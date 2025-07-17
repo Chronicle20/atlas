@@ -76,7 +76,7 @@ func TestFollowUpSagaTemplateStoreThreadSafety(t *testing.T) {
 			go func(index int) {
 				defer wg.Done()
 				characterName := fmt.Sprintf("Character_%d", index)
-				err := store.Store(tenantId, characterName, input, templateData)
+				err := store.Store(tenantId, characterName, input, templateData, uuid.New())
 				if err != nil {
 					t.Errorf("Error storing template: %v", err)
 				}
@@ -115,7 +115,7 @@ func TestFollowUpSagaTemplateStoreThreadSafety(t *testing.T) {
 			characterName := fmt.Sprintf("Character_%d", i)
 			input := RestModel{Name: characterName}
 			templateData := template.RestModel{Items: []uint32{uint32(i)}}
-			store.Store(tenantId, characterName, input, templateData)
+			store.Store(tenantId, characterName, input, templateData, uuid.New())
 		}
 		
 		// Verify all stored
@@ -157,8 +157,8 @@ func TestFollowUpSagaTemplateStoreTenantIsolation(t *testing.T) {
 	template2 := template.RestModel{Items: []uint32{2000}}
 	
 	// Store templates for both tenants with same character name
-	store.Store(tenant1, characterName, input1, template1)
-	store.Store(tenant2, characterName, input2, template2)
+	store.Store(tenant1, characterName, input1, template1, uuid.New())
+	store.Store(tenant2, characterName, input2, template2, uuid.New())
 	
 	// Verify both stored
 	if store.Size() != 2 {
@@ -213,7 +213,7 @@ func TestFollowUpSagaTemplateStoreHelperFunctions(t *testing.T) {
 	// but we can test the Get and Remove helper functions
 	
 	// Store directly
-	store.Store(tenantId, characterName, input, templateData)
+	store.Store(tenantId, characterName, input, templateData, uuid.New())
 	
 	// Get via helper function
 	result, exists := GetFollowUpSagaTemplate(tenantId, characterName)
@@ -232,5 +232,194 @@ func TestFollowUpSagaTemplateStoreHelperFunctions(t *testing.T) {
 	_, existsAfter := GetFollowUpSagaTemplate(tenantId, characterName)
 	if existsAfter {
 		t.Errorf("Template should be removed")
+	}
+}
+
+func TestSagaCompletionTrackerStoreSingleton(t *testing.T) {
+	t.Run("singleton_returns_same_instance", func(t *testing.T) {
+		store1 := GetSagaCompletionTrackerStore()
+		store2 := GetSagaCompletionTrackerStore()
+		
+		if store1 != store2 {
+			t.Errorf("Expected singleton to return same instance")
+		}
+	})
+	
+	t.Run("singleton_concurrent_access", func(t *testing.T) {
+		var wg sync.WaitGroup
+		stores := make([]*SagaCompletionTrackerStore, 10)
+		
+		for i := 0; i < 10; i++ {
+			wg.Add(1)
+			go func(index int) {
+				defer wg.Done()
+				stores[index] = GetSagaCompletionTrackerStore()
+			}(i)
+		}
+		
+		wg.Wait()
+		
+		// All instances should be the same
+		for i := 1; i < len(stores); i++ {
+			if stores[0] != stores[i] {
+				t.Errorf("Expected all instances to be the same")
+			}
+		}
+	})
+}
+
+func TestSagaCompletionTrackerStoreOperations(t *testing.T) {
+	store := GetSagaCompletionTrackerStore()
+	store.Clear() // Start with clean state
+	
+	t.Run("store_and_track_character_creation", func(t *testing.T) {
+		tenantId := uuid.New()
+		accountId := uint32(12345)
+		characterCreationTransactionId := uuid.New()
+		
+		// Store tracking info for character creation
+		store.StoreTrackerForCharacterCreation(tenantId, accountId, characterCreationTransactionId)
+		
+		// Verify stored
+		if store.Size() != 1 {
+			t.Errorf("Expected 1 tracker stored, got %d", store.Size())
+		}
+		
+		// Mark character creation as completed (should not trigger seed event yet)
+		tracker, bothComplete := store.MarkSagaCompleted(characterCreationTransactionId)
+		if bothComplete {
+			t.Errorf("Expected bothComplete to be false when only character creation is complete")
+		}
+		if tracker != nil {
+			t.Errorf("Expected tracker to be nil when not both complete")
+		}
+	})
+	
+	t.Run("complete_saga_flow", func(t *testing.T) {
+		store.Clear()
+		
+		tenantId := uuid.New()
+		accountId := uint32(67890)
+		characterId := uint32(99999)
+		characterCreationTransactionId := uuid.New()
+		followUpSagaTransactionId := uuid.New()
+		
+		// Store tracking info for character creation
+		store.StoreTrackerForCharacterCreation(tenantId, accountId, characterCreationTransactionId)
+		
+		// Update with follow-up saga info
+		store.UpdateTrackerForFollowUpSaga(characterCreationTransactionId, followUpSagaTransactionId, characterId)
+		
+		// Verify both transaction IDs are now tracked
+		if store.Size() != 2 {
+			t.Errorf("Expected 2 tracker entries (one for each transaction ID), got %d", store.Size())
+		}
+		
+		// Mark character creation as completed
+		tracker, bothComplete := store.MarkSagaCompleted(characterCreationTransactionId)
+		if bothComplete {
+			t.Errorf("Expected bothComplete to be false when only character creation is complete")
+		}
+		if tracker != nil {
+			t.Errorf("Expected tracker to be nil when not both complete")
+		}
+		
+		// Mark follow-up saga as completed (should trigger seed event)
+		tracker, bothComplete = store.MarkSagaCompleted(followUpSagaTransactionId)
+		if !bothComplete {
+			t.Errorf("Expected bothComplete to be true when both sagas are complete")
+		}
+		if tracker == nil {
+			t.Fatalf("Expected tracker to be returned when both complete")
+		}
+		
+		// Verify tracker data
+		if tracker.TenantId != tenantId {
+			t.Errorf("Expected TenantId %s, got %s", tenantId, tracker.TenantId)
+		}
+		if tracker.AccountId != accountId {
+			t.Errorf("Expected AccountId %d, got %d", accountId, tracker.AccountId)
+		}
+		if tracker.CharacterId != characterId {
+			t.Errorf("Expected CharacterId %d, got %d", characterId, tracker.CharacterId)
+		}
+		if tracker.CharacterCreationTransactionId != characterCreationTransactionId {
+			t.Errorf("Expected CharacterCreationTransactionId %s, got %s", characterCreationTransactionId, tracker.CharacterCreationTransactionId)
+		}
+		if tracker.FollowUpSagaTransactionId != followUpSagaTransactionId {
+			t.Errorf("Expected FollowUpSagaTransactionId %s, got %s", followUpSagaTransactionId, tracker.FollowUpSagaTransactionId)
+		}
+		
+		// Verify trackers are cleaned up
+		if store.Size() != 0 {
+			t.Errorf("Expected 0 trackers after completion, got %d", store.Size())
+		}
+	})
+	
+	t.Run("concurrent_tracking_operations", func(t *testing.T) {
+		store.Clear()
+		
+		var wg sync.WaitGroup
+		numTrackers := 50
+		
+		// Create multiple trackers concurrently
+		for i := 0; i < numTrackers; i++ {
+			wg.Add(1)
+			go func(index int) {
+				defer wg.Done()
+				tenantId := uuid.New()
+				accountId := uint32(index)
+				characterCreationTransactionId := uuid.New()
+				
+				store.StoreTrackerForCharacterCreation(tenantId, accountId, characterCreationTransactionId)
+			}(i)
+		}
+		
+		wg.Wait()
+		
+		// Verify all trackers stored
+		if store.Size() != numTrackers {
+			t.Errorf("Expected %d trackers stored, got %d", numTrackers, store.Size())
+		}
+	})
+}
+
+func TestSagaCompletionHelperFunctions(t *testing.T) {
+	store := GetSagaCompletionTrackerStore()
+	store.Clear()
+	
+	tenantId := uuid.New()
+	accountId := uint32(11111)
+	characterId := uint32(22222)
+	characterCreationTransactionId := uuid.New()
+	followUpSagaTransactionId := uuid.New()
+	
+	// Store tracking info for character creation
+	store.StoreTrackerForCharacterCreation(tenantId, accountId, characterCreationTransactionId)
+	
+	// Test StoreFollowUpSagaTracking helper function
+	StoreFollowUpSagaTracking(characterCreationTransactionId, followUpSagaTransactionId, characterId)
+	
+	// Test MarkSagaCompleted helper function
+	tracker, bothComplete := MarkSagaCompleted(characterCreationTransactionId)
+	if bothComplete {
+		t.Errorf("Expected bothComplete to be false when only character creation is complete")
+	}
+	
+	// Complete the follow-up saga
+	tracker, bothComplete = MarkSagaCompleted(followUpSagaTransactionId)
+	if !bothComplete {
+		t.Errorf("Expected bothComplete to be true when both sagas are complete")
+	}
+	if tracker == nil {
+		t.Fatalf("Expected tracker to be returned when both complete")
+	}
+	
+	// Verify tracker data is correct
+	if tracker.AccountId != accountId {
+		t.Errorf("Expected AccountId %d, got %d", accountId, tracker.AccountId)
+	}
+	if tracker.CharacterId != characterId {
+		t.Errorf("Expected CharacterId %d, got %d", characterId, tracker.CharacterId)
 	}
 }

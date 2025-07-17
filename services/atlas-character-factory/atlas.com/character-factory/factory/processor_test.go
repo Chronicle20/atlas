@@ -2,6 +2,7 @@ package factory
 
 import (
 	"atlas-character-factory/configuration/tenant/characters/template"
+	job2 "atlas-character-factory/job"
 	"atlas-character-factory/saga"
 	"context"
 	"strings"
@@ -86,17 +87,14 @@ func TestBuildCharacterCreationSaga(t *testing.T) {
 					if payload.WorldId != 0 {
 						t.Errorf("Expected WorldId 0, got %d", payload.WorldId)
 					}
-					if payload.JobId != 100 {
-						t.Errorf("Expected JobId 100, got %d", payload.JobId)
+					if payload.JobId != 0 { // job.BeginnerId is 0
+						t.Errorf("Expected JobId 0, got %d", payload.JobId)
 					}
 					if payload.Face != 20000 {
 						t.Errorf("Expected Face 20000, got %d", payload.Face)
 					}
-					if payload.Hair != 30000 {
-						t.Errorf("Expected Hair 30000, got %d", payload.Hair)
-					}
-					if payload.HairColor != 7 {
-						t.Errorf("Expected HairColor 7, got %d", payload.HairColor)
+					if payload.Hair != 30007 { // Hair + HairColor combined
+						t.Errorf("Expected Hair 30007, got %d", payload.Hair)
 					}
 					if payload.Skin != 0 {
 						t.Errorf("Expected Skin 0, got %d", payload.Skin)
@@ -169,14 +167,11 @@ func TestBuildCharacterCreationSaga(t *testing.T) {
 						if payload.CharacterId != 0 {
 							t.Errorf("Expected CharacterId 0 (to be set by orchestrator), got %d", payload.CharacterId)
 						}
-						if payload.TemplateId != equipmentTemplateIds[i] {
-							t.Errorf("Expected TemplateId %d, got %d", equipmentTemplateIds[i], payload.TemplateId)
+						if payload.Item.TemplateId != equipmentTemplateIds[i] {
+							t.Errorf("Expected TemplateId %d, got %d", equipmentTemplateIds[i], payload.Item.TemplateId)
 						}
-						if payload.Source != 1 {
-							t.Errorf("Expected Source 1, got %d", payload.Source)
-						}
-						if payload.Destination != 0 {
-							t.Errorf("Expected Destination 0, got %d", payload.Destination)
+						if payload.Item.Quantity != 1 {
+							t.Errorf("Expected Quantity 1, got %d", payload.Item.Quantity)
 						}
 					} else {
 						t.Errorf("Step %d payload is not CreateAndEquipAssetPayload", stepIndex)
@@ -488,17 +483,16 @@ func TestBuildCharacterCreationSaga_AllFieldsPresent(t *testing.T) {
 		if payload.WorldId != input.WorldId {
 			t.Errorf("WorldId mismatch: expected %d, got %d", input.WorldId, payload.WorldId)
 		}
-		if payload.JobId != input.JobIndex {
-			t.Errorf("JobId mismatch: expected %d, got %d", input.JobIndex, payload.JobId)
+		expectedJobId := job2.JobFromIndex(input.JobIndex, input.SubJobIndex)
+		if payload.JobId != expectedJobId {
+			t.Errorf("JobId mismatch: expected %d, got %d", expectedJobId, payload.JobId)
 		}
 		if payload.Face != input.Face {
 			t.Errorf("Face mismatch: expected %d, got %d", input.Face, payload.Face)
 		}
-		if payload.Hair != input.Hair {
-			t.Errorf("Hair mismatch: expected %d, got %d", input.Hair, payload.Hair)
-		}
-		if payload.HairColor != input.HairColor {
-			t.Errorf("HairColor mismatch: expected %d, got %d", input.HairColor, payload.HairColor)
+		expectedHair := input.Hair + input.HairColor
+		if payload.Hair != expectedHair {
+			t.Errorf("Hair mismatch: expected %d, got %d", expectedHair, payload.Hair)
 		}
 		if payload.Skin != uint32(input.SkinColor) {
 			t.Errorf("Skin mismatch: expected %d, got %d", uint32(input.SkinColor), payload.Skin)
@@ -829,8 +823,7 @@ func TestSagaEmissionToKafka(t *testing.T) {
 					WorldId:   0,
 					JobId:     100,
 					Face:      20000,
-					Hair:      30000,
-					HairColor: 7,
+					Hair:      30000 + 7, // Combined hair + hairColor
 					Skin:      0,
 					Top:       1040002,
 					Bottom:    1060002,
@@ -861,9 +854,10 @@ func TestSagaEmissionToKafka(t *testing.T) {
 				}).
 				AddStep("equip_weapon", saga.Pending, saga.CreateAndEquipAsset, saga.CreateAndEquipAssetPayload{
 					CharacterId: 0,
-					TemplateId:  1302000,
-					Source:      1,
-					Destination: 0,
+					Item: saga.ItemPayload{
+						TemplateId: 1302000,
+						Quantity:   1,
+					},
 				}).
 				Build(),
 			expectError: false,
@@ -1277,19 +1271,19 @@ func TestCharacterCreationOrchestrationFlow(t *testing.T) {
 			if payload.WorldId != input.WorldId {
 				t.Errorf("Character create payload missing WorldId: expected %d, got %d", input.WorldId, payload.WorldId)
 			}
-			if payload.JobId != input.JobIndex {
-				t.Errorf("Character create payload missing JobId: expected %d, got %d", input.JobIndex, payload.JobId)
+			expectedJobId := job2.JobFromIndex(input.JobIndex, input.SubJobIndex)
+			if payload.JobId != expectedJobId {
+				t.Errorf("Character create payload missing JobId: expected %d, got %d", expectedJobId, payload.JobId)
 			}
 
 			// Verify appearance fields
 			if payload.Face != input.Face {
 				t.Errorf("Character create payload missing Face: expected %d, got %d", input.Face, payload.Face)
 			}
-			if payload.Hair != input.Hair {
-				t.Errorf("Character create payload missing Hair: expected %d, got %d", input.Hair, payload.Hair)
-			}
-			if payload.HairColor != input.HairColor {
-				t.Errorf("Character create payload missing HairColor: expected %d, got %d", input.HairColor, payload.HairColor)
+			// Hair now combines hair + hairColor
+			expectedHair := input.Hair + input.HairColor
+			if payload.Hair != expectedHair {
+				t.Errorf("Character create payload missing combined Hair: expected %d, got %d", expectedHair, payload.Hair)
 			}
 			if payload.Skin != uint32(input.SkinColor) {
 				t.Errorf("Character create payload missing Skin: expected %d, got %d", uint32(input.SkinColor), payload.Skin)

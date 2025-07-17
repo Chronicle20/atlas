@@ -99,6 +99,9 @@ func characterCreatedHandler() message.Handler[character3.StatusEvent[character3
 			template.Template,
 		)
 
+		// Store the follow-up saga tracking information
+		factory.StoreFollowUpSagaTracking(template.CharacterCreationTransactionId, followUpTransactionId, event.CharacterId)
+
 		// Emit the follow-up saga
 		sagaProcessor := saga.NewProcessor(l, ctx)
 		err := sagaProcessor.Create(followUpSaga)

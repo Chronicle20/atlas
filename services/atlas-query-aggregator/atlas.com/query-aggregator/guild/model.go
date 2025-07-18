@@ -1,49 +1,84 @@
 package guild
 
-// Model represents a guild domain object
+import (
+	"atlas-query-aggregator/guild/member"
+	"atlas-query-aggregator/guild/title"
+)
+
 type Model struct {
-	id     uint32
-	name   string
-	rank   uint32
-	member bool
+	id                  uint32
+	worldId             byte
+	name                string
+	notice              string
+	points              uint32
+	capacity            uint32
+	logo                uint16
+	logoColor           byte
+	logoBackground      uint16
+	logoBackgroundColor byte
+	leaderId            uint32
+	members             []member.Model
+	titles              []title.Model
 }
 
-// Id returns the guild ID
 func (m Model) Id() uint32 {
 	return m.id
 }
 
-// Name returns the guild name
 func (m Model) Name() string {
 	return m.name
 }
 
-// Rank returns the member's rank in the guild
-func (m Model) Rank() uint32 {
-	return m.rank
+func (m Model) Logo() uint16 {
+	return m.logo
 }
 
-// IsMember returns true if the character is a member of a guild
-func (m Model) IsMember() bool {
-	return m.member
+func (m Model) LogoColor() byte {
+	return m.logoColor
 }
 
-// NewModel creates a new guild model
-func NewModel(id uint32, name string, rank uint32) Model {
-	return Model{
-		id:     id,
-		name:   name,
-		rank:   rank,
-		member: id != 0, // If guild ID is 0, character is not in a guild
+func (m Model) LogoBackground() uint16 {
+	return m.logoBackground
+}
+
+func (m Model) LogoBackgroundColor() byte {
+	return m.logoBackgroundColor
+}
+
+func (m Model) Titles() []title.Model {
+	return m.titles
+}
+
+func (m Model) Members() []member.Model {
+	return m.members
+
+}
+
+func (m Model) Capacity() uint32 {
+	return m.capacity
+}
+
+func (m Model) Notice() string {
+	return m.notice
+}
+
+func (m Model) Points() uint32 {
+	return m.points
+}
+
+func (m Model) AllianceId() uint32 {
+	return 0
+}
+
+func (m Model) LeaderId() uint32 {
+	return m.leaderId
+}
+
+func (m Model) MemberRank(characterId uint32) int {
+	for _, mem := range m.Members() {
+		if mem.CharacterId() == characterId {
+			return int(mem.Rank())
+		}
 	}
-}
-
-// EmptyModel creates an empty guild model for characters not in a guild
-func EmptyModel() Model {
-	return Model{
-		id:     0,
-		name:   "",
-		rank:   0,
-		member: false,
-	}
+	return 0
 }

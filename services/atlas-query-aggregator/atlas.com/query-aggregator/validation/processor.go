@@ -43,7 +43,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 
 
 // ValidateStructured validates a list of structured condition inputs against a character
-func (p *ProcessorImpl) ValidateStructured(decorators ...model.Decorator[ValidationResult]) func(characterId uint32, conditionInputs []ConditionInput) (ValidationResult, error) {
+func (p *ProcessorImpl) ValidateStructured(resultDecorators ...model.Decorator[ValidationResult]) func(characterId uint32, conditionInputs []ConditionInput) (ValidationResult, error) {
 	return func(characterId uint32, conditionInputs []ConditionInput) (ValidationResult, error) {
 		// Create a new validation result
 		result := NewValidationResult(characterId)
@@ -51,6 +51,7 @@ func (p *ProcessorImpl) ValidateStructured(decorators ...model.Decorator[Validat
 		// Parse all conditions
 		conditions := make([]Condition, 0, len(conditionInputs))
 		needsInventory := false
+		needsGuild := false
 
 		for _, input := range conditionInputs {
 			condition, err := NewConditionBuilder().FromInput(input).Build()
@@ -64,15 +65,28 @@ func (p *ProcessorImpl) ValidateStructured(decorators ...model.Decorator[Validat
 			if condition.conditionType == ItemCondition {
 				needsInventory = true
 			}
+
+			// Check if this condition requires guild data
+			if condition.conditionType == GuildLeaderCondition {
+				needsGuild = true
+			}
 		}
 
-		// Get character data with inventory if needed
+		// Get character data with inventory and/or guild if needed
 		var characterData character.Model
 		var err error
+		var charDecorators []model.Decorator[character.Model]
 
 		if needsInventory {
-			// Use the InventoryDecorator to ensure the character has inventory data
-			characterData, err = p.characterProcessor.GetById(p.characterProcessor.InventoryDecorator)(characterId)
+			charDecorators = append(charDecorators, p.characterProcessor.InventoryDecorator)
+		}
+
+		if needsGuild {
+			charDecorators = append(charDecorators, p.characterProcessor.GuildDecorator)
+		}
+
+		if len(charDecorators) > 0 {
+			characterData, err = p.characterProcessor.GetById(charDecorators...)(characterId)
 		} else {
 			characterData, err = p.characterProcessor.GetById()(characterId)
 		}
@@ -88,7 +102,7 @@ func (p *ProcessorImpl) ValidateStructured(decorators ...model.Decorator[Validat
 		}
 
 		// Apply decorators
-		return model.Map(model.Decorate(decorators))(func() (ValidationResult, error) {
+		return model.Map(model.Decorate(resultDecorators))(func() (ValidationResult, error) {
 			return result, nil
 		})()
 	}

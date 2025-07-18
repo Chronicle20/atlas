@@ -4,6 +4,7 @@ import (
 	"atlas-query-aggregator/character"
 	"atlas-query-aggregator/quest"
 	"fmt"
+
 	inventory2 "github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/item"
 )
@@ -12,26 +13,27 @@ import (
 type ConditionType string
 
 const (
-	JobCondition           ConditionType = "jobId"
-	MesoCondition          ConditionType = "meso"
-	MapCondition           ConditionType = "mapId"
-	FameCondition          ConditionType = "fame"
-	ItemCondition          ConditionType = "item"
-	GenderCondition        ConditionType = "gender"
-	LevelCondition         ConditionType = "level"
-	RebornsCondition       ConditionType = "reborns"
-	DojoPointsCondition    ConditionType = "dojoPoints"
-	VanquisherKillsCondition ConditionType = "vanquisherKills"
-	GmLevelCondition       ConditionType = "gmLevel"
-	GuildIdCondition       ConditionType = "guildId"
-	GuildRankCondition     ConditionType = "guildRank"
-	QuestStatusCondition   ConditionType = "questStatus"
-	QuestProgressCondition ConditionType = "questProgress"
+	JobCondition                    ConditionType = "jobId"
+	MesoCondition                   ConditionType = "meso"
+	MapCondition                    ConditionType = "mapId"
+	FameCondition                   ConditionType = "fame"
+	ItemCondition                   ConditionType = "item"
+	GenderCondition                 ConditionType = "gender"
+	LevelCondition                  ConditionType = "level"
+	RebornsCondition                ConditionType = "reborns"
+	DojoPointsCondition             ConditionType = "dojoPoints"
+	VanquisherKillsCondition        ConditionType = "vanquisherKills"
+	GmLevelCondition                ConditionType = "gmLevel"
+	GuildIdCondition                ConditionType = "guildId"
+	GuildLeaderCondition            ConditionType = "guildLeader"
+	GuildRankCondition              ConditionType = "guildRank"
+	QuestStatusCondition            ConditionType = "questStatus"
+	QuestProgressCondition          ConditionType = "questProgress"
 	UnclaimedMarriageGiftsCondition ConditionType = "hasUnclaimedMarriageGifts"
-	StrengthCondition      ConditionType = "strength"
-	DexterityCondition     ConditionType = "dexterity"
-	IntelligenceCondition  ConditionType = "intelligence"
-	LuckCondition          ConditionType = "luck"
+	StrengthCondition               ConditionType = "strength"
+	DexterityCondition              ConditionType = "dexterity"
+	IntelligenceCondition           ConditionType = "intelligence"
+	LuckCondition                   ConditionType = "luck"
 )
 
 // Operator represents the comparison operator in a condition
@@ -97,7 +99,7 @@ func (b *ConditionBuilder) SetType(condType string) *ConditionBuilder {
 	}
 
 	switch ConditionType(condType) {
-	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition, GmLevelCondition, GuildIdCondition, GuildRankCondition, QuestStatusCondition, QuestProgressCondition, UnclaimedMarriageGiftsCondition, StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition:
+	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition, GmLevelCondition, GuildIdCondition, GuildRankCondition, QuestStatusCondition, QuestProgressCondition, UnclaimedMarriageGiftsCondition, StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition, GuildLeaderCondition:
 		b.conditionType = ConditionType(condType)
 	default:
 		b.err = fmt.Errorf("unsupported condition type: %s", condType)
@@ -266,7 +268,6 @@ func (b *ConditionBuilder) Build() (Condition, error) {
 	return condition, nil
 }
 
-
 // Evaluate evaluates the condition against a character model
 // Returns a structured ConditionResult with evaluation details
 func (c Condition) Evaluate(character character.Model) ConditionResult {
@@ -308,30 +309,28 @@ func (c Condition) Evaluate(character character.Model) ConditionResult {
 		actualValue = character.GmLevel()
 		description = fmt.Sprintf("GM Level %s %d", c.operator, c.value)
 	case GuildIdCondition:
-		if !character.Guild().IsMember() {
-			return ConditionResult{
-				Passed:      false,
-				Description: fmt.Sprintf("Guild ID %s %d (character not in guild)", c.operator, c.value),
-				Type:        c.conditionType,
-				Operator:    c.operator,
-				Value:       c.value,
-				ActualValue: 0,
-			}
-		}
 		actualValue = int(character.Guild().Id())
 		description = fmt.Sprintf("Guild ID %s %d", c.operator, c.value)
-	case GuildRankCondition:
-		if !character.Guild().IsMember() {
-			return ConditionResult{
-				Passed:      false,
-				Description: fmt.Sprintf("Guild Rank %s %d (character not in guild)", c.operator, c.value),
-				Type:        c.conditionType,
-				Operator:    c.operator,
-				Value:       c.value,
-				ActualValue: 0,
-			}
+	case GuildLeaderCondition:
+		// For guild leader conditions, we need to check if the character is a guild leader
+		// Get the guild from the character model
+		guild := character.Guild()
+
+		// Check if the character is the guild leader
+		if guild.Id() == 0 {
+			// Character has no guild
+			actualValue = 0
+		} else if guild.LeaderId() == character.Id() {
+			// Character is the guild leader
+			actualValue = 1
+		} else {
+			// Character is not the guild leader
+			actualValue = 0
 		}
-		actualValue = int(character.Guild().Rank())
+
+		description = fmt.Sprintf("Guild Leader %s %d", c.operator, c.value)
+	case GuildRankCondition:
+		actualValue = character.Guild().MemberRank(character.Id())
 		description = fmt.Sprintf("Guild Rank %s %d", c.operator, c.value)
 	case QuestStatusCondition:
 		// Quest status validation requires context - return error state
@@ -344,7 +343,7 @@ func (c Condition) Evaluate(character character.Model) ConditionResult {
 			ActualValue: int(quest.UNDEFINED),
 		}
 	case QuestProgressCondition:
-		// Quest progress validation requires context - return error state  
+		// Quest progress validation requires context - return error state
 		return ConditionResult{
 			Passed:      false,
 			Description: fmt.Sprintf("Quest %d Progress validation (step: %s) requires ValidationContext", c.referenceId, c.step),
@@ -463,7 +462,7 @@ func (c Condition) EvaluateWithContext(ctx ValidationContext) ConditionResult {
 		}
 		actualValue = int(questModel.Status())
 		description = fmt.Sprintf("Quest %d Status %s %d", c.referenceId, c.operator, c.value)
-		
+
 	case QuestProgressCondition:
 		questModel, exists := ctx.Quest(c.referenceId)
 		if !exists {
@@ -478,7 +477,7 @@ func (c Condition) EvaluateWithContext(ctx ValidationContext) ConditionResult {
 		}
 		actualValue = questModel.Progress(c.step)
 		description = fmt.Sprintf("Quest %d Progress (step: %s) %s %d", c.referenceId, c.step, c.operator, c.value)
-		
+
 	case UnclaimedMarriageGiftsCondition:
 		marriageModel := ctx.Marriage()
 		if marriageModel.HasUnclaimedGifts() {
@@ -487,35 +486,15 @@ func (c Condition) EvaluateWithContext(ctx ValidationContext) ConditionResult {
 			actualValue = 0
 		}
 		description = fmt.Sprintf("Unclaimed Marriage Gifts %s %d", c.operator, c.value)
-		
+
 	case GuildIdCondition:
-		if !character.Guild().IsMember() {
-			return ConditionResult{
-				Passed:      false,
-				Description: fmt.Sprintf("Guild ID %s %d (character not in guild)", c.operator, c.value),
-				Type:        c.conditionType,
-				Operator:    c.operator,
-				Value:       c.value,
-				ActualValue: 0,
-			}
-		}
 		actualValue = int(character.Guild().Id())
 		description = fmt.Sprintf("Guild ID %s %d", c.operator, c.value)
-		
+
 	case GuildRankCondition:
-		if !character.Guild().IsMember() {
-			return ConditionResult{
-				Passed:      false,
-				Description: fmt.Sprintf("Guild Rank %s %d (character not in guild)", c.operator, c.value),
-				Type:        c.conditionType,
-				Operator:    c.operator,
-				Value:       c.value,
-				ActualValue: 0,
-			}
-		}
-		actualValue = int(character.Guild().Rank())
+		actualValue = character.Guild().MemberRank(character.Id())
 		description = fmt.Sprintf("Guild Rank %s %d", c.operator, c.value)
-		
+
 	default:
 		// For non-context-specific conditions, delegate to the original Evaluate method
 		return c.Evaluate(character)
@@ -545,7 +524,6 @@ func (c Condition) EvaluateWithContext(ctx ValidationContext) ConditionResult {
 		ActualValue: actualValue,
 	}
 }
-
 
 // ValidationResult represents the result of a validation
 type ValidationResult struct {
@@ -584,7 +562,6 @@ func (v ValidationResult) Results() []ConditionResult {
 func (v ValidationResult) CharacterId() uint32 {
 	return v.characterId
 }
-
 
 // AddConditionResult adds a structured condition result to the validation result
 func (v *ValidationResult) AddConditionResult(result ConditionResult) {

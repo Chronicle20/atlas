@@ -6,12 +6,13 @@ import (
 	"atlas-query-aggregator/equipment"
 	"atlas-query-aggregator/guild"
 	"atlas-query-aggregator/inventory"
+	"strconv"
+	"strings"
+
 	"github.com/Chronicle20/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas-constants/job"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
-	"strconv"
-	"strings"
 )
 
 type Model struct {
@@ -238,6 +239,10 @@ func (m Model) Inventory() inventory.Model {
 	return m.inventory
 }
 
+func (m Model) Guild() guild.Model {
+	return m.guild
+}
+
 func (m Model) X() int16 {
 	return m.x
 }
@@ -264,10 +269,6 @@ func (m Model) DojoPoints() uint32 {
 
 func (m Model) VanquisherKills() uint32 {
 	return m.vanquisherKills
-}
-
-func (m Model) Guild() guild.Model {
-	return m.guild
 }
 
 func (m Model) SetInventory(i inventory.Model) Model {
@@ -328,6 +329,10 @@ func (m Model) SetInventory(i inventory.Model) Model {
 		SetCash(i.Cash())
 
 	return Clone(m).SetInventory(ib.Build()).SetEquipment(eq).Build()
+}
+
+func (m Model) SetGuild(g guild.Model) Model {
+	return Clone(m).SetGuild(g).Build()
 }
 
 func Clone(m Model) *ModelBuilder {

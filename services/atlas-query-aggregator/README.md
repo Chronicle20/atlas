@@ -24,6 +24,7 @@ A RESTful service that provides composite character state validation in the Atla
 - Dojo points validation
 - Vanquisher kills validation
 - GM level validation
+- Guild leader validation (0 = not a leader, 1 = is a leader)
 - Guild membership validation
 - Guild rank validation
 - Quest status validation
@@ -106,243 +107,6 @@ The atlas-query-aggregator service requires connectivity to multiple external At
 - Supports boolean equality operations for gift presence validation
 
 **Current Implementation**: Placeholder methods return default values (`false` for gift presence)
-
-#### Service Configuration
-
-All external services are configured through environment variables that specify base URLs:
-
-```bash
-# Character service base URL
-CHARACTERS_HOST=https://atlas-character-service.example.com
-
-# Inventory service base URL  
-INVENTORY_HOST=https://atlas-inventory-service.example.com
-
-# Quest service base URL (future)
-QUEST_HOST=https://atlas-quest-service.example.com
-
-# Marriage service base URL (future)
-MARRIAGE_HOST=https://atlas-marriage-service.example.com
-```
-
-#### Complete Configuration Example
-
-Here's a comprehensive example of all configuration options for deploying atlas-query-aggregator:
-
-```bash
-# Core Service Configuration
-REST_PORT=8080
-LOG_LEVEL=Info
-
-# Tracing Configuration
-JAEGER_HOST=jaeger.example.com:14268
-
-# Kafka Configuration
-BOOTSTRAP_SERVERS=kafka1.example.com:9092,kafka2.example.com:9092,kafka3.example.com:9092
-
-# External Service Dependencies
-CHARACTERS_HOST=https://atlas-character-service.example.com
-INVENTORY_HOST=https://atlas-inventory-service.example.com
-QUEST_HOST=https://atlas-quest-service.example.com
-MARRIAGE_HOST=https://atlas-marriage-service.example.com
-
-# Tenant Configuration (Required for all requests)
-TENANT_ID=083839c6-c47c-42a6-9585-76492795d123
-REGION=GMS
-MAJOR_VERSION=83
-MINOR_VERSION=1
-
-# HTTP Client Configuration
-HTTP_CLIENT_TIMEOUT=30s
-HTTP_CLIENT_MAX_IDLE_CONNS=100
-HTTP_CLIENT_MAX_IDLE_CONNS_PER_HOST=10
-
-# Database Configuration (if applicable)
-DB_HOST=postgres.example.com
-DB_PORT=5432
-DB_NAME=atlas_query_aggregator
-DB_USER=atlas_service
-DB_PASSWORD=secure_password
-DB_SSL_MODE=require
-
-# Security Configuration
-API_KEY=your-api-key-here
-SERVICE_MESH_ENABLED=true
-MUTUAL_TLS_ENABLED=true
-
-# Performance Tuning
-CACHE_TTL=300s
-CIRCUIT_BREAKER_ENABLED=true
-CIRCUIT_BREAKER_TIMEOUT=5s
-CIRCUIT_BREAKER_MAX_REQUESTS=100
-CIRCUIT_BREAKER_INTERVAL=60s
-CIRCUIT_BREAKER_RATIO=0.6
-
-# Validation Configuration
-VALIDATION_TIMEOUT=10s
-MAX_CONDITIONS_PER_REQUEST=50
-ENABLE_QUEST_VALIDATION=true
-ENABLE_MARRIAGE_VALIDATION=true
-```
-
-#### Docker Compose Example
-
-```yaml
-version: '3.8'
-services:
-  atlas-query-aggregator:
-    image: atlas-query-aggregator:latest
-    ports:
-      - "8080:8080"
-    environment:
-      # Core Configuration
-      REST_PORT: 8080
-      LOG_LEVEL: Info
-      
-      # Tracing
-      JAEGER_HOST: jaeger:14268
-      
-      # Kafka
-      BOOTSTRAP_SERVERS: kafka:9092
-      
-      # External Services
-      CHARACTERS_HOST: http://atlas-character-service:8080
-      INVENTORY_HOST: http://atlas-inventory-service:8080
-      QUEST_HOST: http://atlas-quest-service:8080
-      MARRIAGE_HOST: http://atlas-marriage-service:8080
-      
-      # Tenant Headers
-      TENANT_ID: 083839c6-c47c-42a6-9585-76492795d123
-      REGION: GMS
-      MAJOR_VERSION: 83
-      MINOR_VERSION: 1
-      
-      # Performance
-      HTTP_CLIENT_TIMEOUT: 30s
-      CACHE_TTL: 300s
-      CIRCUIT_BREAKER_ENABLED: true
-      
-    depends_on:
-      - kafka
-      - atlas-character-service
-      - atlas-inventory-service
-    networks:
-      - atlas-network
-    
-  # Supporting services would be defined here
-  # kafka, atlas-character-service, etc.
-
-networks:
-  atlas-network:
-    driver: bridge
-```
-
-#### Kubernetes Deployment Example
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: atlas-query-aggregator
-  namespace: atlas-system
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: atlas-query-aggregator
-  template:
-    metadata:
-      labels:
-        app: atlas-query-aggregator
-    spec:
-      containers:
-      - name: atlas-query-aggregator
-        image: atlas-query-aggregator:latest
-        ports:
-        - containerPort: 8080
-        env:
-        - name: REST_PORT
-          value: "8080"
-        - name: LOG_LEVEL
-          value: "Info"
-        - name: JAEGER_HOST
-          value: "jaeger.atlas-system.svc.cluster.local:14268"
-        - name: BOOTSTRAP_SERVERS
-          value: "kafka.atlas-system.svc.cluster.local:9092"
-        - name: CHARACTERS_HOST
-          value: "http://atlas-character-service.atlas-system.svc.cluster.local:8080"
-        - name: INVENTORY_HOST
-          value: "http://atlas-inventory-service.atlas-system.svc.cluster.local:8080"
-        - name: TENANT_ID
-          valueFrom:
-            secretKeyRef:
-              name: atlas-config
-              key: tenant-id
-        - name: REGION
-          valueFrom:
-            configMapKeyRef:
-              name: atlas-config
-              key: region
-        - name: MAJOR_VERSION
-          valueFrom:
-            configMapKeyRef:
-              name: atlas-config
-              key: major-version
-        - name: MINOR_VERSION
-          valueFrom:
-            configMapKeyRef:
-              name: atlas-config
-              key: minor-version
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "250m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8080
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: 8080
-          initialDelaySeconds: 5
-          periodSeconds: 5
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: atlas-query-aggregator-service
-  namespace: atlas-system
-spec:
-  selector:
-    app: atlas-query-aggregator
-  ports:
-  - protocol: TCP
-    port: 8080
-    targetPort: 8080
-  type: ClusterIP
-```
-
-#### Service Health and Error Handling
-
-- **Circuit Breaker**: Services should implement circuit breaker patterns for resilience
-- **Timeout Configuration**: HTTP timeouts should be configured appropriately for each service
-- **Graceful Degradation**: Validation should handle service unavailability gracefully
-- **Caching Strategy**: Consider caching frequently accessed character data to reduce service load
-- **Retry Logic**: Implement exponential backoff for transient service failures
-
-#### Authentication and Security
-
-- **Service-to-Service Authentication**: Implement mutual TLS or service mesh authentication
-- **API Keys**: Use appropriate API key headers for service authentication
-- **Rate Limiting**: Respect service rate limits and implement backoff strategies
-- **Data Privacy**: Ensure character data is handled according to privacy requirements
-
 ## API
 
 ### Header
@@ -386,6 +150,37 @@ Validates a set of conditions against a character's state.
           "value": 30
         },
         {
+          "type": "mapId",
+          "operator": "=",
+          "value": 2000
+        },
+        {
+          "type": "fame",
+          "operator": ">=",
+          "value": 50
+        },
+        {
+          "type": "gender",
+          "operator": "=",
+          "value": 0
+        },
+        {
+          "type": "guildId",
+          "operator": "=",
+          "value": 12345
+        },
+        {
+          "type": "guildLeader",
+          "operator": "=",
+          "value": 1
+        },
+        {
+          "type": "item",
+          "operator": ">=",
+          "value": 10,
+          "referenceId": 2000001
+        },
+        {
           "type": "reborns",
           "operator": ">=",
           "value": 1
@@ -400,17 +195,6 @@ Validates a set of conditions against a character's state.
           "operator": "=",
           "value": 2,
           "referenceId": 1001
-        },
-        {
-          "type": "guildId",
-          "operator": "=",
-          "value": 12345
-        },
-        {
-          "type": "item",
-          "operator": ">=",
-          "value": 10,
-          "referenceId": 2000001
         }
       ]
     }
@@ -430,11 +214,15 @@ Validates a set of conditions against a character's state.
         "Passed: Job ID = 100",
         "Passed: Meso >= 10000",
         "Passed: Level >= 30",
+        "Passed: Map ID = 2000",
+        "Passed: Fame >= 50",
+        "Passed: Gender = 0",
+        "Passed: Guild Leader = 1",
+        "Passed: Guild ID = 12345",
+        "Passed: Item 2000001 quantity >= 10",
         "Passed: Reborns >= 1",
         "Passed: Dojo Points >= 1000",
-        "Passed: Quest 1001 Status = 2",
-        "Passed: Guild ID = 12345",
-        "Passed: Item 2000001 quantity >= 10"
+        "Passed: Quest 1001 Status = 2"
       ],
       "results": [
         {
@@ -463,6 +251,55 @@ Validates a set of conditions against a character's state.
         },
         {
           "passed": true,
+          "description": "Map ID = 2000",
+          "type": "mapId",
+          "operator": "=",
+          "value": 2000,
+          "actualValue": 2000
+        },
+        {
+          "passed": true,
+          "description": "Fame >= 50",
+          "type": "fame",
+          "operator": ">=",
+          "value": 50,
+          "actualValue": 75
+        },
+        {
+          "passed": true,
+          "description": "Gender = 0",
+          "type": "gender",
+          "operator": "=",
+          "value": 0,
+          "actualValue": 0
+        },
+        {
+          "passed": true,
+          "description": "Guild ID = 12345",
+          "type": "guildId",
+          "operator": "=",
+          "value": 12345,
+          "actualValue": 12345
+        },
+        {
+          "passed": true,
+          "description": "Guild Leader = 1",
+          "type": "guildLeader",
+          "operator": "=",
+          "value": 1,
+          "actualValue": 1
+        },
+        {
+          "passed": true,
+          "description": "Item 2000001 quantity >= 10",
+          "type": "item",
+          "operator": ">=",
+          "value": 10,
+          "itemId": 2000001,
+          "actualValue": 15
+        },
+        {
+          "passed": true,
           "description": "Reborns >= 1",
           "type": "reborns",
           "operator": ">=",
@@ -484,23 +321,6 @@ Validates a set of conditions against a character's state.
           "operator": "=",
           "value": 2,
           "actualValue": 2
-        },
-        {
-          "passed": true,
-          "description": "Guild ID = 12345",
-          "type": "guildId",
-          "operator": "=",
-          "value": 12345,
-          "actualValue": 12345
-        },
-        {
-          "passed": true,
-          "description": "Item 2000001 quantity >= 10",
-          "type": "item",
-          "operator": ">=",
-          "value": 10,
-          "itemId": 2000001,
-          "actualValue": 15
         }
       ]
     }
@@ -523,6 +343,7 @@ Validates a set of conditions against a character's state.
 | Vanquisher Kills| vanquisherKills>=10       | Character Service (character.VanquisherKills)                |
 | GM Level        | gmLevel>=1                | Character Service (character.GmLevel)                         |
 | Guild ID        | guildId=12345             | Character Service (character.Guild.Id)                        |
+| Guild Leader    | guildLeader=1             | Guild Service (guild.IsLeader) - 0=not a leader, 1=is a leader|
 | Guild Rank      | guildRank>=2              | Character Service (character.Guild.Rank)                      |
 | Quest Status    | questStatus=2             | Quest Service (quest.Status) - 0=UNDEFINED, 1=NOT_STARTED, 2=STARTED, 3=COMPLETED |
 | Quest Progress  | questProgress>=5          | Quest Service (quest.Progress) - requires referenceId and step |
@@ -530,8 +351,8 @@ Validates a set of conditions against a character's state.
 | Strength        | strength>=100             | Character Service (character.Strength)                        |
 | Dexterity       | dexterity>=100            | Character Service (character.Dexterity)                       |
 | Intelligence    | intelligence>=100         | Character Service (character.Intelligence)                    |
-| Luck            | luck>=100                 | Character Service (character.Luck)                            |
-| Inventory Item  | item[2000001]>=10         | Inventory Service (quantity of item with template ID) - use referenceId |
+| Luck            | luck>=100                 | Character Service (character.Luck)   
+| Inventory Item  | item[2000001]>=10         | Inventory Service (quantity of item with template ID 2000001) |
 
 **Supported Operators:**
 - `=` (equals)

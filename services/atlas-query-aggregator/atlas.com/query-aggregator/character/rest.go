@@ -1,11 +1,11 @@
 package character
 
 import (
-	"atlas-query-aggregator/guild"
-	"github.com/Chronicle20/atlas-constants/world"
-	"github.com/jtumidanski/api2go/jsonapi"
 	"strconv"
 	"strings"
+
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/jtumidanski/api2go/jsonapi"
 )
 
 type RestModel struct {
@@ -43,9 +43,6 @@ type RestModel struct {
 	Reborns            uint32 `json:"reborns"`
 	DojoPoints         uint32 `json:"dojoPoints"`
 	VanquisherKills    uint32 `json:"vanquisherKills"`
-	GuildId            uint32 `json:"guildId"`
-	GuildName          string `json:"guildName"`
-	GuildRank          uint32 `json:"guildRank"`
 }
 
 func (r RestModel) GetName() string {
@@ -136,9 +133,6 @@ func Transform(m Model) (RestModel, error) {
 		Reborns:            m.Reborns(),
 		DojoPoints:         m.DojoPoints(),
 		VanquisherKills:    m.VanquisherKills(),
-		GuildId:            m.Guild().Id(),
-		GuildName:          m.Guild().Name(),
-		GuildRank:          m.Guild().Rank(),
 	}, nil
 }
 
@@ -178,6 +172,5 @@ func Extract(m RestModel) (Model, error) {
 		x:                  m.X,
 		y:                  m.Y,
 		stance:             m.Stance,
-		guild:              guild.NewModel(m.GuildId, m.GuildName, m.GuildRank),
 	}, nil
 }

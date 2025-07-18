@@ -311,3 +311,18 @@ func faceChangedEventProvider(transactionId uuid.UUID, characterId uint32, world
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func genderChangedEventProvider(transactionId uuid.UUID, characterId uint32, worldId world.Id, oldGender byte, newGender byte) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character2.StatusEvent[character2.StatusEventGenderChangedBody]{
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		WorldId:       worldId,
+		Type:          character2.StatusEventTypeGenderChanged,
+		Body: character2.StatusEventGenderChangedBody{
+			OldGender: oldGender,
+			NewGender: newGender,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

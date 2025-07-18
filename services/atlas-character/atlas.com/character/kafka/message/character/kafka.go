@@ -151,6 +151,12 @@ const (
 	StatusEventTypeUpdated           = "UPDATED"
 	StatusEventTypeDeleted           = "DELETED"
 	StatusEventTypeCreationFailed    = "CREATION_FAILED"
+	StatusEventTypeNameChanged       = "NAME_CHANGED"
+	StatusEventTypeHairChanged       = "HAIR_CHANGED"
+	StatusEventTypeFaceChanged       = "FACE_CHANGED"
+	StatusEventTypeGenderChanged     = "GENDER_CHANGED"
+	StatusEventTypeSkinColorChanged  = "SKIN_COLOR_CHANGED"
+	StatusEventTypeGmChanged         = "GM_CHANGED"
 
 	StatusEventTypeError              = "ERROR"
 	StatusEventErrorTypeNotEnoughMeso = "NOT_ENOUGH_MESO"

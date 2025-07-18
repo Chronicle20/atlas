@@ -1217,3 +1217,96 @@ func TestProcessGenericActionState_ConditionEvaluationContextParameterFailure(t 
 	mockExecutor.AssertExpectations(t)
 	mockEvaluator.AssertExpectations(t)
 }
+// Test string ItemId validation scenarios  
+func TestConditionModel_StringItemIdValidation(t *testing.T) {
+	tests := []struct {
+		name              string
+		itemId            string
+		conditionType     string
+		operator          string
+		value             string
+		expectValid       bool
+		expectedError     string
+	}{
+		{
+			name:          "Valid numeric string ItemId",
+			itemId:        "4001126",
+			conditionType: "item",
+			operator:      ">=",
+			value:         "1",
+			expectValid:   true,
+		},
+		{
+			name:          "Empty string ItemId",
+			itemId:        "",
+			conditionType: "item",
+			operator:      ">=",
+			value:         "1",
+			expectValid:   true, // Empty string should be valid (omitempty)
+		},
+		{
+			name:          "Zero string ItemId",
+			itemId:        "0",
+			conditionType: "level", // Zero ItemId valid for non-item conditions
+			operator:      ">=",
+			value:         "10",
+			expectValid:   true,
+		},
+		{
+			name:          "Non-numeric string ItemId",
+			itemId:        "SPECIAL_ITEM_KEY",
+			conditionType: "item",
+			operator:      ">=",
+			value:         "1",
+			expectValid:   true, // String ItemId allows non-numeric values
+		},
+		{
+			name:          "ItemId with special characters",
+			itemId:        "item-123_abc",
+			conditionType: "item",
+			operator:      ">=",
+			value:         "1",
+			expectValid:   true,
+		},
+		{
+			name:          "Very long ItemId string",
+			itemId:        "very_long_item_identifier_that_exceeds_typical_limits_but_should_still_be_valid_as_string",
+			conditionType: "item",
+			operator:      ">=",
+			value:         "1",
+			expectValid:   true,
+		},
+		{
+			name:          "ItemId with Unicode characters",
+			itemId:        "物品_123_アイテム",
+			conditionType: "item",
+			operator:      ">=",
+			value:         "1",
+			expectValid:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Test ConditionBuilder with string ItemId
+			builder := NewConditionBuilder().
+				SetType(tt.conditionType).
+				SetOperator(tt.operator).
+				SetValue(tt.value).
+				SetItemId(tt.itemId)
+			
+			condition, err := builder.Build()
+			
+			if tt.expectValid {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.itemId, condition.ItemId())
+				assert.Equal(t, tt.conditionType, condition.Type())
+				assert.Equal(t, tt.operator, condition.Operator())
+				assert.Equal(t, tt.value, condition.Value())
+			} else {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.expectedError)
+			}
+		})
+	}
+}

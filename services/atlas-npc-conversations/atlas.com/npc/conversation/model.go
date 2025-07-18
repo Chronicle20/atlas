@@ -630,7 +630,7 @@ type ConditionModel struct {
 	conditionType string
 	operator      string
 	value         string
-	itemId        uint32
+	itemId        string
 }
 
 // Type returns the condition type
@@ -648,7 +648,7 @@ func (c ConditionModel) Value() string {
 	return c.value
 }
 
-func (c ConditionModel) ItemId() uint32 {
+func (c ConditionModel) ItemId() string {
 	return c.itemId
 }
 
@@ -657,7 +657,7 @@ type ConditionBuilder struct {
 	conditionType string
 	operator      string
 	value         string
-	itemId        uint32
+	itemId        string
 }
 
 // NewConditionBuilder creates a new ConditionBuilder
@@ -683,7 +683,7 @@ func (b *ConditionBuilder) SetValue(value string) *ConditionBuilder {
 	return b
 }
 
-func (b *ConditionBuilder) SetItemId(itemId uint32) *ConditionBuilder {
+func (b *ConditionBuilder) SetItemId(itemId string) *ConditionBuilder {
 	b.itemId = itemId
 	return b
 }

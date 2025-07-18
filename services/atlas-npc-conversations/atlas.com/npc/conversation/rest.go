@@ -2,7 +2,6 @@ package conversation
 
 import (
 	"fmt"
-	"strconv"
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
 )
@@ -349,7 +348,7 @@ func TransformGenericAction(m GenericActionModel) (RestGenericActionModel, error
 				Type:     condition.Type(),
 				Operator: condition.Operator(),
 				Value:    condition.Value(),
-				ItemId:   fmt.Sprintf("%d", condition.ItemId()),
+				ItemId:   condition.ItemId(),
 			})
 		}
 
@@ -564,20 +563,11 @@ func ExtractOutcome(r RestOutcomeModel) (OutcomeModel, error) {
 	outcomeBuilder := NewOutcomeBuilder()
 
 	for _, c := range r.Conditions {
-		var itemId uint32
-		if c.ItemId != "" {
-			parsedItemId, err := strconv.ParseUint(c.ItemId, 10, 32)
-			if err != nil {
-				return OutcomeModel{}, fmt.Errorf("invalid itemId: %v", err)
-			}
-			itemId = uint32(parsedItemId)
-		}
-		
 		condition, err := NewConditionBuilder().
 			SetType(c.Type).
 			SetOperator(c.Operator).
 			SetValue(c.Value).
-			SetItemId(itemId).
+			SetItemId(c.ItemId).
 			Build()
 
 		if err != nil {

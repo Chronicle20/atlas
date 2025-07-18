@@ -279,3 +279,11 @@ func SetSkinColor(skinColor byte) EntityUpdateFunction {
 		}
 	}
 }
+
+func SetGm(gm int) EntityUpdateFunction {
+	return func() ([]string, func(e *entity)) {
+		return []string{"GM"}, func(e *entity) {
+			e.GM = gm
+		}
+	}
+}

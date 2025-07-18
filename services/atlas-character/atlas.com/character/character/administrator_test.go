@@ -215,6 +215,47 @@ func TestSetSkinColor(t *testing.T) {
 	}
 }
 
+func TestSetGm(t *testing.T) {
+	db := testDatabase(t)
+	tctx := tenant.WithContext(context.Background(), testTenant())
+	
+	// Create a test character
+	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("GmTest").SetLevel(1).SetExperience(0).Build()
+	processor := character.NewProcessor(testLogger(), tctx, db)
+	created, err := processor.Create(message.NewBuffer())(uuid.New(), input)
+	if err != nil {
+		t.Fatalf("Failed to create character: %v", err)
+	}
+	
+	// Test the SetGm EntityUpdateFunction
+	setGmFunc := character.SetGm(1)
+	columns, _ := setGmFunc()
+	
+	// Check that the correct columns are returned
+	if len(columns) != 1 || columns[0] != "GM" {
+		t.Fatalf("Expected columns [GM], got %v", columns)
+	}
+	
+	// Test the dynamic update functionality via processor
+	updateInput := character.RestModel{
+		Gm: 2,
+	}
+	err = processor.Update(message.NewBuffer())(uuid.New(), created.Id(), updateInput)
+	if err != nil {
+		t.Fatalf("Failed to update character GM status: %v", err)
+	}
+	
+	// Verify the update persisted
+	updated, err := processor.GetById()(created.Id())
+	if err != nil {
+		t.Fatalf("Failed to retrieve updated character: %v", err)
+	}
+	
+	if updated.GM() != 2 {
+		t.Fatalf("Expected updated GM status to be 2, got %d", updated.GM())
+	}
+}
+
 func TestMultipleEntityUpdateFunctions(t *testing.T) {
 	db := testDatabase(t)
 	tctx := tenant.WithContext(context.Background(), testTenant())
@@ -234,6 +275,7 @@ func TestMultipleEntityUpdateFunctions(t *testing.T) {
 		Face:      20300,
 		Gender:    1,
 		SkinColor: 7,
+		Gm:        3,
 	}
 	err = processor.Update(message.NewBuffer())(uuid.New(), created.Id(), updateInput)
 	if err != nil {
@@ -260,5 +302,8 @@ func TestMultipleEntityUpdateFunctions(t *testing.T) {
 	}
 	if updated.SkinColor() != 7 {
 		t.Fatalf("Expected updated skin color to be 7, got %d", updated.SkinColor())
+	}
+	if updated.GM() != 3 {
+		t.Fatalf("Expected updated GM status to be 3, got %d", updated.GM())
 	}
 }

@@ -1202,6 +1202,13 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(transactionId uuid.UUID,
 				}
 				updates = append(updates, SetSkinColor(input.SkinColor))
 			}
+			// GM validation and update
+			if input.Gm != c.GM() {
+				if !p.isValidGm(input.Gm) {
+					return errors.New("invalid GM value")
+				}
+				updates = append(updates, SetGm(input.Gm))
+			}
 
 			// If no updates are needed, return early
 			if len(updates) == 0 {
@@ -1231,6 +1238,9 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(transactionId uuid.UUID,
 			if input.SkinColor != 0 && input.SkinColor != c.SkinColor() {
 				updatedFields["skinColor"] = input.SkinColor
 			}
+			if input.Gm != c.GM() {
+				updatedFields["gm"] = input.Gm
+			}
 
 			// Emit character updated event
 			return mb.Put(character2.EnvEventTopicCharacterStatus, updatedEventProvider(transactionId, characterId, c.WorldId(), updatedFields))
@@ -1257,4 +1267,9 @@ func (p *ProcessorImpl) isValidGender(gender byte) bool {
 func (p *ProcessorImpl) isValidSkinColor(skinColor byte) bool {
 	// Skin color typically ranges from 0-9
 	return skinColor >= 0 && skinColor <= 9
+}
+
+func (p *ProcessorImpl) isValidGm(gm int) bool {
+	// GM level must be non-negative. 0 = not GM, 1+ = GM level
+	return gm >= 0
 }

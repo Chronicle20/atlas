@@ -83,6 +83,8 @@ type Processor interface {
 	ProcessLevelChange(mb *message.Buffer) func(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount byte) error
 	ProcessJobChangeAndEmit(transactionId uuid.UUID, channel channel.Model, characterId uint32, jobId job.Id) error
 	ProcessJobChange(mb *message.Buffer) func(transactionId uuid.UUID, channel channel.Model, characterId uint32, jobId job.Id) error
+	UpdateAndEmit(transactionId uuid.UUID, characterId uint32, input RestModel) error
+	Update(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, input RestModel) error
 }
 
 type ProcessorImpl struct {
@@ -1140,4 +1142,95 @@ func getSkillBook(jobId job.Id) int {
 		return int(jobId - 2209)
 	}
 	return 0
+}
+
+func (p *ProcessorImpl) UpdateAndEmit(transactionId uuid.UUID, characterId uint32, input RestModel) error {
+	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+		return p.Update(buf)(transactionId, characterId, input)
+	})
+}
+
+func (p *ProcessorImpl) Update(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, input RestModel) error {
+	return func(transactionId uuid.UUID, characterId uint32, input RestModel) error {
+		return database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+			c, err := p.WithTransaction(tx).GetById()(characterId)
+			if err != nil {
+				return err
+			}
+
+			updates := []EntityUpdateFunction{}
+
+			// Name validation and update
+			if input.Name != "" && input.Name != c.Name() {
+				if ok, err := p.IsValidName(input.Name); !ok || err != nil {
+					if err != nil {
+						return err
+					}
+					return errors.New("invalid or duplicate name")
+				}
+				updates = append(updates, SetName(input.Name))
+			}
+
+			// Hair validation and update
+			if input.Hair != 0 && input.Hair != c.Hair() {
+				if !p.isValidHair(input.Hair) {
+					return errors.New("invalid hair ID")
+				}
+				updates = append(updates, SetHair(input.Hair))
+			}
+
+			// Face validation and update
+			if input.Face != 0 && input.Face != c.Face() {
+				if !p.isValidFace(input.Face) {
+					return errors.New("invalid face ID")
+				}
+				updates = append(updates, SetFace(input.Face))
+			}
+
+			// Gender validation and update
+			if input.Gender != c.Gender() {
+				if !p.isValidGender(input.Gender) {
+					return errors.New("invalid gender value")
+				}
+				updates = append(updates, SetGender(input.Gender))
+			}
+
+			// Skin color validation and update
+			if input.SkinColor != 0 && input.SkinColor != c.SkinColor() {
+				if !p.isValidSkinColor(input.SkinColor) {
+					return errors.New("invalid skin color value")
+				}
+				updates = append(updates, SetSkinColor(input.SkinColor))
+			}
+
+			// If no updates are needed, return early
+			if len(updates) == 0 {
+				return nil
+			}
+
+			// Apply updates
+			return dynamicUpdate(tx)(updates...)(p.t.Id())(c)
+		})
+	}
+}
+
+// Validation helper methods
+func (p *ProcessorImpl) isValidHair(hair uint32) bool {
+	// Basic hair ID validation - typical range for hair IDs
+	return hair >= 30000 && hair <= 35000
+}
+
+func (p *ProcessorImpl) isValidFace(face uint32) bool {
+	// Basic face ID validation - typical range for face IDs
+	return face >= 20000 && face <= 25000
+}
+
+func (p *ProcessorImpl) isValidGender(gender byte) bool {
+	// Gender must be 0 (male) or 1 (female)
+	return gender == 0 || gender == 1
+}
+
+func (p *ProcessorImpl) isValidSkinColor(skinColor byte) bool {
+	// Skin color typically ranges from 0-9
+	return skinColor >= 0 && skinColor <= 9
 }

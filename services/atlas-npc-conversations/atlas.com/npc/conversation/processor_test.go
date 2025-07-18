@@ -665,9 +665,8 @@ func TestProcessGenericActionState_ConditionEvaluationFailure(t *testing.T) {
 			}
 
 			outcome := OutcomeModel{
-				nextState:    "success_state",
-				failureState: "failure_state",
-				conditions:   []ConditionModel{condition},
+				nextState:  "success_state",
+				conditions: []ConditionModel{condition},
 			}
 
 			genericAction := GenericActionModel{
@@ -773,9 +772,8 @@ func TestProcessGenericActionState_MultipleConditionEvaluationFailure(t *testing
 
 	// Create outcome with multiple conditions
 	outcome := OutcomeModel{
-		nextState:    "success_state",
-		failureState: "failure_state",
-		conditions:   []ConditionModel{condition1, condition2},
+		nextState:  "success_state",
+		conditions: []ConditionModel{condition1, condition2},
 	}
 
 	genericAction := GenericActionModel{
@@ -868,9 +866,8 @@ func TestProcessGenericActionState_ConditionEvaluationTimeout(t *testing.T) {
 	}
 
 	outcome := OutcomeModel{
-		nextState:    "success_state",
-		failureState: "failure_state",
-		conditions:   []ConditionModel{condition},
+		nextState:  "success_state",
+		conditions: []ConditionModel{condition},
 	}
 
 	genericAction := GenericActionModel{
@@ -964,9 +961,8 @@ func TestProcessGenericActionState_ConditionEvaluationExternalServiceError(t *te
 	}
 
 	outcome := OutcomeModel{
-		nextState:    "success_state",
-		failureState: "failure_state",
-		conditions:   []ConditionModel{condition},
+		nextState:  "success_state",
+		conditions: []ConditionModel{condition},
 	}
 
 	genericAction := GenericActionModel{
@@ -1059,9 +1055,8 @@ func TestProcessGenericActionState_ConditionEvaluationInvalidParameters(t *testi
 	}
 
 	outcome := OutcomeModel{
-		nextState:    "success_state",
-		failureState: "failure_state",
-		conditions:   []ConditionModel{condition},
+		nextState:  "success_state",
+		conditions: []ConditionModel{condition},
 	}
 
 	genericAction := GenericActionModel{
@@ -1155,9 +1150,8 @@ func TestProcessGenericActionState_ConditionEvaluationContextParameterFailure(t 
 	}
 
 	outcome := OutcomeModel{
-		nextState:    "success_state",
-		failureState: "failure_state",
-		conditions:   []ConditionModel{condition},
+		nextState:  "success_state",
+		conditions: []ConditionModel{condition},
 	}
 
 	genericAction := GenericActionModel{

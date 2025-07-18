@@ -477,14 +477,9 @@ func (p *ProcessorImpl) processGenericActionState(ctx ConversationContext, state
 			return "", err
 		}
 
-		// If the condition passed, return the appropriate next state
+		// If the condition passed, return the next state
 		if passed {
-			if outcome.SuccessState() != "" {
-				return outcome.SuccessState(), nil
-			}
 			return outcome.NextState(), nil
-		} else if outcome.FailureState() != "" {
-			return outcome.FailureState(), nil
 		}
 	}
 

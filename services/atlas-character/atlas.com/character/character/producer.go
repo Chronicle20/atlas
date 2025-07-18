@@ -326,3 +326,18 @@ func genderChangedEventProvider(transactionId uuid.UUID, characterId uint32, wor
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func skinColorChangedEventProvider(transactionId uuid.UUID, characterId uint32, worldId world.Id, oldSkinColor byte, newSkinColor byte) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character2.StatusEvent[character2.StatusEventSkinColorChangedBody]{
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		WorldId:       worldId,
+		Type:          character2.StatusEventTypeSkinColorChanged,
+		Body: character2.StatusEventSkinColorChangedBody{
+			OldSkinColor: oldSkinColor,
+			NewSkinColor: newSkinColor,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

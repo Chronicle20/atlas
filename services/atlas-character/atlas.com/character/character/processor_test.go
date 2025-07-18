@@ -4,8 +4,10 @@ import (
 	"atlas-character/character"
 	"atlas-character/kafka/message"
 	"context"
+	"fmt"
 	"testing"
 
+	_map "github.com/Chronicle20/atlas-constants/map"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -701,5 +703,244 @@ func TestUpdatePreservesUnchangedValues(t *testing.T) {
 	}
 	if updated.Dexterity() != 50 {
 		t.Fatalf("Expected dexterity to be preserved as 50, got %d", updated.Dexterity())
+	}
+}
+
+// Test map accessibility validation
+func TestMapAccessibilityValidation(t *testing.T) {
+	tctx := tenant.WithContext(context.Background(), testTenant())
+	cp := character.NewProcessor(testLogger(), tctx, testDatabase(t))
+
+	// Create a low-level character (level 1)
+	lowLevelChar := character.NewModelBuilder().
+		SetAccountId(1000).
+		SetWorldId(0).
+		SetName("LowLevel").
+		SetLevel(1).
+		SetExperience(0).
+		SetMapId(100000000). // Training map
+		Build()
+
+	createdLowLevel, err := cp.Create(message.NewBuffer())(uuid.New(), lowLevelChar)
+	if err != nil {
+		t.Fatalf("Failed to create low-level character: %v", err)
+	}
+
+	// Create a high-level character (level 80)
+	highLevelChar := character.NewModelBuilder().
+		SetAccountId(2000).
+		SetWorldId(0).
+		SetName("HighLevel").
+		SetLevel(80).
+		SetExperience(0).
+		SetMapId(100000000). // Training map
+		Build()
+
+	createdHighLevel, err := cp.Create(message.NewBuffer())(uuid.New(), highLevelChar)
+	if err != nil {
+		t.Fatalf("Failed to create high-level character: %v", err)
+	}
+
+	// Create a GM character (level 1 but GM level 1)
+	gmChar := character.NewModelBuilder().
+		SetAccountId(3000).
+		SetWorldId(0).
+		SetName("GMChar").
+		SetLevel(1).
+		SetExperience(0).
+		SetMapId(100000000). // Training map
+		SetGm(1).
+		Build()
+
+	createdGM, err := cp.Create(message.NewBuffer())(uuid.New(), gmChar)
+	if err != nil {
+		t.Fatalf("Failed to create GM character: %v", err)
+	}
+
+	// Test cases
+	tests := []struct {
+		name        string
+		characterId uint32
+		mapId       uint32
+		shouldPass  bool
+		description string
+	}{
+		{
+			name:        "Low level character accessing training map",
+			characterId: createdLowLevel.Id(),
+			mapId:       100000001,
+			shouldPass:  true,
+			description: "Level 1 character should access training maps",
+		},
+		{
+			name:        "Low level character accessing Victoria Island",
+			characterId: createdLowLevel.Id(),
+			mapId:       110000000,
+			shouldPass:  true,
+			description: "Level 1 character should access Victoria Island",
+		},
+		{
+			name:        "Low level character accessing advanced area",
+			characterId: createdLowLevel.Id(),
+			mapId:       200000000,
+			shouldPass:  false,
+			description: "Level 1 character should not access level 30+ areas",
+		},
+		{
+			name:        "High level character accessing advanced area",
+			characterId: createdHighLevel.Id(),
+			mapId:       200000000,
+			shouldPass:  true,
+			description: "Level 80 character should access level 30+ areas",
+		},
+		{
+			name:        "High level character accessing end-game area",
+			characterId: createdHighLevel.Id(),
+			mapId:       500000000,
+			shouldPass:  true,
+			description: "Level 80 character should access level 70+ areas",
+		},
+		{
+			name:        "GM character accessing restricted area",
+			characterId: createdGM.Id(),
+			mapId:       500000000,
+			shouldPass:  true,
+			description: "GM character should access all areas regardless of level",
+		},
+		{
+			name:        "Invalid map ID",
+			characterId: createdLowLevel.Id(),
+			mapId:       50000000,
+			shouldPass:  false,
+			description: "Invalid map ID should be rejected",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Test validation through Update method
+			mapInput := character.RestModel{
+				MapId: _map.Id(tt.mapId),
+			}
+			
+			err := cp.Update(message.NewBuffer())(uuid.New(), tt.characterId, mapInput)
+			
+			if tt.shouldPass {
+				if err != nil {
+					t.Errorf("Test %s failed: %s. Expected success, but got error: %v", 
+						tt.name, tt.description, err)
+				}
+			} else {
+				if err == nil {
+					t.Errorf("Test %s failed: %s. Expected error, but update succeeded", 
+						tt.name, tt.description)
+				} else if err.Error() != "invalid map ID or character cannot access this map" {
+					t.Errorf("Test %s failed: %s. Expected specific error message, got: %v", 
+						tt.name, tt.description, err)
+				}
+			}
+		})
+	}
+}
+
+// Test map accessibility validation through Update method
+func TestUpdateMapAccessibility(t *testing.T) {
+	tctx := tenant.WithContext(context.Background(), testTenant())
+	cp := character.NewProcessor(testLogger(), tctx, testDatabase(t))
+
+	// Create a low-level character
+	lowLevelChar := character.NewModelBuilder().
+		SetAccountId(1000).
+		SetWorldId(0).
+		SetName("UpdateTest").
+		SetLevel(1).
+		SetExperience(0).
+		SetMapId(100000000).
+		Build()
+
+	created, err := cp.Create(message.NewBuffer())(uuid.New(), lowLevelChar)
+	if err != nil {
+		t.Fatalf("Failed to create character: %v", err)
+	}
+
+	// Test successful map update (accessible map)
+	validMapInput := character.RestModel{
+		MapId: _map.Id(110000000), // Victoria Island - accessible to level 1
+	}
+
+	err = cp.Update(message.NewBuffer())(uuid.New(), created.Id(), validMapInput)
+	if err != nil {
+		t.Fatalf("Failed to update character with accessible map: %v", err)
+	}
+
+	// Test failed map update (inaccessible map)
+	invalidMapInput := character.RestModel{
+		MapId: _map.Id(200000000), // Advanced area - not accessible to level 1
+	}
+
+	err = cp.Update(message.NewBuffer())(uuid.New(), created.Id(), invalidMapInput)
+	if err == nil {
+		t.Fatal("Expected error when updating character with inaccessible map, but got nil")
+	}
+	if err.Error() != "invalid map ID or character cannot access this map" {
+		t.Fatalf("Expected specific error message, got: %v", err)
+	}
+}
+
+// Test level-based map restrictions
+func TestLevelBasedMapRestrictions(t *testing.T) {
+	tctx := tenant.WithContext(context.Background(), testTenant())
+	cp := character.NewProcessor(testLogger(), tctx, testDatabase(t))
+
+	// Create characters at different levels
+	levels := []byte{1, 25, 35, 55, 75}
+	characters := make([]character.Model, len(levels))
+	
+	for i, level := range levels {
+		char := character.NewModelBuilder().
+			SetAccountId(1000 + uint32(i)).
+			SetWorldId(0).
+			SetName(fmt.Sprintf("Level%d", level)).
+			SetLevel(level).
+			SetExperience(0).
+			SetMapId(100000000).
+			Build()
+
+		created, err := cp.Create(message.NewBuffer())(uuid.New(), char)
+		if err != nil {
+			t.Fatalf("Failed to create character at level %d: %v", level, err)
+		}
+		characters[i] = created
+	}
+
+	// Test map access at different levels
+	mapTests := []struct {
+		mapId      uint32
+		minLevel   byte
+		mapName    string
+	}{
+		{100000000, 0, "Training area"},
+		{110000000, 0, "Victoria Island"},
+		{200000000, 30, "Advanced area"},
+		{300000000, 50, "High-level area"},
+		{500000000, 70, "End-game area"},
+	}
+
+	for _, mapTest := range mapTests {
+		for i, char := range characters {
+			shouldAccess := levels[i] >= mapTest.minLevel
+			
+			mapInput := character.RestModel{
+				MapId: _map.Id(mapTest.mapId),
+			}
+			
+			err := cp.Update(message.NewBuffer())(uuid.New(), char.Id(), mapInput)
+			canAccess := (err == nil)
+			
+			if canAccess != shouldAccess {
+				t.Errorf("Level %d character accessing %s (map %d): expected %v, got %v (error: %v)",
+					levels[i], mapTest.mapName, mapTest.mapId, shouldAccess, canAccess, err)
+			}
+		}
 	}
 }

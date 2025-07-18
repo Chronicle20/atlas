@@ -224,7 +224,7 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(transactionId uuid.UUID,
 
 		var res Model
 		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
-			res, err = create(tx, p.t.Id(), input.accountId, input.worldId, input.name, input.level, input.strength, input.dexterity, input.intelligence, input.luck, input.maxHp, input.maxMp, input.jobId, input.gender, input.hair, input.face, input.skinColor, input.mapId)
+			res, err = create(tx, p.t.Id(), input.accountId, input.worldId, input.name, input.level, input.strength, input.dexterity, input.intelligence, input.luck, input.maxHp, input.maxMp, input.jobId, input.gender, input.hair, input.face, input.skinColor, input.mapId, input.gm)
 			if err != nil {
 				p.l.WithError(err).Errorf("Error persisting character in database.")
 				tx.Rollback()
@@ -1212,8 +1212,8 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(transactionId uuid.UUID,
 
 			// MapId validation and update
 			if input.MapId != 0 && input.MapId != c.MapId() {
-				if !p.isValidMapId(input.MapId) {
-					return errors.New("invalid map ID")
+				if !p.isValidMapIdForCharacter(characterId, input.MapId) {
+					return errors.New("invalid map ID or character cannot access this map")
 				}
 				updates = append(updates, SetMapId(input.MapId))
 			}
@@ -1316,4 +1316,79 @@ func (p *ProcessorImpl) isValidMapId(mapId _map.Id) bool {
 	// Basic map ID validation - typical range for map IDs
 	// Map IDs are typically 9 digits starting with 100000000
 	return mapId >= 100000000 && mapId <= 999999999
+}
+
+func (p *ProcessorImpl) isValidMapIdForCharacter(characterId uint32, mapId _map.Id) bool {
+	// First check basic map ID validation
+	if !p.isValidMapId(mapId) {
+		return false
+	}
+	
+	// Get character information for accessibility validation
+	character, err := p.GetById()(characterId)
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to retrieve character [%d] for map accessibility validation", characterId)
+		return false
+	}
+	
+	// GM characters have access to all valid maps
+	if character.GM() > 0 {
+		return true
+	}
+	
+	// Check world-specific restrictions
+	if !p.isMapAccessibleInWorld(mapId, character.WorldId()) {
+		return false
+	}
+	
+	// Check level-based restrictions
+	if !p.isMapAccessibleAtLevel(mapId, character.Level()) {
+		return false
+	}
+	
+	return true
+}
+
+func (p *ProcessorImpl) isMapAccessibleInWorld(mapId _map.Id, worldId world.Id) bool {
+	// Most maps are accessible in all worlds
+	// Special restrictions could be added here for world-specific content
+	// For now, allow all maps in all worlds
+	return true
+}
+
+func (p *ProcessorImpl) isMapAccessibleAtLevel(mapId _map.Id, level byte) bool {
+	// Define level restrictions for certain map ranges
+	
+	// Training maps - accessible to all levels
+	if mapId >= 100000000 && mapId <= 109999999 {
+		return true
+	}
+	
+	// Victoria Island maps - accessible to all levels
+	if mapId >= 110000000 && mapId <= 119999999 {
+		return true
+	}
+	
+	// Advanced areas - level 30+
+	if mapId >= 200000000 && mapId <= 299999999 {
+		return level >= 30
+	}
+	
+	// High-level areas - level 50+
+	if mapId >= 300000000 && mapId <= 399999999 {
+		return level >= 50
+	}
+	
+	// End-game areas - level 70+
+	if mapId >= 500000000 && mapId <= 599999999 {
+		return level >= 70
+	}
+	
+	// Special event maps and other areas - level 10+
+	if mapId >= 600000000 && mapId <= 999999999 {
+		return level >= 10
+	}
+	
+	// Default: allow access for any map not explicitly restricted
+	return true
 }

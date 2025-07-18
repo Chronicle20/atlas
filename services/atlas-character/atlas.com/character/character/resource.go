@@ -257,7 +257,7 @@ func handleUpdateCharacter(d *rest.HandlerDependency, c *rest.HandlerContext, in
 					err.Error() == "invalid gender value" ||
 					err.Error() == "invalid skin color value" ||
 					err.Error() == "invalid GM value" ||
-					err.Error() == "invalid map ID" {
+					err.Error() == "invalid map ID or character cannot access this map" {
 					d.Logger().WithError(err).Errorf("Validation error updating character [%d].", characterId)
 					w.WriteHeader(http.StatusBadRequest)
 					return

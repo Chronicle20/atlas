@@ -1242,7 +1242,10 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(transactionId uuid.UUID,
 			}
 
 			// GM validation and update
-			if input.Gm != c.GM() {
+			// Only update GM if the input explicitly provides a different value
+			// We skip the update if input.Gm is 0 and current GM is non-zero, as this likely means
+			// the client didn't intend to change GM status (zero value in request)
+			if input.Gm != c.GM() && !(input.Gm == 0 && c.GM() != 0) {
 				if !p.isValidGm(input.Gm) {
 					return errors.New("invalid GM value")
 				}

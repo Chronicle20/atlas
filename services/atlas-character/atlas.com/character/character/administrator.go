@@ -68,15 +68,85 @@ func dynamicUpdate(db *gorm.DB) func(modifiers ...EntityUpdateFunction) func(ten
 }
 
 func update(db *gorm.DB, tenantId uuid.UUID, characterId uint32, modifiers ...EntityUpdateFunction) error {
-	e := &entity{}
-
-	var columns []string
+	// Build a map of column->value updates instead of using a struct
+	// This avoids GORM including zero values from unset fields
+	updates := make(map[string]interface{})
+	
 	for _, modifier := range modifiers {
-		c, u := modifier()
-		columns = append(columns, c...)
-		u(e)
+		columns, updateFunc := modifier()
+		
+		// Create a temporary entity to capture the update
+		tempEntity := &entity{}
+		updateFunc(tempEntity)
+		
+		// Extract the specific field values that were set
+		for _, column := range columns {
+			switch column {
+			case "MapId":
+				updates[column] = tempEntity.MapId
+			case "Level":
+				updates[column] = tempEntity.Level
+			case "Experience":
+				updates[column] = tempEntity.Experience
+			case "GachaponExperience":
+				updates[column] = tempEntity.GachaponExperience
+			case "Strength":
+				updates[column] = tempEntity.Strength
+			case "Dexterity":
+				updates[column] = tempEntity.Dexterity
+			case "Intelligence":
+				updates[column] = tempEntity.Intelligence
+			case "Luck":
+				updates[column] = tempEntity.Luck
+			case "HP":
+				updates[column] = tempEntity.HP
+			case "MP":
+				updates[column] = tempEntity.MP
+			case "MaxHP":
+				updates[column] = tempEntity.MaxHP
+			case "MaxMP":
+				updates[column] = tempEntity.MaxMP
+			case "Meso":
+				updates[column] = tempEntity.Meso
+			case "HPMPUsed":
+				updates[column] = tempEntity.HPMPUsed
+			case "JobId":
+				updates[column] = tempEntity.JobId
+			case "SkinColor":
+				updates[column] = tempEntity.SkinColor
+			case "Gender":
+				updates[column] = tempEntity.Gender
+			case "Fame":
+				updates[column] = tempEntity.Fame
+			case "Hair":
+				updates[column] = tempEntity.Hair
+			case "Face":
+				updates[column] = tempEntity.Face
+			case "AP":
+				updates[column] = tempEntity.AP
+			case "SP":
+				updates[column] = tempEntity.SP
+			case "SpawnPoint":
+				updates[column] = tempEntity.SpawnPoint
+			case "GM":
+				updates[column] = tempEntity.GM
+			case "Name":
+				updates[column] = tempEntity.Name
+			case "X":
+				updates[column] = tempEntity.X
+			case "Y":
+				updates[column] = tempEntity.Y
+			case "Stance":
+				updates[column] = tempEntity.Stance
+			}
+		}
 	}
-	return db.Model(&entity{TenantId: tenantId, ID: characterId}).Select(columns).Updates(e).Error
+	
+	if len(updates) == 0 {
+		return nil
+	}
+	
+	return db.Model(&entity{TenantId: tenantId, ID: characterId}).Updates(updates).Error
 }
 
 func SetLevel(level byte) EntityUpdateFunction {

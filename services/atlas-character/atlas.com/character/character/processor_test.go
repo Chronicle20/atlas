@@ -944,3 +944,364 @@ func TestLevelBasedMapRestrictions(t *testing.T) {
 		}
 	}
 }
+
+// TestMapIdValidationEdgeCases tests additional edge cases for mapId validation
+func TestMapIdValidationEdgeCases(t *testing.T) {
+	tctx := tenant.WithContext(context.Background(), testTenant())
+	cp := character.NewProcessor(testLogger(), tctx, testDatabase(t))
+
+	// Create a regular character (level 50)
+	char := character.NewModelBuilder().
+		SetAccountId(1000).
+		SetWorldId(0).
+		SetName("EdgeCaseTest").
+		SetLevel(50).
+		SetExperience(0).
+		SetMapId(100000000).
+		Build()
+
+	created, err := cp.Create(message.NewBuffer())(uuid.New(), char)
+	if err != nil {
+		t.Fatalf("Failed to create character: %v", err)
+	}
+
+	// Test cases for mapId validation edge cases
+	tests := []struct {
+		name        string
+		mapId       uint32
+		shouldPass  bool
+		description string
+	}{
+		{
+			name:        "Minimum valid map ID",
+			mapId:       100000000,
+			shouldPass:  true,
+			description: "Minimum valid map ID should be accepted",
+		},
+		{
+			name:        "Maximum valid map ID",
+			mapId:       999999999,
+			shouldPass:  true,
+			description: "Maximum valid map ID should be accepted",
+		},
+		{
+			name:        "Below minimum map ID",
+			mapId:       99999999,
+			shouldPass:  false,
+			description: "Map ID below minimum should be rejected",
+		},
+		{
+			name:        "Above maximum map ID",
+			mapId:       1000000000,
+			shouldPass:  false,
+			description: "Map ID above maximum should be rejected",
+		},
+		{
+			name:        "Zero map ID",
+			mapId:       0,
+			shouldPass:  true, // Zero mapId should be ignored (no change)
+			description: "Zero mapId should be ignored in updates",
+		},
+		{
+			name:        "Event map boundary - minimum",
+			mapId:       600000000,
+			shouldPass:  true,
+			description: "Event map minimum ID should be accessible to level 50",
+		},
+		{
+			name:        "Event map boundary - maximum",
+			mapId:       999999999,
+			shouldPass:  true,
+			description: "Event map maximum ID should be accessible to level 50",
+		},
+		{
+			name:        "Training map boundary - minimum",
+			mapId:       100000000,
+			shouldPass:  true,
+			description: "Training map minimum should be accessible",
+		},
+		{
+			name:        "Training map boundary - maximum",
+			mapId:       109999999,
+			shouldPass:  true,
+			description: "Training map maximum should be accessible",
+		},
+		{
+			name:        "Victoria Island boundary - minimum",
+			mapId:       110000000,
+			shouldPass:  true,
+			description: "Victoria Island minimum should be accessible",
+		},
+		{
+			name:        "Victoria Island boundary - maximum",
+			mapId:       119999999,
+			shouldPass:  true,
+			description: "Victoria Island maximum should be accessible",
+		},
+		{
+			name:        "Advanced area boundary - minimum",
+			mapId:       200000000,
+			shouldPass:  true,
+			description: "Advanced area minimum should be accessible to level 50",
+		},
+		{
+			name:        "Advanced area boundary - maximum",
+			mapId:       299999999,
+			shouldPass:  true,
+			description: "Advanced area maximum should be accessible to level 50",
+		},
+		{
+			name:        "High-level area boundary - minimum",
+			mapId:       300000000,
+			shouldPass:  true,
+			description: "High-level area minimum should be accessible to level 50",
+		},
+		{
+			name:        "High-level area boundary - maximum",
+			mapId:       399999999,
+			shouldPass:  true,
+			description: "High-level area maximum should be accessible to level 50",
+		},
+		{
+			name:        "Gap between ranges",
+			mapId:       400000000,
+			shouldPass:  true,
+			description: "Gap between ranges should default to accessible",
+		},
+		{
+			name:        "End-game area boundary - minimum",
+			mapId:       500000000,
+			shouldPass:  false,
+			description: "End-game area minimum should not be accessible to level 50",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mapInput := character.RestModel{
+				MapId: _map.Id(tt.mapId),
+			}
+			
+			err := cp.Update(message.NewBuffer())(uuid.New(), created.Id(), mapInput)
+			
+			if tt.shouldPass {
+				if err != nil {
+					t.Errorf("Test %s failed: %s. Expected success, but got error: %v", 
+						tt.name, tt.description, err)
+				}
+			} else {
+				if err == nil {
+					t.Errorf("Test %s failed: %s. Expected error, but update succeeded", 
+						tt.name, tt.description)
+				}
+			}
+		})
+	}
+}
+
+// TestMapIdValidationForDifferentCharacterLevels tests mapId validation across character levels
+func TestMapIdValidationForDifferentCharacterLevels(t *testing.T) {
+	tctx := tenant.WithContext(context.Background(), testTenant())
+	cp := character.NewProcessor(testLogger(), tctx, testDatabase(t))
+
+	// Create characters at specific boundary levels
+	boundaryLevels := []byte{1, 10, 29, 30, 49, 50, 69, 70, 200}
+	characters := make([]character.Model, len(boundaryLevels))
+	
+	for i, level := range boundaryLevels {
+		char := character.NewModelBuilder().
+			SetAccountId(1000 + uint32(i)).
+			SetWorldId(0).
+			SetName(fmt.Sprintf("BoundaryLevel%d", level)).
+			SetLevel(level).
+			SetExperience(0).
+			SetMapId(100000000).
+			Build()
+
+		created, err := cp.Create(message.NewBuffer())(uuid.New(), char)
+		if err != nil {
+			t.Fatalf("Failed to create character at level %d: %v", level, err)
+		}
+		characters[i] = created
+	}
+
+	// Test specific boundary conditions
+	tests := []struct {
+		mapId       uint32
+		minLevel    byte
+		description string
+	}{
+		{200000000, 30, "Advanced area minimum level requirement"},
+		{299999999, 30, "Advanced area maximum"},
+		{300000000, 50, "High-level area minimum level requirement"},
+		{399999999, 50, "High-level area maximum"},
+		{500000000, 70, "End-game area minimum level requirement"},
+		{599999999, 70, "End-game area maximum"},
+		{600000000, 10, "Event area minimum level requirement"},
+	}
+
+	for _, test := range tests {
+		for i, char := range characters {
+			level := boundaryLevels[i]
+			shouldAccess := level >= test.minLevel
+			
+			mapInput := character.RestModel{
+				MapId: _map.Id(test.mapId),
+			}
+			
+			err := cp.Update(message.NewBuffer())(uuid.New(), char.Id(), mapInput)
+			canAccess := (err == nil)
+			
+			if canAccess != shouldAccess {
+				t.Errorf("Level %d character accessing map %d (%s): expected %v, got %v (error: %v)",
+					level, test.mapId, test.description, shouldAccess, canAccess, err)
+			}
+		}
+	}
+}
+
+// TestMapIdValidationWithGMCharacters tests that GM characters can access all maps
+func TestMapIdValidationWithGMCharacters(t *testing.T) {
+	tctx := tenant.WithContext(context.Background(), testTenant())
+	cp := character.NewProcessor(testLogger(), tctx, testDatabase(t))
+
+	// Create GM character at low level
+	gmChar := character.NewModelBuilder().
+		SetAccountId(1000).
+		SetWorldId(0).
+		SetName("GMTest").
+		SetLevel(1).
+		SetExperience(0).
+		SetMapId(100000000).
+		SetGm(1).
+		Build()
+
+	created, err := cp.Create(message.NewBuffer())(uuid.New(), gmChar)
+	if err != nil {
+		t.Fatalf("Failed to create GM character: %v", err)
+	}
+
+	// Verify the character was created with GM status
+	retrieved, err := cp.GetById()(created.Id())
+	if err != nil {
+		t.Fatalf("Failed to retrieve created GM character: %v", err)
+	}
+	
+	if retrieved.GM() != 1 {
+		t.Fatalf("Expected GM status to be 1, but got %d", retrieved.GM())
+	}
+
+	// Test that GM can access all valid level-restricted maps
+	restrictedMaps := []uint32{
+		200000000, // Advanced area (normally level 30+) 
+		300000000, // High-level area (normally level 50+)
+		500000000, // End-game area (normally level 70+)
+		600000000, // Event area (normally level 10+)
+	}
+
+	for i, mapId := range restrictedMaps {
+		mapInput := character.RestModel{
+			MapId: _map.Id(mapId),
+		}
+		
+		err := cp.Update(message.NewBuffer())(uuid.New(), created.Id(), mapInput)
+		if err != nil {
+			t.Errorf("GM character (GM=%d) should be able to access map %d, but got error: %v", 
+				retrieved.GM(), mapId, err)
+		}
+		
+		// After each update, verify GM status is still preserved
+		afterUpdate, err := cp.GetById()(created.Id())
+		if err != nil {
+			t.Fatalf("Failed to retrieve character after update %d: %v", i, err)
+		}
+		
+		if afterUpdate.GM() != 1 {
+			t.Errorf("GM status should be preserved after update %d. Expected 1, got %d", i, afterUpdate.GM())
+		}
+	}
+}
+
+// TestMapIdValidationErrorMessages tests specific error messages
+func TestMapIdValidationErrorMessages(t *testing.T) {
+	tctx := tenant.WithContext(context.Background(), testTenant())
+	cp := character.NewProcessor(testLogger(), tctx, testDatabase(t))
+
+	// Create a low-level character
+	char := character.NewModelBuilder().
+		SetAccountId(1000).
+		SetWorldId(0).
+		SetName("ErrorMsgTest").
+		SetLevel(1).
+		SetExperience(0).
+		SetMapId(100000000).
+		Build()
+
+	created, err := cp.Create(message.NewBuffer())(uuid.New(), char)
+	if err != nil {
+		t.Fatalf("Failed to create character: %v", err)
+	}
+
+	// Test specific error conditions
+	errorTests := []struct {
+		name           string
+		mapId          uint32
+		expectedError  string
+		description    string
+	}{
+		{
+			name:          "Invalid map ID - too low",
+			mapId:         99999999,
+			expectedError: "invalid map ID or character cannot access this map",
+			description:   "Map ID below valid range should give clear error",
+		},
+		{
+			name:          "Invalid map ID - too high",
+			mapId:         1000000000,
+			expectedError: "invalid map ID or character cannot access this map",
+			description:   "Map ID above valid range should give clear error",
+		},
+		{
+			name:          "Level restricted map",
+			mapId:         500000000,
+			expectedError: "invalid map ID or character cannot access this map",
+			description:   "Level-restricted map should give clear error",
+		},
+	}
+
+	for _, test := range errorTests {
+		t.Run(test.name, func(t *testing.T) {
+			mapInput := character.RestModel{
+				MapId: _map.Id(test.mapId),
+			}
+			
+			err := cp.Update(message.NewBuffer())(uuid.New(), created.Id(), mapInput)
+			if err == nil {
+				t.Errorf("Expected error for %s, but got none", test.description)
+			} else if err.Error() != test.expectedError {
+				t.Errorf("Expected error message '%s', but got '%s'", test.expectedError, err.Error())
+			}
+		})
+	}
+}
+
+// TestMapIdValidationWithNonExistentCharacter tests mapId validation with non-existent character
+func TestMapIdValidationWithNonExistentCharacter(t *testing.T) {
+	tctx := tenant.WithContext(context.Background(), testTenant())
+	cp := character.NewProcessor(testLogger(), tctx, testDatabase(t))
+
+	// Try to update mapId for a non-existent character
+	mapInput := character.RestModel{
+		MapId: _map.Id(100000000),
+	}
+	
+	err := cp.Update(message.NewBuffer())(uuid.New(), 99999, mapInput)
+	if err == nil {
+		t.Fatal("Expected error when updating mapId for non-existent character, but got none")
+	}
+	
+	// The error should be about the character not being found, not about the map ID
+	if err.Error() == "invalid map ID or character cannot access this map" {
+		t.Error("Error should be about character not found, not map validation")
+	}
+}

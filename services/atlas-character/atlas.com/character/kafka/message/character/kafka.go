@@ -273,6 +273,11 @@ type StatusEventGenderChangedBody struct {
 	NewGender byte `json:"newGender"`
 }
 
+type StatusEventSkinColorChangedBody struct {
+	OldSkinColor byte `json:"oldSkinColor"`
+	NewSkinColor byte `json:"newSkinColor"`
+}
+
 const (
 	EnvCommandTopicMovement = "COMMAND_TOPIC_CHARACTER_MOVEMENT"
 )

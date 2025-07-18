@@ -1,5 +1,10 @@
 package character
 
+import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+)
+
 const (
 	EnvCommandTopic          = "COMMAND_TOPIC_CHARACTER"
 	CommandRequestChangeMeso = "REQUEST_CHANGE_MESO"
@@ -27,6 +32,7 @@ const (
 	EnvEventTopicCharacterStatus  = "EVENT_TOPIC_CHARACTER_STATUS"
 	StatusEventTypeLogout         = "LOGOUT"
 	StatusEventTypeChannelChanged = "CHANNEL_CHANGED"
+	StatusEventTypeMapChanged     = "MAP_CHANGED"
 	StatusEventTypeMesoChanged    = "MESO_CHANGED"
 	StatusEventTypeError          = "ERROR"
 
@@ -49,6 +55,13 @@ type StatusEventChannelChangedBody struct {
 	ChannelId    byte   `json:"channelId"`
 	OldChannelId byte   `json:"oldChannelId"`
 	MapId        uint32 `json:"mapId"`
+}
+
+type StatusEventMapChangedBody struct {
+	ChannelId      channel.Id `json:"channelId"`
+	OldMapId       _map.Id    `json:"oldMapId"`
+	TargetMapId    _map.Id    `json:"targetMapId"`
+	TargetPortalId uint32     `json:"targetPortalId"`
 }
 
 type StatusEventErrorBody[F any] struct {

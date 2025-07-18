@@ -28,6 +28,7 @@ func InitHandlers(l logrus.FieldLogger, db *gorm.DB) func(rf func(topic string, 
 		t, _ = topic.EnvProvider(l)(character.EnvEventTopicCharacterStatus)()
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLogout(db))))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventChannelChanged(db))))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventMapChanged(db))))
 	}
 }
 
@@ -43,6 +44,15 @@ func handleStatusEventLogout(db *gorm.DB) message.Handler[character.StatusEvent[
 func handleStatusEventChannelChanged(db *gorm.DB) message.Handler[character.StatusEvent[character.StatusEventChannelChangedBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e character.StatusEvent[character.StatusEventChannelChangedBody]) {
 		if e.Type != character.StatusEventTypeChannelChanged {
+			return
+		}
+		_ = conversation.NewProcessor(l, ctx, db).End(e.CharacterId)
+	}
+}
+
+func handleStatusEventMapChanged(db *gorm.DB) message.Handler[character.StatusEvent[character.StatusEventMapChangedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e character.StatusEvent[character.StatusEventMapChangedBody]) {
+		if e.Type != character.StatusEventTypeMapChanged {
 			return
 		}
 		_ = conversation.NewProcessor(l, ctx, db).End(e.CharacterId)

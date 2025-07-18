@@ -1210,6 +1210,14 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(transactionId uuid.UUID,
 				updates = append(updates, SetGm(input.Gm))
 			}
 
+			// MapId validation and update
+			if input.MapId != 0 && input.MapId != c.MapId() {
+				if !p.isValidMapId(input.MapId) {
+					return errors.New("invalid map ID")
+				}
+				updates = append(updates, SetMapId(input.MapId))
+			}
+
 			// If no updates are needed, return early
 			if len(updates) == 0 {
 				return nil
@@ -1221,29 +1229,59 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(transactionId uuid.UUID,
 				return err
 			}
 
-			// Prepare updated fields map for event emission
-			updatedFields := make(map[string]interface{})
+			// Emit specific events for each changed field
 			if input.Name != "" && input.Name != c.Name() {
-				updatedFields["name"] = input.Name
+				err = mb.Put(character2.EnvEventTopicCharacterStatus, nameChangedEventProvider(transactionId, characterId, c.WorldId(), c.Name(), input.Name))
+				if err != nil {
+					return err
+				}
 			}
 			if input.Hair != 0 && input.Hair != c.Hair() {
-				updatedFields["hair"] = input.Hair
+				err = mb.Put(character2.EnvEventTopicCharacterStatus, hairChangedEventProvider(transactionId, characterId, c.WorldId(), c.Hair(), input.Hair))
+				if err != nil {
+					return err
+				}
 			}
 			if input.Face != 0 && input.Face != c.Face() {
-				updatedFields["face"] = input.Face
+				err = mb.Put(character2.EnvEventTopicCharacterStatus, faceChangedEventProvider(transactionId, characterId, c.WorldId(), c.Face(), input.Face))
+				if err != nil {
+					return err
+				}
 			}
 			if input.Gender != c.Gender() {
-				updatedFields["gender"] = input.Gender
+				err = mb.Put(character2.EnvEventTopicCharacterStatus, genderChangedEventProvider(transactionId, characterId, c.WorldId(), c.Gender(), input.Gender))
+				if err != nil {
+					return err
+				}
 			}
 			if input.SkinColor != 0 && input.SkinColor != c.SkinColor() {
-				updatedFields["skinColor"] = input.SkinColor
+				err = mb.Put(character2.EnvEventTopicCharacterStatus, skinColorChangedEventProvider(transactionId, characterId, c.WorldId(), c.SkinColor(), input.SkinColor))
+				if err != nil {
+					return err
+				}
 			}
 			if input.Gm != c.GM() {
-				updatedFields["gm"] = input.Gm
+				// Convert int to bool for GM status
+				oldGm := c.GM() != 0
+				newGm := input.Gm != 0
+				err = mb.Put(character2.EnvEventTopicCharacterStatus, gmChangedEventProvider(transactionId, characterId, c.WorldId(), oldGm, newGm))
+				if err != nil {
+					return err
+				}
+			}
+			if input.MapId != 0 && input.MapId != c.MapId() {
+				// Create field models for old and new map locations
+				// Note: We need to get the current channel ID from the context or use a default
+				// For now, using channel ID 0 as a placeholder - this should be updated based on actual channel context
+				oldField := field.NewBuilder(c.WorldId(), 0, c.MapId()).Build()
+				newField := field.NewBuilder(c.WorldId(), 0, input.MapId).Build()
+				err = mb.Put(character2.EnvEventTopicCharacterStatus, mapChangedEventProvider(transactionId, characterId, oldField, newField, 0))
+				if err != nil {
+					return err
+				}
 			}
 
-			// Emit character updated event
-			return mb.Put(character2.EnvEventTopicCharacterStatus, updatedEventProvider(transactionId, characterId, c.WorldId(), updatedFields))
+			return nil
 		})
 	}
 }
@@ -1272,4 +1310,10 @@ func (p *ProcessorImpl) isValidSkinColor(skinColor byte) bool {
 func (p *ProcessorImpl) isValidGm(gm int) bool {
 	// GM level must be non-negative. 0 = not GM, 1+ = GM level
 	return gm >= 0
+}
+
+func (p *ProcessorImpl) isValidMapId(mapId _map.Id) bool {
+	// Basic map ID validation - typical range for map IDs
+	// Map IDs are typically 9 digits starting with 100000000
+	return mapId >= 100000000 && mapId <= 999999999
 }

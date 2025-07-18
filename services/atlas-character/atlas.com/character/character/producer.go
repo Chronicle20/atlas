@@ -252,3 +252,17 @@ func statChangedProvider(transactionId uuid.UUID, channel channel.Model, charact
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func updatedEventProvider(transactionId uuid.UUID, characterId uint32, worldId world.Id, updatedFields map[string]interface{}) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character2.StatusEvent[character2.StatusEventUpdatedBody]{
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		WorldId:       worldId,
+		Type:          character2.StatusEventTypeUpdated,
+		Body: character2.StatusEventUpdatedBody{
+			UpdatedFields: updatedFields,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

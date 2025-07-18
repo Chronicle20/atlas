@@ -1209,7 +1209,31 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(transactionId uuid.UUID,
 			}
 
 			// Apply updates
-			return dynamicUpdate(tx)(updates...)(p.t.Id())(c)
+			err = dynamicUpdate(tx)(updates...)(p.t.Id())(c)
+			if err != nil {
+				return err
+			}
+
+			// Prepare updated fields map for event emission
+			updatedFields := make(map[string]interface{})
+			if input.Name != "" && input.Name != c.Name() {
+				updatedFields["name"] = input.Name
+			}
+			if input.Hair != 0 && input.Hair != c.Hair() {
+				updatedFields["hair"] = input.Hair
+			}
+			if input.Face != 0 && input.Face != c.Face() {
+				updatedFields["face"] = input.Face
+			}
+			if input.Gender != c.Gender() {
+				updatedFields["gender"] = input.Gender
+			}
+			if input.SkinColor != 0 && input.SkinColor != c.SkinColor() {
+				updatedFields["skinColor"] = input.SkinColor
+			}
+
+			// Emit character updated event
+			return mb.Put(character2.EnvEventTopicCharacterStatus, updatedEventProvider(transactionId, characterId, c.WorldId(), updatedFields))
 		})
 	}
 }

@@ -310,7 +310,11 @@ func (c Condition) Evaluate(character character.Model) ConditionResult {
 		description = fmt.Sprintf("GM Level %s %d", c.operator, c.value)
 	case GuildIdCondition:
 		actualValue = int(character.Guild().Id())
-		description = fmt.Sprintf("Guild ID %s %d", c.operator, c.value)
+		if actualValue == 0 {
+			description = fmt.Sprintf("Guild ID %s %d (character not in guild)", c.operator, c.value)
+		} else {
+			description = fmt.Sprintf("Guild ID %s %d", c.operator, c.value)
+		}
 	case GuildLeaderCondition:
 		// For guild leader conditions, we need to check if the character is a guild leader
 		// Get the guild from the character model
@@ -331,7 +335,11 @@ func (c Condition) Evaluate(character character.Model) ConditionResult {
 		description = fmt.Sprintf("Guild Leader %s %d", c.operator, c.value)
 	case GuildRankCondition:
 		actualValue = character.Guild().MemberRank(character.Id())
-		description = fmt.Sprintf("Guild Rank %s %d", c.operator, c.value)
+		if character.Guild().Id() == 0 {
+			description = fmt.Sprintf("Guild Rank %s %d (character not in guild)", c.operator, c.value)
+		} else {
+			description = fmt.Sprintf("Guild Rank %s %d", c.operator, c.value)
+		}
 	case QuestStatusCondition:
 		// Quest status validation requires context - return error state
 		return ConditionResult{
@@ -489,11 +497,19 @@ func (c Condition) EvaluateWithContext(ctx ValidationContext) ConditionResult {
 
 	case GuildIdCondition:
 		actualValue = int(character.Guild().Id())
-		description = fmt.Sprintf("Guild ID %s %d", c.operator, c.value)
+		if actualValue == 0 {
+			description = fmt.Sprintf("Guild ID %s %d (character not in guild)", c.operator, c.value)
+		} else {
+			description = fmt.Sprintf("Guild ID %s %d", c.operator, c.value)
+		}
 
 	case GuildRankCondition:
 		actualValue = character.Guild().MemberRank(character.Id())
-		description = fmt.Sprintf("Guild Rank %s %d", c.operator, c.value)
+		if character.Guild().Id() == 0 {
+			description = fmt.Sprintf("Guild Rank %s %d (character not in guild)", c.operator, c.value)
+		} else {
+			description = fmt.Sprintf("Guild Rank %s %d", c.operator, c.value)
+		}
 
 	default:
 		// For non-context-specific conditions, delegate to the original Evaluate method

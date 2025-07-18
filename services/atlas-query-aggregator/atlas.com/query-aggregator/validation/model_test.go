@@ -5,6 +5,8 @@ import (
 	"atlas-query-aggregator/character"
 	"atlas-query-aggregator/compartment"
 	"atlas-query-aggregator/guild"
+	"atlas-query-aggregator/guild/member"
+	"atlas-query-aggregator/guild/title"
 	"atlas-query-aggregator/inventory"
 	"atlas-query-aggregator/marriage"
 	"atlas-query-aggregator/quest"
@@ -1424,7 +1426,32 @@ func TestCondition_Evaluate_WithGuild(t *testing.T) {
 		Build()
 
 	// Create a guild for the character
-	guildModel := guild.NewModel(1001, "TestGuild", 3)
+	guildRestModel := guild.RestModel{
+		Id:       1001,
+		WorldId:  1,
+		Name:     "TestGuild",
+		Notice:   "Test guild notice",
+		Points:   1000,
+		Capacity: 100,
+		Logo:     1,
+		LogoColor: 1,
+		LogoBackground: 1,
+		LogoBackgroundColor: 1,
+		LeaderId: 123,
+		Members:  []member.RestModel{
+			{
+				CharacterId:  123,
+				Name:         "TestMember",
+				JobId:        100,
+				Level:        25,
+				Rank:         3,
+				Online:       true,
+				AllianceRank: 0,
+			},
+		},
+		Titles:   []title.RestModel{},
+	}
+	guildModel, _ := guild.Extract(guildRestModel)
 
 	// Create a test character with guild
 	character := character.NewModelBuilder().

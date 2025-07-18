@@ -1,44 +1,91 @@
 package guild
 
-import "testing"
+import (
+	"atlas-query-aggregator/guild/member"
+	"atlas-query-aggregator/guild/title"
+	"testing"
+)
 
-func TestNewModel(t *testing.T) {
+func TestExtract(t *testing.T) {
 	tests := []struct {
 		name     string
-		id       uint32
-		guildName string
-		rank     uint32
+		restModel RestModel
 		expected Model
 	}{
 		{
-			name:     "valid guild model",
-			id:       123,
-			guildName: "TestGuild",
-			rank:     5,
+			name: "valid guild model",
+			restModel: RestModel{
+				Id:       123,
+				WorldId:  1,
+				Name:     "TestGuild",
+				Notice:   "Welcome to TestGuild",
+				Points:   1000,
+				Capacity: 100,
+				Logo:     1,
+				LogoColor: 1,
+				LogoBackground: 1,
+				LogoBackgroundColor: 1,
+				LeaderId: 456,
+				Members:  []member.RestModel{},
+				Titles:   []title.RestModel{},
+			},
 			expected: Model{
-				id:     123,
-				name:   "TestGuild",
-				rank:   5,
-				member: true,
+				id:                  123,
+				worldId:             1,
+				name:                "TestGuild",
+				notice:              "Welcome to TestGuild",
+				points:              1000,
+				capacity:            100,
+				logo:                1,
+				logoColor:           1,
+				logoBackground:      1,
+				logoBackgroundColor: 1,
+				leaderId:            456,
+				members:             []member.Model{},
+				titles:              []title.Model{},
 			},
 		},
 		{
-			name:     "empty guild model with zero ID",
-			id:       0,
-			guildName: "",
-			rank:     0,
+			name: "empty guild model",
+			restModel: RestModel{
+				Id:       0,
+				WorldId:  0,
+				Name:     "",
+				Notice:   "",
+				Points:   0,
+				Capacity: 0,
+				Logo:     0,
+				LogoColor: 0,
+				LogoBackground: 0,
+				LogoBackgroundColor: 0,
+				LeaderId: 0,
+				Members:  []member.RestModel{},
+				Titles:   []title.RestModel{},
+			},
 			expected: Model{
-				id:     0,
-				name:   "",
-				rank:   0,
-				member: false,
+				id:                  0,
+				worldId:             0,
+				name:                "",
+				notice:              "",
+				points:              0,
+				capacity:            0,
+				logo:                0,
+				logoColor:           0,
+				logoBackground:      0,
+				logoBackgroundColor: 0,
+				leaderId:            0,
+				members:             []member.Model{},
+				titles:              []title.Model{},
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := NewModel(tt.id, tt.guildName, tt.rank)
+			result, err := Extract(tt.restModel)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
 			
 			if result.Id() != tt.expected.Id() {
 				t.Errorf("expected ID %d, got %d", tt.expected.Id(), result.Id())
@@ -48,33 +95,40 @@ func TestNewModel(t *testing.T) {
 				t.Errorf("expected name %s, got %s", tt.expected.Name(), result.Name())
 			}
 			
-			if result.Rank() != tt.expected.Rank() {
-				t.Errorf("expected rank %d, got %d", tt.expected.Rank(), result.Rank())
+			if result.Notice() != tt.expected.Notice() {
+				t.Errorf("expected notice %s, got %s", tt.expected.Notice(), result.Notice())
 			}
 			
-			if result.IsMember() != tt.expected.IsMember() {
-				t.Errorf("expected member status %t, got %t", tt.expected.IsMember(), result.IsMember())
+			if result.Points() != tt.expected.Points() {
+				t.Errorf("expected points %d, got %d", tt.expected.Points(), result.Points())
+			}
+			
+			if result.Capacity() != tt.expected.Capacity() {
+				t.Errorf("expected capacity %d, got %d", tt.expected.Capacity(), result.Capacity())
+			}
+			
+			if result.LeaderId() != tt.expected.LeaderId() {
+				t.Errorf("expected leader ID %d, got %d", tt.expected.LeaderId(), result.LeaderId())
 			}
 		})
 	}
 }
 
-func TestEmptyModel(t *testing.T) {
-	result := EmptyModel()
-	
-	if result.Id() != 0 {
-		t.Errorf("expected ID 0, got %d", result.Id())
+func TestMemberRank(t *testing.T) {
+	// Create a test guild with members
+	members := []member.Model{
+		{}, // This would need to be properly constructed with actual member data
 	}
 	
-	if result.Name() != "" {
-		t.Errorf("expected empty name, got %s", result.Name())
+	guild := Model{
+		id:      123,
+		name:    "TestGuild",
+		members: members,
 	}
 	
-	if result.Rank() != 0 {
-		t.Errorf("expected rank 0, got %d", result.Rank())
-	}
-	
-	if result.IsMember() {
-		t.Errorf("expected member status false, got true")
+	// Test MemberRank function
+	rank := guild.MemberRank(456)
+	if rank != 0 {
+		t.Errorf("expected rank 0 for non-member, got %d", rank)
 	}
 }

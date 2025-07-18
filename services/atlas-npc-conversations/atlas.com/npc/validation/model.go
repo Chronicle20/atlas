@@ -31,7 +31,7 @@ type ConditionInput struct {
 	Type     string `json:"type"`             // e.g., "jobId", "meso", "item"
 	Operator string `json:"operator"`         // e.g., "=", ">=", "<"
 	Value    int    `json:"value"`            // Value or quantity
-	ItemId   uint32 `json:"itemId,omitempty"` // Only for item checks
+	ItemId   string `json:"itemId,omitempty"` // Only for item checks
 }
 
 // ConditionResult represents the result of a condition evaluation
@@ -41,7 +41,7 @@ type ConditionResult struct {
 	Type        ConditionType
 	Operator    Operator
 	Value       int
-	ItemId      uint32
+	ItemId      string
 	ActualValue int
 }
 
@@ -50,7 +50,7 @@ type Condition struct {
 	conditionType ConditionType
 	operator      Operator
 	value         int
-	itemId        uint32 // Used for item conditions
+	itemId        string // Used for item conditions
 }
 
 // ConditionBuilder is used to safely construct Condition objects
@@ -58,7 +58,7 @@ type ConditionBuilder struct {
 	conditionType ConditionType
 	operator      Operator
 	value         int
-	itemId        *uint32
+	itemId        *string
 	err           error
 }
 
@@ -108,7 +108,7 @@ func (b *ConditionBuilder) SetValue(value int) *ConditionBuilder {
 }
 
 // SetItemId sets the item ID (only for item conditions)
-func (b *ConditionBuilder) SetItemId(itemId uint32) *ConditionBuilder {
+func (b *ConditionBuilder) SetItemId(itemId string) *ConditionBuilder {
 	if b.err != nil {
 		return b
 	}
@@ -123,7 +123,7 @@ func (b *ConditionBuilder) FromInput(input ConditionInput) *ConditionBuilder {
 	b.SetOperator(input.Operator)
 	b.SetValue(input.Value)
 
-	if input.ItemId != 0 {
+	if input.ItemId != "" {
 		b.SetItemId(input.ItemId)
 	} else if ConditionType(input.Type) == ItemCondition {
 		b.err = fmt.Errorf("itemId is required for item conditions")

@@ -78,23 +78,12 @@ func (e *EvaluatorImpl) EvaluateCondition(characterId uint32, condition Conditio
 		}
 	}
 
-	// Convert string ItemId to uint32 for validation
-	var itemId uint32
-	if condition.ItemId() != "" {
-		itemIdVal, err := strconv.ParseUint(condition.ItemId(), 10, 32)
-		if err != nil {
-			e.l.WithError(err).Errorf("Failed to convert ItemId [%s] to uint32", condition.ItemId())
-			return false, fmt.Errorf("ItemId [%s] is not a valid uint32", condition.ItemId())
-		}
-		itemId = uint32(itemIdVal)
-	}
-
 	// Create a validation condition input
 	validationCondition := validation.ConditionInput{
 		Type:     condition.Type(),
 		Operator: condition.Operator(),
 		Value:    value,
-		ItemId:   itemId,
+		ItemId:   condition.ItemId(),
 	}
 
 	// Validate the character state using the validation processor

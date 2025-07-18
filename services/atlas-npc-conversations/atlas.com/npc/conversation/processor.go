@@ -494,9 +494,11 @@ func (p *ProcessorImpl) processCraftActionState(ctx ConversationContext, state S
 		return "", errors.New("craftAction is nil")
 	}
 
-	// TODO: Implement craft action processing
-	// For now, just return the success state
-	return craftAction.SuccessState(), nil
+	// TODO: Implement proper craft action processing logic
+	// This could involve checking materials, costs, and determining success/failure
+	// For now, return empty string to end conversation (simplified approach)
+	// Future implementation should use outcome-based state transitions
+	return "", nil
 }
 
 // processListSelectionState processes a list selection state

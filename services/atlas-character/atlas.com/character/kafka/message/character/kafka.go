@@ -253,6 +253,11 @@ type StatusEventUpdatedBody struct {
 	UpdatedFields map[string]interface{} `json:"updatedFields"`
 }
 
+type StatusEventNameChangedBody struct {
+	OldName string `json:"oldName"`
+	NewName string `json:"newName"`
+}
+
 const (
 	EnvCommandTopicMovement = "COMMAND_TOPIC_CHARACTER_MOVEMENT"
 )

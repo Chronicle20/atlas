@@ -3,7 +3,7 @@ module atlas-saga-orchestrator
 go 1.24.4
 
 require (
-	github.com/Chronicle20/atlas-constants v1.0.19
+	github.com/Chronicle20/atlas-constants v1.0.20
 	github.com/Chronicle20/atlas-kafka v1.1.12
 	github.com/Chronicle20/atlas-model v1.2.5
 	github.com/Chronicle20/atlas-rest v1.2.16

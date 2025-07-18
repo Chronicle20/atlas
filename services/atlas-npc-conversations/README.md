@@ -58,6 +58,193 @@ The conversation system is built around a state machine model with the following
 - **Operations**: Actions that can be performed during a conversation (e.g., award items, mesos, experience).
 - **Conditions**: Criteria that must be met to progress in the conversation.
 
+## Input Specification
+
+### Conversation Input Structure
+
+The create (POST) and update (PATCH) endpoints accept the following data structure:
+
+```json
+{
+  "data": {
+    "type": "conversations",
+    "attributes": {
+      "npcId": 9010000,              // uint32 - Required
+      "startState": "greeting",       // string - Required
+      "states": []                    // Array of states - At least one required
+    }
+  }
+}
+```
+
+### State Types
+
+Each state in the `states` array must have:
+- `id` (string): Unique identifier for the state - Required
+- `type` (string): One of "dialogue", "genericAction", "craftAction", "listSelection" - Required
+- One of: `dialogue`, `genericAction`, `craftAction`, or `listSelection` object based on type
+
+#### Dialogue State
+
+```json
+{
+  "id": "greeting",
+  "type": "dialogue",
+  "dialogue": {
+    "dialogueType": "sendYesNo",    // Required: "sendOk", "sendYesNo", "sendSimple", or "sendNext"
+    "text": "Hello!",               // Required: Dialogue text
+    "choices": [                    // Required based on dialogueType:
+      {                             // - sendOk: exactly 2 choices
+        "text": "Yes",              // - sendYesNo: exactly 3 choices
+        "nextState": "reward",      // - sendSimple: at least 1 choice
+        "context": {                // - sendNext: exactly 2 choices
+          "key": "value"            // Optional: context data
+        }
+      }
+    ]
+  }
+}
+```
+
+#### Generic Action State
+
+```json
+{
+  "id": "reward",
+  "type": "genericAction",
+  "genericAction": {
+    "operations": [],               // Array of operations to execute
+    "outcomes": []                  // Array of outcomes determining next state
+  }
+}
+```
+
+#### Craft Action State
+
+```json
+{
+  "id": "craft",
+  "type": "craftAction",
+  "craftAction": {
+    "itemId": 2000000,              // uint32 - Item to craft - Required
+    "materials": [4000000, 4000001], // []uint32 - Material item IDs - At least one required
+    "quantities": [10, 5],          // []uint32 - Material quantities - Must match materials length
+    "mesoCost": 1000,               // uint32 - Meso cost
+    "stimulatorId": 0,              // uint32 - Optional stimulator item
+    "stimulatorFailChance": 0.0,    // float64 - Optional failure chance
+    "successState": "craftSuccess", // string - Required
+    "failureState": "craftFail",    // string - Required
+    "missingMaterialsState": "noMats" // string - Required
+  }
+}
+```
+
+#### List Selection State
+
+```json
+{
+  "id": "selection",
+  "type": "listSelection",
+  "listSelection": {
+    "title": "Select an option:",   // string - Required
+    "choices": [                    // Same as dialogue choices
+      {
+        "text": "Option 1",
+        "nextState": "option1"
+      }
+    ]
+  }
+}
+```
+
+### Operations
+
+Operations are actions executed during a `genericAction` state:
+
+```json
+{
+  "type": "operation_type",         // string - Required
+  "params": {                       // map[string]string - Parameters vary by type
+    "key": "value"
+  }
+}
+```
+
+#### Available Operations
+
+##### Operations (executed via saga orchestrator)
+- `award_item` - Award an item to the character
+  - Params: `itemId`, `quantity`
+- `award_mesos` - Award mesos (game currency)
+  - Params: `amount`, `actorId` (optional), `actorType` (optional, default "NPC")
+- `award_exp` - Award experience points
+  - Params: `amount`, `type` (optional, default "WHITE"), `attr1` (optional, default 0)
+- `award_level` - Award character levels
+  - Params: `amount`
+- `warp_to_map` - Warp character to specific map and portal
+  - Params: `mapId`, `portalId`
+- `warp_to_random_portal` - Warp character to random portal in map
+  - Params: `mapId`
+- `change_job` - Change character's job
+  - Params: `jobId`
+- `create_skill` - Create a new skill for character
+  - Params: `skillId`, `level` (optional, default 1), `masterLevel` (optional, default 1)
+- `update_skill` - Update an existing skill
+  - Params: `skillId`, `level` (optional, default 1), `masterLevel` (optional, default 1)
+- `destroy_item` - Remove items from inventory
+  - Params: `itemId`, `quantity`
+
+### Conditions
+
+Conditions are evaluated to determine the next state in `outcomes`:
+
+```json
+{
+  "type": "condition_type",         // string - Required
+  "operator": "=",                  // string - Required: "=", ">", "<", ">=", "<="
+  "value": "100",                   // string - Required
+  "itemId": 0                       // uint32 - Required only for "item" type
+}
+```
+
+#### Available Condition Types
+- `jobId` - Check character's job ID
+- `meso` - Check character's meso amount
+- `mapId` - Check character's current map
+- `fame` - Check character's fame level
+- `item` - Check if character has specific item (requires `itemId` field)
+
+### Outcomes
+
+Outcomes determine state transitions based on conditions:
+
+```json
+{
+  "conditions": [],                 // Array of conditions to evaluate
+  "nextState": "state1",           // string - Optional
+  "successState": "success",       // string - Optional
+  "failureState": "failure"        // string - Optional
+}
+```
+
+**Note**: At least one of `nextState`, `successState`, or `failureState` must be provided.
+
+### Context References
+
+Operation parameters can reference conversation context values using the format `context.{key}`:
+
+```json
+{
+  "type": "award_item",
+  "params": {
+    "itemId": "context.selectedItem",    // References context value
+    "quantity": "context.rewardAmount"    // References context value
+  }
+}
+```
+
+This allows dynamic values to be passed between conversation states.
+
 ## Setup Instructions
 
 ### Prerequisites

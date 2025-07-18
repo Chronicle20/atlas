@@ -341,3 +341,18 @@ func skinColorChangedEventProvider(transactionId uuid.UUID, characterId uint32, 
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func gmChangedEventProvider(transactionId uuid.UUID, characterId uint32, worldId world.Id, oldGm bool, newGm bool) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character2.StatusEvent[character2.StatusEventGmChangedBody]{
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		WorldId:       worldId,
+		Type:          character2.StatusEventTypeGmChanged,
+		Body: character2.StatusEventGmChangedBody{
+			OldGm: oldGm,
+			NewGm: newGm,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

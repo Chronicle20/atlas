@@ -263,6 +263,11 @@ type StatusEventHairChangedBody struct {
 	NewHair uint32 `json:"newHair"`
 }
 
+type StatusEventFaceChangedBody struct {
+	OldFace uint32 `json:"oldFace"`
+	NewFace uint32 `json:"newFace"`
+}
+
 const (
 	EnvCommandTopicMovement = "COMMAND_TOPIC_CHARACTER_MOVEMENT"
 )

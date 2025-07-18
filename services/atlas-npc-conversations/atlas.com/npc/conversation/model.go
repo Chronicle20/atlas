@@ -710,10 +710,8 @@ func (b *ConditionBuilder) Build() (ConditionModel, error) {
 
 // OutcomeModel represents an outcome in a generic action
 type OutcomeModel struct {
-	conditions   []ConditionModel
-	nextState    string
-	successState string
-	failureState string
+	conditions []ConditionModel
+	nextState  string
 }
 
 // Conditions returns the outcome condition
@@ -726,22 +724,11 @@ func (o OutcomeModel) NextState() string {
 	return o.nextState
 }
 
-// SuccessState returns the success state ID
-func (o OutcomeModel) SuccessState() string {
-	return o.successState
-}
-
-// FailureState returns the failure state ID
-func (o OutcomeModel) FailureState() string {
-	return o.failureState
-}
 
 // OutcomeBuilder is a builder for OutcomeModel
 type OutcomeBuilder struct {
-	conditions   []ConditionModel
-	nextState    string
-	successState string
-	failureState string
+	conditions []ConditionModel
+	nextState  string
 }
 
 // NewOutcomeBuilder creates a new OutcomeBuilder
@@ -778,29 +765,16 @@ func (b *OutcomeBuilder) SetNextState(nextState string) *OutcomeBuilder {
 	return b
 }
 
-// SetSuccessState sets the success state ID
-func (b *OutcomeBuilder) SetSuccessState(successState string) *OutcomeBuilder {
-	b.successState = successState
-	return b
-}
-
-// SetFailureState sets the failure state ID
-func (b *OutcomeBuilder) SetFailureState(failureState string) *OutcomeBuilder {
-	b.failureState = failureState
-	return b
-}
 
 // Build builds the OutcomeModel
 func (b *OutcomeBuilder) Build() (OutcomeModel, error) {
-	if b.nextState == "" && b.successState == "" && b.failureState == "" {
-		return OutcomeModel{}, errors.New("at least one of nextState, successState, or failureState is required")
+	if b.nextState == "" {
+		return OutcomeModel{}, errors.New("nextState is required")
 	}
 
 	return OutcomeModel{
-		conditions:   b.conditions,
-		nextState:    b.nextState,
-		successState: b.successState,
-		failureState: b.failureState,
+		conditions: b.conditions,
+		nextState:  b.nextState,
 	}, nil
 }
 

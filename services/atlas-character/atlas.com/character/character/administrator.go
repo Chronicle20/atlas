@@ -239,3 +239,43 @@ func SetFame(amount int16) EntityUpdateFunction {
 		}
 	}
 }
+
+func SetName(name string) EntityUpdateFunction {
+	return func() ([]string, func(e *entity)) {
+		return []string{"Name"}, func(e *entity) {
+			e.Name = name
+		}
+	}
+}
+
+func SetHair(hair uint32) EntityUpdateFunction {
+	return func() ([]string, func(e *entity)) {
+		return []string{"Hair"}, func(e *entity) {
+			e.Hair = hair
+		}
+	}
+}
+
+func SetFace(face uint32) EntityUpdateFunction {
+	return func() ([]string, func(e *entity)) {
+		return []string{"Face"}, func(e *entity) {
+			e.Face = face
+		}
+	}
+}
+
+func SetGender(gender byte) EntityUpdateFunction {
+	return func() ([]string, func(e *entity)) {
+		return []string{"Gender"}, func(e *entity) {
+			e.Gender = gender
+		}
+	}
+}
+
+func SetSkinColor(skinColor byte) EntityUpdateFunction {
+	return func() ([]string, func(e *entity)) {
+		return []string{"SkinColor"}, func(e *entity) {
+			e.SkinColor = skinColor
+		}
+	}
+}

@@ -442,16 +442,26 @@ func (p *ProcessorImpl) processGenericActionState(ctx ConversationContext, state
 		return "", errors.New("genericAction is nil")
 	}
 
-	// Execute operations
+	// Error recovery wrapper to ensure conversation cleanup on failures
+	defer func() {
+		if r := recover(); r != nil {
+			p.l.Errorf("Panic recovered in processGenericActionState for character [%d]: %v", ctx.CharacterId(), r)
+			GetRegistry().ClearContext(p.t, ctx.CharacterId())
+		}
+	}()
+
+	// Execute operations with error recovery
 	for _, operation := range genericAction.Operations() {
 		err := p.executor.ExecuteOperation(ctx.Field(), ctx.CharacterId(), operation)
 		if err != nil {
-			p.l.WithError(err).Errorf("Failed to execute operation [%s] for character [%d]", operation.Type(), ctx.CharacterId())
+			p.l.WithError(err).Errorf("Failed to execute operation [%s] for character [%d]. Cleaning up conversation context.", operation.Type(), ctx.CharacterId())
+			// Clean up conversation context before returning error
+			GetRegistry().ClearContext(p.t, ctx.CharacterId())
 			return "", err
 		}
 	}
 
-	// Evaluate outcomes
+	// Evaluate outcomes with error recovery
 	for _, outcome := range genericAction.Outcomes() {
 		if len(outcome.Conditions()) == 0 {
 			return outcome.NextState(), nil
@@ -461,7 +471,9 @@ func (p *ProcessorImpl) processGenericActionState(ctx ConversationContext, state
 		// TODO
 		passed, err := p.evaluator.EvaluateCondition(ctx.CharacterId(), outcome.Conditions()[0])
 		if err != nil {
-			p.l.WithError(err).Errorf("Failed to evaluate condition [%+v] for character [%d]", outcome.Conditions()[0], ctx.CharacterId())
+			p.l.WithError(err).Errorf("Failed to evaluate condition [%+v] for character [%d]. Cleaning up conversation context.", outcome.Conditions()[0], ctx.CharacterId())
+			// Clean up conversation context before returning error
+			GetRegistry().ClearContext(p.t, ctx.CharacterId())
 			return "", err
 		}
 

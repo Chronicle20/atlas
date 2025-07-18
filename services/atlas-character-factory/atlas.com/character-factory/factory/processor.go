@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"sync"
 	"time"
 
@@ -18,9 +19,9 @@ import (
 
 // FollowUpSagaTemplate stores the template information needed to create a follow-up saga
 type FollowUpSagaTemplate struct {
-	TenantId                      uuid.UUID
-	Input                         RestModel
-	Template                      template.RestModel
+	TenantId                       uuid.UUID
+	Input                          RestModel
+	Template                       template.RestModel
 	CharacterCreationTransactionId uuid.UUID
 }
 
@@ -54,9 +55,9 @@ func (s *FollowUpSagaTemplateStore) Store(tenantId uuid.UUID, characterName stri
 	// Store with tenant-aware key to avoid conflicts
 	key := fmt.Sprintf("%s:%s", tenantId.String(), characterName)
 	s.templates[key] = FollowUpSagaTemplate{
-		TenantId:                      tenantId,
-		Input:                         input,
-		Template:                      template,
+		TenantId:                       tenantId,
+		Input:                          input,
+		Template:                       template,
 		CharacterCreationTransactionId: characterCreationTransactionId,
 	}
 
@@ -119,13 +120,13 @@ func RemoveFollowUpSagaTemplate(tenantId uuid.UUID, characterName string) {
 
 // SagaCompletionTracker tracks completion status for character creation saga pairs
 type SagaCompletionTracker struct {
-	TenantId                      uuid.UUID
-	AccountId                     uint32
-	CharacterId                   uint32
+	TenantId                       uuid.UUID
+	AccountId                      uint32
+	CharacterId                    uint32
 	CharacterCreationTransactionId uuid.UUID
-	FollowUpSagaTransactionId     uuid.UUID
-	CharacterCreationCompleted    bool
-	FollowUpSagaCompleted         bool
+	FollowUpSagaTransactionId      uuid.UUID
+	CharacterCreationCompleted     bool
+	FollowUpSagaCompleted          bool
 }
 
 // SagaCompletionTrackerStore provides thread-safe storage for saga completion tracking
@@ -156,11 +157,11 @@ func (s *SagaCompletionTrackerStore) StoreTrackerForCharacterCreation(tenantId u
 	defer s.mutex.Unlock()
 
 	s.trackers[characterCreationTransactionId] = &SagaCompletionTracker{
-		TenantId:                      tenantId,
-		AccountId:                     accountId,
+		TenantId:                       tenantId,
+		AccountId:                      accountId,
 		CharacterCreationTransactionId: characterCreationTransactionId,
-		CharacterCreationCompleted:    false,
-		FollowUpSagaCompleted:         false,
+		CharacterCreationCompleted:     false,
+		FollowUpSagaCompleted:          false,
 	}
 }
 
@@ -308,6 +309,11 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(input RestModel
 				return "", errors.New("chosen weapon is not valid for job")
 			}
 
+			if input.MapId == _map.Id(0) {
+				l.Debugf("Starting map not provided. Leveraging what is configured in the template.")
+				input.MapId = _map.Id(template.MapId)
+			}
+
 			// Generate transaction ID for character creation saga
 			characterCreationId := uuid.New()
 			l.Debugf("Beginning character creation saga for account [%d] in world [%d] with transaction [%s].", input.AccountId, input.WorldId, characterCreationId.String())
@@ -440,7 +446,6 @@ func BuildCharacterCreationFollowUpSaga(transactionId uuid.UUID, characterId uin
 
 	return builder.Build()
 }
-
 
 func validWeapon(weapons []uint32, weapon uint32) bool {
 	return validOption(weapons, weapon)

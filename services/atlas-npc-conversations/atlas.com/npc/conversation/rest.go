@@ -2,6 +2,7 @@ package conversation
 
 import (
 	"fmt"
+	"strconv"
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
 )
@@ -155,15 +156,13 @@ type RestConditionModel struct {
 	Type     string `json:"type"`     // Condition type
 	Operator string `json:"operator"` // Operator
 	Value    string `json:"value"`    // Value
-	ItemId   uint32 `json:"itemId,omitempty"`
+	ItemId   string `json:"itemId,omitempty"`
 }
 
 // RestOutcomeModel represents the REST model for outcomes
 type RestOutcomeModel struct {
-	Conditions   []RestConditionModel `json:"conditions"`             // Outcome conditions
-	NextState    string               `json:"nextState,omitempty"`    // Next state ID
-	SuccessState string               `json:"successState,omitempty"` // Success state ID
-	FailureState string               `json:"failureState,omitempty"` // Failure state ID
+	Conditions []RestConditionModel `json:"conditions"`          // Outcome conditions
+	NextState  string               `json:"nextState,omitempty"` // Next state ID
 }
 
 // RestCraftActionModel represents the REST model for craft action states
@@ -174,8 +173,6 @@ type RestCraftActionModel struct {
 	MesoCost              uint32   `json:"mesoCost"`                       // Meso cost
 	StimulatorId          uint32   `json:"stimulatorId,omitempty"`         // Stimulator item ID
 	StimulatorFailChance  float64  `json:"stimulatorFailChance,omitempty"` // Stimulator failure chance
-	SuccessState          string   `json:"successState"`                   // Success state ID
-	FailureState          string   `json:"failureState"`                   // Failure state ID
 	MissingMaterialsState string   `json:"missingMaterialsState"`          // Missing materials state ID
 }
 
@@ -352,15 +349,13 @@ func TransformGenericAction(m GenericActionModel) (RestGenericActionModel, error
 				Type:     condition.Type(),
 				Operator: condition.Operator(),
 				Value:    condition.Value(),
-				ItemId:   condition.ItemId(),
+				ItemId:   fmt.Sprintf("%d", condition.ItemId()),
 			})
 		}
 
 		restOutcomes = append(restOutcomes, RestOutcomeModel{
-			Conditions:   restConditions,
-			NextState:    outcome.NextState(),
-			SuccessState: outcome.SuccessState(),
-			FailureState: outcome.FailureState(),
+			Conditions: restConditions,
+			NextState:  outcome.NextState(),
 		})
 	}
 
@@ -379,8 +374,6 @@ func TransformCraftAction(m CraftActionModel) (RestCraftActionModel, error) {
 		MesoCost:              m.MesoCost(),
 		StimulatorId:          m.StimulatorId(),
 		StimulatorFailChance:  m.StimulatorFailChance(),
-		SuccessState:          m.SuccessState(),
-		FailureState:          m.FailureState(),
 		MissingMaterialsState: m.MissingMaterialsState(),
 	}, nil
 }
@@ -571,11 +564,20 @@ func ExtractOutcome(r RestOutcomeModel) (OutcomeModel, error) {
 	outcomeBuilder := NewOutcomeBuilder()
 
 	for _, c := range r.Conditions {
+		var itemId uint32
+		if c.ItemId != "" {
+			parsedItemId, err := strconv.ParseUint(c.ItemId, 10, 32)
+			if err != nil {
+				return OutcomeModel{}, fmt.Errorf("invalid itemId: %v", err)
+			}
+			itemId = uint32(parsedItemId)
+		}
+		
 		condition, err := NewConditionBuilder().
 			SetType(c.Type).
 			SetOperator(c.Operator).
 			SetValue(c.Value).
-			SetItemId(c.ItemId).
+			SetItemId(itemId).
 			Build()
 
 		if err != nil {
@@ -587,12 +589,6 @@ func ExtractOutcome(r RestOutcomeModel) (OutcomeModel, error) {
 
 	if r.NextState != "" {
 		outcomeBuilder.SetNextState(r.NextState)
-	}
-	if r.SuccessState != "" {
-		outcomeBuilder.SetSuccessState(r.SuccessState)
-	}
-	if r.FailureState != "" {
-		outcomeBuilder.SetFailureState(r.FailureState)
 	}
 
 	return outcomeBuilder.Build()
@@ -607,8 +603,6 @@ func ExtractCraftAction(r RestCraftActionModel) (*CraftActionModel, error) {
 		SetMesoCost(r.MesoCost).
 		SetStimulatorId(r.StimulatorId).
 		SetStimulatorFailChance(r.StimulatorFailChance).
-		SetSuccessState(r.SuccessState).
-		SetFailureState(r.FailureState).
 		SetMissingMaterialsState(r.MissingMaterialsState)
 
 	return craftActionBuilder.Build()

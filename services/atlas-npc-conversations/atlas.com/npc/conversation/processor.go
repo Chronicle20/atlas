@@ -101,11 +101,8 @@ func (p *ProcessorImpl) Create(m Model) (Model, error) {
 		p.l.WithError(err).Errorf("Failed to convert model to entity")
 		return Model{}, err
 	}
-
-	// Auto-generate UUID if nil
-	if entity.ID == uuid.Nil {
-		entity.ID = uuid.New()
-	}
+	
+	entity.ID = uuid.New()
 
 	// Save to database
 	result := p.db.Create(&entity)

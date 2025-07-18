@@ -1150,6 +1150,13 @@ func (p *ProcessorImpl) UpdateAndEmit(transactionId uuid.UUID, characterId uint3
 	})
 }
 
+// fieldChange represents a validated field change with event emission capability
+type fieldChange struct {
+	updateFunc  EntityUpdateFunction
+	eventFunc   func() error
+	shouldApply bool
+}
+
 func (p *ProcessorImpl) Update(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, input RestModel) error {
 	return func(transactionId uuid.UUID, characterId uint32, input RestModel) error {
 		return database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
@@ -1158,7 +1165,8 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(transactionId uuid.UUID,
 				return err
 			}
 
-			updates := []EntityUpdateFunction{}
+			// Validate and prepare all field changes
+			changes := []fieldChange{}
 
 			// Name validation and update
 			if input.Name != "" && input.Name != c.Name() {
@@ -1168,7 +1176,13 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(transactionId uuid.UUID,
 					}
 					return errors.New("invalid or duplicate name")
 				}
-				updates = append(updates, SetName(input.Name))
+				changes = append(changes, fieldChange{
+					updateFunc:  SetName(input.Name),
+					shouldApply: true,
+					eventFunc: func() error {
+						return mb.Put(character2.EnvEventTopicCharacterStatus, nameChangedEventProvider(transactionId, characterId, c.WorldId(), c.Name(), input.Name))
+					},
+				})
 			}
 
 			// Hair validation and update
@@ -1176,7 +1190,13 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(transactionId uuid.UUID,
 				if !p.isValidHair(input.Hair) {
 					return errors.New("invalid hair ID")
 				}
-				updates = append(updates, SetHair(input.Hair))
+				changes = append(changes, fieldChange{
+					updateFunc:  SetHair(input.Hair),
+					shouldApply: true,
+					eventFunc: func() error {
+						return mb.Put(character2.EnvEventTopicCharacterStatus, hairChangedEventProvider(transactionId, characterId, c.WorldId(), c.Hair(), input.Hair))
+					},
+				})
 			}
 
 			// Face validation and update
@@ -1184,7 +1204,13 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(transactionId uuid.UUID,
 				if !p.isValidFace(input.Face) {
 					return errors.New("invalid face ID")
 				}
-				updates = append(updates, SetFace(input.Face))
+				changes = append(changes, fieldChange{
+					updateFunc:  SetFace(input.Face),
+					shouldApply: true,
+					eventFunc: func() error {
+						return mb.Put(character2.EnvEventTopicCharacterStatus, faceChangedEventProvider(transactionId, characterId, c.WorldId(), c.Face(), input.Face))
+					},
+				})
 			}
 
 			// Gender validation and update
@@ -1192,7 +1218,13 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(transactionId uuid.UUID,
 				if !p.isValidGender(input.Gender) {
 					return errors.New("invalid gender value")
 				}
-				updates = append(updates, SetGender(input.Gender))
+				changes = append(changes, fieldChange{
+					updateFunc:  SetGender(input.Gender),
+					shouldApply: true,
+					eventFunc: func() error {
+						return mb.Put(character2.EnvEventTopicCharacterStatus, genderChangedEventProvider(transactionId, characterId, c.WorldId(), c.Gender(), input.Gender))
+					},
+				})
 			}
 
 			// Skin color validation and update
@@ -1200,14 +1232,30 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(transactionId uuid.UUID,
 				if !p.isValidSkinColor(input.SkinColor) {
 					return errors.New("invalid skin color value")
 				}
-				updates = append(updates, SetSkinColor(input.SkinColor))
+				changes = append(changes, fieldChange{
+					updateFunc:  SetSkinColor(input.SkinColor),
+					shouldApply: true,
+					eventFunc: func() error {
+						return mb.Put(character2.EnvEventTopicCharacterStatus, skinColorChangedEventProvider(transactionId, characterId, c.WorldId(), c.SkinColor(), input.SkinColor))
+					},
+				})
 			}
+
 			// GM validation and update
 			if input.Gm != c.GM() {
 				if !p.isValidGm(input.Gm) {
 					return errors.New("invalid GM value")
 				}
-				updates = append(updates, SetGm(input.Gm))
+				changes = append(changes, fieldChange{
+					updateFunc:  SetGm(input.Gm),
+					shouldApply: true,
+					eventFunc: func() error {
+						// Convert int to bool for GM status
+						oldGm := c.GM() != 0
+						newGm := input.Gm != 0
+						return mb.Put(character2.EnvEventTopicCharacterStatus, gmChangedEventProvider(transactionId, characterId, c.WorldId(), oldGm, newGm))
+					},
+				})
 			}
 
 			// MapId validation and update
@@ -1215,69 +1263,44 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(transactionId uuid.UUID,
 				if !p.isValidMapIdForCharacter(characterId, input.MapId) {
 					return errors.New("invalid map ID or character cannot access this map")
 				}
-				updates = append(updates, SetMapId(input.MapId))
+				changes = append(changes, fieldChange{
+					updateFunc:  SetMapId(input.MapId),
+					shouldApply: true,
+					eventFunc: func() error {
+						// Create field models for old and new map locations
+						// Note: We need to get the current channel ID from the context or use a default
+						// For now, using channel ID 0 as a placeholder - this should be updated based on actual channel context
+						oldField := field.NewBuilder(c.WorldId(), 0, c.MapId()).Build()
+						newField := field.NewBuilder(c.WorldId(), 0, input.MapId).Build()
+						return mb.Put(character2.EnvEventTopicCharacterStatus, mapChangedEventProvider(transactionId, characterId, oldField, newField, 0))
+					},
+				})
 			}
 
 			// If no updates are needed, return early
-			if len(updates) == 0 {
+			if len(changes) == 0 {
 				return nil
 			}
 
-			// Apply updates
+			// Apply all updates
+			updates := []EntityUpdateFunction{}
+			for _, change := range changes {
+				if change.shouldApply {
+					updates = append(updates, change.updateFunc)
+				}
+			}
+
 			err = dynamicUpdate(tx)(updates...)(p.t.Id())(c)
 			if err != nil {
 				return err
 			}
 
-			// Emit specific events for each changed field
-			if input.Name != "" && input.Name != c.Name() {
-				err = mb.Put(character2.EnvEventTopicCharacterStatus, nameChangedEventProvider(transactionId, characterId, c.WorldId(), c.Name(), input.Name))
-				if err != nil {
-					return err
-				}
-			}
-			if input.Hair != 0 && input.Hair != c.Hair() {
-				err = mb.Put(character2.EnvEventTopicCharacterStatus, hairChangedEventProvider(transactionId, characterId, c.WorldId(), c.Hair(), input.Hair))
-				if err != nil {
-					return err
-				}
-			}
-			if input.Face != 0 && input.Face != c.Face() {
-				err = mb.Put(character2.EnvEventTopicCharacterStatus, faceChangedEventProvider(transactionId, characterId, c.WorldId(), c.Face(), input.Face))
-				if err != nil {
-					return err
-				}
-			}
-			if input.Gender != c.Gender() {
-				err = mb.Put(character2.EnvEventTopicCharacterStatus, genderChangedEventProvider(transactionId, characterId, c.WorldId(), c.Gender(), input.Gender))
-				if err != nil {
-					return err
-				}
-			}
-			if input.SkinColor != 0 && input.SkinColor != c.SkinColor() {
-				err = mb.Put(character2.EnvEventTopicCharacterStatus, skinColorChangedEventProvider(transactionId, characterId, c.WorldId(), c.SkinColor(), input.SkinColor))
-				if err != nil {
-					return err
-				}
-			}
-			if input.Gm != c.GM() {
-				// Convert int to bool for GM status
-				oldGm := c.GM() != 0
-				newGm := input.Gm != 0
-				err = mb.Put(character2.EnvEventTopicCharacterStatus, gmChangedEventProvider(transactionId, characterId, c.WorldId(), oldGm, newGm))
-				if err != nil {
-					return err
-				}
-			}
-			if input.MapId != 0 && input.MapId != c.MapId() {
-				// Create field models for old and new map locations
-				// Note: We need to get the current channel ID from the context or use a default
-				// For now, using channel ID 0 as a placeholder - this should be updated based on actual channel context
-				oldField := field.NewBuilder(c.WorldId(), 0, c.MapId()).Build()
-				newField := field.NewBuilder(c.WorldId(), 0, input.MapId).Build()
-				err = mb.Put(character2.EnvEventTopicCharacterStatus, mapChangedEventProvider(transactionId, characterId, oldField, newField, 0))
-				if err != nil {
-					return err
+			// Emit events for all changes
+			for _, change := range changes {
+				if change.shouldApply {
+					if err := change.eventFunc(); err != nil {
+						return err
+					}
 				}
 			}
 

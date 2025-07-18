@@ -73,3 +73,12 @@ func (m Model) AllianceId() uint32 {
 func (m Model) LeaderId() uint32 {
 	return m.leaderId
 }
+
+func (m Model) MemberRank(characterId uint32) int {
+	for _, mem := range m.Members() {
+		if mem.CharacterId() == characterId {
+			return int(mem.Rank())
+		}
+	}
+	return 0
+}

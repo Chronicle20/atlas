@@ -6,12 +6,13 @@ import (
 	"atlas-query-aggregator/equipment"
 	"atlas-query-aggregator/guild"
 	"atlas-query-aggregator/inventory"
+	"strconv"
+	"strings"
+
 	"github.com/Chronicle20/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas-constants/job"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
-	"strconv"
-	"strings"
 )
 
 type Model struct {
@@ -42,6 +43,9 @@ type Model struct {
 	mapId              uint32
 	spawnPoint         uint32
 	gm                 int
+	reborns            uint32
+	dojoPoints         uint32
+	vanquisherKills    uint32
 	x                  int16
 	y                  int16
 	stance             byte
@@ -53,6 +57,10 @@ type Model struct {
 
 func (m Model) Gm() bool {
 	return m.gm == 1
+}
+
+func (m Model) GmLevel() int {
+	return m.gm
 }
 
 func (m Model) Rank() uint32 {
@@ -133,6 +141,10 @@ func (m Model) Mp() uint16 {
 
 func (m Model) MaxMp() uint16 {
 	return m.maxMp
+}
+
+func (m Model) HpMpUsed() int {
+	return m.hpMpUsed
 }
 
 func (m Model) Ap() uint16 {
@@ -247,6 +259,18 @@ func (m Model) WorldId() world.Id {
 	return m.worldId
 }
 
+func (m Model) Reborns() uint32 {
+	return m.reborns
+}
+
+func (m Model) DojoPoints() uint32 {
+	return m.dojoPoints
+}
+
+func (m Model) VanquisherKills() uint32 {
+	return m.vanquisherKills
+}
+
 func (m Model) SetInventory(i inventory.Model) Model {
 	eq := equipment.NewModel()
 	ec := compartment.NewBuilder(i.Equipable().Id(), m.Id(), i.Equipable().Type(), i.Equipable().Capacity())
@@ -340,6 +364,9 @@ func Clone(m Model) *ModelBuilder {
 		mapId:              m.mapId,
 		spawnPoint:         m.spawnPoint,
 		gm:                 m.gm,
+		reborns:            m.reborns,
+		dojoPoints:         m.dojoPoints,
+		vanquisherKills:    m.vanquisherKills,
 		x:                  m.x,
 		y:                  m.y,
 		stance:             m.stance,
@@ -378,6 +405,9 @@ type ModelBuilder struct {
 	mapId              uint32
 	spawnPoint         uint32
 	gm                 int
+	reborns            uint32
+	dojoPoints         uint32
+	vanquisherKills    uint32
 	x                  int16
 	y                  int16
 	stance             byte
@@ -422,9 +452,12 @@ func (b *ModelBuilder) SetMapId(v uint32) *ModelBuilder              { b.mapId =
 func (b *ModelBuilder) SetSpawnPoint(v uint32) *ModelBuilder         { b.spawnPoint = v; return b }
 func (b *ModelBuilder) SetGm(v int) *ModelBuilder                    { b.gm = v; return b }
 func (b *ModelBuilder) SetMeso(v uint32) *ModelBuilder               { b.meso = v; return b }
+func (b *ModelBuilder) SetReborns(v uint32) *ModelBuilder            { b.reborns = v; return b }
+func (b *ModelBuilder) SetDojoPoints(v uint32) *ModelBuilder         { b.dojoPoints = v; return b }
+func (b *ModelBuilder) SetVanquisherKills(v uint32) *ModelBuilder    { b.vanquisherKills = v; return b }
 func (b *ModelBuilder) SetEquipment(v equipment.Model) *ModelBuilder { b.equipment = v; return b }
 func (b *ModelBuilder) SetInventory(v inventory.Model) *ModelBuilder { b.inventory = v; return b }
-func (b *ModelBuilder) SetGuild(v guild.Model) *ModelBuilder { b.guild = v; return b }
+func (b *ModelBuilder) SetGuild(v guild.Model) *ModelBuilder         { b.guild = v; return b }
 
 func (b *ModelBuilder) Build() Model {
 	return Model{
@@ -455,6 +488,9 @@ func (b *ModelBuilder) Build() Model {
 		mapId:              b.mapId,
 		spawnPoint:         b.spawnPoint,
 		gm:                 b.gm,
+		reborns:            b.reborns,
+		dojoPoints:         b.dojoPoints,
+		vanquisherKills:    b.vanquisherKills,
 		x:                  b.x,
 		y:                  b.y,
 		stance:             b.stance,

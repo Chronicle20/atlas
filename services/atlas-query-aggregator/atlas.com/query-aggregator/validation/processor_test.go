@@ -7,6 +7,10 @@ import (
 	"atlas-query-aggregator/compartment"
 	"atlas-query-aggregator/guild"
 	"atlas-query-aggregator/inventory"
+	"atlas-query-aggregator/marriage"
+	marriageMock "atlas-query-aggregator/marriage/mock"
+	"atlas-query-aggregator/quest"
+	questMock "atlas-query-aggregator/quest/mock"
 	"context"
 	"errors"
 	inventory_type "github.com/Chronicle20/atlas-constants/inventory"
@@ -186,8 +190,8 @@ func TestConditionBuilder(t *testing.T) {
 				t.Errorf("ConditionBuilder.Build() value = %v, want %v", condition.value, tt.wantValue)
 			}
 
-			if tt.wantType == ItemCondition && condition.itemId != tt.wantItemId {
-				t.Errorf("ConditionBuilder.Build() itemId = %v, want %v", condition.itemId, tt.wantItemId)
+			if tt.wantType == ItemCondition && condition.referenceId != tt.wantItemId {
+				t.Errorf("ConditionBuilder.Build() itemId = %v, want %v", condition.referenceId, tt.wantItemId)
 			}
 		})
 	}
@@ -486,3 +490,267 @@ func TestProcessorValidateStructured(t *testing.T) {
 		})
 	}
 }
+
+// TestValidateWithContextMockingExternalServices tests validation with mocked external services
+func TestValidateWithContextMockingExternalServices(t *testing.T) {
+	// Create logger
+	logger := logrus.New()
+
+	tests := []struct {
+		name                  string
+		characterId           uint32
+		conditions            []ConditionInput
+		setupCharacterMock    func(*mock.ProcessorImpl)
+		setupQuestMock        func(*questMock.ProcessorImpl)
+		setupMarriageMock     func(*marriageMock.ProcessorImpl)
+		wantPassed            bool
+		wantDetailsCount      int
+		wantError             bool
+		wantErrorContains     string
+	}{
+		{
+			name:        "Quest Status validation - success",
+			characterId: 123,
+			conditions: []ConditionInput{
+				{Type: "questStatus", Operator: "=", Value: int(quest.STARTED), ReferenceId: 1001},
+			},
+			setupCharacterMock: func(m *mock.ProcessorImpl) {
+				m.GetByIdFunc = func(decorators ...model.Decorator[character.Model]) func(characterId uint32) (character.Model, error) {
+					return func(characterId uint32) (character.Model, error) {
+						return character.NewModelBuilder().SetId(characterId).Build(), nil
+					}
+				}
+			},
+			setupQuestMock: func(m *questMock.ProcessorImpl) {
+				m.GetQuestStatusFunc = func(characterId uint32, questId uint32) model.Provider[quest.QuestStatus] {
+					return func() (quest.QuestStatus, error) {
+						if questId == 1001 {
+							return quest.STARTED, nil
+						}
+						return quest.UNDEFINED, nil
+					}
+				}
+			},
+			setupMarriageMock: func(m *marriageMock.ProcessorImpl) {
+				m.HasUnclaimedGiftsFunc = func(characterId uint32) model.Provider[bool] {
+					return func() (bool, error) {
+						return false, nil
+					}
+				}
+			},
+			wantPassed:       true,
+			wantDetailsCount: 1,
+			wantError:        false,
+		},
+		{
+			name:        "Quest Status validation - quest service error",
+			characterId: 123,
+			conditions: []ConditionInput{
+				{Type: "questStatus", Operator: "=", Value: int(quest.STARTED), ReferenceId: 1001},
+			},
+			setupCharacterMock: func(m *mock.ProcessorImpl) {
+				m.GetByIdFunc = func(decorators ...model.Decorator[character.Model]) func(characterId uint32) (character.Model, error) {
+					return func(characterId uint32) (character.Model, error) {
+						return character.NewModelBuilder().SetId(characterId).Build(), nil
+					}
+				}
+			},
+			setupQuestMock: func(m *questMock.ProcessorImpl) {
+				m.GetQuestStatusFunc = func(characterId uint32, questId uint32) model.Provider[quest.QuestStatus] {
+					return func() (quest.QuestStatus, error) {
+						return quest.UNDEFINED, errors.New("quest service unavailable")
+					}
+				}
+			},
+			setupMarriageMock: func(m *marriageMock.ProcessorImpl) {
+				m.HasUnclaimedGiftsFunc = func(characterId uint32) model.Provider[bool] {
+					return func() (bool, error) {
+						return false, nil
+					}
+				}
+			},
+			wantPassed:        false,
+			wantDetailsCount:  0,
+			wantError:         true,
+			wantErrorContains: "failed to get quest data",
+		},
+		{
+			name:        "Marriage Gifts validation - success",
+			characterId: 123,
+			conditions: []ConditionInput{
+				{Type: "hasUnclaimedMarriageGifts", Operator: "=", Value: 1},
+			},
+			setupCharacterMock: func(m *mock.ProcessorImpl) {
+				m.GetByIdFunc = func(decorators ...model.Decorator[character.Model]) func(characterId uint32) (character.Model, error) {
+					return func(characterId uint32) (character.Model, error) {
+						return character.NewModelBuilder().SetId(characterId).Build(), nil
+					}
+				}
+			},
+			setupQuestMock: func(m *questMock.ProcessorImpl) {
+				// Default empty implementation
+			},
+			setupMarriageMock: func(m *marriageMock.ProcessorImpl) {
+				m.HasUnclaimedGiftsFunc = func(characterId uint32) model.Provider[bool] {
+					return func() (bool, error) {
+						return true, nil
+					}
+				}
+			},
+			wantPassed:       true,
+			wantDetailsCount: 1,
+			wantError:        false,
+		},
+		{
+			name:        "Marriage Gifts validation - marriage service error",
+			characterId: 123,
+			conditions: []ConditionInput{
+				{Type: "hasUnclaimedMarriageGifts", Operator: "=", Value: 1},
+			},
+			setupCharacterMock: func(m *mock.ProcessorImpl) {
+				m.GetByIdFunc = func(decorators ...model.Decorator[character.Model]) func(characterId uint32) (character.Model, error) {
+					return func(characterId uint32) (character.Model, error) {
+						return character.NewModelBuilder().SetId(characterId).Build(), nil
+					}
+				}
+			},
+			setupQuestMock: func(m *questMock.ProcessorImpl) {
+				// Default empty implementation
+			},
+			setupMarriageMock: func(m *marriageMock.ProcessorImpl) {
+				m.HasUnclaimedGiftsFunc = func(characterId uint32) model.Provider[bool] {
+					return func() (bool, error) {
+						return false, errors.New("marriage service unavailable")
+					}
+				}
+			},
+			wantPassed:        false,
+			wantDetailsCount:  0,
+			wantError:         true,
+			wantErrorContains: "failed to get marriage data",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create mock processors
+			mockCharProcessor := &mock.ProcessorImpl{}
+			mockQuestProcessor := &questMock.ProcessorImpl{}
+			mockMarriageProcessor := &marriageMock.ProcessorImpl{}
+
+			// Setup mocks
+			if tt.setupCharacterMock != nil {
+				tt.setupCharacterMock(mockCharProcessor)
+			}
+			if tt.setupQuestMock != nil {
+				tt.setupQuestMock(mockQuestProcessor)
+			}
+			if tt.setupMarriageMock != nil {
+				tt.setupMarriageMock(mockMarriageProcessor)
+			}
+
+			// Create validation processor with mocked dependencies
+			processor := &ProcessorImpl{
+				l:                  logger,
+				ctx:                context.Background(),
+				characterProcessor: mockCharProcessor,
+				questProcessor:     mockQuestProcessor,
+				marriageProcessor:  mockMarriageProcessor,
+			}
+
+			// Create validation context using the mocked providers
+			contextProvider := NewContextBuilderProvider(
+				func(characterId uint32) model.Provider[character.Model] {
+					return func() (character.Model, error) {
+						return mockCharProcessor.GetById(mockCharProcessor.InventoryDecorator)(characterId)
+					}
+				},
+				func(characterId uint32) model.Provider[map[uint32]quest.Model] {
+					return func() (map[uint32]quest.Model, error) {
+						// Create quest models based on mocked quest processor data
+						questsMap := make(map[uint32]quest.Model)
+
+						// For test purposes, we'll create quest models based on the conditions
+						for _, condition := range tt.conditions {
+							if condition.Type == "questStatus" || condition.Type == "questProgress" {
+								// Get the quest status from the mock
+								questStatus, err := mockQuestProcessor.GetQuestStatus(characterId, condition.ReferenceId)()
+								if err != nil {
+									return nil, err
+								}
+
+								// Create a quest model
+								questModel := quest.NewModelBuilder().
+									SetId(condition.ReferenceId).
+									SetStatus(questStatus).
+									Build()
+
+								questsMap[condition.ReferenceId] = questModel
+							}
+						}
+
+						return questsMap, nil
+					}
+				},
+				func(characterId uint32) model.Provider[marriage.Model] {
+					return func() (marriage.Model, error) {
+						// Get marriage data from the mock
+						hasGifts, err := mockMarriageProcessor.HasUnclaimedGifts(characterId)()
+						if err != nil {
+							return marriage.Model{}, err
+						}
+
+						// Create a marriage model
+						return marriage.NewModelBuilder().
+							SetCharacterId(characterId).
+							SetHasUnclaimedGifts(hasGifts).
+							Build(), nil
+					}
+				},
+			)
+
+			// Get validation context
+			validationContext, err := contextProvider.GetValidationContext(tt.characterId)()
+			if err != nil {
+				if tt.wantError {
+					if tt.wantErrorContains != "" && !strings.Contains(err.Error(), tt.wantErrorContains) {
+						t.Errorf("Expected error containing '%s', got '%v'", tt.wantErrorContains, err)
+					}
+					return
+				}
+				t.Errorf("Unexpected error getting validation context: %v", err)
+				return
+			}
+
+			// Call ValidateWithContext
+			result, err := processor.ValidateWithContext()(validationContext, tt.conditions)
+
+			// Check for expected errors
+			if tt.wantError {
+				if err == nil {
+					t.Errorf("Expected error, got nil")
+					return
+				}
+				if tt.wantErrorContains != "" && !strings.Contains(err.Error(), tt.wantErrorContains) {
+					t.Errorf("Expected error containing '%s', got '%v'", tt.wantErrorContains, err)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+				return
+			}
+
+			// Check validation result
+			if result.Passed() != tt.wantPassed {
+				t.Errorf("Validation passed = %v, want %v", result.Passed(), tt.wantPassed)
+			}
+
+			if len(result.Details()) != tt.wantDetailsCount {
+				t.Errorf("Validation details count = %v, want %v", len(result.Details()), tt.wantDetailsCount)
+			}
+		})
+	}
+}
+

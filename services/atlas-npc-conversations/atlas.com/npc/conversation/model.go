@@ -786,8 +786,6 @@ type CraftActionModel struct {
 	mesoCost              uint32
 	stimulatorId          uint32
 	stimulatorFailChance  float64
-	successState          string
-	failureState          string
 	missingMaterialsState string
 }
 
@@ -821,15 +819,6 @@ func (c CraftActionModel) StimulatorFailChance() float64 {
 	return c.stimulatorFailChance
 }
 
-// SuccessState returns the success state ID
-func (c CraftActionModel) SuccessState() string {
-	return c.successState
-}
-
-// FailureState returns the failure state ID
-func (c CraftActionModel) FailureState() string {
-	return c.failureState
-}
 
 // MissingMaterialsState returns the missing materials state ID
 func (c CraftActionModel) MissingMaterialsState() string {
@@ -844,8 +833,6 @@ type CraftActionBuilder struct {
 	mesoCost              uint32
 	stimulatorId          uint32
 	stimulatorFailChance  float64
-	successState          string
-	failureState          string
 	missingMaterialsState string
 }
 
@@ -905,17 +892,6 @@ func (b *CraftActionBuilder) SetStimulatorFailChance(stimulatorFailChance float6
 	return b
 }
 
-// SetSuccessState sets the success state ID
-func (b *CraftActionBuilder) SetSuccessState(successState string) *CraftActionBuilder {
-	b.successState = successState
-	return b
-}
-
-// SetFailureState sets the failure state ID
-func (b *CraftActionBuilder) SetFailureState(failureState string) *CraftActionBuilder {
-	b.failureState = failureState
-	return b
-}
 
 // SetMissingMaterialsState sets the missing materials state ID
 func (b *CraftActionBuilder) SetMissingMaterialsState(missingMaterialsState string) *CraftActionBuilder {
@@ -934,12 +910,6 @@ func (b *CraftActionBuilder) Build() (*CraftActionModel, error) {
 	if len(b.quantities) != len(b.materials) {
 		return nil, errors.New("quantities must match materials")
 	}
-	if b.successState == "" {
-		return nil, errors.New("successState is required")
-	}
-	if b.failureState == "" {
-		return nil, errors.New("failureState is required")
-	}
 	if b.missingMaterialsState == "" {
 		return nil, errors.New("missingMaterialsState is required")
 	}
@@ -951,8 +921,6 @@ func (b *CraftActionBuilder) Build() (*CraftActionModel, error) {
 		mesoCost:              b.mesoCost,
 		stimulatorId:          b.stimulatorId,
 		stimulatorFailChance:  b.stimulatorFailChance,
-		successState:          b.successState,
-		failureState:          b.failureState,
 		missingMaterialsState: b.missingMaterialsState,
 	}, nil
 }

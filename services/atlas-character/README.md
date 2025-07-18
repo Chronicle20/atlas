@@ -63,6 +63,9 @@ MINOR_VERSION:1
 #### [DELETE] Delete Character
 ```/api/cos/characters/{characterId}```
 
+#### [PATCH] Update Character
+```/api/cos/characters/{characterId}```
+
 ### Inventory APIs
 
 #### [GET] Get Item By Slot
@@ -190,3 +193,124 @@ The `CREATION_FAILED` event is emitted in the following scenarios:
 - **Saga Support**: Enables distributed transaction patterns and compensation logic
 - **Scalability**: Kafka enables horizontal scaling of character creation workloads
 - **Resilience**: Failed operations are clearly identified with detailed error messages
+
+## Character Update API
+
+The character update API allows synchronous modification of character properties via a JSON:API-compliant PATCH request.
+
+### [PATCH] Update Character
+
+```
+PATCH /api/cos/characters/{characterId}
+```
+
+Updates specific character properties. Only provided fields will be modified; unchanged fields remain unaffected.
+
+#### Request Headers
+All standard headers are required:
+```
+TENANT_ID:083839c6-c47c-42a6-9585-76492795d123
+REGION:GMS
+MAJOR_VERSION:83
+MINOR_VERSION:1
+Content-Type: application/json
+```
+
+#### Request Body
+```json
+{
+  "data": {
+    "type": "characters",
+    "id": "1001",
+    "attributes": {
+      "name": "UpdatedName",
+      "hair": 30100,
+      "face": 20100,
+      "gender": 1,
+      "skinColor": 0
+    }
+  }
+}
+```
+
+#### Updatable Fields
+
+| Field       | Type    | Description                                    | Validation                           |
+|-------------|---------|------------------------------------------------|-------------------------------------|
+| `name`      | string  | Character name                                 | Must be unique and valid format     |
+| `hair`      | uint32  | Hair style ID                                 | Must be in valid hair ID range      |
+| `face`      | uint32  | Face ID                                       | Must be in valid face ID range      |
+| `gender`    | byte    | Character gender (0 = male, 1 = female)      | Must be 0 or 1                     |
+| `skinColor` | byte    | Skin color ID                                 | Must be a valid skin color value    |
+
+#### Response
+
+**Success (204 No Content)**
+```
+HTTP/1.1 204 No Content
+```
+
+**Error (400 Bad Request)**
+```json
+{
+  "error": {
+    "status": 400,
+    "title": "Bad Request",
+    "detail": "Invalid character name format"
+  }
+}
+```
+
+**Error (404 Not Found)**
+```json
+{
+  "error": {
+    "status": 404,
+    "title": "Not Found",
+    "detail": "Character not found"
+  }
+}
+```
+
+**Error (409 Conflict)**
+```json
+{
+  "error": {
+    "status": 409,
+    "title": "Conflict",
+    "detail": "Character name already exists"
+  }
+}
+```
+
+#### Example Usage
+
+Update character name and appearance:
+```bash
+curl -X PATCH \
+  -H "Content-Type: application/json" \
+  -H "TENANT_ID:083839c6-c47c-42a6-9585-76492795d123" \
+  -H "REGION:GMS" \
+  -H "MAJOR_VERSION:83" \
+  -H "MINOR_VERSION:1" \
+  -d '{
+    "data": {
+      "type": "characters",
+      "id": "1001",
+      "attributes": {
+        "name": "NewCharacterName",
+        "hair": 30150,
+        "face": 20120
+      }
+    }
+  }' \
+  https://api.example.com/api/cos/characters/1001
+```
+
+#### Business Rules
+
+- **Name Uniqueness**: Character names must be unique within the tenant/world context
+- **Validation**: All field values are validated against game rules and constraints
+- **Transactional**: Updates are applied atomically - either all changes succeed or none are applied
+- **Audit Trail**: Character updates may trigger audit events for tracking changes
+- **Immutable Fields**: Some character properties (like characterId, accountId) cannot be modified via this endpoint

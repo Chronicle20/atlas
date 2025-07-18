@@ -281,3 +281,18 @@ func nameChangedEventProvider(transactionId uuid.UUID, characterId uint32, world
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func hairChangedEventProvider(transactionId uuid.UUID, characterId uint32, worldId world.Id, oldHair uint32, newHair uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character2.StatusEvent[character2.StatusEventHairChangedBody]{
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		WorldId:       worldId,
+		Type:          character2.StatusEventTypeHairChanged,
+		Body: character2.StatusEventHairChangedBody{
+			OldHair: oldHair,
+			NewHair: newHair,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

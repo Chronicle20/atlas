@@ -227,7 +227,8 @@ Content-Type: application/json
       "hair": 30100,
       "face": 20100,
       "gender": 1,
-      "skinColor": 0
+      "skinColor": 0,
+      "mapId": 110000000
     }
   }
 }
@@ -242,6 +243,7 @@ Content-Type: application/json
 | `face`      | uint32  | Face ID                                       | Must be in valid face ID range      |
 | `gender`    | byte    | Character gender (0 = male, 1 = female)      | Must be 0 or 1                     |
 | `skinColor` | byte    | Skin color ID                                 | Must be a valid skin color value    |
+| `mapId`     | uint32  | Character's current map location              | Must be a valid map ID and accessible to character |
 
 #### Response
 
@@ -285,7 +287,7 @@ HTTP/1.1 204 No Content
 
 #### Example Usage
 
-Update character name and appearance:
+Update character name, appearance, and location:
 ```bash
 curl -X PATCH \
   -H "Content-Type: application/json" \
@@ -300,7 +302,8 @@ curl -X PATCH \
       "attributes": {
         "name": "NewCharacterName",
         "hair": 30150,
-        "face": 20120
+        "face": 20120,
+        "mapId": 110000000
       }
     }
   }' \

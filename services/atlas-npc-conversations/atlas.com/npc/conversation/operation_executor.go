@@ -340,8 +340,8 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 			return "", "", "", nil, err
 		}
 
-		// Type is optional with default "QUEST"
-		expType := "QUEST"
+		// Type is optional with default "WHITE"
+		expType := "WHITE"
 		expTypeValue, exists := operation.Params()["type"]
 		if exists {
 			expType, err = e.evaluateContextValue(characterId, "type", expTypeValue)

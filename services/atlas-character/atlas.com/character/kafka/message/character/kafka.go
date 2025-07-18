@@ -148,6 +148,7 @@ const (
 	StatusEventTypeMesoChanged       = "MESO_CHANGED"
 	StatusEventTypeFameChanged       = "FAME_CHANGED"
 	StatusEventTypeStatChanged       = "STAT_CHANGED"
+	StatusEventTypeUpdated           = "UPDATED"
 	StatusEventTypeDeleted           = "DELETED"
 	StatusEventTypeCreationFailed    = "CREATION_FAILED"
 
@@ -240,6 +241,10 @@ type StatusEventStatChangedBody struct {
 	ChannelId       channel.Id `json:"channelId"`
 	ExclRequestSent bool       `json:"exclRequestSent"`
 	Updates         []string   `json:"updates"`
+}
+
+type StatusEventUpdatedBody struct {
+	UpdatedFields map[string]interface{} `json:"updatedFields"`
 }
 
 const (

@@ -875,3 +875,117 @@ func TestNameChangedEventEmission(t *testing.T) {
 		t.Errorf("Expected new name 'UpdatedName', got '%s'", eventValue.Body.NewName)
 	}
 }
+
+func TestHairChangedEventEmission(t *testing.T) {
+	// Setup test database
+	db := testDatabase(t)
+	tenantModel := testTenant()
+	tctx := tenant.WithContext(context.Background(), tenantModel)
+	logger := testLogger()
+
+	// Create a character to update
+	originalCharacter := character.NewModelBuilder().
+		SetAccountId(1000).
+		SetWorldId(world.Id(0)).
+		SetName("OriginalName").
+		SetLevel(1).
+		SetStrength(4).
+		SetDexterity(4).
+		SetIntelligence(4).
+		SetLuck(4).
+		SetMaxHp(50).SetHp(50).
+		SetMaxMp(50).SetMp(50).
+		SetJobId(job.Id(0)).
+		SetGender(0).
+		SetHair(30000).
+		SetFace(20000).
+		SetSkinColor(0).
+		SetMapId(_map.Id(40000)).
+		Build()
+
+	processor := character.NewProcessor(logger, tctx, db)
+	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter)
+	if err != nil {
+		t.Fatalf("Failed to create character for testing: %v", err)
+	}
+
+	// Create message buffer to capture events
+	buf := message.NewBuffer()
+
+	// Test hair change with message buffer
+	updatePayload := character.RestModel{
+		Id:   createdCharacter.Id(),
+		Hair: 30100,
+	}
+
+	transactionId := uuid.New()
+	err = processor.Update(buf)(transactionId, createdCharacter.Id(), updatePayload)
+	if err != nil {
+		t.Fatalf("Failed to update character: %v", err)
+	}
+
+	// Verify the character was updated in the database
+	updatedCharacter, err := processor.GetById()(createdCharacter.Id())
+	if err != nil {
+		t.Fatalf("Failed to get updated character: %v", err)
+	}
+
+	if updatedCharacter.Hair() != 30100 {
+		t.Errorf("Expected hair 30100, got %d", updatedCharacter.Hair())
+	}
+
+	// Verify HAIR_CHANGED event was buffered
+	bufferedMessages := buf.GetAll()
+	statusMessages, exists := bufferedMessages[character2.EnvEventTopicCharacterStatus]
+	if !exists || len(statusMessages) == 0 {
+		t.Fatal("Expected HAIR_CHANGED event to be buffered to character status topic")
+	}
+
+	// Should have exactly one HAIR_CHANGED event
+	if len(statusMessages) != 1 {
+		t.Fatalf("Expected 1 HAIR_CHANGED event, got %d", len(statusMessages))
+	}
+
+	// Verify the event message structure
+	eventMessage := statusMessages[0]
+	if eventMessage.Key == nil {
+		t.Error("HAIR_CHANGED event should have a key")
+	}
+
+	if eventMessage.Value == nil {
+		t.Error("HAIR_CHANGED event should have a value")
+	}
+
+	// Parse the event value to verify it's a HAIR_CHANGED event
+	// The event should be a StatusEvent[StatusEventHairChangedBody]
+	var eventValue character2.StatusEvent[character2.StatusEventHairChangedBody]
+	err = json.Unmarshal(eventMessage.Value, &eventValue)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal event value: %v", err)
+	}
+
+	// Verify event contents
+	if eventValue.Type != character2.StatusEventTypeHairChanged {
+		t.Errorf("Expected event type '%s', got '%s'", character2.StatusEventTypeHairChanged, eventValue.Type)
+	}
+
+	if eventValue.CharacterId != createdCharacter.Id() {
+		t.Errorf("Expected character ID %d, got %d", createdCharacter.Id(), eventValue.CharacterId)
+	}
+
+	if eventValue.WorldId != world.Id(0) {
+		t.Errorf("Expected world ID 0, got %d", eventValue.WorldId)
+	}
+
+	if eventValue.TransactionId != transactionId {
+		t.Errorf("Expected transaction ID %s, got %s", transactionId, eventValue.TransactionId)
+	}
+
+	if eventValue.Body.OldHair != 30000 {
+		t.Errorf("Expected old hair 30000, got %d", eventValue.Body.OldHair)
+	}
+
+	if eventValue.Body.NewHair != 30100 {
+		t.Errorf("Expected new hair 30100, got %d", eventValue.Body.NewHair)
+	}
+}

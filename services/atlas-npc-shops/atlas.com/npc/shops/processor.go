@@ -598,41 +598,56 @@ func (p *ProcessorImpl) Recharge(mb *message.Buffer) func(characterId uint32) fu
 	}
 }
 
-// RechargeableConsumablesDecorator adds rechargeable consumables to a shop model
 func (p *ProcessorImpl) RechargeableConsumablesDecorator(m Model) Model {
-	// If a custom decorator function is set, use it
 	if p.RechargeableConsumablesDecoratorFn != nil {
 		return p.RechargeableConsumablesDecoratorFn(m)
 	}
 
-	// Only add rechargeable consumables to shops that have the recharger flag set to true
 	if !m.Recharger() {
 		return m
 	}
 
-	// Get rechargeable consumables from the cache
-	rechargeableConsumables := GetConsumableCache().GetConsumables(p.l, p.ctx, p.t.Id())
-
-	// Convert consumable.Model to commodities.Model
-	commoditiesModels := make([]commodities.Model, 0, len(rechargeableConsumables))
-	for _, c := range rechargeableConsumables {
-		// Create a commodity model with default values
-		cm := (&commodities.ModelBuilder{}).
-			SetId(uuid.New()).
-			SetTemplateId(c.Id()).
-			SetSlotMax(c.SlotMax()).
-			SetUnitPrice(c.UnitPrice()).
-			Build()
-		commoditiesModels = append(commoditiesModels, cm)
+	existing := m.Commodities()
+	existingByTemplateId := make(map[uint32]commodities.Model, len(existing))
+	for _, ec := range existing {
+		existingByTemplateId[ec.TemplateId()] = ec
 	}
 
-	// Get existing commodities
-	existingCommodities := m.Commodities()
+	// Prepare the final list
+	finalCommodities := make([]commodities.Model, 0, len(existing))
 
-	// Combine existing commodities with rechargeable consumables
-	allCommodities := make([]commodities.Model, 0, len(existingCommodities)+len(commoditiesModels))
-	allCommodities = append(allCommodities, existingCommodities...)
-	allCommodities = append(allCommodities, commoditiesModels...)
+	// Update existing commodities if they match a rechargeable one
+	for _, ec := range existing {
+		if rc := findRechargeable(ec.TemplateId(), GetConsumableCache().GetConsumables(p.l, p.ctx, p.t.Id())); rc != nil {
+			ec = commodities.Clone(ec).
+				SetSlotMax(rc.SlotMax()).
+				SetUnitPrice(rc.UnitPrice()).
+				Build()
+		}
+		finalCommodities = append(finalCommodities, ec)
+	}
 
-	return Clone(m).SetCommodities(allCommodities).Build()
+	// Add new rechargeable consumables that do not exist
+	for _, rc := range GetConsumableCache().GetConsumables(p.l, p.ctx, p.t.Id()) {
+		if _, found := existingByTemplateId[rc.Id()]; !found {
+			cm := (&commodities.ModelBuilder{}).
+				SetId(uuid.New()).
+				SetTemplateId(rc.Id()).
+				SetSlotMax(rc.SlotMax()).
+				SetUnitPrice(rc.UnitPrice()).
+				Build()
+			finalCommodities = append(finalCommodities, cm)
+		}
+	}
+
+	return Clone(m).SetCommodities(finalCommodities).Build()
+}
+
+func findRechargeable(templateId uint32, rechargeables []consumable.Model) *consumable.Model {
+	for _, rc := range rechargeables {
+		if rc.Id() == templateId {
+			return &rc
+		}
+	}
+	return nil
 }

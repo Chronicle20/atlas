@@ -105,8 +105,14 @@ func (e *OperationExecutorImpl) ExecuteOperation(field field.Model, characterId 
 		return err
 	}
 
-	// Execute the saga
-	return e.sagaP.Create(s)
+	// Execute the saga with enhanced error handling
+	err = e.sagaP.Create(s)
+	if err != nil {
+		e.l.WithError(err).Errorf("Failed to create saga for operation [%s] - saga orchestrator communication failed", operation.Type())
+		return fmt.Errorf("saga orchestrator communication failed: %w", err)
+	}
+	
+	return nil
 }
 
 // ExecuteOperations executes multiple operations for a character
@@ -145,8 +151,14 @@ func (e *OperationExecutorImpl) ExecuteOperations(field field.Model, characterId
 		return err
 	}
 
-	// Execute the saga
-	return e.sagaP.Create(s)
+	// Execute the saga with enhanced error handling
+	err = e.sagaP.Create(s)
+	if err != nil {
+		e.l.WithError(err).Errorf("Failed to create saga for remote operations - saga orchestrator communication failed")
+		return fmt.Errorf("saga orchestrator communication failed for remote operations: %w", err)
+	}
+	
+	return nil
 }
 
 // isLocalOperationType checks if an operation can be executed locally

@@ -442,3 +442,320 @@ func TestPatchCharacterWithNoUpdates(t *testing.T) {
 		t.Errorf("SkinColor should remain unchanged: expected %d, got %d", originalCharacter.SkinColor(), unchangedCharacter.SkinColor())
 	}
 }
+
+func TestPatchCharacterWithDuplicateName(t *testing.T) {
+	// Setup test database
+	db := testDatabase(t)
+	tenantModel := testTenant()
+	tctx := tenant.WithContext(context.Background(), tenantModel)
+	logger := testLogger()
+
+	// Create first character
+	firstCharacter := character.NewModelBuilder().
+		SetAccountId(1000).
+		SetWorldId(world.Id(0)).
+		SetName("ExistingName").
+		SetLevel(1).
+		SetStrength(4).
+		SetDexterity(4).
+		SetIntelligence(4).
+		SetLuck(4).
+		SetMaxHp(50).SetHp(50).
+		SetMaxMp(50).SetMp(50).
+		SetJobId(job.Id(0)).
+		SetGender(0).
+		SetHair(30000).
+		SetFace(20000).
+		SetSkinColor(0).
+		SetMapId(_map.Id(40000)).
+		Build()
+
+	// Create second character
+	secondCharacter := character.NewModelBuilder().
+		SetAccountId(1001).
+		SetWorldId(world.Id(0)).
+		SetName("SecondName").
+		SetLevel(1).
+		SetStrength(4).
+		SetDexterity(4).
+		SetIntelligence(4).
+		SetLuck(4).
+		SetMaxHp(50).SetHp(50).
+		SetMaxMp(50).SetMp(50).
+		SetJobId(job.Id(0)).
+		SetGender(0).
+		SetHair(30000).
+		SetFace(20000).
+		SetSkinColor(0).
+		SetMapId(_map.Id(40000)).
+		Build()
+
+	processor := character.NewProcessor(logger, tctx, db)
+	
+	// Create both characters
+	_, err := processor.Create(message.NewBuffer())(uuid.New(), firstCharacter)
+	if err != nil {
+		t.Fatalf("Failed to create first character: %v", err)
+	}
+	
+	createdSecondCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), secondCharacter)
+	if err != nil {
+		t.Fatalf("Failed to create second character: %v", err)
+	}
+
+	// Try to update second character to have same name as first
+	updatePayload := character.RestModel{
+		Id:   createdSecondCharacter.Id(),
+		Name: "ExistingName", // This name already exists
+	}
+
+	// Test the update logic with message buffer
+	transactionId := uuid.New()
+	err = processor.Update(message.NewBuffer())(transactionId, createdSecondCharacter.Id(), updatePayload)
+	if err == nil || err.Error() != "invalid or duplicate name" {
+		t.Fatalf("Expected 'invalid or duplicate name' error, got: %v", err)
+	}
+
+	// Verify the character was NOT updated in the database
+	unchangedCharacter, err := processor.GetById()(createdSecondCharacter.Id())
+	if err != nil {
+		t.Fatalf("Failed to get character: %v", err)
+	}
+
+	// Verify the name wasn't changed
+	if unchangedCharacter.Name() != "SecondName" {
+		t.Errorf("Character should not have been updated. Expected name 'SecondName', got '%s'", unchangedCharacter.Name())
+	}
+}
+
+func TestPatchCharacterWithInvalidFace(t *testing.T) {
+	// Setup test database
+	db := testDatabase(t)
+	tenantModel := testTenant()
+	tctx := tenant.WithContext(context.Background(), tenantModel)
+	logger := testLogger()
+
+	// Create a character to update
+	originalCharacter := character.NewModelBuilder().
+		SetAccountId(1000).
+		SetWorldId(world.Id(0)).
+		SetName("TestCharacter").
+		SetLevel(1).
+		SetStrength(4).
+		SetDexterity(4).
+		SetIntelligence(4).
+		SetLuck(4).
+		SetMaxHp(50).SetHp(50).
+		SetMaxMp(50).SetMp(50).
+		SetJobId(job.Id(0)).
+		SetGender(0).
+		SetHair(30000).
+		SetFace(20000).
+		SetSkinColor(0).
+		SetMapId(_map.Id(40000)).
+		Build()
+
+	processor := character.NewProcessor(logger, tctx, db)
+	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter)
+	if err != nil {
+		t.Fatalf("Failed to create character for testing: %v", err)
+	}
+
+	// Test with invalid face ID
+	updatePayload := character.RestModel{
+		Id:   createdCharacter.Id(),
+		Face: 1000, // Invalid face ID (should be 20000-25000)
+	}
+
+	// Test the update logic with message buffer
+	transactionId := uuid.New()
+	err = processor.Update(message.NewBuffer())(transactionId, createdCharacter.Id(), updatePayload)
+	if err == nil || err.Error() != "invalid face ID" {
+		t.Fatalf("Expected 'invalid face ID' error, got: %v", err)
+	}
+
+	// Verify the character was NOT updated in the database
+	unchangedCharacter, err := processor.GetById()(createdCharacter.Id())
+	if err != nil {
+		t.Fatalf("Failed to get character: %v", err)
+	}
+
+	// Verify the face wasn't changed
+	if unchangedCharacter.Face() != 20000 {
+		t.Errorf("Character face should not have been updated. Expected face 20000, got %d", unchangedCharacter.Face())
+	}
+}
+
+func TestPatchCharacterWithInvalidSkinColor(t *testing.T) {
+	// Setup test database
+	db := testDatabase(t)
+	tenantModel := testTenant()
+	tctx := tenant.WithContext(context.Background(), tenantModel)
+	logger := testLogger()
+
+	// Create a character to update
+	originalCharacter := character.NewModelBuilder().
+		SetAccountId(1000).
+		SetWorldId(world.Id(0)).
+		SetName("TestCharacter").
+		SetLevel(1).
+		SetStrength(4).
+		SetDexterity(4).
+		SetIntelligence(4).
+		SetLuck(4).
+		SetMaxHp(50).SetHp(50).
+		SetMaxMp(50).SetMp(50).
+		SetJobId(job.Id(0)).
+		SetGender(0).
+		SetHair(30000).
+		SetFace(20000).
+		SetSkinColor(0).
+		SetMapId(_map.Id(40000)).
+		Build()
+
+	processor := character.NewProcessor(logger, tctx, db)
+	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter)
+	if err != nil {
+		t.Fatalf("Failed to create character for testing: %v", err)
+	}
+
+	// Test with invalid skin color
+	updatePayload := character.RestModel{
+		Id:        createdCharacter.Id(),
+		SkinColor: 50, // Invalid skin color (should be 0-9)
+	}
+
+	// Test the update logic with message buffer
+	transactionId := uuid.New()
+	err = processor.Update(message.NewBuffer())(transactionId, createdCharacter.Id(), updatePayload)
+	if err == nil || err.Error() != "invalid skin color value" {
+		t.Fatalf("Expected 'invalid skin color value' error, got: %v", err)
+	}
+
+	// Verify the character was NOT updated in the database
+	unchangedCharacter, err := processor.GetById()(createdCharacter.Id())
+	if err != nil {
+		t.Fatalf("Failed to get character: %v", err)
+	}
+
+	// Verify the skin color wasn't changed
+	if unchangedCharacter.SkinColor() != 0 {
+		t.Errorf("Character skin color should not have been updated. Expected skin color 0, got %d", unchangedCharacter.SkinColor())
+	}
+}
+
+func TestPatchCharacterWithInvalidNameTooShort(t *testing.T) {
+	// Setup test database
+	db := testDatabase(t)
+	tenantModel := testTenant()
+	tctx := tenant.WithContext(context.Background(), tenantModel)
+	logger := testLogger()
+
+	// Create a character to update
+	originalCharacter := character.NewModelBuilder().
+		SetAccountId(1000).
+		SetWorldId(world.Id(0)).
+		SetName("TestCharacter").
+		SetLevel(1).
+		SetStrength(4).
+		SetDexterity(4).
+		SetIntelligence(4).
+		SetLuck(4).
+		SetMaxHp(50).SetHp(50).
+		SetMaxMp(50).SetMp(50).
+		SetJobId(job.Id(0)).
+		SetGender(0).
+		SetHair(30000).
+		SetFace(20000).
+		SetSkinColor(0).
+		SetMapId(_map.Id(40000)).
+		Build()
+
+	processor := character.NewProcessor(logger, tctx, db)
+	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter)
+	if err != nil {
+		t.Fatalf("Failed to create character for testing: %v", err)
+	}
+
+	// Test with invalid name (too short)
+	updatePayload := character.RestModel{
+		Id:   createdCharacter.Id(),
+		Name: "AB", // Too short (< 3 characters)
+	}
+
+	// Test the update logic with message buffer
+	transactionId := uuid.New()
+	err = processor.Update(message.NewBuffer())(transactionId, createdCharacter.Id(), updatePayload)
+	if err == nil || err.Error() != "invalid or duplicate name" {
+		t.Fatalf("Expected 'invalid or duplicate name' error, got: %v", err)
+	}
+
+	// Verify the character was NOT updated in the database
+	unchangedCharacter, err := processor.GetById()(createdCharacter.Id())
+	if err != nil {
+		t.Fatalf("Failed to get character: %v", err)
+	}
+
+	// Verify the name wasn't changed
+	if unchangedCharacter.Name() != "TestCharacter" {
+		t.Errorf("Character should not have been updated. Expected name 'TestCharacter', got '%s'", unchangedCharacter.Name())
+	}
+}
+
+func TestPatchCharacterWithInvalidNameSpecialCharacters(t *testing.T) {
+	// Setup test database
+	db := testDatabase(t)
+	tenantModel := testTenant()
+	tctx := tenant.WithContext(context.Background(), tenantModel)
+	logger := testLogger()
+
+	// Create a character to update
+	originalCharacter := character.NewModelBuilder().
+		SetAccountId(1000).
+		SetWorldId(world.Id(0)).
+		SetName("TestCharacter").
+		SetLevel(1).
+		SetStrength(4).
+		SetDexterity(4).
+		SetIntelligence(4).
+		SetLuck(4).
+		SetMaxHp(50).SetHp(50).
+		SetMaxMp(50).SetMp(50).
+		SetJobId(job.Id(0)).
+		SetGender(0).
+		SetHair(30000).
+		SetFace(20000).
+		SetSkinColor(0).
+		SetMapId(_map.Id(40000)).
+		Build()
+
+	processor := character.NewProcessor(logger, tctx, db)
+	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter)
+	if err != nil {
+		t.Fatalf("Failed to create character for testing: %v", err)
+	}
+
+	// Test with invalid name (contains special characters)
+	updatePayload := character.RestModel{
+		Id:   createdCharacter.Id(),
+		Name: "%%%", // Contains only special characters not in allowed set
+	}
+
+	// Test the update logic with message buffer
+	transactionId := uuid.New()
+	err = processor.Update(message.NewBuffer())(transactionId, createdCharacter.Id(), updatePayload)
+	if err == nil || err.Error() != "invalid or duplicate name" {
+		t.Fatalf("Expected 'invalid or duplicate name' error, got: %v", err)
+	}
+
+	// Verify the character was NOT updated in the database
+	unchangedCharacter, err := processor.GetById()(createdCharacter.Id())
+	if err != nil {
+		t.Fatalf("Failed to get character: %v", err)
+	}
+
+	// Verify the name wasn't changed
+	if unchangedCharacter.Name() != "TestCharacter" {
+		t.Errorf("Character should not have been updated. Expected name 'TestCharacter', got '%s'", unchangedCharacter.Name())
+	}
+}

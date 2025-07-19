@@ -1,10 +1,11 @@
 package list
 
 const (
-	EnvCommandTopic          = "COMMAND_TOPIC_BUDDY_LIST"
-	CommandTypeCreate        = "CREATE"
-	CommandTypeRequestAdd    = "REQUEST_ADD"
-	CommandTypeRequestDelete = "REQUEST_DELETE"
+	EnvCommandTopic            = "COMMAND_TOPIC_BUDDY_LIST"
+	CommandTypeCreate          = "CREATE"
+	CommandTypeRequestAdd      = "REQUEST_ADD"
+	CommandTypeRequestDelete   = "REQUEST_DELETE"
+	CommandTypeIncreaseCapacity = "INCREASE_CAPACITY"
 )
 
 type Command[E any] struct {
@@ -28,6 +29,10 @@ type RequestDeleteBuddyCommandBody struct {
 	CharacterId uint32 `json:"characterId"`
 }
 
+type IncreaseCapacityCommandBody struct {
+	NewCapacity byte `json:"newCapacity"`
+}
+
 const (
 	EnvStatusEventTopic                = "EVENT_TOPIC_BUDDY_LIST_STATUS"
 	StatusEventTypeBuddyAdded          = "BUDDY_ADDED"
@@ -42,6 +47,7 @@ const (
 	StatusEventErrorAlreadyBuddy      = "ALREADY_BUDDY"
 	StatusEventErrorCannotBuddyGm     = "CANNOT_BUDDY_GM"
 	StatusEventErrorCharacterNotFound = "CHARACTER_NOT_FOUND"
+	StatusEventErrorInvalidCapacity   = "INVALID_CAPACITY"
 	StatusEventErrorUnknownError      = "UNKNOWN_ERROR"
 )
 

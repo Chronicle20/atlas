@@ -1,5 +1,6 @@
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
+github.com/Chronicle20/atlas-constants v1.0.19/go.mod h1:mcEZWtptkgYIE844YCo+cYkLMqmSBdDRtTIeQ/hG91c=
 github.com/Chronicle20/atlas-kafka v1.1.11 h1:ZSJ8E06FC5GE4jO65t2xYW6/0Xm43nuEV9EtZgioK9c=
 github.com/Chronicle20/atlas-kafka v1.1.11/go.mod h1:Vo3/hWUo5DznXsx7UYEzhFV+D4lvqNXjLDTn3188+oI=
 github.com/Chronicle20/atlas-kafka v1.1.12 h1:qi9Zwr/e0enDFHfxECbKa6SLeDvQMT/7HWVamlgy1Gs=

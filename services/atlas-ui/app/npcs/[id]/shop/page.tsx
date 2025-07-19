@@ -2,7 +2,8 @@
 
 import { useTenant } from "@/context/tenant-context";
 import { useEffect, useState } from "react";
-import { Commodity, CommodityAttributes, Shop, createCommodity, deleteCommodity, fetchNPCShop, updateCommodity, updateShop, deleteAllCommoditiesForNPC } from "@/lib/npcs";
+import { createCommodity, deleteCommodity, fetchNPCShop, updateCommodity, updateShop, deleteAllCommoditiesForNPC } from "@/lib/npcs";
+import { Commodity, CommodityAttributes, Shop } from "@/types/models/npc";
 import { DataTable } from "@/components/data-table";
 import {hiddenColumns} from "@/app/npcs/[id]/shop/columns";
 import { getColumns } from "./columns";

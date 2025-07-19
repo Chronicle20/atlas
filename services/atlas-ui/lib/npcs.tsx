@@ -1,52 +1,8 @@
 import type {Tenant} from "@/types/models/tenant";
 import type {ApiListResponse, ApiSingleResponse} from "@/types/api/responses";
-import type {Shop as ShopModel, Commodity as CommodityModel} from "@/types/models/npc";
+import type {NPC, Shop, Commodity, CommodityAttributes, CommodityReference, ShopResponse} from "@/types/models/npc";
 import {tenantHeaders} from "@/lib/headers";
 import {fetchConversations} from "@/lib/npc-conversations";
-
-export interface CommodityAttributes {
-    templateId: number;
-    mesoPrice: number;
-    discountRate: number;
-    tokenTemplateId: number;
-    tokenPrice: number;
-    period: number;
-    levelLimit: number;
-    unitPrice?: number;
-    slotMax?: number;
-}
-
-export interface Commodity {
-    id: string;
-    type: string;
-    attributes: CommodityAttributes;
-}
-
-export interface CommodityReference {
-    type: string;
-    id: string;
-}
-
-export interface Shop {
-    type: string;
-    id: string;
-    attributes: {
-        npcId: number;
-        recharger?: boolean;
-    };
-    relationships?: {
-        commodities: {
-            data: CommodityReference[];
-        };
-    };
-    included?: Commodity[];
-}
-
-export interface NPC {
-    id: number;
-    hasShop: boolean;
-    hasConversation: boolean;
-}
 
 export async function fetchNPCs(tenant: Tenant): Promise<NPC[]> {
     // Fetch NPCs with shops
@@ -107,10 +63,6 @@ export async function fetchNPCs(tenant: Tenant): Promise<NPC[]> {
     }
 }
 
-export interface ShopResponse {
-    data: Shop;
-    included?: Commodity[];
-}
 
 export async function fetchNPCShop(tenant: Tenant, npcId: number): Promise<ShopResponse> {
     const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;

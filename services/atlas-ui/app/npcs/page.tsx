@@ -2,7 +2,8 @@
 
 import { useTenant } from "@/context/tenant-context";
 import { useEffect, useState } from "react";
-import {NPC, fetchNPCs, deleteAllShops, updateShop, Commodity} from "@/lib/npcs";
+import {fetchNPCs, deleteAllShops, updateShop} from "@/lib/npcs";
+import {NPC, Commodity} from "@/types/models/npc";
 import { tenantHeaders } from "@/lib/headers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

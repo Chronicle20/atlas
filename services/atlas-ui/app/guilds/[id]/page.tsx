@@ -5,8 +5,8 @@ import {useParams} from "next/navigation"
 import {Badge} from "@/components/ui/badge"
 import {DataTable} from "@/components/data-table"
 import {Toaster} from "@/components/ui/sonner"
-import {fetchGuild, GuildMember, GuildTitle} from "@/lib/guilds";
-import {Guild} from "@/types/models/guild";
+import {fetchGuild} from "@/lib/guilds";
+import {Guild, GuildMember, GuildTitle} from "@/types/models/guild";
 import {ColumnDef} from "@tanstack/react-table";
 import {useTenant} from "@/context/tenant-context";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";

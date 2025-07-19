@@ -24,8 +24,8 @@ const cloneTemplateFormSchema = z.object({
         .max(3, {
             message: "Region must be 3 characters.",
         }),
-    majorVersion: z.coerce.number(),
-    minorVersion: z.coerce.number(),
+    majorVersion: z.number(),
+    minorVersion: z.number(),
 });
 
 type CloneTemplateFormValues = z.infer<typeof cloneTemplateFormSchema>;
@@ -284,7 +284,12 @@ export default function Page() {
                                     <FormItem>
                                         <FormLabel>Major Version</FormLabel>
                                         <FormControl>
-                                            <Input type="number" placeholder="Enter major version" {...field} />
+                                            <Input 
+                                                type="number" 
+                                                placeholder="Enter major version" 
+                                                {...field}
+                                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                            />
                                         </FormControl>
                                         <FormDescription>
                                             The MapleStory major version.
@@ -300,7 +305,12 @@ export default function Page() {
                                     <FormItem>
                                         <FormLabel>Minor Version</FormLabel>
                                         <FormControl>
-                                            <Input type="number" placeholder="Enter minor version" {...field} />
+                                            <Input 
+                                                type="number" 
+                                                placeholder="Enter minor version" 
+                                                {...field}
+                                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                            />
                                         </FormControl>
                                         <FormDescription>
                                             The MapleStory minor version.

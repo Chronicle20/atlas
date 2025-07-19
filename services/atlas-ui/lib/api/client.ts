@@ -12,6 +12,7 @@ import type { Tenant } from '@/types/models/tenant';
 import type { ApiResponse, ApiListResponse, ApiSingleResponse } from '@/types/api/responses';
 import { tenantHeaders } from '@/lib/headers';
 import { createApiErrorFromResponse } from '@/types/api/errors';
+import { isRetryableError } from '@/lib/api/errors';
 
 /**
  * Configuration options for API requests
@@ -23,6 +24,14 @@ export interface ApiRequestOptions extends Omit<RequestInit, 'method' | 'body'> 
   skipTenantHeaders?: boolean;
   /** Additional headers to merge with defaults */
   headers?: HeadersInit;
+  /** Number of retry attempts for failed requests (default: 3) */
+  maxRetries?: number;
+  /** Base delay between retries in milliseconds (default: 1000) */
+  retryDelay?: number;
+  /** Maximum delay between retries in milliseconds (default: 10000) */
+  maxRetryDelay?: number;
+  /** Whether to use exponential backoff for retry delays (default: true) */
+  exponentialBackoff?: boolean;
 }
 
 /**
@@ -32,6 +41,10 @@ interface ApiClientConfig {
   baseUrl: string;
   defaultTimeout: number;
   tenant: Tenant | null;
+  defaultMaxRetries: number;
+  defaultRetryDelay: number;
+  defaultMaxRetryDelay: number;
+  defaultExponentialBackoff: boolean;
 }
 
 /**
@@ -45,6 +58,10 @@ class ApiClient {
       baseUrl: process.env.NEXT_PUBLIC_ROOT_API_URL || (typeof window !== 'undefined' ? window.location.origin : ''),
       defaultTimeout: 30000,
       tenant: null,
+      defaultMaxRetries: 3,
+      defaultRetryDelay: 1000,
+      defaultMaxRetryDelay: 10000,
+      defaultExponentialBackoff: true,
     };
   }
 
@@ -60,6 +77,34 @@ class ApiClient {
    */
   getTenant(): Tenant | null {
     return this.config.tenant;
+  }
+
+  /**
+   * Calculate retry delay with exponential backoff
+   */
+  private calculateRetryDelay(
+    attempt: number,
+    baseDelay: number,
+    maxDelay: number,
+    exponentialBackoff: boolean
+  ): number {
+    if (!exponentialBackoff) {
+      return Math.min(baseDelay, maxDelay);
+    }
+    
+    // Exponential backoff: baseDelay * 2^attempt with jitter
+    const exponentialDelay = baseDelay * Math.pow(2, attempt);
+    const jitter = Math.random() * 0.1 * exponentialDelay; // Add 10% jitter
+    const delayWithJitter = exponentialDelay + jitter;
+    
+    return Math.min(delayWithJitter, maxDelay);
+  }
+
+  /**
+   * Sleep for the specified number of milliseconds
+   */
+  private async sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 
   /**
@@ -91,38 +136,95 @@ class ApiClient {
   }
 
   /**
-   * Create a fetch request with timeout support
+   * Create a fetch request with timeout and retry support
    */
   private async fetchWithTimeout(
     url: string, 
     options: RequestInit, 
-    timeout: number = this.config.defaultTimeout
+    timeout: number = this.config.defaultTimeout,
+    requestOptions?: ApiRequestOptions
   ): Promise<Response> {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
+    const maxRetries = requestOptions?.maxRetries ?? this.config.defaultMaxRetries;
+    const retryDelay = requestOptions?.retryDelay ?? this.config.defaultRetryDelay;
+    const maxRetryDelay = requestOptions?.maxRetryDelay ?? this.config.defaultMaxRetryDelay;
+    const exponentialBackoff = requestOptions?.exponentialBackoff ?? this.config.defaultExponentialBackoff;
 
-    try {
-      const response = await fetch(url, {
-        ...options,
-        signal: controller.signal,
-      });
-      
-      clearTimeout(timeoutId);
-      return response;
-    } catch (error) {
-      clearTimeout(timeoutId);
-      
-      if (error instanceof Error && error.name === 'AbortError') {
-        throw createApiErrorFromResponse(408, 'Request timeout');
+    let lastError: unknown;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+      try {
+        const response = await fetch(url, {
+          ...options,
+          signal: controller.signal,
+        });
+        
+        clearTimeout(timeoutId);
+        
+        // If the response is successful or if it's a non-retryable error, return it
+        if (response.ok || !this.shouldRetryResponse(response.status)) {
+          return response;
+        }
+        
+        // For failed responses that are retryable, create an error and check if we should retry
+        const error = createApiErrorFromResponse(response.status, `Request failed with status ${response.status}`);
+        
+        if (attempt === maxRetries || !isRetryableError(error)) {
+          return response; // Return the response so it can be processed normally
+        }
+        
+        // Wait before retrying
+        if (attempt < maxRetries) {
+          const delay = this.calculateRetryDelay(attempt, retryDelay, maxRetryDelay, exponentialBackoff);
+          await this.sleep(delay);
+        }
+        
+      } catch (error) {
+        clearTimeout(timeoutId);
+        lastError = error;
+        
+        // Handle abort/timeout errors
+        if (error instanceof Error && error.name === 'AbortError') {
+          const timeoutError = createApiErrorFromResponse(408, 'Request timeout');
+          
+          if (attempt === maxRetries || !isRetryableError(timeoutError)) {
+            throw timeoutError;
+          }
+        }
+        // Handle network errors
+        else if (error instanceof TypeError && error.message.includes('fetch')) {
+          const networkError = createApiErrorFromResponse(0, 'Network error: Unable to connect to server');
+          
+          if (attempt === maxRetries || !isRetryableError(networkError)) {
+            throw networkError;
+          }
+        }
+        // Handle other unknown errors
+        else if (attempt === maxRetries) {
+          throw error;
+        }
+        
+        // Wait before retrying
+        if (attempt < maxRetries) {
+          const delay = this.calculateRetryDelay(attempt, retryDelay, maxRetryDelay, exponentialBackoff);
+          await this.sleep(delay);
+        }
       }
-      
-      // Handle network errors
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        throw createApiErrorFromResponse(0, 'Network error: Unable to connect to server');
-      }
-      
-      throw error;
     }
+
+    // This should never be reached, but just in case
+    throw lastError || createApiErrorFromResponse(500, 'Max retries exceeded');
+  }
+
+  /**
+   * Check if a response status code should trigger a retry
+   */
+  private shouldRetryResponse(status: number): boolean {
+    // Retry on server errors and specific client errors
+    const retryableStatusCodes = [408, 429, 500, 502, 503, 504];
+    return retryableStatusCodes.includes(status);
   }
 
   /**
@@ -208,7 +310,8 @@ class ApiClient {
         headers,
         ...options,
       },
-      options?.timeout
+      options?.timeout,
+      options
     );
 
     return this.processResponse<T>(response);
@@ -229,7 +332,8 @@ class ApiClient {
         body: data ? JSON.stringify(data) : null,
         ...options,
       },
-      options?.timeout
+      options?.timeout,
+      options
     );
 
     return this.processResponse<T>(response);
@@ -250,7 +354,8 @@ class ApiClient {
         body: data ? JSON.stringify(data) : null,
         ...options,
       },
-      options?.timeout
+      options?.timeout,
+      options
     );
 
     return this.processResponse<T>(response);
@@ -271,7 +376,8 @@ class ApiClient {
         body: data ? JSON.stringify(data) : null,
         ...options,
       },
-      options?.timeout
+      options?.timeout,
+      options
     );
 
     return this.processResponse<T>(response);
@@ -291,7 +397,8 @@ class ApiClient {
         headers,
         ...options,
       },
-      options?.timeout
+      options?.timeout,
+      options
     );
 
     return this.processResponse<T>(response);

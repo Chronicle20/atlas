@@ -126,7 +126,7 @@ Each state in the `states` array must have:
   "id": "craft",
   "type": "craftAction",
   "craftAction": {
-    "itemId": 2000000,              // uint32 - Item to craft - Required
+    "itemId": "2000000",          // string - Item to craft - Required
     "materials": [4000000, 4000001], // []uint32 - Material item IDs - At least one required
     "quantities": [10, 5],          // []uint32 - Material quantities - Must match materials length
     "mesoCost": 1000,               // uint32 - Meso cost
@@ -203,7 +203,7 @@ Conditions are evaluated to determine the next state in `outcomes`:
   "type": "condition_type",         // string - Required
   "operator": "=",                  // string - Required: "=", ">", "<", ">=", "<="
   "value": "100",                   // string - Required
-  "itemId": 0                       // uint32 - Required only for "item" type
+  "itemId": "0"                   // string - Required only for "item" type
 }
 ```
 

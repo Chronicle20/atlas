@@ -226,8 +226,10 @@ describe('Form Components Integration Tests', () => {
                   <input
                     type="checkbox"
                     data-testid="custom-checkbox"
-                    checked={field.value || false}
-                    onChange={(e) => field.onChange(e.target.checked)}
+                    checked={field?.value || false}
+                    onChange={(e) => field?.onChange?.(e.target.checked)}
+                    ref={field?.ref}
+                    name={field?.name}
                   />
                 )}
               />

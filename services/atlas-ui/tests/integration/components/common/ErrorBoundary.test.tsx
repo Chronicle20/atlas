@@ -1,4 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { ErrorBoundary, withErrorBoundary, ErrorBoundaryProvider, useErrorBoundary } from '@/components/common/ErrorBoundary';
 import * as React from 'react';
 
@@ -208,6 +209,8 @@ describe('ErrorBoundary Integration Tests', () => {
     });
 
     it('should expand and collapse technical details when toggle is clicked', async () => {
+      const user = userEvent.setup();
+      
       render(
         <ErrorBoundary showDetails={true}>
           <ThrowingComponent shouldThrow={true} errorMessage="Details test error" />
@@ -220,7 +223,7 @@ describe('ErrorBoundary Integration Tests', () => {
       expect(screen.queryByText('Error Details:')).not.toBeInTheDocument();
       
       // Click to expand
-      fireEvent.click(toggleButton);
+      await user.click(toggleButton);
       
       await waitFor(() => {
         expect(screen.getByText('Error Details:')).toBeInTheDocument();
@@ -229,7 +232,8 @@ describe('ErrorBoundary Integration Tests', () => {
       });
       
       // Click to collapse
-      fireEvent.click(screen.getByText('Hide Technical Details'));
+      const hideButton = screen.getByText('Hide Technical Details');
+      await user.click(hideButton);
       
       await waitFor(() => {
         expect(screen.queryByText('Error Details:')).not.toBeInTheDocument();

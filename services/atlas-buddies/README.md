@@ -150,3 +150,73 @@ Example Request:
 ```
 
 Response: 202 Accepted (No content)
+
+## Kafka Commands
+
+The buddy service supports several Kafka commands for server-to-server communication and administrative operations.
+
+### INCREASE_CAPACITY Command
+
+Increases a character's buddy list capacity. This command is typically used for premium features or administrative purposes.
+
+**Topic:** `COMMAND_TOPIC_BUDDY_LIST`
+
+**Command Structure:**
+```json
+{
+  "worldId": 0,
+  "characterId": 12345,
+  "type": "INCREASE_CAPACITY",
+  "body": {
+    "newCapacity": 100
+  }
+}
+```
+
+**Parameters:**
+- `worldId` (byte): The world/server ID where the character resides
+- `characterId` (uint32): The ID of the character whose capacity should be increased
+- `newCapacity` (byte): The new capacity value (must be greater than current capacity)
+
+**Validation Rules:**
+- The character must have an existing buddy list
+- The new capacity must be strictly greater than the current capacity
+- The character must exist in the system
+
+**Status Events Emitted:**
+
+**Success - CAPACITY_CHANGE Event:**
+```json
+{
+  "worldId": 0,
+  "characterId": 12345,
+  "type": "CAPACITY_CHANGE",
+  "body": {
+    "capacity": 100
+  }
+}
+```
+
+**Failure - ERROR Events:**
+```json
+{
+  "worldId": 0,
+  "characterId": 12345,
+  "type": "ERROR",
+  "body": {
+    "error": "INVALID_CAPACITY"  // or "CHARACTER_NOT_FOUND" or "UNKNOWN_ERROR"
+  }
+}
+```
+
+**Error Types:**
+- `INVALID_CAPACITY`: New capacity is not greater than current capacity
+- `CHARACTER_NOT_FOUND`: Character's buddy list does not exist
+- `UNKNOWN_ERROR`: Unexpected system error occurred
+
+**Usage Example:**
+This command would typically be triggered by:
+- Cash shop purchases for buddy list expansions
+- Administrative tools for customer support
+- Game events that reward increased buddy capacity
+- Premium account benefits

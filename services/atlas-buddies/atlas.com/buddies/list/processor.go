@@ -36,6 +36,14 @@ type Processor interface {
 	UpdateBuddyChannel(mb *message.Buffer) func(characterId uint32, worldId byte, channelId int8) error
 	UpdateBuddyShopStatusAndEmit(characterId uint32, worldId byte, inShop bool) error
 	UpdateBuddyShopStatus(mb *message.Buffer) func(characterId uint32, worldId byte, inShop bool) error
+	// IncreaseCapacityAndEmit increases buddy list capacity and emits appropriate status events.
+	// This method validates the new capacity and updates the database in a transaction.
+	// On success, emits a CAPACITY_CHANGE event. On failure, emits an ERROR event.
+	IncreaseCapacityAndEmit(characterId uint32, worldId byte, newCapacity byte) error
+	// IncreaseCapacity is the pure business logic version that accepts a message buffer
+	// for transactional event emission. Use this when you need to coordinate multiple
+	// operations within a single transaction.
+	IncreaseCapacity(mb *message.Buffer) func(characterId uint32, worldId byte, newCapacity byte) error
 }
 
 type ProcessorImpl struct {
@@ -497,6 +505,88 @@ func (p *ProcessorImpl) UpdateBuddyShopStatus(mb *message.Buffer) func(character
 		})
 		if txErr != nil {
 			p.l.WithError(txErr).Errorf("Unable to update buddy shop status for character [%d].", characterId)
+			return txErr
+		}
+		return nil
+	}
+}
+
+// IncreaseCapacityAndEmit increases the buddy list capacity for a character and emits status events.
+// This method handles the complete workflow: validation, database update, and event emission.
+//
+// Parameters:
+//   - characterId: ID of the character whose capacity should be increased
+//   - worldId: ID of the world the character is in (for event context)
+//   - newCapacity: The new capacity value (must be > current capacity)
+//
+// Returns:
+//   - error: nil on success, error on failure
+//
+// Events Emitted:
+//   - CAPACITY_CHANGE: On successful capacity increase with new capacity value
+//   - ERROR with INVALID_CAPACITY: If newCapacity <= currentCapacity
+//   - ERROR with CHARACTER_NOT_FOUND: If character's buddy list doesn't exist
+//   - ERROR with UNKNOWN_ERROR: For unexpected database errors
+//
+// Validation:
+//   - Character must have an existing buddy list
+//   - New capacity must be strictly greater than current capacity
+//   - All operations are performed within a database transaction
+func (p *ProcessorImpl) IncreaseCapacityAndEmit(characterId uint32, worldId byte, newCapacity byte) error {
+	return message.Emit(p.p)(func(buf *message.Buffer) error {
+		return p.IncreaseCapacity(buf)(characterId, worldId, newCapacity)
+	})
+}
+
+// IncreaseCapacity returns a curried function that increases buddy list capacity within a transaction.
+// This is the pure business logic version that works with a message buffer for event coordination.
+//
+// Parameters:
+//   - mb: Message buffer for accumulating events within the transaction
+//
+// Returns:
+//   - A function that takes (characterId, worldId, newCapacity) and returns an error
+//
+// Implementation Details:
+//   - Retrieves current buddy list to validate existing capacity
+//   - Validates newCapacity > currentCapacity (emits INVALID_CAPACITY error if not)
+//   - Updates capacity using administrator function
+//   - Emits CAPACITY_CHANGE event on success
+//   - All operations are wrapped in a database transaction
+//   - Follows the Atlas pattern of pure functions with message buffer coordination
+func (p *ProcessorImpl) IncreaseCapacity(mb *message.Buffer) func(characterId uint32, worldId byte, newCapacity byte) error {
+	return func(characterId uint32, worldId byte, newCapacity byte) error {
+		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+			// Get current buddy list to validate capacity
+			bl, err := p.WithTransaction(tx).GetByCharacterId(characterId)
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to retrieve buddy list for character [%d] to increase capacity.", characterId)
+				_ = mb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(characterId, worldId, list2.StatusEventErrorCharacterNotFound))
+				return err
+			}
+
+			// Validate that new capacity is greater than current capacity
+			if newCapacity <= bl.Capacity() {
+				p.l.Debugf("Invalid capacity change attempt for character [%d]: new capacity [%d] must be greater than current capacity [%d].", characterId, newCapacity, bl.Capacity())
+				_ = mb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(characterId, worldId, list2.StatusEventErrorInvalidCapacity))
+				return errors.New("new capacity must be greater than current capacity")
+			}
+
+			// Update the capacity using administrator function
+			err = updateCapacity(tx, p.t.Id(), characterId, newCapacity)
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to update capacity for character [%d] to [%d].", characterId, newCapacity)
+				_ = mb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(characterId, worldId, list2.StatusEventErrorUnknownError))
+				return err
+			}
+
+			// Emit success event
+			_ = mb.Put(list2.EnvStatusEventTopic, list3.BuddyCapacityChangeStatusEventProvider(characterId, worldId, newCapacity))
+			p.l.Debugf("Successfully increased buddy list capacity for character [%d] to [%d].", characterId, newCapacity)
+			return nil
+		})
+		if txErr != nil {
+			p.l.WithError(txErr).Errorf("Transaction failed while increasing capacity for character [%d].", characterId)
 			return txErr
 		}
 		return nil

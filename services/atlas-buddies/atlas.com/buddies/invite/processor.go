@@ -4,6 +4,7 @@ import (
 	invite2 "atlas-buddies/kafka/message/invite"
 	"atlas-buddies/kafka/producer"
 	"context"
+
 	"github.com/sirupsen/logrus"
 )
 

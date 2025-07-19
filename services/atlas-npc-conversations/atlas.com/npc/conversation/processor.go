@@ -477,14 +477,9 @@ func (p *ProcessorImpl) processGenericActionState(ctx ConversationContext, state
 			return "", err
 		}
 
-		// If the condition passed, return the appropriate next state
+		// If the condition passed, return the next state
 		if passed {
-			if outcome.SuccessState() != "" {
-				return outcome.SuccessState(), nil
-			}
 			return outcome.NextState(), nil
-		} else if outcome.FailureState() != "" {
-			return outcome.FailureState(), nil
 		}
 	}
 
@@ -499,9 +494,11 @@ func (p *ProcessorImpl) processCraftActionState(ctx ConversationContext, state S
 		return "", errors.New("craftAction is nil")
 	}
 
-	// TODO: Implement craft action processing
-	// For now, just return the success state
-	return craftAction.SuccessState(), nil
+	// TODO: Implement proper craft action processing logic
+	// This could involve checking materials, costs, and determining success/failure
+	// For now, return empty string to end conversation (simplified approach)
+	// Future implementation should use outcome-based state transitions
+	return "", nil
 }
 
 // processListSelectionState processes a list selection state

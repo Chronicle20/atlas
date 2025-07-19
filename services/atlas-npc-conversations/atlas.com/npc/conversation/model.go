@@ -630,7 +630,7 @@ type ConditionModel struct {
 	conditionType string
 	operator      string
 	value         string
-	itemId        uint32
+	itemId        string
 }
 
 // Type returns the condition type
@@ -648,7 +648,7 @@ func (c ConditionModel) Value() string {
 	return c.value
 }
 
-func (c ConditionModel) ItemId() uint32 {
+func (c ConditionModel) ItemId() string {
 	return c.itemId
 }
 
@@ -657,7 +657,7 @@ type ConditionBuilder struct {
 	conditionType string
 	operator      string
 	value         string
-	itemId        uint32
+	itemId        string
 }
 
 // NewConditionBuilder creates a new ConditionBuilder
@@ -683,7 +683,7 @@ func (b *ConditionBuilder) SetValue(value string) *ConditionBuilder {
 	return b
 }
 
-func (b *ConditionBuilder) SetItemId(itemId uint32) *ConditionBuilder {
+func (b *ConditionBuilder) SetItemId(itemId string) *ConditionBuilder {
 	b.itemId = itemId
 	return b
 }
@@ -710,10 +710,8 @@ func (b *ConditionBuilder) Build() (ConditionModel, error) {
 
 // OutcomeModel represents an outcome in a generic action
 type OutcomeModel struct {
-	conditions   []ConditionModel
-	nextState    string
-	successState string
-	failureState string
+	conditions []ConditionModel
+	nextState  string
 }
 
 // Conditions returns the outcome condition
@@ -726,22 +724,11 @@ func (o OutcomeModel) NextState() string {
 	return o.nextState
 }
 
-// SuccessState returns the success state ID
-func (o OutcomeModel) SuccessState() string {
-	return o.successState
-}
-
-// FailureState returns the failure state ID
-func (o OutcomeModel) FailureState() string {
-	return o.failureState
-}
 
 // OutcomeBuilder is a builder for OutcomeModel
 type OutcomeBuilder struct {
-	conditions   []ConditionModel
-	nextState    string
-	successState string
-	failureState string
+	conditions []ConditionModel
+	nextState  string
 }
 
 // NewOutcomeBuilder creates a new OutcomeBuilder
@@ -778,47 +765,32 @@ func (b *OutcomeBuilder) SetNextState(nextState string) *OutcomeBuilder {
 	return b
 }
 
-// SetSuccessState sets the success state ID
-func (b *OutcomeBuilder) SetSuccessState(successState string) *OutcomeBuilder {
-	b.successState = successState
-	return b
-}
-
-// SetFailureState sets the failure state ID
-func (b *OutcomeBuilder) SetFailureState(failureState string) *OutcomeBuilder {
-	b.failureState = failureState
-	return b
-}
 
 // Build builds the OutcomeModel
 func (b *OutcomeBuilder) Build() (OutcomeModel, error) {
-	if b.nextState == "" && b.successState == "" && b.failureState == "" {
-		return OutcomeModel{}, errors.New("at least one of nextState, successState, or failureState is required")
+	if b.nextState == "" {
+		return OutcomeModel{}, errors.New("nextState is required")
 	}
 
 	return OutcomeModel{
-		conditions:   b.conditions,
-		nextState:    b.nextState,
-		successState: b.successState,
-		failureState: b.failureState,
+		conditions: b.conditions,
+		nextState:  b.nextState,
 	}, nil
 }
 
 // CraftActionModel represents a craft action state
 type CraftActionModel struct {
-	itemId                uint32
+	itemId                string
 	materials             []uint32
 	quantities            []uint32
 	mesoCost              uint32
 	stimulatorId          uint32
 	stimulatorFailChance  float64
-	successState          string
-	failureState          string
 	missingMaterialsState string
 }
 
 // ItemId returns the item ID
-func (c CraftActionModel) ItemId() uint32 {
+func (c CraftActionModel) ItemId() string {
 	return c.itemId
 }
 
@@ -847,15 +819,6 @@ func (c CraftActionModel) StimulatorFailChance() float64 {
 	return c.stimulatorFailChance
 }
 
-// SuccessState returns the success state ID
-func (c CraftActionModel) SuccessState() string {
-	return c.successState
-}
-
-// FailureState returns the failure state ID
-func (c CraftActionModel) FailureState() string {
-	return c.failureState
-}
 
 // MissingMaterialsState returns the missing materials state ID
 func (c CraftActionModel) MissingMaterialsState() string {
@@ -864,14 +827,12 @@ func (c CraftActionModel) MissingMaterialsState() string {
 
 // CraftActionBuilder is a builder for CraftActionModel
 type CraftActionBuilder struct {
-	itemId                uint32
+	itemId                string
 	materials             []uint32
 	quantities            []uint32
 	mesoCost              uint32
 	stimulatorId          uint32
 	stimulatorFailChance  float64
-	successState          string
-	failureState          string
 	missingMaterialsState string
 }
 
@@ -884,7 +845,7 @@ func NewCraftActionBuilder() *CraftActionBuilder {
 }
 
 // SetItemId sets the item ID
-func (b *CraftActionBuilder) SetItemId(itemId uint32) *CraftActionBuilder {
+func (b *CraftActionBuilder) SetItemId(itemId string) *CraftActionBuilder {
 	b.itemId = itemId
 	return b
 }
@@ -931,17 +892,6 @@ func (b *CraftActionBuilder) SetStimulatorFailChance(stimulatorFailChance float6
 	return b
 }
 
-// SetSuccessState sets the success state ID
-func (b *CraftActionBuilder) SetSuccessState(successState string) *CraftActionBuilder {
-	b.successState = successState
-	return b
-}
-
-// SetFailureState sets the failure state ID
-func (b *CraftActionBuilder) SetFailureState(failureState string) *CraftActionBuilder {
-	b.failureState = failureState
-	return b
-}
 
 // SetMissingMaterialsState sets the missing materials state ID
 func (b *CraftActionBuilder) SetMissingMaterialsState(missingMaterialsState string) *CraftActionBuilder {
@@ -951,7 +901,7 @@ func (b *CraftActionBuilder) SetMissingMaterialsState(missingMaterialsState stri
 
 // Build builds the CraftActionModel
 func (b *CraftActionBuilder) Build() (*CraftActionModel, error) {
-	if b.itemId == 0 {
+	if b.itemId == "" {
 		return nil, errors.New("itemId is required")
 	}
 	if len(b.materials) == 0 {
@@ -959,12 +909,6 @@ func (b *CraftActionBuilder) Build() (*CraftActionModel, error) {
 	}
 	if len(b.quantities) != len(b.materials) {
 		return nil, errors.New("quantities must match materials")
-	}
-	if b.successState == "" {
-		return nil, errors.New("successState is required")
-	}
-	if b.failureState == "" {
-		return nil, errors.New("failureState is required")
 	}
 	if b.missingMaterialsState == "" {
 		return nil, errors.New("missingMaterialsState is required")
@@ -977,8 +921,6 @@ func (b *CraftActionBuilder) Build() (*CraftActionModel, error) {
 		mesoCost:              b.mesoCost,
 		stimulatorId:          b.stimulatorId,
 		stimulatorFailChance:  b.stimulatorFailChance,
-		successState:          b.successState,
-		failureState:          b.failureState,
 		missingMaterialsState: b.missingMaterialsState,
 	}, nil
 }

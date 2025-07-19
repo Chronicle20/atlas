@@ -576,7 +576,7 @@ func TestProcessGenericActionState_ConditionEvaluationFailure(t *testing.T) {
 		conditionType     string
 		operator          string
 		value             string
-		itemId            uint32
+		itemId            string
 		expectedError     string
 		setupOperations   bool
 	}{
@@ -585,7 +585,7 @@ func TestProcessGenericActionState_ConditionEvaluationFailure(t *testing.T) {
 			conditionType:     "level",
 			operator:          ">=",
 			value:             "10",
-			itemId:            0,
+			itemId:            "0",
 			expectedError:     "failed to validate level condition",
 			setupOperations:   true,
 		},
@@ -594,7 +594,7 @@ func TestProcessGenericActionState_ConditionEvaluationFailure(t *testing.T) {
 			conditionType:     "item",
 			operator:          ">=",
 			value:             "1",
-			itemId:            4001126,
+			itemId:            "4001126",
 			expectedError:     "failed to validate item condition",
 			setupOperations:   true,
 		},
@@ -603,7 +603,7 @@ func TestProcessGenericActionState_ConditionEvaluationFailure(t *testing.T) {
 			conditionType:     "mesos",
 			operator:          ">=",
 			value:             "1000",
-			itemId:            0,
+			itemId:            "0",
 			expectedError:     "failed to validate mesos condition",
 			setupOperations:   true,
 		},
@@ -612,7 +612,7 @@ func TestProcessGenericActionState_ConditionEvaluationFailure(t *testing.T) {
 			conditionType:     "quest",
 			operator:          "==",
 			value:             "completed",
-			itemId:            0,
+			itemId:            "0",
 			expectedError:     "failed to validate quest condition",
 			setupOperations:   true,
 		},
@@ -621,7 +621,7 @@ func TestProcessGenericActionState_ConditionEvaluationFailure(t *testing.T) {
 			conditionType:     "level",
 			operator:          ">=",
 			value:             "50",
-			itemId:            0,
+			itemId:            "0",
 			expectedError:     "validation service unavailable",
 			setupOperations:   false,
 		},
@@ -665,9 +665,8 @@ func TestProcessGenericActionState_ConditionEvaluationFailure(t *testing.T) {
 			}
 
 			outcome := OutcomeModel{
-				nextState:    "success_state",
-				failureState: "failure_state",
-				conditions:   []ConditionModel{condition},
+				nextState:  "success_state",
+				conditions: []ConditionModel{condition},
 			}
 
 			genericAction := GenericActionModel{
@@ -761,21 +760,20 @@ func TestProcessGenericActionState_MultipleConditionEvaluationFailure(t *testing
 		conditionType: "level",
 		operator:      ">=",
 		value:         "10",
-		itemId:        0,
+		itemId:        "0",
 	}
 	
 	condition2 := ConditionModel{
 		conditionType: "item",
 		operator:      ">=",
 		value:         "1",
-		itemId:        4001126,
+		itemId:        "4001126",
 	}
 
 	// Create outcome with multiple conditions
 	outcome := OutcomeModel{
-		nextState:    "success_state",
-		failureState: "failure_state",
-		conditions:   []ConditionModel{condition1, condition2},
+		nextState:  "success_state",
+		conditions: []ConditionModel{condition1, condition2},
 	}
 
 	genericAction := GenericActionModel{
@@ -864,13 +862,12 @@ func TestProcessGenericActionState_ConditionEvaluationTimeout(t *testing.T) {
 		conditionType: "level",
 		operator:      ">=",
 		value:         "10",
-		itemId:        0,
+		itemId:        "0",
 	}
 
 	outcome := OutcomeModel{
-		nextState:    "success_state",
-		failureState: "failure_state",
-		conditions:   []ConditionModel{condition},
+		nextState:  "success_state",
+		conditions: []ConditionModel{condition},
 	}
 
 	genericAction := GenericActionModel{
@@ -960,13 +957,12 @@ func TestProcessGenericActionState_ConditionEvaluationExternalServiceError(t *te
 		conditionType: "quest",
 		operator:      "==",
 		value:         "completed",
-		itemId:        0,
+		itemId:        "0",
 	}
 
 	outcome := OutcomeModel{
-		nextState:    "success_state",
-		failureState: "failure_state",
-		conditions:   []ConditionModel{condition},
+		nextState:  "success_state",
+		conditions: []ConditionModel{condition},
 	}
 
 	genericAction := GenericActionModel{
@@ -1055,13 +1051,12 @@ func TestProcessGenericActionState_ConditionEvaluationInvalidParameters(t *testi
 		conditionType: "item",
 		operator:      "invalid_operator",
 		value:         "not_a_number",
-		itemId:        0, // Invalid item ID for item condition
+		itemId:        "0", // Invalid item ID for item condition
 	}
 
 	outcome := OutcomeModel{
-		nextState:    "success_state",
-		failureState: "failure_state",
-		conditions:   []ConditionModel{condition},
+		nextState:  "success_state",
+		conditions: []ConditionModel{condition},
 	}
 
 	genericAction := GenericActionModel{
@@ -1151,13 +1146,12 @@ func TestProcessGenericActionState_ConditionEvaluationContextParameterFailure(t 
 		conditionType: "item",
 		operator:      ">=",
 		value:         "context.requiredQuantity", // Context parameter
-		itemId:        4001126,
+		itemId:        "4001126",
 	}
 
 	outcome := OutcomeModel{
-		nextState:    "success_state",
-		failureState: "failure_state",
-		conditions:   []ConditionModel{condition},
+		nextState:  "success_state",
+		conditions: []ConditionModel{condition},
 	}
 
 	genericAction := GenericActionModel{
@@ -1222,4 +1216,97 @@ func TestProcessGenericActionState_ConditionEvaluationContextParameterFailure(t 
 	// Verify all expected calls were made
 	mockExecutor.AssertExpectations(t)
 	mockEvaluator.AssertExpectations(t)
+}
+// Test string ItemId validation scenarios  
+func TestConditionModel_StringItemIdValidation(t *testing.T) {
+	tests := []struct {
+		name              string
+		itemId            string
+		conditionType     string
+		operator          string
+		value             string
+		expectValid       bool
+		expectedError     string
+	}{
+		{
+			name:          "Valid numeric string ItemId",
+			itemId:        "4001126",
+			conditionType: "item",
+			operator:      ">=",
+			value:         "1",
+			expectValid:   true,
+		},
+		{
+			name:          "Empty string ItemId",
+			itemId:        "",
+			conditionType: "item",
+			operator:      ">=",
+			value:         "1",
+			expectValid:   true, // Empty string should be valid (omitempty)
+		},
+		{
+			name:          "Zero string ItemId",
+			itemId:        "0",
+			conditionType: "level", // Zero ItemId valid for non-item conditions
+			operator:      ">=",
+			value:         "10",
+			expectValid:   true,
+		},
+		{
+			name:          "Non-numeric string ItemId",
+			itemId:        "SPECIAL_ITEM_KEY",
+			conditionType: "item",
+			operator:      ">=",
+			value:         "1",
+			expectValid:   true, // String ItemId allows non-numeric values
+		},
+		{
+			name:          "ItemId with special characters",
+			itemId:        "item-123_abc",
+			conditionType: "item",
+			operator:      ">=",
+			value:         "1",
+			expectValid:   true,
+		},
+		{
+			name:          "Very long ItemId string",
+			itemId:        "very_long_item_identifier_that_exceeds_typical_limits_but_should_still_be_valid_as_string",
+			conditionType: "item",
+			operator:      ">=",
+			value:         "1",
+			expectValid:   true,
+		},
+		{
+			name:          "ItemId with Unicode characters",
+			itemId:        "物品_123_アイテム",
+			conditionType: "item",
+			operator:      ">=",
+			value:         "1",
+			expectValid:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Test ConditionBuilder with string ItemId
+			builder := NewConditionBuilder().
+				SetType(tt.conditionType).
+				SetOperator(tt.operator).
+				SetValue(tt.value).
+				SetItemId(tt.itemId)
+			
+			condition, err := builder.Build()
+			
+			if tt.expectValid {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.itemId, condition.ItemId())
+				assert.Equal(t, tt.conditionType, condition.Type())
+				assert.Equal(t, tt.operator, condition.Operator())
+				assert.Equal(t, tt.value, condition.Value())
+			} else {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.expectedError)
+			}
+		})
+	}
 }

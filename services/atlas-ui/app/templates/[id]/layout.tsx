@@ -3,7 +3,8 @@
 import {useParams} from "next/navigation";
 import {Separator} from "@/components/ui/separator";
 import {DetailSidebar} from "@/components/detail-sidebar";
-import {fetchTemplates, Template} from "@/lib/templates";
+import {fetchTemplates} from "@/lib/templates";
+import type {Template} from "@/types/models/template";
 import {useEffect, useState} from "react";
 import {ScrollArea} from "@/components/ui/scroll-area";
 import {Toaster} from "sonner";

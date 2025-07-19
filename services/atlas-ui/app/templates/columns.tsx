@@ -10,15 +10,7 @@ import {
 import {Button} from "@/components/ui/button";
 import {MoreHorizontal} from "lucide-react";
 import Link from "next/link";
-
-export type Template = {
-    id: string
-    attributes: {
-        region: string
-        majorVersion: number
-        minorVersion: number
-    }
-}
+import type {Template} from "@/types/models/template";
 
 interface ColumnProps {
     onDelete?: (id: string) => void;

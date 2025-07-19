@@ -8,7 +8,8 @@ import {Button} from "@/components/ui/button";
 import {useParams} from "next/navigation";
 import {X, Plus} from "lucide-react"
 import {Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog";
-import {fetchTemplates, Template, updateTemplate} from "@/lib/templates";
+import {fetchTemplates, updateTemplate} from "@/lib/templates";
+import type {Template} from "@/types/models/template";
 import {toast} from "sonner";
 
 interface FormValues {

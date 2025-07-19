@@ -3,7 +3,8 @@
 import {DataTable} from "@/components/data-table";
 import {getColumns} from "@/app/templates/columns";
 import {useEffect, useState} from "react";
-import {fetchTemplates, Template, deleteTemplate, cloneTemplate, createTemplate} from "@/lib/templates";
+import {fetchTemplates, deleteTemplate, cloneTemplate, createTemplate} from "@/lib/templates";
+import type {Template} from "@/types/models/template";
 import {createTenantConfiguration, createTenantFromTemplate} from "@/lib/tenants";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";

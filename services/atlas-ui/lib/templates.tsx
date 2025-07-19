@@ -1,61 +1,8 @@
 import type {ApiListResponse, ApiSingleResponse} from "@/types/api/responses";
-import type {Template as TemplateModel, TemplateAttributes as TemplateAttributesModel, CharacterTemplate as CharacterTemplateModel} from "@/types/models/template";
+import type {Template, TemplateAttributes, CharacterTemplate} from "@/types/models/template";
 
-export interface CharacterTemplate {
-    jobIndex: number;
-    subJobIndex: number;
-    gender: number;
-    mapId: number;
-    faces: number[];
-    hairs: number[];
-    hairColors: number[];
-    skinColors: number[];
-    tops: number[];
-    bottoms: number[];
-    shoes: number[];
-    weapons: number[];
-    items: number[];
-    skills: number[];
-}
-
-export interface TemplateAttributes {
-    region: string;
-    majorVersion: number;
-    minorVersion: number;
-    usesPin: boolean;
-    characters: {
-        templates: CharacterTemplate[];
-    };
-    npcs: {
-        npcId: number;
-        impl: string;
-    }[];
-    socket: {
-        handlers: {
-            opCode: string;
-            validator: string;
-            handler: string;
-            options: unknown;
-        }[];
-        writers: {
-            opCode: string;
-            writer: string;
-            options: unknown;
-        }[];
-    }
-    worlds: {
-        name: string;
-        flag: string;
-        serverMessage: string;
-        eventMessage: string;
-        whyAmIRecommended: string;
-    }[];
-}
-
-export interface Template {
-    id: string;
-    attributes: TemplateAttributes;
-}
+// Re-export types from centralized location
+export type {Template, TemplateAttributes, CharacterTemplate};
 
 export async function fetchTemplates(): Promise<Template[]> {
     const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;

@@ -7,7 +7,8 @@ import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
 import {useParams} from "next/navigation";
 import {X} from "lucide-react";
-import {fetchTemplates, Template, updateTemplate} from "@/lib/templates";
+import {fetchTemplates, updateTemplate} from "@/lib/templates";
+import type {Template} from "@/types/models/template";
 import {toast} from "sonner";
 
 export function WorldsForm() {

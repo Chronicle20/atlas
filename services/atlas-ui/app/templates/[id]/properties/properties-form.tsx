@@ -9,7 +9,8 @@ import { z } from "zod"
 import {useParams} from "next/navigation";
 import { Switch } from "@/components/ui/switch";
 import {useEffect, useState} from "react";
-import {fetchTemplates, Template, updateTemplate} from "@/lib/templates";
+import {fetchTemplates, updateTemplate} from "@/lib/templates";
+import type {Template} from "@/types/models/template";
 import {toast} from "sonner";
 
 const propertiesFormSchema = z.object({

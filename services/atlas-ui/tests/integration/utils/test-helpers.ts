@@ -146,6 +146,7 @@ export const tableHelpers = {
   getTableHeaders() {
     const table = screen.getByRole('table');
     const headerRow = within(table).getAllByRole('row')[0];
+    if (!headerRow) throw new Error('No header row found');
     return within(headerRow).getAllByRole('columnheader');
   },
 
@@ -155,6 +156,7 @@ export const tableHelpers = {
   getCellValue(rowIndex: number, columnIndex: number) {
     const rows = this.getTableRows();
     const row = rows[rowIndex];
+    if (!row) throw new Error(`No row found at index ${rowIndex}`);
     const cells = within(row).getAllByRole('cell');
     return cells[columnIndex];
   },

@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { FormProvider, useForm, FieldValues } from 'react-hook-form';
 import { ThemeProvider } from 'next-themes';
 
@@ -7,41 +6,16 @@ import { ThemeProvider } from 'next-themes';
  * Test providers for integration tests that need various context providers
  */
 
-interface TestQueryProviderProps {
-  children: React.ReactNode;
-  queryClient?: QueryClient;
-}
-
 /**
- * Wraps components with React Query provider for testing
+ * Simple wrapper for children when no query provider is needed
  */
-export function TestQueryProvider({ children, queryClient }: TestQueryProviderProps) {
-  const defaultQueryClient = React.useMemo(
-    () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: {
-            retry: false,
-            gcTime: 0,
-          },
-          mutations: {
-            retry: false,
-          },
-        },
-      }),
-    []
-  );
-
-  return (
-    <QueryClientProvider client={queryClient || defaultQueryClient}>
-      {children}
-    </QueryClientProvider>
-  );
+export function TestQueryProvider({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
 }
 
 interface TestThemeProviderProps {
   children: React.ReactNode;
-  defaultTheme?: string;
+  defaultTheme?: string | undefined;
 }
 
 /**
@@ -83,16 +57,15 @@ export function TestFormProvider<T extends FieldValues>({
 
 interface AllProvidersProps {
   children: React.ReactNode;
-  queryClient?: QueryClient;
-  defaultTheme?: string;
+  defaultTheme?: string | undefined;
 }
 
 /**
  * Combines all common providers for comprehensive testing
  */
-export function AllProviders({ children, queryClient, defaultTheme }: AllProvidersProps) {
+export function AllProviders({ children, defaultTheme }: AllProvidersProps) {
   return (
-    <TestQueryProvider queryClient={queryClient}>
+    <TestQueryProvider>
       <TestThemeProvider defaultTheme={defaultTheme}>
         {children}
       </TestThemeProvider>
@@ -104,13 +77,11 @@ export function AllProviders({ children, queryClient, defaultTheme }: AllProvide
  * Creates a wrapper function for React Testing Library that includes all providers
  */
 export function createWrapper(options: {
-  queryClient?: QueryClient;
-  defaultTheme?: string;
+  defaultTheme?: string | undefined;
 } = {}) {
   return function Wrapper({ children }: { children: React.ReactNode }) {
     return (
       <AllProviders
-        queryClient={options.queryClient}
         defaultTheme={options.defaultTheme}
       >
         {children}
@@ -120,22 +91,8 @@ export function createWrapper(options: {
 }
 
 /**
- * Custom hook for testing that provides a mock query client
+ * Simple mock for query client functionality when not using React Query
  */
 export function useMockQueryClient() {
-  return React.useMemo(
-    () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: {
-            retry: false,
-            gcTime: 0,
-          },
-          mutations: {
-            retry: false,
-          },
-        },
-      }),
-    []
-  );
+  return React.useMemo(() => ({}), []);
 }

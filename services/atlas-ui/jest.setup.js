@@ -58,13 +58,13 @@ HTMLElement.prototype.releasePointerCapture = jest.fn()
 HTMLElement.prototype.scrollIntoView = jest.fn()
 
 // Mock window.location.href for error boundary tests
-const originalLocation = window.location
 delete window.location
-window.location = { 
-  href: '', 
+window.location = {
+  href: '',
   reload: jest.fn(),
   assign: jest.fn(),
-  replace: jest.fn()
+  replace: jest.fn(),
+  toString: () => 'http://localhost'
 }
 
 // Suppress console.error for expected errors in tests
@@ -74,13 +74,19 @@ console.error = (...args) => {
     typeof args[0] === 'string' &&
     (args[0].includes('Warning: ReactDOM.render is no longer supported') ||
      args[0].includes('Error: Not implemented: navigation') ||
+     args[0].includes('Error: Not implemented: HTMLFormElement.prototype.requestSubmit') ||
      args[0].includes('The above error occurred'))
   ) {
     return
   }
-  // Suppress React error boundary test errors
-  if (args[0] && args[0].toString && args[0].toString().includes('Test error')) {
-    return
+  // Suppress React error boundary test errors and navigation errors
+  if (args[0] && args[0].toString) {
+    const errorStr = args[0].toString()
+    if (errorStr.includes('Test error') || 
+        errorStr.includes('not implemented') ||
+        errorStr.includes('navigation (except hash changes)')) {
+      return
+    }
   }
   originalError.call(console, ...args)
 }

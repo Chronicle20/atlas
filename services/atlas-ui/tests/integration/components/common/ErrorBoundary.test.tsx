@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ErrorBoundary, withErrorBoundary, ErrorBoundaryProvider, useErrorBoundary } from '@/components/common/ErrorBoundary';
 import * as React from 'react';
 
@@ -84,7 +84,7 @@ describe('ErrorBoundary Integration Tests', () => {
       expect(screen.queryByText('Something went wrong')).not.toBeInTheDocument();
     });
 
-    it('should reset error state and re-render children when Try Again is clicked', () => {
+    it('should reset error state and re-render children when Try Again is clicked', async () => {
       const TestWrapper = ({ shouldThrow }: { shouldThrow: boolean }) => (
         <ErrorBoundary>
           <ThrowingComponent shouldThrow={shouldThrow} />
@@ -104,8 +104,10 @@ describe('ErrorBoundary Integration Tests', () => {
       rerender(<TestWrapper shouldThrow={false} />);
 
       // Should now render children successfully
-      expect(screen.getByText('Component rendered successfully')).toBeInTheDocument();
-      expect(screen.queryByText('Something went wrong')).not.toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Component rendered successfully')).toBeInTheDocument();
+        expect(screen.queryByText('Something went wrong')).not.toBeInTheDocument();
+      });
     });
   });
 
@@ -125,7 +127,7 @@ describe('ErrorBoundary Integration Tests', () => {
       expect(screen.queryByText('Something went wrong')).not.toBeInTheDocument();
     });
 
-    it('should reset error state when custom fallback reset button is clicked', () => {
+    it('should reset error state when custom fallback reset button is clicked', async () => {
       let shouldThrow = true;
       
       const { rerender } = render(
@@ -150,8 +152,10 @@ describe('ErrorBoundary Integration Tests', () => {
         </ErrorBoundary>
       );
 
-      expect(screen.getByText('Component rendered successfully')).toBeInTheDocument();
-      expect(screen.queryByTestId('custom-error-fallback')).not.toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Component rendered successfully')).toBeInTheDocument();
+        expect(screen.queryByTestId('custom-error-fallback')).not.toBeInTheDocument();
+      });
     });
   });
 

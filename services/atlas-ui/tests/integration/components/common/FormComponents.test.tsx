@@ -63,7 +63,8 @@ const TestForm = ({
   // Clone children to inject form control
   const childrenWithForm = React.Children.map(children, (child) => {
     if (React.isValidElement(child)) {
-      return React.cloneElement(child, { control: form.control } as any);
+      // Ensure control is properly passed, even if already present
+      return React.cloneElement(child, { ...child.props, control: form.control } as any);
     }
     return child;
   });
@@ -90,7 +91,6 @@ describe('Form Components Integration Tests', () => {
       render(
         <TestForm onSubmit={mockSubmit}>
           <FormField
-            control={form.control}
             name="username"
             label="Username"
             placeholder="Enter username"
@@ -176,7 +176,7 @@ describe('Form Components Integration Tests', () => {
       expect(input).toHaveAttribute('max', '120');
 
       await user.type(input, '25');
-      expect(input).toHaveValue('25');
+      expect(input).toHaveValue(25);
 
       const submitButton = screen.getByTestId('submit-button');
       await user.click(submitButton);

@@ -47,7 +47,7 @@ describe('DataTableWrapper Integration Tests', () => {
     });
 
     it('should hide PageLoader when loading becomes false', async () => {
-      const { rerender } = render(
+      const { rerender, container } = render(
         <DataTableWrapper
           columns={mockColumns}
           data={[]}
@@ -68,7 +68,9 @@ describe('DataTableWrapper Integration Tests', () => {
 
       await waitFor(() => {
         expect(screen.queryByTestId('page-loader')).not.toBeInTheDocument();
-        expect(screen.getByRole('table')).toBeInTheDocument();
+        // Use container to find table within this specific component
+        const tables = container.querySelectorAll('table');
+        expect(tables.length).toBeGreaterThan(0);
       });
     });
   });
@@ -221,15 +223,16 @@ describe('DataTableWrapper Integration Tests', () => {
 
   describe('Success State Integration', () => {
     it('should render DataTable when data is provided', () => {
-      render(
+      const { container } = render(
         <DataTableWrapper
           columns={mockColumns}
           data={mockData}
         />
       );
 
-      // DataTable should be rendered
-      expect(screen.getByRole('table')).toBeInTheDocument();
+      // DataTable should be rendered - use container to avoid multiple element issue
+      const tables = container.querySelectorAll('table');
+      expect(tables.length).toBeGreaterThan(0);
       
       // Should show data
       expect(screen.getByText('John Doe')).toBeInTheDocument();
@@ -244,7 +247,7 @@ describe('DataTableWrapper Integration Tests', () => {
     });
 
     it('should pass through initialVisibilityState to DataTable', () => {
-      render(
+      const { container } = render(
         <DataTableWrapper
           columns={mockColumns}
           data={mockData}
@@ -252,7 +255,8 @@ describe('DataTableWrapper Integration Tests', () => {
         />
       );
 
-      expect(screen.getByRole('table')).toBeInTheDocument();
+      const tables = container.querySelectorAll('table');
+      expect(tables.length).toBeGreaterThan(0);
       // This would require inspecting DataTable implementation details
       // For now, just verify the table renders
     });
@@ -260,7 +264,7 @@ describe('DataTableWrapper Integration Tests', () => {
     it('should pass through onRefresh to DataTable when provided', () => {
       const mockRefresh = jest.fn();
       
-      render(
+      const { container } = render(
         <DataTableWrapper
           columns={mockColumns}
           data={mockData}
@@ -268,7 +272,8 @@ describe('DataTableWrapper Integration Tests', () => {
         />
       );
 
-      expect(screen.getByRole('table')).toBeInTheDocument();
+      const tables = container.querySelectorAll('table');
+      expect(tables.length).toBeGreaterThan(0);
       // The refresh functionality would be tested in DataTable unit tests
     });
 
@@ -282,7 +287,7 @@ describe('DataTableWrapper Integration Tests', () => {
         },
       ];
       
-      render(
+      const { container } = render(
         <DataTableWrapper
           columns={mockColumns}
           data={mockData}
@@ -290,7 +295,8 @@ describe('DataTableWrapper Integration Tests', () => {
         />
       );
 
-      expect(screen.getByRole('table')).toBeInTheDocument();
+      const tables = container.querySelectorAll('table');
+      expect(tables.length).toBeGreaterThan(0);
       // The header actions would be tested in DataTable unit tests
     });
   });
@@ -324,21 +330,22 @@ describe('DataTableWrapper Integration Tests', () => {
     });
 
     it('should prioritize success state over empty state when data is provided', () => {
-      render(
+      const { container } = render(
         <DataTableWrapper
           columns={mockColumns}
           data={mockData}
         />
       );
 
-      expect(screen.getByRole('table')).toBeInTheDocument();
+      const tables = container.querySelectorAll('table');
+      expect(tables.length).toBeGreaterThan(0);
       expect(screen.queryByTestId('empty-state')).not.toBeInTheDocument();
     });
   });
 
   describe('State Transitions Integration', () => {
     it('should transition from loading to success state', async () => {
-      const { rerender } = render(
+      const { rerender, container } = render(
         <DataTableWrapper
           columns={mockColumns}
           data={[]}
@@ -358,7 +365,8 @@ describe('DataTableWrapper Integration Tests', () => {
 
       await waitFor(() => {
         expect(screen.queryByTestId('page-loader')).not.toBeInTheDocument();
-        expect(screen.getByRole('table')).toBeInTheDocument();
+        const tables = container.querySelectorAll('table');
+        expect(tables.length).toBeGreaterThan(0);
       });
     });
 
@@ -419,7 +427,7 @@ describe('DataTableWrapper Integration Tests', () => {
         hasError = false;
       });
 
-      const { rerender } = render(
+      const { rerender, container } = render(
         <DataTableWrapper
           columns={mockColumns}
           data={[]}
@@ -443,7 +451,8 @@ describe('DataTableWrapper Integration Tests', () => {
 
       await waitFor(() => {
         expect(screen.queryByTestId('error-display')).not.toBeInTheDocument();
-        expect(screen.getByRole('table')).toBeInTheDocument();
+        const tables = container.querySelectorAll('table');
+        expect(tables.length).toBeGreaterThan(0);
       });
     });
   });

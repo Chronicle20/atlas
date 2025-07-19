@@ -4,3 +4,4 @@ export { LoadingOverlay } from './LoadingOverlay';
 export { ErrorDisplay } from './ErrorDisplay';
 export { ErrorBoundary, withErrorBoundary, ErrorBoundaryProvider, useErrorBoundary } from './ErrorBoundary';
 export { EmptyState } from './EmptyState';
+export { DataTableWrapper } from './DataTableWrapper';

@@ -148,8 +148,15 @@ const (
 	StatusEventTypeMesoChanged       = "MESO_CHANGED"
 	StatusEventTypeFameChanged       = "FAME_CHANGED"
 	StatusEventTypeStatChanged       = "STAT_CHANGED"
+	StatusEventTypeUpdated           = "UPDATED"
 	StatusEventTypeDeleted           = "DELETED"
 	StatusEventTypeCreationFailed    = "CREATION_FAILED"
+	StatusEventTypeNameChanged       = "NAME_CHANGED"
+	StatusEventTypeHairChanged       = "HAIR_CHANGED"
+	StatusEventTypeFaceChanged       = "FACE_CHANGED"
+	StatusEventTypeGenderChanged     = "GENDER_CHANGED"
+	StatusEventTypeSkinColorChanged  = "SKIN_COLOR_CHANGED"
+	StatusEventTypeGmChanged         = "GM_CHANGED"
 
 	StatusEventTypeError              = "ERROR"
 	StatusEventErrorTypeNotEnoughMeso = "NOT_ENOUGH_MESO"
@@ -240,6 +247,40 @@ type StatusEventStatChangedBody struct {
 	ChannelId       channel.Id `json:"channelId"`
 	ExclRequestSent bool       `json:"exclRequestSent"`
 	Updates         []string   `json:"updates"`
+}
+
+type StatusEventUpdatedBody struct {
+	UpdatedFields map[string]interface{} `json:"updatedFields"`
+}
+
+type StatusEventNameChangedBody struct {
+	OldName string `json:"oldName"`
+	NewName string `json:"newName"`
+}
+
+type StatusEventHairChangedBody struct {
+	OldHair uint32 `json:"oldHair"`
+	NewHair uint32 `json:"newHair"`
+}
+
+type StatusEventFaceChangedBody struct {
+	OldFace uint32 `json:"oldFace"`
+	NewFace uint32 `json:"newFace"`
+}
+
+type StatusEventGenderChangedBody struct {
+	OldGender byte `json:"oldGender"`
+	NewGender byte `json:"newGender"`
+}
+
+type StatusEventSkinColorChangedBody struct {
+	OldSkinColor byte `json:"oldSkinColor"`
+	NewSkinColor byte `json:"newSkinColor"`
+}
+
+type StatusEventGmChangedBody struct {
+	OldGm bool `json:"oldGm"`
+	NewGm bool `json:"newGm"`
 }
 
 const (

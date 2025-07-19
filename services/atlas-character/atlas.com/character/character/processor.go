@@ -83,6 +83,8 @@ type Processor interface {
 	ProcessLevelChange(mb *message.Buffer) func(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount byte) error
 	ProcessJobChangeAndEmit(transactionId uuid.UUID, channel channel.Model, characterId uint32, jobId job.Id) error
 	ProcessJobChange(mb *message.Buffer) func(transactionId uuid.UUID, channel channel.Model, characterId uint32, jobId job.Id) error
+	UpdateAndEmit(transactionId uuid.UUID, characterId uint32, input RestModel) error
+	Update(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, input RestModel) error
 }
 
 type ProcessorImpl struct {
@@ -222,7 +224,7 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(transactionId uuid.UUID,
 
 		var res Model
 		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
-			res, err = create(tx, p.t.Id(), input.accountId, input.worldId, input.name, input.level, input.strength, input.dexterity, input.intelligence, input.luck, input.maxHp, input.maxMp, input.jobId, input.gender, input.hair, input.face, input.skinColor, input.mapId)
+			res, err = create(tx, p.t.Id(), input.accountId, input.worldId, input.name, input.level, input.strength, input.dexterity, input.intelligence, input.luck, input.maxHp, input.maxMp, input.jobId, input.gender, input.hair, input.face, input.skinColor, input.mapId, input.gm)
 			if err != nil {
 				p.l.WithError(err).Errorf("Error persisting character in database.")
 				tx.Rollback()
@@ -1140,4 +1142,213 @@ func getSkillBook(jobId job.Id) int {
 		return int(jobId - 2209)
 	}
 	return 0
+}
+
+func (p *ProcessorImpl) UpdateAndEmit(transactionId uuid.UUID, characterId uint32, input RestModel) error {
+	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+		return p.Update(buf)(transactionId, characterId, input)
+	})
+}
+
+// fieldChange represents a validated field change with event emission capability
+type fieldChange struct {
+	updateFunc  EntityUpdateFunction
+	eventFunc   func() error
+	shouldApply bool
+}
+
+func (p *ProcessorImpl) Update(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, input RestModel) error {
+	return func(transactionId uuid.UUID, characterId uint32, input RestModel) error {
+		return database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+			c, err := p.WithTransaction(tx).GetById()(characterId)
+			if err != nil {
+				return err
+			}
+
+			// Validate and prepare all field changes
+			changes := []fieldChange{}
+
+			// Name validation and update
+			if input.Name != "" && input.Name != c.Name() {
+				if ok, err := p.IsValidName(input.Name); !ok || err != nil {
+					if err != nil {
+						return err
+					}
+					return errors.New("invalid or duplicate name")
+				}
+				changes = append(changes, fieldChange{
+					updateFunc:  SetName(input.Name),
+					shouldApply: true,
+					eventFunc: func() error {
+						return mb.Put(character2.EnvEventTopicCharacterStatus, nameChangedEventProvider(transactionId, characterId, c.WorldId(), c.Name(), input.Name))
+					},
+				})
+			}
+
+			// Hair validation and update
+			if input.Hair != 0 && input.Hair != c.Hair() {
+				if !p.isValidHair(input.Hair) {
+					return errors.New("invalid hair ID")
+				}
+				changes = append(changes, fieldChange{
+					updateFunc:  SetHair(input.Hair),
+					shouldApply: true,
+					eventFunc: func() error {
+						return mb.Put(character2.EnvEventTopicCharacterStatus, hairChangedEventProvider(transactionId, characterId, c.WorldId(), c.Hair(), input.Hair))
+					},
+				})
+			}
+
+			// Face validation and update
+			if input.Face != 0 && input.Face != c.Face() {
+				if !p.isValidFace(input.Face) {
+					return errors.New("invalid face ID")
+				}
+				changes = append(changes, fieldChange{
+					updateFunc:  SetFace(input.Face),
+					shouldApply: true,
+					eventFunc: func() error {
+						return mb.Put(character2.EnvEventTopicCharacterStatus, faceChangedEventProvider(transactionId, characterId, c.WorldId(), c.Face(), input.Face))
+					},
+				})
+			}
+
+			// Gender validation and update
+			if input.Gender != c.Gender() {
+				if !p.isValidGender(input.Gender) {
+					return errors.New("invalid gender value")
+				}
+				changes = append(changes, fieldChange{
+					updateFunc:  SetGender(input.Gender),
+					shouldApply: true,
+					eventFunc: func() error {
+						return mb.Put(character2.EnvEventTopicCharacterStatus, genderChangedEventProvider(transactionId, characterId, c.WorldId(), c.Gender(), input.Gender))
+					},
+				})
+			}
+
+			// Skin color validation and update
+			if input.SkinColor != 0 && input.SkinColor != c.SkinColor() {
+				if !p.isValidSkinColor(input.SkinColor) {
+					return errors.New("invalid skin color value")
+				}
+				changes = append(changes, fieldChange{
+					updateFunc:  SetSkinColor(input.SkinColor),
+					shouldApply: true,
+					eventFunc: func() error {
+						return mb.Put(character2.EnvEventTopicCharacterStatus, skinColorChangedEventProvider(transactionId, characterId, c.WorldId(), c.SkinColor(), input.SkinColor))
+					},
+				})
+			}
+
+			// GM validation and update
+			// Only update GM if the input explicitly provides a different value
+			// We skip the update if input.Gm is 0 and current GM is non-zero, as this likely means
+			// the client didn't intend to change GM status (zero value in request)
+			if input.Gm != c.GM() && !(input.Gm == 0 && c.GM() != 0) {
+				if !p.isValidGm(input.Gm) {
+					return errors.New("invalid GM value")
+				}
+				changes = append(changes, fieldChange{
+					updateFunc:  SetGm(input.Gm),
+					shouldApply: true,
+					eventFunc: func() error {
+						// Convert int to bool for GM status
+						oldGm := c.GM() != 0
+						newGm := input.Gm != 0
+						return mb.Put(character2.EnvEventTopicCharacterStatus, gmChangedEventProvider(transactionId, characterId, c.WorldId(), oldGm, newGm))
+					},
+				})
+			}
+
+			// MapId validation and update
+			if input.MapId != 0 && input.MapId != c.MapId() {
+				if !p.isValidMapIdForCharacter(input.MapId) {
+					return errors.New("invalid map ID or character cannot access this map")
+				}
+				changes = append(changes, fieldChange{
+					updateFunc:  SetMapId(input.MapId),
+					shouldApply: true,
+					eventFunc: func() error {
+						// Create field models for old and new map locations
+						// Note: We need to get the current channel ID from the context or use a default
+						// For now, using channel ID 0 as a placeholder - this should be updated based on actual channel context
+						oldField := field.NewBuilder(c.WorldId(), 0, c.MapId()).Build()
+						newField := field.NewBuilder(c.WorldId(), 0, input.MapId).Build()
+						return mb.Put(character2.EnvEventTopicCharacterStatus, mapChangedEventProvider(transactionId, characterId, oldField, newField, 0))
+					},
+				})
+			}
+
+			// If no updates are needed, return early
+			if len(changes) == 0 {
+				return nil
+			}
+
+			// Apply all updates
+			updates := []EntityUpdateFunction{}
+			for _, change := range changes {
+				if change.shouldApply {
+					updates = append(updates, change.updateFunc)
+				}
+			}
+
+			err = dynamicUpdate(tx)(updates...)(p.t.Id())(c)
+			if err != nil {
+				return err
+			}
+
+			// Emit events for all changes
+			for _, change := range changes {
+				if change.shouldApply {
+					if err := change.eventFunc(); err != nil {
+						return err
+					}
+				}
+			}
+
+			return nil
+		})
+	}
+}
+
+// Validation helper methods
+func (p *ProcessorImpl) isValidHair(hair uint32) bool {
+	// Basic hair ID validation - typical range for hair IDs
+	return hair >= 30000 && hair <= 35000
+}
+
+func (p *ProcessorImpl) isValidFace(face uint32) bool {
+	// Basic face ID validation - typical range for face IDs
+	return face >= 20000 && face <= 25000
+}
+
+func (p *ProcessorImpl) isValidGender(gender byte) bool {
+	// Gender must be 0 (male) or 1 (female)
+	return gender == 0 || gender == 1
+}
+
+func (p *ProcessorImpl) isValidSkinColor(skinColor byte) bool {
+	// Skin color typically ranges from 0-9
+	return skinColor >= 0 && skinColor <= 9
+}
+
+func (p *ProcessorImpl) isValidGm(gm int) bool {
+	// GM level must be non-negative. 0 = not GM, 1+ = GM level
+	return gm >= 0
+}
+
+func (p *ProcessorImpl) isValidMapId(mapId _map.Id) bool {
+	// Basic map ID validation - typical range for map IDs
+	// Map IDs are typically 9 digits starting with 100000000
+	return mapId >= 100000000 && mapId <= 999999999
+}
+
+func (p *ProcessorImpl) isValidMapIdForCharacter(mapId _map.Id) bool {
+	// First check basic map ID validation
+	if !p.isValidMapId(mapId) {
+		return false
+	}
+
+	return true
 }

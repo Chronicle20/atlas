@@ -13,7 +13,7 @@ import (
 
 type EntityUpdateFunction func() ([]string, func(e *entity))
 
-func create(db *gorm.DB, tenantId uuid.UUID, accountId uint32, worldId world.Id, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, maxHP uint16, maxMP uint16, jobId job.Id, gender byte, hair uint32, face uint32, skinColor byte, mapId _map.Id) (Model, error) {
+func create(db *gorm.DB, tenantId uuid.UUID, accountId uint32, worldId world.Id, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, maxHP uint16, maxMP uint16, jobId job.Id, gender byte, hair uint32, face uint32, skinColor byte, mapId _map.Id, gm int) (Model, error) {
 	e := &entity{
 		TenantId:     tenantId,
 		AccountId:    accountId,
@@ -35,6 +35,7 @@ func create(db *gorm.DB, tenantId uuid.UUID, accountId uint32, worldId world.Id,
 		Face:         face,
 		MapId:        mapId,
 		SP:           "0, 0, 0, 0, 0, 0, 0, 0, 0, 0",
+		GM:           gm,
 	}
 
 	err := db.Create(e).Error
@@ -67,15 +68,85 @@ func dynamicUpdate(db *gorm.DB) func(modifiers ...EntityUpdateFunction) func(ten
 }
 
 func update(db *gorm.DB, tenantId uuid.UUID, characterId uint32, modifiers ...EntityUpdateFunction) error {
-	e := &entity{}
-
-	var columns []string
+	// Build a map of column->value updates instead of using a struct
+	// This avoids GORM including zero values from unset fields
+	updates := make(map[string]interface{})
+	
 	for _, modifier := range modifiers {
-		c, u := modifier()
-		columns = append(columns, c...)
-		u(e)
+		columns, updateFunc := modifier()
+		
+		// Create a temporary entity to capture the update
+		tempEntity := &entity{}
+		updateFunc(tempEntity)
+		
+		// Extract the specific field values that were set
+		for _, column := range columns {
+			switch column {
+			case "MapId":
+				updates[column] = tempEntity.MapId
+			case "Level":
+				updates[column] = tempEntity.Level
+			case "Experience":
+				updates[column] = tempEntity.Experience
+			case "GachaponExperience":
+				updates[column] = tempEntity.GachaponExperience
+			case "Strength":
+				updates[column] = tempEntity.Strength
+			case "Dexterity":
+				updates[column] = tempEntity.Dexterity
+			case "Intelligence":
+				updates[column] = tempEntity.Intelligence
+			case "Luck":
+				updates[column] = tempEntity.Luck
+			case "HP":
+				updates[column] = tempEntity.HP
+			case "MP":
+				updates[column] = tempEntity.MP
+			case "MaxHP":
+				updates[column] = tempEntity.MaxHP
+			case "MaxMP":
+				updates[column] = tempEntity.MaxMP
+			case "Meso":
+				updates[column] = tempEntity.Meso
+			case "HPMPUsed":
+				updates[column] = tempEntity.HPMPUsed
+			case "JobId":
+				updates[column] = tempEntity.JobId
+			case "SkinColor":
+				updates[column] = tempEntity.SkinColor
+			case "Gender":
+				updates[column] = tempEntity.Gender
+			case "Fame":
+				updates[column] = tempEntity.Fame
+			case "Hair":
+				updates[column] = tempEntity.Hair
+			case "Face":
+				updates[column] = tempEntity.Face
+			case "AP":
+				updates[column] = tempEntity.AP
+			case "SP":
+				updates[column] = tempEntity.SP
+			case "SpawnPoint":
+				updates[column] = tempEntity.SpawnPoint
+			case "GM":
+				updates[column] = tempEntity.GM
+			case "Name":
+				updates[column] = tempEntity.Name
+			case "X":
+				updates[column] = tempEntity.X
+			case "Y":
+				updates[column] = tempEntity.Y
+			case "Stance":
+				updates[column] = tempEntity.Stance
+			}
+		}
 	}
-	return db.Model(&entity{TenantId: tenantId, ID: characterId}).Select(columns).Updates(e).Error
+	
+	if len(updates) == 0 {
+		return nil
+	}
+	
+	return db.Model(&entity{TenantId: tenantId, ID: characterId}).Updates(updates).Error
 }
 
 func SetLevel(level byte) EntityUpdateFunction {
@@ -236,6 +307,54 @@ func SetFame(amount int16) EntityUpdateFunction {
 	return func() ([]string, func(e *entity)) {
 		return []string{"Fame"}, func(e *entity) {
 			e.Fame = amount
+		}
+	}
+}
+
+func SetName(name string) EntityUpdateFunction {
+	return func() ([]string, func(e *entity)) {
+		return []string{"Name"}, func(e *entity) {
+			e.Name = name
+		}
+	}
+}
+
+func SetHair(hair uint32) EntityUpdateFunction {
+	return func() ([]string, func(e *entity)) {
+		return []string{"Hair"}, func(e *entity) {
+			e.Hair = hair
+		}
+	}
+}
+
+func SetFace(face uint32) EntityUpdateFunction {
+	return func() ([]string, func(e *entity)) {
+		return []string{"Face"}, func(e *entity) {
+			e.Face = face
+		}
+	}
+}
+
+func SetGender(gender byte) EntityUpdateFunction {
+	return func() ([]string, func(e *entity)) {
+		return []string{"Gender"}, func(e *entity) {
+			e.Gender = gender
+		}
+	}
+}
+
+func SetSkinColor(skinColor byte) EntityUpdateFunction {
+	return func() ([]string, func(e *entity)) {
+		return []string{"SkinColor"}, func(e *entity) {
+			e.SkinColor = skinColor
+		}
+	}
+}
+
+func SetGm(gm int) EntityUpdateFunction {
+	return func() ([]string, func(e *entity)) {
+		return []string{"GM"}, func(e *entity) {
+			e.GM = gm
 		}
 	}
 }

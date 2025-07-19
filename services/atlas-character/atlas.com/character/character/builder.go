@@ -46,6 +46,7 @@ type Builder struct {
 	face         uint32
 	ap           uint16
 	mapId        _map.Id
+	gm           int
 }
 
 func (b *Builder) SetJobId(jobId job.Id) *Builder {
@@ -55,6 +56,11 @@ func (b *Builder) SetJobId(jobId job.Id) *Builder {
 
 func (b *Builder) SetMapId(mapId _map.Id) *Builder {
 	b.mapId = mapId
+	return b
+}
+
+func (b *Builder) SetGm(gm int) *Builder {
+	b.gm = gm
 	return b
 }
 
@@ -86,7 +92,7 @@ func (b *Builder) Build() Model {
 		sp:                 "",
 		mapId:              b.mapId,
 		spawnPoint:         0,
-		gm:                 0,
+		gm:                 b.gm,
 	}
 }
 

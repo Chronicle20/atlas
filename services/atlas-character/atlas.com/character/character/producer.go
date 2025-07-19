@@ -252,3 +252,107 @@ func statChangedProvider(transactionId uuid.UUID, channel channel.Model, charact
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func updatedEventProvider(transactionId uuid.UUID, characterId uint32, worldId world.Id, updatedFields map[string]interface{}) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character2.StatusEvent[character2.StatusEventUpdatedBody]{
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		WorldId:       worldId,
+		Type:          character2.StatusEventTypeUpdated,
+		Body: character2.StatusEventUpdatedBody{
+			UpdatedFields: updatedFields,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func nameChangedEventProvider(transactionId uuid.UUID, characterId uint32, worldId world.Id, oldName string, newName string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character2.StatusEvent[character2.StatusEventNameChangedBody]{
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		WorldId:       worldId,
+		Type:          character2.StatusEventTypeNameChanged,
+		Body: character2.StatusEventNameChangedBody{
+			OldName: oldName,
+			NewName: newName,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func hairChangedEventProvider(transactionId uuid.UUID, characterId uint32, worldId world.Id, oldHair uint32, newHair uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character2.StatusEvent[character2.StatusEventHairChangedBody]{
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		WorldId:       worldId,
+		Type:          character2.StatusEventTypeHairChanged,
+		Body: character2.StatusEventHairChangedBody{
+			OldHair: oldHair,
+			NewHair: newHair,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func faceChangedEventProvider(transactionId uuid.UUID, characterId uint32, worldId world.Id, oldFace uint32, newFace uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character2.StatusEvent[character2.StatusEventFaceChangedBody]{
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		WorldId:       worldId,
+		Type:          character2.StatusEventTypeFaceChanged,
+		Body: character2.StatusEventFaceChangedBody{
+			OldFace: oldFace,
+			NewFace: newFace,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func genderChangedEventProvider(transactionId uuid.UUID, characterId uint32, worldId world.Id, oldGender byte, newGender byte) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character2.StatusEvent[character2.StatusEventGenderChangedBody]{
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		WorldId:       worldId,
+		Type:          character2.StatusEventTypeGenderChanged,
+		Body: character2.StatusEventGenderChangedBody{
+			OldGender: oldGender,
+			NewGender: newGender,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func skinColorChangedEventProvider(transactionId uuid.UUID, characterId uint32, worldId world.Id, oldSkinColor byte, newSkinColor byte) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character2.StatusEvent[character2.StatusEventSkinColorChangedBody]{
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		WorldId:       worldId,
+		Type:          character2.StatusEventTypeSkinColorChanged,
+		Body: character2.StatusEventSkinColorChangedBody{
+			OldSkinColor: oldSkinColor,
+			NewSkinColor: newSkinColor,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func gmChangedEventProvider(transactionId uuid.UUID, characterId uint32, worldId world.Id, oldGm bool, newGm bool) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character2.StatusEvent[character2.StatusEventGmChangedBody]{
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		WorldId:       worldId,
+		Type:          character2.StatusEventTypeGmChanged,
+		Body: character2.StatusEventGmChangedBody{
+			OldGm: oldGm,
+			NewGm: newGm,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

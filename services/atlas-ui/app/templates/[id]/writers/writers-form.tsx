@@ -1,7 +1,7 @@
 "use client"
 
 import {useEffect, useState} from "react";
-import {useFieldArray, useForm} from "react-hook-form";
+import {useFieldArray, useForm, SubmitHandler} from "react-hook-form";
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
@@ -11,6 +11,14 @@ import {fetchTemplates, updateTemplate} from "@/lib/templates";
 import type {Template} from "@/types/models/template";
 import {OptionsField} from "@/components/unknown-options";
 import {toast} from "sonner";
+
+interface FormValues {
+    writers: {
+        opCode: string;
+        writer: string;
+        options: unknown;
+    }[];
+}
 
 export function WritersForm() {
     const {id} = useParams(); // Get templates ID from URL
@@ -35,13 +43,16 @@ export function WritersForm() {
                 const template = data.find((t) => String(t.id) === String(id));
                 setTemplate(template);
 
-                form.reset({
-                    writers: template?.attributes.socket.writers.map(writer => ({
-                        opCode: writer.opCode || "",
-                        writer: writer.writer || "",
-                        options: writer.options,
-                    })),
-                });
+                if (template) {
+                    const formValues: FormValues = {
+                        writers: template.attributes.socket.writers.map(writer => ({
+                            opCode: writer.opCode,
+                            writer: writer.writer,
+                            options: writer.options,
+                        }))
+                    };
+                    form.reset(formValues);
+                }
             })
             .catch((err) => {
                 setError(err.message);
@@ -49,20 +60,12 @@ export function WritersForm() {
             .finally(() => setLoading(false));
     }, [id, form]);
 
-    interface FormValues {
-        writers: {
-            opCode: string;
-            writer: string;
-            options: unknown;
-        }[];
-    }
-
     const {fields, append, remove} = useFieldArray({
         control: form.control,
         name: "writers"
     });
 
-    const onSubmit = async (data: FormValues) => {
+    const onSubmit: SubmitHandler<FormValues> = async (data: FormValues) => {
         updateTemplate(template, {
             socket: {
                 handlers: template?.attributes.socket.handlers || [],

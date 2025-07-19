@@ -198,8 +198,10 @@ export function OptionsField<T extends FieldValues>({form, path}: OptionsFieldPr
                                         value={prop.key}
                                         onChange={(e) => {
                                             const newProps = [...complexProperties];
-                                            newProps[index].key = e.target.value;
-                                            setComplexProperties(newProps);
+                                            if (newProps[index]) {
+                                                newProps[index].key = e.target.value;
+                                                setComplexProperties(newProps);
+                                            }
                                         }}
                                         placeholder="Property name..."
                                     />
@@ -207,8 +209,10 @@ export function OptionsField<T extends FieldValues>({form, path}: OptionsFieldPr
                                         value={prop.value}
                                         onChange={(e) => {
                                             const newProps = [...complexProperties];
-                                            newProps[index].value = e.target.value;
-                                            setComplexProperties(newProps);
+                                            if (newProps[index]) {
+                                                newProps[index].value = e.target.value;
+                                                setComplexProperties(newProps);
+                                            }
                                         }}
                                         placeholder="Property value..."
                                     />

@@ -1,7 +1,7 @@
 "use client"
 
 import {useEffect, useState} from "react";
-import {useForm, useFieldArray, UseFormReturn, FieldValues, Path, useWatch, PathValue} from "react-hook-form";
+import {useForm, useFieldArray, UseFormReturn, FieldValues, Path, useWatch, PathValue, SubmitHandler} from "react-hook-form";
 import {Form, FormField, FormItem, FormLabel, FormControl, FormMessage} from "@/components/ui/form";
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
@@ -40,22 +40,7 @@ export function TemplatesForm() {
 
     const form = useForm<FormValues>({
         defaultValues: {
-            templates: template?.attributes.characters.templates.map(template => ({
-                jobIndex: template.jobIndex || 0,
-                subJobIndex: template.subJobIndex || 0,
-                gender: template.gender || 0,
-                mapId: template.mapId || 0,
-                faces: template.faces || [],
-                hairs: template.hairs || [],
-                hairColors: template.hairColors || [],
-                skinColors: template.skinColors || [],
-                tops: template.tops || [],
-                bottoms: template.bottoms || [],
-                shoes: template.shoes || [],
-                weapons: template.weapons || [],
-                items: template.items || [],
-                skills: template.skills || [],
-            }))
+            templates: []
         }
     });
 
@@ -69,24 +54,27 @@ export function TemplatesForm() {
                 const template = data.find((t) => String(t.id) === String(id));
                 setTemplate(template);
 
-                form.reset({
-                    templates: template?.attributes.characters.templates.map(template => ({
-                        jobIndex: template.jobIndex || 0,
-                        subJobIndex: template.subJobIndex || 0,
-                        gender: template.gender || 0,
-                        mapId: template.mapId || 0,
-                        faces: template.faces || [],
-                        hairs: template.hairs || [],
-                        hairColors: template.hairColors || [],
-                        skinColors: template.skinColors || [],
-                        tops: template.tops || [],
-                        bottoms: template.bottoms || [],
-                        shoes: template.shoes || [],
-                        weapons: template.weapons || [],
-                        items: template.items || [],
-                        skills: template.skills || [],
-                    })),
-                });
+                if (template) {
+                    const formValues: FormValues = {
+                        templates: template.attributes.characters.templates.map(t => ({
+                            jobIndex: t.jobIndex,
+                            subJobIndex: t.subJobIndex,
+                            gender: t.gender,
+                            mapId: t.mapId,
+                            faces: t.faces,
+                            hairs: t.hairs,
+                            hairColors: t.hairColors,
+                            skinColors: t.skinColors,
+                            tops: t.tops,
+                            bottoms: t.bottoms,
+                            shoes: t.shoes,
+                            weapons: t.weapons,
+                            items: t.items,
+                            skills: t.skills,
+                        }))
+                    };
+                    form.reset(formValues);
+                }
             })
             .catch((err) => setError(err.message))
             .finally(() => setLoading(false));
@@ -97,7 +85,7 @@ export function TemplatesForm() {
         name: "templates"
     });
 
-    const onSubmit = async (data: FormValues) => {
+    const onSubmit: SubmitHandler<FormValues> = async (data: FormValues) => {
         updateTemplate(template, {
             characters: {
                 templates: data.templates,

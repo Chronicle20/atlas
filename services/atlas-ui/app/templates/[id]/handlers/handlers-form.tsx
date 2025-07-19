@@ -1,7 +1,7 @@
 "use client"
 
 import {useEffect, useState} from "react";
-import {useFieldArray, useForm} from "react-hook-form";
+import {useFieldArray, useForm, SubmitHandler} from "react-hook-form";
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
@@ -11,6 +11,15 @@ import {fetchTemplates, updateTemplate} from "@/lib/templates";
 import type {Template} from "@/types/models/template";
 import {OptionsField} from "@/components/unknown-options";
 import {toast} from "sonner";
+
+interface FormValues {
+    handlers: {
+        opCode: string;
+        validator: string;
+        handler: string;
+        options: unknown;
+    }[];
+}
 
 export function HandlersForm() {
     const {id} = useParams(); // Get templates ID from URL
@@ -35,14 +44,17 @@ export function HandlersForm() {
                 const template = data.find((t) => String(t.id) === String(id));
                 setTemplate(template);
 
-                form.reset({
-                    handlers: template?.attributes.socket.handlers.map(handler => ({
-                        opCode: handler.opCode || "",
-                        validator: handler.validator || "",
-                        handler: handler.handler || "",
-                        options: handler.options,
-                    })),
-                });
+                if (template) {
+                    const formValues: FormValues = {
+                        handlers: template.attributes.socket.handlers.map(handler => ({
+                            opCode: handler.opCode,
+                            validator: handler.validator,
+                            handler: handler.handler,
+                            options: handler.options,
+                        }))
+                    };
+                    form.reset(formValues);
+                }
             })
             .catch((err) => {
                 setError(err.message);
@@ -50,21 +62,12 @@ export function HandlersForm() {
             .finally(() => setLoading(false));
     }, [id, form]);
 
-    interface FormValues {
-        handlers: {
-            opCode: string;
-            validator: string;
-            handler: string;
-            options: unknown;
-        }[];
-    }
-
     const {fields, append, remove} = useFieldArray({
         control: form.control,
         name: "handlers"
     });
 
-    const onSubmit = async (data: FormValues) => {
+    const onSubmit: SubmitHandler<FormValues> = async (data: FormValues) => {
         updateTemplate(template, {
             socket: {
                 handlers: data.handlers,

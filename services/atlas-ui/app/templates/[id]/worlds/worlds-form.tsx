@@ -1,7 +1,7 @@
 "use client"
 
 import {useEffect, useState} from "react";
-import {useFieldArray, useForm} from "react-hook-form";
+import {useFieldArray, useForm, SubmitHandler} from "react-hook-form";
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
@@ -10,6 +10,16 @@ import {X} from "lucide-react";
 import {fetchTemplates, updateTemplate} from "@/lib/templates";
 import type {Template} from "@/types/models/template";
 import {toast} from "sonner";
+
+interface FormValues {
+    worlds: {
+        name: string;
+        flag: string;
+        eventMessage: string;
+        serverMessage: string;
+        whyAmIRecommended: string;
+    }[];
+}
 
 export function WorldsForm() {
     const {id} = useParams(); // Get templates ID from URL
@@ -20,13 +30,7 @@ export function WorldsForm() {
 
     const form = useForm<FormValues>({
         defaultValues: {
-            worlds: template?.attributes.worlds.map(world => ({
-                name: world.name || "",
-                flag: world.flag || "",
-                eventMessage: world.eventMessage || "",
-                serverMessage: world.serverMessage || "",
-                whyAmIRecommended: world.whyAmIRecommended || "",
-            }))
+            worlds: []
         }
     });
 
@@ -40,15 +44,18 @@ export function WorldsForm() {
                 const template = data.find((t) => String(t.id) === String(id));
                 setTemplate(template);
 
-                form.reset({
-                    worlds: template?.attributes.worlds.map(world => ({
-                        name: world.name || "",
-                        flag: world.flag || "",
-                        eventMessage: world.eventMessage || "",
-                        serverMessage: world.serverMessage || "",
-                        whyAmIRecommended: world.whyAmIRecommended || "",
-                    })),
-                });
+                if (template) {
+                    const formValues: FormValues = {
+                        worlds: template.attributes.worlds.map(world => ({
+                            name: world.name,
+                            flag: world.flag,
+                            eventMessage: world.eventMessage,
+                            serverMessage: world.serverMessage,
+                            whyAmIRecommended: world.whyAmIRecommended,
+                        }))
+                    };
+                    form.reset(formValues);
+                }
             })
             .catch((err) => {
                 setError(err.message);
@@ -56,22 +63,12 @@ export function WorldsForm() {
             .finally(() => setLoading(false));
     }, [id, form]);
 
-    interface FormValues {
-        worlds: {
-            name: string;
-            flag: string;
-            eventMessage: string;
-            serverMessage: string;
-            whyAmIRecommended: string;
-        }[];
-    }
-
     const {fields, append, remove} = useFieldArray({
         control: form.control,
         name: "worlds"
     });
 
-    const onSubmit = async (data: FormValues) => {
+    const onSubmit: SubmitHandler<FormValues> = async (data: FormValues) => {
         updateTemplate(template, {
             worlds: data.worlds,
         }).then(() => {

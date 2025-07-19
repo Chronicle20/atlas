@@ -1402,40 +1402,43 @@ export default function ConversationPage() {
         // Update the appropriate connection in the conversation data
         if (sourceHandleId?.startsWith('choice-')) {
           // This is a choice connection
-          const choiceIndex = parseInt(sourceHandleId.split('-')[1]);
+          const choiceIndex = parseInt(sourceHandleId.split('-')[1] || '0');
 
           if (sourceState.type === 'dialogue' && sourceState.dialogue?.choices) {
             // Update the nextState for this choice
             if (choiceIndex >= 0 && choiceIndex < sourceState.dialogue.choices.length) {
+              const choice = sourceState.dialogue.choices[choiceIndex];
               // Only update if this choice points to the old target node
-              if (sourceState.dialogue.choices[choiceIndex].nextState === oldEdge.target) {
+              if (choice && choice.nextState === oldEdge.target) {
                 if (newConnection.target != null) {
-                  sourceState.dialogue.choices[choiceIndex].nextState = newConnection.target;
+                  choice.nextState = newConnection.target;
                 }
               }
             }
           } else if (sourceState.type === 'listSelection' && sourceState.listSelection?.choices) {
             // Update the nextState for this choice in listSelection
             if (choiceIndex >= 0 && choiceIndex < sourceState.listSelection.choices.length) {
+              const choice = sourceState.listSelection.choices[choiceIndex];
               // Only update if this choice points to the old target node
-              if (sourceState.listSelection.choices[choiceIndex].nextState === oldEdge.target) {
+              if (choice && choice.nextState === oldEdge.target) {
                 if (newConnection.target != null) {
-                  sourceState.listSelection.choices[choiceIndex].nextState = newConnection.target;
+                  choice.nextState = newConnection.target;
                 }
               }
             }
           }
         } else if (sourceHandleId?.startsWith('outcome-')) {
           // This is an outcome connection
-          const outcomeIndex = parseInt(sourceHandleId.split('-')[1]);
+          const outcomeIndex = parseInt(sourceHandleId.split('-')[1] || '0');
 
           if (sourceState.type === 'genericAction' && sourceState.genericAction?.outcomes) {
             // Update the nextState for this outcome
             if (outcomeIndex >= 0 && outcomeIndex < sourceState.genericAction.outcomes.length) {
+              const outcome = sourceState.genericAction.outcomes[outcomeIndex];
               // Only update if this outcome points to the old target node
-              if (sourceState.genericAction.outcomes[outcomeIndex].nextState === oldEdge.target) {
+              if (outcome && outcome.nextState === oldEdge.target) {
                 if (newConnection.target != null) {
-                  sourceState.genericAction.outcomes[outcomeIndex].nextState = newConnection.target;
+                  outcome.nextState = newConnection.target;
                 }
               }
             }
@@ -1468,18 +1471,31 @@ export default function ConversationPage() {
   }, [conversation, setConversation, setEdges]);
 
   // Helper function to update an edge
-  const updateEdge = (oldEdge: Edge, newConnection: Connection, edges: Edge[]) => {
+  const updateEdge = (oldEdge: Edge, newConnection: Connection, edges: Edge[]): Edge[] => {
     // Remove the old edge
     const updatedEdges = edges.filter((e) => e.id !== oldEdge.id);
 
-    // Add the new edge with the same id and style
-    const newEdge = {
-      ...oldEdge,
+    // Add the new edge with the same id and style, being careful about exact optional properties
+    const newEdge: Edge = {
       id: oldEdge.id,
       source: newConnection.source || oldEdge.source,
       target: newConnection.target || oldEdge.target,
-      sourceHandle: newConnection.sourceHandle || oldEdge.sourceHandle,
-      targetHandle: newConnection.targetHandle || oldEdge.targetHandle,
+      sourceHandle: newConnection.sourceHandle !== undefined ? newConnection.sourceHandle : oldEdge.sourceHandle,
+      targetHandle: newConnection.targetHandle !== undefined ? newConnection.targetHandle : oldEdge.targetHandle,
+      // Copy other properties from oldEdge that might be optional
+      ...(oldEdge.type && { type: oldEdge.type }),
+      ...(oldEdge.style && { style: oldEdge.style }),
+      ...(oldEdge.animated !== undefined && { animated: oldEdge.animated }),
+      ...(oldEdge.hidden !== undefined && { hidden: oldEdge.hidden }),
+      ...(oldEdge.deletable !== undefined && { deletable: oldEdge.deletable }),
+      ...(oldEdge.data && { data: oldEdge.data }),
+      ...(oldEdge.className && { className: oldEdge.className }),
+      ...(oldEdge.selected !== undefined && { selected: oldEdge.selected }),
+      ...(oldEdge.markerStart && { markerStart: oldEdge.markerStart }),
+      ...(oldEdge.markerEnd && { markerEnd: oldEdge.markerEnd }),
+      ...(oldEdge.zIndex !== undefined && { zIndex: oldEdge.zIndex }),
+      ...(oldEdge.ariaLabel && { ariaLabel: oldEdge.ariaLabel }),
+      ...(oldEdge.interactionWidth !== undefined && { interactionWidth: oldEdge.interactionWidth }),
     };
 
     return [...updatedEdges, newEdge];

@@ -19,11 +19,12 @@ interface ColumnProps {
     tenant: Tenant | null;
     tenantConfig: TenantConfig | null;
     accountMap: Map<string, Account>;
+    onRefresh?: () => void;
 }
 
 export const hiddenColumns = ["id", "attributes.gm"];
 
-export const getColumns = ({tenant, tenantConfig, accountMap}: ColumnProps): ColumnDef<Character>[] => {
+export const getColumns = ({tenant, tenantConfig, accountMap, onRefresh}: ColumnProps): ColumnDef<Character>[] => {
     return [
         {
             accessorKey: "id",
@@ -141,13 +142,13 @@ export const getColumns = ({tenant, tenantConfig, accountMap}: ColumnProps): Col
         {
             id: "actions",
             cell: ({row}) => {
-                return <CharacterActions character={row.original} />
+                return <CharacterActions character={row.original} onRefresh={onRefresh} />
             },
         }
     ];
 };
 
-function CharacterActions({ character }: { character: Character }) {
+function CharacterActions({ character, onRefresh }: { character: Character; onRefresh?: () => void }) {
     const [changeMapOpen, setChangeMapOpen] = useState(false);
 
     return (
@@ -174,6 +175,7 @@ function CharacterActions({ character }: { character: Character }) {
                 character={character}
                 open={changeMapOpen}
                 onOpenChange={setChangeMapOpen}
+                onSuccess={onRefresh}
             />
         </>
     );

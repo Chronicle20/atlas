@@ -9,6 +9,7 @@ import {getColumns} from "@/app/guilds/columns";
 import {Toaster} from "sonner";
 import {Character, fetchCharacters} from "@/lib/characters";
 import {TenantConfig} from "@/lib/tenants";
+import {createErrorFromUnknown} from "@/types/api/errors";
 
 
 export default function Page() {
@@ -34,7 +35,10 @@ export default function Page() {
                 setCharacters(characterData);
                 setTenantConfig(tenantConfigData);
             })
-            .catch((err) => setError(err.message))
+            .catch((err: unknown) => {
+                const errorInfo = createErrorFromUnknown(err, "Failed to fetch guilds and tenant config");
+                setError(errorInfo.message);
+            })
             .finally(() => setLoading(false));
     }
 

@@ -98,7 +98,7 @@ export async function fetchNPCs(tenant: Tenant): Promise<NPC[]> {
 
         // Convert map back to array
         return Array.from(npcMap.values());
-    } catch (error) {
+    } catch (error: unknown) {
         console.error("Failed to fetch NPCs with conversations:", error);
         // If fetching conversations fails, return just the NPCs with shops
         return npcsWithShops;

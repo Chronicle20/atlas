@@ -97,7 +97,7 @@ export function ChangeMapDialog({ character, open, onOpenChange, onSuccess }: Ch
       
       onOpenChange(false);
       onSuccess?.();
-    } catch (error) {
+    } catch (error: unknown) {
       // Enhanced error handling with more specific messaging
       let errorMessage = "Failed to update character map";
       

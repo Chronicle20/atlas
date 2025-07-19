@@ -7,6 +7,7 @@ import {useEffect, useState} from "react";
 import {Character, fetchCharacters} from "@/lib/characters";
 import {Account, fetchAccounts} from "@/lib/accounts";
 import {TenantConfig} from "@/lib/tenants";
+import {createErrorFromUnknown} from "@/types/api/errors";
 
 
 export default function Page() {
@@ -32,7 +33,10 @@ export default function Page() {
                 setAccounts(accountData);
                 setTenantConfig(tenantConfigData);
             })
-            .catch((err) => setError(err.message))
+            .catch((err: unknown) => {
+                const errorInfo = createErrorFromUnknown(err, "Failed to fetch characters data");
+                setError(errorInfo.message);
+            })
             .finally(() => setLoading(false));
     }
 

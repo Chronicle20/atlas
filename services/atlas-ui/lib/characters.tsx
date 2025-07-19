@@ -116,7 +116,7 @@ export async function updateCharacter(tenant: Tenant, characterId: string, data:
         }
         
         // API returns 204 No Content on success
-    } catch (error) {
+    } catch (error: unknown) {
         // Handle network errors and other fetch failures
         if (error instanceof TypeError && error.message.includes('fetch')) {
             throw new Error("Network error: Unable to connect to server");

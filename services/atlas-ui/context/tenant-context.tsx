@@ -3,6 +3,7 @@
 import {createContext, ReactNode, useContext, useEffect, useState} from "react";
 import {fetchTenants, fetchTenantConfiguration} from "@/lib/tenants";
 import type {Tenant, TenantConfig} from "@/types/models/tenant";
+import {createErrorFromUnknown} from "@/types/api/errors";
 
 type TenantContextType = {
     tenants: Tenant[];
@@ -20,7 +21,7 @@ export function TenantProvider({children}: { children: ReactNode }) {
     const [activeTenant, setActiveTenantState] = useState<Tenant | null>(null);
     const [tenants, setTenants] = useState<Tenant[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState(null);
+    const [error, setError] = useState<string | null>(null);
 
     const LOCAL_STORAGE_KEY = "activeTenantId";
 
@@ -36,7 +37,10 @@ export function TenantProvider({children}: { children: ReactNode }) {
                 // Prefer localStorage value, fallback to first tenant
                 setActiveTenantState(storedTenant ?? data[0] ?? null);
             })
-            .catch((err) => setError(err.message))
+            .catch((err: unknown) => {
+                const errorInfo = createErrorFromUnknown(err, "Failed to fetch tenants");
+                setError(errorInfo.message);
+            })
             .finally(() => setLoading(false));
     }, []);
 
@@ -59,7 +63,7 @@ export function TenantProvider({children}: { children: ReactNode }) {
                 const storedTenant = data.find((t) => t.id === storedId);
                 setActiveTenantState(storedTenant ?? data[0] ?? null);
             }
-        } catch (err) {
+        } catch (err: unknown) {
             console.error("Failed to refresh tenants:", err);
         } finally {
             setLoading(false);

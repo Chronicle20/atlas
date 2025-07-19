@@ -9,6 +9,7 @@ import {Character, fetchCharacter} from "@/lib/characters";
 import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/ui/collapsible";
 import {InventoryResponse, fetchInventory, getCompartmentTypeName, getAssetsForCompartment, deleteAsset, Compartment} from "@/lib/inventory";
 import {TenantConfig} from "@/lib/tenants";
+import {createErrorFromUnknown} from "@/types/api/errors";
 import { Button } from "@/components/ui/button";
 import { X, MapPin } from "lucide-react";
 import { ChangeMapDialog } from "@/components/features/characters/ChangeMapDialog";
@@ -54,7 +55,7 @@ export default function CharacterDetailPage() {
             // Refresh inventory data after deletion
             const updatedInventory = await fetchInventory(activeTenant, String(id));
             setInventory(updatedInventory);
-        } catch (err) {
+        } catch (err: unknown) {
             console.error("Failed to delete asset:", err);
         } finally {
             setDeletingAsset(null);
@@ -71,7 +72,7 @@ export default function CharacterDetailPage() {
             // Refresh character data after map change
             const updatedCharacter = await fetchCharacter(activeTenant, String(id));
             setCharacter(updatedCharacter);
-        } catch (err) {
+        } catch (err: unknown) {
             console.error("Failed to refresh character data:", err);
         }
     };
@@ -84,17 +85,20 @@ export default function CharacterDetailPage() {
         // Fetch character data
         const characterPromise = fetchCharacter(activeTenant, String(id))
             .then(setCharacter)
-            .catch((err) => setError(err.message));
+            .catch((err: unknown) => {
+                const errorInfo = createErrorFromUnknown(err, "Failed to fetch character");
+                setError(errorInfo.message);
+            });
 
         // Fetch inventory data
         const inventoryPromise = fetchInventory(activeTenant, String(id))
             .then(setInventory)
-            .catch((err) => console.error("Failed to fetch inventory:", err));
+            .catch((err: unknown) => console.error("Failed to fetch inventory:", err));
 
         // Fetch tenant configuration
         const tenantConfigPromise = fetchTenantConfiguration(activeTenant.id)
             .then(setTenantConfig)
-            .catch((err) => console.error("Failed to fetch tenant configuration:", err));
+            .catch((err: unknown) => console.error("Failed to fetch tenant configuration:", err));
 
         // Wait for all requests to complete
         Promise.all([characterPromise, inventoryPromise, tenantConfigPromise])

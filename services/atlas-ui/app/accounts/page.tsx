@@ -7,6 +7,7 @@ import {useEffect, useState} from "react";
 import {Account, fetchAccounts} from "@/lib/accounts";
 import {getColumns} from "@/app/accounts/columns";
 import {Toaster} from "sonner";
+import {createErrorFromUnknown} from "@/types/api/errors";
 
 
 export default function Page() {
@@ -24,7 +25,10 @@ export default function Page() {
             .then((data) => {
                 setAccounts(data)
             })
-            .catch((err) => setError(err.message))
+            .catch((err: unknown) => {
+                const errorInfo = createErrorFromUnknown(err, "Failed to fetch accounts");
+                setError(errorInfo.message);
+            })
             .finally(() => setLoading(false))
     }
 

@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
+import {createErrorFromUnknown} from "@/types/api/errors";
 
 export default function Page() {
     const { activeTenant } = useTenant();
@@ -35,7 +36,10 @@ export default function Page() {
             .then((npcData) => {
                 setNpcs(npcData);
             })
-            .catch((err) => setError(err.message))
+            .catch((err: unknown) => {
+                const errorInfo = createErrorFromUnknown(err, "Failed to fetch NPCs");
+                setError(errorInfo.message);
+            })
             .finally(() => setLoading(false));
     };
 
@@ -72,7 +76,7 @@ export default function Page() {
             setIsCreateShopDialogOpen(false);
             setCreateShopJson("");
             fetchDataAgain();
-        } catch (err) {
+        } catch (err: unknown) {
             toast.error("Failed to create shop: " + (err instanceof Error ? err.message : String(err)));
         }
     };
@@ -85,7 +89,7 @@ export default function Page() {
             toast.success("All shops deleted successfully");
             setIsDeleteAllShopsDialogOpen(false);
             fetchDataAgain();
-        } catch (err) {
+        } catch (err: unknown) {
             toast.error("Failed to delete all shops: " + (err instanceof Error ? err.message : String(err)));
         }
     };
@@ -116,7 +120,7 @@ export default function Page() {
             setBulkUpdateShopJson("");
             fetchDataAgain();
             toast.success("Shop updated successfully");
-        } catch (err) {
+        } catch (err: unknown) {
             toast.error("Failed to update shop: " + (err instanceof Error ? err.message : String(err)));
         }
     };

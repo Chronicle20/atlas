@@ -2,15 +2,14 @@
 
 import {useEffect, useState} from "react";
 import {useFieldArray, useForm, SubmitHandler} from "react-hook-form";
-import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
-import {Input} from "@/components/ui/input";
+import {Form} from "@/components/ui/form";
 import {Button} from "@/components/ui/button";
 import {useParams} from "next/navigation";
 import {X} from "lucide-react";
 import {fetchTemplates, updateTemplate} from "@/lib/templates";
 import type {Template} from "@/types/models/template";
 import {toast} from "sonner";
-import { LoadingSpinner, ErrorDisplay } from "@/components/common";
+import { LoadingSpinner, ErrorDisplay, FormField } from "@/components/common";
 
 interface FormValues {
     worlds: {
@@ -89,69 +88,39 @@ export function WorldsForm() {
                             <FormField
                                 control={form.control}
                                 name={`worlds.${index}.name`}
-                                render={({field}) => (
-                                    <FormItem>
-                                        <FormLabel>Name</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="World Name" {...field} />
-                                        </FormControl>
-                                        <FormMessage/>
-                                    </FormItem>
-                                )}
+                                label="Name"
+                                type="text"
+                                placeholder="World Name"
                             />
                             <FormField
                                 control={form.control}
                                 name={`worlds.${index}.flag`}
-                                render={({field}) => (
-                                    <FormItem>
-                                        <FormLabel>Flag</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="World Message" {...field} />
-                                        </FormControl>
-                                        <FormMessage/>
-                                    </FormItem>
-                                )}
+                                label="Flag"
+                                type="text"
+                                placeholder="World Message"
                             />
                         </div>
                         <FormField
                             control={form.control}
                             name={`worlds.${index}.serverMessage`}
-                            render={({field}) => (
-                                <FormItem>
-                                    <FormLabel>Server Message</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="Server Message" {...field} />
-                                    </FormControl>
-                                    <FormMessage/>
-                                </FormItem>
-                            )}
+                            label="Server Message"
+                            type="text"
+                            placeholder="Server Message"
                         />
                         <div className="flex flex-row justify-stretch">
                             <FormField
                                 control={form.control}
                                 name={`worlds.${index}.eventMessage`}
-                                render={({field}) => (
-                                    <FormItem>
-                                        <FormLabel>Event Message</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="Event Message" {...field} />
-                                        </FormControl>
-                                        <FormMessage/>
-                                    </FormItem>
-                                )}
+                                label="Event Message"
+                                type="text"
+                                placeholder="Event Message"
                             />
                             <FormField
                                 control={form.control}
                                 name={`worlds.${index}.whyAmIRecommended`}
-                                render={({field}) => (
-                                    <FormItem>
-                                        <FormLabel>Recommendation Justification</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="Recommendation Justification" {...field} />
-                                        </FormControl>
-                                        <FormMessage/>
-                                    </FormItem>
-                                )}
+                                label="Recommendation Justification"
+                                type="text"
+                                placeholder="Recommendation Justification"
                             />
                         </div>
                         <Button type="button" className="absolute top-0 right-0" variant="ghost" size="icon"

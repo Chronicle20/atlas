@@ -2,3 +2,4 @@ export { LoadingSpinner } from './LoadingSpinner';
 export { PageLoader } from './PageLoader';
 export { LoadingOverlay } from './LoadingOverlay';
 export { ErrorDisplay } from './ErrorDisplay';
+export { ErrorBoundary, withErrorBoundary, ErrorBoundaryProvider, useErrorBoundary } from './ErrorBoundary';

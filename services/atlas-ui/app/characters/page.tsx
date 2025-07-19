@@ -45,7 +45,7 @@ export default function Page() {
 
     const accountMap = new Map(accounts.map(a => [a.id, a]));
 
-    const columns = getColumns({tenant: activeTenant, tenantConfig: tenantConfig, accountMap});
+    const columns = getColumns({tenant: activeTenant, tenantConfig: tenantConfig, accountMap, onRefresh: fetchDataAgain});
 
     return (
         <div className="flex flex-col flex-1 space-y-6 p-10 pb-16">

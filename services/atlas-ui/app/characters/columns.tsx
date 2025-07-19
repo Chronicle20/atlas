@@ -12,16 +12,19 @@ import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 import {Button} from "@/components/ui/button";
 import {MoreHorizontal} from "lucide-react";
 import Link from "next/link";
+import {ChangeMapDialog} from "@/components/features/characters/ChangeMapDialog";
+import {useState} from "react";
 
 interface ColumnProps {
     tenant: Tenant | null;
     tenantConfig: TenantConfig | null;
     accountMap: Map<string, Account>;
+    onRefresh?: () => void;
 }
 
 export const hiddenColumns = ["id", "attributes.gm"];
 
-export const getColumns = ({tenant, tenantConfig, accountMap}: ColumnProps): ColumnDef<Character>[] => {
+export const getColumns = ({tenant, tenantConfig, accountMap, onRefresh}: ColumnProps): ColumnDef<Character>[] => {
     return [
         {
             accessorKey: "id",
@@ -139,24 +142,41 @@ export const getColumns = ({tenant, tenantConfig, accountMap}: ColumnProps): Col
         {
             id: "actions",
             cell: ({row}) => {
-                return (
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">Open menu</span>
-                                <MoreHorizontal className="h-4 w-4"/>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem asChild>
-                                <Link href={"/characters/" + row.getValue("id")}>
-                                    View Character
-                                </Link>
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                )
+                return <CharacterActions character={row.original} onRefresh={onRefresh} />
             },
         }
     ];
 };
+
+function CharacterActions({ character, onRefresh }: { character: Character; onRefresh?: () => void }) {
+    const [changeMapOpen, setChangeMapOpen] = useState(false);
+
+    return (
+        <>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="h-8 w-8 p-0">
+                        <span className="sr-only">Open menu</span>
+                        <MoreHorizontal className="h-4 w-4"/>
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem asChild>
+                        <Link href={"/characters/" + character.id}>
+                            View Character
+                        </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setChangeMapOpen(true)}>
+                        Change Map
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+            <ChangeMapDialog 
+                character={character}
+                open={changeMapOpen}
+                onOpenChange={setChangeMapOpen}
+                onSuccess={onRefresh}
+            />
+        </>
+    );
+}

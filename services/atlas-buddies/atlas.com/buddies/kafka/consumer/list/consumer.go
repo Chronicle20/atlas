@@ -71,6 +71,28 @@ func handleRequestBuddyDeleteCommand(db *gorm.DB) message.Handler[list2.Command[
 	}
 }
 
+// handleIncreaseCapacityCommand creates a Kafka message handler for INCREASE_CAPACITY commands.
+// This handler processes requests to increase a character's buddy list capacity.
+//
+// Command Structure:
+//   - Type: "INCREASE_CAPACITY"
+//   - Body: IncreaseCapacityCommandBody with NewCapacity field
+//
+// Processing:
+//   - Validates command type matches INCREASE_CAPACITY
+//   - Creates a processor with tenant context and span tracing
+//   - Delegates to processor's IncreaseCapacityAndEmit method
+//   - Logs errors if the operation fails
+//
+// Event Emission:
+//   - Success: CAPACITY_CHANGE event with new capacity
+//   - Failure: ERROR event with specific error type (INVALID_CAPACITY, CHARACTER_NOT_FOUND, UNKNOWN_ERROR)
+//
+// Parameters:
+//   - db: Database connection for the processor
+//
+// Returns:
+//   - message.Handler that processes IncreaseCapacityCommandBody commands
 func handleIncreaseCapacityCommand(db *gorm.DB) message.Handler[list2.Command[list2.IncreaseCapacityCommandBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, c list2.Command[list2.IncreaseCapacityCommandBody]) {
 		if c.Type != list2.CommandTypeIncreaseCapacity {

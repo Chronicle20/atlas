@@ -141,6 +141,26 @@ func deleteEntityWithBuddies(db *gorm.DB, tenantId uuid.UUID, characterId uint32
 	return nil
 }
 
+// updateCapacity increases the buddy list capacity for a character.
+// This function validates that the new capacity is greater than the current capacity
+// before performing the database update.
+//
+// Parameters:
+//   - db: Database transaction or connection
+//   - tenantId: UUID of the tenant for multi-tenancy support
+//   - characterId: ID of the character whose capacity should be increased
+//   - newCapacity: The new capacity value (must be > current capacity)
+//
+// Returns:
+//   - error: nil on success, or an error if validation fails or database operation fails
+//
+// Validation Rules:
+//   - newCapacity must be strictly greater than the current capacity
+//   - Character must exist in the database
+//
+// Error Conditions:
+//   - Returns "INVALID_CAPACITY" error if newCapacity <= currentCapacity
+//   - Returns database error if character not found or save operation fails
 func updateCapacity(db *gorm.DB, tenantId uuid.UUID, characterId uint32, newCapacity byte) error {
 	// Get the current entity to validate capacity
 	entity, err := byCharacterIdEntityProvider(tenantId, characterId)(db)()

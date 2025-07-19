@@ -54,6 +54,7 @@ export function TenantProvider({children}: { children: ReactNode }) {
     const refreshTenants = async () => {
         try {
             setLoading(true);
+            setError(null); // Clear previous errors
             const data = await fetchTenants();
             setTenants(data);
 
@@ -64,15 +65,22 @@ export function TenantProvider({children}: { children: ReactNode }) {
                 setActiveTenantState(storedTenant ?? data[0] ?? null);
             }
         } catch (err: unknown) {
-            console.error("Failed to refresh tenants:", err);
+            const errorInfo = createErrorFromUnknown(err, "Failed to refresh tenants");
+            setError(errorInfo.message);
+            console.error("Failed to refresh tenants:", errorInfo);
         } finally {
             setLoading(false);
         }
     };
 
     // Function to fetch a tenant configuration
-    const fetchTenantConfig = async (tenantId: string) => {
-        return await fetchTenantConfiguration(tenantId);
+    const fetchTenantConfig = async (tenantId: string): Promise<TenantConfig> => {
+        try {
+            return await fetchTenantConfiguration(tenantId);
+        } catch (err: unknown) {
+            const errorInfo = createErrorFromUnknown(err, `Failed to fetch configuration for tenant ${tenantId}`);
+            throw errorInfo;
+        }
     };
 
     return (

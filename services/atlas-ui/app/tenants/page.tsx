@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTenant } from "@/context/tenant-context";
-import { DataTable } from "@/components/data-table";
+import { DataTableWrapper } from "@/components/common/DataTableWrapper";
 import { getColumns } from "@/app/tenants/columns";
 import { deleteTenant } from "@/lib/tenants";
 import {
@@ -57,7 +57,14 @@ export default function Page() {
                 </div>
             </div>
             <div className="mt-4">
-                <DataTable columns={columns} data={tenants} />
+                <DataTableWrapper 
+                    columns={columns} 
+                    data={tenants}
+                    emptyState={{
+                        title: "No tenants found",
+                        description: "There are no tenants to display at this time."
+                    }}
+                />
             </div>
 
             {/* Delete Confirmation Dialog */}

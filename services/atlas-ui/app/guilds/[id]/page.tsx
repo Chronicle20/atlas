@@ -3,7 +3,7 @@
 import {useEffect, useState} from "react"
 import {useParams} from "next/navigation"
 import {Badge} from "@/components/ui/badge"
-import {DataTable} from "@/components/data-table"
+import {DataTableWrapper} from "@/components/common/DataTableWrapper"
 import {Toaster} from "@/components/ui/sonner"
 import {fetchGuild} from "@/lib/guilds";
 import {Guild, GuildMember, GuildTitle} from "@/types/models/guild";
@@ -97,10 +97,14 @@ export default function GuildDetailPage() {
                 </Card>
             </div>
             <div className="flex-1">
-                <DataTable
+                <DataTableWrapper
                     data={guild.attributes.members}
                     columns={getMemberColumns(guild.attributes.titles)}
                     initialVisibilityState={[]}
+                    emptyState={{
+                        title: "No guild members found",
+                        description: "This guild currently has no members."
+                    }}
                 />
             </div>
             <Toaster richColors/>

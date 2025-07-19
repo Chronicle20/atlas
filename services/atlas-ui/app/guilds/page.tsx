@@ -1,7 +1,7 @@
 "use client"
 
 import {useTenant} from "@/context/tenant-context";
-import {DataTable} from "@/components/data-table";
+import {DataTableWrapper} from "@/components/common/DataTableWrapper";
 import {hiddenColumns} from "@/app/guilds/columns";
 import {useEffect, useState} from "react";
 import {fetchGuilds} from "@/lib/guilds";
@@ -12,8 +12,6 @@ import {Guild} from "@/types/models/guild";
 import {Character} from "@/types/models/character";
 import {TenantConfig} from "@/types/models/tenant";
 import {createErrorFromUnknown} from "@/types/api/errors";
-import {PageLoader} from "@/components/common/PageLoader";
-import {ErrorDisplay} from "@/components/common/ErrorDisplay";
 
 
 export default function Page() {
@@ -50,9 +48,6 @@ export default function Page() {
         fetchDataAgain()
     }, [activeTenant])
 
-    if (loading) return <PageLoader />;
-    if (error) return <ErrorDisplay error={error} retry={fetchDataAgain} />;
-
     const characterMap = new Map(characters.map(c => [c.id, c]));
 
     const columns = getColumns({ tenant: tenantConfig, characterMap });
@@ -65,7 +60,18 @@ export default function Page() {
                 </div>
             </div>
             <div className="mt-4">
-                <DataTable columns={columns} data={guilds} onRefresh={fetchDataAgain} initialVisibilityState={hiddenColumns}/>
+                <DataTableWrapper 
+                    columns={columns} 
+                    data={guilds} 
+                    loading={loading}
+                    error={error}
+                    onRefresh={fetchDataAgain} 
+                    initialVisibilityState={hiddenColumns}
+                    emptyState={{
+                        title: "No guilds found",
+                        description: "There are no guilds to display at this time."
+                    }}
+                />
             </div>
             <Toaster richColors/>
         </div>

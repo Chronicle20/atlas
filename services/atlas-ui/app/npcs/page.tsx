@@ -15,6 +15,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import {createErrorFromUnknown} from "@/types/api/errors";
+import {PageLoader} from "@/components/common/PageLoader";
+import {ErrorDisplay} from "@/components/common/ErrorDisplay";
 
 export default function Page() {
     const { activeTenant } = useTenant();
@@ -144,8 +146,8 @@ export default function Page() {
         };
     }, []);
 
-    if (loading) return <div>Loading...</div>;
-    if (error) return <div>Error: {error}</div>;
+    if (loading) return <PageLoader />;
+    if (error) return <ErrorDisplay error={error} retry={fetchDataAgain} />;
 
     return (
         <div className="flex flex-col flex-1 space-y-6 p-10 pb-4 h-[calc(100vh-4rem)] overflow-hidden">

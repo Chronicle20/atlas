@@ -12,6 +12,8 @@ import {Guild} from "@/types/models/guild";
 import {Character} from "@/types/models/character";
 import {TenantConfig} from "@/types/models/tenant";
 import {createErrorFromUnknown} from "@/types/api/errors";
+import {PageLoader} from "@/components/common/PageLoader";
+import {ErrorDisplay} from "@/components/common/ErrorDisplay";
 
 
 export default function Page() {
@@ -48,8 +50,8 @@ export default function Page() {
         fetchDataAgain()
     }, [activeTenant])
 
-    if (loading) return <div>Loading...</div>;
-    if (error) return <div>Error: {error}</div>;
+    if (loading) return <PageLoader />;
+    if (error) return <ErrorDisplay error={error} retry={fetchDataAgain} />;
 
     const characterMap = new Map(characters.map(c => [c.id, c]));
 

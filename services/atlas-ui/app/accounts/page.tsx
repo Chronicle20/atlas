@@ -9,6 +9,8 @@ import {Account} from "@/types/models/account";
 import {getColumns} from "@/app/accounts/columns";
 import {Toaster} from "sonner";
 import {createErrorFromUnknown} from "@/types/api/errors";
+import {PageLoader} from "@/components/common/PageLoader";
+import {ErrorDisplay} from "@/components/common/ErrorDisplay";
 
 
 export default function Page() {
@@ -37,8 +39,8 @@ export default function Page() {
         fetchDataAgain()
     }, [activeTenant])
 
-    if (loading) return <div>Loading...</div>; // Show loading message while fetching data
-    if (error) return <div>Error: {error}</div>; // Show error message if fetching failed
+    if (loading) return <PageLoader />;
+    if (error) return <ErrorDisplay error={error} retry={fetchDataAgain} />;
 
     const columns = getColumns({tenant: activeTenant});
 

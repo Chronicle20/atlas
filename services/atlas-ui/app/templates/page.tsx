@@ -15,6 +15,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import {createErrorFromUnknown} from "@/types/api/errors";
+import {PageLoader} from "@/components/common/PageLoader";
+import {ErrorDisplay} from "@/components/common/ErrorDisplay";
 
 // Form schema for clone template
 const cloneTemplateFormSchema = z.object({
@@ -218,8 +220,8 @@ export default function Page() {
         onCreateTenant: openCreateTenantDialog
     });
 
-    if (loading) return <div>Loading...</div>; // Show loading message while fetching data
-    if (error) return <div>Error: {error}</div>; // Show error message if fetching failed
+    if (loading) return <PageLoader />;
+    if (error) return <ErrorDisplay error={error} retry={fetchDataAgain} />;
 
     return (
         <div className="flex flex-col flex-1 space-y-6 p-10 pb-16">

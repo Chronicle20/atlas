@@ -5,10 +5,11 @@ import {useParams} from "next/navigation"
 import {Toaster} from "@/components/ui/sonner"
 import {useTenant} from "@/context/tenant-context";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
-import {Character, fetchCharacter} from "@/lib/characters";
+import {fetchCharacter} from "@/lib/characters";
+import {Character} from "@/types/models/character";
 import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/ui/collapsible";
 import {InventoryResponse, fetchInventory, getCompartmentTypeName, getAssetsForCompartment, deleteAsset, Compartment} from "@/lib/inventory";
-import {TenantConfig} from "@/lib/tenants";
+import {TenantConfig} from "@/types/models/tenant";
 import {createErrorFromUnknown} from "@/types/api/errors";
 import { Button } from "@/components/ui/button";
 import { X, MapPin } from "lucide-react";

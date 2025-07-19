@@ -9,8 +9,9 @@ import {useParams} from "next/navigation";
 import {useTenant} from "@/context/tenant-context";
 import {Plus, X} from "lucide-react"
 import {Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog";
-import {CharacterTemplate} from "@/lib/templates";
-import {updateTenantConfiguration, TenantConfig} from "@/lib/tenants";
+import {updateTenantConfiguration} from "@/lib/tenants";
+import {CharacterTemplate} from "@/types/models/template";
+import {TenantConfig} from "@/types/models/tenant";
 import {toast} from "sonner";
 
 interface FormValues {

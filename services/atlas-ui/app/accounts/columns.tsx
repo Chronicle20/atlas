@@ -6,7 +6,8 @@ import {Badge} from "@/components/ui/badge";
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
 import {Button} from "@/components/ui/button";
 import {MoreHorizontal} from "lucide-react";
-import {Account, terminateAccountSession} from "@/lib/accounts";
+import {terminateAccountSession} from "@/lib/accounts";
+import {Account} from "@/types/models/account";
 import type {Tenant} from "@/types/models/tenant";
 import {toast} from "sonner";
 

@@ -10,7 +10,8 @@ import {useParams} from "next/navigation";
 import {useTenant} from "@/context/tenant-context";
 import {Switch} from "@/components/ui/switch";
 import {useEffect, useState} from "react";
-import {updateTenantConfiguration, TenantConfig} from "@/lib/tenants";
+import {updateTenantConfiguration} from "@/lib/tenants";
+import {TenantConfig} from "@/types/models/tenant";
 import {toast} from "sonner";
 
 const propertiesFormSchema = z.object({

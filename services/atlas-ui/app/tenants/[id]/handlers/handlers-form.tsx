@@ -8,7 +8,8 @@ import {Button} from "@/components/ui/button";
 import {useParams} from "next/navigation";
 import {useTenant} from "@/context/tenant-context";
 import {X} from "lucide-react";
-import {updateTenantConfiguration, TenantConfig} from "@/lib/tenants";
+import {updateTenantConfiguration} from "@/lib/tenants";
+import {TenantConfig} from "@/types/models/tenant";
 import {OptionsField} from "@/components/unknown-options";
 import {toast} from "sonner";
 

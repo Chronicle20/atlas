@@ -4,11 +4,13 @@ import {useTenant} from "@/context/tenant-context";
 import {DataTable} from "@/components/data-table";
 import {hiddenColumns} from "@/app/guilds/columns";
 import {useEffect, useState} from "react";
-import {Guild, fetchGuilds} from "@/lib/guilds";
+import {fetchGuilds} from "@/lib/guilds";
 import {getColumns} from "@/app/guilds/columns";
 import {Toaster} from "sonner";
-import {Character, fetchCharacters} from "@/lib/characters";
-import {TenantConfig} from "@/lib/tenants";
+import {fetchCharacters} from "@/lib/characters";
+import {Guild} from "@/types/models/guild";
+import {Character} from "@/types/models/character";
+import {TenantConfig} from "@/types/models/tenant";
 import {createErrorFromUnknown} from "@/types/api/errors";
 
 

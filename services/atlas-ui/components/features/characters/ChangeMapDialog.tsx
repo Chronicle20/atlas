@@ -5,7 +5,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Character, updateCharacter } from "@/lib/characters";
+import { updateCharacter } from "@/lib/characters";
+import { Character } from "@/types/models/character";
 import { useTenant } from "@/context/tenant-context";
 import { toast } from "sonner";
 

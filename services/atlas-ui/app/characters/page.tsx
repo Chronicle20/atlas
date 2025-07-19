@@ -4,9 +4,11 @@ import {useTenant} from "@/context/tenant-context";
 import {DataTable} from "@/components/data-table";
 import {getColumns, hiddenColumns} from "@/app/characters/columns";
 import {useEffect, useState} from "react";
-import {Character, fetchCharacters} from "@/lib/characters";
-import {Account, fetchAccounts} from "@/lib/accounts";
-import {TenantConfig} from "@/lib/tenants";
+import {fetchCharacters} from "@/lib/characters";
+import {fetchAccounts} from "@/lib/accounts";
+import {Character} from "@/types/models/character";
+import {Account} from "@/types/models/account";
+import {TenantConfig} from "@/types/models/tenant";
 import {createErrorFromUnknown} from "@/types/api/errors";
 
 

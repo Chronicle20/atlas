@@ -320,3 +320,65 @@ curl -X PATCH \
 - **Transactional**: Updates are applied atomically - either all changes succeed or none are applied
 - **Audit Trail**: Character updates may trigger audit events for tracking changes
 - **Immutable Fields**: Some character properties (like characterId, accountId) cannot be modified via this endpoint
+
+### Character Update Events
+
+When character properties are updated via the PATCH endpoint, specific events are emitted to the `EVENT_TOPIC_CHARACTER_STATUS` topic to provide detailed audit trails and enable downstream services to react to specific changes. Each modified field triggers its own dedicated event with old and new values for tracking purposes.
+
+#### Emitted Events by Field
+
+| Field Changed | Event Type | Event Body Structure | Description |
+|---------------|------------|---------------------|-------------|
+| `name` | `NAME_CHANGED` | `{"oldName": "OldName", "newName": "NewName"}` | Character name change with audit trail |
+| `hair` | `HAIR_CHANGED` | `{"oldHair": 30000, "newHair": 30100}` | Hair style ID change tracking |
+| `face` | `FACE_CHANGED` | `{"oldFace": 20000, "newFace": 20100}` | Face ID change tracking |
+| `gender` | `GENDER_CHANGED` | `{"oldGender": 0, "newGender": 1}` | Gender change (0=male, 1=female) |
+| `skinColor` | `SKIN_COLOR_CHANGED` | `{"oldSkinColor": 0, "newSkinColor": 1}` | Skin color ID change tracking |
+| `mapId` | `MAP_CHANGED` | `{"channelId": 1, "oldMapId": 100000000, "targetMapId": 110000000, "targetPortalId": 0}` | Map location change (reuses existing event type) |
+| `gm` | `GM_CHANGED` | `{"oldGm": false, "newGm": true}` | GM status change tracking |
+
+#### Event Structure
+
+All character update events follow the standard status event structure:
+
+```json
+{
+  "transactionId": "123e4567-e89b-12d3-a456-426614174000",
+  "worldId": 1,
+  "characterId": 1001,
+  "type": "NAME_CHANGED",
+  "body": {
+    "oldName": "OldCharacterName",
+    "newName": "NewCharacterName"
+  }
+}
+```
+
+#### Multiple Field Updates
+
+When multiple fields are updated in a single PATCH request, **multiple specific events are emitted** - one for each changed field. For example, updating both name and hair in one request will emit both a `NAME_CHANGED` event and a `HAIR_CHANGED` event.
+
+Example PATCH request updating name and hair:
+```json
+{
+  "data": {
+    "type": "characters",
+    "id": "1001",
+    "attributes": {
+      "name": "NewName",
+      "hair": 30150
+    }
+  }
+}
+```
+
+Results in two separate events:
+1. `NAME_CHANGED` event with old/new name values
+2. `HAIR_CHANGED` event with old/new hair ID values
+
+#### Benefits for Downstream Services
+
+- **Granular Reactivity**: Services can subscribe to specific change types instead of processing generic "UPDATED" events
+- **Audit Trail**: Complete old/new value tracking for compliance and debugging
+- **Selective Processing**: Different services can react to different field changes without unnecessary processing
+- **Event Sourcing**: Detailed change history enables event replay and state reconstruction

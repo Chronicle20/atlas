@@ -67,6 +67,9 @@ export function ChangeMapDialog({ character, open, onOpenChange, onSuccess }: Ch
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Clear any existing validation errors
+    setValidationError("");
+    
     if (!activeTenant) {
       toast.error("No active tenant selected");
       return;
@@ -76,6 +79,7 @@ export function ChangeMapDialog({ character, open, onOpenChange, onSuccess }: Ch
     const error = validateMapId(mapId);
     if (error) {
       setValidationError(error);
+      toast.error("Please fix the validation errors before submitting");
       return;
     }
 
@@ -86,11 +90,45 @@ export function ChangeMapDialog({ character, open, onOpenChange, onSuccess }: Ch
     try {
       await updateCharacter(activeTenant, character.id, { mapId: mapIdNumber });
       toast.success(`Successfully changed ${character.attributes.name}'s map to ${mapIdNumber}`);
+      
+      // Reset form state on success
+      setMapId(character.attributes.mapId.toString());
+      setValidationError("");
+      
       onOpenChange(false);
       onSuccess?.();
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to update character map";
+      // Enhanced error handling with more specific messaging
+      let errorMessage = "Failed to update character map";
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        
+        // Add contextual information for specific error types
+        if (error.message.includes("Network error")) {
+          errorMessage += ". Please check your internet connection and try again.";
+        } else if (error.message.includes("Authentication failed")) {
+          errorMessage += ". Please refresh the page and try again.";
+        } else if (error.message.includes("Permission denied")) {
+          errorMessage += ". You may not have the required permissions to perform this action.";
+        } else if (error.message.includes("Server error")) {
+          errorMessage += ". Please try again later or contact support if the issue persists.";
+        } else if (error.message.includes("Invalid map ID")) {
+          // This is a validation error from the server, reset to show it in validation
+          setValidationError("The map ID is invalid or does not exist");
+          errorMessage = "Invalid map ID provided";
+        }
+      } else {
+        // Handle non-Error objects
+        errorMessage = "An unexpected error occurred while updating the character map";
+      }
+      
       toast.error(errorMessage);
+      
+      // Log error for debugging (only in development)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Map change error:', error);
+      }
     } finally {
       setIsLoading(false);
     }

@@ -105,7 +105,7 @@ export function FormField<
       control={control}
       name={name}
       render={({ field }) => (
-        <FormItem className={cn(className)}>
+        <FormItem className={cn(className)} data-testid="form-field">
           <FormLabel>{label}</FormLabel>
           <FormControl>
             {"render" in props ? (

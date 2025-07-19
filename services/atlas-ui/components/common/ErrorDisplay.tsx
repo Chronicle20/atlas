@@ -22,7 +22,7 @@ export function ErrorDisplay({
   const message = typeof error === 'string' ? error : error.message;
   
   return (
-    <Alert variant="destructive" className={cn('', className)}>
+    <Alert variant="destructive" className={cn('', className)} data-testid="error-display">
       {showIcon && <AlertCircle />}
       <AlertTitle>{title}</AlertTitle>
       <AlertDescription>

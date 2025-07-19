@@ -21,10 +21,13 @@ export function EmptyState({
   className 
 }: EmptyStateProps) {
   return (
-    <div className={cn(
-      'flex flex-col items-center justify-center p-8 text-center',
-      className
-    )}>
+    <div 
+      className={cn(
+        'flex flex-col items-center justify-center p-8 text-center',
+        className
+      )}
+      data-testid="empty-state"
+    >
       {icon && (
         <div className="mb-4 text-muted-foreground">
           {icon}

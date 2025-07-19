@@ -8,7 +8,10 @@ interface LoadingSpinnerProps {
 
 export function LoadingSpinner({ size = 'md', className }: LoadingSpinnerProps) {
   return (
-    <div className={cn('flex items-center justify-center p-4', className)}>
+    <div 
+      className={cn('flex items-center justify-center p-4', className)}
+      data-testid="loading-spinner"
+    >
       <Loader2
         className={cn(
           'animate-spin text-muted-foreground',

@@ -27,7 +27,7 @@ export function TableSkeleton({
   className 
 }: TableSkeletonProps) {
   return (
-    <div className={`w-full space-y-4 ${className || ''}`}>
+    <div className={`w-full space-y-4 ${className || ''}`} data-testid="table-skeleton">
       {/* Header actions skeleton */}
       {showActions && (
         <div className="flex items-center justify-between">

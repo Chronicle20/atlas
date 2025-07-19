@@ -1,4 +1,5 @@
 import type {ApiListResponse, ApiSingleResponse} from "@/types/api/responses";
+import {createApiErrorFromResponse, createErrorFromUnknown} from "@/types/api/errors";
 
 // Lightweight tenant attributes for the new API
 export type TenantBasicAttributes = {
@@ -76,208 +77,281 @@ export type Tenant = TenantBasic;
 
 // Fetch lightweight tenant list using the new API
 export async function fetchTenants(): Promise<Tenant[]> {
-    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
-    const response = await fetch(rootUrl + "/api/tenants");
-    if (!response.ok) {
-        throw new Error("Failed to fetch tenants.");
-    }
+    try {
+        const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
+        const response = await fetch(rootUrl + "/api/tenants");
+        if (!response.ok) {
+            throw createApiErrorFromResponse(response.status, "Failed to fetch tenants");
+        }
 
-    const responseData: ApiListResponse<Tenant> = await response.json();
-    return responseData.data
-        .sort((a: Tenant, b: Tenant) => {
-            if (a.attributes.region !== b.attributes.region) {
-                return a.attributes.region.localeCompare(b.attributes.region);
-            }
-            if (a.attributes.majorVersion !== b.attributes.majorVersion) {
-                return a.attributes.majorVersion - b.attributes.majorVersion;
-            }
-            return a.attributes.minorVersion - b.attributes.minorVersion;
-        });
+        const responseData: ApiListResponse<Tenant> = await response.json();
+        return responseData.data
+            .sort((a: Tenant, b: Tenant) => {
+                if (a.attributes.region !== b.attributes.region) {
+                    return a.attributes.region.localeCompare(b.attributes.region);
+                }
+                if (a.attributes.majorVersion !== b.attributes.majorVersion) {
+                    return a.attributes.majorVersion - b.attributes.majorVersion;
+                }
+                return a.attributes.minorVersion - b.attributes.minorVersion;
+            });
+    } catch (error: unknown) {
+        if (typeof error === 'object' && error !== null && 'statusCode' in error) {
+            throw error; // Re-throw API errors
+        }
+        throw createErrorFromUnknown(error, "Failed to fetch tenants");
+    }
 }
 
 // Fetch a single tenant by ID using the new API
 export async function fetchTenant(tenantId: string): Promise<Tenant> {
-    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
-    const response = await fetch(`${rootUrl}/api/tenants/${tenantId}`);
-    if (!response.ok) {
-        throw new Error("Failed to fetch tenant.");
-    }
+    try {
+        const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
+        const response = await fetch(`${rootUrl}/api/tenants/${tenantId}`);
+        if (!response.ok) {
+            throw createApiErrorFromResponse(response.status, `Failed to fetch tenant with ID: ${tenantId}`);
+        }
 
-    const responseData: ApiSingleResponse<Tenant> = await response.json();
-    return responseData.data;
+        const responseData: ApiSingleResponse<Tenant> = await response.json();
+        return responseData.data;
+    } catch (error: unknown) {
+        if (typeof error === 'object' && error !== null && 'statusCode' in error) {
+            throw error; // Re-throw API errors
+        }
+        throw createErrorFromUnknown(error, `Failed to fetch tenant with ID: ${tenantId}`);
+    }
 }
 
 // Fetch tenant configuration using the existing API
 export async function fetchTenantConfigurations(): Promise<TenantConfig[]> {
-    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
-    const response = await fetch(rootUrl + "/api/configurations/tenants");
-    if (!response.ok) {
-        throw new Error("Failed to fetch tenant configurations.");
-    }
+    try {
+        const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
+        const response = await fetch(rootUrl + "/api/configurations/tenants");
+        if (!response.ok) {
+            throw createApiErrorFromResponse(response.status, "Failed to fetch tenant configurations");
+        }
 
-    const responseData: ApiListResponse<TenantConfig> = await response.json();
-    return responseData.data
-        .map((tenant: TenantConfig) => ({
-            ...tenant,
-            attributes: {
-                ...tenant.attributes,
-                socket: {
-                    ...tenant.attributes.socket,
-                    handlers: [...tenant.attributes.socket.handlers].sort(
-                        (a, b) => parseInt(a.opCode, 16) - parseInt(b.opCode, 16)
-                    ),
-                    writers: [...tenant.attributes.socket.writers].sort(
-                        (a, b) => parseInt(a.opCode, 16) - parseInt(b.opCode, 16)
-                    ),
+        const responseData: ApiListResponse<TenantConfig> = await response.json();
+        return responseData.data
+            .map((tenant: TenantConfig) => ({
+                ...tenant,
+                attributes: {
+                    ...tenant.attributes,
+                    socket: {
+                        ...tenant.attributes.socket,
+                        handlers: [...tenant.attributes.socket.handlers].sort(
+                            (a, b) => parseInt(a.opCode, 16) - parseInt(b.opCode, 16)
+                        ),
+                        writers: [...tenant.attributes.socket.writers].sort(
+                            (a, b) => parseInt(a.opCode, 16) - parseInt(b.opCode, 16)
+                        ),
+                    },
                 },
-            },
-        }))
-        .sort((a: TenantConfig, b: TenantConfig) => {
-            if (a.attributes.region !== b.attributes.region) {
-                return a.attributes.region.localeCompare(b.attributes.region);
-            }
-            if (a.attributes.majorVersion !== b.attributes.majorVersion) {
-                return a.attributes.majorVersion - b.attributes.majorVersion;
-            }
-            return a.attributes.minorVersion - b.attributes.minorVersion;
-        });
+            }))
+            .sort((a: TenantConfig, b: TenantConfig) => {
+                if (a.attributes.region !== b.attributes.region) {
+                    return a.attributes.region.localeCompare(b.attributes.region);
+                }
+                if (a.attributes.majorVersion !== b.attributes.majorVersion) {
+                    return a.attributes.majorVersion - b.attributes.majorVersion;
+                }
+                return a.attributes.minorVersion - b.attributes.minorVersion;
+            });
+    } catch (error: unknown) {
+        if (typeof error === 'object' && error !== null && 'statusCode' in error) {
+            throw error; // Re-throw API errors
+        }
+        throw createErrorFromUnknown(error, "Failed to fetch tenant configurations");
+    }
 }
 
 // Fetch a single tenant configuration by ID using the existing API
 export async function fetchTenantConfiguration(tenantId: string): Promise<TenantConfig> {
-    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
-    const response = await fetch(`${rootUrl}/api/configurations/tenants/${tenantId}`);
-    if (!response.ok) {
-        throw new Error("Failed to fetch tenant configuration.");
+    try {
+        const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
+        const response = await fetch(`${rootUrl}/api/configurations/tenants/${tenantId}`);
+        if (!response.ok) {
+            throw createApiErrorFromResponse(response.status, `Failed to fetch tenant configuration for ID: ${tenantId}`);
+        }
+
+        const responseData: ApiSingleResponse<TenantConfig> = await response.json();
+        const tenant = responseData.data;
+
+        // Sort handlers and writers
+        if (tenant.attributes.socket) {
+            tenant.attributes.socket.handlers = [...tenant.attributes.socket.handlers].sort(
+                (a, b) => parseInt(a.opCode, 16) - parseInt(b.opCode, 16)
+            );
+            tenant.attributes.socket.writers = [...tenant.attributes.socket.writers].sort(
+                (a, b) => parseInt(a.opCode, 16) - parseInt(b.opCode, 16)
+            );
+        }
+
+        return tenant;
+    } catch (error: unknown) {
+        if (typeof error === 'object' && error !== null && 'statusCode' in error) {
+            throw error; // Re-throw API errors
+        }
+        throw createErrorFromUnknown(error, `Failed to fetch tenant configuration for ID: ${tenantId}`);
     }
-
-    const responseData: ApiSingleResponse<TenantConfig> = await response.json();
-    const tenant = responseData.data;
-
-    // Sort handlers and writers
-    if (tenant.attributes.socket) {
-        tenant.attributes.socket.handlers = [...tenant.attributes.socket.handlers].sort(
-            (a, b) => parseInt(a.opCode, 16) - parseInt(b.opCode, 16)
-        );
-        tenant.attributes.socket.writers = [...tenant.attributes.socket.writers].sort(
-            (a, b) => parseInt(a.opCode, 16) - parseInt(b.opCode, 16)
-        );
-    }
-
-    return tenant;
 }
 
 // Update a tenant using the new API
 export const updateTenant = async (tenant: Tenant | undefined, updatedAttributes: Partial<TenantBasicAttributes>) => {
     if (!tenant) return;
 
-    const input = {
-        data: {
-            id: tenant.id,
-            type: "tenants",
-            attributes: {
-                ...tenant.attributes,
-                ...updatedAttributes,
+    try {
+        const input = {
+            data: {
+                id: tenant.id,
+                type: "tenants",
+                attributes: {
+                    ...tenant.attributes,
+                    ...updatedAttributes,
+                },
             },
-        },
-    };
+        };
 
-    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
-    const response = await fetch(`${rootUrl}/api/tenants/${tenant.id}`, {
-        method: "PATCH",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(input),
-    });
+        const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
+        const response = await fetch(`${rootUrl}/api/tenants/${tenant.id}`, {
+            method: "PATCH",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(input),
+        });
 
-    if (!response.ok) throw new Error("Failed to update tenant.");
+        if (!response.ok) {
+            throw createApiErrorFromResponse(response.status, `Failed to update tenant with ID: ${tenant.id}`);
+        }
 
-    // If the request is successful, update the local tenant state
-    return {...tenant, attributes: {...tenant.attributes, ...updatedAttributes}};
+        // If the request is successful, update the local tenant state
+        return {...tenant, attributes: {...tenant.attributes, ...updatedAttributes}};
+    } catch (error: unknown) {
+        if (typeof error === 'object' && error !== null && 'statusCode' in error) {
+            throw error; // Re-throw API errors
+        }
+        throw createErrorFromUnknown(error, `Failed to update tenant with ID: ${tenant.id}`);
+    }
 };
 
 // Delete a tenant using the new API
 export const deleteTenant = async (tenantId: string) => {
-    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
-    const response = await fetch(`${rootUrl}/api/tenants/${tenantId}`, {
-        method: "DELETE",
-        headers: {"Content-Type": "application/json"},
-    });
+    try {
+        const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
+        const response = await fetch(`${rootUrl}/api/tenants/${tenantId}`, {
+            method: "DELETE",
+            headers: {"Content-Type": "application/json"},
+        });
 
-    if (!response.ok) throw new Error("Failed to delete tenant.");
+        if (!response.ok) {
+            throw createApiErrorFromResponse(response.status, `Failed to delete tenant with ID: ${tenantId}`);
+        }
 
-    return true;
+        return true;
+    } catch (error: unknown) {
+        if (typeof error === 'object' && error !== null && 'statusCode' in error) {
+            throw error; // Re-throw API errors
+        }
+        throw createErrorFromUnknown(error, `Failed to delete tenant with ID: ${tenantId}`);
+    }
 };
 
 // Create a tenant using the new API
 export const createTenant = async (attributes: TenantBasicAttributes) => {
-    const input = {
-        data: {
-            type: "tenants",
-            attributes: attributes,
-        },
-    };
+    try {
+        const input = {
+            data: {
+                type: "tenants",
+                attributes: attributes,
+            },
+        };
 
-    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
-    const response = await fetch(`${rootUrl}/api/tenants`, {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(input),
-    });
+        const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
+        const response = await fetch(`${rootUrl}/api/tenants`, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(input),
+        });
 
-    if (!response.ok) throw new Error("Failed to create tenant.");
+        if (!response.ok) {
+            throw createApiErrorFromResponse(response.status, "Failed to create tenant");
+        }
 
-    const responseData: ApiSingleResponse<Tenant> = await response.json();
-    return responseData.data;
+        const responseData: ApiSingleResponse<Tenant> = await response.json();
+        return responseData.data;
+    } catch (error: unknown) {
+        if (typeof error === 'object' && error !== null && 'statusCode' in error) {
+            throw error; // Re-throw API errors
+        }
+        throw createErrorFromUnknown(error, "Failed to create tenant");
+    }
 };
 
 // Update a tenant configuration using the existing API
 export const updateTenantConfiguration = async (tenant: TenantConfig | undefined, updatedAttributes: Partial<TenantConfigAttributes>) => {
     if (!tenant) return;
 
-    const input = {
-        data: {
-            id: tenant.id,
-            type: "tenants",
-            attributes: {
-                ...tenant.attributes,
-                ...updatedAttributes,
+    try {
+        const input = {
+            data: {
+                id: tenant.id,
+                type: "tenants",
+                attributes: {
+                    ...tenant.attributes,
+                    ...updatedAttributes,
+                },
             },
-        },
-    };
+        };
 
-    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
-    const response = await fetch(`${rootUrl}/api/configurations/tenants/${tenant.id}`, {
-        method: "PATCH",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(input),
-    });
+        const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
+        const response = await fetch(`${rootUrl}/api/configurations/tenants/${tenant.id}`, {
+            method: "PATCH",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(input),
+        });
 
-    if (!response.ok) throw new Error("Failed to update tenant configuration.");
+        if (!response.ok) {
+            throw createApiErrorFromResponse(response.status, `Failed to update tenant configuration with ID: ${tenant.id}`);
+        }
 
-    // If the request is successful, update the local tenant state
-    return {...tenant, attributes: {...tenant.attributes, ...updatedAttributes}};
+        // If the request is successful, update the local tenant state
+        return {...tenant, attributes: {...tenant.attributes, ...updatedAttributes}};
+    } catch (error: unknown) {
+        if (typeof error === 'object' && error !== null && 'statusCode' in error) {
+            throw error; // Re-throw API errors
+        }
+        throw createErrorFromUnknown(error, `Failed to update tenant configuration with ID: ${tenant.id}`);
+    }
 };
 
 // Create a tenant configuration using the existing API
 export const createTenantConfiguration = async (attributes: TenantConfigAttributes) => {
-    const input = {
-        data: {
-            type: "tenants",
-            attributes: attributes,
-        },
-    };
+    try {
+        const input = {
+            data: {
+                type: "tenants",
+                attributes: attributes,
+            },
+        };
 
-    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
-    const response = await fetch(`${rootUrl}/api/configurations/tenants`, {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(input),
-    });
+        const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
+        const response = await fetch(`${rootUrl}/api/configurations/tenants`, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(input),
+        });
 
-    if (!response.ok) throw new Error("Failed to create tenant configuration.");
+        if (!response.ok) {
+            throw createApiErrorFromResponse(response.status, "Failed to create tenant configuration");
+        }
 
-    const responseData: ApiSingleResponse<TenantConfig> = await response.json();
-    return responseData.data;
+        const responseData: ApiSingleResponse<TenantConfig> = await response.json();
+        return responseData.data;
+    } catch (error: unknown) {
+        if (typeof error === 'object' && error !== null && 'statusCode' in error) {
+            throw error; // Re-throw API errors
+        }
+        throw createErrorFromUnknown(error, "Failed to create tenant configuration");
+    }
 };
 
 export const createTenantFromTemplate = (template: import("@/lib/templates").Template): TenantAttributes => {

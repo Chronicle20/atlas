@@ -14,6 +14,7 @@ import {createErrorFromUnknown} from "@/types/api/errors";
 import { Button } from "@/components/ui/button";
 import { X, MapPin } from "lucide-react";
 import { ChangeMapDialog } from "@/components/features/characters/ChangeMapDialog";
+import { PageLoader, ErrorDisplay } from "@/components/common";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -107,8 +108,8 @@ export default function CharacterDetailPage() {
 
     }, [activeTenant, id, fetchTenantConfiguration])
 
-    if (loading) return <div className="p-4">Loading...</div>
-    if (error || !character || !tenantConfig) return <div className="p-4 text-red-500">Error: {error || "Character or tenant configuration not found"}</div>
+    if (loading) return <PageLoader />
+    if (error || !character || !tenantConfig) return <ErrorDisplay error={error || "Character or tenant configuration not found"} className="p-4" />;
 
     // Get compartments from inventory data
     const compartments = inventory?.included.filter(

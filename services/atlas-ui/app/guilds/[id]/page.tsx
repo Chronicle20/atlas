@@ -3,7 +3,7 @@
 import {useEffect, useState} from "react"
 import {useParams} from "next/navigation"
 import {Badge} from "@/components/ui/badge"
-import {DataTable} from "@/components/data-table"
+import {DataTableWrapper} from "@/components/common/DataTableWrapper"
 import {Toaster} from "@/components/ui/sonner"
 import {fetchGuild} from "@/lib/guilds";
 import {Guild, GuildMember, GuildTitle} from "@/types/models/guild";
@@ -13,6 +13,7 @@ import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {getJobNameById} from "@/lib/jobs";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip";
 import {TenantConfig} from "@/types/models/tenant";
+import { PageLoader, ErrorDisplay } from "@/components/common";
 
 export default function GuildDetailPage() {
     const {id} = useParams()
@@ -41,8 +42,8 @@ export default function GuildDetailPage() {
             .finally(() => setLoading(false))
     }, [activeTenant, id, fetchTenantConfiguration])
 
-    if (loading) return <div className="p-4">Loading...</div>
-    if (error || !guild || !tenantConfig) return <div className="p-4 text-red-500">Error: {error || "Guild or tenant configuration not found"}</div>
+    if (loading) return <PageLoader />
+    if (error || !guild || !tenantConfig) return <ErrorDisplay error={error || "Guild or tenant configuration not found"} className="p-4" />;
 
     return (
         <div className="flex flex-col flex-1 space-y-6 p-10 pb-16 h-screen">
@@ -96,10 +97,14 @@ export default function GuildDetailPage() {
                 </Card>
             </div>
             <div className="flex-1">
-                <DataTable
+                <DataTableWrapper
                     data={guild.attributes.members}
                     columns={getMemberColumns(guild.attributes.titles)}
                     initialVisibilityState={[]}
+                    emptyState={{
+                        title: "No guild members found",
+                        description: "This guild currently has no members."
+                    }}
                 />
             </div>
             <Toaster richColors/>

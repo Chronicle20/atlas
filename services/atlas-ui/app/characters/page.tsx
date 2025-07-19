@@ -1,7 +1,7 @@
 "use client"
 
 import {useTenant} from "@/context/tenant-context";
-import {DataTable} from "@/components/data-table";
+import {DataTableWrapper} from "@/components/common/DataTableWrapper";
 import {getColumns, hiddenColumns} from "@/app/characters/columns";
 import {useEffect, useState} from "react";
 import {fetchCharacters} from "@/lib/characters";
@@ -46,9 +46,6 @@ export default function Page() {
         fetchDataAgain()
     }, [activeTenant])
 
-    if (loading) return <div>Loading...</div>;
-    if (error) return <div>Error: {error}</div>;
-
     const accountMap = new Map(accounts.map(a => [a.id, a]));
 
     const columns = getColumns({tenant: activeTenant, tenantConfig: tenantConfig, accountMap, onRefresh: fetchDataAgain});
@@ -61,8 +58,18 @@ export default function Page() {
                 </div>
             </div>
             <div className="mt-4">
-                <DataTable columns={columns} data={characters} onRefresh={fetchDataAgain}
-                           initialVisibilityState={hiddenColumns}/>
+                <DataTableWrapper 
+                    columns={columns} 
+                    data={characters} 
+                    loading={loading}
+                    error={error}
+                    onRefresh={fetchDataAgain}
+                    initialVisibilityState={hiddenColumns}
+                    emptyState={{
+                        title: "No characters found",
+                        description: "There are no characters to display at this time."
+                    }}
+                />
             </div>
         </div>
     );

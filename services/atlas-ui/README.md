@@ -51,6 +51,7 @@ This project uses TypeScript in strict mode with enhanced type checking:
 The codebase follows the architectural patterns defined in `CLAUDE.md`:
 
 - **Component Structure**: Organized by scope (ui, common, features)
+- **Reusable Components**: Common UI patterns extracted into reusable components (see `docs/reusable-components.md`)
 - **State Management**: Local state → React Context → Global store
 - **Data Fetching**: React Query for server state management
 - **Styling**: Tailwind CSS with shadcn/ui component system

@@ -4,7 +4,7 @@ import { useTenant } from "@/context/tenant-context";
 import { useEffect, useState } from "react";
 import { createCommodity, deleteCommodity, fetchNPCShop, updateCommodity, updateShop, deleteAllCommoditiesForNPC } from "@/lib/npcs";
 import { Commodity, CommodityAttributes, Shop } from "@/types/models/npc";
-import { DataTable } from "@/components/data-table";
+import { DataTableWrapper } from "@/components/common/DataTableWrapper";
 import {hiddenColumns} from "@/app/npcs/[id]/shop/columns";
 import { getColumns } from "./columns";
 import { useParams } from "next/navigation";
@@ -304,13 +304,20 @@ export default function Page() {
         }
     };
 
-    if (loading) return <div>Loading...</div>;
-    if (error) return <div>Error: {error}</div>;
-
     const columns = getColumns({
         npcId,
         onEdit: handleEditCommodity,
         onDelete: handleDeleteCommodity
+    });
+
+    const filteredCommodities = commodities.filter(commodity => {
+        // Filter out commodities that both don't have a meso price and don't have a token price if recharger is set
+        if (recharger && 
+            commodity.attributes.mesoPrice <= 0 && 
+            commodity.attributes.tokenPrice <= 0) {
+            return false;
+        }
+        return true;
     });
 
     return (
@@ -556,17 +563,11 @@ export default function Page() {
             </div>
 
             <div className="mt-4">
-                <DataTable
+                <DataTableWrapper
                     columns={columns}
-                    data={commodities.filter(commodity => {
-                        // Filter out commodities that both don't have a meso price and don't have a token price if recharger is set
-                        if (recharger && 
-                            commodity.attributes.mesoPrice <= 0 && 
-                            commodity.attributes.tokenPrice <= 0) {
-                            return false;
-                        }
-                        return true;
-                    })}
+                    data={filteredCommodities}
+                    loading={loading}
+                    error={error}
                     onRefresh={fetchDataAgain}
                     headerActions={[
                         {
@@ -591,6 +592,10 @@ export default function Page() {
                         }
                     ]}
                     initialVisibilityState={hiddenColumns}
+                    emptyState={{
+                        title: "No commodities found",
+                        description: "There are no commodities in this shop. Add one to get started."
+                    }}
                 />
             </div>
         </div>

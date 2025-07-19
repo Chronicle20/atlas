@@ -1,6 +1,6 @@
 "use client"
 
-import {DataTable} from "@/components/data-table";
+import {DataTableWrapper} from "@/components/common/DataTableWrapper";
 import {getColumns} from "@/app/templates/columns";
 import {useEffect, useState} from "react";
 import {fetchTemplates, deleteTemplate, cloneTemplate, createTemplate} from "@/lib/templates";
@@ -218,9 +218,6 @@ export default function Page() {
         onCreateTenant: openCreateTenantDialog
     });
 
-    if (loading) return <div>Loading...</div>; // Show loading message while fetching data
-    if (error) return <div>Error: {error}</div>; // Show error message if fetching failed
-
     return (
         <div className="flex flex-col flex-1 space-y-6 p-10 pb-16">
             <div className="items-center justify-between space-y-2">
@@ -229,7 +226,17 @@ export default function Page() {
                 </div>
             </div>
             <div className="mt-4">
-                <DataTable columns={columns} data={templates} onRefresh={fetchDataAgain}/>
+                <DataTableWrapper 
+                    columns={columns} 
+                    data={templates} 
+                    loading={loading}
+                    error={error}
+                    onRefresh={fetchDataAgain}
+                    emptyState={{
+                        title: "No templates found",
+                        description: "There are no templates to display at this time."
+                    }}
+                />
             </div>
 
             {/* Delete Confirmation Dialog */}

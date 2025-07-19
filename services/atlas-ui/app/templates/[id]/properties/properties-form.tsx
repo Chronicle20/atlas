@@ -1,10 +1,9 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import {Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import {Form, FormControl, FormDescription, FormField as ShadcnFormField, FormItem, FormLabel } from "@/components/ui/form"
 import {zodResolver} from "@hookform/resolvers/zod";
 import {useForm} from "react-hook-form";
-import { Input } from "@/components/ui/input"
 import { z } from "zod"
 import {useParams} from "next/navigation";
 import { Switch } from "@/components/ui/switch";
@@ -12,6 +11,7 @@ import {useEffect, useState} from "react";
 import {fetchTemplates, updateTemplate} from "@/lib/templates";
 import type {Template} from "@/types/models/template";
 import {toast} from "sonner";
+import { LoadingSpinner, ErrorDisplay, FormField } from "@/components/common";
 
 const propertiesFormSchema = z.object({
     region: z
@@ -87,8 +87,8 @@ export function PropertiesForm() {
         });
     }
 
-    if (loading) return <div>Loading...</div>; // Show loading message while fetching data
-    if (error) return <div>Error: {error}</div>; // Show error message if fetching failed
+    if (loading) return <LoadingSpinner />; // Show loading message while fetching data
+    if (error) return <ErrorDisplay error={error} />; // Show error message if fetching failed
 
     return (
         <Form {...form}>
@@ -96,62 +96,28 @@ export function PropertiesForm() {
                 <FormField
                     control={form.control}
                     name="region"
-                    render={({field}) => (
-                        <FormItem>
-                            <FormLabel>Region</FormLabel>
-                            <FormControl>
-                                <Input placeholder={template?.attributes.region} {...field} />
-                            </FormControl>
-                            <FormDescription>
-                                The MapleStory region.
-                            </FormDescription>
-                            <FormMessage/>
-                        </FormItem>
-                    )}
+                    label="Region"
+                    type="text"
+                    placeholder={template?.attributes.region || "Enter region"}
+                    description="The MapleStory region."
                 />
                 <FormField
                     control={form.control}
                     name="major"
-                    render={({field}) => (
-                        <FormItem>
-                            <FormLabel>Major Version</FormLabel>
-                            <FormControl>
-                                <Input 
-                                    type="number" 
-                                    placeholder={String(template?.attributes.majorVersion)} 
-                                    {...field}
-                                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                                />
-                            </FormControl>
-                            <FormDescription>
-                                The MapleStory major version.
-                            </FormDescription>
-                            <FormMessage/>
-                        </FormItem>
-                    )}
+                    label="Major Version"
+                    type="number"
+                    placeholder={String(template?.attributes.majorVersion || 0)}
+                    description="The MapleStory major version."
                 />
                 <FormField
                     control={form.control}
                     name="minor"
-                    render={({field}) => (
-                        <FormItem>
-                            <FormLabel>Minor Version</FormLabel>
-                            <FormControl>
-                                <Input 
-                                    type="number" 
-                                    placeholder={String(template?.attributes.minorVersion)} 
-                                    {...field}
-                                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                                />
-                            </FormControl>
-                            <FormDescription>
-                                The MapleStory minor version.
-                            </FormDescription>
-                            <FormMessage/>
-                        </FormItem>
-                    )}
+                    label="Minor Version"
+                    type="number"
+                    placeholder={String(template?.attributes.minorVersion || 0)}
+                    description="The MapleStory minor version."
                 />
-                <FormField
+                <ShadcnFormField
                     control={form.control}
                     name="usesPin"
                     render={({field}) => (

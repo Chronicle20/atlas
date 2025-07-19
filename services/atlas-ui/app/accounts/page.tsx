@@ -1,7 +1,7 @@
 "use client"
 
 import {useTenant} from "@/context/tenant-context";
-import {DataTable} from "@/components/data-table";
+import {DataTableWrapper} from "@/components/common/DataTableWrapper";
 import {hiddenColumns} from "@/app/accounts/columns";
 import {useEffect, useState} from "react";
 import {fetchAccounts} from "@/lib/accounts";
@@ -37,9 +37,6 @@ export default function Page() {
         fetchDataAgain()
     }, [activeTenant])
 
-    if (loading) return <div>Loading...</div>; // Show loading message while fetching data
-    if (error) return <div>Error: {error}</div>; // Show error message if fetching failed
-
     const columns = getColumns({tenant: activeTenant});
 
     return (
@@ -50,7 +47,18 @@ export default function Page() {
                 </div>
             </div>
             <div className="mt-4">
-                <DataTable columns={columns} data={accounts} onRefresh={fetchDataAgain} initialVisibilityState={hiddenColumns}/>
+                <DataTableWrapper 
+                    columns={columns} 
+                    data={accounts} 
+                    loading={loading}
+                    error={error}
+                    onRefresh={fetchDataAgain} 
+                    initialVisibilityState={hiddenColumns}
+                    emptyState={{
+                        title: "No accounts found",
+                        description: "There are no accounts to display at this time."
+                    }}
+                />
             </div>
             <Toaster richColors/>
         </div>

@@ -2,8 +2,7 @@
 
 import {useEffect, useState} from "react";
 import {useFieldArray, useForm, SubmitHandler} from "react-hook-form";
-import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
-import {Input} from "@/components/ui/input";
+import {Form} from "@/components/ui/form";
 import {Button} from "@/components/ui/button";
 import {useParams} from "next/navigation";
 import {X} from "lucide-react";
@@ -11,6 +10,7 @@ import {fetchTemplates, updateTemplate} from "@/lib/templates";
 import type {Template} from "@/types/models/template";
 import {OptionsField} from "@/components/unknown-options";
 import {toast} from "sonner";
+import { LoadingSpinner, ErrorDisplay, FormField } from "@/components/common";
 
 interface FormValues {
     handlers: {
@@ -78,8 +78,8 @@ export function HandlersForm() {
         });
     }
 
-    if (loading) return <div>Loading...</div>; // Show loading message while fetching data
-    if (error) return <div>Error: {error}</div>; // Show error message if fetching failed
+    if (loading) return <LoadingSpinner />; // Show loading message while fetching data
+    if (error) return <ErrorDisplay error={error} />; // Show error message if fetching failed
 
     return (
         <Form {...form}>
@@ -90,41 +90,21 @@ export function HandlersForm() {
                             <FormField
                                 control={form.control}
                                 name={`handlers.${index}.opCode`}
-                                render={({field}) => (
-                                    <FormItem>
-                                        <FormLabel>Operation Code</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="0x00" {...field} />
-                                        </FormControl>
-                                        <FormMessage/>
-                                    </FormItem>
-                                )}
+                                label="Operation Code"
+                                type="text"
+                                placeholder="0x00"
                             />
                             <FormField
                                 control={form.control}
                                 name={`handlers.${index}.validator`}
-                                render={({field}) => (
-                                    <FormItem>
-                                        <FormLabel>Validator</FormLabel>
-                                        <FormControl>
-                                            <Input {...field} />
-                                        </FormControl>
-                                        <FormMessage/>
-                                    </FormItem>
-                                )}
+                                label="Validator"
+                                type="text"
                             />
                             <FormField
                                 control={form.control}
                                 name={`handlers.${index}.handler`}
-                                render={({field}) => (
-                                    <FormItem>
-                                        <FormLabel>Handler</FormLabel>
-                                        <FormControl>
-                                            <Input {...field} />
-                                        </FormControl>
-                                        <FormMessage/>
-                                    </FormItem>
-                                )}
+                                label="Handler"
+                                type="text"
                             />
                         </div>
                         <OptionsField form={form} path={`handlers.${index}.options`}/>

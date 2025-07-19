@@ -10,7 +10,8 @@ import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/
 import {InventoryResponse, fetchInventory, getCompartmentTypeName, getAssetsForCompartment, deleteAsset, Compartment} from "@/lib/inventory";
 import {TenantConfig} from "@/lib/tenants";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
+import { X, MapPin } from "lucide-react";
+import { ChangeMapDialog } from "@/components/features/characters/ChangeMapDialog";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -34,6 +35,7 @@ export default function CharacterDetailPage() {
     const [deletingAsset, setDeletingAsset] = useState<string | null>(null)
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
     const [assetToDelete, setAssetToDelete] = useState<{ compartmentId: string, assetId: string } | null>(null)
+    const [changeMapDialogOpen, setChangeMapDialogOpen] = useState(false)
 
     // Function to open delete confirmation dialog
     const openDeleteDialog = (compartmentId: string, assetId: string) => {
@@ -58,6 +60,19 @@ export default function CharacterDetailPage() {
             setDeletingAsset(null);
             setDeleteDialogOpen(false);
             setAssetToDelete(null);
+        }
+    };
+
+    // Function to handle successful map change
+    const handleMapChangeSuccess = async () => {
+        if (!activeTenant || !id) return;
+        
+        try {
+            // Refresh character data after map change
+            const updatedCharacter = await fetchCharacter(activeTenant, String(id));
+            setCharacter(updatedCharacter);
+        } catch (err) {
+            console.error("Failed to refresh character data:", err);
         }
     };
 
@@ -108,7 +123,18 @@ export default function CharacterDetailPage() {
             <div className="flex flex-row gap-6">
                 <Card className="w-[100%]">
                     <CardHeader>
-                        <CardTitle>Attributes</CardTitle>
+                        <div className="flex items-center justify-between">
+                            <CardTitle>Attributes</CardTitle>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setChangeMapDialogOpen(true)}
+                                className="flex items-center gap-2"
+                            >
+                                <MapPin className="h-4 w-4" />
+                                Change Map
+                            </Button>
+                        </div>
                     </CardHeader>
                     <CardContent className="grid grid-cols-4 gap-2 text-sm text-muted-foreground">
                         <div>
@@ -117,6 +143,7 @@ export default function CharacterDetailPage() {
                         <div><strong>Gender:</strong> {character.attributes.gender}</div>
                         <div><strong>Level:</strong> {character.attributes.level}</div>
                         <div><strong>Experience:</strong> {character.attributes.experience}</div>
+                        <div><strong>Map ID:</strong> {character.attributes.mapId}</div>
                         <div><strong>Strength:</strong> {character.attributes.strength}</div>
                         <div><strong>Dexterity:</strong> {character.attributes.dexterity}</div>
                         <div><strong>Intelligence:</strong> {character.attributes.intelligence}</div>
@@ -203,6 +230,14 @@ export default function CharacterDetailPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {/* Change Map Dialog */}
+            <ChangeMapDialog
+                character={character}
+                open={changeMapDialogOpen}
+                onOpenChange={setChangeMapDialogOpen}
+                onSuccess={handleMapChangeSuccess}
+            />
         </div>
     )
 }

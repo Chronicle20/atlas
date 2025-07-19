@@ -54,6 +54,9 @@ HTMLElement.prototype.hasPointerCapture = jest.fn(() => false)
 HTMLElement.prototype.setPointerCapture = jest.fn()
 HTMLElement.prototype.releasePointerCapture = jest.fn()
 
+// Mock scrollIntoView for JSDOM
+HTMLElement.prototype.scrollIntoView = jest.fn()
+
 // Mock window.location.href for error boundary tests
 const originalLocation = window.location
 delete window.location

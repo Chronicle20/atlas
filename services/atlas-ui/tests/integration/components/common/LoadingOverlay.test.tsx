@@ -221,9 +221,10 @@ describe('LoadingOverlay Integration Tests', () => {
         </LoadingOverlay>
       );
 
-      // Initially blocked
-      const childButton = screen.getByTestId('child-button');
-      fireEvent.click(childButton);
+      // Verify the loading overlay is present and child has pointer-events-none
+      expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
+      const childComponent = screen.getByTestId('child-component');
+      expect(childComponent.parentElement).toHaveClass('pointer-events-none');
       
       // Change to not loading
       rerender(
@@ -236,8 +237,12 @@ describe('LoadingOverlay Integration Tests', () => {
         expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
       });
 
+      // Verify pointer-events-none is removed
+      const updatedChildComponent = screen.getByTestId('child-component');
+      expect(updatedChildComponent.parentElement).not.toHaveClass('pointer-events-none');
+
       // Now clicks should work
-      fireEvent.click(childButton);
+      fireEvent.click(updatedChildComponent);
       expect(mockClick).toHaveBeenCalledTimes(1);
     });
   });
@@ -362,38 +367,37 @@ describe('LoadingOverlay Integration Tests', () => {
     it('should apply custom className to container', () => {
       const customClass = 'my-custom-overlay-class';
       
-      render(
+      const { container } = render(
         <LoadingOverlay loading={false} className={customClass}>
           <MockChildComponent />
         </LoadingOverlay>
       );
 
-      const container = screen.getByTestId('child-component').parentElement;
-      expect(container).toHaveClass(customClass);
-      expect(container).toHaveClass('relative'); // Default class should also be present
+      const overlayContainer = container.firstChild;
+      expect(overlayContainer).toHaveClass(customClass);
+      expect(overlayContainer).toHaveClass('relative'); // Default class should also be present
     });
 
     it('should maintain relative positioning for overlay functionality', () => {
-      render(
+      const { container } = render(
         <LoadingOverlay loading={true}>
           <MockChildComponent />
         </LoadingOverlay>
       );
 
-      const container = screen.getByTestId('child-component').parentElement;
-      expect(container).toHaveClass('relative');
+      const overlayContainer = container.firstChild;
+      expect(overlayContainer).toHaveClass('relative');
     });
 
     it('should apply overlay styling when loading', () => {
-      render(
+      const { container } = render(
         <LoadingOverlay loading={true}>
           <MockChildComponent />
         </LoadingOverlay>
       );
 
-      // Find the overlay element (sibling of the child component)
-      const childComponent = screen.getByTestId('child-component');
-      const overlayElement = childComponent.parentElement?.querySelector('.absolute.inset-0');
+      // Find the overlay element within the main container
+      const overlayElement = container.querySelector('.absolute.inset-0');
       
       expect(overlayElement).toBeInTheDocument();
       expect(overlayElement).toHaveClass('absolute', 'inset-0', 'bg-background/50', 'flex', 'items-center', 'justify-center', 'z-10');
@@ -402,15 +406,15 @@ describe('LoadingOverlay Integration Tests', () => {
     it('should combine custom className with default classes', () => {
       const customClass = 'border border-gray-300 rounded-lg';
       
-      render(
+      const { container } = render(
         <LoadingOverlay loading={true} className={customClass}>
           <MockChildComponent />
         </LoadingOverlay>
       );
 
-      const container = screen.getByTestId('child-component').parentElement;
-      expect(container).toHaveClass('relative'); // Default class
-      expect(container?.className).toContain(customClass); // Custom classes
+      const overlayContainer = container.firstChild;
+      expect(overlayContainer).toHaveClass('relative'); // Default class
+      expect(overlayContainer?.className).toContain(customClass); // Custom classes
     });
   });
 

@@ -85,30 +85,23 @@ describe('ErrorBoundary Integration Tests', () => {
     });
 
     it('should reset error state and re-render children when Try Again is clicked', () => {
-      let shouldThrow = true;
-      
-      const { rerender } = render(
+      const TestWrapper = ({ shouldThrow }: { shouldThrow: boolean }) => (
         <ErrorBoundary>
           <ThrowingComponent shouldThrow={shouldThrow} />
         </ErrorBoundary>
       );
+      
+      const { rerender } = render(<TestWrapper shouldThrow={true} />);
 
       // Initially should show error fallback
       expect(screen.getByText('Something went wrong')).toBeInTheDocument();
       
-      // Simulate fixing the error condition
-      shouldThrow = false;
-      
-      // Click Try Again
+      // Click Try Again to reset error boundary state
       const tryAgainButton = screen.getByText('Try Again');
       fireEvent.click(tryAgainButton);
       
       // Rerender with fixed component
-      rerender(
-        <ErrorBoundary>
-          <ThrowingComponent shouldThrow={shouldThrow} />
-        </ErrorBoundary>
-      );
+      rerender(<TestWrapper shouldThrow={false} />);
 
       // Should now render children successfully
       expect(screen.getByText('Component rendered successfully')).toBeInTheDocument();
@@ -485,14 +478,16 @@ describe('ErrorBoundary Integration Tests', () => {
     it('should apply custom className to error boundary fallback', () => {
       const customClass = 'my-custom-error-class';
       
-      render(
+      const { container } = render(
         <ErrorBoundary className={customClass}>
           <ThrowingComponent shouldThrow={true} />
         </ErrorBoundary>
       );
 
-      const fallbackContainer = screen.getByText('Something went wrong').closest('div')?.parentElement;
+      // The className should be on the outermost error boundary container
+      const fallbackContainer = container.firstChild;
       expect(fallbackContainer).toHaveClass(customClass);
+      expect(fallbackContainer).toHaveClass('flex', 'items-center', 'justify-center');
     });
 
     it('should pass through className to custom fallback component', () => {

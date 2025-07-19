@@ -49,20 +49,35 @@ Object.defineProperty(HTMLFormElement.prototype, 'requestSubmit', {
   configurable: true,
 })
 
+// Mock hasPointerCapture for JSDOM
+HTMLElement.prototype.hasPointerCapture = jest.fn(() => false)
+HTMLElement.prototype.setPointerCapture = jest.fn()
+HTMLElement.prototype.releasePointerCapture = jest.fn()
+
 // Mock window.location.href for error boundary tests
+const originalLocation = window.location
 delete window.location
-window.location = { href: '' }
+window.location = { 
+  href: '', 
+  reload: jest.fn(),
+  assign: jest.fn(),
+  replace: jest.fn()
+}
 
 // Suppress console.error for expected errors in tests
 const originalError = console.error
-beforeEach(() => {
-  console.error = (...args) => {
-    if (
-      typeof args[0] === 'string' &&
-      args[0].includes('Warning: ReactDOM.render is no longer supported')
-    ) {
-      return
-    }
-    originalError.call(console, ...args)
+console.error = (...args) => {
+  if (
+    typeof args[0] === 'string' &&
+    (args[0].includes('Warning: ReactDOM.render is no longer supported') ||
+     args[0].includes('Error: Not implemented: navigation') ||
+     args[0].includes('The above error occurred'))
+  ) {
+    return
   }
-})
+  // Suppress React error boundary test errors
+  if (args[0] && args[0].toString && args[0].toString().includes('Test error')) {
+    return
+  }
+  originalError.call(console, ...args)
+}

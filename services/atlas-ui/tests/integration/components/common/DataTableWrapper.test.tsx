@@ -452,7 +452,7 @@ describe('DataTableWrapper Integration Tests', () => {
     it('should apply custom className to wrapper', () => {
       const customClass = 'my-custom-wrapper-class';
       
-      render(
+      const { container } = render(
         <DataTableWrapper
           columns={mockColumns}
           data={mockData}
@@ -460,7 +460,7 @@ describe('DataTableWrapper Integration Tests', () => {
         />
       );
 
-      const wrapper = screen.getByRole('table').closest('div');
+      const wrapper = container.firstChild;
       expect(wrapper).toHaveClass(customClass);
       expect(wrapper).toHaveClass('w-full'); // Default class should also be present
     });
@@ -468,7 +468,7 @@ describe('DataTableWrapper Integration Tests', () => {
     it('should apply className to loading state wrapper', () => {
       const customClass = 'loading-wrapper-class';
       
-      render(
+      const { container } = render(
         <DataTableWrapper
           columns={mockColumns}
           data={[]}
@@ -477,7 +477,7 @@ describe('DataTableWrapper Integration Tests', () => {
         />
       );
 
-      const wrapper = screen.getByTestId('page-loader').closest('div');
+      const wrapper = container.firstChild;
       expect(wrapper).toHaveClass(customClass);
       expect(wrapper).toHaveClass('w-full');
     });
@@ -485,7 +485,7 @@ describe('DataTableWrapper Integration Tests', () => {
     it('should apply className to error state wrapper', () => {
       const customClass = 'error-wrapper-class';
       
-      render(
+      const { container } = render(
         <DataTableWrapper
           columns={mockColumns}
           data={[]}
@@ -494,7 +494,7 @@ describe('DataTableWrapper Integration Tests', () => {
         />
       );
 
-      const wrapper = screen.getByTestId('error-display').closest('div');
+      const wrapper = container.firstChild;
       expect(wrapper).toHaveClass(customClass);
       expect(wrapper).toHaveClass('w-full');
     });
@@ -502,7 +502,7 @@ describe('DataTableWrapper Integration Tests', () => {
     it('should apply className to empty state wrapper', () => {
       const customClass = 'empty-wrapper-class';
       
-      render(
+      const { container } = render(
         <DataTableWrapper
           columns={mockColumns}
           data={[]}
@@ -510,7 +510,7 @@ describe('DataTableWrapper Integration Tests', () => {
         />
       );
 
-      const wrapper = screen.getByTestId('empty-state').closest('div');
+      const wrapper = container.firstChild;
       expect(wrapper).toHaveClass(customClass);
       expect(wrapper).toHaveClass('w-full');
     });

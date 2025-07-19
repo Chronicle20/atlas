@@ -17,7 +17,9 @@ export function LoadingOverlay({
 }: LoadingOverlayProps) {
   return (
     <div className={cn('relative', className)}>
-      {children}
+      <div className={cn(loading && 'pointer-events-none')}>
+        {children}
+      </div>
       {loading && (
         <div className="absolute inset-0 bg-background/50 flex items-center justify-center z-10">
           <LoadingSpinner size={spinnerSize} />

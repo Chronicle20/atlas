@@ -19,7 +19,50 @@ interface ChangeMapDialogProps {
 export function ChangeMapDialog({ character, open, onOpenChange, onSuccess }: ChangeMapDialogProps) {
   const [mapId, setMapId] = useState<string>(character.attributes.mapId.toString());
   const [isLoading, setIsLoading] = useState(false);
+  const [validationError, setValidationError] = useState<string>("");
   const { activeTenant } = useTenant();
+
+  const validateMapId = (value: string): string => {
+    // Clear any existing validation error
+    setValidationError("");
+    
+    // Check if empty
+    if (!value.trim()) {
+      return "Map ID is required";
+    }
+    
+    // Check if contains only digits (no decimals, no scientific notation, no negative signs)
+    if (!/^\d+$/.test(value.trim())) {
+      return "Map ID must contain only numbers";
+    }
+    
+    const numValue = parseInt(value, 10);
+    
+    // Check for valid integer range (Map IDs are typically positive integers)
+    if (numValue < 0) {
+      return "Map ID must be a positive number";
+    }
+    
+    // Check for reasonable upper bound (prevent extremely large numbers)
+    if (numValue > 2147483647) {
+      return "Map ID is too large";
+    }
+    
+    // Check if same as current map
+    if (numValue === character.attributes.mapId) {
+      return "Character is already on this map";
+    }
+    
+    return "";
+  };
+
+  const handleMapIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setMapId(value);
+    
+    const error = validateMapId(value);
+    setValidationError(error);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,16 +72,14 @@ export function ChangeMapDialog({ character, open, onOpenChange, onSuccess }: Ch
       return;
     }
 
-    const mapIdNumber = parseInt(mapId);
-    if (isNaN(mapIdNumber) || mapIdNumber < 0) {
-      toast.error("Map ID must be a valid positive number");
+    // Validate the input before submission
+    const error = validateMapId(mapId);
+    if (error) {
+      setValidationError(error);
       return;
     }
 
-    if (mapIdNumber === character.attributes.mapId) {
-      toast.error("Character is already on this map");
-      return;
-    }
+    const mapIdNumber = parseInt(mapId, 10);
 
     setIsLoading(true);
     
@@ -61,6 +102,7 @@ export function ChangeMapDialog({ character, open, onOpenChange, onSuccess }: Ch
       if (!newOpen) {
         // Reset form when dialog closes
         setMapId(character.attributes.mapId.toString());
+        setValidationError("");
       }
     }
   };
@@ -82,15 +124,17 @@ export function ChangeMapDialog({ character, open, onOpenChange, onSuccess }: Ch
               <Label htmlFor="mapId">New Map ID</Label>
               <Input
                 id="mapId"
-                type="number"
+                type="text"
                 value={mapId}
-                onChange={(e) => setMapId(e.target.value)}
+                onChange={handleMapIdChange}
                 placeholder="Enter map ID"
-                min="0"
-                step="1"
                 disabled={isLoading}
                 required
+                className={validationError ? "border-red-500 focus-visible:ring-red-500" : ""}
               />
+              {validationError && (
+                <p className="text-sm text-red-500 mt-1">{validationError}</p>
+              )}
             </div>
           </div>
           <DialogFooter>
@@ -102,7 +146,7 @@ export function ChangeMapDialog({ character, open, onOpenChange, onSuccess }: Ch
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" disabled={isLoading || !!validationError}>
               {isLoading ? "Updating..." : "Change Map"}
             </Button>
           </DialogFooter>

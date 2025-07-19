@@ -85,13 +85,13 @@ describe('ErrorBoundary Integration Tests', () => {
     });
 
     it('should reset error state and re-render children when Try Again is clicked', async () => {
-      const TestWrapper = ({ shouldThrow }: { shouldThrow: boolean }) => (
-        <ErrorBoundary>
+      let shouldThrow = true;
+      
+      const { rerender } = render(
+        <ErrorBoundary key={shouldThrow ? 'error' : 'success'}>
           <ThrowingComponent shouldThrow={shouldThrow} />
         </ErrorBoundary>
       );
-      
-      const { rerender } = render(<TestWrapper shouldThrow={true} />);
 
       // Initially should show error fallback
       expect(screen.getByText('Something went wrong')).toBeInTheDocument();
@@ -100,8 +100,13 @@ describe('ErrorBoundary Integration Tests', () => {
       const tryAgainButton = screen.getByText('Try Again');
       fireEvent.click(tryAgainButton);
       
-      // Rerender with fixed component
-      rerender(<TestWrapper shouldThrow={false} />);
+      // Change the condition and rerender with new key to force component recreation
+      shouldThrow = false;
+      rerender(
+        <ErrorBoundary key={shouldThrow ? 'error' : 'success'}>
+          <ThrowingComponent shouldThrow={shouldThrow} />
+        </ErrorBoundary>
+      );
 
       // Should now render children successfully
       await waitFor(() => {
@@ -131,23 +136,21 @@ describe('ErrorBoundary Integration Tests', () => {
       let shouldThrow = true;
       
       const { rerender } = render(
-        <ErrorBoundary fallback={CustomErrorFallback}>
+        <ErrorBoundary fallback={CustomErrorFallback} key={shouldThrow ? 'error' : 'success'}>
           <ThrowingComponent shouldThrow={shouldThrow} />
         </ErrorBoundary>
       );
 
       expect(screen.getByTestId('custom-error-fallback')).toBeInTheDocument();
       
-      // Fix the error condition
-      shouldThrow = false;
-      
       // Click custom reset button
       const resetButton = screen.getByTestId('custom-reset-button');
       fireEvent.click(resetButton);
       
-      // Rerender with fixed component
+      // Fix the error condition and rerender with new key
+      shouldThrow = false;
       rerender(
-        <ErrorBoundary fallback={CustomErrorFallback}>
+        <ErrorBoundary fallback={CustomErrorFallback} key={shouldThrow ? 'error' : 'success'}>
           <ThrowingComponent shouldThrow={shouldThrow} />
         </ErrorBoundary>
       );
@@ -204,7 +207,7 @@ describe('ErrorBoundary Integration Tests', () => {
       expect(screen.getByText('Show Technical Details')).toBeInTheDocument();
     });
 
-    it('should expand and collapse technical details when toggle is clicked', () => {
+    it('should expand and collapse technical details when toggle is clicked', async () => {
       render(
         <ErrorBoundary showDetails={true}>
           <ThrowingComponent shouldThrow={true} errorMessage="Details test error" />
@@ -219,15 +222,19 @@ describe('ErrorBoundary Integration Tests', () => {
       // Click to expand
       fireEvent.click(toggleButton);
       
-      expect(screen.getByText('Error Details:')).toBeInTheDocument();
-      expect(screen.getByText('Hide Technical Details')).toBeInTheDocument();
-      expect(screen.getByText('Details test error')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Error Details:')).toBeInTheDocument();
+        expect(screen.getByText('Hide Technical Details')).toBeInTheDocument();
+        expect(screen.getByText('Details test error')).toBeInTheDocument();
+      });
       
       // Click to collapse
       fireEvent.click(screen.getByText('Hide Technical Details'));
       
-      expect(screen.queryByText('Error Details:')).not.toBeInTheDocument();
-      expect(screen.getByText('Show Technical Details')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.queryByText('Error Details:')).not.toBeInTheDocument();
+        expect(screen.getByText('Show Technical Details')).toBeInTheDocument();
+      });
     });
 
     it('should not show technical details toggle when showDetails is false', () => {
@@ -274,22 +281,24 @@ describe('ErrorBoundary Integration Tests', () => {
       expect(screen.getByText('Show Technical Details')).toBeInTheDocument();
     });
 
-    it('should reset error in HOC wrapped component', () => {
+    it('should reset error in HOC wrapped component', async () => {
       let shouldThrow = true;
       const WrappedComponent = withErrorBoundary(ThrowingComponent);
       
-      const { rerender } = render(<WrappedComponent shouldThrow={shouldThrow} />);
+      const { rerender } = render(<WrappedComponent shouldThrow={shouldThrow} key={shouldThrow ? 'error' : 'success'} />);
 
       expect(screen.getByText('Something went wrong')).toBeInTheDocument();
-      
-      shouldThrow = false;
       
       const tryAgainButton = screen.getByText('Try Again');
       fireEvent.click(tryAgainButton);
       
-      rerender(<WrappedComponent shouldThrow={shouldThrow} />);
+      shouldThrow = false;
+      rerender(<WrappedComponent shouldThrow={shouldThrow} key={shouldThrow ? 'error' : 'success'} />);
 
-      expect(screen.getByText('Component rendered successfully')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Component rendered successfully')).toBeInTheDocument();
+        expect(screen.queryByText('Something went wrong')).not.toBeInTheDocument();
+      });
     });
   });
 

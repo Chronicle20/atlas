@@ -63,8 +63,12 @@ const TestForm = ({
   // Clone children to inject form control
   const childrenWithForm = React.Children.map(children, (child) => {
     if (React.isValidElement(child)) {
-      // Ensure control is properly passed, even if already present
-      return React.cloneElement(child, { ...child.props, control: form.control } as any);
+      // Ensure control is properly passed, preserving existing props
+      const childProps = { ...child.props };
+      if (!childProps.control) {
+        childProps.control = form.control;
+      }
+      return React.cloneElement(child, childProps);
     }
     return child;
   });
@@ -193,22 +197,49 @@ describe('Form Components Integration Tests', () => {
     it('should handle custom render FormField', async () => {
       const mockSubmit = jest.fn();
       
-      render(
-        <TestForm onSubmit={mockSubmit}>
-          <FormField
-            name="isActive"
-            label="Active Status"
-            render={({ field }) => (
-              <input
-                type="checkbox"
-                data-testid="custom-checkbox"
-                checked={field.value}
-                onChange={(e) => field.onChange(e.target.checked)}
+      const TestFormWithCustomRender = () => {
+        const form = useForm<TestFormData>({
+          defaultValues: {
+            username: '',
+            email: '',
+            age: 0,
+            status: '',
+            category: '',
+            description: '',
+            bio: '',
+            isActive: false,
+          },
+        });
+
+        const handleSubmit = (data: TestFormData) => {
+          mockSubmit(data);
+        };
+
+        return (
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmit)} data-testid="test-form">
+              <FormField
+                control={form.control}
+                name="isActive"
+                label="Active Status"
+                render={({ field }) => (
+                  <input
+                    type="checkbox"
+                    data-testid="custom-checkbox"
+                    checked={field.value || false}
+                    onChange={(e) => field.onChange(e.target.checked)}
+                  />
+                )}
               />
-            )}
-          />
-        </TestForm>
-      );
+              <Button type="submit" data-testid="submit-button">
+                Submit
+              </Button>
+            </form>
+          </Form>
+        );
+      };
+      
+      render(<TestFormWithCustomRender />);
 
       const checkbox = screen.getByTestId('custom-checkbox');
       expect(checkbox).toBeInTheDocument();
@@ -253,9 +284,13 @@ describe('Form Components Integration Tests', () => {
       const selectTrigger = screen.getByRole('combobox');
       await user.click(selectTrigger);
 
-      // Select an option
-      const activeOption = screen.getByText('Active');
-      await user.click(activeOption);
+      // Select an option - use getAllByText and take the first interactive one
+      const activeOptions = screen.getAllByText('Active');
+      const selectableOption = activeOptions.find(option => 
+        option.getAttribute('role') !== null || 
+        option.closest('[role="option"]') !== null
+      ) || activeOptions[0];
+      await user.click(selectableOption);
 
       // Submit form
       const submitButton = screen.getByTestId('submit-button');

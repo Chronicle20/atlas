@@ -780,7 +780,7 @@ func (b *OutcomeBuilder) Build() (OutcomeModel, error) {
 
 // CraftActionModel represents a craft action state
 type CraftActionModel struct {
-	itemId                uint32
+	itemId                string
 	materials             []uint32
 	quantities            []uint32
 	mesoCost              uint32
@@ -790,7 +790,7 @@ type CraftActionModel struct {
 }
 
 // ItemId returns the item ID
-func (c CraftActionModel) ItemId() uint32 {
+func (c CraftActionModel) ItemId() string {
 	return c.itemId
 }
 
@@ -827,7 +827,7 @@ func (c CraftActionModel) MissingMaterialsState() string {
 
 // CraftActionBuilder is a builder for CraftActionModel
 type CraftActionBuilder struct {
-	itemId                uint32
+	itemId                string
 	materials             []uint32
 	quantities            []uint32
 	mesoCost              uint32
@@ -845,7 +845,7 @@ func NewCraftActionBuilder() *CraftActionBuilder {
 }
 
 // SetItemId sets the item ID
-func (b *CraftActionBuilder) SetItemId(itemId uint32) *CraftActionBuilder {
+func (b *CraftActionBuilder) SetItemId(itemId string) *CraftActionBuilder {
 	b.itemId = itemId
 	return b
 }
@@ -901,7 +901,7 @@ func (b *CraftActionBuilder) SetMissingMaterialsState(missingMaterialsState stri
 
 // Build builds the CraftActionModel
 func (b *CraftActionBuilder) Build() (*CraftActionModel, error) {
-	if b.itemId == 0 {
+	if b.itemId == "" {
 		return nil, errors.New("itemId is required")
 	}
 	if len(b.materials) == 0 {

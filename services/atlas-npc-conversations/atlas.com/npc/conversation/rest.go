@@ -166,7 +166,7 @@ type RestOutcomeModel struct {
 
 // RestCraftActionModel represents the REST model for craft action states
 type RestCraftActionModel struct {
-	ItemId                uint32   `json:"itemId"`                         // Item ID
+	ItemId                string   `json:"itemId"`                         // Item ID
 	Materials             []uint32 `json:"materials"`                      // Material item IDs
 	Quantities            []uint32 `json:"quantities"`                     // Material quantities
 	MesoCost              uint32   `json:"mesoCost"`                       // Meso cost

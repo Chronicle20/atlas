@@ -409,9 +409,11 @@ All character update events follow the standard status event structure:
 
 #### Multiple Field Updates
 
-When multiple fields are updated in a single PATCH request, **multiple specific events are emitted** - one for each changed field. For example, updating both name and hair in one request will emit both a `NAME_CHANGED` event and a `HAIR_CHANGED` event.
+When multiple fields are updated in a single PATCH request, **multiple specific events are emitted** - one for each changed field. This provides granular tracking and allows downstream services to react to specific changes.
 
-Example PATCH request updating name and hair:
+##### Example 1: Simple Appearance Update (2 fields)
+
+PATCH request updating name and hair:
 ```json
 {
   "data": {
@@ -425,9 +427,100 @@ Example PATCH request updating name and hair:
 }
 ```
 
-Results in two separate events:
-1. `NAME_CHANGED` event with old/new name values
-2. `HAIR_CHANGED` event with old/new hair ID values
+Results in **2 separate events**:
+1. `NAME_CHANGED` event: `{"oldName": "OldName", "newName": "NewName"}`
+2. `HAIR_CHANGED` event: `{"oldHair": 30000, "newHair": 30150}`
+
+##### Example 2: Complete Character Makeover (5 fields)
+
+PATCH request updating multiple appearance properties:
+```json
+{
+  "data": {
+    "type": "characters",
+    "id": "1001",
+    "attributes": {
+      "name": "BeautifulWarrior",
+      "hair": 31500,
+      "face": 21200,
+      "gender": 1,
+      "skinColor": 3
+    }
+  }
+}
+```
+
+Results in **5 separate events**:
+1. `NAME_CHANGED` event: `{"oldName": "UglyFighter", "newName": "BeautifulWarrior"}`
+2. `HAIR_CHANGED` event: `{"oldHair": 30000, "newHair": 31500}`
+3. `FACE_CHANGED` event: `{"oldFace": 20000, "newFace": 21200}`
+4. `GENDER_CHANGED` event: `{"oldGender": 0, "newGender": 1}`
+5. `SKIN_COLOR_CHANGED` event: `{"oldSkinColor": 0, "newSkinColor": 3}`
+
+##### Example 3: Administrative Update (3 fields)
+
+PATCH request for admin actions (map relocation + GM promotion):
+```json
+{
+  "data": {
+    "type": "characters",
+    "id": "1001",
+    "attributes": {
+      "name": "AdminCharacter",
+      "mapId": 110000000,
+      "gm": 1
+    }
+  }
+}
+```
+
+Results in **3 separate events**:
+1. `NAME_CHANGED` event: `{"oldName": "PlayerCharacter", "newName": "AdminCharacter"}`
+2. `MAP_CHANGED` event: `{"channelId": 1, "oldMapId": 100000000, "targetMapId": 110000000, "targetPortalId": 0}`
+3. `GM_CHANGED` event: `{"oldGm": 0, "newGm": 1}`
+
+##### Example 4: Maximum Field Update (7 fields)
+
+PATCH request updating all supported fields:
+```json
+{
+  "data": {
+    "type": "characters",
+    "id": "1001",
+    "attributes": {
+      "name": "SuperAdmin",
+      "hair": 34999,
+      "face": 24999,
+      "gender": 1,
+      "skinColor": 9,
+      "mapId": 999999999,
+      "gm": 5
+    }
+  }
+}
+```
+
+Results in **7 separate events**:
+1. `NAME_CHANGED` event: `{"oldName": "RegularPlayer", "newName": "SuperAdmin"}`
+2. `HAIR_CHANGED` event: `{"oldHair": 30000, "newHair": 34999}`
+3. `FACE_CHANGED` event: `{"oldFace": 20000, "newFace": 24999}`
+4. `GENDER_CHANGED` event: `{"oldGender": 0, "newGender": 1}`
+5. `SKIN_COLOR_CHANGED` event: `{"oldSkinColor": 0, "newSkinColor": 9}`
+6. `MAP_CHANGED` event: `{"channelId": 1, "oldMapId": 100000000, "targetMapId": 999999999, "targetPortalId": 0}`
+7. `GM_CHANGED` event: `{"oldGm": 0, "newGm": 5}`
+
+##### Event Emission Order
+
+Events are emitted in the order that fields are processed during the update operation:
+1. `name` (if changed)
+2. `hair` (if changed)
+3. `face` (if changed)
+4. `gender` (if changed)
+5. `skinColor` (if changed)
+6. `mapId` (if changed)
+7. `gm` (if changed)
+
+**Note**: Only fields that actually change will emit events. If a field value matches the current value, no event is emitted for that field.
 
 #### Benefits for Downstream Services
 

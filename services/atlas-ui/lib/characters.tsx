@@ -60,3 +60,37 @@ export async function fetchCharacter(tenant: Tenant, characterId: string): Promi
     const responseData = await response.json();
     return responseData.data;
 }
+
+interface UpdateCharacterData {
+    mapId?: number;
+}
+
+export async function updateCharacter(tenant: Tenant, characterId: string, data: UpdateCharacterData): Promise<void> {
+    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
+    const response = await fetch(rootUrl + "/api/cos/characters/" + characterId, {
+        method: "PATCH",
+        headers: {
+            ...tenantHeaders(tenant),
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            data: {
+                type: "characters",
+                id: characterId,
+                attributes: data,
+            },
+        }),
+    });
+    
+    if (!response.ok) {
+        if (response.status === 400) {
+            throw new Error("Invalid map ID or request");
+        } else if (response.status === 404) {
+            throw new Error("Character not found");
+        } else {
+            throw new Error("Failed to update character");
+        }
+    }
+    
+    // API returns 204 No Content on success
+}

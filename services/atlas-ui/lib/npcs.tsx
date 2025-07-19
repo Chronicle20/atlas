@@ -1,6 +1,6 @@
 import type {Tenant} from "@/types/models/tenant";
 import type {ApiListResponse, ApiSingleResponse} from "@/types/api/responses";
-import type {NPC, Shop, Commodity, CommodityAttributes, CommodityReference, ShopResponse} from "@/types/models/npc";
+import type {NPC, Shop, Commodity, CommodityAttributes, ShopResponse} from "@/types/models/npc";
 import {tenantHeaders} from "@/lib/headers";
 import {fetchConversations} from "@/lib/npc-conversations";
 
@@ -73,14 +73,18 @@ export async function fetchNPCShop(tenant: Tenant, npcId: number): Promise<ShopR
     if (!response.ok) {
         throw new Error("Failed to fetch NPC shop.");
     }
-    return await response.json() as ShopResponse;
+    const responseData: ShopResponse = await response.json();
+    return responseData;
 }
 
 export async function createCommodity(tenant: Tenant, npcId: number, commodityAttributes: CommodityAttributes): Promise<Commodity> {
     const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
     const response = await fetch(rootUrl + "/api/npcs/" + npcId + "/shop/relationships/commodities", {
         method: "POST",
-        headers: tenantHeaders(tenant),
+        headers: {
+            ...tenantHeaders(tenant),
+            "Content-Type": "application/json",
+        },
         body: JSON.stringify({
             data: {
                 type: "commodities",
@@ -99,7 +103,10 @@ export async function updateCommodity(tenant: Tenant, npcId: number, commodityId
     const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
     const response = await fetch(rootUrl + "/api/npcs/" + npcId + "/shop/relationships/commodities/" + commodityId, {
         method: "PUT",
-        headers: tenantHeaders(tenant),
+        headers: {
+            ...tenantHeaders(tenant),
+            "Content-Type": "application/json",
+        },
         body: JSON.stringify({
             data: {
                 type: "commodities",
@@ -143,7 +150,10 @@ export async function createShop(tenant: Tenant, npcId: number, commodities: Omi
 
     const response = await fetch(rootUrl + "/api/npcs/" + npcId + "/shop", {
         method: "POST",
-        headers: tenantHeaders(tenant),
+        headers: {
+            ...tenantHeaders(tenant),
+            "Content-Type": "application/json",
+        },
         body: JSON.stringify({
             data: {
                 type: "shops",
@@ -186,7 +196,10 @@ export async function updateShop(tenant: Tenant, npcId: number, commodities: Com
 
     const response = await fetch(rootUrl + "/api/npcs/" + npcId + "/shop", {
         method: "PUT",
-        headers: tenantHeaders(tenant),
+        headers: {
+            ...tenantHeaders(tenant),
+            "Content-Type": "application/json",
+        },
         body: JSON.stringify({
             data: {
                 type: "shops",

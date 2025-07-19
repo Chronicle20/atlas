@@ -1,9 +1,11 @@
 import * as React from 'react';
-import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
+import { AlertTriangle, RefreshCw, Home, Bug, Send } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { errorLogger } from '@/services/errorLogger';
+import type { ErrorContext } from '@/services/errorLogger';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -21,6 +23,8 @@ interface ErrorBoundaryProps {
   onError?: (error: Error, errorInfo: React.ErrorInfo) => void;
   showDetails?: boolean;
   className?: string;
+  enableErrorReporting?: boolean;
+  context?: Partial<ErrorContext>;
 }
 
 interface ErrorFallbackProps {
@@ -29,6 +33,8 @@ interface ErrorFallbackProps {
   resetError: () => void;
   showDetails?: boolean;
   className?: string;
+  enableErrorReporting?: boolean;
+  onReportError?: () => void;
 }
 
 /**
@@ -40,12 +46,31 @@ function DefaultErrorFallback({
   errorInfo, 
   resetError, 
   showDetails = false,
-  className 
+  className,
+  enableErrorReporting = true,
+  onReportError
 }: ErrorFallbackProps) {
   const [detailsExpanded, setDetailsExpanded] = React.useState(false);
+  const [reportSent, setReportSent] = React.useState(false);
+  const [reportLoading, setReportLoading] = React.useState(false);
 
   const handleGoHome = () => {
     window.location.href = '/';
+  };
+
+  const handleReportError = async () => {
+    if (reportSent || reportLoading) return;
+    
+    setReportLoading(true);
+    try {
+      await errorLogger.logError(error, errorInfo || undefined);
+      setReportSent(true);
+      onReportError?.();
+    } catch (reportError) {
+      console.error('Failed to send error report:', reportError);
+    } finally {
+      setReportLoading(false);
+    }
   };
 
   return (
@@ -109,23 +134,52 @@ function DefaultErrorFallback({
             </div>
           )}
 
-          <div className="flex gap-2">
-            <Button
-              onClick={resetError}
-              className="flex-1"
-              variant="default"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Try Again
-            </Button>
-            <Button
-              onClick={handleGoHome}
-              variant="outline"
-              className="flex-1"
-            >
-              <Home className="h-4 w-4 mr-2" />
-              Go Home
-            </Button>
+          <div className="space-y-2">
+            {enableErrorReporting && (
+              <Button
+                onClick={handleReportError}
+                disabled={reportSent || reportLoading}
+                variant="ghost"
+                size="sm"
+                className="w-full"
+              >
+                {reportLoading ? (
+                  <>
+                    <Bug className="h-4 w-4 mr-2 animate-spin" />
+                    Sending Report...
+                  </>
+                ) : reportSent ? (
+                  <>
+                    <Send className="h-4 w-4 mr-2" />
+                    Report Sent
+                  </>
+                ) : (
+                  <>
+                    <Bug className="h-4 w-4 mr-2" />
+                    Report This Error
+                  </>
+                )}
+              </Button>
+            )}
+            
+            <div className="flex gap-2">
+              <Button
+                onClick={resetError}
+                className="flex-1"
+                variant="default"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Try Again
+              </Button>
+              <Button
+                onClick={handleGoHome}
+                variant="outline"
+                className="flex-1"
+              >
+                <Home className="h-4 w-4 mr-2" />
+                Go Home
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -188,6 +242,13 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
       console.error('ErrorBoundary caught an error:', error);
       console.error('Error Info:', errorInfo);
     }
+
+    // Log error to error reporting service (if enabled)
+    if (this.props.enableErrorReporting !== false) {
+      errorLogger.logError(error, errorInfo, this.props.context).catch((logError) => {
+        console.warn('Failed to log error:', logError);
+      });
+    }
   }
 
   resetError = () => {
@@ -207,6 +268,11 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
         errorInfo: this.state.errorInfo,
         resetError: this.resetError,
         showDetails: this.props.showDetails ?? false,
+        enableErrorReporting: this.props.enableErrorReporting ?? true,
+        onReportError: () => {
+          // Additional callback when user manually reports error
+          this.props.onError?.(this.state.error!, this.state.errorInfo!);
+        },
         ...(this.props.className ? { className: this.props.className } : {}),
       };
 
@@ -225,7 +291,7 @@ export function withErrorBoundary<T extends Record<string, unknown>>(
   errorBoundaryProps?: Omit<ErrorBoundaryProps, 'children'>
 ) {
   const WrappedComponent = (props: T) => (
-    <ErrorBoundary {...errorBoundaryProps}>
+    <ErrorBoundary enableErrorReporting={true} {...errorBoundaryProps}>
       <Component {...props} />
     </ErrorBoundary>
   );

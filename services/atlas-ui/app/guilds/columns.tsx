@@ -4,9 +4,9 @@ import {ColumnDef} from "@tanstack/react-table"
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
 import {Button} from "@/components/ui/button";
 import {MoreHorizontal} from "lucide-react";
-import {TenantConfig} from "@/lib/tenants";
-import {Guild} from "@/lib/guilds";
-import {Character} from "@/lib/characters";
+import type {TenantConfig} from "@/types/models/tenant";
+import {Guild} from "@/types/models/guild";
+import {Character} from "@/types/models/character";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip";
 import {Badge} from "@/components/ui/badge";
 import Link from "next/link";
@@ -46,7 +46,7 @@ export function getColumns({tenant, characterMap}: ColumnProps): ColumnDef<Guild
                 const num = Number(value);
                 let name = String(value);
                 if (!isNaN(num)) {
-                    name = tenant?.attributes.worlds[num].name || String(value)
+                    name = tenant?.attributes.worlds[num]?.name || String(value)
                 }
                 return (
                     <TooltipProvider>

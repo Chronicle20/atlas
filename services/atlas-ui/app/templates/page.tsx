@@ -3,7 +3,8 @@
 import {DataTable} from "@/components/data-table";
 import {getColumns} from "@/app/templates/columns";
 import {useEffect, useState} from "react";
-import {fetchTemplates, Template, deleteTemplate, cloneTemplate, createTemplate} from "@/lib/templates";
+import {fetchTemplates, deleteTemplate, cloneTemplate, createTemplate} from "@/lib/templates";
+import type {Template} from "@/types/models/template";
 import {createTenantConfiguration, createTenantFromTemplate} from "@/lib/tenants";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
+import {createErrorFromUnknown} from "@/types/api/errors";
 
 // Form schema for clone template
 const cloneTemplateFormSchema = z.object({
@@ -76,7 +78,10 @@ export default function Page() {
         setLoading(true)
         fetchTemplates()
             .then((data) => setTemplates(data))
-            .catch((err) => setError(err.message))
+            .catch((err: unknown) => {
+                const errorInfo = createErrorFromUnknown(err, "Failed to fetch templates");
+                setError(errorInfo.message);
+            })
             .finally(() => setLoading(false))
     }
 
@@ -100,7 +105,7 @@ export default function Page() {
 
             // Refresh template data
             fetchDataAgain();
-        } catch (err) {
+        } catch (err: unknown) {
             console.error("Failed to delete template:", err);
         } finally {
             setIsDeleting(false);
@@ -155,7 +160,7 @@ export default function Page() {
             window.location.replace(`/templates/${newTemplate.id}/properties`);
 
             // The code below this point may not execute due to the page navigation
-        } catch (err) {
+        } catch (err: unknown) {
             console.error("Failed to clone template:", err);
             toast.error("Failed to clone template");
         } finally {
@@ -199,7 +204,7 @@ export default function Page() {
             window.location.replace(`/tenants/${newTenant.id}/properties`);
 
             // The code below this point may not execute due to the page navigation
-        } catch (err) {
+        } catch (err: unknown) {
             console.error("Failed to create tenant:", err);
             toast.error("Failed to create tenant");
         } finally {

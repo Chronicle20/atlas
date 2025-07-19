@@ -29,7 +29,7 @@ export function DataTable<TData, TValue>({
                                              onRefresh,
                                              headerActions,
                                          }: DataTableProps<TData, TValue>) {
-    const state = Object.fromEntries((initialVisibilityState || []).map((col) => [col.replaceAll(".", "_"), false]));
+    const state = Object.fromEntries((initialVisibilityState || []).map((col) => [col.replace(/\./g, "_"), false]));
     const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>(state)
 
     const table = useReactTable({

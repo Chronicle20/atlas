@@ -1,50 +1,8 @@
-import {Tenant} from "@/app/tenants/columns";
+import type {Tenant} from "@/types/models/tenant";
+import type {ApiListResponse, ApiSingleResponse} from "@/types/api/responses";
+import type {NPC, Shop, Commodity, CommodityAttributes, ShopResponse} from "@/types/models/npc";
 import {tenantHeaders} from "@/lib/headers";
 import {fetchConversations} from "@/lib/npc-conversations";
-
-export interface CommodityAttributes {
-    templateId: number;
-    mesoPrice: number;
-    discountRate: number;
-    tokenTemplateId: number;
-    tokenPrice: number;
-    period: number;
-    levelLimit: number;
-    unitPrice?: number;
-    slotMax?: number;
-}
-
-export interface Commodity {
-    id: string;
-    type: string;
-    attributes: CommodityAttributes;
-}
-
-export interface CommodityReference {
-    type: string;
-    id: string;
-}
-
-export interface Shop {
-    type: string;
-    id: string;
-    attributes: {
-        npcId: number;
-        recharger?: boolean;
-    };
-    relationships?: {
-        commodities: {
-            data: CommodityReference[];
-        };
-    };
-    included?: Commodity[];
-}
-
-export interface NPC {
-    id: number;
-    hasShop: boolean;
-    hasConversation: boolean;
-}
 
 export async function fetchNPCs(tenant: Tenant): Promise<NPC[]> {
     // Fetch NPCs with shops
@@ -56,7 +14,7 @@ export async function fetchNPCs(tenant: Tenant): Promise<NPC[]> {
     if (!shopResponse.ok) {
         throw new Error("Failed to fetch NPCs with shops.");
     }
-    const shopResponseData = await shopResponse.json();
+    const shopResponseData: ApiListResponse<Shop> = await shopResponse.json();
 
     // Extract NPCs from shops data
     const npcsWithShops = shopResponseData.data.map((shop: Shop) => ({
@@ -98,17 +56,13 @@ export async function fetchNPCs(tenant: Tenant): Promise<NPC[]> {
 
         // Convert map back to array
         return Array.from(npcMap.values());
-    } catch (error) {
+    } catch (error: unknown) {
         console.error("Failed to fetch NPCs with conversations:", error);
         // If fetching conversations fails, return just the NPCs with shops
         return npcsWithShops;
     }
 }
 
-export interface ShopResponse {
-    data: Shop;
-    included?: Commodity[];
-}
 
 export async function fetchNPCShop(tenant: Tenant, npcId: number): Promise<ShopResponse> {
     const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
@@ -119,14 +73,18 @@ export async function fetchNPCShop(tenant: Tenant, npcId: number): Promise<ShopR
     if (!response.ok) {
         throw new Error("Failed to fetch NPC shop.");
     }
-    return await response.json();
+    const responseData: ShopResponse = await response.json();
+    return responseData;
 }
 
 export async function createCommodity(tenant: Tenant, npcId: number, commodityAttributes: CommodityAttributes): Promise<Commodity> {
     const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
     const response = await fetch(rootUrl + "/api/npcs/" + npcId + "/shop/relationships/commodities", {
         method: "POST",
-        headers: tenantHeaders(tenant),
+        headers: {
+            ...tenantHeaders(tenant),
+            "Content-Type": "application/json",
+        },
         body: JSON.stringify({
             data: {
                 type: "commodities",
@@ -137,7 +95,7 @@ export async function createCommodity(tenant: Tenant, npcId: number, commodityAt
     if (!response.ok) {
         throw new Error("Failed to create commodity.");
     }
-    const responseData = await response.json();
+    const responseData: ApiSingleResponse<Commodity> = await response.json();
     return responseData.data;
 }
 
@@ -145,7 +103,10 @@ export async function updateCommodity(tenant: Tenant, npcId: number, commodityId
     const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
     const response = await fetch(rootUrl + "/api/npcs/" + npcId + "/shop/relationships/commodities/" + commodityId, {
         method: "PUT",
-        headers: tenantHeaders(tenant),
+        headers: {
+            ...tenantHeaders(tenant),
+            "Content-Type": "application/json",
+        },
         body: JSON.stringify({
             data: {
                 type: "commodities",
@@ -156,7 +117,7 @@ export async function updateCommodity(tenant: Tenant, npcId: number, commodityId
     if (!response.ok) {
         throw new Error("Failed to update commodity.");
     }
-    const responseData = await response.json();
+    const responseData: ApiSingleResponse<Commodity> = await response.json();
     return responseData.data;
 }
 
@@ -189,7 +150,10 @@ export async function createShop(tenant: Tenant, npcId: number, commodities: Omi
 
     const response = await fetch(rootUrl + "/api/npcs/" + npcId + "/shop", {
         method: "POST",
-        headers: tenantHeaders(tenant),
+        headers: {
+            ...tenantHeaders(tenant),
+            "Content-Type": "application/json",
+        },
         body: JSON.stringify({
             data: {
                 type: "shops",
@@ -210,7 +174,7 @@ export async function createShop(tenant: Tenant, npcId: number, commodities: Omi
     if (!response.ok) {
         throw new Error("Failed to create shop.");
     }
-    const responseData = await response.json();
+    const responseData: ApiSingleResponse<Shop> = await response.json();
     return responseData.data;
 }
 
@@ -232,7 +196,10 @@ export async function updateShop(tenant: Tenant, npcId: number, commodities: Com
 
     const response = await fetch(rootUrl + "/api/npcs/" + npcId + "/shop", {
         method: "PUT",
-        headers: tenantHeaders(tenant),
+        headers: {
+            ...tenantHeaders(tenant),
+            "Content-Type": "application/json",
+        },
         body: JSON.stringify({
             data: {
                 type: "shops",
@@ -253,7 +220,7 @@ export async function updateShop(tenant: Tenant, npcId: number, commodities: Com
     if (!response.ok) {
         throw new Error("Failed to update shop.");
     }
-    const responseData = await response.json();
+    const responseData: ApiSingleResponse<Shop> = await response.json();
     return responseData.data;
 }
 

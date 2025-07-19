@@ -38,7 +38,7 @@ export default function Page() {
 
             // Refresh tenant data using the context function
             await refreshTenants();
-        } catch (err) {
+        } catch (err: unknown) {
             console.error("Failed to delete tenant:", err);
         } finally {
             setIsDeleting(false);

@@ -10,16 +10,7 @@ import {
 import {Button} from "@/components/ui/button";
 import {MoreHorizontal} from "lucide-react";
 import Link from "next/link";
-
-export type Tenant = {
-    id: string
-    attributes: {
-        name: string
-        region: string
-        majorVersion: number
-        minorVersion: number
-    }
-}
+import type { Tenant } from "@/types/models/tenant";
 
 interface ColumnProps {
     onDelete?: (id: string) => void;

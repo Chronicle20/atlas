@@ -5,13 +5,14 @@ import {useParams} from "next/navigation"
 import {Badge} from "@/components/ui/badge"
 import {DataTable} from "@/components/data-table"
 import {Toaster} from "@/components/ui/sonner"
-import {fetchGuild, Guild, GuildMember, GuildTitle} from "@/lib/guilds";
+import {fetchGuild} from "@/lib/guilds";
+import {Guild, GuildMember, GuildTitle} from "@/types/models/guild";
 import {ColumnDef} from "@tanstack/react-table";
 import {useTenant} from "@/context/tenant-context";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {getJobNameById} from "@/lib/jobs";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip";
-import {TenantConfig} from "@/lib/tenants";
+import {TenantConfig} from "@/types/models/tenant";
 
 export default function GuildDetailPage() {
     const {id} = useParams()
@@ -60,7 +61,7 @@ export default function GuildDetailPage() {
                             <strong>Leader:</strong>{" "}
                             {guild.attributes.members.find(m => m.characterId === guild.attributes.leaderId)?.name ?? "Unknown"}
                         </div>
-                        <div><strong>World:</strong> {tenantConfig.attributes.worlds[guild.attributes.worldId].name}
+                        <div><strong>World:</strong> {tenantConfig.attributes.worlds[guild.attributes.worldId]?.name || 'Unknown'}
                         </div>
                         <div><strong>Members:</strong> {guild.attributes.members.length}</div>
                         <div><strong>Capacity:</strong> {guild.attributes.capacity}</div>

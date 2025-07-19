@@ -1,4 +1,4 @@
-import {Tenant} from "@/lib/tenants";
+import type {Tenant} from "@/types/models/tenant";
 import {useEffect, useState} from "react";
 import {fetchMap} from "@/lib/maps";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip";
@@ -18,7 +18,7 @@ export function MapCell({ mapId, tenant }: { mapId: string; tenant: Tenant | nul
                 mapNameCache.set(mapId, mapName)
                 setName(mapName)
             })
-            .catch(() => setName("Unknown"))
+            .catch((_error: unknown) => setName("Unknown"))
     }, [mapId])
 
     return (

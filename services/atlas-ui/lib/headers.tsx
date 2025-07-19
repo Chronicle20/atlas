@@ -1,4 +1,4 @@
-import {Tenant} from "@/app/tenants/columns";
+import type {Tenant} from "./tenants";
 
 export function tenantHeaders(tenant: Tenant): Headers {
     const headers = new Headers();

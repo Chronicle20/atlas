@@ -6,10 +6,15 @@ import { Toaster as Sonner, ToasterProps } from "sonner"
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme = "system" } = useTheme()
 
+  const toasterProps: ToasterProps = {
+    className: "toaster group",
+    ...(theme !== undefined && { theme: theme as "light" | "dark" | "system" }),
+    ...props
+  };
+
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
-      className="toaster group"
+      {...toasterProps}
       toastOptions={{
         classNames: {
           toast:
@@ -21,7 +26,6 @@ const Toaster = ({ ...props }: ToasterProps) => {
             "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground font-medium",
         },
       }}
-      {...props}
     />
   )
 }

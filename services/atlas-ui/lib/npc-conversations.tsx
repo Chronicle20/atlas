@@ -1,4 +1,4 @@
-import {Tenant} from "@/app/tenants/columns";
+import type {Tenant} from "@/types/models/tenant";
 import {tenantHeaders} from "@/lib/headers";
 
 // Define interfaces based on the NPC conversation schema
@@ -170,5 +170,5 @@ export async function fetchNPCConversations(tenant: Tenant, npcId: number): Prom
   }
   const responseData: ConversationsResponse = await response.json();
   // Return the first conversation if one exists, otherwise return null
-  return responseData.data.length > 0 ? responseData.data[0] : null;
+  return responseData.data.length > 0 ? (responseData.data[0] || null) : null;
 }

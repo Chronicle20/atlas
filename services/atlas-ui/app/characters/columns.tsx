@@ -1,12 +1,12 @@
 "use client"
 
 import {ColumnDef} from "@tanstack/react-table"
-import {Tenant, TenantConfig} from "@/lib/tenants";
+import type {Tenant, TenantConfig} from "@/types/models/tenant";
 import {getJobNameById} from "@/lib/jobs";
 import {Badge} from "@/components/ui/badge";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip";
-import {Character} from "@/lib/characters";
-import {Account} from "@/lib/accounts";
+import {Character} from "@/types/models/character";
+import {Account} from "@/types/models/account";
 import {MapCell} from "@/components/map-cell";
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
 import {Button} from "@/components/ui/button";
@@ -52,7 +52,7 @@ export const getColumns = ({tenant, tenantConfig, accountMap, onRefresh}: Column
                 const num = Number(value);
                 let name = String(value);
                 if (!isNaN(num)) {
-                    name = tenantConfig?.attributes.worlds[num].name || String(value)
+                    name = tenantConfig?.attributes.worlds[num]?.name || String(value)
                 }
                 return (
                     <TooltipProvider>
@@ -142,7 +142,7 @@ export const getColumns = ({tenant, tenantConfig, accountMap, onRefresh}: Column
         {
             id: "actions",
             cell: ({row}) => {
-                return <CharacterActions character={row.original} onRefresh={onRefresh} />
+                return <CharacterActions character={row.original} {...(onRefresh && { onRefresh })} />
             },
         }
     ];
@@ -175,7 +175,7 @@ function CharacterActions({ character, onRefresh }: { character: Character; onRe
                 character={character}
                 open={changeMapOpen}
                 onOpenChange={setChangeMapOpen}
-                onSuccess={onRefresh}
+                {...(onRefresh && { onSuccess: onRefresh })}
             />
         </>
     );

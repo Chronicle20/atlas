@@ -140,3 +140,20 @@ func deleteEntityWithBuddies(db *gorm.DB, tenantId uuid.UUID, characterId uint32
 
 	return nil
 }
+
+func updateCapacity(db *gorm.DB, tenantId uuid.UUID, characterId uint32, newCapacity byte) error {
+	// Get the current entity to validate capacity
+	entity, err := byCharacterIdEntityProvider(tenantId, characterId)(db)()
+	if err != nil {
+		return err
+	}
+
+	// Validate that new capacity is greater than current capacity
+	if newCapacity <= entity.Capacity {
+		return errors.New("INVALID_CAPACITY")
+	}
+
+	// Update the capacity
+	entity.Capacity = newCapacity
+	return db.Save(&entity).Error
+}

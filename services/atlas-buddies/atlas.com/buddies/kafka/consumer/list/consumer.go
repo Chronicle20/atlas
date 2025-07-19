@@ -30,6 +30,7 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCreateBuddyListCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestBuddyAddCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestBuddyDeleteCommand(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleIncreaseCapacityCommand(db))))
 		}
 	}
 }
@@ -66,6 +67,18 @@ func handleRequestBuddyDeleteCommand(db *gorm.DB) message.Handler[list2.Command[
 		err := list.NewProcessor(l, ctx, db).RequestDeleteBuddyAndEmit(c.CharacterId, c.WorldId, c.Body.CharacterId)
 		if err != nil {
 			l.WithError(err).Errorf("Error attempting to delete [%d] to character [%d] buddy list.", c.Body.CharacterId, c.CharacterId)
+		}
+	}
+}
+
+func handleIncreaseCapacityCommand(db *gorm.DB) message.Handler[list2.Command[list2.IncreaseCapacityCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c list2.Command[list2.IncreaseCapacityCommandBody]) {
+		if c.Type != list2.CommandTypeIncreaseCapacity {
+			return
+		}
+		err := list.NewProcessor(l, ctx, db).IncreaseCapacityAndEmit(c.CharacterId, c.WorldId, c.Body.NewCapacity)
+		if err != nil {
+			l.WithError(err).Errorf("Failed to increase buddy list capacity for character [%d].", c.CharacterId)
 		}
 	}
 }

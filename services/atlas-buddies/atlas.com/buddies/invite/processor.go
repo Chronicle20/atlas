@@ -9,8 +9,8 @@ import (
 )
 
 type Processor interface {
-	Create(actorId uint32, worldId constants.Id, targetId uint32) error
-	Reject(actorId uint32, worldId constants.Id, originatorId uint32) error
+	Create(actorId uint32, worldId byte, targetId uint32) error
+	Reject(actorId uint32, worldId byte, originatorId uint32) error
 }
 
 type ProcessorImpl struct {
@@ -25,12 +25,12 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
-func (p *ProcessorImpl) Create(actorId uint32, worldId constants.Id, targetId uint32) error {
+func (p *ProcessorImpl) Create(actorId uint32, worldId byte, targetId uint32) error {
 	p.l.Debugf("Creating buddy [%d] invitation for [%d].", targetId, actorId)
 	return producer.ProviderImpl(p.l)(p.ctx)(invite2.EnvCommandTopic)(createInviteCommandProvider(actorId, worldId, targetId))
 }
 
-func (p *ProcessorImpl) Reject(actorId uint32, worldId constants.Id, originatorId uint32) error {
+func (p *ProcessorImpl) Reject(actorId uint32, worldId byte, originatorId uint32) error {
 	p.l.Debugf("Rejecting buddy [%d] invitation for [%d].", originatorId, actorId)
 	return producer.ProviderImpl(p.l)(p.ctx)(invite2.EnvCommandTopic)(rejectInviteCommandProvider(actorId, worldId, originatorId))
 }

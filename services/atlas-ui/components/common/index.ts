@@ -9,4 +9,5 @@ export { TableSkeleton } from './TableSkeleton';
 export { CardSkeleton } from './CardSkeleton';
 export { FormField } from './FormField';
 export { FormSelect } from './FormSelect';
+export { FormTextarea } from './FormTextarea';
 export type { SelectOption } from './FormSelect';

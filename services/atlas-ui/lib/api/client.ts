@@ -226,7 +226,7 @@ class ApiClient {
       {
         method: 'POST',
         headers,
-        body: data ? JSON.stringify(data) : undefined,
+        body: data ? JSON.stringify(data) : null,
         ...options,
       },
       options?.timeout
@@ -247,7 +247,7 @@ class ApiClient {
       {
         method: 'PUT',
         headers,
-        body: data ? JSON.stringify(data) : undefined,
+        body: data ? JSON.stringify(data) : null,
         ...options,
       },
       options?.timeout
@@ -268,7 +268,7 @@ class ApiClient {
       {
         method: 'PATCH',
         headers,
-        body: data ? JSON.stringify(data) : undefined,
+        body: data ? JSON.stringify(data) : null,
         ...options,
       },
       options?.timeout

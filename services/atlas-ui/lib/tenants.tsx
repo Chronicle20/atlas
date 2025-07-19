@@ -1,3 +1,5 @@
+import type {ApiListResponse, ApiSingleResponse} from "@/types/api/responses";
+
 // Lightweight tenant attributes for the new API
 export type TenantBasicAttributes = {
     name: string;
@@ -80,7 +82,7 @@ export async function fetchTenants(): Promise<Tenant[]> {
         throw new Error("Failed to fetch tenants.");
     }
 
-    const responseData = await response.json();
+    const responseData: ApiListResponse<Tenant> = await response.json();
     return responseData.data
         .sort((a: Tenant, b: Tenant) => {
             if (a.attributes.region !== b.attributes.region) {
@@ -101,7 +103,7 @@ export async function fetchTenant(tenantId: string): Promise<Tenant> {
         throw new Error("Failed to fetch tenant.");
     }
 
-    const responseData = await response.json();
+    const responseData: ApiSingleResponse<Tenant> = await response.json();
     return responseData.data;
 }
 
@@ -113,7 +115,7 @@ export async function fetchTenantConfigurations(): Promise<TenantConfig[]> {
         throw new Error("Failed to fetch tenant configurations.");
     }
 
-    const responseData = await response.json();
+    const responseData: ApiListResponse<TenantConfig> = await response.json();
     return responseData.data
         .map((tenant: TenantConfig) => ({
             ...tenant,
@@ -149,7 +151,7 @@ export async function fetchTenantConfiguration(tenantId: string): Promise<Tenant
         throw new Error("Failed to fetch tenant configuration.");
     }
 
-    const responseData = await response.json();
+    const responseData: ApiSingleResponse<TenantConfig> = await response.json();
     const tenant = responseData.data;
 
     // Sort handlers and writers
@@ -224,7 +226,7 @@ export const createTenant = async (attributes: TenantBasicAttributes) => {
 
     if (!response.ok) throw new Error("Failed to create tenant.");
 
-    const responseData = await response.json();
+    const responseData: ApiSingleResponse<Tenant> = await response.json();
     return responseData.data;
 };
 
@@ -274,7 +276,7 @@ export const createTenantConfiguration = async (attributes: TenantConfigAttribut
 
     if (!response.ok) throw new Error("Failed to create tenant configuration.");
 
-    const responseData = await response.json();
+    const responseData: ApiSingleResponse<TenantConfig> = await response.json();
     return responseData.data;
 };
 

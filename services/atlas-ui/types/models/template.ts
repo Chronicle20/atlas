@@ -51,3 +51,8 @@ export interface TemplateAttributes {
         whyAmIRecommended: string;
     }[];
 }
+
+export interface Template {
+    id: string;
+    attributes: TemplateAttributes;
+}

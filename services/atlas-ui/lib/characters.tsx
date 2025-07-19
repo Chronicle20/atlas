@@ -1,4 +1,7 @@
 import type {Tenant} from "@/types/models/tenant";
+import type {ApiListResponse, ApiSingleResponse, ApiErrorResponse, ApiSimpleErrorResponse} from "@/types/api/responses";
+import {isApiErrorResponse, isApiSimpleErrorResponse} from "@/types/api/responses";
+import type {Character as CharacterModel, UpdateCharacterData} from "@/types/models/character";
 import {tenantHeaders} from "@/lib/headers";
 
 export interface Character {
@@ -44,7 +47,7 @@ export async function fetchCharacters(tenant: Tenant): Promise<Character[]> {
     if (!response.ok) {
         throw new Error("Failed to fetch characters.");
     }
-    const responseData = await response.json();
+    const responseData: ApiListResponse<Character> = await response.json();
     return responseData.data;
 }
 
@@ -57,13 +60,11 @@ export async function fetchCharacter(tenant: Tenant, characterId: string): Promi
     if (!response.ok) {
         throw new Error("Failed to fetch character.");
     }
-    const responseData = await response.json();
+    const responseData: ApiSingleResponse<Character> = await response.json();
     return responseData.data;
 }
 
-interface UpdateCharacterData {
-    mapId?: number;
-}
+// UpdateCharacterData is now imported from types
 
 export async function updateCharacter(tenant: Tenant, characterId: string, data: UpdateCharacterData): Promise<void> {
     const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
@@ -89,10 +90,10 @@ export async function updateCharacter(tenant: Tenant, characterId: string, data:
             let errorMessage = "Failed to update character";
             
             try {
-                const errorData = await response.json();
-                if (errorData.error?.detail) {
+                const errorData: ApiErrorResponse | ApiSimpleErrorResponse = await response.json();
+                if (isApiErrorResponse(errorData)) {
                     errorMessage = errorData.error.detail;
-                } else if (errorData.message) {
+                } else if (isApiSimpleErrorResponse(errorData)) {
                     errorMessage = errorData.message;
                 }
             } catch {

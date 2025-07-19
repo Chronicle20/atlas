@@ -1,4 +1,6 @@
 import type {Tenant} from "@/types/models/tenant";
+import type {ApiListResponse} from "@/types/api/responses";
+import type {Account as AccountModel} from "@/types/models/account";
 import {tenantHeaders} from "@/lib/headers";
 
 export interface Account {
@@ -27,7 +29,7 @@ export async function fetchAccounts(tenant: Tenant): Promise<Account[]> {
     if (!response.ok) {
         throw new Error("Failed to fetch accounts.");
     }
-    const responseData = await response.json();
+    const responseData: ApiListResponse<Account> = await response.json();
     return responseData.data;
 }
 

@@ -1,4 +1,6 @@
 import type {Tenant} from "@/types/models/tenant";
+import type {ApiListResponse, ApiSingleResponse} from "@/types/api/responses";
+import type {Guild as GuildModel} from "@/types/models/guild";
 import {tenantHeaders} from "@/lib/headers";
 
 export interface Guild {
@@ -43,7 +45,7 @@ export async function fetchGuilds(tenant: Tenant): Promise<Guild[]> {
     if (!response.ok) {
         throw new Error("Failed to fetch guilds.");
     }
-    const responseData = await response.json();
+    const responseData: ApiListResponse<Guild> = await response.json();
     return responseData.data;
 }
 
@@ -56,6 +58,6 @@ export async function fetchGuild(tenant: Tenant, guildId: string): Promise<Guild
     if (!response.ok) {
         throw new Error("Failed to fetch guild.");
     }
-    const responseData = await response.json();
+    const responseData: ApiSingleResponse<Guild> = await response.json();
     return responseData.data;
 }

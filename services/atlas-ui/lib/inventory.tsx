@@ -90,7 +90,7 @@ export async function fetchInventory(tenant: Tenant, characterId: string): Promi
     throw new Error("Failed to fetch inventory.");
   }
 
-  return await response.json();
+  return await response.json() as InventoryResponse;
 }
 
 // Helper function to get assets for a compartment

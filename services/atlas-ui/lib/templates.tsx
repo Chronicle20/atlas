@@ -1,3 +1,6 @@
+import type {ApiListResponse, ApiSingleResponse} from "@/types/api/responses";
+import type {Template as TemplateModel, TemplateAttributes as TemplateAttributesModel, CharacterTemplate as CharacterTemplateModel} from "@/types/models/template";
+
 export interface CharacterTemplate {
     jobIndex: number;
     subJobIndex: number;
@@ -65,7 +68,7 @@ export async function fetchTemplates(): Promise<Template[]> {
     if (!response.ok) {
         throw new Error("Failed to fetch templates.");
     }
-    const responseData = await response.json();
+    const responseData: ApiListResponse<Template> = await response.json();
     return responseData.data
         .map((template: Template) => ({
             ...template,
@@ -150,7 +153,7 @@ export const createTemplate = async (attributes: TemplateAttributes) => {
 
     if (!response.ok) throw new Error("Failed to create template.");
 
-    const responseData = await response.json();
+    const responseData: ApiSingleResponse<Template> = await response.json();
     return responseData.data;
 };
 

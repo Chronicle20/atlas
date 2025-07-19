@@ -1,4 +1,6 @@
 import type {Tenant} from "@/types/models/tenant";
+import type {ApiSingleResponse} from "@/types/api/responses";
+import type {Map as MapModel} from "@/types/models/map";
 import {tenantHeaders} from "@/lib/headers";
 
 export interface Map {
@@ -18,6 +20,6 @@ export async function fetchMap(tenant: Tenant, mapId: string): Promise<Map> {
     if (!response.ok) {
         throw new Error("Failed to fetch map.");
     }
-    const responseData = await response.json();
+    const responseData: ApiSingleResponse<Map> = await response.json();
     return responseData.data;
 }

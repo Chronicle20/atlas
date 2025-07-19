@@ -1,4 +1,6 @@
 import type {Tenant} from "@/types/models/tenant";
+import type {ApiListResponse, ApiSingleResponse} from "@/types/api/responses";
+import type {Shop as ShopModel, Commodity as CommodityModel} from "@/types/models/npc";
 import {tenantHeaders} from "@/lib/headers";
 import {fetchConversations} from "@/lib/npc-conversations";
 
@@ -56,7 +58,7 @@ export async function fetchNPCs(tenant: Tenant): Promise<NPC[]> {
     if (!shopResponse.ok) {
         throw new Error("Failed to fetch NPCs with shops.");
     }
-    const shopResponseData = await shopResponse.json();
+    const shopResponseData: ApiListResponse<Shop> = await shopResponse.json();
 
     // Extract NPCs from shops data
     const npcsWithShops = shopResponseData.data.map((shop: Shop) => ({
@@ -119,7 +121,7 @@ export async function fetchNPCShop(tenant: Tenant, npcId: number): Promise<ShopR
     if (!response.ok) {
         throw new Error("Failed to fetch NPC shop.");
     }
-    return await response.json();
+    return await response.json() as ShopResponse;
 }
 
 export async function createCommodity(tenant: Tenant, npcId: number, commodityAttributes: CommodityAttributes): Promise<Commodity> {
@@ -137,7 +139,7 @@ export async function createCommodity(tenant: Tenant, npcId: number, commodityAt
     if (!response.ok) {
         throw new Error("Failed to create commodity.");
     }
-    const responseData = await response.json();
+    const responseData: ApiSingleResponse<Commodity> = await response.json();
     return responseData.data;
 }
 
@@ -156,7 +158,7 @@ export async function updateCommodity(tenant: Tenant, npcId: number, commodityId
     if (!response.ok) {
         throw new Error("Failed to update commodity.");
     }
-    const responseData = await response.json();
+    const responseData: ApiSingleResponse<Commodity> = await response.json();
     return responseData.data;
 }
 
@@ -210,7 +212,7 @@ export async function createShop(tenant: Tenant, npcId: number, commodities: Omi
     if (!response.ok) {
         throw new Error("Failed to create shop.");
     }
-    const responseData = await response.json();
+    const responseData: ApiSingleResponse<Shop> = await response.json();
     return responseData.data;
 }
 
@@ -253,7 +255,7 @@ export async function updateShop(tenant: Tenant, npcId: number, commodities: Com
     if (!response.ok) {
         throw new Error("Failed to update shop.");
     }
-    const responseData = await response.json();
+    const responseData: ApiSingleResponse<Shop> = await response.json();
     return responseData.data;
 }
 

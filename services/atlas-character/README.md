@@ -247,6 +247,59 @@ Content-Type: application/json
 | `mapId`     | uint32  | Character's current map location              | Must be a valid map ID and accessible to character |
 | `gm`        | int     | GM level (0 = not GM, 1+ = GM level)         | Must be non-negative integer        |
 
+### Detailed Validation Rules
+
+#### Character Name Validation
+- **Format**: Must match regex pattern `[A-Za-z0-9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]{3,12}`
+  - Allowed characters: English letters (A-Z, a-z), numbers (0-9), Hiragana, Katakana, and Kanji
+  - Length: 3-12 characters
+- **Uniqueness**: Name must not already exist for any character in the tenant context
+- **Blocked Names**: Reserved or inappropriate names are blocked (future enhancement)
+
+#### Appearance Validation
+- **Hair ID Range**: Must be between 30,000 and 35,000 (inclusive)
+- **Face ID Range**: Must be between 20,000 and 25,000 (inclusive)
+- **Gender**: Must be exactly 0 (male) or 1 (female)
+- **Skin Color**: Must be between 0 and 9 (inclusive)
+
+#### Map Location Validation
+- **Map ID Range**: Must be between 100,000,000 and 999,999,999 (9-digit map IDs)
+- **Character Level Restrictions**:
+  - Training Maps (100,000,000 - 109,999,999): Accessible to all levels
+  - Victoria Island (110,000,000 - 119,999,999): Accessible to all levels
+  - Advanced Areas (200,000,000 - 299,999,999): Requires level 30+
+  - High-Level Areas (300,000,000 - 399,999,999): Requires level 50+
+  - End-Game Areas (500,000,000 - 599,999,999): Requires level 70+
+  - Special/Event Maps (600,000,000 - 999,999,999): Requires level 10+
+- **GM Bypass**: GM characters (gm > 0) have access to all valid maps regardless of level
+- **World Restrictions**: All maps are currently accessible in all worlds (may be restricted in future)
+
+#### GM Status Validation
+- **GM Level**: Must be a non-negative integer (0 or greater)
+- **Values**: 0 = not a GM, 1+ = GM level (higher numbers indicate higher GM privileges)
+
+#### Validation Error Scenarios
+
+The following validation errors will result in appropriate HTTP error responses:
+
+**400 Bad Request** - Invalid field format or value:
+- Character name doesn't match required format pattern
+- Hair ID outside valid range (30,000-35,000)
+- Face ID outside valid range (20,000-25,000)
+- Gender is not 0 or 1
+- Skin color outside valid range (0-9)
+- Map ID outside valid range (100,000,000-999,999,999)
+- GM level is negative
+
+**404 Not Found** - Character not found:
+- Attempting to update a character that doesn't exist
+- Character doesn't belong to the authenticated tenant
+
+**409 Conflict** - Business rule violation:
+- Character name already exists (uniqueness constraint)
+- Character level insufficient for target map access
+- Invalid map accessibility based on character's current state
+
 #### Response
 
 **Success (204 No Content)**

@@ -228,7 +228,8 @@ Content-Type: application/json
       "face": 20100,
       "gender": 1,
       "skinColor": 0,
-      "mapId": 110000000
+      "mapId": 110000000,
+      "gm": 1
     }
   }
 }
@@ -244,6 +245,7 @@ Content-Type: application/json
 | `gender`    | byte    | Character gender (0 = male, 1 = female)      | Must be 0 or 1                     |
 | `skinColor` | byte    | Skin color ID                                 | Must be a valid skin color value    |
 | `mapId`     | uint32  | Character's current map location              | Must be a valid map ID and accessible to character |
+| `gm`        | int     | GM level (0 = not GM, 1+ = GM level)         | Must be non-negative integer        |
 
 #### Response
 
@@ -303,7 +305,8 @@ curl -X PATCH \
         "name": "NewCharacterName",
         "hair": 30150,
         "face": 20120,
-        "mapId": 110000000
+        "mapId": 110000000,
+        "gm": 1
       }
     }
   }' \

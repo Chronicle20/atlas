@@ -1,4 +1,4 @@
-import {Tenant} from "@/app/tenants/columns";
+import type {Tenant} from "@/types/models/tenant";
 import {tenantHeaders} from "@/lib/headers";
 import {fetchConversations} from "@/lib/npc-conversations";
 

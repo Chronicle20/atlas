@@ -1,4 +1,4 @@
-import {Tenant} from "@/lib/tenants";
+import type {Tenant} from "@/types/models/tenant";
 import {useEffect, useState} from "react";
 import {fetchMap} from "@/lib/maps";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip";

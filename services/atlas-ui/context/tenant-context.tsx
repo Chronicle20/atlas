@@ -1,7 +1,8 @@
 "use client";
 
 import {createContext, ReactNode, useContext, useEffect, useState} from "react";
-import {fetchTenants, Tenant, TenantConfig, fetchTenantConfiguration} from "@/lib/tenants";
+import {fetchTenants, fetchTenantConfiguration} from "@/lib/tenants";
+import type {Tenant, TenantConfig} from "@/types/models/tenant";
 
 type TenantContextType = {
     tenants: Tenant[];

@@ -1,7 +1,7 @@
 "use client"
 
 import {ColumnDef} from "@tanstack/react-table"
-import {Tenant, TenantConfig} from "@/lib/tenants";
+import type {Tenant, TenantConfig} from "@/types/models/tenant";
 import {getJobNameById} from "@/lib/jobs";
 import {Badge} from "@/components/ui/badge";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip";

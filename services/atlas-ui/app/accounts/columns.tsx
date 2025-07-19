@@ -7,7 +7,7 @@ import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 import {Button} from "@/components/ui/button";
 import {MoreHorizontal} from "lucide-react";
 import {Account, terminateAccountSession} from "@/lib/accounts";
-import {Tenant} from "@/lib/tenants";
+import type {Tenant} from "@/types/models/tenant";
 import {toast} from "sonner";
 
 const onLogout = (tenant: Tenant | null, id: string, name: string) => {

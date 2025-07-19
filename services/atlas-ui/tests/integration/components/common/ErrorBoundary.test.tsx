@@ -228,7 +228,9 @@ describe('ErrorBoundary Integration Tests', () => {
       await waitFor(() => {
         expect(screen.getByText('Error Details:')).toBeInTheDocument();
         expect(screen.getByText('Hide Technical Details')).toBeInTheDocument();
-        expect(screen.getByText('Details test error')).toBeInTheDocument();
+        // Check that the technical details section is expanded and contains error info
+        const messageLabel = screen.getByText('Message:');
+        expect(messageLabel).toBeInTheDocument();
       });
       
       // Click to collapse

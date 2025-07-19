@@ -13,6 +13,7 @@ import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {getJobNameById} from "@/lib/jobs";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip";
 import {TenantConfig} from "@/types/models/tenant";
+import { PageLoader } from "@/components/common";
 
 export default function GuildDetailPage() {
     const {id} = useParams()
@@ -41,7 +42,7 @@ export default function GuildDetailPage() {
             .finally(() => setLoading(false))
     }, [activeTenant, id, fetchTenantConfiguration])
 
-    if (loading) return <div className="p-4">Loading...</div>
+    if (loading) return <PageLoader />
     if (error || !guild || !tenantConfig) return <div className="p-4 text-red-500">Error: {error || "Guild or tenant configuration not found"}</div>
 
     return (

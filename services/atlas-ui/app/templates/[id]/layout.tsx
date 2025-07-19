@@ -8,6 +8,7 @@ import type {Template} from "@/types/models/template";
 import {useEffect, useState} from "react";
 import {ScrollArea} from "@/components/ui/scroll-area";
 import {Toaster} from "sonner";
+import { LoadingSpinner } from "@/components/common";
 
 interface TemplateDetailLayoutProps {
     children: React.ReactNode
@@ -59,7 +60,7 @@ export default function TemplateDetailLayout({ children }: TemplateDetailLayoutP
         },
     ];
 
-    if (loading) return <div>Loading...</div>; // Show loading message while fetching data
+    if (loading) return <LoadingSpinner />; // Show loading message while fetching data
     if (error) return <div>Error: {error}</div>; // Show error message if fetching failed
 
     return (

@@ -136,7 +136,12 @@ export function PropertiesForm() {
                         <FormItem>
                             <FormLabel>Major Version</FormLabel>
                             <FormControl>
-                                <Input type="number" placeholder={String(tenant.attributes.majorVersion)} {...field} />
+                                <Input 
+                                    type="number" 
+                                    placeholder={String(tenant.attributes.majorVersion)} 
+                                    {...field}
+                                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                />
                             </FormControl>
                             <FormDescription>
                                 The MapleStory major version.
@@ -152,7 +157,12 @@ export function PropertiesForm() {
                         <FormItem>
                             <FormLabel>Minor Version</FormLabel>
                             <FormControl>
-                                <Input type="number" placeholder={String(tenant.attributes.minorVersion)} {...field} />
+                                <Input 
+                                    type="number" 
+                                    placeholder={String(tenant.attributes.minorVersion)} 
+                                    {...field}
+                                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                />
                             </FormControl>
                             <FormDescription>
                                 The MapleStory minor version.

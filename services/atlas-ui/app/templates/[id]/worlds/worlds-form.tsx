@@ -10,7 +10,7 @@ import {X} from "lucide-react";
 import {fetchTemplates, updateTemplate} from "@/lib/templates";
 import type {Template} from "@/types/models/template";
 import {toast} from "sonner";
-import { LoadingSpinner } from "@/components/common";
+import { LoadingSpinner, ErrorDisplay } from "@/components/common";
 
 interface FormValues {
     worlds: {
@@ -78,7 +78,7 @@ export function WorldsForm() {
     }
 
     if (loading) return <LoadingSpinner />; // Show loading message while fetching data
-    if (error) return <div>Error: {error}</div>; // Show error message if fetching failed
+    if (error) return <ErrorDisplay error={error} />; // Show error message if fetching failed
 
     return (
         <Form {...form}>

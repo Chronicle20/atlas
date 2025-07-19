@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import {toast} from "sonner";
-import { LoadingSpinner } from "@/components/common";
+import { LoadingSpinner, ErrorDisplay } from "@/components/common";
 
 export default function Page() {
     const { activeTenant } = useTenant();
@@ -306,7 +306,7 @@ export default function Page() {
     };
 
     if (loading) return <LoadingSpinner />;
-    if (error) return <div>Error: {error}</div>;
+    if (error) return <ErrorDisplay error={error} />;
 
     const columns = getColumns({
         npcId,

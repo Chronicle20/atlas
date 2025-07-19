@@ -61,7 +61,7 @@ export function PropertiesForm() {
                     region: template?.attributes.region || "",
                     major: template?.attributes.majorVersion || 0,
                     minor: template?.attributes.minorVersion || 0,
-                    usesPin: template?.attributes.usesPin,
+                    usesPin: template?.attributes.usesPin || false,
                 });
             })
             .catch((err) => {
@@ -80,9 +80,10 @@ export function PropertiesForm() {
             toast.success("Successfully saved template.");
         });
         form.reset({
-            region: template?.attributes.region,
-            major: template?.attributes.majorVersion,
-            minor: template?.attributes.minorVersion,
+            region: template?.attributes.region || "",
+            major: template?.attributes.majorVersion || 0,
+            minor: template?.attributes.minorVersion || 0,
+            usesPin: template?.attributes.usesPin || false,
         });
     }
 

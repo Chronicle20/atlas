@@ -143,7 +143,7 @@ export default function CharacterDetailPage() {
                     </CardHeader>
                     <CardContent className="grid grid-cols-4 gap-2 text-sm text-muted-foreground">
                         <div>
-                            <strong>World:</strong> {tenantConfig.attributes.worlds[character.attributes.worldId].name}
+                            <strong>World:</strong> {tenantConfig.attributes.worlds[character.attributes.worldId]?.name || 'Unknown'}
                         </div>
                         <div><strong>Gender:</strong> {character.attributes.gender}</div>
                         <div><strong>Level:</strong> {character.attributes.level}</div>

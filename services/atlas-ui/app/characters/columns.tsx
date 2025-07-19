@@ -52,7 +52,7 @@ export const getColumns = ({tenant, tenantConfig, accountMap, onRefresh}: Column
                 const num = Number(value);
                 let name = String(value);
                 if (!isNaN(num)) {
-                    name = tenantConfig?.attributes.worlds[num].name || String(value)
+                    name = tenantConfig?.attributes.worlds[num]?.name || String(value)
                 }
                 return (
                     <TooltipProvider>
@@ -142,7 +142,7 @@ export const getColumns = ({tenant, tenantConfig, accountMap, onRefresh}: Column
         {
             id: "actions",
             cell: ({row}) => {
-                return <CharacterActions character={row.original} onRefresh={onRefresh} />
+                return <CharacterActions character={row.original} {...(onRefresh && { onRefresh })} />
             },
         }
     ];
@@ -175,7 +175,7 @@ function CharacterActions({ character, onRefresh }: { character: Character; onRe
                 character={character}
                 open={changeMapOpen}
                 onOpenChange={setChangeMapOpen}
-                onSuccess={onRefresh}
+                {...(onRefresh && { onSuccess: onRefresh })}
             />
         </>
     );

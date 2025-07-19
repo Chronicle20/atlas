@@ -61,7 +61,7 @@ export default function GuildDetailPage() {
                             <strong>Leader:</strong>{" "}
                             {guild.attributes.members.find(m => m.characterId === guild.attributes.leaderId)?.name ?? "Unknown"}
                         </div>
-                        <div><strong>World:</strong> {tenantConfig.attributes.worlds[guild.attributes.worldId].name}
+                        <div><strong>World:</strong> {tenantConfig.attributes.worlds[guild.attributes.worldId]?.name || 'Unknown'}
                         </div>
                         <div><strong>Members:</strong> {guild.attributes.members.length}</div>
                         <div><strong>Capacity:</strong> {guild.attributes.capacity}</div>

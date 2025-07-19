@@ -46,7 +46,7 @@ export function getColumns({tenant, characterMap}: ColumnProps): ColumnDef<Guild
                 const num = Number(value);
                 let name = String(value);
                 if (!isNaN(num)) {
-                    name = tenant?.attributes.worlds[num].name || String(value)
+                    name = tenant?.attributes.worlds[num]?.name || String(value)
                 }
                 return (
                     <TooltipProvider>

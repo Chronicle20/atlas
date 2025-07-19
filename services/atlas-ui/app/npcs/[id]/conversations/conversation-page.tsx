@@ -638,35 +638,38 @@ export default function ConversationPage() {
           if (sourceState) {
             if (sourceHandle?.startsWith('choice-')) {
               // This is a choice connection
-              const choiceIndex = parseInt(sourceHandle.split('-')[1]);
+              const choiceIndex = parseInt(sourceHandle.split('-')[1] || '0');
 
               if (sourceState.type === 'dialogue' && sourceState.dialogue?.choices) {
                 // Update the nextState for this choice
                 if (choiceIndex >= 0 && choiceIndex < sourceState.dialogue.choices.length) {
                   // Only update if this choice points to the target node
-                  if (sourceState.dialogue.choices[choiceIndex].nextState === targetId) {
-                    sourceState.dialogue.choices[choiceIndex].nextState = null;
+                  const choice = sourceState.dialogue.choices[choiceIndex];
+                  if (choice && choice.nextState === targetId) {
+                    choice.nextState = null;
                   }
                 }
               } else if (sourceState.type === 'listSelection' && sourceState.listSelection?.choices) {
                 // Update the nextState for this choice in listSelection
                 if (choiceIndex >= 0 && choiceIndex < sourceState.listSelection.choices.length) {
                   // Only update if this choice points to the target node
-                  if (sourceState.listSelection.choices[choiceIndex].nextState === targetId) {
-                    sourceState.listSelection.choices[choiceIndex].nextState = null;
+                  const choice = sourceState.listSelection.choices[choiceIndex];
+                  if (choice && choice.nextState === targetId) {
+                    choice.nextState = null;
                   }
                 }
               }
             } else if (sourceHandle?.startsWith('outcome-')) {
               // This is an outcome connection
-              const outcomeIndex = parseInt(sourceHandle.split('-')[1]);
+              const outcomeIndex = parseInt(sourceHandle.split('-')[1] || '0');
 
               if (sourceState.type === 'genericAction' && sourceState.genericAction?.outcomes) {
                 // Update the nextState for this outcome
                 if (outcomeIndex >= 0 && outcomeIndex < sourceState.genericAction.outcomes.length) {
                   // Only update if this outcome points to the target node
-                  if (sourceState.genericAction.outcomes[outcomeIndex].nextState === targetId) {
-                    sourceState.genericAction.outcomes[outcomeIndex].nextState = '';
+                  const outcome = sourceState.genericAction.outcomes[outcomeIndex];
+                  if (outcome && outcome.nextState === targetId) {
+                    outcome.nextState = '';
                   }
                 }
               }
@@ -1131,10 +1134,11 @@ export default function ConversationPage() {
     updatedConversation.attributes.states.splice(nodeIndex, 1);
 
     // If the deleted node was the start state, update the start state
-    if (updatedConversation.attributes.startState === selectedNodeId) {
+    if (selectedNodeId && updatedConversation.attributes.startState === selectedNodeId) {
       // If there are other states, set the first one as the start state
       if (updatedConversation.attributes.states.length > 0) {
-        updatedConversation.attributes.startState = updatedConversation.attributes.states[0].id;
+        const firstState = updatedConversation.attributes.states[0];
+        updatedConversation.attributes.startState = firstState?.id || '';
       } else {
         // If no states left, clear the start state
         updatedConversation.attributes.startState = '';
@@ -1265,39 +1269,45 @@ export default function ConversationPage() {
         if (sourceState) {
           if (sourceHandleId?.startsWith('choice-')) {
             // This is a choice connection
-            const choiceIndex = parseInt(sourceHandleId.split('-')[1]);
+            const choiceIndex = parseInt(sourceHandleId.split('-')[1] || '0');
 
             if (sourceState.type === 'dialogue' && sourceState.dialogue?.choices) {
               // Update the nextState for this choice
               if (choiceIndex >= 0 && choiceIndex < sourceState.dialogue.choices.length) {
-                sourceState.dialogue.choices[choiceIndex].nextState = targetNode.id;
-
-                connectionInfo.connectionType = 'choice';
-                connectionInfo.itemLabel = sourceState.dialogue.choices[choiceIndex].text || 'Unknown choice';
+                const choice = sourceState.dialogue.choices[choiceIndex];
+                if (choice) {
+                  choice.nextState = targetNode.id;
+                  connectionInfo.connectionType = 'choice';
+                  connectionInfo.itemLabel = choice.text || 'Unknown choice';
+                }
               }
             } else if (sourceState.type === 'listSelection' && sourceState.listSelection?.choices) {
               // Update the nextState for this choice in listSelection
               if (choiceIndex >= 0 && choiceIndex < sourceState.listSelection.choices.length) {
-                sourceState.listSelection.choices[choiceIndex].nextState = targetNode.id;
-
-                connectionInfo.connectionType = 'choice';
-                connectionInfo.itemLabel = sourceState.listSelection.choices[choiceIndex].text || 'Unknown choice';
+                const choice = sourceState.listSelection.choices[choiceIndex];
+                if (choice) {
+                  choice.nextState = targetNode.id;
+                  connectionInfo.connectionType = 'choice';
+                  connectionInfo.itemLabel = choice.text || 'Unknown choice';
+                }
               }
             }
           } else if (sourceHandleId?.startsWith('outcome-')) {
             // This is an outcome connection
-            const outcomeIndex = parseInt(sourceHandleId.split('-')[1]);
+            const outcomeIndex = parseInt(sourceHandleId.split('-')[1] || '0');
 
             if (sourceState.type === 'genericAction' && sourceState.genericAction?.outcomes) {
               // Update the nextState for this outcome
               if (outcomeIndex >= 0 && outcomeIndex < sourceState.genericAction.outcomes.length) {
-                sourceState.genericAction.outcomes[outcomeIndex].nextState = targetNode.id;
-
-                connectionInfo.connectionType = 'outcome';
-                const conditions = sourceState.genericAction.outcomes[outcomeIndex].conditions;
-                connectionInfo.itemLabel = conditions.length > 0 ? 
-                  `Outcome with ${conditions.length} condition(s)` : 
-                  'Default outcome';
+                const outcome = sourceState.genericAction.outcomes[outcomeIndex];
+                if (outcome) {
+                  outcome.nextState = targetNode.id;
+                  connectionInfo.connectionType = 'outcome';
+                  const conditions = outcome.conditions;
+                  connectionInfo.itemLabel = conditions.length > 0 ? 
+                    `Outcome with ${conditions.length} condition(s)` : 
+                    'Default outcome';
+                }
               }
             }
           } else if (sourceHandleId === 'success' || sourceHandleId === 'failure' || sourceHandleId === 'missing') {
@@ -1332,10 +1342,10 @@ export default function ConversationPage() {
     // Generate the edge ID based on the connection type
     if (sourceNode && targetNode && params.sourceHandle) {
       if (params.sourceHandle.startsWith('choice-')) {
-        const choiceIndex = parseInt(params.sourceHandle.split('-')[1]);
+        const choiceIndex = parseInt(params.sourceHandle.split('-')[1] || '0');
         edgeId = `${sourceNode.id}-to-${targetNode.id}-${choiceIndex}`;
       } else if (params.sourceHandle.startsWith('outcome-')) {
-        const outcomeIndex = parseInt(params.sourceHandle.split('-')[1]);
+        const outcomeIndex = parseInt(params.sourceHandle.split('-')[1] || '0');
         edgeId = `${sourceNode.id}-to-${targetNode.id}-${outcomeIndex}`;
       } else if (params.sourceHandle === 'success') {
         edgeId = `${sourceNode.id}-to-${targetNode.id}-success`;

@@ -358,7 +358,7 @@ describe('Toast Notification Utilities', () => {
       const messages = {
         loading: 'Loading...',
         success: 'Success!',
-        error: 'Fallback error' as any, // Type hack for test
+        error: 'Fallback error' as string | ((error: unknown) => string),
       };
       const context = { component: 'TestComponent' };
       
@@ -367,8 +367,8 @@ describe('Toast Notification Utilities', () => {
       const callArgs = mockToast.promise.mock.calls[0]![1];
       
       // Simulate the error case where error message is not a function or string
-      delete (messages as any).error;
-      const errorMessage = callArgs.error(new Error('Test error'));
+      delete (messages as Record<string, unknown>).error;
+      callArgs.error(new Error('Test error'));
       
       expect(mockErrorUtils.transformError).toHaveBeenCalledWith(
         new Error('Test error'),

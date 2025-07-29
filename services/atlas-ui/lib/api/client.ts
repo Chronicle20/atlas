@@ -15,6 +15,29 @@ import { createApiErrorFromResponse } from '@/types/api/errors';
 import { isRetryableError, sanitizeErrorData } from '@/lib/api/errors';
 
 /**
+ * Progress information for file uploads/downloads
+ */
+export interface ProgressInfo {
+  /** Total number of bytes (if known) */
+  total: number | undefined;
+  /** Number of bytes transferred */
+  loaded: number;
+  /** Progress percentage (0-100, if total is known) */
+  percentage: number | undefined;
+  /** Transfer rate in bytes per second */
+  rate: number | undefined;
+  /** Estimated time remaining in milliseconds */
+  timeRemaining: number | undefined;
+  /** Whether the operation is complete */
+  done: boolean;
+}
+
+/**
+ * Progress callback function
+ */
+export type ProgressCallback = (progress: ProgressInfo) => void;
+
+/**
  * Configuration options for API requests
  */
 export interface ApiRequestOptions extends Omit<RequestInit, 'method' | 'body'> {
@@ -36,6 +59,8 @@ export interface ApiRequestOptions extends Omit<RequestInit, 'method' | 'body'> 
   signal?: AbortSignal;
   /** Disable request deduplication for this specific request (default: false) */
   skipDeduplication?: boolean;
+  /** Progress callback for tracking upload/download progress */
+  onProgress?: ProgressCallback;
 }
 
 /**
@@ -58,6 +83,91 @@ interface PendingRequest<T = unknown> {
   promise: Promise<T>;
   abortController: AbortController;
   requestCount: number;
+}
+
+/**
+ * Progress tracker utility for monitoring upload/download progress
+ */
+class ProgressTracker {
+  private startTime: number;
+  private lastTime: number;
+  private lastLoaded: number;
+  private samples: Array<{ time: number; loaded: number }> = [];
+  private readonly maxSamples = 10;
+
+  constructor() {
+    this.startTime = Date.now();
+    this.lastTime = this.startTime;
+    this.lastLoaded = 0;
+  }
+
+  /**
+   * Update progress and calculate metrics
+   */
+  update(loaded: number, total?: number): ProgressInfo {
+    const now = Date.now();
+    const deltaTime = now - this.lastTime;
+    const deltaLoaded = loaded - this.lastLoaded;
+
+    // Add sample for rate calculation
+    this.samples.push({ time: now, loaded });
+    if (this.samples.length > this.maxSamples) {
+      this.samples.shift();
+    }
+
+    // Calculate transfer rate (bytes per second)
+    let rate = 0;
+    if (this.samples.length >= 2) {
+      const oldestSample = this.samples[0]!;
+      const newestSample = this.samples[this.samples.length - 1]!;
+      const timeDiff = newestSample.time - oldestSample.time;
+      const loadedDiff = newestSample.loaded - oldestSample.loaded;
+      
+      if (timeDiff > 0) {
+        rate = (loadedDiff / timeDiff) * 1000; // Convert to bytes per second
+      }
+    }
+
+    // Calculate percentage if total is known
+    let percentage: number | undefined;
+    if (total && total > 0) {
+      percentage = Math.min(100, (loaded / total) * 100);
+    }
+
+    // Calculate estimated time remaining
+    let timeRemaining: number | undefined;
+    if (total && rate > 0 && total > loaded) {
+      const remainingBytes = total - loaded;
+      timeRemaining = (remainingBytes / rate) * 1000; // Convert to milliseconds
+    }
+
+    // Update tracking variables
+    this.lastTime = now;
+    this.lastLoaded = loaded;
+
+    return {
+      total: total,
+      loaded,
+      percentage: percentage,
+      rate,
+      timeRemaining: timeRemaining,
+      done: false
+    };
+  }
+
+  /**
+   * Mark progress as complete
+   */
+  complete(total?: number): ProgressInfo {
+    return {
+      total: total || this.lastLoaded,
+      loaded: total || this.lastLoaded,
+      percentage: 100,
+      rate: 0,
+      timeRemaining: 0,
+      done: true
+    };
+  }
 }
 
 /**
@@ -360,6 +470,104 @@ class ApiClient {
   }
 
   /**
+   * Create a progress-tracking readable stream for upload monitoring
+   */
+  private createProgressTrackingUploadBody(
+    body: BodyInit | null | undefined,
+    onProgress?: ProgressCallback
+  ): BodyInit | null | undefined {
+    if (!body || !onProgress) {
+      return body;
+    }
+
+    // Handle different body types
+    if (body instanceof FormData) {
+      // For FormData, we can't easily track progress during the upload
+      // The browser will handle this internally, so we just call the callback immediately
+      // Real progress tracking would need to be handled at the xhr level or with a custom implementation
+      const tracker = new ProgressTracker();
+      onProgress(tracker.update(0));
+      return body;
+    }
+
+    if (body instanceof ArrayBuffer || body instanceof Uint8Array) {
+      const tracker = new ProgressTracker();
+      const size = body instanceof ArrayBuffer ? body.byteLength : body.length;
+      onProgress(tracker.update(0, size));
+      // For binary data, we can't easily wrap it with progress tracking in fetch
+      // This would require using XMLHttpRequest instead
+      return body;
+    }
+
+    if (typeof body === 'string') {
+      const tracker = new ProgressTracker();
+      const size = new TextEncoder().encode(body).length;
+      onProgress(tracker.update(0, size));
+      // For string data, we can't easily wrap it with progress tracking in fetch
+      return body;
+    }
+
+    // For other body types, return as-is
+    return body;
+  }
+
+  /**
+   * Create a progress-tracking response for download monitoring
+   */
+  private async createProgressTrackingResponse(
+    response: Response,
+    onProgress?: ProgressCallback
+  ): Promise<Response> {
+    if (!onProgress || !response.body) {
+      return response;
+    }
+
+    const contentLength = response.headers.get('content-length');
+    const total = contentLength ? parseInt(contentLength, 10) : undefined;
+    const tracker = new ProgressTracker();
+    
+    // Create a new ReadableStream that tracks progress
+    const progressStream = new ReadableStream({
+      start(controller) {
+        const reader = response.body!.getReader();
+        let loaded = 0;
+
+        function pump(): Promise<void> {
+          return reader.read().then(({ done, value }) => {
+            if (done) {
+              // Complete the progress tracking
+              onProgress!(tracker.complete(total));
+              controller.close();
+              return;
+            }
+
+            // Update progress
+            loaded += value.length;
+            onProgress!(tracker.update(loaded, total));
+
+            // Enqueue the chunk
+            controller.enqueue(value);
+            return pump();
+          }).catch(error => {
+            controller.error(error);
+          });
+        }
+
+        // Start initial progress update
+        onProgress!(tracker.update(0, total));
+        return pump();
+      }
+    });
+
+    // Create a new response with the progress-tracking stream
+    return new Response(progressStream, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers
+    });
+  }
+
+  /**
    * Create a fetch request with timeout and retry support
    */
   private async fetchWithTimeout(
@@ -385,23 +593,33 @@ class ApiClient {
       const { controller, timeoutId } = this.createCombinedController(timeout, externalSignal);
 
       try {
+        // Add progress tracking to request body if needed
+        const trackedBody = this.createProgressTrackingUploadBody(options.body, requestOptions?.onProgress);
+        
         const response = await fetch(url, {
           ...options,
+          body: trackedBody || null,
           signal: controller.signal,
         });
         
         if (timeoutId) clearTimeout(timeoutId);
         
+        // Add progress tracking to response if needed and response is successful
+        let finalResponse = response;
+        if (response.ok && requestOptions?.onProgress) {
+          finalResponse = await this.createProgressTrackingResponse(response, requestOptions.onProgress);
+        }
+        
         // If the response is successful or if it's a non-retryable error, return it
         if (response.ok || !this.shouldRetryResponse(response.status)) {
-          return response;
+          return finalResponse;
         }
         
         // For failed responses that are retryable, create an error and check if we should retry
         const error = createApiErrorFromResponse(response.status, `Request failed with status ${response.status}`);
         
         if (attempt === maxRetries || !isRetryableError(error)) {
-          return response; // Return the response so it can be processed normally
+          return finalResponse; // Return the response so it can be processed normally
         }
         
         // Wait before retrying (but check for cancellation during sleep)
@@ -738,6 +956,152 @@ class ApiClient {
   }
 
   /**
+   * Upload a file with progress tracking
+   */
+  async upload<T>(
+    url: string,
+    file: File | FormData,
+    options?: ApiRequestOptions
+  ): Promise<T> {
+    const formData = file instanceof FormData ? file : new FormData();
+    if (file instanceof File) {
+      formData.append('file', file);
+    }
+
+    // Remove Content-Type header to let the browser set it with boundary for FormData
+    const headers = this.createHeaders(options);
+    headers.delete('Content-Type');
+
+    const fullUrl = `${this.config.baseUrl}${url}`;
+    
+    // Progress tracking for uploads works better with XMLHttpRequest
+    // For now, we'll use fetch with basic progress indication
+    if (options?.onProgress) {
+      const tracker = new ProgressTracker();
+      const fileSize = file instanceof File ? file.size : undefined;
+      
+      // Initial progress
+      options.onProgress(tracker.update(0, fileSize));
+      
+      // Since fetch doesn't provide upload progress, we'll simulate it
+      // In a real implementation, you might want to use XMLHttpRequest for true upload progress
+    }
+
+    const response = await this.fetchWithTimeout(
+      fullUrl,
+      {
+        method: 'POST',
+        headers,
+        body: formData,
+        ...options,
+      },
+      options?.timeout,
+      options
+    );
+
+    return this.processResponse<T>(response);
+  }
+
+  /**
+   * Download a file with progress tracking
+   */
+  async download(
+    url: string,
+    options?: ApiRequestOptions
+  ): Promise<Blob> {
+    const headers = this.createHeaders(options);
+    const fullUrl = `${this.config.baseUrl}${url}`;
+    
+    const response = await this.fetchWithTimeout(
+      fullUrl,
+      {
+        method: 'GET',
+        headers,
+        ...options,
+      },
+      options?.timeout,
+      options
+    );
+
+    if (!response.ok) {
+      // Use the regular error processing
+      await this.processResponse(response);
+    }
+
+    // For downloads, we want to return the blob directly
+    // Progress tracking is already handled in fetchWithTimeout via createProgressTrackingResponse
+    return response.blob();
+  }
+
+  /**
+   * Stream download with custom processing
+   */
+  async streamDownload(
+    url: string,
+    onChunk: (chunk: Uint8Array, progress: ProgressInfo) => void,
+    options?: ApiRequestOptions
+  ): Promise<void> {
+    const headers = this.createHeaders(options);
+    const fullUrl = `${this.config.baseUrl}${url}`;
+    
+    const response = await this.fetchWithTimeout(
+      fullUrl,
+      {
+        method: 'GET',
+        headers,
+        ...options,
+      },
+      options?.timeout,
+      // Don't use the built-in progress tracking since we're handling it manually
+      { ...options, onProgress: undefined }
+    );
+
+    if (!response.ok) {
+      await this.processResponse(response);
+      return;
+    }
+
+    if (!response.body) {
+      throw createApiErrorFromResponse(500, 'Response body is empty');
+    }
+
+    const contentLength = response.headers.get('content-length');
+    const total = contentLength ? parseInt(contentLength, 10) : undefined;
+    const tracker = new ProgressTracker();
+    
+    const reader = response.body.getReader();
+    let loaded = 0;
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) {
+          // Complete the progress tracking
+          if (options?.onProgress) {
+            options.onProgress(tracker.complete(total));
+          }
+          break;
+        }
+
+        // Update progress
+        loaded += value.length;
+        const progress = tracker.update(loaded, total);
+        
+        // Call progress callback
+        if (options?.onProgress) {
+          options.onProgress(progress);
+        }
+
+        // Call chunk callback
+        onChunk(value, progress);
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  }
+
+  /**
    * Perform a DELETE request
    */
   async delete<T>(url: string, options?: ApiRequestOptions): Promise<T> {
@@ -854,6 +1218,27 @@ export const api = {
    * Get the number of pending requests (useful for debugging)
    */
   getPendingRequestCount: (): number => apiClient.getPendingRequestCount(),
+
+  /**
+   * Upload a file with progress tracking
+   */
+  upload: <T>(url: string, file: File | FormData, options?: ApiRequestOptions): Promise<T> =>
+    apiClient.upload<T>(url, file, options),
+
+  /**
+   * Download a file with progress tracking
+   */
+  download: (url: string, options?: ApiRequestOptions): Promise<Blob> =>
+    apiClient.download(url, options),
+
+  /**
+   * Stream download with custom chunk processing
+   */
+  streamDownload: (
+    url: string,
+    onChunk: (chunk: Uint8Array, progress: ProgressInfo) => void,
+    options?: ApiRequestOptions
+  ): Promise<void> => apiClient.streamDownload(url, onChunk, options),
 };
 
 /**
@@ -923,6 +1308,72 @@ export const cancellation = {
     return error instanceof Error && 
            (error.name === 'AbortError' || 
             (typeof error.message === 'string' && error.message.includes('Request was cancelled')));
+  }
+};
+
+/**
+ * Utility functions for progress tracking
+ */
+export const progress = {
+  /**
+   * Create a FormData object with file information for progress tracking
+   */
+  createFormData: (files: File[] | FileList, fieldName: string = 'files'): FormData => {
+    const formData = new FormData();
+    const fileArray = Array.from(files);
+    
+    fileArray.forEach((file, index) => {
+      const name = fileArray.length === 1 ? fieldName : `${fieldName}[${index}]`;
+      formData.append(name, file);
+    });
+    
+    return formData;
+  },
+
+  /**
+   * Calculate total size of files for progress tracking
+   */
+  getTotalSize: (files: File[] | FileList): number => {
+    return Array.from(files).reduce((total, file) => total + file.size, 0);
+  },
+
+  /**
+   * Format bytes into human-readable string
+   */
+  formatBytes: (bytes: number, decimals: number = 2): string => {
+    if (bytes === 0) return '0 Bytes';
+
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+  },
+
+  /**
+   * Format transfer rate into human-readable string
+   */
+  formatRate: (bytesPerSecond: number): string => {
+    return `${progress.formatBytes(bytesPerSecond)}/s`;
+  },
+
+  /**
+   * Format time remaining into human-readable string
+   */
+  formatTimeRemaining: (milliseconds: number): string => {
+    const seconds = Math.floor(milliseconds / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+
+    if (hours > 0) {
+      return `${hours}h ${minutes % 60}m`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${seconds % 60}s`;
+    } else {
+      return `${seconds}s`;
+    }
   }
 };
 

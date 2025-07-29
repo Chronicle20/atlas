@@ -543,10 +543,8 @@ class ApiClient {
   async get<T>(url: string, options?: ApiRequestOptions): Promise<T> {
     // Check for already aborted signal early
     if (options?.signal?.aborted) {
-      console.log('Signal already aborted, throwing error');
       throw createApiErrorFromResponse(0, 'Request was cancelled');
     }
-    console.log('Signal aborted?', options?.signal?.aborted);
 
     const headers = this.createHeaders(options);
     const fullUrl = `${this.config.baseUrl}${url}`;

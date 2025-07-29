@@ -38,6 +38,20 @@ export interface ProgressInfo {
 export type ProgressCallback = (progress: ProgressInfo) => void;
 
 /**
+ * Cache configuration options
+ */
+export interface CacheOptions {
+  /** Cache time-to-live in milliseconds (default: 300000ms = 5 minutes) */
+  ttl?: number;
+  /** Cache key prefix for namespacing (default: auto-generated) */
+  keyPrefix?: string;
+  /** Whether to use stale data while revalidating (default: false) */
+  staleWhileRevalidate?: boolean;
+  /** Maximum stale time in milliseconds when using stale-while-revalidate (default: 60000ms = 1 minute) */
+  maxStaleTime?: number;
+}
+
+/**
  * Configuration options for API requests
  */
 export interface ApiRequestOptions extends Omit<RequestInit, 'method' | 'body'> {
@@ -61,6 +75,8 @@ export interface ApiRequestOptions extends Omit<RequestInit, 'method' | 'body'> 
   skipDeduplication?: boolean;
   /** Progress callback for tracking upload/download progress */
   onProgress?: ProgressCallback;
+  /** Cache configuration for this request */
+  cache?: CacheOptions | false;
 }
 
 /**
@@ -86,6 +102,28 @@ interface PendingRequest<T = unknown> {
 }
 
 /**
+ * Cached response entry with metadata
+ */
+interface CacheEntry<T = unknown> {
+  /** The cached response data */
+  data: T;
+  /** Timestamp when the entry was created */
+  timestamp: number;
+  /** Time-to-live in milliseconds */
+  ttl: number;
+  /** Whether this entry supports stale-while-revalidate */
+  staleWhileRevalidate: boolean;
+  /** Maximum stale time in milliseconds */
+  maxStaleTime: number;
+  /** HTTP headers from the original response (for conditional requests) */
+  headers?: Record<string, string>;
+  /** ETag from the original response (for conditional requests) */
+  etag?: string;
+  /** Last-Modified from the original response (for conditional requests) */
+  lastModified?: string;
+}
+
+/**
  * Progress tracker utility for monitoring upload/download progress
  */
 class ProgressTracker {
@@ -106,8 +144,6 @@ class ProgressTracker {
    */
   update(loaded: number, total?: number): ProgressInfo {
     const now = Date.now();
-    const deltaTime = now - this.lastTime;
-    const deltaLoaded = loaded - this.lastLoaded;
 
     // Add sample for rate calculation
     this.samples.push({ time: now, loaded });
@@ -176,6 +212,8 @@ class ProgressTracker {
 class ApiClient {
   private config: ApiClientConfig;
   private pendingRequests: Map<string, PendingRequest> = new Map();
+  private responseCache: Map<string, CacheEntry> = new Map();
+  private cacheCleanupInterval: NodeJS.Timeout | number | null = null;
 
   constructor() {
     this.config = {
@@ -187,6 +225,9 @@ class ApiClient {
       defaultMaxRetryDelay: 10000,
       defaultExponentialBackoff: true,
     };
+
+    // Start cache cleanup interval (every 5 minutes)
+    this.startCacheCleanup();
   }
 
   /**
@@ -201,6 +242,230 @@ class ApiClient {
    */
   getTenant(): Tenant | null {
     return this.config.tenant;
+  }
+
+  /**
+   * Start automatic cache cleanup interval
+   */
+  private startCacheCleanup(): void {
+    // Only run cleanup in browser environment
+    if (typeof window === 'undefined') return;
+
+    // Clean up expired cache entries every 5 minutes
+    this.cacheCleanupInterval = setInterval(() => {
+      this.cleanupExpiredCache();
+    }, 5 * 60 * 1000); // 5 minutes
+  }
+
+  /**
+   * Stop the cache cleanup interval
+   */
+  private stopCacheCleanup(): void {
+    if (this.cacheCleanupInterval) {
+      clearInterval(this.cacheCleanupInterval);
+      this.cacheCleanupInterval = null;
+    }
+  }
+
+  /**
+   * Clean up expired cache entries
+   */
+  private cleanupExpiredCache(): void {
+    const now = Date.now();
+    const entriesToDelete: string[] = [];
+
+    for (const [key, entry] of this.responseCache.entries()) {
+      const age = now - entry.timestamp;
+      const maxAge = entry.staleWhileRevalidate 
+        ? entry.ttl + entry.maxStaleTime 
+        : entry.ttl;
+
+      if (age > maxAge) {
+        entriesToDelete.push(key);
+      }
+    }
+
+    entriesToDelete.forEach(key => {
+      this.responseCache.delete(key);
+    });
+  }
+
+  /**
+   * Generate a cache key for a request
+   */
+  private generateCacheKey(
+    method: string, 
+    url: string, 
+    data?: unknown, 
+    headers?: Headers,
+    cacheOptions?: CacheOptions
+  ): string {
+    const tenantId = this.config.tenant?.id || 'no-tenant';
+    const keyPrefix = cacheOptions?.keyPrefix || 'api';
+    
+    // Include relevant headers that might affect the response
+    const relevantHeaders = headers ? Array.from(headers.entries())
+      .filter(([key]) => ['accept', 'accept-language', 'content-type'].includes(key.toLowerCase()))
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, value]) => `${key}:${value}`)
+      .join('|') : '';
+    
+    const components = [
+      keyPrefix,
+      method.toUpperCase(),
+      url,
+      data ? JSON.stringify(data) : '',
+      relevantHeaders,
+      tenantId
+    ];
+    
+    // Create a simple hash-like string for the cache key
+    return btoa(components.join('::'));
+  }
+
+  /**
+   * Get cached response if available and valid
+   */
+  private getCachedResponse<T>(key: string): { data: T; isStale: boolean } | null {
+    const entry = this.responseCache.get(key) as CacheEntry<T> | undefined;
+    
+    if (!entry) {
+      return null;
+    }
+
+    const now = Date.now();
+    const age = now - entry.timestamp;
+
+    // Check if entry is fresh (within TTL)
+    if (age <= entry.ttl) {
+      return { data: entry.data, isStale: false };
+    }
+
+    // Check if entry is stale but within stale-while-revalidate period
+    if (entry.staleWhileRevalidate && age <= entry.ttl + entry.maxStaleTime) {
+      return { data: entry.data, isStale: true };
+    }
+
+    // Entry is expired, remove it
+    this.responseCache.delete(key);
+    return null;
+  }
+
+  /**
+   * Store response in cache
+   */
+  private setCachedResponse<T>(
+    key: string, 
+    data: T, 
+    response: Response, 
+    cacheOptions: CacheOptions
+  ): void {
+    const now = Date.now();
+    const ttl = cacheOptions.ttl ?? 5 * 60 * 1000; // Default 5 minutes
+    const staleWhileRevalidate = cacheOptions.staleWhileRevalidate ?? false;
+    const maxStaleTime = cacheOptions.maxStaleTime ?? 60 * 1000; // Default 1 minute
+
+    // Extract relevant headers for conditional requests
+    const headers: Record<string, string> = {};
+    const etag = response.headers.get('etag');
+    const lastModified = response.headers.get('last-modified');
+    const cacheControl = response.headers.get('cache-control');
+
+    if (cacheControl) headers['cache-control'] = cacheControl;
+
+    const entry: CacheEntry<T> = {
+      data,
+      timestamp: now,
+      ttl,
+      staleWhileRevalidate,
+      maxStaleTime,
+      headers,
+      etag: etag || undefined,
+      lastModified: lastModified || undefined
+    };
+
+    this.responseCache.set(key, entry);
+  }
+
+  /**
+   * Clear all cached responses
+   */
+  clearCache(): void {
+    this.responseCache.clear();
+  }
+
+  /**
+   * Clear cached responses by key pattern
+   */
+  clearCacheByPattern(pattern: string): void {
+    const regex = new RegExp(pattern);
+    const keysToDelete: string[] = [];
+
+    for (const key of this.responseCache.keys()) {
+      if (regex.test(key)) {
+        keysToDelete.push(key);
+      }
+    }
+
+    keysToDelete.forEach(key => {
+      this.responseCache.delete(key);
+    });
+  }
+
+  /**
+   * Get cache statistics
+   */
+  getCacheStats(): { size: number; entries: Array<{ key: string; age: number; ttl: number; isStale: boolean }> } {
+    const now = Date.now();
+    const entries: Array<{ key: string; age: number; ttl: number; isStale: boolean }> = [];
+
+    for (const [key, entry] of this.responseCache.entries()) {
+      const age = now - entry.timestamp;
+      const isStale = age > entry.ttl;
+      entries.push({ key, age, ttl: entry.ttl, isStale });
+    }
+
+    return {
+      size: this.responseCache.size,
+      entries
+    };
+  }
+
+  /**
+   * Revalidate cache entry in the background for stale-while-revalidate
+   */
+  private async revalidateInBackground<T>(
+    fullUrl: string,
+    headers: Headers,
+    options: ApiRequestOptions | undefined,
+    cacheKey: string,
+    cacheOptions: CacheOptions
+  ): Promise<void> {
+    try {
+      const response = await this.fetchWithTimeout(
+        fullUrl,
+        {
+          method: 'GET',
+          headers,
+          ...options,
+        },
+        options?.timeout,
+        {
+          ...options,
+          // Don't use progress callbacks for background revalidation
+          onProgress: undefined,
+        }
+      );
+
+      const data = await this.processResponse<T>(response);
+      
+      // Update the cache with fresh data
+      this.setCachedResponse(cacheKey, data, response, cacheOptions);
+    } catch (error) {
+      // Silently handle revalidation errors - the user already has stale data
+      // We could log this error for debugging purposes if needed
+      console.debug('Background revalidation failed:', error);
+    }
   }
 
   /**
@@ -267,7 +532,7 @@ class ApiClient {
     
     // Create a promise that we can control manually
     let resolvePromise: (value: T | PromiseLike<T>) => void;
-    let rejectPromise: (reason?: any) => void;
+    let rejectPromise: (reason?: unknown) => void;
     
     const controlledPromise = new Promise<T>((resolve, reject) => {
       resolvePromise = resolve;
@@ -324,10 +589,20 @@ class ApiClient {
    */
   clearPendingRequests(): void {
     // Cancel all pending requests
-    for (const [key, request] of this.pendingRequests.entries()) {
+    for (const [, request] of this.pendingRequests.entries()) {
       request.abortController.abort();
     }
     this.pendingRequests.clear();
+  }
+
+  /**
+   * Cleanup method to prevent memory leaks
+   * Call this when the API client is no longer needed
+   */
+  cleanup(): void {
+    this.stopCacheCleanup();
+    this.clearCache();
+    this.clearPendingRequests();
   }
 
   /**
@@ -767,6 +1042,33 @@ class ApiClient {
     const headers = this.createHeaders(options);
     const fullUrl = `${this.config.baseUrl}${url}`;
     
+    // Check if caching is enabled for this request
+    const cacheOptions = options?.cache;
+    const shouldCache = cacheOptions !== false && cacheOptions !== undefined;
+    
+    // Try cache first if enabled
+    if (shouldCache && cacheOptions) {
+      const cacheKey = this.generateCacheKey('GET', fullUrl, undefined, headers, cacheOptions);
+      const cachedResponse = this.getCachedResponse<T>(cacheKey);
+      
+      if (cachedResponse) {
+        // If we have fresh data, return it
+        if (!cachedResponse.isStale) {
+          return cachedResponse.data;
+        }
+        
+        // If data is stale but stale-while-revalidate is enabled, return it and revalidate in background
+        if (cachedResponse.isStale && cacheOptions.staleWhileRevalidate) {
+          // Start background revalidation (don't await it)
+          this.revalidateInBackground(fullUrl, headers, options, cacheKey, cacheOptions).catch(() => {
+            // Silently handle revalidation errors - user already has stale data
+          });
+          
+          return cachedResponse.data;
+        }
+      }
+    }
+    
     // Skip deduplication if explicitly requested
     if (options?.skipDeduplication) {
       const response = await this.fetchWithTimeout(
@@ -780,7 +1082,15 @@ class ApiClient {
         options
       );
 
-      return this.processResponse<T>(response);
+      const data = await this.processResponse<T>(response);
+      
+      // Cache the response if caching is enabled
+      if (shouldCache && cacheOptions) {
+        const cacheKey = this.generateCacheKey('GET', fullUrl, undefined, headers, cacheOptions);
+        this.setCachedResponse(cacheKey, data, response, cacheOptions);
+      }
+      
+      return data;
     }
 
     // Use deduplication for GET requests
@@ -800,7 +1110,15 @@ class ApiClient {
           options
         );
 
-        return this.processResponse<T>(response);
+        const data = await this.processResponse<T>(response);
+        
+        // Cache the response if caching is enabled
+        if (shouldCache && cacheOptions) {
+          const cacheKey = this.generateCacheKey('GET', fullUrl, undefined, headers, cacheOptions);
+          this.setCachedResponse(cacheKey, data, response, cacheOptions);
+        }
+        
+        return data;
       },
       options?.signal
     );
@@ -1239,6 +1557,26 @@ export const api = {
     onChunk: (chunk: Uint8Array, progress: ProgressInfo) => void,
     options?: ApiRequestOptions
   ): Promise<void> => apiClient.streamDownload(url, onChunk, options),
+
+  /**
+   * Clear all cached responses
+   */
+  clearCache: (): void => apiClient.clearCache(),
+
+  /**
+   * Clear cached responses by key pattern
+   */
+  clearCacheByPattern: (pattern: string): void => apiClient.clearCacheByPattern(pattern),
+
+  /**
+   * Get cache statistics
+   */
+  getCacheStats: () => apiClient.getCacheStats(),
+
+  /**
+   * Cleanup method to prevent memory leaks
+   */
+  cleanup: (): void => apiClient.cleanup(),
 };
 
 /**
@@ -1309,6 +1647,68 @@ export const cancellation = {
            (error.name === 'AbortError' || 
             (typeof error.message === 'string' && error.message.includes('Request was cancelled')));
   }
+};
+
+/**
+ * Utility functions for response caching
+ */
+export const cache = {
+  /**
+   * Create cache options with default TTL (5 minutes)
+   */
+  defaultOptions: (): CacheOptions => ({
+    ttl: 5 * 60 * 1000, // 5 minutes
+    staleWhileRevalidate: false,
+    maxStaleTime: 60 * 1000, // 1 minute
+  }),
+
+  /**
+   * Create cache options for short-lived data (1 minute)
+   */
+  shortLived: (): CacheOptions => ({
+    ttl: 60 * 1000, // 1 minute
+    staleWhileRevalidate: false,
+  }),
+
+  /**
+   * Create cache options for long-lived data (30 minutes)
+   */
+  longLived: (): CacheOptions => ({
+    ttl: 30 * 60 * 1000, // 30 minutes
+    staleWhileRevalidate: true,
+    maxStaleTime: 5 * 60 * 1000, // 5 minutes stale time
+  }),
+
+  /**
+   * Create cache options with stale-while-revalidate enabled
+   */
+  staleWhileRevalidate: (ttl: number = 5 * 60 * 1000, maxStaleTime: number = 60 * 1000): CacheOptions => ({
+    ttl,
+    staleWhileRevalidate: true,
+    maxStaleTime,
+  }),
+
+  /**
+   * Create cache options with custom TTL
+   */
+  withTTL: (ttlMinutes: number): CacheOptions => ({
+    ttl: ttlMinutes * 60 * 1000,
+    staleWhileRevalidate: false,
+  }),
+
+  /**
+   * Create cache options with custom key prefix for namespacing
+   */
+  withPrefix: (keyPrefix: string, ttl: number = 5 * 60 * 1000): CacheOptions => ({
+    ttl,
+    keyPrefix,
+    staleWhileRevalidate: false,
+  }),
+
+  /**
+   * Disable caching for a request
+   */
+  disable: () => false as const,
 };
 
 /**

@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { FormProvider, useForm, FieldValues } from 'react-hook-form';
 import { ThemeProvider } from 'next-themes';
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 
 /**
  * Test providers for integration tests that need various context providers
@@ -58,19 +59,30 @@ export function TestFormProvider<T extends FieldValues>({
 interface AllProvidersProps {
   children: React.ReactNode;
   defaultTheme?: string | undefined;
+  withErrorBoundary?: boolean;
 }
 
 /**
  * Combines all common providers for comprehensive testing
  */
-export function AllProviders({ children, defaultTheme }: AllProvidersProps) {
-  return (
+export function AllProviders({ children, defaultTheme, withErrorBoundary = false }: AllProvidersProps) {
+  const content = (
     <TestQueryProvider>
       <TestThemeProvider defaultTheme={defaultTheme}>
         {children}
       </TestThemeProvider>
     </TestQueryProvider>
   );
+
+  if (withErrorBoundary) {
+    return (
+      <ErrorBoundary enableErrorReporting={false}>
+        {content}
+      </ErrorBoundary>
+    );
+  }
+
+  return content;
 }
 
 /**
@@ -78,11 +90,13 @@ export function AllProviders({ children, defaultTheme }: AllProvidersProps) {
  */
 export function createWrapper(options: {
   defaultTheme?: string | undefined;
+  withErrorBoundary?: boolean;
 } = {}) {
   return function Wrapper({ children }: { children: React.ReactNode }) {
     return (
       <AllProviders
         defaultTheme={options.defaultTheme}
+        withErrorBoundary={options.withErrorBoundary}
       >
         {children}
       </AllProviders>

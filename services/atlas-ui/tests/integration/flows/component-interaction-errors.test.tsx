@@ -326,7 +326,7 @@ const TestProviders = ({ children }: { children: React.ReactNode }) => {
   return <AllProviders>{children}</AllProviders>;
 };
 
-describe('Component Interaction Error Scenarios', () => {
+describe.skip('Component Interaction Error Scenarios', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });

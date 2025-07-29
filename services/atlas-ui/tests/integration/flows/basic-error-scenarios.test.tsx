@@ -164,8 +164,14 @@ const TestFormComponent = ({ onSubmit }: { onSubmit: (data: any) => Promise<any>
 };
 
 // Test provider component
-const TestProviders = ({ children }: { children: React.ReactNode }) => {
-  return <AllProviders>{children}</AllProviders>;
+const TestProviders = ({ 
+  children, 
+  withErrorBoundary = false 
+}: { 
+  children: React.ReactNode;
+  withErrorBoundary?: boolean;
+}) => {
+  return <AllProviders withErrorBoundary={withErrorBoundary}>{children}</AllProviders>;
 };
 
 describe('Basic Error Scenarios Integration Tests', () => {
@@ -406,7 +412,7 @@ describe('Basic Error Scenarios Integration Tests', () => {
       const mockFetch = jest.fn();
 
       render(
-        <TestProviders>
+        <TestProviders withErrorBoundary={true}>
           <TestDataComponent onFetch={mockFetch} showErrorBoundary={true} />
         </TestProviders>
       );
@@ -423,7 +429,7 @@ describe('Basic Error Scenarios Integration Tests', () => {
       const mockFetch = jest.fn();
 
       render(
-        <TestProviders>
+        <TestProviders withErrorBoundary={true}>
           <TestDataComponent onFetch={mockFetch} showErrorBoundary={true} />
         </TestProviders>
       );

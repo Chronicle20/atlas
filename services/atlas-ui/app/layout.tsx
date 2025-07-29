@@ -6,6 +6,7 @@ import {ThemeProvider} from "next-themes";
 import {ThemeToggle} from "@/components/theme-toggle";
 import {SidebarToggle} from "@/components/sidebar-toggle";
 import {TenantProvider} from "@/context/tenant-context";
+import {Toaster} from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
     title: "AtlasMS",
@@ -32,6 +33,7 @@ export default function RootLayout({children,}: Readonly<{ children: React.React
                     </main>
                 </SidebarProvider>
             </ThemeProvider>
+            <Toaster />
         </TenantProvider>
         </body>
         </html>

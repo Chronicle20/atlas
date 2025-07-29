@@ -34,6 +34,7 @@ export interface NetworkError extends ApiError {
  */
 export interface ValidationError extends ApiError {
   code: 'VALIDATION_ERROR';
+  statusCode: 400 | 422;
   /** Field-specific validation errors */
   fieldErrors?: Record<string, string[]>;
 }
@@ -69,7 +70,7 @@ export interface NotFoundError extends ApiError {
  */
 export interface ServerError extends ApiError {
   code: 'SERVER_ERROR';
-  statusCode: 500;
+  statusCode: 500 | 502 | 503 | 504;
 }
 
 /**
@@ -183,6 +184,13 @@ export function createApiErrorFromResponse(
   code?: string
 ): ApiErrorType {
   switch (statusCode) {
+    case 400:
+    case 422:
+      return {
+        message,
+        statusCode,
+        code: 'VALIDATION_ERROR'
+      } as ValidationError;
     case 401:
       return { 
         message, 
@@ -207,7 +215,7 @@ export function createApiErrorFromResponse(
     case 504:
       return { 
         message, 
-        statusCode: 500, 
+        statusCode, 
         code: 'SERVER_ERROR' 
       } as ServerError;
     default:

@@ -1,5 +1,5 @@
 import type {Tenant} from "@/types/models/tenant";
-import {tenantHeaders} from "@/lib/headers";
+import { api } from "@/lib/api/client";
 
 export interface Inventory {
   type: string;
@@ -80,17 +80,8 @@ export function getCompartmentTypeName(type: number): string {
 
 // Function to fetch inventory data
 export async function fetchInventory(tenant: Tenant, characterId: string): Promise<InventoryResponse> {
-  const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
-  const response = await fetch(`${rootUrl}/api/characters/${characterId}/inventory`, {
-    method: "GET",
-    headers: tenantHeaders(tenant),
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch inventory.");
-  }
-
-  return await response.json() as InventoryResponse;
+  api.setTenant(tenant);
+  return api.get<InventoryResponse>(`/api/characters/${characterId}/inventory`);
 }
 
 // Helper function to get assets for a compartment
@@ -109,13 +100,6 @@ export function getAssetsForCompartment(compartment: Compartment, included: Arra
 
 // Function to delete an asset
 export async function deleteAsset(tenant: Tenant, characterId: string, compartmentId: string, assetId: string): Promise<void> {
-  const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
-  const response = await fetch(`${rootUrl}/api/characters/${characterId}/inventory/compartments/${compartmentId}/assets/${assetId}`, {
-    method: "DELETE",
-    headers: tenantHeaders(tenant),
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to delete asset.");
-  }
+  api.setTenant(tenant);
+  return api.delete<void>(`/api/characters/${characterId}/inventory/compartments/${compartmentId}/assets/${assetId}`);
 }

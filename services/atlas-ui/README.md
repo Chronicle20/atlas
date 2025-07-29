@@ -52,6 +52,7 @@ The codebase follows the architectural patterns defined in `CLAUDE.md`:
 
 - **Component Structure**: Organized by scope (ui, common, features)
 - **Reusable Components**: Common UI patterns extracted into reusable components (see `docs/reusable-components.md`)
+- **Error Handling**: Comprehensive error handling system with user-friendly messages and recovery options (see `docs/error-handling.md`)
 - **State Management**: Local state → React Context → Global store
 - **Data Fetching**: React Query for server state management
 - **Styling**: Tailwind CSS with shadcn/ui component system
@@ -65,3 +66,9 @@ The UI integrates with Atlas microservices using typed API clients:
 - Multi-tenant headers (`TENANT_ID`, `REGION`, etc.)
 
 For detailed architectural guidelines, see `CLAUDE.md`.
+
+## Documentation
+
+- [`CLAUDE.md`](./CLAUDE.md) - Complete architectural guidelines and conventions
+- [`docs/reusable-components.md`](./docs/reusable-components.md) - Guide to reusable UI components
+- [`docs/error-handling.md`](./docs/error-handling.md) - Comprehensive error handling patterns and examples

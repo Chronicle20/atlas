@@ -12,7 +12,7 @@ import { BaseService, type ServiceOptions, type QueryOptions, type ValidationErr
 import type { ApiSingleResponse } from '@/types/api/responses';
 
 // Lightweight tenant attributes for the new API
-export interface TenantBasicAttributes {
+interface TenantBasicAttributes {
   name: string;
   region: string;
   majorVersion: number;
@@ -20,13 +20,13 @@ export interface TenantBasicAttributes {
 }
 
 // Lightweight tenant type for the new API
-export interface TenantBasic {
+interface TenantBasic {
   id: string;
   attributes: TenantBasicAttributes;
 }
 
 // Full tenant configuration attributes for the existing API
-export interface TenantConfigAttributes {
+interface TenantConfigAttributes {
   region: string;
   majorVersion: number;
   minorVersion: number;
@@ -76,7 +76,7 @@ export interface TenantConfigAttributes {
 }
 
 // Full tenant configuration type for the existing API
-export interface TenantConfig {
+interface TenantConfig {
   id: string;
   attributes: TenantConfigAttributes;
 }
@@ -86,14 +86,14 @@ export type TenantAttributes = TenantConfigAttributes;
 export type Tenant = TenantBasic;
 
 // Create tenant input types
-export interface CreateTenantInput {
+interface CreateTenantInput {
   data: {
     type: 'tenants';
     attributes: TenantBasicAttributes;
   };
 }
 
-export interface UpdateTenantInput {
+interface UpdateTenantInput {
   data: {
     id: string;
     type: 'tenants';
@@ -101,14 +101,14 @@ export interface UpdateTenantInput {
   };
 }
 
-export interface CreateTenantConfigInput {
+interface CreateTenantConfigInput {
   data: {
     type: 'tenants';
     attributes: TenantConfigAttributes;
   };
 }
 
-export interface UpdateTenantConfigInput {
+interface UpdateTenantConfigInput {
   data: {
     id: string;
     type: 'tenants';
@@ -126,7 +126,7 @@ class TenantsService extends BaseService {
   /**
    * Validate tenant data before API calls
    */
-  protected validate<T>(data: T): ValidationError[] {
+  protected override validate<T>(data: T): ValidationError[] {
     const errors: ValidationError[] = [];
 
     if (this.isTenantBasicAttributes(data)) {
@@ -150,7 +150,7 @@ class TenantsService extends BaseService {
   /**
    * Transform request data to proper API format
    */
-  protected transformRequest<T>(data: T): T {
+  protected override transformRequest<T>(data: T): T {
     // For create/update operations, ensure proper JSON:API structure
     if (this.isCreateTenantInput(data) || this.isUpdateTenantInput(data)) {
       return data;
@@ -172,7 +172,7 @@ class TenantsService extends BaseService {
   /**
    * Transform response data (sort socket handlers/writers)
    */
-  protected transformResponse<T>(data: T): T {
+  protected override transformResponse<T>(data: T): T {
     if (this.isTenantConfig(data)) {
       const transformed = { ...data };
       if (transformed.attributes.socket) {
@@ -439,6 +439,3 @@ export const tenantsService = new TenantsService();
 
 // Export types for use in other files
 export type { TenantBasic, TenantBasicAttributes, TenantConfig, TenantConfigAttributes };
-
-// Legacy exports for backward compatibility
-export type { Tenant, TenantAttributes };

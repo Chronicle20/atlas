@@ -4,7 +4,7 @@ import {useTenant} from "@/context/tenant-context";
 import {DataTableWrapper} from "@/components/common/DataTableWrapper";
 import {hiddenColumns} from "@/app/accounts/columns";
 import {useEffect, useState} from "react";
-import {fetchAccounts} from "@/lib/accounts";
+import {accountsService} from "@/services/api/accounts.service";
 import {Account} from "@/types/models/account";
 import {getColumns} from "@/app/accounts/columns";
 import {Toaster} from "sonner";
@@ -22,7 +22,7 @@ export default function Page() {
 
         setLoading(true)
 
-        fetchAccounts(activeTenant)
+        accountsService.getAllAccounts(activeTenant)
             .then((data) => {
                 setAccounts(data)
             })

@@ -64,6 +64,25 @@ Object.defineProperty(HTMLFormElement.prototype, 'requestSubmit', {
   configurable: true,
 })
 
+// Mock Response for API tests
+global.Response = class MockResponse {
+  constructor(body, init = {}) {
+    this.body = body
+    this.status = init.status || 200
+    this.statusText = init.statusText || 'OK'
+    this.headers = new Map(Object.entries(init.headers || {}))
+    this.ok = this.status >= 200 && this.status < 300
+  }
+
+  async json() {
+    return typeof this.body === 'string' ? JSON.parse(this.body) : this.body
+  }
+
+  async text() {
+    return typeof this.body === 'string' ? this.body : JSON.stringify(this.body)
+  }
+}
+
 // Mock hasPointerCapture for JSDOM
 HTMLElement.prototype.hasPointerCapture = jest.fn(() => false)
 HTMLElement.prototype.setPointerCapture = jest.fn()

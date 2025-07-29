@@ -293,16 +293,23 @@ export function createErrorConfig(
 }
 
 /**
- * Utility for logging errors with context
+ * Utility for logging errors with context and sanitization
  */
 export function logError(
   error: unknown,
   context: ErrorContext = {}
 ): void {
   if (process.env.NODE_ENV === 'development') {
+    // Sanitize error and context data before logging
+    const sanitizedError = error instanceof Error ? sanitizeError(error) : error;
+    const sanitizedContext = sanitizeErrorData(context.data || {});
+    
     console.error('Error occurred:', {
-      error,
-      context,
+      error: sanitizedError,
+      context: {
+        ...context,
+        data: sanitizedContext
+      },
       message: transformError(error),
       timestamp: new Date().toISOString()
     });
@@ -313,12 +320,52 @@ export function logError(
 }
 
 /**
+ * Comprehensive patterns for detecting sensitive data
+ */
+const SENSITIVE_PATTERNS = [
+  // API keys and tokens
+  /[Aa]pi[_-]?[Kk]ey[:\s=]+[^\s\n]+/g,
+  /[Tt]oken[:\s=]+[^\s\n]+/g,
+  /[Bb]earer\s+[^\s\n]+/g,
+  // Passwords
+  /[Pp]assword[:\s=]+[^\s\n]+/g,
+  /[Pp]wd[:\s=]+[^\s\n]+/g,
+  // Email addresses (partial sanitization to protect privacy)
+  /[\w\.-]+@[\w\.-]+\.\w+/g,
+  // Credit card patterns
+  /\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b/g,
+  // SSN patterns
+  /\b\d{3}[-\s]?\d{2}[-\s]?\d{4}\b/g,
+  // UUID patterns that might contain sensitive IDs
+  /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi,
+  // JWT tokens
+  /eyJ[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_.+/=]*/g,
+  // Database connection strings
+  /[a-zA-Z]+:\/\/[^\s]+:[^\s]+@[^\s]+/g,
+  // Private keys
+  /-----BEGIN[^-]+PRIVATE KEY-----[\s\S]*?-----END[^-]+PRIVATE KEY-----/g,
+];
+
+/**
+ * Sanitize a string by removing sensitive patterns
+ */
+function sanitizeString(input: string): string {
+  let sanitized = input;
+  
+  SENSITIVE_PATTERNS.forEach(pattern => {
+    sanitized = sanitized.replace(pattern, '[REDACTED]');
+  });
+  
+  return sanitized;
+}
+
+/**
  * Sanitize error data to remove sensitive information before logging
  */
 export function sanitizeErrorData(data: Record<string, unknown>): Record<string, unknown> {
   const sanitized = { ...data };
   
-  // Remove common sensitive fields
+  // Remove common sensitive fields by name
   const sensitiveFields = [
     'password', 
     'token', 
@@ -326,14 +373,70 @@ export function sanitizeErrorData(data: Record<string, unknown>): Record<string,
     'key', 
     'authorization',
     'cookie',
-    'session'
+    'session',
+    'apiKey',
+    'api_key',
+    'accessToken',
+    'access_token',
+    'refreshToken',
+    'refresh_token',
+    'clientSecret',
+    'client_secret',
+    'privateKey',
+    'private_key',
+    'x-api-key',
+    'x-auth-token'
   ];
 
-  for (const field of sensitiveFields) {
-    if (field in sanitized) {
-      sanitized[field] = '[REDACTED]';
+  // Recursively sanitize object properties
+  function sanitizeValue(value: unknown): unknown {
+    if (typeof value === 'string') {
+      return sanitizeString(value);
     }
+    
+    if (Array.isArray(value)) {
+      return value.map(sanitizeValue);
+    }
+    
+    if (value && typeof value === 'object' && value.constructor === Object) {
+      const obj = value as Record<string, unknown>;
+      const sanitizedObject: Record<string, unknown> = {};
+      
+      for (const [key, val] of Object.entries(obj)) {
+        // Check if field name indicates sensitive data
+        const lowerKey = key.toLowerCase();
+        const isSensitiveField = sensitiveFields.some(field => 
+          lowerKey.includes(field.toLowerCase())
+        );
+        
+        if (isSensitiveField) {
+          sanitizedObject[key] = '[REDACTED]';
+        } else {
+          sanitizedObject[key] = sanitizeValue(val);
+        }
+      }
+      
+      return sanitizedObject;
+    }
+    
+    return value;
+  }
+
+  // Sanitize all values in the data object
+  for (const [key, value] of Object.entries(sanitized)) {
+    sanitized[key] = sanitizeValue(value);
   }
 
   return sanitized;
+}
+
+/**
+ * Sanitize error message and stack trace to prevent sensitive data leaks
+ */
+export function sanitizeError(error: Error): { name: string; message: string; stack?: string } {
+  return {
+    name: error.name,
+    message: sanitizeString(error.message),
+    ...(error.stack ? { stack: sanitizeString(error.stack) } : {}),
+  };
 }

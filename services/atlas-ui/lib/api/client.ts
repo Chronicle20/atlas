@@ -12,7 +12,7 @@ import type { Tenant } from '@/types/models/tenant';
 import type { ApiListResponse, ApiSingleResponse } from '@/types/api/responses';
 import { tenantHeaders } from '@/lib/headers';
 import { createApiErrorFromResponse } from '@/types/api/errors';
-import { isRetryableError } from '@/lib/api/errors';
+import { isRetryableError, sanitizeErrorData } from '@/lib/api/errors';
 
 /**
  * Configuration options for API requests
@@ -233,15 +233,22 @@ class ApiClient {
   private async processResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
       let errorMessage = 'Request failed';
+      let sanitizedErrorData: Record<string, unknown> = {};
       
       try {
         const errorData = await response.json();
         
-        // Handle different error response formats
-        if (errorData.error?.detail) {
-          errorMessage = errorData.error.detail;
-        } else if (errorData.message) {
-          errorMessage = errorData.message;
+        // Sanitize error data to prevent sensitive data leaks
+        sanitizedErrorData = sanitizeErrorData(errorData);
+        
+        // Handle different error response formats (using sanitized data)
+        if (sanitizedErrorData.error && typeof sanitizedErrorData.error === 'object') {
+          const errorObj = sanitizedErrorData.error as Record<string, unknown>;
+          if (typeof errorObj.detail === 'string') {
+            errorMessage = errorObj.detail;
+          }
+        } else if (typeof sanitizedErrorData.message === 'string') {
+          errorMessage = sanitizedErrorData.message;
         }
       } catch {
         // Fallback to status-based messages if response body can't be parsed

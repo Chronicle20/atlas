@@ -1,6 +1,5 @@
 import type {Tenant} from "@/types/models/tenant";
-import type {ApiSingleResponse} from "@/types/api/responses";
-import {tenantHeaders} from "@/lib/headers";
+import { api } from "@/lib/api/client";
 
 export interface Map {
     id: string;
@@ -11,14 +10,6 @@ export interface Map {
 }
 
 export async function fetchMap(tenant: Tenant, mapId: string): Promise<Map> {
-    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
-    const response = await fetch(rootUrl + "/api/data/maps/" + mapId, {
-        method: "GET",
-        headers: tenantHeaders(tenant),
-    });
-    if (!response.ok) {
-        throw new Error("Failed to fetch map.");
-    }
-    const responseData: ApiSingleResponse<Map> = await response.json();
-    return responseData.data;
+    api.setTenant(tenant);
+    return api.getOne<Map>(`/api/data/maps/${mapId}`);
 }

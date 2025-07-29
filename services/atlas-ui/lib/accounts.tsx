@@ -1,6 +1,5 @@
 import type {Tenant} from "@/types/models/tenant";
-import type {ApiListResponse} from "@/types/api/responses";
-import {tenantHeaders} from "@/lib/headers";
+import { api } from "@/lib/api/client";
 
 export interface Account {
     id: string;
@@ -20,26 +19,11 @@ export interface Account {
 }
 
 export async function fetchAccounts(tenant: Tenant): Promise<Account[]> {
-    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
-    const response = await fetch(rootUrl + "/api/accounts/", {
-        method: "GET",
-        headers: tenantHeaders(tenant),
-    });
-    if (!response.ok) {
-        throw new Error("Failed to fetch accounts.");
-    }
-    const responseData: ApiListResponse<Account> = await response.json();
-    return responseData.data;
+    api.setTenant(tenant);
+    return api.getList<Account>('/api/accounts/');
 }
 
 export async function terminateAccountSession(tenant: Tenant, accountId: string): Promise<void> {
-    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
-    const response = await fetch(rootUrl + "/api/accounts/" + accountId + "/session", {
-        method: "DELETE",
-        headers: tenantHeaders(tenant),
-    });
-    if (!response.ok) {
-        throw new Error("Failed to delete account session.");
-    }
-    return Promise.resolve();
+    api.setTenant(tenant);
+    return api.delete<void>(`/api/accounts/${accountId}/session`);
 }

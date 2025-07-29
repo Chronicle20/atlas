@@ -1,5 +1,5 @@
 import type {Tenant} from "@/types/models/tenant";
-import {tenantHeaders} from "@/lib/headers";
+import { api } from "@/lib/api/client";
 
 // Define interfaces based on the NPC conversation schema
 export interface DialogueChoice {
@@ -84,91 +84,48 @@ export interface ConversationsResponse {
 
 // API client functions for NPC conversations
 export async function fetchConversations(tenant: Tenant): Promise<Conversation[]> {
-  const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
-  const response = await fetch(rootUrl + "/api/npcs/conversations", {
-    method: "GET",
-    headers: tenantHeaders(tenant),
-  });
-  if (!response.ok) {
-    throw new Error("Failed to fetch NPC conversations.");
-  }
-  const responseData: ConversationsResponse = await response.json();
-  return responseData.data;
+  api.setTenant(tenant);
+  const response = await api.get<ConversationsResponse>('/api/npcs/conversations');
+  return response.data;
 }
 
 export async function fetchConversation(tenant: Tenant, conversationId: string): Promise<Conversation> {
-  const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
-  const response = await fetch(rootUrl + "/api/npcs/conversations/" + conversationId, {
-    method: "GET",
-    headers: tenantHeaders(tenant),
-  });
-  if (!response.ok) {
-    throw new Error("Failed to fetch NPC conversation.");
-  }
-  const responseData: ConversationResponse = await response.json();
-  return responseData.data;
+  api.setTenant(tenant);
+  const response = await api.get<ConversationResponse>(`/api/npcs/conversations/${conversationId}`);
+  return response.data;
 }
 
 export async function createConversation(tenant: Tenant, conversationAttributes: ConversationAttributes): Promise<Conversation> {
-  const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
-  const response = await fetch(rootUrl + "/api/npcs/conversations", {
-    method: "POST",
-    headers: tenantHeaders(tenant),
-    body: JSON.stringify({
-      data: {
-        type: "conversations",
-        attributes: conversationAttributes
-      }
-    }),
+  api.setTenant(tenant);
+  const response = await api.post<ConversationResponse>('/api/npcs/conversations', {
+    data: {
+      type: "conversations",
+      attributes: conversationAttributes
+    }
   });
-  if (!response.ok) {
-    throw new Error("Failed to create NPC conversation.");
-  }
-  const responseData: ConversationResponse = await response.json();
-  return responseData.data;
+  return response.data;
 }
 
 export async function updateConversation(tenant: Tenant, conversationId: string, conversationAttributes: Partial<ConversationAttributes>): Promise<Conversation> {
-  const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
-  const response = await fetch(rootUrl + "/api/npcs/conversations/" + conversationId, {
-    method: "PATCH",
-    headers: tenantHeaders(tenant),
-    body: JSON.stringify({
-      data: {
-        type: "conversations",
-        id: conversationId,
-        attributes: conversationAttributes
-      }
-    }),
+  api.setTenant(tenant);
+  const response = await api.patch<ConversationResponse>(`/api/npcs/conversations/${conversationId}`, {
+    data: {
+      type: "conversations",
+      id: conversationId,
+      attributes: conversationAttributes
+    }
   });
-  if (!response.ok) {
-    throw new Error("Failed to update NPC conversation.");
-  }
-  const responseData: ConversationResponse = await response.json();
-  return responseData.data;
+  return response.data;
 }
 
 export async function deleteConversation(tenant: Tenant, conversationId: string): Promise<void> {
-  const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
-  const response = await fetch(rootUrl + "/api/npcs/conversations/" + conversationId, {
-    method: "DELETE",
-    headers: tenantHeaders(tenant),
-  });
-  if (!response.ok) {
-    throw new Error("Failed to delete NPC conversation.");
-  }
+  api.setTenant(tenant);
+  return api.delete<void>(`/api/npcs/conversations/${conversationId}`);
 }
 
 export async function fetchNPCConversations(tenant: Tenant, npcId: number): Promise<Conversation | null> {
-  const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
-  const response = await fetch(rootUrl + "/api/npcs/" + npcId + "/conversations", {
-    method: "GET",
-    headers: tenantHeaders(tenant),
-  });
-  if (!response.ok) {
-    throw new Error("Failed to fetch NPC conversations.");
-  }
-  const responseData: ConversationsResponse = await response.json();
+  api.setTenant(tenant);
+  const response = await api.get<ConversationsResponse>(`/api/npcs/${npcId}/conversations`);
   // Return the first conversation if one exists, otherwise return null
-  return responseData.data.length > 0 ? (responseData.data[0] || null) : null;
+  return response.data.length > 0 ? (response.data[0] || null) : null;
 }

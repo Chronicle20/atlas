@@ -1,23 +1,15 @@
 import type {Tenant} from "@/types/models/tenant";
-import type {ApiListResponse, ApiSingleResponse} from "@/types/api/responses";
 import type {NPC, Shop, Commodity, CommodityAttributes, ShopResponse} from "@/types/models/npc";
-import {tenantHeaders} from "@/lib/headers";
+import { api } from "@/lib/api/client";
 import {fetchConversations} from "@/lib/npc-conversations";
 
 export async function fetchNPCs(tenant: Tenant): Promise<NPC[]> {
     // Fetch NPCs with shops
-    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
-    const shopResponse = await fetch(rootUrl + "/api/shops", {
-        method: "GET",
-        headers: tenantHeaders(tenant),
-    });
-    if (!shopResponse.ok) {
-        throw new Error("Failed to fetch NPCs with shops.");
-    }
-    const shopResponseData: ApiListResponse<Shop> = await shopResponse.json();
+    api.setTenant(tenant);
+    const shops = await api.getList<Shop>('/api/shops');
 
     // Extract NPCs from shops data
-    const npcsWithShops = shopResponseData.data.map((shop: Shop) => ({
+    const npcsWithShops = shops.map((shop: Shop) => ({
         id: shop.attributes.npcId,
         hasShop: true,
         hasConversation: false
@@ -65,75 +57,39 @@ export async function fetchNPCs(tenant: Tenant): Promise<NPC[]> {
 
 
 export async function fetchNPCShop(tenant: Tenant, npcId: number): Promise<ShopResponse> {
-    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
-    const response = await fetch(rootUrl + "/api/npcs/" + npcId + "/shop?include=commodities", {
-        method: "GET",
-        headers: tenantHeaders(tenant),
-    });
-    if (!response.ok) {
-        throw new Error("Failed to fetch NPC shop.");
-    }
-    const responseData: ShopResponse = await response.json();
-    return responseData;
+    api.setTenant(tenant);
+    return api.get<ShopResponse>(`/api/npcs/${npcId}/shop?include=commodities`);
 }
 
 export async function createCommodity(tenant: Tenant, npcId: number, commodityAttributes: CommodityAttributes): Promise<Commodity> {
-    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
-    const response = await fetch(rootUrl + "/api/npcs/" + npcId + "/shop/relationships/commodities", {
-        method: "POST",
-        headers: {
-            ...tenantHeaders(tenant),
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-            data: {
-                type: "commodities",
-                attributes: commodityAttributes
-            }
-        }),
+    api.setTenant(tenant);
+    const response = await api.post<{data: Commodity}>(`/api/npcs/${npcId}/shop/relationships/commodities`, {
+        data: {
+            type: "commodities",
+            attributes: commodityAttributes
+        }
     });
-    if (!response.ok) {
-        throw new Error("Failed to create commodity.");
-    }
-    const responseData: ApiSingleResponse<Commodity> = await response.json();
-    return responseData.data;
+    return response.data;
 }
 
 export async function updateCommodity(tenant: Tenant, npcId: number, commodityId: string, commodityAttributes: Partial<CommodityAttributes>): Promise<Commodity> {
-    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
-    const response = await fetch(rootUrl + "/api/npcs/" + npcId + "/shop/relationships/commodities/" + commodityId, {
-        method: "PUT",
-        headers: {
-            ...tenantHeaders(tenant),
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-            data: {
-                type: "commodities",
-                attributes: commodityAttributes
-            }
-        }),
+    api.setTenant(tenant);
+    const response = await api.put<{data: Commodity}>(`/api/npcs/${npcId}/shop/relationships/commodities/${commodityId}`, {
+        data: {
+            type: "commodities",
+            attributes: commodityAttributes
+        }
     });
-    if (!response.ok) {
-        throw new Error("Failed to update commodity.");
-    }
-    const responseData: ApiSingleResponse<Commodity> = await response.json();
-    return responseData.data;
+    return response.data;
 }
 
 export async function deleteCommodity(tenant: Tenant, npcId: number, commodityId: string): Promise<void> {
-    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
-    const response = await fetch(rootUrl + "/api/npcs/" + npcId + "/shop/relationships/commodities/" + commodityId, {
-        method: "DELETE",
-        headers: tenantHeaders(tenant),
-    });
-    if (!response.ok) {
-        throw new Error("Failed to delete commodity.");
-    }
+    api.setTenant(tenant);
+    return api.delete<void>(`/api/npcs/${npcId}/shop/relationships/commodities/${commodityId}`);
 }
 
 export async function createShop(tenant: Tenant, npcId: number, commodities: Omit<CommodityAttributes, 'id'>[], recharger?: boolean): Promise<Shop> {
-    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
+    api.setTenant(tenant);
 
     // Create commodity data for included section
     const includedCommodities = commodities.map((commodity, index) => ({
@@ -148,38 +104,27 @@ export async function createShop(tenant: Tenant, npcId: number, commodities: Omi
         id: commodity.id
     }));
 
-    const response = await fetch(rootUrl + "/api/npcs/" + npcId + "/shop", {
-        method: "POST",
-        headers: {
-            ...tenantHeaders(tenant),
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-            data: {
-                type: "shops",
-                id: `shop-${npcId}`,
-                attributes: {
-                    npcId: npcId,
-                    recharger: recharger
-                },
-                relationships: {
-                    commodities: {
-                        data: commodityReferences
-                    }
-                }
+    const response = await api.post<{data: Shop}>(`/api/npcs/${npcId}/shop`, {
+        data: {
+            type: "shops",
+            id: `shop-${npcId}`,
+            attributes: {
+                npcId: npcId,
+                recharger: recharger
             },
-            included: includedCommodities
-        }),
+            relationships: {
+                commodities: {
+                    data: commodityReferences
+                }
+            }
+        },
+        included: includedCommodities
     });
-    if (!response.ok) {
-        throw new Error("Failed to create shop.");
-    }
-    const responseData: ApiSingleResponse<Shop> = await response.json();
-    return responseData.data;
+    return response.data;
 }
 
 export async function updateShop(tenant: Tenant, npcId: number, commodities: Commodity[], recharger?: boolean): Promise<Shop> {
-    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
+    api.setTenant(tenant);
 
     // Create commodity references for relationships section
     const commodityReferences = commodities.map(commodity => ({
@@ -194,54 +139,31 @@ export async function updateShop(tenant: Tenant, npcId: number, commodities: Com
         attributes: commodity.attributes
     }));
 
-    const response = await fetch(rootUrl + "/api/npcs/" + npcId + "/shop", {
-        method: "PUT",
-        headers: {
-            ...tenantHeaders(tenant),
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-            data: {
-                type: "shops",
-                id: `shop-${npcId}`,
-                attributes: {
-                    npcId: npcId,
-                    recharger: recharger
-                },
-                relationships: {
-                    commodities: {
-                        data: commodityReferences
-                    }
-                }
+    const response = await api.put<{data: Shop}>(`/api/npcs/${npcId}/shop`, {
+        data: {
+            type: "shops",
+            id: `shop-${npcId}`,
+            attributes: {
+                npcId: npcId,
+                recharger: recharger
             },
-            included: includedCommodities
-        }),
+            relationships: {
+                commodities: {
+                    data: commodityReferences
+                }
+            }
+        },
+        included: includedCommodities
     });
-    if (!response.ok) {
-        throw new Error("Failed to update shop.");
-    }
-    const responseData: ApiSingleResponse<Shop> = await response.json();
-    return responseData.data;
+    return response.data;
 }
 
 export async function deleteAllShops(tenant: Tenant): Promise<void> {
-    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
-    const response = await fetch(rootUrl + "/api/shops", {
-        method: "DELETE",
-        headers: tenantHeaders(tenant),
-    });
-    if (!response.ok) {
-        throw new Error("Failed to delete all shops.");
-    }
+    api.setTenant(tenant);
+    return api.delete<void>('/api/shops');
 }
 
 export async function deleteAllCommoditiesForNPC(tenant: Tenant, npcId: number): Promise<void> {
-    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
-    const response = await fetch(rootUrl + "/api/npcs/" + npcId + "/shop/relationships/commodities", {
-        method: "DELETE",
-        headers: tenantHeaders(tenant),
-    });
-    if (!response.ok) {
-        throw new Error("Failed to delete all commodities for NPC.");
-    }
+    api.setTenant(tenant);
+    return api.delete<void>(`/api/npcs/${npcId}/shop/relationships/commodities`);
 }

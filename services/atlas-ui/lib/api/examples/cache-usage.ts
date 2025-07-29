@@ -10,56 +10,56 @@ import { api, cache } from '../client';
 // Example 1: Basic caching with default options (5 minutes)
 export async function fetchUserProfile(userId: string) {
   return api.get(`/users/${userId}`, {
-    cache: cache.defaultOptions()
+    cacheConfig: cache.defaultOptions()
   });
 }
 
 // Example 2: Short-lived cache for frequently changing data (1 minute)
 export async function fetchUnreadNotificationCount() {
   return api.get('/notifications/unread-count', {
-    cache: cache.shortLived()
+    cacheConfig: cache.shortLived()
   });
 }
 
 // Example 3: Long-lived cache for static data (30 minutes with stale-while-revalidate)
 export async function fetchSystemConfiguration() {
   return api.get('/system/config', {
-    cache: cache.longLived()
+    cacheConfig: cache.longLived()
   });
 }
 
 // Example 4: Custom TTL for specific use cases
 export async function fetchTenantSettings(tenantId: string) {
   return api.get(`/tenants/${tenantId}/settings`, {
-    cache: cache.withTTL(15) // 15 minutes
+    cacheConfig: cache.withTTL(15) // 15 minutes
   });
 }
 
 // Example 5: Stale-while-revalidate for better UX
 export async function fetchRegionsList() {
   return api.get('/regions', {
-    cache: cache.staleWhileRevalidate(10 * 60 * 1000, 2 * 60 * 1000) // 10min TTL, 2min stale
+    cacheConfig: cache.staleWhileRevalidate(10 * 60 * 1000, 2 * 60 * 1000) // 10min TTL, 2min stale
   });
 }
 
 // Example 6: Custom cache key prefix for namespacing
 export async function fetchGameMaps() {
   return api.get('/maps', {
-    cache: cache.withPrefix('game-data', 5 * 60 * 1000)
+    cacheConfig: cache.withPrefix('game-data', 5 * 60 * 1000)
   });
 }
 
 // Example 7: Disable caching for sensitive or real-time data
 export async function fetchSecurityTokens() {
   return api.get('/auth/tokens', {
-    cache: cache.disable()
+    cacheConfig: cache.disable()
   });
 }
 
 // Example 8: Complex caching configuration
 export async function fetchCharacterData(characterId: string) {
   return api.get(`/characters/${characterId}`, {
-    cache: {
+    cacheConfig: {
       ttl: 3 * 60 * 1000,        // 3 minutes
       keyPrefix: 'characters',    // namespace cache keys
       staleWhileRevalidate: true, // serve stale data while revalidating
@@ -119,7 +119,7 @@ export class ComponentCacheManager {
    */
   static async fetchComponentData(componentId: string) {
     return api.get(`/components/${componentId}/data`, {
-      cache: cache.withPrefix(`component-${componentId}`, 2 * 60 * 1000)
+      cacheConfig: cache.withPrefix(`component-${componentId}`, 2 * 60 * 1000)
     });
   }
 }

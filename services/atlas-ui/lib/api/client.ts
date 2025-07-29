@@ -54,7 +54,7 @@ export interface CacheOptions {
 /**
  * Configuration options for API requests
  */
-export interface ApiRequestOptions extends Omit<RequestInit, 'method' | 'body'> {
+export interface ApiRequestOptions extends Omit<RequestInit, 'method' | 'body' | 'cache'> {
   /** Override default timeout (default: 30000ms) */
   timeout?: number;
   /** Skip automatic tenant header injection */
@@ -76,7 +76,7 @@ export interface ApiRequestOptions extends Omit<RequestInit, 'method' | 'body'> 
   /** Progress callback for tracking upload/download progress */
   onProgress?: ProgressCallback;
   /** Cache configuration for this request */
-  cache?: CacheOptions | false;
+  cacheConfig?: CacheOptions | false;
 }
 
 /**
@@ -380,8 +380,8 @@ class ApiClient {
       staleWhileRevalidate,
       maxStaleTime,
       headers,
-      etag: etag || undefined,
-      lastModified: lastModified || undefined
+      ...(etag && { etag }),
+      ...(lastModified && { lastModified })
     };
 
     this.responseCache.set(key, entry);
@@ -450,10 +450,8 @@ class ApiClient {
           ...options,
         },
         options?.timeout,
-        {
-          ...options,
-          // Don't use progress callbacks for background revalidation
-          onProgress: undefined,
+{
+          ...(options ? (({ onProgress: _onProgress, ...rest }) => rest)(options) : {}),
         }
       );
 
@@ -1043,7 +1041,7 @@ class ApiClient {
     const fullUrl = `${this.config.baseUrl}${url}`;
     
     // Check if caching is enabled for this request
-    const cacheOptions = options?.cache;
+    const cacheOptions = options?.cacheConfig;
     const shouldCache = cacheOptions !== false && cacheOptions !== undefined;
     
     // Try cache first if enabled
@@ -1370,8 +1368,8 @@ class ApiClient {
         ...options,
       },
       options?.timeout,
-      // Don't use the built-in progress tracking since we're handling it manually
-      { ...options, onProgress: undefined }
+// Don't use the built-in progress tracking since we're handling it manually
+      options ? (({ onProgress: _onProgress, ...rest }) => rest)(options) : {}
     );
 
     if (!response.ok) {

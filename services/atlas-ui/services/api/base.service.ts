@@ -10,8 +10,7 @@
  * - Standard response transformations
  * - Batch operations and validation helpers
  */
-import { apiClient, type ApiRequestOptions, type ProgressCallback, type CacheOptions } from '@/lib/api/client';
-import { api } from '@/lib/api/client';
+import { api, type ApiRequestOptions, type ProgressCallback, type CacheOptions } from '@/lib/api/client';
 
 /**
  * Service configuration options that can be set per operation or service-wide
@@ -130,8 +129,8 @@ export abstract class BaseService {
     if (options?.search) params.append('search', options.search);
     if (options?.sortBy) params.append('sortBy', options.sortBy);
     if (options?.sortOrder) params.append('sortOrder', options.sortOrder);
-    if (options?.limit) params.append('limit', options.limit.toString());
-    if (options?.offset) params.append('offset', options.offset.toString());
+    if (options?.limit !== undefined) params.append('limit', options.limit.toString());
+    if (options?.offset !== undefined) params.append('offset', options.offset.toString());
     
     if (options?.filters) {
       Object.entries(options.filters).forEach(([key, value]) => {
@@ -153,9 +152,9 @@ export abstract class BaseService {
     
     // Configure caching
     if (options?.useCache !== false) {
-      processedOptions.cache = options?.cacheConfig || this.defaultCacheConfig;
+      processedOptions.cacheConfig = options?.cacheConfig || this.defaultCacheConfig;
     } else {
-      processedOptions.cache = false;
+      processedOptions.cacheConfig = false;
     }
     
     return processedOptions;
@@ -275,7 +274,7 @@ export abstract class BaseService {
     for (let i = 0; i < items.length; i += concurrency) {
       const batch = items.slice(i, i + concurrency);
       
-      const promises = batch.map(async (item) => {
+      const promises = batch.map(async (item): Promise<{ success: true; item: D; result: T } | { success: false; item: D; error: Error }> => {
         try {
           const result = await this.create<T, D>(item, options);
           return { success: true, item, result };
@@ -333,7 +332,7 @@ export abstract class BaseService {
     for (let i = 0; i < updates.length; i += concurrency) {
       const batch = updates.slice(i, i + concurrency);
       
-      const promises = batch.map(async (update) => {
+      const promises = batch.map(async (update): Promise<{ success: true; item: { id: string; data: D }; result: T } | { success: false; item: { id: string; data: D }; error: Error }> => {
         try {
           const result = await this.update<T, D>(update.id, update.data, options);
           return { success: true, item: update, result };
@@ -391,7 +390,7 @@ export abstract class BaseService {
     for (let i = 0; i < ids.length; i += concurrency) {
       const batch = ids.slice(i, i + concurrency);
       
-      const promises = batch.map(async (id) => {
+      const promises = batch.map(async (id): Promise<{ success: true; item: string } | { success: false; item: string; error: Error }> => {
         try {
           await this.delete(id, options);
           return { success: true, item: id };

@@ -1,0 +1,37 @@
+/**
+ * Account management service
+ * Handles all account-related API operations
+ */
+import { BaseService } from './base.service';
+import type { Account } from '@/types/models/account';
+import type { Tenant } from '@/types/models/tenant';
+import { api } from '@/lib/api/client';
+
+class AccountsService extends BaseService {
+  protected basePath = '/api/accounts';
+
+  /**
+   * Get all accounts for a tenant
+   */
+  async getAll(tenant: Tenant, options?: { signal?: AbortSignal }): Promise<Account[]> {
+    // Temporarily set tenant context for this request
+    const originalOptions = { ...options, skipTenantHeaders: false };
+    return super.getAll<Account>(originalOptions);
+  }
+
+  /**
+   * Get account by ID
+   */
+  async getById(id: string, options?: { signal?: AbortSignal }): Promise<Account> {
+    return super.getById<Account>(id, options);
+  }
+
+  /**
+   * Terminate account session
+   */
+  async terminateSession(accountId: string, options?: { signal?: AbortSignal }): Promise<void> {
+    return api.delete(`${this.basePath}/${accountId}/session`, options);  
+  }
+}
+
+export const accountsService = new AccountsService();

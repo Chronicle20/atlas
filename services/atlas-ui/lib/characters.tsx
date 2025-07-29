@@ -1,8 +1,6 @@
 import type {Tenant} from "@/types/models/tenant";
-import type {ApiListResponse, ApiSingleResponse, ApiErrorResponse, ApiSimpleErrorResponse} from "@/types/api/responses";
-import {isApiErrorResponse, isApiSimpleErrorResponse} from "@/types/api/responses";
-import type {Character as CharacterModel, UpdateCharacterData} from "@/types/models/character";
-import {tenantHeaders} from "@/lib/headers";
+import type {UpdateCharacterData} from "@/types/models/character";
+import {api} from "@/lib/api/client";
 
 export interface Character {
     id: string;
@@ -39,94 +37,35 @@ export interface Character {
 }
 
 export async function fetchCharacters(tenant: Tenant): Promise<Character[]> {
-    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
-    const response = await fetch(rootUrl + "/api/characters/", {
-        method: "GET",
-        headers: tenantHeaders(tenant),
-    });
-    if (!response.ok) {
-        throw new Error("Failed to fetch characters.");
-    }
-    const responseData: ApiListResponse<Character> = await response.json();
-    return responseData.data;
+    // Set tenant for this request
+    api.setTenant(tenant);
+    
+    // Use the centralized API client to fetch characters
+    return api.getList<Character>("/api/characters/");
 }
 
 export async function fetchCharacter(tenant: Tenant, characterId: string): Promise<Character> {
-    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
-    const response = await fetch(rootUrl + "/api/characters/" + characterId, {
-        method: "GET",
-        headers: tenantHeaders(tenant),
-    });
-    if (!response.ok) {
-        throw new Error("Failed to fetch character.");
-    }
-    const responseData: ApiSingleResponse<Character> = await response.json();
-    return responseData.data;
+    // Set tenant for this request
+    api.setTenant(tenant);
+    
+    // Use the centralized API client to fetch a single character
+    return api.getOne<Character>(`/api/characters/${characterId}`);
 }
 
-// UpdateCharacterData is now imported from types
-
 export async function updateCharacter(tenant: Tenant, characterId: string, data: UpdateCharacterData): Promise<void> {
-    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
+    // Set tenant for this request
+    api.setTenant(tenant);
     
-    try {
-        const response = await fetch(rootUrl + "/api/cos/characters/" + characterId, {
-            method: "PATCH",
-            headers: {
-                ...tenantHeaders(tenant),
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                data: {
-                    type: "characters",
-                    id: characterId,
-                    attributes: data,
-                },
-            }),
-        });
-        
-        if (!response.ok) {
-            // Try to parse error details from response body if available
-            let errorMessage = "Failed to update character";
-            
-            try {
-                const errorData: ApiErrorResponse | ApiSimpleErrorResponse = await response.json();
-                if (isApiErrorResponse(errorData)) {
-                    errorMessage = errorData.error.detail;
-                } else if (isApiSimpleErrorResponse(errorData)) {
-                    errorMessage = errorData.message;
-                }
-            } catch {
-                // Fall back to status-based messages if response body can't be parsed
-                if (response.status === 400) {
-                    errorMessage = "Invalid map ID or request parameters";
-                } else if (response.status === 404) {
-                    errorMessage = "Character not found";
-                } else if (response.status === 401) {
-                    errorMessage = "Authentication failed";
-                } else if (response.status === 403) {
-                    errorMessage = "Permission denied";
-                } else if (response.status === 409) {
-                    errorMessage = "Map change conflicts with current character state";
-                } else if (response.status >= 500) {
-                    errorMessage = "Server error occurred while updating character";
-                }
-            }
-            
-            throw new Error(errorMessage);
-        }
-        
-        // API returns 204 No Content on success
-    } catch (error: unknown) {
-        // Handle network errors and other fetch failures
-        if (error instanceof TypeError && error.message.includes('fetch')) {
-            throw new Error("Network error: Unable to connect to server");
-        } else if (error instanceof Error) {
-            // Re-throw API errors with their specific messages
-            throw error;
-        } else {
-            // Handle unexpected error types
-            throw new Error("An unexpected error occurred while updating character");
-        }
-    }
+    // Prepare the JSON:API formatted request body
+    const requestBody = {
+        data: {
+            type: "characters",
+            id: characterId,
+            attributes: data,
+        },
+    };
+    
+    // Use the centralized API client to update the character
+    // The API client handles all error cases and status codes automatically
+    await api.patch<void>(`/api/cos/characters/${characterId}`, requestBody);
 }

@@ -9,12 +9,7 @@ import type {
   ApiError, 
   ApiErrorType, 
   NetworkError, 
-  ValidationError, 
-  AuthenticationError,
-  AuthorizationError,
-  NotFoundError,
-  ServerError,
-  UnknownError
+  ValidationError
 } from '@/types/api/errors';
 import {
   isApiError,

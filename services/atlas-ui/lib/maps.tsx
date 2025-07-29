@@ -1,6 +1,5 @@
 import type {Tenant} from "@/types/models/tenant";
 import type {ApiSingleResponse} from "@/types/api/responses";
-import type {Map as MapModel} from "@/types/models/map";
 import {tenantHeaders} from "@/lib/headers";
 
 export interface Map {

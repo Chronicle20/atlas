@@ -1,6 +1,5 @@
 import type {Tenant} from "@/types/models/tenant";
 import type {ApiListResponse} from "@/types/api/responses";
-import type {Account as AccountModel} from "@/types/models/account";
 import {tenantHeaders} from "@/lib/headers";
 
 export interface Account {

@@ -3,9 +3,11 @@ import { ErrorPage, Error404Page, Error500Page } from '../ErrorPage';
 
 // Mock Next.js Link component
 jest.mock('next/link', () => {
-  return ({ children, href }: { children: React.ReactNode; href: string }) => (
+  const MockLink = ({ children, href }: { children: React.ReactNode; href: string }) => (
     <a href={href}>{children}</a>
   );
+  MockLink.displayName = 'MockLink';
+  return MockLink;
 });
 
 describe('ErrorPage', () => {
@@ -13,7 +15,7 @@ describe('ErrorPage', () => {
     render(<ErrorPage statusCode={404} />);
     
     expect(screen.getByText('Page Not Found')).toBeInTheDocument();
-    expect(screen.getByText(/page you're looking for doesn't exist/)).toBeInTheDocument();
+    expect(screen.getByText(/The page you.*re looking for doesn.*t exist or has been moved/)).toBeInTheDocument();
     expect(screen.getByText('Error Code: 404')).toBeInTheDocument();
   });
 

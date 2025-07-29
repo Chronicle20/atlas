@@ -18,7 +18,7 @@ export function MapCell({ mapId, tenant }: { mapId: string; tenant: Tenant | nul
                 mapNameCache.set(mapId, mapName)
                 setName(mapName)
             })
-            .catch((_error: unknown) => setName("Unknown"))
+            .catch(() => setName("Unknown"))
     }, [mapId])
 
     return (

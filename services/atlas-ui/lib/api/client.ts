@@ -9,7 +9,7 @@
  */
 
 import type { Tenant } from '@/types/models/tenant';
-import type { ApiResponse, ApiListResponse, ApiSingleResponse } from '@/types/api/responses';
+import type { ApiListResponse, ApiSingleResponse } from '@/types/api/responses';
 import { tenantHeaders } from '@/lib/headers';
 import { createApiErrorFromResponse } from '@/types/api/errors';
 import { isRetryableError } from '@/lib/api/errors';
@@ -291,7 +291,7 @@ class ApiClient {
 
     try {
       return await response.json();
-    } catch (error) {
+    } catch {
       throw createApiErrorFromResponse(500, 'Invalid JSON response from server');
     }
   }

@@ -1,6 +1,6 @@
 import type {Tenant} from "@/types/models/tenant";
 import type {ApiListResponse, ApiSingleResponse} from "@/types/api/responses";
-import type {Guild, GuildMember, GuildTitle} from "@/types/models/guild";
+import type {Guild} from "@/types/models/guild";
 import {tenantHeaders} from "@/lib/headers";
 
 export async function fetchGuilds(tenant: Tenant): Promise<Guild[]> {

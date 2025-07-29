@@ -34,6 +34,8 @@ export interface ApiRequestOptions extends Omit<RequestInit, 'method' | 'body'> 
   exponentialBackoff?: boolean;
   /** AbortController signal for request cancellation */
   signal?: AbortSignal;
+  /** Disable request deduplication for this specific request (default: false) */
+  skipDeduplication?: boolean;
 }
 
 /**
@@ -50,10 +52,20 @@ interface ApiClientConfig {
 }
 
 /**
+ * Information about a pending request for deduplication
+ */
+interface PendingRequest<T = unknown> {
+  promise: Promise<T>;
+  abortController: AbortController;
+  requestCount: number;
+}
+
+/**
  * API client class that provides centralized HTTP request handling
  */
 class ApiClient {
   private config: ApiClientConfig;
+  private pendingRequests: Map<string, PendingRequest> = new Map();
 
   constructor() {
     this.config = {
@@ -79,6 +91,140 @@ class ApiClient {
    */
   getTenant(): Tenant | null {
     return this.config.tenant;
+  }
+
+  /**
+   * Generate a unique key for request deduplication based on method, URL, and data
+   */
+  private generateRequestKey(method: string, url: string, data?: unknown, headers?: Headers): string {
+    // Create a hash-like key from the request components
+    const tenantId = this.config.tenant?.id || 'no-tenant';
+    const headerString = headers ? Array.from(headers.entries())
+      .filter(([key]) => !['authorization', 'cookie'].includes(key.toLowerCase())) // Exclude sensitive headers
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, value]) => `${key}:${value}`)
+      .join('|') : '';
+    
+    const components = [
+      method.toUpperCase(),
+      url,
+      data ? JSON.stringify(data) : '',
+      headerString,
+      tenantId
+    ];
+    
+    // Create a simple hash-like string (not cryptographically secure, but sufficient for deduplication)
+    return btoa(components.join('::'));
+  }
+
+  /**
+   * Get or create a deduplicated request
+   */
+  private getOrCreateDeduplicatedRequest<T>(
+    key: string,
+    requestFactory: () => Promise<T>,
+    externalSignal?: AbortSignal
+  ): Promise<T> {
+    const existingRequest = this.pendingRequests.get(key) as PendingRequest<T> | undefined;
+    
+    if (existingRequest) {
+      // Increment request count
+      existingRequest.requestCount++;
+      
+      // If external signal is provided, listen for cancellation
+      if (externalSignal) {
+        const abortHandler = () => {
+          existingRequest.requestCount--;
+          if (existingRequest.requestCount <= 0) {
+            existingRequest.abortController.abort();
+            this.pendingRequests.delete(key);
+          }
+        };
+        
+        if (externalSignal.aborted) {
+          // If signal is already aborted, reject immediately
+          return Promise.reject(createApiErrorFromResponse(0, 'Request was cancelled'));
+        } else {
+          externalSignal.addEventListener('abort', abortHandler, { once: true });
+        }
+      }
+      
+      return existingRequest.promise;
+    }
+
+    // Create new request
+    const abortController = new AbortController();
+    
+    // Create a promise that we can control manually
+    let resolvePromise: (value: T | PromiseLike<T>) => void;
+    let rejectPromise: (reason?: any) => void;
+    
+    const controlledPromise = new Promise<T>((resolve, reject) => {
+      resolvePromise = resolve;
+      rejectPromise = reject;
+    });
+
+    const pendingRequest: PendingRequest<T> = {
+      promise: controlledPromise,
+      abortController,
+      requestCount: 1
+    };
+
+    this.pendingRequests.set(key, pendingRequest);
+    
+    // Execute the actual request
+    // Note: requestFactory should already handle the external signal passed to the method
+    requestFactory()
+      .then(result => {
+        resolvePromise(result);
+      })
+      .catch(error => {
+        rejectPromise(error);
+      })
+      .finally(() => {
+        // Clean up after request completion (success or failure)
+        this.pendingRequests.delete(key);
+      });
+
+    // If external signal is provided, listen for cancellation
+    if (externalSignal) {
+      const abortHandler = () => {
+        pendingRequest.requestCount--;
+        if (pendingRequest.requestCount <= 0) {
+          abortController.abort();
+          this.pendingRequests.delete(key);
+          // Reject the controlled promise with cancellation error
+          rejectPromise(createApiErrorFromResponse(0, 'Request was cancelled'));
+        }
+      };
+      
+      if (externalSignal.aborted) {
+        abortHandler();
+        return controlledPromise; // Return early if already cancelled
+      } else {
+        externalSignal.addEventListener('abort', abortHandler, { once: true });
+      }
+    }
+
+    return controlledPromise;
+  }
+
+  /**
+   * Clear all pending requests (useful for cleanup or testing)
+   */
+  clearPendingRequests(): void {
+    // Cancel all pending requests
+    for (const [key, request] of this.pendingRequests.entries()) {
+      request.abortController.abort();
+    }
+    this.pendingRequests.clear();
+  }
+
+  /**
+   * Get the number of pending requests (useful for debugging)
+   */
+  getPendingRequestCount(): number {
+    return this.pendingRequests.size;
   }
 
   /**
@@ -395,43 +541,106 @@ class ApiClient {
    * Perform a GET request
    */
   async get<T>(url: string, options?: ApiRequestOptions): Promise<T> {
+    // Check for already aborted signal early
+    if (options?.signal?.aborted) {
+      console.log('Signal already aborted, throwing error');
+      throw createApiErrorFromResponse(0, 'Request was cancelled');
+    }
+    console.log('Signal aborted?', options?.signal?.aborted);
+
     const headers = this.createHeaders(options);
     const fullUrl = `${this.config.baseUrl}${url}`;
     
-    const response = await this.fetchWithTimeout(
-      fullUrl,
-      {
-        method: 'GET',
-        headers,
-        ...options,
-      },
-      options?.timeout,
-      options
-    );
+    // Skip deduplication if explicitly requested
+    if (options?.skipDeduplication) {
+      const response = await this.fetchWithTimeout(
+        fullUrl,
+        {
+          method: 'GET',
+          headers,
+          ...options,
+        },
+        options?.timeout,
+        options
+      );
 
-    return this.processResponse<T>(response);
+      return this.processResponse<T>(response);
+    }
+
+    // Use deduplication for GET requests
+    const requestKey = this.generateRequestKey('GET', fullUrl, undefined, headers);
+    
+    return this.getOrCreateDeduplicatedRequest<T>(
+      requestKey,
+      async () => {
+        const response = await this.fetchWithTimeout(
+          fullUrl,
+          {
+            method: 'GET',
+            headers,
+            ...options,
+          },
+          options?.timeout,
+          options
+        );
+
+        return this.processResponse<T>(response);
+      },
+      options?.signal
+    );
   }
 
   /**
    * Perform a POST request
    */
   async post<T>(url: string, data?: unknown, options?: ApiRequestOptions): Promise<T> {
+    // Check for already aborted signal early
+    if (options?.signal?.aborted) {
+      throw createApiErrorFromResponse(0, 'Request was cancelled');
+    }
+
     const headers = this.createHeaders(options);
     const fullUrl = `${this.config.baseUrl}${url}`;
     
-    const response = await this.fetchWithTimeout(
-      fullUrl,
-      {
-        method: 'POST',
-        headers,
-        body: data ? JSON.stringify(data) : null,
-        ...options,
-      },
-      options?.timeout,
-      options
-    );
+    // Skip deduplication if explicitly requested
+    if (options?.skipDeduplication) {
+      const response = await this.fetchWithTimeout(
+        fullUrl,
+        {
+          method: 'POST',
+          headers,
+          body: data ? JSON.stringify(data) : null,
+          ...options,
+        },
+        options?.timeout,
+        options
+      );
 
-    return this.processResponse<T>(response);
+      return this.processResponse<T>(response);
+    }
+
+    // Use deduplication for POST requests
+    const requestKey = this.generateRequestKey('POST', fullUrl, data, headers);
+    
+    return this.getOrCreateDeduplicatedRequest<T>(
+      requestKey,
+      async () => {
+        const response = await this.fetchWithTimeout(
+          fullUrl,
+          {
+            method: 'POST',
+            headers,
+            body: data ? JSON.stringify(data) : null,
+            ...options,
+          },
+          options?.timeout,
+          options
+        );
+
+        return this.processResponse<T>(response);
+      },
+      options?.signal
+    );
   }
 
   /**
@@ -441,19 +650,45 @@ class ApiClient {
     const headers = this.createHeaders(options);
     const fullUrl = `${this.config.baseUrl}${url}`;
     
-    const response = await this.fetchWithTimeout(
-      fullUrl,
-      {
-        method: 'PUT',
-        headers,
-        body: data ? JSON.stringify(data) : null,
-        ...options,
-      },
-      options?.timeout,
-      options
-    );
+    // Skip deduplication if explicitly requested
+    if (options?.skipDeduplication) {
+      const response = await this.fetchWithTimeout(
+        fullUrl,
+        {
+          method: 'PUT',
+          headers,
+          body: data ? JSON.stringify(data) : null,
+          ...options,
+        },
+        options?.timeout,
+        options
+      );
 
-    return this.processResponse<T>(response);
+      return this.processResponse<T>(response);
+    }
+
+    // Use deduplication for PUT requests
+    const requestKey = this.generateRequestKey('PUT', fullUrl, data, headers);
+    
+    return this.getOrCreateDeduplicatedRequest<T>(
+      requestKey,
+      async () => {
+        const response = await this.fetchWithTimeout(
+          fullUrl,
+          {
+            method: 'PUT',
+            headers,
+            body: data ? JSON.stringify(data) : null,
+            ...options,
+          },
+          options?.timeout,
+          options
+        );
+
+        return this.processResponse<T>(response);
+      },
+      options?.signal
+    );
   }
 
   /**
@@ -463,19 +698,45 @@ class ApiClient {
     const headers = this.createHeaders(options);
     const fullUrl = `${this.config.baseUrl}${url}`;
     
-    const response = await this.fetchWithTimeout(
-      fullUrl,
-      {
-        method: 'PATCH',
-        headers,
-        body: data ? JSON.stringify(data) : null,
-        ...options,
-      },
-      options?.timeout,
-      options
-    );
+    // Skip deduplication if explicitly requested
+    if (options?.skipDeduplication) {
+      const response = await this.fetchWithTimeout(
+        fullUrl,
+        {
+          method: 'PATCH',
+          headers,
+          body: data ? JSON.stringify(data) : null,
+          ...options,
+        },
+        options?.timeout,
+        options
+      );
 
-    return this.processResponse<T>(response);
+      return this.processResponse<T>(response);
+    }
+
+    // Use deduplication for PATCH requests
+    const requestKey = this.generateRequestKey('PATCH', fullUrl, data, headers);
+    
+    return this.getOrCreateDeduplicatedRequest<T>(
+      requestKey,
+      async () => {
+        const response = await this.fetchWithTimeout(
+          fullUrl,
+          {
+            method: 'PATCH',
+            headers,
+            body: data ? JSON.stringify(data) : null,
+            ...options,
+          },
+          options?.timeout,
+          options
+        );
+
+        return this.processResponse<T>(response);
+      },
+      options?.signal
+    );
   }
 
   /**
@@ -485,18 +746,43 @@ class ApiClient {
     const headers = this.createHeaders(options);
     const fullUrl = `${this.config.baseUrl}${url}`;
     
-    const response = await this.fetchWithTimeout(
-      fullUrl,
-      {
-        method: 'DELETE',
-        headers,
-        ...options,
-      },
-      options?.timeout,
-      options
-    );
+    // Skip deduplication if explicitly requested
+    if (options?.skipDeduplication) {
+      const response = await this.fetchWithTimeout(
+        fullUrl,
+        {
+          method: 'DELETE',
+          headers,
+          ...options,
+        },
+        options?.timeout,
+        options
+      );
 
-    return this.processResponse<T>(response);
+      return this.processResponse<T>(response);
+    }
+
+    // Use deduplication for DELETE requests
+    const requestKey = this.generateRequestKey('DELETE', fullUrl, undefined, headers);
+    
+    return this.getOrCreateDeduplicatedRequest<T>(
+      requestKey,
+      async () => {
+        const response = await this.fetchWithTimeout(
+          fullUrl,
+          {
+            method: 'DELETE',
+            headers,
+            ...options,
+          },
+          options?.timeout,
+          options
+        );
+
+        return this.processResponse<T>(response);
+      },
+      options?.signal
+    );
   }
 }
 
@@ -560,6 +846,16 @@ export const api = {
    * Get current tenant
    */
   getTenant: (): Tenant | null => apiClient.getTenant(),
+
+  /**
+   * Clear all pending requests (useful for cleanup)
+   */
+  clearPendingRequests: (): void => apiClient.clearPendingRequests(),
+
+  /**
+   * Get the number of pending requests (useful for debugging)
+   */
+  getPendingRequestCount: (): number => apiClient.getPendingRequestCount(),
 };
 
 /**

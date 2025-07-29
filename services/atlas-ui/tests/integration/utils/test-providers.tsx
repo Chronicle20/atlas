@@ -93,11 +93,16 @@ export function createWrapper(options: {
   withErrorBoundary?: boolean;
 } = {}) {
   return function Wrapper({ children }: { children: React.ReactNode }) {
+    const props: any = {
+      defaultTheme: options.defaultTheme,
+    };
+    
+    if (options.withErrorBoundary !== undefined) {
+      props.withErrorBoundary = options.withErrorBoundary;
+    }
+    
     return (
-      <AllProviders
-        defaultTheme={options.defaultTheme}
-        withErrorBoundary={options.withErrorBoundary}
-      >
+      <AllProviders {...props}>
         {children}
       </AllProviders>
     );

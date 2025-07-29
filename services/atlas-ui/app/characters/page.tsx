@@ -5,7 +5,7 @@ import {DataTableWrapper} from "@/components/common/DataTableWrapper";
 import {getColumns, hiddenColumns} from "@/app/characters/columns";
 import {useEffect, useState} from "react";
 import {fetchCharacters} from "@/lib/characters";
-import {fetchAccounts} from "@/lib/accounts";
+import {accountsService} from "@/services/api/accounts.service";
 import {Character} from "@/types/models/character";
 import {Account} from "@/types/models/account";
 import {TenantConfig} from "@/types/models/tenant";
@@ -27,7 +27,7 @@ export default function Page() {
 
         Promise.all([
             fetchCharacters(activeTenant),
-            fetchAccounts(activeTenant),
+            accountsService.getAllAccounts(activeTenant),
             fetchTenantConfiguration(activeTenant.id),
         ])
             .then(([characterData, accountData, tenantConfigData]) => {

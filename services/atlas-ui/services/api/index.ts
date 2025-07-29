@@ -15,8 +15,18 @@ export type {
   ValidationError,
 } from './base.service';
 
+// Export service-specific types
+export type {
+  TenantBasic,
+  TenantBasicAttributes,
+  TenantConfig,
+  TenantConfigAttributes,
+  Tenant,
+  TenantAttributes,
+} from './tenants.service';
+
 // Individual services will be exported here as they are implemented:
-// export { tenantsService } from './tenants.service';
+export { tenantsService } from './tenants.service';
 // export { accountsService } from './accounts.service';
 // export { charactersService } from './characters.service';
 // export { inventoryService } from './inventory.service';

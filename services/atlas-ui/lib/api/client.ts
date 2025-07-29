@@ -32,6 +32,8 @@ export interface ApiRequestOptions extends Omit<RequestInit, 'method' | 'body'> 
   maxRetryDelay?: number;
   /** Whether to use exponential backoff for retry delays (default: true) */
   exponentialBackoff?: boolean;
+  /** AbortController signal for request cancellation */
+  signal?: AbortSignal;
 }
 
 /**
@@ -108,6 +110,40 @@ class ApiClient {
   }
 
   /**
+   * Sleep for the specified number of milliseconds with cancellation support
+   */
+  private async sleepWithCancellation(ms: number, signal?: AbortSignal): Promise<void> {
+    return new Promise((resolve, reject) => {
+      // Check if already cancelled
+      if (signal?.aborted) {
+        reject(createApiErrorFromResponse(0, 'Request was cancelled'));
+        return;
+      }
+
+      const timeoutId = setTimeout(() => {
+        resolve();
+      }, ms);
+
+      // Listen for cancellation
+      if (signal) {
+        const abortHandler = () => {
+          clearTimeout(timeoutId);
+          reject(createApiErrorFromResponse(0, 'Request was cancelled'));
+        };
+
+        signal.addEventListener('abort', abortHandler, { once: true });
+
+        // Clean up listener when timeout completes
+        const originalResolve = resolve;
+        resolve = () => {
+          signal.removeEventListener('abort', abortHandler);
+          originalResolve();
+        };
+      }
+    });
+  }
+
+  /**
    * Create request headers with tenant information
    */
   private createHeaders(options?: ApiRequestOptions): Headers {
@@ -136,6 +172,48 @@ class ApiClient {
   }
 
   /**
+   * Create a combined AbortController that handles both timeout and external cancellation
+   */
+  private createCombinedController(timeout: number, externalSignal?: AbortSignal): {
+    controller: AbortController;
+    timeoutId: NodeJS.Timeout | number | null;
+  } {
+    const controller = new AbortController();
+    let timeoutId: NodeJS.Timeout | number | null = null;
+
+    // Set up timeout abortion
+    timeoutId = setTimeout(() => {
+      if (!controller.signal.aborted) {
+        controller.abort();
+      }
+    }, timeout);
+
+    // Listen for external signal abortion
+    if (externalSignal) {
+      const abortHandler = () => {
+        if (!controller.signal.aborted) {
+          controller.abort();
+        }
+      };
+
+      if (externalSignal.aborted) {
+        // If already aborted, abort immediately
+        controller.abort();
+      } else {
+        // Listen for abort event
+        externalSignal.addEventListener('abort', abortHandler, { once: true });
+        
+        // Clean up listener when our controller is aborted
+        controller.signal.addEventListener('abort', () => {
+          externalSignal.removeEventListener('abort', abortHandler);
+        }, { once: true });
+      }
+    }
+
+    return { controller, timeoutId };
+  }
+
+  /**
    * Create a fetch request with timeout and retry support
    */
   private async fetchWithTimeout(
@@ -148,12 +226,17 @@ class ApiClient {
     const retryDelay = requestOptions?.retryDelay ?? this.config.defaultRetryDelay;
     const maxRetryDelay = requestOptions?.maxRetryDelay ?? this.config.defaultMaxRetryDelay;
     const exponentialBackoff = requestOptions?.exponentialBackoff ?? this.config.defaultExponentialBackoff;
+    const externalSignal = requestOptions?.signal;
 
     let lastError: unknown;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeout);
+      // Check if external signal is already aborted before starting
+      if (externalSignal?.aborted) {
+        throw createApiErrorFromResponse(0, 'Request was cancelled');
+      }
+
+      const { controller, timeoutId } = this.createCombinedController(timeout, externalSignal);
 
       try {
         const response = await fetch(url, {
@@ -161,7 +244,7 @@ class ApiClient {
           signal: controller.signal,
         });
         
-        clearTimeout(timeoutId);
+        if (timeoutId) clearTimeout(timeoutId);
         
         // If the response is successful or if it's a non-retryable error, return it
         if (response.ok || !this.shouldRetryResponse(response.status)) {
@@ -175,22 +258,27 @@ class ApiClient {
           return response; // Return the response so it can be processed normally
         }
         
-        // Wait before retrying
+        // Wait before retrying (but check for cancellation during sleep)
         if (attempt < maxRetries) {
           const delay = this.calculateRetryDelay(attempt, retryDelay, maxRetryDelay, exponentialBackoff);
-          await this.sleep(delay);
+          await this.sleepWithCancellation(delay, externalSignal);
         }
         
       } catch (error) {
-        clearTimeout(timeoutId);
+        if (timeoutId) clearTimeout(timeoutId);
         lastError = error;
         
-        // Handle abort/timeout errors
+        // Handle abort/timeout/cancellation errors
         if (error instanceof Error && error.name === 'AbortError') {
-          const timeoutError = createApiErrorFromResponse(408, 'Request timeout');
-          
-          if (attempt === maxRetries || !isRetryableError(timeoutError)) {
-            throw timeoutError;
+          // Check if it was external cancellation vs timeout
+          if (externalSignal?.aborted) {
+            throw createApiErrorFromResponse(0, 'Request was cancelled');
+          } else {
+            const timeoutError = createApiErrorFromResponse(408, 'Request timeout');
+            
+            if (attempt === maxRetries || !isRetryableError(timeoutError)) {
+              throw timeoutError;
+            }
           }
         }
         // Handle network errors
@@ -206,10 +294,10 @@ class ApiClient {
           throw error;
         }
         
-        // Wait before retrying
+        // Wait before retrying (but check for cancellation during sleep)
         if (attempt < maxRetries) {
           const delay = this.calculateRetryDelay(attempt, retryDelay, maxRetryDelay, exponentialBackoff);
-          await this.sleep(delay);
+          await this.sleepWithCancellation(delay, externalSignal);
         }
       }
     }
@@ -472,6 +560,76 @@ export const api = {
    * Get current tenant
    */
   getTenant: (): Tenant | null => apiClient.getTenant(),
+};
+
+/**
+ * Utility functions for request cancellation
+ */
+export const cancellation = {
+  /**
+   * Create a new AbortController for request cancellation
+   */
+  createController: (): AbortController => new AbortController(),
+
+  /**
+   * Create an AbortController that automatically aborts after a timeout
+   */
+  createTimeoutController: (timeoutMs: number): AbortController => {
+    const controller = new AbortController();
+    setTimeout(() => {
+      if (!controller.signal.aborted) {
+        controller.abort();
+      }
+    }, timeoutMs);
+    return controller;
+  },
+
+  /**
+   * Combine multiple AbortSignals into one
+   */
+  combineSignals: (...signals: (AbortSignal | undefined)[]): AbortController => {
+    const controller = new AbortController();
+    const validSignals = signals.filter((signal): signal is AbortSignal => signal != null);
+
+    if (validSignals.length === 0) {
+      return controller;
+    }
+
+    const abortHandler = () => {
+      if (!controller.signal.aborted) {
+        controller.abort();
+      }
+    };
+
+    // Check if any signal is already aborted
+    if (validSignals.some(signal => signal.aborted)) {
+      controller.abort();
+      return controller;
+    }
+
+    // Listen to all signals
+    validSignals.forEach(signal => {
+      signal.addEventListener('abort', abortHandler, { once: true });
+    });
+
+    // Clean up listeners when our controller is aborted
+    controller.signal.addEventListener('abort', () => {
+      validSignals.forEach(signal => {
+        signal.removeEventListener('abort', abortHandler);
+      });
+    }, { once: true });
+
+    return controller;
+  },
+
+  /**
+   * Check if an error is a cancellation error
+   */
+  isCancellationError: (error: unknown): boolean => {
+    return error instanceof Error && 
+           (error.name === 'AbortError' || 
+            (typeof error.message === 'string' && error.message.includes('Request was cancelled')));
+  }
 };
 
 export default api;

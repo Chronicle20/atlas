@@ -8,7 +8,7 @@ import {Button} from "@/components/ui/button";
 import {useParams} from "next/navigation";
 import {X, Plus} from "lucide-react"
 import {Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog";
-import {fetchTemplates, updateTemplate} from "@/lib/templates";
+import {templatesService} from "@/services/api";
 import type {Template} from "@/types/models/template";
 import {toast} from "sonner";
 import { LoadingSpinner, ErrorDisplay } from "@/components/common";
@@ -50,9 +50,8 @@ export function TemplatesForm() {
 
         setLoading(true); // Show loading while fetching
 
-        fetchTemplates()
-            .then((data) => {
-                const template = data.find((t) => String(t.id) === String(id));
+        templatesService.getById(String(id))
+            .then((template) => {
                 setTemplate(template);
 
                 if (template) {
@@ -87,11 +86,14 @@ export function TemplatesForm() {
     });
 
     const onSubmit: SubmitHandler<FormValues> = async (data: FormValues) => {
-        updateTemplate(template, {
+        if (!template) return;
+        
+        templatesService.update(template.id, {
             characters: {
                 templates: data.templates,
             },
-        }).then(() => {
+        }).then((updatedTemplate) => {
+            setTemplate(updatedTemplate);
             toast.success("Successfully saved template.");
         });
     }

@@ -5,7 +5,7 @@ import {useParams} from "next/navigation"
 import {Badge} from "@/components/ui/badge"
 import {DataTableWrapper} from "@/components/common/DataTableWrapper"
 import {Toaster} from "@/components/ui/sonner"
-import {fetchGuild} from "@/lib/guilds";
+import {guildsService} from "@/services/api/guilds.service";
 import {Guild, GuildMember, GuildTitle} from "@/types/models/guild";
 import {ColumnDef} from "@tanstack/react-table";
 import {useTenant} from "@/context/tenant-context";
@@ -31,7 +31,7 @@ export default function GuildDetailPage() {
 
         // Fetch both guild data and tenant configuration
         Promise.all([
-            fetchGuild(activeTenant, String(id)),
+            guildsService.getById(activeTenant, String(id)),
             fetchTenantConfiguration(activeTenant.id)
         ])
             .then(([guildData, tenantConfigData]) => {

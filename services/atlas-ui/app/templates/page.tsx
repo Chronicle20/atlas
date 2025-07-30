@@ -3,7 +3,7 @@
 import {DataTableWrapper} from "@/components/common/DataTableWrapper";
 import {getColumns} from "@/app/templates/columns";
 import {useEffect, useState} from "react";
-import {fetchTemplates, deleteTemplate, cloneTemplate, createTemplate} from "@/lib/templates";
+import {templatesService} from "@/services/api";
 import type {Template} from "@/types/models/template";
 import {createTenantConfiguration, createTenantFromTemplate} from "@/lib/tenants";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -76,7 +76,7 @@ export default function Page() {
 
     const fetchDataAgain = () => {
         setLoading(true)
-        fetchTemplates()
+        templatesService.getAll()
             .then((data) => setTemplates(data))
             .catch((err: unknown) => {
                 const errorInfo = createErrorFromUnknown(err, "Failed to fetch templates");
@@ -101,7 +101,7 @@ export default function Page() {
 
         try {
             setIsDeleting(true);
-            await deleteTemplate(templateToDelete);
+            await templatesService.delete(templateToDelete);
 
             // Refresh template data
             fetchDataAgain();
@@ -138,13 +138,13 @@ export default function Page() {
             setIsCloning(true);
 
             // Clone the template and update with form values
-            const clonedAttributes = cloneTemplate(templateToClone);
+            const clonedAttributes = templatesService.cloneTemplate(templateToClone);
             clonedAttributes.region = data.region;
             clonedAttributes.majorVersion = data.majorVersion;
             clonedAttributes.minorVersion = data.minorVersion;
 
             // Create the new template
-            const newTemplate = await createTemplate(clonedAttributes);
+            const newTemplate = await templatesService.create(clonedAttributes);
 
             // Show success message
             toast.success("Template cloned successfully");

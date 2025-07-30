@@ -6,7 +6,7 @@ import {Form} from "@/components/ui/form";
 import {Button} from "@/components/ui/button";
 import {useParams} from "next/navigation";
 import {X} from "lucide-react";
-import {fetchTemplates, updateTemplate} from "@/lib/templates";
+import {templatesService} from "@/services/api";
 import type {Template} from "@/types/models/template";
 import {OptionsField} from "@/components/unknown-options";
 import {toast} from "sonner";
@@ -39,9 +39,8 @@ export function HandlersForm() {
 
         setLoading(true); // Show loading while fetching
 
-        fetchTemplates()
-            .then((data) => {
-                const template = data.find((t) => String(t.id) === String(id));
+        templatesService.getById(String(id))
+            .then((template) => {
                 setTemplate(template);
 
                 if (template) {
@@ -68,12 +67,15 @@ export function HandlersForm() {
     });
 
     const onSubmit: SubmitHandler<FormValues> = async (data: FormValues) => {
-        updateTemplate(template, {
+        if (!template) return;
+        
+        templatesService.update(template.id, {
             socket: {
                 handlers: data.handlers,
-                writers: template?.attributes.socket.writers || [],
+                writers: template.attributes.socket.writers || [],
             },
-        }).then(() => {
+        }).then((updatedTemplate) => {
+            setTemplate(updatedTemplate);
             toast.success("Successfully saved template.");
         });
     }

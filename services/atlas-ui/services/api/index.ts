@@ -72,6 +72,13 @@ export type {
   ConversationsResponse,
 } from './conversations.service';
 
+export type {
+  TemplateCreateRequest,
+  TemplateUpdateRequest,
+  TemplateResponse,
+  TemplatesResponse,
+} from './templates.service';
+
 // Individual services will be exported here as they are implemented:
 export { tenantsService } from './tenants.service';
 export { accountsService } from './accounts.service';
@@ -81,4 +88,4 @@ export { mapsService } from './maps.service';
 export { guildsService } from './guilds.service';
 export { npcsService } from './npcs.service';
 export { conversationsService } from './conversations.service';
-// export { templatesService } from './templates.service';
+export { templatesService } from './templates.service';

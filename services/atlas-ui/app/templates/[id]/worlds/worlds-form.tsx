@@ -6,7 +6,7 @@ import {Form} from "@/components/ui/form";
 import {Button} from "@/components/ui/button";
 import {useParams} from "next/navigation";
 import {X} from "lucide-react";
-import {fetchTemplates, updateTemplate} from "@/lib/templates";
+import {templatesService} from "@/services/api";
 import type {Template} from "@/types/models/template";
 import {toast} from "sonner";
 import { LoadingSpinner, ErrorDisplay, FormField } from "@/components/common";
@@ -39,9 +39,8 @@ export function WorldsForm() {
 
         setLoading(true); // Show loading while fetching
 
-        fetchTemplates()
-            .then((data) => {
-                const template = data.find((t) => String(t.id) === String(id));
+        templatesService.getById(String(id))
+            .then((template) => {
                 setTemplate(template);
 
                 if (template) {
@@ -69,9 +68,12 @@ export function WorldsForm() {
     });
 
     const onSubmit: SubmitHandler<FormValues> = async (data: FormValues) => {
-        updateTemplate(template, {
+        if (!template) return;
+        
+        templatesService.update(template.id, {
             worlds: data.worlds,
-        }).then(() => {
+        }).then((updatedTemplate) => {
+            setTemplate(updatedTemplate);
             toast.success("Successfully saved template.");
         });
     }

@@ -36,11 +36,19 @@ export type {
   UpdateCharacterData,
 } from '@/types/models/character';
 
+export type {
+  Inventory,
+  Compartment,
+  Asset,
+  InventoryResponse,
+  CompartmentType,
+} from './inventory.service';
+
 // Individual services will be exported here as they are implemented:
 export { tenantsService } from './tenants.service';
 export { accountsService } from './accounts.service';
 export { charactersService } from './characters.service';
-// export { inventoryService } from './inventory.service';
+export { inventoryService } from './inventory.service';
 // export { mapsService } from './maps.service';
 // export { guildsService } from './guilds.service';
 // export { npcsService } from './npcs.service';

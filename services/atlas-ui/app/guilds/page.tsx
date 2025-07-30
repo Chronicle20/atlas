@@ -4,7 +4,7 @@ import {useTenant} from "@/context/tenant-context";
 import {DataTableWrapper} from "@/components/common/DataTableWrapper";
 import {hiddenColumns} from "@/app/guilds/columns";
 import {useEffect, useState} from "react";
-import {fetchGuilds} from "@/lib/guilds";
+import {guildsService} from "@/services/api/guilds.service";
 import {getColumns} from "@/app/guilds/columns";
 import {Toaster} from "sonner";
 import {charactersService} from "@/services/api/characters.service";
@@ -28,7 +28,7 @@ export default function Page() {
         setLoading(true)
 
         Promise.all([
-            fetchGuilds(activeTenant),
+            guildsService.getAll(activeTenant),
             charactersService.getAll(activeTenant),
             fetchTenantConfiguration(activeTenant.id),
         ])

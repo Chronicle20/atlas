@@ -21,7 +21,6 @@ import {
   type TenantBasic,
   type TenantBasicAttributes,
   type TenantConfig,
-  type TenantConfigAttributes,
 } from '../useTenants';
 
 // Mock the tenants service
@@ -83,9 +82,11 @@ function createWrapper() {
     },
   });
 
-  return ({ children }: { children: ReactNode }) => (
+  const Wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
+  Wrapper.displayName = 'TestQueryClientWrapper';
+  return Wrapper;
 }
 
 describe('useTenants hooks', () => {

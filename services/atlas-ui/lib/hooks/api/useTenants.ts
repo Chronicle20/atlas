@@ -124,12 +124,12 @@ export function useUpdateTenant(): UseMutationResult<
 /**
  * Hook to delete a tenant
  */
-export function useDeleteTenant(): UseMutationResult<void, Error, { id: string; tenant?: TenantBasic }> {
+export function useDeleteTenant(): UseMutationResult<void, Error, { id: string }> {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({ id }) => tenantsService.deleteTenant(id),
-    onMutate: async ({ id, tenant }) => {
+    onMutate: async ({ id }) => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: tenantKeys.basicDetail(id) });
       

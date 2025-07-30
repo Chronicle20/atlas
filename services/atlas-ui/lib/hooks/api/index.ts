@@ -7,8 +7,10 @@
 // Tenant hooks
 export * from './useTenants';
 
+// Account hooks
+export * from './useAccounts';
+
 // TODO: Add exports for other service hooks as they're implemented
-// export * from './useAccounts';
 // export * from './useCharacters';
 // export * from './useInventory';
 // export * from './useMaps';

@@ -1,6 +1,6 @@
 import type {Tenant} from "@/types/models/tenant";
 import {useEffect, useState} from "react";
-import {fetchMap} from "@/lib/maps";
+import {mapsService} from "@/services/api";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip";
 import {Badge} from "@/components/ui/badge";
 
@@ -12,7 +12,7 @@ export function MapCell({ mapId, tenant }: { mapId: string; tenant: Tenant | nul
     useEffect(() => {
         if (!tenant || !mapId || mapNameCache.has(mapId)) return
 
-        fetchMap(tenant, mapId)
+        mapsService.fetchMap(tenant, mapId)
             .then((map) => {
                 const mapName = map.attributes.name
                 mapNameCache.set(mapId, mapName)

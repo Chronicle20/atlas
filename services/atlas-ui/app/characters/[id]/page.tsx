@@ -5,7 +5,7 @@ import {useParams} from "next/navigation"
 import {Toaster} from "@/components/ui/sonner"
 import {useTenant} from "@/context/tenant-context";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
-import {fetchCharacter} from "@/lib/characters";
+import {charactersService} from "@/services/api/characters.service";
 import {Character} from "@/types/models/character";
 import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/ui/collapsible";
 import {InventoryResponse, fetchInventory, getCompartmentTypeName, getAssetsForCompartment, deleteAsset, Compartment} from "@/lib/inventory";
@@ -72,7 +72,7 @@ export default function CharacterDetailPage() {
         
         try {
             // Refresh character data after map change
-            const updatedCharacter = await fetchCharacter(activeTenant, String(id));
+            const updatedCharacter = await charactersService.getById(activeTenant, String(id));
             setCharacter(updatedCharacter);
         } catch (err: unknown) {
             console.error("Failed to refresh character data:", err);
@@ -85,7 +85,7 @@ export default function CharacterDetailPage() {
         setLoading(true)
 
         // Fetch character data
-        const characterPromise = fetchCharacter(activeTenant, String(id))
+        const characterPromise = charactersService.getById(activeTenant, String(id))
             .then(setCharacter)
             .catch((err: unknown) => {
                 const errorInfo = createErrorFromUnknown(err, "Failed to fetch character");

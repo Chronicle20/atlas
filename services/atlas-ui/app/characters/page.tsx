@@ -4,8 +4,8 @@ import {useTenant} from "@/context/tenant-context";
 import {DataTableWrapper} from "@/components/common/DataTableWrapper";
 import {getColumns, hiddenColumns} from "@/app/characters/columns";
 import {useEffect, useState} from "react";
-import {fetchCharacters} from "@/lib/characters";
 import {accountsService} from "@/services/api/accounts.service";
+import {charactersService} from "@/services/api/characters.service";
 import {Character} from "@/types/models/character";
 import {Account} from "@/types/models/account";
 import {TenantConfig} from "@/types/models/tenant";
@@ -26,7 +26,7 @@ export default function Page() {
         setLoading(true)
 
         Promise.all([
-            fetchCharacters(activeTenant),
+            charactersService.getAll(activeTenant),
             accountsService.getAllAccounts(activeTenant),
             fetchTenantConfiguration(activeTenant.id),
         ])

@@ -1,7 +1,7 @@
 import type {Tenant} from "@/types/models/tenant";
 import type {NPC, Shop, Commodity, CommodityAttributes, ShopResponse} from "@/types/models/npc";
 import { api } from "@/lib/api/client";
-import {fetchConversations} from "@/lib/npc-conversations";
+import { conversationsService } from "@/services/api/conversations.service";
 
 export async function fetchNPCs(tenant: Tenant): Promise<NPC[]> {
     // Fetch NPCs with shops
@@ -17,7 +17,8 @@ export async function fetchNPCs(tenant: Tenant): Promise<NPC[]> {
 
     // Fetch NPCs with conversations
     try {
-        const conversations = await fetchConversations(tenant);
+        api.setTenant(tenant);
+        const conversations = await conversationsService.getAll();
 
         // Extract NPCs from conversations data
         const npcsWithConversations = conversations.map(conversation => ({

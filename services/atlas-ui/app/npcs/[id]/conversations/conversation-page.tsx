@@ -3,13 +3,12 @@
 import { useTenant } from "@/context/tenant-context";
 import { useEffect, useState, useCallback, useMemo, useRef, SetStateAction } from "react";
 import {useParams} from "next/navigation";
-import {
+import { conversationsService } from "@/services/api/conversations.service";
+import type {
   Conversation,
   ConversationState,
   DialogueChoice,
-  fetchNPCConversations,
-  updateConversation
-} from "@/lib/npc-conversations";
+} from "@/types/models/conversation";
 import ReactFlow, {
   Node,
   Edge,
@@ -1508,7 +1507,7 @@ export default function ConversationPage() {
     setError(null);
 
     try {
-      const conversationData = await fetchNPCConversations(activeTenant, npcId);
+      const conversationData = await conversationsService.getByNpcId(npcId);
 
       if (!conversationData) {
         setError("No conversation found for this NPC.");
@@ -1757,17 +1756,17 @@ export default function ConversationPage() {
 
   // Handle saving the conversation to the database
   const handleSaveConversation = useCallback(async () => {
-    if (!activeTenant || !conversation) return;
+    if (!conversation) return;
 
     try {
       // Save the current conversation state to the database
-      await updateConversation(activeTenant, conversation.id, conversation.attributes);
+      await conversationsService.update(conversation.id, conversation.attributes);
       toast.success("Conversation saved successfully");
       setIsSaveDialogOpen(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to save conversation");
     }
-  }, [activeTenant, conversation]);
+  }, [conversation]);
 
   if (loading) {
     return (

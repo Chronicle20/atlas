@@ -8,7 +8,7 @@ import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {charactersService} from "@/services/api/characters.service";
 import {Character} from "@/types/models/character";
 import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/ui/collapsible";
-import {InventoryResponse, fetchInventory, getCompartmentTypeName, getAssetsForCompartment, deleteAsset, Compartment} from "@/lib/inventory";
+import {inventoryService, type InventoryResponse, type Compartment} from "@/services/api/inventory.service";
 import {TenantConfig} from "@/types/models/tenant";
 import {createErrorFromUnknown} from "@/types/api/errors";
 import { Button } from "@/components/ui/button";
@@ -52,10 +52,10 @@ export default function CharacterDetailPage() {
 
         try {
             setDeletingAsset(assetToDelete.assetId);
-            await deleteAsset(activeTenant, String(id), assetToDelete.compartmentId, assetToDelete.assetId);
+            await inventoryService.deleteAsset(activeTenant, String(id), assetToDelete.compartmentId, assetToDelete.assetId);
 
             // Refresh inventory data after deletion
-            const updatedInventory = await fetchInventory(activeTenant, String(id));
+            const updatedInventory = await inventoryService.getInventory(activeTenant, String(id));
             setInventory(updatedInventory);
         } catch (err: unknown) {
             console.error("Failed to delete asset:", err);
@@ -93,7 +93,7 @@ export default function CharacterDetailPage() {
             });
 
         // Fetch inventory data
-        const inventoryPromise = fetchInventory(activeTenant, String(id))
+        const inventoryPromise = inventoryService.getInventory(activeTenant, String(id))
             .then(setInventory)
             .catch((err: unknown) => console.error("Failed to fetch inventory:", err));
 
@@ -164,12 +164,12 @@ export default function CharacterDetailPage() {
                     <h3 className="text-xl font-bold tracking-tight">Inventory</h3>
                     <div className="grid grid-cols-1 gap-4">
                         {sortedCompartments.map((compartment) => {
-                            const assets = getAssetsForCompartment(compartment, inventory.included);
+                            const assets = inventoryService.getAssetsForCompartment(compartment, inventory.included);
                             return (
                                 <Collapsible key={compartment.id} className="border rounded-md">
                                     <CollapsibleTrigger className="flex justify-between items-center w-full p-4 hover:bg-muted/50">
                                         <div className="flex items-center gap-2">
-                                            <h4 className="text-lg font-semibold">{getCompartmentTypeName(compartment.attributes.type)}</h4>
+                                            <h4 className="text-lg font-semibold">{inventoryService.getCompartmentTypeName(compartment.attributes.type)}</h4>
                                         </div>
                                         <span className="text-sm text-muted-foreground">
                                             {assets.length} / {compartment.attributes.capacity}

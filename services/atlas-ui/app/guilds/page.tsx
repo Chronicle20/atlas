@@ -7,7 +7,7 @@ import {useEffect, useState} from "react";
 import {fetchGuilds} from "@/lib/guilds";
 import {getColumns} from "@/app/guilds/columns";
 import {Toaster} from "sonner";
-import {fetchCharacters} from "@/lib/characters";
+import {charactersService} from "@/services/api/characters.service";
 import {Guild} from "@/types/models/guild";
 import {Character} from "@/types/models/character";
 import {TenantConfig} from "@/types/models/tenant";
@@ -29,7 +29,7 @@ export default function Page() {
 
         Promise.all([
             fetchGuilds(activeTenant),
-            fetchCharacters(activeTenant),
+            charactersService.getAll(activeTenant),
             fetchTenantConfiguration(activeTenant.id),
         ])
             .then(([guildData, characterData, tenantConfigData]) => {

@@ -31,10 +31,15 @@ export type {
   AccountQueryOptions,
 } from './accounts.service';
 
+export type {
+  Character,
+  UpdateCharacterData,
+} from '@/types/models/character';
+
 // Individual services will be exported here as they are implemented:
 export { tenantsService } from './tenants.service';
 export { accountsService } from './accounts.service';
-// export { charactersService } from './characters.service';
+export { charactersService } from './characters.service';
 // export { inventoryService } from './inventory.service';
 // export { mapsService } from './maps.service';
 // export { guildsService } from './guilds.service';

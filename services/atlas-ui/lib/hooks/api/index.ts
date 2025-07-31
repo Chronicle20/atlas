@@ -13,8 +13,8 @@ export * from './useAccounts';
 // Character hooks
 export * from './useCharacters';
 
-// TODO: Add exports for other service hooks as they're implemented
-// export * from './useInventory';
+// Inventory hooks
+export * from './useInventory';
 // export * from './useMaps';
 // export * from './useGuilds';
 // export * from './useNpcs';

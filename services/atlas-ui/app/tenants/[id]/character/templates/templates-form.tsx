@@ -79,7 +79,7 @@ export function TemplatesForm() {
         if (!tenant) return;
 
         try {
-            const updatedTenant = await tenantsService.updateConfiguration(tenant, {
+            const updatedTenant = await tenantsService.updateTenantConfiguration(tenant, {
                 characters: {
                     templates: data.templates,
                 },

@@ -27,7 +27,7 @@ export function TenantProvider({children}: { children: ReactNode }) {
 
     // Fetch tenants data (you can replace this with your actual data fetching logic)
     useEffect(() => {
-        tenantsService.getAll()
+        tenantsService.getAllTenants()
             .then((data) => {
                 setTenants(data);
 
@@ -55,7 +55,7 @@ export function TenantProvider({children}: { children: ReactNode }) {
         try {
             setLoading(true);
             setError(null); // Clear previous errors
-            const data = await tenantsService.getAll();
+            const data = await tenantsService.getAllTenants();
             setTenants(data);
 
             // If active tenant was deleted, set a new one
@@ -76,7 +76,7 @@ export function TenantProvider({children}: { children: ReactNode }) {
     // Function to fetch a tenant configuration
     const fetchTenantConfig = async (tenantId: string): Promise<TenantConfig> => {
         try {
-            return await tenantsService.getConfiguration(tenantId);
+            return await tenantsService.getTenantConfigurationById(tenantId);
         } catch (err: unknown) {
             const errorInfo = createErrorFromUnknown(err, `Failed to fetch configuration for tenant ${tenantId}`);
             throw errorInfo;

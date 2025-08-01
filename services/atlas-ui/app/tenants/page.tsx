@@ -34,7 +34,7 @@ export default function Page() {
 
         try {
             setIsDeleting(true);
-            await tenantsService.delete(tenantToDelete);
+            await tenantsService.deleteTenant(tenantToDelete);
 
             // Refresh tenant data using the context function
             await refreshTenants();

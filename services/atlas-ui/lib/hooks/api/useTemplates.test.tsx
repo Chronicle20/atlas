@@ -12,7 +12,6 @@ import {
   useTemplateExists,
   useCreateTemplate,
   useUpdateTemplate,
-  usePatchTemplate,
   useDeleteTemplate,
   useCreateTemplatesBatch,
   useUpdateTemplatesBatch,

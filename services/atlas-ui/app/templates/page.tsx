@@ -185,10 +185,18 @@ export default function Page() {
             setIsCreatingTenant(true);
 
             // Create tenant attributes from template
-            const tenantAttributes = tenantsService.createFromTemplate(templateForTenant);
+            const templateAttributes = tenantsService.createTenantFromTemplate(templateForTenant);
+
+            // Create basic tenant attributes with required name field
+            const tenantAttributes = {
+                name: `Tenant from Template ${templateForTenant.id}`,
+                region: templateAttributes.region,
+                majorVersion: templateAttributes.majorVersion,  
+                minorVersion: templateAttributes.minorVersion
+            };
 
             // Create the new tenant configuration
-            const newTenant = await tenantsService.create(tenantAttributes);
+            const newTenant = await tenantsService.createTenant(tenantAttributes);
 
             // Show success message
             toast.success("Tenant created successfully");

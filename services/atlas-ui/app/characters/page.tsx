@@ -3,7 +3,7 @@
 import {useTenant} from "@/context/tenant-context";
 import {DataTableWrapper} from "@/components/common/DataTableWrapper";
 import {getColumns, hiddenColumns} from "@/app/characters/columns";
-import {useEffect, useState} from "react";
+import {useCallback, useEffect, useState} from "react";
 import {accountsService} from "@/services/api/accounts.service";
 import {charactersService} from "@/services/api/characters.service";
 import {Character} from "@/types/models/character";
@@ -20,7 +20,7 @@ export default function Page() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchDataAgain = () => {
+    const fetchDataAgain = useCallback(() => {
         if (!activeTenant) return
 
         setLoading(true)
@@ -40,11 +40,11 @@ export default function Page() {
                 setError(errorInfo.message);
             })
             .finally(() => setLoading(false));
-    }
+    }, [activeTenant, fetchTenantConfiguration])
 
     useEffect(() => {
         fetchDataAgain()
-    }, [activeTenant])
+    }, [activeTenant, fetchDataAgain])
 
     const accountMap = new Map(accounts.map(a => [a.id, a]));
 

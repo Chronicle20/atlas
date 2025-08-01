@@ -18,7 +18,9 @@ export * from './useInventory';
 
 // Map hooks
 export * from './useMaps';
-// export * from './useGuilds';
+
+// Guild hooks
+export * from './useGuilds';
 // export * from './useNpcs';
 // export * from './useConversations';
 // export * from './useTemplates';

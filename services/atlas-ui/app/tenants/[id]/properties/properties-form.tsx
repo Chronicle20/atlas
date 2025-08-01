@@ -79,7 +79,7 @@ export function PropertiesForm() {
         if (!tenant) return;
 
         try {
-            const updatedTenant = await tenantsService.updateConfiguration(tenant, {
+            const updatedTenant = await tenantsService.updateTenantConfiguration(tenant, {
                 region: data.region,
                 majorVersion: data.major,
                 minorVersion: data.minor,

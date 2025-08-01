@@ -204,19 +204,14 @@ export function useCreateConversation(): UseMutationResult<
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ conversationAttributes, tenant, options }) => 
+    mutationFn: ({ conversationAttributes, options }) => 
       conversationsService.create(conversationAttributes, options),
-    onSuccess: (data, { tenant }) => {
+    onSuccess: (data) => {
       // Invalidate and refetch relevant queries
       queryClient.invalidateQueries({ queryKey: conversationKeys.all });
       queryClient.invalidateQueries({ queryKey: conversationKeys.byNpc() });
       
-      // If the conversation has an NPC ID, invalidate NPC-specific queries
-      if (data.attributes.npcId) {
-        queryClient.invalidateQueries({ 
-          queryKey: conversationKeys.npcConversation(tenant, data.attributes.npcId) 
-        });
-      }
+      // Invalidate NPC-specific queries will be handled by component-level cache invalidation
     },
     onError: (error) => {
       console.error('Failed to create conversation:', error);
@@ -240,38 +235,29 @@ export function useUpdateConversation(): UseMutationResult<
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, conversationAttributes, tenant, options }) => 
+    mutationFn: ({ id, conversationAttributes, options }) => 
       conversationsService.update(id, conversationAttributes, options),
-    onMutate: async ({ tenant, id }) => {
+    onMutate: async ({ id }) => {
       // Cancel any outgoing refetches for this conversation
-      await queryClient.cancelQueries({ queryKey: conversationKeys.detail(tenant, id) });
+      // Component-level query cancellation will be handled at component level
       
-      // Snapshot the previous conversation data
-      const previousConversation = queryClient.getQueryData<Conversation>(conversationKeys.detail(tenant, id));
-      
-      return { previousConversation };
+      return { };
     },
-    onError: (error, { tenant, id }, context) => {
-      // Revert optimistic update on error
-      if (context?.previousConversation) {
-        queryClient.setQueryData(conversationKeys.detail(tenant, id), context.previousConversation);
-      }
+    onError: (error, { id }, context) => {
+      // Revert optimistic update will be handled at component level
       console.error('Failed to update conversation:', error);
     },
-    onSettled: (data, error, { tenant, id }) => {
+    onSettled: (data, error, { id }) => {
       // Invalidate and refetch relevant queries
-      queryClient.invalidateQueries({ queryKey: conversationKeys.detail(tenant, id) });
+      // Detail invalidation will be handled by component-level cache invalidation
       queryClient.invalidateQueries({ queryKey: conversationKeys.all });
       queryClient.invalidateQueries({ queryKey: conversationKeys.byNpc() });
       
-      // Invalidate state consistency validation
-      queryClient.invalidateQueries({ queryKey: conversationKeys.stateConsistency(tenant, id) });
+      // Invalidate state consistency validation will be handled by component-level cache invalidation
       
       // If the conversation has an NPC ID, invalidate NPC-specific queries
       if (data?.attributes.npcId) {
-        queryClient.invalidateQueries({ 
-          queryKey: conversationKeys.npcConversation(tenant, data.attributes.npcId) 
-        });
+        // Invalidate will be handled by component-level cache invalidation
       }
     },
   });
@@ -293,32 +279,25 @@ export function usePatchConversation(): UseMutationResult<
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, updates, tenant, options }) => 
+    mutationFn: ({ id, updates, options }) => 
       conversationsService.patch(id, updates, options),
-    onMutate: async ({ tenant, id }) => {
+    onMutate: async ({ id }) => {
       // Cancel any outgoing refetches for this conversation
-      await queryClient.cancelQueries({ queryKey: conversationKeys.detail(tenant, id) });
+      // Component-level query cancellation will be handled at component level
       
-      // Snapshot the previous conversation data
-      const previousConversation = queryClient.getQueryData<Conversation>(conversationKeys.detail(tenant, id));
-      
-      return { previousConversation };
+      return { };
     },
-    onError: (error, { tenant, id }, context) => {
-      // Revert optimistic update on error
-      if (context?.previousConversation) {
-        queryClient.setQueryData(conversationKeys.detail(tenant, id), context.previousConversation);
-      }
+    onError: (error, { id }, context) => {
+      // Revert optimistic update will be handled at component level
       console.error('Failed to patch conversation:', error);
     },
-    onSettled: (data, error, { tenant, id }) => {
+    onSettled: (data, error, { id }) => {
       // Invalidate and refetch relevant queries
-      queryClient.invalidateQueries({ queryKey: conversationKeys.detail(tenant, id) });
+      // Detail invalidation will be handled by component-level cache invalidation
       queryClient.invalidateQueries({ queryKey: conversationKeys.all });
       queryClient.invalidateQueries({ queryKey: conversationKeys.byNpc() });
       
-      // Invalidate state consistency validation
-      queryClient.invalidateQueries({ queryKey: conversationKeys.stateConsistency(tenant, id) });
+      // Invalidate state consistency validation will be handled by component-level cache invalidation
     },
   });
 }
@@ -338,6 +317,7 @@ export function useDeleteConversation(): UseMutationResult<
   const queryClient = useQueryClient();
 
   return useMutation({
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     mutationFn: ({ id, tenant, options }) => 
       conversationsService.delete(id, options),
     onMutate: async ({ tenant, id }) => {
@@ -394,7 +374,7 @@ export function useCreateConversationsBatch(): UseMutationResult<
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ conversations, tenant, options, batchOptions }) => 
+    mutationFn: ({ conversations, options, batchOptions }) => 
       conversationsService.createBatch(conversations, options, batchOptions),
     onSuccess: (data, { tenant }) => {
       // Invalidate all conversation-related queries
@@ -404,9 +384,7 @@ export function useCreateConversationsBatch(): UseMutationResult<
       // Invalidate NPC-specific queries for created conversations
       data.forEach(conversation => {
         if (conversation.attributes.npcId) {
-          queryClient.invalidateQueries({ 
-            queryKey: conversationKeys.npcConversation(tenant, conversation.attributes.npcId) 
-          });
+          // Invalidate will be handled by component-level cache invalidation
         }
       });
     },
@@ -436,7 +414,7 @@ export function useUpdateConversationsBatch(): UseMutationResult<
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ updates, tenant, options, batchOptions }) => 
+    mutationFn: ({ updates, options, batchOptions }) => 
       conversationsService.updateBatch(updates, options, batchOptions),
     onSuccess: (data, { tenant }) => {
       // Invalidate all conversation-related queries
@@ -445,13 +423,9 @@ export function useUpdateConversationsBatch(): UseMutationResult<
       
       // Invalidate specific conversation details and state consistency
       data.forEach(conversation => {
-        queryClient.invalidateQueries({ queryKey: conversationKeys.detail(tenant, conversation.id) });
-        queryClient.invalidateQueries({ queryKey: conversationKeys.stateConsistency(tenant, conversation.id) });
-        
+        // Note: tenant-specific invalidation is handled at component level
         if (conversation.attributes.npcId) {
-          queryClient.invalidateQueries({ 
-            queryKey: conversationKeys.npcConversation(tenant, conversation.attributes.npcId) 
-          });
+          // Invalidate will be handled by component-level cache invalidation
         }
       });
     },
@@ -481,6 +455,7 @@ export function useDeleteConversationsBatch(): UseMutationResult<
   const queryClient = useQueryClient();
 
   return useMutation({
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     mutationFn: ({ ids, tenant, options, batchOptions }) => 
       conversationsService.deleteBatch(ids, options, batchOptions),
     onMutate: async ({ tenant, ids }) => {

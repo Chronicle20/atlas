@@ -3,7 +3,7 @@
 import {useTenant} from "@/context/tenant-context";
 import {DataTableWrapper} from "@/components/common/DataTableWrapper";
 import {hiddenColumns} from "@/app/guilds/columns";
-import {useEffect, useState} from "react";
+import {useCallback, useEffect, useState} from "react";
 import {guildsService} from "@/services/api/guilds.service";
 import {getColumns} from "@/app/guilds/columns";
 import {Toaster} from "sonner";
@@ -22,7 +22,7 @@ export default function Page() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchDataAgain = () => {
+    const fetchDataAgain = useCallback(() => {
         if (!activeTenant) return
 
         setLoading(true)
@@ -42,11 +42,11 @@ export default function Page() {
                 setError(errorInfo.message);
             })
             .finally(() => setLoading(false));
-    }
+    }, [activeTenant, fetchTenantConfiguration])
 
     useEffect(() => {
         fetchDataAgain()
-    }, [activeTenant])
+    }, [activeTenant, fetchDataAgain])
 
     const characterMap = new Map(characters.map(c => [c.id, c]));
 

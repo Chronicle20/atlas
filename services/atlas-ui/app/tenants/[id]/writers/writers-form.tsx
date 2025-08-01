@@ -71,7 +71,7 @@ export function WritersForm() {
         if (!tenant) return;
 
         try {
-            const updatedTenant = await tenantsService.updateConfiguration(tenant, {
+            const updatedTenant = await tenantsService.updateTenantConfiguration(tenant, {
                 socket: {
                     handlers: tenant.attributes.socket.handlers || [],
                     writers: data.writers,

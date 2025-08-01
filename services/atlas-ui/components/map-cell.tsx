@@ -19,7 +19,7 @@ export function MapCell({ mapId, tenant }: { mapId: string; tenant: Tenant | nul
                 setName(mapName)
             })
             .catch(() => setName("Unknown"))
-    }, [mapId])
+    }, [mapId, tenant])
 
     return (
         <TooltipProvider>

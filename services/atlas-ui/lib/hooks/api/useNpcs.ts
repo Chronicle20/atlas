@@ -250,6 +250,7 @@ export function useUpdateCommodity(): UseMutationResult<
   return useMutation({
     mutationFn: ({ npcId, commodityId, commodityAttributes, tenant, options }) => 
       npcsService.updateCommodity(npcId, commodityId, commodityAttributes, tenant, options),
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     onMutate: async ({ tenant, npcId, commodityId }) => {
       // Cancel any outgoing refetches for this shop
       await queryClient.cancelQueries({ queryKey: npcKeys.shop(tenant, npcId) });

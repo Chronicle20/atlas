@@ -96,9 +96,11 @@ function createWrapper() {
     },
   });
 
-  return ({ children }: { children: ReactNode }) => (
+  const TestWrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
+  TestWrapper.displayName = 'TestWrapper';
+  return TestWrapper;
 }
 
 describe('useCharacters hooks', () => {
@@ -135,7 +137,7 @@ describe('useCharacters hooks', () => {
 
     it('should not fetch when tenant is not provided', () => {
       const { result } = renderHook(
-        () => useCharacters(null as any),
+        () => useCharacters(null as Tenant | null),
         { wrapper: createWrapper() }
       );
 

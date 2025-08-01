@@ -114,13 +114,17 @@ class InventoryService {
   /**
    * Helper function to get assets for a compartment
    */
-  getAssetsForCompartment(compartment: Compartment, included: Array<Compartment | Asset>): Asset[] {
-    return compartment.relationships.assets.data
+  getAssetsForCompartment(compartment: Compartment, included: Array<Compartment | Asset> = []): Asset[] {
+    // Handle cases where compartment relationships might be malformed
+    const assetRefs = compartment.relationships?.assets?.data || [];
+    
+    return assetRefs
       .map(assetRef => included.find(item => item.type === assetRef.type && item.id === assetRef.id))
       .filter((asset): asset is Asset => {
         return (
           asset !== undefined &&
           asset.type === 'assets' &&
+          (asset as Asset).attributes?.slot !== undefined &&
           (asset as Asset).attributes.slot >= 0
         );
       })
@@ -134,8 +138,8 @@ class InventoryService {
     // Set tenant for this request
     api.setTenant(tenant);
     
-    // Use the API client to fetch inventory
-    return api.getOne<InventoryResponse>(`${this.basePath}/${characterId}/inventory`, options);
+    // Use the API client to fetch inventory - use get() instead of getOne() to preserve included array
+    return api.get<InventoryResponse>(`${this.basePath}/${characterId}/inventory`, options);
   }
 
   /**
@@ -169,9 +173,9 @@ class InventoryService {
     const inventoryResponse = await this.getInventory(tenant, characterId, options);
     
     // Filter included items to get only compartments
-    return inventoryResponse.included.filter((item): item is Compartment => 
+    return inventoryResponse.included?.filter((item): item is Compartment => 
       item.type === 'compartments'
-    );
+    ) || [];
   }
 
   /**
@@ -220,9 +224,9 @@ class InventoryService {
       const inventoryResponse = await this.getInventory(tenant, characterId, options);
       
       // Check if asset exists in included items
-      return inventoryResponse.included.some(
+      return inventoryResponse.included?.some(
         item => item.type === 'assets' && item.id === assetId
-      );
+      ) || false;
     } catch (error) {
       // If inventory fetch fails, assume asset doesn't exist
       return false;
@@ -249,18 +253,18 @@ class InventoryService {
     const inventoryResponse = await this.getInventory(tenant, characterId, options);
     
     // Get compartments
-    const compartments = inventoryResponse.included.filter((item): item is Compartment => 
+    const compartments = inventoryResponse.included?.filter((item): item is Compartment => 
       item.type === 'compartments'
-    );
+    ) || [];
     
     // Get assets
-    const assets = inventoryResponse.included.filter((item): item is Asset => 
+    const assets = inventoryResponse.included?.filter((item): item is Asset => 
       item.type === 'assets'
-    );
+    ) || [];
     
     // Create compartment summary
     const compartmentSummary = compartments.map(compartment => {
-      const compartmentAssets = this.getAssetsForCompartment(compartment, inventoryResponse.included);
+      const compartmentAssets = this.getAssetsForCompartment(compartment, inventoryResponse.included || []);
       
       return {
         type: compartment.attributes.type,

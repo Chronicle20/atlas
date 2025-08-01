@@ -11,23 +11,31 @@ import { AllProviders } from '../utils/test-providers';
 import { createApiErrorFromResponse } from '@/types/api/errors';
 
 // Mock the API client and services
-jest.mock('@/lib/characters', () => ({
-  getCharacters: jest.fn(),
-  getCharacter: jest.fn(),
+jest.mock('@/services/api/characters.service', () => ({
+  charactersService: {
+    getAll: jest.fn(),
+    getById: jest.fn(),
+  },
 }));
 
-jest.mock('@/lib/tenants', () => ({
-  getTenants: jest.fn(),
-  getTenant: jest.fn(),
+jest.mock('@/services/api/tenants.service', () => ({
+  tenantsService: {
+    getAll: jest.fn(),
+    getById: jest.fn(),
+  },
 }));
 
-jest.mock('@/lib/accounts', () => ({
-  getAccounts: jest.fn(),
+jest.mock('@/services/api/accounts.service', () => ({
+  accountsService: {
+    getAll: jest.fn(),
+  },
 }));
 
-jest.mock('@/lib/guilds', () => ({
-  getGuilds: jest.fn(),
-  getGuild: jest.fn(),
+jest.mock('@/services/api/guilds.service', () => ({
+  guildsService: {
+    getAll: jest.fn(),
+    getById: jest.fn(),
+  },
 }));
 
 // Mock Next.js router
@@ -183,10 +191,10 @@ const TestProviders = ({ children }: { children: React.ReactNode }) => {
 };
 
 describe.skip('Page Error Scenarios Integration Tests', () => {
-  const mockCharacters = require('@/lib/characters');
-  const mockTenants = require('@/lib/tenants');
-  const mockAccounts = require('@/lib/accounts');
-  const mockGuilds = require('@/lib/guilds');
+  const { charactersService: mockCharacters } = require('@/services/api/characters.service');
+  const { tenantsService: mockTenants } = require('@/services/api/tenants.service');
+  const { accountsService: mockAccounts } = require('@/services/api/accounts.service');
+  const { guildsService: mockGuilds } = require('@/services/api/guilds.service');
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -194,14 +202,14 @@ describe.skip('Page Error Scenarios Integration Tests', () => {
 
   describe('Data Table Page Error Scenarios', () => {
     it('should handle characters list loading error', async () => {
-      mockCharacters.getCharacters.mockRejectedValue(
+      mockCharacters.getAll.mockRejectedValue(
         createApiErrorFromResponse(500, 'Failed to fetch characters')
       );
 
       render(
         <TestProviders >
           <TestDataTablePage 
-            dataFetcher={mockCharacters.getCharacters}
+            dataFetcher={mockCharacters.getAll}
             title="Characters"
           />
         </TestProviders>
@@ -221,14 +229,14 @@ describe.skip('Page Error Scenarios Integration Tests', () => {
     });
 
     it('should handle tenants list authentication error', async () => {
-      mockTenants.getTenants.mockRejectedValue(
+      mockTenants.getAll.mockRejectedValue(
         createApiErrorFromResponse(401, 'Authentication required')
       );
 
       render(
         <TestProviders >
           <TestDataTablePage 
-            dataFetcher={mockTenants.getTenants}
+            dataFetcher={mockTenants.getAll}
             title="Tenants"
           />
         </TestProviders>
@@ -242,14 +250,14 @@ describe.skip('Page Error Scenarios Integration Tests', () => {
     });
 
     it('should handle accounts list authorization error', async () => {
-      mockAccounts.getAccounts.mockRejectedValue(
+      mockAccounts.getAll.mockRejectedValue(
         createApiErrorFromResponse(403, 'Insufficient permissions')
       );
 
       render(
         <TestProviders >
           <TestDataTablePage 
-            dataFetcher={mockAccounts.getAccounts}
+            dataFetcher={mockAccounts.getAll}
             title="Accounts"
           />
         </TestProviders>
@@ -263,12 +271,12 @@ describe.skip('Page Error Scenarios Integration Tests', () => {
     });
 
     it('should handle empty data gracefully', async () => {
-      mockCharacters.getCharacters.mockResolvedValue([]);
+      mockCharacters.getAll.mockResolvedValue([]);
 
       render(
         <TestProviders >
           <TestDataTablePage 
-            dataFetcher={mockCharacters.getCharacters}
+            dataFetcher={mockCharacters.getAll}
             title="Characters"
           />
         </TestProviders>
@@ -283,14 +291,14 @@ describe.skip('Page Error Scenarios Integration Tests', () => {
     });
 
     it('should handle network timeout errors', async () => {
-      mockGuilds.getGuilds.mockRejectedValue(
+      mockGuilds.getAll.mockRejectedValue(
         createApiErrorFromResponse(408, 'Request timeout')
       );
 
       render(
         <TestProviders >
           <TestDataTablePage 
-            dataFetcher={mockGuilds.getGuilds}
+            dataFetcher={mockGuilds.getAll}
             title="Guilds"
           />
         </TestProviders>
@@ -304,14 +312,14 @@ describe.skip('Page Error Scenarios Integration Tests', () => {
     });
 
     it('should handle rate limiting errors', async () => {
-      mockCharacters.getCharacters.mockRejectedValue(
+      mockCharacters.getAll.mockRejectedValue(
         createApiErrorFromResponse(429, 'Too many requests')
       );
 
       render(
         <TestProviders >
           <TestDataTablePage 
-            dataFetcher={mockCharacters.getCharacters}
+            dataFetcher={mockCharacters.getAll}
             title="Characters"
           />
         </TestProviders>
@@ -327,14 +335,14 @@ describe.skip('Page Error Scenarios Integration Tests', () => {
 
   describe('Detail Page Error Scenarios', () => {
     it('should handle character detail not found error', async () => {
-      mockCharacters.getCharacter.mockRejectedValue(
+      mockCharacters.getById.mockRejectedValue(
         createApiErrorFromResponse(404, 'Character not found')
       );
 
       render(
         <TestProviders >
           <TestDetailPage 
-            dataFetcher={mockCharacters.getCharacter}
+            dataFetcher={mockCharacters.getById}
             id="123"
             title="Character"
           />
@@ -351,14 +359,14 @@ describe.skip('Page Error Scenarios Integration Tests', () => {
     });
 
     it('should handle tenant detail server error', async () => {
-      mockTenants.getTenant.mockRejectedValue(
+      mockTenants.getById.mockRejectedValue(
         createApiErrorFromResponse(500, 'Internal server error')
       );
 
       render(
         <TestProviders >
           <TestDetailPage 
-            dataFetcher={mockTenants.getTenant}
+            dataFetcher={mockTenants.getById}
             id="tenant-456"
             title="Tenant"
           />
@@ -373,14 +381,14 @@ describe.skip('Page Error Scenarios Integration Tests', () => {
     });
 
     it('should handle guild detail network error', async () => {
-      mockGuilds.getGuild.mockRejectedValue(
+      mockGuilds.getById.mockRejectedValue(
         createApiErrorFromResponse(0, 'Network connection failed')
       );
 
       render(
         <TestProviders >
           <TestDetailPage 
-            dataFetcher={mockGuilds.getGuild}
+            dataFetcher={mockGuilds.getById}
             id="guild-789"
             title="Guild"
           />
@@ -397,14 +405,14 @@ describe.skip('Page Error Scenarios Integration Tests', () => {
     it('should navigate back when back button is clicked', async () => {
       const user = userEvent.setup();
       
-      mockCharacters.getCharacter.mockRejectedValue(
+      mockCharacters.getById.mockRejectedValue(
         createApiErrorFromResponse(404, 'Character not found')
       );
 
       render(
         <TestProviders >
           <TestDetailPage 
-            dataFetcher={mockCharacters.getCharacter}
+            dataFetcher={mockCharacters.getById}
             id="123"
             title="Character"
           />
@@ -425,7 +433,7 @@ describe.skip('Page Error Scenarios Integration Tests', () => {
   describe('Loading State Error Recovery', () => {
     it('should handle successful recovery after initial failure', async () => {
       // First call fails, subsequent calls succeed
-      mockCharacters.getCharacters
+      mockCharacters.getAll
         .mockRejectedValueOnce(createApiErrorFromResponse(503, 'Service unavailable'))
         .mockResolvedValue([
           { id: 1, name: 'Character 1' },
@@ -435,7 +443,7 @@ describe.skip('Page Error Scenarios Integration Tests', () => {
       const { rerender } = render(
         <TestProviders >
           <TestDataTablePage 
-            dataFetcher={mockCharacters.getCharacters}
+            dataFetcher={mockCharacters.getAll}
             title="Characters"
           />
         </TestProviders>
@@ -450,7 +458,7 @@ describe.skip('Page Error Scenarios Integration Tests', () => {
       rerender(
         <TestProviders >
           <TestDataTablePage 
-            dataFetcher={mockCharacters.getCharacters}
+            dataFetcher={mockCharacters.getAll}
             title="Characters"
           />
         </TestProviders>
@@ -466,7 +474,7 @@ describe.skip('Page Error Scenarios Integration Tests', () => {
 
     it('should handle intermittent connectivity issues', async () => {
       // Simulate intermittent failures
-      mockTenants.getTenants
+      mockTenants.getAll
         .mockRejectedValueOnce(createApiErrorFromResponse(0, 'Network error'))
         .mockRejectedValueOnce(createApiErrorFromResponse(408, 'Timeout'))
         .mockResolvedValue([{ id: 1, name: 'Tenant 1' }]);
@@ -476,13 +484,13 @@ describe.skip('Page Error Scenarios Integration Tests', () => {
         
         const fetcher = React.useCallback(async () => {
           try {
-            return await mockTenants.getTenants();
+            return await mockTenants.getAll();
           } catch (error) {
             if (retryCount < 2) {
               setRetryCount(prev => prev + 1);
               throw error;
             }
-            return await mockTenants.getTenants();
+            return await mockTenants.getAll();
           }
         }, [retryCount]);
 
@@ -511,13 +519,13 @@ describe.skip('Page Error Scenarios Integration Tests', () => {
 
   describe('Multiple Page Error Scenarios', () => {
     it('should handle errors across multiple page components simultaneously', async () => {
-      mockCharacters.getCharacters.mockRejectedValue(
+      mockCharacters.getAll.mockRejectedValue(
         createApiErrorFromResponse(500, 'Characters service error')
       );
-      mockTenants.getTenants.mockRejectedValue(
+      mockTenants.getAll.mockRejectedValue(
         createApiErrorFromResponse(503, 'Tenants service unavailable')
       );
-      mockAccounts.getAccounts.mockResolvedValue([
+      mockAccounts.getAll.mockResolvedValue([
         { id: 1, name: 'Account 1' }
       ]);
 
@@ -526,7 +534,7 @@ describe.skip('Page Error Scenarios Integration Tests', () => {
           <div>
             <div data-testid="characters-section">
               <TestDataTablePage 
-                dataFetcher={mockCharacters.getCharacters}
+                dataFetcher={mockCharacters.getAll}
                 title="Characters"
               />
             </div>
@@ -538,7 +546,7 @@ describe.skip('Page Error Scenarios Integration Tests', () => {
             </div>
             <div data-testid="accounts-section">
               <TestDataTablePage 
-                dataFetcher={mockAccounts.getAccounts}
+                dataFetcher={mockAccounts.getAll}
                 title="Accounts"
               />
             </div>
@@ -562,7 +570,7 @@ describe.skip('Page Error Scenarios Integration Tests', () => {
     });
 
     it('should isolate errors between different page sections', async () => {
-      mockCharacters.getCharacters.mockRejectedValue(
+      mockCharacters.getAll.mockRejectedValue(
         createApiErrorFromResponse(404, 'Characters not found')
       );
       mockGuilds.getGuilds.mockResolvedValue([
@@ -575,13 +583,13 @@ describe.skip('Page Error Scenarios Integration Tests', () => {
           <div>
             <div data-testid="characters-section">
               <TestDataTablePage 
-                dataFetcher={mockCharacters.getCharacters}
+                dataFetcher={mockCharacters.getAll}
                 title="Characters"
               />
             </div>
             <div data-testid="guilds-section">
               <TestDataTablePage 
-                dataFetcher={mockGuilds.getGuilds}
+                dataFetcher={mockGuilds.getAll}
                 title="Guilds"
               />
             </div>

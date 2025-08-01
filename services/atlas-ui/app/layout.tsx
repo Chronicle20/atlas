@@ -7,6 +7,7 @@ import {ThemeToggle} from "@/components/theme-toggle";
 import {SidebarToggle} from "@/components/sidebar-toggle";
 import {TenantProvider} from "@/context/tenant-context";
 import {Toaster} from "@/components/ui/sonner";
+import {QueryProvider} from "@/components/providers/query-provider";
 
 export const metadata: Metadata = {
     title: "AtlasMS",
@@ -17,23 +18,25 @@ export default function RootLayout({children,}: Readonly<{ children: React.React
         <html lang="en" suppressHydrationWarning>
         <body>
         <TenantProvider>
-            <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-                <SidebarProvider>
-                    <AppSidebar/>
-                    <main className="w-full flex h-screen flex-1 flex-col gap-2 pt-2">
-                        <div className="flex items-center h-12 justify-between px-2">
-                            <SidebarToggle/>
-                            <ThemeToggle/>
-                        </div>
-                        <div className="flex flex-1 flex-col overflow-hidden gap-4 p-2 pt-0">
-                            <div className="flex flex-1 flex-col overflow-hidden rounded-xl bg-sidebar">
-                                {children}
+            <QueryProvider>
+                <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+                    <SidebarProvider>
+                        <AppSidebar/>
+                        <main className="w-full flex h-screen flex-1 flex-col gap-2 pt-2">
+                            <div className="flex items-center h-12 justify-between px-2">
+                                <SidebarToggle/>
+                                <ThemeToggle/>
                             </div>
-                        </div>
-                    </main>
-                </SidebarProvider>
-            </ThemeProvider>
-            <Toaster />
+                            <div className="flex flex-1 flex-col overflow-hidden gap-4 p-2 pt-0">
+                                <div className="flex flex-1 flex-col overflow-hidden rounded-xl bg-sidebar">
+                                    {children}
+                                </div>
+                            </div>
+                        </main>
+                    </SidebarProvider>
+                </ThemeProvider>
+                <Toaster />
+            </QueryProvider>
         </TenantProvider>
         </body>
         </html>

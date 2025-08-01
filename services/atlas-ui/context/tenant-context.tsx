@@ -1,7 +1,7 @@
 "use client";
 
 import {createContext, ReactNode, useContext, useEffect, useState} from "react";
-import {fetchTenants, fetchTenantConfiguration} from "@/lib/tenants";
+import {tenantsService} from "@/services/api";
 import type {Tenant, TenantConfig} from "@/types/models/tenant";
 import {createErrorFromUnknown} from "@/types/api/errors";
 
@@ -27,7 +27,7 @@ export function TenantProvider({children}: { children: ReactNode }) {
 
     // Fetch tenants data (you can replace this with your actual data fetching logic)
     useEffect(() => {
-        fetchTenants()
+        tenantsService.getAllTenants()
             .then((data) => {
                 setTenants(data);
 
@@ -55,7 +55,7 @@ export function TenantProvider({children}: { children: ReactNode }) {
         try {
             setLoading(true);
             setError(null); // Clear previous errors
-            const data = await fetchTenants();
+            const data = await tenantsService.getAllTenants();
             setTenants(data);
 
             // If active tenant was deleted, set a new one
@@ -76,7 +76,7 @@ export function TenantProvider({children}: { children: ReactNode }) {
     // Function to fetch a tenant configuration
     const fetchTenantConfig = async (tenantId: string): Promise<TenantConfig> => {
         try {
-            return await fetchTenantConfiguration(tenantId);
+            return await tenantsService.getTenantConfigurationById(tenantId);
         } catch (err: unknown) {
             const errorInfo = createErrorFromUnknown(err, `Failed to fetch configuration for tenant ${tenantId}`);
             throw errorInfo;

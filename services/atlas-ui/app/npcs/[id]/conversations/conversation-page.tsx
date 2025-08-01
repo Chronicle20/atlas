@@ -3,13 +3,12 @@
 import { useTenant } from "@/context/tenant-context";
 import { useEffect, useState, useCallback, useMemo, useRef, SetStateAction } from "react";
 import {useParams} from "next/navigation";
-import {
+import { conversationsService } from "@/services/api/conversations.service";
+import type {
   Conversation,
   ConversationState,
   DialogueChoice,
-  fetchNPCConversations,
-  updateConversation
-} from "@/lib/npc-conversations";
+} from "@/types/models/conversation";
 import ReactFlow, {
   Node,
   Edge,
@@ -923,7 +922,7 @@ export default function ConversationPage() {
 
     // Show success message
     toast.success("Node updated successfully");
-  }, [conversation, selectedNodeId, editNodeId, editNodeType, editNodeText, editNodeTitle, setNodes, setEdges]);
+  }, [conversation, selectedNodeId, editNodeId, editNodeType, editNodeText, editNodeTitle, editChoices, editDialogueType, setNodes, setEdges]);
 
   // Handle adding a new node
   const handleAddNode = useCallback(() => {
@@ -1012,7 +1011,7 @@ export default function ConversationPage() {
 
     // Show success message
     toast.success("Node added successfully");
-  }, [conversation, editNodeId, editNodeType, editNodeText, editNodeTitle, setNodes, setEdges]);
+  }, [conversation, editNodeId, editNodeType, editNodeText, editNodeTitle, editChoices, editDialogueType, setNodes, setEdges]);
 
   // Handle node edit
   const handleNodeEdit = useCallback((nodeId: string) => {
@@ -1371,7 +1370,7 @@ export default function ConversationPage() {
       animated: false,
       style: edgeStyle,
     }, eds));
-  }, [isHandleConnected, setEdges, setNodes, nodes, conversation, setConversation, processConversationData]);
+  }, [isHandleConnected, setEdges, nodes, conversation, setConversation]);
 
   // Edge update handlers for drag-and-drop deletion
   const onEdgeUpdateStart = useCallback(() => {
@@ -1508,7 +1507,7 @@ export default function ConversationPage() {
     setError(null);
 
     try {
-      const conversationData = await fetchNPCConversations(activeTenant, npcId);
+      const conversationData = await conversationsService.getByNpcId(npcId);
 
       if (!conversationData) {
         setError("No conversation found for this NPC.");
@@ -1711,7 +1710,7 @@ export default function ConversationPage() {
       hasOrganized.current = true;
       handleReorganize();
     }
-  }, [loading, handleReorganize]);
+  }, [loading, handleReorganize, nodes.length]);
 
   // Update nodes and edges when conversation changes
   const prevConversationRef = useRef<Conversation | null>(null);
@@ -1741,7 +1740,7 @@ export default function ConversationPage() {
       setNodes(updatedNodes);
       setEdges(processedEdges);
     }
-  }, [conversation, nodes, processConversationData, setNodes, setEdges]);
+  }, [conversation, nodes, setNodes, setEdges]);
 
   const handleZoomIn = () => {
     reactFlowInstance.zoomIn();
@@ -1757,17 +1756,17 @@ export default function ConversationPage() {
 
   // Handle saving the conversation to the database
   const handleSaveConversation = useCallback(async () => {
-    if (!activeTenant || !conversation) return;
+    if (!conversation) return;
 
     try {
       // Save the current conversation state to the database
-      await updateConversation(activeTenant, conversation.id, conversation.attributes);
+      await conversationsService.update(conversation.id, conversation.attributes);
       toast.success("Conversation saved successfully");
       setIsSaveDialogOpen(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to save conversation");
     }
-  }, [activeTenant, conversation]);
+  }, [conversation]);
 
   if (loading) {
     return (

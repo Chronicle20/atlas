@@ -6,18 +6,22 @@ import {Badge} from "@/components/ui/badge";
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
 import {Button} from "@/components/ui/button";
 import {MoreHorizontal} from "lucide-react";
-import {terminateAccountSession} from "@/lib/accounts";
+import {accountsService} from "@/services/api/accounts.service";
 import {Account} from "@/types/models/account";
 import type {Tenant} from "@/types/models/tenant";
 import {toast} from "sonner";
 
-const onLogout = (tenant: Tenant | null, id: string, name: string) => {
+const onLogout = async (tenant: Tenant | null, id: string, name: string) => {
     if (tenant === null) {
         return
     }
 
-    terminateAccountSession(tenant, id);
-    toast.success("Successfully logged out " + name);
+    try {
+        await accountsService.terminateAccountSession(tenant, id);
+        toast.success("Successfully logged out " + name);
+    } catch (error) {
+        toast.error("Failed to logout " + name + ": " + (error instanceof Error ? error.message : 'Unknown error'));
+    }
 };
 
 interface ColumnProps {

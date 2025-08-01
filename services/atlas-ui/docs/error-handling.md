@@ -33,23 +33,27 @@ graph TD
 
 ## API Error Handling
 
-### Centralized API Client
+### Centralized Service Layer
 
-The `lib/api/client.ts` provides automatic error handling for all HTTP requests:
+The service layer (`/services/api/`) provides automatic error handling for all API operations:
 
 ```typescript
-import { apiClient } from '@/lib/api/client';
+import { accountsService, tenantsService } from '@/services/api';
 
 // Basic usage with automatic error handling
-const data = await apiClient.get<User[]>('/api/users');
+const accounts = await accountsService.getAll();
 
-// With custom options
-const user = await apiClient.post<User>('/api/users', {
+// Create operation with validation
+const newAccount = await accountsService.create({
   name: 'John Doe',
   email: 'john@example.com'
-}, {
-  timeout: 10000,
-  retryCount: 2
+});
+
+// With custom options and cancellation
+const accountsPage = await accountsService.getAll({
+  page: 1,
+  pageSize: 20,
+  signal: abortController.signal
 });
 ```
 
@@ -57,8 +61,13 @@ const user = await apiClient.post<User>('/api/users', {
 - Automatic retry for transient errors (429, 500, 502, 503, 504)
 - Exponential backoff with jitter
 - Request timeouts with abort controller
+- Request deduplication to prevent duplicate calls
 - Tenant header injection
 - Type-safe responses
+- BaseService architecture with consistent CRUD operations
+- Enhanced validation and error transformation
+- Progress tracking for file uploads/downloads
+- Response caching with configurable TTL
 
 ### Error Types
 
@@ -75,7 +84,7 @@ import {
 } from '@/types/api/errors';
 
 try {
-  const data = await apiClient.get('/api/users');
+  const accounts = await accountsService.getAll();
 } catch (error) {
   if (isApiError(error)) {
     console.log(`API Error: ${error.status} - ${error.message}`);
@@ -523,23 +532,23 @@ In development, errors are logged to console with detailed information:
 'use client';
 
 import { useState } from 'react';
-import { apiClient } from '@/lib/api/client';
+import { accountsService } from '@/services/api';
 import { notify } from '@/lib/utils/toast';
 import { LoadingOverlay } from '@/components/common/LoadingOverlay';
 import { ErrorDisplay } from '@/components/common/ErrorDisplay';
 
-function UserManagement() {
-  const [users, setUsers] = useState<User[]>([]);
+function AccountManagement() {
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   
-  const loadUsers = async () => {
+  const loadAccounts = async () => {
     setLoading(true);
     setError(null);
     
     try {
-      const data = await apiClient.get<User[]>('/api/users');
-      setUsers(data);
+      const data = await accountsService.getAll();
+      setAccounts(data);
     } catch (err) {
       setError(err as Error);
       notify.error(err);
@@ -548,16 +557,16 @@ function UserManagement() {
     }
   };
   
-  const deleteUser = async (userId: string) => {
+  const deleteAccount = async (accountId: string) => {
     try {
       await notify.delete(
-        () => apiClient.delete(`/api/users/${userId}`),
-        'Deleting user...',
-        'User deleted successfully!'
+        () => accountsService.delete(accountId),
+        'Deleting account...',
+        'Account deleted successfully!'
       );
       
       // Refresh list
-      await loadUsers();
+      await loadAccounts();
     } catch (err) {
       // Error automatically handled by notify.delete
     }
@@ -567,19 +576,19 @@ function UserManagement() {
     <LoadingOverlay loading={loading}>
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <h1>Users</h1>
-          <Button onClick={loadUsers}>Refresh</Button>
+          <h1>Accounts</h1>
+          <Button onClick={loadAccounts}>Refresh</Button>
         </div>
         
         {error && (
           <ErrorDisplay 
             error={error} 
-            retry={loadUsers}
-            title="Failed to load users"
+            retry={loadAccounts}
+            title="Failed to load accounts"
           />
         )}
         
-        <UserTable users={users} onDelete={deleteUser} />
+        <AccountTable accounts={accounts} onDelete={deleteAccount} />
       </div>
     </LoadingOverlay>
   );
@@ -594,7 +603,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { FormField } from '@/components/common/FormField';
 import { notify } from '@/lib/utils/toast';
-import { apiClient } from '@/lib/api/client';
+import { accountsService } from '@/services/api';
 
 const userSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -604,7 +613,7 @@ const userSchema = z.object({
 
 type UserFormData = z.infer<typeof userSchema>;
 
-function CreateUserForm() {
+function CreateAccountForm() {
   const form = useForm<UserFormData>({
     resolver: zodResolver(userSchema),
   });
@@ -612,9 +621,9 @@ function CreateUserForm() {
   const onSubmit = async (data: UserFormData) => {
     try {
       await notify.save(
-        () => apiClient.post('/api/users', data),
-        'Creating user...',
-        'User created successfully!'
+        () => accountsService.create(data),
+        'Creating account...',
+        'Account created successfully!'
       );
       
       form.reset();
@@ -658,7 +667,7 @@ function CreateUserForm() {
       
       <Button type="submit" disabled={form.formState.isSubmitting}>
         {form.formState.isSubmitting && <LoadingSpinner size="sm" />}
-        Create User
+        Create Account
       </Button>
     </form>
   );
@@ -671,10 +680,10 @@ function CreateUserForm() {
 import { DataTableWrapper } from '@/components/common/DataTableWrapper';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 
-function UsersTable() {
+function AccountsTable() {
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['users'],
-    queryFn: () => apiClient.get<User[]>('/api/users'),
+    queryKey: ['accounts'],
+    queryFn: () => accountsService.getAll(),
     retry: (failureCount, error) => {
       // Don't retry on 4xx errors except 429
       if (error instanceof ApiError && error.status >= 400 && error.status < 500 && error.status !== 429) {
@@ -687,17 +696,17 @@ function UsersTable() {
   return (
     <ErrorBoundary>
       <DataTableWrapper
-        columns={userColumns}
+        columns={accountColumns}
         data={data || []}
         loading={isLoading}
         error={error}
         onRefresh={refetch}
         emptyState={{
-          title: "No users found",
-          description: "Create your first user to get started.",
+          title: "No accounts found",
+          description: "Create your first account to get started.",
           action: {
-            label: "Add User",
-            onClick: () => router.push('/users/new')
+            label: "Add Account",
+            onClick: () => router.push('/accounts/new')
           }
         }}
       />
@@ -824,42 +833,42 @@ it('error boundary catches component errors', () => {
 
 ```typescript
 // Before: Manual error handling
-const [users, setUsers] = useState([]);
+const [accounts, setAccounts] = useState([]);
 const [loading, setLoading] = useState(false);
 const [error, setError] = useState('');
 
-const loadUsers = async () => {
+const loadAccounts = async () => {
   setLoading(true);
   setError('');
   
   try {
-    const response = await fetch('/api/users');
+    const response = await fetch('/api/accounts');
     if (!response.ok) {
-      throw new Error('Failed to load users');
+      throw new Error('Failed to load accounts');
     }
     const data = await response.json();
-    setUsers(data);
+    setAccounts(data);
   } catch (err) {
     setError(err.message);
-    console.error('Error loading users:', err);
+    console.error('Error loading accounts:', err);
   } finally {
     setLoading(false);
   }
 };
 
-// After: Using centralized error handling
-const [users, setUsers] = useState([]);
+// After: Using centralized service layer
+const [accounts, setAccounts] = useState([]);
 const [loading, setLoading] = useState(false);
 const [error, setError] = useState<Error | null>(null);
 
-const loadUsers = async () => {
+const loadAccounts = async () => {
   setLoading(true);
   setError(null);
   
   try {
-    const data = await apiClient.get<User[]>('/api/users');
-    setUsers(data);
-    notify.success('Users loaded successfully');
+    const data = await accountsService.getAll();
+    setAccounts(data);
+    notify.success('Accounts loaded successfully');
   } catch (err) {
     setError(err as Error);
     notify.error(err); // Automatic error transformation and logging
@@ -871,11 +880,12 @@ const loadUsers = async () => {
 
 ### Updating Existing Components
 
-1. **Replace manual fetch with apiClient**
+1. **Replace manual fetch with service layer** - Use services from `/services/api`
 2. **Replace custom error states with ErrorDisplay component**  
 3. **Add toast notifications for user feedback**
 4. **Wrap with ErrorBoundary for unexpected errors**
 5. **Use FormField components for form validation errors**
+6. **Leverage BaseService features** - Batch operations, request cancellation, caching
 
 ## Configuration
 

@@ -3,11 +3,11 @@
 import {useTenant} from "@/context/tenant-context";
 import {DataTableWrapper} from "@/components/common/DataTableWrapper";
 import {hiddenColumns} from "@/app/guilds/columns";
-import {useEffect, useState} from "react";
-import {fetchGuilds} from "@/lib/guilds";
+import {useCallback, useEffect, useState} from "react";
+import {guildsService} from "@/services/api/guilds.service";
 import {getColumns} from "@/app/guilds/columns";
 import {Toaster} from "sonner";
-import {fetchCharacters} from "@/lib/characters";
+import {charactersService} from "@/services/api/characters.service";
 import {Guild} from "@/types/models/guild";
 import {Character} from "@/types/models/character";
 import {TenantConfig} from "@/types/models/tenant";
@@ -22,14 +22,14 @@ export default function Page() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchDataAgain = () => {
+    const fetchDataAgain = useCallback(() => {
         if (!activeTenant) return
 
         setLoading(true)
 
         Promise.all([
-            fetchGuilds(activeTenant),
-            fetchCharacters(activeTenant),
+            guildsService.getAll(activeTenant),
+            charactersService.getAll(activeTenant),
             fetchTenantConfiguration(activeTenant.id),
         ])
             .then(([guildData, characterData, tenantConfigData]) => {
@@ -42,11 +42,11 @@ export default function Page() {
                 setError(errorInfo.message);
             })
             .finally(() => setLoading(false));
-    }
+    }, [activeTenant, fetchTenantConfiguration])
 
     useEffect(() => {
         fetchDataAgain()
-    }, [activeTenant])
+    }, [activeTenant, fetchDataAgain])
 
     const characterMap = new Map(characters.map(c => [c.id, c]));
 

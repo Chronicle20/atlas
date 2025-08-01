@@ -3,7 +3,7 @@
 import {useParams} from "next/navigation";
 import {Separator} from "@/components/ui/separator";
 import {DetailSidebar} from "@/components/detail-sidebar";
-import {fetchTemplates} from "@/lib/templates";
+import {templatesService} from "@/services/api";
 import type {Template} from "@/types/models/template";
 import {useEffect, useState} from "react";
 import {ScrollArea} from "@/components/ui/scroll-area";
@@ -26,9 +26,8 @@ export default function TemplateDetailLayout({ children }: TemplateDetailLayoutP
 
         setLoading(true); // Show loading while fetching
 
-        fetchTemplates()
-            .then((data) => {
-                const template = data.find((t) => String(t.id) === String(id));
+        templatesService.getById(String(id))
+            .then((template) => {
                 setTemplate(template);
             })
             .catch((err) => {

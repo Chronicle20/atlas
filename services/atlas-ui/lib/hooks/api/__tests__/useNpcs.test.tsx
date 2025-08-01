@@ -114,11 +114,13 @@ function createWrapper() {
     },
   });
 
-  return ({ children }: { children: ReactNode }) => (
+  const TestWrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>
       {children}
     </QueryClientProvider>
   );
+  TestWrapper.displayName = 'TestWrapper';
+  return TestWrapper;
 }
 
 describe('useNpcs hooks', () => {
@@ -153,7 +155,7 @@ describe('useNpcs hooks', () => {
     it('should not fetch when tenant is not provided', () => {
       mockNpcsService.getAllNPCs.mockResolvedValue(mockNPCs);
 
-      const { result } = renderHook(() => useNPCs(null as any), {
+      const { result } = renderHook(() => useNPCs(null as Tenant | null), {
         wrapper: createWrapper(),
       });
 

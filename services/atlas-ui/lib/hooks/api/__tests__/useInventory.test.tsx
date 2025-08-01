@@ -25,7 +25,6 @@ import type {
   InventoryResponse, 
   Compartment, 
   Asset, 
-  CompartmentType 
 } from '@/services/api/inventory.service';
 import type { Tenant } from '@/types/models/tenant';
 import { ReactNode } from 'react';
@@ -175,9 +174,11 @@ function createWrapper() {
     },
   });
 
-  return ({ children }: { children: ReactNode }) => (
+  const TestWrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
+  TestWrapper.displayName = 'TestWrapper';
+  return TestWrapper;
 }
 
 describe('useInventory hooks', () => {
@@ -220,7 +221,7 @@ describe('useInventory hooks', () => {
 
     it('should not fetch when tenant is not provided', () => {
       const { result } = renderHook(
-        () => useInventory(null as any, '123'),
+        () => useInventory(null as Tenant | null, '123'),
         { wrapper: createWrapper() }
       );
 

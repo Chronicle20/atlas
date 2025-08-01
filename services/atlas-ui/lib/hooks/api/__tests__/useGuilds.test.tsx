@@ -89,9 +89,11 @@ function createWrapper() {
     },
   });
 
-  return ({ children }: { children: ReactNode }) => (
+  const TestWrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
+  TestWrapper.displayName = 'TestWrapper';
+  return TestWrapper;
 }
 
 describe('useGuilds', () => {
@@ -191,7 +193,7 @@ describe('useGuilds', () => {
     });
 
     it('should not fetch when tenant is not provided', () => {
-      const { result } = renderHook(() => useGuilds(null as any), {
+      const { result } = renderHook(() => useGuilds(null as Tenant | null), {
         wrapper: createWrapper(),
       });
 

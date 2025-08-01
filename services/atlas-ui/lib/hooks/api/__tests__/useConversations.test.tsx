@@ -11,12 +11,8 @@ import {
   useConversationExists,
   useConversationByNpc, 
   useConversationSearch,
-  useConversationsByNpc,
-  useConversationStateConsistency,
-  useConversationExport,
   useCreateConversation,
   useUpdateConversation,
-  usePatchConversation,
   useDeleteConversation,
   conversationKeys 
 } from '../useConversations';
@@ -110,12 +106,6 @@ const mockConversations: Conversation[] = [
   }
 ];
 
-const mockStateConsistencyResult = {
-  isValid: true,
-  errors: []
-};
-
-const mockExportBlob = new Blob(['test data'], { type: 'application/json' });
 
 // Test wrapper component
 function createWrapper() {
@@ -127,11 +117,13 @@ function createWrapper() {
     },
   });
 
-  return ({ children }: { children: ReactNode }) => (
+  const TestWrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>
       {children}
     </QueryClientProvider>
   );
+  TestWrapper.displayName = 'TestWrapper';
+  return TestWrapper;
 }
 
 describe('useConversations hooks', () => {
@@ -166,7 +158,7 @@ describe('useConversations hooks', () => {
     it('should not fetch when tenant is not provided', () => {
       mockConversationsService.getAll.mockResolvedValue(mockConversations);
 
-      const { result } = renderHook(() => useConversations(null as any), {
+      const { result } = renderHook(() => useConversations(null as Tenant | null), {
         wrapper: createWrapper(),
       });
 

@@ -28,4 +28,5 @@ export * from './useNpcs';
 // Conversation hooks
 export * from './useConversations';
 
-// export * from './useTemplates';
+// Template hooks
+export * from './useTemplates';

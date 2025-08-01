@@ -2,7 +2,7 @@
  * NPC conversation service
  * Handles all NPC conversation-related API operations with full API client feature support
  */
-import { BaseService } from './base.service';
+import { BaseService, type QueryOptions } from './base.service';
 import type { 
   Conversation, 
   ConversationAttributes,
@@ -53,7 +53,7 @@ class ConversationsService extends BaseService {
   /**
    * Transform request data to API format
    */
-  protected transformRequest<T>(data: T): T {
+  protected override transformRequest<T>(data: T): T {
     // For create/update operations, wrap data in the expected format
     if (data && typeof data === 'object' && 'npcId' in data) {
       return {
@@ -70,7 +70,7 @@ class ConversationsService extends BaseService {
   /**
    * Transform API response to domain model format
    */
-  protected transformResponse<T>(data: T): T {
+  protected override transformResponse<T>(data: T): T {
     // Extract data from API response wrapper if present
     if (data && typeof data === 'object' && 'data' in data) {
       return (data as any).data;
@@ -81,7 +81,7 @@ class ConversationsService extends BaseService {
   /**
    * Validate conversation data before API calls
    */
-  protected validate(data: unknown): Array<{ field: string; message: string; value?: unknown }> {
+  protected override validate(data: unknown): Array<{ field: string; message: string; value?: unknown }> {
     const errors: Array<{ field: string; message: string; value?: unknown }> = [];
     
     if (!data || typeof data !== 'object') {
@@ -136,29 +136,29 @@ class ConversationsService extends BaseService {
   /**
    * Get all conversations with advanced query support
    */
-  async getAll(options?: Parameters<BaseService['getAll']>[0]): Promise<Conversation[]> {
-    return super.getAll<Conversation>(options);
+  override async getAll<T = Conversation>(options?: QueryOptions): Promise<T[]> {
+    return super.getAll<T>(options);
   }
 
   /**
    * Get conversation by ID
    */
-  async getById(id: string, options?: Parameters<BaseService['getById']>[1]): Promise<Conversation> {
-    return super.getById<Conversation>(id, options);
+  override async getById<T = Conversation>(id: string, options?: Parameters<BaseService['getById']>[1]): Promise<T> {
+    return super.getById<T>(id, options);
   }
 
   /**
    * Check if conversation exists
    */
-  async exists(id: string, options?: Parameters<BaseService['exists']>[1]): Promise<boolean> {
+  override async exists(id: string, options?: Parameters<BaseService['exists']>[1]): Promise<boolean> {
     return super.exists(id, options);
   }
 
   /**
    * Create new conversation with validation
    */
-  async create(conversationAttributes: ConversationAttributes, options?: Parameters<BaseService['create']>[1]): Promise<Conversation> {
-    return super.create<Conversation, ConversationAttributes>(conversationAttributes, { validate: true, ...options });
+  override async create<T = Conversation, D = ConversationAttributes>(data: D, options?: Parameters<BaseService['create']>[1]): Promise<T> {
+    return super.create<T, D>(data, { validate: true, ...options });
   }
 
   /**

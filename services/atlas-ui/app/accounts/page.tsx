@@ -3,8 +3,8 @@
 import {useTenant} from "@/context/tenant-context";
 import {DataTableWrapper} from "@/components/common/DataTableWrapper";
 import {hiddenColumns} from "@/app/accounts/columns";
-import {useEffect, useState} from "react";
-import {fetchAccounts} from "@/lib/accounts";
+import {useCallback, useEffect, useState} from "react";
+import {accountsService} from "@/services/api/accounts.service";
 import {Account} from "@/types/models/account";
 import {getColumns} from "@/app/accounts/columns";
 import {Toaster} from "sonner";
@@ -17,12 +17,12 @@ export default function Page() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchDataAgain = () => {
+    const fetchDataAgain = useCallback(() => {
         if (!activeTenant) return
 
         setLoading(true)
 
-        fetchAccounts(activeTenant)
+        accountsService.getAllAccounts(activeTenant)
             .then((data) => {
                 setAccounts(data)
             })
@@ -31,11 +31,11 @@ export default function Page() {
                 setError(errorInfo.message);
             })
             .finally(() => setLoading(false))
-    }
+    }, [activeTenant])
 
     useEffect(() => {
         fetchDataAgain()
-    }, [activeTenant])
+    }, [activeTenant, fetchDataAgain])
 
     const columns = getColumns({tenant: activeTenant});
 

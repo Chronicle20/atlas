@@ -9,7 +9,7 @@ import {useParams} from "next/navigation";
 import {useTenant} from "@/context/tenant-context";
 import {Plus, X} from "lucide-react"
 import {Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog";
-import {updateTenantConfiguration} from "@/lib/tenants";
+import {tenantsService} from "@/services/api";
 import {CharacterTemplate} from "@/types/models/template";
 import {TenantConfig} from "@/types/models/tenant";
 import {toast} from "sonner";
@@ -79,7 +79,7 @@ export function TemplatesForm() {
         if (!tenant) return;
 
         try {
-            const updatedTenant = await updateTenantConfiguration(tenant, {
+            const updatedTenant = await tenantsService.updateTenantConfiguration(tenant, {
                 characters: {
                     templates: data.templates,
                 },

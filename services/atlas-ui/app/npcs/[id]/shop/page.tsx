@@ -1,8 +1,8 @@
 "use client"
 
 import { useTenant } from "@/context/tenant-context";
-import { useEffect, useState } from "react";
-import { createCommodity, deleteCommodity, fetchNPCShop, updateCommodity, updateShop, deleteAllCommoditiesForNPC } from "@/lib/npcs";
+import { useCallback, useEffect, useState } from "react";
+import { npcsService } from "@/services/api";
 import { Commodity, CommodityAttributes, Shop } from "@/types/models/npc";
 import { DataTableWrapper } from "@/components/common/DataTableWrapper";
 import {hiddenColumns} from "@/app/npcs/[id]/shop/columns";
@@ -45,12 +45,12 @@ export default function Page() {
         levelLimit: 0
     });
 
-    const fetchDataAgain = () => {
+    const fetchDataAgain = useCallback(() => {
         if (!activeTenant) return;
 
         setLoading(true);
 
-        fetchNPCShop(activeTenant, npcId)
+        npcsService.getNPCShop(npcId, activeTenant)
             .then((response) => {
                 setShop(response.data);
                 // Set recharger state from shop data
@@ -64,11 +64,11 @@ export default function Page() {
             })
             .catch((err) => setError(err.message))
             .finally(() => setLoading(false));
-    };
+    }, [activeTenant, npcId]);
 
     useEffect(() => {
         fetchDataAgain();
-    }, [activeTenant, npcId]);
+    }, [activeTenant, npcId, fetchDataAgain]);
 
     // Reset form data when dialogs are closed
     useEffect(() => {
@@ -124,7 +124,7 @@ export default function Page() {
         }
 
         try {
-            await createCommodity(activeTenant, npcId, formData);
+            await npcsService.createCommodity(npcId, formData, activeTenant);
             setIsCreateDialogOpen(false);
             setFormData({
                 templateId: 0,
@@ -172,7 +172,7 @@ export default function Page() {
         }
 
         try {
-            await updateCommodity(activeTenant, npcId, currentCommodity.id, formData);
+            await npcsService.updateCommodity(npcId, currentCommodity.id, formData, activeTenant);
             setIsEditDialogOpen(false);
             setCurrentCommodity(null);
             fetchDataAgain();
@@ -186,7 +186,7 @@ export default function Page() {
         if (!activeTenant) return;
 
         try {
-            await deleteCommodity(activeTenant, npcId, commodityId);
+            await npcsService.deleteCommodity(npcId, commodityId, activeTenant);
             fetchDataAgain();
             toast.success("Commodity deleted successfully");
         } catch {
@@ -217,7 +217,7 @@ export default function Page() {
                 ? jsonData.data.attributes.recharger 
                 : recharger;
 
-            await updateShop(activeTenant, npcId, commoditiesToUpdate, rechargerValue);
+            await npcsService.updateShop(npcId, commoditiesToUpdate, activeTenant, rechargerValue);
             setIsBulkUpdateDialogOpen(false);
             setBulkUpdateJson("");
             fetchDataAgain();
@@ -232,7 +232,7 @@ export default function Page() {
 
         try {
             setRecharger(checked);
-            await updateShop(activeTenant, npcId, commodities, checked);
+            await npcsService.updateShop(npcId, commodities, activeTenant, checked);
             toast.success("Shop recharger status updated successfully");
         } catch (err) {
             // Revert state if update fails
@@ -295,7 +295,7 @@ export default function Page() {
         if (!activeTenant) return;
 
         try {
-            await deleteAllCommoditiesForNPC(activeTenant, npcId);
+            await npcsService.deleteAllCommoditiesForNPC(npcId, activeTenant);
             toast.success("All commodities deleted successfully");
             setIsDeleteAllCommoditiesDialogOpen(false);
             fetchDataAgain();

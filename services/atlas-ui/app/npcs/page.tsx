@@ -1,8 +1,8 @@
 "use client"
 
 import { useTenant } from "@/context/tenant-context";
-import { useEffect, useState } from "react";
-import {fetchNPCs, deleteAllShops, updateShop} from "@/lib/npcs";
+import { useCallback, useEffect, useState } from "react";
+import {npcsService} from "@/services/api";
 import {NPC, Commodity} from "@/types/models/npc";
 import { tenantHeaders } from "@/lib/headers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,12 +30,12 @@ export default function Page() {
     const [createShopJson, setCreateShopJson] = useState("");
     const [bulkUpdateShopJson, setBulkUpdateShopJson] = useState("");
 
-    const fetchDataAgain = () => {
+    const fetchDataAgain = useCallback(() => {
         if (!activeTenant) return;
 
         setLoading(true);
 
-        fetchNPCs(activeTenant)
+        npcsService.getAllNPCs(activeTenant)
             .then((npcData) => {
                 setNpcs(npcData);
             })
@@ -44,7 +44,7 @@ export default function Page() {
                 setError(errorInfo.message);
             })
             .finally(() => setLoading(false));
-    };
+    }, [activeTenant]);
 
     const handleCreateShop = async () => {
         if (!activeTenant) return;
@@ -88,7 +88,7 @@ export default function Page() {
         if (!activeTenant) return;
 
         try {
-            await deleteAllShops(activeTenant);
+            await npcsService.deleteAllShops(activeTenant);
             toast.success("All shops deleted successfully");
             setIsDeleteAllShopsDialogOpen(false);
             fetchDataAgain();
@@ -118,7 +118,7 @@ export default function Page() {
             // Get recharger value from JSON data if available
             const rechargerValue = jsonData.data.attributes?.recharger;
 
-            await updateShop(activeTenant, selectedNpcId, commoditiesToUpdate, rechargerValue);
+            await npcsService.updateShop(selectedNpcId, commoditiesToUpdate, activeTenant, rechargerValue);
             setIsBulkUpdateShopDialogOpen(false);
             setBulkUpdateShopJson("");
             fetchDataAgain();
@@ -130,7 +130,7 @@ export default function Page() {
 
     useEffect(() => {
         fetchDataAgain();
-    }, [activeTenant]);
+    }, [activeTenant, fetchDataAgain]);
 
     // Prevent body scrolling when this page is mounted
     useEffect(() => {

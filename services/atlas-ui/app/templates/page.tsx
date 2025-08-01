@@ -3,9 +3,9 @@
 import {DataTableWrapper} from "@/components/common/DataTableWrapper";
 import {getColumns} from "@/app/templates/columns";
 import {useEffect, useState} from "react";
-import {fetchTemplates, deleteTemplate, cloneTemplate, createTemplate} from "@/lib/templates";
+import {templatesService} from "@/services/api";
 import type {Template} from "@/types/models/template";
-import {createTenantConfiguration, createTenantFromTemplate} from "@/lib/tenants";
+import {tenantsService} from "@/services/api";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -76,7 +76,7 @@ export default function Page() {
 
     const fetchDataAgain = () => {
         setLoading(true)
-        fetchTemplates()
+        templatesService.getAll()
             .then((data) => setTemplates(data))
             .catch((err: unknown) => {
                 const errorInfo = createErrorFromUnknown(err, "Failed to fetch templates");
@@ -101,7 +101,7 @@ export default function Page() {
 
         try {
             setIsDeleting(true);
-            await deleteTemplate(templateToDelete);
+            await templatesService.delete(templateToDelete);
 
             // Refresh template data
             fetchDataAgain();
@@ -138,13 +138,13 @@ export default function Page() {
             setIsCloning(true);
 
             // Clone the template and update with form values
-            const clonedAttributes = cloneTemplate(templateToClone);
+            const clonedAttributes = templatesService.cloneTemplate(templateToClone);
             clonedAttributes.region = data.region;
             clonedAttributes.majorVersion = data.majorVersion;
             clonedAttributes.minorVersion = data.minorVersion;
 
             // Create the new template
-            const newTemplate = await createTemplate(clonedAttributes);
+            const newTemplate = await templatesService.create(clonedAttributes);
 
             // Show success message
             toast.success("Template cloned successfully");
@@ -185,10 +185,18 @@ export default function Page() {
             setIsCreatingTenant(true);
 
             // Create tenant attributes from template
-            const tenantAttributes = createTenantFromTemplate(templateForTenant);
+            const templateAttributes = tenantsService.createTenantFromTemplate(templateForTenant);
+
+            // Create basic tenant attributes with required name field
+            const tenantAttributes = {
+                name: `Tenant from Template ${templateForTenant.id}`,
+                region: templateAttributes.region,
+                majorVersion: templateAttributes.majorVersion,  
+                minorVersion: templateAttributes.minorVersion
+            };
 
             // Create the new tenant configuration
-            const newTenant = await createTenantConfiguration(tenantAttributes);
+            const newTenant = await tenantsService.createTenant(tenantAttributes);
 
             // Show success message
             toast.success("Tenant created successfully");

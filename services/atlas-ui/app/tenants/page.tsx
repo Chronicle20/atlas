@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useTenant } from "@/context/tenant-context";
 import { DataTableWrapper } from "@/components/common/DataTableWrapper";
 import { getColumns } from "@/app/tenants/columns";
-import { deleteTenant } from "@/lib/tenants";
+import { tenantsService } from "@/services/api";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -34,7 +34,7 @@ export default function Page() {
 
         try {
             setIsDeleting(true);
-            await deleteTenant(tenantToDelete);
+            await tenantsService.deleteTenant(tenantToDelete);
 
             // Refresh tenant data using the context function
             await refreshTenants();

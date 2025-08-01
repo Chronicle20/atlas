@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { updateCharacter } from "@/lib/characters";
+import { charactersService } from "@/services/api/characters.service";
 import { Character } from "@/types/models/character";
 import { useTenant } from "@/context/tenant-context";
 import { toast } from "sonner";
@@ -89,7 +89,7 @@ export function ChangeMapDialog({ character, open, onOpenChange, onSuccess }: Ch
     setIsLoading(true);
     
     try {
-      await updateCharacter(activeTenant, character.id, { mapId: mapIdNumber });
+      await charactersService.update(activeTenant, character.id, { mapId: mapIdNumber });
       toast.success(`Successfully changed ${character.attributes.name}'s map to ${mapIdNumber}`);
       
       // Reset form state on success

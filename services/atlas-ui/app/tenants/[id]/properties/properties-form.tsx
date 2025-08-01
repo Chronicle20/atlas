@@ -10,7 +10,7 @@ import {useParams} from "next/navigation";
 import {useTenant} from "@/context/tenant-context";
 import {Switch} from "@/components/ui/switch";
 import {useEffect, useState} from "react";
-import {updateTenantConfiguration} from "@/lib/tenants";
+import {tenantsService} from "@/services/api";
 import {TenantConfig} from "@/types/models/tenant";
 import {toast} from "sonner";
 
@@ -79,7 +79,7 @@ export function PropertiesForm() {
         if (!tenant) return;
 
         try {
-            const updatedTenant = await updateTenantConfiguration(tenant, {
+            const updatedTenant = await tenantsService.updateTenantConfiguration(tenant, {
                 region: data.region,
                 majorVersion: data.major,
                 minorVersion: data.minor,

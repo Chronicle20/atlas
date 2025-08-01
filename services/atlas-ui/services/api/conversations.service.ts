@@ -2,7 +2,7 @@
  * NPC conversation service
  * Handles all NPC conversation-related API operations with full API client feature support
  */
-import { BaseService, type QueryOptions } from './base.service';
+import { BaseService, type QueryOptions, type ServiceOptions, type BatchOptions, type BatchResult } from './base.service';
 import type { 
   Conversation, 
   ConversationAttributes,
@@ -164,21 +164,21 @@ class ConversationsService extends BaseService {
   /**
    * Update existing conversation with validation
    */
-  async update(id: string, conversationAttributes: Partial<ConversationAttributes>, options?: Parameters<BaseService['update']>[2]): Promise<Conversation> {
-    return super.update<Conversation, Partial<ConversationAttributes>>(id, conversationAttributes, { validate: true, ...options });
+  override async update<T = Conversation, D = Partial<ConversationAttributes>>(id: string, data: D, options?: ServiceOptions): Promise<T> {
+    return super.update<T, D>(id, data, { validate: true, ...options });
   }
 
   /**
    * Partially update conversation (PATCH)
    */
-  async patch(id: string, updates: Partial<ConversationAttributes>, options?: Parameters<BaseService['patch']>[2]): Promise<Conversation> {
-    return super.patch<Conversation, Partial<ConversationAttributes>>(id, updates, options);
+  override async patch<T = Conversation, D = Partial<ConversationAttributes>>(id: string, data: D, options?: ServiceOptions): Promise<T> {
+    return super.patch<T, D>(id, data, options);
   }
 
   /**
    * Delete conversation
    */
-  async delete(id: string, options?: Parameters<BaseService['delete']>[1]): Promise<void> {
+  override async delete(id: string, options?: ServiceOptions): Promise<void> {
     return super.delete(id, options);
   }
 
@@ -200,7 +200,7 @@ class ConversationsService extends BaseService {
       // Restore original basePath
       (this as any).basePath = originalBasePath;
       
-      return conversations.length > 0 ? conversations[0] : null;
+      return conversations.length > 0 ? conversations[0]! : null;
     } catch (error) {
       // If it's a 404 error, no conversations exist for this NPC
       if (error && typeof error === 'object' && 'status' in error && error.status === 404) {
@@ -213,13 +213,13 @@ class ConversationsService extends BaseService {
   /**
    * Batch create multiple conversations
    */
-  async createBatch(
-    conversations: ConversationAttributes[], 
-    options?: Parameters<BaseService['createBatch']>[1],
-    batchOptions?: Parameters<BaseService['createBatch']>[2]
-  ) {
-    return super.createBatch<Conversation, ConversationAttributes>(
-      conversations, 
+  override async createBatch<T = Conversation, D = ConversationAttributes>(
+    items: D[], 
+    options?: ServiceOptions,
+    batchOptions?: BatchOptions
+  ): Promise<BatchResult<T>> {
+    return super.createBatch<T, D>(
+      items, 
       { validate: true, ...options },
       batchOptions
     );
@@ -228,12 +228,12 @@ class ConversationsService extends BaseService {
   /**
    * Batch update multiple conversations
    */
-  async updateBatch(
-    updates: Array<{ id: string; data: Partial<ConversationAttributes> }>,
-    options?: Parameters<BaseService['updateBatch']>[1],
-    batchOptions?: Parameters<BaseService['updateBatch']>[2]
-  ) {
-    return super.updateBatch<Conversation, Partial<ConversationAttributes>>(
+  override async updateBatch<T = Conversation, D = Partial<ConversationAttributes>>(
+    updates: Array<{ id: string; data: D }>,
+    options?: ServiceOptions,
+    batchOptions?: BatchOptions
+  ): Promise<BatchResult<T>> {
+    return super.updateBatch<T, D>(
       updates,
       { validate: true, ...options },
       batchOptions
@@ -243,11 +243,11 @@ class ConversationsService extends BaseService {
   /**
    * Batch delete multiple conversations
    */
-  async deleteBatch(
+  override async deleteBatch(
     ids: string[],
-    options?: Parameters<BaseService['deleteBatch']>[1],
-    batchOptions?: Parameters<BaseService['deleteBatch']>[2]
-  ) {
+    options?: ServiceOptions,
+    batchOptions?: BatchOptions
+  ): Promise<BatchResult<string>> {
     return super.deleteBatch(ids, options, batchOptions);
   }
 

@@ -112,7 +112,7 @@ export default function CharacterDetailPage() {
     if (error || !character || !tenantConfig) return <ErrorDisplay error={error || "Character or tenant configuration not found"} className="p-4" />;
 
     // Get compartments from inventory data
-    const compartments = inventory?.included.filter(
+    const compartments = inventory?.included?.filter(
         (item): item is Compartment => item.type === 'compartments'
     ) || [];
 
@@ -164,8 +164,9 @@ export default function CharacterDetailPage() {
                     <h3 className="text-xl font-bold tracking-tight">Inventory</h3>
                     <div className="grid grid-cols-1 gap-4">
                         {sortedCompartments.map((compartment) => {
-                            const assets = inventoryService.getAssetsForCompartment(compartment, inventory.included);
-                            return (
+                            try {
+                                const assets = inventoryService.getAssetsForCompartment(compartment, inventory.included || []);
+                                return (
                                 <Collapsible key={compartment.id} className="border rounded-md">
                                     <CollapsibleTrigger className="flex justify-between items-center w-full p-4 hover:bg-muted/50">
                                         <div className="flex items-center gap-2">
@@ -209,6 +210,14 @@ export default function CharacterDetailPage() {
                                     </CollapsibleContent>
                                 </Collapsible>
                             );
+                            } catch (error) {
+                                console.error('Error rendering compartment:', compartment.id, error);
+                                return (
+                                    <div key={compartment.id} className="border rounded-md p-4 bg-red-50">
+                                        <p className="text-red-600">Error loading compartment: {inventoryService.getCompartmentTypeName(compartment.attributes?.type || 0)}</p>
+                                    </div>
+                                );
+                            }
                         })}
                     </div>
                 </div>

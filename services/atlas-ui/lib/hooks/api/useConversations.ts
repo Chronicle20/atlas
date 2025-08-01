@@ -61,7 +61,7 @@ export function useConversations(
 ): UseQueryResult<Conversation[], Error> {
   return useQuery({
     queryKey: conversationKeys.list(tenant, options),
-    queryFn: () => conversationsService.getAll(options),
+    queryFn: () => conversationsService.getAll<Conversation>(options),
     enabled: !!tenant?.id,
     staleTime: 3 * 60 * 1000, // 3 minutes (conversations change less frequently)
     gcTime: 10 * 60 * 1000, // 10 minutes
@@ -207,7 +207,7 @@ export function useCreateConversation(): UseMutationResult<
   return useMutation({
     mutationFn: ({ conversationAttributes, options }) => 
       conversationsService.create(conversationAttributes, options),
-    onSuccess: (data) => {
+    onSuccess: () => {
       // Invalidate and refetch relevant queries
       queryClient.invalidateQueries({ queryKey: conversationKeys.all });
       queryClient.invalidateQueries({ queryKey: conversationKeys.byNpc() });
@@ -238,17 +238,17 @@ export function useUpdateConversation(): UseMutationResult<
   return useMutation({
     mutationFn: ({ id, conversationAttributes, options }) => 
       conversationsService.update(id, conversationAttributes, options),
-    onMutate: async ({ id }) => {
+    onMutate: async () => {
       // Cancel any outgoing refetches for this conversation
       // Component-level query cancellation will be handled at component level
       
       return { };
     },
-    onError: (error, { id }, context) => {
+    onError: (error) => {
       // Revert optimistic update will be handled at component level
       console.error('Failed to update conversation:', error);
     },
-    onSettled: (data, error, { id }) => {
+    onSettled: (data) => {
       // Invalidate and refetch relevant queries
       // Detail invalidation will be handled by component-level cache invalidation
       queryClient.invalidateQueries({ queryKey: conversationKeys.all });
@@ -282,17 +282,17 @@ export function usePatchConversation(): UseMutationResult<
   return useMutation({
     mutationFn: ({ id, updates, options }) => 
       conversationsService.patch(id, updates, options),
-    onMutate: async ({ id }) => {
+    onMutate: async () => {
       // Cancel any outgoing refetches for this conversation
       // Component-level query cancellation will be handled at component level
       
       return { };
     },
-    onError: (error, { id }, context) => {
+    onError: (error) => {
       // Revert optimistic update will be handled at component level
       console.error('Failed to patch conversation:', error);
     },
-    onSettled: (data, error, { id }) => {
+    onSettled: () => {
       // Invalidate and refetch relevant queries
       // Detail invalidation will be handled by component-level cache invalidation
       queryClient.invalidateQueries({ queryKey: conversationKeys.all });
@@ -373,7 +373,7 @@ export function useCreateConversationsBatch(): UseMutationResult<
   return useMutation({
     mutationFn: ({ conversations, options, batchOptions }) => 
       conversationsService.createBatch(conversations, options, batchOptions),
-    onSuccess: (data, { tenant }) => {
+    onSuccess: (data) => {
       // Invalidate all conversation-related queries
       queryClient.invalidateQueries({ queryKey: conversationKeys.all });
       queryClient.invalidateQueries({ queryKey: conversationKeys.byNpc() });
@@ -409,7 +409,7 @@ export function useUpdateConversationsBatch(): UseMutationResult<
   return useMutation({
     mutationFn: ({ updates, options, batchOptions }) => 
       conversationsService.updateBatch(updates, options, batchOptions),
-    onSuccess: (data, { tenant }) => {
+    onSuccess: (data) => {
       // Invalidate all conversation-related queries
       queryClient.invalidateQueries({ queryKey: conversationKeys.all });
       queryClient.invalidateQueries({ queryKey: conversationKeys.byNpc() });
@@ -575,7 +575,7 @@ export function usePrefetchConversations() {
     prefetchConversations: (tenant: Tenant, options?: QueryOptions) =>
       queryClient.prefetchQuery({
         queryKey: conversationKeys.list(tenant, options),
-        queryFn: () => conversationsService.getAll(options),
+        queryFn: () => conversationsService.getAll<Conversation>(options),
         staleTime: 3 * 60 * 1000,
       }),
     

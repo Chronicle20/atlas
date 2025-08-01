@@ -11,8 +11,9 @@
  */
 
 import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
-import { templatesService, type Template, type TemplateAttributes } from '@/services/api/templates.service';
-import type { ServiceOptions, QueryOptions } from '@/services/api/base.service';
+import { templatesService } from '@/services/api/templates.service';
+import type { Template, TemplateAttributes } from '@/types/models/template';
+import type { ServiceOptions, QueryOptions, BatchResult } from '@/services/api/base.service';
 
 // Query keys for consistent cache management
 export const templateKeys = {
@@ -229,7 +230,7 @@ export function useDeleteTemplate(): UseMutationResult<void, Error, { id: string
  * Hook to create multiple templates in batch
  */
 export function useCreateTemplatesBatch(): UseMutationResult<
-  { successes: Template[]; failures: Array<{ index: number; error: string }> },
+  BatchResult<Template>,
   Error,
   { templates: TemplateAttributes[]; options?: ServiceOptions }
 > {
@@ -256,7 +257,7 @@ export function useCreateTemplatesBatch(): UseMutationResult<
  * Hook to update multiple templates in batch
  */
 export function useUpdateTemplatesBatch(): UseMutationResult<
-  { successes: Template[]; failures: Array<{ id: string; error: string }> },
+  BatchResult<Template>,
   Error,
   { updates: Array<{ id: string; data: Partial<TemplateAttributes> }>; options?: ServiceOptions }
 > {
@@ -283,7 +284,7 @@ export function useUpdateTemplatesBatch(): UseMutationResult<
  * Hook to delete multiple templates in batch
  */
 export function useDeleteTemplatesBatch(): UseMutationResult<
-  { successes: string[]; failures: Array<{ id: string; error: string }> },
+  BatchResult<string>,
   Error,
   { ids: string[]; options?: ServiceOptions }
 > {

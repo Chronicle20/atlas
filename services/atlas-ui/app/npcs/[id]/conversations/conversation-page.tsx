@@ -922,7 +922,7 @@ export default function ConversationPage() {
 
     // Show success message
     toast.success("Node updated successfully");
-  }, [conversation, selectedNodeId, editNodeId, editNodeType, editNodeText, editNodeTitle, setNodes, setEdges]);
+  }, [conversation, selectedNodeId, editNodeId, editNodeType, editNodeText, editNodeTitle, editChoices, editDialogueType, setNodes, setEdges]);
 
   // Handle adding a new node
   const handleAddNode = useCallback(() => {
@@ -1011,7 +1011,7 @@ export default function ConversationPage() {
 
     // Show success message
     toast.success("Node added successfully");
-  }, [conversation, editNodeId, editNodeType, editNodeText, editNodeTitle, setNodes, setEdges]);
+  }, [conversation, editNodeId, editNodeType, editNodeText, editNodeTitle, editChoices, editDialogueType, setNodes, setEdges]);
 
   // Handle node edit
   const handleNodeEdit = useCallback((nodeId: string) => {
@@ -1370,7 +1370,7 @@ export default function ConversationPage() {
       animated: false,
       style: edgeStyle,
     }, eds));
-  }, [isHandleConnected, setEdges, setNodes, nodes, conversation, setConversation, processConversationData]);
+  }, [isHandleConnected, setEdges, nodes, conversation, setConversation]);
 
   // Edge update handlers for drag-and-drop deletion
   const onEdgeUpdateStart = useCallback(() => {
@@ -1710,7 +1710,7 @@ export default function ConversationPage() {
       hasOrganized.current = true;
       handleReorganize();
     }
-  }, [loading, handleReorganize]);
+  }, [loading, handleReorganize, nodes.length]);
 
   // Update nodes and edges when conversation changes
   const prevConversationRef = useRef<Conversation | null>(null);
@@ -1740,7 +1740,7 @@ export default function ConversationPage() {
       setNodes(updatedNodes);
       setEdges(processedEdges);
     }
-  }, [conversation, nodes, processConversationData, setNodes, setEdges]);
+  }, [conversation, nodes, setNodes, setEdges]);
 
   const handleZoomIn = () => {
     reactFlowInstance.zoomIn();

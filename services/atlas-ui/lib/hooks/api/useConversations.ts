@@ -12,6 +12,7 @@
 
 import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
 import { conversationsService, type ConversationCreateRequest, type ConversationUpdateRequest } from '@/services/api/conversations.service';
+import type { BatchResult, BatchOptions } from '@/services/api/base.service';
 import type { 
   Conversation, 
   ConversationAttributes,
@@ -358,17 +359,13 @@ export function useDeleteConversation(): UseMutationResult<
  * Hook to batch create multiple conversations
  */
 export function useCreateConversationsBatch(): UseMutationResult<
-  Conversation[],
+  BatchResult<Conversation>,
   Error,
   { 
     conversations: ConversationAttributes[]; 
     tenant: Tenant; 
     options?: ServiceOptions;
-    batchOptions?: { 
-      batchSize?: number; 
-      delayBetweenBatches?: number; 
-      continueOnError?: boolean 
-    }
+    batchOptions?: BatchOptions;
   }
 > {
   const queryClient = useQueryClient();
@@ -381,8 +378,8 @@ export function useCreateConversationsBatch(): UseMutationResult<
       queryClient.invalidateQueries({ queryKey: conversationKeys.all });
       queryClient.invalidateQueries({ queryKey: conversationKeys.byNpc() });
       
-      // Invalidate NPC-specific queries for created conversations
-      data.forEach(conversation => {
+      // Invalidate NPC-specific queries for successfully created conversations
+      data.successes.forEach(conversation => {
         if (conversation.attributes.npcId) {
           // Invalidate will be handled by component-level cache invalidation
         }
@@ -398,17 +395,13 @@ export function useCreateConversationsBatch(): UseMutationResult<
  * Hook to batch update multiple conversations
  */
 export function useUpdateConversationsBatch(): UseMutationResult<
-  Conversation[],
+  BatchResult<Conversation>,
   Error,
   { 
     updates: Array<{ id: string; data: Partial<ConversationAttributes> }>; 
     tenant: Tenant; 
     options?: ServiceOptions;
-    batchOptions?: { 
-      batchSize?: number; 
-      delayBetweenBatches?: number; 
-      continueOnError?: boolean 
-    }
+    batchOptions?: BatchOptions;
   }
 > {
   const queryClient = useQueryClient();
@@ -421,8 +414,8 @@ export function useUpdateConversationsBatch(): UseMutationResult<
       queryClient.invalidateQueries({ queryKey: conversationKeys.all });
       queryClient.invalidateQueries({ queryKey: conversationKeys.byNpc() });
       
-      // Invalidate specific conversation details and state consistency
-      data.forEach(conversation => {
+      // Invalidate specific conversation details and state consistency for successful updates
+      data.successes.forEach(conversation => {
         // Note: tenant-specific invalidation is handled at component level
         if (conversation.attributes.npcId) {
           // Invalidate will be handled by component-level cache invalidation
@@ -439,17 +432,13 @@ export function useUpdateConversationsBatch(): UseMutationResult<
  * Hook to batch delete multiple conversations
  */
 export function useDeleteConversationsBatch(): UseMutationResult<
-  void,
+  BatchResult<string>,
   Error,
   { 
     ids: string[]; 
     tenant: Tenant; 
     options?: ServiceOptions;
-    batchOptions?: { 
-      batchSize?: number; 
-      delayBetweenBatches?: number; 
-      continueOnError?: boolean 
-    }
+    batchOptions?: BatchOptions;
   }
 > {
   const queryClient = useQueryClient();

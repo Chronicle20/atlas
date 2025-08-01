@@ -277,15 +277,6 @@ class InventoryService {
     };
   }
 
-  // Legacy methods for backward compatibility
-  
-  /**
-   * Legacy method: fetchInventory
-   * @deprecated Use getInventory() instead
-   */
-  async fetchInventory(tenant: Tenant, characterId: string): Promise<InventoryResponse> {
-    return this.getInventory(tenant, characterId);
-  }
 }
 
 export const inventoryService = new InventoryService();

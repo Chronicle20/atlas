@@ -9,9 +9,6 @@ import {
   useCharacters, 
   useCharacter, 
   useUpdateCharacter,
-  useFetchCharacters,
-  useFetchCharacter,
-  useUpdateCharacterLegacy,
   useInvalidateCharacters,
   usePrefetchCharacters,
   usePrefetchCharacter,
@@ -27,9 +24,6 @@ jest.mock('@/services/api/characters.service', () => ({
     getAll: jest.fn(),
     getById: jest.fn(),
     update: jest.fn(),
-    fetchCharacters: jest.fn(),
-    fetchCharacter: jest.fn(),
-    updateCharacter: jest.fn(),
   },
 }));
 
@@ -239,68 +233,6 @@ describe('useCharacters hooks', () => {
     });
   });
 
-  describe('Legacy hooks', () => {
-    describe('useFetchCharacters', () => {
-      it('should use legacy fetchCharacters method', async () => {
-        mockCharactersService.fetchCharacters.mockResolvedValue(mockCharacters);
-
-        const { result } = renderHook(
-          () => useFetchCharacters(mockTenant),
-          { wrapper: createWrapper() }
-        );
-
-        await waitFor(() => {
-          expect(result.current.isSuccess).toBe(true);
-        });
-
-        expect(result.current.data).toEqual(mockCharacters);
-        expect(mockCharactersService.fetchCharacters).toHaveBeenCalledWith(mockTenant);
-      });
-    });
-
-    describe('useFetchCharacter', () => {
-      it('should use legacy fetchCharacter method', async () => {
-        mockCharactersService.fetchCharacter.mockResolvedValue(mockCharacter);
-
-        const { result } = renderHook(
-          () => useFetchCharacter(mockTenant, 'char-123'),
-          { wrapper: createWrapper() }
-        );
-
-        await waitFor(() => {
-          expect(result.current.isSuccess).toBe(true);
-        });
-
-        expect(result.current.data).toEqual(mockCharacter);
-        expect(mockCharactersService.fetchCharacter).toHaveBeenCalledWith(mockTenant, 'char-123');
-      });
-    });
-
-    describe('useUpdateCharacterLegacy', () => {
-      it('should use legacy updateCharacter method', async () => {
-        mockCharactersService.updateCharacter.mockResolvedValue(undefined);
-
-        const wrapper = createWrapper();
-        const { result } = renderHook(() => useUpdateCharacterLegacy(), { wrapper });
-
-        result.current.mutate({
-          tenant: mockTenant,
-          characterId: 'char-123',
-          updates: mockUpdateData,
-        });
-
-        await waitFor(() => {
-          expect(result.current.isSuccess).toBe(true);
-        });
-
-        expect(mockCharactersService.updateCharacter).toHaveBeenCalledWith(
-          mockTenant,
-          'char-123',
-          mockUpdateData
-        );
-      });
-    });
-  });
 
   describe('Utility hooks', () => {
     describe('useInvalidateCharacters', () => {

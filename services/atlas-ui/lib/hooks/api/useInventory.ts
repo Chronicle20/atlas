@@ -231,26 +231,6 @@ export function useDeleteAsset(): UseMutationResult<
   });
 }
 
-// ============================================================================
-// LEGACY SUPPORT HOOKS
-// ============================================================================
-
-/**
- * Legacy hook using fetchInventory method
- * @deprecated Use useInventory() instead
- */
-export function useFetchInventory(
-  tenant: Tenant, 
-  characterId: string
-): UseQueryResult<InventoryResponse, Error> {
-  return useQuery({
-    queryKey: [...inventoryKeys.inventories(), 'legacy', tenant.id, characterId],
-    queryFn: () => inventoryService.fetchInventory(tenant, characterId),
-    enabled: !!tenant?.id && !!characterId,
-    staleTime: 30 * 1000,
-    gcTime: 2 * 60 * 1000,
-  });
-}
 
 // ============================================================================
 // UTILITY HOOKS

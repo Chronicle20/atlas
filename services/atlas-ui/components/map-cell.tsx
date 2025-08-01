@@ -12,7 +12,7 @@ export function MapCell({ mapId, tenant }: { mapId: string; tenant: Tenant | nul
     useEffect(() => {
         if (!tenant || !mapId || mapNameCache.has(mapId)) return
 
-        mapsService.fetchMap(tenant, mapId)
+        mapsService.getMapById(mapId)
             .then((map) => {
                 const mapName = map.attributes.name
                 mapNameCache.set(mapId, mapName)

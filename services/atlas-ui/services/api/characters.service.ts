@@ -53,29 +53,6 @@ class CharactersService {
     return api.patch<void>(`/api/characters/${characterId}`, requestBody, options);
   }
 
-  /**
-   * Legacy method: fetchCharacters
-   * @deprecated Use getAll() instead
-   */
-  async fetchCharacters(tenant: Tenant): Promise<Character[]> {
-    return this.getAll(tenant);
-  }
-
-  /**
-   * Legacy method: fetchCharacter
-   * @deprecated Use getById() instead
-   */
-  async fetchCharacter(tenant: Tenant, characterId: string): Promise<Character> {
-    return this.getById(tenant, characterId);
-  }
-
-  /**
-   * Legacy method: updateCharacter
-   * @deprecated Use update() instead
-   */
-  async updateCharacter(tenant: Tenant, characterId: string, data: UpdateCharacterData): Promise<void> {
-    return this.update(tenant, characterId, data);
-  }
 }
 
 export const charactersService = new CharactersService();

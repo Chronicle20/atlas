@@ -2,7 +2,7 @@
  * Template service
  * Handles all template-related API operations with full API client feature support
  */
-import { BaseService } from './base.service';
+import { BaseService, type QueryOptions, type ServiceOptions, type BatchOptions, type BatchResult } from './base.service';
 import type { 
   Template, 
   TemplateAttributes,
@@ -45,7 +45,7 @@ class TemplatesService extends BaseService {
   /**
    * Transform request data to API format
    */
-  protected transformRequest<T>(data: T): T {
+  protected override transformRequest<T>(data: T): T {
     // For create/update operations, wrap data in the expected format
     if (data && typeof data === 'object' && !('data' in data)) {
       return {
@@ -62,7 +62,7 @@ class TemplatesService extends BaseService {
   /**
    * Transform API response to domain model format with sorting
    */
-  protected transformResponse<T>(data: T): T {
+  protected override transformResponse<T>(data: T): T {
     // Extract data from API response wrapper if present
     let extractedData = data;
     if (data && typeof data === 'object' && 'data' in data) {
@@ -75,7 +75,7 @@ class TemplatesService extends BaseService {
         .map((template: Template) => this.sortTemplateHandlersAndWriters(template))
         .sort((a: Template, b: Template) => this.compareTemplates(a, b)) as T;
     } else if (extractedData && typeof extractedData === 'object' && 'attributes' in extractedData) {
-      return this.sortTemplateHandlersAndWriters(extractedData as Template) as T;
+      return this.sortTemplateHandlersAndWriters(extractedData as unknown as Template) as T;
     }
 
     return extractedData;
@@ -118,7 +118,7 @@ class TemplatesService extends BaseService {
   /**
    * Validate template data before API calls
    */
-  protected validate(data: unknown): Array<{ field: string; message: string; value?: unknown }> {
+  protected override validate(data: unknown): Array<{ field: string; message: string; value?: unknown }> {
     const errors: Array<{ field: string; message: string; value?: unknown }> = [];
     
     if (!data || typeof data !== 'object') {
@@ -253,49 +253,49 @@ class TemplatesService extends BaseService {
   /**
    * Get all templates with advanced query support and automatic sorting
    */
-  async getAll(options?: Parameters<BaseService['getAll']>[0]): Promise<Template[]> {
-    return super.getAll<Template>(options);
+  override async getAll<T = Template>(options?: QueryOptions): Promise<T[]> {
+    return super.getAll<T>(options);
   }
 
   /**
    * Get template by ID
    */
-  async getById(id: string, options?: Parameters<BaseService['getById']>[1]): Promise<Template> {
-    return super.getById<Template>(id, options);
+  override async getById<T = Template>(id: string, options?: ServiceOptions): Promise<T> {
+    return super.getById<T>(id, options);
   }
 
   /**
    * Check if template exists
    */
-  async exists(id: string, options?: Parameters<BaseService['exists']>[1]): Promise<boolean> {
+  override async exists(id: string, options?: ServiceOptions): Promise<boolean> {
     return super.exists(id, options);
   }
 
   /**
    * Create new template with validation
    */
-  async create(templateAttributes: TemplateAttributes, options?: Parameters<BaseService['create']>[1]): Promise<Template> {
-    return super.create<Template, TemplateAttributes>(templateAttributes, { validate: true, ...options });
+  override async create<T = Template, D = TemplateAttributes>(data: D, options?: ServiceOptions): Promise<T> {
+    return super.create<T, D>(data, { validate: true, ...options });
   }
 
   /**
    * Update existing template with validation
    */
-  async update(id: string, templateAttributes: Partial<TemplateAttributes>, options?: Parameters<BaseService['update']>[2]): Promise<Template> {
-    return super.update<Template, Partial<TemplateAttributes>>(id, templateAttributes, { validate: true, ...options });
+  override async update<T = Template, D = Partial<TemplateAttributes>>(id: string, data: D, options?: ServiceOptions): Promise<T> {
+    return super.update<T, D>(id, data, { validate: true, ...options });
   }
 
   /**
    * Partially update template (PATCH)
    */
-  async patch(id: string, updates: Partial<TemplateAttributes>, options?: Parameters<BaseService['patch']>[2]): Promise<Template> {
-    return super.patch<Template, Partial<TemplateAttributes>>(id, updates, options);
+  override async patch<T = Template, D = Partial<TemplateAttributes>>(id: string, data: D, options?: ServiceOptions): Promise<T> {
+    return super.patch<T, D>(id, data, options);
   }
 
   /**
    * Delete template
    */
-  async delete(id: string, options?: Parameters<BaseService['delete']>[1]): Promise<void> {
+  override async delete(id: string, options?: ServiceOptions): Promise<void> {
     return super.delete(id, options);
   }
 
@@ -318,13 +318,13 @@ class TemplatesService extends BaseService {
   /**
    * Batch create multiple templates
    */
-  async createBatch(
-    templates: TemplateAttributes[], 
-    options?: Parameters<BaseService['createBatch']>[1],
-    batchOptions?: Parameters<BaseService['createBatch']>[2]
-  ) {
-    return super.createBatch<Template, TemplateAttributes>(
-      templates, 
+  override async createBatch<T = Template, D = TemplateAttributes>(
+    items: D[], 
+    options?: ServiceOptions,
+    batchOptions?: BatchOptions
+  ): Promise<BatchResult<T>> {
+    return super.createBatch<T, D>(
+      items, 
       { validate: true, ...options },
       batchOptions
     );
@@ -333,12 +333,12 @@ class TemplatesService extends BaseService {
   /**
    * Batch update multiple templates
    */
-  async updateBatch(
-    updates: Array<{ id: string; data: Partial<TemplateAttributes> }>,
-    options?: Parameters<BaseService['updateBatch']>[1],
-    batchOptions?: Parameters<BaseService['updateBatch']>[2]
-  ) {
-    return super.updateBatch<Template, Partial<TemplateAttributes>>(
+  override async updateBatch<T = Template, D = Partial<TemplateAttributes>>(
+    updates: Array<{ id: string; data: D }>,
+    options?: ServiceOptions,
+    batchOptions?: BatchOptions
+  ): Promise<BatchResult<T>> {
+    return super.updateBatch<T, D>(
       updates,
       { validate: true, ...options },
       batchOptions
@@ -348,11 +348,11 @@ class TemplatesService extends BaseService {
   /**
    * Batch delete multiple templates
    */
-  async deleteBatch(
+  override async deleteBatch(
     ids: string[],
-    options?: Parameters<BaseService['deleteBatch']>[1],
-    batchOptions?: Parameters<BaseService['deleteBatch']>[2]
-  ) {
+    options?: ServiceOptions,
+    batchOptions?: BatchOptions
+  ): Promise<BatchResult<string>> {
     return super.deleteBatch(ids, options, batchOptions);
   }
 

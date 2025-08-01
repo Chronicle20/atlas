@@ -21,6 +21,11 @@ export * from './useMaps';
 
 // Guild hooks
 export * from './useGuilds';
-// export * from './useNpcs';
-// export * from './useConversations';
+
+// NPC hooks
+export * from './useNpcs';
+
+// Conversation hooks
+export * from './useConversations';
+
 // export * from './useTemplates';

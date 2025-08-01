@@ -117,69 +117,6 @@ export function useUpdateCharacter(): UseMutationResult<
   });
 }
 
-// ============================================================================
-// LEGACY SUPPORT HOOKS
-// ============================================================================
-
-/**
- * Legacy hook using fetchCharacters method
- * @deprecated Use useCharacters() instead
- */
-export function useFetchCharacters(tenant: Tenant): UseQueryResult<Character[], Error> {
-  return useQuery({
-    queryKey: [...characterKeys.lists(), 'legacy', tenant.id],
-    queryFn: () => charactersService.fetchCharacters(tenant),
-    enabled: !!tenant?.id,
-    staleTime: 2 * 60 * 1000,
-    gcTime: 5 * 60 * 1000,
-  });
-}
-
-/**
- * Legacy hook using fetchCharacter method
- * @deprecated Use useCharacter() instead
- */
-export function useFetchCharacter(
-  tenant: Tenant, 
-  characterId: string
-): UseQueryResult<Character, Error> {
-  return useQuery({
-    queryKey: [...characterKeys.details(), 'legacy', tenant.id, characterId],
-    queryFn: () => charactersService.fetchCharacter(tenant, characterId),
-    enabled: !!tenant?.id && !!characterId,
-    staleTime: 2 * 60 * 1000,
-    gcTime: 5 * 60 * 1000,
-  });
-}
-
-/**
- * Legacy hook using updateCharacter method
- * @deprecated Use useUpdateCharacter() instead
- */
-export function useUpdateCharacterLegacy(): UseMutationResult<
-  void,
-  Error,
-  { tenant: Tenant; characterId: string; updates: UpdateCharacterData }
-> {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ tenant, characterId, updates }) => 
-      charactersService.updateCharacter(tenant, characterId, updates),
-    onSuccess: (data, variables) => {
-      // Invalidate relevant queries
-      queryClient.invalidateQueries({ 
-        queryKey: [...characterKeys.details(), 'legacy', variables.tenant.id, variables.characterId]
-      });
-      queryClient.invalidateQueries({ 
-        queryKey: [...characterKeys.lists(), 'legacy', variables.tenant.id] 
-      });
-    },
-    onError: (error) => {
-      console.error('Failed to update character (legacy):', error);
-    },
-  });
-}
 
 // ============================================================================
 // UTILITY HOOKS
@@ -197,10 +134,6 @@ export function useInvalidateCharacters() {
       queryClient.invalidateQueries({ queryKey: characterKeys.list(tenant) }),
     invalidateCharacter: (tenant: Tenant, characterId: string) => 
       queryClient.invalidateQueries({ queryKey: characterKeys.detail(tenant, characterId) }),
-    invalidateLegacy: (tenant: Tenant) => {
-      queryClient.invalidateQueries({ queryKey: [...characterKeys.lists(), 'legacy', tenant.id] });
-      queryClient.invalidateQueries({ queryKey: [...characterKeys.details(), 'legacy', tenant.id] });
-    },
   };
 }
 

@@ -12,7 +12,6 @@ import {
   useInventorySummary,
   useHasAsset,
   useDeleteAsset,
-  useFetchInventory,
   useInvalidateInventory,
   usePrefetchInventory,
   usePrefetchCompartments,
@@ -40,7 +39,6 @@ jest.mock('@/services/api/inventory.service', () => ({
     getInventorySummary: jest.fn(),
     hasAsset: jest.fn(),
     deleteAsset: jest.fn(),
-    fetchInventory: jest.fn(),
     getCompartmentTypeName: jest.fn(),
     getAssetsForCompartment: jest.fn(),
   },
@@ -398,25 +396,6 @@ describe('useInventory hooks', () => {
     });
   });
 
-  describe('Legacy hooks', () => {
-    describe('useFetchInventory', () => {
-      it('should use legacy fetchInventory method', async () => {
-        mockInventoryService.fetchInventory.mockResolvedValue(mockInventoryResponse);
-
-        const { result } = renderHook(
-          () => useFetchInventory(mockTenant, '123'),
-          { wrapper: createWrapper() }
-        );
-
-        await waitFor(() => {
-          expect(result.current.isSuccess).toBe(true);
-        });
-
-        expect(result.current.data).toEqual(mockInventoryResponse);
-        expect(mockInventoryService.fetchInventory).toHaveBeenCalledWith(mockTenant, '123');
-      });
-    });
-  });
 
   describe('Utility hooks', () => {
     describe('useInvalidateInventory', () => {

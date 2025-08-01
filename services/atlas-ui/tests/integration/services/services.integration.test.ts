@@ -256,9 +256,9 @@ describe('Services Integration Tests', () => {
       expect(mockApi.getOne).toHaveBeenCalled();
       expect(character.attributes.name).toBe('TestCharacter');
 
-      // 3. Fetch character (alternative method)
+      // 3. Verify character using getById
       mockApi.getOne.mockResolvedValueOnce(mockCharacter);
-      const fetchedCharacter = await charactersService.fetchCharacter(mockTenant, 'char-1');
+      const fetchedCharacter = await charactersService.getById(mockTenant, 'char-1');
       
       expect(fetchedCharacter.attributes.name).toBe('TestCharacter');
     });

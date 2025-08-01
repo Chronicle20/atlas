@@ -187,15 +187,6 @@ class MapsService extends BaseService {
     return this.sortMaps(maps);
   }
 
-  /**
-   * Legacy method for backward compatibility with the old API
-   * @deprecated Use getMapById instead
-   */
-  async fetchMap(tenant: Tenant, mapId: string): Promise<MapData> {
-    // For backward compatibility, we'll use the tenant information if needed
-    // The new API client handles tenant information automatically
-    return this.getMapById(mapId);
-  }
 
   // === TYPE GUARDS ===
 

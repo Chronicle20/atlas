@@ -235,21 +235,9 @@ func handleDeleteCharacter(d *rest.HandlerDependency, _ *rest.HandlerContext) ht
 func handleUpdateCharacter(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			transactionId := r.Header.Get("X-Transaction-Id")
-			if transactionId == "" {
-				d.Logger().Errorf("Missing X-Transaction-Id header for character update.")
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
+			transactionUuid := uuid.New()
 
-			transactionUuid, err := uuid.Parse(transactionId)
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Invalid X-Transaction-Id header format.")
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
-
-			err = NewProcessor(d.Logger(), d.Context(), d.DB()).UpdateAndEmit(transactionUuid, characterId, input)
+			err := NewProcessor(d.Logger(), d.Context(), d.DB()).UpdateAndEmit(transactionUuid, characterId, input)
 			if err != nil {
 				if err.Error() == "invalid or duplicate name" ||
 					err.Error() == "invalid hair ID" ||

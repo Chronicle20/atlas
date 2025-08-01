@@ -50,7 +50,7 @@ class CharactersService {
     
     // Use the centralized API client to update the character
     // The API client handles all error cases and status codes automatically
-    return api.patch<void>(`/api/cos/characters/${characterId}`, requestBody, options);
+    return api.patch<void>(`/api/characters/${characterId}`, requestBody, options);
   }
 
   /**

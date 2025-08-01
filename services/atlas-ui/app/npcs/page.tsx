@@ -2,7 +2,7 @@
 
 import { useTenant } from "@/context/tenant-context";
 import { useEffect, useState } from "react";
-import {fetchNPCs, deleteAllShops, updateShop} from "@/lib/npcs";
+import {npcsService} from "@/services/api";
 import {NPC, Commodity} from "@/types/models/npc";
 import { tenantHeaders } from "@/lib/headers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,7 +35,7 @@ export default function Page() {
 
         setLoading(true);
 
-        fetchNPCs(activeTenant)
+        npcsService.getAll()
             .then((npcData) => {
                 setNpcs(npcData);
             })
@@ -88,7 +88,7 @@ export default function Page() {
         if (!activeTenant) return;
 
         try {
-            await deleteAllShops(activeTenant);
+            await npcsService.deleteAllShops();
             toast.success("All shops deleted successfully");
             setIsDeleteAllShopsDialogOpen(false);
             fetchDataAgain();
@@ -118,7 +118,7 @@ export default function Page() {
             // Get recharger value from JSON data if available
             const rechargerValue = jsonData.data.attributes?.recharger;
 
-            await updateShop(activeTenant, selectedNpcId, commoditiesToUpdate, rechargerValue);
+            await npcsService.updateShop(selectedNpcId, commoditiesToUpdate, rechargerValue);
             setIsBulkUpdateShopDialogOpen(false);
             setBulkUpdateShopJson("");
             fetchDataAgain();

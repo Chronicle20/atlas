@@ -5,7 +5,7 @@ import {getColumns} from "@/app/templates/columns";
 import {useEffect, useState} from "react";
 import {templatesService} from "@/services/api";
 import type {Template} from "@/types/models/template";
-import {createTenantConfiguration, createTenantFromTemplate} from "@/lib/tenants";
+import {tenantsService} from "@/services/api";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -185,10 +185,10 @@ export default function Page() {
             setIsCreatingTenant(true);
 
             // Create tenant attributes from template
-            const tenantAttributes = createTenantFromTemplate(templateForTenant);
+            const tenantAttributes = tenantsService.createFromTemplate(templateForTenant);
 
             // Create the new tenant configuration
-            const newTenant = await createTenantConfiguration(tenantAttributes);
+            const newTenant = await tenantsService.create(tenantAttributes);
 
             // Show success message
             toast.success("Tenant created successfully");

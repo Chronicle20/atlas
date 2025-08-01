@@ -143,8 +143,8 @@ class NpcsService extends BaseService {
 
       // Fetch NPCs with conversations
       try {
-        const { fetchConversations } = await import('@/lib/npc-conversations');
-        const conversations = await fetchConversations(tenant);
+        const { conversationsService } = await import('@/services/api');
+        const conversations = await conversationsService.getAll();
 
         // Extract NPCs from conversations data
         const npcsWithConversations = conversations.map(conversation => ({

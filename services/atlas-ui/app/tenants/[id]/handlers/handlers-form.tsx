@@ -8,7 +8,7 @@ import {Button} from "@/components/ui/button";
 import {useParams} from "next/navigation";
 import {useTenant} from "@/context/tenant-context";
 import {X} from "lucide-react";
-import {updateTenantConfiguration} from "@/lib/tenants";
+import {tenantsService} from "@/services/api";
 import {TenantConfig} from "@/types/models/tenant";
 import {OptionsField} from "@/components/unknown-options";
 import {toast} from "sonner";
@@ -73,7 +73,7 @@ export function HandlersForm() {
         if (!tenant) return;
 
         try {
-            const updatedTenant = await updateTenantConfiguration(tenant, {
+            const updatedTenant = await tenantsService.updateConfiguration(tenant, {
                 socket: {
                     handlers: data.handlers,
                     writers: tenant.attributes.socket.writers || [],

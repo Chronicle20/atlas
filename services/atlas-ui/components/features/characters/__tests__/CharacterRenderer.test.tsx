@@ -299,10 +299,10 @@ describe('CharacterRenderer', () => {
       );
     });
 
-    it('should render character with two-handed weapon and shield', async () => {
+    it('should render character with one-handed weapon and shield', async () => {
       const weaponSet: Asset[] = [
         createMockAsset(-10, 1092000), // Shield
-        createMockAsset(-11, 1302000), // Two-handed sword
+        createMockAsset(-11, 1302000), // One-handed sword
       ];
 
       mockMapleStoryService.characterToMapleStoryData.mockReturnValue({
@@ -344,7 +344,7 @@ describe('CharacterRenderer', () => {
             '-10': 1092000,
             '-11': 1302000,
           },
-          stance: 'stand2', // Two-handed weapon
+          stance: 'stand1', // One-handed weapon
           resize: 2,
         },
         cached: false,
@@ -357,7 +357,7 @@ describe('CharacterRenderer', () => {
       });
 
       const image = screen.getByTestId('character-image');
-      expect(image).toHaveAttribute('src', expect.stringContaining('stand2'));
+      expect(image).toHaveAttribute('src', expect.stringContaining('stand1'));
     });
 
     it('should render character with accessories', async () => {

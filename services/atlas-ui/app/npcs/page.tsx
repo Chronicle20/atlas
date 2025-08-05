@@ -1,15 +1,13 @@
 "use client"
 
 import { useTenant } from "@/context/tenant-context";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import {npcsService} from "@/services/api";
 import {NPC, Commodity} from "@/types/models/npc";
 import { tenantHeaders } from "@/lib/headers";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, RefreshCw, Upload, Trash2, ShoppingBag, Plus, MessageCircle } from "lucide-react";
+import { MoreHorizontal, RefreshCw, Upload, Trash2, Plus } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import Link from "next/link";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
@@ -17,10 +15,13 @@ import { Toaster } from "@/components/ui/sonner";
 import {createErrorFromUnknown} from "@/types/api/errors";
 import {ErrorDisplay} from "@/components/common/ErrorDisplay";
 import {NpcPageSkeleton} from "@/components/common/skeletons/NpcPageSkeleton";
+import { NpcCard, DropdownAction } from "@/components/features/npc/NpcCard";
+import { useNpcBatchData } from "@/lib/hooks/useNpcData";
 
 export default function Page() {
     const { activeTenant } = useTenant();
     const [npcs, setNpcs] = useState<NPC[]>([]);
+    const [npcsWithMetadata, setNpcsWithMetadata] = useState<NPC[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isCreateShopDialogOpen, setIsCreateShopDialogOpen] = useState(false);
@@ -45,6 +46,37 @@ export default function Page() {
             })
             .finally(() => setLoading(false));
     }, [activeTenant]);
+
+    // Extract NPC IDs for batch data fetching
+    const npcIds = useMemo(() => npcs.map(npc => npc.id), [npcs]);
+    
+    // Fetch NPC metadata (names and icons) in batch
+    const { data: npcDataResults, isLoading: isMetadataLoading } = useNpcBatchData(npcIds, {
+        enabled: npcIds.length > 0,
+        staleTime: 30 * 60 * 1000, // 30 minutes
+    });
+
+    // Merge original NPC data with fetched metadata
+    useEffect(() => {
+        if (!npcDataResults || npcDataResults.length === 0) {
+            setNpcsWithMetadata(npcs);
+            return;
+        }
+
+        const updatedNpcs: NPC[] = npcs.map(npc => {
+            const metadata = npcDataResults.find(result => 
+                result && !result.error && result.id === npc.id
+            );
+            
+            return {
+                ...npc,
+                ...(metadata?.name && { name: metadata.name }),
+                ...(metadata?.iconUrl && { iconUrl: metadata.iconUrl }),
+            };
+        });
+        
+        setNpcsWithMetadata(updatedNpcs);
+    }, [npcs, npcDataResults]);
 
     const handleCreateShop = async () => {
         if (!activeTenant) return;
@@ -189,87 +221,34 @@ export default function Page() {
             </div>
 
             <div className="overflow-auto h-[calc(100vh-10rem)] pr-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {npcs.map((npc) => (
-                        <Card key={npc.id} className="overflow-hidden">
-                            <CardHeader className="pb-2 flex justify-between items-start">
-                                <CardTitle className="text-lg">NPC #{npc.id}</CardTitle>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" className="h-8 w-8 p-0">
-                                            <span className="sr-only">Open menu</span>
-                                            <MoreHorizontal className="h-4 w-4" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                        {npc.hasShop && (
-                                            <DropdownMenuItem onClick={() => {
-                                                setSelectedNpcId(npc.id);
-                                                setIsBulkUpdateShopDialogOpen(true);
-                                            }}>
-                                                <Upload className="h-4 w-4 mr-2" />
-                                                Bulk Update Shop
-                                            </DropdownMenuItem>
-                                        )}
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </CardHeader>
-                            <CardContent className="pb-2">
-                                <div className="text-sm flex space-x-2">
-                                    {npc.hasShop ? (
-                                        <Button 
-                                            variant="default" 
-                                            size="sm"
-                                            className="cursor-pointer"
-                                            asChild
-                                            title="Shop Active"
-                                        >
-                                            <Link href={`/npcs/${npc.id}/shop`}>
-                                                <ShoppingBag className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    ) : (
-                                        <Button 
-                                            variant="outline" 
-                                            size="sm"
-                                            className="cursor-not-allowed opacity-50"
-                                            disabled
-                                            title="Shop Inactive"
-                                        >
-                                            <ShoppingBag className="h-4 w-4" />
-                                        </Button>
-                                    )}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+                    {npcsWithMetadata.map((npc) => {
+                        // Create dropdown actions for NPCs with shops
+                        const dropdownActions: DropdownAction[] = npc.hasShop ? [{
+                            label: "Bulk Update Shop",
+                            icon: <Upload className="h-4 w-4 mr-2" />,
+                            onClick: () => {
+                                setSelectedNpcId(npc.id);
+                                setIsBulkUpdateShopDialogOpen(true);
+                            }
+                        }] : [];
 
-                                    {npc.hasConversation ? (
-                                        <Button 
-                                            variant="default" 
-                                            size="sm"
-                                            className="cursor-pointer"
-                                            asChild
-                                            title="Conversation Available"
-                                        >
-                                            <Link href={`/npcs/${npc.id}/conversations`}>
-                                                <MessageCircle className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    ) : (
-                                        <Button 
-                                            variant="outline" 
-                                            size="sm"
-                                            className="cursor-not-allowed opacity-50"
-                                            disabled
-                                            title="No Conversation"
-                                        >
-                                            <MessageCircle className="h-4 w-4" />
-                                        </Button>
-                                    )}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))}
-                    {npcs.length === 0 && (
+                        return (
+                            <NpcCard 
+                                key={npc.id}
+                                npc={npc}
+                                dropdownActions={dropdownActions}
+                            />
+                        );
+                    })}
+                    {npcsWithMetadata.length === 0 && !loading && !isMetadataLoading && (
                         <div className="col-span-full text-center py-10">
                             No NPCs found.
+                        </div>
+                    )}
+                    {(loading || isMetadataLoading) && npcsWithMetadata.length === 0 && (
+                        <div className="col-span-full text-center py-10">
+                            Loading NPCs...
                         </div>
                     )}
                 </div>

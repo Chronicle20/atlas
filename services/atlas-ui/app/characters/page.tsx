@@ -10,6 +10,7 @@ import {Character} from "@/types/models/character";
 import {Account} from "@/types/models/account";
 import {TenantConfig} from "@/types/models/tenant";
 import {createErrorFromUnknown} from "@/types/api/errors";
+import {CharacterPageSkeleton} from "@/components/common/skeletons/CharacterPageSkeleton";
 
 
 export default function Page() {
@@ -50,6 +51,10 @@ export default function Page() {
 
     const columns = getColumns({tenant: activeTenant, tenantConfig: tenantConfig, accountMap, onRefresh: fetchDataAgain});
 
+    if (loading) {
+        return <CharacterPageSkeleton />;
+    }
+
     return (
         <div className="flex flex-col flex-1 space-y-6 p-10 pb-16">
             <div className="items-center justify-between space-y-2">
@@ -61,7 +66,6 @@ export default function Page() {
                 <DataTableWrapper 
                     columns={columns} 
                     data={characters} 
-                    loading={loading}
                     error={error}
                     onRefresh={fetchDataAgain}
                     initialVisibilityState={hiddenColumns}

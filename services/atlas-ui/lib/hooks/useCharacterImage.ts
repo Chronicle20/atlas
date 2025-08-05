@@ -16,7 +16,7 @@ interface UseCharacterImageOptions {
   priority?: boolean;
   lazy?: boolean;
   staleTime?: number;
-  cacheTime?: number;
+  gcTime?: number;
   retry?: number;
   onSuccess?: (data: CharacterImageResult) => void;
   onError?: (error: Error) => void;
@@ -33,7 +33,7 @@ const DEFAULT_OPTIONS: Required<Omit<UseCharacterImageOptions, 'onSuccess' | 'on
   priority: false,
   lazy: true,
   staleTime: 60 * 60 * 1000, // 1 hour
-  cacheTime: 24 * 60 * 60 * 1000, // 24 hours
+  gcTime: 24 * 60 * 60 * 1000, // 24 hours
   retry: 3,
 };
 
@@ -122,14 +122,25 @@ export function useCharacterImage(
     },
     enabled: options.enabled,
     staleTime: options.staleTime,
-    cacheTime: options.cacheTime,
+    gcTime: options.gcTime,
     retry: options.retry,
-    onSuccess: options.onSuccess,
-    onError: options.onError,
     // Keep failed queries in cache briefly for retry optimization
     retryOnMount: false,
     refetchOnWindowFocus: false,
   });
+
+  // Handle success/error callbacks with useEffect
+  useEffect(() => {
+    if (query.isSuccess && query.data && options.onSuccess) {
+      options.onSuccess(query.data);
+    }
+  }, [query.isSuccess, query.data, options]);
+
+  useEffect(() => {
+    if (query.isError && query.error && options.onError) {
+      options.onError(query.error);
+    }
+  }, [query.isError, query.error, options]);
 
   // Preload management
   const preload = useCallback(async (): Promise<ImagePreloadResult | null> => {
@@ -232,7 +243,7 @@ export function useCharacterImageCache() {
       totalQueries: characterImageQueries.length,
       activeQueries: characterImageQueries.filter(q => q.state.status === 'success').length,
       errorQueries: characterImageQueries.filter(q => q.state.status === 'error').length,
-      loadingQueries: characterImageQueries.filter(q => q.state.status === 'loading').length,
+      loadingQueries: characterImageQueries.filter(q => q.state.status === 'pending').length,
     };
   }, [queryClient]);
 

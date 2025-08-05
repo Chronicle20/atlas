@@ -12,7 +12,6 @@ const nextConfig: NextConfig = {
   },
   // Enable experimental features for better performance
   experimental: {
-    optimizeCss: true,
     optimizePackageImports: ['react-icons', '@tanstack/react-query'],
   },
   // Webpack optimizations for better bundle splitting

@@ -20,8 +20,14 @@ jest.mock('@/services/api/maplestory.service', () => ({
 
 // Mock Next.js Image component
 jest.mock('next/image', () => {
-  return function MockImage({ src, alt, onError, ...props }: any) {
+  return function MockImage({ src, alt, onError, ...props }: {
+    src: string;
+    alt: string;
+    onError?: () => void;
+    [key: string]: unknown;
+  }) {
     return (
+      // eslint-disable-next-line @next/next/no-img-element
       <img
         src={src}
         alt={alt}
@@ -66,7 +72,8 @@ function TestWrapper({ children }: { children: React.ReactNode }) {
 }
 
 describe('CharacterRenderer', () => {
-  const mockUseCharacterImage = require('@/lib/hooks/useCharacterImage').useCharacterImage as jest.MockedFunction<any>;
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const mockUseCharacterImage = require('@/lib/hooks/useCharacterImage').useCharacterImage as jest.MockedFunction<typeof import('@/lib/hooks/useCharacterImage').useCharacterImage>;
 
   beforeEach(() => {
     jest.clearAllMocks();

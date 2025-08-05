@@ -60,7 +60,7 @@ class CharacterCacheManager {
   /**
    * Send a message to the service worker
    */
-  private async sendMessage(message: ServiceWorkerMessage): Promise<any> {
+  private async sendMessage(message: ServiceWorkerMessage): Promise<CacheStats | void> {
     if (!this.swRegistration?.active) {
       throw new Error('Service worker not available');
     }
@@ -99,7 +99,7 @@ class CharacterCacheManager {
   async getCacheStats(): Promise<CacheStats> {
     try {
       const stats = await this.sendMessage({ type: 'GET_CACHE_STATS' });
-      return stats;
+      return stats as CacheStats;
     } catch (error) {
       console.error('Failed to get cache stats:', error);
       throw error;
@@ -228,18 +228,6 @@ export function useCharacterCache(): UseCharacterCacheReturn {
     }
   }, []);
 
-  const preloadImages = useCallback(async (urls: string[]) => {
-    try {
-      setError(null);
-      await characterCacheManager.preloadImages(urls);
-      // Refresh stats after preloading
-      await refreshStats();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to preload images');
-      throw err;
-    }
-  }, []);
-
   const refreshStats = useCallback(async () => {
     if (!isAvailable) return;
     
@@ -252,6 +240,18 @@ export function useCharacterCache(): UseCharacterCacheReturn {
       throw err;
     }
   }, [isAvailable]);
+
+  const preloadImages = useCallback(async (urls: string[]) => {
+    try {
+      setError(null);
+      await characterCacheManager.preloadImages(urls);
+      // Refresh stats after preloading
+      await refreshStats();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to preload images');
+      throw err;
+    }
+  }, [refreshStats]);
 
   return {
     isAvailable,
@@ -288,7 +288,7 @@ export function generateCharacterImageUrls(
         // This would use the same URL generation logic as the MapleStory service
         // Simplified version for example:
         const equipmentString = Object.entries(character.equipment)
-          .map(([slot, itemId]) => `${itemId}:0`)
+          .map(([, itemId]) => `${itemId}:0`)
           .join(',');
         
         const url = `https://maplestory.io/api/GMS/214/character/center/${character.skinColor}/${character.hair}:0,${character.face}:0,${equipmentString}/${stance}/0?resize=${scale}`;

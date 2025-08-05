@@ -12,15 +12,15 @@ interface UseIntersectionObserverOptions {
   enabled?: boolean;
 }
 
-interface IntersectionObserverResult {
+interface IntersectionObserverResult<T extends Element = Element> {
   isIntersecting: boolean;
   entry: IntersectionObserverEntry | null;
-  ref: React.RefObject<Element>;
+  ref: React.RefObject<T>;
 }
 
-export function useIntersectionObserver(
+export function useIntersectionObserver<T extends Element = Element>(
   options: UseIntersectionObserverOptions = {}
-): IntersectionObserverResult {
+): IntersectionObserverResult<T> {
   const {
     threshold = 0.1,
     root = null,
@@ -29,7 +29,7 @@ export function useIntersectionObserver(
     enabled = true,
   } = options;
 
-  const elementRef = useRef<Element>(null);
+  const elementRef = useRef<T>(null);
   const [isIntersecting, setIsIntersecting] = useState(false);
   const [entry, setEntry] = useState<IntersectionObserverEntry | null>(null);
   const [hasTriggered, setHasTriggered] = useState(false);
@@ -43,11 +43,13 @@ export function useIntersectionObserver(
     const observer = new IntersectionObserver(
       (entries) => {
         const [entry] = entries;
-        setEntry(entry);
-        setIsIntersecting(entry.isIntersecting);
+        if (entry) {
+          setEntry(entry);
+          setIsIntersecting(entry.isIntersecting);
 
-        if (entry.isIntersecting && triggerOnce) {
-          setHasTriggered(true);
+          if (entry.isIntersecting && triggerOnce) {
+            setHasTriggered(true);
+          }
         }
       },
       {
@@ -67,15 +69,15 @@ export function useIntersectionObserver(
   return {
     isIntersecting: triggerOnce ? (hasTriggered || isIntersecting) : isIntersecting,
     entry,
-    ref: elementRef,
+    ref: elementRef as React.RefObject<T>,
   };
 }
 
 /**
  * Hook for lazy loading that only enables queries when element is visible
  */
-export function useLazyLoad(options?: UseIntersectionObserverOptions) {
-  const { isIntersecting, ref } = useIntersectionObserver({
+export function useLazyLoad<T extends Element = HTMLDivElement>(options?: UseIntersectionObserverOptions) {
+  const { isIntersecting, ref } = useIntersectionObserver<T>({
     triggerOnce: true,
     threshold: 0.1,
     rootMargin: '100px', // Load slightly before entering viewport

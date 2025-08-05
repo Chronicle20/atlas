@@ -4,7 +4,7 @@
  */
 
 import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useEffect } from 'react';
 import { mapleStoryService } from '@/services/api/maplestory.service';
 import type { NpcDataResult } from '@/types/models/maplestory';
 

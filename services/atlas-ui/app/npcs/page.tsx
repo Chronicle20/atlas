@@ -79,9 +79,11 @@ export default function Page() {
         enabled: npcIds.length > 0,
         staleTime: 30 * 60 * 1000, // 30 minutes
         onError: (error: Error) => {
-            handleError(error, 0, { context: 'batch_metadata_fetch' });
+            if (handleError) {
+                handleError(error, 0, { context: 'batch_metadata_fetch' });
+            }
         },
-    }), [npcIds.length, handleError]);
+    }), [npcIds.length]); // Remove handleError from dependencies
     
     // Fetch NPC metadata (names and icons) in batch
     const { data: npcDataResults, isLoading: isMetadataLoading, errors: metadataErrors } = useNpcBatchData(npcIds, batchDataOptions);

@@ -27,7 +27,7 @@ interface NpcCardProps {
   onBulkUpdateShop?: (npcId: number) => void;
 }
 
-export const NpcCard = React.memo(function NpcCard({ 
+const NpcCardComponent = function NpcCard({ 
   npc, 
   dropdownActions = [],
   onBulkUpdateShop
@@ -158,5 +158,18 @@ export const NpcCard = React.memo(function NpcCard({
       </CardContent>
     </Card>
     </NpcErrorBoundary>
+  );
+};
+
+export const NpcCard = React.memo(NpcCardComponent, (prevProps, nextProps) => {
+  // Custom comparison function to prevent unnecessary re-renders
+  return (
+    prevProps.npc.id === nextProps.npc.id &&
+    prevProps.npc.name === nextProps.npc.name &&
+    prevProps.npc.iconUrl === nextProps.npc.iconUrl &&
+    prevProps.npc.hasShop === nextProps.npc.hasShop &&
+    prevProps.npc.hasConversation === nextProps.npc.hasConversation &&
+    prevProps.onBulkUpdateShop === nextProps.onBulkUpdateShop &&
+    prevProps.dropdownActions?.length === nextProps.dropdownActions?.length
   );
 });

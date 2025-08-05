@@ -8,12 +8,13 @@ import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {charactersService} from "@/services/api/characters.service";
 import {Character} from "@/types/models/character";
 import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/ui/collapsible";
-import {inventoryService, type InventoryResponse, type Compartment} from "@/services/api/inventory.service";
+import {inventoryService, type InventoryResponse, type Compartment, type Asset} from "@/services/api/inventory.service";
 import {TenantConfig} from "@/types/models/tenant";
 import {createErrorFromUnknown} from "@/types/api/errors";
 import { Button } from "@/components/ui/button";
 import { X, MapPin } from "lucide-react";
 import { ChangeMapDialog } from "@/components/features/characters/ChangeMapDialog";
+import { CharacterRenderer } from "@/components/features/characters/CharacterRenderer";
 import { PageLoader, ErrorDisplay } from "@/components/common";
 import {
     AlertDialog,
@@ -116,6 +117,12 @@ export default function CharacterDetailPage() {
         (item): item is Compartment => item.type === 'compartments'
     ) || [];
 
+    // Extract equipped items (those with negative slot indexes) from all assets for character rendering
+    const equippedItems = inventory?.included?.filter(
+        (item): item is Asset => 
+            item.type === 'assets' && 'slot' in item.attributes && item.attributes.slot < 0
+    ) || [];
+
     // Sort compartments by type
     const sortedCompartments = [...compartments].sort((a, b) => a.attributes.type - b.attributes.type);
 
@@ -127,7 +134,24 @@ export default function CharacterDetailPage() {
                 </div>
             </div>
             <div className="flex flex-row gap-6">
-                <Card className="w-[100%]">
+                {/* Character Rendering */}
+                <Card className="w-auto flex-shrink-0">
+                    <CardHeader>
+                        <CardTitle>Character</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex justify-center">
+                        <CharacterRenderer
+                            character={character}
+                            inventory={equippedItems}
+                            size="large"
+                            scale={2}
+                            className="character-renderer"
+                        />
+                    </CardContent>
+                </Card>
+
+                {/* Character Attributes */}
+                <Card className="flex-1">
                     <CardHeader>
                         <div className="flex items-center justify-between">
                             <CardTitle>Attributes</CardTitle>

@@ -15,7 +15,8 @@ import { Button } from "@/components/ui/button";
 import { X, MapPin } from "lucide-react";
 import { ChangeMapDialog } from "@/components/features/characters/ChangeMapDialog";
 import { CharacterRenderer } from "@/components/features/characters/CharacterRenderer";
-import { PageLoader, ErrorDisplay } from "@/components/common";
+import { ErrorDisplay } from "@/components/common";
+import { CharacterDetailSkeleton } from "@/components/common/skeletons/CharacterDetailSkeleton";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -109,7 +110,7 @@ export default function CharacterDetailPage() {
 
     }, [activeTenant, id, fetchTenantConfiguration])
 
-    if (loading) return <PageLoader />
+    if (loading) return <CharacterDetailSkeleton />
     if (error || !character || !tenantConfig) return <ErrorDisplay error={error || "Character or tenant configuration not found"} className="p-4" />;
 
     // Get compartments from inventory data

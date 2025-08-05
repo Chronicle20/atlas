@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { CharacterRendererDetailSkeleton } from '@/components/common/skeletons/CharacterDetailSkeleton';
 import { mapleStoryService } from '@/services/api/maplestory.service';
 import type { Asset } from '@/services/api/inventory.service';
 import type { CharacterRendererProps, MapleStoryCharacterData } from '@/types/models/maplestory';
@@ -175,13 +175,10 @@ export function CharacterRenderer({
   // Loading state
   if (loading && showLoading) {
     return (
-      <div className={cn(sizeClasses[size], 'flex items-center justify-center', className)}>
-        <Skeleton 
-          className={cn(sizeClasses[size], 'rounded-lg')}
-          variant="rectangular"
-          animation="pulse"
-        />
-      </div>
+      <CharacterRendererDetailSkeleton 
+        size={size} 
+        className={className}
+      />
     );
   }
   
@@ -284,12 +281,9 @@ export function CharacterRendererSkeleton({
   className?: string;
 }) {
   return (
-    <div className={cn(sizeClasses[size], 'flex items-center justify-center', className)}>
-      <Skeleton 
-        className={cn(sizeClasses[size], 'rounded-lg')}
-        variant="rectangular"
-        animation="pulse"
-      />
-    </div>
+    <CharacterRendererDetailSkeleton 
+      size={size} 
+      className={className}
+    />
   );
 }

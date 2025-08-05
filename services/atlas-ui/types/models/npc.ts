@@ -3,9 +3,13 @@
 
 export interface NPC {
     id: number;
+    name?: string;
+    iconUrl?: string;
     hasShop: boolean;
     hasConversation: boolean;
 }
+
+// API response data type is defined in @/types/models/maplestory.ts as NpcApiData
 
 // Shop-related types
 export interface Shop {

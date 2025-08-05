@@ -15,8 +15,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import {createErrorFromUnknown} from "@/types/api/errors";
-import {PageLoader} from "@/components/common/PageLoader";
 import {ErrorDisplay} from "@/components/common/ErrorDisplay";
+import {NpcPageSkeleton} from "@/components/common/skeletons/NpcPageSkeleton";
 
 export default function Page() {
     const { activeTenant } = useTenant();
@@ -146,7 +146,7 @@ export default function Page() {
         };
     }, []);
 
-    if (loading) return <PageLoader />;
+    if (loading) return <NpcPageSkeleton />;
     if (error) return <ErrorDisplay error={error} retry={fetchDataAgain} />;
 
     return (

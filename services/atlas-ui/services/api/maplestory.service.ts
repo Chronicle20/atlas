@@ -23,7 +23,7 @@ import { type Asset } from '@/services/api/inventory.service';
  */
 const DEFAULT_CONFIG: CharacterRenderingConfig = {
   apiBaseUrl: 'https://maplestory.io/api',
-  apiVersion: '214',
+  apiVersion: '214', // Fallback version if tenant not provided
   cacheEnabled: true,
   cacheTTL: 60 * 60 * 1000, // 1 hour
   defaultStance: 'stand1',
@@ -143,7 +143,7 @@ export class MapleStoryService {
   /**
    * Generate character image URL using MapleStory.io API
    */
-  generateCharacterUrl(options: CharacterRenderOptions): string {
+  generateCharacterUrl(options: CharacterRenderOptions, region?: string, majorVersion?: number): string {
     const items: string[] = [];
     const stance = options.stance || this.determineStance(options.equipment);
     
@@ -180,13 +180,22 @@ export class MapleStoryService {
     const itemString = items.join(',');
     const queryString = params.toString();
     
-    return `${this.config.apiBaseUrl}/GMS/${this.config.apiVersion}/character/center/${options.skin}/${itemString}/${stance}/0${queryString ? '?' + queryString : ''}`;
+    // Use provided region and majorVersion, fallback to defaults
+    const apiRegion = region || 'GMS';
+    const apiVersion = majorVersion?.toString() || this.config.apiVersion;
+    
+    return `${this.config.apiBaseUrl}/${apiRegion}/${apiVersion}/character/center/${options.skin}/${itemString}/${stance}/0${queryString ? '?' + queryString : ''}`;
   }
 
   /**
    * Generate character image with full result metadata
    */
-  async generateCharacterImage(character: MapleStoryCharacterData, options: Partial<CharacterRenderOptions> = {}): Promise<CharacterImageResult> {
+  async generateCharacterImage(
+    character: MapleStoryCharacterData, 
+    options: Partial<CharacterRenderOptions> = {},
+    region?: string,
+    majorVersion?: number
+  ): Promise<CharacterImageResult> {
     const renderOptions: CharacterRenderOptions = {
       hair: character.hair,
       face: character.face,
@@ -199,8 +208,8 @@ export class MapleStoryService {
       flipX: options.flipX || false,
     };
 
-    const cacheKey = this.getCacheKey(renderOptions);
-    const url = this.generateCharacterUrl(renderOptions);
+    const cacheKey = this.getCacheKey(renderOptions, region, majorVersion);
+    const url = this.generateCharacterUrl(renderOptions, region, majorVersion);
     
     let cached = false;
     if (this.config.cacheEnabled) {
@@ -316,8 +325,10 @@ export class MapleStoryService {
   /**
    * Generate cache key for a character render
    */
-  private getCacheKey(options: CharacterRenderOptions): string {
+  private getCacheKey(options: CharacterRenderOptions, region?: string, majorVersion?: number): string {
     const keyParts = [
+      region || 'GMS',
+      majorVersion?.toString() || this.config.apiVersion,
       options.hair,
       options.face,
       options.skin,

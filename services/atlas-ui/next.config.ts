@@ -1,5 +1,11 @@
 import type { NextConfig } from "next";
 
+// Auto-detect container environment
+const isContainer = 
+  process.env.DOCKER_ENV === 'true' || 
+  process.env.KUBERNETES_SERVICE_HOST !== undefined ||
+  process.env.NODE_ENV === 'production';
+
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
@@ -16,6 +22,13 @@ const nextConfig: NextConfig = {
     imageSizes: [32, 48, 64, 96, 128, 192, 256], // Icon sizes
     dangerouslyAllowSVG: true, // Allow SVG fallbacks
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    // Disable image optimization in containers to avoid 400 errors
+    unoptimized: isContainer,
+    // Alternative loader for containers
+    ...(isContainer && {
+      loader: 'custom' as const,
+      loaderFile: './lib/image-loader.ts',
+    }),
   },
   // Enable experimental features for better performance
   experimental: {

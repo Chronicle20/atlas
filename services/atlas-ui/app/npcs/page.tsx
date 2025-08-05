@@ -79,11 +79,10 @@ export default function Page() {
         enabled: npcIds.length > 0,
         staleTime: 30 * 60 * 1000, // 30 minutes
         onError: (error: Error) => {
-            if (handleError) {
-                handleError(error, 0, { context: 'batch_metadata_fetch' });
-            }
+            // Handle error without dependency on handleError function
+            console.error('Batch metadata fetch error:', error);
         },
-    }), [npcIds.length]); // Remove handleError from dependencies
+    }), [npcIds.length]);
     
     // Fetch NPC metadata (names and icons) in batch
     const { data: npcDataResults, isLoading: isMetadataLoading, errors: metadataErrors } = useNpcBatchData(npcIds, batchDataOptions);
@@ -118,7 +117,7 @@ export default function Page() {
             }));
             handleErrors(errorData);
         }
-    }, [npcs, npcDataResults, metadataErrors, npcIds, handleErrors]);
+    }, [npcs, npcDataResults, metadataErrors, npcIds]); // Removed handleErrors from dependencies
 
     const handleCreateShop = async () => {
         if (!activeTenant) return;

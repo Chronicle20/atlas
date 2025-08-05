@@ -65,7 +65,7 @@ export function CharacterRenderer({
   const mountedRef = useRef(true);
 
   // Lazy loading support with intersection observer
-  const { shouldLoad, ref: lazyRef } = useLazyLoad({
+  const { shouldLoad, ref: lazyRef } = useLazyLoad<HTMLDivElement>({
     enabled: lazy && !priority,
     rootMargin: '200px', // Start loading 200px before entering viewport
   });
@@ -94,7 +94,7 @@ export function CharacterRenderer({
       lazy,
       retry: maxRetries,
       enabled: priority || !lazy || shouldLoad, // Load immediately if priority or not lazy, otherwise wait for intersection
-      onSuccess: (data) => {
+      onSuccess: () => {
         setImageLoaded(false); // Reset for new image
         onImageLoad?.();
       },

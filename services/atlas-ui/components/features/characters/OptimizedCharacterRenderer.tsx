@@ -4,13 +4,55 @@
 
 "use client";
 
-import { memo, useMemo, Suspense } from 'react';
+import { memo, useMemo, Suspense, Component, ErrorInfo, ReactNode } from 'react';
 import dynamic from 'next/dynamic';
-import { ErrorBoundary } from 'react-error-boundary';
 import { CharacterRenderer, CharacterRendererSkeleton } from './CharacterRenderer';
 import { useCharacterImagePreloader } from '@/lib/hooks/useCharacterImage';
+import { mapleStoryService } from '@/services/api/maplestory.service';
 import type { Character } from '@/types/models/character';
 import type { Asset } from '@/services/api/inventory.service';
+
+// Simple Error Boundary implementation
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error?: Error;
+}
+
+interface ErrorBoundaryProps {
+  children: ReactNode;
+  fallbackRender: (props: { error: Error; resetErrorBoundary: () => void }) => ReactNode;
+  onError?: (error: Error, errorInfo: ErrorInfo) => void;
+}
+
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    this.props.onError?.(error, errorInfo);
+  }
+
+  resetErrorBoundary = () => {
+    this.setState({ hasError: false });
+  };
+
+  override render() {
+    if (this.state.hasError && this.state.error) {
+      return this.props.fallbackRender({
+        error: this.state.error,
+        resetErrorBoundary: this.resetErrorBoundary,
+      });
+    }
+
+    return this.props.children;
+  }
+}
 
 interface OptimizedCharacterRendererProps {
   character: Character;
@@ -44,13 +86,11 @@ function CharacterRenderErrorFallback({
   error, 
   resetErrorBoundary,
   character,
-  size = 'medium',
   className 
 }: {
   error: Error;
   resetErrorBoundary: () => void;
   character: Character;
-  size?: 'small' | 'medium' | 'large';
   className?: string;
 }) {
   return (
@@ -116,13 +156,20 @@ const OptimizedCharacterRendererComponent = memo<OptimizedCharacterRendererProps
   // Preload sibling characters for better UX
   useMemo(() => {
     if (preloadSiblings.length > 0) {
-      // Fire and forget - don't await
-      preloadImages(
-        preloadSiblings.map(sibling => ({
-          character: sibling.character,
+      // Convert Character to MapleStoryCharacterData first, then preload
+      const siblingData = preloadSiblings.map(sibling => {
+        const mapleStoryData = mapleStoryService.characterToMapleStoryData(
+          sibling.character,
+          sibling.inventory || []
+        );
+        return {
+          character: mapleStoryData,
           options: { resize: sibling.scale || scale },
-        }))
-      );
+        };
+      });
+      
+      // Fire and forget - don't await
+      preloadImages(siblingData);
     }
   }, [preloadSiblings, preloadImages, scale]);
   
@@ -136,9 +183,9 @@ const OptimizedCharacterRendererComponent = memo<OptimizedCharacterRendererProps
       lazy={lazy}
       showLoading={showLoading}
       fallbackAvatar={fallbackAvatar}
-      className={className}
-      onImageLoad={onImageLoad}
-      onImageError={onImageError}
+      className={className || ''}
+{...(onImageLoad && { onImageLoad })}
+      {...(onImageError && { onImageError })}
       enablePreload={enablePreload}
       prefetchVariants={prefetchVariants}
     />
@@ -152,8 +199,7 @@ const OptimizedCharacterRendererComponent = memo<OptimizedCharacterRendererProps
           error={error}
           resetErrorBoundary={resetErrorBoundary}
           character={character}
-          size={size}
-          className={className}
+          className={className || ''}
         />
       )}
       onError={(error, errorInfo) => {
@@ -220,12 +266,14 @@ export function CharacterGallery({
   
   useMemo(() => {
     if (priority && characters.length > 0) {
-      preloadImages(
-        characters.map(({ character, scale = 2 }) => ({
-          character: character,
+      const characterData = characters.map(({ character, inventory = [], scale = 2 }) => {
+        const mapleStoryData = mapleStoryService.characterToMapleStoryData(character, inventory);
+        return {
+          character: mapleStoryData,
           options: { resize: scale },
-        }))
-      );
+        };
+      });
+      preloadImages(characterData);
     }
   }, [characters, priority, preloadImages]);
 
@@ -239,8 +287,8 @@ export function CharacterGallery({
         >
           <OptimizedCharacterRenderer
             character={character}
-            inventory={inventory}
-            scale={scale}
+            inventory={inventory || []}
+            scale={scale || 2}
             size={itemSize}
             priority={priority && index < 3} // Prioritize first 3 images
             lazy={!priority}

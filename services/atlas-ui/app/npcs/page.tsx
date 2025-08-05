@@ -6,15 +6,14 @@ import {npcsService} from "@/services/api";
 import {NPC, Commodity} from "@/types/models/npc";
 import { tenantHeaders } from "@/lib/headers";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Upload, User } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import dynamic from "next/dynamic";
 import {createErrorFromUnknown} from "@/types/api/errors";
 import {ErrorDisplay} from "@/components/common/ErrorDisplay";
 import {NpcPageSkeleton} from "@/components/common/skeletons/NpcPageSkeleton";
-import { NpcCard, DropdownAction } from "@/components/features/npc/NpcCard";
-import { NpcCardSkeleton } from "@/components/features/npc/NpcCardSkeleton";
+import { VirtualizedNpcGrid } from "@/components/features/npc/VirtualizedNpcGrid";
 import { useNpcBatchData } from "@/lib/hooks/useNpcData";
 import { useNpcErrorHandler } from "@/lib/hooks/useNpcErrorHandler";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
@@ -47,6 +46,7 @@ export default function Page() {
     const [selectedNpcId, setSelectedNpcId] = useState<number | null>(null);
     const [createShopJson, setCreateShopJson] = useState("");
     const [bulkUpdateShopJson, setBulkUpdateShopJson] = useState("");
+    const [containerHeight, setContainerHeight] = useState(600);
 
     // Initialize error handler for batch operations
     const { handleErrors, handleError } = useNpcErrorHandler({
@@ -215,6 +215,22 @@ export default function Page() {
         };
     }, []);
 
+    // Calculate container height dynamically for virtual scrolling
+    useEffect(() => {
+        const calculateHeight = () => {
+            // Calculate available height: viewport height - header - padding - controls
+            const viewportHeight = window.innerHeight;
+            const headerHeight = 64; // Approximate header height
+            const paddingAndControls = 200; // Padding, title, controls space
+            const availableHeight = viewportHeight - headerHeight - paddingAndControls;
+            setContainerHeight(Math.max(400, availableHeight)); // Minimum 400px
+        };
+
+        calculateHeight();
+        window.addEventListener('resize', calculateHeight);
+        return () => window.removeEventListener('resize', calculateHeight);
+    }, []);
+
     if (loading) return <NpcPageSkeleton />;
     if (error) return <ErrorDisplay error={error} retry={fetchDataAgain} />;
 
@@ -272,57 +288,18 @@ export default function Page() {
                         });
                     }}
                 >
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-                        {/* Show NPC cards with data */}
-                        {npcsWithMetadata.map((npc) => {
-                            // Create dropdown actions for NPCs with shops
-                            const dropdownActions: DropdownAction[] = npc.hasShop ? [{
-                                label: "Bulk Update Shop",
-                                icon: <Upload className="h-4 w-4 mr-2" />,
-                                onClick: () => {
-                                    setSelectedNpcId(npc.id);
-                                    setIsBulkUpdateShopDialogOpen(true);
-                                }
-                            }] : [];
-
-                            return (
-                                <NpcCard 
-                                    key={npc.id}
-                                    npc={npc}
-                                    dropdownActions={dropdownActions}
-                                />
-                            );
-                        })}
-                        
-                        {/* Show skeleton cards while metadata is still loading */}
-                        {isMetadataLoading && npcs.length > npcsWithMetadata.length && (
-                            <>
-                                {Array.from({ length: Math.min(npcs.length - npcsWithMetadata.length, 8) }).map((_, index) => (
-                                    <NpcCardSkeleton key={`loading-skeleton-${index}`} />
-                                ))}
-                            </>
-                        )}
-                        
-                        {/* Empty state */}
-                        {npcsWithMetadata.length === 0 && !loading && !isMetadataLoading && (
-                            <div className="col-span-full text-center py-10">
-                                <div className="text-muted-foreground">
-                                    <User className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                                    <p className="text-lg font-medium">No NPCs found</p>
-                                    <p className="text-sm">Try refreshing the page or check your connection.</p>
-                                </div>
-                            </div>
-                        )}
-                        
-                        {/* Initial loading state - only when no data is available yet */}
-                        {(loading || (isMetadataLoading && npcs.length === 0)) && npcsWithMetadata.length === 0 && (
-                            <>
-                                {Array.from({ length: 12 }).map((_, index) => (
-                                    <NpcCardSkeleton key={`initial-loading-${index}`} />
-                                ))}
-                            </>
-                        )}
-                    </div>
+                    <VirtualizedNpcGrid
+                        npcs={npcsWithMetadata}
+                        isLoading={loading || (isMetadataLoading && npcs.length === 0)}
+                        containerHeight={containerHeight - 80} // Account for padding and headers
+                        onBulkUpdateShop={(npcId) => {
+                            setSelectedNpcId(npcId);
+                            setIsBulkUpdateShopDialogOpen(true);
+                        }}
+                        enableVirtualization={true}
+                        itemHeight={200} // Approximate height based on NPC card design
+                        overscan={2} // Render 2 extra rows for smooth scrolling
+                    />
                 </ErrorBoundary>
             </div>
 

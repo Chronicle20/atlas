@@ -1,26 +1,43 @@
 "use client"
 
 import { useTenant } from "@/context/tenant-context";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import {npcsService} from "@/services/api";
 import {NPC, Commodity} from "@/types/models/npc";
 import { tenantHeaders } from "@/lib/headers";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, RefreshCw, Upload, Trash2, ShoppingBag, Plus, MessageCircle } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import Link from "next/link";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
+import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
+import dynamic from "next/dynamic";
 import {createErrorFromUnknown} from "@/types/api/errors";
 import {ErrorDisplay} from "@/components/common/ErrorDisplay";
 import {NpcPageSkeleton} from "@/components/common/skeletons/NpcPageSkeleton";
+import { VirtualizedNpcGrid } from "@/components/features/npc/VirtualizedNpcGrid";
+import { useOptimizedNpcBatchData } from "@/lib/hooks/useNpcData";
+import { useNpcErrorHandler } from "@/lib/hooks/useNpcErrorHandler";
+import { ErrorBoundary } from "@/components/common/ErrorBoundary";
+
+// Dynamic imports for performance optimization
+const NpcDialogs = dynamic(() => import("@/components/features/npc/NpcDialogs").then(mod => ({ default: mod.NpcDialogs })), {
+  loading: () => null,
+  ssr: false,
+});
+
+// Dynamic import for heavy UI components that aren't immediately needed
+const AdvancedNpcActions = dynamic(() => import("@/components/features/npc/AdvancedNpcActions").then(mod => ({ default: mod.AdvancedNpcActions })), {
+  loading: () => (
+    <div className="flex items-center gap-2">
+      <div className="h-8 w-20 bg-muted rounded animate-pulse" />
+    </div>
+  ),
+  ssr: false,
+});
 
 export default function Page() {
     const { activeTenant } = useTenant();
     const [npcs, setNpcs] = useState<NPC[]>([]);
+    const [npcsWithMetadata, setNpcsWithMetadata] = useState<NPC[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isCreateShopDialogOpen, setIsCreateShopDialogOpen] = useState(false);
@@ -29,6 +46,14 @@ export default function Page() {
     const [selectedNpcId, setSelectedNpcId] = useState<number | null>(null);
     const [createShopJson, setCreateShopJson] = useState("");
     const [bulkUpdateShopJson, setBulkUpdateShopJson] = useState("");
+    const [containerHeight, setContainerHeight] = useState(600);
+
+    // Initialize error handler for batch operations
+    const { handleErrors, handleError } = useNpcErrorHandler({
+        showToasts: true,
+        logErrors: true,
+        maxToastsPerMinute: 5, // Allow more toasts for batch operations
+    });
 
     const fetchDataAgain = useCallback(() => {
         if (!activeTenant) return;
@@ -45,6 +70,85 @@ export default function Page() {
             })
             .finally(() => setLoading(false));
     }, [activeTenant]);
+
+    // Extract NPC IDs for batch data fetching
+    const npcIds = useMemo(() => npcs.map(npc => npc.id), [npcs]);
+    
+    // Memoize batch data options to prevent unnecessary re-fetching
+    const batchDataOptions = useMemo(() => ({
+        enabled: npcIds.length > 0,
+        staleTime: 30 * 60 * 1000, // 30 minutes
+        region: activeTenant?.attributes?.region || 'GMS',
+        version: activeTenant?.attributes?.majorVersion?.toString() || '214',
+        onError: (error: Error) => {
+            // Handle error without dependency on handleError function
+            console.error('Batch metadata fetch error:', error);
+        },
+    }), [npcIds.length, activeTenant?.attributes?.region, activeTenant?.attributes?.majorVersion]);
+    
+    // Fetch NPC metadata (names and icons) in batch using optimized hook
+    const { 
+        data: npcDataResults, 
+        isLoading: isMetadataLoading, 
+        error: metadataError,
+        invalidateBatch: refetchMetadata 
+    } = useOptimizedNpcBatchData(npcIds, batchDataOptions);
+
+    // Merge original NPC data with fetched metadata
+    useEffect(() => {
+        if (!npcs || npcs.length === 0) {
+            setNpcsWithMetadata([]);
+            return;
+        }
+
+        // If metadata is still loading and we have no results yet, show NPCs without metadata
+        if (isMetadataLoading && (!npcDataResults || npcDataResults.length === 0)) {
+            setNpcsWithMetadata(npcs);
+            return;
+        }
+
+        const updatedNpcs: NPC[] = npcs.map(npc => {
+            // Find metadata for this NPC
+            const metadata = npcDataResults?.find(result => 
+                result && result.id === npc.id
+            );
+            
+            // Apply metadata if available (even if partially successful)
+            if (metadata) {
+                const updatedNpc = { ...npc };
+                
+                // Only update name if it's a valid string
+                if ('name' in metadata && metadata.name && typeof metadata.name === 'string') {
+                    updatedNpc.name = metadata.name;
+                }
+                
+                // Only update iconUrl if it's a valid string
+                if ('iconUrl' in metadata && metadata.iconUrl && typeof metadata.iconUrl === 'string') {
+                    updatedNpc.iconUrl = metadata.iconUrl;
+                }
+                
+                return updatedNpc;
+            }
+            
+            // Return original NPC if no metadata found
+            return npc;
+        });
+        
+        setNpcsWithMetadata(updatedNpcs);
+        
+        // Log statistics for debugging
+        const npcsWithNames = updatedNpcs.filter(n => n.name).length;
+        const npcsWithIcons = updatedNpcs.filter(n => n.iconUrl).length;
+        console.log(`NPCs updated: ${updatedNpcs.length} total, ${npcsWithNames} with names, ${npcsWithIcons} with icons`);
+    }, [npcs, npcDataResults, isMetadataLoading]);
+
+    // Handle metadata errors separately
+    useEffect(() => {
+        if (metadataError) {
+            // Log errors for debugging without causing re-renders
+            console.error('Metadata fetch error:', metadataError);
+        }
+    }, [metadataError]); // Safe to depend on error object
 
     const handleCreateShop = async () => {
         if (!activeTenant) return;
@@ -146,13 +250,37 @@ export default function Page() {
         };
     }, []);
 
+    // Calculate container height dynamically for virtual scrolling
+    useEffect(() => {
+        const calculateHeight = () => {
+            // Calculate available height: viewport height - header - padding - controls
+            const viewportHeight = window.innerHeight;
+            const headerHeight = 64; // Approximate header height
+            const paddingAndControls = 200; // Padding, title, controls space
+            const availableHeight = viewportHeight - headerHeight - paddingAndControls;
+            setContainerHeight(Math.max(400, availableHeight)); // Minimum 400px
+        };
+
+        calculateHeight();
+        window.addEventListener('resize', calculateHeight);
+        return () => window.removeEventListener('resize', calculateHeight);
+    }, []);
+
     if (loading) return <NpcPageSkeleton />;
     if (error) return <ErrorDisplay error={error} retry={fetchDataAgain} />;
 
     return (
         <div className="flex flex-col flex-1 space-y-6 p-10 pb-4 h-[calc(100vh-4rem)] overflow-hidden">
             <div className="flex flex-col space-y-4">
-                <h2 className="text-2xl font-bold tracking-tight">NPCs</h2>
+                <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-bold tracking-tight">NPCs</h2>
+                    {isMetadataLoading && npcDataResults && npcDataResults.length > 0 && (
+                        <div className="text-sm text-muted-foreground flex items-center gap-2">
+                            <RefreshCw className="h-3 w-3 animate-spin" />
+                            Loading metadata...
+                        </div>
+                    )}
+                </div>
                 <div className="flex items-center justify-between">
                     <div className="flex gap-2 items-center">
                         <Button
@@ -160,188 +288,96 @@ export default function Page() {
                             size="icon"
                             onClick={fetchDataAgain}
                             className="hover:bg-accent cursor-pointer"
-                            title="Refresh"
+                            title="Refresh All Data"
                         >
                             <RefreshCw className="h-4 w-4" />
                         </Button>
+                        {npcDataResults && npcDataResults.length > 0 && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                    refetchMetadata();
+                                    toast.info("Refreshing NPC metadata...");
+                                }}
+                                disabled={isMetadataLoading}
+                                className="hover:bg-accent cursor-pointer"
+                                title="Refresh NPC Names and Icons"
+                            >
+                                <RefreshCw className={`h-4 w-4 mr-2 ${isMetadataLoading ? 'animate-spin' : ''}`} />
+                                Refresh Metadata
+                            </Button>
+                        )}
                     </div>
                     <div className="flex items-center gap-2">
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm">
-                                    <MoreHorizontal className="h-4 w-4 mr-2" />
-                                    Actions
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => setIsCreateShopDialogOpen(true)}>
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    Create Shop
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setIsDeleteAllShopsDialogOpen(true)}>
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete All Shops
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                        <AdvancedNpcActions
+                            onCreateShop={() => setIsCreateShopDialogOpen(true)}
+                            onDeleteAllShops={() => setIsDeleteAllShopsDialogOpen(true)}
+                        />
                     </div>
                 </div>
             </div>
 
             <div className="overflow-auto h-[calc(100vh-10rem)] pr-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {npcs.map((npc) => (
-                        <Card key={npc.id} className="overflow-hidden">
-                            <CardHeader className="pb-2 flex justify-between items-start">
-                                <CardTitle className="text-lg">NPC #{npc.id}</CardTitle>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" className="h-8 w-8 p-0">
-                                            <span className="sr-only">Open menu</span>
-                                            <MoreHorizontal className="h-4 w-4" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                        {npc.hasShop && (
-                                            <DropdownMenuItem onClick={() => {
-                                                setSelectedNpcId(npc.id);
-                                                setIsBulkUpdateShopDialogOpen(true);
-                                            }}>
-                                                <Upload className="h-4 w-4 mr-2" />
-                                                Bulk Update Shop
-                                            </DropdownMenuItem>
-                                        )}
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </CardHeader>
-                            <CardContent className="pb-2">
-                                <div className="text-sm flex space-x-2">
-                                    {npc.hasShop ? (
-                                        <Button 
-                                            variant="default" 
-                                            size="sm"
-                                            className="cursor-pointer"
-                                            asChild
-                                            title="Shop Active"
-                                        >
-                                            <Link href={`/npcs/${npc.id}/shop`}>
-                                                <ShoppingBag className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    ) : (
-                                        <Button 
-                                            variant="outline" 
-                                            size="sm"
-                                            className="cursor-not-allowed opacity-50"
-                                            disabled
-                                            title="Shop Inactive"
-                                        >
-                                            <ShoppingBag className="h-4 w-4" />
-                                        </Button>
-                                    )}
-
-                                    {npc.hasConversation ? (
-                                        <Button 
-                                            variant="default" 
-                                            size="sm"
-                                            className="cursor-pointer"
-                                            asChild
-                                            title="Conversation Available"
-                                        >
-                                            <Link href={`/npcs/${npc.id}/conversations`}>
-                                                <MessageCircle className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    ) : (
-                                        <Button 
-                                            variant="outline" 
-                                            size="sm"
-                                            className="cursor-not-allowed opacity-50"
-                                            disabled
-                                            title="No Conversation"
-                                        >
-                                            <MessageCircle className="h-4 w-4" />
-                                        </Button>
-                                    )}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))}
-                    {npcs.length === 0 && (
-                        <div className="col-span-full text-center py-10">
-                            No NPCs found.
+                <ErrorBoundary
+                    fallback={({ error, resetError }) => (
+                        <div className="flex flex-col items-center justify-center py-10 space-y-4">
+                            <div className="text-center">
+                                <h3 className="text-lg font-medium text-destructive">Error Loading NPCs</h3>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    {error.message || 'An unexpected error occurred while loading the NPC grid.'}
+                                </p>
+                            </div>
+                            <div className="flex gap-2">
+                                <Button onClick={resetError} variant="outline">
+                                    <RefreshCw className="h-4 w-4 mr-2" />
+                                    Try Again
+                                </Button>
+                                <Button onClick={fetchDataAgain} variant="default">
+                                    <RefreshCw className="h-4 w-4 mr-2" />
+                                    Reload All Data
+                                </Button>
+                            </div>
                         </div>
                     )}
-                </div>
+                    onError={(error, errorInfo) => {
+                        handleError(error, 0, { 
+                            context: 'npc_grid_rendering',
+                            componentStack: errorInfo.componentStack,
+                        });
+                    }}
+                >
+                    <VirtualizedNpcGrid
+                        npcs={npcsWithMetadata}
+                        isLoading={loading || (isMetadataLoading && npcs.length === 0)}
+                        containerHeight={containerHeight - 80} // Account for padding and headers
+                        onBulkUpdateShop={(npcId) => {
+                            setSelectedNpcId(npcId);
+                            setIsBulkUpdateShopDialogOpen(true);
+                        }}
+                        enableVirtualization={true}
+                        itemHeight={200} // Approximate height based on NPC card design
+                        overscan={2} // Render 2 extra rows for smooth scrolling
+                    />
+                </ErrorBoundary>
             </div>
 
-            <Dialog open={isCreateShopDialogOpen} onOpenChange={setIsCreateShopDialogOpen}>
-                <DialogContent className="sm:max-w-[600px]">
-                    <DialogHeader>
-                        <DialogTitle>Create Shop</DialogTitle>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <Textarea
-                            placeholder="Paste JSON data here..."
-                            value={createShopJson}
-                            onChange={(e) => setCreateShopJson(e.target.value)}
-                            className="min-h-[300px] font-mono"
-                        />
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsCreateShopDialogOpen(false)}>
-                            Cancel
-                        </Button>
-                        <Button onClick={handleCreateShop}>
-                            Create Shop
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            <Dialog open={isDeleteAllShopsDialogOpen} onOpenChange={setIsDeleteAllShopsDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Delete All Shops</DialogTitle>
-                    </DialogHeader>
-                    <div className="py-4">
-                        <p className="text-destructive font-semibold">Warning: This action cannot be undone.</p>
-                        <p>Are you sure you want to delete all shops for the current tenant?</p>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsDeleteAllShopsDialogOpen(false)}>
-                            Cancel
-                        </Button>
-                        <Button variant="destructive" onClick={handleDeleteAllShops}>
-                            Delete All Shops
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            <Dialog open={isBulkUpdateShopDialogOpen} onOpenChange={setIsBulkUpdateShopDialogOpen}>
-                <DialogContent className="sm:max-w-[600px]">
-                    <DialogHeader>
-                        <DialogTitle>Bulk Update Shop</DialogTitle>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <Textarea
-                            placeholder="Paste JSON data here..."
-                            value={bulkUpdateShopJson}
-                            onChange={(e) => setBulkUpdateShopJson(e.target.value)}
-                            className="min-h-[300px] font-mono"
-                        />
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsBulkUpdateShopDialogOpen(false)}>
-                            Cancel
-                        </Button>
-                        <Button onClick={handleBulkUpdateShop}>
-                            Update Shop
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            {/* Dynamic dialogs - only loaded when needed */}
+            <NpcDialogs
+                isCreateShopDialogOpen={isCreateShopDialogOpen}
+                setIsCreateShopDialogOpen={setIsCreateShopDialogOpen}
+                isDeleteAllShopsDialogOpen={isDeleteAllShopsDialogOpen}
+                setIsDeleteAllShopsDialogOpen={setIsDeleteAllShopsDialogOpen}
+                isBulkUpdateShopDialogOpen={isBulkUpdateShopDialogOpen}
+                setIsBulkUpdateShopDialogOpen={setIsBulkUpdateShopDialogOpen}
+                createShopJson={createShopJson}
+                setCreateShopJson={setCreateShopJson}
+                bulkUpdateShopJson={bulkUpdateShopJson}
+                setBulkUpdateShopJson={setBulkUpdateShopJson}
+                handleCreateShop={handleCreateShop}
+                handleDeleteAllShops={handleDeleteAllShops}
+                handleBulkUpdateShop={handleBulkUpdateShop}
+            />
 
             <Toaster richColors />
         </div>

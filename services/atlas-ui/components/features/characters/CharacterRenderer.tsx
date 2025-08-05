@@ -10,6 +10,7 @@ import { mapleStoryService } from '@/services/api/maplestory.service';
 import type { Asset } from '@/services/api/inventory.service';
 import type { CharacterRendererProps, MapleStoryCharacterData } from '@/types/models/maplestory';
 import { cn } from '@/lib/utils';
+import { shouldUnoptimizeImageSrc, getImageLoadingStrategy } from '@/lib/utils/image';
 
 interface CharacterRendererComponentProps extends Omit<CharacterRendererProps, 'equipment'> {
   inventory?: Asset[];
@@ -261,6 +262,7 @@ export function CharacterRenderer({
             alt={`${character.attributes.name} (fallback)`}
             width={sizeDimensions[size].width}
             height={sizeDimensions[size].height}
+            unoptimized={shouldUnoptimizeImageSrc(fallbackAvatar)}
             className={cn('object-contain rounded-lg')}
             onError={handleFallbackError}
           />
@@ -297,8 +299,9 @@ export function CharacterRenderer({
         alt={character.attributes.name}
         width={sizeDimensions[size].width}
         height={sizeDimensions[size].height}
-{...priority && { priority: true }}
-        loading={lazy ? 'lazy' : 'eager'}
+        {...priority && { priority: true }}
+        loading={lazy ? getImageLoadingStrategy() : 'eager'}
+        unoptimized={shouldUnoptimizeImageSrc(imageUrl)}
         placeholder="blur"
         blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNmNmY2ZjYiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiNlNGU0ZTQiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2cpIi8+PC9zdmc+"
         className={cn(

@@ -14,10 +14,14 @@ import {
   type SkinColorMapping,
   type EquipmentSlotMapping,
   type WeaponRange,
+  type NpcApiData,
+  type NpcDataResult,
   WeaponType,
 } from '@/types/models/maplestory';
 import { type Character } from '@/types/models/character';
 import { type Asset } from '@/services/api/inventory.service';
+import { debounceAsync } from '@/lib/utils/debounce';
+import { cachedFetch } from '@/lib/utils/cache';
 
 /**
  * Configuration for the MapleStory API service
@@ -30,7 +34,18 @@ const DEFAULT_CONFIG: CharacterRenderingConfig = {
   defaultStance: 'stand1',
   defaultResize: 2,
   enableErrorLogging: true,
+  defaultRegion: 'GMS',
 };
+
+/**
+ * HTTP headers for optimal caching and performance
+ */
+const OPTIMIZED_REQUEST_HEADERS = {
+  'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400', // Cache for 1 hour, serve stale for 24 hours
+  'Accept': 'application/json, image/*, text/plain, */*',
+  'Accept-Encoding': 'gzip, deflate, br',
+  'User-Agent': 'Atlas-UI/1.0.0 (MapleStory NPC Data Client)',
+} as const;
 
 /**
  * Skin color mapping from internal values to MapleStory.io API values
@@ -162,9 +177,66 @@ export class MapleStoryService {
   private config: CharacterRenderingConfig;
   private imageCache = new Map<string, string>();
   private timestampCache = new Map<string, number>();
+  private npcDataCache = new Map<string, NpcDataResult>();
+  private npcTimestampCache = new Map<string, number>();
+  
+  // Debounced API methods for batch requests - simplified for better type safety
+  private debouncedGetNpcIcon: (npcId: number, region?: string, version?: string) => Promise<string>;
+  private debouncedGetNpcName: (npcId: number, region?: string, version?: string) => Promise<string>;
+  private debouncedGetNpcData: (npcId: number, region?: string, version?: string) => Promise<NpcApiData>;
 
   constructor(config: Partial<CharacterRenderingConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
+    
+    // Initialize debounced methods for batch API calls
+    // This helps prevent API rate limiting when fetching multiple NPCs
+    this.debouncedGetNpcIcon = this.createDebouncedMethod(this.getNpcIcon.bind(this), 50);
+    this.debouncedGetNpcName = this.createDebouncedMethod(this.getNpcName.bind(this), 50);
+    this.debouncedGetNpcData = this.createDebouncedMethod(this.getNpcData.bind(this), 150);
+  }
+
+  /**
+   * Create a debounced version of an async method
+   */
+  private createDebouncedMethod<T extends (...args: any[]) => Promise<any>>(
+    method: T,
+    delay: number
+  ): T {
+    let timeoutId: NodeJS.Timeout | undefined;
+    let latestResolve: ((value: any) => void) | null = null;
+    let latestReject: ((reason?: any) => void) | null = null;
+
+    return ((...args: Parameters<T>): Promise<ReturnType<T>> => {
+      return new Promise((resolve, reject) => {
+        // Cancel previous timeout and reject previous promise
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+        
+        if (latestResolve && latestReject) {
+          latestReject(new Error('Debounced call cancelled'));
+        }
+
+        latestResolve = resolve;
+        latestReject = reject;
+
+        timeoutId = setTimeout(async () => {
+          try {
+            const result = await method(...args);
+            if (latestResolve) {
+              latestResolve(result);
+            }
+          } catch (error) {
+            if (latestReject) {
+              latestReject(error);
+            }
+          } finally {
+            latestResolve = null;
+            latestReject = null;
+          }
+        }, delay);
+      });
+    }) as T;
   }
 
   /**
@@ -415,11 +487,13 @@ export class MapleStoryService {
   }
 
   /**
-   * Clear all cached URLs
+   * Clear all cached URLs and NPC data
    */
   clearCache(): void {
     this.imageCache.clear();
     this.timestampCache.clear();
+    this.npcDataCache.clear();
+    this.npcTimestampCache.clear();
   }
 
   /**
@@ -427,8 +501,14 @@ export class MapleStoryService {
    */
   getCacheStats() {
     return {
-      size: this.imageCache.size,
-      urls: Array.from(this.imageCache.keys()),
+      images: {
+        size: this.imageCache.size,
+        urls: Array.from(this.imageCache.keys()),
+      },
+      npcs: {
+        size: this.npcDataCache.size,
+        keys: Array.from(this.npcDataCache.keys()),
+      },
       enabled: this.config.cacheEnabled,
       ttl: this.config.cacheTTL,
     };
@@ -488,6 +568,260 @@ export class MapleStoryService {
    */
   getWeaponType(weaponId: number): WeaponType {
     return getWeaponType(weaponId);
+  }
+
+  /**
+   * Get NPC icon URL from MapleStory.io API
+   */
+  async getNpcIcon(npcId: number, region?: string, version?: string): Promise<string> {
+    const apiRegion = region || this.config.defaultRegion || 'GMS';
+    const apiVersion = version || this.config.apiVersion;
+    
+    const iconUrl = `${this.config.apiBaseUrl}/${apiRegion}/${apiVersion}/npc/${npcId}/icon`;
+    
+    if (this.config.enableErrorLogging) {
+      console.debug(`Fetching NPC icon from: ${iconUrl}`);
+    }
+    
+    try {
+      // Validate that the icon exists by making a HEAD request with optimized headers
+      const response = await cachedFetch(iconUrl, { 
+        method: 'HEAD',
+        headers: OPTIMIZED_REQUEST_HEADERS,
+        cacheStrategy: 'NPC_IMAGES',
+      });
+      if (!response.ok) {
+        throw new Error(`NPC icon not found: ${response.status}`);
+      }
+      return iconUrl;
+    } catch (error) {
+      if (this.config.enableErrorLogging) {
+        console.warn(`Failed to fetch NPC icon for ID ${npcId}:`, error);
+      }
+      throw new Error(`Failed to fetch NPC icon for ID ${npcId}`);
+    }
+  }
+
+  /**
+   * Get NPC name from MapleStory.io API
+   */
+  async getNpcName(npcId: number, region?: string, version?: string): Promise<string> {
+    const apiRegion = region || this.config.defaultRegion || 'GMS';
+    const apiVersion = version || this.config.apiVersion;
+    
+    const nameUrl = `${this.config.apiBaseUrl}/${apiRegion}/${apiVersion}/npc/${npcId}/name`;
+    
+    try {
+      const response = await cachedFetch(nameUrl, {
+        headers: OPTIMIZED_REQUEST_HEADERS,
+        cacheStrategy: 'MAPLESTORY_API',
+      });
+      if (!response.ok) {
+        throw new Error(`NPC name not found: ${response.status}`);
+      }
+      const responseText = await response.text();
+      
+      // Handle potential JSON response
+      try {
+        const parsed = JSON.parse(responseText);
+        // If it's a JSON object with a name property
+        if (typeof parsed === 'object' && parsed.name) {
+          return String(parsed.name).trim();
+        }
+        // If it's just a JSON string
+        if (typeof parsed === 'string') {
+          return parsed.trim();
+        }
+      } catch {
+        // Not JSON, treat as plain text
+      }
+      
+      return responseText.trim();
+    } catch (error) {
+      if (this.config.enableErrorLogging) {
+        console.warn(`Failed to fetch NPC name for ID ${npcId}:`, error);
+      }
+      throw new Error(`Failed to fetch NPC name for ID ${npcId}`);
+    }
+  }
+
+  /**
+   * Get full NPC data from MapleStory.io API
+   */
+  async getNpcData(npcId: number, region?: string, version?: string): Promise<NpcApiData> {
+    const apiRegion = region || this.config.defaultRegion || 'GMS';
+    const apiVersion = version || this.config.apiVersion;
+    
+    const dataUrl = `${this.config.apiBaseUrl}/${apiRegion}/${apiVersion}/npc/${npcId}`;
+    
+    try {
+      const response = await cachedFetch(dataUrl, {
+        headers: OPTIMIZED_REQUEST_HEADERS,
+        cacheStrategy: 'MAPLESTORY_API',
+      });
+      if (!response.ok) {
+        throw new Error(`NPC data not found: ${response.status}`);
+      }
+      const data = await response.json();
+      return {
+        id: npcId,
+        name: data.name || `NPC ${npcId}`,
+        description: data.description,
+        scripts: data.scripts,
+      };
+    } catch (error) {
+      if (this.config.enableErrorLogging) {
+        console.warn(`Failed to fetch NPC data for ID ${npcId}:`, error);
+      }
+      throw new Error(`Failed to fetch NPC data for ID ${npcId}`);
+    }
+  }
+
+  /**
+   * Get NPC data with caching and error handling
+   */
+  async getNpcDataWithCache(npcId: number, region?: string, version?: string): Promise<NpcDataResult> {
+    const cacheKey = this.getNpcCacheKey(npcId, region, version);
+    
+    // Check cache first
+    if (this.config.cacheEnabled) {
+      const cachedData = this.getCachedNpcData(cacheKey);
+      if (cachedData) {
+        return { ...cachedData, cached: true };
+      }
+    }
+
+    const result: NpcDataResult = {
+      id: npcId,
+      cached: false,
+    };
+
+    try {
+      // For batch operations, use direct methods instead of debounced ones
+      // to prevent request cancellation
+      const [namePromise, iconPromise] = await Promise.allSettled([
+        this.getNpcName(npcId, region, version),
+        this.getNpcIcon(npcId, region, version),
+      ]);
+
+      if (namePromise.status === 'fulfilled') {
+        result.name = namePromise.value;
+      } else if (namePromise.status === 'rejected' && this.config.enableErrorLogging) {
+        console.debug(`Failed to fetch name for NPC ${npcId}:`, namePromise.reason);
+      }
+
+      if (iconPromise.status === 'fulfilled') {
+        result.iconUrl = iconPromise.value;
+      } else if (iconPromise.status === 'rejected' && this.config.enableErrorLogging) {
+        console.debug(`Failed to fetch icon for NPC ${npcId}:`, iconPromise.reason);
+      }
+
+      // If both failed, set an error
+      if (namePromise.status === 'rejected' && iconPromise.status === 'rejected') {
+        result.error = 'Failed to fetch NPC data';
+      }
+
+      // Cache the result even if partially successful
+      if (this.config.cacheEnabled) {
+        this.setCachedNpcData(cacheKey, result);
+      }
+
+      return result;
+    } catch (error) {
+      result.error = error instanceof Error ? error.message : 'Unknown error';
+      
+      // Cache error results for a shorter time to avoid repeated failures
+      if (this.config.cacheEnabled) {
+        this.setCachedNpcData(cacheKey, result, this.config.cacheTTL / 4); // Cache errors for 1/4 of normal time
+      }
+      
+      return result;
+    }
+  }
+
+  /**
+   * Generate cache key for NPC data
+   */
+  private getNpcCacheKey(npcId: number, region?: string, version?: string): string {
+    const apiRegion = region || this.config.defaultRegion || 'GMS';
+    const apiVersion = version || this.config.apiVersion;
+    return `npc:${apiRegion}:${apiVersion}:${npcId}`;
+  }
+
+  /**
+   * Get cached NPC data if still valid
+   */
+  private getCachedNpcData(cacheKey: string): NpcDataResult | null {
+    if (!this.config.cacheEnabled) return null;
+    
+    const data = this.npcDataCache.get(cacheKey);
+    const timestamp = this.npcTimestampCache.get(cacheKey);
+    
+    if (!data || !timestamp) return null;
+    
+    const now = Date.now();
+    if (now - timestamp > this.config.cacheTTL) {
+      // Cache expired
+      this.npcDataCache.delete(cacheKey);
+      this.npcTimestampCache.delete(cacheKey);
+      return null;
+    }
+    
+    return data;
+  }
+
+  /**
+   * Cache NPC data with timestamp
+   */
+  private setCachedNpcData(cacheKey: string, data: NpcDataResult, customTTL?: number): void {
+    if (!this.config.cacheEnabled) return;
+    
+    this.npcDataCache.set(cacheKey, data);
+    this.npcTimestampCache.set(cacheKey, Date.now());
+  }
+
+  /**
+   * Batch fetch NPC data for multiple NPCs with request optimization
+   */
+  async getNpcDataBatch(
+    npcIds: number[],
+    region?: string,
+    version?: string,
+    batchSize: number = 10
+  ): Promise<NpcDataResult[]> {
+    if (npcIds.length === 0) return [];
+
+    // Split into batches to avoid overwhelming the API
+    const batches: number[][] = [];
+    for (let i = 0; i < npcIds.length; i += batchSize) {
+      batches.push(npcIds.slice(i, i + batchSize));
+    }
+
+    const results: NpcDataResult[] = [];
+
+    // Process batches with staggered delays to be API-friendly
+    for (let i = 0; i < batches.length; i++) {
+      const batch = batches[i];
+      
+      if (!batch || batch.length === 0) {
+        continue;
+      }
+      
+      // Add small delay between batches (except first)
+      if (i > 0) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      // Fetch batch in parallel
+      const batchPromises = batch.map(npcId => 
+        this.getNpcDataWithCache(npcId, region, version)
+      );
+      
+      const batchResults = await Promise.all(batchPromises);
+      results.push(...batchResults);
+    }
+
+    return results;
   }
 }
 

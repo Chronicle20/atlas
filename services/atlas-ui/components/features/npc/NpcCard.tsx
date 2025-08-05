@@ -63,12 +63,14 @@ const NpcCardComponent = function NpcCard({
               npcId={npc.id} 
               {...(npc.name && { name: npc.name })}
               {...(npc.iconUrl && { iconUrl: npc.iconUrl })}
+              size={48} // Explicit size to match w-12 h-12
               className="w-12 h-12 rounded-md bg-muted flex-shrink-0"
               showRetryButton={false} // Let error boundary handle retries
               maxRetries={2}
               onError={handleImageError}
               lazy={true} // Enable lazy loading for performance
               lazyRootMargin="200px" // Load images 200px before they enter viewport
+              maintainLayout={true} // Ensure consistent dimensions
             />
             <div className="min-w-0 flex-1">
               <CardTitle className="text-lg truncate">

@@ -339,3 +339,98 @@ export function useNpcDataPreloader() {
     preloadNpcData,
   };
 }
+
+/**
+ * Optimized hook for batch NPC data fetching with debouncing and intelligent caching
+ */
+export function useOptimizedNpcBatchData(
+  npcIds: number[],
+  hookOptions: UseNpcBatchDataOptions = {}
+) {
+  const options = useMemo(() => ({ ...DEFAULT_OPTIONS, ...hookOptions }), [hookOptions]);
+  const queryClient = useQueryClient();
+  
+  // Debounced batch fetcher to reduce API calls
+  const batchFetch = useCallback(async (ids: number[]) => {
+    const results = await mapleStoryService.getNpcDataBatch(ids, options.region, options.version);
+    
+    // Cache individual results for future single requests
+    results.forEach((result) => {
+      const queryKey = generateNpcDataQueryKey(result.id, options.region, options.version);
+      queryClient.setQueryData(queryKey, result);
+    });
+    
+    return results;
+  }, [options.region, options.version, queryClient]);
+
+  // Use a single query for the entire batch
+  const batchQueryKey = [
+    'npc-data-batch',
+    options.region || 'GMS',
+    options.version || '214',
+    npcIds.sort().join(','), // Stable key based on sorted IDs
+  ];
+
+  const query = useQuery({
+    queryKey: batchQueryKey,
+    queryFn: () => batchFetch(npcIds),
+    enabled: options.enabled && npcIds.length > 0,
+    staleTime: options.staleTime,
+    gcTime: options.gcTime,
+    retry: options.retry,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
+    placeholderData: (previousData) => previousData,
+  });
+
+  // Handle success callback
+  const successCallback = options.onSuccess;
+  const hasSuccess = query.isSuccess && query.data;
+  
+  const handleSuccess = useCallback(() => {
+    if (hasSuccess && successCallback) {
+      successCallback(query.data);
+    }
+  }, [hasSuccess, successCallback, query.data]);
+
+  useMemo(() => {
+    handleSuccess();
+  }, [handleSuccess]);
+
+  // Handle error callback
+  const errorCallback = options.onError;
+  const hasError = query.isError && query.error;
+  
+  const handleError = useCallback(() => {
+    if (hasError && errorCallback) {
+      errorCallback(query.error);
+    }
+  }, [hasError, errorCallback, query.error]);
+
+  useMemo(() => {
+    handleError();
+  }, [handleError]);
+
+  // Invalidate batch cache
+  const invalidateBatch = useCallback(() => {
+    queryClient.invalidateQueries({
+      queryKey: ['npc-data-batch'],
+    });
+    
+    // Also invalidate individual NPC queries
+    npcIds.forEach(npcId => {
+      queryClient.invalidateQueries({
+        queryKey: ['npc-data', npcId.toString()],
+      });
+    });
+  }, [queryClient, npcIds]);
+
+  return {
+    data: query.data || [],
+    isLoading: query.isLoading,
+    isError: query.isError,
+    isSuccess: query.isSuccess,
+    error: query.error,
+    invalidateBatch,
+  };
+}

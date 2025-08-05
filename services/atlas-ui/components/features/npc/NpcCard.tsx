@@ -47,6 +47,8 @@ export function NpcCard({
               showRetryButton={false} // Let error boundary handle retries
               maxRetries={2}
               onError={handleImageError}
+              lazy={true} // Enable lazy loading for performance
+              lazyRootMargin="200px" // Load images 200px before they enter viewport
             />
             <div className="min-w-0 flex-1">
               <CardTitle className="text-lg truncate">

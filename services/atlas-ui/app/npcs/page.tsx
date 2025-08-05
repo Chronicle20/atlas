@@ -6,12 +6,10 @@ import {npcsService} from "@/services/api";
 import {NPC, Commodity} from "@/types/models/npc";
 import { tenantHeaders } from "@/lib/headers";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, RefreshCw, Upload, Trash2, Plus, User } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
+import { RefreshCw, Upload, User } from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
+import dynamic from "next/dynamic";
 import {createErrorFromUnknown} from "@/types/api/errors";
 import {ErrorDisplay} from "@/components/common/ErrorDisplay";
 import {NpcPageSkeleton} from "@/components/common/skeletons/NpcPageSkeleton";
@@ -20,6 +18,22 @@ import { NpcCardSkeleton } from "@/components/features/npc/NpcCardSkeleton";
 import { useNpcBatchData } from "@/lib/hooks/useNpcData";
 import { useNpcErrorHandler } from "@/lib/hooks/useNpcErrorHandler";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
+
+// Dynamic imports for performance optimization
+const NpcDialogs = dynamic(() => import("@/components/features/npc/NpcDialogs").then(mod => ({ default: mod.NpcDialogs })), {
+  loading: () => null,
+  ssr: false,
+});
+
+// Dynamic import for heavy UI components that aren't immediately needed
+const AdvancedNpcActions = dynamic(() => import("@/components/features/npc/AdvancedNpcActions").then(mod => ({ default: mod.AdvancedNpcActions })), {
+  loading: () => (
+    <div className="flex items-center gap-2">
+      <div className="h-8 w-20 bg-muted rounded animate-pulse" />
+    </div>
+  ),
+  ssr: false,
+});
 
 export default function Page() {
     const { activeTenant } = useTenant();
@@ -221,24 +235,10 @@ export default function Page() {
                         </Button>
                     </div>
                     <div className="flex items-center gap-2">
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm">
-                                    <MoreHorizontal className="h-4 w-4 mr-2" />
-                                    Actions
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => setIsCreateShopDialogOpen(true)}>
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    Create Shop
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setIsDeleteAllShopsDialogOpen(true)}>
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete All Shops
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                        <AdvancedNpcActions
+                            onCreateShop={() => setIsCreateShopDialogOpen(true)}
+                            onDeleteAllShops={() => setIsDeleteAllShopsDialogOpen(true)}
+                        />
                     </div>
                 </div>
             </div>
@@ -326,73 +326,22 @@ export default function Page() {
                 </ErrorBoundary>
             </div>
 
-            <Dialog open={isCreateShopDialogOpen} onOpenChange={setIsCreateShopDialogOpen}>
-                <DialogContent className="sm:max-w-[600px]">
-                    <DialogHeader>
-                        <DialogTitle>Create Shop</DialogTitle>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <Textarea
-                            placeholder="Paste JSON data here..."
-                            value={createShopJson}
-                            onChange={(e) => setCreateShopJson(e.target.value)}
-                            className="min-h-[300px] font-mono"
-                        />
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsCreateShopDialogOpen(false)}>
-                            Cancel
-                        </Button>
-                        <Button onClick={handleCreateShop}>
-                            Create Shop
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            <Dialog open={isDeleteAllShopsDialogOpen} onOpenChange={setIsDeleteAllShopsDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Delete All Shops</DialogTitle>
-                    </DialogHeader>
-                    <div className="py-4">
-                        <p className="text-destructive font-semibold">Warning: This action cannot be undone.</p>
-                        <p>Are you sure you want to delete all shops for the current tenant?</p>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsDeleteAllShopsDialogOpen(false)}>
-                            Cancel
-                        </Button>
-                        <Button variant="destructive" onClick={handleDeleteAllShops}>
-                            Delete All Shops
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            <Dialog open={isBulkUpdateShopDialogOpen} onOpenChange={setIsBulkUpdateShopDialogOpen}>
-                <DialogContent className="sm:max-w-[600px]">
-                    <DialogHeader>
-                        <DialogTitle>Bulk Update Shop</DialogTitle>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <Textarea
-                            placeholder="Paste JSON data here..."
-                            value={bulkUpdateShopJson}
-                            onChange={(e) => setBulkUpdateShopJson(e.target.value)}
-                            className="min-h-[300px] font-mono"
-                        />
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsBulkUpdateShopDialogOpen(false)}>
-                            Cancel
-                        </Button>
-                        <Button onClick={handleBulkUpdateShop}>
-                            Update Shop
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            {/* Dynamic dialogs - only loaded when needed */}
+            <NpcDialogs
+                isCreateShopDialogOpen={isCreateShopDialogOpen}
+                setIsCreateShopDialogOpen={setIsCreateShopDialogOpen}
+                isDeleteAllShopsDialogOpen={isDeleteAllShopsDialogOpen}
+                setIsDeleteAllShopsDialogOpen={setIsDeleteAllShopsDialogOpen}
+                isBulkUpdateShopDialogOpen={isBulkUpdateShopDialogOpen}
+                setIsBulkUpdateShopDialogOpen={setIsBulkUpdateShopDialogOpen}
+                createShopJson={createShopJson}
+                setCreateShopJson={setCreateShopJson}
+                bulkUpdateShopJson={bulkUpdateShopJson}
+                setBulkUpdateShopJson={setBulkUpdateShopJson}
+                handleCreateShop={handleCreateShop}
+                handleDeleteAllShops={handleDeleteAllShops}
+                handleBulkUpdateShop={handleBulkUpdateShop}
+            />
 
             <Toaster richColors />
         </div>

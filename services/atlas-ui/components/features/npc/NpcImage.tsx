@@ -6,6 +6,7 @@ import { User, AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { errorLogger } from "@/services/errorLogger";
+import { useLazyLoad } from "@/lib/hooks/useIntersectionObserver";
 
 interface NpcImageProps {
   npcId: number;
@@ -18,6 +19,8 @@ interface NpcImageProps {
   onError?: (error: string) => void;
   onRetry?: () => void;
   maintainLayout?: boolean; // Ensures consistent dimensions during load
+  lazy?: boolean; // Enable lazy loading (default: true)
+  lazyRootMargin?: string; // Custom root margin for lazy loading
 }
 
 export function NpcImage({ 
@@ -30,12 +33,20 @@ export function NpcImage({
   maxRetries = 2,
   onError,
   onRetry,
-  maintainLayout = true
+  maintainLayout = true,
+  lazy = true,
+  lazyRootMargin = "100px"
 }: NpcImageProps) {
   const [imageError, setImageError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
   const [isRetrying, setIsRetrying] = useState(false);
+
+  // Lazy loading hook
+  const { shouldLoad, ref: lazyRef } = useLazyLoad<HTMLDivElement>({
+    enabled: lazy,
+    rootMargin: lazyRootMargin,
+  });
 
   // Reset states when iconUrl changes
   useEffect(() => {
@@ -47,9 +58,12 @@ export function NpcImage({
     }
   }, [iconUrl]);
 
-  // If no iconUrl provided or image failed to load, show placeholder
-  const showPlaceholder = !iconUrl || imageError;
-  const canRetry = retryCount < maxRetries && imageError && iconUrl;
+  // Determine if we should attempt to load the image
+  const shouldAttemptLoad = !lazy || shouldLoad;
+  
+  // If no iconUrl provided, image failed to load, or lazy loading not triggered, show placeholder
+  const showPlaceholder = !iconUrl || imageError || !shouldAttemptLoad;
+  const canRetry = retryCount < maxRetries && imageError && iconUrl && shouldAttemptLoad;
 
   const handleImageLoad = useCallback(() => {
     setIsLoading(false);
@@ -105,6 +119,7 @@ export function NpcImage({
 
   return (
     <div 
+      ref={lazyRef}
       className={cn(
         "relative overflow-hidden border border-border/50",
         maintainLayout && "flex-shrink-0", // Prevent flex shrinking
@@ -135,6 +150,12 @@ export function NpcImage({
                 </Button>
               )}
             </>
+          ) : lazy && !shouldLoad ? (
+            // Lazy loading placeholder
+            <div className="flex flex-col items-center space-y-1">
+              <User className="w-6 h-6 text-muted-foreground opacity-50" />
+              <div className="w-2 h-2 bg-muted-foreground/30 rounded-full animate-pulse" />
+            </div>
           ) : (
             <User className="w-6 h-6 text-muted-foreground" />
           )}

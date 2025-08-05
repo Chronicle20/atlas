@@ -17,6 +17,7 @@ interface NpcImageProps {
   maxRetries?: number;
   onError?: (error: string) => void;
   onRetry?: () => void;
+  maintainLayout?: boolean; // Ensures consistent dimensions during load
 }
 
 export function NpcImage({ 
@@ -28,7 +29,8 @@ export function NpcImage({
   showRetryButton = false,
   maxRetries = 2,
   onError,
-  onRetry
+  onRetry,
+  maintainLayout = true
 }: NpcImageProps) {
   const [imageError, setImageError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -102,10 +104,14 @@ export function NpcImage({
   const altText = name ? `${name} (NPC ${npcId})` : `NPC ${npcId}`;
 
   return (
-    <div className={cn(
-      "relative overflow-hidden border border-border/50",
-      className
-    )}>
+    <div 
+      className={cn(
+        "relative overflow-hidden border border-border/50",
+        maintainLayout && "flex-shrink-0", // Prevent flex shrinking
+        className
+      )}
+      style={maintainLayout ? { width: size, height: size } : undefined}
+    >
       {showPlaceholder ? (
         // Placeholder when no image or error
         <div className={cn(
@@ -135,13 +141,21 @@ export function NpcImage({
         </div>
       ) : (
         <>
-          {/* Loading skeleton */}
+          {/* Loading skeleton with progressive enhancement */}
           {(isLoading || isRetrying) && (
-            <div className="absolute inset-0 bg-muted animate-pulse flex items-center justify-center">
+            <div className="absolute inset-0 bg-gradient-to-br from-muted to-muted/80 animate-pulse flex items-center justify-center">
               {isRetrying ? (
-                <RefreshCw className="w-4 h-4 text-muted-foreground animate-spin" />
+                <div className="flex flex-col items-center space-y-1">
+                  <RefreshCw className="w-4 h-4 text-muted-foreground animate-spin" />
+                  <span className="text-xs text-muted-foreground">Retrying...</span>
+                </div>
               ) : (
-                <User className="w-6 h-6 text-muted-foreground" />
+                <div className="flex flex-col items-center space-y-1">
+                  <User className="w-6 h-6 text-muted-foreground animate-pulse" />
+                  <div className="w-8 h-1 bg-muted-foreground/20 rounded-full overflow-hidden">
+                    <div className="w-full h-full bg-muted-foreground/40 animate-pulse" />
+                  </div>
+                </div>
               )}
             </div>
           )}
@@ -154,8 +168,8 @@ export function NpcImage({
             width={size}
             height={size}
             className={cn(
-              "object-cover transition-opacity duration-200",
-              (isLoading || isRetrying) ? "opacity-0" : "opacity-100"
+              "object-cover transition-all duration-300 ease-in-out",
+              (isLoading || isRetrying) ? "opacity-0 scale-95" : "opacity-100 scale-100"
             )}
             onLoad={handleImageLoad}
             onError={handleImageError}

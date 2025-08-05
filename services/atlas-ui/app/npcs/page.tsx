@@ -74,14 +74,17 @@ export default function Page() {
     // Extract NPC IDs for batch data fetching
     const npcIds = useMemo(() => npcs.map(npc => npc.id), [npcs]);
     
-    // Fetch NPC metadata (names and icons) in batch
-    const { data: npcDataResults, isLoading: isMetadataLoading, errors: metadataErrors } = useNpcBatchData(npcIds, {
+    // Memoize batch data options to prevent unnecessary re-fetching
+    const batchDataOptions = useMemo(() => ({
         enabled: npcIds.length > 0,
         staleTime: 30 * 60 * 1000, // 30 minutes
-        onError: (error) => {
+        onError: (error: Error) => {
             handleError(error, 0, { context: 'batch_metadata_fetch' });
         },
-    });
+    }), [npcIds.length, handleError]);
+    
+    // Fetch NPC metadata (names and icons) in batch
+    const { data: npcDataResults, isLoading: isMetadataLoading, errors: metadataErrors } = useNpcBatchData(npcIds, batchDataOptions);
 
     // Merge original NPC data with fetched metadata
     useEffect(() => {
@@ -97,8 +100,8 @@ export default function Page() {
             
             return {
                 ...npc,
-                ...(metadata?.name && { name: metadata.name }),
-                ...(metadata?.iconUrl && { iconUrl: metadata.iconUrl }),
+                ...(metadata?.name && typeof metadata.name === 'string' && { name: metadata.name }),
+                ...(metadata?.iconUrl && typeof metadata.iconUrl === 'string' && { iconUrl: metadata.iconUrl }),
             };
         });
         

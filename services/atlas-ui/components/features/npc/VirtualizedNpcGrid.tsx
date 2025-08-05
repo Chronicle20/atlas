@@ -132,7 +132,7 @@ export function VirtualizedNpcGrid({
     }] : [];
 
     return (
-      <div key={`${npc.id}-${index}`} className="p-2">
+      <div key={`npc-${npc.id}-${index}`} className="p-2">
         <NpcCard 
           npc={npc}
           dropdownActions={dropdownActions}

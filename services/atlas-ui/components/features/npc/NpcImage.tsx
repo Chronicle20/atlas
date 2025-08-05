@@ -195,9 +195,10 @@ export function NpcImage({
               width={size}
               height={size}
               className={cn(
-                "object-cover transition-all duration-300 ease-in-out",
+                "w-full h-full object-contain transition-all duration-300 ease-in-out",
                 (isLoading || isRetrying) ? "opacity-0 scale-95" : "opacity-100 scale-100"
               )}
+              style={{ maxWidth: '100%', maxHeight: '100%' }}
               onLoad={handleImageLoad}
               onError={handleImageError}
               priority={false}

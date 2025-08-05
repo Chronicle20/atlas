@@ -619,8 +619,24 @@ export class MapleStoryService {
       if (!response.ok) {
         throw new Error(`NPC name not found: ${response.status}`);
       }
-      const name = await response.text();
-      return name.trim();
+      const responseText = await response.text();
+      
+      // Handle potential JSON response
+      try {
+        const parsed = JSON.parse(responseText);
+        // If it's a JSON object with a name property
+        if (typeof parsed === 'object' && parsed.name) {
+          return String(parsed.name).trim();
+        }
+        // If it's just a JSON string
+        if (typeof parsed === 'string') {
+          return parsed.trim();
+        }
+      } catch {
+        // Not JSON, treat as plain text
+      }
+      
+      return responseText.trim();
     } catch (error) {
       if (this.config.enableErrorLogging) {
         console.warn(`Failed to fetch NPC name for ID ${npcId}:`, error);

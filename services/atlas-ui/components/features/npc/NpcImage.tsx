@@ -51,7 +51,7 @@ export function NpcImage({
 
   // Reset states when iconUrl changes
   useEffect(() => {
-    if (iconUrl) {
+    if (iconUrl && typeof iconUrl === 'string') {
       setImageError(false);
       setIsLoading(true);
       setRetryCount(0);
@@ -63,8 +63,8 @@ export function NpcImage({
   const shouldAttemptLoad = !lazy || shouldLoad;
   
   // If no iconUrl provided, image failed to load, or lazy loading not triggered, show placeholder
-  const showPlaceholder = !iconUrl || imageError || !shouldAttemptLoad;
-  const canRetry = retryCount < maxRetries && imageError && iconUrl && shouldAttemptLoad;
+  const showPlaceholder = !iconUrl || typeof iconUrl !== 'string' || imageError || !shouldAttemptLoad;
+  const canRetry = retryCount < maxRetries && imageError && iconUrl && typeof iconUrl === 'string' && shouldAttemptLoad;
 
   const handleImageLoad = useCallback(() => {
     setIsLoading(false);
@@ -116,7 +116,7 @@ export function NpcImage({
     onRetry?.();
   }, [canRetry, npcId, retryCount, iconUrl, onRetry]);
 
-  const altText = name ? `${name} (NPC ${npcId})` : `NPC ${npcId}`;
+  const altText = (typeof name === 'string' && name) ? `${name} (NPC ${npcId})` : `NPC ${npcId}`;
 
   return (
     <div 
@@ -183,22 +183,24 @@ export function NpcImage({
           )}
           
           {/* Actual image */}
-          <Image
-            key={`${iconUrl}-${retryCount}`} // Force re-render on retry
-            src={iconUrl}
-            alt={altText}
-            width={size}
-            height={size}
-            className={cn(
-              "object-cover transition-all duration-300 ease-in-out",
-              (isLoading || isRetrying) ? "opacity-0 scale-95" : "opacity-100 scale-100"
-            )}
-            onLoad={handleImageLoad}
-            onError={handleImageError}
-            priority={false}
-            loading={getImageLoadingStrategy()}
-            unoptimized={shouldUnoptimizeImageSrc(iconUrl)}
-          />
+          {iconUrl && typeof iconUrl === 'string' && (
+            <Image
+              key={`${npcId}-${iconUrl}-${retryCount}`} // Force re-render on retry
+              src={iconUrl}
+              alt={altText}
+              width={size}
+              height={size}
+              className={cn(
+                "object-cover transition-all duration-300 ease-in-out",
+                (isLoading || isRetrying) ? "opacity-0 scale-95" : "opacity-100 scale-100"
+              )}
+              onLoad={handleImageLoad}
+              onError={handleImageError}
+              priority={false}
+              loading={getImageLoadingStrategy()}
+              unoptimized={shouldUnoptimizeImageSrc(iconUrl)}
+            />
+          )}
         </>
       )}
       

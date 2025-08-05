@@ -52,9 +52,9 @@ export function NpcCard({
             />
             <div className="min-w-0 flex-1">
               <CardTitle className="text-lg truncate">
-                {npc.name || `NPC #${npc.id}`}
+                {typeof npc.name === 'string' ? npc.name : `NPC #${npc.id}`}
               </CardTitle>
-              {npc.name && (
+              {typeof npc.name === 'string' && npc.name && (
                 <p className="text-sm text-muted-foreground">
                   ID: {npc.id}
                 </p>

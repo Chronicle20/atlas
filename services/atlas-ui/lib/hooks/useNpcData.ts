@@ -122,21 +122,12 @@ export function useNpcData(
     placeholderData: (previousData) => previousData,
   });
 
-  // Handle error callback
-  const errorCallback = options.onError;
-  const hasError = query.isError && query.error;
-  
-  // Use useCallback to avoid infinite re-renders
-  const handleError = useCallback(() => {
-    if (hasError && errorCallback) {
-      errorCallback(query.error);
+  // Handle error callback with proper dependency management
+  useEffect(() => {
+    if (query.isError && query.error && options.onError) {
+      options.onError(query.error);
     }
-  }, [hasError, errorCallback, query.error]);
-
-  // Call error callback when error state changes
-  useMemo(() => {
-    handleError();
-  }, [handleError]);
+  }, [query.isError, query.error]); // Remove options.onError from dependencies to prevent infinite loops
 
   // Invalidate cache for this NPC
   const invalidate = useCallback(() => {
@@ -183,7 +174,25 @@ export function useNpcBatchData(
     queries: npcIds.map((npcId) => ({
       queryKey: generateNpcDataQueryKey(npcId, options.region, options.version),
       queryFn: async (): Promise<NpcDataResult> => {
-        return mapleStoryService.getNpcDataWithCache(npcId, options.region, options.version);
+        try {
+          const result = await mapleStoryService.getNpcDataWithCache(npcId, options.region, options.version);
+          
+          // Ensure we return a valid result even if the API call partially fails
+          return {
+            id: npcId,
+            name: typeof result.name === 'string' ? result.name : undefined,
+            iconUrl: typeof result.iconUrl === 'string' ? result.iconUrl : undefined,
+            cached: result.cached || false,
+            error: result.error,
+          };
+        } catch (error) {
+          console.error(`Failed to fetch NPC data for ID ${npcId}:`, error);
+          return {
+            id: npcId,
+            cached: false,
+            error: error instanceof Error ? error.message : 'Unknown error occurred',
+          };
+        }
       },
       enabled: options.enabled && npcId > 0,
       staleTime: options.staleTime,
@@ -206,33 +215,19 @@ export function useNpcBatchData(
   const isSuccess = queries.every(query => query.isSuccess);
   const errors = queries.filter(query => query.error).map(query => query.error);
 
-  // Handle success callback
-  const successCallback = options.onSuccess;
-  const hasSuccess = isSuccess && allData.length === npcIds.length;
-  
-  const handleSuccess = useCallback(() => {
-    if (hasSuccess && successCallback) {
-      successCallback(allData);
+  // Handle success callback with proper dependency management
+  useEffect(() => {
+    if (isSuccess && allData.length === npcIds.length && options.onSuccess) {
+      options.onSuccess(allData);
     }
-  }, [hasSuccess, successCallback, allData]);
+  }, [isSuccess, allData.length, npcIds.length]); // Remove options.onSuccess from dependencies
 
-  useMemo(() => {
-    handleSuccess();
-  }, [handleSuccess]);
-
-  // Handle error callback
-  const errorCallback = options.onError;
-  const hasErrors = isError && errors.length > 0;
-  
-  const handleError = useCallback(() => {
-    if (hasErrors && errorCallback && errors[0]) {
-      errorCallback(errors[0]);
+  // Handle error callback with proper dependency management
+  useEffect(() => {
+    if (isError && errors.length > 0 && errors[0] && options.onError) {
+      options.onError(errors[0]);
     }
-  }, [hasErrors, errorCallback, errors]);
-
-  useMemo(() => {
-    handleError();
-  }, [handleError]);
+  }, [isError, errors.length]); // Remove options.onError from dependencies
 
   // Batch invalidate
   const invalidateAll = useCallback(() => {
@@ -352,15 +347,31 @@ export function useOptimizedNpcBatchData(
   
   // Debounced batch fetcher to reduce API calls
   const batchFetch = useCallback(async (ids: number[]) => {
-    const results = await mapleStoryService.getNpcDataBatch(ids, options.region, options.version);
-    
-    // Cache individual results for future single requests
-    results.forEach((result) => {
-      const queryKey = generateNpcDataQueryKey(result.id, options.region, options.version);
-      queryClient.setQueryData(queryKey, result);
-    });
-    
-    return results;
+    try {
+      const results = await mapleStoryService.getNpcDataBatch(ids, options.region, options.version);
+      
+      // Cache individual results for future single requests
+      results.forEach((result) => {
+        if (result && result.id) {
+          const queryKey = generateNpcDataQueryKey(result.id, options.region, options.version);
+          queryClient.setQueryData(queryKey, {
+            ...result,
+            name: typeof result.name === 'string' ? result.name : undefined,
+            iconUrl: typeof result.iconUrl === 'string' ? result.iconUrl : undefined,
+          });
+        }
+      });
+      
+      return results;
+    } catch (error) {
+      console.error('Batch fetch failed:', error);
+      // Return empty results for failed batch
+      return ids.map(id => ({
+        id,
+        cached: false,
+        error: error instanceof Error ? error.message : 'Batch fetch failed',
+      }));
+    }
   }, [options.region, options.version, queryClient]);
 
   // Use a single query for the entire batch
@@ -383,33 +394,19 @@ export function useOptimizedNpcBatchData(
     placeholderData: (previousData) => previousData,
   });
 
-  // Handle success callback
-  const successCallback = options.onSuccess;
-  const hasSuccess = query.isSuccess && query.data;
-  
-  const handleSuccess = useCallback(() => {
-    if (hasSuccess && successCallback) {
-      successCallback(query.data);
+  // Handle success callback with proper dependency management
+  useEffect(() => {
+    if (query.isSuccess && query.data && options.onSuccess) {
+      options.onSuccess(query.data);
     }
-  }, [hasSuccess, successCallback, query.data]);
+  }, [query.isSuccess, query.data]); // Remove options.onSuccess from dependencies
 
-  useMemo(() => {
-    handleSuccess();
-  }, [handleSuccess]);
-
-  // Handle error callback
-  const errorCallback = options.onError;
-  const hasError = query.isError && query.error;
-  
-  const handleError = useCallback(() => {
-    if (hasError && errorCallback) {
-      errorCallback(query.error);
+  // Handle error callback with proper dependency management
+  useEffect(() => {
+    if (query.isError && query.error && options.onError) {
+      options.onError(query.error);
     }
-  }, [hasError, errorCallback, query.error]);
-
-  useMemo(() => {
-    handleError();
-  }, [handleError]);
+  }, [query.isError, query.error]); // Remove options.onError from dependencies
 
   // Invalidate batch cache
   const invalidateBatch = useCallback(() => {

@@ -858,6 +858,206 @@ When migrating existing code to use these components:
 
 8. **Consider Accessibility**: Include proper ARIA labels and respect user preferences for reduced motion
 
+## Application-Wide Loading State Integration
+
+The Atlas UI application now implements a comprehensive loading state system across all major components and pages. Here's how different areas of the application use these loading patterns:
+
+### Page-Level Loading
+All main pages now use appropriate skeleton components during initial data loading:
+
+```tsx
+// Example from tenants page
+function TenantsPage() {
+  const { data, isLoading } = useTenants();
+  
+  if (isLoading) return <TenantPageSkeleton />;
+  
+  return <TenantsTable data={data} />;
+}
+```
+
+### Component-Level Loading
+Individual components like MapCell now use contextual skeletons:
+
+```tsx
+// MapCell component shows skeleton while fetching map names
+if (isLoading) {
+  return <Skeleton className="h-6 w-16 rounded-full" />;
+}
+```
+
+### Form Loading States
+All forms use FormSkeleton during initialization and LoadingOverlay during submissions:
+
+```tsx
+function UserForm() {
+  const { isLoading: isInitializing } = useUserData();
+  const { mutate, isPending } = useUpdateUser();
+  
+  if (isInitializing) return <FormSkeleton fields={6} />;
+  
+  return (
+    <LoadingOverlay loading={isPending}>
+      {/* Form fields */}
+    </LoadingOverlay>
+  );
+}
+```
+
+### Table Loading States
+All data tables use TableSkeleton for initial loading and LoadingOverlay for actions:
+
+```tsx
+<DataTableWrapper
+  columns={columns}
+  data={data}
+  loading={isLoading}
+  // Automatically handles skeleton display
+/>
+```
+
+## Performance Guidelines
+
+### Memory Management
+- **Skeleton Caching**: Skeleton components are lightweight and don't maintain internal state
+- **Animation Performance**: Wave animations use CSS transforms for optimal performance
+- **Virtual Scrolling**: For large lists, combine ListSkeleton with virtual scrolling
+
+```tsx
+// Efficient skeleton for large datasets
+<VirtualizedList
+  itemCount={totalItems}
+  renderSkeleton={() => <ListSkeleton items={10} />}
+  renderItem={({ index, item }) => <UserCard user={item} />}
+/>
+```
+
+### Reducing Animation Load
+```tsx
+// Respect user preferences for reduced motion
+<ListSkeleton 
+  animation={preferesReducedMotion ? 'none' : 'pulse'} 
+/>
+
+// Use wave sparingly for hero sections only
+<CardSkeleton animation="wave" /> // Only for featured content
+```
+
+### Bundle Size Optimization
+- All skeleton components are tree-shakeable
+- Shared base styles minimize CSS duplication
+- Page-specific skeletons are code-split with their respective pages
+
+## Troubleshooting Common Issues
+
+### Skeleton Not Showing
+**Problem**: Skeleton doesn't appear during loading
+**Solution**: Ensure loading state is properly managed
+
+```tsx
+// ❌ Wrong - skeleton appears briefly
+const { data, isLoading } = useQuery({
+  queryKey: ['data'],
+  queryFn: fetchData,
+  staleTime: 0, // Don't do this
+});
+
+// ✅ Correct - proper loading management
+const { data, isLoading } = useQuery({
+  queryKey: ['data'],
+  queryFn: fetchData,
+  staleTime: 5 * 60 * 1000, // 5 minutes
+});
+```
+
+### Layout Shift Issues
+**Problem**: Content jumps when transitioning from skeleton to actual content
+**Solution**: Ensure skeleton dimensions match actual content
+
+```tsx
+// ❌ Wrong - dimensions don't match
+<Skeleton className="h-4 w-20" /> // Skeleton
+<h3 className="text-lg font-semibold">{title}</h3> // Actual content
+
+// ✅ Correct - matching dimensions
+<Skeleton className="h-7 w-48" /> // Matches text-lg height
+<h3 className="text-lg font-semibold">{title}</h3>
+```
+
+### Animation Performance Issues
+**Problem**: Animations causing performance problems on low-end devices
+**Solution**: Use performance-friendly animations
+
+```tsx
+// ❌ Avoid excessive wave animations
+<div>
+  {Array.from({ length: 100 }).map((_, i) => (
+    <CardSkeleton key={i} animation="wave" />
+  ))}
+</div>
+
+// ✅ Use pulse for multiple items
+<div>
+  {Array.from({ length: 100 }).map((_, i) => (
+    <CardSkeleton key={i} animation="pulse" />
+  ))}
+</div>
+```
+
+### Accessibility Issues
+**Problem**: Screen readers announcing too many loading states
+**Solution**: Use proper ARIA labeling
+
+```tsx
+// ❌ Too verbose for screen readers
+<div>
+  <ListSkeleton items={10} />
+</div>
+
+// ✅ Proper accessibility
+<div role="status" aria-label="Loading user list">
+  <ListSkeleton items={10} />
+  <span className="sr-only">Loading user information...</span>
+</div>
+```
+
+## Migration Guide - Implementation Complete
+
+✅ **All loading states have been successfully migrated**. The following changes have been implemented across the Atlas UI application:
+
+### Completed Migrations
+
+1. **✅ Base Skeleton Component Enhanced**
+   - Added variant support (default, circular, rectangular)
+   - Added animation support (pulse, wave, none)
+   - Implemented shimmer animation in globals.css
+
+2. **✅ All Primitive Loading States Replaced**
+   - MapCell component now uses proper skeleton
+   - All "Loading..." text patterns have been eliminated
+   - Consistent loading experience across all components
+
+3. **✅ Complete Skeleton Component Library**
+   - `ListSkeleton` with multiple variants
+   - `FormSkeleton` with flexible configurations
+   - `TableSkeleton` with header support
+   - `CardSkeleton` with multiple layouts
+   - Page-specific skeletons for all main pages
+
+4. **✅ Page-Level Integration**
+   - All main pages (Tenants, Accounts, Characters, Guilds, NPCs, Templates)
+   - Proper skeleton components for each page layout
+   - Smooth transitions between loading and loaded states
+
+5. **✅ Enhanced Loading Components**
+   - `LoadingSpinner` with size variants
+   - `LoadingOverlay` for mutation states
+   - `PageLoader` for full-page loading
+
+### No Further Migration Required
+
+All components in the application now use the comprehensive loading state system. New components should follow the patterns established in this documentation.
+
 ## TypeScript Support
 
 All components are fully typed with TypeScript:
@@ -866,5 +1066,7 @@ All components are fully typed with TypeScript:
 - Generic components (like DataTableWrapper) preserve type safety
 - Error objects are properly typed
 - Form components integrate seamlessly with react-hook-form types
+- All skeleton components support full prop inference
+- Animation and variant props are strictly typed
 
 This ensures compile-time safety and excellent developer experience.

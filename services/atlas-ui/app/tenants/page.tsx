@@ -5,6 +5,7 @@ import { useTenant } from "@/context/tenant-context";
 import { DataTableWrapper } from "@/components/common/DataTableWrapper";
 import { getColumns } from "@/app/tenants/columns";
 import { tenantsService } from "@/services/api";
+import { TenantPageSkeleton } from "@/components/common/skeletons/TenantPageSkeleton";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -17,7 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function Page() {
-    const { tenants, refreshTenants } = useTenant();
+    const { tenants, loading, refreshTenants } = useTenant();
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [tenantToDelete, setTenantToDelete] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -48,6 +49,10 @@ export default function Page() {
     };
 
     const columns = getColumns({ onDelete: openDeleteDialog });
+
+    if (loading) {
+        return <TenantPageSkeleton />;
+    }
 
     return (
         <div className="flex flex-col flex-1 space-y-6 p-10 pb-16">

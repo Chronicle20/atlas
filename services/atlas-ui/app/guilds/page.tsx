@@ -12,6 +12,7 @@ import {Guild} from "@/types/models/guild";
 import {Character} from "@/types/models/character";
 import {TenantConfig} from "@/types/models/tenant";
 import {createErrorFromUnknown} from "@/types/api/errors";
+import {GuildPageSkeleton} from "@/components/common/skeletons/GuildPageSkeleton";
 
 
 export default function Page() {
@@ -52,6 +53,10 @@ export default function Page() {
 
     const columns = getColumns({ tenant: tenantConfig, characterMap });
 
+    if (loading) {
+        return <GuildPageSkeleton />;
+    }
+
     return (
         <div className="flex flex-col flex-1 space-y-6 p-10 pb-16">
             <div className="items-center justify-between space-y-2">
@@ -63,7 +68,6 @@ export default function Page() {
                 <DataTableWrapper 
                     columns={columns} 
                     data={guilds} 
-                    loading={loading}
                     error={error}
                     onRefresh={fetchDataAgain} 
                     initialVisibilityState={hiddenColumns}

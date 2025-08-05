@@ -15,6 +15,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import {createErrorFromUnknown} from "@/types/api/errors";
+import {TemplatePageSkeleton} from "@/components/common/skeletons/TemplatePageSkeleton";
 
 // Form schema for clone template
 const cloneTemplateFormSchema = z.object({
@@ -226,6 +227,10 @@ export default function Page() {
         onCreateTenant: openCreateTenantDialog
     });
 
+    if (loading) {
+        return <TemplatePageSkeleton />;
+    }
+
     return (
         <div className="flex flex-col flex-1 space-y-6 p-10 pb-16">
             <div className="items-center justify-between space-y-2">
@@ -237,7 +242,6 @@ export default function Page() {
                 <DataTableWrapper 
                     columns={columns} 
                     data={templates} 
-                    loading={loading}
                     error={error}
                     onRefresh={fetchDataAgain}
                     emptyState={{

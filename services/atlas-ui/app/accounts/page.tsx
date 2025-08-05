@@ -9,6 +9,7 @@ import {Account} from "@/types/models/account";
 import {getColumns} from "@/app/accounts/columns";
 import {Toaster} from "sonner";
 import {createErrorFromUnknown} from "@/types/api/errors";
+import {AccountPageSkeleton} from "@/components/common/skeletons/AccountPageSkeleton";
 
 
 export default function Page() {
@@ -39,6 +40,10 @@ export default function Page() {
 
     const columns = getColumns({tenant: activeTenant});
 
+    if (loading) {
+        return <AccountPageSkeleton />;
+    }
+
     return (
         <div className="flex flex-col flex-1 space-y-6 p-10 pb-16">
             <div className="items-center justify-between space-y-2">
@@ -50,7 +55,6 @@ export default function Page() {
                 <DataTableWrapper 
                     columns={columns} 
                     data={accounts} 
-                    loading={loading}
                     error={error}
                     onRefresh={fetchDataAgain} 
                     initialVisibilityState={hiddenColumns}

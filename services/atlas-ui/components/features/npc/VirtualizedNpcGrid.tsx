@@ -123,23 +123,22 @@ export function VirtualizedNpcGrid({
     };
   }, [shouldVirtualize, npcs.length, actualItemsPerRow, containerHeight, itemHeight, scrollTop, overscan]);
 
+  // Memoize the bulk update handler to prevent re-renders
+  const handleBulkUpdate = useCallback((npcId: number) => {
+    onBulkUpdateShop?.(npcId);
+  }, [onBulkUpdateShop]);
+
   // Memoize the NPC rendering logic
   const renderNpcCard = useCallback((npc: NPC, index: number) => {
-    const dropdownActions: DropdownAction[] = npc.hasShop ? [{
-      label: "Bulk Update Shop",
-      icon: <Upload className="h-4 w-4 mr-2" />,
-      onClick: () => onBulkUpdateShop?.(npc.id)
-    }] : [];
-
     return (
       <div key={`npc-${npc.id}-${index}`} className="p-2">
         <NpcCard 
           npc={npc}
-          dropdownActions={dropdownActions}
+          onBulkUpdateShop={npc.hasShop ? handleBulkUpdate : undefined}
         />
       </div>
     );
-  }, [onBulkUpdateShop]);
+  }, [handleBulkUpdate]);
 
   // Render visible items
   const renderedItems = useMemo(() => {

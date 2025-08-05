@@ -3,7 +3,7 @@
  */
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useRef, useEffect } from 'react';
+import { useCallback, useRef, useEffect, useMemo } from 'react';
 import { mapleStoryService } from '@/services/api/maplestory.service';
 import type { 
   MapleStoryCharacterData, 
@@ -18,6 +18,8 @@ interface UseCharacterImageOptions {
   staleTime?: number;
   gcTime?: number;
   retry?: number;
+  region?: string;
+  majorVersion?: number;
   onSuccess?: (data: CharacterImageResult) => void;
   onError?: (error: Error) => void;
 }
@@ -28,7 +30,7 @@ interface ImagePreloadResult {
   dimensions?: { width: number; height: number };
 }
 
-const DEFAULT_OPTIONS: Required<Omit<UseCharacterImageOptions, 'onSuccess' | 'onError'>> = {
+const DEFAULT_OPTIONS: Required<Omit<UseCharacterImageOptions, 'onSuccess' | 'onError' | 'region' | 'majorVersion'>> = {
   enabled: true,
   priority: false,
   lazy: true,
@@ -40,9 +42,11 @@ const DEFAULT_OPTIONS: Required<Omit<UseCharacterImageOptions, 'onSuccess' | 'on
 /**
  * Generate a stable query key for character image
  */
-function generateQueryKey(character: MapleStoryCharacterData, options?: Partial<CharacterRenderOptions>): string[] {
+function generateQueryKey(character: MapleStoryCharacterData, options?: Partial<CharacterRenderOptions>, region?: string, majorVersion?: number): string[] {
   const baseKey = [
     'character-image',
+    region || 'GMS',
+    majorVersion?.toString() || '214',
     character.id.toString(),
     character.hair.toString(),
     character.face.toString(),
@@ -101,17 +105,17 @@ export function useCharacterImage(
   renderOptions?: Partial<CharacterRenderOptions>,
   hookOptions: UseCharacterImageOptions = {}
 ) {
-  const options = { ...DEFAULT_OPTIONS, ...hookOptions };
+  const options = useMemo(() => ({ ...DEFAULT_OPTIONS, ...hookOptions }), [hookOptions]);
   const queryClient = useQueryClient();
   const preloadPromiseRef = useRef<Promise<ImagePreloadResult> | null>(null);
   
-  const queryKey = generateQueryKey(character, renderOptions);
+  const queryKey = generateQueryKey(character, renderOptions, options.region, options.majorVersion);
   
   // Main query for character image generation
   const query = useQuery({
     queryKey,
     queryFn: async (): Promise<CharacterImageResult> => {
-      const result = await mapleStoryService.generateCharacterImage(character, renderOptions);
+      const result = await mapleStoryService.generateCharacterImage(character, renderOptions, options.region, options.majorVersion);
       
       // If this is a priority image, preload it immediately
       if (options.priority) {
@@ -158,14 +162,14 @@ export function useCharacterImage(
   // Prefetch related images (e.g., different stances or scales)
   const prefetchVariants = useCallback((variants: Array<Partial<CharacterRenderOptions>>) => {
     variants.forEach((variant) => {
-      const variantKey = generateQueryKey(character, { ...renderOptions, ...variant });
+      const variantKey = generateQueryKey(character, { ...renderOptions, ...variant }, options.region, options.majorVersion);
       queryClient.prefetchQuery({
         queryKey: variantKey,
-        queryFn: () => mapleStoryService.generateCharacterImage(character, { ...renderOptions, ...variant }),
+        queryFn: () => mapleStoryService.generateCharacterImage(character, { ...renderOptions, ...variant }, options.region, options.majorVersion),
         staleTime: options.staleTime,
       });
     });
-  }, [character, renderOptions, queryClient, options.staleTime]);
+  }, [character, renderOptions, queryClient, options.staleTime, options.region, options.majorVersion]);
 
   // Invalidate cache for this character
   const invalidate = useCallback(() => {
@@ -203,14 +207,16 @@ export function useCharacterImagePreloader() {
     characters: Array<{
       character: MapleStoryCharacterData;
       options?: Partial<CharacterRenderOptions>;
+      region?: string;
+      majorVersion?: number;
     }>
   ) => {
-    const preloadPromises = characters.map(({ character, options }) => {
-      const queryKey = generateQueryKey(character, options);
+    const preloadPromises = characters.map(({ character, options, region, majorVersion }) => {
+      const queryKey = generateQueryKey(character, options, region, majorVersion);
       
       return queryClient.prefetchQuery({
         queryKey,
-        queryFn: () => mapleStoryService.generateCharacterImage(character, options),
+        queryFn: () => mapleStoryService.generateCharacterImage(character, options, region, majorVersion),
         staleTime: DEFAULT_OPTIONS.staleTime,
       });
     });
@@ -261,14 +267,16 @@ export function useCharacterImageCache() {
 
   const warmCache = useCallback(async (
     characters: MapleStoryCharacterData[],
-    options?: Partial<CharacterRenderOptions>
+    options?: Partial<CharacterRenderOptions>,
+    region?: string,
+    majorVersion?: number
   ) => {
     const warmupPromises = characters.map(character => {
-      const queryKey = generateQueryKey(character, options);
+      const queryKey = generateQueryKey(character, options, region, majorVersion);
       
       return queryClient.prefetchQuery({
         queryKey,
-        queryFn: () => mapleStoryService.generateCharacterImage(character, options),
+        queryFn: () => mapleStoryService.generateCharacterImage(character, options, region, majorVersion),
         staleTime: DEFAULT_OPTIONS.staleTime,
       });
     });

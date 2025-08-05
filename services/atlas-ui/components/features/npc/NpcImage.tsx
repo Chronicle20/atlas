@@ -96,9 +96,11 @@ export function NpcImage({
         url: iconUrl || 'unknown',
       });
       
-      onError?.(errorMsg);
+      if (onError) {
+        onError(errorMsg);
+      }
     }
-  }, [retryCount, maxRetries, npcId, iconUrl, onError]);
+  }, [retryCount, maxRetries, npcId, iconUrl]); // Remove onError from dependencies
 
   const handleManualRetry = useCallback(() => {
     if (!canRetry) return;
@@ -113,8 +115,10 @@ export function NpcImage({
     setIsRetrying(true);
     setIsLoading(true);
     setImageError(false);
-    onRetry?.();
-  }, [canRetry, npcId, retryCount, iconUrl, onRetry]);
+    if (onRetry) {
+      onRetry();
+    }
+  }, [canRetry, npcId, retryCount, iconUrl]); // Remove onRetry from dependencies
 
   const altText = (typeof name === 'string' && name) ? `${name} (NPC ${npcId})` : `NPC ${npcId}`;
 

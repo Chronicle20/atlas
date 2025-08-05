@@ -125,20 +125,10 @@ export function VirtualizedNpcGrid({
 
   // Memoize the bulk update handler to prevent re-renders
   const handleBulkUpdate = useCallback((npcId: number) => {
-    onBulkUpdateShop?.(npcId);
+    if (onBulkUpdateShop) {
+      onBulkUpdateShop(npcId);
+    }
   }, [onBulkUpdateShop]);
-
-  // Memoize the NPC rendering logic
-  const renderNpcCard = useCallback((npc: NPC, index: number) => {
-    return (
-      <div key={`npc-${npc.id}-${index}`} className="p-2">
-        <NpcCard 
-          npc={npc}
-          onBulkUpdateShop={npc.hasShop ? handleBulkUpdate : undefined}
-        />
-      </div>
-    );
-  }, [handleBulkUpdate]);
 
   // Render visible items
   const renderedItems = useMemo(() => {
@@ -158,19 +148,31 @@ export function VirtualizedNpcGrid({
     if (shouldVirtualize && virtualItems) {
       // Render only visible items for large lists
       const visibleNpcs = npcs.slice(virtualItems.startIndex, virtualItems.endIndex);
-      return visibleNpcs.map((npc, index) => 
-        renderNpcCard(npc, virtualItems.startIndex + index)
-      );
+      return visibleNpcs.map((npc, index) => (
+        <div key={`npc-${npc.id}-${virtualItems.startIndex + index}`} className="p-2">
+          <NpcCard 
+            npc={npc}
+            onBulkUpdateShop={npc.hasShop ? handleBulkUpdate : undefined}
+          />
+        </div>
+      ));
     } else {
       // Render all items for small lists
-      return npcs.map((npc, index) => renderNpcCard(npc, index));
+      return npcs.map((npc, index) => (
+        <div key={`npc-${npc.id}-${index}`} className="p-2">
+          <NpcCard 
+            npc={npc}
+            onBulkUpdateShop={npc.hasShop ? handleBulkUpdate : undefined}
+          />
+        </div>
+      ));
     }
   }, [
     isLoading, 
     shouldVirtualize, 
     virtualItems, 
     npcs, 
-    renderNpcCard, 
+    handleBulkUpdate,
     containerHeight, 
     itemHeight, 
     actualItemsPerRow

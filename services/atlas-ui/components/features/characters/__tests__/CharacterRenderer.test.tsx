@@ -4,6 +4,7 @@
 
 import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { CharacterRenderer } from '../CharacterRenderer';
 import { mapleStoryService } from '@/services/api/maplestory.service';
 import type { Character } from '@/types/models/character';
@@ -32,9 +33,75 @@ jest.mock('next/image', () => {
   };
 });
 
+// Mock the character image hook
+jest.mock('@/lib/hooks/useCharacterImage', () => ({
+  useCharacterImage: jest.fn(),
+}));
+
+// Mock the intersection observer hook
+jest.mock('@/lib/hooks/useIntersectionObserver', () => ({
+  useLazyLoad: jest.fn(() => ({
+    shouldLoad: true,
+    ref: { current: null },
+  })),
+}));
+
 const mockMapleStoryService = mapleStoryService as jest.Mocked<typeof mapleStoryService>;
 
+// Test wrapper with QueryClient
+function TestWrapper({ children }: { children: React.ReactNode }) {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+      },
+    },
+  });
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      {children}
+    </QueryClientProvider>
+  );
+}
+
 describe('CharacterRenderer', () => {
+  const mockUseCharacterImage = require('@/lib/hooks/useCharacterImage').useCharacterImage as jest.MockedFunction<any>;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    
+    // Default successful mock for useCharacterImage
+    mockUseCharacterImage.mockReturnValue({
+      data: {
+        url: 'https://maplestory.io/api/character/test.png',
+        character: {},
+        options: {},
+        cached: false,
+      },
+      isLoading: false,
+      error: null,
+      refetch: jest.fn(),
+      preload: jest.fn(),
+      prefetchVariants: jest.fn(),
+      imageUrl: 'https://maplestory.io/api/character/test.png',
+      cached: false,
+    });
+
+    // Mock the service methods
+    mockMapleStoryService.characterToMapleStoryData.mockReturnValue({
+      id: 'char1',
+      name: 'TestWarrior',
+      level: 85,
+      jobId: 110,
+      hair: 30000,
+      face: 20000,
+      skinColor: 2,
+      gender: 0,
+      equipment: {},
+    });
+  });
+
   const mockCharacter: Character = {
     id: 'char1',
     type: 'character',
@@ -127,7 +194,7 @@ describe('CharacterRenderer', () => {
 
   describe('Basic rendering', () => {
     it('should render character with no equipment', async () => {
-      render(<CharacterRenderer character={mockCharacter} />);
+      render(<CharacterRenderer character={mockCharacter} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();
@@ -170,7 +237,7 @@ describe('CharacterRenderer', () => {
         },
       });
 
-      render(<CharacterRenderer character={mockCharacter} inventory={basicEquipment} />);
+      render(<CharacterRenderer character={mockCharacter} inventory={basicEquipment} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();
@@ -213,7 +280,7 @@ describe('CharacterRenderer', () => {
         },
       });
 
-      render(<CharacterRenderer character={mockCharacter} inventory={armorSet} />);
+      render(<CharacterRenderer character={mockCharacter} inventory={armorSet} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();
@@ -276,7 +343,7 @@ describe('CharacterRenderer', () => {
         cached: false,
       });
 
-      render(<CharacterRenderer character={mockCharacter} inventory={weaponSet} />);
+      render(<CharacterRenderer character={mockCharacter} inventory={weaponSet} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();
@@ -317,7 +384,7 @@ describe('CharacterRenderer', () => {
         },
       });
 
-      render(<CharacterRenderer character={mockCharacter} inventory={accessorySet} />);
+      render(<CharacterRenderer character={mockCharacter} inventory={accessorySet} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();
@@ -352,7 +419,7 @@ describe('CharacterRenderer', () => {
         },
       });
 
-      render(<CharacterRenderer character={mockCharacter} inventory={cashSet} />);
+      render(<CharacterRenderer character={mockCharacter} inventory={cashSet} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();
@@ -389,7 +456,7 @@ describe('CharacterRenderer', () => {
         },
       });
 
-      render(<CharacterRenderer character={mockCharacter} inventory={mixedSet} />);
+      render(<CharacterRenderer character={mockCharacter} inventory={mixedSet} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();
@@ -457,7 +524,7 @@ describe('CharacterRenderer', () => {
         },
       });
 
-      render(<CharacterRenderer character={mockCharacter} inventory={fullSet} />);
+      render(<CharacterRenderer character={mockCharacter} inventory={fullSet} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();
@@ -494,7 +561,7 @@ describe('CharacterRenderer', () => {
     });
 
     it('should use custom scale factor', async () => {
-      render(<CharacterRenderer character={mockCharacter} scale={4} />);
+      render(<CharacterRenderer character={mockCharacter} scale={4} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(mockMapleStoryService.generateCharacterImage).toHaveBeenCalledWith(
@@ -528,7 +595,7 @@ describe('CharacterRenderer', () => {
         () => new Promise(() => {}) // Never resolves
       );
 
-      render(<CharacterRenderer character={mockCharacter} />);
+      render(<CharacterRenderer character={mockCharacter} />, { wrapper: TestWrapper });
 
       // Should show skeleton loading
       expect(screen.queryByTestId('character-image')).not.toBeInTheDocument();
@@ -539,7 +606,7 @@ describe('CharacterRenderer', () => {
         () => new Promise(() => {}) // Never resolves
       );
 
-      render(<CharacterRenderer character={mockCharacter} showLoading={false} />);
+      render(<CharacterRenderer character={mockCharacter} showLoading={false} />, { wrapper: TestWrapper });
 
       // Should not show loading state
       expect(screen.queryByTestId('character-image')).not.toBeInTheDocument();
@@ -552,7 +619,7 @@ describe('CharacterRenderer', () => {
         new Error('API service is temporarily unavailable')
       );
 
-      render(<CharacterRenderer character={mockCharacter} />);
+      render(<CharacterRenderer character={mockCharacter} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();
@@ -565,7 +632,7 @@ describe('CharacterRenderer', () => {
     });
 
     it('should handle image load errors', async () => {
-      render(<CharacterRenderer character={mockCharacter} />);
+      render(<CharacterRenderer character={mockCharacter} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();
@@ -586,7 +653,7 @@ describe('CharacterRenderer', () => {
         new Error('Network connection failed')
       );
 
-      render(<CharacterRenderer character={mockCharacter} maxRetries={2} />);
+      render(<CharacterRenderer character={mockCharacter} maxRetries={2} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByText(/Network connection failed/)).toBeInTheDocument();
@@ -649,7 +716,7 @@ describe('CharacterRenderer', () => {
         new Error('Character image unavailable')
       );
 
-      render(<CharacterRenderer character={mockCharacter} />);
+      render(<CharacterRenderer character={mockCharacter} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();
@@ -786,7 +853,7 @@ describe('CharacterRenderer', () => {
         equipment: {},
       });
 
-      render(<CharacterRenderer character={femaleCharacter} />);
+      render(<CharacterRenderer character={femaleCharacter} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();

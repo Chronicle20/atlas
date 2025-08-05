@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { CharacterRendererDetailSkeleton } from '@/components/common/skeletons/CharacterDetailSkeleton';
+import { useCharacterImage } from '@/lib/hooks/useCharacterImage';
+import { useLazyLoad } from '@/lib/hooks/useIntersectionObserver';
 import { mapleStoryService } from '@/services/api/maplestory.service';
 import type { Asset } from '@/services/api/inventory.service';
 import type { CharacterRendererProps, MapleStoryCharacterData } from '@/types/models/maplestory';
@@ -14,6 +16,10 @@ interface CharacterRendererComponentProps extends Omit<CharacterRendererProps, '
   size?: 'small' | 'medium' | 'large';
   maxRetries?: number;
   showRetryButton?: boolean;
+  priority?: boolean;
+  lazy?: boolean;
+  enablePreload?: boolean;
+  prefetchVariants?: boolean;
 }
 
 type ErrorType = 'api_error' | 'image_load_error' | 'network_error' | 'fallback_error' | 'unknown_error';
@@ -48,13 +54,79 @@ export function CharacterRenderer({
   onImageError,
   maxRetries = 3,
   showRetryButton = true,
+  priority = false,
+  lazy = true,
+  enablePreload = true,
+  prefetchVariants = false,
 }: CharacterRendererComponentProps) {
-  const [imageUrl, setImageUrl] = useState<string>('');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<ErrorState | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
   const [fallbackImageError, setFallbackImageError] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [manualRetryCount, setManualRetryCount] = useState(0);
   const mountedRef = useRef(true);
+
+  // Lazy loading support with intersection observer
+  const { shouldLoad, ref: lazyRef } = useLazyLoad({
+    enabled: lazy && !priority,
+    rootMargin: '200px', // Start loading 200px before entering viewport
+  });
+
+  // Convert Character model to MapleStoryCharacterData
+  const mapleStoryData = useMemo((): MapleStoryCharacterData => 
+    mapleStoryService.characterToMapleStoryData(character, inventory),
+    [character, inventory]
+  );
+
+  // Use optimized character image hook
+  const {
+    data: imageResult,
+    isLoading,
+    error: queryError,
+    refetch,
+    preload,
+    prefetchVariants: prefetchVariantsFn,
+    imageUrl,
+    cached,
+  } = useCharacterImage(
+    mapleStoryData,
+    { resize: scale },
+    {
+      priority,
+      lazy,
+      retry: maxRetries,
+      enabled: priority || !lazy || shouldLoad, // Load immediately if priority or not lazy, otherwise wait for intersection
+      onSuccess: (data) => {
+        setImageLoaded(false); // Reset for new image
+        onImageLoad?.();
+      },
+      onError: (error) => {
+        onImageError?.(error);
+      },
+    }
+  );
+
+  // Prefetch variants if enabled
+  useEffect(() => {
+    if (prefetchVariants && imageResult && !isLoading && !queryError) {
+      const variants = [
+        { resize: scale * 0.5 }, // Smaller version
+        { resize: scale * 1.5 }, // Larger version
+      ];
+      
+      // Don't await - fire and forget
+      prefetchVariantsFn(variants);
+    }
+  }, [prefetchVariants, prefetchVariantsFn, imageResult, isLoading, queryError, scale]);
+
+  // Preload image if enabled and priority
+  useEffect(() => {
+    if (enablePreload && priority && imageUrl && !imageLoaded) {
+      preload().then((result) => {
+        if (result?.loaded && mountedRef.current) {
+          setImageLoaded(true);
+        }
+      });
+    }
+  }, [enablePreload, priority, imageUrl, imageLoaded, preload]);
   
   // Utility function to classify errors
   const classifyError = useCallback((err: unknown): ErrorState => {
@@ -99,86 +171,39 @@ export function CharacterRenderer({
     };
   }, []);
 
+  // Convert query error to our error state format
+  const error = useMemo((): ErrorState | null => {
+    if (!queryError) return null;
+    return classifyError(queryError);
+  }, [queryError, classifyError]);
+
   // Retry mechanism
   const handleRetry = useCallback(() => {
-    if (retryCount < maxRetries) {
-      setRetryCount(prev => prev + 1);
-      setError(null);
+    if (manualRetryCount < maxRetries) {
+      setManualRetryCount(prev => prev + 1);
       setFallbackImageError(false);
-      setLoading(true);
+      setImageLoaded(false);
+      refetch();
     }
-  }, [retryCount, maxRetries]);
+  }, [manualRetryCount, maxRetries, refetch]);
   
+  // Cleanup on unmount
   useEffect(() => {
     mountedRef.current = true;
-    
-    const generateCharacterImage = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // Convert Character model to MapleStoryCharacterData
-        const mapleStoryData: MapleStoryCharacterData = mapleStoryService.characterToMapleStoryData(
-          character,
-          inventory
-        );
-        
-        // Generate character image
-        const result = await mapleStoryService.generateCharacterImage(mapleStoryData, {
-          resize: scale,
-        });
-        
-        if (mountedRef.current) {
-          setImageUrl(result.url);
-          
-          // Preload image to handle loading state properly
-          const img = new window.Image();
-          img.onload = () => {
-            if (mountedRef.current) {
-              setLoading(false);
-              setRetryCount(0); // Reset retry count on success
-              onImageLoad?.();
-            }
-          };
-          img.onerror = () => {
-            if (mountedRef.current) {
-              const errorState = classifyError(new Error('Failed to load character image'));
-              setError(errorState);
-              setLoading(false);
-              onImageError?.(new Error(errorState.message));
-            }
-          };
-          img.src = result.url;
-        }
-      } catch (err) {
-        if (mountedRef.current) {
-          const errorState = classifyError(err);
-          setError(errorState);
-          setLoading(false);
-          onImageError?.(new Error(errorState.message));
-          
-          // Log error in development
-          if (process.env.NODE_ENV === 'development') {
-            console.error('Character rendering error:', err);
-          }
-        }
-      }
-    };
-    
-    generateCharacterImage();
-    
     return () => {
       mountedRef.current = false;
     };
-  }, [character, inventory, scale, onImageLoad, onImageError, retryCount]);
+  }, []);
   
   // Loading state
-  if (loading && showLoading) {
+  if (isLoading && showLoading) {
     return (
-      <CharacterRendererDetailSkeleton 
-        size={size} 
-        className={className}
-      />
+      <div ref={lazy && !priority ? lazyRef : undefined}>
+        <CharacterRendererDetailSkeleton 
+          size={size} 
+          className={className}
+        />
+      </div>
     );
   }
   
@@ -192,7 +217,10 @@ export function CharacterRenderer({
     // If both main image and fallback failed, show inline SVG
     if (fallbackImageError) {
       return (
-        <div className={cn(sizeClasses[size], 'flex flex-col items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg', className)}>
+        <div 
+          ref={lazy && !priority ? lazyRef : undefined}
+          className={cn(sizeClasses[size], 'flex flex-col items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg', className)}
+        >
           {/* Inline SVG fallback */}
           <svg width="48" height="48" viewBox="0 0 48 48" className="text-gray-400 mb-2">
             <circle cx="24" cy="18" r="6" fill="currentColor" opacity="0.3"/>
@@ -201,14 +229,14 @@ export function CharacterRenderer({
           <div className="text-xs text-gray-500 text-center px-2 mb-2">
             {error?.message || 'Character image unavailable'}
           </div>
-          {error?.isRetryable && showRetryButton && retryCount < maxRetries && (
+          {error?.isRetryable && showRetryButton && manualRetryCount < maxRetries && (
             <Button
               size="sm"
               variant="outline"
               onClick={handleRetry}
               className="text-xs px-2 py-1"
             >
-              Retry ({retryCount + 1}/{maxRetries})
+              Retry ({manualRetryCount + 1}/{maxRetries})
             </Button>
           )}
         </div>
@@ -217,7 +245,10 @@ export function CharacterRenderer({
 
     // Show fallback avatar with potential retry option
     return (
-      <div className={cn(sizeClasses[size], 'flex flex-col items-center justify-center', className)}>
+      <div 
+        ref={lazy && !priority ? lazyRef : undefined}
+        className={cn(sizeClasses[size], 'flex flex-col items-center justify-center', className)}
+      >
         <div className="relative">
           <Image
             src={fallbackAvatar}
@@ -233,14 +264,14 @@ export function CharacterRenderer({
             <div className="text-xs text-gray-500 text-center px-2 mb-1">
               {error.message}
             </div>
-            {error.isRetryable && showRetryButton && retryCount < maxRetries && (
+            {error.isRetryable && showRetryButton && manualRetryCount < maxRetries && (
               <Button
                 size="sm"
                 variant="outline"
                 onClick={handleRetry}
                 className="text-xs px-2 py-1"
               >
-                Retry ({retryCount + 1}/{maxRetries})
+                Retry ({manualRetryCount + 1}/{maxRetries})
               </Button>
             )}
           </div>
@@ -251,23 +282,43 @@ export function CharacterRenderer({
   
   // Success state - show character image
   return (
-    <div className={cn(sizeClasses[size], 'flex items-center justify-center', className)}>
+    <div 
+      ref={lazy && !priority ? lazyRef : undefined}
+      className={cn(sizeClasses[size], 'flex items-center justify-center', className)}
+    >
       <Image
         src={imageUrl}
         alt={character.attributes.name}
         width={sizeDimensions[size].width}
         height={sizeDimensions[size].height}
-        className={cn('object-contain rounded-lg')}
+{...priority && { priority: true }}
+        loading={lazy ? 'lazy' : 'eager'}
+        placeholder="blur"
+        blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNmNmY2ZjYiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiNlNGU0ZTQiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2cpIi8+PC9zdmc+"
+        className={cn(
+          'object-contain rounded-lg transition-opacity duration-300',
+          imageLoaded || !enablePreload ? 'opacity-100' : 'opacity-0'
+        )}
+        onLoad={() => {
+          if (mountedRef.current) {
+            setImageLoaded(true);
+            onImageLoad?.();
+          }
+        }}
         onError={() => {
           // Handle image load error by falling back to error state
           if (mountedRef.current) {
             const errorState = classifyError(new Error('Character image failed to load'));
-            setError(errorState);
-            setLoading(false);
             onImageError?.(new Error(errorState.message));
           }
         }}
       />
+      {/* Show cache indicator in development */}
+      {process.env.NODE_ENV === 'development' && cached && (
+        <div className="absolute top-1 right-1 bg-green-500 text-white text-xs px-1 py-0.5 rounded">
+          Cached
+        </div>
+      )}
     </div>
   );
 }

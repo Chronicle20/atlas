@@ -362,7 +362,7 @@ export function useOptimizedNpcBatchData(
       // Increase batch size for better performance
       const results = await mapleStoryService.getNpcDataBatch(ids, options.region, options.version, 20);
       
-      console.log(`Fetched metadata for ${results.length} NPCs out of ${ids.length} requested`);
+      console.log(`Fetched metadata for ${results.length} NPCs out of ${ids.length} requested using region: ${options.region}, version: ${options.version}`);
       
       // Cache individual results for future single requests
       results.forEach((result) => {

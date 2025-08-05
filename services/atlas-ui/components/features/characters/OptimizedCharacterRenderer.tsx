@@ -169,8 +169,8 @@ const OptimizedCharacterRendererComponent = memo<OptimizedCharacterRendererProps
         return {
           character: mapleStoryData,
           options: { resize: sibling.scale || scale },
-          region,
-          majorVersion,
+          ...(region && { region }),
+          ...(majorVersion && { majorVersion }),
         };
       });
       
@@ -190,8 +190,8 @@ const OptimizedCharacterRendererComponent = memo<OptimizedCharacterRendererProps
       showLoading={showLoading}
       fallbackAvatar={fallbackAvatar}
       className={className || ''}
-      region={region}
-      majorVersion={majorVersion}
+      {...(region && { region })}
+      {...(majorVersion && { majorVersion })}
       {...(onImageLoad && { onImageLoad })}
       {...(onImageError && { onImageError })}
       enablePreload={enablePreload}
@@ -283,8 +283,8 @@ export function CharacterGallery({
         return {
           character: mapleStoryData,
           options: { resize: scale },
-          region,
-          majorVersion,
+          ...(region && { region }),
+          ...(majorVersion && { majorVersion }),
         };
       });
       preloadImages(characterData);
@@ -306,8 +306,8 @@ export function CharacterGallery({
             size={itemSize}
             priority={priority && index < 3} // Prioritize first 3 images
             lazy={!priority}
-            region={region}
-            majorVersion={majorVersion}
+            {...(region && { region })}
+            {...(majorVersion && { majorVersion })}
             enablePreload={priority}
             prefetchVariants={false} // Disable for gallery to avoid too many requests
             preloadSiblings={

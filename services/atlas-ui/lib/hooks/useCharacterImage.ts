@@ -3,7 +3,7 @@
  */
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useRef, useEffect } from 'react';
+import { useCallback, useRef, useEffect, useMemo } from 'react';
 import { mapleStoryService } from '@/services/api/maplestory.service';
 import type { 
   MapleStoryCharacterData, 
@@ -30,7 +30,7 @@ interface ImagePreloadResult {
   dimensions?: { width: number; height: number };
 }
 
-const DEFAULT_OPTIONS: Required<Omit<UseCharacterImageOptions, 'onSuccess' | 'onError'>> = {
+const DEFAULT_OPTIONS: Required<Omit<UseCharacterImageOptions, 'onSuccess' | 'onError' | 'region' | 'majorVersion'>> = {
   enabled: true,
   priority: false,
   lazy: true,
@@ -105,7 +105,7 @@ export function useCharacterImage(
   renderOptions?: Partial<CharacterRenderOptions>,
   hookOptions: UseCharacterImageOptions = {}
 ) {
-  const options = { ...DEFAULT_OPTIONS, ...hookOptions };
+  const options = useMemo(() => ({ ...DEFAULT_OPTIONS, ...hookOptions }), [hookOptions]);
   const queryClient = useQueryClient();
   const preloadPromiseRef = useRef<Promise<ImagePreloadResult> | null>(null);
   

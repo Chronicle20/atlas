@@ -146,8 +146,8 @@ export default function CharacterDetailPage() {
                             inventory={equippedItems}
                             size="large"
                             scale={2}
-                            region={activeTenant?.attributes.region}
-                            majorVersion={activeTenant?.attributes.majorVersion}
+                            {...(activeTenant?.attributes.region && { region: activeTenant.attributes.region })}
+                            {...(activeTenant?.attributes.majorVersion && { majorVersion: activeTenant.attributes.majorVersion })}
                             className="character-renderer"
                         />
                     </CardContent>

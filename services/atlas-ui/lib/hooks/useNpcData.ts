@@ -58,26 +58,66 @@ export function useNpcData(
   const query = useQuery({
     queryKey,
     queryFn: async (): Promise<NpcDataResult> => {
-      const result = await mapleStoryService.getNpcDataWithCache(npcId, options.region, options.version);
-      
-      // Call success callback if provided
-      if (options.onSuccess) {
-        options.onSuccess(result);
+      try {
+        const result = await mapleStoryService.getNpcDataWithCache(npcId, options.region, options.version);
+        
+        // Call success callback if provided
+        if (options.onSuccess && !result.error) {
+          options.onSuccess(result);
+        }
+        
+        return result;
+      } catch (error) {
+        // Enhanced error logging with more context
+        console.error(`Failed to fetch NPC data for ID ${npcId}:`, error);
+        
+        // Return structured error result instead of throwing
+        const errorResult: NpcDataResult = {
+          id: npcId,
+          cached: false,
+          error: error instanceof Error ? error.message : 'Unknown error occurred',
+        };
+        
+        return errorResult;
       }
-      
-      return result;
     },
     enabled: options.enabled && npcId > 0,
     staleTime: options.staleTime,
     gcTime: options.gcTime,
     retry: (failureCount, error) => {
-      // Don't retry if it's a 404 (NPC doesn't exist)
-      if (error?.message?.includes('404') || error?.message?.includes('not found')) {
+      // Enhanced retry logic with better error classification
+      const errorMessage = error?.message?.toLowerCase() || '';
+      
+      // Don't retry for client errors (4xx)
+      if (errorMessage.includes('404') || 
+          errorMessage.includes('not found') ||
+          errorMessage.includes('400') ||
+          errorMessage.includes('bad request') ||
+          errorMessage.includes('unauthorized') ||
+          errorMessage.includes('forbidden')) {
         return false;
       }
-      return failureCount < options.retry;
+      
+      // Don't retry if we've exceeded the limit
+      if (failureCount >= options.retry) {
+        return false;
+      }
+      
+      // Log retry attempts for monitoring
+      console.warn(`Retrying NPC data fetch for ID ${npcId}, attempt ${failureCount + 1}/${options.retry}`);
+      
+      return true;
+    },
+    retryDelay: (attemptIndex) => {
+      // Exponential backoff with jitter
+      const baseDelay = 1000; // 1 second
+      const maxDelay = 10000; // 10 seconds
+      const exponentialDelay = Math.min(baseDelay * Math.pow(2, attemptIndex), maxDelay);
+      const jitter = Math.random() * 1000; // Add up to 1 second of jitter
+      return exponentialDelay + jitter;
     },
     refetchOnWindowFocus: false,
+    refetchOnReconnect: true, // Refetch when connection is restored
     // Keep previous data while refetching to avoid loading flicker
     placeholderData: (previousData) => previousData,
   });

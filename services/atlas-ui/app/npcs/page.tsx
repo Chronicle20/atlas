@@ -17,6 +17,8 @@ import {ErrorDisplay} from "@/components/common/ErrorDisplay";
 import {NpcPageSkeleton} from "@/components/common/skeletons/NpcPageSkeleton";
 import { NpcCard, DropdownAction } from "@/components/features/npc/NpcCard";
 import { useNpcBatchData } from "@/lib/hooks/useNpcData";
+import { useNpcErrorHandler } from "@/lib/hooks/useNpcErrorHandler";
+import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 
 export default function Page() {
     const { activeTenant } = useTenant();
@@ -30,6 +32,13 @@ export default function Page() {
     const [selectedNpcId, setSelectedNpcId] = useState<number | null>(null);
     const [createShopJson, setCreateShopJson] = useState("");
     const [bulkUpdateShopJson, setBulkUpdateShopJson] = useState("");
+
+    // Initialize error handler for batch operations
+    const { handleErrors, handleError } = useNpcErrorHandler({
+        showToasts: true,
+        logErrors: true,
+        maxToastsPerMinute: 5, // Allow more toasts for batch operations
+    });
 
     const fetchDataAgain = useCallback(() => {
         if (!activeTenant) return;
@@ -51,9 +60,12 @@ export default function Page() {
     const npcIds = useMemo(() => npcs.map(npc => npc.id), [npcs]);
     
     // Fetch NPC metadata (names and icons) in batch
-    const { data: npcDataResults, isLoading: isMetadataLoading } = useNpcBatchData(npcIds, {
+    const { data: npcDataResults, isLoading: isMetadataLoading, errors: metadataErrors } = useNpcBatchData(npcIds, {
         enabled: npcIds.length > 0,
         staleTime: 30 * 60 * 1000, // 30 minutes
+        onError: (error) => {
+            handleError(error, 0, { context: 'batch_metadata_fetch' });
+        },
     });
 
     // Merge original NPC data with fetched metadata
@@ -76,7 +88,17 @@ export default function Page() {
         });
         
         setNpcsWithMetadata(updatedNpcs);
-    }, [npcs, npcDataResults]);
+        
+        // Handle any metadata fetch errors
+        if (metadataErrors && metadataErrors.length > 0) {
+            const errorData = npcIds.map((npcId, index) => ({
+                error: metadataErrors[index] || new Error('Unknown metadata fetch error'),
+                npcId,
+                context: { context: 'individual_metadata_fetch', index },
+            }));
+            handleErrors(errorData);
+        }
+    }, [npcs, npcDataResults, metadataErrors, npcIds, handleErrors]);
 
     const handleCreateShop = async () => {
         if (!activeTenant) return;
@@ -221,37 +243,66 @@ export default function Page() {
             </div>
 
             <div className="overflow-auto h-[calc(100vh-10rem)] pr-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-                    {npcsWithMetadata.map((npc) => {
-                        // Create dropdown actions for NPCs with shops
-                        const dropdownActions: DropdownAction[] = npc.hasShop ? [{
-                            label: "Bulk Update Shop",
-                            icon: <Upload className="h-4 w-4 mr-2" />,
-                            onClick: () => {
-                                setSelectedNpcId(npc.id);
-                                setIsBulkUpdateShopDialogOpen(true);
-                            }
-                        }] : [];
+                <ErrorBoundary
+                    fallback={({ error, resetError }) => (
+                        <div className="flex flex-col items-center justify-center py-10 space-y-4">
+                            <div className="text-center">
+                                <h3 className="text-lg font-medium text-destructive">Error Loading NPCs</h3>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    {error.message || 'An unexpected error occurred while loading the NPC grid.'}
+                                </p>
+                            </div>
+                            <div className="flex gap-2">
+                                <Button onClick={resetError} variant="outline">
+                                    <RefreshCw className="h-4 w-4 mr-2" />
+                                    Try Again
+                                </Button>
+                                <Button onClick={fetchDataAgain} variant="default">
+                                    <RefreshCw className="h-4 w-4 mr-2" />
+                                    Reload All Data
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                    onError={(error, errorInfo) => {
+                        handleError(error, 0, { 
+                            context: 'npc_grid_rendering',
+                            componentStack: errorInfo.componentStack,
+                        });
+                    }}
+                >
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+                        {npcsWithMetadata.map((npc) => {
+                            // Create dropdown actions for NPCs with shops
+                            const dropdownActions: DropdownAction[] = npc.hasShop ? [{
+                                label: "Bulk Update Shop",
+                                icon: <Upload className="h-4 w-4 mr-2" />,
+                                onClick: () => {
+                                    setSelectedNpcId(npc.id);
+                                    setIsBulkUpdateShopDialogOpen(true);
+                                }
+                            }] : [];
 
-                        return (
-                            <NpcCard 
-                                key={npc.id}
-                                npc={npc}
-                                dropdownActions={dropdownActions}
-                            />
-                        );
-                    })}
-                    {npcsWithMetadata.length === 0 && !loading && !isMetadataLoading && (
-                        <div className="col-span-full text-center py-10">
-                            No NPCs found.
-                        </div>
-                    )}
-                    {(loading || isMetadataLoading) && npcsWithMetadata.length === 0 && (
-                        <div className="col-span-full text-center py-10">
-                            Loading NPCs...
-                        </div>
-                    )}
-                </div>
+                            return (
+                                <NpcCard 
+                                    key={npc.id}
+                                    npc={npc}
+                                    dropdownActions={dropdownActions}
+                                />
+                            );
+                        })}
+                        {npcsWithMetadata.length === 0 && !loading && !isMetadataLoading && (
+                            <div className="col-span-full text-center py-10">
+                                No NPCs found.
+                            </div>
+                        )}
+                        {(loading || isMetadataLoading) && npcsWithMetadata.length === 0 && (
+                            <div className="col-span-full text-center py-10">
+                                Loading NPCs...
+                            </div>
+                        )}
+                    </div>
+                </ErrorBoundary>
             </div>
 
             <Dialog open={isCreateShopDialogOpen} onOpenChange={setIsCreateShopDialogOpen}>

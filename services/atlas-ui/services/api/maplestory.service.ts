@@ -238,7 +238,7 @@ export class MapleStoryService {
     const totalSlots = inventory.length;
 
     for (const asset of inventory) {
-      const slot = asset.slot.toString();
+      const slot = asset.attributes.slot.toString();
       const slotNumber = parseInt(slot);
       
       // Skip non-negative slots if not including them
@@ -260,7 +260,7 @@ export class MapleStoryService {
       
       // Only include equipped items (negative slots)
       if (slotNumber < 0) {
-        equipment[slot] = asset.itemId;
+        equipment[slot] = asset.attributes.templateId;
         equippedCount++;
       }
     }
@@ -280,13 +280,13 @@ export class MapleStoryService {
     
     return {
       id: character.id,
-      name: character.name,
-      level: character.level,
-      jobId: character.job,
-      hair: character.hair,
-      face: character.face,
-      skinColor: character.skincolor,
-      gender: character.gender,
+      name: character.attributes.name,
+      level: character.attributes.level,
+      jobId: character.attributes.jobId,
+      hair: character.attributes.hair,
+      face: character.attributes.face,
+      skinColor: character.attributes.skinColor,
+      gender: character.attributes.gender,
       equipment,
     };
   }
@@ -310,7 +310,7 @@ export class MapleStoryService {
    * Map internal skin color value to MapleStory.io API value
    */
   private mapSkinColor(skincolor: number): number {
-    return SKIN_COLOR_MAPPING[skincolor] || SKIN_COLOR_MAPPING[0];
+    return SKIN_COLOR_MAPPING[skincolor] || SKIN_COLOR_MAPPING[0] || 2000;
   }
 
   /**
@@ -431,7 +431,7 @@ export const mapleStoryService = MapleStoryService.getInstance();
  * Utility functions for external use
  */
 export const mapSkinColor = (skincolor: number): number => {
-  return SKIN_COLOR_MAPPING[skincolor] || SKIN_COLOR_MAPPING[0];
+  return SKIN_COLOR_MAPPING[skincolor] || SKIN_COLOR_MAPPING[0] || 2000;
 };
 
 export const getEquipmentSlotName = (slot: string): string => {

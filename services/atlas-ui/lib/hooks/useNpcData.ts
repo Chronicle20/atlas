@@ -1,0 +1,301 @@
+/**
+ * React Query hook for NPC data fetching with caching and batch support
+ * Provides name and icon URL data for NPCs using MapleStory.io API
+ */
+
+import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useMemo } from 'react';
+import { mapleStoryService } from '@/services/api/maplestory.service';
+import type { NpcDataResult } from '@/types/models/maplestory';
+
+interface UseNpcDataOptions {
+  enabled?: boolean;
+  staleTime?: number;
+  gcTime?: number;
+  retry?: number;
+  region?: string;
+  version?: string;
+  onSuccess?: (data: NpcDataResult) => void;
+  onError?: (error: Error) => void;
+}
+
+interface UseNpcBatchDataOptions extends Omit<UseNpcDataOptions, 'onSuccess' | 'onError'> {
+  onSuccess?: (data: NpcDataResult[]) => void;
+  onError?: (error: Error) => void;
+}
+
+const DEFAULT_OPTIONS: Required<Omit<UseNpcDataOptions, 'onSuccess' | 'onError' | 'region' | 'version'>> = {
+  enabled: true,
+  staleTime: 30 * 60 * 1000, // 30 minutes
+  gcTime: 24 * 60 * 60 * 1000, // 24 hours
+  retry: 3,
+};
+
+/**
+ * Generate a stable query key for NPC data
+ */
+function generateNpcDataQueryKey(npcId: number, region?: string, version?: string): string[] {
+  return [
+    'npc-data',
+    region || 'GMS',
+    version || '214',
+    npcId.toString(),
+  ];
+}
+
+/**
+ * Hook for fetching single NPC data (name and icon)
+ */
+export function useNpcData(
+  npcId: number,
+  hookOptions: UseNpcDataOptions = {}
+) {
+  const options = useMemo(() => ({ ...DEFAULT_OPTIONS, ...hookOptions }), [hookOptions]);
+  const queryClient = useQueryClient();
+  
+  const queryKey = generateNpcDataQueryKey(npcId, options.region, options.version);
+  
+  const query = useQuery({
+    queryKey,
+    queryFn: async (): Promise<NpcDataResult> => {
+      const result = await mapleStoryService.getNpcDataWithCache(npcId, options.region, options.version);
+      
+      // Call success callback if provided
+      if (options.onSuccess) {
+        options.onSuccess(result);
+      }
+      
+      return result;
+    },
+    enabled: options.enabled && npcId > 0,
+    staleTime: options.staleTime,
+    gcTime: options.gcTime,
+    retry: (failureCount, error) => {
+      // Don't retry if it's a 404 (NPC doesn't exist)
+      if (error?.message?.includes('404') || error?.message?.includes('not found')) {
+        return false;
+      }
+      return failureCount < options.retry;
+    },
+    refetchOnWindowFocus: false,
+    // Keep previous data while refetching to avoid loading flicker
+    placeholderData: (previousData) => previousData,
+  });
+
+  // Handle error callback
+  const errorCallback = options.onError;
+  const hasError = query.isError && query.error;
+  
+  // Use useCallback to avoid infinite re-renders
+  const handleError = useCallback(() => {
+    if (hasError && errorCallback) {
+      errorCallback(query.error);
+    }
+  }, [hasError, errorCallback, query.error]);
+
+  // Call error callback when error state changes
+  useMemo(() => {
+    handleError();
+  }, [handleError]);
+
+  // Invalidate cache for this NPC
+  const invalidate = useCallback(() => {
+    queryClient.invalidateQueries({
+      queryKey: ['npc-data', npcId.toString()],
+    });
+  }, [queryClient, npcId]);
+
+  // Prefetch related NPC data
+  const prefetchNpc = useCallback((prefetchNpcId: number) => {
+    const prefetchKey = generateNpcDataQueryKey(prefetchNpcId, options.region, options.version);
+    queryClient.prefetchQuery({
+      queryKey: prefetchKey,
+      queryFn: () => mapleStoryService.getNpcDataWithCache(prefetchNpcId, options.region, options.version),
+      staleTime: options.staleTime,
+    });
+  }, [queryClient, options.region, options.version, options.staleTime]);
+
+  return {
+    ...query,
+    npcData: query.data,
+    name: query.data?.name,
+    iconUrl: query.data?.iconUrl,
+    hasError: query.data?.error !== undefined,
+    errorMessage: query.data?.error,
+    cached: query.data?.cached ?? false,
+    invalidate,
+    prefetchNpc,
+  };
+}
+
+/**
+ * Hook for fetching multiple NPC data in batch
+ */
+export function useNpcBatchData(
+  npcIds: number[],
+  hookOptions: UseNpcBatchDataOptions = {}
+) {
+  const options = useMemo(() => ({ ...DEFAULT_OPTIONS, ...hookOptions }), [hookOptions]);
+  const queryClient = useQueryClient();
+  
+  // Create queries for each NPC ID
+  const queries = useQueries({
+    queries: npcIds.map((npcId) => ({
+      queryKey: generateNpcDataQueryKey(npcId, options.region, options.version),
+      queryFn: async (): Promise<NpcDataResult> => {
+        return mapleStoryService.getNpcDataWithCache(npcId, options.region, options.version);
+      },
+      enabled: options.enabled && npcId > 0,
+      staleTime: options.staleTime,
+      gcTime: options.gcTime,
+      retry: (failureCount: number, error: Error) => {
+        if (error?.message?.includes('404') || error?.message?.includes('not found')) {
+          return false;
+        }
+        return failureCount < options.retry;
+      },
+      refetchOnWindowFocus: false,
+      placeholderData: (previousData: NpcDataResult | undefined) => previousData,
+    })),
+  });
+
+  // Aggregate results
+  const allData = queries.map(query => query.data).filter(Boolean) as NpcDataResult[];
+  const isLoading = queries.some(query => query.isLoading);
+  const isError = queries.some(query => query.isError);
+  const isSuccess = queries.every(query => query.isSuccess);
+  const errors = queries.filter(query => query.error).map(query => query.error);
+
+  // Handle success callback
+  const successCallback = options.onSuccess;
+  const hasSuccess = isSuccess && allData.length === npcIds.length;
+  
+  const handleSuccess = useCallback(() => {
+    if (hasSuccess && successCallback) {
+      successCallback(allData);
+    }
+  }, [hasSuccess, successCallback, allData]);
+
+  useMemo(() => {
+    handleSuccess();
+  }, [handleSuccess]);
+
+  // Handle error callback
+  const errorCallback = options.onError;
+  const hasErrors = isError && errors.length > 0;
+  
+  const handleError = useCallback(() => {
+    if (hasErrors && errorCallback && errors[0]) {
+      errorCallback(errors[0]);
+    }
+  }, [hasErrors, errorCallback, errors]);
+
+  useMemo(() => {
+    handleError();
+  }, [handleError]);
+
+  // Batch invalidate
+  const invalidateAll = useCallback(() => {
+    npcIds.forEach(npcId => {
+      queryClient.invalidateQueries({
+        queryKey: ['npc-data', npcId.toString()],
+      });
+    });
+  }, [queryClient, npcIds]);
+
+  return {
+    queries,
+    data: allData,
+    isLoading,
+    isError,
+    isSuccess,
+    errors,
+    invalidateAll,
+  };
+}
+
+/**
+ * Hook for managing NPC data cache
+ */
+export function useNpcDataCache() {
+  const queryClient = useQueryClient();
+
+  const getCacheStats = useCallback(() => {
+    const cache = queryClient.getQueryCache();
+    const npcDataQueries = cache.findAll({ queryKey: ['npc-data'] });
+    
+    return {
+      totalQueries: npcDataQueries.length,
+      activeQueries: npcDataQueries.filter(q => q.state.status === 'success').length,
+      errorQueries: npcDataQueries.filter(q => q.state.status === 'error').length,
+      loadingQueries: npcDataQueries.filter(q => q.state.status === 'pending').length,
+    };
+  }, [queryClient]);
+
+  const clearCache = useCallback((npcId?: number) => {
+    if (npcId) {
+      queryClient.removeQueries({
+        queryKey: ['npc-data', npcId.toString()],
+      });
+    } else {
+      queryClient.removeQueries({
+        queryKey: ['npc-data'],
+      });
+    }
+  }, [queryClient]);
+
+  const warmCache = useCallback(async (
+    npcIds: number[],
+    region?: string,
+    version?: string
+  ) => {
+    const warmupPromises = npcIds.map(npcId => {
+      const queryKey = generateNpcDataQueryKey(npcId, region, version);
+      
+      return queryClient.prefetchQuery({
+        queryKey,
+        queryFn: () => mapleStoryService.getNpcDataWithCache(npcId, region, version),
+        staleTime: DEFAULT_OPTIONS.staleTime,
+      });
+    });
+
+    return Promise.allSettled(warmupPromises);
+  }, [queryClient]);
+
+  return {
+    getCacheStats,
+    clearCache,
+    warmCache,
+  };
+}
+
+/**
+ * Hook for preloading NPC data
+ */
+export function useNpcDataPreloader() {
+  const queryClient = useQueryClient();
+
+  const preloadNpcData = useCallback(async (
+    npcs: Array<{
+      npcId: number;
+      region?: string;
+      version?: string;
+    }>
+  ) => {
+    const preloadPromises = npcs.map(({ npcId, region, version }) => {
+      const queryKey = generateNpcDataQueryKey(npcId, region, version);
+      
+      return queryClient.prefetchQuery({
+        queryKey,
+        queryFn: () => mapleStoryService.getNpcDataWithCache(npcId, region, version),
+        staleTime: DEFAULT_OPTIONS.staleTime,
+      });
+    });
+
+    return Promise.allSettled(preloadPromises);
+  }, [queryClient]);
+
+  return {
+    preloadNpcData,
+  };
+}

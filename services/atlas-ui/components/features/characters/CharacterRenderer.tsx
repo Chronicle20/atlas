@@ -20,6 +20,8 @@ interface CharacterRendererComponentProps extends Omit<CharacterRendererProps, '
   lazy?: boolean;
   enablePreload?: boolean;
   prefetchVariants?: boolean;
+  region?: string;
+  majorVersion?: number;
 }
 
 type ErrorType = 'api_error' | 'image_load_error' | 'network_error' | 'fallback_error' | 'unknown_error';
@@ -58,6 +60,8 @@ export function CharacterRenderer({
   lazy = true,
   enablePreload = true,
   prefetchVariants = false,
+  region,
+  majorVersion,
 }: CharacterRendererComponentProps) {
   const [fallbackImageError, setFallbackImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -93,6 +97,8 @@ export function CharacterRenderer({
       priority,
       lazy,
       retry: maxRetries,
+      region,
+      majorVersion,
       enabled: priority || !lazy || shouldLoad, // Load immediately if priority or not lazy, otherwise wait for intersection
       onSuccess: () => {
         setImageLoaded(false); // Reset for new image

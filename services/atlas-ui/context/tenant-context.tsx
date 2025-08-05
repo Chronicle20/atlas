@@ -8,6 +8,7 @@ import {createErrorFromUnknown} from "@/types/api/errors";
 type TenantContextType = {
     tenants: Tenant[];
     activeTenant: Tenant | null;
+    loading: boolean;
     setActiveTenant: (tenant: Tenant) => void;
     refreshTenants: () => Promise<void>;
     fetchTenantConfiguration: (tenantId: string) => Promise<TenantConfig>;
@@ -87,6 +88,7 @@ export function TenantProvider({children}: { children: ReactNode }) {
         <TenantContext.Provider value={{
             tenants, 
             activeTenant, 
+            loading,
             setActiveTenant, 
             refreshTenants,
             fetchTenantConfiguration: fetchTenantConfig

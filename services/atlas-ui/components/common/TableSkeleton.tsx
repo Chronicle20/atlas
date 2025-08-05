@@ -7,6 +7,13 @@ interface TableSkeletonProps {
   showHeader?: boolean;
   showActions?: boolean;
   className?: string;
+  /**
+   * Animation type for the skeleton elements
+   * - 'pulse': Default pulsing animation
+   * - 'wave': Shimmer wave animation
+   * - 'none': No animation
+   */
+  animation?: 'pulse' | 'wave' | 'none';
 }
 
 /**
@@ -18,13 +25,15 @@ interface TableSkeletonProps {
  * @param showHeader - Whether to show the header skeleton (default: true)
  * @param showActions - Whether to show the actions skeleton (default: true)
  * @param className - Additional CSS classes to apply
+ * @param animation - Animation type for skeleton elements (default: 'pulse')
  */
 export function TableSkeleton({ 
   rows = 5, 
   columns = 4, 
   showHeader = true, 
   showActions = true,
-  className 
+  className,
+  animation = 'pulse'
 }: TableSkeletonProps) {
   return (
     <div className={`w-full space-y-4 ${className || ''}`} data-testid="table-skeleton">
@@ -32,10 +41,10 @@ export function TableSkeleton({
       {showActions && (
         <div className="flex items-center justify-between">
           <div className="flex gap-2 items-center">
-            <Skeleton className="h-10 w-10" /> {/* Refresh button */}
+            <Skeleton animation={animation} className="h-10 w-10" /> {/* Refresh button */}
           </div>
           <div className="flex items-center gap-2">
-            <Skeleton className="h-8 w-20" /> {/* Actions dropdown */}
+            <Skeleton animation={animation} className="h-8 w-20" /> {/* Actions dropdown */}
           </div>
         </div>
       )}
@@ -52,7 +61,7 @@ export function TableSkeleton({
                     <TableRow>
                       {Array.from({ length: columns }).map((_, index) => (
                         <TableHead key={`header-${index}`}>
-                          <Skeleton className="h-4 w-full" />
+                          <Skeleton animation={animation} className="h-4 w-full" />
                         </TableHead>
                       ))}
                     </TableRow>
@@ -69,7 +78,7 @@ export function TableSkeleton({
                     <TableRow key={`row-${rowIndex}`}>
                       {Array.from({ length: columns }).map((_, colIndex) => (
                         <TableCell key={`cell-${rowIndex}-${colIndex}`}>
-                          <Skeleton className="h-4 w-full" />
+                          <Skeleton animation={animation} className="h-4 w-full" />
                         </TableCell>
                       ))}
                     </TableRow>

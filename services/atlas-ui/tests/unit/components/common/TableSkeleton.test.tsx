@@ -95,4 +95,20 @@ describe('TableSkeleton', () => {
     const skeletons = tableSkeleton.querySelectorAll('[data-testid="table-skeleton"] > div:first-child .h-10, [data-testid="table-skeleton"] > div:first-child .h-8');
     expect(skeletons.length).toBeGreaterThan(0);
   });
+
+  it('passes animation prop to skeleton elements', () => {
+    const { container } = render(<TableSkeleton animation="wave" />);
+    
+    // Check that skeleton elements have the shimmer animation class
+    const skeletonElements = container.querySelectorAll('.animate-shimmer');
+    expect(skeletonElements.length).toBeGreaterThan(0);
+  });
+
+  it('uses default pulse animation when no animation prop provided', () => {
+    const { container } = render(<TableSkeleton />);
+    
+    // Check that skeleton elements have the pulse animation class
+    const skeletonElements = container.querySelectorAll('.animate-pulse');
+    expect(skeletonElements.length).toBeGreaterThan(0);
+  });
 });

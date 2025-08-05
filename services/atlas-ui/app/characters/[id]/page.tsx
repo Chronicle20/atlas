@@ -137,10 +137,10 @@ export default function CharacterDetailPage() {
             <div className="flex flex-row gap-6">
                 {/* Character Rendering */}
                 <Card className="w-auto flex-shrink-0">
-                    <CardHeader>
-                        <CardTitle>Character</CardTitle>
+                    <CardHeader className="pb-2">
+                        <CardTitle>Avatar</CardTitle>
                     </CardHeader>
-                    <CardContent className="flex justify-center">
+                    <CardContent className="flex justify-center pt-2 pb-4">
                         <CharacterRenderer
                             character={character}
                             inventory={equippedItems}

@@ -35,13 +35,13 @@ interface ErrorState {
 const sizeClasses = {
   small: 'w-32 h-32',
   medium: 'w-48 h-48', 
-  large: 'w-64 h-64'
+  large: 'w-32 h-32'
 };
 
 const sizeDimensions = {
   small: { width: 128, height: 128 },
   medium: { width: 192, height: 192 },
-  large: { width: 256, height: 256 }
+  large: { width: 128, height: 128 }
 };
 
 export function CharacterRenderer({
@@ -303,7 +303,7 @@ export function CharacterRenderer({
         blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNmNmY2ZjYiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiNlNGU0ZTQiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2cpIi8+PC9zdmc+"
         className={cn(
           'object-contain rounded-lg transition-opacity duration-300',
-          imageLoaded || !enablePreload ? 'opacity-100' : 'opacity-0'
+          'opacity-100'
         )}
         onLoad={() => {
           if (mountedRef.current) {

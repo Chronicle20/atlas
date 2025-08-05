@@ -178,13 +178,24 @@ export function useNpcBatchData(
           const result = await mapleStoryService.getNpcDataWithCache(npcId, options.region, options.version);
           
           // Ensure we return a valid result even if the API call partially fails
-          return {
+          const validResult: NpcDataResult = {
             id: npcId,
-            name: typeof result.name === 'string' ? result.name : undefined,
-            iconUrl: typeof result.iconUrl === 'string' ? result.iconUrl : undefined,
             cached: result.cached || false,
-            error: result.error,
           };
+          
+          if (typeof result.name === 'string') {
+            validResult.name = result.name;
+          }
+          
+          if (typeof result.iconUrl === 'string') {
+            validResult.iconUrl = result.iconUrl;
+          }
+          
+          if (result.error) {
+            validResult.error = result.error;
+          }
+          
+          return validResult;
         } catch (error) {
           console.error(`Failed to fetch NPC data for ID ${npcId}:`, error);
           return {

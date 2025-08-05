@@ -1,9 +1,9 @@
 "use client"
 
 import { useMemo, useState, useEffect, useCallback, useRef } from "react";
-import { NpcCard, DropdownAction } from "./NpcCard";
+import { NpcCard } from "./NpcCard";
 import { NpcCardSkeleton } from "./NpcCardSkeleton";
-import { User, Upload } from "lucide-react";
+import { User } from "lucide-react";
 import { NPC } from "@/types/models/npc";
 
 interface VirtualizedNpcGridProps {
@@ -152,7 +152,7 @@ export function VirtualizedNpcGrid({
         <div key={`npc-${npc.id}-${virtualItems.startIndex + index}`} className="p-2">
           <NpcCard 
             npc={npc}
-            onBulkUpdateShop={npc.hasShop ? handleBulkUpdate : undefined}
+            {...(npc.hasShop && { onBulkUpdateShop: handleBulkUpdate })}
           />
         </div>
       ));
@@ -162,7 +162,7 @@ export function VirtualizedNpcGrid({
         <div key={`npc-${npc.id}-${index}`} className="p-2">
           <NpcCard 
             npc={npc}
-            onBulkUpdateShop={npc.hasShop ? handleBulkUpdate : undefined}
+            {...(npc.hasShop && { onBulkUpdateShop: handleBulkUpdate })}
           />
         </div>
       ));

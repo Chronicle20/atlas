@@ -8,6 +8,7 @@ export * from './conversation';
 export * from './guild';
 export * from './job';
 export * from './map';
+export * from './maplestory';
 export * from './npc';
 export * from './template';
 export * from './tenant';

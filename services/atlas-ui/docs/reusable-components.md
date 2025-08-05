@@ -395,6 +395,286 @@ function UserCard() {
 </div>
 ```
 
+### Base Skeleton Component
+
+The enhanced base skeleton component supports multiple variants and animations.
+
+```tsx
+import { Skeleton } from '@/components/ui/skeleton';
+
+// Default skeleton (rounded medium)
+<Skeleton className="h-4 w-48" />
+
+// Circular skeleton (for avatars)
+<Skeleton variant="circular" className="h-10 w-10" />
+
+// Rectangular skeleton (for buttons/cards)
+<Skeleton variant="rectangular" className="h-12 w-32" />
+
+// Different animations
+<Skeleton animation="pulse" className="h-4 w-32" />  // Default
+<Skeleton animation="wave" className="h-4 w-32" />   // Shimmer effect
+<Skeleton animation="none" className="h-4 w-32" />   // No animation
+```
+
+**Props:**
+- `variant`: 'default' | 'circular' | 'rectangular' (default: 'default')
+- `animation`: 'pulse' | 'wave' | 'none' (default: 'pulse')
+- `className`: Additional CSS classes
+
+### ListSkeleton
+
+Loading skeleton for list components with various layout options.
+
+```tsx
+import { ListSkeleton } from '@/components/common/ListSkeleton';
+
+// Basic list skeleton
+<ListSkeleton />
+
+// Compact list (smaller spacing)
+<ListSkeleton variant="compact" items={8} />
+
+// Card-style list items
+<ListSkeleton variant="card" showActions={true} />
+
+// List without avatars
+<ListSkeleton showAvatar={false} items={10} />
+
+// List with actions and subtext
+<ListSkeleton 
+  showActions={true} 
+  showSubtext={true}
+  items={6}
+/>
+
+// Custom animation
+<ListSkeleton animation="wave" />
+```
+
+**Props:**
+- `items`: Number of list items (default: 5)
+- `showAvatar`: Show avatar placeholders (default: true)
+- `showActions`: Show action button placeholders (default: false)
+- `showSubtext`: Show secondary text lines (default: true)
+- `variant`: 'default' | 'compact' | 'card' (default: 'default')
+- `animation`: 'pulse' | 'wave' | 'none' (default: 'pulse')
+- `className`: Additional CSS classes
+
+**Use cases:**
+- User lists with profiles
+- Menu items with icons
+- Search results
+- Activity feeds
+- Comment threads
+
+### FormSkeleton
+
+Loading skeleton for form components with flexible field layouts.
+
+```tsx
+import { FormSkeleton } from '@/components/common/FormSkeleton';
+
+// Basic form skeleton
+<FormSkeleton />
+
+// Compact form (smaller spacing)
+<FormSkeleton variant="compact" fields={6} />
+
+// Wide form layout
+<FormSkeleton variant="wide" showHelpText={true} />
+
+// Form without labels
+<FormSkeleton showLabels={false} fields={8} />
+
+// Form with action buttons
+<FormSkeleton 
+  showActionButtons={true}
+  showHelpText={true}
+  fields={5}
+/>
+
+// Custom animation
+<FormSkeleton animation="wave" />
+```
+
+**Props:**
+- `fields`: Number of form fields (default: 4)
+- `showLabels`: Show label placeholders (default: true)
+- `showHelpText`: Show help text placeholders (default: false)
+- `showSubmitButton`: Show submit button placeholder (default: true)
+- `showActionButtons`: Show additional action buttons (default: false)
+- `variant`: 'default' | 'compact' | 'wide' (default: 'default')
+- `animation`: 'pulse' | 'wave' | 'none' (default: 'pulse')
+- `className`: Additional CSS classes
+
+**Use cases:**
+- User registration forms
+- Settings panels
+- Content creation forms
+- Profile editing
+- Configuration dialogs
+
+### Page-Specific Skeletons
+
+Pre-built skeleton layouts for specific pages in the application.
+
+```tsx
+import { 
+  TenantPageSkeleton,
+  AccountPageSkeleton,
+  CharacterPageSkeleton,
+  GuildPageSkeleton,
+  NpcPageSkeleton,
+  TemplatePageSkeleton
+} from '@/components/common/skeletons';
+
+// For tenants listing page
+function TenantsPage() {
+  const { data, isLoading } = useTenants();
+  
+  if (isLoading) return <TenantPageSkeleton />;
+  
+  return <TenantsTable data={data} />;
+}
+
+// For character detail page
+function CharacterDetailPage() {
+  const { character, isLoading } = useCharacter(id);
+  
+  if (isLoading) return <CharacterPageSkeleton />;
+  
+  return <CharacterDetail character={character} />;
+}
+
+// With custom animation
+<AccountPageSkeleton animation="wave" />
+```
+
+**Available Page Skeletons:**
+- `TenantPageSkeleton`: Tenants listing page layout
+- `AccountPageSkeleton`: Accounts management page layout
+- `CharacterPageSkeleton`: Character details page layout
+- `GuildPageSkeleton`: Guild information page layout
+- `NpcPageSkeleton`: NPC configuration page layout
+- `TemplatePageSkeleton`: Template management page layout
+
+All page skeletons support the `animation` prop with 'pulse', 'wave', or 'none' options.
+
+## Skeleton Best Practices
+
+### 1. Match Content Structure
+Skeletons should mirror the exact layout of the content they represent:
+
+```tsx
+// ✅ Good - matches actual content structure
+function UserProfile() {
+  if (isLoading) {
+    return (
+      <div className="flex items-center space-x-4">
+        <Skeleton variant="circular" className="h-12 w-12" />
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-3 w-24" />
+        </div>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="flex items-center space-x-4">
+      <Avatar className="h-12 w-12" />
+      <div>
+        <h3 className="font-medium">{user.name}</h3>
+        <p className="text-sm text-muted-foreground">{user.email}</p>
+      </div>
+    </div>
+  );
+}
+```
+
+### 2. Animation Guidelines
+- **Pulse**: Use for most content (default, subtle)
+- **Wave**: Use for hero sections or when you want to draw attention
+- **None**: Use when animations might be distracting or for accessibility
+
+```tsx
+// Hero sections - wave animation
+<Skeleton animation="wave" className="h-64 w-full mb-8" />
+
+// Regular content - pulse animation (default)
+<ListSkeleton />
+
+// Reduced motion preference
+<FormSkeleton animation="none" />
+```
+
+### 3. Performance Considerations
+- Limit the number of skeleton elements (avoid hundreds of items)
+- Use page-specific skeletons for complex layouts
+- Consider virtual scrolling for long lists
+
+```tsx
+// ✅ Good - reasonable number of items
+<ListSkeleton items={10} />
+
+// ❌ Avoid - too many skeleton elements
+<ListSkeleton items={500} />
+```
+
+### 4. Accessibility
+- Include proper ARIA labels for screen readers
+- Respect user's reduced motion preferences
+- Provide alternative loading indicators when needed
+
+```tsx
+// Accessible skeleton with ARIA label
+<div role="status" aria-label="Loading content">
+  <ListSkeleton />
+  <span className="sr-only">Loading...</span>
+</div>
+```
+
+### 5. Timing Guidelines
+- **< 300ms**: No loading state needed
+- **300ms - 1s**: Use skeleton components
+- **> 1s**: Add progress indicators or detailed loading messages
+
+```tsx
+function DataComponent() {
+  const { data, isLoading, loadingTime } = useData();
+  
+  // Short loading - no skeleton needed
+  if (isLoading && loadingTime < 300) return null;
+  
+  // Medium loading - show skeleton
+  if (isLoading) return <ListSkeleton />;
+  
+  return <DataList data={data} />;
+}
+```
+
+## Accessibility Features
+
+All skeleton components include:
+
+- **Semantic HTML**: Proper role and ARIA attributes
+- **Screen Reader Support**: Hidden text for assistive technologies
+- **Reduced Motion**: Respects `prefers-reduced-motion` CSS media query
+- **Focus Management**: Non-focusable skeleton elements
+- **Color Contrast**: Uses theme-aware colors for accessibility
+
+```tsx
+// All skeletons automatically include accessibility features
+<ListSkeleton /> // Includes role="status" and screen reader text
+
+// Manual accessibility implementation
+<div role="status" aria-live="polite" aria-label="Loading user list">
+  <ListSkeleton />
+  <span className="sr-only">Loading user information...</span>
+</div>
+```
+
 ## Complete Examples
 
 ### Data Management Page
@@ -541,10 +821,16 @@ function CreateUserForm() {
 When migrating existing code to use these components:
 
 1. **Replace Loading Patterns**: Change `<div>Loading...</div>` to appropriate loading components
+   - Use `ListSkeleton` for list-based loading states
+   - Use `FormSkeleton` for form-based loading states  
+   - Use `TableSkeleton` for table-based loading states
+   - Use `CardSkeleton` for card-based loading states
+   - Use page-specific skeletons for entire page loading states
 2. **Replace Error Patterns**: Change `<div>Error: {error}</div>` to `<ErrorDisplay error={error} />`
 3. **Use DataTableWrapper**: Replace direct DataTable usage with DataTableWrapper for consistent states
 4. **Update Forms**: Use FormField components instead of manual form field patterns
 5. **Add Error Boundaries**: Wrap major sections with ErrorBoundary for better error handling
+6. **Update Skeleton Usage**: Replace basic skeleton usage with enhanced variants and animations
 
 ## Best Practices
 
@@ -552,14 +838,25 @@ When migrating existing code to use these components:
    - `LoadingSpinner` for small, inline loading states
    - `PageLoader` for full-page loading
    - `LoadingOverlay` for overlaying existing content
+   - `ListSkeleton` for list-based content
+   - `FormSkeleton` for form loading states
+   - `TableSkeleton` for table data loading
+   - `CardSkeleton` for card-based layouts
+   - Page-specific skeletons for complete page layouts
 
-2. **Provide Meaningful Error Messages**: Always include helpful error messages and retry options when possible
+2. **Match Skeleton Structure**: Ensure skeleton components mirror the actual content layout for smooth transitions
 
-3. **Use Empty States Effectively**: Provide clear next steps for users when no data is available
+3. **Use Appropriate Animations**: Choose pulse for subtle loading, wave for attention-grabbing, none for accessibility
 
-4. **Test Error Boundaries**: Ensure error boundaries are placed at appropriate levels in your component tree
+4. **Provide Meaningful Error Messages**: Always include helpful error messages and retry options when possible
 
-5. **Consistent Styling**: Use className props to maintain design system consistency
+5. **Use Empty States Effectively**: Provide clear next steps for users when no data is available
+
+6. **Test Error Boundaries**: Ensure error boundaries are placed at appropriate levels in your component tree
+
+7. **Consistent Styling**: Use className props to maintain design system consistency
+
+8. **Consider Accessibility**: Include proper ARIA labels and respect user preferences for reduced motion
 
 ## TypeScript Support
 

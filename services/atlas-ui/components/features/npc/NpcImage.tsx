@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { errorLogger } from "@/services/errorLogger";
 import { useLazyLoad } from "@/lib/hooks/useIntersectionObserver";
+import { shouldUnoptimizeImageSrc, getImageLoadingStrategy } from "@/lib/utils/image";
 
 interface NpcImageProps {
   npcId: number;
@@ -195,7 +196,8 @@ export function NpcImage({
             onLoad={handleImageLoad}
             onError={handleImageError}
             priority={false}
-            unoptimized // MapleStory.io images are external
+            loading={getImageLoadingStrategy()}
+            unoptimized={shouldUnoptimizeImageSrc(iconUrl)}
           />
         </>
       )}

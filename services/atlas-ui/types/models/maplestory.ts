@@ -195,6 +195,27 @@ export interface EquipmentExtractionOptions {
 }
 
 /**
+ * NPC API response data from MapleStory.io
+ */
+export interface NpcApiData {
+  id: number;
+  name: string;
+  description?: string;
+  scripts?: string[];
+}
+
+/**
+ * NPC icon and name result
+ */
+export interface NpcDataResult {
+  id: number;
+  name?: string;
+  iconUrl?: string;
+  cached: boolean;
+  error?: string;
+}
+
+/**
  * Character rendering service configuration
  */
 export interface CharacterRenderingConfig {
@@ -205,4 +226,5 @@ export interface CharacterRenderingConfig {
   defaultStance: 'stand1' | 'stand2';
   defaultResize: number;
   enableErrorLogging: boolean;
+  defaultRegion?: string;
 }

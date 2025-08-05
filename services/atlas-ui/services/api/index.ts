@@ -79,6 +79,16 @@ export type {
   TemplatesResponse,
 } from './templates.service';
 
+export type {
+  CharacterRenderOptions,
+  EquipmentData,
+  MapleStoryCharacterData,
+  CharacterImageResult,
+  EquipmentExtractionResult,
+  EquipmentExtractionOptions,
+  CharacterRenderingConfig,
+} from '@/types/models/maplestory';
+
 // Individual services will be exported here as they are implemented:
 export { tenantsService } from './tenants.service';
 export { accountsService } from './accounts.service';
@@ -89,3 +99,4 @@ export { guildsService } from './guilds.service';
 export { npcsService } from './npcs.service';
 export { conversationsService } from './conversations.service';
 export { templatesService } from './templates.service';
+export { MapleStoryService, mapleStoryService, mapSkinColor, getEquipmentSlotName, isTwoHandedWeapon } from './maplestory.service';

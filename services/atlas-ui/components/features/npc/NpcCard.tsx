@@ -1,9 +1,12 @@
 "use client"
 
+import React from "react";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, ShoppingBag, MessageCircle } from "lucide-react";
+import { MoreHorizontal, ShoppingBag, MessageCircle, Upload } from "lucide-react";
+import { useMemo } from "react";
 import Link from "next/link";
 import { NPC } from "@/types/models/npc";
 import { NpcImage } from "./NpcImage";
@@ -21,11 +24,13 @@ interface NpcCardProps {
   onShopToggle?: (npcId: number) => void;
   onConversationToggle?: (npcId: number) => void;
   dropdownActions?: DropdownAction[];
+  onBulkUpdateShop?: (npcId: number) => void;
 }
 
-export function NpcCard({ 
+export const NpcCard = React.memo(function NpcCard({ 
   npc, 
-  dropdownActions = [] 
+  dropdownActions = [],
+  onBulkUpdateShop
 }: NpcCardProps) {
   const { createNpcErrorHandler } = useNpcErrorHandler({
     showToasts: false, // Avoid duplicate toasts since we have error boundaries
@@ -33,6 +38,21 @@ export function NpcCard({
   });
 
   const handleImageError = createNpcErrorHandler(npc.id);
+
+  // Create stable dropdown actions
+  const finalDropdownActions = useMemo(() => {
+    const actions = [...dropdownActions];
+    
+    if (npc.hasShop && onBulkUpdateShop) {
+      actions.push({
+        label: "Bulk Update Shop",
+        icon: <Upload className="h-4 w-4 mr-2" />,
+        onClick: () => onBulkUpdateShop(npc.id)
+      });
+    }
+    
+    return actions;
+  }, [dropdownActions, npc.hasShop, npc.id, onBulkUpdateShop]);
 
   return (
     <NpcErrorBoundary npcId={npc.id}>
@@ -63,7 +83,7 @@ export function NpcCard({
           </div>
         
         {/* Conditional dropdown menu - only show if actions are available */}
-        {dropdownActions.length > 0 && (
+        {finalDropdownActions.length > 0 && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-8 p-0 flex-shrink-0">
@@ -72,7 +92,7 @@ export function NpcCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {dropdownActions.map((action, index) => (
+              {finalDropdownActions.map((action, index) => (
                 <DropdownMenuItem key={index} onClick={action.onClick}>
                   {action.icon}
                   {action.label}
@@ -139,4 +159,4 @@ export function NpcCard({
     </Card>
     </NpcErrorBoundary>
   );
-}
+});

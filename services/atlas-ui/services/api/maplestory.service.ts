@@ -192,7 +192,7 @@ export class MapleStoryService {
       face: character.face,
       skin: this.mapSkinColor(character.skinColor),
       equipment: character.equipment,
-      stance: options.stance || this.config.defaultStance,
+      stance: options.stance || this.determineStance(character.equipment),
       resize: options.resize || this.config.defaultResize,
       renderMode: options.renderMode || 'default',
       frame: options.frame || 0,

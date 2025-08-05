@@ -170,7 +170,7 @@ export function CharacterRenderer({
     return () => {
       mountedRef.current = false;
     };
-  }, [character, inventory, scale, onImageLoad, onImageError, retryCount, classifyError]);
+  }, [character, inventory, scale, onImageLoad, onImageError, retryCount]);
   
   // Loading state
   if (loading && showLoading) {

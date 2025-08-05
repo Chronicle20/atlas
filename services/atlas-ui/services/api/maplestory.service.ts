@@ -190,8 +190,8 @@ export class MapleStoryService {
     
     // Initialize debounced methods for batch API calls
     // This helps prevent API rate limiting when fetching multiple NPCs
-    this.debouncedGetNpcIcon = this.createDebouncedMethod(this.getNpcIcon.bind(this), 100);
-    this.debouncedGetNpcName = this.createDebouncedMethod(this.getNpcName.bind(this), 100);
+    this.debouncedGetNpcIcon = this.createDebouncedMethod(this.getNpcIcon.bind(this), 50);
+    this.debouncedGetNpcName = this.createDebouncedMethod(this.getNpcName.bind(this), 50);
     this.debouncedGetNpcData = this.createDebouncedMethod(this.getNpcData.bind(this), 150);
   }
 
@@ -784,7 +784,7 @@ export class MapleStoryService {
       
       // Add small delay between batches (except first)
       if (i > 0) {
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
 
       // Fetch batch in parallel

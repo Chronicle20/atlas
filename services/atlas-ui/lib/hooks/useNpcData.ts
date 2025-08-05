@@ -359,7 +359,10 @@ export function useOptimizedNpcBatchData(
   // Debounced batch fetcher to reduce API calls
   const batchFetch = useCallback(async (ids: number[]) => {
     try {
-      const results = await mapleStoryService.getNpcDataBatch(ids, options.region, options.version);
+      // Increase batch size for better performance
+      const results = await mapleStoryService.getNpcDataBatch(ids, options.region, options.version, 20);
+      
+      console.log(`Fetched metadata for ${results.length} NPCs out of ${ids.length} requested`);
       
       // Cache individual results for future single requests
       results.forEach((result) => {
@@ -372,6 +375,12 @@ export function useOptimizedNpcBatchData(
           });
         }
       });
+      
+      // Log any NPCs that failed to fetch
+      const failedNpcs = results.filter(r => r.error);
+      if (failedNpcs.length > 0) {
+        console.warn(`Failed to fetch metadata for ${failedNpcs.length} NPCs:`, failedNpcs);
+      }
       
       return results;
     } catch (error) {

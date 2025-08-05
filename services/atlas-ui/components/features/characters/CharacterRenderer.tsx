@@ -97,8 +97,8 @@ export function CharacterRenderer({
       priority,
       lazy,
       retry: maxRetries,
-      region,
-      majorVersion,
+      ...(region && { region }),
+      ...(majorVersion && { majorVersion }),
       enabled: priority || !lazy || shouldLoad, // Load immediately if priority or not lazy, otherwise wait for intersection
       onSuccess: () => {
         setImageLoaded(false); // Reset for new image

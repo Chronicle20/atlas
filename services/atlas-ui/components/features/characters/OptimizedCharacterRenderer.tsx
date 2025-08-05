@@ -66,6 +66,8 @@ interface OptimizedCharacterRendererProps {
   className?: string;
   onImageLoad?: () => void;
   onImageError?: (error: Error) => void;
+  region?: string;
+  majorVersion?: number;
   
   // Performance optimization options
   enablePreload?: boolean;
@@ -138,6 +140,8 @@ const OptimizedCharacterRendererComponent = memo<OptimizedCharacterRendererProps
   className,
   onImageLoad,
   onImageError,
+  region,
+  majorVersion,
   enablePreload = true,
   prefetchVariants = false,
   enableErrorBoundary = true,
@@ -165,13 +169,15 @@ const OptimizedCharacterRendererComponent = memo<OptimizedCharacterRendererProps
         return {
           character: mapleStoryData,
           options: { resize: sibling.scale || scale },
+          ...(region && { region }),
+          ...(majorVersion && { majorVersion }),
         };
       });
       
       // Fire and forget - don't await
       preloadImages(siblingData);
     }
-  }, [preloadSiblings, preloadImages, scale]);
+  }, [preloadSiblings, preloadImages, scale, region, majorVersion]);
   
   const rendererComponent = (
     <CharacterRenderer
@@ -184,7 +190,9 @@ const OptimizedCharacterRendererComponent = memo<OptimizedCharacterRendererProps
       showLoading={showLoading}
       fallbackAvatar={fallbackAvatar}
       className={className || ''}
-{...(onImageLoad && { onImageLoad })}
+      {...(region && { region })}
+      {...(majorVersion && { majorVersion })}
+      {...(onImageLoad && { onImageLoad })}
       {...(onImageError && { onImageError })}
       enablePreload={enablePreload}
       prefetchVariants={prefetchVariants}
@@ -251,6 +259,8 @@ interface CharacterGalleryProps {
   itemSize?: 'small' | 'medium' | 'large';
   priority?: boolean;
   className?: string;
+  region?: string;
+  majorVersion?: number;
   onCharacterClick?: (character: Character) => void;
 }
 
@@ -259,6 +269,8 @@ export function CharacterGallery({
   itemSize = 'medium',
   priority = false,
   className = '',
+  region,
+  majorVersion,
   onCharacterClick,
 }: CharacterGalleryProps) {
   // Preload all character images in batch
@@ -271,11 +283,13 @@ export function CharacterGallery({
         return {
           character: mapleStoryData,
           options: { resize: scale },
+          ...(region && { region }),
+          ...(majorVersion && { majorVersion }),
         };
       });
       preloadImages(characterData);
     }
-  }, [characters, priority, preloadImages]);
+  }, [characters, priority, preloadImages, region, majorVersion]);
 
   return (
     <div className={`grid gap-4 ${className}`}>
@@ -292,6 +306,8 @@ export function CharacterGallery({
             size={itemSize}
             priority={priority && index < 3} // Prioritize first 3 images
             lazy={!priority}
+            {...(region && { region })}
+            {...(majorVersion && { majorVersion })}
             enablePreload={priority}
             prefetchVariants={false} // Disable for gallery to avoid too many requests
             preloadSiblings={

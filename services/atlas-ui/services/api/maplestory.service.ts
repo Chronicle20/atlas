@@ -14,6 +14,7 @@ import {
   type SkinColorMapping,
   type EquipmentSlotMapping,
   type WeaponRange,
+  WeaponType,
 } from '@/types/models/maplestory';
 import { type Character } from '@/types/models/character';
 import { type Asset } from '@/services/api/inventory.service';
@@ -23,7 +24,7 @@ import { type Asset } from '@/services/api/inventory.service';
  */
 const DEFAULT_CONFIG: CharacterRenderingConfig = {
   apiBaseUrl: 'https://maplestory.io/api',
-  apiVersion: '214',
+  apiVersion: '214', // Fallback version if tenant not provided
   cacheEnabled: true,
   cacheTTL: 60 * 60 * 1000, // 1 hour
   defaultStance: 'stand1',
@@ -90,18 +91,54 @@ const EQUIPMENT_SLOT_MAPPING: EquipmentSlotMapping = {
   '-114': 'Cash Belt',
 };
 
+
 /**
- * Two-handed weapon ID ranges for stance determination
+ * Get weapon type from item ID using MapleStory classification algorithm
+ * Based on Go backend GetWeaponType function
  */
-const TWO_HANDED_WEAPON_RANGES: WeaponRange[] = [
-  { min: 1300000, max: 1399999, category: 'Two-handed Swords' },
-  { min: 1400000, max: 1419999, category: 'Two-handed Axes' },
-  { min: 1420000, max: 1439999, category: 'Two-handed Blunt Weapons' },
-  { min: 1440000, max: 1449999, category: 'Spears' },
-  { min: 1450000, max: 1459999, category: 'Polearms' },
-  { min: 1520000, max: 1529999, category: 'Knuckles' },
-  { min: 1590000, max: 1599999, category: 'Guns/Cannons' },
-];
+function getWeaponType(itemId: number): WeaponType {
+  const cat = Math.floor((itemId / 10000) % 100);
+  
+  if (cat < 30 || cat > 49) {
+    return WeaponType.None;
+  }
+  
+  switch (cat - 30) {
+    case 0: return WeaponType.OneHandedSword;
+    case 1: return WeaponType.OneHandedAxe;
+    case 2: return WeaponType.OneHandedMace;
+    case 3: return WeaponType.Dagger;
+    case 7: return WeaponType.Wand;
+    case 8: return WeaponType.Staff;
+    case 10: return WeaponType.TwoHandedSword;
+    case 11: return WeaponType.TwoHandedAxe;
+    case 12: return WeaponType.TwoHandedMace;
+    case 13: return WeaponType.Spear;
+    case 14: return WeaponType.Polearm;
+    case 15: return WeaponType.Bow;
+    case 16: return WeaponType.Crossbow;
+    case 17: return WeaponType.Claw;
+    case 18: return WeaponType.Knuckle;
+    case 19: return WeaponType.Gun;
+    default: return WeaponType.None;
+  }
+}
+
+/**
+ * Two-handed weapon types for stance determination
+ */
+const TWO_HANDED_WEAPON_TYPES = new Set([
+  WeaponType.TwoHandedSword,
+  WeaponType.TwoHandedAxe,
+  WeaponType.TwoHandedMace,
+  WeaponType.Spear,
+  WeaponType.Polearm,
+  WeaponType.Bow,
+  WeaponType.Crossbow,
+  WeaponType.Knuckle,
+  WeaponType.Gun,
+  // Note: Claw is one-handed, Staff is one-handed (despite being long)
+]);
 
 /**
  * Equipment rendering order for layering
@@ -143,7 +180,7 @@ export class MapleStoryService {
   /**
    * Generate character image URL using MapleStory.io API
    */
-  generateCharacterUrl(options: CharacterRenderOptions): string {
+  generateCharacterUrl(options: CharacterRenderOptions, region?: string, majorVersion?: number): string {
     const items: string[] = [];
     const stance = options.stance || this.determineStance(options.equipment);
     
@@ -180,13 +217,22 @@ export class MapleStoryService {
     const itemString = items.join(',');
     const queryString = params.toString();
     
-    return `${this.config.apiBaseUrl}/GMS/${this.config.apiVersion}/character/center/${options.skin}/${itemString}/${stance}/0${queryString ? '?' + queryString : ''}`;
+    // Use provided region and majorVersion, fallback to defaults
+    const apiRegion = region || 'GMS';
+    const apiVersion = majorVersion?.toString() || this.config.apiVersion;
+    
+    return `${this.config.apiBaseUrl}/${apiRegion}/${apiVersion}/character/center/${options.skin}/${itemString}/${stance}/0${queryString ? '?' + queryString : ''}`;
   }
 
   /**
    * Generate character image with full result metadata
    */
-  async generateCharacterImage(character: MapleStoryCharacterData, options: Partial<CharacterRenderOptions> = {}): Promise<CharacterImageResult> {
+  async generateCharacterImage(
+    character: MapleStoryCharacterData, 
+    options: Partial<CharacterRenderOptions> = {},
+    region?: string,
+    majorVersion?: number
+  ): Promise<CharacterImageResult> {
     const renderOptions: CharacterRenderOptions = {
       hair: character.hair,
       face: character.face,
@@ -199,8 +245,8 @@ export class MapleStoryService {
       flipX: options.flipX || false,
     };
 
-    const cacheKey = this.getCacheKey(renderOptions);
-    const url = this.generateCharacterUrl(renderOptions);
+    const cacheKey = this.getCacheKey(renderOptions, region, majorVersion);
+    const url = this.generateCharacterUrl(renderOptions, region, majorVersion);
     
     let cached = false;
     if (this.config.cacheEnabled) {
@@ -298,10 +344,9 @@ export class MapleStoryService {
     const weaponId = equipment['-11'] || equipment['-111']; // Regular or cash weapon
     if (!weaponId) return this.config.defaultStance;
     
-    // Check if weapon is two-handed
-    const isTwoHanded = TWO_HANDED_WEAPON_RANGES.some(range => 
-      weaponId >= range.min && weaponId <= range.max
-    );
+    // Get weapon type using proper classification algorithm
+    const weaponType = getWeaponType(weaponId);
+    const isTwoHanded = TWO_HANDED_WEAPON_TYPES.has(weaponType);
     
     return isTwoHanded ? 'stand2' : 'stand1';
   }
@@ -316,8 +361,10 @@ export class MapleStoryService {
   /**
    * Generate cache key for a character render
    */
-  private getCacheKey(options: CharacterRenderOptions): string {
+  private getCacheKey(options: CharacterRenderOptions, region?: string, majorVersion?: number): string {
     const keyParts = [
+      region || 'GMS',
+      majorVersion?.toString() || this.config.apiVersion,
       options.hair,
       options.face,
       options.skin,
@@ -405,20 +452,42 @@ export class MapleStoryService {
    * Check if a weapon ID represents a two-handed weapon
    */
   isTwoHandedWeapon(weaponId: number): boolean {
-    return TWO_HANDED_WEAPON_RANGES.some(range => 
-      weaponId >= range.min && weaponId <= range.max
-    );
+    const weaponType = getWeaponType(weaponId);
+    return TWO_HANDED_WEAPON_TYPES.has(weaponType);
   }
 
   /**
    * Get weapon category by ID
    */
   getWeaponCategory(weaponId: number): string {
-    const range = TWO_HANDED_WEAPON_RANGES.find(range => 
-      weaponId >= range.min && weaponId <= range.max
-    );
+    const weaponType = getWeaponType(weaponId);
     
-    return range?.category || 'One-handed';
+    switch (weaponType) {
+      case WeaponType.OneHandedSword: return 'One-handed Sword';
+      case WeaponType.OneHandedAxe: return 'One-handed Axe';
+      case WeaponType.OneHandedMace: return 'One-handed Mace';
+      case WeaponType.Dagger: return 'Dagger';
+      case WeaponType.Wand: return 'Wand';
+      case WeaponType.Staff: return 'Staff';
+      case WeaponType.TwoHandedSword: return 'Two-handed Sword';
+      case WeaponType.TwoHandedAxe: return 'Two-handed Axe';
+      case WeaponType.TwoHandedMace: return 'Two-handed Mace';
+      case WeaponType.Spear: return 'Spear';
+      case WeaponType.Polearm: return 'Polearm';
+      case WeaponType.Bow: return 'Bow';
+      case WeaponType.Crossbow: return 'Crossbow';
+      case WeaponType.Claw: return 'Claw';
+      case WeaponType.Knuckle: return 'Knuckle';
+      case WeaponType.Gun: return 'Gun';
+      default: return 'Unknown';
+    }
+  }
+
+  /**
+   * Get weapon type enum for a weapon ID
+   */
+  getWeaponType(weaponId: number): WeaponType {
+    return getWeaponType(weaponId);
   }
 }
 
@@ -439,7 +508,10 @@ export const getEquipmentSlotName = (slot: string): string => {
 };
 
 export const isTwoHandedWeapon = (weaponId: number): boolean => {
-  return TWO_HANDED_WEAPON_RANGES.some(range => 
-    weaponId >= range.min && weaponId <= range.max
-  );
+  const weaponType = getWeaponType(weaponId);
+  return TWO_HANDED_WEAPON_TYPES.has(weaponType);
+};
+
+export const getWeaponTypeFromId = (weaponId: number): WeaponType => {
+  return getWeaponType(weaponId);
 };

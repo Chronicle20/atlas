@@ -579,6 +579,10 @@ export class MapleStoryService {
     
     const iconUrl = `${this.config.apiBaseUrl}/${apiRegion}/${apiVersion}/npc/${npcId}/icon`;
     
+    if (this.config.enableErrorLogging) {
+      console.debug(`Fetching NPC icon from: ${iconUrl}`);
+    }
+    
     try {
       // Validate that the icon exists by making a HEAD request with optimized headers
       const response = await cachedFetch(iconUrl, { 
@@ -677,18 +681,23 @@ export class MapleStoryService {
     };
 
     try {
-      // Try to fetch both name and icon in parallel using debounced methods
+      // For batch operations, use direct methods instead of debounced ones
+      // to prevent request cancellation
       const [namePromise, iconPromise] = await Promise.allSettled([
-        this.debouncedGetNpcName(npcId, region, version),
-        this.debouncedGetNpcIcon(npcId, region, version),
+        this.getNpcName(npcId, region, version),
+        this.getNpcIcon(npcId, region, version),
       ]);
 
       if (namePromise.status === 'fulfilled') {
         result.name = namePromise.value;
+      } else if (namePromise.status === 'rejected' && this.config.enableErrorLogging) {
+        console.debug(`Failed to fetch name for NPC ${npcId}:`, namePromise.reason);
       }
 
       if (iconPromise.status === 'fulfilled') {
         result.iconUrl = iconPromise.value;
+      } else if (iconPromise.status === 'rejected' && this.config.enableErrorLogging) {
+        console.debug(`Failed to fetch icon for NPC ${npcId}:`, iconPromise.reason);
       }
 
       // If both failed, set an error

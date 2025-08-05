@@ -82,7 +82,7 @@ describe('MapleStoryService', () => {
       it('should render character with weapon and shield', () => {
         const weaponSet: EquipmentData = {
           '-10': 1092000, // Shield
-          '-11': 1302000, // Two-handed sword
+          '-11': 1302000, // One-handed sword
         };
 
         const options = { 
@@ -94,7 +94,7 @@ describe('MapleStoryService', () => {
         
         expect(url).toContain('1092000:0'); // Shield
         expect(url).toContain('1302000:0'); // Weapon
-        expect(url).toContain('stand2'); // Should auto-detect two-handed stance
+        expect(url).toContain('stand1'); // Should auto-detect one-handed stance
       });
 
       it('should render character with accessories', () => {
@@ -194,16 +194,22 @@ describe('MapleStoryService', () => {
 
     describe('Weapon stance detection', () => {
       const weaponTestCases = [
-        { weaponId: 1302000, expectedStance: 'stand2', category: 'Two-handed sword' },
-        { weaponId: 1412000, expectedStance: 'stand2', category: 'Two-handed axe' },
-        { weaponId: 1422000, expectedStance: 'stand2', category: 'Two-handed blunt' },
-        { weaponId: 1442000, expectedStance: 'stand2', category: 'Spear' },
-        { weaponId: 1452000, expectedStance: 'stand2', category: 'Polearm' },
-        { weaponId: 1522000, expectedStance: 'stand2', category: 'Knuckles' },
-        { weaponId: 1592000, expectedStance: 'stand2', category: 'Gun/Cannon' },
-        { weaponId: 1202000, expectedStance: 'stand1', category: 'One-handed sword' },
-        { weaponId: 1270000, expectedStance: 'stand1', category: 'Wand' },
-        { weaponId: 1472000, expectedStance: 'stand1', category: 'Bow' },
+        { weaponId: 1302000, expectedStance: 'stand1', category: 'One-handed Sword' },
+        { weaponId: 1402000, expectedStance: 'stand2', category: 'Two-handed Sword' },
+        { weaponId: 1412000, expectedStance: 'stand2', category: 'Two-handed Axe' },
+        { weaponId: 1422000, expectedStance: 'stand2', category: 'Two-handed Mace' },
+        { weaponId: 1432000, expectedStance: 'stand2', category: 'Spear' },
+        { weaponId: 1442000, expectedStance: 'stand2', category: 'Polearm' },
+        { weaponId: 1452000, expectedStance: 'stand2', category: 'Bow' },
+        { weaponId: 1462000, expectedStance: 'stand2', category: 'Crossbow' },
+        { weaponId: 1472000, expectedStance: 'stand1', category: 'Claw' },
+        { weaponId: 1482000, expectedStance: 'stand2', category: 'Knuckle' },
+        { weaponId: 1492000, expectedStance: 'stand2', category: 'Gun' },
+        { weaponId: 1312000, expectedStance: 'stand1', category: 'One-handed Axe' },
+        { weaponId: 1322000, expectedStance: 'stand1', category: 'One-handed Mace' },
+        { weaponId: 1332000, expectedStance: 'stand1', category: 'Dagger' },
+        { weaponId: 1372000, expectedStance: 'stand1', category: 'Wand' },
+        { weaponId: 1382000, expectedStance: 'stand1', category: 'Staff' },
       ];
 
       weaponTestCases.forEach(({ weaponId, expectedStance, category }) => {
@@ -222,7 +228,7 @@ describe('MapleStoryService', () => {
       });
 
       it('should check cash weapon slot when regular weapon slot is empty', () => {
-        const cashWeaponEquipment: EquipmentData = { '-111': 1302000 }; // Cash two-handed sword
+        const cashWeaponEquipment: EquipmentData = { '-111': 1402000 }; // Cash two-handed sword
         const options = { 
           ...baseCharacterOptions, 
           equipment: cashWeaponEquipment,
@@ -231,20 +237,20 @@ describe('MapleStoryService', () => {
         const url = service.generateCharacterUrl(options);
         
         expect(url).toContain('stand2');
-        expect(url).toContain('1302000:0');
+        expect(url).toContain('1402000:0');
       });
 
       it('should prioritize regular weapon over cash weapon for stance detection', () => {
         const mixedWeaponEquipment: EquipmentData = {
-          '-11': 1202000,  // One-handed sword (regular)
-          '-111': 1302000, // Two-handed sword (cash)
+          '-11': 1302000,  // One-handed sword (regular)
+          '-111': 1402000, // Two-handed sword (cash)
         };
         const options = { ...baseCharacterOptions, equipment: mixedWeaponEquipment };
         const url = service.generateCharacterUrl(options);
         
         expect(url).toContain('stand1'); // Should use one-handed stance
-        expect(url).toContain('1202000:0'); // Regular weapon
-        expect(url).toContain('1302000:0'); // Cash weapon
+        expect(url).toContain('1302000:0'); // Regular weapon
+        expect(url).toContain('1402000:0'); // Cash weapon
       });
     });
 
@@ -466,7 +472,7 @@ describe('MapleStoryService', () => {
       const inventory: Asset[] = [
         createMockAsset(-1, 1001000),  // Hat
         createMockAsset(-5, 1041000),  // Top
-        createMockAsset(-11, 1302000), // Two-handed sword
+        createMockAsset(-11, 1302000), // One-handed sword
       ];
 
       const result = service.characterToMapleStoryData(mockCharacter, inventory);
@@ -529,7 +535,7 @@ describe('MapleStoryService', () => {
       expect(result.options.hair).toBe(30000);
       expect(result.options.face).toBe(20000);
       expect(result.options.skin).toBe(2000); // Mapped from 0
-      expect(result.options.stance).toBe('stand2'); // Auto-detected from two-handed weapon (1302000)
+      expect(result.options.stance).toBe('stand1'); // Auto-detected from one-handed weapon (1302000)
       expect(result.cached).toBe(false); // Cache disabled in tests
     });
 
@@ -568,15 +574,26 @@ describe('MapleStoryService', () => {
     });
 
     it('should identify two-handed weapons', () => {
-      expect(service.isTwoHandedWeapon(1302000)).toBe(true);  // Two-handed sword
-      expect(service.isTwoHandedWeapon(1452000)).toBe(true);  // Polearm
-      expect(service.isTwoHandedWeapon(1202000)).toBe(false); // One-handed sword
+      expect(service.isTwoHandedWeapon(1302000)).toBe(false); // One-handed sword
+      expect(service.isTwoHandedWeapon(1402000)).toBe(true);  // Two-handed sword
+      expect(service.isTwoHandedWeapon(1452000)).toBe(true);  // Bow
+      expect(service.isTwoHandedWeapon(1372000)).toBe(false); // Wand
+      expect(service.isTwoHandedWeapon(1382000)).toBe(false); // Staff
+      expect(service.isTwoHandedWeapon(1332000)).toBe(false); // Dagger
+      expect(service.isTwoHandedWeapon(1472000)).toBe(false); // Claw
+      expect(service.isTwoHandedWeapon(1482000)).toBe(true);  // Knuckle
     });
 
     it('should get weapon categories', () => {
-      expect(service.getWeaponCategory(1302000)).toBe('Two-handed Swords');
-      expect(service.getWeaponCategory(1452000)).toBe('Polearms');
-      expect(service.getWeaponCategory(1202000)).toBe('One-handed');
+      expect(service.getWeaponCategory(1302000)).toBe('One-handed Sword');
+      expect(service.getWeaponCategory(1402000)).toBe('Two-handed Sword');
+      expect(service.getWeaponCategory(1452000)).toBe('Bow');
+      expect(service.getWeaponCategory(1372000)).toBe('Wand');
+      expect(service.getWeaponCategory(1382000)).toBe('Staff');
+      expect(service.getWeaponCategory(1332000)).toBe('Dagger');
+      expect(service.getWeaponCategory(1472000)).toBe('Claw');
+      expect(service.getWeaponCategory(1482000)).toBe('Knuckle');
+      expect(service.getWeaponCategory(1999999)).toBe('Unknown'); // Invalid weapon
     });
   });
 

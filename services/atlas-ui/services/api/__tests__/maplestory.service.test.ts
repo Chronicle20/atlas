@@ -632,17 +632,152 @@ describe('MapleStoryService', () => {
       cachedService.clearCache();
       const stats = cachedService.getCacheStats();
       
-      expect(stats.size).toBe(0);
-      expect(stats.urls).toEqual([]);
+      expect(stats.images.size).toBe(0);
+      expect(stats.images.urls).toEqual([]);
+      expect(stats.npcs.size).toBe(0);
+      expect(stats.npcs.keys).toEqual([]);
     });
 
     it('should provide cache statistics', () => {
       const stats = cachedService.getCacheStats();
       
-      expect(typeof stats.size).toBe('number');
-      expect(Array.isArray(stats.urls)).toBe(true);
+      expect(typeof stats.images.size).toBe('number');
+      expect(Array.isArray(stats.images.urls)).toBe(true);
+      expect(typeof stats.npcs.size).toBe('number');
+      expect(Array.isArray(stats.npcs.keys)).toBe(true);
       expect(stats.enabled).toBe(true);
       expect(stats.ttl).toBe(1000);
+    });
+  });
+
+  describe('NPC functionality', () => {
+    it('should generate correct NPC icon URL', async () => {
+      // Mock successful response
+      global.fetch = jest.fn(() =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+        } as Response)
+      );
+
+      const service = new MapleStoryService();
+      const iconUrl = await service.getNpcIcon(100000, 'GMS', '214');
+      
+      expect(iconUrl).toBe('https://maplestory.io/api/GMS/214/npc/100000/icon');
+      expect(fetch).toHaveBeenCalledWith('https://maplestory.io/api/GMS/214/npc/100000/icon', { method: 'HEAD' });
+    });
+
+    it('should fetch NPC name correctly', async () => {
+      const mockName = 'Maple Administrator';
+      global.fetch = jest.fn(() =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve(mockName),
+        } as Response)
+      );
+
+      const service = new MapleStoryService();
+      const name = await service.getNpcName(100000, 'GMS', '214');
+      
+      expect(name).toBe(mockName);
+      expect(fetch).toHaveBeenCalledWith('https://maplestory.io/api/GMS/214/npc/100000/name');
+    });
+
+    it('should fetch complete NPC data', async () => {
+      const mockData = {
+        name: 'Maple Administrator',
+        description: 'The game administrator',
+        scripts: ['Welcome to MapleStory!']
+      };
+      
+      global.fetch = jest.fn(() =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve(mockData),
+        } as Response)
+      );
+
+      const service = new MapleStoryService();
+      const npcData = await service.getNpcData(100000, 'GMS', '214');
+      
+      expect(npcData).toEqual({
+        id: 100000,
+        name: 'Maple Administrator',
+        description: 'The game administrator',
+        scripts: ['Welcome to MapleStory!']
+      });
+      expect(fetch).toHaveBeenCalledWith('https://maplestory.io/api/GMS/214/npc/100000');
+    });
+
+    it('should handle NPC data with caching', async () => {
+      const mockName = 'Maple Administrator';
+      const mockIconUrl = 'https://maplestory.io/api/GMS/214/npc/100000/icon';
+      
+      global.fetch = jest.fn()
+        .mockImplementationOnce(() => // First call for name
+          Promise.resolve({
+            ok: true,
+            status: 200,
+            text: () => Promise.resolve(mockName),
+          } as Response)
+        )
+        .mockImplementationOnce(() => // Second call for icon validation
+          Promise.resolve({
+            ok: true,
+            status: 200,
+          } as Response)
+        );
+
+      const cachedService = new MapleStoryService({ cacheEnabled: true, cacheTTL: 1000 });
+      
+      // First call should fetch from API
+      const result1 = await cachedService.getNpcDataWithCache(100000, 'GMS', '214');
+      expect(result1.cached).toBe(false);
+      expect(result1.name).toBe(mockName);
+      expect(result1.iconUrl).toBe(mockIconUrl);
+      
+      // Second call should return cached result
+      const result2 = await cachedService.getNpcDataWithCache(100000, 'GMS', '214');
+      expect(result2.cached).toBe(true);
+      expect(result2.name).toBe(mockName);
+      expect(result2.iconUrl).toBe(mockIconUrl);
+      
+      // Should only have called fetch twice (once for name, once for icon validation)
+      expect(fetch).toHaveBeenCalledTimes(2);
+    });
+
+    it('should handle NPC API errors gracefully', async () => {
+      global.fetch = jest.fn(() =>
+        Promise.resolve({
+          ok: false,
+          status: 404,
+        } as Response)
+      );
+
+      const service = new MapleStoryService();
+      const result = await service.getNpcDataWithCache(999999);
+      
+      expect(result.cached).toBe(false);
+      expect(result.error).toBe('Failed to fetch NPC data');
+      expect(result.name).toBeUndefined();
+      expect(result.iconUrl).toBeUndefined();
+    });
+
+    it('should use default region and version', async () => {
+      global.fetch = jest.fn(() =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve('Test NPC'),
+        } as Response)
+      );
+
+      const service = new MapleStoryService();
+      await service.getNpcName(100000);
+      
+      expect(fetch).toHaveBeenCalledWith('https://maplestory.io/api/GMS/214/npc/100000/name');
     });
   });
 

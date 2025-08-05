@@ -14,6 +14,8 @@ import {
   type SkinColorMapping,
   type EquipmentSlotMapping,
   type WeaponRange,
+  type NpcApiData,
+  type NpcDataResult,
   WeaponType,
 } from '@/types/models/maplestory';
 import { type Character } from '@/types/models/character';
@@ -30,6 +32,7 @@ const DEFAULT_CONFIG: CharacterRenderingConfig = {
   defaultStance: 'stand1',
   defaultResize: 2,
   enableErrorLogging: true,
+  defaultRegion: 'GMS',
 };
 
 /**
@@ -162,6 +165,8 @@ export class MapleStoryService {
   private config: CharacterRenderingConfig;
   private imageCache = new Map<string, string>();
   private timestampCache = new Map<string, number>();
+  private npcDataCache = new Map<string, NpcDataResult>();
+  private npcTimestampCache = new Map<string, number>();
 
   constructor(config: Partial<CharacterRenderingConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -415,11 +420,13 @@ export class MapleStoryService {
   }
 
   /**
-   * Clear all cached URLs
+   * Clear all cached URLs and NPC data
    */
   clearCache(): void {
     this.imageCache.clear();
     this.timestampCache.clear();
+    this.npcDataCache.clear();
+    this.npcTimestampCache.clear();
   }
 
   /**
@@ -427,8 +434,14 @@ export class MapleStoryService {
    */
   getCacheStats() {
     return {
-      size: this.imageCache.size,
-      urls: Array.from(this.imageCache.keys()),
+      images: {
+        size: this.imageCache.size,
+        urls: Array.from(this.imageCache.keys()),
+      },
+      npcs: {
+        size: this.npcDataCache.size,
+        keys: Array.from(this.npcDataCache.keys()),
+      },
       enabled: this.config.cacheEnabled,
       ttl: this.config.cacheTTL,
     };
@@ -488,6 +501,181 @@ export class MapleStoryService {
    */
   getWeaponType(weaponId: number): WeaponType {
     return getWeaponType(weaponId);
+  }
+
+  /**
+   * Get NPC icon URL from MapleStory.io API
+   */
+  async getNpcIcon(npcId: number, region?: string, version?: string): Promise<string> {
+    const apiRegion = region || this.config.defaultRegion || 'GMS';
+    const apiVersion = version || this.config.apiVersion;
+    
+    const iconUrl = `${this.config.apiBaseUrl}/${apiRegion}/${apiVersion}/npc/${npcId}/icon`;
+    
+    try {
+      // Validate that the icon exists by making a HEAD request
+      const response = await fetch(iconUrl, { method: 'HEAD' });
+      if (!response.ok) {
+        throw new Error(`NPC icon not found: ${response.status}`);
+      }
+      return iconUrl;
+    } catch (error) {
+      if (this.config.enableErrorLogging) {
+        console.warn(`Failed to fetch NPC icon for ID ${npcId}:`, error);
+      }
+      throw new Error(`Failed to fetch NPC icon for ID ${npcId}`);
+    }
+  }
+
+  /**
+   * Get NPC name from MapleStory.io API
+   */
+  async getNpcName(npcId: number, region?: string, version?: string): Promise<string> {
+    const apiRegion = region || this.config.defaultRegion || 'GMS';
+    const apiVersion = version || this.config.apiVersion;
+    
+    const nameUrl = `${this.config.apiBaseUrl}/${apiRegion}/${apiVersion}/npc/${npcId}/name`;
+    
+    try {
+      const response = await fetch(nameUrl);
+      if (!response.ok) {
+        throw new Error(`NPC name not found: ${response.status}`);
+      }
+      const name = await response.text();
+      return name.trim();
+    } catch (error) {
+      if (this.config.enableErrorLogging) {
+        console.warn(`Failed to fetch NPC name for ID ${npcId}:`, error);
+      }
+      throw new Error(`Failed to fetch NPC name for ID ${npcId}`);
+    }
+  }
+
+  /**
+   * Get full NPC data from MapleStory.io API
+   */
+  async getNpcData(npcId: number, region?: string, version?: string): Promise<NpcApiData> {
+    const apiRegion = region || this.config.defaultRegion || 'GMS';
+    const apiVersion = version || this.config.apiVersion;
+    
+    const dataUrl = `${this.config.apiBaseUrl}/${apiRegion}/${apiVersion}/npc/${npcId}`;
+    
+    try {
+      const response = await fetch(dataUrl);
+      if (!response.ok) {
+        throw new Error(`NPC data not found: ${response.status}`);
+      }
+      const data = await response.json();
+      return {
+        id: npcId,
+        name: data.name || `NPC ${npcId}`,
+        description: data.description,
+        scripts: data.scripts,
+      };
+    } catch (error) {
+      if (this.config.enableErrorLogging) {
+        console.warn(`Failed to fetch NPC data for ID ${npcId}:`, error);
+      }
+      throw new Error(`Failed to fetch NPC data for ID ${npcId}`);
+    }
+  }
+
+  /**
+   * Get NPC data with caching and error handling
+   */
+  async getNpcDataWithCache(npcId: number, region?: string, version?: string): Promise<NpcDataResult> {
+    const cacheKey = this.getNpcCacheKey(npcId, region, version);
+    
+    // Check cache first
+    if (this.config.cacheEnabled) {
+      const cachedData = this.getCachedNpcData(cacheKey);
+      if (cachedData) {
+        return { ...cachedData, cached: true };
+      }
+    }
+
+    const result: NpcDataResult = {
+      id: npcId,
+      cached: false,
+    };
+
+    try {
+      // Try to fetch both name and icon in parallel
+      const [namePromise, iconPromise] = await Promise.allSettled([
+        this.getNpcName(npcId, region, version),
+        this.getNpcIcon(npcId, region, version),
+      ]);
+
+      if (namePromise.status === 'fulfilled') {
+        result.name = namePromise.value;
+      }
+
+      if (iconPromise.status === 'fulfilled') {
+        result.iconUrl = iconPromise.value;
+      }
+
+      // If both failed, set an error
+      if (namePromise.status === 'rejected' && iconPromise.status === 'rejected') {
+        result.error = 'Failed to fetch NPC data';
+      }
+
+      // Cache the result even if partially successful
+      if (this.config.cacheEnabled) {
+        this.setCachedNpcData(cacheKey, result);
+      }
+
+      return result;
+    } catch (error) {
+      result.error = error instanceof Error ? error.message : 'Unknown error';
+      
+      // Cache error results for a shorter time to avoid repeated failures
+      if (this.config.cacheEnabled) {
+        this.setCachedNpcData(cacheKey, result, this.config.cacheTTL / 4); // Cache errors for 1/4 of normal time
+      }
+      
+      return result;
+    }
+  }
+
+  /**
+   * Generate cache key for NPC data
+   */
+  private getNpcCacheKey(npcId: number, region?: string, version?: string): string {
+    const apiRegion = region || this.config.defaultRegion || 'GMS';
+    const apiVersion = version || this.config.apiVersion;
+    return `npc:${apiRegion}:${apiVersion}:${npcId}`;
+  }
+
+  /**
+   * Get cached NPC data if still valid
+   */
+  private getCachedNpcData(cacheKey: string): NpcDataResult | null {
+    if (!this.config.cacheEnabled) return null;
+    
+    const data = this.npcDataCache.get(cacheKey);
+    const timestamp = this.npcTimestampCache.get(cacheKey);
+    
+    if (!data || !timestamp) return null;
+    
+    const now = Date.now();
+    if (now - timestamp > this.config.cacheTTL) {
+      // Cache expired
+      this.npcDataCache.delete(cacheKey);
+      this.npcTimestampCache.delete(cacheKey);
+      return null;
+    }
+    
+    return data;
+  }
+
+  /**
+   * Cache NPC data with timestamp
+   */
+  private setCachedNpcData(cacheKey: string, data: NpcDataResult, customTTL?: number): void {
+    if (!this.config.cacheEnabled) return;
+    
+    this.npcDataCache.set(cacheKey, data);
+    this.npcTimestampCache.set(cacheKey, Date.now());
   }
 }
 

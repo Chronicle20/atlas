@@ -2,7 +2,14 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    domains: ['maplestory.io'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'maplestory.io',
+        port: '',
+        pathname: '/api/**',
+      },
+    ],
     minimumCacheTTL: 60 * 60 * 24, // 24 hours cache for character images
     formats: ['image/webp', 'image/avif'], // Modern formats for better compression
     deviceSizes: [128, 192, 256, 384, 512], // Common character image sizes

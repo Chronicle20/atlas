@@ -14,7 +14,7 @@ import {createErrorFromUnknown} from "@/types/api/errors";
 import {ErrorDisplay} from "@/components/common/ErrorDisplay";
 import {NpcPageSkeleton} from "@/components/common/skeletons/NpcPageSkeleton";
 import { VirtualizedNpcGrid } from "@/components/features/npc/VirtualizedNpcGrid";
-import { useNpcBatchData } from "@/lib/hooks/useNpcData";
+import { useOptimizedNpcBatchData } from "@/lib/hooks/useNpcData";
 import { useNpcErrorHandler } from "@/lib/hooks/useNpcErrorHandler";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 
@@ -84,8 +84,8 @@ export default function Page() {
         },
     }), [npcIds.length]);
     
-    // Fetch NPC metadata (names and icons) in batch
-    const { data: npcDataResults, isLoading: isMetadataLoading, errors: metadataErrors } = useNpcBatchData(npcIds, batchDataOptions);
+    // Fetch NPC metadata (names and icons) in batch using optimized hook
+    const { data: npcDataResults, isLoading: isMetadataLoading, error: metadataError } = useOptimizedNpcBatchData(npcIds, batchDataOptions);
 
     // Merge original NPC data with fetched metadata
     useEffect(() => {
@@ -99,25 +99,28 @@ export default function Page() {
                 result && !result.error && result.id === npc.id
             );
             
-            return {
-                ...npc,
-                ...(metadata?.name && typeof metadata.name === 'string' && { name: metadata.name }),
-                ...(metadata?.iconUrl && typeof metadata.iconUrl === 'string' && { iconUrl: metadata.iconUrl }),
-            };
+            // Only apply metadata if it exists and has no error
+            if (metadata && !metadata.error) {
+                return {
+                    ...npc,
+                    ...('name' in metadata && metadata.name && typeof metadata.name === 'string' && { name: metadata.name }),
+                    ...('iconUrl' in metadata && metadata.iconUrl && typeof metadata.iconUrl === 'string' && { iconUrl: metadata.iconUrl }),
+                };
+            }
+            
+            return npc;
         });
         
         setNpcsWithMetadata(updatedNpcs);
-        
-        // Handle any metadata fetch errors
-        if (metadataErrors && metadataErrors.length > 0) {
-            const errorData = npcIds.map((npcId, index) => ({
-                error: metadataErrors[index] || new Error('Unknown metadata fetch error'),
-                npcId,
-                context: { context: 'individual_metadata_fetch', index },
-            }));
-            handleErrors(errorData);
+    }, [npcs, npcDataResults]);
+
+    // Handle metadata errors separately
+    useEffect(() => {
+        if (metadataError) {
+            // Log errors for debugging without causing re-renders
+            console.error('Metadata fetch error:', metadataError);
         }
-    }, [npcs, npcDataResults, metadataErrors, npcIds]); // Removed handleErrors from dependencies
+    }, [metadataError]); // Safe to depend on error object
 
     const handleCreateShop = async () => {
         if (!activeTenant) return;

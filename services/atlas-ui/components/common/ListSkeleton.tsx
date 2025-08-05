@@ -34,6 +34,14 @@ interface ListSkeletonProps {
    * - 'card': Each item wrapped in a card-like container
    */
   variant?: 'default' | 'compact' | 'card';
+  
+  /**
+   * Animation type for the skeleton elements
+   * - 'pulse': Default pulsing animation
+   * - 'wave': Shimmer wave animation
+   * - 'none': No animation
+   */
+  animation?: 'pulse' | 'wave' | 'none';
 }
 
 /**
@@ -46,6 +54,7 @@ interface ListSkeletonProps {
  * @param showSubtext - Whether to show secondary text line (default: true)
  * @param className - Additional CSS classes to apply
  * @param variant - Layout style variant (default: 'default')
+ * @param animation - Animation type for skeleton elements (default: 'pulse')
  */
 export function ListSkeleton({
   items = 5,
@@ -53,7 +62,8 @@ export function ListSkeleton({
   showActions = false,
   showSubtext = true,
   className,
-  variant = 'default'
+  variant = 'default',
+  animation = 'pulse'
 }: ListSkeletonProps) {
   const getItemClassName = () => {
     switch (variant) {
@@ -88,6 +98,7 @@ export function ListSkeleton({
           {showAvatar && (
             <Skeleton 
               variant="circular" 
+              animation={animation}
               className={cn(
                 variant === 'compact' ? 'h-8 w-8' : 'h-10 w-10'
               )} 
@@ -98,6 +109,7 @@ export function ListSkeleton({
           <div className="flex-1 space-y-2">
             {/* Primary text line */}
             <Skeleton 
+              animation={animation}
               className={cn(
                 'h-4',
                 variant === 'compact' ? 'w-24' : 'w-32'
@@ -107,6 +119,7 @@ export function ListSkeleton({
             {/* Secondary text line */}
             {showSubtext && (
               <Skeleton 
+                animation={animation}
                 className={cn(
                   'h-3',
                   variant === 'compact' ? 'w-16' : 'w-48'
@@ -119,11 +132,13 @@ export function ListSkeleton({
           {showActions && (
             <div className="flex items-center space-x-2">
               <Skeleton 
+                animation={animation}
                 className={cn(
                   variant === 'compact' ? 'h-6 w-12' : 'h-8 w-16'
                 )} 
               />
               <Skeleton 
+                animation={animation}
                 className={cn(
                   variant === 'compact' ? 'h-6 w-6' : 'h-8 w-8'
                 )} 

@@ -161,4 +161,20 @@ describe('FormSkeleton', () => {
     const buttonSection = skeleton.querySelector('.flex.items-center.justify-end');
     expect(buttonSection).not.toBeInTheDocument();
   });
+
+  it('passes animation prop to skeleton elements', () => {
+    const { container } = render(<FormSkeleton animation="wave" fields={2} />);
+    
+    // Check that skeleton elements have the shimmer animation class
+    const skeletonElements = container.querySelectorAll('.animate-shimmer');
+    expect(skeletonElements.length).toBeGreaterThan(0);
+  });
+
+  it('uses default pulse animation when no animation prop provided', () => {
+    const { container } = render(<FormSkeleton fields={2} />);
+    
+    // Check that skeleton elements have the pulse animation class
+    const skeletonElements = container.querySelectorAll('.animate-pulse');
+    expect(skeletonElements.length).toBeGreaterThan(0);
+  });
 });

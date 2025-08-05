@@ -39,6 +39,14 @@ interface FormSkeletonProps {
    * - 'wide': Wider form fields for desktop layouts
    */
   variant?: 'default' | 'compact' | 'wide';
+  
+  /**
+   * Animation type for the skeleton elements
+   * - 'pulse': Default pulsing animation
+   * - 'wave': Shimmer wave animation
+   * - 'none': No animation
+   */
+  animation?: 'pulse' | 'wave' | 'none';
 }
 
 /**
@@ -52,6 +60,7 @@ interface FormSkeletonProps {
  * @param showActionButtons - Whether to show additional action buttons (default: false)
  * @param className - Additional CSS classes to apply
  * @param variant - Layout style variant (default: 'default')
+ * @param animation - Animation type for skeleton elements (default: 'pulse')
  */
 export function FormSkeleton({
   fields = 4,
@@ -60,7 +69,8 @@ export function FormSkeleton({
   showSubmitButton = true,
   showActionButtons = false,
   className,
-  variant = 'default'
+  variant = 'default',
+  animation = 'pulse'
 }: FormSkeletonProps) {
   const getFieldSpacing = () => {
     switch (variant) {
@@ -117,6 +127,7 @@ export function FormSkeleton({
           {/* Field label */}
           {showLabels && (
             <Skeleton 
+              animation={animation}
               className={cn('h-4', getLabelWidth())} 
             />
           )}
@@ -124,12 +135,13 @@ export function FormSkeleton({
           {/* Form field input */}
           <Skeleton 
             variant="rectangular"
+            animation={animation}
             className={cn('w-full', getFieldHeight())} 
           />
           
           {/* Help text */}
           {showHelpText && (
-            <Skeleton className="h-3 w-3/4" />
+            <Skeleton animation={animation} className="h-3 w-3/4" />
           )}
         </div>
       ))}
@@ -141,6 +153,7 @@ export function FormSkeleton({
           {showActionButtons && (
             <Skeleton 
               variant="rectangular"
+              animation={animation}
               className={cn('w-20', getButtonHeight())} 
             />
           )}
@@ -149,6 +162,7 @@ export function FormSkeleton({
           {showSubmitButton && (
             <Skeleton 
               variant="rectangular"
+              animation={animation}
               className={cn('w-24', getButtonHeight())} 
             />
           )}

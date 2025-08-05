@@ -106,4 +106,20 @@ describe('ListSkeleton', () => {
     // Should have two skeleton elements (primary text + subtext) when subtext is shown
     expect(skeletonElements).toHaveLength(2);
   });
+
+  it('passes animation prop to skeleton elements', () => {
+    const { container } = render(<ListSkeleton items={1} animation="wave" />);
+    
+    // Check that skeleton elements have the shimmer animation class
+    const skeletonElements = container.querySelectorAll('.animate-shimmer');
+    expect(skeletonElements.length).toBeGreaterThan(0);
+  });
+
+  it('uses default pulse animation when no animation prop provided', () => {
+    const { container } = render(<ListSkeleton items={1} />);
+    
+    // Check that skeleton elements have the pulse animation class
+    const skeletonElements = container.querySelectorAll('.animate-pulse');
+    expect(skeletonElements.length).toBeGreaterThan(0);
+  });
 });

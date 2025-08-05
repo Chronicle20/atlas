@@ -85,34 +85,60 @@ export default function Page() {
     }), [npcIds.length]);
     
     // Fetch NPC metadata (names and icons) in batch using optimized hook
-    const { data: npcDataResults, isLoading: isMetadataLoading, error: metadataError } = useOptimizedNpcBatchData(npcIds, batchDataOptions);
+    const { 
+        data: npcDataResults, 
+        isLoading: isMetadataLoading, 
+        error: metadataError,
+        invalidateBatch: refetchMetadata 
+    } = useOptimizedNpcBatchData(npcIds, batchDataOptions);
 
     // Merge original NPC data with fetched metadata
     useEffect(() => {
-        if (!npcDataResults || npcDataResults.length === 0) {
+        if (!npcs || npcs.length === 0) {
+            setNpcsWithMetadata([]);
+            return;
+        }
+
+        // If metadata is still loading and we have no results yet, show NPCs without metadata
+        if (isMetadataLoading && (!npcDataResults || npcDataResults.length === 0)) {
             setNpcsWithMetadata(npcs);
             return;
         }
 
         const updatedNpcs: NPC[] = npcs.map(npc => {
-            const metadata = npcDataResults.find(result => 
-                result && !result.error && result.id === npc.id
+            // Find metadata for this NPC
+            const metadata = npcDataResults?.find(result => 
+                result && result.id === npc.id
             );
             
-            // Only apply metadata if it exists and has no error
-            if (metadata && !metadata.error) {
-                return {
-                    ...npc,
-                    ...('name' in metadata && metadata.name && typeof metadata.name === 'string' && { name: metadata.name }),
-                    ...('iconUrl' in metadata && metadata.iconUrl && typeof metadata.iconUrl === 'string' && { iconUrl: metadata.iconUrl }),
-                };
+            // Apply metadata if available (even if partially successful)
+            if (metadata) {
+                const updatedNpc = { ...npc };
+                
+                // Only update name if it's a valid string
+                if ('name' in metadata && metadata.name && typeof metadata.name === 'string') {
+                    updatedNpc.name = metadata.name;
+                }
+                
+                // Only update iconUrl if it's a valid string
+                if ('iconUrl' in metadata && metadata.iconUrl && typeof metadata.iconUrl === 'string') {
+                    updatedNpc.iconUrl = metadata.iconUrl;
+                }
+                
+                return updatedNpc;
             }
             
+            // Return original NPC if no metadata found
             return npc;
         });
         
         setNpcsWithMetadata(updatedNpcs);
-    }, [npcs, npcDataResults]);
+        
+        // Log statistics for debugging
+        const npcsWithNames = updatedNpcs.filter(n => n.name).length;
+        const npcsWithIcons = updatedNpcs.filter(n => n.iconUrl).length;
+        console.log(`NPCs updated: ${updatedNpcs.length} total, ${npcsWithNames} with names, ${npcsWithIcons} with icons`);
+    }, [npcs, npcDataResults, isMetadataLoading]);
 
     // Handle metadata errors separately
     useEffect(() => {
@@ -244,7 +270,15 @@ export default function Page() {
     return (
         <div className="flex flex-col flex-1 space-y-6 p-10 pb-4 h-[calc(100vh-4rem)] overflow-hidden">
             <div className="flex flex-col space-y-4">
-                <h2 className="text-2xl font-bold tracking-tight">NPCs</h2>
+                <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-bold tracking-tight">NPCs</h2>
+                    {isMetadataLoading && npcDataResults && npcDataResults.length > 0 && (
+                        <div className="text-sm text-muted-foreground flex items-center gap-2">
+                            <RefreshCw className="h-3 w-3 animate-spin" />
+                            Loading metadata...
+                        </div>
+                    )}
+                </div>
                 <div className="flex items-center justify-between">
                     <div className="flex gap-2 items-center">
                         <Button
@@ -252,10 +286,26 @@ export default function Page() {
                             size="icon"
                             onClick={fetchDataAgain}
                             className="hover:bg-accent cursor-pointer"
-                            title="Refresh"
+                            title="Refresh All Data"
                         >
                             <RefreshCw className="h-4 w-4" />
                         </Button>
+                        {npcDataResults && npcDataResults.length > 0 && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                    refetchMetadata();
+                                    toast.info("Refreshing NPC metadata...");
+                                }}
+                                disabled={isMetadataLoading}
+                                className="hover:bg-accent cursor-pointer"
+                                title="Refresh NPC Names and Icons"
+                            >
+                                <RefreshCw className={`h-4 w-4 mr-2 ${isMetadataLoading ? 'animate-spin' : ''}`} />
+                                Refresh Metadata
+                            </Button>
+                        )}
                     </div>
                     <div className="flex items-center gap-2">
                         <AdvancedNpcActions

@@ -6,7 +6,7 @@ import {npcsService} from "@/services/api";
 import {NPC, Commodity} from "@/types/models/npc";
 import { tenantHeaders } from "@/lib/headers";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, RefreshCw, Upload, Trash2, Plus } from "lucide-react";
+import { MoreHorizontal, RefreshCw, Upload, Trash2, Plus, User } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,6 +16,7 @@ import {createErrorFromUnknown} from "@/types/api/errors";
 import {ErrorDisplay} from "@/components/common/ErrorDisplay";
 import {NpcPageSkeleton} from "@/components/common/skeletons/NpcPageSkeleton";
 import { NpcCard, DropdownAction } from "@/components/features/npc/NpcCard";
+import { NpcCardSkeleton } from "@/components/features/npc/NpcCardSkeleton";
 import { useNpcBatchData } from "@/lib/hooks/useNpcData";
 import { useNpcErrorHandler } from "@/lib/hooks/useNpcErrorHandler";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
@@ -272,6 +273,7 @@ export default function Page() {
                     }}
                 >
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+                        {/* Show NPC cards with data */}
                         {npcsWithMetadata.map((npc) => {
                             // Create dropdown actions for NPCs with shops
                             const dropdownActions: DropdownAction[] = npc.hasShop ? [{
@@ -291,15 +293,34 @@ export default function Page() {
                                 />
                             );
                         })}
+                        
+                        {/* Show skeleton cards while metadata is still loading */}
+                        {isMetadataLoading && npcs.length > npcsWithMetadata.length && (
+                            <>
+                                {Array.from({ length: Math.min(npcs.length - npcsWithMetadata.length, 8) }).map((_, index) => (
+                                    <NpcCardSkeleton key={`loading-skeleton-${index}`} />
+                                ))}
+                            </>
+                        )}
+                        
+                        {/* Empty state */}
                         {npcsWithMetadata.length === 0 && !loading && !isMetadataLoading && (
                             <div className="col-span-full text-center py-10">
-                                No NPCs found.
+                                <div className="text-muted-foreground">
+                                    <User className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                                    <p className="text-lg font-medium">No NPCs found</p>
+                                    <p className="text-sm">Try refreshing the page or check your connection.</p>
+                                </div>
                             </div>
                         )}
-                        {(loading || isMetadataLoading) && npcsWithMetadata.length === 0 && (
-                            <div className="col-span-full text-center py-10">
-                                Loading NPCs...
-                            </div>
+                        
+                        {/* Initial loading state - only when no data is available yet */}
+                        {(loading || (isMetadataLoading && npcs.length === 0)) && npcsWithMetadata.length === 0 && (
+                            <>
+                                {Array.from({ length: 12 }).map((_, index) => (
+                                    <NpcCardSkeleton key={`initial-loading-${index}`} />
+                                ))}
+                            </>
                         )}
                     </div>
                 </ErrorBoundary>

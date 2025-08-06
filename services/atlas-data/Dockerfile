@@ -1,6 +1,6 @@
 # Start from a Debian image with the latest version of Go installed
 # and a workspace (GOPATH) configured at /go.
-FROM golang:1.24.5-alpine3.21 AS build-env
+FROM golang:1.24.6-alpine3.21 AS build-env
 
 # Copy the local package files to the container's workspace.
 

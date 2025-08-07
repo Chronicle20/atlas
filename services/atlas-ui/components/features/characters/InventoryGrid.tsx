@@ -6,25 +6,133 @@ import { cn } from '@/lib/utils';
 import { useItemDataCache } from '@/lib/hooks/useItemData';
 import type { Asset, Compartment } from '@/services/api/inventory.service';
 
+/**
+ * Props for the InventoryGrid component.
+ * 
+ * @interface InventoryGridProps
+ * @example
+ * ```typescript
+ * const gridProps: InventoryGridProps = {
+ *   compartment: {
+ *     id: "comp-1",
+ *     attributes: { 
+ *       compartmentType: 1, // EQUIPABLES
+ *       capacity: 24 
+ *     }
+ *   },
+ *   assets: inventoryAssets,
+ *   onDeleteAsset: handleDeleteAsset,
+ *   region: "GMS",
+ *   majorVersion: 83
+ * };
+ * ```
+ */
 interface InventoryGridProps {
+  /** The inventory compartment containing metadata like capacity and type. */
   compartment: Compartment;
+  
+  /** Array of inventory assets/items to display. Assets are mapped to grid slots based on their slot property. */
   assets: Asset[];
+  
+  /** Optional callback function called when an item's delete button is clicked. */
   onDeleteAsset?: (assetId: string) => void;
+  
+  /** ID of the asset currently being deleted. Used to show loading state on the specific item. */
   deletingAssetId?: string | null;
+  
+  /** MapleStory region identifier used for API calls. */
   region?: string | undefined;
+  
+  /** MapleStory major version number used for API calls. */
   majorVersion?: number | undefined;
+  
+  /** Whether the grid is in a loading state. Shows skeleton components when true. */
   isLoading?: boolean;
+  
+  /** Additional CSS classes to apply to the grid container. */
   className?: string;
-  // Future drag-and-drop preparation
+  
+  /** Optional callback for when empty slots are clicked. Useful for future drag-and-drop functionality. */
   onSlotClick?: (slotIndex: number) => void;
+  
+  /** Whether drag-and-drop interactions are enabled. Changes cursor and hover states. */
   isDragEnabled?: boolean;
 }
 
+/**
+ * Represents a single slot in the inventory grid.
+ * 
+ * @interface GridSlot
+ */
 interface GridSlot {
+  /** The index/position of this slot (0-based). */
   slotIndex: number;
+  
+  /** The asset in this slot, or null if the slot is empty. */
   asset: Asset | null;
 }
 
+/**
+ * A responsive grid component for displaying inventory items with empty slots and interactive features.
+ * 
+ * ## Features
+ * - **Responsive Layout**: Automatically adjusts grid columns based on compartment capacity and type
+ * - **Empty Slot Visualization**: Shows empty slots for better inventory management UX
+ * - **Cache Warming**: Preloads metadata for all visible items to improve performance
+ * - **Image Preloading**: Automatically preloads images for the first 12 items
+ * - **Drag-and-Drop Ready**: Prepared for future drag-and-drop functionality
+ * - **Compartment-Specific Layouts**: Optimized grid layouts for different inventory types
+ * 
+ * ## Usage Examples
+ * 
+ * ### Basic Usage
+ * ```tsx
+ * <InventoryGrid
+ *   compartment={{
+ *     id: "equipables",
+ *     attributes: { compartmentType: 1, capacity: 24 }
+ *   }}
+ *   assets={equipmentAssets}
+ * />
+ * ```
+ * 
+ * ### With Delete Functionality
+ * ```tsx
+ * <InventoryGrid
+ *   compartment={compartment}
+ *   assets={assets}
+ *   onDeleteAsset={(assetId) => handleDelete(assetId)}
+ *   deletingAssetId={currentlyDeletingId}
+ *   region="GMS"
+ *   majorVersion={83}
+ * />
+ * ```
+ * 
+ * ### With Future Drag-and-Drop Support
+ * ```tsx
+ * <InventoryGrid
+ *   compartment={compartment}
+ *   assets={assets}
+ *   onSlotClick={(slotIndex) => handleSlotClick(slotIndex)}
+ *   isDragEnabled={true}
+ * />
+ * ```
+ * 
+ * ## Grid Layout Logic
+ * - **EQUIPABLES (Type 1)**: 4-6 columns, focused layout for equipment
+ * - **CONSUMABLES/SETUP (Types 2-3)**: 6-8 columns, medium density
+ * - **ETC/CASH (Types 4-5)**: 8-12 columns, high density for bulk items
+ * - **Adaptive**: Automatically scales based on compartment capacity
+ * 
+ * ## Performance Features
+ * - Uses cache warming to batch-fetch item metadata
+ * - Preloads first 12 item images for faster perceived loading
+ * - Deferred rendering for large inventories
+ * - Optimized grid calculations based on compartment type
+ * 
+ * @param props - The component props
+ * @returns A responsive grid displaying inventory items and empty slots
+ */
 export function InventoryGrid({
   compartment,
   assets,
@@ -157,7 +265,15 @@ export function InventoryGrid({
   );
 }
 
-// Empty slot component for visual consistency
+/**
+ * Component representing an empty inventory slot.
+ * 
+ * Provides visual consistency and shows slot numbers to help users understand
+ * inventory layout and available space.
+ * 
+ * @param slotIndex - The slot number to display
+ * @returns An empty slot component with dashed border styling
+ */
 function EmptySlot({ slotIndex }: { slotIndex: number }) {
   return (
     <div className="w-[100px] h-[120px] border-2 border-dashed border-muted-foreground/30 rounded-lg flex flex-col items-center justify-center bg-muted/10 hover:bg-muted/20 transition-colors">
@@ -171,9 +287,34 @@ function EmptySlot({ slotIndex }: { slotIndex: number }) {
   );
 }
 
-// Grid layout helper for different compartment types
+/**
+ * Calculates the optimal grid layout for different compartment types and capacities.
+ * 
+ * This function provides compartment-specific grid layouts optimized for different
+ * types of inventory items. Equipment items use denser layouts, while bulk items
+ * like ETC and Cash use wider layouts for better visibility.
+ * 
+ * ## Compartment Type Mappings
+ * - **Type 1 (EQUIPABLES)**: Equipment items - focused, dense layout
+ * - **Type 2 (CONSUMABLES)**: Potions, consumables - medium density
+ * - **Type 3 (SETUP)**: Setup items - medium density
+ * - **Type 4 (ETC)**: Miscellaneous items - wide layout for bulk
+ * - **Type 5 (CASH)**: Cash shop items - wide layout for variety
+ * 
+ * @param compartmentType - The type of inventory compartment (1-5)
+ * @param capacity - The maximum number of items the compartment can hold
+ * @returns Tailwind CSS grid class string (e.g., 'grid-cols-4', 'grid-cols-8')
+ * 
+ * @example
+ * ```typescript
+ * // Equipment compartment with 24 slots
+ * const layout = getOptimalGridLayout(1, 24); // Returns 'grid-cols-6'
+ * 
+ * // ETC compartment with 96 slots  
+ * const layout = getOptimalGridLayout(4, 96); // Returns 'grid-cols-12'
+ * ```
+ */
 export function getOptimalGridLayout(compartmentType: number, capacity: number) {
-  // Compartment type specific layouts
   switch (compartmentType) {
     case 1: // EQUIPABLES - typically smaller, more focused layout
       return capacity <= 16 ? 'grid-cols-4' : 'grid-cols-6';
@@ -188,5 +329,17 @@ export function getOptimalGridLayout(compartmentType: number, capacity: number) 
   }
 }
 
-// Export helper function for external usage
+/**
+ * Export the GridSlot type for external usage in other components or utilities.
+ * 
+ * @example
+ * ```typescript
+ * import { GridSlot } from './InventoryGrid';
+ * 
+ * // Use in custom inventory processing
+ * function processGridSlots(slots: GridSlot[]) {
+ *   return slots.filter(slot => slot.asset !== null);
+ * }
+ * ```
+ */
 export type { GridSlot };

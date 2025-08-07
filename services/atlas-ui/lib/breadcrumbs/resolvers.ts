@@ -225,6 +225,7 @@ const resolvers: Record<EntityType, EntityResolver> = {
   [EntityType.TEMPLATE]: async (tenant, entityId, options = {}) => {
     const { templatesService } = await import('@/services/api');
     try {
+      // Note: Templates service doesn't require tenant context for getById
       const template = await templatesService.getById(entityId, options);
       // Templates don't have a name field, use ID for now
       return `Template ${template.id}`;

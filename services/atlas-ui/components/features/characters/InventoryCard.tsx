@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -19,6 +19,7 @@ interface InventoryCardProps {
   region?: string | undefined;
   majorVersion?: number | undefined;
   className?: string;
+  shouldPreload?: boolean; // New prop for image preloading
 }
 
 export function InventoryCard({ 
@@ -27,7 +28,8 @@ export function InventoryCard({
   isDeleting = false,
   region,
   majorVersion,
-  className 
+  className,
+  shouldPreload = false
 }: InventoryCardProps) {
   const [imageError, setImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -45,7 +47,7 @@ export function InventoryCard({
     hasError, 
     errorMessage 
   } = useItemData(asset.attributes.templateId, {
-    enabled: shouldLoad, // Only fetch when visible
+    enabled: shouldLoad || shouldPreload, // Enable if visible or should preload
     ...(region && { region }),
     ...(majorVersion && { version: majorVersion.toString() }),
     staleTime: 30 * 60 * 1000, // 30 minutes
@@ -67,6 +69,31 @@ export function InventoryCard({
       });
     },
   });
+
+  // Image preloading effect - preload images when data is available
+  useEffect(() => {
+    if (typeof window !== 'undefined' && itemData?.iconUrl && (shouldLoad || shouldPreload) && !imageError) {
+      // Create a new image element for preloading
+      const img = new window.Image();
+      img.src = itemData.iconUrl;
+      
+      // Handle preload success
+      img.onload = () => {
+        console.log(`[InventoryCard] Preloaded image for item ${asset.attributes.templateId}`);
+      };
+      
+      // Handle preload errors silently - the main image will handle error display
+      img.onerror = () => {
+        console.warn(`[InventoryCard] Failed to preload image for item ${asset.attributes.templateId}`);
+      };
+      
+      // Clean up
+      return () => {
+        img.onload = null;
+        img.onerror = null;
+      };
+    }
+  }, [itemData?.iconUrl, shouldLoad, shouldPreload, imageError, asset.attributes.templateId]);
 
   const handleImageLoad = () => {
     setImageLoaded(true);
@@ -172,7 +199,7 @@ export function InventoryCard({
                     onLoad={handleImageLoad}
                     onError={handleImageError}
                     unoptimized
-                    priority={false}
+                    priority={shouldLoad || shouldPreload} // Prioritize loading for visible/preloaded items
                   />
                   {!imageLoaded && (
                     <Skeleton className="absolute inset-0 h-8 w-8 rounded" />

@@ -1,8 +1,9 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { InventoryCard, InventoryCardSkeleton } from './InventoryCard';
 import { cn } from '@/lib/utils';
+import { useItemDataCache } from '@/lib/hooks/useItemData';
 import type { Asset, Compartment } from '@/services/api/inventory.service';
 
 interface InventoryGridProps {
@@ -59,6 +60,37 @@ export function InventoryGrid({
   };
 
   const gridSlots = createGridSlots();
+  
+  // Extract unique item IDs for preloading
+  const itemIds = useMemo(() => {
+    return Array.from(new Set(assets.map(asset => asset.attributes.templateId)));
+  }, [assets]);
+  
+  // Use cache warming for image preloading
+  const { warmCache } = useItemDataCache();
+  
+  // Preload item data for all visible items when component mounts or assets change
+  useEffect(() => {
+    if (itemIds.length > 0 && !isLoading) {
+      // Warm the cache for all item IDs in this grid
+      warmCache(itemIds, region, majorVersion?.toString())
+        .then((results) => {
+          const successful = results.filter(result => result.status === 'fulfilled').length;
+          const failed = results.filter(result => result.status === 'rejected').length;
+          
+          if (successful > 0) {
+            console.log(`[InventoryGrid] Preloaded metadata for ${successful} items`);
+          }
+          
+          if (failed > 0) {
+            console.warn(`[InventoryGrid] Failed to preload metadata for ${failed} items`);
+          }
+        })
+        .catch((error) => {
+          console.warn('[InventoryGrid] Cache warming failed:', error);
+        });
+    }
+  }, [itemIds, warmCache, region, majorVersion, isLoading]);
 
   // Calculate grid columns based on capacity
   const getGridColumns = (capacity: number): string => {
@@ -114,6 +146,7 @@ export function InventoryGrid({
               isDeleting={deletingAssetId === asset.id}
               region={region}
               majorVersion={majorVersion}
+              shouldPreload={slotIndex < 12} // Preload first 12 items for faster loading
             />
           ) : (
             <EmptySlot slotIndex={slotIndex} />

@@ -100,8 +100,7 @@ export function NpcImage({
         onError(errorMsg);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [retryCount, maxRetries, npcId, iconUrl]); // Remove onError from dependencies
+  }, [retryCount, maxRetries, npcId, iconUrl, onError]);
 
   const handleManualRetry = useCallback(() => {
     if (!canRetry) return;
@@ -119,8 +118,7 @@ export function NpcImage({
     if (onRetry) {
       onRetry();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canRetry, npcId, retryCount, iconUrl]); // Remove onRetry from dependencies
+  }, [canRetry, npcId, retryCount, iconUrl, onRetry]);
 
   const altText = (typeof name === 'string' && name) ? `${name} (NPC ${npcId})` : `NPC ${npcId}`;
 

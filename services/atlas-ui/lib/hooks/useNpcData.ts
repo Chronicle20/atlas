@@ -123,12 +123,12 @@ export function useNpcData(
   });
 
   // Handle error callback with proper dependency management
+  const handleError = options.onError;
   useEffect(() => {
-    if (query.isError && query.error && options.onError) {
-      options.onError(query.error);
+    if (query.isError && query.error && handleError) {
+      handleError(query.error);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query.isError, query.error]); // Remove options.onError from dependencies to prevent infinite loops
+  }, [query.isError, query.error, handleError]);
 
   // Invalidate cache for this NPC
   const invalidate = useCallback(() => {
@@ -228,20 +228,20 @@ export function useNpcBatchData(
   const errors = queries.filter(query => query.error).map(query => query.error);
 
   // Handle success callback with proper dependency management
+  const handleSuccess = options.onSuccess;
   useEffect(() => {
-    if (isSuccess && allData.length === npcIds.length && options.onSuccess) {
-      options.onSuccess(allData);
+    if (isSuccess && allData.length === npcIds.length && handleSuccess) {
+      handleSuccess(allData);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSuccess, allData.length, npcIds.length]); // Remove options.onSuccess from dependencies
+  }, [isSuccess, allData.length, npcIds.length, handleSuccess, allData]);
 
   // Handle error callback with proper dependency management
+  const handleError = options.onError;
   useEffect(() => {
-    if (isError && errors.length > 0 && errors[0] && options.onError) {
-      options.onError(errors[0]);
+    if (isError && errors.length > 0 && errors[0] && handleError) {
+      handleError(errors[0]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isError, errors.length]); // Remove options.onError from dependencies
+  }, [isError, errors.length, errors, handleError]);
 
   // Batch invalidate
   const invalidateAll = useCallback(() => {
@@ -418,20 +418,20 @@ export function useOptimizedNpcBatchData(
   });
 
   // Handle success callback with proper dependency management
+  const handleSuccess = options.onSuccess;
   useEffect(() => {
-    if (query.isSuccess && query.data && options.onSuccess) {
-      options.onSuccess(query.data);
+    if (query.isSuccess && query.data && handleSuccess) {
+      handleSuccess(query.data);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query.isSuccess, query.data]); // Remove options.onSuccess from dependencies
+  }, [query.isSuccess, query.data, handleSuccess]);
 
   // Handle error callback with proper dependency management
+  const handleError = options.onError;
   useEffect(() => {
-    if (query.isError && query.error && options.onError) {
-      options.onError(query.error);
+    if (query.isError && query.error && handleError) {
+      handleError(query.error);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query.isError, query.error]); // Remove options.onError from dependencies
+  }, [query.isError, query.error, handleError]);
 
   // Invalidate batch cache
   const invalidateBatch = useCallback(() => {

@@ -12,16 +12,111 @@ import { useLazyLoad } from '@/lib/hooks/useIntersectionObserver';
 import { errorLogger } from '@/services/errorLogger';
 import type { Asset } from '@/services/api/inventory.service';
 
+/**
+ * Props for the InventoryCard component.
+ * 
+ * @interface InventoryCardProps
+ * @example
+ * ```typescript
+ * const cardProps: InventoryCardProps = {
+ *   asset: {
+ *     id: "asset-123",
+ *     attributes: {
+ *       templateId: "1002000",
+ *       slot: 5
+ *     }
+ *   },
+ *   onDelete: (assetId: string) => console.log(`Deleting ${assetId}`),
+ *   region: "GMS",
+ *   majorVersion: 83,
+ *   shouldPreload: true
+ * };
+ * ```
+ */
 interface InventoryCardProps {
+  /** The inventory asset/item to display. Must contain templateId and slot information. */
   asset: Asset;
+  
+  /** Optional callback function called when the delete button is clicked. If not provided, delete button won't be shown. */
   onDelete?: (assetId: string) => void;
+  
+  /** Whether the item is currently being deleted. Shows loading state on delete button when true. */
   isDeleting?: boolean;
+  
+  /** MapleStory region identifier (e.g., "GMS", "JMS", "KMS"). Used for API calls to fetch item data. */
   region?: string | undefined;
+  
+  /** MapleStory major version number (e.g., 83, 251). Used for API calls to fetch version-specific item data. */
   majorVersion?: number | undefined;
+  
+  /** Additional CSS classes to apply to the card container. */
   className?: string;
-  shouldPreload?: boolean; // New prop for image preloading
+  
+  /** 
+   * Whether to preload the item's icon and metadata even before the card becomes visible.
+   * Useful for improving perceived performance of frequently accessed items.
+   * Default: false
+   */
+  shouldPreload?: boolean;
 }
 
+/**
+ * A card component for displaying inventory items with lazy loading, image preloading, and interactive features.
+ * 
+ * ## Features
+ * - **Lazy Loading**: Only loads item data and icons when the card becomes visible in the viewport
+ * - **Image Preloading**: Optional preloading for better perceived performance
+ * - **Error Handling**: Graceful fallback to text display when icons fail to load
+ * - **Delete Functionality**: Optional delete button with loading states
+ * - **MapleStory API Integration**: Fetches item icons and names from MapleStory.io API
+ * - **Performance Optimized**: Uses intersection observer and React Query for efficient loading
+ * 
+ * ## Usage Examples
+ * 
+ * ### Basic Usage
+ * ```tsx
+ * <InventoryCard
+ *   asset={{
+ *     id: "asset-123",
+ *     attributes: { templateId: "1002000", slot: 5 }
+ *   }}
+ * />
+ * ```
+ * 
+ * ### With Delete Functionality
+ * ```tsx
+ * <InventoryCard
+ *   asset={asset}
+ *   onDelete={(assetId) => handleDelete(assetId)}
+ *   isDeleting={deletingAssetId === asset.id}
+ * />
+ * ```
+ * 
+ * ### With Preloading and Custom Styling
+ * ```tsx
+ * <InventoryCard
+ *   asset={asset}
+ *   region="GMS"
+ *   majorVersion={83}
+ *   shouldPreload={true}
+ *   className="border-2 border-blue-500"
+ * />
+ * ```
+ * 
+ * ## Performance Considerations
+ * - Uses intersection observer to only load visible items
+ * - Image preloading is optional and should be used sparingly (e.g., first 12 items)
+ * - React Query handles caching and deduplication of API requests
+ * - Images are optimized using Next.js Image component
+ * 
+ * ## Error Handling
+ * - API failures fall back to displaying templateId
+ * - Image loading failures fall back to package icon
+ * - All errors are logged for monitoring
+ * 
+ * @param props - The component props
+ * @returns A card component displaying the inventory item
+ */
 export function InventoryCard({ 
   asset, 
   onDelete, 
@@ -156,15 +251,15 @@ export function InventoryCard({
 
       {/* Item Content */}
       <CardContent className="p-2 pt-0 flex flex-col items-center justify-center min-h-[70px]">
-        {!shouldLoad ? (
+        {!shouldLoad && !shouldPreload ? (
           // Not loaded yet (lazy loading) with consistent dimensions
-          <div className="flex flex-col items-center space-y-1">
+          <div className="flex flex-col items-center space-y-1" data-testid="inventory-card-loading">
             <Skeleton className="h-8 w-8 rounded" />
             <Skeleton className="h-8 w-full rounded" />
           </div>
         ) : isLoading ? (
           // Loading State with consistent dimensions
-          <div className="flex flex-col items-center space-y-1">
+          <div className="flex flex-col items-center space-y-1" data-testid="inventory-card-loading">
             <Skeleton className="h-8 w-8 rounded" />
             <Skeleton className="h-8 w-full rounded" />
           </div>
@@ -172,7 +267,7 @@ export function InventoryCard({
           // Error State - Text Fallback with consistent dimensions
           <div className="flex flex-col items-center text-center space-y-1">
             <div className="relative h-8 w-8 flex-shrink-0 flex items-center justify-center">
-              <Package className="h-6 w-6 text-muted-foreground" />
+              <Package className="h-6 w-6 text-muted-foreground" data-testid="inventory-card-package-icon" />
             </div>
             <div className="text-xs text-center break-all h-8 flex items-center justify-center w-full">
               <span className="font-medium line-clamp-2 leading-tight text-foreground">
@@ -207,7 +302,7 @@ export function InventoryCard({
                 </>
               ) : (
                 <div className="flex items-center justify-center h-full w-full">
-                  <Package className="h-6 w-6 text-muted-foreground flex-shrink-0" />
+                  <Package className="h-6 w-6 text-muted-foreground flex-shrink-0" data-testid="inventory-card-package-icon" />
                 </div>
               )}
             </div>
@@ -225,7 +320,29 @@ export function InventoryCard({
   );
 }
 
-// Loading skeleton component for consistent loading states
+/**
+ * A skeleton component that matches the InventoryCard layout for loading states.
+ * 
+ * Provides a consistent loading experience with the same dimensions and structure
+ * as the actual InventoryCard component to prevent layout shift.
+ * 
+ * @example
+ * ```tsx
+ * // Display loading skeletons while data loads
+ * {isLoading ? (
+ *   <div className="grid grid-cols-4 gap-3">
+ *     {Array.from({ length: 8 }).map((_, index) => (
+ *       <InventoryCardSkeleton key={index} />
+ *     ))}
+ *   </div>
+ * ) : (
+ *   // Render actual inventory cards
+ * )}
+ * ```
+ * 
+ * @param className - Optional additional CSS classes
+ * @returns A skeleton component matching InventoryCard layout
+ */
 export function InventoryCardSkeleton({ className }: { className?: string }) {
   return (
     <Card className={cn("overflow-hidden relative py-0 w-[100px] h-[120px]", className)}>

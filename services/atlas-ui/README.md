@@ -8,6 +8,7 @@ Mushroom game Administrative Web UI built with Next.js, TypeScript, Tailwind CSS
 - 🎨 **Modern UI**: Built with shadcn/ui components and Tailwind CSS
 - ⚡ **Performance**: Next.js App Router with optimized builds
 - 🔒 **Multi-tenant**: Support for multiple game tenants/regions
+- 🧭 **Smart Navigation**: Dynamic breadcrumb navigation with entity name resolution
 - 📊 **Admin Tools**: Character, guild, NPC, and game world management
 
 ## Development
@@ -124,3 +125,4 @@ const { data, isLoading, error } = useQuery({
 - [`docs/service-layer.md`](./docs/service-layer.md) - Centralized API service layer architecture guide
 - [`docs/reusable-components.md`](./docs/reusable-components.md) - Guide to reusable UI components
 - [`docs/error-handling.md`](./docs/error-handling.md) - Comprehensive error handling patterns and examples
+- [`docs/breadcrumb-navigation.md`](./docs/breadcrumb-navigation.md) - Breadcrumb navigation system implementation and usage guide

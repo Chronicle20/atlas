@@ -545,6 +545,70 @@ describe('Breadcrumb Navigation Integration Tests', () => {
         expect(listItems.length).toBeGreaterThan(0);
       }, { timeout: 3000 });
     });
+
+    it('should have proper ARIA attributes for accessibility', async () => {
+      mockPathname.mockReturnValue('/characters/123');
+
+      render(
+        <TestWrapper pathname="/characters/123">
+          <BreadcrumbBar />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        const nav = screen.getByRole('navigation', { name: /breadcrumb/i });
+        expect(nav).toHaveAttribute('aria-label', 'breadcrumb');
+        
+        // Find the current page breadcrumb (should have aria-current="page")
+        const currentPageElement = screen.getByLabelText(/current page/i) || 
+                                  screen.querySelector('[aria-current="page"]');
+        expect(currentPageElement).toBeInTheDocument();
+        expect(currentPageElement).toHaveAttribute('aria-current', 'page');
+        
+        // Check that separators are properly hidden from screen readers
+        const separators = nav.querySelectorAll('[role="presentation"][aria-hidden="true"]');
+        expect(separators.length).toBeGreaterThan(0);
+      }, { timeout: 3000 });
+    });
+
+    it('should maintain accessibility during loading states', async () => {
+      mockPathname.mockReturnValue('/characters/123');
+
+      render(
+        <TestWrapper pathname="/characters/123" tenantLoading={true}>
+          <BreadcrumbBar showLoadingStates={true} />
+        </TestWrapper>
+      );
+
+      // Even during loading, should maintain semantic navigation structure
+      const nav = screen.getByRole('navigation', { name: /breadcrumb/i });
+      expect(nav).toBeInTheDocument();
+      expect(nav).toHaveAttribute('aria-label', 'breadcrumb');
+      
+      // Loading text should be descriptive for screen readers
+      expect(screen.getByText(/loading navigation/i)).toBeInTheDocument();
+    });
+
+    it('should handle error states with accessible fallbacks', async () => {
+      // Force an error in breadcrumb generation
+      mockResolveEntityLabel.mockRejectedValue(new Error('Test error'));
+      mockPathname.mockReturnValue('/characters/invalid');
+
+      render(
+        <TestWrapper pathname="/characters/invalid">
+          <BreadcrumbBar />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        const nav = screen.getByRole('navigation', { name: /breadcrumb/i });
+        expect(nav).toBeInTheDocument();
+        expect(nav).toHaveAttribute('aria-label', 'breadcrumb');
+        
+        // Error state should still provide meaningful content for screen readers
+        expect(screen.getByText(/navigation unavailable/i)).toBeInTheDocument();
+      }, { timeout: 3000 });
+    });
   });
 
   describe('Performance and Caching', () => {

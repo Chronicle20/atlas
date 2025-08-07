@@ -165,8 +165,14 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
   const [processedBreadcrumbs, setProcessedBreadcrumbs] = useState<BreadcrumbSegment[]>(initialBreadcrumbs);
 
 
+  // Track if resolution is in progress to prevent concurrent executions
+  const [isResolving, setIsResolving] = useState(false);
+
   // Effect to resolve dynamic labels when key dependencies change
   useEffect(() => {
+    // Prevent concurrent executions
+    if (isResolving) return;
+
     const resolveDynamicLabels = async () => {
       if (!activeTenant || !opts.autoResolve) {
         setProcessedBreadcrumbs(initialBreadcrumbs);
@@ -180,19 +186,26 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
         return;
       }
 
-      // Process each dynamic breadcrumb
-      for (const breadcrumb of dynamicBreadcrumbs) {
+      setIsResolving(true);
+
+      // Batch all resolutions first
+      const resolutionResults = new Map<string, BreadcrumbResolutionState>();
+      const updatedBreadcrumbs = [...initialBreadcrumbs];
+
+      // Set all items to loading state
+      dynamicBreadcrumbs.forEach(breadcrumb => {
+        const key = `${breadcrumb.entityType}:${breadcrumb.entityId}`;
+        resolutionResults.set(key, { loading: true, error: null, resolved: null });
+      });
+
+      // Update resolution states once for loading
+      setResolutionStates(new Map(resolutionResults));
+
+      // Process all resolutions in parallel
+      const resolutionPromises = dynamicBreadcrumbs.map(async (breadcrumb) => {
         const key = `${breadcrumb.entityType}:${breadcrumb.entityId}`;
         
         try {
-          // Update resolution state directly without depending on the callback
-          setResolutionStates(prev => {
-            const newMap = new Map(prev);
-            const existing = newMap.get(key) || { loading: false, error: null, resolved: null };
-            newMap.set(key, { ...existing, loading: true, error: null });
-            return newMap;
-          });
-          
           const resolved = await resolveEntityLabel(
             breadcrumb.entityType as EntityType,
             breadcrumb.entityId!,
@@ -200,36 +213,35 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
             opts.resolverOptions
           );
           
-          setResolutionStates(prev => {
-            const newMap = new Map(prev);
-            const existing = newMap.get(key) || { loading: false, error: null, resolved: null };
-            newMap.set(key, { ...existing, loading: false, resolved });
-            return newMap;
-          });
-
-          // Update the breadcrumb with resolved label
-          setProcessedBreadcrumbs(prev => prev.map(b => 
+          // Store the result for batch update
+          resolutionResults.set(key, { loading: false, error: null, resolved });
+          
+          // Update the breadcrumb in our local array
+          const index = updatedBreadcrumbs.findIndex(b => 
             b.entityId === breadcrumb.entityId && b.entityType === breadcrumb.entityType
-              ? { ...b, label: resolved.label }
-              : b
-          ));
+          );
+          if (index !== -1) {
+            updatedBreadcrumbs[index] = { ...updatedBreadcrumbs[index], label: resolved.label };
+          }
           
         } catch (error) {
           const err = error instanceof Error ? error : new Error('Resolution failed');
-          setResolutionStates(prev => {
-            const newMap = new Map(prev);
-            const existing = newMap.get(key) || { loading: false, error: null, resolved: null };
-            newMap.set(key, { ...existing, loading: false, error: err });
-            return newMap;
-          });
-          
+          resolutionResults.set(key, { loading: false, error: err, resolved: null });
           console.warn(`Failed to resolve ${breadcrumb.entityType}:${breadcrumb.entityId}`, error);
         }
-      }
+      });
+
+      // Wait for all resolutions to complete
+      await Promise.all(resolutionPromises);
+
+      // Update both states once after all resolutions are done
+      setResolutionStates(new Map(resolutionResults));
+      setProcessedBreadcrumbs(updatedBreadcrumbs);
+      setIsResolving(false);
     };
 
     resolveDynamicLabels();
-  }, [initialBreadcrumbs, activeTenant, opts.autoResolve, opts.resolverOptions]);
+  }, [initialBreadcrumbs, activeTenant, opts.autoResolve, opts.resolverOptions, isResolving]);
 
   // Effect to preload labels
   useEffect(() => {

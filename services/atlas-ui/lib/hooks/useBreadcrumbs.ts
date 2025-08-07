@@ -166,29 +166,37 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
 
   // Process breadcrumbs with dynamic label resolution
   const [processedBreadcrumbs, setProcessedBreadcrumbs] = useState<BreadcrumbSegment[]>(initialBreadcrumbs);
+  
+  // Track previous pathname to detect changes
+  const prevPathnameRef = useRef(pathname);
+  const hasResolvedRef = useRef(false);
 
-  // Track if resolution is in progress to prevent concurrent executions
-  const isResolvingRef = useRef(false);
-
-  // Effect to resolve dynamic labels when key dependencies change
+  // Update processed breadcrumbs when pathname changes
   useEffect(() => {
-    // Prevent concurrent executions
-    if (isResolvingRef.current) return;
+    if (prevPathnameRef.current !== pathname) {
+      prevPathnameRef.current = pathname;
+      hasResolvedRef.current = false;
+      setProcessedBreadcrumbs(initialBreadcrumbs);
+    }
+  }, [pathname, initialBreadcrumbs]);
+
+  // Effect to resolve dynamic labels only once per pathname
+  useEffect(() => {
+    // Skip if already resolved for this pathname or if conditions not met
+    if (hasResolvedRef.current || !activeTenant || !autoResolve) {
+      return;
+    }
+
+    const dynamicBreadcrumbs = initialBreadcrumbs.filter(b => b.dynamic && b.entityId && b.entityType);
+    
+    if (dynamicBreadcrumbs.length === 0) {
+      hasResolvedRef.current = true;
+      return;
+    }
 
     const resolveDynamicLabels = async () => {
-      if (!activeTenant || !autoResolve) {
-        setProcessedBreadcrumbs(initialBreadcrumbs);
-        return;
-      }
-
-      const dynamicBreadcrumbs = initialBreadcrumbs.filter(b => b.dynamic && b.entityId && b.entityType);
-      
-      if (dynamicBreadcrumbs.length === 0) {
-        setProcessedBreadcrumbs(initialBreadcrumbs);
-        return;
-      }
-
-      isResolvingRef.current = true;
+      // Mark as resolved immediately to prevent re-runs
+      hasResolvedRef.current = true;
 
       // Batch all resolutions first
       const resolutionResults = new Map<string, BreadcrumbResolutionState>();
@@ -239,11 +247,11 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
       // Update both states once after all resolutions are done
       setResolutionStates(new Map(resolutionResults));
       setProcessedBreadcrumbs(updatedBreadcrumbs);
-      isResolvingRef.current = false;
     };
 
     resolveDynamicLabels();
-  }, [initialBreadcrumbs, activeTenant, autoResolve, resolverOptions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, activeTenant, autoResolve, resolverOptions]);
 
   // Effect to preload labels
   useEffect(() => {
@@ -324,7 +332,8 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
         });
       });
       
-      // Reset processed breadcrumbs to trigger re-resolution
+      // Reset to allow re-resolution
+      hasResolvedRef.current = false;
       setProcessedBreadcrumbs(initialBreadcrumbs);
     },
     preloadLabels: async (entityType: EntityType, entityIds: string[]) => {

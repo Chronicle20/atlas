@@ -8,6 +8,7 @@ import {SidebarToggle} from "@/components/sidebar-toggle";
 import {TenantProvider} from "@/context/tenant-context";
 import {Toaster} from "@/components/ui/sonner";
 import {QueryProvider} from "@/components/providers/query-provider";
+import {BreadcrumbBar} from "@/components/features/navigation/BreadcrumbBar";
 
 export const metadata: Metadata = {
     title: "AtlasMS",
@@ -26,6 +27,14 @@ export default function RootLayout({children,}: Readonly<{ children: React.React
                             <div className="flex items-center h-12 justify-between px-2">
                                 <SidebarToggle/>
                                 <ThemeToggle/>
+                            </div>
+                            <div className="px-2">
+                                <BreadcrumbBar 
+                                    className="mb-2" 
+                                    maxItems={5}
+                                    showEllipsis={true}
+                                    showLoadingStates={true}
+                                />
                             </div>
                             <div className="flex flex-1 flex-col overflow-hidden gap-4 p-2 pt-0">
                                 <div className="flex flex-1 flex-col overflow-hidden rounded-xl bg-sidebar">

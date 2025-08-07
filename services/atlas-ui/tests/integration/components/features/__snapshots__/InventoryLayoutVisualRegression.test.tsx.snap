@@ -1,0 +1,384 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`Inventory Layout Visual Regression Tests Visual Layout Snapshots should match snapshot for inventory grid with mixed content: inventory-grid-mixed-content 1`] = `
+<div
+  class="grid gap-3 grid-cols-4"
+>
+  <div
+    class="flex items-center justify-center"
+    data-slot="0"
+    data-testid="inventory-slot-0"
+  >
+    <div
+      class="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border shadow-sm overflow-hidden relative py-0 w-[100px] h-[120px]"
+      data-slot="card"
+    >
+      <div
+        class="@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6 p-1 pl-2 pb-1 text-left"
+        data-slot="card-header"
+      >
+        <div
+          class="text-xs font-medium text-muted-foreground"
+        >
+          0
+        </div>
+      </div>
+      <div
+        class="p-2 pt-0 flex flex-col items-center justify-center min-h-[70px]"
+        data-slot="card-content"
+      >
+        <div
+          class="flex flex-col items-center space-y-1"
+        >
+          <div
+            class="relative h-8 w-8 flex-shrink-0"
+          >
+            <div
+              class="flex items-center justify-center h-full w-full"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-package h-6 w-6 text-muted-foreground flex-shrink-0"
+                data-testid="inventory-card-package-icon"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"
+                />
+                <path
+                  d="M12 22V12"
+                />
+                <polyline
+                  points="3.29 7 12 12 20.71 7"
+                />
+                <path
+                  d="m7.5 4.27 9 5.15"
+                />
+              </svg>
+            </div>
+          </div>
+          <div
+            class="text-xs text-center break-all h-8 flex items-center justify-center w-full"
+          >
+            <span
+              class="font-medium line-clamp-2 leading-tight"
+            >
+              Grid Item
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="flex items-center justify-center"
+    data-slot="1"
+    data-testid="inventory-slot-1"
+  >
+    <div
+      class="w-[100px] h-[120px] border-2 border-dashed border-muted-foreground/30 rounded-lg flex flex-col items-center justify-center bg-muted/10 hover:bg-muted/20 transition-colors"
+    >
+      <div
+        class="text-xs font-medium text-muted-foreground/60 mb-2"
+      >
+        1
+      </div>
+      <div
+        class="text-xs text-muted-foreground/50"
+      >
+        Empty
+      </div>
+    </div>
+  </div>
+  <div
+    class="flex items-center justify-center"
+    data-slot="2"
+    data-testid="inventory-slot-2"
+  >
+    <div
+      class="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border shadow-sm overflow-hidden relative py-0 w-[100px] h-[120px]"
+      data-slot="card"
+    >
+      <div
+        class="@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6 p-1 pl-2 pb-1 text-left"
+        data-slot="card-header"
+      >
+        <div
+          class="text-xs font-medium text-muted-foreground"
+        >
+          2
+        </div>
+      </div>
+      <div
+        class="p-2 pt-0 flex flex-col items-center justify-center min-h-[70px]"
+        data-slot="card-content"
+      >
+        <div
+          class="flex flex-col items-center space-y-1"
+        >
+          <div
+            class="relative h-8 w-8 flex-shrink-0"
+          >
+            <div
+              class="flex items-center justify-center h-full w-full"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-package h-6 w-6 text-muted-foreground flex-shrink-0"
+                data-testid="inventory-card-package-icon"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"
+                />
+                <path
+                  d="M12 22V12"
+                />
+                <polyline
+                  points="3.29 7 12 12 20.71 7"
+                />
+                <path
+                  d="m7.5 4.27 9 5.15"
+                />
+              </svg>
+            </div>
+          </div>
+          <div
+            class="text-xs text-center break-all h-8 flex items-center justify-center w-full"
+          >
+            <span
+              class="font-medium line-clamp-2 leading-tight"
+            >
+              Grid Item
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="flex items-center justify-center"
+    data-slot="3"
+    data-testid="inventory-slot-3"
+  >
+    <div
+      class="w-[100px] h-[120px] border-2 border-dashed border-muted-foreground/30 rounded-lg flex flex-col items-center justify-center bg-muted/10 hover:bg-muted/20 transition-colors"
+    >
+      <div
+        class="text-xs font-medium text-muted-foreground/60 mb-2"
+      >
+        3
+      </div>
+      <div
+        class="text-xs text-muted-foreground/50"
+      >
+        Empty
+      </div>
+    </div>
+  </div>
+  <div
+    class="flex items-center justify-center"
+    data-slot="4"
+    data-testid="inventory-slot-4"
+  >
+    <div
+      class="w-[100px] h-[120px] border-2 border-dashed border-muted-foreground/30 rounded-lg flex flex-col items-center justify-center bg-muted/10 hover:bg-muted/20 transition-colors"
+    >
+      <div
+        class="text-xs font-medium text-muted-foreground/60 mb-2"
+      >
+        4
+      </div>
+      <div
+        class="text-xs text-muted-foreground/50"
+      >
+        Empty
+      </div>
+    </div>
+  </div>
+  <div
+    class="flex items-center justify-center"
+    data-slot="5"
+    data-testid="inventory-slot-5"
+  >
+    <div
+      class="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border shadow-sm overflow-hidden relative py-0 w-[100px] h-[120px]"
+      data-slot="card"
+    >
+      <div
+        class="@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6 p-1 pl-2 pb-1 text-left"
+        data-slot="card-header"
+      >
+        <div
+          class="text-xs font-medium text-muted-foreground"
+        >
+          5
+        </div>
+      </div>
+      <div
+        class="p-2 pt-0 flex flex-col items-center justify-center min-h-[70px]"
+        data-slot="card-content"
+      >
+        <div
+          class="flex flex-col items-center space-y-1"
+        >
+          <div
+            class="relative h-8 w-8 flex-shrink-0"
+          >
+            <div
+              class="flex items-center justify-center h-full w-full"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-package h-6 w-6 text-muted-foreground flex-shrink-0"
+                data-testid="inventory-card-package-icon"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"
+                />
+                <path
+                  d="M12 22V12"
+                />
+                <polyline
+                  points="3.29 7 12 12 20.71 7"
+                />
+                <path
+                  d="m7.5 4.27 9 5.15"
+                />
+              </svg>
+            </div>
+          </div>
+          <div
+            class="text-xs text-center break-all h-8 flex items-center justify-center w-full"
+          >
+            <span
+              class="font-medium line-clamp-2 leading-tight"
+            >
+              Grid Item
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="flex items-center justify-center"
+    data-slot="6"
+    data-testid="inventory-slot-6"
+  >
+    <div
+      class="w-[100px] h-[120px] border-2 border-dashed border-muted-foreground/30 rounded-lg flex flex-col items-center justify-center bg-muted/10 hover:bg-muted/20 transition-colors"
+    >
+      <div
+        class="text-xs font-medium text-muted-foreground/60 mb-2"
+      >
+        6
+      </div>
+      <div
+        class="text-xs text-muted-foreground/50"
+      >
+        Empty
+      </div>
+    </div>
+  </div>
+  <div
+    class="flex items-center justify-center"
+    data-slot="7"
+    data-testid="inventory-slot-7"
+  >
+    <div
+      class="w-[100px] h-[120px] border-2 border-dashed border-muted-foreground/30 rounded-lg flex flex-col items-center justify-center bg-muted/10 hover:bg-muted/20 transition-colors"
+    >
+      <div
+        class="text-xs font-medium text-muted-foreground/60 mb-2"
+      >
+        7
+      </div>
+      <div
+        class="text-xs text-muted-foreground/50"
+      >
+        Empty
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Inventory Layout Visual Regression Tests Visual Layout Snapshots should match snapshot for loaded inventory card: loaded-inventory-card 1`] = `
+<div
+  class="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border shadow-sm overflow-hidden relative py-0 w-[100px] h-[120px]"
+  data-slot="card"
+>
+  <div
+    class="@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6 p-1 pl-2 pb-1 text-left"
+    data-slot="card-header"
+  >
+    <div
+      class="text-xs font-medium text-muted-foreground"
+    >
+      -11
+    </div>
+  </div>
+  <div
+    class="p-2 pt-0 flex flex-col items-center justify-center min-h-[70px]"
+    data-slot="card-content"
+  >
+    <div
+      class="flex flex-col items-center space-y-1"
+    >
+      <div
+        class="relative h-8 w-8 flex-shrink-0"
+      >
+        <div
+          class="object-contain transition-opacity duration-200 opacity-0"
+          data-alt="Basic Sword"
+          data-height="32"
+          data-priority="true"
+          data-src="https://maplestory.io/api/GMS/214/item/1302000/valid-item/icon"
+          data-testid="mock-image"
+          data-unoptimized="true"
+          data-width="32"
+          style="width: 32px; height: 32px;"
+        />
+        <div
+          class="bg-muted animate-pulse absolute inset-0 h-8 w-8 rounded"
+        />
+      </div>
+      <div
+        class="text-xs text-center break-all h-8 flex items-center justify-center w-full"
+      >
+        <span
+          class="font-medium line-clamp-2 leading-tight"
+        >
+          Basic Sword
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+`;

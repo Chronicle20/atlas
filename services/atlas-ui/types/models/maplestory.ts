@@ -216,6 +216,27 @@ export interface NpcDataResult {
 }
 
 /**
+ * Item API response data from MapleStory.io
+ */
+export interface ItemApiData {
+  id: number;
+  name: string;
+  description?: string;
+  category?: string;
+}
+
+/**
+ * Item icon and name result
+ */
+export interface ItemDataResult {
+  id: number;
+  name?: string;
+  iconUrl?: string;
+  cached: boolean;
+  error?: string;
+}
+
+/**
  * Character rendering service configuration
  */
 export interface CharacterRenderingConfig {

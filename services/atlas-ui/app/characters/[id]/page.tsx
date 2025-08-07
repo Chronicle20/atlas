@@ -12,9 +12,10 @@ import {inventoryService, type InventoryResponse, type Compartment, type Asset} 
 import {TenantConfig} from "@/types/models/tenant";
 import {createErrorFromUnknown} from "@/types/api/errors";
 import { Button } from "@/components/ui/button";
-import { X, MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { ChangeMapDialog } from "@/components/features/characters/ChangeMapDialog";
 import { CharacterRenderer } from "@/components/features/characters/CharacterRenderer";
+import { InventoryGrid } from "@/components/features/characters/InventoryGrid";
 import { ErrorDisplay } from "@/components/common";
 import { CharacterDetailSkeleton } from "@/components/common/skeletons/CharacterDetailSkeleton";
 import {
@@ -204,35 +205,21 @@ export default function CharacterDetailPage() {
                                         </span>
                                     </CollapsibleTrigger>
                                     <CollapsibleContent className="p-4 pt-0">
-                                        <div className="flex flex-wrap gap-3 pt-4">
-                                            {assets.length > 0 ? (
-                                                assets.map((asset) => (
-                                                    <Card key={asset.id} className="overflow-hidden relative py-0 w-[100px]">
-                                                        <Button
-                                                            variant="ghost" 
-                                                            size="icon" 
-                                                            className="absolute top-0 right-0"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                openDeleteDialog(compartment.id, asset.id);
-                                                            }}
-                                                            disabled={deletingAsset === asset.id}
-                                                        >
-                                                            <X/>
-                                                        </Button>
-                                                        <CardHeader className="p-1 pl-3 pb-1 text-left">
-                                                            <div>{asset.attributes.slot}</div>
-                                                        </CardHeader>
-                                                        <CardContent className="p-2 pt-0 text-base text-center">
-                                                            <CardTitle>{asset.attributes.templateId}</CardTitle>
-                                                        </CardContent>
-                                                    </Card>
-                                                ))
-                                            ) : (
-                                                <div className="col-span-full text-center text-muted-foreground py-4">
-                                                    No items in this compartment
-                                                </div>
-                                            )}
+                                        <div className="pt-4">
+                                            <InventoryGrid
+                                                compartment={compartment}
+                                                assets={assets}
+                                                onDeleteAsset={(assetId) => {
+                                                    const asset = assets.find(a => a.id === assetId);
+                                                    if (asset) {
+                                                        openDeleteDialog(compartment.id, asset.id);
+                                                    }
+                                                }}
+                                                deletingAssetId={deletingAsset}
+                                                region={activeTenant?.attributes.region}
+                                                majorVersion={activeTenant?.attributes.majorVersion}
+                                                isLoading={loading}
+                                            />
                                         </div>
                                     </CollapsibleContent>
                                 </Collapsible>

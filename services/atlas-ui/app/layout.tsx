@@ -32,6 +32,7 @@ export default function RootLayout({children,}: Readonly<{ children: React.React
                                 <BreadcrumbBar 
                                     className="mb-2" 
                                     maxItems={5}
+                                    maxItemsMobile={2}
                                     showEllipsis={true}
                                     showLoadingStates={true}
                                 />

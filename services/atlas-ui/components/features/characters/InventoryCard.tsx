@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { X, Package } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { mapleStoryService } from '@/services/api/maplestory.service';
+import { useItemData } from '@/lib/hooks/useItemData';
+import { useLazyLoad } from '@/lib/hooks/useIntersectionObserver';
 import type { Asset } from '@/services/api/inventory.service';
-import type { ItemDataResult } from '@/types/models/maplestory';
 
 interface InventoryCardProps {
   asset: Asset;
@@ -28,49 +28,28 @@ export function InventoryCard({
   majorVersion,
   className 
 }: InventoryCardProps) {
-  const [itemData, setItemData] = useState<ItemDataResult | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
 
-  // Fetch item data on mount
-  useEffect(() => {
-    let isMounted = true;
+  // Use intersection observer for lazy loading
+  const { shouldLoad, ref: lazyRef } = useLazyLoad<HTMLDivElement>({
+    threshold: 0.1,
+    rootMargin: '100px', // Start loading when card is 100px away from viewport
+  });
 
-    const fetchItemData = async () => {
-      try {
-        setIsLoading(true);
-        const data = await mapleStoryService.getItemDataWithCache(
-          asset.attributes.templateId,
-          region,
-          majorVersion?.toString()
-        );
-        
-        if (isMounted) {
-          setItemData(data);
-        }
-      } catch (error) {
-        console.warn('Failed to fetch item data:', error);
-        if (isMounted) {
-          setItemData({
-            id: asset.attributes.templateId,
-            cached: false,
-            error: 'Failed to load item data'
-          });
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    fetchItemData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [asset.attributes.templateId, region, majorVersion]);
+  // Use React Query for data fetching with lazy loading
+  const { 
+    itemData, 
+    isLoading, 
+    hasError, 
+    errorMessage 
+  } = useItemData(asset.attributes.templateId, {
+    enabled: shouldLoad, // Only fetch when visible
+    ...(region && { region }),
+    ...(majorVersion && { version: majorVersion.toString() }),
+    staleTime: 30 * 60 * 1000, // 30 minutes
+    gcTime: 24 * 60 * 60 * 1000, // 24 hours
+  });
 
   const handleImageLoad = () => {
     setImageLoaded(true);
@@ -91,10 +70,10 @@ export function InventoryCard({
   // Determine what to display
   const hasIcon = itemData?.iconUrl && !imageError;
   const hasName = itemData?.name;
-  const hasError = itemData?.error || (!isLoading && !hasIcon && !hasName);
+  const displayError = hasError || errorMessage || (!isLoading && !hasIcon && !hasName);
 
   return (
-    <Card className={cn("overflow-hidden relative py-0 w-[100px] h-[120px]", className)}>
+    <Card ref={lazyRef} className={cn("overflow-hidden relative py-0 w-[100px] h-[120px]", className)}>
       {/* Delete Button */}
       {onDelete && (
         <Button
@@ -117,13 +96,19 @@ export function InventoryCard({
 
       {/* Item Content */}
       <CardContent className="p-2 pt-0 flex flex-col items-center justify-center min-h-[70px]">
-        {isLoading ? (
+        {!shouldLoad ? (
+          // Not loaded yet (lazy loading)
+          <div className="flex flex-col items-center space-y-2">
+            <Skeleton className="h-8 w-8 rounded" />
+            <Skeleton className="h-3 w-12" />
+          </div>
+        ) : isLoading ? (
           // Loading State
           <div className="flex flex-col items-center space-y-2">
             <Skeleton className="h-8 w-8 rounded" />
             <Skeleton className="h-3 w-12" />
           </div>
-        ) : hasError ? (
+        ) : displayError ? (
           // Error State - Text Fallback
           <div className="flex flex-col items-center text-center space-y-1">
             <Package className="h-6 w-6 text-muted-foreground" />

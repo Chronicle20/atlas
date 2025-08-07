@@ -10,7 +10,7 @@
  * - Performance optimizations
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTenant } from '@/context/tenant-context';
 import { 
@@ -125,6 +125,9 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
   const pathname = usePathname();
   const router = useRouter();
   const { activeTenant } = useTenant();
+  
+  // Destructure specific options to avoid dependency issues
+  const { autoResolve, resolverOptions, enablePreloading } = opts;
 
   // State management
   const [resolutionStates, setResolutionStates] = useState<Map<string, BreadcrumbResolutionState>>(new Map());
@@ -164,17 +167,16 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
   // Process breadcrumbs with dynamic label resolution
   const [processedBreadcrumbs, setProcessedBreadcrumbs] = useState<BreadcrumbSegment[]>(initialBreadcrumbs);
 
-
   // Track if resolution is in progress to prevent concurrent executions
-  const [isResolving, setIsResolving] = useState(false);
+  const isResolvingRef = useRef(false);
 
   // Effect to resolve dynamic labels when key dependencies change
   useEffect(() => {
     // Prevent concurrent executions
-    if (isResolving) return;
+    if (isResolvingRef.current) return;
 
     const resolveDynamicLabels = async () => {
-      if (!activeTenant || !opts.autoResolve) {
+      if (!activeTenant || !autoResolve) {
         setProcessedBreadcrumbs(initialBreadcrumbs);
         return;
       }
@@ -186,7 +188,7 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
         return;
       }
 
-      setIsResolving(true);
+      isResolvingRef.current = true;
 
       // Batch all resolutions first
       const resolutionResults = new Map<string, BreadcrumbResolutionState>();
@@ -210,7 +212,7 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
             breadcrumb.entityType as EntityType,
             breadcrumb.entityId!,
             activeTenant,
-            opts.resolverOptions
+            resolverOptions
           );
           
           // Store the result for batch update
@@ -237,16 +239,16 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
       // Update both states once after all resolutions are done
       setResolutionStates(new Map(resolutionResults));
       setProcessedBreadcrumbs(updatedBreadcrumbs);
-      setIsResolving(false);
+      isResolvingRef.current = false;
     };
 
     resolveDynamicLabels();
-  }, [initialBreadcrumbs, activeTenant, opts.autoResolve, opts.resolverOptions, isResolving]);
+  }, [initialBreadcrumbs, activeTenant, autoResolve, resolverOptions]);
 
   // Effect to preload labels
   useEffect(() => {
     const preloadLabelsForRoute = async () => {
-      if (!activeTenant || !opts.enablePreloading) return;
+      if (!activeTenant || !enablePreloading) return;
 
       const entityType = getEntityTypeFromRoute(pathname);
       if (!entityType) return;
@@ -260,14 +262,14 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
       const entityIds = dynamicBreadcrumbs.map(b => b.entityId!);
       
       try {
-        await preloadEntityLabels(entityType, entityIds, activeTenant, opts.resolverOptions);
+        await preloadEntityLabels(entityType, entityIds, activeTenant, resolverOptions);
       } catch (error) {
         console.warn(`Failed to preload labels for ${entityType}:`, error);
       }
     };
 
     preloadLabelsForRoute();
-  }, [pathname, initialBreadcrumbs, activeTenant, opts.enablePreloading, opts.resolverOptions]);
+  }, [pathname, initialBreadcrumbs, activeTenant, enablePreloading, resolverOptions]);
 
   // Build final breadcrumbs with filtering and truncation
   const finalBreadcrumbs = useMemo(() => {
@@ -306,7 +308,7 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
   const resolution = useMemo(() => ({
     resolveLabel: async (entityType: EntityType, entityId: string) => {
       if (!activeTenant) throw new Error('No active tenant');
-      return resolveEntityLabel(entityType, entityId, activeTenant, opts.resolverOptions);
+      return resolveEntityLabel(entityType, entityId, activeTenant, resolverOptions);
     },
     invalidateLabels: (entityType: EntityType, entityIds: string[]) => {
       if (!activeTenant) return;
@@ -327,10 +329,10 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
     },
     preloadLabels: async (entityType: EntityType, entityIds: string[]) => {
       if (!activeTenant) throw new Error('No active tenant');
-      await preloadEntityLabels(entityType, entityIds, activeTenant, opts.resolverOptions);
+      await preloadEntityLabels(entityType, entityIds, activeTenant, resolverOptions);
     },
     resolutionStates,
-  }), [activeTenant, opts.resolverOptions, resolutionStates, initialBreadcrumbs]);
+  }), [activeTenant, resolverOptions, resolutionStates, initialBreadcrumbs]);
 
   // Utility functions
   const utils = useMemo(() => ({

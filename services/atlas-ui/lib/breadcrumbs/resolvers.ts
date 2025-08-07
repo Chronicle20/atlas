@@ -227,8 +227,8 @@ const resolvers: Record<EntityType, EntityResolver> = {
     try {
       // Note: Templates service doesn't require tenant context for getById
       const template = await templatesService.getById(entityId, options);
-      // Templates don't have a name field, use ID for now
-      return `Template ${template.id}`;
+      // Templates don't have a name field, use region and version for display
+      return `${template.attributes.region} v${template.attributes.majorVersion}.${template.attributes.minorVersion}`;
     } catch (error) {
       console.warn(`Failed to resolve template name for ID ${entityId}:`, error);
       throw new ResolverError(`Failed to resolve template: ${error}`, true);

@@ -19,7 +19,7 @@ import {
 // Mock the services
 jest.mock('@/services/api', () => ({
   accountsService: {
-    getById: jest.fn(),
+    getAccountById: jest.fn(),
   },
   charactersService: {
     getById: jest.fn(),
@@ -28,13 +28,13 @@ jest.mock('@/services/api', () => ({
     getById: jest.fn(),
   },
   npcsService: {
-    getById: jest.fn(),
+    getNPCById: jest.fn(),
   },
   templatesService: {
     getById: jest.fn(),
   },
   tenantsService: {
-    getById: jest.fn(),
+    getTenantById: jest.fn(),
   },
 }));
 
@@ -488,10 +488,11 @@ describe('Entity-Specific Resolution', () => {
 
   it('should resolve NPC names with fallback to ID', async () => {
     const { npcsService } = await import('@/services/api');
-    (npcsService.getById as jest.Mock).mockResolvedValue({
-      id: '101112',
-      type: 'npc',
-      attributes: { name: 'Test NPC' },
+    (npcsService.getNPCById as jest.Mock).mockResolvedValue({
+      id: 101112,
+      hasShop: true,
+      hasConversation: false,
+      name: 'Test NPC',
     });
 
     const result = await resolveEntityLabel(
@@ -507,8 +508,11 @@ describe('Entity-Specific Resolution', () => {
     const { templatesService } = await import('@/services/api');
     (templatesService.getById as jest.Mock).mockResolvedValue({
       id: 'template-123',
-      type: 'template',
-      attributes: { name: 'Test Template' },
+      attributes: {
+        region: 'GMS',
+        majorVersion: 83,
+        minorVersion: 1,
+      },
     });
 
     const result = await resolveEntityLabel(
@@ -517,14 +521,13 @@ describe('Entity-Specific Resolution', () => {
       mockTenant
     );
 
-    expect(result.label).toBe('Test Template');
+    expect(result.label).toBe('GMS v83.1');
   });
 
   it('should resolve tenant names', async () => {
     const { tenantsService } = await import('@/services/api');
-    (tenantsService.getById as jest.Mock).mockResolvedValue({
+    (tenantsService.getTenantById as jest.Mock).mockResolvedValue({
       id: 'tenant-123',
-      type: 'tenant',
       attributes: { name: 'Test Tenant' },
     });
 

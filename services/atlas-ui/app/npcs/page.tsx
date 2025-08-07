@@ -49,7 +49,7 @@ export default function Page() {
     const [containerHeight, setContainerHeight] = useState(600);
 
     // Initialize error handler for batch operations
-    const { handleErrors, handleError } = useNpcErrorHandler({
+    const { handleError } = useNpcErrorHandler({
         showToasts: true,
         logErrors: true,
         maxToastsPerMinute: 5, // Allow more toasts for batch operations

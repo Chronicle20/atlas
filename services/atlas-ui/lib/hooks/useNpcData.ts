@@ -127,6 +127,7 @@ export function useNpcData(
     if (query.isError && query.error && options.onError) {
       options.onError(query.error);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query.isError, query.error]); // Remove options.onError from dependencies to prevent infinite loops
 
   // Invalidate cache for this NPC
@@ -231,6 +232,7 @@ export function useNpcBatchData(
     if (isSuccess && allData.length === npcIds.length && options.onSuccess) {
       options.onSuccess(allData);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSuccess, allData.length, npcIds.length]); // Remove options.onSuccess from dependencies
 
   // Handle error callback with proper dependency management
@@ -238,6 +240,7 @@ export function useNpcBatchData(
     if (isError && errors.length > 0 && errors[0] && options.onError) {
       options.onError(errors[0]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isError, errors.length]); // Remove options.onError from dependencies
 
   // Batch invalidate
@@ -419,6 +422,7 @@ export function useOptimizedNpcBatchData(
     if (query.isSuccess && query.data && options.onSuccess) {
       options.onSuccess(query.data);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query.isSuccess, query.data]); // Remove options.onSuccess from dependencies
 
   // Handle error callback with proper dependency management
@@ -426,6 +430,7 @@ export function useOptimizedNpcBatchData(
     if (query.isError && query.error && options.onError) {
       options.onError(query.error);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query.isError, query.error]); // Remove options.onError from dependencies
 
   // Invalidate batch cache

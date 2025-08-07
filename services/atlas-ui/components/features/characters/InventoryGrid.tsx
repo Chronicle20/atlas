@@ -65,7 +65,7 @@ interface InventoryGridProps {
  * @interface GridSlot
  */
 interface GridSlot {
-  /** The index/position of this slot (0-based). */
+  /** The index/position of this slot (1-based, matching inventory slot numbering). */
   slotIndex: number;
   
   /** The asset in this slot, or null if the slot is empty. */
@@ -156,8 +156,8 @@ export function InventoryGrid({
       assetBySlot.set(asset.attributes.slot, asset);
     });
     
-    // Fill all slots (0 to capacity-1)
-    for (let i = 0; i < capacity; i++) {
+    // Fill all slots (1 to capacity) - inventory slots are 1-indexed
+    for (let i = 1; i <= capacity; i++) {
       slots.push({
         slotIndex: i,
         asset: assetBySlot.get(i) || null

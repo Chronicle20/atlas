@@ -230,7 +230,18 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
             b.entityId === breadcrumb.entityId && b.entityType === breadcrumb.entityType
           );
           if (index !== -1) {
-            updatedBreadcrumbs[index] = { ...updatedBreadcrumbs[index], label: resolved.label };
+            const current = updatedBreadcrumbs[index];
+            if (current) {
+              updatedBreadcrumbs[index] = {
+                segment: current.segment,
+                label: resolved.label,
+                href: current.href,
+                dynamic: current.dynamic,
+                isCurrentPage: current.isCurrentPage,
+                ...(current.entityId && { entityId: current.entityId }),
+                ...(current.entityType && { entityType: current.entityType }),
+              };
+            }
           }
           
         } catch (error) {

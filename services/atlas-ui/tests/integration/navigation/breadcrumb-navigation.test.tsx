@@ -650,4 +650,365 @@ describe('Breadcrumb Navigation Integration Tests', () => {
       );
     });
   });
+
+  describe('Multi-Tenant Context Preservation', () => {
+    const mockTenant2: Tenant = {
+      id: 'f2e3d4c5-6789-4abc-9def-123456789abc',
+      name: 'Second Test Tenant',
+      description: 'Second tenant for testing',
+      region: 'SEA',
+      majorVersion: 95,
+      minorVersion: 2,
+      port: 8090,
+      createdAt: '2024-02-01T00:00:00Z',
+      updatedAt: '2024-02-01T00:00:00Z',
+    };
+
+    // Enhanced test wrapper that can switch tenants
+    interface MultiTenantTestWrapperProps {
+      children: React.ReactNode;
+      pathname?: string;
+      initialTenant?: Tenant;
+      switchToTenant?: Tenant;
+      switchAfterMs?: number;
+    }
+
+    function MultiTenantTestWrapper({ 
+      children, 
+      pathname = '/', 
+      initialTenant = mockTenant,
+      switchToTenant,
+      switchAfterMs = 1000
+    }: MultiTenantTestWrapperProps) {
+      const [currentTenant, setCurrentTenant] = React.useState<Tenant>(initialTenant);
+      
+      // Update mock pathname
+      React.useEffect(() => {
+        mockPathname.mockReturnValue(pathname);
+      }, [pathname]);
+
+      // Setup localStorage and tenant service for current tenant
+      React.useEffect(() => {
+        localStorageMock.getItem.mockReturnValue(currentTenant.id);
+        mockTenantsService.getAllTenants.mockResolvedValue([currentTenant, mockTenant2]);
+      }, [currentTenant]);
+
+      // Switch tenant after delay if requested
+      React.useEffect(() => {
+        if (switchToTenant && switchAfterMs > 0) {
+          const timer = setTimeout(() => {
+            setCurrentTenant(switchToTenant);
+          }, switchAfterMs);
+          return () => clearTimeout(timer);
+        }
+      }, [switchToTenant, switchAfterMs]);
+
+      // Mock resolver to return tenant-specific results
+      React.useEffect(() => {
+        mockResolveEntityLabel.mockImplementation((entityType: string, entityId: string, tenant: Tenant) => {
+          const mockLabels: Record<string, (id: string, tenant: Tenant) => string> = {
+            character: (id, t) => `Character ${id} (${t.region})`,
+            guild: (id, t) => `Guild ${id} (${t.region})`,
+            npc: (id, t) => `NPC ${id} (${t.region})`,
+            template: (id, t) => `Template ${id} (${t.region})`,
+            tenant: (id, t) => `${t.name}`,
+            account: (id, t) => `Account ${id} (${t.region})`,
+          };
+          
+          return Promise.resolve({
+            label: mockLabels[entityType]?.(entityId, tenant) || `Unknown ${entityType}`,
+            fromCache: false,
+            resolvedAt: Date.now(),
+            isFallback: false,
+          });
+        });
+      }, [currentTenant]);
+
+      return (
+        <TenantProvider>
+          <div data-testid="multi-tenant-wrapper" data-current-tenant-id={currentTenant.id}>
+            {children}
+          </div>
+        </TenantProvider>
+      );
+    }
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      // Reset resolver mock to default behavior
+      mockResolveEntityLabel.mockImplementation((entityType: string, entityId: string) => {
+        const mockLabels: Record<string, (id: string) => string> = {
+          character: (id) => `Character ${id}`,
+          guild: (id) => `Guild ${id}`,
+          npc: (id) => `NPC ${id}`,
+          template: (id) => `Template ${id}`,
+          tenant: (id) => `Tenant ${id}`,
+          account: (id) => `Account ${id}`,
+        };
+        
+        return Promise.resolve({
+          label: mockLabels[entityType]?.(entityId) || `Unknown ${entityType}`,
+          fromCache: false,
+          resolvedAt: Date.now(),
+          isFallback: false,
+        });
+      });
+    });
+
+    it('should preserve tenant context when resolving breadcrumb labels', async () => {
+      mockPathname.mockReturnValue('/characters/123');
+
+      render(
+        <MultiTenantTestWrapper pathname="/characters/123" initialTenant={mockTenant}>
+          <BreadcrumbTestComponent pathname="/characters/123" />
+        </MultiTenantTestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('label-2')).toHaveTextContent('Character 123 (GMS)');
+      }, { timeout: 3000 });
+
+      // Verify resolver was called with correct tenant
+      expect(mockResolveEntityLabel).toHaveBeenCalledWith(
+        'character',
+        '123',
+        expect.objectContaining({
+          id: mockTenant.id,
+          region: 'GMS'
+        }),
+        expect.any(Object)
+      );
+    });
+
+    it('should update breadcrumb labels when tenant context changes', async () => {
+      mockPathname.mockReturnValue('/characters/123');
+
+      render(
+        <MultiTenantTestWrapper 
+          pathname="/characters/123" 
+          initialTenant={mockTenant}
+          switchToTenant={mockTenant2}
+          switchAfterMs={500}
+        >
+          <BreadcrumbTestComponent pathname="/characters/123" />
+        </MultiTenantTestWrapper>
+      );
+
+      // Initially should show first tenant's format
+      await waitFor(() => {
+        expect(screen.getByTestId('label-2')).toHaveTextContent('Character 123 (GMS)');
+      }, { timeout: 3000 });
+
+      // Wait for tenant switch to occur and labels to update
+      await waitFor(() => {
+        expect(screen.getByTestId('label-2')).toHaveTextContent('Character 123 (SEA)');
+      }, { timeout: 4000 });
+
+      // Verify resolver was called with both tenants
+      expect(mockResolveEntityLabel).toHaveBeenCalledWith(
+        'character',
+        '123',
+        expect.objectContaining({ region: 'GMS' }),
+        expect.any(Object)
+      );
+      expect(mockResolveEntityLabel).toHaveBeenCalledWith(
+        'character',
+        '123',
+        expect.objectContaining({ region: 'SEA' }),
+        expect.any(Object)
+      );
+    });
+
+    it('should handle tenant-specific caching correctly', async () => {
+      // Test that different tenants have separate cache entries
+      mockPathname.mockReturnValue('/guilds/456');
+
+      const { rerender } = render(
+        <MultiTenantTestWrapper pathname="/guilds/456" initialTenant={mockTenant}>
+          <BreadcrumbTestComponent pathname="/guilds/456" />
+        </MultiTenantTestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('label-2')).toHaveTextContent('Guild 456 (GMS)');
+      }, { timeout: 3000 });
+
+      // Switch to second tenant
+      rerender(
+        <MultiTenantTestWrapper pathname="/guilds/456" initialTenant={mockTenant2}>
+          <BreadcrumbTestComponent pathname="/guilds/456" />
+        </MultiTenantTestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('label-2')).toHaveTextContent('Guild 456 (SEA)');
+      }, { timeout: 3000 });
+
+      // Should have called resolver for both tenants (separate cache entries)
+      expect(mockResolveEntityLabel).toHaveBeenCalledWith(
+        'guild',
+        '456',
+        expect.objectContaining({ region: 'GMS' }),
+        expect.any(Object)
+      );
+      expect(mockResolveEntityLabel).toHaveBeenCalledWith(
+        'guild',
+        '456',
+        expect.objectContaining({ region: 'SEA' }),
+        expect.any(Object)
+      );
+    });
+
+    it('should properly handle tenant switching during async label resolution', async () => {
+      let resolverDelay = 0;
+      
+      // Mock resolver with controllable delay
+      mockResolveEntityLabel.mockImplementation((entityType: string, entityId: string, tenant: Tenant) => {
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            resolve({
+              label: `${entityType} ${entityId} (${tenant.region})`,
+              fromCache: false,
+              resolvedAt: Date.now(),
+              isFallback: false,
+            });
+          }, resolverDelay);
+        });
+      });
+
+      mockPathname.mockReturnValue('/characters/789');
+      resolverDelay = 1000; // 1 second delay
+
+      render(
+        <MultiTenantTestWrapper 
+          pathname="/characters/789" 
+          initialTenant={mockTenant}
+          switchToTenant={mockTenant2}
+          switchAfterMs={500} // Switch while first resolution is still pending
+        >
+          <BreadcrumbTestComponent pathname="/characters/789" />
+        </MultiTenantTestWrapper>
+      );
+
+      // Should eventually show the second tenant's result (most recent)
+      await waitFor(() => {
+        expect(screen.getByTestId('label-2')).toHaveTextContent('character 789 (SEA)');
+      }, { timeout: 5000 });
+
+      // Both resolvers should have been called
+      expect(mockResolveEntityLabel).toHaveBeenCalledTimes(2);
+    });
+
+    it('should invalidate cache when tenant changes', async () => {
+      mockPathname.mockReturnValue('/npcs/101');
+
+      const { rerender } = render(
+        <MultiTenantTestWrapper pathname="/npcs/101" initialTenant={mockTenant}>
+          <BreadcrumbTestComponent pathname="/npcs/101" />
+        </MultiTenantTestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('label-2')).toHaveTextContent('NPC 101 (GMS)');
+      }, { timeout: 3000 });
+
+      const firstCallCount = mockResolveEntityLabel.mock.calls.length;
+
+      // Switch to same tenant (should use cache)
+      rerender(
+        <MultiTenantTestWrapper pathname="/npcs/101" initialTenant={mockTenant}>
+          <BreadcrumbTestComponent pathname="/npcs/101" />
+        </MultiTenantTestWrapper>
+      );
+
+      // Cache should still show same label
+      expect(screen.getByTestId('label-2')).toHaveTextContent('NPC 101 (GMS)');
+
+      // Switch to different tenant (should invalidate cache and re-resolve)
+      rerender(
+        <MultiTenantTestWrapper pathname="/npcs/101" initialTenant={mockTenant2}>
+          <BreadcrumbTestComponent pathname="/npcs/101" />
+        </MultiTenantTestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('label-2')).toHaveTextContent('NPC 101 (SEA)');
+      }, { timeout: 3000 });
+
+      // Should have made new resolver call for different tenant
+      expect(mockResolveEntityLabel.mock.calls.length).toBeGreaterThan(firstCallCount);
+    });
+
+    it('should maintain breadcrumb navigation functionality across tenant switches', async () => {
+      const user = userEvent.setup();
+      mockPathname.mockReturnValue('/characters/123');
+
+      const { rerender } = render(
+        <MultiTenantTestWrapper pathname="/characters/123" initialTenant={mockTenant}>
+          <BreadcrumbTestComponent pathname="/characters/123" />
+        </MultiTenantTestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('breadcrumbs-count')).toHaveTextContent('3');
+      }, { timeout: 3000 });
+
+      // Test navigation before tenant switch
+      const charactersLink = screen.getByTestId('link-1');
+      await user.click(charactersLink);
+      expect(mockPush).toHaveBeenCalledWith('/characters');
+
+      // Switch tenant
+      rerender(
+        <MultiTenantTestWrapper pathname="/characters/123" initialTenant={mockTenant2}>
+          <BreadcrumbTestComponent pathname="/characters/123" />
+        </MultiTenantTestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('label-2')).toHaveTextContent('Character 123 (SEA)');
+      }, { timeout: 3000 });
+
+      // Test parent navigation after tenant switch
+      const parentButton = screen.getByTestId('parent-navigation');
+      await user.click(parentButton);
+      expect(mockPush).toHaveBeenCalledWith('/characters');
+
+      // Navigation should still work correctly
+      expect(mockPush).toHaveBeenCalledTimes(2);
+    });
+
+    it('should handle missing tenant context gracefully', async () => {
+      // Mock useTenant to return null/undefined
+      const originalUseTenant = jest.requireActual('@/context/tenant-context').useTenant;
+      jest.spyOn(require('@/context/tenant-context'), 'useTenant').mockReturnValue({
+        activeTenant: null,
+        loading: false,
+        tenants: [],
+        setActiveTenant: jest.fn(),
+        refreshTenants: jest.fn(),
+        fetchTenantConfiguration: jest.fn(),
+      });
+
+      mockPathname.mockReturnValue('/characters/123');
+
+      render(
+        <TestWrapper pathname="/characters/123">
+          <BreadcrumbTestComponent pathname="/characters/123" />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        // Should still show basic breadcrumbs without dynamic resolution
+        expect(screen.getByTestId('breadcrumbs-count')).toHaveTextContent('3');
+        expect(screen.getByTestId('label-2')).toHaveTextContent('Character Details');
+      }, { timeout: 3000 });
+
+      // Should not have called resolver without tenant
+      expect(mockResolveEntityLabel).not.toHaveBeenCalled();
+
+      // Restore original implementation
+      jest.spyOn(require('@/context/tenant-context'), 'useTenant').mockImplementation(originalUseTenant);
+    });
+  });
 });

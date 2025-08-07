@@ -121,7 +121,7 @@ describe('Inventory Layout Visual Regression Tests', () => {
 
   describe('InventoryCard Layout Tests', () => {
     it('should maintain consistent dimensions across all states', async () => {
-      const asset = createAsset(1302000, 0);
+      const asset = createAsset(1302000, 1);
       
       // Test loading state
       mockUseItemData.mockReturnValueOnce({
@@ -200,7 +200,7 @@ describe('Inventory Layout Visual Regression Tests', () => {
         errorMessage: undefined,
       });
 
-      const asset = createAsset(1302000, 0);
+      const asset = createAsset(1302000, 1);
       
       // Without delete button
       const { rerender, container } = render(
@@ -230,7 +230,7 @@ describe('Inventory Layout Visual Regression Tests', () => {
     });
 
     it('should maintain consistent icon container dimensions', async () => {
-      const asset = createAsset(1302000, 0);
+      const asset = createAsset(1302000, 1);
       const mockItemData: ItemDataResult = {
         id: 1302000,
         name: 'Test Item',
@@ -260,7 +260,7 @@ describe('Inventory Layout Visual Regression Tests', () => {
     });
 
     it('should render text content within fixed height containers', () => {
-      const asset = createAsset(1302000, 0);
+      const asset = createAsset(1302000, 1);
       const mockItemData: ItemDataResult = {
         id: 1302000,
         name: 'Very Long Item Name That Should Wrap',
@@ -290,9 +290,9 @@ describe('Inventory Layout Visual Regression Tests', () => {
   describe('InventoryGrid Layout Tests', () => {
     it('should render consistent grid layout for different capacities', () => {
       const assets = [
-        createAsset(1302000, 0),
-        createAsset(1302001, 1),
-        createAsset(1302002, 2),
+        createAsset(1302000, 1),
+        createAsset(1302001, 2),
+        createAsset(1302002, 3),
       ];
 
       mockUseItemData.mockReturnValue({
@@ -382,7 +382,7 @@ describe('Inventory Layout Visual Regression Tests', () => {
 
     it('should maintain grid gap consistency', () => {
       const compartment = createCompartment(12);
-      const assets = Array.from({ length: 6 }, (_, i) => createAsset(1302000 + i, i));
+      const assets = Array.from({ length: 6 }, (_, i) => createAsset(1302000 + i, i + 1));
 
       mockUseItemData.mockReturnValue({
         itemData: { id: 1302000, name: 'Test Item', cached: false },
@@ -430,7 +430,7 @@ describe('Inventory Layout Visual Regression Tests', () => {
 
   describe('Responsive Layout Behavior', () => {
     it('should handle different compartment types with optimal layouts', () => {
-      const assets = [createAsset(1302000, 0)];
+      const assets = [createAsset(1302000, 1)];
 
       mockUseItemData.mockReturnValue({
         itemData: { id: 1302000, name: 'Test Item', cached: false },
@@ -468,7 +468,7 @@ describe('Inventory Layout Visual Regression Tests', () => {
     });
 
     it('should maintain card aspect ratios across all screen sizes', () => {
-      const asset = createAsset(1302000, 0);
+      const asset = createAsset(1302000, 1);
       const mockItemData: ItemDataResult = {
         id: 1302000,
         name: 'Test Item',
@@ -499,7 +499,7 @@ describe('Inventory Layout Visual Regression Tests', () => {
 
   describe('Layout State Transitions', () => {
     it('should prevent layout shift during loading to loaded transition', async () => {
-      const asset = createAsset(1302000, 0);
+      const asset = createAsset(1302000, 1);
 
       // Start with loading state
       mockUseItemData.mockReturnValueOnce({
@@ -547,7 +547,7 @@ describe('Inventory Layout Visual Regression Tests', () => {
     });
 
     it('should maintain visual consistency during error state transition', async () => {
-      const asset = createAsset(1302000, 0);
+      const asset = createAsset(1302000, 1);
 
       // Start with loaded state
       mockUseItemData.mockReturnValueOnce({
@@ -626,9 +626,9 @@ describe('Inventory Layout Visual Regression Tests', () => {
     it('should match snapshot for inventory grid with mixed content', async () => {
       const compartment = createCompartment(8);
       const assets = [
-        createAsset(1302000, 0),
-        createAsset(1302001, 2),
-        createAsset(1302002, 5),
+        createAsset(1302000, 1),
+        createAsset(1302001, 3),
+        createAsset(1302002, 6),
       ];
 
       mockUseItemData.mockReturnValue({

@@ -6,8 +6,8 @@ exports[`Inventory Layout Visual Regression Tests Visual Layout Snapshots should
 >
   <div
     class="flex items-center justify-center"
-    data-slot="0"
-    data-testid="inventory-slot-0"
+    data-slot="1"
+    data-testid="inventory-slot-1"
   >
     <div
       class="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border shadow-sm overflow-hidden relative py-0 w-[100px] h-[120px]"
@@ -20,7 +20,7 @@ exports[`Inventory Layout Visual Regression Tests Visual Layout Snapshots should
         <div
           class="text-xs font-medium text-muted-foreground"
         >
-          0
+          1
         </div>
       </div>
       <div
@@ -75,26 +75,6 @@ exports[`Inventory Layout Visual Regression Tests Visual Layout Snapshots should
             </span>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
-  <div
-    class="flex items-center justify-center"
-    data-slot="1"
-    data-testid="inventory-slot-1"
-  >
-    <div
-      class="w-[100px] h-[120px] border-2 border-dashed border-muted-foreground/30 rounded-lg flex flex-col items-center justify-center bg-muted/10 hover:bg-muted/20 transition-colors"
-    >
-      <div
-        class="text-xs font-medium text-muted-foreground/60 mb-2"
-      >
-        1
-      </div>
-      <div
-        class="text-xs text-muted-foreground/50"
-      >
-        Empty
       </div>
     </div>
   </div>
@@ -104,6 +84,26 @@ exports[`Inventory Layout Visual Regression Tests Visual Layout Snapshots should
     data-testid="inventory-slot-2"
   >
     <div
+      class="w-[100px] h-[120px] border-2 border-dashed border-muted-foreground/30 rounded-lg flex flex-col items-center justify-center bg-muted/10 hover:bg-muted/20 transition-colors"
+    >
+      <div
+        class="text-xs font-medium text-muted-foreground/60 mb-2"
+      >
+        2
+      </div>
+      <div
+        class="text-xs text-muted-foreground/50"
+      >
+        Empty
+      </div>
+    </div>
+  </div>
+  <div
+    class="flex items-center justify-center"
+    data-slot="3"
+    data-testid="inventory-slot-3"
+  >
+    <div
       class="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border shadow-sm overflow-hidden relative py-0 w-[100px] h-[120px]"
       data-slot="card"
     >
@@ -114,7 +114,7 @@ exports[`Inventory Layout Visual Regression Tests Visual Layout Snapshots should
         <div
           class="text-xs font-medium text-muted-foreground"
         >
-          2
+          3
         </div>
       </div>
       <div
@@ -169,26 +169,6 @@ exports[`Inventory Layout Visual Regression Tests Visual Layout Snapshots should
             </span>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
-  <div
-    class="flex items-center justify-center"
-    data-slot="3"
-    data-testid="inventory-slot-3"
-  >
-    <div
-      class="w-[100px] h-[120px] border-2 border-dashed border-muted-foreground/30 rounded-lg flex flex-col items-center justify-center bg-muted/10 hover:bg-muted/20 transition-colors"
-    >
-      <div
-        class="text-xs font-medium text-muted-foreground/60 mb-2"
-      >
-        3
-      </div>
-      <div
-        class="text-xs text-muted-foreground/50"
-      >
-        Empty
       </div>
     </div>
   </div>
@@ -218,6 +198,26 @@ exports[`Inventory Layout Visual Regression Tests Visual Layout Snapshots should
     data-testid="inventory-slot-5"
   >
     <div
+      class="w-[100px] h-[120px] border-2 border-dashed border-muted-foreground/30 rounded-lg flex flex-col items-center justify-center bg-muted/10 hover:bg-muted/20 transition-colors"
+    >
+      <div
+        class="text-xs font-medium text-muted-foreground/60 mb-2"
+      >
+        5
+      </div>
+      <div
+        class="text-xs text-muted-foreground/50"
+      >
+        Empty
+      </div>
+    </div>
+  </div>
+  <div
+    class="flex items-center justify-center"
+    data-slot="6"
+    data-testid="inventory-slot-6"
+  >
+    <div
       class="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border shadow-sm overflow-hidden relative py-0 w-[100px] h-[120px]"
       data-slot="card"
     >
@@ -228,7 +228,7 @@ exports[`Inventory Layout Visual Regression Tests Visual Layout Snapshots should
         <div
           class="text-xs font-medium text-muted-foreground"
         >
-          5
+          6
         </div>
       </div>
       <div
@@ -288,26 +288,6 @@ exports[`Inventory Layout Visual Regression Tests Visual Layout Snapshots should
   </div>
   <div
     class="flex items-center justify-center"
-    data-slot="6"
-    data-testid="inventory-slot-6"
-  >
-    <div
-      class="w-[100px] h-[120px] border-2 border-dashed border-muted-foreground/30 rounded-lg flex flex-col items-center justify-center bg-muted/10 hover:bg-muted/20 transition-colors"
-    >
-      <div
-        class="text-xs font-medium text-muted-foreground/60 mb-2"
-      >
-        6
-      </div>
-      <div
-        class="text-xs text-muted-foreground/50"
-      >
-        Empty
-      </div>
-    </div>
-  </div>
-  <div
-    class="flex items-center justify-center"
     data-slot="7"
     data-testid="inventory-slot-7"
   >
@@ -318,6 +298,26 @@ exports[`Inventory Layout Visual Regression Tests Visual Layout Snapshots should
         class="text-xs font-medium text-muted-foreground/60 mb-2"
       >
         7
+      </div>
+      <div
+        class="text-xs text-muted-foreground/50"
+      >
+        Empty
+      </div>
+    </div>
+  </div>
+  <div
+    class="flex items-center justify-center"
+    data-slot="8"
+    data-testid="inventory-slot-8"
+  >
+    <div
+      class="w-[100px] h-[120px] border-2 border-dashed border-muted-foreground/30 rounded-lg flex flex-col items-center justify-center bg-muted/10 hover:bg-muted/20 transition-colors"
+    >
+      <div
+        class="text-xs font-medium text-muted-foreground/60 mb-2"
+      >
+        8
       </div>
       <div
         class="text-xs text-muted-foreground/50"

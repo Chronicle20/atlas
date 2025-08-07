@@ -9,6 +9,7 @@ import { X, Package } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useItemData } from '@/lib/hooks/useItemData';
 import { useLazyLoad } from '@/lib/hooks/useIntersectionObserver';
+import { errorLogger } from '@/services/errorLogger';
 import type { Asset } from '@/services/api/inventory.service';
 
 interface InventoryCardProps {
@@ -49,6 +50,22 @@ export function InventoryCard({
     ...(majorVersion && { version: majorVersion.toString() }),
     staleTime: 30 * 60 * 1000, // 30 minutes
     gcTime: 24 * 60 * 60 * 1000, // 24 hours
+    onError: (error: Error) => {
+      // Log errors for monitoring with context
+      const context: { userId?: string; tenantId?: string; url?: string } = {
+        userId: 'character_inventory_user', // Could be enhanced with actual user ID
+        tenantId: 'atlas_ui', // Could be enhanced with actual tenant ID
+      };
+      
+      if (typeof window !== 'undefined') {
+        context.url = window.location.href;
+      }
+      
+      errorLogger.logError(error, undefined, context).catch((loggingError) => {
+        // Fallback logging if errorLogger fails
+        console.warn('Failed to log inventory card error:', loggingError);
+      });
+    },
   });
 
   const handleImageLoad = () => {
@@ -59,6 +76,22 @@ export function InventoryCard({
   const handleImageError = () => {
     setImageError(true);
     setImageLoaded(true);
+    
+    // Log image loading failures for monitoring
+    const imageError = new Error(`Failed to load item icon for item ${asset.attributes.templateId}`);
+    const context: { userId?: string; tenantId?: string; url?: string } = {
+      userId: 'character_inventory_user', // Could be enhanced with actual user ID
+      tenantId: 'atlas_ui', // Could be enhanced with actual tenant ID
+    };
+    
+    if (typeof window !== 'undefined') {
+      context.url = window.location.href;
+    }
+    
+    errorLogger.logError(imageError, undefined, context).catch((loggingError) => {
+      // Fallback logging if errorLogger fails
+      console.warn('Failed to log image error:', loggingError);
+    });
   };
 
   const handleDelete = () => {
@@ -97,55 +130,64 @@ export function InventoryCard({
       {/* Item Content */}
       <CardContent className="p-2 pt-0 flex flex-col items-center justify-center min-h-[70px]">
         {!shouldLoad ? (
-          // Not loaded yet (lazy loading)
-          <div className="flex flex-col items-center space-y-2">
+          // Not loaded yet (lazy loading) with consistent dimensions
+          <div className="flex flex-col items-center space-y-1">
             <Skeleton className="h-8 w-8 rounded" />
-            <Skeleton className="h-3 w-12" />
+            <Skeleton className="h-8 w-full rounded" />
           </div>
         ) : isLoading ? (
-          // Loading State
-          <div className="flex flex-col items-center space-y-2">
+          // Loading State with consistent dimensions
+          <div className="flex flex-col items-center space-y-1">
             <Skeleton className="h-8 w-8 rounded" />
-            <Skeleton className="h-3 w-12" />
+            <Skeleton className="h-8 w-full rounded" />
           </div>
         ) : displayError ? (
-          // Error State - Text Fallback
+          // Error State - Text Fallback with consistent dimensions
           <div className="flex flex-col items-center text-center space-y-1">
-            <Package className="h-6 w-6 text-muted-foreground" />
-            <div className="text-xs font-medium text-foreground break-all">
-              {asset.attributes.templateId}
+            <div className="relative h-8 w-8 flex-shrink-0 flex items-center justify-center">
+              <Package className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <div className="text-xs text-center break-all h-8 flex items-center justify-center w-full">
+              <span className="font-medium line-clamp-2 leading-tight text-foreground">
+                {asset.attributes.templateId}
+              </span>
             </div>
           </div>
         ) : (
           // Success State
           <div className="flex flex-col items-center space-y-1">
-            {/* Item Icon */}
-            {hasIcon && itemData?.iconUrl ? (
-              <div className="relative h-8 w-8 flex-shrink-0">
-                <Image
-                  src={itemData.iconUrl}
-                  alt={hasName && itemData?.name ? itemData.name : `Item ${asset.attributes.templateId}`}
-                  width={32}
-                  height={32}
-                  className={cn(
-                    "object-contain transition-opacity duration-200",
-                    imageLoaded ? "opacity-100" : "opacity-0"
+            {/* Item Icon - Consistent dimensions to prevent layout shift */}
+            <div className="relative h-8 w-8 flex-shrink-0">
+              {hasIcon && itemData?.iconUrl ? (
+                <>
+                  <Image
+                    src={itemData.iconUrl}
+                    alt={hasName && itemData?.name ? itemData.name : `Item ${asset.attributes.templateId}`}
+                    width={32}
+                    height={32}
+                    className={cn(
+                      "object-contain transition-opacity duration-200",
+                      imageLoaded ? "opacity-100" : "opacity-0"
+                    )}
+                    onLoad={handleImageLoad}
+                    onError={handleImageError}
+                    unoptimized
+                    priority={false}
+                  />
+                  {!imageLoaded && (
+                    <Skeleton className="absolute inset-0 h-8 w-8 rounded" />
                   )}
-                  onLoad={handleImageLoad}
-                  onError={handleImageError}
-                  unoptimized
-                />
-                {!imageLoaded && (
-                  <Skeleton className="absolute inset-0 h-8 w-8 rounded" />
-                )}
-              </div>
-            ) : (
-              <Package className="h-6 w-6 text-muted-foreground flex-shrink-0" />
-            )}
+                </>
+              ) : (
+                <div className="flex items-center justify-center h-full w-full">
+                  <Package className="h-6 w-6 text-muted-foreground flex-shrink-0" />
+                </div>
+              )}
+            </div>
 
-            {/* Item Name or Template ID */}
-            <div className="text-xs text-center break-all min-h-[16px] flex items-center">
-              <span className="font-medium">
+            {/* Item Name or Template ID - Fixed height to prevent layout shift */}
+            <div className="text-xs text-center break-all h-8 flex items-center justify-center w-full">
+              <span className="font-medium line-clamp-2 leading-tight">
                 {hasName && itemData?.name ? itemData.name : asset.attributes.templateId}
               </span>
             </div>

@@ -3,6 +3,7 @@
  * Handles all NPC conversation-related API operations with full API client feature support
  */
 import { BaseService, type QueryOptions, type ServiceOptions, type BatchOptions, type BatchResult } from './base.service';
+import { api } from '@/lib/api/client';
 import type { 
   Conversation, 
   ConversationAttributes,
@@ -188,17 +189,37 @@ class ConversationsService extends BaseService {
    */
   async getByNpcId(npcId: number, options?: Parameters<BaseService['getAll']>[0]): Promise<Conversation | null> {
     try {
-      const url = `/api/npcs/${npcId}/conversations`;
       const processedOptions = options ? { ...options, useCache: options.useCache !== false } : { useCache: true };
       
-      // Override the basePath temporarily for this specific request
-      const originalBasePath = this.basePath;
-      (this as any).basePath = '';
+      // Build query string from options
+      const params = new URLSearchParams();
+      if (processedOptions?.search) params.append('search', processedOptions.search);
+      if (processedOptions?.sortBy) params.append('sortBy', processedOptions.sortBy);
+      if (processedOptions?.sortOrder) params.append('sortOrder', processedOptions.sortOrder);
+      if (processedOptions?.limit !== undefined) params.append('limit', processedOptions.limit.toString());
+      if (processedOptions?.offset !== undefined) params.append('offset', processedOptions.offset.toString());
       
-      const conversations = await super.getAll<Conversation>({ ...processedOptions });
+      if (processedOptions?.filters) {
+        Object.entries(processedOptions.filters).forEach(([key, value]) => {
+          if (value !== null && value !== undefined) {
+            params.append(`filter[${key}]`, String(value));
+          }
+        });
+      }
       
-      // Restore original basePath
-      (this as any).basePath = originalBasePath;
+      const queryString = params.toString();
+      const url = `/api/npcs/${npcId}/conversations${queryString ? `?${queryString}` : ''}`;
+      
+      // Configure API options with caching
+      const apiOptions: any = { ...processedOptions };
+      if (processedOptions?.useCache !== false) {
+        apiOptions.cacheConfig = processedOptions?.cacheConfig || this.defaultCacheConfig;
+      } else {
+        apiOptions.cacheConfig = false;
+      }
+      
+      const data = await api.getList<Conversation>(url, apiOptions);
+      const conversations = data.map(item => this.transformResponse(item));
       
       return conversations.length > 0 ? conversations[0]! : null;
     } catch (error) {

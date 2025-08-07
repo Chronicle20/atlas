@@ -230,7 +230,10 @@ export function extractParams(pathname: string, pattern: string): Record<string,
   patternSegments.forEach((segment, index) => {
     if (segment.startsWith('[') && segment.endsWith(']')) {
       const paramName = segment.slice(1, -1);
-      params[paramName] = pathSegments[index];
+      const pathSegment = pathSegments[index];
+      if (pathSegment) {
+        params[paramName] = pathSegment;
+      }
     }
   });
   
@@ -269,15 +272,21 @@ export function getBreadcrumbsFromRoute(pathname: string): Partial<BreadcrumbSeg
     const isLast = index === hierarchy.length - 1;
     const href = buildHrefFromPattern(config.pattern, params);
     
-    return {
+    const breadcrumb: Partial<BreadcrumbSegment> = {
       segment: config.pattern.split('/').pop() || '',
       label: config.labelResolver ? config.labelResolver(params) : config.label,
       href,
       dynamic: config.entityType !== undefined,
       isCurrentPage: isLast,
-      entityId: config.entityType && params.id ? params.id : undefined,
-      entityType: config.entityType,
     };
+
+    // Only set entityId and entityType if they exist
+    if (config.entityType && params.id) {
+      breadcrumb.entityId = params.id;
+      breadcrumb.entityType = config.entityType;
+    }
+
+    return breadcrumb;
   });
 }
 

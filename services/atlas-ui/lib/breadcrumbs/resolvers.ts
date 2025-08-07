@@ -115,8 +115,11 @@ class ResolverCache {
       
       // Remove oldest 10% of entries
       const toRemove = Math.floor(CACHE_CONFIG.MAX_SIZE * 0.1);
-      for (let i = 0; i < toRemove; i++) {
-        typeCache.delete(entries[i][0]);
+      for (let i = 0; i < toRemove && i < entries.length; i++) {
+        const entry = entries[i];
+        if (entry) {
+          typeCache.delete(entry[0]);
+        }
       }
     }
 
@@ -154,7 +157,7 @@ class ResolverCache {
 
       stats[entityType] = {
         size: typeCache.size,
-        oldestEntry,
+        ...(oldestEntry !== undefined && { oldestEntry }),
       };
     });
 
@@ -178,7 +181,7 @@ const resolvers: Record<EntityType, EntityResolver> = {
   [EntityType.ACCOUNT]: async (tenant, entityId, options = {}) => {
     const { accountsService } = await import('@/services/api');
     try {
-      const account = await accountsService.getById(tenant, entityId, options);
+      const account = await accountsService.getAccountById(tenant, entityId, options);
       return account.attributes?.name || `Account ${entityId}`;
     } catch (error) {
       console.warn(`Failed to resolve account name for ID ${entityId}:`, error);
@@ -211,8 +214,8 @@ const resolvers: Record<EntityType, EntityResolver> = {
   [EntityType.NPC]: async (tenant, entityId, options = {}) => {
     const { npcsService } = await import('@/services/api');
     try {
-      const npc = await npcsService.getById(tenant, entityId, options);
-      return npc.attributes?.name || `NPC ${entityId}`;
+      const npc = await npcsService.getNPCById(parseInt(entityId), tenant, options);
+      return npc?.name || `NPC ${entityId}`;
     } catch (error) {
       console.warn(`Failed to resolve NPC name for ID ${entityId}:`, error);
       throw new ResolverError(`Failed to resolve NPC: ${error}`, true);
@@ -222,8 +225,9 @@ const resolvers: Record<EntityType, EntityResolver> = {
   [EntityType.TEMPLATE]: async (tenant, entityId, options = {}) => {
     const { templatesService } = await import('@/services/api');
     try {
-      const template = await templatesService.getById(tenant, entityId, options);
-      return template.attributes?.name || `Template ${entityId}`;
+      const template = await templatesService.getById(entityId, options);
+      // Templates don't have a name field, use ID for now
+      return `Template ${template.id}`;
     } catch (error) {
       console.warn(`Failed to resolve template name for ID ${entityId}:`, error);
       throw new ResolverError(`Failed to resolve template: ${error}`, true);
@@ -233,7 +237,7 @@ const resolvers: Record<EntityType, EntityResolver> = {
   [EntityType.TENANT]: async (tenant, entityId, options = {}) => {
     const { tenantsService } = await import('@/services/api');
     try {
-      const targetTenant = await tenantsService.getById(entityId, options);
+      const targetTenant = await tenantsService.getTenantById(entityId, options);
       return targetTenant.attributes?.name || `Tenant ${entityId}`;
     } catch (error) {
       console.warn(`Failed to resolve tenant name for ID ${entityId}:`, error);

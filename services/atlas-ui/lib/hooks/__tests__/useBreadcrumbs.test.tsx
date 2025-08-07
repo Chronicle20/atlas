@@ -174,7 +174,7 @@ describe('useBreadcrumbs', () => {
 
   describe('dynamic label resolution', () => {
     it('should resolve dynamic labels when autoResolve is enabled', async () => {
-      const { result } = renderHook(() => useBreadcrumbs({ autoResolve: true }));
+      renderHook(() => useBreadcrumbs({ autoResolve: true }));
 
       await waitFor(() => {
         expect(mockResolvers.resolveEntityLabel).toHaveBeenCalledWith(

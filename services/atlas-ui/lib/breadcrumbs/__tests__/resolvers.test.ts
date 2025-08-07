@@ -12,8 +12,6 @@ import {
   getEntityTypeFromRoute,
   isValidEntityType,
   EntityType,
-  resolverCache,
-  type ResolverOptions,
 } from '../resolvers';
 
 // Mock the services

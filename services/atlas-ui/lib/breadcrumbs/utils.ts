@@ -285,7 +285,7 @@ export function filterVisibleBreadcrumbs(
     userPermissions?: string[];
   } = {}
 ): BreadcrumbSegment[] {
-  const { hiddenRoutes = [], userPermissions = [] } = options;
+  const { hiddenRoutes = [] } = options;
   
   return segments.filter(segment => {
     // Skip hidden routes

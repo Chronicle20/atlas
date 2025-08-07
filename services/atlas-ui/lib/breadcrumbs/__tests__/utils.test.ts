@@ -9,7 +9,6 @@ import {
   getBreadcrumbKey,
   filterVisibleBreadcrumbs,
   BreadcrumbSegment,
-  STATIC_ROUTE_LABELS,
 } from '../utils';
 
 describe('Breadcrumb Utils', () => {

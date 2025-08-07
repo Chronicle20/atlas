@@ -25,11 +25,13 @@ jest.mock('@/lib/hooks/useBreadcrumbs', () => ({
 
 // Mock Link component
 jest.mock('next/link', () => {
-  return ({ children, href, ...props }: any) => (
+  const MockLink = ({ children, href, ...props }: { children: React.ReactNode; href: string; [key: string]: unknown }) => (
     <a href={href} {...props}>
       {children}
     </a>
   );
+  MockLink.displayName = 'MockLink';
+  return MockLink;
 });
 
 const mockUseTenant = useTenant as jest.MockedFunction<typeof useTenant>;

@@ -21,6 +21,8 @@ interface BreadcrumbBarProps {
   className?: string;
   /** Maximum number of breadcrumb items to display */
   maxItems?: number;
+  /** Maximum number of breadcrumb items to display on mobile */
+  maxItemsMobile?: number;
   /** Whether to show ellipsis when truncating */
   showEllipsis?: boolean;
   /** Routes to hide from breadcrumbs */
@@ -38,13 +40,14 @@ interface BreadcrumbBarProps {
  * - Dynamic label resolution for entity names (characters, guilds, etc.)
  * - Tenant context integration for data fetching
  * - Loading states for async label resolution
- * - Responsive design with ellipsis support
+ * - Responsive design with adaptive max items and ellipsis support
  * - Accessibility compliance (ARIA labels, semantic HTML)
  * - Error handling with fallbacks
  */
 export const BreadcrumbBar = memo<BreadcrumbBarProps>(({
   className,
   maxItems = 5,
+  maxItemsMobile = 2,
   showEllipsis = true,
   hiddenRoutes = [],
   showLoadingStates = true,
@@ -52,10 +55,22 @@ export const BreadcrumbBar = memo<BreadcrumbBarProps>(({
 }) => {
   const { activeTenant, loading: tenantLoading } = useTenant();
   const [isClient, setIsClient] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   
-  // Initialize client-side rendering flag
+  // Initialize client-side rendering flag and mobile detection
   useEffect(() => {
     setIsClient(true);
+    
+    // Check if mobile on initial load
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint is 768px
+    };
+    
+    checkMobile();
+    
+    // Listen for window resize
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
   const {
@@ -79,10 +94,10 @@ export const BreadcrumbBar = memo<BreadcrumbBarProps>(({
   // Don't render during SSR or if tenant is loading
   if (!isClient || tenantLoading) {
     return (
-      <nav aria-label="breadcrumb" className={cn("flex items-center space-x-2", className)}>
+      <nav aria-label="breadcrumb" className={cn("flex items-center space-x-1 sm:space-x-2", className)}>
         <div className="flex items-center space-x-1">
           <LoadingSpinner size="sm" />
-          <span className="text-sm text-muted-foreground">Loading navigation...</span>
+          <span className="text-xs text-muted-foreground sm:text-sm">Loading...</span>
         </div>
       </nav>
     );
@@ -93,7 +108,7 @@ export const BreadcrumbBar = memo<BreadcrumbBarProps>(({
     console.warn('Breadcrumb error:', error);
     return (
       <nav aria-label="breadcrumb" className={cn("flex items-center", className)}>
-        <span className="text-sm text-muted-foreground">Navigation unavailable</span>
+        <span className="text-xs text-muted-foreground sm:text-sm">Navigation unavailable</span>
       </nav>
     );
   }
@@ -109,17 +124,20 @@ export const BreadcrumbBar = memo<BreadcrumbBarProps>(({
     label: labelOverrides[breadcrumb.href] || breadcrumb.label,
   }));
 
+  // Use adaptive max items based on screen size
+  const adaptiveMaxItems = isMobile ? maxItemsMobile : maxItems;
+  
   // Calculate if we need ellipsis
-  const needsEllipsis = showEllipsis && processedBreadcrumbs.length > maxItems;
+  const needsEllipsis = showEllipsis && processedBreadcrumbs.length > adaptiveMaxItems;
   const visibleBreadcrumbs = needsEllipsis 
     ? [
         processedBreadcrumbs[0], // First item
-        ...processedBreadcrumbs.slice(-2) // Last two items
+        ...processedBreadcrumbs.slice(-(adaptiveMaxItems - 1)) // Last items (leaving room for ellipsis)
       ]
-    : processedBreadcrumbs.slice(0, maxItems);
+    : processedBreadcrumbs.slice(0, adaptiveMaxItems);
 
   return (
-    <div className={cn("flex items-center space-x-2", className)}>
+    <div className={cn("flex items-center space-x-1 sm:space-x-2", className)}>
       <Breadcrumb>
         <BreadcrumbList>
           {visibleBreadcrumbs.map((breadcrumb, index) => {
@@ -141,20 +159,20 @@ export const BreadcrumbBar = memo<BreadcrumbBarProps>(({
                 <BreadcrumbItem>
                   {isLast || breadcrumb?.isCurrentPage ? (
                     <BreadcrumbPage>
-                      <span className="flex items-center gap-2">
+                      <span className="flex items-center gap-1 sm:gap-2">
                         {showLoadingStates && breadcrumbsLoading && breadcrumb?.dynamic && (
                           <LoadingSpinner size="sm" />
                         )}
-                        {breadcrumb?.label}
+                        <span className="truncate max-w-[100px] sm:max-w-none">{breadcrumb?.label}</span>
                       </span>
                     </BreadcrumbPage>
                   ) : (
                     <BreadcrumbLink asChild>
-                      <Link href={breadcrumb?.href || '#'} className="flex items-center gap-2">
+                      <Link href={breadcrumb?.href || '#'} className="flex items-center gap-1 sm:gap-2">
                         {showLoadingStates && breadcrumbsLoading && breadcrumb?.dynamic && (
                           <LoadingSpinner size="sm" />
                         )}
-                        {breadcrumb?.label}
+                        <span className="truncate max-w-[100px] sm:max-w-none">{breadcrumb?.label}</span>
                       </Link>
                     </BreadcrumbLink>
                   )}
@@ -170,7 +188,7 @@ export const BreadcrumbBar = memo<BreadcrumbBarProps>(({
 
       {/* Show loading indicator for overall breadcrumb loading */}
       {showLoadingStates && breadcrumbsLoading && (
-        <div className="ml-2">
+        <div className="ml-1 sm:ml-2">
           <LoadingSpinner size="sm" />
         </div>
       )}
@@ -187,6 +205,7 @@ export const SimpleBreadcrumbBar = memo<Pick<BreadcrumbBarProps, 'className'>>((
   <BreadcrumbBar 
     className={className ?? undefined}
     maxItems={3}
+    maxItemsMobile={2}
     showEllipsis={false}
     showLoadingStates={false}
   />

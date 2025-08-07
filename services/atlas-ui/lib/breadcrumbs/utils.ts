@@ -131,7 +131,7 @@ export function parsePathname(pathname: string): BreadcrumbSegment[] {
   if (pathname === '/') {
     return [{
       segment: '',
-      label: STATIC_ROUTE_LABELS[''],
+      label: STATIC_ROUTE_LABELS[''] || 'Home',
       href: '/',
       dynamic: false,
       isCurrentPage: true,
@@ -144,7 +144,7 @@ export function parsePathname(pathname: string): BreadcrumbSegment[] {
   // Add home breadcrumb for non-root paths
   breadcrumbs.push({
     segment: '',
-    label: STATIC_ROUTE_LABELS[''],
+    label: STATIC_ROUTE_LABELS[''] || 'Home',
     href: '/',
     dynamic: false,
     isCurrentPage: false,
@@ -167,7 +167,10 @@ export function parsePathname(pathname: string): BreadcrumbSegment[] {
     // Add entity metadata for dynamic segments
     if (isDynamic) {
       breadcrumbSegment.entityId = segment;
-      breadcrumbSegment.entityType = getEntityType(segment, pathname);
+      const entityType = getEntityType(segment, pathname);
+      if (entityType) {
+        breadcrumbSegment.entityType = entityType;
+      }
     }
 
     breadcrumbs.push(breadcrumbSegment);
@@ -198,6 +201,8 @@ export function buildBreadcrumbPath(
 
   // Keep first, last, and some middle items with ellipsis
   const firstItem = segments[0];
+  if (!firstItem) return segments; // Guard against undefined
+  
   const lastItems = segments.slice(-2); // Keep last 2 items
   const middleItems = segments.slice(1, -(Math.min(2, segments.length - 1)));
   
@@ -248,6 +253,8 @@ export function isValidRoute(pathname: string): boolean {
   if (segments.length === 0) return true;
   
   const firstSegment = segments[0];
+  if (!firstSegment) return true; // Empty segments is valid (home)
+  
   const knownRoutes = Object.keys(STATIC_ROUTE_LABELS).filter(key => key !== '');
   
   return knownRoutes.includes(firstSegment);

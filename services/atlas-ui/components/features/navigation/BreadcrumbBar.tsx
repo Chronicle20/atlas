@@ -201,15 +201,17 @@ BreadcrumbBar.displayName = 'BreadcrumbBar';
 // Export a simplified version for basic usage
 export const SimpleBreadcrumbBar = memo<Pick<BreadcrumbBarProps, 'className'>>(({ 
   className 
-}) => (
-  <BreadcrumbBar 
-    className={className ?? undefined}
-    maxItems={3}
-    maxItemsMobile={2}
-    showEllipsis={false}
-    showLoadingStates={false}
-  />
-));
+}) => {
+  const props = {
+    maxItems: 3 as const,
+    maxItemsMobile: 2 as const,
+    showEllipsis: false as const,
+    showLoadingStates: false as const,
+    ...(className && { className })
+  };
+  
+  return <BreadcrumbBar {...props} />;
+});
 
 SimpleBreadcrumbBar.displayName = 'SimpleBreadcrumbBar';
 

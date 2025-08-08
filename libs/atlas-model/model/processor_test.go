@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"runtime"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -5769,6 +5770,402 @@ func TestMemoryLeakDetection(t *testing.T) {
 		maxGoroutineGrowth := 15
 		if goroutineGrowth > maxGoroutineGrowth {
 			t.Errorf("Excessive goroutine growth with context cancellation: %d goroutines", goroutineGrowth)
+		}
+	})
+}
+
+func TestResourceCleanupInErrorScenarios(t *testing.T) {
+	// Test that resources are properly cleaned up when errors occur during various operations
+	// This ensures that error scenarios don't cause memory leaks or resource accumulation
+	
+	t.Run("ProviderChainErrorResourceCleanup", func(t *testing.T) {
+		// Test that resources are cleaned up when provider chains fail
+		runtime.GC()
+		var m1 runtime.MemStats
+		runtime.ReadMemStats(&m1)
+		initialAlloc := m1.Alloc
+		initialGoroutines := runtime.NumGoroutine()
+		
+		// Run operations that fail at different points in the chain
+		for i := 0; i < 100; i++ {
+			data := []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+			
+			// Transform that fails on specific values with resource allocation
+			failingTransform := func(val uint32) (uint32, error) {
+				// Allocate memory for processing (should be cleaned up on error)
+				temp := make([]byte, 2048)
+				for j := range temp {
+					temp[j] = byte(j % 256)
+				}
+				
+				if val == 7 { // Fail on the 7th item
+					return 0, fmt.Errorf("intentional error on value %d", val)
+				}
+				
+				// Some processing work
+				result := val
+				for k := 0; k < 100; k++ {
+					result = (result * 7) % 1000
+				}
+				return result + val, nil
+			}
+			
+			provider := FixedProvider(data)
+			mapped := SliceMap(failingTransform)(provider)(ParallelMap())
+			
+			_, err := mapped()
+			
+			if err == nil {
+				t.Errorf("Iteration %d: expected error but got none", i)
+				continue
+			}
+			
+			// Verify we got the expected error
+			if err.Error() != "intentional error on value 7" {
+				t.Errorf("Iteration %d: expected specific error, got %v", i, err)
+			}
+			
+			// Periodic cleanup to verify no accumulation
+			if i%20 == 0 {
+				time.Sleep(10 * time.Millisecond)
+				runtime.GC()
+			}
+		}
+		
+		// Final cleanup and measurement
+		time.Sleep(50 * time.Millisecond)
+		runtime.GC()
+		runtime.GC()
+		
+		var m2 runtime.MemStats
+		runtime.ReadMemStats(&m2)
+		finalAlloc := m2.Alloc
+		finalGoroutines := runtime.NumGoroutine()
+		
+		memoryGrowth := int64(finalAlloc) - int64(initialAlloc)
+		goroutineGrowth := finalGoroutines - initialGoroutines
+		
+		t.Logf("Provider chain error cleanup - Memory growth: %d bytes (%.2f MB), Goroutine growth: %d", 
+			memoryGrowth, float64(memoryGrowth)/1024/1024, goroutineGrowth)
+		
+		// Verify minimal resource growth
+		maxMemoryGrowth := int64(3 * 1024 * 1024) // 3MB threshold
+		if memoryGrowth > maxMemoryGrowth {
+			t.Errorf("Excessive memory growth in error scenarios: %d bytes (%.2f MB)", 
+				memoryGrowth, float64(memoryGrowth)/1024/1024)
+		}
+		
+		maxGoroutineGrowth := 10
+		if goroutineGrowth > maxGoroutineGrowth {
+			t.Errorf("Excessive goroutine growth in error scenarios: %d goroutines", goroutineGrowth)
+		}
+	})
+	
+	t.Run("ParallelMapErrorResourceCleanup", func(t *testing.T) {
+		// Test resource cleanup when parallel operations fail
+		runtime.GC()
+		var m1 runtime.MemStats
+		runtime.ReadMemStats(&m1)
+		initialAlloc := m1.Alloc
+		
+		for iteration := 0; iteration < 50; iteration++ {
+			// Create larger dataset to stress parallel processing
+			data := make([]uint32, 50)
+			for i := range data {
+				data[i] = uint32(i + 1)
+			}
+			
+			// Transform that fails on multiple values with heavy resource usage
+			errorTransform := func(val uint32) (uint32, error) {
+				// Allocate significant memory per operation
+				temp := make([]int64, 1000)
+				for j := range temp {
+					temp[j] = int64(val) * int64(j)
+				}
+				
+				// Fail on multiple values to test various error timing
+				if val%13 == 0 { // Fail on values 13, 26, 39
+					return 0, fmt.Errorf("parallel error on value %d", val)
+				}
+				
+				// CPU-intensive work that should be cleaned up on error
+				result := val
+				for k := 0; k < 500; k++ {
+					result = (result*11 + 7) % 10007
+				}
+				
+				return result, nil
+			}
+			
+			provider := FixedProvider(data)
+			mapped := SliceMap(errorTransform)(provider)(ParallelMap())
+			
+			_, err := mapped()
+			
+			if err == nil {
+				t.Errorf("Iteration %d: expected error but got none", iteration)
+			}
+			
+			// Give time for goroutine cleanup
+			time.Sleep(5 * time.Millisecond)
+			
+			if iteration%10 == 0 {
+				runtime.GC()
+			}
+		}
+		
+		// Final cleanup and measurement
+		time.Sleep(100 * time.Millisecond)
+		runtime.GC()
+		runtime.GC()
+		
+		var m2 runtime.MemStats
+		runtime.ReadMemStats(&m2)
+		finalAlloc := m2.Alloc
+		
+		memoryGrowth := int64(finalAlloc) - int64(initialAlloc)
+		maxGrowth := int64(5 * 1024 * 1024) // 5MB threshold for parallel operations
+		
+		t.Logf("Parallel map error cleanup - Memory growth: %d bytes (%.2f MB)", memoryGrowth, float64(memoryGrowth)/1024/1024)
+		
+		if memoryGrowth > maxGrowth {
+			t.Errorf("Excessive memory growth in parallel error scenarios: %d bytes (%.2f MB)", 
+				memoryGrowth, float64(memoryGrowth)/1024/1024)
+		}
+	})
+	
+	t.Run("MidOperationErrorResourceCleanup", func(t *testing.T) {
+		// Test cleanup when errors occur in the middle of operations
+		runtime.GC()
+		var m1 runtime.MemStats
+		runtime.ReadMemStats(&m1)
+		initialAlloc := m1.Alloc
+		
+		for i := 0; i < 200; i++ {
+			data := []uint32{1, 2, 3, 4, 5}
+			
+			// Transform that fails partway through processing
+			midErrorTransform := func(val uint32) (uint32, error) {
+				// Allocate resources at the start
+				temp1 := make([]float64, 500)
+				for j := range temp1 {
+					temp1[j] = float64(val) * float64(j) * 0.1
+				}
+				
+				// Start processing
+				result := val
+				for step := 0; step < 10; step++ {
+					result = result*3 + 1
+					
+					// Fail partway through for certain values
+					if val == 3 && step == 5 {
+						// Allocate more resources that should be cleaned up
+						temp2 := make([]int, 1000)
+						for k := range temp2 {
+							temp2[k] = int(result) + k
+						}
+						return 0, fmt.Errorf("mid-operation error on value %d at step %d", val, step)
+					}
+				}
+				
+				return result, nil
+			}
+			
+			provider := FixedProvider(data)
+			mapped := SliceMap(midErrorTransform)(provider)()
+			
+			_, err := mapped()
+			
+			if err == nil {
+				t.Errorf("Iteration %d: expected mid-operation error but got none", i)
+			} else if !strings.Contains(err.Error(), "mid-operation error") {
+				t.Errorf("Iteration %d: expected mid-operation error, got %v", i, err)
+			}
+			
+			// Periodic cleanup
+			if i%25 == 0 {
+				time.Sleep(10 * time.Millisecond)
+				runtime.GC()
+			}
+		}
+		
+		// Final cleanup and measurement
+		time.Sleep(50 * time.Millisecond)
+		runtime.GC()
+		runtime.GC()
+		
+		var m2 runtime.MemStats
+		runtime.ReadMemStats(&m2)
+		finalAlloc := m2.Alloc
+		
+		memoryGrowth := int64(finalAlloc) - int64(initialAlloc)
+		maxGrowth := int64(4 * 1024 * 1024) // 4MB threshold
+		
+		t.Logf("Mid-operation error cleanup - Memory growth: %d bytes (%.2f MB)", memoryGrowth, float64(memoryGrowth)/1024/1024)
+		
+		if memoryGrowth > maxGrowth {
+			t.Errorf("Excessive memory growth in mid-operation error scenarios: %d bytes (%.2f MB)", 
+				memoryGrowth, float64(memoryGrowth)/1024/1024)
+		}
+	})
+	
+	t.Run("ErrorPropagationResourceCleanup", func(t *testing.T) {
+		// Test that error propagation doesn't leak resources
+		runtime.GC()
+		var m1 runtime.MemStats
+		runtime.ReadMemStats(&m1)
+		initialAlloc := m1.Alloc
+		initialGoroutines := runtime.NumGoroutine()
+		
+		// Run operations with cascading errors
+		for i := 0; i < 30; i++ {
+			data := make([]uint32, 20)
+			for j := range data {
+				data[j] = uint32(j + 1 + i*20)
+			}
+			
+			// First transform that allocates resources
+			firstTransform := func(val uint32) (uint32, error) {
+				temp := make([]byte, 4096)
+				for k := range temp {
+					temp[k] = byte((val + uint32(k)) % 256)
+				}
+				return val * 2, nil
+			}
+			
+			// Second transform that fails and should clean up resources
+			secondTransform := func(val uint32) (uint32, error) {
+				// Allocate more resources
+				temp := make([]int32, 1024)
+				for k := range temp {
+					temp[k] = int32(val) + int32(k)
+				}
+				
+				// Fail on even values (will be multiple values since first transform doubles)
+				if val%4 == 0 {
+					return 0, fmt.Errorf("error propagation test on value %d", val)
+				}
+				
+				return val + 100, nil
+			}
+			
+			provider := FixedProvider(data)
+			firstMapped := SliceMap(firstTransform)(provider)(ParallelMap())
+			
+			// Chain the operations
+			result, err := firstMapped()
+			if err != nil {
+				t.Errorf("Iteration %d: first transform should not error, got %v", i, err)
+				continue
+			}
+			
+			secondMapped := SliceMap(secondTransform)(FixedProvider(result))(ParallelMap())
+			_, err = secondMapped()
+			
+			if err == nil {
+				t.Errorf("Iteration %d: expected error from second transform but got none", i)
+			}
+			
+			// Allow cleanup time
+			time.Sleep(5 * time.Millisecond)
+			
+			if i%10 == 0 {
+				runtime.GC()
+			}
+		}
+		
+		// Final cleanup and measurement
+		time.Sleep(100 * time.Millisecond)
+		runtime.GC()
+		runtime.GC()
+		
+		var m2 runtime.MemStats
+		runtime.ReadMemStats(&m2)
+		finalAlloc := m2.Alloc
+		finalGoroutines := runtime.NumGoroutine()
+		
+		memoryGrowth := int64(finalAlloc) - int64(initialAlloc)
+		goroutineGrowth := finalGoroutines - initialGoroutines
+		
+		t.Logf("Error propagation cleanup - Memory growth: %d bytes (%.2f MB), Goroutine growth: %d", 
+			memoryGrowth, float64(memoryGrowth)/1024/1024, goroutineGrowth)
+		
+		maxMemoryGrowth := int64(6 * 1024 * 1024) // 6MB threshold for chained operations
+		if memoryGrowth > maxMemoryGrowth {
+			t.Errorf("Excessive memory growth in error propagation: %d bytes (%.2f MB)", 
+				memoryGrowth, float64(memoryGrowth)/1024/1024)
+		}
+		
+		maxGoroutineGrowth := 12
+		if goroutineGrowth > maxGoroutineGrowth {
+			t.Errorf("Excessive goroutine growth in error propagation: %d goroutines", goroutineGrowth)
+		}
+	})
+	
+	t.Run("FilterOperationErrorResourceCleanup", func(t *testing.T) {
+		// Test resource cleanup when filter operations encounter errors
+		runtime.GC()
+		var m1 runtime.MemStats
+		runtime.ReadMemStats(&m1)
+		initialAlloc := m1.Alloc
+		
+		for i := 0; i < 100; i++ {
+			data := make([]uint32, 30)
+			for j := range data {
+				data[j] = uint32(j + 1)
+			}
+			
+			// Filter function that allocates resources and sometimes fails
+			errorFilter := func(val uint32) bool {
+				// Allocate memory during filtering
+				temp := make([]uint64, 200)
+				for k := range temp {
+					temp[k] = uint64(val) * uint64(k) * uint64(k)
+				}
+				
+				// Fail on specific values (this will be handled as a filter non-match, but resources should still be cleaned up)
+				if val == 15 {
+					// Even though this doesn't return an error, the resources should be cleaned up
+					// when the filter doesn't match
+					return false
+				}
+				
+				return val%3 == 0
+			}
+			
+			provider := FixedProvider(data)
+			filtered, err := First(provider, Filters(errorFilter))
+			
+			// This should succeed (finding value 3), but resource cleanup should still occur
+			if err != nil && err.Error() != "no item found" {
+				t.Errorf("Iteration %d: unexpected error %v", i, err)
+			}
+			
+			if err == nil && filtered != 3 {
+				t.Errorf("Iteration %d: expected 3, got %d", i, filtered)
+			}
+			
+			if i%20 == 0 {
+				runtime.GC()
+			}
+		}
+		
+		// Final cleanup and measurement
+		runtime.GC()
+		runtime.GC()
+		
+		var m2 runtime.MemStats
+		runtime.ReadMemStats(&m2)
+		finalAlloc := m2.Alloc
+		
+		memoryGrowth := int64(finalAlloc) - int64(initialAlloc)
+		maxGrowth := int64(2 * 1024 * 1024) // 2MB threshold for filter operations
+		
+		t.Logf("Filter operation cleanup - Memory growth: %d bytes (%.2f MB)", memoryGrowth, float64(memoryGrowth)/1024/1024)
+		
+		if memoryGrowth > maxGrowth {
+			t.Errorf("Excessive memory growth in filter error scenarios: %d bytes (%.2f MB)", 
+				memoryGrowth, float64(memoryGrowth)/1024/1024)
 		}
 	})
 }

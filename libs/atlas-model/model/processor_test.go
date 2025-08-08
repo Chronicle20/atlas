@@ -1,6 +1,7 @@
 package model
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
@@ -3791,6 +3792,257 @@ func TestContextCancellation(t *testing.T) {
 		// Should have processed at least some items
 		if processedCount == 0 {
 			t.Errorf("Expected some items to be processed before cancellation")
+		}
+	})
+}
+
+func TestContextTimeout(t *testing.T) {
+	t.Run("Long-running operation with external context timeout", func(t *testing.T) {
+		// Test timeout handling when operations take longer than expected
+		slice := []uint32{1, 2, 3, 4, 5}
+		var processedCount int64
+		var timeoutCount int64
+
+		// Create context with short timeout
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+		defer cancel()
+
+		// Operation that simulates long-running work
+		operation := func(u uint32) error {
+			select {
+			case <-ctx.Done():
+				atomic.AddInt64(&timeoutCount, 1)
+				return ctx.Err()
+			case <-time.After(20 * time.Millisecond): // Longer than context timeout
+				atomic.AddInt64(&processedCount, 1)
+				return nil
+			}
+		}
+
+		// Execute operations - some should timeout
+		err := ExecuteForEachSlice(operation, ParallelExecute())(slice)
+
+		// Should get a timeout error from at least one operation
+		if err == nil {
+			t.Errorf("Expected timeout error from long-running operations")
+		}
+
+		processed := atomic.LoadInt64(&processedCount)
+		timedOut := atomic.LoadInt64(&timeoutCount)
+
+		t.Logf("Processed: %d, Timed out: %d, Total: %d", processed, timedOut, len(slice))
+
+		// At least some operations should have timed out
+		if timedOut == 0 {
+			t.Errorf("Expected at least some operations to timeout, got %d", timedOut)
+		}
+
+		// Total processed + timed out should be at least 1 (the first error stops execution)
+		if processed+timedOut == 0 {
+			t.Errorf("Expected at least one operation to be attempted")
+		}
+	})
+
+	t.Run("Context timeout vs operation completion race", func(t *testing.T) {
+		// Test the race between context timeout and operation completion
+		slice := []uint32{1, 2, 3}
+		var results sync.Map
+		
+		// Create context with medium timeout
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Millisecond)
+		defer cancel()
+
+		operation := func(u uint32) error {
+			// Variable operation duration to create race conditions
+			duration := time.Duration(u*5) * time.Millisecond
+			
+			select {
+			case <-ctx.Done():
+				results.Store(u, "timeout")
+				return ctx.Err()
+			case <-time.After(duration):
+				results.Store(u, "completed")
+				return nil
+			}
+		}
+
+		// Execute operations
+		err := ExecuteForEachSlice(operation, ParallelExecute())(slice)
+
+		// Check results of the race conditions
+		var completed, timedOut int
+		for _, val := range slice {
+			if result, ok := results.Load(val); ok {
+				switch result {
+				case "completed":
+					completed++
+				case "timeout":
+					timedOut++
+				}
+				t.Logf("Operation %d: %s", val, result)
+			}
+		}
+
+		t.Logf("Race results - Completed: %d, Timed out: %d", completed, timedOut)
+
+		// Should have at least one timeout or completion
+		if completed+timedOut == 0 {
+			t.Errorf("Expected at least one operation result")
+		}
+
+		// If there was a timeout, err should not be nil
+		if timedOut > 0 && err == nil {
+			t.Errorf("Expected error when operations timed out")
+		}
+	})
+
+	t.Run("Sequential vs parallel timeout behavior", func(t *testing.T) {
+		// Test that sequential execution doesn't respect external context timeout
+		// while parallel execution does (due to internal context handling)
+		slice := []uint32{1, 2, 3}
+
+		// Create context with short timeout
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Millisecond)
+		defer cancel()
+
+		// Operation that checks context and simulates work
+		var seqProcessed, parProcessed int64
+
+		sequentialOp := func(u uint32) error {
+			// Sequential mode doesn't check external context internally,
+			// but we can simulate checking it in the operation
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(5 * time.Millisecond):
+				atomic.AddInt64(&seqProcessed, 1)
+				return nil
+			}
+		}
+
+		parallelOp := func(u uint32) error {
+			// Parallel operations should be interrupted by timeout
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(10 * time.Millisecond): // Longer than context timeout
+				atomic.AddInt64(&parProcessed, 1)
+				return nil
+			}
+		}
+
+		// Test sequential execution (should timeout on first operation that checks)
+		seqErr := ExecuteForEachSlice(sequentialOp)(slice)
+
+		// Test parallel execution (should timeout on operations)
+		parErr := ExecuteForEachSlice(parallelOp, ParallelExecute())(slice)
+
+		t.Logf("Sequential processed: %d, error: %v", atomic.LoadInt64(&seqProcessed), seqErr)
+		t.Logf("Parallel processed: %d, error: %v", atomic.LoadInt64(&parProcessed), parErr)
+
+		// Both should have timeout errors due to operation-level context checking
+		if seqErr == nil {
+			t.Errorf("Expected timeout error in sequential execution")
+		}
+		if parErr == nil {
+			t.Errorf("Expected timeout error in parallel execution")
+		}
+
+		// Both should have processed very few or no items due to timeout
+		if atomic.LoadInt64(&seqProcessed) > 1 {
+			t.Errorf("Expected at most 1 item processed in sequential due to timeout, got %d", 
+				atomic.LoadInt64(&seqProcessed))
+		}
+		if atomic.LoadInt64(&parProcessed) > 0 {
+			t.Errorf("Expected no items processed in parallel due to timeout, got %d", 
+				atomic.LoadInt64(&parProcessed))
+		}
+	})
+
+	t.Run("Context deadline exceeded error handling", func(t *testing.T) {
+		// Test specific handling of context.DeadlineExceeded errors
+		slice := []uint32{1, 2, 3, 4, 5}
+		
+		// Create context with very short timeout
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
+		defer cancel()
+
+		operation := func(u uint32) error {
+			// Ensure context is already expired
+			time.Sleep(2 * time.Millisecond)
+			
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			default:
+				return nil
+			}
+		}
+
+		// Execute operations
+		err := ExecuteForEachSlice(operation, ParallelExecute())(slice)
+
+		// Should get specific deadline exceeded error
+		if err == nil {
+			t.Errorf("Expected deadline exceeded error")
+		} else if !errors.Is(err, context.DeadlineExceeded) {
+			t.Errorf("Expected context.DeadlineExceeded error, got: %T %v", err, err)
+		}
+	})
+
+	t.Run("Timeout with resource cleanup", func(t *testing.T) {
+		// Test that timeouts don't cause resource leaks
+		slice := make([]uint32, 20)
+		for i := range slice {
+			slice[i] = uint32(i)
+		}
+
+		var startedOps, cleanedOps int64
+
+		// Create context with medium timeout
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Millisecond)
+		defer cancel()
+
+		operation := func(u uint32) error {
+			atomic.AddInt64(&startedOps, 1)
+			defer atomic.AddInt64(&cleanedOps, 1)
+
+			select {
+			case <-ctx.Done():
+				// Simulate cleanup time
+				time.Sleep(100 * time.Microsecond)
+				return ctx.Err()
+			case <-time.After(10 * time.Millisecond): // Longer than context timeout
+				time.Sleep(100 * time.Microsecond)
+				return nil
+			}
+		}
+
+		// Execute operations
+		err := ExecuteForEachSlice(operation, ParallelExecute())(slice)
+
+		// Give some time for cleanup
+		time.Sleep(10 * time.Millisecond)
+
+		started := atomic.LoadInt64(&startedOps)
+		cleaned := atomic.LoadInt64(&cleanedOps)
+
+		t.Logf("Started operations: %d, Cleaned operations: %d", started, cleaned)
+
+		// Should have timeout error
+		if err == nil || !errors.Is(err, context.DeadlineExceeded) {
+			t.Errorf("Expected context.DeadlineExceeded error, got: %v", err)
+		}
+
+		// All started operations should have cleaned up
+		if cleaned != started {
+			t.Errorf("Expected all %d started operations to clean up, only %d cleaned up", 
+				started, cleaned)
+		}
+
+		// Should have started at least some operations
+		if started == 0 {
+			t.Errorf("Expected at least some operations to start")
 		}
 	})
 }

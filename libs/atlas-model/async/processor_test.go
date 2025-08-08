@@ -49,3 +49,30 @@ func AsyncTestTransformer(m uint32) (Provider[uint32], error) {
 		rchan <- m
 	}, nil
 }
+
+func TestAsyncSliceErrorHandling(t *testing.T) {
+	// Test that errors are properly returned without double-read issues
+	items := []uint32{1, 2, 3}
+	expectedError := errors.New("test error")
+
+	ctx := context.Background()
+	results, err := AwaitSlice(model.SliceMap(func(m uint32) (Provider[uint32], error) {
+		return func(ctx context.Context, rchan chan uint32, echan chan error) {
+			if m == 2 {
+				echan <- expectedError
+				return
+			}
+			rchan <- m
+		}, nil
+	})(model.FixedProvider(items))(), SetContext(ctx))()
+
+	if err == nil {
+		t.Fatal("Expected error but got none")
+	}
+	if err.Error() != expectedError.Error() {
+		t.Fatalf("Expected error %q but got %q", expectedError.Error(), err.Error())
+	}
+	if results != nil {
+		t.Fatal("Expected nil results on error")
+	}
+}

@@ -397,31 +397,36 @@ func Decorate[M any](decorators []Decorator[M]) func(m M) (M, error) {
 
 //goland:noinspection GoUnusedExportedFunction
 func FirstProvider[M any](provider Provider[[]M], filters []Filter[M]) Provider[M] {
-	ms, err := provider()
-	if err != nil {
-		return ErrorProvider[M](err)
-	}
+	return func() (M, error) {
+		ms, err := provider()
+		if err != nil {
+			var zero M
+			return zero, err
+		}
 
-	if len(ms) == 0 {
-		return ErrorProvider[M](ErrEmptySlice)
-	}
+		if len(ms) == 0 {
+			var zero M
+			return zero, ErrEmptySlice
+		}
 
-	if len(filters) == 0 {
-		return FixedProvider[M](ms[0])
-	}
+		if len(filters) == 0 {
+			return ms[0], nil
+		}
 
-	for _, m := range ms {
-		ok := true
-		for _, filter := range filters {
-			if !filter(m) {
-				ok = false
+		for _, m := range ms {
+			ok := true
+			for _, filter := range filters {
+				if !filter(m) {
+					ok = false
+				}
+			}
+			if ok {
+				return m, nil
 			}
 		}
-		if ok {
-			return FixedProvider[M](m)
-		}
+		var zero M
+		return zero, ErrNoResultFound
 	}
-	return ErrorProvider[M](ErrNoResultFound)
 }
 
 //goland:noinspection GoUnusedExportedFunction

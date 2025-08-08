@@ -703,3 +703,186 @@ func TestMemoizeError(t *testing.T) {
 		t.Errorf("Expected execution count 1 after second call (cached error), got %d", executionCount)
 	}
 }
+
+func TestFirstProviderLazyEvaluation(t *testing.T) {
+	// Test that FirstProvider function defers execution until Provider is called
+	executed := false
+	
+	// Create a Provider that tracks execution
+	trackingProvider := func() ([]uint32, error) {
+		executed = true
+		return []uint32{1, 2, 3, 4, 5}, nil
+	}
+	
+	// Filter function that only allows even numbers
+	evenFilter := func(val uint32) bool {
+		return val%2 == 0
+	}
+	
+	// Create FirstProvider pipeline - should NOT execute the provider yet
+	firstProvider := FirstProvider(trackingProvider, []Filter[uint32]{evenFilter})
+	
+	// Verify that the underlying provider has not been executed during composition
+	if executed {
+		t.Errorf("FirstProvider function should not execute provider during composition")
+	}
+	
+	// Now execute the first provider
+	result, err := firstProvider()
+	if err != nil {
+		t.Errorf("Expected result, got err %s", err)
+	}
+	
+	// Verify execution happened and result is correct
+	if !executed {
+		t.Errorf("Provider should have been executed when first provider was called")
+	}
+	
+	// Should return first even number (2)
+	expected := uint32(2)
+	if result != expected {
+		t.Errorf("Expected %d, got %d", expected, result)
+	}
+}
+
+func TestToSliceProviderLazyEvaluation(t *testing.T) {
+	// Test that ToSliceProvider function defers execution until Provider is called
+	executed := false
+	
+	// Create a Provider that tracks execution
+	trackingProvider := func() (uint32, error) {
+		executed = true
+		return uint32(42), nil
+	}
+	
+	// Create ToSliceProvider pipeline - should NOT execute the provider yet
+	sliceProvider := ToSliceProvider(trackingProvider)
+	
+	// Verify that the underlying provider has not been executed during composition
+	if executed {
+		t.Errorf("ToSliceProvider function should not execute provider during composition")
+	}
+	
+	// Now execute the slice provider
+	result, err := sliceProvider()
+	if err != nil {
+		t.Errorf("Expected result, got err %s", err)
+	}
+	
+	// Verify execution happened and result is correct
+	if !executed {
+		t.Errorf("Provider should have been executed when slice provider was called")
+	}
+	
+	// Should return slice with single element
+	expected := []uint32{42}
+	if len(result) != 1 {
+		t.Errorf("Expected slice with 1 element, got %d", len(result))
+	}
+	if result[0] != expected[0] {
+		t.Errorf("Expected %d, got %d", expected[0], result[0])
+	}
+}
+
+func TestLazyHelperLazyEvaluation(t *testing.T) {
+	// Test that Lazy helper function defers execution until Provider is called
+	executed := false
+	
+	// Create a function that returns a provider and tracks execution
+	providerFactory := func() Provider[uint32] {
+		executed = true
+		return func() (uint32, error) {
+			return uint32(123), nil
+		}
+	}
+	
+	// Create Lazy provider - should NOT execute the factory function yet
+	lazyProvider := Lazy(providerFactory)
+	
+	// Verify that the factory function has not been executed during composition
+	if executed {
+		t.Errorf("Lazy helper should not execute factory function during composition")
+	}
+	
+	// Now execute the lazy provider
+	result, err := lazyProvider()
+	if err != nil {
+		t.Errorf("Expected result, got err %s", err)
+	}
+	
+	// Verify execution happened and result is correct
+	if !executed {
+		t.Errorf("Factory function should have been executed when lazy provider was called")
+	}
+	
+	expected := uint32(123)
+	if result != expected {
+		t.Errorf("Expected %d, got %d", expected, result)
+	}
+}
+
+func TestComplexPipelineLazyEvaluation(t *testing.T) {
+	// Test lazy evaluation in a complex pipeline with multiple combinators
+	executionOrder := []string{}
+	
+	// Create providers that track execution order
+	provider1 := func() ([]uint32, error) {
+		executionOrder = append(executionOrder, "provider1")
+		return []uint32{1, 2, 3, 4, 5, 6}, nil
+	}
+	
+	// Filter transform for SliceMap
+	transform := func(val uint32) (uint32, error) {
+		executionOrder = append(executionOrder, fmt.Sprintf("transform-%d", val))
+		return val * 2, nil
+	}
+	
+	// Build complex pipeline: provider1 -> SliceMap -> FilteredProvider -> FirstProvider
+	// This should NOT execute any of the underlying operations during composition
+	pipeline := FirstProvider(
+		FilteredProvider(
+			SliceMap[uint32, uint32](transform)(provider1)(),
+			[]Filter[uint32]{func(val uint32) bool {
+				executionOrder = append(executionOrder, fmt.Sprintf("filter-%d", val))
+				return val > 6 // Only values greater than 6
+			}},
+		),
+		[]Filter[uint32]{}, // No additional filters for FirstProvider
+	)
+	
+	// Verify no execution happened during pipeline composition
+	if len(executionOrder) > 0 {
+		t.Errorf("Complex pipeline should not execute any operations during composition, but got: %v", executionOrder)
+	}
+	
+	// Now execute the pipeline
+	result, err := pipeline()
+	if err != nil {
+		t.Errorf("Expected result, got err %s", err)
+	}
+	
+	// Verify execution happened in correct order
+	expectedExecutionOrder := []string{
+		"provider1",
+		"transform-1", "transform-2", "transform-3", "transform-4", "transform-5", "transform-6",
+		"filter-2", "filter-4", "filter-6", "filter-8", "filter-10", "filter-12",
+	}
+	
+	if len(executionOrder) != len(expectedExecutionOrder) {
+		t.Errorf("Expected %d execution steps, got %d: %v", len(expectedExecutionOrder), len(executionOrder), executionOrder)
+	}
+	
+	for i, expected := range expectedExecutionOrder {
+		if i >= len(executionOrder) || executionOrder[i] != expected {
+			t.Errorf("At step %d: expected '%s', got execution order: %v", i, expected, executionOrder)
+			break
+		}
+	}
+	
+	// Verify the result is correct
+	// Pipeline: [1,2,3,4,5,6] -> transform (*2) -> [2,4,6,8,10,12] -> filter (>6) -> [8,10,12] -> first -> 8
+	expected := uint32(8)
+	if result != expected {
+		t.Errorf("Expected %d, got %d", expected, result)
+	}
+}

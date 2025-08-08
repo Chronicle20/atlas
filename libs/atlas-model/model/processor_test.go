@@ -6,6 +6,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 )
 
 func TestFirstNoFilter(t *testing.T) {
@@ -2328,5 +2329,410 @@ func TestExecuteForEachSliceErrorHandling(t *testing.T) {
 		if sum != expectedSum {
 			t.Errorf("Expected sum %d, got %d", expectedSum, sum)
 		}
+	})
+}
+
+func TestRaceConditionThreadSafety(t *testing.T) {
+	// Comprehensive race condition tests designed to be run with `go test -race`
+	// These tests verify thread safety of parallel execution functions
+
+	t.Run("ExecuteForEachSliceRaceConditions", func(t *testing.T) {
+		// Test for race conditions in parallel ExecuteForEachSlice
+		// This test will fail with -race flag if there are unsafe memory accesses
+
+		data := make([]uint32, 1000)
+		for i := range data {
+			data[i] = uint32(i + 1)
+		}
+		provider := FixedProvider(data)
+
+		// Shared counter to verify thread safety
+		var safeCounter int64
+		var unsafeCounter int64
+
+		err := ForEachSlice(provider, func(u uint32) error {
+			// Safe atomic operation
+			atomic.AddInt64(&safeCounter, int64(u))
+
+			// Simulate some work to increase chance of race conditions
+			for i := 0; i < 10; i++ {
+				// This operation is NOT thread-safe but we're not sharing the variable
+				temp := unsafeCounter + int64(u)
+				_ = temp // Use the value to prevent optimization
+			}
+
+			return nil
+		}, ParallelExecute())
+
+		if err != nil {
+			t.Errorf("Expected no error, got %s", err)
+		}
+
+		// Verify all values were processed exactly once
+		expectedSum := int64(0)
+		for _, val := range data {
+			expectedSum += int64(val)
+		}
+
+		if safeCounter != expectedSum {
+			t.Errorf("Expected sum %d, got %d (possible race condition)", expectedSum, safeCounter)
+		}
+	})
+
+	t.Run("ExecuteForEachMapRaceConditions", func(t *testing.T) {
+		// Test for race conditions in parallel ExecuteForEachMap
+		data := make(map[uint32][]uint32)
+		for i := uint32(1); i <= 100; i++ {
+			data[i] = []uint32{i, i * 2, i * 3}
+		}
+		provider := FixedProvider(data)
+
+		// Shared map to verify thread safety (this should be safe with proper synchronization)
+		results := make(map[uint32]int64)
+		var mu sync.RWMutex
+
+		err := ForEachMap(provider, func(k uint32) Operator[[]uint32] {
+			return func(vs []uint32) error {
+				sum := int64(0)
+				for _, v := range vs {
+					sum += int64(v)
+				}
+
+				// Thread-safe write to shared map
+				mu.Lock()
+				results[k] = sum
+				mu.Unlock()
+
+				return nil
+			}
+		}, ParallelExecute())
+
+		if err != nil {
+			t.Errorf("Expected no error, got %s", err)
+		}
+
+		// Verify all keys were processed
+		if len(results) != len(data) {
+			t.Errorf("Expected %d results, got %d", len(data), len(results))
+		}
+
+		// Verify sums are correct
+		for k, expectedSlice := range data {
+			mu.RLock()
+			actualSum, exists := results[k]
+			mu.RUnlock()
+
+			if !exists {
+				t.Errorf("Missing result for key %d", k)
+				continue
+			}
+
+			expectedSum := int64(0)
+			for _, v := range expectedSlice {
+				expectedSum += int64(v)
+			}
+
+			if actualSum != expectedSum {
+				t.Errorf("For key %d: expected sum %d, got %d", k, expectedSum, actualSum)
+			}
+		}
+	})
+
+	t.Run("ConcurrentExecuteForEachSliceInvocations", func(t *testing.T) {
+		// Test multiple concurrent invocations of ExecuteForEachSlice
+		// This tests that each invocation is properly isolated
+
+		const numRoutines = 10
+		const dataSize = 100
+
+		var wg sync.WaitGroup
+		results := make([]int64, numRoutines)
+		errors := make([]error, numRoutines)
+
+		for routineIdx := 0; routineIdx < numRoutines; routineIdx++ {
+			wg.Add(1)
+			go func(idx int) {
+				defer wg.Done()
+
+				// Each routine processes its own data
+				data := make([]uint32, dataSize)
+				for i := range data {
+					data[i] = uint32(i + 1 + idx*1000) // Make data unique per routine
+				}
+				provider := FixedProvider(data)
+
+				var sum int64
+				err := ForEachSlice(provider, func(u uint32) error {
+					atomic.AddInt64(&sum, int64(u))
+					return nil
+				}, ParallelExecute())
+
+				results[idx] = sum
+				errors[idx] = err
+			}(routineIdx)
+		}
+
+		wg.Wait()
+
+		// Verify all routines completed successfully
+		for i := 0; i < numRoutines; i++ {
+			if errors[i] != nil {
+				t.Errorf("Routine %d failed: %s", i, errors[i])
+			}
+
+			// Calculate expected sum for this routine's data
+			expectedSum := int64(0)
+			for j := 1; j <= dataSize; j++ {
+				expectedSum += int64(j + i*1000)
+			}
+
+			if results[i] != expectedSum {
+				t.Errorf("Routine %d: expected sum %d, got %d", i, expectedSum, results[i])
+			}
+		}
+	})
+
+	t.Run("ParallelSliceMapRaceConditions", func(t *testing.T) {
+		// Test ParallelSliceMap for race conditions
+		data := make([]uint32, 500)
+		for i := range data {
+			data[i] = uint32(i + 1)
+		}
+		provider := FixedProvider(data)
+
+		// Shared state that transform functions will access safely
+		var transformCount int64
+
+		transform := func(val uint32) (uint32, error) {
+			// Atomic increment to count transforms
+			atomic.AddInt64(&transformCount, 1)
+
+			// Simulate some work
+			result := val * 2
+			for i := 0; i < 5; i++ {
+				result = result + 1 - 1 // Dummy operation
+			}
+
+			return result, nil
+		}
+
+		mappedProvider := SliceMap[uint32, uint32](transform)(provider)(ParallelMap())
+		result, err := mappedProvider()
+
+		if err != nil {
+			t.Errorf("Expected no error, got %s", err)
+		}
+
+		// Verify all items were transformed
+		if len(result) != len(data) {
+			t.Errorf("Expected %d results, got %d", len(data), len(result))
+		}
+
+		// Verify transform was called correct number of times
+		if transformCount != int64(len(data)) {
+			t.Errorf("Expected %d transform calls, got %d", len(data), transformCount)
+		}
+
+		// Verify results are correct
+		for i, original := range data {
+			expected := original * 2
+			if result[i] != expected {
+				t.Errorf("At index %d: expected %d, got %d", i, expected, result[i])
+			}
+		}
+	})
+
+	t.Run("MixedParallelAndSequentialExecution", func(t *testing.T) {
+		// Test mixing parallel and sequential execution to verify no interference
+		data := make([]uint32, 200)
+		for i := range data {
+			data[i] = uint32(i + 1)
+		}
+		provider := FixedProvider(data)
+
+		var parallelSum int64
+		var sequentialSum int64
+
+		// Run both parallel and sequential operations concurrently
+		var wg sync.WaitGroup
+
+		// Parallel execution
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err := ForEachSlice(provider, func(u uint32) error {
+				atomic.AddInt64(&parallelSum, int64(u))
+				return nil
+			}, ParallelExecute())
+			if err != nil {
+				t.Errorf("Parallel execution failed: %s", err)
+			}
+		}()
+
+		// Sequential execution
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err := ForEachSlice(provider, func(u uint32) error {
+				atomic.AddInt64(&sequentialSum, int64(u))
+				return nil
+			})
+			if err != nil {
+				t.Errorf("Sequential execution failed: %s", err)
+			}
+		}()
+
+		wg.Wait()
+
+		// Both should have the same result
+		expectedSum := int64(0)
+		for _, val := range data {
+			expectedSum += int64(val)
+		}
+
+		if parallelSum != expectedSum {
+			t.Errorf("Parallel sum: expected %d, got %d", expectedSum, parallelSum)
+		}
+		if sequentialSum != expectedSum {
+			t.Errorf("Sequential sum: expected %d, got %d", expectedSum, sequentialSum)
+		}
+	})
+
+	t.Run("ErrorHandlingRaceConditions", func(t *testing.T) {
+		// Test that error handling doesn't create race conditions
+		data := make([]uint32, 100)
+		for i := range data {
+			data[i] = uint32(i + 1)
+		}
+		provider := FixedProvider(data)
+
+		const numRoutines = 5
+		var wg sync.WaitGroup
+		results := make([]error, numRoutines)
+
+		for routineIdx := 0; routineIdx < numRoutines; routineIdx++ {
+			wg.Add(1)
+			go func(idx int) {
+				defer wg.Done()
+
+				err := ForEachSlice(provider, func(u uint32) error {
+					// Create error on specific value to test error handling
+					if u == uint32(50+idx) {
+						return fmt.Errorf("error on %d from routine %d", u, idx)
+					}
+					return nil
+				}, ParallelExecute())
+
+				results[idx] = err
+			}(routineIdx)
+		}
+
+		wg.Wait()
+
+		// Verify each routine got its expected error
+		for i := 0; i < numRoutines; i++ {
+			expectedErrorVal := 50 + i
+			if results[i] == nil {
+				t.Errorf("Routine %d: expected error but got none", i)
+			} else {
+				expectedMsg := fmt.Sprintf("error on %d from routine %d", expectedErrorVal, i)
+				if results[i].Error() != expectedMsg {
+					t.Errorf("Routine %d: expected error '%s', got '%s'", i, expectedMsg, results[i].Error())
+				}
+			}
+		}
+	})
+
+	t.Run("ChannelCommunicationRaceConditions", func(t *testing.T) {
+		// Test that channel operations in parallel functions don't cause races
+		// This specifically tests the channel creation and communication patterns
+
+		data := make([]uint32, 300)
+		for i := range data {
+			data[i] = uint32(i + 1)
+		}
+		provider := FixedProvider(data)
+
+		const numConcurrentTests = 8
+		var wg sync.WaitGroup
+		results := make([]bool, numConcurrentTests)
+
+		for testIdx := 0; testIdx < numConcurrentTests; testIdx++ {
+			wg.Add(1)
+			go func(idx int) {
+				defer wg.Done()
+
+				success := true
+				err := ForEachSlice(provider, func(u uint32) error {
+					// Simulate varying execution times
+					if u%10 == 0 {
+						time.Sleep(time.Microsecond * time.Duration(u%5))
+					}
+					return nil
+				}, ParallelExecute())
+
+				if err != nil {
+					success = false
+					t.Errorf("Test %d failed: %s", idx, err)
+				}
+
+				results[idx] = success
+			}(testIdx)
+		}
+
+		wg.Wait()
+
+		// Verify all concurrent tests succeeded
+		for i, success := range results {
+			if !success {
+				t.Errorf("Concurrent test %d failed", i)
+			}
+		}
+	})
+
+	t.Run("HighContentionScenario", func(t *testing.T) {
+		// Test high contention scenario to stress-test race condition fixes
+		data := make([]uint32, 1000)
+		for i := range data {
+			data[i] = uint32(i + 1)
+		}
+		provider := FixedProvider(data)
+
+		// Shared resource with high contention (protected by mutex)
+		sharedMap := make(map[uint32]bool)
+		var mapMutex sync.Mutex
+
+		err := ForEachSlice(provider, func(u uint32) error {
+			// High contention operation
+			mapMutex.Lock()
+			sharedMap[u] = true
+			mapMutex.Unlock()
+
+			// Some CPU-intensive work to increase chance of context switches
+			sum := uint64(0)
+			for i := uint64(0); i < uint64(u%100+1); i++ {
+				sum += i * i
+			}
+			_ = sum // Prevent optimization
+
+			return nil
+		}, ParallelExecute())
+
+		if err != nil {
+			t.Errorf("High contention test failed: %s", err)
+		}
+
+		// Verify all values were processed
+		mapMutex.Lock()
+		if len(sharedMap) != len(data) {
+			t.Errorf("Expected %d entries in shared map, got %d", len(data), len(sharedMap))
+		}
+
+		for _, val := range data {
+			if !sharedMap[val] {
+				t.Errorf("Value %d not found in shared map", val)
+			}
+		}
+		mapMutex.Unlock()
 	})
 }

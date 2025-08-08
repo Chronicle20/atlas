@@ -6169,3 +6169,193 @@ func TestResourceCleanupInErrorScenarios(t *testing.T) {
 		}
 	})
 }
+
+// BenchmarkProviderErrorHandling measures the performance overhead of error handling in provider operations
+func BenchmarkProviderErrorHandling(b *testing.B) {
+	// Setup test data
+	data := make([]uint32, 100)
+	for i := range data {
+		data[i] = uint32(i + 1)
+	}
+	
+	b.Run("SuccessfulProvider", func(b *testing.B) {
+		// Baseline: providers that never fail
+		successfulProvider := func() ([]uint32, error) {
+			return data, nil
+		}
+		
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			_, err := successfulProvider()
+			if err != nil {
+				b.Fatal("Unexpected error in successful provider")
+			}
+		}
+	})
+	
+	b.Run("ErrorProvider", func(b *testing.B) {
+		// Error providers to measure error handling overhead
+		testError := errors.New("benchmark test error")
+		errorProvider := ErrorProvider[[]uint32](testError)
+		
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			_, err := errorProvider()
+			if err == nil {
+				b.Fatal("Expected error but got none")
+			}
+		}
+	})
+	
+	b.Run("SliceMapWithErrors", func(b *testing.B) {
+		// Measure overhead of error handling in SliceMap operations
+		provider := func() ([]uint32, error) {
+			return data, nil
+		}
+		
+		// Transform that fails on every 10th item
+		errorTransform := func(val uint32) (uint32, error) {
+			if val%10 == 0 {
+				return 0, fmt.Errorf("error on value %d", val)
+			}
+			return val * 2, nil
+		}
+		
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			_, err := SliceMap(errorTransform)(provider)()()
+			if err == nil {
+				b.Fatal("Expected error from failing transform")
+			}
+		}
+	})
+	
+	b.Run("ParallelMapWithErrors", func(b *testing.B) {
+		// Measure parallel error handling overhead
+		provider := func() ([]uint32, error) {
+			return data, nil
+		}
+		
+		// Transform that fails on multiple values
+		errorTransform := func(val uint32) (uint32, error) {
+			if val%5 == 0 {
+				return 0, fmt.Errorf("parallel error on value %d", val)
+			}
+			// Add small delay to simulate work
+			time.Sleep(time.Microsecond)
+			return val * 3, nil
+		}
+		
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			_, err := SliceMap(errorTransform)(provider)(ParallelMap())()
+			if err == nil {
+				b.Fatal("Expected error from parallel failing transform")
+			}
+		}
+	})
+	
+	b.Run("ChainedProviderErrors", func(b *testing.B) {
+		// Measure error propagation overhead through provider chains
+		baseProvider := func() (uint32, error) {
+			return 42, nil
+		}
+		
+		// First transform succeeds
+		firstTransform := func(val uint32) (uint32, error) {
+			return val * 2, nil
+		}
+		
+		// Second transform fails
+		secondTransform := func(val uint32) (uint32, error) {
+			return 0, fmt.Errorf("chained error on value %d", val)
+		}
+		
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			chain := Map(secondTransform)(Map(firstTransform)(baseProvider))
+			_, err := chain()
+			if err == nil {
+				b.Fatal("Expected error from chained transforms")
+			}
+		}
+	})
+	
+	b.Run("MemoizedProviderWithErrors", func(b *testing.B) {
+		// Measure error handling overhead with memoization
+		callCount := int64(0)
+		errorProvider := func() (uint32, error) {
+			atomic.AddInt64(&callCount, 1)
+			return 0, fmt.Errorf("memoized error call %d", callCount)
+		}
+		
+		memoized := Memoize(errorProvider)
+		
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			_, err := memoized()
+			if err == nil {
+				b.Fatal("Expected error from memoized provider")
+			}
+		}
+		
+		// Verify memoization worked (should only call once)
+		if atomic.LoadInt64(&callCount) != 1 {
+			b.Fatalf("Expected memoized provider to be called once, got %d calls", callCount)
+		}
+	})
+	
+	b.Run("ContextCancellationErrors", func(b *testing.B) {
+		// Measure performance of context cancellation error handling
+		provider := func() ([]uint32, error) {
+			return data, nil
+		}
+		
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			ctx, cancel := context.WithCancel(context.Background())
+			
+			// Transform that checks for cancellation
+			cancelTransform := func(val uint32) (uint32, error) {
+				select {
+				case <-ctx.Done():
+					return 0, ctx.Err()
+				default:
+					return val * 2, nil
+				}
+			}
+			
+			// Cancel immediately to trigger error
+			cancel()
+			
+			_, err := SliceMap(cancelTransform)(provider)()()
+			if err == nil || !errors.Is(err, context.Canceled) {
+				b.Fatal("Expected context cancellation error")
+			}
+		}
+	})
+	
+	b.Run("ErrorRecoveryOverhead", func(b *testing.B) {
+		// Measure overhead of attempting operations after errors
+		var successCount, errorCount int64
+		
+		// Provider that alternates between success and error
+		alternatingProvider := func() (uint32, error) {
+			count := atomic.AddInt64(&successCount, 1)
+			if count%2 == 0 {
+				atomic.AddInt64(&errorCount, 1)
+				return 0, fmt.Errorf("alternating error on call %d", count)
+			}
+			return uint32(count), nil
+		}
+		
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			_, err := alternatingProvider()
+			// Don't fail on expected errors - just measure the overhead
+			_ = err
+		}
+		
+		b.Logf("Success: %d, Errors: %d", atomic.LoadInt64(&successCount), atomic.LoadInt64(&errorCount))
+	})
+}

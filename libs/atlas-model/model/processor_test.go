@@ -716,6 +716,69 @@ func TestMemoizeError(t *testing.T) {
 	}
 }
 
+func TestMemoizeConcurrentAccess(t *testing.T) {
+	// Test that Memoize is thread-safe when accessed concurrently from multiple goroutines
+	executionCount := int64(0)
+	
+	// Create a provider that tracks execution count atomically
+	expensiveProvider := func() (uint32, error) {
+		atomic.AddInt64(&executionCount, 1)
+		// Simulate some work to increase chance of race conditions
+		time.Sleep(time.Millisecond * 10)
+		return uint32(42), nil
+	}
+
+	// Create memoized provider
+	memoizedProvider := Memoize(expensiveProvider)
+
+	// Number of concurrent goroutines to test with
+	const numGoroutines = 20
+	var wg sync.WaitGroup
+	results := make([]uint32, numGoroutines)
+	errors := make([]error, numGoroutines)
+
+	// Launch multiple goroutines that all call the memoized provider concurrently
+	for i := 0; i < numGoroutines; i++ {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			result, err := memoizedProvider()
+			results[idx] = result
+			errors[idx] = err
+		}(i)
+	}
+
+	// Wait for all goroutines to complete
+	wg.Wait()
+
+	// Verify that the underlying provider was executed exactly once
+	if atomic.LoadInt64(&executionCount) != 1 {
+		t.Errorf("Expected execution count 1 with concurrent access, got %d", executionCount)
+	}
+
+	// Verify all results are consistent
+	for i := 0; i < numGoroutines; i++ {
+		if errors[i] != nil {
+			t.Errorf("Goroutine %d: Expected result, got error %s", i, errors[i])
+		}
+		if results[i] != 42 {
+			t.Errorf("Goroutine %d: Expected result 42, got %d", i, results[i])
+		}
+	}
+
+	// Verify subsequent calls still return cached result
+	result, err := memoizedProvider()
+	if err != nil {
+		t.Errorf("Post-concurrent call: Expected result, got error %s", err)
+	}
+	if result != 42 {
+		t.Errorf("Post-concurrent call: Expected result 42, got %d", result)
+	}
+	if atomic.LoadInt64(&executionCount) != 1 {
+		t.Errorf("Post-concurrent call: Expected execution count 1, got %d", executionCount)
+	}
+}
+
 func TestFirstProviderLazyEvaluation(t *testing.T) {
 	// Test that FirstProvider function defers execution until Provider is called
 	executed := false

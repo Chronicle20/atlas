@@ -1777,3 +1777,484 @@ func TestSideEffectTiming(t *testing.T) {
 		}
 	})
 }
+
+// Benchmark tests to compare lazy vs eager performance
+// These demonstrate the performance benefits of lazy evaluation
+
+func BenchmarkMapLazyEvaluation(b *testing.B) {
+	// Benchmark Map function with lazy evaluation - measures deferred execution performance
+	
+	// Create provider with simulated expensive operation
+	expensiveProvider := func() (uint32, error) {
+		// Simulate expensive computation
+		sum := uint32(0)
+		for i := 0; i < 1000; i++ {
+			sum += uint32(i)
+		}
+		return sum, nil
+	}
+	
+	// Simple doubling transform
+	doubleTransform := func(val uint32) (uint32, error) {
+		return val * 2, nil
+	}
+	
+	b.ResetTimer()
+	
+	// Benchmark the complete lazy evaluation cycle
+	for i := 0; i < b.N; i++ {
+		// Compose the pipeline (should be fast - no execution)
+		mappedProvider := Map[uint32, uint32](doubleTransform)(expensiveProvider)
+		
+		// Execute the pipeline (this is where the work happens)
+		result, err := mappedProvider()
+		if err != nil {
+			b.Errorf("Unexpected error: %s", err)
+		}
+		if result == 0 {
+			b.Errorf("Expected non-zero result")
+		}
+	}
+}
+
+func BenchmarkMapComposition(b *testing.B) {
+	// Benchmark just the composition part of Map (should be very fast with lazy evaluation)
+	
+	expensiveProvider := func() (uint32, error) {
+		// This should NOT be executed during composition
+		panic("Provider should not execute during composition")
+	}
+	
+	doubleTransform := func(val uint32) (uint32, error) {
+		return val * 2, nil
+	}
+	
+	b.ResetTimer()
+	
+	// Benchmark composition only (no execution)
+	for i := 0; i < b.N; i++ {
+		_ = Map[uint32, uint32](doubleTransform)(expensiveProvider)
+	}
+}
+
+func BenchmarkSliceMapLazyVsEager(b *testing.B) {
+	// Compare performance of lazy SliceMap vs hypothetical eager implementation
+	
+	// Large dataset to emphasize performance differences
+	largeData := make([]uint32, 10000)
+	for i := range largeData {
+		largeData[i] = uint32(i + 1)
+	}
+	
+	dataProvider := func() ([]uint32, error) {
+		return largeData, nil
+	}
+	
+	expensiveTransform := func(val uint32) (uint32, error) {
+		// Simulate CPU-intensive transform
+		result := val
+		for i := 0; i < 100; i++ {
+			result = result*2 + 1
+			result = result / 2
+		}
+		return result, nil
+	}
+	
+	b.Run("LazySliceMap", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			// Composition + execution
+			mappedProvider := SliceMap[uint32, uint32](expensiveTransform)(dataProvider)()
+			result, err := mappedProvider()
+			if err != nil {
+				b.Errorf("Unexpected error: %s", err)
+			}
+			if len(result) != len(largeData) {
+				b.Errorf("Expected %d results, got %d", len(largeData), len(result))
+			}
+		}
+	})
+	
+	b.Run("LazySliceMapComposition", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			// Only composition (should be very fast)
+			_ = SliceMap[uint32, uint32](expensiveTransform)(dataProvider)()
+		}
+	})
+}
+
+func BenchmarkParallelSliceMapPerformance(b *testing.B) {
+	// Compare sequential vs parallel performance with lazy evaluation
+	
+	// Create computationally intensive dataset
+	data := make([]uint32, 1000)
+	for i := range data {
+		data[i] = uint32(i + 1)
+	}
+	
+	dataProvider := func() ([]uint32, error) {
+		return data, nil
+	}
+	
+	// CPU-intensive transform to benefit from parallelization
+	intensiveTransform := func(val uint32) (uint32, error) {
+		result := val
+		for i := 0; i < 10000; i++ {
+			result = (result*7 + 13) % 1000003 // Prime modulus to prevent optimization
+		}
+		return result, nil
+	}
+	
+	b.Run("SequentialSliceMap", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mappedProvider := SliceMap[uint32, uint32](intensiveTransform)(dataProvider)()
+			result, err := mappedProvider()
+			if err != nil {
+				b.Errorf("Unexpected error: %s", err)
+			}
+			if len(result) != len(data) {
+				b.Errorf("Expected %d results, got %d", len(data), len(result))
+			}
+		}
+	})
+	
+	b.Run("ParallelSliceMap", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mappedProvider := SliceMap[uint32, uint32](intensiveTransform)(dataProvider)(ParallelMap())
+			result, err := mappedProvider()
+			if err != nil {
+				b.Errorf("Unexpected error: %s", err)
+			}
+			if len(result) != len(data) {
+				b.Errorf("Expected %d results, got %d", len(data), len(result))
+			}
+		}
+	})
+}
+
+func BenchmarkFilteredProviderPerformance(b *testing.B) {
+	// Benchmark FilteredProvider with various filter complexities
+	
+	// Large dataset
+	data := make([]uint32, 50000)
+	for i := range data {
+		data[i] = uint32(i + 1)
+	}
+	
+	dataProvider := func() ([]uint32, error) {
+		return data, nil
+	}
+	
+	b.Run("SimpleFilter", func(b *testing.B) {
+		simpleFilter := func(val uint32) bool {
+			return val%2 == 0 // Even numbers only
+		}
+		
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			filteredProvider := FilteredProvider(dataProvider, []Filter[uint32]{simpleFilter})
+			result, err := filteredProvider()
+			if err != nil {
+				b.Errorf("Unexpected error: %s", err)
+			}
+			if len(result) == 0 {
+				b.Errorf("Expected non-empty result")
+			}
+		}
+	})
+	
+	b.Run("ComplexFilter", func(b *testing.B) {
+		complexFilter := func(val uint32) bool {
+			// More complex filtering logic
+			if val%2 != 0 {
+				return false
+			}
+			// Prime check for even numbers
+			for i := uint32(2); i*i <= val; i++ {
+				if val%i == 0 && i != val {
+					return false
+				}
+			}
+			return val > 2
+		}
+		
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			filteredProvider := FilteredProvider(dataProvider, []Filter[uint32]{complexFilter})
+			result, err := filteredProvider()
+			if err != nil {
+				b.Errorf("Unexpected error: %s", err)
+			}
+			// Result may be empty for complex filter, that's OK
+			_ = result
+		}
+	})
+}
+
+func BenchmarkComplexPipelinePerformance(b *testing.B) {
+	// Benchmark complex pipeline with multiple operations
+	// This demonstrates the performance characteristics of composed lazy operations
+	
+	// Initial data
+	data := make([]uint32, 5000)
+	for i := range data {
+		data[i] = uint32(i + 1)
+	}
+	
+	dataProvider := func() ([]uint32, error) {
+		return data, nil
+	}
+	
+	// Transform functions
+	multiplyTransform := func(val uint32) (uint32, error) {
+		return val * 3, nil
+	}
+	
+	addTransform := func(val uint32) (uint32, error) {
+		return val + 100, nil
+	}
+	
+	// Filters
+	rangeFilter := func(val uint32) bool {
+		return val >= 1000 && val <= 20000
+	}
+	
+	modFilter := func(val uint32) bool {
+		return val%7 == 0
+	}
+	
+	b.Run("ComplexLazyPipeline", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			// Build complex pipeline: multiply -> add -> filter by range -> filter by mod -> take first 100
+			pipeline := SliceMap[uint32, uint32](func(val uint32) (uint32, error) {
+				if val >= 100 {
+					return val, nil
+				}
+				return 0, nil // Skip small values
+			})(
+				FilteredProvider(
+					FilteredProvider(
+						SliceMap[uint32, uint32](addTransform)(
+							SliceMap[uint32, uint32](multiplyTransform)(dataProvider)(),
+						)(),
+						[]Filter[uint32]{rangeFilter},
+					),
+					[]Filter[uint32]{modFilter},
+				),
+			)()
+			
+			result, err := pipeline()
+			if err != nil {
+				b.Errorf("Unexpected error: %s", err)
+			}
+			_ = result
+		}
+	})
+}
+
+func BenchmarkMemoryUsage(b *testing.B) {
+	// Benchmark memory allocation patterns with lazy evaluation
+	// Lazy evaluation should minimize intermediate allocations
+	
+	// Large dataset to emphasize memory usage
+	dataSize := 100000
+	data := make([]uint32, dataSize)
+	for i := range data {
+		data[i] = uint32(i + 1)
+	}
+	
+	dataProvider := func() ([]uint32, error) {
+		// Create new slice each time to measure allocation behavior
+		result := make([]uint32, len(data))
+		copy(result, data)
+		return result, nil
+	}
+	
+	// Memory-allocating transform
+	memoryTransform := func(val uint32) (uint32, error) {
+		// Force allocation of temporary data
+		temp := make([]uint32, 10)
+		for i := range temp {
+			temp[i] = val + uint32(i)
+		}
+		return temp[9], nil
+	}
+	
+	b.Run("LazySliceMapMemory", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mappedProvider := SliceMap[uint32, uint32](memoryTransform)(dataProvider)()
+			result, err := mappedProvider()
+			if err != nil {
+				b.Errorf("Unexpected error: %s", err)
+			}
+			if len(result) != dataSize {
+				b.Errorf("Expected %d results, got %d", dataSize, len(result))
+			}
+		}
+	})
+}
+
+func BenchmarkMemoizePerformance(b *testing.B) {
+	// Benchmark Memoize utility performance
+	
+	expensiveComputationCount := 0
+	expensiveProvider := func() (uint32, error) {
+		expensiveComputationCount++
+		// Simulate expensive computation
+		result := uint32(0)
+		for i := 0; i < 10000; i++ {
+			result += uint32(i * i)
+		}
+		return result, nil
+	}
+	
+	b.Run("WithoutMemoization", func(b *testing.B) {
+		expensiveComputationCount = 0
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			result, err := expensiveProvider()
+			if err != nil {
+				b.Errorf("Unexpected error: %s", err)
+			}
+			if result == 0 {
+				b.Errorf("Expected non-zero result")
+			}
+		}
+	})
+	
+	b.Run("WithMemoization", func(b *testing.B) {
+		expensiveComputationCount = 0
+		memoizedProvider := Memoize(expensiveProvider)
+		
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			result, err := memoizedProvider()
+			if err != nil {
+				b.Errorf("Unexpected error: %s", err)
+			}
+			if result == 0 {
+				b.Errorf("Expected non-zero result")
+			}
+		}
+		
+		// Verify memoization worked (expensive computation should only run once)
+		if expensiveComputationCount != 1 {
+			b.Errorf("Expected expensive computation to run once with memoization, ran %d times", expensiveComputationCount)
+		}
+	})
+}
+
+func BenchmarkFirstProviderEarlyTermination(b *testing.B) {
+	// Benchmark FirstProvider to demonstrate early termination benefits
+	
+	// Large dataset where first match is found early
+	data := make([]uint32, 100000)
+	for i := range data {
+		data[i] = uint32(i + 1)
+	}
+	// Place target value early in the dataset
+	data[100] = 999999
+	
+	dataProvider := func() ([]uint32, error) {
+		return data, nil
+	}
+	
+	// Filter that matches the target value
+	targetFilter := func(val uint32) bool {
+		return val == 999999
+	}
+	
+	b.Run("FirstProviderEarlyMatch", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			firstProvider := FirstProvider(dataProvider, []Filter[uint32]{targetFilter})
+			result, err := firstProvider()
+			if err != nil {
+				b.Errorf("Unexpected error: %s", err)
+			}
+			if result != 999999 {
+				b.Errorf("Expected 999999, got %d", result)
+			}
+		}
+	})
+	
+	// Compare with filtering entire dataset first
+	b.Run("FilterThenFirstAlternative", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			filteredProvider := FilteredProvider(dataProvider, []Filter[uint32]{targetFilter})
+			filtered, err := filteredProvider()
+			if err != nil {
+				b.Errorf("Unexpected error: %s", err)
+			}
+			if len(filtered) == 0 {
+				b.Errorf("Expected at least one result")
+			}
+			result := filtered[0]
+			if result != 999999 {
+				b.Errorf("Expected 999999, got %d", result)
+			}
+		}
+	})
+}
+
+func BenchmarkPipelineComposition(b *testing.B) {
+	// Benchmark the cost of composing complex pipelines
+	// With lazy evaluation, composition should be very fast
+	
+	simpleProvider := func() ([]uint32, error) {
+		return []uint32{1, 2, 3, 4, 5}, nil
+	}
+	
+	simpleTransform := func(val uint32) (uint32, error) {
+		return val * 2, nil
+	}
+	
+	simpleFilter := func(val uint32) bool {
+		return val > 5
+	}
+	
+	b.Run("SimplePipelineComposition", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			// Composition only - no execution
+			_ = FirstProvider(
+				FilteredProvider(
+					SliceMap[uint32, uint32](simpleTransform)(simpleProvider)(),
+					[]Filter[uint32]{simpleFilter},
+				),
+				[]Filter[uint32]{},
+			)
+		}
+	})
+	
+	b.Run("ComplexPipelineComposition", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			// Complex composition with multiple stages
+			_ = FilteredProvider(
+				SliceMap[uint32, uint32](func(val uint32) (uint32, error) {
+					return val + 10, nil
+				})(
+					FilteredProvider(
+						SliceMap[uint32, uint32](func(val uint32) (uint32, error) {
+							return val * 3, nil
+						})(
+							FilteredProvider(
+								SliceMap[uint32, uint32](simpleTransform)(simpleProvider)(),
+								[]Filter[uint32]{simpleFilter},
+							),
+						)(),
+						[]Filter[uint32]{func(val uint32) bool { return val%2 == 0 }},
+					),
+				)(),
+				[]Filter[uint32]{func(val uint32) bool { return val < 100 }},
+			)
+		}
+	})
+}

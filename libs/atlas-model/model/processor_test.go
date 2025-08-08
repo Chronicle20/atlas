@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -5425,5 +5426,222 @@ func TestContextPropagationProviderChains(t *testing.T) {
 		
 		// The test passes if we get cancellation error - the specific cancellation counts
 		// may vary due to timing, but the error propagation is what we're testing
+	})
+}
+
+func TestGoroutineCleanup(t *testing.T) {
+	// Test that operations properly clean up goroutines and don't leak them
+
+	t.Run("ParallelMap with successful execution", func(t *testing.T) {
+		// Get baseline goroutine count
+		runtime.GC() // Force GC to clean up any lingering goroutines
+		time.Sleep(10 * time.Millisecond) // Brief pause for cleanup
+		initialGoroutines := runtime.NumGoroutine()
+
+		// Execute a parallel operation that creates goroutines
+		data := make([]uint32, 50) // Enough to trigger goroutine creation
+		for i := range data {
+			data[i] = uint32(i)
+		}
+
+		provider := FixedProvider(data)
+		transformer := func(n uint32) (uint32, error) {
+			time.Sleep(1 * time.Millisecond) // Small delay to ensure goroutines exist
+			return n * 2, nil
+		}
+
+		_, err := SliceMap[uint32, uint32](transformer)(provider)(ParallelMap())()
+		if err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+
+		// Allow time for goroutine cleanup
+		runtime.GC()
+		time.Sleep(50 * time.Millisecond) // Sufficient time for cleanup
+
+		// Check that goroutines were cleaned up
+		finalGoroutines := runtime.NumGoroutine()
+		if finalGoroutines > initialGoroutines {
+			t.Errorf("Goroutine leak detected: initial=%d, final=%d, leaked=%d",
+				initialGoroutines, finalGoroutines, finalGoroutines-initialGoroutines)
+		}
+	})
+
+	t.Run("ParallelMap with early error termination", func(t *testing.T) {
+		// Test cleanup when operations are cancelled due to error
+		runtime.GC()
+		time.Sleep(10 * time.Millisecond)
+		initialGoroutines := runtime.NumGoroutine()
+
+		data := make([]uint32, 100) // Large dataset to ensure multiple goroutines
+		for i := range data {
+			data[i] = uint32(i)
+		}
+
+		provider := FixedProvider(data)
+		transformer := func(n uint32) (uint32, error) {
+			time.Sleep(2 * time.Millisecond) // Delay to ensure goroutines are active
+			if n == 10 { // Error on a specific value
+				return 0, fmt.Errorf("test error") // Return error instead of panic
+			}
+			return n * 2, nil
+		}
+
+		// Execute with early error
+		_, err := SliceMap[uint32, uint32](transformer)(provider)(ParallelMap())()
+		
+		// Should get an error due to the failing transformer
+		if err == nil {
+			t.Log("Expected error from transformer, but got none")
+		}
+
+		// Allow time for goroutine cleanup after error
+		runtime.GC()
+		time.Sleep(100 * time.Millisecond) // Extra time for error cleanup
+
+		finalGoroutines := runtime.NumGoroutine()
+		if finalGoroutines > initialGoroutines {
+			t.Errorf("Goroutine leak detected after error: initial=%d, final=%d, leaked=%d",
+				initialGoroutines, finalGoroutines, finalGoroutines-initialGoroutines)
+		}
+	})
+
+	t.Run("ExecuteForEach with parallel execution", func(t *testing.T) {
+		// Test ExecuteForEach goroutine cleanup
+		runtime.GC()
+		time.Sleep(10 * time.Millisecond)
+		initialGoroutines := runtime.NumGoroutine()
+
+		data := make([]uint32, 30)
+		for i := range data {
+			data[i] = uint32(i)
+		}
+
+		executed := make([]bool, len(data))
+		var executedMutex sync.Mutex
+
+		operator := func(n uint32) error {
+			time.Sleep(2 * time.Millisecond) // Ensure goroutines exist
+			executedMutex.Lock()
+			executed[n] = true
+			executedMutex.Unlock()
+			return nil
+		}
+
+		err := ExecuteForEachSlice(operator, ParallelExecute())(data)
+		if err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+
+		// Verify all operations executed
+		for i, ex := range executed {
+			if !ex {
+				t.Errorf("Operation %d was not executed", i)
+			}
+		}
+
+		// Allow cleanup
+		runtime.GC()
+		time.Sleep(50 * time.Millisecond)
+
+		finalGoroutines := runtime.NumGoroutine()
+		if finalGoroutines > initialGoroutines {
+			t.Errorf("Goroutine leak in ExecuteForEach: initial=%d, final=%d, leaked=%d",
+				initialGoroutines, finalGoroutines, finalGoroutines-initialGoroutines)
+		}
+	})
+
+	t.Run("Context cancellation cleanup", func(t *testing.T) {
+		// Test that cancelled operations properly clean up goroutines
+		runtime.GC()
+		time.Sleep(10 * time.Millisecond)
+		initialGoroutines := runtime.NumGoroutine()
+
+		data := make([]uint32, 100) // Large dataset
+		for i := range data {
+			data[i] = uint32(i)
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+		defer cancel()
+
+		provider := func() ([]uint32, error) {
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			default:
+				return data, nil
+			}
+		}
+
+		transformer := func(n uint32) (uint32, error) {
+			select {
+			case <-ctx.Done():
+				return 0, ctx.Err() // Return context error
+			default:
+				time.Sleep(20 * time.Millisecond) // Longer than context timeout
+				return n * 2, nil
+			}
+		}
+
+		// This should timeout and cancel
+		_, err := SliceMap[uint32, uint32](transformer)(provider)(ParallelMap())()
+		
+		// Should get timeout error
+		if err == nil {
+			t.Log("Expected timeout error, but operation completed")
+		}
+
+		// Cancel to ensure cleanup
+		cancel()
+
+		// Allow extra time for cancelled goroutine cleanup
+		runtime.GC()
+		time.Sleep(100 * time.Millisecond)
+
+		finalGoroutines := runtime.NumGoroutine()
+		if finalGoroutines > initialGoroutines {
+			t.Errorf("Goroutine leak after cancellation: initial=%d, final=%d, leaked=%d",
+				initialGoroutines, finalGoroutines, finalGoroutines-initialGoroutines)
+		}
+	})
+
+	t.Run("Multiple sequential operations cleanup", func(t *testing.T) {
+		// Test that multiple operations don't accumulate goroutines
+		runtime.GC()
+		time.Sleep(10 * time.Millisecond)
+		initialGoroutines := runtime.NumGoroutine()
+
+		for iteration := 0; iteration < 10; iteration++ {
+			data := make([]uint32, 20)
+			for i := range data {
+				data[i] = uint32(i + iteration*20)
+			}
+
+			provider := FixedProvider(data)
+			transformer := func(n uint32) (uint32, error) {
+				time.Sleep(1 * time.Millisecond)
+				return n + 100, nil
+			}
+
+			_, err := SliceMap[uint32, uint32](transformer)(provider)(ParallelMap())()
+			if err != nil {
+				t.Fatalf("Unexpected error in iteration %d: %s", iteration, err)
+			}
+
+			// Brief cleanup between iterations
+			runtime.GC()
+			time.Sleep(5 * time.Millisecond)
+		}
+
+		// Final cleanup
+		runtime.GC()
+		time.Sleep(50 * time.Millisecond)
+
+		finalGoroutines := runtime.NumGoroutine()
+		if finalGoroutines > initialGoroutines {
+			t.Errorf("Goroutine accumulation detected: initial=%d, final=%d, accumulated=%d",
+				initialGoroutines, finalGoroutines, finalGoroutines-initialGoroutines)
+		}
 	})
 }

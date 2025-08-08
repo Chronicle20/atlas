@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/Chronicle20/atlas-model/model"
 	"reflect"
+	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -1815,6 +1816,254 @@ func TestConcurrentProviderExecution(t *testing.T) {
 			t.Error("All async executions failed - this suggests a more serious issue")
 		} else {
 			t.Logf("Async stress test: %d/%d executions succeeded", successCount, numConcurrentExecutions)
+		}
+	})
+}
+
+func TestGoroutineCleanup(t *testing.T) {
+	// Test that async operations properly clean up goroutines and don't leak them
+
+	t.Run("AwaitSlice with successful execution", func(t *testing.T) {
+		// Get baseline goroutine count
+		runtime.GC() // Force GC to clean up any lingering goroutines
+		time.Sleep(10 * time.Millisecond) // Brief pause for cleanup
+		initialGoroutines := runtime.NumGoroutine()
+
+		// Create test data
+		data := make([]uint32, 20)
+		for i := range data {
+			data[i] = uint32(i)
+		}
+
+		// Transformer that creates async providers
+		transformer := func(n uint32) (Provider[uint32], error) {
+			return func(ctx context.Context, resultCh chan uint32, errCh chan error) {
+				time.Sleep(5 * time.Millisecond) // Small delay to ensure goroutines exist
+				select {
+				case resultCh <- n * 2:
+				case <-ctx.Done():
+					return
+				}
+			}, nil
+		}
+
+		// Use model.SliceMap to convert values to providers, then await them
+		provider := model.FixedProvider(data)
+		_, err := AwaitSlice(model.SliceMap(transformer)(provider)())()
+		if err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+
+		// Allow time for goroutine cleanup
+		runtime.GC()
+		time.Sleep(50 * time.Millisecond) // Sufficient time for cleanup
+
+		// Check that goroutines were cleaned up
+		finalGoroutines := runtime.NumGoroutine()
+		if finalGoroutines > initialGoroutines {
+			t.Errorf("Goroutine leak detected: initial=%d, final=%d, leaked=%d",
+				initialGoroutines, finalGoroutines, finalGoroutines-initialGoroutines)
+		}
+	})
+
+	t.Run("AwaitSlice with timeout and cancellation", func(t *testing.T) {
+		// Test cleanup when operations are cancelled due to context timeout
+		runtime.GC()
+		time.Sleep(10 * time.Millisecond)
+		initialGoroutines := runtime.NumGoroutine()
+
+		// Create test data
+		data := make([]uint32, 15)
+		for i := range data {
+			data[i] = uint32(i)
+		}
+
+		// Transformer that creates providers with long delays
+		transformer := func(n uint32) (Provider[uint32], error) {
+			return func(ctx context.Context, resultCh chan uint32, errCh chan error) {
+				select {
+				case <-time.After(100 * time.Millisecond): // Longer than context timeout
+					resultCh <- n * 2
+				case <-ctx.Done():
+					return // Proper cleanup on cancellation
+				}
+			}, nil
+		}
+
+		// Context with short timeout
+		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+		defer cancel()
+
+		provider := model.FixedProvider(data)
+		_, err := AwaitSlice(model.SliceMap(transformer)(provider)(), SetContext(ctx))()
+		
+		// Should get timeout error
+		if err == nil {
+			t.Log("Expected timeout error, but operation completed")
+		}
+
+		// Cancel to ensure cleanup
+		cancel()
+
+		// Allow extra time for cancelled goroutine cleanup
+		runtime.GC()
+		time.Sleep(150 * time.Millisecond) // Extra time for async cleanup
+
+		finalGoroutines := runtime.NumGoroutine()
+		if finalGoroutines > initialGoroutines {
+			t.Errorf("Goroutine leak after timeout: initial=%d, final=%d, leaked=%d",
+				initialGoroutines, finalGoroutines, finalGoroutines-initialGoroutines)
+		}
+	})
+
+	t.Run("AwaitSlice with error propagation", func(t *testing.T) {
+		// Test cleanup when one provider errors and others are cancelled
+		runtime.GC()
+		time.Sleep(10 * time.Millisecond)
+		initialGoroutines := runtime.NumGoroutine()
+
+		// Create test data
+		data := make([]uint32, 25)
+		for i := range data {
+			data[i] = uint32(i)
+		}
+
+		// Transformer where one provider will error
+		transformer := func(n uint32) (Provider[uint32], error) {
+			return func(ctx context.Context, resultCh chan uint32, errCh chan error) {
+				if n == 5 { // One provider will error
+					time.Sleep(10 * time.Millisecond)
+					errCh <- fmt.Errorf("test error from provider %d", n)
+					return
+				}
+				
+				select {
+				case <-time.After(50 * time.Millisecond): // Others take longer
+					resultCh <- n * 2
+				case <-ctx.Done():
+					return // Proper cleanup on cancellation
+				}
+			}, nil
+		}
+
+		ctx := context.Background()
+		provider := model.FixedProvider(data)
+		_, err := AwaitSlice(model.SliceMap(transformer)(provider)(), SetContext(ctx))()
+		
+		// Should get error from provider 5
+		if err == nil {
+			t.Error("Expected error from provider, but got none")
+		}
+
+		// Allow time for error cleanup
+		runtime.GC()
+		time.Sleep(100 * time.Millisecond)
+
+		finalGoroutines := runtime.NumGoroutine()
+		if finalGoroutines > initialGoroutines {
+			t.Errorf("Goroutine leak after error: initial=%d, final=%d, leaked=%d",
+				initialGoroutines, finalGoroutines, finalGoroutines-initialGoroutines)
+		}
+	})
+
+	t.Run("Multiple sequential AwaitSlice operations", func(t *testing.T) {
+		// Test that multiple operations don't accumulate goroutines
+		runtime.GC()
+		time.Sleep(10 * time.Millisecond)
+		initialGoroutines := runtime.NumGoroutine()
+
+		for iteration := 0; iteration < 8; iteration++ {
+			// Create test data for this iteration
+			data := make([]uint32, 10)
+			for i := range data {
+				data[i] = uint32(i + iteration*10)
+			}
+
+			// Transformer that creates providers
+			transformer := func(n uint32) (Provider[uint32], error) {
+				return func(ctx context.Context, resultCh chan uint32, errCh chan error) {
+					time.Sleep(2 * time.Millisecond)
+					select {
+					case resultCh <- n + 100:
+					case <-ctx.Done():
+						return
+					}
+				}, nil
+			}
+
+			ctx := context.Background()
+			provider := model.FixedProvider(data)
+			results, err := AwaitSlice(model.SliceMap(transformer)(provider)(), SetContext(ctx))()
+			if err != nil {
+				t.Fatalf("Unexpected error in iteration %d: %s", iteration, err)
+			}
+
+			if len(results) != len(data) {
+				t.Errorf("Iteration %d: expected %d results, got %d", iteration, len(data), len(results))
+			}
+
+			// Brief cleanup between iterations
+			runtime.GC()
+			time.Sleep(10 * time.Millisecond)
+		}
+
+		// Final cleanup
+		runtime.GC()
+		time.Sleep(50 * time.Millisecond)
+
+		finalGoroutines := runtime.NumGoroutine()
+		if finalGoroutines > initialGoroutines {
+			t.Errorf("Goroutine accumulation detected: initial=%d, final=%d, accumulated=%d",
+				initialGoroutines, finalGoroutines, finalGoroutines-initialGoroutines)
+		}
+	})
+
+	t.Run("High concurrency cleanup", func(t *testing.T) {
+		// Test cleanup under high concurrency stress
+		runtime.GC()
+		time.Sleep(10 * time.Millisecond)
+		initialGoroutines := runtime.NumGoroutine()
+
+		// Create test data
+		data := make([]uint32, 50) // High number of concurrent providers
+		for i := range data {
+			data[i] = uint32(i)
+		}
+
+		// Transformer that creates providers with variable delays
+		transformer := func(n uint32) (Provider[uint32], error) {
+			return func(ctx context.Context, resultCh chan uint32, errCh chan error) {
+				// Variable delay to create different completion times
+				delay := time.Duration((n%5)+1) * time.Millisecond
+				time.Sleep(delay)
+				
+				select {
+				case resultCh <- n * 3:
+				case <-ctx.Done():
+					return
+				}
+			}, nil
+		}
+
+		ctx := context.Background()
+		provider := model.FixedProvider(data)
+		results, err := AwaitSlice(model.SliceMap(transformer)(provider)(), SetContext(ctx))()
+		if err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+
+		if len(results) != len(data) {
+			t.Errorf("Expected %d results, got %d", len(data), len(results))
+		}
+
+		// Allow sufficient time for all goroutines to clean up
+		runtime.GC()
+		time.Sleep(100 * time.Millisecond)
+
+		finalGoroutines := runtime.NumGoroutine()
+		if finalGoroutines > initialGoroutines {
+			t.Errorf("Goroutine leak in high concurrency: initial=%d, final=%d, leaked=%d",
+				initialGoroutines, finalGoroutines, finalGoroutines-initialGoroutines)
 		}
 	})
 }

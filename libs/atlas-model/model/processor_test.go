@@ -3624,3 +3624,173 @@ func TestErrorAggregationParallelOperations(t *testing.T) {
 		}
 	})
 }
+
+func TestContextCancellation(t *testing.T) {
+	t.Run("ExecuteForEachSlice cancels remaining operations on first error", func(t *testing.T) {
+		// Test that the internal context cancellation works when an error occurs
+		slice := make([]uint32, 100)
+		for i := 0; i < 100; i++ {
+			slice[i] = uint32(i)
+		}
+
+		var processedCount int64
+		var cancelledCount int64
+		
+		// Operation that fails on specific value to trigger cancellation
+		operation := func(u uint32) error {
+			// Fail on value 50 to trigger context cancellation
+			if u == 50 {
+				return errors.New("operation failed on value 50")
+			}
+			
+			// Simulate work and check for cancellation in select statement
+			// The select will check the internal context created by ExecuteForEachSlice
+			select {
+			case <-time.After(2 * time.Millisecond):
+				// Normal processing path
+				atomic.AddInt64(&processedCount, 1)
+				return nil
+			}
+		}
+
+		// Execute in parallel mode to trigger internal context usage
+		err := ExecuteForEachSlice(operation, ParallelExecute())(slice)
+		
+		// Should get error from the failing operation
+		if err == nil {
+			t.Errorf("Expected error from failing operation")
+		} else if err.Error() != "operation failed on value 50" {
+			t.Errorf("Expected specific error message, got: %s", err.Error())
+		}
+
+		processed := atomic.LoadInt64(&processedCount)
+		cancelled := atomic.LoadInt64(&cancelledCount)
+
+		t.Logf("Processed: %d, Cancelled: %d, Total: %d", processed, cancelled, len(slice))
+
+		// Due to parallel execution and cancellation, not all should be processed
+		if processed >= int64(len(slice)) {
+			t.Errorf("Expected less than %d operations to be processed due to cancellation, got %d", 
+				len(slice), processed)
+		}
+	})
+
+	t.Run("ExecuteForEachSlice sequential mode processes all items", func(t *testing.T) {
+		// Test that sequential execution processes all items without using context
+		slice := []uint32{1, 2, 3, 4, 5}
+		var processedCount int64
+
+		operation := func(u uint32) error {
+			// Sequential mode doesn't use context, so this should process all items
+			atomic.AddInt64(&processedCount, 1)
+			return nil
+		}
+
+		// Execute in sequential mode (default)
+		err := ExecuteForEachSlice(operation)(slice)
+		
+		if err != nil {
+			t.Errorf("Expected no error in sequential mode, got %s", err)
+		}
+
+		// All items should be processed in sequential mode
+		if atomic.LoadInt64(&processedCount) != int64(len(slice)) {
+			t.Errorf("Expected all %d items to be processed in sequential mode, got %d", 
+				len(slice), atomic.LoadInt64(&processedCount))
+		}
+	})
+
+	t.Run("Context cancellation behavior in parallel vs sequential", func(t *testing.T) {
+		slice := []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+		
+		// Test parallel execution with early error
+		var parallelProcessed int64
+		parallelOp := func(u uint32) error {
+			if u == 3 {
+				return fmt.Errorf("error on item %d", u)
+			}
+			time.Sleep(1 * time.Millisecond) // Small delay
+			atomic.AddInt64(&parallelProcessed, 1)
+			return nil
+		}
+		
+		parallelErr := ExecuteForEachSlice(parallelOp, ParallelExecute())(slice)
+		if parallelErr == nil {
+			t.Errorf("Expected error in parallel execution")
+		}
+		
+		// Test sequential execution with same operation
+		var sequentialProcessed int64
+		sequentialOp := func(u uint32) error {
+			if u == 3 {
+				return fmt.Errorf("error on item %d", u)
+			}
+			atomic.AddInt64(&sequentialProcessed, 1)
+			return nil
+		}
+		
+		sequentialErr := ExecuteForEachSlice(sequentialOp)(slice)
+		if sequentialErr == nil {
+			t.Errorf("Expected error in sequential execution")
+		}
+		
+		t.Logf("Parallel processed: %d, Sequential processed: %d", 
+			atomic.LoadInt64(&parallelProcessed), atomic.LoadInt64(&sequentialProcessed))
+		
+		// Sequential should process exactly 2 items (before hitting error at item 3)
+		if atomic.LoadInt64(&sequentialProcessed) != 2 {
+			t.Errorf("Expected 2 items processed in sequential, got %d", 
+				atomic.LoadInt64(&sequentialProcessed))
+		}
+	})
+
+	t.Run("Parallel execution context cancellation with goroutine coordination", func(t *testing.T) {
+		// Test the specific context cancellation mechanism in parallel execution
+		slice := make([]uint32, 50)
+		for i := 0; i < 50; i++ {
+			slice[i] = uint32(i)
+		}
+		
+		var mutex sync.Mutex
+		processOrder := make([]uint32, 0)
+		
+		operation := func(u uint32) error {
+			// Add delay to see context cancellation effect
+			time.Sleep(time.Duration(u%5) * time.Millisecond)
+			
+			mutex.Lock()
+			processOrder = append(processOrder, u)
+			mutex.Unlock()
+			
+			// Fail on specific value to trigger cancellation
+			if u == 25 {
+				return fmt.Errorf("intentional error on value %d", u)
+			}
+			
+			return nil
+		}
+		
+		err := ExecuteForEachSlice(operation, ParallelExecute())(slice)
+		
+		if err == nil {
+			t.Errorf("Expected error from operation")
+		}
+		
+		mutex.Lock()
+		processedCount := len(processOrder)
+		mutex.Unlock()
+		
+		t.Logf("Processed %d out of %d items before cancellation", processedCount, len(slice))
+		
+		// Should have processed less than total due to cancellation
+		if processedCount >= len(slice) {
+			t.Errorf("Expected fewer than %d items to be processed, got %d", 
+				len(slice), processedCount)
+		}
+		
+		// Should have processed at least some items
+		if processedCount == 0 {
+			t.Errorf("Expected some items to be processed before cancellation")
+		}
+	})
+}

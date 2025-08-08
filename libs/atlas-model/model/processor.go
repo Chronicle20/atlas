@@ -217,11 +217,13 @@ func AsSliceProvider[M any](model M) Provider[[]M] {
 
 //goland:noinspection GoUnusedExportedFunction
 func ToSliceProvider[M any](provider Provider[M]) Provider[[]M] {
-	m, err := provider()
-	if err != nil {
-		return ErrorProvider[[]M](err)
+	return func() ([]M, error) {
+		m, err := provider()
+		if err != nil {
+			return nil, err
+		}
+		return []M{m}, nil
 	}
-	return AsSliceProvider(m)
 }
 
 //goland:noinspection GoUnusedExportedFunction

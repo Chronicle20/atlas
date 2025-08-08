@@ -1997,3 +1997,437 @@ func TestChannelCleanup(t *testing.T) {
 		time.Sleep(50 * time.Millisecond)
 	})
 }
+
+// Memory Leak Detection Tests for Async Operations
+func TestAsyncMemoryLeakDetection(t *testing.T) {
+	t.Run("RepeatedAsyncProviderExecutionMemoryLeak", func(t *testing.T) {
+		// Test that repeated async provider execution doesn't accumulate memory
+		runtime.GC()
+		var m1 runtime.MemStats
+		runtime.ReadMemStats(&m1)
+		initialAlloc := m1.Alloc
+		
+		// Execute many async provider operations
+		for i := 0; i < 1000; i++ {
+			provider := func(ctx context.Context, rchan chan uint32, echan chan error) {
+				// Allocate temporary memory during async processing
+				temp := make([]byte, 2048)
+				for j := range temp {
+					temp[j] = byte(j % 256)
+				}
+				
+				select {
+				case rchan <- uint32(i)*2:
+				case <-ctx.Done():
+					return
+				}
+			}
+			
+			result, err := Await(SingleProvider(provider))()
+			if err != nil {
+				t.Errorf("Iteration %d failed: %v", i, err)
+			}
+			if result != uint32(i)*2 {
+				t.Errorf("Iteration %d: expected %d, got %d", i, uint32(i)*2, result)
+			}
+			
+			// Periodically force GC to prevent normal accumulation
+			if i%100 == 0 {
+				runtime.GC()
+			}
+		}
+		
+		// Force final garbage collection and measure memory
+		runtime.GC()
+		runtime.GC() // Double GC to ensure cleanup
+		var m2 runtime.MemStats
+		runtime.ReadMemStats(&m2)
+		finalAlloc := m2.Alloc
+		
+		// Memory growth should be reasonable
+		memoryGrowth := int64(finalAlloc) - int64(initialAlloc)
+		maxGrowth := int64(5 * 1024 * 1024) // 5MB threshold
+		
+		t.Logf("Async memory growth: %d bytes (%.2f MB)", memoryGrowth, float64(memoryGrowth)/1024/1024)
+		
+		if memoryGrowth > maxGrowth {
+			t.Errorf("Excessive memory growth in async execution: %d bytes (%.2f MB), threshold: %d bytes", 
+				memoryGrowth, float64(memoryGrowth)/1024/1024, maxGrowth)
+		}
+	})
+	
+	t.Run("AsyncSliceExecutionMemoryLeak", func(t *testing.T) {
+		// Test that async slice processing doesn't accumulate memory or goroutines
+		runtime.GC()
+		var m1 runtime.MemStats
+		runtime.ReadMemStats(&m1)
+		initialAlloc := m1.Alloc
+		initialGoroutines := runtime.NumGoroutine()
+		
+		// Run many async slice operations
+		for iteration := 0; iteration < 200; iteration++ {
+			providers := make([]Provider[uint32], 20)
+			
+			for i := 0; i < 20; i++ {
+				val := uint32(i + iteration*20)
+				providers[i] = func(ctx context.Context, rchan chan uint32, echan chan error) {
+					// Allocate memory for processing
+					temp := make([]int, 500)
+					for j := range temp {
+						temp[j] = int(val) * j
+					}
+					
+					// Simulate some async work
+					time.Sleep(time.Microsecond * time.Duration(val%10))
+					
+					select {
+					case rchan <- val * 2:
+					case <-ctx.Done():
+						return
+					}
+				}
+			}
+			
+			results, err := AwaitSlice(FixedProvider(providers))()
+			if err != nil {
+				t.Errorf("Iteration %d failed: %v", iteration, err)
+			}
+			if len(results) != 20 {
+				t.Errorf("Iteration %d: expected 20 results, got %d", iteration, len(results))
+			}
+			
+			// Give goroutines time to clean up
+			if iteration%20 == 0 {
+				time.Sleep(10 * time.Millisecond)
+				runtime.GC()
+			}
+		}
+		
+		// Allow time for goroutine cleanup
+		time.Sleep(100 * time.Millisecond)
+		runtime.GC()
+		runtime.GC()
+		
+		var m2 runtime.MemStats
+		runtime.ReadMemStats(&m2)
+		finalAlloc := m2.Alloc
+		finalGoroutines := runtime.NumGoroutine()
+		
+		memoryGrowth := int64(finalAlloc) - int64(initialAlloc)
+		goroutineGrowth := finalGoroutines - initialGoroutines
+		
+		t.Logf("Async slice execution - Memory growth: %d bytes (%.2f MB), Goroutine growth: %d", 
+			memoryGrowth, float64(memoryGrowth)/1024/1024, goroutineGrowth)
+		
+		// Memory growth should be reasonable
+		maxMemoryGrowth := int64(8 * 1024 * 1024) // 8MB threshold for async operations
+		if memoryGrowth > maxMemoryGrowth {
+			t.Errorf("Excessive memory growth in async slice execution: %d bytes (%.2f MB)", 
+				memoryGrowth, float64(memoryGrowth)/1024/1024)
+		}
+		
+		// Goroutine growth should be minimal
+		maxGoroutineGrowth := 15
+		if goroutineGrowth > maxGoroutineGrowth {
+			t.Errorf("Excessive goroutine growth: %d goroutines, threshold: %d", 
+				goroutineGrowth, maxGoroutineGrowth)
+		}
+	})
+	
+	t.Run("AsyncTimeoutMemoryLeak", func(t *testing.T) {
+		// Test that async timeouts don't cause memory leaks
+		runtime.GC()
+		var m1 runtime.MemStats
+		runtime.ReadMemStats(&m1)
+		initialAlloc := m1.Alloc
+		initialGoroutines := runtime.NumGoroutine()
+		
+		// Run many async operations that timeout
+		for i := 0; i < 100; i++ {
+			provider := func(ctx context.Context, rchan chan uint32, echan chan error) {
+				// Allocate memory for long-running operation
+				temp := make([]int64, 1000)
+				for j := range temp {
+					temp[j] = int64(i) * int64(j)
+				}
+				
+				// Long operation that will timeout
+				time.Sleep(200 * time.Millisecond)
+				
+				select {
+				case rchan <- uint32(i):
+				case <-ctx.Done():
+					return
+				}
+			}
+			
+			// Set a short timeout to ensure timeout occurs
+			_, err := Await(SingleProvider(provider), SetTimeout(50*time.Millisecond))()
+			
+			// Should get timeout error
+			if err == nil {
+				t.Errorf("Iteration %d: expected timeout error but got none", i)
+			}
+			
+			// Give time for cleanup after timeout
+			time.Sleep(20 * time.Millisecond)
+			
+			if i%10 == 0 {
+				runtime.GC()
+			}
+		}
+		
+		// Final cleanup and measurement
+		time.Sleep(500 * time.Millisecond) // Extra time for async cleanup
+		runtime.GC()
+		runtime.GC()
+		
+		var m2 runtime.MemStats
+		runtime.ReadMemStats(&m2)
+		finalAlloc := m2.Alloc
+		finalGoroutines := runtime.NumGoroutine()
+		
+		memoryGrowth := int64(finalAlloc) - int64(initialAlloc)
+		goroutineGrowth := finalGoroutines - initialGoroutines
+		
+		t.Logf("Async timeout - Memory growth: %d bytes (%.2f MB), Goroutine growth: %d", 
+			memoryGrowth, float64(memoryGrowth)/1024/1024, goroutineGrowth)
+		
+		// Memory and goroutine growth should be minimal
+		maxMemoryGrowth := int64(3 * 1024 * 1024) // 3MB threshold
+		if memoryGrowth > maxMemoryGrowth {
+			t.Errorf("Excessive memory growth with async timeouts: %d bytes (%.2f MB)", 
+				memoryGrowth, float64(memoryGrowth)/1024/1024)
+		}
+		
+		maxGoroutineGrowth := 20 // Higher threshold for async due to cleanup timing
+		if goroutineGrowth > maxGoroutineGrowth {
+			t.Errorf("Excessive goroutine growth with async timeouts: %d goroutines", goroutineGrowth)
+		}
+	})
+	
+	t.Run("AsyncErrorScenarioMemoryLeak", func(t *testing.T) {
+		// Test that async error scenarios don't cause memory leaks
+		runtime.GC()
+		var m1 runtime.MemStats
+		runtime.ReadMemStats(&m1)
+		initialAlloc := m1.Alloc
+		
+		// Run many async operations that fail with errors
+		for i := 0; i < 500; i++ {
+			provider := func(ctx context.Context, rchan chan uint32, echan chan error) {
+				// Always allocate some memory
+				temp := make([]byte, 4096)
+				for j := range temp {
+					temp[j] = byte(j % 256)
+				}
+				
+				// Fail on certain iterations
+				if i%4 == 0 {
+					select {
+					case echan <- fmt.Errorf("intentional async error for iteration %d", i):
+					case <-ctx.Done():
+						return
+					}
+					return
+				}
+				
+				// Normal success case
+				select {
+				case rchan <- uint32(i) * 3:
+				case <-ctx.Done():
+					return
+				}
+			}
+			
+			_, err := Await(SingleProvider(provider))()
+			
+			// We expect errors on i%4==0 iterations
+			if i%4 == 0 && err == nil {
+				t.Errorf("Iteration %d: expected error but got none", i)
+			}
+			
+			// Periodically clean up
+			if i%50 == 0 {
+				runtime.GC()
+			}
+		}
+		
+		// Final cleanup and measurement
+		runtime.GC()
+		runtime.GC()
+		var m2 runtime.MemStats
+		runtime.ReadMemStats(&m2)
+		finalAlloc := m2.Alloc
+		
+		memoryGrowth := int64(finalAlloc) - int64(initialAlloc)
+		maxGrowth := int64(4 * 1024 * 1024) // 4MB threshold
+		
+		t.Logf("Async error scenario memory growth: %d bytes (%.2f MB)", memoryGrowth, float64(memoryGrowth)/1024/1024)
+		
+		if memoryGrowth > maxGrowth {
+			t.Errorf("Excessive memory growth in async error scenarios: %d bytes (%.2f MB)", 
+				memoryGrowth, float64(memoryGrowth)/1024/1024)
+		}
+	})
+	
+	t.Run("AsyncContextCancellationMemoryLeak", func(t *testing.T) {
+		// Test that async context cancellation doesn't cause memory leaks
+		runtime.GC()
+		var m1 runtime.MemStats
+		runtime.ReadMemStats(&m1)
+		initialAlloc := m1.Alloc
+		initialGoroutines := runtime.NumGoroutine()
+		
+		// Run many async operations that get cancelled
+		for i := 0; i < 50; i++ {
+			ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+			
+			provider := func(asyncCtx context.Context, rchan chan uint32, echan chan error) {
+				// Allocate memory for processing
+				temp := make([]float64, 1000)
+				for j := range temp {
+					temp[j] = float64(i) * float64(j) * 0.5
+				}
+				
+				// Long processing time to ensure cancellation
+				for j := 0; j < 200; j++ {
+					select {
+					case <-ctx.Done():
+						return
+					case <-asyncCtx.Done():
+						return
+					default:
+						time.Sleep(time.Millisecond)
+					}
+				}
+				
+				select {
+				case rchan <- uint32(i) * 4:
+				case <-ctx.Done():
+					return
+				case <-asyncCtx.Done():
+					return
+				}
+			}
+			
+			// Start a goroutine to cancel after a short delay
+			go func() {
+				time.Sleep(5 * time.Millisecond)
+				cancel()
+			}()
+			
+			_, err := Await(SingleProvider(provider), SetTimeout(100*time.Millisecond))()
+			
+			// Should get cancellation or timeout error
+			if err == nil {
+				t.Logf("Iteration %d: expected cancellation/timeout error but got none", i)
+			}
+			
+			cancel() // Ensure cleanup
+			
+			// Give time for async goroutines to clean up
+			time.Sleep(30 * time.Millisecond)
+			
+			if i%10 == 0 {
+				runtime.GC()
+			}
+		}
+		
+		// Final cleanup and measurement
+		time.Sleep(200 * time.Millisecond)
+		runtime.GC()
+		runtime.GC()
+		
+		var m2 runtime.MemStats
+		runtime.ReadMemStats(&m2)
+		finalAlloc := m2.Alloc
+		finalGoroutines := runtime.NumGoroutine()
+		
+		memoryGrowth := int64(finalAlloc) - int64(initialAlloc)
+		goroutineGrowth := finalGoroutines - initialGoroutines
+		
+		t.Logf("Async context cancellation - Memory growth: %d bytes (%.2f MB), Goroutine growth: %d", 
+			memoryGrowth, float64(memoryGrowth)/1024/1024, goroutineGrowth)
+		
+		// Memory and goroutine growth should be minimal
+		maxMemoryGrowth := int64(2 * 1024 * 1024) // 2MB threshold
+		if memoryGrowth > maxMemoryGrowth {
+			t.Errorf("Excessive memory growth with async context cancellation: %d bytes (%.2f MB)", 
+				memoryGrowth, float64(memoryGrowth)/1024/1024)
+		}
+		
+		maxGoroutineGrowth := 25 // Higher threshold for async due to timing complexity
+		if goroutineGrowth > maxGoroutineGrowth {
+			t.Errorf("Excessive goroutine growth with async context cancellation: %d goroutines", goroutineGrowth)
+		}
+	})
+	
+	t.Run("AsyncChannelMemoryLeakStressTest", func(t *testing.T) {
+		// Stress test async channel operations for memory leaks
+		runtime.GC()
+		var m1 runtime.MemStats
+		runtime.ReadMemStats(&m1)
+		initialAlloc := m1.Alloc
+		
+		// Run many concurrent async operations
+		for batch := 0; batch < 50; batch++ {
+			const batchSize = 20
+			providers := make([]Provider[uint32], batchSize)
+			
+			for i := 0; i < batchSize; i++ {
+				val := uint32(i + batch*batchSize)
+				providers[i] = func(ctx context.Context, rchan chan uint32, echan chan error) {
+					// Allocate varying amounts of memory
+					tempSize := 100 + int(val%1000)
+					temp := make([]int, tempSize)
+					for j := range temp {
+						temp[j] = int(val) + j
+					}
+					
+					// Add variable delay to create different execution patterns
+					delay := time.Duration(val%5) * time.Microsecond
+					time.Sleep(delay)
+					
+					select {
+					case rchan <- val * val:
+					case <-ctx.Done():
+						return
+					}
+				}
+			}
+			
+			results, err := AwaitSlice(FixedProvider(providers), SetTimeout(5*time.Second))()
+			if err != nil {
+				t.Errorf("Batch %d failed: %v", batch, err)
+			}
+			if len(results) != batchSize {
+				t.Errorf("Batch %d: expected %d results, got %d", batch, batchSize, len(results))
+			}
+			
+			// Force cleanup between batches
+			if batch%5 == 0 {
+				time.Sleep(50 * time.Millisecond)
+				runtime.GC()
+			}
+		}
+		
+		// Final cleanup and measurement
+		time.Sleep(100 * time.Millisecond)
+		runtime.GC()
+		runtime.GC()
+		var m2 runtime.MemStats
+		runtime.ReadMemStats(&m2)
+		finalAlloc := m2.Alloc
+		
+		memoryGrowth := int64(finalAlloc) - int64(initialAlloc)
+		maxGrowth := int64(10 * 1024 * 1024) // 10MB threshold for stress test
+		
+		t.Logf("Async channel stress test memory growth: %d bytes (%.2f MB)", memoryGrowth, float64(memoryGrowth)/1024/1024)
+		
+		if memoryGrowth > maxGrowth {
+			t.Errorf("Excessive memory growth in async channel stress test: %d bytes (%.2f MB)", 
+				memoryGrowth, float64(memoryGrowth)/1024/1024)
+		}
+	})
+}

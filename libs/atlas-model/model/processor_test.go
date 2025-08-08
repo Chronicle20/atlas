@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -5425,5 +5426,349 @@ func TestContextPropagationProviderChains(t *testing.T) {
 		
 		// The test passes if we get cancellation error - the specific cancellation counts
 		// may vary due to timing, but the error propagation is what we're testing
+	})
+}
+
+// Memory Leak Detection Tests
+func TestMemoryLeakDetection(t *testing.T) {
+	t.Run("RepeatedProviderExecutionMemoryLeak", func(t *testing.T) {
+		// Test that repeated provider execution doesn't accumulate memory
+		runtime.GC()
+		var m1 runtime.MemStats
+		runtime.ReadMemStats(&m1)
+		initialAlloc := m1.Alloc
+		
+		// Execute many provider operations
+		for i := 0; i < 10000; i++ {
+			data := make([]uint32, 100)
+			for j := range data {
+				data[j] = uint32(j)
+			}
+			
+			provider := FixedProvider(data)
+			transform := func(val uint32) (uint32, error) {
+				// Create some temporary objects to stress memory
+				temp := make([]byte, 1024)
+				_ = temp
+				return val * 2, nil
+			}
+			
+			mapped := SliceMap(transform)(provider)()
+			results, err := mapped()
+			if err != nil {
+				t.Errorf("Iteration %d failed: %v", i, err)
+			}
+			if len(results) != len(data) {
+				t.Errorf("Iteration %d: expected %d results, got %d", i, len(data), len(results))
+			}
+			
+			// Periodically force GC to prevent normal accumulation
+			if i%1000 == 0 {
+				runtime.GC()
+			}
+		}
+		
+		// Force final garbage collection and measure memory
+		runtime.GC()
+		runtime.GC() // Double GC to ensure cleanup
+		var m2 runtime.MemStats
+		runtime.ReadMemStats(&m2)
+		finalAlloc := m2.Alloc
+		
+		// Memory growth should be reasonable (less than 10MB for this test)
+		memoryGrowth := int64(finalAlloc) - int64(initialAlloc)
+		maxGrowth := int64(10 * 1024 * 1024) // 10MB threshold
+		
+		t.Logf("Memory growth: %d bytes (%.2f MB)", memoryGrowth, float64(memoryGrowth)/1024/1024)
+		
+		if memoryGrowth > maxGrowth {
+			t.Errorf("Excessive memory growth detected: %d bytes (%.2f MB), threshold: %d bytes", 
+				memoryGrowth, float64(memoryGrowth)/1024/1024, maxGrowth)
+		}
+	})
+	
+	t.Run("MemoizedProviderMemoryLeak", func(t *testing.T) {
+		// Test that memoized providers don't cause memory leaks with repeated access
+		runtime.GC()
+		var m1 runtime.MemStats
+		runtime.ReadMemStats(&m1)
+		initialAlloc := m1.Alloc
+		
+		// Create a memoized provider that allocates memory
+		expensiveProvider := func() ([]byte, error) {
+			// Allocate a large chunk of memory for the cached result
+			data := make([]byte, 1024*1024) // 1MB
+			for i := range data {
+				data[i] = byte(i % 256)
+			}
+			return data, nil
+		}
+		
+		memoized := Memoize(expensiveProvider)
+		
+		// Access the memoized provider many times
+		for i := 0; i < 5000; i++ {
+			result, err := memoized()
+			if err != nil {
+				t.Errorf("Iteration %d failed: %v", i, err)
+			}
+			if len(result) != 1024*1024 {
+				t.Errorf("Iteration %d: expected 1MB result, got %d bytes", i, len(result))
+			}
+			
+			// Verify content is correct
+			if result[0] != 0 || result[255] != 255 {
+				t.Errorf("Iteration %d: result content verification failed", i)
+			}
+		}
+		
+		// Force garbage collection and measure memory
+		runtime.GC()
+		runtime.GC()
+		var m2 runtime.MemStats
+		runtime.ReadMemStats(&m2)
+		finalAlloc := m2.Alloc
+		
+		// Should only have one copy of the 1MB data plus reasonable overhead
+		memoryGrowth := int64(finalAlloc) - int64(initialAlloc)
+		maxGrowth := int64(2 * 1024 * 1024) // 2MB threshold (1MB data + overhead)
+		
+		t.Logf("Memoized memory growth: %d bytes (%.2f MB)", memoryGrowth, float64(memoryGrowth)/1024/1024)
+		
+		if memoryGrowth > maxGrowth {
+			t.Errorf("Excessive memory growth in memoized provider: %d bytes (%.2f MB), threshold: %d bytes", 
+				memoryGrowth, float64(memoryGrowth)/1024/1024, maxGrowth)
+		}
+	})
+	
+	t.Run("ParallelExecutionMemoryLeak", func(t *testing.T) {
+		// Test that parallel execution doesn't accumulate goroutines or memory
+		runtime.GC()
+		var m1 runtime.MemStats
+		runtime.ReadMemStats(&m1)
+		initialAlloc := m1.Alloc
+		initialGoroutines := runtime.NumGoroutine()
+		
+		// Run many parallel operations
+		for iteration := 0; iteration < 100; iteration++ {
+			data := make([]uint32, 50)
+			for i := range data {
+				data[i] = uint32(i + iteration*50)
+			}
+			
+			provider := FixedProvider(data)
+			
+			// Transform that allocates temporary memory
+			transform := func(val uint32) (uint32, error) {
+				// Allocate temporary memory to stress the system
+				temp := make([]int, 1000)
+				for i := range temp {
+					temp[i] = int(val) + i
+				}
+				
+				// Add some computation delay
+				time.Sleep(time.Microsecond)
+				return val * 2, nil
+			}
+			
+			mapped := SliceMap(transform)(provider)(ParallelMap())
+			results, err := mapped()
+			if err != nil {
+				t.Errorf("Iteration %d failed: %v", iteration, err)
+			}
+			if len(results) != len(data) {
+				t.Errorf("Iteration %d: expected %d results, got %d", iteration, len(data), len(results))
+			}
+			
+			// Give goroutines time to clean up
+			if iteration%10 == 0 {
+				time.Sleep(10 * time.Millisecond)
+				runtime.GC()
+			}
+		}
+		
+		// Allow time for goroutine cleanup
+		time.Sleep(100 * time.Millisecond)
+		runtime.GC()
+		runtime.GC()
+		
+		var m2 runtime.MemStats
+		runtime.ReadMemStats(&m2)
+		finalAlloc := m2.Alloc
+		finalGoroutines := runtime.NumGoroutine()
+		
+		memoryGrowth := int64(finalAlloc) - int64(initialAlloc)
+		goroutineGrowth := finalGoroutines - initialGoroutines
+		
+		t.Logf("Parallel execution - Memory growth: %d bytes (%.2f MB), Goroutine growth: %d", 
+			memoryGrowth, float64(memoryGrowth)/1024/1024, goroutineGrowth)
+		
+		// Memory growth should be reasonable
+		maxMemoryGrowth := int64(5 * 1024 * 1024) // 5MB threshold
+		if memoryGrowth > maxMemoryGrowth {
+			t.Errorf("Excessive memory growth in parallel execution: %d bytes (%.2f MB)", 
+				memoryGrowth, float64(memoryGrowth)/1024/1024)
+		}
+		
+		// Goroutine growth should be minimal (allow some variance for test runner)
+		maxGoroutineGrowth := 10
+		if goroutineGrowth > maxGoroutineGrowth {
+			t.Errorf("Excessive goroutine growth: %d goroutines, threshold: %d", 
+				goroutineGrowth, maxGoroutineGrowth)
+		}
+	})
+	
+	t.Run("ErrorScenarioMemoryLeak", func(t *testing.T) {
+		// Test that error scenarios don't cause memory leaks
+		runtime.GC()
+		var m1 runtime.MemStats
+		runtime.ReadMemStats(&m1)
+		initialAlloc := m1.Alloc
+		
+		// Run many operations that fail with errors
+		for i := 0; i < 1000; i++ {
+			data := make([]uint32, 20)
+			for j := range data {
+				data[j] = uint32(j)
+			}
+			
+			provider := FixedProvider(data)
+			
+			// Transform that sometimes fails and allocates memory
+			transform := func(val uint32) (uint32, error) {
+				// Always allocate some memory
+				temp := make([]byte, 2048)
+				_ = temp
+				
+				// Fail on certain values
+				if val%3 == 0 {
+					return 0, fmt.Errorf("intentional error for value %d", val)
+				}
+				return val * 2, nil
+			}
+			
+			mapped := SliceMap(transform)(provider)()
+			_, err := mapped()
+			
+			// We expect errors, so that's okay
+			if err == nil && i%3 == 0 {
+				// Some iterations should have errors due to val%3==0 check
+			}
+			
+			// Periodically clean up
+			if i%100 == 0 {
+				runtime.GC()
+			}
+		}
+		
+		// Final cleanup and measurement
+		runtime.GC()
+		runtime.GC()
+		var m2 runtime.MemStats
+		runtime.ReadMemStats(&m2)
+		finalAlloc := m2.Alloc
+		
+		memoryGrowth := int64(finalAlloc) - int64(initialAlloc)
+		maxGrowth := int64(3 * 1024 * 1024) // 3MB threshold
+		
+		t.Logf("Error scenario memory growth: %d bytes (%.2f MB)", memoryGrowth, float64(memoryGrowth)/1024/1024)
+		
+		if memoryGrowth > maxGrowth {
+			t.Errorf("Excessive memory growth in error scenarios: %d bytes (%.2f MB), threshold: %d bytes", 
+				memoryGrowth, float64(memoryGrowth)/1024/1024, maxGrowth)
+		}
+	})
+	
+	t.Run("ContextCancellationMemoryLeak", func(t *testing.T) {
+		// Test that context cancellation doesn't cause memory leaks
+		runtime.GC()
+		var m1 runtime.MemStats
+		runtime.ReadMemStats(&m1)
+		initialAlloc := m1.Alloc
+		initialGoroutines := runtime.NumGoroutine()
+		
+		// Run many operations that get cancelled
+		for i := 0; i < 50; i++ {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+			
+			data := make([]uint32, 30)
+			for j := range data {
+				data[j] = uint32(j + i*30)
+			}
+			
+			provider := FixedProvider(data)
+			
+			// Long-running transform that respects context
+			transform := func(val uint32) (uint32, error) {
+				// Allocate memory for processing
+				temp := make([]int64, 500)
+				for k := range temp {
+					temp[k] = int64(val) * int64(k)
+				}
+				
+				// Long processing time to ensure cancellation
+				for j := 0; j < 100; j++ {
+					select {
+					case <-ctx.Done():
+						return 0, ctx.Err()
+					default:
+						time.Sleep(time.Millisecond)
+					}
+				}
+				return val * 2, nil
+			}
+			
+			mapped := SliceMap(transform)(provider)(ParallelMap())
+			
+			// Start a goroutine to cancel after a short delay
+			go func() {
+				time.Sleep(5 * time.Millisecond)
+				cancel()
+			}()
+			
+			_, err := mapped()
+			
+			// Should get cancellation error
+			if err == nil {
+				t.Logf("Iteration %d: expected cancellation error but got none", i)
+			}
+			
+			cancel() // Ensure cleanup
+			
+			// Give time for goroutines to clean up
+			time.Sleep(20 * time.Millisecond)
+			
+			if i%10 == 0 {
+				runtime.GC()
+			}
+		}
+		
+		// Final cleanup and measurement
+		time.Sleep(100 * time.Millisecond)
+		runtime.GC()
+		runtime.GC()
+		
+		var m2 runtime.MemStats
+		runtime.ReadMemStats(&m2)
+		finalAlloc := m2.Alloc
+		finalGoroutines := runtime.NumGoroutine()
+		
+		memoryGrowth := int64(finalAlloc) - int64(initialAlloc)
+		goroutineGrowth := finalGoroutines - initialGoroutines
+		
+		t.Logf("Context cancellation - Memory growth: %d bytes (%.2f MB), Goroutine growth: %d", 
+			memoryGrowth, float64(memoryGrowth)/1024/1024, goroutineGrowth)
+		
+		// Memory and goroutine growth should be minimal
+		maxMemoryGrowth := int64(2 * 1024 * 1024) // 2MB threshold
+		if memoryGrowth > maxMemoryGrowth {
+			t.Errorf("Excessive memory growth with context cancellation: %d bytes (%.2f MB)", 
+				memoryGrowth, float64(memoryGrowth)/1024/1024)
+		}
+		
+		maxGoroutineGrowth := 15
+		if goroutineGrowth > maxGoroutineGrowth {
+			t.Errorf("Excessive goroutine growth with context cancellation: %d goroutines", goroutineGrowth)
+		}
 	})
 }

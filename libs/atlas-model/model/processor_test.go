@@ -445,3 +445,56 @@ func TestFilteredProviderLazyEvaluation(t *testing.T) {
 		}
 	}
 }
+
+func TestFoldLazyEvaluation(t *testing.T) {
+	// Test that Fold function defers execution until Provider is called
+	providerExecuted := false
+	supplierExecuted := false
+	
+	// Create providers that track execution
+	trackingProvider := func() ([]uint32, error) {
+		providerExecuted = true
+		return []uint32{1, 2, 3}, nil
+	}
+	
+	trackingSupplier := func() (uint32, error) {
+		supplierExecuted = true
+		return uint32(0), nil
+	}
+	
+	// Folder function that sums values
+	sumFolder := func(acc uint32, val uint32) (uint32, error) {
+		return acc + val, nil
+	}
+	
+	// Create Fold pipeline - should NOT execute the providers yet
+	foldProvider := Fold(trackingProvider, trackingSupplier, sumFolder)
+	
+	// Verify that the underlying providers have not been executed during composition
+	if providerExecuted {
+		t.Errorf("Fold function should not execute provider during composition")
+	}
+	if supplierExecuted {
+		t.Errorf("Fold function should not execute supplier during composition")
+	}
+	
+	// Now execute the fold provider
+	result, err := foldProvider()
+	if err != nil {
+		t.Errorf("Expected result, got err %s", err)
+	}
+	
+	// Verify execution happened and result is correct
+	if !providerExecuted {
+		t.Errorf("Provider should have been executed when fold provider was called")
+	}
+	if !supplierExecuted {
+		t.Errorf("Supplier should have been executed when fold provider was called")
+	}
+	
+	// Verify the result is the sum of 0 + 1 + 2 + 3 = 6
+	expected := uint32(6)
+	if result != expected {
+		t.Errorf("Expected %d, got %d", expected, result)
+	}
+}

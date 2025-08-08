@@ -49,41 +49,41 @@ func Await[M any](provider model.Provider[Provider[M]], configurators ...Configu
 
 //goland:noinspection GoUnusedExportedFunction
 func AwaitSlice[M any](provider model.Provider[[]Provider[M]], configurators ...Configurator) model.Provider[[]M] {
-	c := &Config{ctx: context.Background(), timeout: 500 * time.Millisecond}
-	for _, configurator := range configurators {
-		configurator(c)
-	}
-
-	ctx, cancel := context.WithTimeout(c.ctx, c.timeout)
-	defer cancel()
-
-	providers, err := provider()
-	if err != nil {
-		return model.ErrorProvider[[]M](err)
-	}
-
-	resultChannels := make(chan M, len(providers))
-	errChannels := make(chan error, len(providers))
-
-	for _, provider := range providers {
-		p := provider
-		go func() {
-			p(ctx, resultChannels, errChannels)
-		}()
-	}
-
-	var results = make([]M, 0)
-	for i := 0; i < len(providers); i++ {
-		select {
-		case result := <-resultChannels:
-			results = append(results, result)
-		case <-ctx.Done():
-			err = ErrAwaitTimeout
-		case <-errChannels:
-			err = <-errChannels
-		}
-	}
 	return func() ([]M, error) {
-		return results, err
+		c := &Config{ctx: context.Background(), timeout: 500 * time.Millisecond}
+		for _, configurator := range configurators {
+			configurator(c)
+		}
+
+		ctx, cancel := context.WithTimeout(c.ctx, c.timeout)
+		defer cancel()
+
+		providers, err := provider()
+		if err != nil {
+			return nil, err
+		}
+
+		resultChannels := make(chan M, len(providers))
+		errChannels := make(chan error, len(providers))
+
+		for _, provider := range providers {
+			p := provider
+			go func() {
+				p(ctx, resultChannels, errChannels)
+			}()
+		}
+
+		var results = make([]M, 0)
+		for i := 0; i < len(providers); i++ {
+			select {
+			case result := <-resultChannels:
+				results = append(results, result)
+			case <-ctx.Done():
+				return nil, ErrAwaitTimeout
+			case <-errChannels:
+				return nil, <-errChannels
+			}
+		}
+		return results, nil
 	}
 }

@@ -3146,6 +3146,394 @@ func TestRaceConditionThreadSafety(t *testing.T) {
 	})
 }
 
+func TestConcurrentProviderExecution(t *testing.T) {
+	// Test concurrent access to multiple provider instances with shared resources
+	// This test verifies thread safety when multiple goroutines access different
+	// provider chains simultaneously, including scenarios with shared state
+
+	t.Run("MultipleConcurrentProviderChains", func(t *testing.T) {
+		// Test concurrent execution of different provider chains that access shared data
+		sharedData := make([]uint32, 200)
+		for i := range sharedData {
+			sharedData[i] = uint32(i + 1)
+		}
+
+		// Create multiple different provider chains
+		provider1 := FixedProvider(sharedData[:50])
+		provider2 := FixedProvider(sharedData[50:100])
+		provider3 := FixedProvider(sharedData[100:150])
+		provider4 := FixedProvider(sharedData[150:])
+
+		// Create different transformation chains
+		chain1 := SliceMap[uint32, uint32](func(val uint32) (uint32, error) {
+			return val * 2, nil
+		})(provider1)(ParallelMap())
+
+		chain2 := SliceMap[uint32, string](func(val uint32) (string, error) {
+			return fmt.Sprintf("val_%d", val), nil
+		})(provider2)(ParallelMap())
+
+		chain3 := FilteredProvider(provider3, []Filter[uint32]{
+			func(val uint32) bool { return val%2 == 0 },
+		})
+
+		chain4 := Map[[]uint32, uint32](func(vals []uint32) (uint32, error) {
+			sum := uint32(0)
+			for _, val := range vals {
+				sum += val
+			}
+			return sum, nil
+		})(provider4)
+
+		// Execute all chains concurrently
+		const numConcurrentExecutions = 20
+		var wg sync.WaitGroup
+
+		// Results storage
+		results1 := make([][]uint32, numConcurrentExecutions)
+		results2 := make([][]string, numConcurrentExecutions)
+		results3 := make([][]uint32, numConcurrentExecutions)
+		results4 := make([]uint32, numConcurrentExecutions)
+		errors := make([][]error, 4)
+		for i := range errors {
+			errors[i] = make([]error, numConcurrentExecutions)
+		}
+
+		// Launch concurrent executions
+		for i := 0; i < numConcurrentExecutions; i++ {
+			wg.Add(4) // Four different chains
+
+			go func(idx int) {
+				defer wg.Done()
+				result, err := chain1()
+				results1[idx] = result
+				errors[0][idx] = err
+			}(i)
+
+			go func(idx int) {
+				defer wg.Done()
+				result, err := chain2()
+				results2[idx] = result
+				errors[1][idx] = err
+			}(i)
+
+			go func(idx int) {
+				defer wg.Done()
+				result, err := chain3()
+				results3[idx] = result
+				errors[2][idx] = err
+			}(i)
+
+			go func(idx int) {
+				defer wg.Done()
+				result, err := chain4()
+				results4[idx] = result
+				errors[3][idx] = err
+			}(i)
+		}
+
+		wg.Wait()
+
+		// Verify results consistency
+		for i := 0; i < numConcurrentExecutions; i++ {
+			// Check chain1 results
+			if errors[0][i] != nil {
+				t.Errorf("Chain1 execution %d failed: %s", i, errors[0][i])
+			} else if len(results1[i]) != 50 {
+				t.Errorf("Chain1 execution %d: expected 50 results, got %d", i, len(results1[i]))
+			} else if i > 0 {
+				// Verify consistency across executions
+				for j := range results1[i] {
+					if results1[i][j] != results1[0][j] {
+						t.Errorf("Chain1 execution %d inconsistent at index %d: got %d, expected %d", i, j, results1[i][j], results1[0][j])
+					}
+				}
+			}
+
+			// Check chain2 results
+			if errors[1][i] != nil {
+				t.Errorf("Chain2 execution %d failed: %s", i, errors[1][i])
+			} else if len(results2[i]) != 50 {
+				t.Errorf("Chain2 execution %d: expected 50 results, got %d", i, len(results2[i]))
+			}
+
+			// Check chain3 results (filtered evens from 101-150)
+			if errors[2][i] != nil {
+				t.Errorf("Chain3 execution %d failed: %s", i, errors[2][i])
+			} else if len(results3[i]) != 25 { // 25 even numbers from 101-150
+				t.Errorf("Chain3 execution %d: expected 25 filtered results, got %d", i, len(results3[i]))
+			}
+
+			// Check chain4 results (sum of 151-200)
+			if errors[3][i] != nil {
+				t.Errorf("Chain4 execution %d failed: %s", i, errors[3][i])
+			} else {
+				expectedSum := uint32(0)
+				for j := 151; j <= 200; j++ {
+					expectedSum += uint32(j)
+				}
+				if results4[i] != expectedSum {
+					t.Errorf("Chain4 execution %d: expected sum %d, got %d", i, expectedSum, results4[i])
+				}
+			}
+		}
+	})
+
+	t.Run("ConcurrentAccessToSharedMemoizedProviders", func(t *testing.T) {
+		// Test concurrent access to shared memoized providers
+		var expensiveCallCount int64
+		expensiveProvider := func() ([]uint32, error) {
+			atomic.AddInt64(&expensiveCallCount, 1)
+			// Simulate expensive computation
+			time.Sleep(time.Millisecond * 5)
+			return []uint32{1, 2, 3, 4, 5}, nil
+		}
+
+		memoizedProvider := Memoize(expensiveProvider)
+
+		// Multiple transformation chains sharing the same memoized provider
+		chain1 := SliceMap[uint32, uint32](func(val uint32) (uint32, error) {
+			return val * 2, nil
+		})(memoizedProvider)(ParallelMap())
+
+		chain2 := SliceMap[uint32, uint32](func(val uint32) (uint32, error) {
+			return val + 10, nil
+		})(memoizedProvider)(ParallelMap())
+
+		chain3 := Map[[]uint32, uint32](func(vals []uint32) (uint32, error) {
+			sum := uint32(0)
+			for _, val := range vals {
+				sum += val
+			}
+			return sum, nil
+		})(memoizedProvider)
+
+		const numConcurrentAccess = 30
+		var wg sync.WaitGroup
+
+		results := make([][3]interface{}, numConcurrentAccess) // [chain1_result, chain2_result, chain3_result]
+		errors := make([][3]error, numConcurrentAccess)
+
+		// Launch concurrent access to shared memoized provider
+		for i := 0; i < numConcurrentAccess; i++ {
+			wg.Add(3)
+
+			go func(idx int) {
+				defer wg.Done()
+				result, err := chain1()
+				results[idx][0] = result
+				errors[idx][0] = err
+			}(i)
+
+			go func(idx int) {
+				defer wg.Done()
+				result, err := chain2()
+				results[idx][1] = result
+				errors[idx][1] = err
+			}(i)
+
+			go func(idx int) {
+				defer wg.Done()
+				result, err := chain3()
+				results[idx][2] = result
+				errors[idx][2] = err
+			}(i)
+		}
+
+		wg.Wait()
+
+		// Verify all accesses succeeded
+		for i := 0; i < numConcurrentAccess; i++ {
+			for j := 0; j < 3; j++ {
+				if errors[i][j] != nil {
+					t.Errorf("Chain %d execution %d failed: %s", j+1, i, errors[i][j])
+				}
+			}
+		}
+
+		// Verify the expensive provider was only called once due to memoization
+		if expensiveCallCount != 1 {
+			t.Errorf("Expected expensive provider to be called once, but was called %d times", expensiveCallCount)
+		}
+
+		// Verify result consistency
+		expectedChain1 := []uint32{2, 4, 6, 8, 10}
+		expectedChain2 := []uint32{11, 12, 13, 14, 15}
+		expectedChain3 := uint32(15) // sum of 1+2+3+4+5
+
+		for i := 0; i < numConcurrentAccess; i++ {
+			if result1, ok := results[i][0].([]uint32); ok {
+				for j := range expectedChain1 {
+					if j < len(result1) && result1[j] != expectedChain1[j] {
+						t.Errorf("Chain1 execution %d index %d: expected %d, got %d", i, j, expectedChain1[j], result1[j])
+					}
+				}
+			}
+
+			if result2, ok := results[i][1].([]uint32); ok {
+				for j := range expectedChain2 {
+					if j < len(result2) && result2[j] != expectedChain2[j] {
+						t.Errorf("Chain2 execution %d index %d: expected %d, got %d", i, j, expectedChain2[j], result2[j])
+					}
+				}
+			}
+
+			if result3, ok := results[i][2].(uint32); ok {
+				if result3 != expectedChain3 {
+					t.Errorf("Chain3 execution %d: expected %d, got %d", i, expectedChain3, result3)
+				}
+			}
+		}
+	})
+
+	t.Run("ConcurrentProviderWithErrorHandling", func(t *testing.T) {
+		// Test concurrent execution where some providers fail and others succeed
+		successData := []uint32{1, 2, 3, 4, 5}
+		
+		successProvider := FixedProvider(successData)
+		errorProvider := ErrorProvider[[]uint32](fmt.Errorf("intentional test error"))
+
+		successChain := SliceMap[uint32, uint32](func(val uint32) (uint32, error) {
+			return val * 3, nil
+		})(successProvider)(ParallelMap())
+
+		errorChain := SliceMap[uint32, uint32](func(val uint32) (uint32, error) {
+			return val * 3, nil
+		})(errorProvider)(ParallelMap())
+
+		const numConcurrentTests = 25
+		var wg sync.WaitGroup
+
+		successResults := make([][]uint32, numConcurrentTests)
+		errorResults := make([][]uint32, numConcurrentTests)
+		successErrors := make([]error, numConcurrentTests)
+		errorErrors := make([]error, numConcurrentTests)
+
+		// Run success and error chains concurrently
+		for i := 0; i < numConcurrentTests; i++ {
+			wg.Add(2)
+
+			go func(idx int) {
+				defer wg.Done()
+				result, err := successChain()
+				successResults[idx] = result
+				successErrors[idx] = err
+			}(i)
+
+			go func(idx int) {
+				defer wg.Done()
+				result, err := errorChain()
+				errorResults[idx] = result
+				errorErrors[idx] = err
+			}(i)
+		}
+
+		wg.Wait()
+
+		// Verify success chain results
+		for i := 0; i < numConcurrentTests; i++ {
+			if successErrors[i] != nil {
+				t.Errorf("Success chain execution %d failed: %s", i, successErrors[i])
+			} else if len(successResults[i]) != len(successData) {
+				t.Errorf("Success chain execution %d: expected %d results, got %d", i, len(successData), len(successResults[i]))
+			} else {
+				for j, expected := range []uint32{3, 6, 9, 12, 15} {
+					if successResults[i][j] != expected {
+						t.Errorf("Success chain execution %d index %d: expected %d, got %d", i, j, expected, successResults[i][j])
+					}
+				}
+			}
+		}
+
+		// Verify error chain consistently fails
+		for i := 0; i < numConcurrentTests; i++ {
+			if errorErrors[i] == nil {
+				t.Errorf("Error chain execution %d should have failed but didn't", i)
+			} else if errorErrors[i].Error() != "intentional test error" {
+				t.Errorf("Error chain execution %d: expected 'intentional test error', got '%s'", i, errorErrors[i].Error())
+			}
+
+			if errorResults[i] != nil {
+				t.Errorf("Error chain execution %d: expected nil result, got %v", i, errorResults[i])
+			}
+		}
+	})
+
+	t.Run("HighConcurrencyProviderStressTest", func(t *testing.T) {
+		// Stress test with high concurrency to detect race conditions
+		largeData := make([]uint32, 1000)
+		for i := range largeData {
+			largeData[i] = uint32(i + 1)
+		}
+		provider := FixedProvider(largeData)
+
+		transformChain := SliceMap[uint32, uint32](func(val uint32) (uint32, error) {
+			// Add small delay to increase chance of race conditions
+			if val%100 == 0 {
+				time.Sleep(time.Microsecond)
+			}
+			return val*2 + 1, nil
+		})(provider)(ParallelMap())
+
+		const highConcurrency = 100
+		var wg sync.WaitGroup
+
+		results := make([][]uint32, highConcurrency)
+		errors := make([]error, highConcurrency)
+		startSignal := make(chan struct{})
+
+		// Launch high number of concurrent executions
+		for i := 0; i < highConcurrency; i++ {
+			wg.Add(1)
+			go func(idx int) {
+				defer wg.Done()
+				<-startSignal // Wait for start signal to maximize concurrency
+				result, err := transformChain()
+				results[idx] = result
+				errors[idx] = err
+			}(i)
+		}
+
+		// Start all executions simultaneously
+		close(startSignal)
+		wg.Wait()
+
+		// Verify all executions succeeded and are consistent
+		for i := 0; i < highConcurrency; i++ {
+			if errors[i] != nil {
+				t.Errorf("High concurrency execution %d failed: %s", i, errors[i])
+				continue
+			}
+
+			if len(results[i]) != len(largeData) {
+				t.Errorf("High concurrency execution %d: expected %d results, got %d", i, len(largeData), len(results[i]))
+				continue
+			}
+
+			// Verify results are consistent (compare with first successful result)
+			if i > 0 && len(results[0]) == len(results[i]) {
+				for j := range results[i] {
+					if results[i][j] != results[0][j] {
+						t.Errorf("High concurrency execution %d inconsistent at index %d: got %d, expected %d", i, j, results[i][j], results[0][j])
+						break // Break inner loop to avoid spam
+					}
+				}
+			}
+		}
+
+		// Verify transformation correctness for first result
+		if len(results[0]) == len(largeData) {
+			for i, originalVal := range largeData {
+				expectedTransformed := originalVal*2 + 1
+				if results[0][i] != expectedTransformed {
+					t.Errorf("Transformation incorrect at index %d: got %d, expected %d", i, results[0][i], expectedTransformed)
+					break
+				}
+			}
+		}
+	})
+}
+
 // Benchmark tests for ExecuteForEachSlice performance
 func BenchmarkExecuteForEachSlice(b *testing.B) {
 	// Create test data

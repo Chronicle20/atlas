@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Chronicle20/atlas-model/model"
+	"reflect"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -517,6 +519,251 @@ func TestAsyncRaceConditionThreadSafety(t *testing.T) {
 					t.Errorf("Test %d: unexpected error format: %s", i, err)
 				}
 			}
+		}
+	})
+
+	t.Run("ExtremeConcurrencyRaceConditions", func(t *testing.T) {
+		// Test with extreme concurrency to stress-test race conditions
+		const dataSize = 10000
+		items := make([]uint32, dataSize)
+		for i := range items {
+			items[i] = uint32(i + 1)
+		}
+
+		// Provider that performs shared memory operations
+		var sharedCounter int64
+		extremeProvider := func(m uint32) (Provider[uint32], error) {
+			return func(ctx context.Context, rchan chan uint32, echan chan error) {
+				// Atomic increment to test thread-safety
+				atomic.AddInt64(&sharedCounter, 1)
+				
+				// Minimal delay to maximize concurrency
+				if m%1000 == 0 {
+					time.Sleep(time.Microsecond)
+				}
+
+				select {
+				case <-ctx.Done():
+					return
+				default:
+					rchan <- m + 100000
+				}
+			}, nil
+		}
+
+		ctx := context.Background()
+		result, err := AwaitSlice(
+			model.SliceMap(extremeProvider)(model.FixedProvider(items))(),
+			SetContext(ctx),
+			SetTimeout(time.Second*15),
+		)()
+
+		if err != nil {
+			t.Errorf("Expected no error, got %s", err)
+		}
+
+		if len(result) != len(items) {
+			t.Errorf("Expected %d results, got %d", len(items), len(result))
+		}
+
+		// Verify shared counter (should equal number of items if thread-safe)
+		if sharedCounter != int64(dataSize) {
+			t.Errorf("Expected shared counter %d, got %d (race condition detected)", dataSize, sharedCounter)
+		}
+
+		// Verify all results are correct and unique
+		resultMap := make(map[uint32]bool)
+		for _, r := range result {
+			if resultMap[r] {
+				t.Errorf("Duplicate result detected: %d (race condition)", r)
+			}
+			resultMap[r] = true
+		}
+
+		for _, original := range items {
+			expected := original + 100000
+			if !resultMap[expected] {
+				t.Errorf("Missing expected result %d for input %d", expected, original)
+			}
+		}
+	})
+
+	t.Run("ChannelBufferingRaceConditions", func(t *testing.T) {
+		// Test race conditions with channel buffering and backpressure
+		items := make([]uint32, 500)
+		for i := range items {
+			items[i] = uint32(i + 1)
+		}
+
+		// Provider that simulates varying processing speeds
+		bufferProvider := func(m uint32) (Provider[uint32], error) {
+			return func(ctx context.Context, rchan chan uint32, echan chan error) {
+				// Simulate different processing speeds to create backpressure
+				delay := time.Microsecond * time.Duration((m%20)+1)
+				time.Sleep(delay)
+
+				// Multiple goroutines to stress channel operations
+				var wg sync.WaitGroup
+				results := make([]uint32, 3)
+				
+				for i := 0; i < 3; i++ {
+					wg.Add(1)
+					go func(idx int) {
+						defer wg.Done()
+						// Each goroutine computes a different transformation
+						switch idx {
+						case 0:
+							results[idx] = m * 2
+						case 1:
+							results[idx] = m + 1000
+						case 2:
+							results[idx] = m ^ 0xFF // XOR operation
+						}
+					}(i)
+				}
+
+				wg.Wait()
+
+				// Combine results (race condition potential here if not handled properly)
+				final := results[0] + results[1] + results[2]
+
+				select {
+				case <-ctx.Done():
+					return
+				default:
+					rchan <- final
+				}
+			}, nil
+		}
+
+		const numTests = 8
+		var wg sync.WaitGroup
+		results := make([][]uint32, numTests)
+		errors := make([]error, numTests)
+
+		for testIdx := 0; testIdx < numTests; testIdx++ {
+			wg.Add(1)
+			go func(idx int) {
+				defer wg.Done()
+
+				ctx := context.Background()
+				result, err := AwaitSlice(
+					model.SliceMap(bufferProvider)(model.FixedProvider(items))(),
+					SetContext(ctx),
+					SetTimeout(time.Second*10),
+				)()
+
+				results[idx] = result
+				errors[idx] = err
+			}(testIdx)
+		}
+
+		wg.Wait()
+
+		// Verify all tests succeeded
+		for i := 0; i < numTests; i++ {
+			if errors[i] != nil {
+				t.Errorf("Test %d failed: %s", i, errors[i])
+				continue
+			}
+
+			if len(results[i]) != len(items) {
+				t.Errorf("Test %d: expected %d results, got %d", i, len(items), len(results[i]))
+				continue
+			}
+
+			// Results may be in different orders due to concurrency, but should contain the same values
+			if i > 0 {
+				// Sort both result sets to compare contents rather than order
+				baseline := make([]uint32, len(results[0]))
+				current := make([]uint32, len(results[i]))
+				copy(baseline, results[0])
+				copy(current, results[i])
+				
+				// Convert to maps for order-independent comparison
+				baselineMap := make(map[uint32]int)
+				currentMap := make(map[uint32]int)
+				
+				for _, val := range baseline {
+					baselineMap[val]++
+				}
+				for _, val := range current {
+					currentMap[val]++
+				}
+				
+				if !reflect.DeepEqual(baselineMap, currentMap) {
+					t.Errorf("Test %d: result sets differ from baseline (race condition)", i)
+				}
+			}
+		}
+	})
+
+	t.Run("SingleProviderHighConcurrency", func(t *testing.T) {
+		// Test race conditions with single provider under high concurrent load
+		var executionCount int64
+
+		provider := func(ctx context.Context, rchan chan uint32, echan chan error) {
+			// Atomic increment to track executions
+			count := atomic.AddInt64(&executionCount, 1)
+			
+			// Simulate work with potential for race conditions
+			time.Sleep(time.Microsecond * time.Duration(count%10))
+
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				rchan <- uint32(count * 100)
+			}
+		}
+
+		const numConcurrentCalls = 50
+		var wg sync.WaitGroup
+		results := make([]uint32, numConcurrentCalls)
+		errors := make([]error, numConcurrentCalls)
+
+		// Execute many concurrent single provider calls
+		for i := 0; i < numConcurrentCalls; i++ {
+			wg.Add(1)
+			go func(idx int) {
+				defer wg.Done()
+
+				ctx := context.Background()
+				result, err := Await(
+					SingleProvider(provider),
+					SetContext(ctx),
+					SetTimeout(time.Second),
+				)()
+
+				results[idx] = result
+				errors[idx] = err
+			}(i)
+		}
+
+		wg.Wait()
+
+		// Verify all calls succeeded
+		for i, err := range errors {
+			if err != nil {
+				t.Errorf("Call %d failed: %s", i, err)
+			}
+		}
+
+		// Verify execution count matches expected (no race condition in counter)
+		if executionCount != int64(numConcurrentCalls) {
+			t.Errorf("Expected %d executions, got %d (race condition in counter)", numConcurrentCalls, executionCount)
+		}
+
+		// Verify all results are unique (since count is incremented each time)
+		resultSet := make(map[uint32]bool)
+		for i, result := range results {
+			if errors[i] != nil {
+				continue // Skip failed calls
+			}
+			if resultSet[result] {
+				t.Errorf("Duplicate result %d detected (race condition)", result)
+			}
+			resultSet[result] = true
 		}
 	})
 }

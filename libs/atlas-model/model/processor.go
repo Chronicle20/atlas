@@ -496,6 +496,13 @@ func Memoize[T any](provider Provider[T]) Provider[T] {
 }
 
 //goland:noinspection GoUnusedExportedFunction
+func Lazy[T any](f func() Provider[T]) Provider[T] {
+	return func() (T, error) {
+		return f()()
+	}
+}
+
+//goland:noinspection GoUnusedExportedFunction
 func Apply[A any, B any](f func(a A) Provider[B]) func(a A) (B, error) {
 	return func(a A) (B, error) {
 		return f(a)()

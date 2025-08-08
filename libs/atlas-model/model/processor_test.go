@@ -2800,6 +2800,350 @@ func TestRaceConditionThreadSafety(t *testing.T) {
 		}
 		mapMutex.Unlock()
 	})
+
+	t.Run("MemoizeProviderRaceConditions", func(t *testing.T) {
+		// Test that memoized providers are thread-safe under high concurrency
+		var expensiveCallCount int64
+		expensiveProvider := func() (uint32, error) {
+			atomic.AddInt64(&expensiveCallCount, 1)
+			// Simulate expensive computation with variable delay
+			time.Sleep(time.Millisecond * time.Duration(1+expensiveCallCount%3))
+			return 42, nil
+		}
+
+		memoizedProvider := Memoize(expensiveProvider)
+
+		const numGoroutines = 50
+		var wg sync.WaitGroup
+		results := make([]uint32, numGoroutines)
+		errors := make([]error, numGoroutines)
+
+		// Launch many goroutines that all try to access the memoized provider simultaneously
+		for i := 0; i < numGoroutines; i++ {
+			wg.Add(1)
+			go func(idx int) {
+				defer wg.Done()
+				
+				// Add some randomness to timing to increase race condition likelihood
+				if idx%2 == 0 {
+					time.Sleep(time.Microsecond * time.Duration(idx%10))
+				}
+
+				result, err := memoizedProvider()
+				results[idx] = result
+				errors[idx] = err
+			}(i)
+		}
+
+		wg.Wait()
+
+		// Verify all results are the same and no errors occurred
+		for i := 0; i < numGoroutines; i++ {
+			if errors[i] != nil {
+				t.Errorf("Goroutine %d got error: %s", i, errors[i])
+			}
+			if results[i] != 42 {
+				t.Errorf("Goroutine %d got result %d, expected 42", i, results[i])
+			}
+		}
+
+		// Most importantly, verify the expensive computation only ran once
+		if expensiveCallCount != 1 {
+			t.Errorf("Expected expensive computation to run once, but ran %d times", expensiveCallCount)
+		}
+	})
+
+	t.Run("ComplexProviderChainRaceConditions", func(t *testing.T) {
+		// Test race conditions in complex provider chains with transformations and filters
+		data := make([]uint32, 500)
+		for i := range data {
+			data[i] = uint32(i + 1)
+		}
+		baseProvider := FixedProvider(data)
+
+		var transformCount, filterCount int64
+		
+		// Create a complex chain: SliceMap -> Filter -> SliceMap
+		chainedProvider := SliceMap[uint32, uint32](func(val uint32) (uint32, error) {
+			atomic.AddInt64(&transformCount, 1)
+			return val * 2, nil
+		})(baseProvider)(ParallelMap())
+
+		filteredProvider := FilteredProvider(chainedProvider, []Filter[uint32]{
+			func(val uint32) bool {
+				atomic.AddInt64(&filterCount, 1)
+				return val < 200 // Filter to smaller values
+			},
+		})
+
+		finalProvider := SliceMap[uint32, uint32](func(val uint32) (uint32, error) {
+			return val + 1, nil
+		})(filteredProvider)(ParallelMap())
+
+		const numConcurrentAccess = 20
+		var wg sync.WaitGroup
+		results := make([][]uint32, numConcurrentAccess)
+		errors := make([]error, numConcurrentAccess)
+
+		// Multiple goroutines access the same complex provider chain
+		for i := 0; i < numConcurrentAccess; i++ {
+			wg.Add(1)
+			go func(idx int) {
+				defer wg.Done()
+				result, err := finalProvider()
+				results[idx] = result
+				errors[idx] = err
+			}(i)
+		}
+
+		wg.Wait()
+
+		// Verify all results are consistent
+		for i := 0; i < numConcurrentAccess; i++ {
+			if errors[i] != nil {
+				t.Errorf("Chain access %d failed: %s", i, errors[i])
+				continue
+			}
+
+			// All results should be identical
+			if i > 0 && len(results[i]) != len(results[0]) {
+				t.Errorf("Result %d has different length: got %d, expected %d", i, len(results[i]), len(results[0]))
+				continue
+			}
+
+			if i > 0 {
+				for j := range results[i] {
+					if results[i][j] != results[0][j] {
+						t.Errorf("Result %d index %d differs: got %d, expected %d", i, j, results[i][j], results[0][j])
+					}
+				}
+			}
+		}
+
+		// Verify operations were performed correctly
+		// Each value 1-99 gets: *2 -> filter (keeps values < 200) -> +1
+		// So we should have processed 99 items in transforms and filters
+		expectedFilteredCount := int64(99)
+		expectedTransformCount := int64(len(data)) * numConcurrentAccess
+
+		if filterCount < expectedFilteredCount {
+			t.Errorf("Expected at least %d filter operations, got %d", expectedFilteredCount, filterCount)
+		}
+		if transformCount < expectedTransformCount {
+			t.Errorf("Expected at least %d transform operations, got %d", expectedTransformCount, transformCount)
+		}
+	})
+
+	t.Run("NestedParallelOperationsRaceConditions", func(t *testing.T) {
+		// Test race conditions when parallel operations are nested within parallel operations
+		outerData := make([]uint32, 20)
+		for i := range outerData {
+			outerData[i] = uint32(i + 1)
+		}
+		outerProvider := FixedProvider(outerData)
+
+		var nestedOperationCount int64
+
+		err := ForEachSlice(outerProvider, func(outerVal uint32) error {
+			// For each outer value, create an inner parallel operation
+			innerData := make([]uint32, 10)
+			for i := range innerData {
+				innerData[i] = outerVal*10 + uint32(i)
+			}
+			innerProvider := FixedProvider(innerData)
+
+			return ForEachSlice(innerProvider, func(innerVal uint32) error {
+				atomic.AddInt64(&nestedOperationCount, 1)
+				// Simulate some work
+				result := innerVal * innerVal
+				_ = result
+				return nil
+			}, ParallelExecute())
+		}, ParallelExecute())
+
+		if err != nil {
+			t.Errorf("Nested parallel operations failed: %s", err)
+		}
+
+		// Verify all nested operations were executed
+		expectedOperations := int64(len(outerData) * 10)
+		if nestedOperationCount != expectedOperations {
+			t.Errorf("Expected %d nested operations, got %d", expectedOperations, nestedOperationCount)
+		}
+	})
+
+	t.Run("CollectToMapRaceConditions", func(t *testing.T) {
+		// Test race conditions in CollectToMap with parallel key/value extraction
+		data := make([]uint32, 300)
+		for i := range data {
+			data[i] = uint32(i + 1)
+		}
+		provider := FixedProvider(data)
+
+		var keyExtractionCount, valueExtractionCount int64
+
+		keyProvider := func(val uint32) uint32 {
+			atomic.AddInt64(&keyExtractionCount, 1)
+			return val
+		}
+
+		valueProvider := func(val uint32) string {
+			atomic.AddInt64(&valueExtractionCount, 1)
+			return fmt.Sprintf("value_%d", val)
+		}
+
+		const numConcurrentMaps = 15
+		var wg sync.WaitGroup
+		results := make([]map[uint32]string, numConcurrentMaps)
+		errors := make([]error, numConcurrentMaps)
+
+		for i := 0; i < numConcurrentMaps; i++ {
+			wg.Add(1)
+			go func(idx int) {
+				defer wg.Done()
+				mapProvider := CollectToMap(provider, keyProvider, valueProvider)
+				result, err := mapProvider()
+				results[idx] = result
+				errors[idx] = err
+			}(i)
+		}
+
+		wg.Wait()
+
+		// Verify all results
+		for i := 0; i < numConcurrentMaps; i++ {
+			if errors[i] != nil {
+				t.Errorf("CollectToMap %d failed: %s", i, errors[i])
+				continue
+			}
+
+			if len(results[i]) != len(data) {
+				t.Errorf("Result %d has %d entries, expected %d", i, len(results[i]), len(data))
+				continue
+			}
+
+			// Verify content consistency
+			for _, originalVal := range data {
+				if value, exists := results[i][originalVal]; !exists {
+					t.Errorf("Result %d missing key %d", i, originalVal)
+				} else {
+					expectedValue := fmt.Sprintf("value_%d", originalVal)
+					if value != expectedValue {
+						t.Errorf("Result %d key %d: got '%s', expected '%s'", i, originalVal, value, expectedValue)
+					}
+				}
+			}
+		}
+
+		// Verify extraction operations were performed (should be >= expected due to concurrent access)
+		expectedExtractions := int64(len(data)) * numConcurrentMaps
+		if keyExtractionCount < expectedExtractions {
+			t.Errorf("Expected at least %d key extractions, got %d", expectedExtractions, keyExtractionCount)
+		}
+		if valueExtractionCount < expectedExtractions {
+			t.Errorf("Expected at least %d value extractions, got %d", expectedExtractions, valueExtractionCount)
+		}
+	})
+
+	t.Run("ErrorRecoveryInParallelOperations", func(t *testing.T) {
+		// Test that error handling in one parallel operation doesn't affect others
+		data := make([]uint32, 100)
+		for i := range data {
+			data[i] = uint32(i + 1)
+		}
+		provider := FixedProvider(data)
+
+		const numParallelRuns = 10
+		var wg sync.WaitGroup
+		results := make([]error, numParallelRuns)
+
+		for runIdx := 0; runIdx < numParallelRuns; runIdx++ {
+			wg.Add(1)
+			go func(idx int) {
+				defer wg.Done()
+				
+				// Each run has different error conditions
+				errorTrigger := uint32(10 + idx*5)
+				
+				err := ForEachSlice(provider, func(val uint32) error {
+					if val == errorTrigger {
+						return fmt.Errorf("intentional error at %d in run %d", val, idx)
+					}
+					// Simulate some work
+					_ = val * val
+					return nil
+				}, ParallelExecute())
+
+				results[idx] = err
+			}(runIdx)
+		}
+
+		wg.Wait()
+
+		// Verify each run got its expected error
+		for i := 0; i < numParallelRuns; i++ {
+			expectedErrorVal := 10 + i*5
+			if results[i] == nil {
+				t.Errorf("Run %d: expected error but got nil", i)
+			} else {
+				expectedMsg := fmt.Sprintf("intentional error at %d in run %d", expectedErrorVal, i)
+				if results[i].Error() != expectedMsg {
+					t.Errorf("Run %d: expected '%s', got '%s'", i, expectedMsg, results[i].Error())
+				}
+			}
+		}
+	})
+
+	t.Run("HighVelocityConcurrentAccess", func(t *testing.T) {
+		// Stress test with very high number of concurrent goroutines
+		data := make([]uint32, 50)
+		for i := range data {
+			data[i] = uint32(i + 1)
+		}
+		provider := FixedProvider(data)
+
+		var operationCount int64
+		const numGoroutines = 100 // High concurrency
+
+		var wg sync.WaitGroup
+		startSignal := make(chan struct{})
+
+		// Launch all goroutines and have them wait for start signal
+		for i := 0; i < numGoroutines; i++ {
+			wg.Add(1)
+			go func(goroutineId int) {
+				defer wg.Done()
+				
+				// Wait for start signal to maximize concurrency
+				<-startSignal
+
+				err := ForEachSlice(provider, func(val uint32) error {
+					atomic.AddInt64(&operationCount, 1)
+					
+					// Add some variability in execution time
+					if val%3 == 0 {
+						time.Sleep(time.Nanosecond * time.Duration(val%10))
+					}
+					
+					return nil
+				}, ParallelExecute())
+
+				if err != nil {
+					t.Errorf("Goroutine %d failed: %s", goroutineId, err)
+				}
+			}(i)
+		}
+
+		// Start all goroutines simultaneously
+		close(startSignal)
+		wg.Wait()
+
+		// Verify all operations were performed
+		expectedOperations := int64(len(data)) * numGoroutines
+		if operationCount != expectedOperations {
+			t.Errorf("Expected %d operations, got %d", expectedOperations, operationCount)
+		}
+	})
 }
 
 // Benchmark tests for ExecuteForEachSlice performance

@@ -3406,3 +3406,221 @@ func BenchmarkExecuteForEachSliceErrorHandling(b *testing.B) {
 		}
 	})
 }
+
+// TestErrorAggregationParallelOperations tests comprehensive error aggregation scenarios
+func TestErrorAggregationParallelOperations(t *testing.T) {
+	t.Run("MultipleSimultaneousErrorsInParallelSliceMap", func(t *testing.T) {
+		// Test that when multiple parallel operations fail, we get a meaningful error
+		// This tests the current behavior where first error is returned
+		provider := func() ([]uint32, error) {
+			return []uint32{1, 2, 3, 4, 5, 6, 7, 8}, nil
+		}
+
+		// Transform function that fails on multiple specific values
+		transform := func(val uint32) (uint32, error) {
+			switch val {
+			case 2:
+				return 0, errors.New("error on value 2")
+			case 5:
+				return 0, errors.New("error on value 5")
+			case 7:
+				return 0, errors.New("error on value 7")
+			default:
+				time.Sleep(time.Millisecond) // Small delay to increase chance of parallel execution
+				return val * 2, nil
+			}
+		}
+
+		// Execute parallel SliceMap
+		result, err := SliceMap[uint32, uint32](transform)(provider)(ParallelMap())()
+
+		// Should get an error (currently returns first error encountered)
+		if err == nil {
+			t.Errorf("Expected error when multiple parallel operations fail, got result %v", result)
+		}
+
+		// Verify we get one of the expected errors
+		expectedErrors := []string{"error on value 2", "error on value 5", "error on value 7"}
+		errorFound := false
+		for _, expectedErr := range expectedErrors {
+			if err.Error() == expectedErr {
+				errorFound = true
+				break
+			}
+		}
+		if !errorFound {
+			t.Errorf("Expected one of %v, got error '%s'", expectedErrors, err.Error())
+		}
+
+		// Result should be nil when errors occur
+		if result != nil {
+			t.Errorf("Expected nil result when parallel errors occur, got %v", result)
+		}
+	})
+
+	t.Run("ErrorAggregationWithHighConcurrency", func(t *testing.T) {
+		// Test error behavior with high concurrency (more errors than workers)
+		data := make([]uint32, 100)
+		for i := range data {
+			data[i] = uint32(i + 1)
+		}
+		provider := func() ([]uint32, error) {
+			return data, nil
+		}
+
+		// Transform that fails on every 10th item
+		failureCount := int64(0)
+		transform := func(val uint32) (uint32, error) {
+			if val%10 == 0 {
+				atomic.AddInt64(&failureCount, 1)
+				return 0, fmt.Errorf("error on value %d", val)
+			}
+			// Add small work to simulate real processing
+			time.Sleep(time.Microsecond * 10)
+			return val * 2, nil
+		}
+
+		// Execute with high concurrency
+		result, err := SliceMap[uint32, uint32](transform)(provider)(ParallelMap())()
+
+		// Should get an error
+		if err == nil {
+			t.Errorf("Expected error with high concurrency failures, got result %v", result)
+		}
+
+		// Should have at least some failures (even if not all are counted due to early return)
+		if atomic.LoadInt64(&failureCount) == 0 {
+			t.Errorf("Expected some failures to be recorded, got %d", failureCount)
+		}
+
+		// Result should be nil
+		if result != nil {
+			t.Errorf("Expected nil result when high concurrency errors occur, got %v", result)
+		}
+	})
+
+	t.Run("MixedSuccessFailureErrorAggregation", func(t *testing.T) {
+		// Test mixed scenarios where some operations succeed and some fail
+		provider := func() ([]uint32, error) {
+			return []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, nil
+		}
+
+		successCount := int64(0)
+		failureCount := int64(0)
+
+		// Transform that fails on even numbers, succeeds on odd
+		transform := func(val uint32) (uint32, error) {
+			if val%2 == 0 {
+				atomic.AddInt64(&failureCount, 1)
+				return 0, fmt.Errorf("even number error: %d", val)
+			}
+			atomic.AddInt64(&successCount, 1)
+			return val * 3, nil
+		}
+
+		// Execute parallel operation
+		result, err := SliceMap[uint32, uint32](transform)(provider)(ParallelMap())()
+
+		// Should get an error due to failures
+		if err == nil {
+			t.Errorf("Expected error in mixed success/failure scenario, got result %v", result)
+		}
+
+		// Should have recorded some successes and failures
+		// Note: Due to early termination, not all may be recorded
+		if atomic.LoadInt64(&failureCount) == 0 {
+			t.Errorf("Expected some failures to be recorded, got %d", failureCount)
+		}
+
+		// Result should be nil when errors occur
+		if result != nil {
+			t.Errorf("Expected nil result in mixed success/failure scenario, got %v", result)
+		}
+	})
+
+	t.Run("ErrorPropagationConsistencyInParallel", func(t *testing.T) {
+		// Test that error propagation is consistent across multiple runs
+		provider := func() ([]uint32, error) {
+			return []uint32{1, 2, 3, 4, 5}, nil
+		}
+
+		// Transform that always fails on value 3
+		transform := func(val uint32) (uint32, error) {
+			if val == 3 {
+				return 0, errors.New("consistent error on value 3")
+			}
+			// Add randomness to execution time to test concurrency
+			time.Sleep(time.Duration(val) * time.Microsecond)
+			return val * 2, nil
+		}
+
+		// Run multiple times to test consistency
+		for run := 0; run < 10; run++ {
+			result, err := SliceMap[uint32, uint32](transform)(provider)(ParallelMap())()
+
+			// Should always get an error
+			if err == nil {
+				t.Errorf("Run %d: Expected error, got result %v", run, result)
+			}
+
+			// Should always get the same error (in this deterministic case)
+			expectedError := "consistent error on value 3"
+			if err.Error() != expectedError {
+				t.Errorf("Run %d: Expected error '%s', got '%s'", run, expectedError, err.Error())
+			}
+
+			// Result should always be nil
+			if result != nil {
+				t.Errorf("Run %d: Expected nil result, got %v", run, result)
+			}
+		}
+	})
+
+	t.Run("ParallelErrorAggregationWithExecuteForEachSlice", func(t *testing.T) {
+		// Test error aggregation behavior in ExecuteForEachSlice parallel execution
+		data := []uint32{1, 2, 3, 4, 5, 6, 7, 8}
+		provider := func() ([]uint32, error) {
+			return data, nil
+		}
+
+		failureCount := int64(0)
+		
+		// Operation that fails on multiple values
+		operation := func(val uint32) error {
+			if val == 2 || val == 5 || val == 7 {
+				atomic.AddInt64(&failureCount, 1)
+				return fmt.Errorf("operation failed on value %d", val)
+			}
+			// Small delay to simulate work
+			time.Sleep(time.Microsecond * 100)
+			return nil
+		}
+
+		// Execute with parallel configuration
+		err := ForEachSlice(provider, operation, ParallelExecute())
+
+		// Should get an error
+		if err == nil {
+			t.Errorf("Expected error in parallel ExecuteForEachSlice with failures")
+		}
+
+		// Should have recorded at least one failure
+		if atomic.LoadInt64(&failureCount) == 0 {
+			t.Errorf("Expected some failures to be recorded, got %d", failureCount)
+		}
+
+		// Error should indicate which value failed
+		errorStr := err.Error()
+		validErrors := []string{"operation failed on value 2", "operation failed on value 5", "operation failed on value 7"}
+		errorFound := false
+		for _, validError := range validErrors {
+			if errorStr == validError {
+				errorFound = true
+				break
+			}
+		}
+		if !errorFound {
+			t.Errorf("Expected error to be one of %v, got '%s'", validErrors, errorStr)
+		}
+	})
+}

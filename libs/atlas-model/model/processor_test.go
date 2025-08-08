@@ -3,6 +3,7 @@ package model
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -3057,6 +3058,306 @@ func TestProviderChainErrorPropagation(t *testing.T) {
 		// Result should be zero value
 		if result != 0 {
 			t.Errorf("Expected zero value result when error occurs, got %d", result)
+		}
+	})
+}
+
+func TestPartialFailureRecovery(t *testing.T) {
+	// Test behavior when some operations succeed and others fail
+	// This test focuses on scenarios where the system needs to handle mixed results gracefully
+	
+	t.Run("SliceOperationWithPartialFailures", func(t *testing.T) {
+		// Test SliceMap with some elements succeeding and others failing
+		provider := FixedProvider([]uint32{1, 2, 3, 4, 5, 6})
+		partialFailureError := errors.New("partial failure error")
+		
+		// Transform that fails for even numbers
+		selectiveTransform := func(val uint32) (string, error) {
+			if val%2 == 0 {
+				return "", partialFailureError
+			}
+			return fmt.Sprintf("success_%d", val), nil
+		}
+		
+		// Execute transformation
+		result, err := SliceMap[uint32, string](selectiveTransform)(provider)()()
+		
+		// Should fail because some elements failed
+		if err == nil {
+			t.Errorf("Expected error due to partial failures, got result %v", result)
+		}
+		if err.Error() != partialFailureError.Error() {
+			t.Errorf("Expected error '%s', got '%s'", partialFailureError.Error(), err.Error())
+		}
+		
+		// Result should be nil due to failure
+		if result != nil {
+			t.Errorf("Expected nil result when partial failure occurs, got %v", result)
+		}
+	})
+	
+	t.Run("FilteredProviderWithPartialSuccesses", func(t *testing.T) {
+		// Test filtering where some elements pass and others would cause errors
+		provider := FixedProvider([]uint32{1, 2, 3, 4, 5, 6, 7, 8})
+		
+		// Filter that only allows odd numbers (preventing errors on even numbers)
+		oddFilter := func(val uint32) bool {
+			return val%2 == 1
+		}
+		
+		// Transform that would fail on even numbers (but they should be filtered out)
+		safeTransform := func(val uint32) (uint32, error) {
+			if val%2 == 0 {
+				return 0, errors.New("should not reach even numbers due to filter")
+			}
+			return val * 10, nil
+		}
+		
+		// Apply filter first, then transform
+		filteredProvider := FilteredProvider(provider, []Filter[uint32]{oddFilter})
+		result, err := SliceMap[uint32, uint32](safeTransform)(filteredProvider)()()
+		
+		// Should succeed because filter prevented errors
+		if err != nil {
+			t.Errorf("Expected no error due to filtering, got error: %v", err)
+		}
+		
+		// Should have only odd numbers transformed (1, 3, 5, 7) -> (10, 30, 50, 70)
+		expected := []uint32{10, 30, 50, 70}
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("Expected result %v, got %v", expected, result)
+		}
+	})
+	
+	t.Run("ParallelExecutionWithMixedResults", func(t *testing.T) {
+		// Test parallel execution where some workers succeed and others fail
+		provider := FixedProvider([]uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10})
+		mixedError := errors.New("mixed results error")
+		
+		// Transform that fails for multiples of 3
+		mixedTransform := func(val uint32) (uint32, error) {
+			if val%3 == 0 {
+				return 0, mixedError
+			}
+			return val * val, nil
+		}
+		
+		// Execute in parallel
+		result, err := SliceMap[uint32, uint32](mixedTransform)(provider)(ParallelMap())()
+		
+		// Should fail because some parallel operations failed
+		if err == nil {
+			t.Errorf("Expected error due to parallel failures, got result %v", result)
+		}
+		if err.Error() != mixedError.Error() {
+			t.Errorf("Expected error '%s', got '%s'", mixedError.Error(), err.Error())
+		}
+		
+		// Result should be nil due to parallel failure
+		if result != nil {
+			t.Errorf("Expected nil result when parallel failure occurs, got %v", result)
+		}
+	})
+	
+	t.Run("ChainedProvidersWithSelectiveFailure", func(t *testing.T) {
+		// Test chained providers where one succeeds and another fails
+		successProvider := FixedProvider([]uint32{1, 2, 3})
+		chainError := errors.New("chain failure error")
+		
+		// First transform succeeds
+		firstTransform := func(val uint32) (uint32, error) {
+			return val * 2, nil
+		}
+		
+		// Second transform fails for values > 4
+		secondTransform := func(val uint32) (uint32, error) {
+			if val > 4 {
+				return 0, chainError
+			}
+			return val + 10, nil
+		}
+		
+		// Chain the transformations
+		chain := func() ([]uint32, error) {
+			intermediate, err := SliceMap[uint32, uint32](firstTransform)(successProvider)()()
+			if err != nil {
+				return nil, err
+			}
+			intermediateProvider := FixedProvider(intermediate)
+			return SliceMap[uint32, uint32](secondTransform)(intermediateProvider)()()
+		}
+		
+		// Execute chain
+		result, err := chain()
+		
+		// Should fail because second transform fails on value 6 (3*2=6 > 4)
+		if err == nil {
+			t.Errorf("Expected error due to chain failure, got result %v", result)
+		}
+		if err.Error() != chainError.Error() {
+			t.Errorf("Expected error '%s', got '%s'", chainError.Error(), err.Error())
+		}
+		
+		// Result should be nil due to chain failure
+		if result != nil {
+			t.Errorf("Expected nil result when chain failure occurs, got %v", result)
+		}
+	})
+	
+	t.Run("MergedProvidersWithPartialFailure", func(t *testing.T) {
+		// Test merging providers where some succeed and others fail
+		successProvider1 := FixedProvider([]uint32{1, 2, 3})
+		successProvider2 := FixedProvider([]uint32{4, 5, 6})
+		mergeError := errors.New("merge failure error")
+		failureProvider := ErrorProvider[[]uint32](mergeError)
+		
+		// Merge successful providers
+		successfulMerge := MergeSliceProvider(successProvider1, successProvider2)
+		result1, err1 := successfulMerge()
+		
+		// Should succeed
+		if err1 != nil {
+			t.Errorf("Expected no error in successful merge, got: %v", err1)
+		}
+		
+		expected1 := []uint32{1, 2, 3, 4, 5, 6}
+		if !reflect.DeepEqual(result1, expected1) {
+			t.Errorf("Expected merged result %v, got %v", expected1, result1)
+		}
+		
+		// Merge with failure
+		failureMerge := MergeSliceProvider(successProvider1, failureProvider)
+		result2, err2 := failureMerge()
+		
+		// Should fail due to one provider failing
+		if err2 == nil {
+			t.Errorf("Expected error due to merge failure, got result %v", result2)
+		}
+		if err2.Error() != mergeError.Error() {
+			t.Errorf("Expected error '%s', got '%s'", mergeError.Error(), err2.Error())
+		}
+		
+		// Result should be nil due to merge failure
+		if result2 != nil {
+			t.Errorf("Expected nil result when merge failure occurs, got %v", result2)
+		}
+	})
+	
+	t.Run("FoldOperationWithPartialFailure", func(t *testing.T) {
+		// Test fold operation that fails partway through
+		provider := FixedProvider([]uint32{1, 2, 3, 4, 5})
+		foldError := errors.New("fold operation error")
+		
+		// Initial value function
+		initialValue := func() (uint32, error) {
+			return 0, nil
+		}
+		
+		// Folder that fails when accumulator reaches certain threshold
+		selectiveFolder := func(acc uint32, val uint32) (uint32, error) {
+			newAcc := acc + val
+			if newAcc > 6 { // Fails at 1+2+3+4 = 10 > 6, actually fails at 1+2+3=6, then 6+4=10
+				return 0, foldError
+			}
+			return newAcc, nil
+		}
+		
+		// Execute fold operation
+		result, err := Fold(provider, initialValue, selectiveFolder)()
+		
+		// Should fail when threshold is exceeded
+		if err == nil {
+			t.Errorf("Expected error due to fold failure, got result %d", result)
+		}
+		if err.Error() != foldError.Error() {
+			t.Errorf("Expected error '%s', got '%s'", foldError.Error(), err.Error())
+		}
+		
+		// Result should be zero due to failure
+		if result != 0 {
+			t.Errorf("Expected zero result when fold failure occurs, got %d", result)
+		}
+	})
+	
+	t.Run("ForEachWithPartialExecution", func(t *testing.T) {
+		// Test ForEach operation where some iterations succeed before failure
+		provider := FixedProvider([]uint32{1, 2, 3, 4, 5, 6})
+		executedCount := int32(0)
+		forEachError := errors.New("for each partial error")
+		
+		// Operation that succeeds for first few elements then fails
+		partialOperation := func(val uint32) error {
+			atomic.AddInt32(&executedCount, 1)
+			if val > 3 {
+				return forEachError
+			}
+			// Simulate successful work
+			time.Sleep(time.Microsecond)
+			return nil
+		}
+		
+		// Execute for each
+		err := ForEachSlice(provider, partialOperation)
+		
+		// Should fail when encountering error
+		if err == nil {
+			t.Errorf("Expected error due to partial execution failure")
+		}
+		if err.Error() != forEachError.Error() {
+			t.Errorf("Expected error '%s', got '%s'", forEachError.Error(), err.Error())
+		}
+		
+		// Should have executed at least some operations (1, 2, 3, then fail on 4)
+		execCount := atomic.LoadInt32(&executedCount)
+		if execCount < 3 {
+			t.Errorf("Expected at least 3 executions before failure, got %d", execCount)
+		}
+		if execCount > 6 {
+			t.Errorf("Expected no more than 6 executions, got %d", execCount)
+		}
+	})
+	
+	t.Run("NestedPartialFailureRecovery", func(t *testing.T) {
+		// Test nested operations where outer succeeds but inner fails
+		outerProvider := FixedProvider([][]uint32{{1, 2}, {3, 4}, {5, 6}})
+		innerError := errors.New("inner operation error")
+		
+		// Outer operation processes each inner array
+		outerTransform := func(innerSlice []uint32) ([]uint32, error) {
+			// Inner operation that fails on value 4
+			innerTransform := func(val uint32) (uint32, error) {
+				if val == 4 {
+					return 0, innerError
+				}
+				return val * 100, nil
+			}
+			
+			// Process inner slice
+			result := make([]uint32, len(innerSlice))
+			for i, val := range innerSlice {
+				transformed, err := innerTransform(val)
+				if err != nil {
+					return nil, err
+				}
+				result[i] = transformed
+			}
+			return result, nil
+		}
+		
+		// Execute nested operation
+		result, err := SliceMap[[]uint32, []uint32](outerTransform)(outerProvider)()()
+		
+		// Should fail due to inner operation failure
+		if err == nil {
+			t.Errorf("Expected error due to nested failure, got result %v", result)
+		}
+		if err.Error() != innerError.Error() {
+			t.Errorf("Expected error '%s', got '%s'", innerError.Error(), err.Error())
+		}
+		
+		// Result should be nil due to nested failure
+		if result != nil {
+			t.Errorf("Expected nil result when nested failure occurs, got %v", result)
 		}
 	})
 }

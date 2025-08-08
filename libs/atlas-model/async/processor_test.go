@@ -892,7 +892,7 @@ func TestAsyncProviderErrorPropagation(t *testing.T) {
 		}
 	})
 	
-	t.Run("ErrorPropagationWithTimeout", func(t *testing.T) {
+	t.Run("ErrorPropagationSetTimeout", func(t *testing.T) {
 		// Test error propagation when both errors and timeouts can occur
 		items := []uint32{1, 2, 3}
 		explicitError := errors.New("explicit async error")
@@ -1044,7 +1044,7 @@ func TestAsyncProviderErrorPropagation(t *testing.T) {
 		}
 	})
 	
-	t.Run("ErrorPropagationWithContextCancellation", func(t *testing.T) {
+	t.Run("ErrorPropagationSetContextCancellation", func(t *testing.T) {
 		// Test error propagation when context is cancelled during operation
 		items := []uint32{1, 2, 3, 4, 5}
 		explicitError := errors.New("explicit error before cancellation")
@@ -2429,5 +2429,228 @@ func TestAsyncMemoryLeakDetection(t *testing.T) {
 			t.Errorf("Excessive memory growth in async channel stress test: %d bytes (%.2f MB)", 
 				memoryGrowth, float64(memoryGrowth)/1024/1024)
 		}
+	})
+}
+
+func BenchmarkContextCancellation(b *testing.B) {
+	// Benchmark measuring the performance overhead of context cancellation/timeout
+	// in async operations
+	
+	// Setup test data
+	data := make([]uint32, 100)
+	for i := range data {
+		data[i] = uint32(i + 1)
+	}
+	
+	b.Run("NormalTimeout", func(b *testing.B) {
+		// Baseline: operations that complete within normal timeout
+		fastProvider := func(val uint32) (Provider[uint32], error) {
+			return func(ctx context.Context, rchan chan uint32, echan chan error) {
+				// Fast operation - completes well before timeout
+				select {
+				case <-time.After(1 * time.Millisecond):
+					rchan <- val * 2
+				case <-ctx.Done():
+					echan <- ctx.Err()
+				}
+			}, nil
+		}
+		
+		providerSlice := func() ([]Provider[uint32], error) {
+			providers := make([]Provider[uint32], len(data))
+			for i, val := range data {
+				p, _ := fastProvider(val)
+				providers[i] = p
+			}
+			return providers, nil
+		}
+		
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			results, err := AwaitSlice(providerSlice, SetTimeout(100*time.Millisecond))()
+			if err != nil {
+				b.Fatalf("Unexpected error: %v", err)
+			}
+			if len(results) != len(data) {
+				b.Fatalf("Expected %d results, got %d", len(data), len(results))
+			}
+		}
+	})
+	
+	b.Run("TimeoutCancellation", func(b *testing.B) {
+		// Measure overhead when timeout cancellation occurs
+		slowProvider := func(val uint32) (Provider[uint32], error) {
+			return func(ctx context.Context, rchan chan uint32, echan chan error) {
+				// Slow operation - will be cancelled by timeout
+				select {
+				case <-time.After(200 * time.Millisecond):
+					rchan <- val * 2
+				case <-ctx.Done():
+					echan <- ctx.Err()
+				}
+			}, nil
+		}
+		
+		providerSlice := func() ([]Provider[uint32], error) {
+			providers := make([]Provider[uint32], len(data))
+			for i, val := range data {
+				p, _ := slowProvider(val)
+				providers[i] = p
+			}
+			return providers, nil
+		}
+		
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			_, err := AwaitSlice(providerSlice, SetTimeout(50*time.Millisecond))()
+			if err == nil {
+				b.Fatal("Expected timeout error")
+			}
+			if !errors.Is(err, ErrAwaitTimeout) {
+				b.Fatalf("Expected timeout error, got: %v", err)
+			}
+		}
+	})
+	
+	b.Run("MixedTimeoutBehavior", func(b *testing.B) {
+		// Measure performance with mixed fast/slow providers to test partial timeout
+		mixedProviderFunc := func(val uint32) (Provider[uint32], error) {
+			return func(ctx context.Context, rchan chan uint32, echan chan error) {
+				// Fast operations for first half, slow for second half
+				delay := time.Millisecond
+				if val > 50 {
+					delay = 100 * time.Millisecond // Will timeout
+				}
+				
+				select {
+				case <-time.After(delay):
+					rchan <- val * 2
+				case <-ctx.Done():
+					echan <- ctx.Err()
+				}
+			}, nil
+		}
+		
+		providerSlice := func() ([]Provider[uint32], error) {
+			providers := make([]Provider[uint32], len(data))
+			for i, val := range data {
+				p, _ := mixedProviderFunc(val)
+				providers[i] = p
+			}
+			return providers, nil
+		}
+		
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			_, err := AwaitSlice(providerSlice, SetTimeout(50*time.Millisecond))()
+			if err == nil {
+				b.Fatal("Expected timeout error due to slow providers")
+			}
+		}
+	})
+	
+	b.Run("ShortVsLongTimeout", func(b *testing.B) {
+		// Compare cancellation overhead between short and long timeouts
+		mediumProvider := func(val uint32) (Provider[uint32], error) {
+			return func(ctx context.Context, rchan chan uint32, echan chan error) {
+				// Medium delay - between short and long timeout
+				select {
+				case <-time.After(25 * time.Millisecond):
+					rchan <- val * 2
+				case <-ctx.Done():
+					echan <- ctx.Err()
+				}
+			}, nil
+		}
+		
+		providerSlice := func() ([]Provider[uint32], error) {
+			providers := make([]Provider[uint32], len(data[:20])) // Smaller set for timeout tests
+			for i, val := range data[:20] {
+				p, _ := mediumProvider(val)
+				providers[i] = p
+			}
+			return providers, nil
+		}
+		
+		b.Run("ShortTimeout", func(b *testing.B) {
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				_, err := AwaitSlice(providerSlice, SetTimeout(10*time.Millisecond))()
+				if err == nil {
+					b.Fatal("Expected timeout error with short timeout")
+				}
+			}
+		})
+		
+		b.Run("LongTimeout", func(b *testing.B) {
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				results, err := AwaitSlice(providerSlice, SetTimeout(100*time.Millisecond))()
+				if err != nil {
+					b.Fatalf("Unexpected error with long timeout: %v", err)
+				}
+				if len(results) != 20 {
+					b.Fatalf("Expected 20 results, got %d", len(results))
+				}
+			}
+		})
+	})
+	
+	b.Run("ContextCancellationVsTimeout", func(b *testing.B) {
+		// Compare explicit context cancellation vs timeout cancellation
+		fastProvider := func(val uint32) (Provider[uint32], error) {
+			return func(ctx context.Context, rchan chan uint32, echan chan error) {
+				select {
+				case <-time.After(2 * time.Millisecond):
+					rchan <- val * 2
+				case <-ctx.Done():
+					echan <- ctx.Err()
+				}
+			}, nil
+		}
+		
+		b.Run("ExplicitCancellation", func(b *testing.B) {
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				ctx, cancel := context.WithCancel(context.Background())
+				
+				providerSlice := func() ([]Provider[uint32], error) {
+					providers := make([]Provider[uint32], len(data[:50]))
+					for j, val := range data[:50] {
+						p, _ := fastProvider(val)
+						providers[j] = p
+					}
+					return providers, nil
+				}
+				
+				// Cancel immediately to test cancellation overhead
+				cancel()
+				
+				_, err := AwaitSlice(providerSlice, SetContext(ctx))()
+				if err == nil {
+					b.Fatal("Expected cancellation error")
+				}
+			}
+		})
+		
+		b.Run("TimeoutCancellation", func(b *testing.B) {
+			providerSlice := func() ([]Provider[uint32], error) {
+				providers := make([]Provider[uint32], len(data[:50]))
+				for j, val := range data[:50] {
+					p, _ := fastProvider(val)
+					providers[j] = p
+				}
+				return providers, nil
+			}
+			
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				// Very short timeout to trigger immediate timeout
+				_, err := AwaitSlice(providerSlice, SetTimeout(1*time.Nanosecond))()
+				if err == nil {
+					b.Fatal("Expected timeout error")
+				}
+			}
+		})
 	})
 }

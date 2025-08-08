@@ -6359,3 +6359,178 @@ func BenchmarkProviderErrorHandling(b *testing.B) {
 		b.Logf("Success: %d, Errors: %d", atomic.LoadInt64(&successCount), atomic.LoadInt64(&errorCount))
 	})
 }
+
+func BenchmarkContextCancellation(b *testing.B) {
+	// Benchmark measuring the performance overhead of context cancellation
+	// in parallel operations vs sequential operations
+	
+	// Setup test data
+	data := make([]uint32, 1000)
+	for i := range data {
+		data[i] = uint32(i + 1)
+	}
+	
+	b.Run("ParallelWithoutCancellation", func(b *testing.B) {
+		// Baseline: parallel execution without any cancellation
+		operation := func(u uint32) error {
+			// Simulate light work
+			time.Sleep(10 * time.Microsecond)
+			return nil
+		}
+		
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			err := ExecuteForEachSlice(operation, ParallelExecute())(data)
+			if err != nil {
+				b.Fatalf("Unexpected error: %v", err)
+			}
+		}
+	})
+	
+	b.Run("ParallelWithEarlyCancellation", func(b *testing.B) {
+		// Measure overhead when context cancellation occurs early in execution
+		operation := func(u uint32) error {
+			// Fail on the 10th item to trigger early cancellation
+			if u == 10 {
+				return errors.New("early cancellation trigger")
+			}
+			// Simulate work - some goroutines will be cancelled mid-execution
+			time.Sleep(10 * time.Microsecond)
+			return nil
+		}
+		
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			err := ExecuteForEachSlice(operation, ParallelExecute())(data)
+			if err == nil {
+				b.Fatal("Expected cancellation error")
+			}
+		}
+	})
+	
+	b.Run("ParallelWithLateCancellation", func(b *testing.B) {
+		// Measure overhead when context cancellation occurs late in execution
+		operation := func(u uint32) error {
+			// Fail on the 900th item to trigger late cancellation
+			if u == 900 {
+				return errors.New("late cancellation trigger")
+			}
+			// Simulate work
+			time.Sleep(10 * time.Microsecond)
+			return nil
+		}
+		
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			err := ExecuteForEachSlice(operation, ParallelExecute())(data)
+			if err == nil {
+				b.Fatal("Expected cancellation error")
+			}
+		}
+	})
+	
+	b.Run("SequentialVsParallelCancellationOverhead", func(b *testing.B) {
+		// Compare cancellation overhead between sequential and parallel execution
+		erroringOperation := func(u uint32) error {
+			if u == 50 {
+				return errors.New("operation error")
+			}
+			time.Sleep(5 * time.Microsecond)
+			return nil
+		}
+		
+		b.Run("Sequential", func(b *testing.B) {
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				err := ExecuteForEachSlice(erroringOperation)(data)
+				if err == nil {
+					b.Fatal("Expected error in sequential execution")
+				}
+			}
+		})
+		
+		b.Run("Parallel", func(b *testing.B) {
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				err := ExecuteForEachSlice(erroringOperation, ParallelExecute())(data)
+				if err == nil {
+					b.Fatal("Expected error in parallel execution")
+				}
+			}
+		})
+	})
+	
+	b.Run("CancellationWithVaryingWorkload", func(b *testing.B) {
+		// Measure how cancellation performance scales with different workload intensities
+		lightWork := func(u uint32) error {
+			if u == 100 {
+				return errors.New("cancellation trigger")
+			}
+			time.Sleep(1 * time.Microsecond)
+			return nil
+		}
+		
+		heavyWork := func(u uint32) error {
+			if u == 100 {
+				return errors.New("cancellation trigger") 
+			}
+			time.Sleep(100 * time.Microsecond)
+			return nil
+		}
+		
+		b.Run("LightWork", func(b *testing.B) {
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				err := ExecuteForEachSlice(lightWork, ParallelExecute())(data[:200])
+				if err == nil {
+					b.Fatal("Expected cancellation error")
+				}
+			}
+		})
+		
+		b.Run("HeavyWork", func(b *testing.B) {
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				err := ExecuteForEachSlice(heavyWork, ParallelExecute())(data[:200])
+				if err == nil {
+					b.Fatal("Expected cancellation error")
+				}
+			}
+		})
+	})
+	
+	b.Run("ContextCancellationRaceConditions", func(b *testing.B) {
+		// Measure performance impact of race conditions during context cancellation
+		var completedCount int64
+		var cancelledCount int64
+		
+		operation := func(u uint32) error {
+			// Fail on item 10 to trigger cancellation
+			if u == 10 {
+				return errors.New("trigger cancellation")
+			}
+			
+			// Simulate work that might race with cancellation
+			select {
+			case <-time.After(5 * time.Microsecond):
+				atomic.AddInt64(&completedCount, 1)
+				return nil
+			}
+		}
+		
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			atomic.StoreInt64(&completedCount, 0)
+			atomic.StoreInt64(&cancelledCount, 0)
+			
+			err := ExecuteForEachSlice(operation, ParallelExecute())(data)
+			if err == nil {
+				b.Fatal("Expected cancellation error")
+			}
+		}
+		
+		b.Logf("Avg completed: %d, cancelled: %d per iteration", 
+			atomic.LoadInt64(&completedCount)/int64(b.N),
+			atomic.LoadInt64(&cancelledCount)/int64(b.N))
+	})
+}

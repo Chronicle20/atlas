@@ -197,6 +197,9 @@ func ExecuteForEachMap[K comparable, V any](f KeyValueOperator[K, V], configurat
 
 	return func(m map[K]V) error {
 		if c.parallel {
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			
 			wg := &sync.WaitGroup{}
 			errChannels := make(chan error, len(m))
 			for k, v := range m {
@@ -204,16 +207,28 @@ func ExecuteForEachMap[K comparable, V any](f KeyValueOperator[K, V], configurat
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
-					err := f(key)(value)
-					errChannels <- err
+					select {
+					case <-ctx.Done():
+						return
+					default:
+						err := f(key)(value)
+						errChannels <- err
+					}
 				}()
 			}
-			wg.Wait()
-			var err error
-			for i := 0; i < len(m); i++ {
-				err = <-errChannels
+			
+			go func() {
+				wg.Wait()
+				close(errChannels)
+			}()
+			
+			for err := range errChannels {
+				if err != nil {
+					cancel() // Cancel other operations on first error
+					return err
+				}
 			}
-			return err
+			return nil
 		} else {
 			for k, v := range m {
 				err := f(k)(v)

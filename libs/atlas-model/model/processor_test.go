@@ -560,3 +560,57 @@ func TestCollectToMapLazyEvaluation(t *testing.T) {
 		}
 	}
 }
+
+func TestMergeSliceProviderLazyEvaluation(t *testing.T) {
+	// Track side effects to verify lazy evaluation
+	executed1 := false
+	executed2 := false
+	
+	// Create providers with side effects
+	provider1 := func() ([]uint32, error) {
+		executed1 = true
+		return []uint32{1, 2, 3}, nil
+	}
+	
+	provider2 := func() ([]uint32, error) {
+		executed2 = true
+		return []uint32{4, 5, 6}, nil
+	}
+	
+	// Compose the merge - should NOT execute providers yet
+	mergedProvider := MergeSliceProvider(provider1, provider2)
+	
+	// Verify no execution happened during composition
+	if executed1 {
+		t.Errorf("MergeSliceProvider should not execute first provider during composition")
+	}
+	if executed2 {
+		t.Errorf("MergeSliceProvider should not execute second provider during composition")
+	}
+	
+	// Now execute the merged provider
+	result, err := mergedProvider()
+	if err != nil {
+		t.Errorf("Expected result, got err %s", err)
+	}
+	
+	// Verify execution happened when merged provider was called
+	if !executed1 {
+		t.Errorf("First provider should have been executed when merged provider was called")
+	}
+	if !executed2 {
+		t.Errorf("Second provider should have been executed when merged provider was called")
+	}
+	
+	// Verify the result is correct
+	expected := []uint32{1, 2, 3, 4, 5, 6}
+	if len(result) != len(expected) {
+		t.Errorf("Expected slice with %d elements, got %d", len(expected), len(result))
+	}
+	
+	for i, expectedValue := range expected {
+		if result[i] != expectedValue {
+			t.Errorf("At index %d: expected %d, got %d", i, expectedValue, result[i])
+		}
+	}
+}

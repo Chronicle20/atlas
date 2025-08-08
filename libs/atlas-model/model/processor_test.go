@@ -3,6 +3,7 @@ package model
 import (
 	"errors"
 	"fmt"
+	"sync"
 	"testing"
 )
 
@@ -125,9 +126,12 @@ func TestForEachSlice(t *testing.T) {
 
 func TestForEachSliceParallel(t *testing.T) {
 	p := FixedProvider([]uint32{1, 2, 3, 4, 5})
-	count := uint32(0)
+	var count uint32
+	var mu sync.Mutex
 
 	err := ForEachSlice(p, func(u uint32) error {
+		mu.Lock()
+		defer mu.Unlock()
 		count += u
 		return nil
 	}, ParallelExecute())
@@ -167,6 +171,7 @@ func TestForEachMap(t *testing.T) {
 func TestForEachMapParallel(t *testing.T) {
 	p := FixedProvider(map[uint32][]uint32{1: {1, 2}, 2: {1, 2, 3}})
 	counts := map[uint32]uint32{}
+	var mu sync.Mutex
 
 	err := ForEachMap(p, func(k uint32) Operator[[]uint32] {
 		return func(vs []uint32) error {
@@ -174,6 +179,8 @@ func TestForEachMapParallel(t *testing.T) {
 			for _, v := range vs {
 				count += v
 			}
+			mu.Lock()
+			defer mu.Unlock()
 			counts[k] = count
 			return nil
 		}

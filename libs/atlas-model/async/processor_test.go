@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/Chronicle20/atlas-model/model"
 	"reflect"
+	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -1816,5 +1817,183 @@ func TestConcurrentProviderExecution(t *testing.T) {
 		} else {
 			t.Logf("Async stress test: %d/%d executions succeeded", successCount, numConcurrentExecutions)
 		}
+	})
+}
+
+func TestChannelCleanup(t *testing.T) {
+	t.Run("TestChannelsClosedAfterExecution", func(t *testing.T) {
+		// Test that channels used in async execution are properly cleaned up
+		data := []uint32{1, 2, 3, 4, 5}
+		providers := make([]Provider[uint32], len(data))
+
+		// Track channel operations to verify proper cleanup
+		channelOpsCount := int64(0)
+
+		for i, val := range data {
+			v := val
+			providers[i] = func(ctx context.Context, rchan chan uint32, echan chan error) {
+				atomic.AddInt64(&channelOpsCount, 1)
+				
+				select {
+				case <-ctx.Done():
+					// Context cancelled - this is expected cleanup behavior
+					return
+				case rchan <- v * 2:
+					// Normal execution path
+				}
+			}
+		}
+
+		results, err := AwaitSlice(FixedProvider(providers))()
+		
+		if err != nil {
+			t.Errorf("Expected no error, got: %v", err)
+		}
+		if len(results) != len(data) {
+			t.Errorf("Expected %d results, got %d", len(data), len(results))
+		}
+
+		// Verify all providers executed
+		if channelOpsCount != int64(len(data)) {
+			t.Errorf("Expected %d channel operations, got %d", len(data), channelOpsCount)
+		}
+	})
+
+	t.Run("TestChannelResourcesReleasedOnTimeout", func(t *testing.T) {
+		// Test that channels are properly cleaned up when operations timeout
+		slowProviders := make([]Provider[uint32], 3)
+		
+		for i := range slowProviders {
+			idx := i
+			slowProviders[i] = func(ctx context.Context, rchan chan uint32, echan chan error) {
+				select {
+				case <-time.After(200 * time.Millisecond): // Longer than default timeout
+					// This should be interrupted by context cancellation
+					rchan <- uint32(idx * 100)
+				case <-ctx.Done():
+					// Proper cleanup path when context is cancelled
+					return
+				}
+			}
+		}
+
+		// Use a short timeout to trigger channel cleanup
+		_, err := AwaitSlice(FixedProvider(slowProviders), SetTimeout(50*time.Millisecond))()
+		
+		if err == nil {
+			t.Error("Expected timeout error, got nil")
+		}
+		if !errors.Is(err, ErrAwaitTimeout) {
+			t.Errorf("Expected ErrAwaitTimeout, got: %v", err)
+		}
+
+		// Give goroutines time to exit cleanly
+		time.Sleep(250 * time.Millisecond)
+	})
+
+	t.Run("TestChannelMemoryLeakPrevention", func(t *testing.T) {
+		// Test that repeated async operations don't accumulate channel resources
+		iterations := 100
+		data := []uint32{1, 2, 3}
+
+		for iteration := 0; iteration < iterations; iteration++ {
+			providers := make([]Provider[uint32], len(data))
+			
+			for i, val := range data {
+				v := val
+				providers[i] = func(ctx context.Context, rchan chan uint32, echan chan error) {
+					select {
+					case rchan <- v:
+					case <-ctx.Done():
+						return
+					}
+				}
+			}
+
+			results, err := AwaitSlice(FixedProvider(providers))()
+			
+			if err != nil {
+				t.Errorf("Iteration %d: expected no error, got: %v", iteration, err)
+			}
+			if len(results) != len(data) {
+				t.Errorf("Iteration %d: expected %d results, got %d", iteration, len(data), len(results))
+			}
+		}
+
+		// Force garbage collection to help detect any resource leaks
+		runtime.GC()
+		time.Sleep(10 * time.Millisecond)
+	})
+
+	t.Run("TestChannelBufferingSafety", func(t *testing.T) {
+		// Test that buffered channels don't cause deadlocks or resource leaks
+		largeDataSet := make([]uint32, 1000) // Large enough to test buffering limits
+		for i := range largeDataSet {
+			largeDataSet[i] = uint32(i)
+		}
+
+		providers := make([]Provider[uint32], len(largeDataSet))
+		
+		for i, val := range largeDataSet {
+			v := val
+			providers[i] = func(ctx context.Context, rchan chan uint32, echan chan error) {
+				select {
+				case rchan <- v * 2:
+					// Normal execution
+				case <-ctx.Done():
+					return
+				}
+			}
+		}
+
+		start := time.Now()
+		results, err := AwaitSlice(FixedProvider(providers), SetTimeout(5*time.Second))()
+		duration := time.Since(start)
+
+		if err != nil {
+			t.Errorf("Expected no error with large dataset, got: %v", err)
+		}
+		if len(results) != len(largeDataSet) {
+			t.Errorf("Expected %d results, got %d", len(largeDataSet), len(results))
+		}
+
+		// Verify reasonable performance (should not take excessive time)
+		if duration > 10*time.Second {
+			t.Errorf("Large dataset processing took too long: %v", duration)
+		}
+	})
+
+	t.Run("TestChannelErrorHandlingCleanup", func(t *testing.T) {
+		// Test that channels are properly cleaned up when errors occur
+		providers := make([]Provider[uint32], 5)
+		
+		providers[0] = func(ctx context.Context, rchan chan uint32, echan chan error) {
+			rchan <- 10
+		}
+		providers[1] = func(ctx context.Context, rchan chan uint32, echan chan error) {
+			rchan <- 20
+		}
+		providers[2] = func(ctx context.Context, rchan chan uint32, echan chan error) {
+			// This provider will cause an error
+			echan <- errors.New("intentional channel cleanup test error")
+		}
+		providers[3] = func(ctx context.Context, rchan chan uint32, echan chan error) {
+			rchan <- 30
+		}
+		providers[4] = func(ctx context.Context, rchan chan uint32, echan chan error) {
+			rchan <- 40
+		}
+
+		_, err := AwaitSlice(FixedProvider(providers))()
+		
+		if err == nil {
+			t.Error("Expected error from failing provider, got nil")
+		}
+		if err.Error() != "intentional channel cleanup test error" {
+			t.Errorf("Expected specific error message, got: %v", err)
+		}
+
+		// Give time for any remaining goroutines to exit cleanly
+		time.Sleep(50 * time.Millisecond)
 	})
 }

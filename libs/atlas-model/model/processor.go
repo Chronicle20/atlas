@@ -180,25 +180,27 @@ func Filters[M any](filters ...Filter[M]) []Filter[M] {
 
 //goland:noinspection GoUnusedExportedFunction
 func FilteredProvider[M any](provider Provider[[]M], filters []Filter[M]) Provider[[]M] {
-	models, err := provider()
-	if err != nil {
-		return ErrorProvider[[]M](err)
-	}
+	return func() ([]M, error) {
+		models, err := provider()
+		if err != nil {
+			return nil, err
+		}
 
-	var results []M
-	for _, m := range models {
-		good := true
-		for _, f := range filters {
-			if !f(m) {
-				good = false
-				break
+		var results []M
+		for _, m := range models {
+			good := true
+			for _, f := range filters {
+				if !f(m) {
+					good = false
+					break
+				}
+			}
+			if good {
+				results = append(results, m)
 			}
 		}
-		if good {
-			results = append(results, m)
-		}
+		return results, nil
 	}
-	return FixedProvider(results)
 }
 
 //goland:noinspection GoUnusedExportedFunction

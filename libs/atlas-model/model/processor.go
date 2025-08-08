@@ -365,23 +365,28 @@ type Folder[M any, N any] func(N, M) (N, error)
 
 //goland:noinspection GoUnusedExportedFunction
 func Fold[M any, N any](provider Provider[[]M], supplier Provider[N], folder Folder[M, N]) Provider[N] {
-	ms, err := provider()
-	if err != nil {
-		return ErrorProvider[N](err)
-	}
-
-	n, err := supplier()
-	if err != nil {
-		return ErrorProvider[N](err)
-	}
-
-	for _, wip := range ms {
-		n, err = folder(n, wip)
+	return func() (N, error) {
+		ms, err := provider()
 		if err != nil {
-			return ErrorProvider[N](err)
+			var zero N
+			return zero, err
 		}
+
+		n, err := supplier()
+		if err != nil {
+			var zero N
+			return zero, err
+		}
+
+		for _, wip := range ms {
+			n, err = folder(n, wip)
+			if err != nil {
+				var zero N
+				return zero, err
+			}
+		}
+		return n, nil
 	}
-	return FixedProvider(n)
 }
 
 //goland:noinspection GoUnusedExportedFunction

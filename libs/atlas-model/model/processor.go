@@ -1,3 +1,34 @@
+// Package model provides functional programming utilities with lazy evaluation for data processing pipelines.
+//
+// # Lazy Evaluation
+//
+// All Provider combinators in this package implement lazy evaluation, meaning that operations are deferred
+// until the final Provider is invoked. This approach offers several benefits:
+//
+//   - Performance: Expensive operations (DB queries, API calls) only execute when results are needed
+//   - Memory efficiency: Intermediate results aren't stored unnecessarily
+//   - Composability: Complex processing pipelines can be built without triggering execution
+//   - Predictable side effects: External operations happen at invocation time, not composition time
+//
+// # Basic Usage
+//
+//	// Build a processing pipeline (no execution yet)
+//	pipeline := Map(expensiveTransform)(
+//		SliceMap(anotherTransform)(databaseQuery)(ParallelMap()),
+//	)
+//
+//	// Only now does execution happen
+//	result, err := pipeline()
+//
+// # Key Design Principles
+//
+//   - Providers return new Providers that defer execution
+//   - Side effects only occur when the final Provider is called
+//   - Error propagation works correctly through the lazy chain
+//   - Composition builds the execution plan without running it
+//
+// Use Memoize() when you need to cache results across multiple invocations of the same Provider.
+// Use Lazy() to defer even Provider creation until invocation time.
 package model
 
 import (
@@ -35,6 +66,14 @@ func ThenOperator[M any](first Operator[M], others []Operator[M]) Operator[M] {
 
 type KeyValueOperator[K any, V any] func(K) Operator[V]
 
+// Provider represents a deferred computation that yields a value of type M or an error.
+// All Provider operations use lazy evaluation - they build execution plans without running them.
+// The actual computation only occurs when the Provider function is invoked.
+//
+// Example:
+//
+//	provider := FixedProvider(42)           // Creates Provider, no computation yet
+//	result, err := provider()               // Now the computation happens
 type Provider[M any] func() (M, error)
 
 //goland:noinspection GoUnusedExportedFunction
@@ -178,27 +217,43 @@ func Filters[M any](filters ...Filter[M]) []Filter[M] {
 	return filters
 }
 
+// FilteredProvider applies filters to a slice using lazy evaluation.
+// The slice is NOT fetched and filtered during composition - all work happens on invocation.
+//
+// All filters must pass for an element to be included in the result.
+// Filtering short-circuits on the first failed filter per element for efficiency.
+//
+// Example:
+//
+//	isEven := func(i int) bool { return i%2 == 0 }
+//	isPositive := func(i int) bool { return i > 0 }
+//	filtered := FilteredProvider(databaseQuery, []Filter[int]{isEven, isPositive})
+//	// No database query or filtering has happened yet
+//	result, err := filtered()  // Now query executes and filtering is applied
+//
 //goland:noinspection GoUnusedExportedFunction
 func FilteredProvider[M any](provider Provider[[]M], filters []Filter[M]) Provider[[]M] {
-	models, err := provider()
-	if err != nil {
-		return ErrorProvider[[]M](err)
-	}
+	return func() ([]M, error) {
+		models, err := provider()
+		if err != nil {
+			return nil, err
+		}
 
-	var results []M
-	for _, m := range models {
-		good := true
-		for _, f := range filters {
-			if !f(m) {
-				good = false
-				break
+		var results []M
+		for _, m := range models {
+			good := true
+			for _, f := range filters {
+				if !f(m) {
+					good = false
+					break
+				}
+			}
+			if good {
+				results = append(results, m)
 			}
 		}
-		if good {
-			results = append(results, m)
-		}
+		return results, nil
 	}
-	return FixedProvider(results)
 }
 
 //goland:noinspection GoUnusedExportedFunction
@@ -215,11 +270,13 @@ func AsSliceProvider[M any](model M) Provider[[]M] {
 
 //goland:noinspection GoUnusedExportedFunction
 func ToSliceProvider[M any](provider Provider[M]) Provider[[]M] {
-	m, err := provider()
-	if err != nil {
-		return ErrorProvider[[]M](err)
+	return func() ([]M, error) {
+		m, err := provider()
+		if err != nil {
+			return nil, err
+		}
+		return []M{m}, nil
 	}
-	return AsSliceProvider(m)
 }
 
 //goland:noinspection GoUnusedExportedFunction
@@ -261,18 +318,32 @@ func ForEachMap[K comparable, V any](provider Provider[map[K]V], operator KeyVal
 //goland:noinspection GoUnusedExportedFunction
 type Transformer[M any, N any] func(M) (N, error)
 
+// Map applies a transformation function to the value inside a Provider using lazy evaluation.
+// The transformation is NOT applied during composition - it's deferred until the returned Provider is invoked.
+//
+// This enables building transformation pipelines without executing them:
+//
+//	pipeline := Map(transform1)(Map(transform2)(databaseQuery))  // No execution yet
+//	result, err := pipeline()                                    // Now both transforms execute
+//
+// Example:
+//
+//	stringToInt := func(s string) (int, error) { return strconv.Atoi(s) }
+//	provider := Map(stringToInt)(FixedProvider("42"))
+//	// No computation has happened yet
+//	result, err := provider()  // Now both FixedProvider and stringToInt execute
+//
 //goland:noinspection GoUnusedExportedFunction
 func Map[M any, N any](transformer Transformer[M, N]) func(provider Provider[M]) Provider[N] {
 	return func(provider Provider[M]) Provider[N] {
-		m, err := provider()
-		if err != nil {
-			return ErrorProvider[N](err)
+		return func() (N, error) {
+			m, err := provider()
+			if err != nil {
+				var zero N
+				return zero, err
+			}
+			return transformer(m)
 		}
-		n, err := transformer(m)
-		if err != nil {
-			return ErrorProvider[N](err)
-		}
-		return FixedProvider(n)
 	}
 }
 
@@ -299,50 +370,66 @@ type mapResult[E any] struct {
 	err   error
 }
 
+// SliceMap applies a transformation to each element of a slice using lazy evaluation.
+// The slice is NOT fetched and transformed during composition - all work is deferred until invocation.
+//
+// Supports both sequential and parallel processing via configurators:
+//   - Default: Sequential processing
+//   - ParallelMap(): Concurrent processing with goroutines
+//
+// Example:
+//
+//	transform := func(i int) (string, error) { return fmt.Sprintf("item-%d", i) }
+//	pipeline := SliceMap(transform)(databaseQuery)(ParallelMap())
+//	// No database query or transformations have happened yet
+//	result, err := pipeline()  // Now query executes and all transforms run in parallel
+//
 //goland:noinspection GoUnusedExportedFunction
 func SliceMap[M any, N any](transformer Transformer[M, N]) func(provider Provider[[]M]) func(configurators ...MapFuncConfigurator) Provider[[]N] {
 	return func(provider Provider[[]M]) func(configurators ...MapFuncConfigurator) Provider[[]N] {
 		return func(configurators ...MapFuncConfigurator) Provider[[]N] {
-			c := MapConfig{parallel: false}
-			for _, configurator := range configurators {
-				c = configurator(c)
-			}
-
-			models, err := provider()
-			if err != nil {
-				return ErrorProvider[[]N](err)
-			}
-			var results = make([]N, len(models))
-
-			if c.parallel {
-				var wg sync.WaitGroup
-
-				resCh := make(chan mapResult[N], len(models))
-
-				for i, m := range models {
-					wg.Add(1)
-					go parallelTransform(&wg, transformer, i, m, resCh)
+			return func() ([]N, error) {
+				c := MapConfig{parallel: false}
+				for _, configurator := range configurators {
+					c = configurator(c)
 				}
-				wg.Wait()
 
-				close(resCh)
-				for res := range resCh {
-					if res.err != nil {
-						return ErrorProvider[[]N](res.err)
+				models, err := provider()
+				if err != nil {
+					return nil, err
+				}
+				var results = make([]N, len(models))
+
+				if c.parallel {
+					var wg sync.WaitGroup
+
+					resCh := make(chan mapResult[N], len(models))
+
+					for i, m := range models {
+						wg.Add(1)
+						go parallelTransform(&wg, transformer, i, m, resCh)
 					}
-					results[res.index] = res.value
-				}
-			} else {
-				for i, m := range models {
-					var n N
-					n, err = transformer(m)
-					if err != nil {
-						return ErrorProvider[[]N](err)
+					wg.Wait()
+
+					close(resCh)
+					for res := range resCh {
+						if res.err != nil {
+							return nil, res.err
+						}
+						results[res.index] = res.value
 					}
-					results[i] = n
+				} else {
+					for i, m := range models {
+						var n N
+						n, err = transformer(m)
+						if err != nil {
+							return nil, err
+						}
+						results[i] = n
+					}
 				}
+				return results, nil
 			}
-			return FixedProvider(results)
 		}
 	}
 }
@@ -362,23 +449,28 @@ type Folder[M any, N any] func(N, M) (N, error)
 
 //goland:noinspection GoUnusedExportedFunction
 func Fold[M any, N any](provider Provider[[]M], supplier Provider[N], folder Folder[M, N]) Provider[N] {
-	ms, err := provider()
-	if err != nil {
-		return ErrorProvider[N](err)
-	}
-
-	n, err := supplier()
-	if err != nil {
-		return ErrorProvider[N](err)
-	}
-
-	for _, wip := range ms {
-		n, err = folder(n, wip)
+	return func() (N, error) {
+		ms, err := provider()
 		if err != nil {
-			return ErrorProvider[N](err)
+			var zero N
+			return zero, err
 		}
+
+		n, err := supplier()
+		if err != nil {
+			var zero N
+			return zero, err
+		}
+
+		for _, wip := range ms {
+			n, err = folder(n, wip)
+			if err != nil {
+				var zero N
+				return zero, err
+			}
+		}
+		return n, nil
 	}
-	return FixedProvider(n)
 }
 
 //goland:noinspection GoUnusedExportedFunction
@@ -394,31 +486,36 @@ func Decorate[M any](decorators []Decorator[M]) func(m M) (M, error) {
 
 //goland:noinspection GoUnusedExportedFunction
 func FirstProvider[M any](provider Provider[[]M], filters []Filter[M]) Provider[M] {
-	ms, err := provider()
-	if err != nil {
-		return ErrorProvider[M](err)
-	}
+	return func() (M, error) {
+		ms, err := provider()
+		if err != nil {
+			var zero M
+			return zero, err
+		}
 
-	if len(ms) == 0 {
-		return ErrorProvider[M](ErrEmptySlice)
-	}
+		if len(ms) == 0 {
+			var zero M
+			return zero, ErrEmptySlice
+		}
 
-	if len(filters) == 0 {
-		return FixedProvider[M](ms[0])
-	}
+		if len(filters) == 0 {
+			return ms[0], nil
+		}
 
-	for _, m := range ms {
-		ok := true
-		for _, filter := range filters {
-			if !filter(m) {
-				ok = false
+		for _, m := range ms {
+			ok := true
+			for _, filter := range filters {
+				if !filter(m) {
+					ok = false
+				}
+			}
+			if ok {
+				return m, nil
 			}
 		}
-		if ok {
-			return FixedProvider[M](m)
-		}
+		var zero M
+		return zero, ErrNoResultFound
 	}
-	return ErrorProvider[M](ErrNoResultFound)
 }
 
 //goland:noinspection GoUnusedExportedFunction
@@ -438,11 +535,11 @@ func Identity[M any](m M) M {
 
 //goland:noinspection GoUnusedExportedFunction
 func CollectToMap[M any, K comparable, V any](mp Provider[[]M], kp KeyProvider[M, K], vp ValueProvider[M, V]) Provider[map[K]V] {
-	ms, err := mp()
-	if err != nil {
-		return ErrorProvider[map[K]V](err)
-	}
 	return func() (map[K]V, error) {
+		ms, err := mp()
+		if err != nil {
+			return nil, err
+		}
 		var result = make(map[K]V)
 		for _, m := range ms {
 			result[kp(m)] = vp(m)
@@ -463,6 +560,62 @@ func MergeSliceProvider[M any](provider Provider[[]M], other Provider[[]M]) Prov
 			return nil, err
 		}
 		return append(r1, r2...), nil
+	}
+}
+
+// Memoize wraps a Provider with thread-safe caching, ensuring the underlying computation
+// only executes once regardless of how many times the returned Provider is called.
+//
+// This is useful for expensive operations that may be accessed multiple times:
+//   - Database queries
+//   - API calls
+//   - Complex computations
+//
+// Example:
+//
+//	expensiveQuery := Memoize(databaseProvider)
+//	result1, _ := expensiveQuery()  // Executes the database query
+//	result2, _ := expensiveQuery()  // Returns cached result, no database call
+//
+// Thread-safe: Multiple goroutines can safely call the memoized Provider concurrently.
+//
+//goland:noinspection GoUnusedExportedFunction
+func Memoize[T any](provider Provider[T]) Provider[T] {
+	var once sync.Once
+	var result T
+	var err error
+
+	return func() (T, error) {
+		once.Do(func() {
+			result, err = provider()
+		})
+		return result, err
+	}
+}
+
+// Lazy defers not just the execution of a Provider, but the creation of the Provider itself.
+// This is useful when the Provider creation depends on runtime conditions or expensive setup.
+//
+// The function f is only called when the returned Provider is invoked, allowing for:
+//   - Conditional Provider selection based on runtime state
+//   - Lazy initialization of expensive Provider creation logic
+//   - Dynamic Provider construction
+//
+// Example:
+//
+//	conditionalProvider := Lazy(func() Provider[string] {
+//		if someCondition() {
+//			return expensiveProvider()
+//		}
+//		return FixedProvider("default")
+//	})
+//	// Neither someCondition() nor any Provider creation has happened yet
+//	result, err := conditionalProvider()  // Now f() executes and chosen Provider runs
+//
+//goland:noinspection GoUnusedExportedFunction
+func Lazy[T any](f func() Provider[T]) Provider[T] {
+	return func() (T, error) {
+		return f()()
 	}
 }
 

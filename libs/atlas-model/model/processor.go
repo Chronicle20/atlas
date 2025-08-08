@@ -32,6 +32,7 @@
 package model
 
 import (
+	"context"
 	"errors"
 	"math/rand"
 	"sync"
@@ -143,6 +144,9 @@ func ExecuteForEachSlice[M any](f Operator[M], configurators ...ExecuteFuncConfi
 
 	return func(models []M) error {
 		if c.parallel {
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			
 			wg := &sync.WaitGroup{}
 			errChannels := make(chan error, len(models))
 			for _, m := range models {
@@ -150,16 +154,28 @@ func ExecuteForEachSlice[M any](f Operator[M], configurators ...ExecuteFuncConfi
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
-					err := f(model)
-					errChannels <- err
+					select {
+					case <-ctx.Done():
+						return
+					default:
+						err := f(model)
+						errChannels <- err
+					}
 				}()
 			}
-			wg.Wait()
-			var err error
-			for i := 0; i < len(models); i++ {
-				err = <-errChannels
+			
+			go func() {
+				wg.Wait()
+				close(errChannels)
+			}()
+			
+			for err := range errChannels {
+				if err != nil {
+					cancel() // Cancel other operations on first error
+					return err
+				}
 			}
-			return err
+			return nil
 		} else {
 			for _, m := range models {
 				err := f(m)

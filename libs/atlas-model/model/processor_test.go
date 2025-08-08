@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"testing"
 )
 
@@ -2255,6 +2256,77 @@ func BenchmarkPipelineComposition(b *testing.B) {
 				)(),
 				[]Filter[uint32]{func(val uint32) bool { return val < 100 }},
 			)
+		}
+	})
+}
+
+func TestExecuteForEachSliceErrorHandling(t *testing.T) {
+	// Test that ExecuteForEachSlice properly handles errors and terminates early in parallel mode
+
+	t.Run("SequentialMode", func(t *testing.T) {
+		// Test sequential mode (existing behavior should work)
+		p := FixedProvider([]uint32{1, 2, 3, 4, 5})
+		callCount := 0
+
+		err := ForEachSlice(p, func(u uint32) error {
+			callCount++
+			if u == 3 {
+				return errors.New("error on 3")
+			}
+			return nil
+		})
+
+		if err == nil {
+			t.Error("Expected error, got nil")
+		}
+		if err.Error() != "error on 3" {
+			t.Errorf("Expected 'error on 3', got '%s'", err.Error())
+		}
+		// In sequential mode, should stop at the error (3 calls: 1, 2, 3)
+		if callCount != 3 {
+			t.Errorf("Expected 3 calls in sequential mode, got %d", callCount)
+		}
+	})
+
+	t.Run("ParallelMode", func(t *testing.T) {
+		// Test parallel mode - should return first error
+		p := FixedProvider([]uint32{1, 2, 3, 4, 5})
+		var callCount int32
+
+		err := ForEachSlice(p, func(u uint32) error {
+			atomic.AddInt32(&callCount, 1)
+			if u == 3 {
+				return errors.New("error on 3")
+			}
+			return nil
+		}, ParallelExecute())
+
+		if err == nil {
+			t.Error("Expected error, got nil")
+		}
+		if err.Error() != "error on 3" {
+			t.Errorf("Expected 'error on 3', got '%s'", err.Error())
+		}
+		// Note: In parallel mode, some goroutines might complete before cancellation
+		// but we should get the error without waiting for all to complete
+	})
+
+	t.Run("ParallelModeNoError", func(t *testing.T) {
+		// Test parallel mode when no errors occur
+		p := FixedProvider([]uint32{1, 2, 3, 4, 5})
+		var sum int32
+
+		err := ForEachSlice(p, func(u uint32) error {
+			atomic.AddInt32(&sum, int32(u))
+			return nil
+		}, ParallelExecute())
+
+		if err != nil {
+			t.Errorf("Expected no error, got %s", err)
+		}
+		expectedSum := int32(1 + 2 + 3 + 4 + 5)
+		if sum != expectedSum {
+			t.Errorf("Expected sum %d, got %d", expectedSum, sum)
 		}
 	})
 }

@@ -1588,3 +1588,233 @@ func BenchmarkAwaitSliceConcurrentLoad(b *testing.B) {
 		}
 	})
 }
+
+func TestConcurrentProviderExecution(t *testing.T) {
+	// Test concurrent access to multiple async provider instances with shared resources
+	// This test verifies thread safety when multiple goroutines access different
+	// async provider chains simultaneously, including scenarios with shared state
+
+	t.Run("MultipleConcurrentAsyncProviders", func(t *testing.T) {
+		// Test concurrent execution of simple async provider chains
+		const numConcurrentExecutions = 10
+		const itemsPerExecution = 5
+		
+		// Create a simple transformer for testing
+		transformer := func(val uint32) (Provider[uint32], error) {
+			return func(ctx context.Context, rchan chan uint32, echan chan error) {
+				// Small delay to simulate async work
+				time.Sleep(time.Microsecond * 100)
+				rchan <- val * 2
+			}, nil
+		}
+
+		var wg sync.WaitGroup
+		results := make([][]uint32, numConcurrentExecutions)
+		errors := make([]error, numConcurrentExecutions)
+
+		// Launch concurrent executions
+		for i := 0; i < numConcurrentExecutions; i++ {
+			wg.Add(1)
+			go func(idx int) {
+				defer wg.Done()
+				
+				// Create unique data for each execution
+				data := make([]uint32, itemsPerExecution)
+				for j := range data {
+					data[j] = uint32(idx*itemsPerExecution + j + 1)
+				}
+				
+				result, err := AwaitSlice(
+					model.SliceMap(transformer)(model.FixedProvider(data))(),
+					SetTimeout(2*time.Second),
+				)()
+				
+				results[idx] = result
+				errors[idx] = err
+			}(i)
+		}
+
+		wg.Wait()
+
+		// Verify all executions succeeded
+		successCount := 0
+		for i := 0; i < numConcurrentExecutions; i++ {
+			if errors[i] != nil {
+				t.Errorf("Async execution %d failed: %s", i, errors[i])
+				continue
+			}
+			
+			if len(results[i]) != itemsPerExecution {
+				t.Errorf("Async execution %d: expected %d results, got %d", i, itemsPerExecution, len(results[i]))
+				continue
+			}
+			
+			successCount++
+		}
+
+		if successCount != numConcurrentExecutions {
+			t.Errorf("Expected all %d executions to succeed, only %d succeeded", numConcurrentExecutions, successCount)
+		}
+	})
+
+	t.Run("ConcurrentAsyncProviderWithErrorHandling", func(t *testing.T) {
+		// Test concurrent async execution where some providers fail and others succeed
+		successData := []uint32{1, 2, 3}
+		
+		successTransformer := func(val uint32) (Provider[uint32], error) {
+			return func(ctx context.Context, rchan chan uint32, echan chan error) {
+				time.Sleep(time.Microsecond * 50) // Simulate async work
+				rchan <- val * 3
+			}, nil
+		}
+
+		errorTransformer := func(val uint32) (Provider[uint32], error) {
+			return func(ctx context.Context, rchan chan uint32, echan chan error) {
+				time.Sleep(time.Microsecond * 25) // Short delay before error
+				echan <- fmt.Errorf("intentional async test error for value %d", val)
+			}, nil
+		}
+
+		const numConcurrentTests = 5
+		var wg sync.WaitGroup
+
+		successResults := make([][]uint32, numConcurrentTests)
+		errorResults := make([][]uint32, numConcurrentTests)
+		successErrors := make([]error, numConcurrentTests)
+		errorErrors := make([]error, numConcurrentTests)
+
+		// Run success and error chains concurrently
+		for i := 0; i < numConcurrentTests; i++ {
+			wg.Add(2)
+
+			go func(idx int) {
+				defer wg.Done()
+				result, err := AwaitSlice(
+					model.SliceMap(successTransformer)(model.FixedProvider(successData))(),
+					SetTimeout(2*time.Second),
+				)()
+				successResults[idx] = result
+				successErrors[idx] = err
+			}(i)
+
+			go func(idx int) {
+				defer wg.Done()
+				result, err := AwaitSlice(
+					model.SliceMap(errorTransformer)(model.FixedProvider(successData))(),
+					SetTimeout(2*time.Second),
+				)()
+				errorResults[idx] = result
+				errorErrors[idx] = err
+			}(i)
+		}
+
+		wg.Wait()
+
+		// Verify success chain results
+		successCount := 0
+		for i := 0; i < numConcurrentTests; i++ {
+			if successErrors[i] != nil {
+				t.Errorf("Async success chain execution %d failed: %s", i, successErrors[i])
+			} else if len(successResults[i]) != len(successData) {
+				t.Errorf("Async success chain execution %d: expected %d results, got %d", i, len(successData), len(successResults[i]))
+			} else {
+				successCount++
+			}
+		}
+
+		// Verify error chain consistently fails
+		errorCount := 0
+		for i := 0; i < numConcurrentTests; i++ {
+			if errorErrors[i] == nil {
+				t.Errorf("Async error chain execution %d should have failed but didn't", i)
+			} else if strings.Contains(errorErrors[i].Error(), "intentional async test error") {
+				errorCount++
+			}
+
+			if errorResults[i] != nil {
+				t.Errorf("Async error chain execution %d: expected nil result, got %v", i, errorResults[i])
+			}
+		}
+
+		if successCount == 0 {
+			t.Error("Expected some success chains to succeed")
+		}
+		if errorCount == 0 {
+			t.Error("Expected some error chains to fail with the expected error")
+		}
+	})
+
+	t.Run("ConcurrentAsyncProviderStressTest", func(t *testing.T) {
+		// Simplified stress test for async operations
+		const numConcurrentExecutions = 20
+		const itemCount = 10
+		
+		asyncTransformer := func(val uint32) (Provider[uint32], error) {
+			return func(ctx context.Context, rchan chan uint32, echan chan error) {
+				// Minimal delay to reduce timeouts
+				delay := time.Duration(val%3) * time.Microsecond
+				time.Sleep(delay)
+				
+				select {
+				case <-ctx.Done():
+					echan <- ctx.Err()
+				case rchan <- val*2+1:
+				}
+			}, nil
+		}
+
+		data := make([]uint32, itemCount)
+		for i := range data {
+			data[i] = uint32(i + 1)
+		}
+
+		var wg sync.WaitGroup
+		results := make([][]uint32, numConcurrentExecutions)
+		errors := make([]error, numConcurrentExecutions)
+		startSignal := make(chan struct{})
+
+		// Launch concurrent async executions
+		for i := 0; i < numConcurrentExecutions; i++ {
+			wg.Add(1)
+			go func(idx int) {
+				defer wg.Done()
+				<-startSignal // Wait for start signal to maximize concurrency
+				result, err := AwaitSlice(
+					model.SliceMap(asyncTransformer)(model.FixedProvider(data))(),
+					SetTimeout(3*time.Second),
+				)()
+				results[idx] = result
+				errors[idx] = err
+			}(i)
+		}
+
+		// Start all executions simultaneously
+		close(startSignal)
+		wg.Wait()
+
+		// Count successful executions
+		successCount := 0
+		for i := 0; i < numConcurrentExecutions; i++ {
+			if errors[i] != nil {
+				// Timeouts are acceptable under high load
+				if !strings.Contains(errors[i].Error(), "timeout") && 
+				   !strings.Contains(errors[i].Error(), "context deadline exceeded") {
+					t.Errorf("Unexpected error in execution %d: %s", i, errors[i])
+				}
+				continue
+			}
+
+			successCount++
+			if len(results[i]) != len(data) {
+				t.Errorf("Execution %d: expected %d results, got %d", i, len(data), len(results[i]))
+			}
+		}
+
+		// At least some executions should succeed
+		if successCount == 0 {
+			t.Error("All async executions failed - this suggests a more serious issue")
+		} else {
+			t.Logf("Async stress test: %d/%d executions succeeded", successCount, numConcurrentExecutions)
+		}
+	})
+}

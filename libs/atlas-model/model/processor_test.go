@@ -1,6 +1,7 @@
 package model
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 )
@@ -885,4 +886,253 @@ func TestComplexPipelineLazyEvaluation(t *testing.T) {
 	if result != expected {
 		t.Errorf("Expected %d, got %d", expected, result)
 	}
+}
+
+func TestSideEffectTiming(t *testing.T) {
+	// Test that side effects occur at the right time - only when final Provider is invoked
+	// This is critical for resource management, logging, and database operations
+	
+	t.Run("DatabaseOperation", func(t *testing.T) {
+		// Simulate database operations with proper timing
+		connectionOpenCount := 0
+		queryExecutionCount := 0
+		
+		// Simulate opening a database connection (side effect)
+		openConnection := func() ([]string, error) {
+			connectionOpenCount++
+			return []string{"user1", "user2", "user3"}, nil
+		}
+		
+		// Simulate executing a query (side effect) 
+		executeQuery := func(user string) (string, error) {
+			queryExecutionCount++
+			return fmt.Sprintf("processed_%s", user), nil
+		}
+		
+		// Build pipeline: openConnection -> SliceMap(executeQuery) -> FilteredProvider
+		pipeline := FilteredProvider(
+			SliceMap[string, string](executeQuery)(openConnection)(),
+			[]Filter[string]{func(s string) bool {
+				return len(s) > 10 // Only longer processed strings
+			}},
+		)
+		
+		// Verify NO side effects occurred during composition
+		if connectionOpenCount != 0 {
+			t.Errorf("Database connection should not be opened during composition, got %d opens", connectionOpenCount)
+		}
+		if queryExecutionCount != 0 {
+			t.Errorf("Query should not be executed during composition, got %d executions", queryExecutionCount)
+		}
+		
+		// Execute the pipeline - side effects should occur now
+		result, err := pipeline()
+		if err != nil {
+			t.Errorf("Expected result, got err %s", err)
+		}
+		
+		// Verify side effects occurred exactly once when pipeline was executed
+		if connectionOpenCount != 1 {
+			t.Errorf("Expected database connection to be opened exactly once, got %d", connectionOpenCount)
+		}
+		if queryExecutionCount != 3 {
+			t.Errorf("Expected 3 query executions (one per user), got %d", queryExecutionCount)
+		}
+		
+		// Verify correct result
+		expected := []string{"processed_user1", "processed_user2", "processed_user3"}
+		if len(result) != len(expected) {
+			t.Errorf("Expected %d results, got %d", len(expected), len(result))
+		}
+	})
+	
+	t.Run("LoggingOperations", func(t *testing.T) {
+		// Test that logging side effects happen at proper execution time
+		logEntries := []string{}
+		
+		// Simulate logging provider (side effect)
+		loggedProvider := func() (uint32, error) {
+			logEntries = append(logEntries, "Data retrieved")
+			return uint32(100), nil
+		}
+		
+		// Simulate logging transformer (side effect)
+		loggedTransform := func(val uint32) (uint32, error) {
+			logEntries = append(logEntries, fmt.Sprintf("Processing value %d", val))
+			return val * 2, nil
+		}
+		
+		// Build pipeline with multiple logging points
+		pipeline := Map[uint32, uint32](loggedTransform)(loggedProvider)
+		
+		// Verify no logging happened during composition
+		if len(logEntries) != 0 {
+			t.Errorf("No log entries should exist during composition, got: %v", logEntries)
+		}
+		
+		// Execute pipeline - logging should happen now
+		result, err := pipeline()
+		if err != nil {
+			t.Errorf("Expected result, got err %s", err)
+		}
+		
+		// Verify logging happened in correct order
+		expectedLogs := []string{
+			"Data retrieved",
+			"Processing value 100",
+		}
+		
+		if len(logEntries) != len(expectedLogs) {
+			t.Errorf("Expected %d log entries, got %d: %v", len(expectedLogs), len(logEntries), logEntries)
+		}
+		
+		for i, expected := range expectedLogs {
+			if i >= len(logEntries) || logEntries[i] != expected {
+				t.Errorf("At log entry %d: expected '%s', got: %v", i, expected, logEntries)
+			}
+		}
+		
+		if result != 200 {
+			t.Errorf("Expected 200, got %d", result)
+		}
+	})
+	
+	t.Run("ResourceManagement", func(t *testing.T) {
+		// Test that resource allocation/deallocation happens at the right time
+		resourcesAllocated := 0
+		resourcesReleased := 0
+		
+		// Simulate resource allocation (side effect)
+		allocateResource := func() ([]int, error) {
+			resourcesAllocated++
+			return []int{1, 2, 3, 4, 5}, nil
+		}
+		
+		// Simulate resource processing (side effect)
+		processResource := func(val int) (int, error) {
+			if val == 5 { // Simulate resource cleanup on last item
+				resourcesReleased++
+			}
+			return val * 10, nil
+		}
+		
+		// Build pipeline: allocateResource -> SliceMap(processResource) -> FirstProvider
+		pipeline := FirstProvider(
+			SliceMap[int, int](processResource)(allocateResource)(),
+			[]Filter[int]{func(val int) bool {
+				return val >= 30 // Only values >= 30
+			}},
+		)
+		
+		// Verify no resources allocated during composition
+		if resourcesAllocated != 0 {
+			t.Errorf("Resources should not be allocated during composition, got %d", resourcesAllocated)
+		}
+		if resourcesReleased != 0 {
+			t.Errorf("Resources should not be released during composition, got %d", resourcesReleased)
+		}
+		
+		// Execute pipeline - resource operations should happen now
+		result, err := pipeline()
+		if err != nil {
+			t.Errorf("Expected result, got err %s", err)
+		}
+		
+		// Verify resource management happened correctly
+		if resourcesAllocated != 1 {
+			t.Errorf("Expected 1 resource allocation, got %d", resourcesAllocated)
+		}
+		if resourcesReleased != 1 {
+			t.Errorf("Expected 1 resource release, got %d", resourcesReleased)
+		}
+		
+		// Verify correct result (first value >= 30)
+		if result != 30 {
+			t.Errorf("Expected 30, got %d", result)
+		}
+	})
+	
+	t.Run("ErrorPropagation", func(t *testing.T) {
+		// Test that side effects don't occur when early errors prevent execution
+		sideEffectCount := 0
+		
+		// Provider that will fail
+		failingProvider := func() ([]string, error) {
+			return nil, errors.New("simulated failure")
+		}
+		
+		// Transform that should never be called due to earlier error
+		sideEffectTransform := func(val string) (string, error) {
+			sideEffectCount++
+			return val + "_processed", nil
+		}
+		
+		// Build pipeline that should fail early
+		pipeline := SliceMap[string, string](sideEffectTransform)(failingProvider)()
+		
+		// Execute pipeline - should fail before side effect
+		_, err := pipeline()
+		
+		// Verify error occurred
+		if err == nil {
+			t.Errorf("Expected error, got success")
+		}
+		
+		// Verify side effect never occurred due to early failure
+		if sideEffectCount != 0 {
+			t.Errorf("Side effect should not occur when provider fails, got %d executions", sideEffectCount)
+		}
+	})
+	
+	t.Run("ConditionalSideEffects", func(t *testing.T) {
+		// Test that side effects only occur for processed items, not filtered items
+		processedItems := []string{}
+		
+		// Provider with multiple items
+		multiItemProvider := func() ([]int, error) {
+			return []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, nil
+		}
+		
+		// Transform that tracks which items were processed
+		trackingTransform := func(val int) (int, error) {
+			processedItems = append(processedItems, fmt.Sprintf("item_%d", val))
+			return val * 2, nil
+		}
+		
+		// Build pipeline with filtering - only even numbers should be processed after transformation
+		pipeline := FilteredProvider(
+			SliceMap[int, int](trackingTransform)(multiItemProvider)(),
+			[]Filter[int]{func(val int) bool {
+				return val > 10 // Only transformed values > 10 (original values > 5)
+			}},
+		)
+		
+		// Execute pipeline
+		result, err := pipeline()
+		if err != nil {
+			t.Errorf("Expected result, got err %s", err)
+		}
+		
+		// Verify side effects occurred for ALL items (transform happens before filter)
+		expectedProcessedItems := []string{
+			"item_1", "item_2", "item_3", "item_4", "item_5",
+			"item_6", "item_7", "item_8", "item_9", "item_10",
+		}
+		
+		if len(processedItems) != len(expectedProcessedItems) {
+			t.Errorf("Expected %d processed items, got %d: %v", len(expectedProcessedItems), len(processedItems), processedItems)
+		}
+		
+		// Verify result contains only filtered items (transformed values > 10)
+		expectedResults := []int{12, 14, 16, 18, 20} // Original values 6,7,8,9,10 -> *2 = 12,14,16,18,20
+		if len(result) != len(expectedResults) {
+			t.Errorf("Expected %d filtered results, got %d", len(expectedResults), len(result))
+		}
+		
+		for i, expected := range expectedResults {
+			if i >= len(result) || result[i] != expected {
+				t.Errorf("At result %d: expected %d, got %d", i, expected, result[i])
+			}
+		}
+	})
 }

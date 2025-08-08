@@ -80,8 +80,8 @@ func AwaitSlice[M any](provider model.Provider[[]Provider[M]], configurators ...
 				results = append(results, result)
 			case <-ctx.Done():
 				return nil, ErrAwaitTimeout
-			case <-errChannels:
-				return nil, <-errChannels
+			case err := <-errChannels:
+				return nil, err
 			}
 		}
 		return results, nil

@@ -286,3 +286,41 @@ func TestFilters(t *testing.T) {
 	}
 
 }
+
+func TestMapLazyEvaluation(t *testing.T) {
+	// Test that Map function defers execution until Provider is called
+	executed := false
+	
+	// Create a Provider that tracks execution
+	trackingProvider := func() (uint32, error) {
+		executed = true
+		return 5, nil
+	}
+	
+	// Transform function that doubles the value
+	doubleTransform := func(val uint32) (uint32, error) {
+		return val * 2, nil
+	}
+	
+	// Create Map pipeline - should NOT execute the provider yet
+	mappedProvider := Map[uint32, uint32](doubleTransform)(trackingProvider)
+	
+	// Verify that the underlying provider has not been executed during composition
+	if executed {
+		t.Errorf("Map function should not execute provider during composition")
+	}
+	
+	// Now execute the mapped provider
+	result, err := mappedProvider()
+	if err != nil {
+		t.Errorf("Expected result, got err %s", err)
+	}
+	
+	// Verify execution happened and result is correct
+	if !executed {
+		t.Errorf("Provider should have been executed when mapped provider was called")
+	}
+	if result != 10 {
+		t.Errorf("Expected 10, got %d", result)
+	}
+}

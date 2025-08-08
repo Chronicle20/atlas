@@ -264,15 +264,14 @@ type Transformer[M any, N any] func(M) (N, error)
 //goland:noinspection GoUnusedExportedFunction
 func Map[M any, N any](transformer Transformer[M, N]) func(provider Provider[M]) Provider[N] {
 	return func(provider Provider[M]) Provider[N] {
-		m, err := provider()
-		if err != nil {
-			return ErrorProvider[N](err)
+		return func() (N, error) {
+			m, err := provider()
+			if err != nil {
+				var zero N
+				return zero, err
+			}
+			return transformer(m)
 		}
-		n, err := transformer(m)
-		if err != nil {
-			return ErrorProvider[N](err)
-		}
-		return FixedProvider(n)
 	}
 }
 

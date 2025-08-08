@@ -324,3 +324,79 @@ func TestMapLazyEvaluation(t *testing.T) {
 		t.Errorf("Expected 10, got %d", result)
 	}
 }
+
+func TestSliceMapLazyEvaluation(t *testing.T) {
+	executed := false
+	
+	// Create a provider that tracks if it was executed
+	provider := func() ([]uint32, error) {
+		executed = true
+		return []uint32{1, 2, 3}, nil
+	}
+	
+	// Create the mapped provider - this should NOT execute the underlying provider
+	mappedProvider := SliceMap[uint32, uint32](byTwo)(provider)()
+	
+	// Verify that the underlying provider has not been executed during composition
+	if executed {
+		t.Errorf("SliceMap function should not execute provider during composition")
+	}
+	
+	// Now execute the mapped provider
+	result, err := mappedProvider()
+	if err != nil {
+		t.Errorf("Expected result, got err %s", err)
+	}
+	
+	// Verify execution happened and result is correct
+	if !executed {
+		t.Errorf("Provider should have been executed when mapped provider was called")
+	}
+	expected := []uint32{2, 4, 6}
+	if len(result) != len(expected) {
+		t.Errorf("Expected length %d, got %d", len(expected), len(result))
+	}
+	for i := range expected {
+		if result[i] != expected[i] {
+			t.Errorf("Expected %d, got %d at index %d", expected[i], result[i], i)
+		}
+	}
+}
+
+func TestParallelSliceMapLazyEvaluation(t *testing.T) {
+	executed := false
+	
+	// Create a provider that tracks if it was executed
+	provider := func() ([]uint32, error) {
+		executed = true
+		return []uint32{1, 2, 3}, nil
+	}
+	
+	// Create the mapped provider with parallel execution - this should NOT execute the underlying provider
+	mappedProvider := SliceMap[uint32, uint32](byTwo)(provider)(ParallelMap())
+	
+	// Verify that the underlying provider has not been executed during composition
+	if executed {
+		t.Errorf("SliceMap with ParallelMap should not execute provider during composition")
+	}
+	
+	// Now execute the mapped provider
+	result, err := mappedProvider()
+	if err != nil {
+		t.Errorf("Expected result, got err %s", err)
+	}
+	
+	// Verify execution happened and result is correct
+	if !executed {
+		t.Errorf("Provider should have been executed when mapped provider was called")
+	}
+	expected := []uint32{2, 4, 6}
+	if len(result) != len(expected) {
+		t.Errorf("Expected length %d, got %d", len(expected), len(result))
+	}
+	for i := range expected {
+		if result[i] != expected[i] {
+			t.Errorf("Expected %d, got %d at index %d", expected[i], result[i], i)
+		}
+	}
+}

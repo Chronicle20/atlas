@@ -614,3 +614,92 @@ func TestMergeSliceProviderLazyEvaluation(t *testing.T) {
 		}
 	}
 }
+
+func TestMemoize(t *testing.T) {
+	// Test that Memoize caches results and only executes underlying provider once
+	executionCount := 0
+	
+	// Create a provider that tracks how many times it's been called
+	expensiveProvider := func() (uint32, error) {
+		executionCount++
+		return uint32(42), nil
+	}
+	
+	// Create memoized provider
+	memoizedProvider := Memoize(expensiveProvider)
+	
+	// First call should execute the provider
+	result1, err1 := memoizedProvider()
+	if err1 != nil {
+		t.Errorf("Expected result, got err %s", err1)
+	}
+	if result1 != 42 {
+		t.Errorf("Expected 42, got %d", result1)
+	}
+	if executionCount != 1 {
+		t.Errorf("Expected execution count 1 after first call, got %d", executionCount)
+	}
+	
+	// Second call should return cached result without executing provider again
+	result2, err2 := memoizedProvider()
+	if err2 != nil {
+		t.Errorf("Expected result, got err %s", err2)
+	}
+	if result2 != 42 {
+		t.Errorf("Expected 42, got %d", result2)
+	}
+	if executionCount != 1 {
+		t.Errorf("Expected execution count 1 after second call (cached), got %d", executionCount)
+	}
+	
+	// Third call should also return cached result
+	result3, err3 := memoizedProvider()
+	if err3 != nil {
+		t.Errorf("Expected result, got err %s", err3)
+	}
+	if result3 != 42 {
+		t.Errorf("Expected 42, got %d", result3)
+	}
+	if executionCount != 1 {
+		t.Errorf("Expected execution count 1 after third call (cached), got %d", executionCount)
+	}
+}
+
+func TestMemoizeError(t *testing.T) {
+	// Test that Memoize also caches errors
+	executionCount := 0
+	expectedError := fmt.Errorf("test error")
+	
+	// Create a provider that always returns an error
+	errorProvider := func() (uint32, error) {
+		executionCount++
+		return 0, expectedError
+	}
+	
+	// Create memoized provider
+	memoizedProvider := Memoize(errorProvider)
+	
+	// First call should execute and return the error
+	result1, err1 := memoizedProvider()
+	if err1 == nil {
+		t.Errorf("Expected error, got result %d", result1)
+	}
+	if err1.Error() != expectedError.Error() {
+		t.Errorf("Expected error '%s', got '%s'", expectedError.Error(), err1.Error())
+	}
+	if executionCount != 1 {
+		t.Errorf("Expected execution count 1 after first call, got %d", executionCount)
+	}
+	
+	// Second call should return cached error without executing provider again
+	result2, err2 := memoizedProvider()
+	if err2 == nil {
+		t.Errorf("Expected error, got result %d", result2)
+	}
+	if err2.Error() != expectedError.Error() {
+		t.Errorf("Expected error '%s', got '%s'", expectedError.Error(), err2.Error())
+	}
+	if executionCount != 1 {
+		t.Errorf("Expected execution count 1 after second call (cached error), got %d", executionCount)
+	}
+}

@@ -482,6 +482,20 @@ func MergeSliceProvider[M any](provider Provider[[]M], other Provider[[]M]) Prov
 }
 
 //goland:noinspection GoUnusedExportedFunction
+func Memoize[T any](provider Provider[T]) Provider[T] {
+	var once sync.Once
+	var result T
+	var err error
+	
+	return func() (T, error) {
+		once.Do(func() {
+			result, err = provider()
+		})
+		return result, err
+	}
+}
+
+//goland:noinspection GoUnusedExportedFunction
 func Apply[A any, B any](f func(a A) Provider[B]) func(a A) (B, error) {
 	return func(a A) (B, error) {
 		return f(a)()

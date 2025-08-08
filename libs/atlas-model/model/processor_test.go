@@ -3534,6 +3534,287 @@ func TestConcurrentProviderExecution(t *testing.T) {
 	})
 }
 
+func TestParallelExecutionRaceConditions(t *testing.T) {
+	// High concurrency race condition tests with intensive provider chain operations
+	// This test is specifically designed to catch race conditions in provider execution
+	// when running with `go test -race`
+
+	t.Run("HighConcurrencyParallelProviderChains", func(t *testing.T) {
+		// Test with very high concurrency to maximize chances of detecting race conditions
+		const highConcurrency = 500 // Much higher than existing tests
+		const dataSize = 200
+
+		// Create shared data that will be accessed by multiple provider chains
+		sharedData := make([]uint32, dataSize)
+		for i := range sharedData {
+			sharedData[i] = uint32(i + 1)
+		}
+
+		// Create multiple complex provider chains that will be executed concurrently
+		baseProvider := FixedProvider(sharedData)
+
+		// Chain 1: Multiple transformations with parallel processing
+		chain1 := SliceMap[uint32, uint32](func(val uint32) (uint32, error) {
+			// Add computational work to increase race condition likelihood
+			result := val
+			for i := 0; i < 100; i++ {
+				result = (result*3 + 7) % 1000000
+			}
+			return result, nil
+		})(baseProvider)(ParallelMap())
+
+		// Chain 2: Filtered processing with transformations
+		chain2 := SliceMap[uint32, string](func(val uint32) (string, error) {
+			// String formatting with computation
+			result := val * val
+			return fmt.Sprintf("processed_%d_%d", val, result), nil
+		})(FilteredProvider(baseProvider, []Filter[uint32]{
+			func(val uint32) bool { return val%3 == 0 },
+		}))(ParallelMap())
+
+		// Chain 3: Complex aggregation operations
+		chain3 := SliceMap[uint32, uint64](func(val uint32) (uint64, error) {
+			// Accumulate operations to stress memory access patterns
+			acc := uint64(val)
+			for i := uint32(1); i <= 10; i++ {
+				acc = acc*uint64(val) + uint64(i)
+			}
+			return acc, nil
+		})(baseProvider)(ParallelMap())
+
+		// Shared resources for race condition detection
+		var totalProcessed int64
+		var processingErrors int64
+		var maxValue uint32
+		var mutex sync.RWMutex
+
+		// Launch extremely high concurrency execution
+		var wg sync.WaitGroup
+		results1 := make([][]uint32, highConcurrency)
+		results2 := make([][]string, highConcurrency)
+		results3 := make([][]uint64, highConcurrency)
+		errors := make([][]error, 3)
+		for i := range errors {
+			errors[i] = make([]error, highConcurrency)
+		}
+
+		start := time.Now()
+
+		for i := 0; i < highConcurrency; i++ {
+			wg.Add(3) // Three concurrent chains per iteration
+
+			go func(idx int) {
+				defer wg.Done()
+				result, err := chain1()
+				
+				// Update shared counters safely
+				if err == nil {
+					atomic.AddInt64(&totalProcessed, int64(len(result)))
+					// Update max value with race condition potential
+					mutex.Lock()
+					for _, val := range result {
+						if val > maxValue {
+							maxValue = val
+						}
+					}
+					mutex.Unlock()
+				} else {
+					atomic.AddInt64(&processingErrors, 1)
+				}
+				
+				results1[idx] = result
+				errors[0][idx] = err
+			}(i)
+
+			go func(idx int) {
+				defer wg.Done()
+				result, err := chain2()
+				
+				if err == nil {
+					atomic.AddInt64(&totalProcessed, int64(len(result)))
+				} else {
+					atomic.AddInt64(&processingErrors, 1)
+				}
+				
+				results2[idx] = result
+				errors[1][idx] = err
+			}(i)
+
+			go func(idx int) {
+				defer wg.Done()
+				result, err := chain3()
+				
+				if err == nil {
+					atomic.AddInt64(&totalProcessed, int64(len(result)))
+				} else {
+					atomic.AddInt64(&processingErrors, 1)
+				}
+				
+				results3[idx] = result
+				errors[2][idx] = err
+			}(i)
+		}
+
+		wg.Wait()
+		elapsed := time.Since(start)
+
+		// Verify no errors occurred during high concurrency execution
+		if processingErrors > 0 {
+			t.Errorf("Expected no processing errors, but got %d errors", processingErrors)
+		}
+
+		// Verify results consistency across all executions
+		for i := 0; i < highConcurrency; i++ {
+			// Verify chain1 results
+			if errors[0][i] != nil {
+				t.Errorf("Chain1 execution %d failed: %s", i, errors[0][i])
+			} else if len(results1[i]) != dataSize {
+				t.Errorf("Chain1 execution %d: expected %d results, got %d", i, dataSize, len(results1[i]))
+			} else if i > 0 && len(results1[0]) == len(results1[i]) {
+				// Compare with first successful result for consistency
+				for j := 0; j < len(results1[i]) && j < 10; j++ { // Limit comparison to avoid spam
+					if results1[i][j] != results1[0][j] {
+						t.Errorf("Chain1 execution %d inconsistent at index %d: got %d, expected %d", i, j, results1[i][j], results1[0][j])
+						break
+					}
+				}
+			}
+
+			// Verify chain2 results (filtered data, so fewer results expected)
+			if errors[1][i] != nil {
+				t.Errorf("Chain2 execution %d failed: %s", i, errors[1][i])
+			} else {
+				expectedFilteredCount := 0
+				for _, val := range sharedData {
+					if val%3 == 0 {
+						expectedFilteredCount++
+					}
+				}
+				if len(results2[i]) != expectedFilteredCount {
+					t.Errorf("Chain2 execution %d: expected %d filtered results, got %d", i, expectedFilteredCount, len(results2[i]))
+				}
+			}
+
+			// Verify chain3 results
+			if errors[2][i] != nil {
+				t.Errorf("Chain3 execution %d failed: %s", i, errors[2][i])
+			} else if len(results3[i]) != dataSize {
+				t.Errorf("Chain3 execution %d: expected %d results, got %d", i, dataSize, len(results3[i]))
+			}
+		}
+
+		// Performance and race condition indicators
+		t.Logf("High concurrency test completed in %v", elapsed)
+		t.Logf("Total items processed: %d", totalProcessed)
+		t.Logf("Max value computed: %d", maxValue)
+
+		// Verify we actually processed a reasonable amount of data
+		expectedMinProcessed := int64(highConcurrency * (dataSize*2 + (dataSize/3))) // chain1 + chain2 + chain3
+		if totalProcessed < expectedMinProcessed/2 { // Allow some variance
+			t.Errorf("Expected at least %d items processed, got %d", expectedMinProcessed/2, totalProcessed)
+		}
+	})
+
+	t.Run("RaceConditionsWithSharedMutableState", func(t *testing.T) {
+		// Test race conditions when providers access shared mutable state
+		// This test is designed to fail if proper synchronization is not in place
+		
+		const iterations = 100
+		const concurrency = 50
+		
+		// Shared mutable state that could cause race conditions
+		var sharedCounter int64
+		var sharedMap sync.Map
+		var sharedSlice []uint32
+		var sliceMutex sync.RWMutex
+
+		// Provider that modifies shared state
+		racyProvider := func() ([]uint32, error) {
+			// Increment counter (this is safe with atomic)
+			newCount := atomic.AddInt64(&sharedCounter, 1)
+			
+			// Store in shared map
+			sharedMap.Store(fmt.Sprintf("key_%d", newCount), newCount)
+			
+			// Append to shared slice (potentially racy without proper locking)
+			sliceMutex.Lock()
+			sharedSlice = append(sharedSlice, uint32(newCount))
+			currentSlice := make([]uint32, len(sharedSlice))
+			copy(currentSlice, sharedSlice)
+			sliceMutex.Unlock()
+			
+			return currentSlice, nil
+		}
+
+		// Create transformation chain that uses the racy provider
+		transformChain := SliceMap[uint32, uint32](func(val uint32) (uint32, error) {
+			// Additional computation to increase race condition window
+			result := val
+			for i := 0; i < 50; i++ {
+				result = (result*7 + 13) % 100000
+			}
+			return result, nil
+		})(racyProvider)(ParallelMap())
+
+		var wg sync.WaitGroup
+		results := make([][]uint32, concurrency)
+		errors := make([]error, concurrency)
+
+		// Launch concurrent executions
+		for i := 0; i < concurrency; i++ {
+			wg.Add(1)
+			go func(idx int) {
+				defer wg.Done()
+				result, err := transformChain()
+				results[idx] = result
+				errors[idx] = err
+			}(i)
+		}
+
+		wg.Wait()
+
+		// Verify all executions completed successfully
+		successCount := 0
+		for i := 0; i < concurrency; i++ {
+			if errors[i] != nil {
+				t.Errorf("Execution %d failed: %s", i, errors[i])
+			} else {
+				successCount++
+				if len(results[i]) == 0 {
+					t.Errorf("Execution %d returned empty result", i)
+				}
+			}
+		}
+
+		// Verify shared state is consistent
+		finalCount := atomic.LoadInt64(&sharedCounter)
+		if finalCount != int64(concurrency) {
+			t.Errorf("Expected counter to be %d, got %d", concurrency, finalCount)
+		}
+
+		// Verify shared map entries
+		mapCount := 0
+		sharedMap.Range(func(key, value interface{}) bool {
+			mapCount++
+			return true
+		})
+		if mapCount != concurrency {
+			t.Errorf("Expected %d map entries, got %d", concurrency, mapCount)
+		}
+
+		// Verify shared slice final length
+		sliceMutex.RLock()
+		finalSliceLen := len(sharedSlice)
+		sliceMutex.RUnlock()
+		
+		if finalSliceLen != concurrency {
+			t.Errorf("Expected slice length %d, got %d", concurrency, finalSliceLen)
+		}
+
+		t.Logf("Race condition test completed successfully with %d concurrent executions", successCount)
+	})
+}
+
 // Benchmark tests for ExecuteForEachSlice performance
 func BenchmarkExecuteForEachSlice(b *testing.B) {
 	// Create test data

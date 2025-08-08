@@ -888,6 +888,640 @@ func TestComplexPipelineLazyEvaluation(t *testing.T) {
 	}
 }
 
+func TestErrorPropagationLazyContext(t *testing.T) {
+	// Test comprehensive error propagation in lazy evaluation contexts
+	
+	t.Run("MapErrorPropagation", func(t *testing.T) {
+		// Test error propagation through Map function
+		expectedError := errors.New("provider error")
+		
+		// Provider that returns an error
+		errorProvider := func() (uint32, error) {
+			return 0, expectedError
+		}
+		
+		// Transform function that should never be called
+		transformCalled := false
+		transform := func(val uint32) (uint32, error) {
+			transformCalled = true
+			return val * 2, nil
+		}
+		
+		// Build Map pipeline
+		mappedProvider := Map[uint32, uint32](transform)(errorProvider)
+		
+		// Execute and verify error propagation
+		result, err := mappedProvider()
+		
+		// Should receive the original error
+		if err == nil {
+			t.Errorf("Expected error, got result %d", result)
+		}
+		if err.Error() != expectedError.Error() {
+			t.Errorf("Expected error '%s', got '%s'", expectedError.Error(), err.Error())
+		}
+		
+		// Transform should never be called due to provider error
+		if transformCalled {
+			t.Errorf("Transform function should not be called when provider fails")
+		}
+		
+		// Result should be zero value
+		if result != 0 {
+			t.Errorf("Expected zero result when error occurs, got %d", result)
+		}
+	})
+	
+	t.Run("MapTransformErrorPropagation", func(t *testing.T) {
+		// Test error propagation from transformer function in Map
+		expectedError := errors.New("transform error")
+		
+		// Provider that succeeds
+		provider := func() (uint32, error) {
+			return 42, nil
+		}
+		
+		// Transform function that returns an error
+		transform := func(val uint32) (uint32, error) {
+			return 0, expectedError
+		}
+		
+		// Build Map pipeline
+		mappedProvider := Map[uint32, uint32](transform)(provider)
+		
+		// Execute and verify error propagation
+		result, err := mappedProvider()
+		
+		// Should receive the transform error
+		if err == nil {
+			t.Errorf("Expected error, got result %d", result)
+		}
+		if err.Error() != expectedError.Error() {
+			t.Errorf("Expected error '%s', got '%s'", expectedError.Error(), err.Error())
+		}
+		
+		// Result should be zero value
+		if result != 0 {
+			t.Errorf("Expected zero result when transform error occurs, got %d", result)
+		}
+	})
+	
+	t.Run("SliceMapErrorPropagation", func(t *testing.T) {
+		// Test error propagation in SliceMap function
+		expectedError := errors.New("slice provider error")
+		
+		// Provider that returns an error
+		errorProvider := func() ([]uint32, error) {
+			return nil, expectedError
+		}
+		
+		// Transform function that should never be called
+		transformCalled := false
+		transform := func(val uint32) (uint32, error) {
+			transformCalled = true
+			return val * 2, nil
+		}
+		
+		// Build SliceMap pipeline
+		mappedProvider := SliceMap[uint32, uint32](transform)(errorProvider)()
+		
+		// Execute and verify error propagation
+		result, err := mappedProvider()
+		
+		// Should receive the original error
+		if err == nil {
+			t.Errorf("Expected error, got result %v", result)
+		}
+		if err.Error() != expectedError.Error() {
+			t.Errorf("Expected error '%s', got '%s'", expectedError.Error(), err.Error())
+		}
+		
+		// Transform should never be called due to provider error
+		if transformCalled {
+			t.Errorf("Transform function should not be called when provider fails")
+		}
+		
+		// Result should be nil
+		if result != nil {
+			t.Errorf("Expected nil result when error occurs, got %v", result)
+		}
+	})
+	
+	t.Run("SliceMapTransformErrorPropagation", func(t *testing.T) {
+		// Test error propagation from transformer in SliceMap
+		expectedError := errors.New("transform error")
+		
+		// Provider that succeeds
+		provider := func() ([]uint32, error) {
+			return []uint32{1, 2, 3}, nil
+		}
+		
+		// Transform function that fails on second item
+		transformCallCount := 0
+		transform := func(val uint32) (uint32, error) {
+			transformCallCount++
+			if val == 2 {
+				return 0, expectedError
+			}
+			return val * 2, nil
+		}
+		
+		// Build SliceMap pipeline
+		mappedProvider := SliceMap[uint32, uint32](transform)(provider)()
+		
+		// Execute and verify error propagation
+		result, err := mappedProvider()
+		
+		// Should receive the transform error
+		if err == nil {
+			t.Errorf("Expected error, got result %v", result)
+		}
+		if err.Error() != expectedError.Error() {
+			t.Errorf("Expected error '%s', got '%s'", expectedError.Error(), err.Error())
+		}
+		
+		// Transform should be called at least twice (up to the failing item)
+		if transformCallCount < 2 {
+			t.Errorf("Expected at least 2 transform calls, got %d", transformCallCount)
+		}
+		
+		// Result should be nil
+		if result != nil {
+			t.Errorf("Expected nil result when transform error occurs, got %v", result)
+		}
+	})
+	
+	t.Run("ParallelSliceMapErrorPropagation", func(t *testing.T) {
+		// Test error propagation in parallel SliceMap
+		expectedError := errors.New("parallel transform error")
+		
+		// Provider that succeeds
+		provider := func() ([]uint32, error) {
+			return []uint32{1, 2, 3, 4, 5}, nil
+		}
+		
+		// Transform function that fails on specific value
+		transform := func(val uint32) (uint32, error) {
+			if val == 3 {
+				return 0, expectedError
+			}
+			return val * 2, nil
+		}
+		
+		// Build parallel SliceMap pipeline
+		mappedProvider := SliceMap[uint32, uint32](transform)(provider)(ParallelMap())
+		
+		// Execute and verify error propagation
+		result, err := mappedProvider()
+		
+		// Should receive the transform error
+		if err == nil {
+			t.Errorf("Expected error, got result %v", result)
+		}
+		if err.Error() != expectedError.Error() {
+			t.Errorf("Expected error '%s', got '%s'", expectedError.Error(), err.Error())
+		}
+		
+		// Result should be nil
+		if result != nil {
+			t.Errorf("Expected nil result when parallel transform error occurs, got %v", result)
+		}
+	})
+	
+	t.Run("FilteredProviderErrorPropagation", func(t *testing.T) {
+		// Test error propagation in FilteredProvider
+		expectedError := errors.New("filtered provider error")
+		
+		// Provider that returns an error
+		errorProvider := func() ([]uint32, error) {
+			return nil, expectedError
+		}
+		
+		// Filter function that should never be called
+		filterCalled := false
+		filter := func(val uint32) bool {
+			filterCalled = true
+			return val > 2
+		}
+		
+		// Build FilteredProvider pipeline
+		filteredProvider := FilteredProvider(errorProvider, []Filter[uint32]{filter})
+		
+		// Execute and verify error propagation
+		result, err := filteredProvider()
+		
+		// Should receive the original error
+		if err == nil {
+			t.Errorf("Expected error, got result %v", result)
+		}
+		if err.Error() != expectedError.Error() {
+			t.Errorf("Expected error '%s', got '%s'", expectedError.Error(), err.Error())
+		}
+		
+		// Filter should never be called due to provider error
+		if filterCalled {
+			t.Errorf("Filter function should not be called when provider fails")
+		}
+		
+		// Result should be nil
+		if result != nil {
+			t.Errorf("Expected nil result when error occurs, got %v", result)
+		}
+	})
+	
+	t.Run("FirstProviderErrorPropagation", func(t *testing.T) {
+		// Test error propagation in FirstProvider
+		expectedError := errors.New("first provider error")
+		
+		// Provider that returns an error
+		errorProvider := func() ([]uint32, error) {
+			return nil, expectedError
+		}
+		
+		// Filter function that should never be called
+		filterCalled := false
+		filter := func(val uint32) bool {
+			filterCalled = true
+			return true
+		}
+		
+		// Build FirstProvider pipeline
+		firstProvider := FirstProvider(errorProvider, []Filter[uint32]{filter})
+		
+		// Execute and verify error propagation
+		result, err := firstProvider()
+		
+		// Should receive the original error
+		if err == nil {
+			t.Errorf("Expected error, got result %d", result)
+		}
+		if err.Error() != expectedError.Error() {
+			t.Errorf("Expected error '%s', got '%s'", expectedError.Error(), err.Error())
+		}
+		
+		// Filter should never be called due to provider error
+		if filterCalled {
+			t.Errorf("Filter function should not be called when provider fails")
+		}
+		
+		// Result should be zero value
+		if result != 0 {
+			t.Errorf("Expected zero result when error occurs, got %d", result)
+		}
+	})
+	
+	t.Run("FoldErrorPropagation", func(t *testing.T) {
+		// Test error propagation in Fold function - provider error
+		expectedError := errors.New("fold provider error")
+		
+		// Provider that returns an error
+		errorProvider := func() ([]uint32, error) {
+			return nil, expectedError
+		}
+		
+		// Supplier that should never be called
+		supplierCalled := false
+		supplier := func() (uint32, error) {
+			supplierCalled = true
+			return 0, nil
+		}
+		
+		// Folder that should never be called
+		folderCalled := false
+		folder := func(acc uint32, val uint32) (uint32, error) {
+			folderCalled = true
+			return acc + val, nil
+		}
+		
+		// Build Fold pipeline
+		foldProvider := Fold(errorProvider, supplier, folder)
+		
+		// Execute and verify error propagation
+		result, err := foldProvider()
+		
+		// Should receive the original error
+		if err == nil {
+			t.Errorf("Expected error, got result %d", result)
+		}
+		if err.Error() != expectedError.Error() {
+			t.Errorf("Expected error '%s', got '%s'", expectedError.Error(), err.Error())
+		}
+		
+		// Supplier and folder should never be called due to provider error
+		if supplierCalled {
+			t.Errorf("Supplier should not be called when provider fails")
+		}
+		if folderCalled {
+			t.Errorf("Folder should not be called when provider fails")
+		}
+		
+		// Result should be zero value
+		if result != 0 {
+			t.Errorf("Expected zero result when error occurs, got %d", result)
+		}
+	})
+	
+	t.Run("FoldSupplierErrorPropagation", func(t *testing.T) {
+		// Test error propagation in Fold function - supplier error
+		expectedError := errors.New("fold supplier error")
+		
+		// Provider that succeeds
+		provider := func() ([]uint32, error) {
+			return []uint32{1, 2, 3}, nil
+		}
+		
+		// Supplier that returns an error
+		supplier := func() (uint32, error) {
+			return 0, expectedError
+		}
+		
+		// Folder that should never be called
+		folderCalled := false
+		folder := func(acc uint32, val uint32) (uint32, error) {
+			folderCalled = true
+			return acc + val, nil
+		}
+		
+		// Build Fold pipeline
+		foldProvider := Fold(provider, supplier, folder)
+		
+		// Execute and verify error propagation
+		result, err := foldProvider()
+		
+		// Should receive the supplier error
+		if err == nil {
+			t.Errorf("Expected error, got result %d", result)
+		}
+		if err.Error() != expectedError.Error() {
+			t.Errorf("Expected error '%s', got '%s'", expectedError.Error(), err.Error())
+		}
+		
+		// Folder should never be called due to supplier error
+		if folderCalled {
+			t.Errorf("Folder should not be called when supplier fails")
+		}
+		
+		// Result should be zero value
+		if result != 0 {
+			t.Errorf("Expected zero result when error occurs, got %d", result)
+		}
+	})
+	
+	t.Run("FoldFolderErrorPropagation", func(t *testing.T) {
+		// Test error propagation in Fold function - folder error
+		expectedError := errors.New("folder error")
+		
+		// Provider that succeeds
+		provider := func() ([]uint32, error) {
+			return []uint32{1, 2, 3}, nil
+		}
+		
+		// Supplier that succeeds
+		supplier := func() (uint32, error) {
+			return 0, nil
+		}
+		
+		// Folder that fails on second item
+		folderCallCount := 0
+		folder := func(acc uint32, val uint32) (uint32, error) {
+			folderCallCount++
+			if val == 2 {
+				return 0, expectedError
+			}
+			return acc + val, nil
+		}
+		
+		// Build Fold pipeline
+		foldProvider := Fold(provider, supplier, folder)
+		
+		// Execute and verify error propagation
+		result, err := foldProvider()
+		
+		// Should receive the folder error
+		if err == nil {
+			t.Errorf("Expected error, got result %d", result)
+		}
+		if err.Error() != expectedError.Error() {
+			t.Errorf("Expected error '%s', got '%s'", expectedError.Error(), err.Error())
+		}
+		
+		// Folder should be called twice (for values 1 and 2)
+		if folderCallCount != 2 {
+			t.Errorf("Expected 2 folder calls, got %d", folderCallCount)
+		}
+		
+		// Result should be zero value
+		if result != 0 {
+			t.Errorf("Expected zero result when folder error occurs, got %d", result)
+		}
+	})
+	
+	t.Run("CollectToMapErrorPropagation", func(t *testing.T) {
+		// Test error propagation in CollectToMap
+		expectedError := errors.New("collect provider error")
+		
+		// Provider that returns an error
+		errorProvider := func() ([]uint32, error) {
+			return nil, expectedError
+		}
+		
+		// Key and value providers that should never be called
+		keyProviderCalled := false
+		keyProvider := func(val uint32) string {
+			keyProviderCalled = true
+			return fmt.Sprintf("key-%d", val)
+		}
+		
+		valueProviderCalled := false
+		valueProvider := func(val uint32) uint32 {
+			valueProviderCalled = true
+			return val * 2
+		}
+		
+		// Build CollectToMap pipeline
+		mapProvider := CollectToMap[uint32, string, uint32](errorProvider, keyProvider, valueProvider)
+		
+		// Execute and verify error propagation
+		result, err := mapProvider()
+		
+		// Should receive the original error
+		if err == nil {
+			t.Errorf("Expected error, got result %v", result)
+		}
+		if err.Error() != expectedError.Error() {
+			t.Errorf("Expected error '%s', got '%s'", expectedError.Error(), err.Error())
+		}
+		
+		// Key and value providers should never be called due to provider error
+		if keyProviderCalled {
+			t.Errorf("Key provider should not be called when main provider fails")
+		}
+		if valueProviderCalled {
+			t.Errorf("Value provider should not be called when main provider fails")
+		}
+		
+		// Result should be nil
+		if result != nil {
+			t.Errorf("Expected nil result when error occurs, got %v", result)
+		}
+	})
+	
+	t.Run("MergeSliceProviderErrorPropagation", func(t *testing.T) {
+		// Test error propagation in MergeSliceProvider - first provider error
+		expectedError := errors.New("first provider error")
+		
+		// First provider that returns an error
+		errorProvider := func() ([]uint32, error) {
+			return nil, expectedError
+		}
+		
+		// Second provider that should never be called due to first provider error
+		secondProviderCalled := false
+		secondProvider := func() ([]uint32, error) {
+			secondProviderCalled = true
+			return []uint32{4, 5, 6}, nil
+		}
+		
+		// Build MergeSliceProvider pipeline
+		mergedProvider := MergeSliceProvider(errorProvider, secondProvider)
+		
+		// Execute and verify error propagation
+		result, err := mergedProvider()
+		
+		// Should receive the first provider error
+		if err == nil {
+			t.Errorf("Expected error, got result %v", result)
+		}
+		if err.Error() != expectedError.Error() {
+			t.Errorf("Expected error '%s', got '%s'", expectedError.Error(), err.Error())
+		}
+		
+		// Second provider should never be called due to first provider error
+		if secondProviderCalled {
+			t.Errorf("Second provider should not be called when first provider fails")
+		}
+		
+		// Result should be nil
+		if result != nil {
+			t.Errorf("Expected nil result when error occurs, got %v", result)
+		}
+	})
+	
+	t.Run("MergeSliceProviderSecondErrorPropagation", func(t *testing.T) {
+		// Test error propagation in MergeSliceProvider - second provider error
+		expectedError := errors.New("second provider error")
+		
+		// First provider that succeeds
+		firstProvider := func() ([]uint32, error) {
+			return []uint32{1, 2, 3}, nil
+		}
+		
+		// Second provider that returns an error
+		errorProvider := func() ([]uint32, error) {
+			return nil, expectedError
+		}
+		
+		// Build MergeSliceProvider pipeline
+		mergedProvider := MergeSliceProvider(firstProvider, errorProvider)
+		
+		// Execute and verify error propagation
+		result, err := mergedProvider()
+		
+		// Should receive the second provider error
+		if err == nil {
+			t.Errorf("Expected error, got result %v", result)
+		}
+		if err.Error() != expectedError.Error() {
+			t.Errorf("Expected error '%s', got '%s'", expectedError.Error(), err.Error())
+		}
+		
+		// Result should be nil
+		if result != nil {
+			t.Errorf("Expected nil result when error occurs, got %v", result)
+		}
+	})
+	
+	t.Run("ToSliceProviderErrorPropagation", func(t *testing.T) {
+		// Test error propagation in ToSliceProvider
+		expectedError := errors.New("to slice provider error")
+		
+		// Provider that returns an error
+		errorProvider := func() (uint32, error) {
+			return 0, expectedError
+		}
+		
+		// Build ToSliceProvider pipeline
+		sliceProvider := ToSliceProvider(errorProvider)
+		
+		// Execute and verify error propagation
+		result, err := sliceProvider()
+		
+		// Should receive the original error
+		if err == nil {
+			t.Errorf("Expected error, got result %v", result)
+		}
+		if err.Error() != expectedError.Error() {
+			t.Errorf("Expected error '%s', got '%s'", expectedError.Error(), err.Error())
+		}
+		
+		// Result should be nil
+		if result != nil {
+			t.Errorf("Expected nil result when error occurs, got %v", result)
+		}
+	})
+	
+	t.Run("ChainedErrorPropagation", func(t *testing.T) {
+		// Test error propagation through a chain of lazy operations
+		expectedError := errors.New("chain error")
+		
+		// Initial provider that succeeds
+		initialProvider := func() ([]uint32, error) {
+			return []uint32{1, 2, 3, 4, 5}, nil
+		}
+		
+		// First transform that succeeds
+		firstTransform := func(val uint32) (uint32, error) {
+			return val * 2, nil
+		}
+		
+		// Second transform that fails on specific value
+		secondTransformCallCount := 0
+		secondTransform := func(val uint32) (uint32, error) {
+			secondTransformCallCount++
+			if val == 6 { // This is 3*2 from first transform
+				return 0, expectedError
+			}
+			return val + 10, nil
+		}
+		
+		// Build chained pipeline: provider -> SliceMap(firstTransform) -> SliceMap(secondTransform)
+		pipeline := SliceMap[uint32, uint32](secondTransform)(
+			SliceMap[uint32, uint32](firstTransform)(initialProvider)(),
+		)()
+		
+		// Execute and verify error propagation
+		result, err := pipeline()
+		
+		// Should receive the second transform error
+		if err == nil {
+			t.Errorf("Expected error, got result %v", result)
+		}
+		if err.Error() != expectedError.Error() {
+			t.Errorf("Expected error '%s', got '%s'", expectedError.Error(), err.Error())
+		}
+		
+		// Second transform should be called at least 3 times (up to the failing item)
+		if secondTransformCallCount < 3 {
+			t.Errorf("Expected at least 3 second transform calls, got %d", secondTransformCallCount)
+		}
+		
+		// Result should be nil
+		if result != nil {
+			t.Errorf("Expected nil result when chained error occurs, got %v", result)
+		}
+	})
+}
+
 func TestSideEffectTiming(t *testing.T) {
 	// Test that side effects occur at the right time - only when final Provider is invoked
 	// This is critical for resource management, logging, and database operations

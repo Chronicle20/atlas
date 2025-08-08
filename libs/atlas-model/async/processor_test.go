@@ -521,6 +521,334 @@ func TestAsyncRaceConditionThreadSafety(t *testing.T) {
 	})
 }
 
+func TestAsyncProviderErrorPropagation(t *testing.T) {
+	// Test that errors propagate correctly through async provider chains
+	// This test focuses on async-specific error propagation scenarios
+	
+	t.Run("SingleProviderErrorPropagation", func(t *testing.T) {
+		// Test error propagation from a single async provider
+		expectedError := errors.New("async provider error")
+		
+		errorProvider := func(ctx context.Context, rchan chan uint32, echan chan error) {
+			// Simulate async work before error
+			time.Sleep(time.Millisecond * 10)
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				echan <- expectedError
+			}
+		}
+		
+		ctx := context.Background()
+		result, err := Await(SingleProvider(errorProvider), SetContext(ctx), SetTimeout(time.Second))()
+		
+		if err == nil {
+			t.Fatal("Expected error but got none")
+		}
+		if err.Error() != expectedError.Error() {
+			t.Errorf("Expected error %q but got %q", expectedError.Error(), err.Error())
+		}
+		if result != 0 {
+			t.Errorf("Expected zero value result when error occurs, got %d", result)
+		}
+	})
+	
+	t.Run("SliceProviderErrorPropagation", func(t *testing.T) {
+		// Test error propagation in slice operations where one provider fails
+		items := []uint32{1, 2, 3, 4, 5}
+		expectedError := errors.New("slice operation error")
+		
+		// Transform that fails on the third item
+		failingTransform := func(m uint32) (Provider[uint32], error) {
+			return func(ctx context.Context, rchan chan uint32, echan chan error) {
+				// Simulate async processing time
+				time.Sleep(time.Millisecond * time.Duration(m*2))
+				
+				select {
+				case <-ctx.Done():
+					return
+				default:
+					if m == 3 {
+						echan <- expectedError
+					} else {
+						rchan <- m * 10
+					}
+				}
+			}, nil
+		}
+		
+		ctx := context.Background()
+		result, err := AwaitSlice(
+			model.SliceMap(failingTransform)(model.FixedProvider(items))(),
+			SetContext(ctx),
+			SetTimeout(time.Second),
+		)()
+		
+		if err == nil {
+			t.Fatal("Expected error but got none")
+		}
+		if err.Error() != expectedError.Error() {
+			t.Errorf("Expected error %q but got %q", expectedError.Error(), err.Error())
+		}
+		if result != nil {
+			t.Error("Expected nil result when error occurs")
+		}
+	})
+	
+	t.Run("ConcurrentErrorPropagation", func(t *testing.T) {
+		// Test that the first error is properly propagated in concurrent scenarios
+		items := make([]uint32, 50)
+		for i := range items {
+			items[i] = uint32(i + 1)
+		}
+		
+		// Multiple errors can occur, but only the first one should be returned
+		multiErrorTransform := func(m uint32) (Provider[uint32], error) {
+			return func(ctx context.Context, rchan chan uint32, echan chan error) {
+				// Variable delay to create race conditions for error reporting
+				delay := time.Microsecond * time.Duration(m%10+1)
+				time.Sleep(delay)
+				
+				select {
+				case <-ctx.Done():
+					return
+				default:
+					if m%10 == 0 { // Multiple items will error (10, 20, 30, 40, 50)
+						echan <- fmt.Errorf("concurrent error on item %d", m)
+					} else {
+						rchan <- m + 100
+					}
+				}
+			}, nil
+		}
+		
+		ctx := context.Background()
+		result, err := AwaitSlice(
+			model.SliceMap(multiErrorTransform)(model.FixedProvider(items))(),
+			SetContext(ctx),
+			SetTimeout(time.Second),
+		)()
+		
+		if err == nil {
+			t.Fatal("Expected error but got none")
+		}
+		
+		// Should be a concurrent error (exact item number may vary due to concurrency)
+		if !strings.Contains(err.Error(), "concurrent error on item") {
+			t.Errorf("Expected concurrent error but got %q", err.Error())
+		}
+		
+		if result != nil {
+			t.Error("Expected nil result when error occurs")
+		}
+	})
+	
+	t.Run("ErrorPropagationWithTimeout", func(t *testing.T) {
+		// Test error propagation when both errors and timeouts can occur
+		items := []uint32{1, 2, 3}
+		explicitError := errors.New("explicit async error")
+		
+		mixedProvider := func(m uint32) (Provider[uint32], error) {
+			return func(ctx context.Context, rchan chan uint32, echan chan error) {
+				switch m {
+				case 1:
+					// Fast error
+					time.Sleep(time.Millisecond * 10)
+					echan <- explicitError
+				case 2:
+					// Slow success that should timeout
+					time.Sleep(time.Millisecond * 200)
+					rchan <- m
+				case 3:
+					// Fast success
+					time.Sleep(time.Millisecond * 5)
+					rchan <- m
+				}
+			}, nil
+		}
+		
+		ctx := context.Background()
+		result, err := AwaitSlice(
+			model.SliceMap(mixedProvider)(model.FixedProvider(items))(),
+			SetContext(ctx),
+			SetTimeout(time.Millisecond*50), // Should timeout before item 2 completes but after error from item 1
+		)()
+		
+		if err == nil {
+			t.Fatal("Expected error but got none")
+		}
+		
+		// Should get explicit error (not timeout) because explicit errors are processed first
+		if err.Error() != explicitError.Error() {
+			t.Errorf("Expected explicit error %q but got %q", explicitError.Error(), err.Error())
+		}
+		
+		if result != nil {
+			t.Error("Expected nil result when error occurs")
+		}
+	})
+	
+	t.Run("ChainedAsyncProviderErrorPropagation", func(t *testing.T) {
+		// Test error propagation through chained async operations
+		items := []uint32{1, 2, 3, 4, 5}
+		chainedError := errors.New("chained operation error")
+		
+		// First transformation (should succeed)
+		firstTransform := func(m uint32) (Provider[uint32], error) {
+			return func(ctx context.Context, rchan chan uint32, echan chan error) {
+				time.Sleep(time.Millisecond * 5)
+				select {
+				case <-ctx.Done():
+					return
+				default:
+					rchan <- m * 2
+				}
+			}, nil
+		}
+		
+		// Second transformation (should fail on specific value)
+		secondTransform := func(m uint32) (Provider[uint32], error) {
+			return func(ctx context.Context, rchan chan uint32, echan chan error) {
+				time.Sleep(time.Millisecond * 10)
+				select {
+				case <-ctx.Done():
+					return
+				default:
+					if m == 8 { // This is 4*2 from first transform
+						echan <- chainedError
+					} else {
+						rchan <- m + 1000
+					}
+				}
+			}, nil
+		}
+		
+		ctx := context.Background()
+		
+		// First async operation
+		firstResult, err := AwaitSlice(
+			model.SliceMap(firstTransform)(model.FixedProvider(items))(),
+			SetContext(ctx),
+			SetTimeout(time.Second),
+		)()
+		
+		if err != nil {
+			t.Fatalf("First transformation should not error: %v", err)
+		}
+		
+		// Second async operation (should fail)
+		_, err = AwaitSlice(
+			model.SliceMap(secondTransform)(model.FixedProvider(firstResult))(),
+			SetContext(ctx),
+			SetTimeout(time.Second),
+		)()
+		
+		if err == nil {
+			t.Fatal("Expected chained error but got none")
+		}
+		if err.Error() != chainedError.Error() {
+			t.Errorf("Expected chained error %q but got %q", chainedError.Error(), err.Error())
+		}
+	})
+	
+	t.Run("PartialAsyncFailureRecovery", func(t *testing.T) {
+		// Test that async operations properly handle partial failures
+		// Unlike model operations, async operations should fail completely on any error
+		items := []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+		partialError := errors.New("partial async failure")
+		
+		partialFailureProvider := func(m uint32) (Provider[uint32], error) {
+			return func(ctx context.Context, rchan chan uint32, echan chan error) {
+				// Variable processing time to create race conditions
+				delay := time.Millisecond * time.Duration(m%5+1)
+				time.Sleep(delay)
+				
+				select {
+				case <-ctx.Done():
+					return
+				default:
+					if m == 7 { // Fail on the 7th item
+						echan <- partialError
+					} else {
+						rchan <- m * m // Square the number
+					}
+				}
+			}, nil
+		}
+		
+		ctx := context.Background()
+		result, err := AwaitSlice(
+			model.SliceMap(partialFailureProvider)(model.FixedProvider(items))(),
+			SetContext(ctx),
+			SetTimeout(time.Second),
+		)()
+		
+		// Should fail completely due to partial failure
+		if err == nil {
+			t.Fatal("Expected partial failure error but got none")
+		}
+		if err.Error() != partialError.Error() {
+			t.Errorf("Expected partial failure error %q but got %q", partialError.Error(), err.Error())
+		}
+		if result != nil {
+			t.Error("Expected nil result when partial failure occurs")
+		}
+	})
+	
+	t.Run("ErrorPropagationWithContextCancellation", func(t *testing.T) {
+		// Test error propagation when context is cancelled during operation
+		items := []uint32{1, 2, 3, 4, 5}
+		explicitError := errors.New("explicit error before cancellation")
+		
+		cancellationProvider := func(m uint32) (Provider[uint32], error) {
+			return func(ctx context.Context, rchan chan uint32, echan chan error) {
+				if m == 1 {
+					// Quick error
+					time.Sleep(time.Millisecond * 5)
+					echan <- explicitError
+					return
+				}
+				
+				// Longer operation that should be cancelled
+				select {
+				case <-time.After(time.Millisecond * 100):
+					rchan <- m * 100
+				case <-ctx.Done():
+					return
+				}
+			}, nil
+		}
+		
+		ctx, cancel := context.WithCancel(context.Background())
+		
+		// Cancel context after short delay
+		go func() {
+			time.Sleep(time.Millisecond * 20)
+			cancel()
+		}()
+		
+		result, err := AwaitSlice(
+			model.SliceMap(cancellationProvider)(model.FixedProvider(items))(),
+			SetContext(ctx),
+			SetTimeout(time.Second),
+		)()
+		
+		if err == nil {
+			t.Fatal("Expected error but got none")
+		}
+		
+		// Should get explicit error (processed before cancellation) or timeout/cancellation
+		if err.Error() != explicitError.Error() && err != ErrAwaitTimeout && err != context.Canceled {
+			t.Errorf("Expected explicit error, timeout, or cancellation but got %q", err.Error())
+		}
+		
+		if result != nil {
+			t.Error("Expected nil result when error occurs")
+		}
+	})
+}
+
 // Benchmark tests for AwaitSlice performance
 func BenchmarkAwaitSlice(b *testing.B) {
 	// Create test data

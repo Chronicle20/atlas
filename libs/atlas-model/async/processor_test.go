@@ -520,3 +520,174 @@ func TestAsyncRaceConditionThreadSafety(t *testing.T) {
 		}
 	})
 }
+
+// Benchmark tests for AwaitSlice performance
+func BenchmarkAwaitSlice(b *testing.B) {
+	// Create test data
+	data := make([]uint32, 1000)
+	for i := range data {
+		data[i] = uint32(i + 1)
+	}
+
+	// CPU-intensive provider with variable delays
+	intensiveProvider := func(val uint32) (Provider[uint32], error) {
+		return func(ctx context.Context, rchan chan uint32, echan chan error) {
+			// CPU-intensive work
+			result := val
+			for i := 0; i < 1000; i++ {
+				result = (result*7 + 13) % 1000003
+			}
+			
+			select {
+			case <-ctx.Done():
+				return
+			case rchan <- result:
+			}
+		}, nil
+	}
+
+	b.Run("AsyncProcessing", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			ctx := context.Background()
+			results, err := AwaitSlice(
+				model.SliceMap(intensiveProvider)(model.FixedProvider(data))(),
+				SetContext(ctx),
+				SetTimeout(time.Second*10),
+			)()
+			
+			if err != nil {
+				b.Fatalf("Unexpected error: %v", err)
+			}
+			
+			if len(results) != len(data) {
+				b.Fatalf("Expected %d results, got %d", len(data), len(results))
+			}
+		}
+	})
+
+	// Test with small timeout to benchmark timeout handling
+	b.Run("TimeoutHandling", func(b *testing.B) {
+		slowProvider := func(val uint32) (Provider[uint32], error) {
+			return func(ctx context.Context, rchan chan uint32, echan chan error) {
+				time.Sleep(time.Millisecond * 100) // Slow operation
+				
+				select {
+				case <-ctx.Done():
+					return
+				case rchan <- val*2:
+				}
+			}, nil
+		}
+
+		smallData := data[:10] // Use smaller dataset for timeout test
+		
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			ctx := context.Background()
+			_, err := AwaitSlice(
+				model.SliceMap(slowProvider)(model.FixedProvider(smallData))(),
+				SetContext(ctx),
+				SetTimeout(time.Millisecond*50), // Shorter than operation time
+			)()
+			
+			if err == nil {
+				b.Fatal("Expected timeout error but got none")
+			}
+		}
+	})
+}
+
+// Benchmark for error handling performance in async processing
+func BenchmarkAwaitSliceErrorHandling(b *testing.B) {
+	// Create test data
+	data := make([]uint32, 100)
+	for i := range data {
+		data[i] = uint32(i + 1)
+	}
+
+	// Provider that fails on specific values
+	errorProvider := func(val uint32) (Provider[uint32], error) {
+		return func(ctx context.Context, rchan chan uint32, echan chan error) {
+			if val == 50 { // Fail halfway through
+				select {
+				case <-ctx.Done():
+					return
+				case echan <- fmt.Errorf("test error on value %d", val):
+				}
+				return
+			}
+			
+			// Small CPU work for successful cases
+			result := val
+			for i := 0; i < 100; i++ {
+				result = (result*7 + 13) % 1000003
+			}
+			
+			select {
+			case <-ctx.Done():
+				return
+			case rchan <- result:
+			}
+		}, nil
+	}
+
+	b.Run("ErrorHandlingPerformance", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			ctx := context.Background()
+			_, err := AwaitSlice(
+				model.SliceMap(errorProvider)(model.FixedProvider(data))(),
+				SetContext(ctx),
+				SetTimeout(time.Second*5),
+			)()
+			
+			if err == nil {
+				b.Fatal("Expected error but got none")
+			}
+		}
+	})
+}
+
+// Benchmark for concurrent load
+func BenchmarkAwaitSliceConcurrentLoad(b *testing.B) {
+	// Create test data with many items to stress concurrency
+	data := make([]uint32, 5000)
+	for i := range data {
+		data[i] = uint32(i + 1)
+	}
+
+	// Light provider to focus on concurrency overhead
+	lightProvider := func(val uint32) (Provider[uint32], error) {
+		return func(ctx context.Context, rchan chan uint32, echan chan error) {
+			// Very light work
+			result := val * 2
+			
+			select {
+			case <-ctx.Done():
+				return
+			case rchan <- result:
+			}
+		}, nil
+	}
+
+	b.Run("HighConcurrency", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			ctx := context.Background()
+			results, err := AwaitSlice(
+				model.SliceMap(lightProvider)(model.FixedProvider(data))(),
+				SetContext(ctx),
+				SetTimeout(time.Second*30),
+			)()
+			
+			if err != nil {
+				b.Fatalf("Unexpected error: %v", err)
+			}
+			
+			if len(results) != len(data) {
+				b.Fatalf("Expected %d results, got %d", len(data), len(results))
+			}
+		}
+	})
+}

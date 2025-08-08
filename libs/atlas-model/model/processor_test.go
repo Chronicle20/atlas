@@ -2736,3 +2736,132 @@ func TestRaceConditionThreadSafety(t *testing.T) {
 		mapMutex.Unlock()
 	})
 }
+
+// Benchmark tests for ExecuteForEachSlice performance
+func BenchmarkExecuteForEachSlice(b *testing.B) {
+	// Create test data
+	data := make([]uint32, 1000)
+	for i := range data {
+		data[i] = uint32(i + 1)
+	}
+	provider := func() ([]uint32, error) {
+		return data, nil
+	}
+
+	// CPU-intensive operation
+	intensiveOperation := func(val uint32) error {
+		result := val
+		for i := 0; i < 1000; i++ {
+			result = (result*7 + 13) % 1000003
+		}
+		return nil
+	}
+
+	b.Run("SequentialExecution", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			err := ForEachSlice(provider, intensiveOperation)
+			if err != nil {
+				b.Fatalf("Unexpected error: %v", err)
+			}
+		}
+	})
+
+	b.Run("ParallelExecution", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			err := ForEachSlice(provider, intensiveOperation, ParallelExecute())
+			if err != nil {
+				b.Fatalf("Unexpected error: %v", err)
+			}
+		}
+	})
+}
+
+// Benchmark tests for ExecuteForEachMap performance
+func BenchmarkExecuteForEachMap(b *testing.B) {
+	// Create test data
+	data := make(map[string]uint32, 1000)
+	for i := 0; i < 1000; i++ {
+		data[fmt.Sprintf("key_%d", i)] = uint32(i + 1)
+	}
+	provider := func() (map[string]uint32, error) {
+		return data, nil
+	}
+
+	// CPU-intensive operation (curried function)
+	intensiveOperation := func(key string) Operator[uint32] {
+		return func(val uint32) error {
+			result := val
+			for i := 0; i < 1000; i++ {
+				result = (result*7 + 13) % 1000003
+			}
+			return nil
+		}
+	}
+
+	b.Run("SequentialExecution", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			err := ForEachMap(provider, intensiveOperation)
+			if err != nil {
+				b.Fatalf("Unexpected error: %v", err)
+			}
+		}
+	})
+
+	b.Run("ParallelExecution", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			err := ForEachMap(provider, intensiveOperation, ParallelExecute())
+			if err != nil {
+				b.Fatalf("Unexpected error: %v", err)
+			}
+		}
+	})
+}
+
+// Benchmark for error handling performance in parallel execution
+func BenchmarkExecuteForEachSliceErrorHandling(b *testing.B) {
+	// Create test data
+	data := make([]uint32, 100)
+	for i := range data {
+		data[i] = uint32(i + 1)
+	}
+	provider := func() ([]uint32, error) {
+		return data, nil
+	}
+
+	// Operation that fails on specific values
+	errorOperation := func(val uint32) error {
+		if val == 50 { // Fail halfway through
+			return errors.New("test error")
+		}
+		// Small CPU work
+		result := val
+		for i := 0; i < 100; i++ {
+			result = (result*7 + 13) % 1000003
+		}
+		return nil
+	}
+
+	b.Run("SequentialErrorHandling", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			err := ForEachSlice(provider, errorOperation)
+			if err == nil {
+				b.Fatal("Expected error but got nil")
+			}
+		}
+	})
+
+	b.Run("ParallelErrorHandling", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			err := ForEachSlice(provider, errorOperation, ParallelExecute())
+			if err == nil {
+				b.Fatal("Expected error but got nil")
+			}
+		}
+	})
+}

@@ -2821,6 +2821,246 @@ func BenchmarkExecuteForEachMap(b *testing.B) {
 	})
 }
 
+func TestProviderChainErrorPropagation(t *testing.T) {
+	// Test that errors propagate correctly through complex provider chains
+	// This test focuses on multi-level chaining scenarios that can occur in production
+	
+	t.Run("DeepProviderChainWithEarlyError", func(t *testing.T) {
+		// Test error propagation when error occurs early in a deep chain
+		expectedError := errors.New("early chain error")
+		
+		// Create an error provider that fails immediately
+		errorProvider := ErrorProvider[[]uint32](expectedError)
+		
+		// Build a deep chain: errorProvider -> SliceMap -> Map -> Filter -> First
+		transform := func(val uint32) (uint32, error) {
+			return val * 2, nil
+		}
+		
+		filter := func(val uint32) bool {
+			return val > 5
+		}
+		
+		// Chain multiple operations
+		chain := func() (uint32, error) {
+			sliceMapped := SliceMap[uint32, uint32](transform)(errorProvider)()
+			filtered := FilteredProvider(sliceMapped, []Filter[uint32]{filter})
+			return First(filtered, []Filter[uint32]{})
+		}
+		
+		// Execute and verify error propagates to the top
+		result, err := chain()
+		
+		// Should receive the original error from the beginning of the chain
+		if err == nil {
+			t.Errorf("Expected error, got result %d", result)
+		}
+		if err.Error() != expectedError.Error() {
+			t.Errorf("Expected error '%s', got '%s'", expectedError.Error(), err.Error())
+		}
+		
+		// Result should be zero value
+		if result != 0 {
+			t.Errorf("Expected zero value result when error occurs, got %d", result)
+		}
+	})
+	
+	t.Run("ProviderChainWithMiddleError", func(t *testing.T) {
+		// Test error propagation when error occurs in the middle of chain
+		transformError := errors.New("middle chain transform error")
+		
+		// Initial provider that succeeds
+		provider := FixedProvider([]uint32{1, 2, 3, 4, 5})
+		
+		// Transform function that fails for certain values
+		failingTransform := func(val uint32) (uint32, error) {
+			if val == 3 {
+				return 0, transformError
+			}
+			return val * 2, nil
+		}
+		
+		// Build chain with error in the middle
+		chain := func() ([]uint32, error) {
+			return SliceMap[uint32, uint32](failingTransform)(provider)()()
+		}
+		
+		// Execute and verify error propagation
+		result, err := chain()
+		
+		// Should receive the transform error
+		if err == nil {
+			t.Errorf("Expected error, got result %v", result)
+		}
+		if err.Error() != transformError.Error() {
+			t.Errorf("Expected error '%s', got '%s'", transformError.Error(), err.Error())
+		}
+		
+		// Result should be nil
+		if result != nil {
+			t.Errorf("Expected nil result when error occurs, got %v", result)
+		}
+	})
+	
+	t.Run("ParallelProviderChainErrorPropagation", func(t *testing.T) {
+		// Test error propagation in parallel execution chains
+		parallelError := errors.New("parallel chain error")
+		
+		// Provider that succeeds
+		provider := FixedProvider([]uint32{1, 2, 3, 4, 5})
+		
+		// Transform that fails for specific value
+		parallelTransform := func(val uint32) (uint32, error) {
+			if val == 4 {
+				return 0, parallelError
+			}
+			return val * 3, nil
+		}
+		
+		// Build parallel chain
+		chain := func() ([]uint32, error) {
+			return SliceMap[uint32, uint32](parallelTransform)(provider)(ParallelMap())()
+		}
+		
+		// Execute and verify error propagation in parallel context
+		result, err := chain()
+		
+		// Should receive the parallel transform error
+		if err == nil {
+			t.Errorf("Expected error, got result %v", result)
+		}
+		if err.Error() != parallelError.Error() {
+			t.Errorf("Expected error '%s', got '%s'", parallelError.Error(), err.Error())
+		}
+		
+		// Result should be nil
+		if result != nil {
+			t.Errorf("Expected nil result when parallel error occurs, got %v", result)
+		}
+	})
+	
+	t.Run("ChainedOperationErrorAggregation", func(t *testing.T) {
+		// Test that only the first error in a chain is propagated
+		firstError := errors.New("first error in chain")
+		secondError := errors.New("second error in chain")
+		
+		// Provider that fails with first error
+		errorProvider := ErrorProvider[uint32](firstError)
+		
+		// Transform that would fail with second error (but shouldn't be reached)
+		failingTransform := func(val uint32) (uint32, error) {
+			return 0, secondError
+		}
+		
+		// Build chain where both operations would fail
+		chain := func() (uint32, error) {
+			return Map[uint32, uint32](failingTransform)(errorProvider)()
+		}
+		
+		// Execute and verify only first error is propagated
+		result, err := chain()
+		
+		// Should receive only the first error (short-circuiting)
+		if err == nil {
+			t.Errorf("Expected error, got result %d", result)
+		}
+		if err.Error() != firstError.Error() {
+			t.Errorf("Expected first error '%s', got '%s'", firstError.Error(), err.Error())
+		}
+		
+		// Result should be zero value
+		if result != 0 {
+			t.Errorf("Expected zero value result when error occurs, got %d", result)
+		}
+	})
+	
+	t.Run("NestedProviderChainErrorPropagation", func(t *testing.T) {
+		// Test error propagation through nested provider operations
+		nestedError := errors.New("nested provider error")
+		
+		// Create nested structure: provider -> merge -> fold -> collect
+		provider1 := FixedProvider([]uint32{1, 2, 3})
+		provider2 := ErrorProvider[[]uint32](nestedError)
+		
+		// Merge two providers (one fails)
+		mergedProvider := MergeSliceProvider(provider1, provider2)
+		
+		// Fold operation on the merged result
+		initialValue := func() (uint32, error) {
+			return 0, nil
+		}
+		
+		folder := func(acc uint32, val uint32) (uint32, error) {
+			return acc + val, nil
+		}
+		
+		// Build nested chain
+		chain := func() (uint32, error) {
+			return Fold(mergedProvider, initialValue, folder)()
+		}
+		
+		// Execute and verify error propagation through nested structure
+		result, err := chain()
+		
+		// Should receive the nested error
+		if err == nil {
+			t.Errorf("Expected error, got result %d", result)
+		}
+		if err.Error() != nestedError.Error() {
+			t.Errorf("Expected error '%s', got '%s'", nestedError.Error(), err.Error())
+		}
+		
+		// Result should be zero value
+		if result != 0 {
+			t.Errorf("Expected zero value result when nested error occurs, got %d", result)
+		}
+	})
+	
+	t.Run("LongChainPerformanceWithErrors", func(t *testing.T) {
+		// Test that error propagation is efficient in long chains
+		chainError := errors.New("chain performance error")
+		
+		// Create a very long chain to test performance
+		provider := ErrorProvider[uint32](chainError)
+		
+		// Build an intentionally long chain of operations
+		longChain := provider
+		
+		// Chain multiple Map operations (should short-circuit on first error)
+		for i := 0; i < 10; i++ {
+			transform := func(val uint32) (uint32, error) {
+				// This should never execute due to early error
+				t.Errorf("Transform should not execute when early error occurs")
+				return val + 1, nil
+			}
+			longChain = Map[uint32, uint32](transform)(longChain)
+		}
+		
+		// Execute and verify quick error propagation
+		start := time.Now()
+		result, err := longChain()
+		duration := time.Since(start)
+		
+		// Should receive the original error quickly
+		if err == nil {
+			t.Errorf("Expected error, got result %d", result)
+		}
+		if err.Error() != chainError.Error() {
+			t.Errorf("Expected error '%s', got '%s'", chainError.Error(), err.Error())
+		}
+		
+		// Should be very fast (under 1ms) due to short-circuiting
+		if duration > time.Millisecond {
+			t.Errorf("Error propagation took too long: %v (expected < 1ms)", duration)
+		}
+		
+		// Result should be zero value
+		if result != 0 {
+			t.Errorf("Expected zero value result when error occurs, got %d", result)
+		}
+	})
+}
+
 // Benchmark for error handling performance in parallel execution
 func BenchmarkExecuteForEachSliceErrorHandling(b *testing.B) {
 	// Create test data

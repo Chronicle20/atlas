@@ -1,6 +1,9 @@
 package model
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 func TestFirstNoFilter(t *testing.T) {
 	p := FixedProvider([]uint32{1})
@@ -496,5 +499,64 @@ func TestFoldLazyEvaluation(t *testing.T) {
 	expected := uint32(6)
 	if result != expected {
 		t.Errorf("Expected %d, got %d", expected, result)
+	}
+}
+
+func TestCollectToMapLazyEvaluation(t *testing.T) {
+	// Test that CollectToMap function defers execution until Provider is called
+	executed := false
+	
+	// Create a Provider that tracks execution
+	trackingProvider := func() ([]uint32, error) {
+		executed = true
+		return []uint32{1, 2, 3}, nil
+	}
+	
+	// Key provider that converts value to string
+	keyProvider := func(val uint32) string {
+		return fmt.Sprintf("key-%d", val)
+	}
+	
+	// Value provider that doubles the value
+	valueProvider := func(val uint32) uint32 {
+		return val * 2
+	}
+	
+	// Create CollectToMap pipeline - should NOT execute the provider yet
+	mapProvider := CollectToMap[uint32, string, uint32](trackingProvider, keyProvider, valueProvider)
+	
+	// Verify that the underlying provider has not been executed during composition
+	if executed {
+		t.Errorf("CollectToMap function should not execute provider during composition")
+	}
+	
+	// Now execute the map provider
+	result, err := mapProvider()
+	if err != nil {
+		t.Errorf("Expected result, got err %s", err)
+	}
+	
+	// Verify execution happened and result is correct
+	if !executed {
+		t.Errorf("Provider should have been executed when map provider was called")
+	}
+	
+	// Verify the result has correct mapping
+	expected := map[string]uint32{
+		"key-1": 2,
+		"key-2": 4, 
+		"key-3": 6,
+	}
+	
+	if len(result) != len(expected) {
+		t.Errorf("Expected map with %d entries, got %d", len(expected), len(result))
+	}
+	
+	for key, expectedValue := range expected {
+		if actualValue, exists := result[key]; !exists {
+			t.Errorf("Expected key %s not found in result", key)
+		} else if actualValue != expectedValue {
+			t.Errorf("For key %s: expected %d, got %d", key, expectedValue, actualValue)
+		}
 	}
 }

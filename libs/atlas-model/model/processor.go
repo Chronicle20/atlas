@@ -451,11 +451,11 @@ func Identity[M any](m M) M {
 
 //goland:noinspection GoUnusedExportedFunction
 func CollectToMap[M any, K comparable, V any](mp Provider[[]M], kp KeyProvider[M, K], vp ValueProvider[M, V]) Provider[map[K]V] {
-	ms, err := mp()
-	if err != nil {
-		return ErrorProvider[map[K]V](err)
-	}
 	return func() (map[K]V, error) {
+		ms, err := mp()
+		if err != nil {
+			return nil, err
+		}
 		var result = make(map[K]V)
 		for _, m := range ms {
 			result[kp(m)] = vp(m)

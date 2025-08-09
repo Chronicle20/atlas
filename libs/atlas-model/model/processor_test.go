@@ -6706,3 +6706,205 @@ func BenchmarkHighConcurrency(b *testing.B) {
 		b.ReportMetric(float64(atomic.LoadInt64(&sharedCounter))/float64(b.N), "final_counter/iteration")
 	})
 }
+
+// Memory Profiling Benchmarks
+// These benchmarks are designed to work with Go's memory profiling tools:
+// go test -bench=BenchmarkMemoryProfile -memprofile=mem.prof
+// go tool pprof mem.prof
+
+func BenchmarkMemoryProfileProviderAllocation(b *testing.B) {
+	// Benchmark memory allocations in provider chains
+	// Use with: go test -bench=BenchmarkMemoryProfileProviderAllocation -memprofile=provider_mem.prof
+	b.ReportAllocs()
+	
+	dataSize := 10000
+	data := make([]uint32, dataSize)
+	for i := range data {
+		data[i] = uint32(i + 1)
+	}
+	
+	// Memory-allocating provider
+	provider := func() ([]uint32, error) {
+		// Create new slice each time to track allocations
+		result := make([]uint32, len(data))
+		copy(result, data)
+		return result, nil
+	}
+	
+	// Memory-intensive transform
+	transform := func(val uint32) ([]byte, error) {
+		// Allocate bytes to track memory patterns
+		result := make([]byte, 100)
+		for i := range result {
+			result[i] = byte(val + uint32(i))
+		}
+		return result, nil
+	}
+	
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		mapped := SliceMap[uint32, []byte](transform)(provider)()
+		_, err := mapped()
+		if err != nil {
+			b.Fatalf("Unexpected error: %v", err)
+		}
+	}
+}
+
+func BenchmarkMemoryProfileProviderChainComposition(b *testing.B) {
+	// Benchmark memory usage in complex provider chains
+	// Use with: go test -bench=BenchmarkMemoryProfileProviderChainComposition -memprofile=chain_mem.prof
+	b.ReportAllocs()
+	
+	// Multi-stage provider chain with memory allocations at each stage
+	stage1 := func() ([]uint32, error) {
+		data := make([]uint32, 5000)
+		for i := range data {
+			data[i] = uint32(i + 1)
+		}
+		return data, nil
+	}
+	
+	stage2 := func(val uint32) (string, error) {
+		// Convert to string with padding
+		return fmt.Sprintf("value_%08d_padded_data", val), nil
+	}
+	
+	stage3 := func(val string) (map[string]interface{}, error) {
+		// Create map with multiple allocations
+		result := make(map[string]interface{})
+		result["original"] = val
+		result["length"] = len(val)
+		result["hash"] = make([]byte, 16) // Additional allocation
+		return result, nil
+	}
+	
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		chain := SliceMap[string, map[string]interface{}](stage3)(SliceMap[uint32, string](stage2)(stage1)())()
+		_, err := chain()
+		if err != nil {
+			b.Fatalf("Unexpected error: %v", err)
+		}
+	}
+}
+
+func BenchmarkMemoryProfileParallelProcessing(b *testing.B) {
+	// Benchmark memory usage in parallel processing scenarios
+	// Use with: go test -bench=BenchmarkMemoryProfileParallelProcessing -memprofile=parallel_mem.prof
+	b.ReportAllocs()
+	
+	dataSize := 20000
+	data := make([]uint32, dataSize)
+	for i := range data {
+		data[i] = uint32(i + 1)
+	}
+	
+	provider := func() ([]uint32, error) {
+		// Create new slice for each benchmark iteration
+		result := make([]uint32, len(data))
+		copy(result, data)
+		return result, nil
+	}
+	
+	// Memory-heavy operation for parallel processing
+	operation := func(val uint32) ([]int64, error) {
+		// Allocate different sized slices based on input
+		size := int(val%100) + 50
+		result := make([]int64, size)
+		for i := range result {
+			result[i] = int64(val) * int64(i+1)
+		}
+		return result, nil
+	}
+	
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		parallel, err := SliceMap[uint32, []int64](operation)(provider)(ParallelMap())()
+		if err != nil {
+			b.Fatalf("Unexpected error: %v", err)
+		}
+		_ = parallel // Use the result to avoid unused variable warning
+	}
+}
+
+func BenchmarkMemoryProfileMemoization(b *testing.B) {
+	// Benchmark memory usage patterns in memoization
+	// Use with: go test -bench=BenchmarkMemoryProfileMemoization -memprofile=memo_mem.prof
+	b.ReportAllocs()
+	
+	// Expensive computation that allocates memory
+	computeProvider := func(input uint32) Provider[[]string] {
+		return func() ([]string, error) {
+			// Simulate expensive computation with memory allocation
+			result := make([]string, 100)
+			for i := range result {
+				result[i] = fmt.Sprintf("computed_value_%d_%d", input, i)
+			}
+			return result, nil
+		}
+	}
+	
+	// Test both memoized and non-memoized versions
+	b.Run("WithMemoization", func(b *testing.B) {
+		b.ReportAllocs()
+		
+		memoized := Memoize(computeProvider(42))
+		
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			_, err := memoized()
+			if err != nil {
+				b.Fatalf("Unexpected error: %v", err)
+			}
+		}
+	})
+	
+	b.Run("WithoutMemoization", func(b *testing.B) {
+		b.ReportAllocs()
+		
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			provider := computeProvider(42)
+			_, err := provider()
+			if err != nil {
+				b.Fatalf("Unexpected error: %v", err)
+			}
+		}
+	})
+}
+
+func BenchmarkMemoryProfileErrorHandling(b *testing.B) {
+	// Benchmark memory allocations during error scenarios
+	// Use with: go test -bench=BenchmarkMemoryProfileErrorHandling -memprofile=error_mem.prof
+	b.ReportAllocs()
+	
+	data := make([]uint32, 1000)
+	for i := range data {
+		data[i] = uint32(i + 1)
+	}
+	
+	provider := func() ([]uint32, error) {
+		result := make([]uint32, len(data))
+		copy(result, data)
+		return result, nil
+	}
+	
+	// Operation that fails for certain values
+	faultyOperation := func(val uint32) (string, error) {
+		if val%100 == 0 {
+			// Create error with allocated message
+			return "", fmt.Errorf("processing failed for value %d with detailed error information", val)
+		}
+		// Normal processing with allocation
+		return fmt.Sprintf("processed_value_%d", val), nil
+	}
+	
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		// Execute and expect some errors
+		mapped, err := SliceMap[uint32, string](faultyOperation)(provider)()()
+		_ = mapped // Use the result
+		_ = err    // Ignore errors for memory profiling
+	}
+}

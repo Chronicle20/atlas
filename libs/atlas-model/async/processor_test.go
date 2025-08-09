@@ -2911,3 +2911,244 @@ func BenchmarkHighConcurrency(b *testing.B) {
 		b.ReportMetric(float64(atomic.LoadInt64(&channelOps))/float64(b.N), "async_channel_ops/iteration")
 	})
 }
+
+// Memory Profiling Benchmarks for Async Operations
+// These benchmarks are designed to work with Go's memory profiling tools:
+// go test -bench=BenchmarkAsyncMemoryProfile -memprofile=async_mem.prof
+// go tool pprof async_mem.prof
+
+func BenchmarkAsyncMemoryProfileProviderCreation(b *testing.B) {
+	// Benchmark memory allocations in async provider creation
+	// Use with: go test -bench=BenchmarkAsyncMemoryProfileProviderCreation -memprofile=async_provider_mem.prof
+	b.ReportAllocs()
+	
+	dataSize := 1000
+	data := make([]uint32, dataSize)
+	for i := range data {
+		data[i] = uint32(i + 1)
+	}
+	
+	// Memory-allocating async provider
+	createProvider := func(val uint32) Provider[[]byte] {
+		return func(ctx context.Context, rchan chan []byte, echan chan error) {
+			// Simulate async work with memory allocation
+			result := make([]byte, int(val%500)+100)
+			for i := range result {
+				result[i] = byte(val + uint32(i))
+			}
+			select {
+			case rchan <- result:
+			case <-ctx.Done():
+				echan <- ctx.Err()
+			}
+		}
+	}
+	
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		// Create slice of providers
+		providers := make([]Provider[[]byte], len(data))
+		for j, val := range data {
+			providers[j] = createProvider(val)
+		}
+		
+		// Execute async processing
+		_, err := AwaitSlice(FixedProvider(providers), SetTimeout(5*time.Second))()
+		if err != nil {
+			b.Fatalf("Unexpected error: %v", err)
+		}
+	}
+}
+
+func BenchmarkAsyncMemoryProfileChannelOperations(b *testing.B) {
+	// Benchmark memory usage with different provider counts to understand channel overhead
+	// Use with: go test -bench=BenchmarkAsyncMemoryProfileChannelOperations -memprofile=channel_ops_mem.prof
+	b.ReportAllocs()
+	
+	// Test different provider counts to understand memory impact
+	providerCounts := []int{10, 100, 500, 1000}
+	
+	for _, providerCount := range providerCounts {
+		b.Run(fmt.Sprintf("ProviderCount_%d", providerCount), func(b *testing.B) {
+			b.ReportAllocs()
+			
+			// Memory-intensive provider
+			provider := func(id int) Provider[string] {
+				return func(ctx context.Context, rchan chan string, echan chan error) {
+					// Allocate varying amounts of memory
+					data := make([]byte, (id%500)+100)
+					for i := range data {
+						data[i] = byte(i + id)
+					}
+					result := fmt.Sprintf("result_%d_%s", id, string(data[:50]))
+					select {
+					case rchan <- result:
+					case <-ctx.Done():
+						echan <- ctx.Err()
+					}
+				}
+			}
+			
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				providers := make([]Provider[string], providerCount)
+				for j := 0; j < providerCount; j++ {
+					providers[j] = provider(j)
+				}
+				
+				_, err := AwaitSlice(FixedProvider(providers), SetTimeout(10*time.Second))()
+				if err != nil {
+					b.Fatalf("Unexpected error: %v", err)
+				}
+			}
+		})
+	}
+}
+
+func BenchmarkAsyncMemoryProfileErrorPropagation(b *testing.B) {
+	// Benchmark memory allocations during async error scenarios
+	// Use with: go test -bench=BenchmarkAsyncMemoryProfileErrorPropagation -memprofile=async_error_mem.prof
+	b.ReportAllocs()
+	
+	providerCount := 2000
+	
+	// Provider that fails for certain values (with memory allocation in error messages)
+	faultyProvider := func(id int) Provider[map[string]interface{}] {
+		return func(ctx context.Context, rchan chan map[string]interface{}, echan chan error) {
+			if id%100 == 0 {
+				// Create detailed error with memory allocation
+				errorData := make([]string, 50)
+				for i := range errorData {
+					errorData[i] = fmt.Sprintf("error_context_%d_%d", id, i)
+				}
+				select {
+				case echan <- fmt.Errorf("provider %d failed with context: %v", id, errorData):
+				case <-ctx.Done():
+					echan <- ctx.Err()
+				}
+				return
+			}
+			
+			// Normal processing with memory allocation
+			result := make(map[string]interface{})
+			result["id"] = id
+			result["data"] = make([]int, id%100+10) // Variable allocation
+			result["metadata"] = fmt.Sprintf("processed_%d", id)
+			
+			select {
+			case rchan <- result:
+			case <-ctx.Done():
+				echan <- ctx.Err()
+			}
+		}
+	}
+	
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		providers := make([]Provider[map[string]interface{}], providerCount)
+		for j := 0; j < providerCount; j++ {
+			providers[j] = faultyProvider(j)
+		}
+		
+		// Execute and expect some errors
+		_, _ = AwaitSlice(FixedProvider(providers), SetTimeout(10*time.Second))()
+	}
+}
+
+func BenchmarkAsyncMemoryProfileGoroutineScaling(b *testing.B) {
+	// Benchmark memory usage with different numbers of concurrent goroutines
+	// Use with: go test -bench=BenchmarkAsyncMemoryProfileGoroutineScaling -memprofile=goroutine_scaling_mem.prof
+	b.ReportAllocs()
+	
+	// Test different concurrency levels
+	concurrencyLevels := []int{10, 100, 1000, 5000}
+	
+	for _, concurrency := range concurrencyLevels {
+		b.Run(fmt.Sprintf("Concurrency_%d", concurrency), func(b *testing.B) {
+			b.ReportAllocs()
+			
+			// Memory-allocating provider
+			provider := func(id int) Provider[[][]byte] {
+				return func(ctx context.Context, rchan chan [][]byte, echan chan error) {
+					// Create nested slices to increase memory pressure
+					result := make([][]byte, 10)
+					for i := range result {
+						result[i] = make([]byte, (id+i)%200+50)
+						for j := range result[i] {
+							result[i][j] = byte((id + i + j) % 256)
+						}
+					}
+					select {
+					case rchan <- result:
+					case <-ctx.Done():
+						echan <- ctx.Err()
+					}
+				}
+			}
+			
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				providers := make([]Provider[[][]byte], concurrency)
+				for j := 0; j < concurrency; j++ {
+					providers[j] = provider(j)
+				}
+				
+				_, err := AwaitSlice(FixedProvider(providers), SetTimeout(15*time.Second))()
+				if err != nil {
+					b.Fatalf("Unexpected error: %v", err)
+				}
+			}
+		})
+	}
+}
+
+func BenchmarkAsyncMemoryProfileTimeoutHandling(b *testing.B) {
+	// Benchmark memory usage in timeout scenarios
+	// Use with: go test -bench=BenchmarkAsyncMemoryProfileTimeoutHandling -memprofile=timeout_mem.prof
+	b.ReportAllocs()
+	
+	providerCount := 1000
+	
+	// Mix of fast and slow providers to trigger timeouts
+	mixedProvider := func(id int) Provider[string] {
+		return func(ctx context.Context, rchan chan string, echan chan error) {
+			if id%10 == 0 {
+				// Slow provider that will timeout
+				select {
+				case <-time.After(200 * time.Millisecond):
+				case <-ctx.Done():
+					echan <- ctx.Err()
+					return
+				}
+			}
+			
+			// Allocate memory regardless of speed
+			data := make([]byte, (id%300)+100)
+			for i := range data {
+				data[i] = byte(i + id)
+			}
+			
+			endIdx := 50
+			if len(data) < 50 {
+				endIdx = len(data)
+			}
+			result := fmt.Sprintf("result_%d_%s", id, string(data[:endIdx]))
+			select {
+			case rchan <- result:
+			case <-ctx.Done():
+				echan <- ctx.Err()
+			}
+		}
+	}
+	
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		providers := make([]Provider[string], providerCount)
+		for j := 0; j < providerCount; j++ {
+			providers[j] = mixedProvider(j)
+		}
+		
+		// Short timeout to trigger timeout handling
+		_, _ = AwaitSlice(FixedProvider(providers), SetTimeout(100*time.Millisecond))()
+	}
+}

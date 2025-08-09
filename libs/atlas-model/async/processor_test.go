@@ -2654,3 +2654,260 @@ func BenchmarkContextCancellation(b *testing.B) {
 		})
 	})
 }
+
+// BenchmarkHighConcurrency performs stress testing with high concurrency to evaluate async system behavior
+// under extreme load conditions and detect performance degradation points
+func BenchmarkHighConcurrency(b *testing.B) {
+	// Test with different dataset sizes for async operations
+	dataSizes := []int{100, 1000, 5000, 10000}
+	
+	// Test with different timeout configurations
+	timeouts := []time.Duration{
+		100 * time.Millisecond,
+		500 * time.Millisecond, 
+		1 * time.Second,
+		5 * time.Second,
+	}
+	
+	for _, dataSize := range dataSizes {
+		for _, timeout := range timeouts {
+			b.Run(fmt.Sprintf("DataSize_%d_Timeout_%v", dataSize, timeout), func(b *testing.B) {
+				// Setup large dataset of async providers
+				data := make([]uint32, dataSize)
+				for i := range data {
+					data[i] = uint32(i + 1)
+				}
+				
+				// Create async provider function with simulated async work
+				asyncProvider := func(val uint32) Provider[uint32] {
+					return func(ctx context.Context, rchan chan uint32, echan chan error) {
+						// Simulate async work with variable duration
+						workDuration := time.Duration(val%50+1) * time.Microsecond
+						time.Sleep(workDuration)
+						
+						// CPU work to simulate real computation
+						result := val
+						for i := 0; i < 50; i++ {
+							result = (result*31 + val) % 1000000
+						}
+						
+						select {
+						case rchan <- result:
+						case <-ctx.Done():
+						}
+					}
+				}
+				
+				// Create provider slice
+				providerSlice := func() ([]Provider[uint32], error) {
+					providers := make([]Provider[uint32], len(data))
+					for j, val := range data {
+						providers[j] = asyncProvider(val)
+					}
+					return providers, nil
+				}
+				
+				b.ResetTimer()
+				for i := 0; i < b.N; i++ {
+					_, err := AwaitSlice(providerSlice, SetTimeout(timeout))()
+					if err != nil {
+						b.Fatalf("Unexpected error in high concurrency test: %v", err)
+					}
+				}
+			})
+		}
+	}
+	
+	b.Run("StressTestAsyncMemoryPressure", func(b *testing.B) {
+		// Test async operations under memory pressure
+		largeData := make([]uint32, 20000)
+		for i := range largeData {
+			largeData[i] = uint32(i + 1)
+		}
+		
+		// Memory-intensive async operation
+		memoryIntensiveProvider := func(val uint32) Provider[[]uint32] {
+			return func(ctx context.Context, rchan chan []uint32, echan chan error) {
+				// Create temporary large slice for each async operation
+				temp := make([]uint32, 2000)
+				for i := range temp {
+					temp[i] = val * uint32(i+1)
+				}
+				
+				// Simulate async delay
+				time.Sleep(time.Microsecond * time.Duration(val%100+1))
+				
+				select {
+				case rchan <- temp:
+				case <-ctx.Done():
+				}
+			}
+		}
+		
+		providerSlice := func() ([]Provider[[]uint32], error) {
+			providers := make([]Provider[[]uint32], len(largeData))
+			for j, val := range largeData {
+				providers[j] = memoryIntensiveProvider(val)
+			}
+			return providers, nil
+		}
+		
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			_, err := AwaitSlice(providerSlice, SetTimeout(10*time.Second))()
+			if err != nil {
+				b.Fatalf("Unexpected error in memory pressure test: %v", err)
+			}
+		}
+	})
+	
+	b.Run("StressTestAsyncGoroutineOverhead", func(b *testing.B) {
+		// Test with extremely high async goroutine count to measure overhead
+		data := make([]uint32, 50000)
+		for i := range data {
+			data[i] = uint32(i + 1)
+		}
+		
+		// Minimal async operation to isolate goroutine overhead
+		minimalProvider := func(val uint32) Provider[uint32] {
+			return func(ctx context.Context, rchan chan uint32, echan chan error) {
+				// Minimal work with tiny async delay
+				time.Sleep(time.Nanosecond * 10)
+				
+				select {
+				case rchan <- val + 1:
+				case <-ctx.Done():
+				}
+			}
+		}
+		
+		providerSlice := func() ([]Provider[uint32], error) {
+			providers := make([]Provider[uint32], len(data))
+			for j, val := range data {
+				providers[j] = minimalProvider(val)
+			}
+			return providers, nil
+		}
+		
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			_, err := AwaitSlice(providerSlice, SetTimeout(5*time.Second))()
+			if err != nil {
+				b.Fatalf("Unexpected error in goroutine overhead test: %v", err)
+			}
+		}
+		
+		// Report async goroutine overhead metrics
+		b.ReportMetric(float64(len(data)), "async_goroutines/op")
+	})
+	
+	b.Run("StressTestTimeoutBehavior", func(b *testing.B) {
+		// Test timeout behavior under high load
+		data := make([]uint32, 1000)
+		for i := range data {
+			data[i] = uint32(i + 1)
+		}
+		
+		// Providers with variable execution times
+		var timeoutCount int64
+		variableTimeProvider := func(val uint32) Provider[uint32] {
+			return func(ctx context.Context, rchan chan uint32, echan chan error) {
+				// Some operations will timeout, others won't
+				if val%10 == 0 {
+					// These will likely timeout
+					time.Sleep(200 * time.Millisecond)
+				} else {
+					// These should complete
+					time.Sleep(time.Duration(val%5+1) * time.Millisecond)
+				}
+				
+				select {
+				case rchan <- val:
+				case <-ctx.Done():
+				}
+			}
+		}
+		
+		providerSlice := func() ([]Provider[uint32], error) {
+			providers := make([]Provider[uint32], len(data))
+			for j, val := range data {
+				providers[j] = variableTimeProvider(val)
+			}
+			return providers, nil
+		}
+		
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			atomic.StoreInt64(&timeoutCount, 0)
+			
+			// Short timeout to trigger timeouts on slow operations
+			_, err := AwaitSlice(providerSlice, SetTimeout(50*time.Millisecond))()
+			if err != nil {
+				// Count timeout occurrences
+				atomic.AddInt64(&timeoutCount, 1)
+			}
+		}
+		
+		b.ReportMetric(float64(atomic.LoadInt64(&timeoutCount))/float64(b.N), "timeout_rate")
+	})
+	
+	b.Run("StressTestChannelCommunication", func(b *testing.B) {
+		// Test async channel communication under high load
+		data := make([]uint32, 2000)
+		for i := range data {
+			data[i] = uint32(i + 1)
+		}
+		
+		// Provider that stresses channel communication patterns
+		var channelOps int64
+		channelStressProvider := func(val uint32) Provider[uint32] {
+			return func(ctx context.Context, rchan chan uint32, echan chan error) {
+				atomic.AddInt64(&channelOps, 1)
+				
+				// Create temporary channels to stress the communication system
+				done := make(chan bool, 1)
+				result := make(chan uint32, 1)
+				
+				go func() {
+					time.Sleep(time.Microsecond * time.Duration(val%20+1))
+					result <- val * 2
+					done <- true
+				}()
+				
+				select {
+				case res := <-result:
+					<-done
+					select {
+					case rchan <- res:
+					case <-ctx.Done():
+					}
+				case <-time.After(50 * time.Millisecond):
+					select {
+					case echan <- fmt.Errorf("channel communication timeout for value %d", val):
+					case <-ctx.Done():
+					}
+				case <-ctx.Done():
+				}
+			}
+		}
+		
+		providerSlice := func() ([]Provider[uint32], error) {
+			providers := make([]Provider[uint32], len(data))
+			for j, val := range data {
+				providers[j] = channelStressProvider(val)
+			}
+			return providers, nil
+		}
+		
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			atomic.StoreInt64(&channelOps, 0)
+			_, err := AwaitSlice(providerSlice, SetTimeout(2*time.Second))()
+			if err != nil {
+				b.Fatalf("Unexpected error in channel communication test: %v", err)
+			}
+		}
+		
+		b.ReportMetric(float64(atomic.LoadInt64(&channelOps))/float64(b.N), "async_channel_ops/iteration")
+	})
+}

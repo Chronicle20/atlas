@@ -6534,3 +6534,175 @@ func BenchmarkContextCancellation(b *testing.B) {
 			atomic.LoadInt64(&cancelledCount)/int64(b.N))
 	})
 }
+
+// BenchmarkHighConcurrency performs stress testing with high concurrency to evaluate system behavior
+// under extreme load conditions and detect performance degradation points
+func BenchmarkHighConcurrency(b *testing.B) {
+	// Test with different dataset sizes to understand scaling characteristics
+	dataSizes := []int{100, 1000, 10000, 50000}
+	
+	// Test with different concurrency levels
+	concurrencyLevels := []int{10, 100, 1000, 5000}
+	
+	for _, dataSize := range dataSizes {
+		for _, concurrency := range concurrencyLevels {
+			b.Run(fmt.Sprintf("DataSize_%d_Concurrency_%d", dataSize, concurrency), func(b *testing.B) {
+				// Setup large dataset
+				data := make([]uint32, dataSize)
+				for i := range data {
+					data[i] = uint32(i + 1)
+				}
+				
+				// CPU-intensive operation to simulate real workload
+				operation := func(val uint32) (uint32, error) {
+					// Simulate computational work
+					result := val
+					for i := 0; i < 100; i++ {
+						result = (result*31 + val) % 1000000
+					}
+					return result, nil
+				}
+				
+				// Create provider with data
+				provider := func() ([]uint32, error) {
+					return data, nil
+				}
+				
+				b.ResetTimer()
+				for i := 0; i < b.N; i++ {
+					// Use SliceMap with high concurrency
+					_, err := SliceMap[uint32, uint32](operation)(provider)(ParallelMap())()
+					if err != nil {
+						b.Fatalf("Unexpected error in high concurrency test: %v", err)
+					}
+				}
+			})
+		}
+	}
+	
+	b.Run("StressTestMemoryPressure", func(b *testing.B) {
+		// Test behavior under memory pressure with large datasets
+		largeData := make([]uint32, 100000)
+		for i := range largeData {
+			largeData[i] = uint32(i + 1)
+		}
+		
+		// Memory-intensive operation
+		operation := func(val uint32) ([]uint32, error) {
+			// Create temporary slice for each operation to increase memory pressure
+			temp := make([]uint32, 1000)
+			for i := range temp {
+				temp[i] = val * uint32(i+1)
+			}
+			return temp, nil
+		}
+		
+		provider := func() ([]uint32, error) {
+			return largeData, nil
+		}
+		
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			_, err := SliceMap[uint32, []uint32](operation)(provider)(ParallelMap())()
+			if err != nil {
+				b.Fatalf("Unexpected error in memory pressure test: %v", err)
+			}
+		}
+	})
+	
+	b.Run("StressTestGoroutineOverhead", func(b *testing.B) {
+		// Test with extremely high goroutine count to measure overhead
+		smallData := make([]uint32, 10000)
+		for i := range smallData {
+			smallData[i] = uint32(i + 1)
+		}
+		
+		// Minimal operation to isolate goroutine overhead
+		operation := func(val uint32) (uint32, error) {
+			return val + 1, nil
+		}
+		
+		provider := func() ([]uint32, error) {
+			return smallData, nil
+		}
+		
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			_, err := SliceMap[uint32, uint32](operation)(provider)(ParallelMap())()
+			if err != nil {
+				b.Fatalf("Unexpected error in goroutine overhead test: %v", err)
+			}
+		}
+		
+		// Report goroutine overhead metrics
+		b.ReportMetric(float64(len(smallData)), "goroutines/op")
+	})
+	
+	b.Run("StressTestChannelThroughput", func(b *testing.B) {
+		// Test channel throughput under high load
+		mediumData := make([]uint32, 5000)
+		for i := range mediumData {
+			mediumData[i] = uint32(i + 1)
+		}
+		
+		// Operation that stresses channel communication
+		var channelOps int64
+		operation := func(val uint32) (uint32, error) {
+			atomic.AddInt64(&channelOps, 1)
+			// Simulate brief work to create channel pressure
+			time.Sleep(time.Nanosecond * 100)
+			return val * 2, nil
+		}
+		
+		provider := func() ([]uint32, error) {
+			return mediumData, nil
+		}
+		
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			atomic.StoreInt64(&channelOps, 0)
+			_, err := SliceMap[uint32, uint32](operation)(provider)(ParallelMap())()
+			if err != nil {
+				b.Fatalf("Unexpected error in channel throughput test: %v", err)
+			}
+		}
+		
+		b.ReportMetric(float64(atomic.LoadInt64(&channelOps))/float64(b.N), "channel_ops/iteration")
+	})
+	
+	b.Run("StressTestRaceConditionDetection", func(b *testing.B) {
+		// Stress test specifically designed to trigger race conditions if they exist
+		sharedCounter := int64(0)
+		data := make([]uint32, 1000)
+		for i := range data {
+			data[i] = uint32(i + 1)
+		}
+		
+		// Operation that might create race conditions with shared state
+		operation := func(val uint32) (uint32, error) {
+			// Intentionally create potential race condition scenarios
+			current := atomic.LoadInt64(&sharedCounter)
+			// Simulate work
+			for i := 0; i < int(val%10)+1; i++ {
+				current++
+			}
+			atomic.StoreInt64(&sharedCounter, current)
+			return val, nil
+		}
+		
+		provider := func() ([]uint32, error) {
+			return data, nil
+		}
+		
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			atomic.StoreInt64(&sharedCounter, 0)
+			_, err := SliceMap[uint32, uint32](operation)(provider)(ParallelMap())()
+			if err != nil {
+				b.Fatalf("Unexpected error in race condition detection test: %v", err)
+			}
+		}
+		
+		b.ReportMetric(float64(atomic.LoadInt64(&sharedCounter))/float64(b.N), "final_counter/iteration")
+	})
+}

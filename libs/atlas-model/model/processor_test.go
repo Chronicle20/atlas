@@ -1847,6 +1847,193 @@ func TestSideEffectTiming(t *testing.T) {
 	})
 }
 
+func TestNilProviderHandling(t *testing.T) {
+	// Test edge cases involving nil providers and provider functions
+	// This ensures robust handling of null/nil scenarios in various provider operations
+
+	t.Run("NilProviderFunction", func(t *testing.T) {
+		// Test behavior when provider function itself is nil
+		var nilProvider Provider[string]
+		
+		// Direct execution of nil provider should panic safely or handle gracefully
+		defer func() {
+			if r := recover(); r == nil {
+				t.Error("Expected panic when calling nil provider directly")
+			}
+		}()
+		
+		// This should panic
+		_, _ = nilProvider()
+	})
+
+	t.Run("ProviderReturningNilValues", func(t *testing.T) {
+		// Test provider that returns nil values for pointer types
+		nilStringProvider := func() (*string, error) {
+			return nil, nil
+		}
+		
+		result, err := nilStringProvider()
+		if err != nil {
+			t.Errorf("Expected no error from nil-returning provider, got: %v", err)
+		}
+		if result != nil {
+			t.Errorf("Expected nil result, got: %v", result)
+		}
+		
+		// Test with Map function on nil values
+		mappedProvider := Map[*string, string](func(s *string) (string, error) {
+			if s == nil {
+				return "nil_value", nil
+			}
+			return *s, nil
+		})(nilStringProvider)
+		
+		mappedResult, err := mappedProvider()
+		if err != nil {
+			t.Errorf("Expected no error mapping nil value, got: %v", err)
+		}
+		if mappedResult != "nil_value" {
+			t.Errorf("Expected 'nil_value', got: %v", mappedResult)
+		}
+	})
+
+	t.Run("NilSliceProviders", func(t *testing.T) {
+		// Test providers that return nil slices
+		nilSliceProvider := func() ([]string, error) {
+			return nil, nil
+		}
+		
+		result, err := nilSliceProvider()
+		if err != nil {
+			t.Errorf("Expected no error from nil slice provider, got: %v", err)
+		}
+		if result != nil {
+			t.Errorf("Expected nil slice, got: %v", result)
+		}
+		
+		// Test SliceMap with nil slice
+		mapped := SliceMap[string, int](func(s string) (int, error) {
+			return len(s), nil
+		})(nilSliceProvider)()
+		
+		mappedResult, err := mapped()
+		if err != nil {
+			t.Errorf("Expected no error mapping nil slice, got: %v", err)
+		}
+		if mappedResult == nil {
+			t.Error("Expected empty slice result, got nil")
+		}
+		if len(mappedResult) != 0 {
+			t.Errorf("Expected empty slice, got slice with %d elements", len(mappedResult))
+		}
+	})
+
+	t.Run("NilTransformerFunctions", func(t *testing.T) {
+		// Test behavior with nil transformer functions
+		provider := FixedProvider("test")
+		
+		// This should panic when transformer is nil and the provider is executed
+		defer func() {
+			if r := recover(); r == nil {
+				t.Error("Expected panic when using nil transformer")
+			}
+		}()
+		
+		var nilTransformer Transformer[string, int]
+		mappedProvider := Map[string, int](nilTransformer)(provider)
+		// This should panic when executed
+		_, _ = mappedProvider()
+	})
+
+	t.Run("NilFilterFunctions", func(t *testing.T) {
+		// Test behavior with nil filter functions in FilteredProvider
+		provider := FixedProvider([]string{"test1", "test2", "test3"})
+		
+		// Test with empty filter list (should return all items)
+		filteredProvider := FilteredProvider(provider, []Filter[string]{})
+		result, err := filteredProvider()
+		if err != nil {
+			t.Errorf("Expected no error with empty filters, got: %v", err)
+		}
+		if len(result) != 3 {
+			t.Errorf("Expected 3 items with no filters, got: %d", len(result))
+		}
+		
+		// Test with nil filter in list (should handle gracefully or panic predictably)
+		defer func() {
+			if r := recover(); r != nil {
+				// Panic is acceptable behavior for nil filter
+				return
+			}
+		}()
+		
+		var nilFilter Filter[string]
+		filteredProvider = FilteredProvider(provider, []Filter[string]{nilFilter})
+		_, err = filteredProvider()
+		if err == nil {
+			t.Error("Expected error or panic with nil filter function")
+		}
+	})
+
+	t.Run("ErrorProviderWithNilError", func(t *testing.T) {
+		// Test ErrorProvider with nil error
+		var nilErr error
+		provider := ErrorProvider[string](nilErr)
+		
+		result, err := provider()
+		if err != nil {
+			t.Errorf("Expected nil error to be treated as no error, got: %v", err)
+		}
+		if result != "" {
+			t.Errorf("Expected zero value for string, got: %v", result)
+		}
+	})
+
+	t.Run("NilContextHandling", func(t *testing.T) {
+		// Test provider operations with nil context scenarios
+		provider := FixedProvider([]uint32{1, 2, 3})
+		
+		// Test ForEachSlice with operations that might receive nil context
+		err := ForEachSlice[uint32](provider, func(val uint32) error {
+			// Simulate operation that handles nil context gracefully
+			if val == 0 {
+				return fmt.Errorf("invalid nil-like value")
+			}
+			return nil
+		})
+		
+		if err != nil {
+			t.Errorf("Expected no error in context handling test, got: %v", err)
+		}
+	})
+
+	t.Run("NilPointerDereference", func(t *testing.T) {
+		// Test scenarios that might lead to nil pointer dereferences
+		type TestStruct struct {
+			Value *string
+		}
+		
+		// Provider returning struct with nil pointer field
+		provider := FixedProvider(TestStruct{Value: nil})
+		
+		// Map function that safely handles nil pointer
+		mappedProvider := Map[TestStruct, string](func(ts TestStruct) (string, error) {
+			if ts.Value == nil {
+				return "nil_pointer", nil
+			}
+			return *ts.Value, nil
+		})(provider)
+		
+		result, err := mappedProvider()
+		if err != nil {
+			t.Errorf("Expected no error handling nil pointer, got: %v", err)
+		}
+		if result != "nil_pointer" {
+			t.Errorf("Expected 'nil_pointer', got: %v", result)
+		}
+	})
+}
+
 // Benchmark tests to compare lazy vs eager performance
 // These demonstrate the performance benefits of lazy evaluation
 

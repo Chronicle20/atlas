@@ -7451,3 +7451,381 @@ func BenchmarkMemoryProfileErrorHandling(b *testing.B) {
 		_ = err    // Ignore errors for memory profiling
 	}
 }
+
+func TestZeroValueAndNilPointerScenarios(t *testing.T) {
+	// Test comprehensive zero-value and nil pointer scenarios for different data types
+	// This ensures robust handling of edge cases involving zero values across the type system
+
+	t.Run("ZeroValueIntegers", func(t *testing.T) {
+		// Test providers with zero-value integers
+		zeroIntProvider := FixedProvider(0)
+		result, err := zeroIntProvider()
+		if err != nil {
+			t.Errorf("Expected no error with zero integer, got: %v", err)
+		}
+		if result != 0 {
+			t.Errorf("Expected zero value, got: %d", result)
+		}
+
+		// Test mapping zero values
+		mappedProvider := Map[int, string](func(i int) (string, error) {
+			if i == 0 {
+				return "zero", nil
+			}
+			return "non-zero", nil
+		})(zeroIntProvider)
+
+		mappedResult, err := mappedProvider()
+		if err != nil {
+			t.Errorf("Expected no error mapping zero integer, got: %v", err)
+		}
+		if mappedResult != "zero" {
+			t.Errorf("Expected 'zero', got: %s", mappedResult)
+		}
+	})
+
+	t.Run("ZeroValueStrings", func(t *testing.T) {
+		// Test providers with empty strings (zero value for string type)
+		emptyStringProvider := FixedProvider("")
+		result, err := emptyStringProvider()
+		if err != nil {
+			t.Errorf("Expected no error with empty string, got: %v", err)
+		}
+		if result != "" {
+			t.Errorf("Expected empty string, got: %s", result)
+		}
+
+		// Test SliceMap with empty strings in slice
+		emptyStringsSlice := []string{"", "non-empty", "", "another"}
+		provider := FixedProvider(emptyStringsSlice)
+		
+		// Transform empty strings to indicate their emptiness
+		mapped := SliceMap[string, string](func(s string) (string, error) {
+			if s == "" {
+				return "EMPTY", nil
+			}
+			return s, nil
+		})(provider)()
+
+		result2, err := mapped()
+		if err != nil {
+			t.Errorf("Expected no error mapping strings with empties, got: %v", err)
+		}
+		expected := []string{"EMPTY", "non-empty", "EMPTY", "another"}
+		if len(result2) != len(expected) {
+			t.Errorf("Expected %d results, got %d", len(expected), len(result2))
+		}
+		for i, val := range result2 {
+			if val != expected[i] {
+				t.Errorf("Index %d: expected %s, got %s", i, expected[i], val)
+			}
+		}
+	})
+
+	t.Run("ZeroValueBooleans", func(t *testing.T) {
+		// Test zero-value boolean (false)
+		falseBoolProvider := FixedProvider(false)
+		result, err := falseBoolProvider()
+		if err != nil {
+			t.Errorf("Expected no error with false boolean, got: %v", err)
+		}
+		if result != false {
+			t.Errorf("Expected false, got: %v", result)
+		}
+
+		// Test filtering with zero-value booleans
+		boolSlice := []bool{false, true, false, true, false}
+		boolProvider := FixedProvider(boolSlice)
+		
+		// Count false values (zero values)
+		falseCount := 0
+		err = ForEachSlice[bool](boolProvider, func(b bool) error {
+			if !b { // if b == false (zero value)
+				falseCount++
+			}
+			return nil
+		})
+		
+		if err != nil {
+			t.Errorf("Expected no error counting false values, got: %v", err)
+		}
+		if falseCount != 3 {
+			t.Errorf("Expected 3 false values, got %d", falseCount)
+		}
+	})
+
+	t.Run("ZeroValueStructs", func(t *testing.T) {
+		// Test struct with all zero values
+		type TestStruct struct {
+			ID    uint32
+			Name  string
+			Value *int
+			Items []string
+		}
+
+		// Zero-value struct
+		zeroStruct := TestStruct{}
+		zeroStructProvider := FixedProvider(zeroStruct)
+		
+		result, err := zeroStructProvider()
+		if err != nil {
+			t.Errorf("Expected no error with zero-value struct, got: %v", err)
+		}
+		
+		// Verify all fields are zero values
+		if result.ID != 0 {
+			t.Errorf("Expected zero ID, got: %d", result.ID)
+		}
+		if result.Name != "" {
+			t.Errorf("Expected empty Name, got: %s", result.Name)
+		}
+		if result.Value != nil {
+			t.Errorf("Expected nil Value pointer, got: %v", result.Value)
+		}
+		if result.Items != nil {
+			t.Errorf("Expected nil Items slice, got: %v", result.Items)
+		}
+
+		// Test mapping zero-value struct to detect emptiness
+		mappedProvider := Map[TestStruct, bool](func(ts TestStruct) (bool, error) {
+			isEmpty := ts.ID == 0 && ts.Name == "" && ts.Value == nil && ts.Items == nil
+			return isEmpty, nil
+		})(zeroStructProvider)
+
+		isEmpty, err := mappedProvider()
+		if err != nil {
+			t.Errorf("Expected no error checking struct emptiness, got: %v", err)
+		}
+		if !isEmpty {
+			t.Error("Expected struct to be identified as empty/zero-value")
+		}
+	})
+
+	t.Run("ZeroValueSlicesAndMaps", func(t *testing.T) {
+		// Test zero-value slice (nil slice)
+		var zeroSlice []int
+		zeroSliceProvider := FixedProvider(zeroSlice)
+		
+		result, err := zeroSliceProvider()
+		if err != nil {
+			t.Errorf("Expected no error with zero-value slice, got: %v", err)
+		}
+		if result != nil {
+			t.Errorf("Expected nil slice, got: %v", result)
+		}
+		if len(result) != 0 {
+			t.Errorf("Expected zero length slice, got length: %d", len(result))
+		}
+
+		// Test SliceMap on zero-value slice
+		mapped := SliceMap[int, string](func(i int) (string, error) {
+			return fmt.Sprintf("value_%d", i), nil
+		})(zeroSliceProvider)()
+
+		mappedResult, err := mapped()
+		if err != nil {
+			t.Errorf("Expected no error mapping zero-value slice, got: %v", err)
+		}
+		if mappedResult == nil {
+			t.Error("Expected empty slice result, not nil")
+		}
+		if len(mappedResult) != 0 {
+			t.Errorf("Expected empty result slice, got length: %d", len(mappedResult))
+		}
+
+		// Test zero-value map
+		var zeroMap map[string]int
+		zeroMapProvider := FixedProvider(zeroMap)
+		
+		mapResult, err := zeroMapProvider()
+		if err != nil {
+			t.Errorf("Expected no error with zero-value map, got: %v", err)
+		}
+		if mapResult != nil {
+			t.Errorf("Expected nil map, got: %v", mapResult)
+		}
+		if len(mapResult) != 0 {
+			t.Errorf("Expected zero length map, got length: %d", len(mapResult))
+		}
+	})
+
+	t.Run("NilPointerFieldsInStructs", func(t *testing.T) {
+		// Test struct with nil pointer fields
+		type StructWithPointers struct {
+			IntPtr    *int
+			StringPtr *string
+			SlicePtr  *[]int
+			MapPtr    *map[string]int
+		}
+
+		nilPtrStruct := StructWithPointers{
+			IntPtr:    nil,
+			StringPtr: nil,
+			SlicePtr:  nil,
+			MapPtr:    nil,
+		}
+
+		provider := FixedProvider(nilPtrStruct)
+		result, err := provider()
+		if err != nil {
+			t.Errorf("Expected no error with nil pointer struct, got: %v", err)
+		}
+
+		// Verify all pointer fields are nil
+		if result.IntPtr != nil {
+			t.Errorf("Expected nil IntPtr, got: %v", result.IntPtr)
+		}
+		if result.StringPtr != nil {
+			t.Errorf("Expected nil StringPtr, got: %v", result.StringPtr)
+		}
+		if result.SlicePtr != nil {
+			t.Errorf("Expected nil SlicePtr, got: %v", result.SlicePtr)
+		}
+		if result.MapPtr != nil {
+			t.Errorf("Expected nil MapPtr, got: %v", result.MapPtr)
+		}
+
+		// Test safe access to nil pointer fields
+		mappedProvider := Map[StructWithPointers, string](func(s StructWithPointers) (string, error) {
+			var parts []string
+			
+			if s.IntPtr == nil {
+				parts = append(parts, "IntPtr:nil")
+			} else {
+				parts = append(parts, fmt.Sprintf("IntPtr:%d", *s.IntPtr))
+			}
+			
+			if s.StringPtr == nil {
+				parts = append(parts, "StringPtr:nil")
+			} else {
+				parts = append(parts, fmt.Sprintf("StringPtr:%s", *s.StringPtr))
+			}
+			
+			return fmt.Sprintf("{%s}", strings.Join(parts, ",")), nil
+		})(provider)
+
+		safeResult, err := mappedProvider()
+		if err != nil {
+			t.Errorf("Expected no error in safe nil pointer access, got: %v", err)
+		}
+		expected := "{IntPtr:nil,StringPtr:nil}"
+		if safeResult != expected {
+			t.Errorf("Expected %s, got %s", expected, safeResult)
+		}
+	})
+
+	t.Run("ZeroValueInterfaces", func(t *testing.T) {
+		// Test zero-value interfaces (nil interface)
+		var zeroInterface interface{}
+		zeroInterfaceProvider := FixedProvider(zeroInterface)
+		
+		result, err := zeroInterfaceProvider()
+		if err != nil {
+			t.Errorf("Expected no error with zero-value interface, got: %v", err)
+		}
+		if result != nil {
+			t.Errorf("Expected nil interface, got: %v", result)
+		}
+
+		// Test type assertion on nil interface
+		mappedProvider := Map[interface{}, string](func(i interface{}) (string, error) {
+			if i == nil {
+				return "nil_interface", nil
+			}
+			return fmt.Sprintf("type_%T", i), nil
+		})(zeroInterfaceProvider)
+
+		typeResult, err := mappedProvider()
+		if err != nil {
+			t.Errorf("Expected no error checking interface type, got: %v", err)
+		}
+		if typeResult != "nil_interface" {
+			t.Errorf("Expected 'nil_interface', got: %s", typeResult)
+		}
+	})
+
+	t.Run("ZeroValueChannels", func(t *testing.T) {
+		// Test zero-value channel (nil channel)
+		var zeroChannel chan int
+		zeroChannelProvider := FixedProvider(zeroChannel)
+		
+		result, err := zeroChannelProvider()
+		if err != nil {
+			t.Errorf("Expected no error with zero-value channel, got: %v", err)
+		}
+		if result != nil {
+			t.Errorf("Expected nil channel, got: %v", result)
+		}
+
+		// Test safe channel operations check
+		mappedProvider := Map[chan int, string](func(ch chan int) (string, error) {
+			if ch == nil {
+				return "nil_channel", nil
+			}
+			// Don't actually use the channel in tests to avoid blocking
+			return "valid_channel", nil
+		})(zeroChannelProvider)
+
+		channelResult, err := mappedProvider()
+		if err != nil {
+			t.Errorf("Expected no error checking channel, got: %v", err)
+		}
+		if channelResult != "nil_channel" {
+			t.Errorf("Expected 'nil_channel', got: %s", channelResult)
+		}
+	})
+
+	t.Run("MixedZeroAndNilValues", func(t *testing.T) {
+		// Test combinations of zero values and nil pointers
+		type MixedStruct struct {
+			ZeroInt     int
+			NilIntPtr   *int
+			EmptyString string
+			NilSlice    []string
+		}
+
+		mixed := MixedStruct{
+			ZeroInt:     0,
+			NilIntPtr:   nil,
+			EmptyString: "",
+			NilSlice:    nil,
+		}
+
+		provider := FixedProvider([]MixedStruct{mixed, mixed, mixed})
+		
+		// Process slice of structs with mixed zero/nil values
+		processed := SliceMap[MixedStruct, int](func(m MixedStruct) (int, error) {
+			// Count the number of zero/nil fields
+			count := 0
+			if m.ZeroInt == 0 {
+				count++
+			}
+			if m.NilIntPtr == nil {
+				count++
+			}
+			if m.EmptyString == "" {
+				count++
+			}
+			if m.NilSlice == nil {
+				count++
+			}
+			return count, nil
+		})(provider)()
+
+		result, err := processed()
+		if err != nil {
+			t.Errorf("Expected no error processing mixed zero/nil values, got: %v", err)
+		}
+		
+		// Each struct should have 4 zero/nil fields
+		expected := []int{4, 4, 4}
+		if len(result) != len(expected) {
+			t.Errorf("Expected %d results, got %d", len(expected), len(result))
+		}
+		for i, count := range result {
+			if count != expected[i] {
+				t.Errorf("Index %d: expected %d zero/nil fields, got %d", i, expected[i], count)
+			}
+		}
+	})
+}

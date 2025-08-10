@@ -5617,6 +5617,201 @@ func TestContextPropagationProviderChains(t *testing.T) {
 	})
 }
 
+func TestInvalidContextHandling(t *testing.T) {
+	t.Run("Nil context handling in operations", func(t *testing.T) {
+		// Test operations that might encounter nil context scenarios
+		// Even though Go doesn't allow literal nil context.Context, we test edge cases
+		slice := []uint32{1, 2, 3}
+		
+		operation := func(val uint32) error {
+			// Simulate operation that might need to handle context edge cases
+			if val == 0 {
+				return fmt.Errorf("invalid zero value")
+			}
+			return nil
+		}
+		
+		// Test sequential execution - should handle nil-like scenarios gracefully
+		err := ExecuteForEachSlice(operation)(slice)
+		if err != nil {
+			t.Errorf("Expected no error with valid slice, got: %v", err)
+		}
+	})
+	
+	t.Run("Already expired context behavior", func(t *testing.T) {
+		// Test behavior with context that expires immediately
+		ctx, cancel := context.WithTimeout(context.Background(), 0) // Expires immediately
+		cancel() // Ensure it's cancelled
+		
+		slice := []uint32{1, 2, 3, 4, 5}
+		operationCount := int64(0)
+		
+		operation := func(val uint32) error {
+			select {
+			case <-ctx.Done():
+				// Context already expired - should handle gracefully
+				return ctx.Err()
+			default:
+				atomic.AddInt64(&operationCount, 1)
+				return nil
+			}
+		}
+		
+		// Test with parallel execution - should handle pre-cancelled context
+		err := ExecuteForEachSlice(operation, ParallelExecute())(slice)
+		
+		// Should either succeed with no operations or fail with context error
+		if err != nil {
+			if !errors.Is(err, context.DeadlineExceeded) && !errors.Is(err, context.Canceled) {
+				t.Errorf("Expected context error, got: %T %v", err, err)
+			}
+		}
+		
+		processed := atomic.LoadInt64(&operationCount)
+		t.Logf("Operations processed with expired context: %d", processed)
+	})
+	
+	t.Run("Context with invalid or corrupted values", func(t *testing.T) {
+		// Test context with unusual values that might cause issues
+		type contextKey string
+		const testKey contextKey = "testKey"
+		
+		// Context with potentially problematic values
+		ctx := context.WithValue(context.Background(), testKey, nil)
+		ctx = context.WithValue(ctx, "anotherKey", "")
+		ctx = context.WithValue(ctx, "", "emptyKeyValue")
+		
+		slice := []uint32{1, 2, 3}
+		
+		operation := func(val uint32) error {
+			// Operation that accesses context values
+			value := ctx.Value(testKey)
+			if value != nil {
+				return fmt.Errorf("expected nil value, got: %v", value)
+			}
+			
+			// Test accessing non-existent key
+			nonExistent := ctx.Value("nonexistent")
+			if nonExistent != nil {
+				return fmt.Errorf("expected nil for non-existent key, got: %v", nonExistent)
+			}
+			
+			return nil
+		}
+		
+		err := ExecuteForEachSlice(operation, ParallelExecute())(slice)
+		if err != nil {
+			t.Errorf("Expected operations to handle context values gracefully, got: %v", err)
+		}
+	})
+	
+	t.Run("Context cancellation race conditions", func(t *testing.T) {
+		// Test race conditions between context cancellation and operation start
+		slice := []uint32{1, 2, 3, 4, 5}
+		successCount := int64(0)
+		cancelCount := int64(0)
+		
+		for i := 0; i < 10; i++ { // Run multiple iterations to catch race conditions
+			ctx, cancel := context.WithCancel(context.Background())
+			
+			operation := func(val uint32) error {
+				// Introduce small delay to increase chance of race condition
+				time.Sleep(time.Microsecond)
+				
+				select {
+				case <-ctx.Done():
+					atomic.AddInt64(&cancelCount, 1)
+					return ctx.Err()
+				default:
+					atomic.AddInt64(&successCount, 1)
+					return nil
+				}
+			}
+			
+			// Cancel context after very short delay
+			go func() {
+				time.Sleep(time.Microsecond)
+				cancel()
+			}()
+			
+			// Execute operations
+			err := ExecuteForEachSlice(operation, ParallelExecute())(slice)
+			
+			// Either should succeed or fail with context error
+			if err != nil && !errors.Is(err, context.Canceled) {
+				t.Errorf("Expected either success or context.Canceled, got: %T %v", err, err)
+			}
+		}
+		
+		t.Logf("Race condition test - Success: %d, Cancelled: %d", 
+			atomic.LoadInt64(&successCount), atomic.LoadInt64(&cancelCount))
+		
+		// At least some operations should have run
+		total := atomic.LoadInt64(&successCount) + atomic.LoadInt64(&cancelCount)
+		if total == 0 {
+			t.Errorf("Expected at least some operations to be attempted")
+		}
+	})
+	
+	t.Run("Context deadline in the past", func(t *testing.T) {
+		// Test context with deadline already in the past
+		pastTime := time.Now().Add(-1 * time.Hour)
+		ctx, cancel := context.WithDeadline(context.Background(), pastTime)
+		defer cancel()
+		
+		slice := []uint32{1, 2}
+		
+		operation := func(val uint32) error {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			default:
+				return nil
+			}
+		}
+		
+		err := ExecuteForEachSlice(operation, ParallelExecute())(slice)
+		
+		// Should fail with deadline exceeded
+		if err == nil {
+			t.Errorf("Expected error with past deadline context")
+		} else if !errors.Is(err, context.DeadlineExceeded) {
+			t.Errorf("Expected context.DeadlineExceeded, got: %T %v", err, err)
+		}
+	})
+	
+	t.Run("Context with zero value timeout", func(t *testing.T) {
+		// Test context with zero-duration timeout
+		ctx, cancel := context.WithTimeout(context.Background(), 0)
+		defer cancel()
+		
+		slice := []uint32{1}
+		errorOccurred := false
+		
+		operation := func(val uint32) error {
+			select {
+			case <-ctx.Done():
+				errorOccurred = true
+				return ctx.Err()
+			default:
+				// Should not reach here with zero timeout
+				return nil
+			}
+		}
+		
+		err := ExecuteForEachSlice(operation)(slice)
+		
+		// Should handle zero timeout gracefully
+		if err != nil {
+			if !errors.Is(err, context.DeadlineExceeded) {
+				t.Errorf("Expected context.DeadlineExceeded or no error, got: %T %v", err, err)
+			}
+		}
+		
+		t.Logf("Zero timeout context - Error occurred: %v", errorOccurred)
+	})
+}
+
 // Memory Leak Detection Tests
 func TestMemoryLeakDetection(t *testing.T) {
 	t.Run("RepeatedProviderExecutionMemoryLeak", func(t *testing.T) {

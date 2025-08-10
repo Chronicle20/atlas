@@ -3305,3 +3305,258 @@ func BenchmarkAsyncMemoryProfileTimeoutHandling(b *testing.B) {
 		_, _ = AwaitSlice(FixedProvider(providers), SetTimeout(100*time.Millisecond))()
 	}
 }
+
+func TestAsyncZeroValueAndNilPointerScenarios(t *testing.T) {
+	// Test comprehensive zero-value and nil pointer scenarios for async operations
+	// This ensures robust async handling of edge cases involving zero values across the type system
+
+	t.Run("AsyncZeroValueIntegers", func(t *testing.T) {
+		// Test async providers with zero-value integers
+		zeroAsyncProvider := func(ctx context.Context, rchan chan int, echan chan error) {
+			rchan <- 0
+		}
+		
+		result, err := Await(SingleProvider(zeroAsyncProvider))()
+		if err != nil {
+			t.Errorf("Expected no error with async zero integer, got: %v", err)
+		}
+		if result != 0 {
+			t.Errorf("Expected zero value, got: %d", result)
+		}
+	})
+
+	t.Run("AsyncZeroValueSlices", func(t *testing.T) {
+		// Test async operations with zero-value slices
+		zeroSliceAsyncProvider := func(ctx context.Context, rchan chan []int, echan chan error) {
+			var zeroSlice []int
+			rchan <- zeroSlice
+		}
+		
+		result, err := Await(SingleProvider(zeroSliceAsyncProvider))()
+		if err != nil {
+			t.Errorf("Expected no error with async zero-value slice, got: %v", err)
+		}
+		if result != nil {
+			t.Errorf("Expected nil slice, got: %v", result)
+		}
+		if len(result) != 0 {
+			t.Errorf("Expected zero length slice, got length: %d", len(result))
+		}
+	})
+
+	t.Run("AsyncZeroValueStructs", func(t *testing.T) {
+		// Test async operations with zero-value structs
+		type AsyncTestStruct struct {
+			ID    uint32
+			Name  string
+			Value *int
+		}
+
+		zeroStructAsyncProvider := func(ctx context.Context, rchan chan AsyncTestStruct, echan chan error) {
+			zeroStruct := AsyncTestStruct{}
+			rchan <- zeroStruct
+		}
+		
+		result, err := Await(SingleProvider(zeroStructAsyncProvider))()
+		if err != nil {
+			t.Errorf("Expected no error with async zero-value struct, got: %v", err)
+		}
+		
+		// Verify all fields are zero values
+		if result.ID != 0 {
+			t.Errorf("Expected zero ID, got: %d", result.ID)
+		}
+		if result.Name != "" {
+			t.Errorf("Expected empty Name, got: %s", result.Name)
+		}
+		if result.Value != nil {
+			t.Errorf("Expected nil Value pointer, got: %v", result.Value)
+		}
+	})
+
+	t.Run("AsyncNilPointerFields", func(t *testing.T) {
+		// Test async operations with nil pointer fields
+		type AsyncStructWithPointers struct {
+			IntPtr    *int
+			StringPtr *string
+			SlicePtr  *[]string
+		}
+
+		nilPtrAsyncProvider := func(ctx context.Context, rchan chan AsyncStructWithPointers, echan chan error) {
+			nilPtrStruct := AsyncStructWithPointers{
+				IntPtr:    nil,
+				StringPtr: nil,
+				SlicePtr:  nil,
+			}
+			rchan <- nilPtrStruct
+		}
+		
+		result, err := Await(SingleProvider(nilPtrAsyncProvider))()
+		if err != nil {
+			t.Errorf("Expected no error with async nil pointer struct, got: %v", err)
+		}
+
+		// Verify all pointer fields are nil
+		if result.IntPtr != nil {
+			t.Errorf("Expected nil IntPtr, got: %v", result.IntPtr)
+		}
+		if result.StringPtr != nil {
+			t.Errorf("Expected nil StringPtr, got: %v", result.StringPtr)
+		}
+		if result.SlicePtr != nil {
+			t.Errorf("Expected nil SlicePtr, got: %v", result.SlicePtr)
+		}
+	})
+
+	t.Run("AsyncZeroValueWithTimeout", func(t *testing.T) {
+		// Test zero-value handling with timeout scenarios
+		zeroWithDelayProvider := func(ctx context.Context, rchan chan int, echan chan error) {
+			// Add small delay to test timeout handling, but still succeed
+			time.Sleep(10 * time.Millisecond)
+			rchan <- 0
+		}
+		
+		// Longer timeout that should allow zero value processing
+		result, err := Await(SingleProvider(zeroWithDelayProvider), SetTimeout(100*time.Millisecond))()
+		if err != nil {
+			t.Errorf("Expected no error with zero value and timeout, got: %v", err)
+		}
+		if result != 0 {
+			t.Errorf("Expected zero value with timeout, got: %d", result)
+		}
+	})
+
+	t.Run("AsyncZeroValueSliceProcessing", func(t *testing.T) {
+		// Test async slice processing with zero values mixed in
+		sliceWithZeros := []int{0, 5, 0, 10, 0}
+		
+		// Create async providers from the slice
+		providers := make([]Provider[string], len(sliceWithZeros))
+		for i, val := range sliceWithZeros {
+			v := val // capture loop variable
+			providers[i] = func(v int) Provider[string] {
+				return func(ctx context.Context, rchan chan string, echan chan error) {
+					rchan <- fmt.Sprintf("async_item_%d", v)
+				}
+			}(v)
+		}
+		
+		results, err := AwaitSlice(FixedProvider(providers))()
+		if err != nil {
+			t.Errorf("Expected no error with async zero-value slice processing, got: %v", err)
+		}
+		
+		// Check we got the right number of results
+		if len(results) != 5 {
+			t.Errorf("Expected 5 results, got %d", len(results))
+		}
+		
+		// Count occurrences of each expected value (order may vary due to async)
+		expectedCounts := map[string]int{
+			"async_item_0":  3, // three zeros
+			"async_item_5":  1, // one 5
+			"async_item_10": 1, // one 10
+		}
+		actualCounts := make(map[string]int)
+		for _, result := range results {
+			actualCounts[result]++
+		}
+		
+		for expected, expectedCount := range expectedCounts {
+			if actualCounts[expected] != expectedCount {
+				t.Errorf("Expected %d occurrences of %s, got %d", expectedCount, expected, actualCounts[expected])
+			}
+		}
+	})
+
+	t.Run("AsyncNilInterfaceHandling", func(t *testing.T) {
+		// Test async operations with nil interfaces
+		nilInterfaceAsyncProvider := func(ctx context.Context, rchan chan interface{}, echan chan error) {
+			var nilInterface interface{}
+			rchan <- nilInterface
+		}
+		
+		result, err := Await(SingleProvider(nilInterfaceAsyncProvider))()
+		if err != nil {
+			t.Errorf("Expected no error with async nil interface, got: %v", err)
+		}
+		if result != nil {
+			t.Errorf("Expected nil interface, got: %v", result)
+		}
+	})
+
+	t.Run("AsyncContextCancellationWithZeroValues", func(t *testing.T) {
+		// Test context cancellation behavior with zero-value processing
+		slowZeroProvider := func(ctx context.Context, rchan chan int, echan chan error) {
+			select {
+			case <-time.After(200 * time.Millisecond):
+				rchan <- 0
+			case <-ctx.Done():
+				echan <- ctx.Err()
+			}
+		}
+		
+		ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+		defer cancel()
+		
+		// Should timeout and get error
+		result, err := Await(SingleProvider(slowZeroProvider), SetContext(ctx))()
+		if err == nil {
+			t.Error("Expected timeout error, got nil")
+		}
+		if err != nil && err != context.DeadlineExceeded && err != ErrAwaitTimeout {
+			t.Errorf("Expected context.DeadlineExceeded or ErrAwaitTimeout, got: %v", err)
+		}
+		
+		// Result should be zero value when error occurs
+		if result != 0 {
+			t.Errorf("Expected zero result when timeout occurs, got %d", result)
+		}
+	})
+
+	t.Run("AsyncZeroValueMixedResults", func(t *testing.T) {
+		// Test mixing zero values with non-zero values in async slice
+		// Create explicit providers to avoid closure issues
+		zeroProvider1 := func(ctx context.Context, rchan chan int, echan chan error) {
+			rchan <- 0 // zero value
+		}
+		nonZeroProvider := func(ctx context.Context, rchan chan int, echan chan error) {
+			rchan <- 42 // non-zero value
+		}
+		zeroProvider2 := func(ctx context.Context, rchan chan int, echan chan error) {
+			rchan <- 0 // zero value
+		}
+		
+		mixedProviders := []Provider[int]{
+			zeroProvider1,
+			nonZeroProvider,
+			zeroProvider2,
+		}
+		
+		results, err := AwaitSlice(FixedProvider(mixedProviders))()
+		if err != nil {
+			t.Errorf("Expected no error with mixed zero/non-zero async values, got: %v", err)
+		}
+		
+		// Check we got the right number of results
+		if len(results) != 3 {
+			t.Errorf("Expected 3 results, got %d", len(results))
+		}
+		
+		// Count occurrences of each expected value (order may vary due to async)
+		expectedCounts := map[int]int{
+			0:  2, // two zeros
+			42: 1, // one 42
+		}
+		actualCounts := make(map[int]int)
+		for _, result := range results {
+			actualCounts[result]++
+		}
+		
+		for expected, expectedCount := range expectedCounts {
+			if actualCounts[expected] != expectedCount {
+				t.Errorf("Expected %d occurrences of %d, got %d", expectedCount, expected, actualCounts[expected])
+			}
+		}
+	})
+}

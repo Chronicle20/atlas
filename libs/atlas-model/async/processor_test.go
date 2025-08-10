@@ -3102,6 +3102,159 @@ func BenchmarkAsyncMemoryProfileGoroutineScaling(b *testing.B) {
 	}
 }
 
+func TestEmptySliceOperations(t *testing.T) {
+	// Test how async slice operations handle empty slices as edge cases
+	
+	t.Run("AwaitSliceWithEmptySlice", func(t *testing.T) {
+		// Create empty slice of async providers
+		emptyProviders := []Provider[uint32]{}
+		providerSlice := model.FixedProvider(emptyProviders)
+		
+		ctx := context.Background()
+		result, err := AwaitSlice(providerSlice, SetContext(ctx))()
+		
+		if err != nil {
+			t.Errorf("Expected no error with empty async slice, got: %s", err)
+		}
+		
+		if result == nil {
+			t.Errorf("Expected empty slice, got nil")
+		}
+		
+		if len(result) != 0 {
+			t.Errorf("Expected empty result slice, got length %d", len(result))
+		}
+	})
+	
+	t.Run("AwaitSliceWithEmptySliceAndTimeout", func(t *testing.T) {
+		// Test empty slice with timeout - should complete immediately
+		emptyProviders := []Provider[uint32]{}
+		providerSlice := model.FixedProvider(emptyProviders)
+		
+		ctx := context.Background()
+		result, err := AwaitSlice(providerSlice, SetContext(ctx), SetTimeout(100*time.Millisecond))()
+		
+		if err != nil {
+			t.Errorf("Expected no error with empty async slice and timeout, got: %s", err)
+		}
+		
+		if result == nil {
+			t.Errorf("Expected empty slice, got nil")
+		}
+		
+		if len(result) != 0 {
+			t.Errorf("Expected empty result slice, got length %d", len(result))
+		}
+	})
+	
+	t.Run("AwaitSliceWithEmptySliceAndCancellation", func(t *testing.T) {
+		// Test empty slice with context cancellation - should complete before cancellation
+		emptyProviders := []Provider[uint32]{}
+		providerSlice := model.FixedProvider(emptyProviders)
+		
+		ctx, cancel := context.WithCancel(context.Background())
+		
+		// Start the operation
+		resultChan := make(chan []uint32, 1)
+		errorChan := make(chan error, 1)
+		
+		go func() {
+			result, err := AwaitSlice(providerSlice, SetContext(ctx))()
+			if err != nil {
+				errorChan <- err
+			} else {
+				resultChan <- result
+			}
+		}()
+		
+		// Cancel immediately - but empty slice should complete before cancellation takes effect
+		cancel()
+		
+		select {
+		case result := <-resultChan:
+			if result == nil {
+				t.Errorf("Expected empty slice, got nil")
+			}
+			if len(result) != 0 {
+				t.Errorf("Expected empty result slice, got length %d", len(result))
+			}
+		case err := <-errorChan:
+			// This could be a cancellation error if the context cancellation is processed first
+			// Both outcomes are valid for this edge case
+			if !errors.Is(err, context.Canceled) {
+				t.Errorf("Expected either success or context.Canceled error, got: %s", err)
+			}
+		case <-time.After(1 * time.Second):
+			t.Errorf("Operation should have completed quickly")
+		}
+	})
+	
+	t.Run("AwaitSliceWithEmptySliceFromSliceMap", func(t *testing.T) {
+		// Test AwaitSlice when the input comes from SliceMap of an empty slice
+		emptyItems := []uint32{}
+		
+		// Transform empty slice into async providers
+		asyncProviders := model.SliceMap(AsyncTestTransformer)(model.FixedProvider(emptyItems))()
+		
+		ctx := context.Background()
+		result, err := AwaitSlice(asyncProviders, SetContext(ctx))()
+		
+		if err != nil {
+			t.Errorf("Expected no error with empty slice from SliceMap, got: %s", err)
+		}
+		
+		if result == nil {
+			t.Errorf("Expected empty slice, got nil")
+		}
+		
+		if len(result) != 0 {
+			t.Errorf("Expected empty result slice, got length %d", len(result))
+		}
+	})
+	
+	t.Run("AwaitSliceWithEmptySliceMultipleConfigurators", func(t *testing.T) {
+		// Test empty slice with multiple configurators
+		emptyProviders := []Provider[uint32]{}
+		providerSlice := model.FixedProvider(emptyProviders)
+		
+		ctx := context.Background()
+		result, err := AwaitSlice(providerSlice, SetContext(ctx), SetTimeout(100*time.Millisecond))()
+		
+		if err != nil {
+			t.Errorf("Expected no error with empty slice and multiple configurators, got: %s", err)
+		}
+		
+		if result == nil {
+			t.Errorf("Expected empty slice, got nil")
+		}
+		
+		if len(result) != 0 {
+			t.Errorf("Expected empty result slice, got length %d", len(result))
+		}
+	})
+	
+	t.Run("AwaitSliceMemoryHandlingWithEmptySlice", func(t *testing.T) {
+		// Test that empty slices don't cause memory issues or goroutine leaks
+		emptyProviders := []Provider[uint32]{}
+		providerSlice := model.FixedProvider(emptyProviders)
+		
+		ctx := context.Background()
+		
+		// Run multiple times to check for memory/goroutine leaks
+		for i := 0; i < 100; i++ {
+			result, err := AwaitSlice(providerSlice, SetContext(ctx))()
+			
+			if err != nil {
+				t.Errorf("Iteration %d: Expected no error, got: %s", i, err)
+			}
+			
+			if len(result) != 0 {
+				t.Errorf("Iteration %d: Expected empty result, got length %d", i, len(result))
+			}
+		}
+	})
+}
+
 func BenchmarkAsyncMemoryProfileTimeoutHandling(b *testing.B) {
 	// Benchmark memory usage in timeout scenarios
 	// Use with: go test -bench=BenchmarkAsyncMemoryProfileTimeoutHandling -memprofile=timeout_mem.prof

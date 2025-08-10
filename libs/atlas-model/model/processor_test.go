@@ -7061,6 +7061,167 @@ func BenchmarkMemoryProfileMemoization(b *testing.B) {
 	})
 }
 
+func TestEmptySliceOperations(t *testing.T) {
+	// Test how slice operations handle empty slices as edge cases
+	
+	t.Run("SliceMapWithEmptySlice", func(t *testing.T) {
+		emptyProvider := FixedProvider([]uint32{})
+		mappedProvider := SliceMap[uint32, uint32](byTwo)(emptyProvider)()
+		
+		result, err := mappedProvider()
+		if err != nil {
+			t.Errorf("Expected no error with empty slice, got: %s", err)
+		}
+		
+		if result == nil {
+			t.Errorf("Expected empty slice, got nil")
+		}
+		
+		if len(result) != 0 {
+			t.Errorf("Expected empty result slice, got length %d", len(result))
+		}
+	})
+	
+	t.Run("ParallelSliceMapWithEmptySlice", func(t *testing.T) {
+		emptyProvider := FixedProvider([]uint32{})
+		mappedProvider := SliceMap[uint32, uint32](byTwo)(emptyProvider)(ParallelMap())
+		
+		result, err := mappedProvider()
+		if err != nil {
+			t.Errorf("Expected no error with empty slice, got: %s", err)
+		}
+		
+		if result == nil {
+			t.Errorf("Expected empty slice, got nil")
+		}
+		
+		if len(result) != 0 {
+			t.Errorf("Expected empty result slice, got length %d", len(result))
+		}
+	})
+	
+	t.Run("ForEachSliceWithEmptySlice", func(t *testing.T) {
+		emptyProvider := FixedProvider([]uint32{})
+		operationCalled := false
+		
+		err := ForEachSlice(emptyProvider, func(u uint32) error {
+			operationCalled = true
+			return nil
+		})
+		
+		if err != nil {
+			t.Errorf("Expected no error with empty slice, got: %s", err)
+		}
+		
+		if operationCalled {
+			t.Errorf("Operation should not be called on empty slice")
+		}
+	})
+	
+	t.Run("ParallelForEachSliceWithEmptySlice", func(t *testing.T) {
+		emptyProvider := FixedProvider([]uint32{})
+		operationCalled := false
+		
+		err := ForEachSlice(emptyProvider, func(u uint32) error {
+			operationCalled = true
+			return nil
+		}, ParallelExecute())
+		
+		if err != nil {
+			t.Errorf("Expected no error with empty slice, got: %s", err)
+		}
+		
+		if operationCalled {
+			t.Errorf("Operation should not be called on empty slice")
+		}
+	})
+	
+	t.Run("MergeSliceProviderWithEmptySlices", func(t *testing.T) {
+		emptyProvider1 := FixedProvider([]uint32{})
+		emptyProvider2 := FixedProvider([]uint32{})
+		
+		merged := MergeSliceProvider(emptyProvider1, emptyProvider2)
+		result, err := merged()
+		
+		if err != nil {
+			t.Errorf("Expected no error merging empty slices, got: %s", err)
+		}
+		
+		if result == nil {
+			t.Errorf("Expected empty slice, got nil")
+		}
+		
+		if len(result) != 0 {
+			t.Errorf("Expected empty merged slice, got length %d", len(result))
+		}
+	})
+	
+	t.Run("MergeSliceProviderEmptyWithNonEmpty", func(t *testing.T) {
+		emptyProvider := FixedProvider([]uint32{})
+		nonEmptyProvider := FixedProvider([]uint32{1, 2, 3})
+		
+		merged := MergeSliceProvider(emptyProvider, nonEmptyProvider)
+		result, err := merged()
+		
+		if err != nil {
+			t.Errorf("Expected no error merging empty with non-empty, got: %s", err)
+		}
+		
+		if len(result) != 3 {
+			t.Errorf("Expected merged slice length 3, got %d", len(result))
+		}
+		
+		expectedValues := []uint32{1, 2, 3}
+		for i, expected := range expectedValues {
+			if result[i] != expected {
+				t.Errorf("Expected value %d at index %d, got %d", expected, i, result[i])
+			}
+		}
+	})
+	
+	t.Run("ToSliceProviderWithEmptyProvider", func(t *testing.T) {
+		// Test edge case where single item provider might have issues with empty creation
+		singleProvider := ErrorProvider[uint32](fmt.Errorf("no data available"))
+		sliceProvider := ToSliceProvider(singleProvider)
+		
+		_, err := sliceProvider()
+		if err == nil {
+			t.Errorf("Expected error to be propagated from empty single provider")
+		}
+	})
+	
+	t.Run("FirstWithEmptySlice", func(t *testing.T) {
+		emptyProvider := FixedProvider([]uint32{})
+		
+		_, err := First(emptyProvider, Filters(func(val uint32) bool { return true }))
+		if err == nil {
+			t.Errorf("Expected error when finding first in empty slice")
+		}
+	})
+	
+	t.Run("ExecuteForEachSliceWithEmptySlice", func(t *testing.T) {
+		emptySlice := []uint32{}
+		operationCalled := false
+		
+		operation := func(u uint32) error {
+			operationCalled = true
+			return nil
+		}
+		
+		// This should process an empty slice without issues
+		processor := ExecuteForEachSlice[uint32](operation)
+		err := processor(emptySlice)
+		
+		if err != nil {
+			t.Errorf("Expected no error with empty slice, got: %s", err)
+		}
+		
+		if operationCalled {
+			t.Errorf("Operation should not be called on empty slice")
+		}
+	})
+}
+
 func BenchmarkMemoryProfileErrorHandling(b *testing.B) {
 	// Benchmark memory allocations during error scenarios
 	// Use with: go test -bench=BenchmarkMemoryProfileErrorHandling -memprofile=error_mem.prof

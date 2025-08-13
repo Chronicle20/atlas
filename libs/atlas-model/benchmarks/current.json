@@ -1,0 +1,19 @@
+{
+  "metadata": {
+    "branch": "unknown",
+    "commit_hash": "unknown",
+    "go_version": "1.24.x"
+  },
+  "benchmarks": [
+    {
+      "name": "MapLazyEvaluation",
+      "package": "model",
+      "iterations": 5142354,
+      "ns_per_op": 240.1,
+      "timestamp": "2025-08-13T08:24:29.76534621-04:00",
+      "commit_hash": "unknown",
+      "branch": "unknown"
+    }
+  ],
+  "generated_at": "2025-08-13T08:24:29.772069071-04:00"
+}

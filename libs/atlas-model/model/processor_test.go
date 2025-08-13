@@ -8195,3 +8195,429 @@ func TestGoroutineCleanup(t *testing.T) {
 		}
 	})
 }
+
+// Tests for previously untested functions
+func TestCollapseProvider(t *testing.T) {
+	t.Run("CollapseProvider with successful provider", func(t *testing.T) {
+		collapsed := CollapseProvider(func(val uint32) Provider[string] {
+			return func() (string, error) {
+				return fmt.Sprintf("value_%d", val), nil
+			}
+		})
+
+		result, err := collapsed(42)
+		if err != nil {
+			t.Errorf("Expected no error, got: %v", err)
+		}
+		if result != "value_42" {
+			t.Errorf("Expected 'value_42', got: %s", result)
+		}
+	})
+
+	t.Run("CollapseProvider with error provider", func(t *testing.T) {
+		testError := errors.New("test error")
+		collapsed := CollapseProvider(func(val uint32) Provider[string] {
+			return ErrorProvider[string](testError)
+		})
+
+		_, err := collapsed(42)
+		if err != testError {
+			t.Errorf("Expected test error, got: %v", err)
+		}
+	})
+}
+
+func TestLiftToProvider(t *testing.T) {
+	t.Run("LiftToProvider with successful function", func(t *testing.T) {
+		lifted := LiftToProvider(func(val uint32) (string, error) {
+			return fmt.Sprintf("lifted_%d", val), nil
+		})
+
+		provider := lifted(123)
+		result, err := provider()
+		if err != nil {
+			t.Errorf("Expected no error, got: %v", err)
+		}
+		if result != "lifted_123" {
+			t.Errorf("Expected 'lifted_123', got: %s", result)
+		}
+	})
+
+	t.Run("LiftToProvider with error function", func(t *testing.T) {
+		testError := errors.New("function error")
+		lifted := LiftToProvider(func(val uint32) (string, error) {
+			return "", testError
+		})
+
+		provider := lifted(456)
+		_, err := provider()
+		if err != testError {
+			t.Errorf("Expected function error, got: %v", err)
+		}
+	})
+}
+
+func TestDecorators(t *testing.T) {
+	t.Run("Decorators returns same decorators", func(t *testing.T) {
+		dec1 := func(s string) string { return s + "_dec1" }
+		dec2 := func(s string) string { return s + "_dec2" }
+
+		decorators := Decorators(dec1, dec2)
+		if len(decorators) != 2 {
+			t.Errorf("Expected 2 decorators, got %d", len(decorators))
+		}
+
+		// Test application of decorators
+		original := "test"
+		result1 := decorators[0](original)
+		if result1 != "test_dec1" {
+			t.Errorf("Expected 'test_dec1', got: %s", result1)
+		}
+
+		result2 := decorators[1](original)
+		if result2 != "test_dec2" {
+			t.Errorf("Expected 'test_dec2', got: %s", result2)
+		}
+	})
+
+	t.Run("Decorators with empty list", func(t *testing.T) {
+		decorators := Decorators[string]()
+		if len(decorators) != 0 {
+			t.Errorf("Expected 0 decorators, got %d", len(decorators))
+		}
+	})
+}
+
+func TestFlip(t *testing.T) {
+	t.Run("Flip two-argument function", func(t *testing.T) {
+		original := func(a string) func(b int) string {
+			return func(b int) string {
+				return fmt.Sprintf("%s_%d", a, b)
+			}
+		}
+
+		flipped := Flip(original)
+		result := flipped(42)("test")
+		if result != "test_42" {
+			t.Errorf("Expected 'test_42', got: %s", result)
+		}
+	})
+
+	t.Run("Flip maintains functionality", func(t *testing.T) {
+		subtract := func(a int) func(b int) int {
+			return func(b int) int {
+				return a - b
+			}
+		}
+
+		flippedSubtract := Flip(subtract)
+
+		// Original: 10 - 3 = 7
+		origResult := subtract(10)(3)
+		if origResult != 7 {
+			t.Errorf("Expected 7, got: %d", origResult)
+		}
+
+		// Flipped: still 10 - 3 = 7 (parameter order changed but result is same)
+		flipResult := flippedSubtract(3)(10)
+		if flipResult != 7 {
+			t.Errorf("Expected 7, got: %d", flipResult)
+		}
+	})
+}
+
+func TestFlipOperator(t *testing.T) {
+	t.Run("FlipOperator success case", func(t *testing.T) {
+		original := func(a string) Operator[int] {
+			return func(b int) error {
+				if len(a) == b {
+					return nil
+				}
+				return fmt.Errorf("length mismatch: %s has length %d, expected %d", a, len(a), b)
+			}
+		}
+
+		flipped := FlipOperator(original)
+		err := flipped(4)("test") // "test" has length 4
+		if err != nil {
+			t.Errorf("Expected no error, got: %v", err)
+		}
+	})
+
+	t.Run("FlipOperator error case", func(t *testing.T) {
+		original := func(a string) Operator[int] {
+			return func(b int) error {
+				if len(a) == b {
+					return nil
+				}
+				return fmt.Errorf("length mismatch: %s has length %d, expected %d", a, len(a), b)
+			}
+		}
+
+		flipped := FlipOperator(original)
+		err := flipped(5)("test") // "test" has length 4, not 5
+		if err == nil {
+			t.Error("Expected error, got nil")
+		}
+	})
+}
+
+func TestAsSliceProvider(t *testing.T) {
+	t.Run("AsSliceProvider converts single value to slice", func(t *testing.T) {
+		value := uint32(42)
+		sliceProvider := AsSliceProvider(value)
+
+		result, err := sliceProvider()
+		if err != nil {
+			t.Errorf("Expected no error, got: %v", err)
+		}
+		if len(result) != 1 {
+			t.Errorf("Expected slice length 1, got: %d", len(result))
+		}
+		if result[0] != 42 {
+			t.Errorf("Expected 42, got: %d", result[0])
+		}
+	})
+
+	t.Run("AsSliceProvider with string value", func(t *testing.T) {
+		value := "test_string"
+		sliceProvider := AsSliceProvider(value)
+
+		result, err := sliceProvider()
+		if err != nil {
+			t.Errorf("Expected no error, got: %v", err)
+		}
+		if len(result) != 1 {
+			t.Errorf("Expected slice length 1, got: %d", len(result))
+		}
+		if result[0] != "test_string" {
+			t.Errorf("Expected 'test_string', got: %s", result[0])
+		}
+	})
+}
+
+func TestRandomPreciselyOneFilter(t *testing.T) {
+	t.Run("RandomPreciselyOneFilter returns single random item", func(t *testing.T) {
+		data := []uint32{1, 2, 3, 4, 5}
+
+		result, err := RandomPreciselyOneFilter(data)
+		if err != nil {
+			t.Errorf("Expected no error, got: %v", err)
+		}
+
+		// Verify result is one of the input values
+		found := false
+		for _, val := range data {
+			if val == result {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("Result %d not found in input data", result)
+		}
+	})
+
+	t.Run("RandomPreciselyOneFilter with empty slice", func(t *testing.T) {
+		data := []uint32{}
+
+		_, err := RandomPreciselyOneFilter(data)
+		if err == nil {
+			t.Error("Expected error with empty slice")
+		}
+	})
+}
+
+func TestFor(t *testing.T) {
+	t.Run("For applies operator to provider result", func(t *testing.T) {
+		provider := FixedProvider(uint32(5))
+		var appliedValue uint32
+		operator := func(val uint32) error {
+			appliedValue = val * 2
+			return nil
+		}
+
+		err := For(provider, operator)
+		if err != nil {
+			t.Errorf("Expected no error, got: %v", err)
+		}
+		if appliedValue != 10 {
+			t.Errorf("Expected 10, got: %d", appliedValue)
+		}
+	})
+
+	t.Run("For propagates provider error", func(t *testing.T) {
+		testError := errors.New("provider error")
+		provider := ErrorProvider[uint32](testError)
+		operator := func(val uint32) error {
+			t.Error("Operator should not be called")
+			return nil
+		}
+
+		err := For(provider, operator)
+		if err != testError {
+			t.Errorf("Expected provider error, got: %v", err)
+		}
+	})
+
+	t.Run("For propagates operator error", func(t *testing.T) {
+		provider := FixedProvider(uint32(123))
+		operatorError := errors.New("operator error")
+		operator := func(val uint32) error {
+			return operatorError
+		}
+
+		err := For(provider, operator)
+		if err != operatorError {
+			t.Errorf("Expected operator error, got: %v", err)
+		}
+	})
+}
+
+func TestDecorate(t *testing.T) {
+	t.Run("Decorate applies single decorator to value", func(t *testing.T) {
+		decorator := func(s string) string {
+			return "[" + s + "]"
+		}
+		decorators := []Decorator[string]{decorator}
+
+		original := "test"
+		result, err := Decorate(decorators)(original)
+		if err != nil {
+			t.Errorf("Expected no error, got: %v", err)
+		}
+		if result != "[test]" {
+			t.Errorf("Expected '[test]', got: %s", result)
+		}
+	})
+
+	t.Run("Decorate with multiple decorators", func(t *testing.T) {
+		brackets := func(s string) string { return "[" + s + "]" }
+		prefix := func(s string) string { return "prefix_" + s }
+		decorators := []Decorator[string]{brackets, prefix}
+
+		original := "test"
+		result, err := Decorate(decorators)(original)
+		if err != nil {
+			t.Errorf("Expected no error, got: %v", err)
+		}
+		if result != "prefix_[test]" {
+			t.Errorf("Expected 'prefix_[test]', got: %s", result)
+		}
+	})
+}
+
+func TestIdentity(t *testing.T) {
+	t.Run("Identity returns input unchanged", func(t *testing.T) {
+		input := "unchanged"
+		result := Identity(input)
+		if result != input {
+			t.Errorf("Expected input %s to be unchanged, got: %s", input, result)
+		}
+	})
+
+	t.Run("Identity with different types", func(t *testing.T) {
+		intResult := Identity(42)
+		if intResult != 42 {
+			t.Errorf("Expected 42, got: %d", intResult)
+		}
+
+		boolResult := Identity(true)
+		if boolResult != true {
+			t.Errorf("Expected true, got: %v", boolResult)
+		}
+
+		type TestStruct struct{ Value int }
+		structInput := TestStruct{Value: 100}
+		structResult := Identity(structInput)
+		if structResult.Value != 100 {
+			t.Errorf("Expected struct with Value 100, got: %v", structResult)
+		}
+	})
+}
+
+func TestUncurry(t *testing.T) {
+	t.Run("Uncurry converts curried function", func(t *testing.T) {
+		curriedAdd := func(a int) func(int) int {
+			return func(b int) int {
+				return a + b
+			}
+		}
+
+		uncurriedAdd := Uncurry(curriedAdd)
+		result := uncurriedAdd(5, 3)
+		if result != 8 {
+			t.Errorf("Expected 8, got: %d", result)
+		}
+	})
+
+	t.Run("Uncurry with string concatenation", func(t *testing.T) {
+		curriedConcat := func(prefix string) func(string) string {
+			return func(suffix string) string {
+				return prefix + "_" + suffix
+			}
+		}
+
+		uncurriedConcat := Uncurry(curriedConcat)
+		result := uncurriedConcat("hello", "world")
+		if result != "hello_world" {
+			t.Errorf("Expected 'hello_world', got: %s", result)
+		}
+	})
+}
+
+func TestPipe(t *testing.T) {
+	t.Run("Pipe composes functions in forward order", func(t *testing.T) {
+		addOne := func(x int) int { return x + 1 }
+		toString := func(x int) string { return fmt.Sprintf("result_%d", x) }
+
+		piped := Pipe(addOne, toString)
+		result := piped(5)
+
+		// Should be: 5 -> addOne -> 6 -> toString -> "result_6"
+		if result != "result_6" {
+			t.Errorf("Expected 'result_6', got: %s", result)
+		}
+	})
+
+	t.Run("Pipe with numeric functions", func(t *testing.T) {
+		double := func(x int) int { return x * 2 }
+		negate := func(x int) int { return -x }
+
+		piped := Pipe(double, negate)
+		result := piped(3)
+
+		// Should be: 3 -> double -> 6 -> negate -> -6
+		if result != -6 {
+			t.Errorf("Expected -6, got: %d", result)
+		}
+	})
+}
+
+func TestAlways(t *testing.T) {
+	t.Run("Always wraps function to return success", func(t *testing.T) {
+		addOne := func(x int) int { return x + 1 }
+		wrappedFunc := Always(addOne)
+
+		result, err := wrappedFunc(5)
+		if err != nil {
+			t.Errorf("Expected no error, got: %v", err)
+		}
+		if result != 6 {
+			t.Errorf("Expected 6, got: %d", result)
+		}
+	})
+
+	t.Run("Always with string function", func(t *testing.T) {
+		toUpper := func(s string) string { return strings.ToUpper(s) }
+		wrappedFunc := Always(toUpper)
+
+		result, err := wrappedFunc("hello")
+		if err != nil {
+			t.Errorf("Expected no error, got: %v", err)
+		}
+		if result != "HELLO" {
+			t.Errorf("Expected 'HELLO', got: %s", result)
+		}
+	})
+}

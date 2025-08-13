@@ -1833,7 +1833,7 @@ func TestChannelCleanup(t *testing.T) {
 			v := val
 			providers[i] = func(ctx context.Context, rchan chan uint32, echan chan error) {
 				atomic.AddInt64(&channelOpsCount, 1)
-				
+
 				select {
 				case <-ctx.Done():
 					// Context cancelled - this is expected cleanup behavior
@@ -1845,7 +1845,7 @@ func TestChannelCleanup(t *testing.T) {
 		}
 
 		results, err := AwaitSlice(FixedProvider(providers))()
-		
+
 		if err != nil {
 			t.Errorf("Expected no error, got: %v", err)
 		}
@@ -1862,7 +1862,7 @@ func TestChannelCleanup(t *testing.T) {
 	t.Run("TestChannelResourcesReleasedOnTimeout", func(t *testing.T) {
 		// Test that channels are properly cleaned up when operations timeout
 		slowProviders := make([]Provider[uint32], 3)
-		
+
 		for i := range slowProviders {
 			idx := i
 			slowProviders[i] = func(ctx context.Context, rchan chan uint32, echan chan error) {
@@ -1879,7 +1879,7 @@ func TestChannelCleanup(t *testing.T) {
 
 		// Use a short timeout to trigger channel cleanup
 		_, err := AwaitSlice(FixedProvider(slowProviders), SetTimeout(50*time.Millisecond))()
-		
+
 		if err == nil {
 			t.Error("Expected timeout error, got nil")
 		}
@@ -1898,7 +1898,7 @@ func TestChannelCleanup(t *testing.T) {
 
 		for iteration := 0; iteration < iterations; iteration++ {
 			providers := make([]Provider[uint32], len(data))
-			
+
 			for i, val := range data {
 				v := val
 				providers[i] = func(ctx context.Context, rchan chan uint32, echan chan error) {
@@ -1911,7 +1911,7 @@ func TestChannelCleanup(t *testing.T) {
 			}
 
 			results, err := AwaitSlice(FixedProvider(providers))()
-			
+
 			if err != nil {
 				t.Errorf("Iteration %d: expected no error, got: %v", iteration, err)
 			}
@@ -1933,7 +1933,7 @@ func TestChannelCleanup(t *testing.T) {
 		}
 
 		providers := make([]Provider[uint32], len(largeDataSet))
-		
+
 		for i, val := range largeDataSet {
 			v := val
 			providers[i] = func(ctx context.Context, rchan chan uint32, echan chan error) {
@@ -1966,7 +1966,7 @@ func TestChannelCleanup(t *testing.T) {
 	t.Run("TestChannelErrorHandlingCleanup", func(t *testing.T) {
 		// Test that channels are properly cleaned up when errors occur
 		providers := make([]Provider[uint32], 5)
-		
+
 		providers[0] = func(ctx context.Context, rchan chan uint32, echan chan error) {
 			rchan <- 10
 		}
@@ -1985,7 +1985,7 @@ func TestChannelCleanup(t *testing.T) {
 		}
 
 		_, err := AwaitSlice(FixedProvider(providers))()
-		
+
 		if err == nil {
 			t.Error("Expected error from failing provider, got nil")
 		}
@@ -2006,7 +2006,7 @@ func TestAsyncMemoryLeakDetection(t *testing.T) {
 		var m1 runtime.MemStats
 		runtime.ReadMemStats(&m1)
 		initialAlloc := m1.Alloc
-		
+
 		// Execute many async provider operations
 		for i := 0; i < 1000; i++ {
 			provider := func(ctx context.Context, rchan chan uint32, echan chan error) {
@@ -2015,14 +2015,14 @@ func TestAsyncMemoryLeakDetection(t *testing.T) {
 				for j := range temp {
 					temp[j] = byte(j % 256)
 				}
-				
+
 				select {
 				case rchan <- uint32(i)*2:
 				case <-ctx.Done():
 					return
 				}
 			}
-			
+
 			result, err := Await(SingleProvider(provider))()
 			if err != nil {
 				t.Errorf("Iteration %d failed: %v", i, err)
@@ -2030,32 +2030,32 @@ func TestAsyncMemoryLeakDetection(t *testing.T) {
 			if result != uint32(i)*2 {
 				t.Errorf("Iteration %d: expected %d, got %d", i, uint32(i)*2, result)
 			}
-			
+
 			// Periodically force GC to prevent normal accumulation
 			if i%100 == 0 {
 				runtime.GC()
 			}
 		}
-		
+
 		// Force final garbage collection and measure memory
 		runtime.GC()
 		runtime.GC() // Double GC to ensure cleanup
 		var m2 runtime.MemStats
 		runtime.ReadMemStats(&m2)
 		finalAlloc := m2.Alloc
-		
+
 		// Memory growth should be reasonable
 		memoryGrowth := int64(finalAlloc) - int64(initialAlloc)
 		maxGrowth := int64(5 * 1024 * 1024) // 5MB threshold
-		
+
 		t.Logf("Async memory growth: %d bytes (%.2f MB)", memoryGrowth, float64(memoryGrowth)/1024/1024)
-		
+
 		if memoryGrowth > maxGrowth {
-			t.Errorf("Excessive memory growth in async execution: %d bytes (%.2f MB), threshold: %d bytes", 
+			t.Errorf("Excessive memory growth in async execution: %d bytes (%.2f MB), threshold: %d bytes",
 				memoryGrowth, float64(memoryGrowth)/1024/1024, maxGrowth)
 		}
 	})
-	
+
 	t.Run("AsyncSliceExecutionMemoryLeak", func(t *testing.T) {
 		// Test that async slice processing doesn't accumulate memory or goroutines
 		runtime.GC()
@@ -2063,11 +2063,11 @@ func TestAsyncMemoryLeakDetection(t *testing.T) {
 		runtime.ReadMemStats(&m1)
 		initialAlloc := m1.Alloc
 		initialGoroutines := runtime.NumGoroutine()
-		
+
 		// Run many async slice operations
 		for iteration := 0; iteration < 200; iteration++ {
 			providers := make([]Provider[uint32], 20)
-			
+
 			for i := 0; i < 20; i++ {
 				val := uint32(i + iteration*20)
 				providers[i] = func(ctx context.Context, rchan chan uint32, echan chan error) {
@@ -2076,10 +2076,10 @@ func TestAsyncMemoryLeakDetection(t *testing.T) {
 					for j := range temp {
 						temp[j] = int(val) * j
 					}
-					
+
 					// Simulate some async work
 					time.Sleep(time.Microsecond * time.Duration(val%10))
-					
+
 					select {
 					case rchan <- val * 2:
 					case <-ctx.Done():
@@ -2087,7 +2087,7 @@ func TestAsyncMemoryLeakDetection(t *testing.T) {
 					}
 				}
 			}
-			
+
 			results, err := AwaitSlice(FixedProvider(providers))()
 			if err != nil {
 				t.Errorf("Iteration %d failed: %v", iteration, err)
@@ -2095,45 +2095,45 @@ func TestAsyncMemoryLeakDetection(t *testing.T) {
 			if len(results) != 20 {
 				t.Errorf("Iteration %d: expected 20 results, got %d", iteration, len(results))
 			}
-			
+
 			// Give goroutines time to clean up
 			if iteration%20 == 0 {
 				time.Sleep(10 * time.Millisecond)
 				runtime.GC()
 			}
 		}
-		
+
 		// Allow time for goroutine cleanup
 		time.Sleep(100 * time.Millisecond)
 		runtime.GC()
 		runtime.GC()
-		
+
 		var m2 runtime.MemStats
 		runtime.ReadMemStats(&m2)
 		finalAlloc := m2.Alloc
 		finalGoroutines := runtime.NumGoroutine()
-		
+
 		memoryGrowth := int64(finalAlloc) - int64(initialAlloc)
 		goroutineGrowth := finalGoroutines - initialGoroutines
-		
-		t.Logf("Async slice execution - Memory growth: %d bytes (%.2f MB), Goroutine growth: %d", 
+
+		t.Logf("Async slice execution - Memory growth: %d bytes (%.2f MB), Goroutine growth: %d",
 			memoryGrowth, float64(memoryGrowth)/1024/1024, goroutineGrowth)
-		
+
 		// Memory growth should be reasonable
 		maxMemoryGrowth := int64(8 * 1024 * 1024) // 8MB threshold for async operations
 		if memoryGrowth > maxMemoryGrowth {
-			t.Errorf("Excessive memory growth in async slice execution: %d bytes (%.2f MB)", 
+			t.Errorf("Excessive memory growth in async slice execution: %d bytes (%.2f MB)",
 				memoryGrowth, float64(memoryGrowth)/1024/1024)
 		}
-		
+
 		// Goroutine growth should be minimal
 		maxGoroutineGrowth := 15
 		if goroutineGrowth > maxGoroutineGrowth {
-			t.Errorf("Excessive goroutine growth: %d goroutines, threshold: %d", 
+			t.Errorf("Excessive goroutine growth: %d goroutines, threshold: %d",
 				goroutineGrowth, maxGoroutineGrowth)
 		}
 	})
-	
+
 	t.Run("AsyncTimeoutMemoryLeak", func(t *testing.T) {
 		// Test that async timeouts don't cause memory leaks
 		runtime.GC()
@@ -2141,7 +2141,7 @@ func TestAsyncMemoryLeakDetection(t *testing.T) {
 		runtime.ReadMemStats(&m1)
 		initialAlloc := m1.Alloc
 		initialGoroutines := runtime.NumGoroutine()
-		
+
 		// Run many async operations that timeout
 		for i := 0; i < 100; i++ {
 			provider := func(ctx context.Context, rchan chan uint32, echan chan error) {
@@ -2150,69 +2150,69 @@ func TestAsyncMemoryLeakDetection(t *testing.T) {
 				for j := range temp {
 					temp[j] = int64(i) * int64(j)
 				}
-				
+
 				// Long operation that will timeout
 				time.Sleep(200 * time.Millisecond)
-				
+
 				select {
 				case rchan <- uint32(i):
 				case <-ctx.Done():
 					return
 				}
 			}
-			
+
 			// Set a short timeout to ensure timeout occurs
 			_, err := Await(SingleProvider(provider), SetTimeout(50*time.Millisecond))()
-			
+
 			// Should get timeout error
 			if err == nil {
 				t.Errorf("Iteration %d: expected timeout error but got none", i)
 			}
-			
+
 			// Give time for cleanup after timeout
 			time.Sleep(20 * time.Millisecond)
-			
+
 			if i%10 == 0 {
 				runtime.GC()
 			}
 		}
-		
+
 		// Final cleanup and measurement
 		time.Sleep(500 * time.Millisecond) // Extra time for async cleanup
 		runtime.GC()
 		runtime.GC()
-		
+
 		var m2 runtime.MemStats
 		runtime.ReadMemStats(&m2)
 		finalAlloc := m2.Alloc
 		finalGoroutines := runtime.NumGoroutine()
-		
+
 		memoryGrowth := int64(finalAlloc) - int64(initialAlloc)
 		goroutineGrowth := finalGoroutines - initialGoroutines
-		
-		t.Logf("Async timeout - Memory growth: %d bytes (%.2f MB), Goroutine growth: %d", 
+
+		t.Logf("Async timeout - Memory growth: %d bytes (%.2f MB), Goroutine growth: %d",
 			memoryGrowth, float64(memoryGrowth)/1024/1024, goroutineGrowth)
-		
+
 		// Memory and goroutine growth should be minimal
 		maxMemoryGrowth := int64(3 * 1024 * 1024) // 3MB threshold
 		if memoryGrowth > maxMemoryGrowth {
-			t.Errorf("Excessive memory growth with async timeouts: %d bytes (%.2f MB)", 
+			t.Errorf("Excessive memory growth with async timeouts: %d bytes (%.2f MB)",
 				memoryGrowth, float64(memoryGrowth)/1024/1024)
 		}
-		
+
 		maxGoroutineGrowth := 20 // Higher threshold for async due to cleanup timing
 		if goroutineGrowth > maxGoroutineGrowth {
 			t.Errorf("Excessive goroutine growth with async timeouts: %d goroutines", goroutineGrowth)
 		}
 	})
-	
+
 	t.Run("AsyncErrorScenarioMemoryLeak", func(t *testing.T) {
 		// Test that async error scenarios don't cause memory leaks
 		runtime.GC()
 		var m1 runtime.MemStats
 		runtime.ReadMemStats(&m1)
 		initialAlloc := m1.Alloc
-		
+
 		// Run many async operations that fail with errors
 		for i := 0; i < 500; i++ {
 			provider := func(ctx context.Context, rchan chan uint32, echan chan error) {
@@ -2221,7 +2221,7 @@ func TestAsyncMemoryLeakDetection(t *testing.T) {
 				for j := range temp {
 					temp[j] = byte(j % 256)
 				}
-				
+
 				// Fail on certain iterations
 				if i%4 == 0 {
 					select {
@@ -2231,7 +2231,7 @@ func TestAsyncMemoryLeakDetection(t *testing.T) {
 					}
 					return
 				}
-				
+
 				// Normal success case
 				select {
 				case rchan <- uint32(i) * 3:
@@ -2239,38 +2239,38 @@ func TestAsyncMemoryLeakDetection(t *testing.T) {
 					return
 				}
 			}
-			
+
 			_, err := Await(SingleProvider(provider))()
-			
+
 			// We expect errors on i%4==0 iterations
 			if i%4 == 0 && err == nil {
 				t.Errorf("Iteration %d: expected error but got none", i)
 			}
-			
+
 			// Periodically clean up
 			if i%50 == 0 {
 				runtime.GC()
 			}
 		}
-		
+
 		// Final cleanup and measurement
 		runtime.GC()
 		runtime.GC()
 		var m2 runtime.MemStats
 		runtime.ReadMemStats(&m2)
 		finalAlloc := m2.Alloc
-		
+
 		memoryGrowth := int64(finalAlloc) - int64(initialAlloc)
 		maxGrowth := int64(4 * 1024 * 1024) // 4MB threshold
-		
+
 		t.Logf("Async error scenario memory growth: %d bytes (%.2f MB)", memoryGrowth, float64(memoryGrowth)/1024/1024)
-		
+
 		if memoryGrowth > maxGrowth {
-			t.Errorf("Excessive memory growth in async error scenarios: %d bytes (%.2f MB)", 
+			t.Errorf("Excessive memory growth in async error scenarios: %d bytes (%.2f MB)",
 				memoryGrowth, float64(memoryGrowth)/1024/1024)
 		}
 	})
-	
+
 	t.Run("AsyncContextCancellationMemoryLeak", func(t *testing.T) {
 		// Test that async context cancellation doesn't cause memory leaks
 		runtime.GC()
@@ -2278,18 +2278,18 @@ func TestAsyncMemoryLeakDetection(t *testing.T) {
 		runtime.ReadMemStats(&m1)
 		initialAlloc := m1.Alloc
 		initialGoroutines := runtime.NumGoroutine()
-		
+
 		// Run many async operations that get cancelled
 		for i := 0; i < 50; i++ {
 			ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
-			
+
 			provider := func(asyncCtx context.Context, rchan chan uint32, echan chan error) {
 				// Allocate memory for processing
 				temp := make([]float64, 1000)
 				for j := range temp {
 					temp[j] = float64(i) * float64(j) * 0.5
 				}
-				
+
 				// Long processing time to ensure cancellation
 				for j := 0; j < 200; j++ {
 					select {
@@ -2301,7 +2301,7 @@ func TestAsyncMemoryLeakDetection(t *testing.T) {
 						time.Sleep(time.Millisecond)
 					}
 				}
-				
+
 				select {
 				case rchan <- uint32(i) * 4:
 				case <-ctx.Done():
@@ -2310,71 +2310,71 @@ func TestAsyncMemoryLeakDetection(t *testing.T) {
 					return
 				}
 			}
-			
+
 			// Start a goroutine to cancel after a short delay
 			go func() {
 				time.Sleep(5 * time.Millisecond)
 				cancel()
 			}()
-			
+
 			_, err := Await(SingleProvider(provider), SetTimeout(100*time.Millisecond))()
-			
+
 			// Should get cancellation or timeout error
 			if err == nil {
 				t.Logf("Iteration %d: expected cancellation/timeout error but got none", i)
 			}
-			
+
 			cancel() // Ensure cleanup
-			
+
 			// Give time for async goroutines to clean up
 			time.Sleep(30 * time.Millisecond)
-			
+
 			if i%10 == 0 {
 				runtime.GC()
 			}
 		}
-		
+
 		// Final cleanup and measurement
 		time.Sleep(200 * time.Millisecond)
 		runtime.GC()
 		runtime.GC()
-		
+
 		var m2 runtime.MemStats
 		runtime.ReadMemStats(&m2)
 		finalAlloc := m2.Alloc
 		finalGoroutines := runtime.NumGoroutine()
-		
+
 		memoryGrowth := int64(finalAlloc) - int64(initialAlloc)
 		goroutineGrowth := finalGoroutines - initialGoroutines
-		
-		t.Logf("Async context cancellation - Memory growth: %d bytes (%.2f MB), Goroutine growth: %d", 
+
+		t.Logf("Async context cancellation - Memory growth: %d bytes (%.2f MB), Goroutine growth: %d",
 			memoryGrowth, float64(memoryGrowth)/1024/1024, goroutineGrowth)
-		
+
 		// Memory and goroutine growth should be minimal
 		maxMemoryGrowth := int64(2 * 1024 * 1024) // 2MB threshold
 		if memoryGrowth > maxMemoryGrowth {
-			t.Errorf("Excessive memory growth with async context cancellation: %d bytes (%.2f MB)", 
+			t.Errorf("Excessive memory growth with async context cancellation: %d bytes (%.2f MB)",
 				memoryGrowth, float64(memoryGrowth)/1024/1024)
 		}
-		
+
 		maxGoroutineGrowth := 25 // Higher threshold for async due to timing complexity
 		if goroutineGrowth > maxGoroutineGrowth {
 			t.Errorf("Excessive goroutine growth with async context cancellation: %d goroutines", goroutineGrowth)
 		}
 	})
-	
+
 	t.Run("AsyncChannelMemoryLeakStressTest", func(t *testing.T) {
 		// Stress test async channel operations for memory leaks
 		runtime.GC()
 		var m1 runtime.MemStats
 		runtime.ReadMemStats(&m1)
 		initialAlloc := m1.Alloc
-		
+
 		// Run many concurrent async operations
 		for batch := 0; batch < 50; batch++ {
 			const batchSize = 20
 			providers := make([]Provider[uint32], batchSize)
-			
+
 			for i := 0; i < batchSize; i++ {
 				val := uint32(i + batch*batchSize)
 				providers[i] = func(ctx context.Context, rchan chan uint32, echan chan error) {
@@ -2384,11 +2384,11 @@ func TestAsyncMemoryLeakDetection(t *testing.T) {
 					for j := range temp {
 						temp[j] = int(val) + j
 					}
-					
+
 					// Add variable delay to create different execution patterns
 					delay := time.Duration(val%5) * time.Microsecond
 					time.Sleep(delay)
-					
+
 					select {
 					case rchan <- val * val:
 					case <-ctx.Done():
@@ -2396,7 +2396,7 @@ func TestAsyncMemoryLeakDetection(t *testing.T) {
 					}
 				}
 			}
-			
+
 			results, err := AwaitSlice(FixedProvider(providers), SetTimeout(5*time.Second))()
 			if err != nil {
 				t.Errorf("Batch %d failed: %v", batch, err)
@@ -2404,14 +2404,14 @@ func TestAsyncMemoryLeakDetection(t *testing.T) {
 			if len(results) != batchSize {
 				t.Errorf("Batch %d: expected %d results, got %d", batch, batchSize, len(results))
 			}
-			
+
 			// Force cleanup between batches
 			if batch%5 == 0 {
 				time.Sleep(50 * time.Millisecond)
 				runtime.GC()
 			}
 		}
-		
+
 		// Final cleanup and measurement
 		time.Sleep(100 * time.Millisecond)
 		runtime.GC()
@@ -2419,14 +2419,14 @@ func TestAsyncMemoryLeakDetection(t *testing.T) {
 		var m2 runtime.MemStats
 		runtime.ReadMemStats(&m2)
 		finalAlloc := m2.Alloc
-		
+
 		memoryGrowth := int64(finalAlloc) - int64(initialAlloc)
 		maxGrowth := int64(10 * 1024 * 1024) // 10MB threshold for stress test
-		
+
 		t.Logf("Async channel stress test memory growth: %d bytes (%.2f MB)", memoryGrowth, float64(memoryGrowth)/1024/1024)
-		
+
 		if memoryGrowth > maxGrowth {
-			t.Errorf("Excessive memory growth in async channel stress test: %d bytes (%.2f MB)", 
+			t.Errorf("Excessive memory growth in async channel stress test: %d bytes (%.2f MB)",
 				memoryGrowth, float64(memoryGrowth)/1024/1024)
 		}
 	})
@@ -2435,13 +2435,13 @@ func TestAsyncMemoryLeakDetection(t *testing.T) {
 func BenchmarkContextCancellation(b *testing.B) {
 	// Benchmark measuring the performance overhead of context cancellation/timeout
 	// in async operations
-	
+
 	// Setup test data
 	data := make([]uint32, 100)
 	for i := range data {
 		data[i] = uint32(i + 1)
 	}
-	
+
 	b.Run("NormalTimeout", func(b *testing.B) {
 		// Baseline: operations that complete within normal timeout
 		fastProvider := func(val uint32) (Provider[uint32], error) {
@@ -2455,7 +2455,7 @@ func BenchmarkContextCancellation(b *testing.B) {
 				}
 			}, nil
 		}
-		
+
 		providerSlice := func() ([]Provider[uint32], error) {
 			providers := make([]Provider[uint32], len(data))
 			for i, val := range data {
@@ -2464,7 +2464,7 @@ func BenchmarkContextCancellation(b *testing.B) {
 			}
 			return providers, nil
 		}
-		
+
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			results, err := AwaitSlice(providerSlice, SetTimeout(100*time.Millisecond))()
@@ -2476,7 +2476,7 @@ func BenchmarkContextCancellation(b *testing.B) {
 			}
 		}
 	})
-	
+
 	b.Run("TimeoutCancellation", func(b *testing.B) {
 		// Measure overhead when timeout cancellation occurs
 		slowProvider := func(val uint32) (Provider[uint32], error) {
@@ -2490,7 +2490,7 @@ func BenchmarkContextCancellation(b *testing.B) {
 				}
 			}, nil
 		}
-		
+
 		providerSlice := func() ([]Provider[uint32], error) {
 			providers := make([]Provider[uint32], len(data))
 			for i, val := range data {
@@ -2499,7 +2499,7 @@ func BenchmarkContextCancellation(b *testing.B) {
 			}
 			return providers, nil
 		}
-		
+
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			_, err := AwaitSlice(providerSlice, SetTimeout(50*time.Millisecond))()
@@ -2511,7 +2511,7 @@ func BenchmarkContextCancellation(b *testing.B) {
 			}
 		}
 	})
-	
+
 	b.Run("MixedTimeoutBehavior", func(b *testing.B) {
 		// Measure performance with mixed fast/slow providers to test partial timeout
 		mixedProviderFunc := func(val uint32) (Provider[uint32], error) {
@@ -2521,7 +2521,7 @@ func BenchmarkContextCancellation(b *testing.B) {
 				if val > 50 {
 					delay = 100 * time.Millisecond // Will timeout
 				}
-				
+
 				select {
 				case <-time.After(delay):
 					rchan <- val * 2
@@ -2530,7 +2530,7 @@ func BenchmarkContextCancellation(b *testing.B) {
 				}
 			}, nil
 		}
-		
+
 		providerSlice := func() ([]Provider[uint32], error) {
 			providers := make([]Provider[uint32], len(data))
 			for i, val := range data {
@@ -2539,7 +2539,7 @@ func BenchmarkContextCancellation(b *testing.B) {
 			}
 			return providers, nil
 		}
-		
+
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			_, err := AwaitSlice(providerSlice, SetTimeout(50*time.Millisecond))()
@@ -2548,7 +2548,7 @@ func BenchmarkContextCancellation(b *testing.B) {
 			}
 		}
 	})
-	
+
 	b.Run("ShortVsLongTimeout", func(b *testing.B) {
 		// Compare cancellation overhead between short and long timeouts
 		mediumProvider := func(val uint32) (Provider[uint32], error) {
@@ -2562,7 +2562,7 @@ func BenchmarkContextCancellation(b *testing.B) {
 				}
 			}, nil
 		}
-		
+
 		providerSlice := func() ([]Provider[uint32], error) {
 			providers := make([]Provider[uint32], len(data[:20])) // Smaller set for timeout tests
 			for i, val := range data[:20] {
@@ -2571,7 +2571,7 @@ func BenchmarkContextCancellation(b *testing.B) {
 			}
 			return providers, nil
 		}
-		
+
 		b.Run("ShortTimeout", func(b *testing.B) {
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
@@ -2581,7 +2581,7 @@ func BenchmarkContextCancellation(b *testing.B) {
 				}
 			}
 		})
-		
+
 		b.Run("LongTimeout", func(b *testing.B) {
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
@@ -2595,7 +2595,7 @@ func BenchmarkContextCancellation(b *testing.B) {
 			}
 		})
 	})
-	
+
 	b.Run("ContextCancellationVsTimeout", func(b *testing.B) {
 		// Compare explicit context cancellation vs timeout cancellation
 		fastProvider := func(val uint32) (Provider[uint32], error) {
@@ -2608,12 +2608,12 @@ func BenchmarkContextCancellation(b *testing.B) {
 				}
 			}, nil
 		}
-		
+
 		b.Run("ExplicitCancellation", func(b *testing.B) {
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
 				ctx, cancel := context.WithCancel(context.Background())
-				
+
 				providerSlice := func() ([]Provider[uint32], error) {
 					providers := make([]Provider[uint32], len(data[:50]))
 					for j, val := range data[:50] {
@@ -2622,17 +2622,17 @@ func BenchmarkContextCancellation(b *testing.B) {
 					}
 					return providers, nil
 				}
-				
+
 				// Cancel immediately to test cancellation overhead
 				cancel()
-				
+
 				_, err := AwaitSlice(providerSlice, SetContext(ctx))()
 				if err == nil {
 					b.Fatal("Expected cancellation error")
 				}
 			}
 		})
-		
+
 		b.Run("TimeoutCancellation", func(b *testing.B) {
 			providerSlice := func() ([]Provider[uint32], error) {
 				providers := make([]Provider[uint32], len(data[:50]))
@@ -2642,7 +2642,7 @@ func BenchmarkContextCancellation(b *testing.B) {
 				}
 				return providers, nil
 			}
-			
+
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
 				// Very short timeout to trigger immediate timeout
@@ -2660,15 +2660,15 @@ func BenchmarkContextCancellation(b *testing.B) {
 func BenchmarkHighConcurrency(b *testing.B) {
 	// Test with different dataset sizes for async operations
 	dataSizes := []int{100, 1000, 5000, 10000}
-	
+
 	// Test with different timeout configurations
 	timeouts := []time.Duration{
 		100 * time.Millisecond,
-		500 * time.Millisecond, 
+		500 * time.Millisecond,
 		1 * time.Second,
 		5 * time.Second,
 	}
-	
+
 	for _, dataSize := range dataSizes {
 		for _, timeout := range timeouts {
 			b.Run(fmt.Sprintf("DataSize_%d_Timeout_%v", dataSize, timeout), func(b *testing.B) {
@@ -2677,27 +2677,27 @@ func BenchmarkHighConcurrency(b *testing.B) {
 				for i := range data {
 					data[i] = uint32(i + 1)
 				}
-				
+
 				// Create async provider function with simulated async work
 				asyncProvider := func(val uint32) Provider[uint32] {
 					return func(ctx context.Context, rchan chan uint32, echan chan error) {
 						// Simulate async work with variable duration
 						workDuration := time.Duration(val%50+1) * time.Microsecond
 						time.Sleep(workDuration)
-						
+
 						// CPU work to simulate real computation
 						result := val
 						for i := 0; i < 50; i++ {
 							result = (result*31 + val) % 1000000
 						}
-						
+
 						select {
 						case rchan <- result:
 						case <-ctx.Done():
 						}
 					}
 				}
-				
+
 				// Create provider slice
 				providerSlice := func() ([]Provider[uint32], error) {
 					providers := make([]Provider[uint32], len(data))
@@ -2706,7 +2706,7 @@ func BenchmarkHighConcurrency(b *testing.B) {
 					}
 					return providers, nil
 				}
-				
+
 				b.ResetTimer()
 				for i := 0; i < b.N; i++ {
 					_, err := AwaitSlice(providerSlice, SetTimeout(timeout))()
@@ -2717,14 +2717,14 @@ func BenchmarkHighConcurrency(b *testing.B) {
 			})
 		}
 	}
-	
+
 	b.Run("StressTestAsyncMemoryPressure", func(b *testing.B) {
 		// Test async operations under memory pressure
 		largeData := make([]uint32, 20000)
 		for i := range largeData {
 			largeData[i] = uint32(i + 1)
 		}
-		
+
 		// Memory-intensive async operation
 		memoryIntensiveProvider := func(val uint32) Provider[[]uint32] {
 			return func(ctx context.Context, rchan chan []uint32, echan chan error) {
@@ -2733,17 +2733,17 @@ func BenchmarkHighConcurrency(b *testing.B) {
 				for i := range temp {
 					temp[i] = val * uint32(i+1)
 				}
-				
+
 				// Simulate async delay
 				time.Sleep(time.Microsecond * time.Duration(val%100+1))
-				
+
 				select {
 				case rchan <- temp:
 				case <-ctx.Done():
 				}
 			}
 		}
-		
+
 		providerSlice := func() ([]Provider[[]uint32], error) {
 			providers := make([]Provider[[]uint32], len(largeData))
 			for j, val := range largeData {
@@ -2751,7 +2751,7 @@ func BenchmarkHighConcurrency(b *testing.B) {
 			}
 			return providers, nil
 		}
-		
+
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			_, err := AwaitSlice(providerSlice, SetTimeout(10*time.Second))()
@@ -2760,27 +2760,27 @@ func BenchmarkHighConcurrency(b *testing.B) {
 			}
 		}
 	})
-	
+
 	b.Run("StressTestAsyncGoroutineOverhead", func(b *testing.B) {
 		// Test with extremely high async goroutine count to measure overhead
 		data := make([]uint32, 50000)
 		for i := range data {
 			data[i] = uint32(i + 1)
 		}
-		
+
 		// Minimal async operation to isolate goroutine overhead
 		minimalProvider := func(val uint32) Provider[uint32] {
 			return func(ctx context.Context, rchan chan uint32, echan chan error) {
 				// Minimal work with tiny async delay
 				time.Sleep(time.Nanosecond * 10)
-				
+
 				select {
 				case rchan <- val + 1:
 				case <-ctx.Done():
 				}
 			}
 		}
-		
+
 		providerSlice := func() ([]Provider[uint32], error) {
 			providers := make([]Provider[uint32], len(data))
 			for j, val := range data {
@@ -2788,7 +2788,7 @@ func BenchmarkHighConcurrency(b *testing.B) {
 			}
 			return providers, nil
 		}
-		
+
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			_, err := AwaitSlice(providerSlice, SetTimeout(5*time.Second))()
@@ -2796,18 +2796,18 @@ func BenchmarkHighConcurrency(b *testing.B) {
 				b.Fatalf("Unexpected error in goroutine overhead test: %v", err)
 			}
 		}
-		
+
 		// Report async goroutine overhead metrics
 		b.ReportMetric(float64(len(data)), "async_goroutines/op")
 	})
-	
+
 	b.Run("StressTestTimeoutBehavior", func(b *testing.B) {
 		// Test timeout behavior under high load
 		data := make([]uint32, 1000)
 		for i := range data {
 			data[i] = uint32(i + 1)
 		}
-		
+
 		// Providers with variable execution times
 		var timeoutCount int64
 		variableTimeProvider := func(val uint32) Provider[uint32] {
@@ -2820,14 +2820,14 @@ func BenchmarkHighConcurrency(b *testing.B) {
 					// These should complete
 					time.Sleep(time.Duration(val%5+1) * time.Millisecond)
 				}
-				
+
 				select {
 				case rchan <- val:
 				case <-ctx.Done():
 				}
 			}
 		}
-		
+
 		providerSlice := func() ([]Provider[uint32], error) {
 			providers := make([]Provider[uint32], len(data))
 			for j, val := range data {
@@ -2835,11 +2835,11 @@ func BenchmarkHighConcurrency(b *testing.B) {
 			}
 			return providers, nil
 		}
-		
+
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			atomic.StoreInt64(&timeoutCount, 0)
-			
+
 			// Short timeout to trigger timeouts on slow operations
 			_, err := AwaitSlice(providerSlice, SetTimeout(50*time.Millisecond))()
 			if err != nil {
@@ -2847,33 +2847,33 @@ func BenchmarkHighConcurrency(b *testing.B) {
 				atomic.AddInt64(&timeoutCount, 1)
 			}
 		}
-		
+
 		b.ReportMetric(float64(atomic.LoadInt64(&timeoutCount))/float64(b.N), "timeout_rate")
 	})
-	
+
 	b.Run("StressTestChannelCommunication", func(b *testing.B) {
 		// Test async channel communication under high load
 		data := make([]uint32, 2000)
 		for i := range data {
 			data[i] = uint32(i + 1)
 		}
-		
+
 		// Provider that stresses channel communication patterns
 		var channelOps int64
 		channelStressProvider := func(val uint32) Provider[uint32] {
 			return func(ctx context.Context, rchan chan uint32, echan chan error) {
 				atomic.AddInt64(&channelOps, 1)
-				
+
 				// Create temporary channels to stress the communication system
 				done := make(chan bool, 1)
 				result := make(chan uint32, 1)
-				
+
 				go func() {
 					time.Sleep(time.Microsecond * time.Duration(val%20+1))
 					result <- val * 2
 					done <- true
 				}()
-				
+
 				select {
 				case res := <-result:
 					<-done
@@ -2890,7 +2890,7 @@ func BenchmarkHighConcurrency(b *testing.B) {
 				}
 			}
 		}
-		
+
 		providerSlice := func() ([]Provider[uint32], error) {
 			providers := make([]Provider[uint32], len(data))
 			for j, val := range data {
@@ -2898,7 +2898,7 @@ func BenchmarkHighConcurrency(b *testing.B) {
 			}
 			return providers, nil
 		}
-		
+
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			atomic.StoreInt64(&channelOps, 0)
@@ -2907,7 +2907,7 @@ func BenchmarkHighConcurrency(b *testing.B) {
 				b.Fatalf("Unexpected error in channel communication test: %v", err)
 			}
 		}
-		
+
 		b.ReportMetric(float64(atomic.LoadInt64(&channelOps))/float64(b.N), "async_channel_ops/iteration")
 	})
 }
@@ -2921,13 +2921,13 @@ func BenchmarkAsyncMemoryProfileProviderCreation(b *testing.B) {
 	// Benchmark memory allocations in async provider creation
 	// Use with: go test -bench=BenchmarkAsyncMemoryProfileProviderCreation -memprofile=async_provider_mem.prof
 	b.ReportAllocs()
-	
+
 	dataSize := 1000
 	data := make([]uint32, dataSize)
 	for i := range data {
 		data[i] = uint32(i + 1)
 	}
-	
+
 	// Memory-allocating async provider
 	createProvider := func(val uint32) Provider[[]byte] {
 		return func(ctx context.Context, rchan chan []byte, echan chan error) {
@@ -2943,7 +2943,7 @@ func BenchmarkAsyncMemoryProfileProviderCreation(b *testing.B) {
 			}
 		}
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		// Create slice of providers
@@ -2951,7 +2951,7 @@ func BenchmarkAsyncMemoryProfileProviderCreation(b *testing.B) {
 		for j, val := range data {
 			providers[j] = createProvider(val)
 		}
-		
+
 		// Execute async processing
 		_, err := AwaitSlice(FixedProvider(providers), SetTimeout(5*time.Second))()
 		if err != nil {
@@ -2964,14 +2964,14 @@ func BenchmarkAsyncMemoryProfileChannelOperations(b *testing.B) {
 	// Benchmark memory usage with different provider counts to understand channel overhead
 	// Use with: go test -bench=BenchmarkAsyncMemoryProfileChannelOperations -memprofile=channel_ops_mem.prof
 	b.ReportAllocs()
-	
+
 	// Test different provider counts to understand memory impact
 	providerCounts := []int{10, 100, 500, 1000}
-	
+
 	for _, providerCount := range providerCounts {
 		b.Run(fmt.Sprintf("ProviderCount_%d", providerCount), func(b *testing.B) {
 			b.ReportAllocs()
-			
+
 			// Memory-intensive provider
 			provider := func(id int) Provider[string] {
 				return func(ctx context.Context, rchan chan string, echan chan error) {
@@ -2988,14 +2988,14 @@ func BenchmarkAsyncMemoryProfileChannelOperations(b *testing.B) {
 					}
 				}
 			}
-			
+
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
 				providers := make([]Provider[string], providerCount)
 				for j := 0; j < providerCount; j++ {
 					providers[j] = provider(j)
 				}
-				
+
 				_, err := AwaitSlice(FixedProvider(providers), SetTimeout(10*time.Second))()
 				if err != nil {
 					b.Fatalf("Unexpected error: %v", err)
@@ -3009,9 +3009,9 @@ func BenchmarkAsyncMemoryProfileErrorPropagation(b *testing.B) {
 	// Benchmark memory allocations during async error scenarios
 	// Use with: go test -bench=BenchmarkAsyncMemoryProfileErrorPropagation -memprofile=async_error_mem.prof
 	b.ReportAllocs()
-	
+
 	providerCount := 2000
-	
+
 	// Provider that fails for certain values (with memory allocation in error messages)
 	faultyProvider := func(id int) Provider[map[string]interface{}] {
 		return func(ctx context.Context, rchan chan map[string]interface{}, echan chan error) {
@@ -3028,13 +3028,13 @@ func BenchmarkAsyncMemoryProfileErrorPropagation(b *testing.B) {
 				}
 				return
 			}
-			
+
 			// Normal processing with memory allocation
 			result := make(map[string]interface{})
 			result["id"] = id
 			result["data"] = make([]int, id%100+10) // Variable allocation
 			result["metadata"] = fmt.Sprintf("processed_%d", id)
-			
+
 			select {
 			case rchan <- result:
 			case <-ctx.Done():
@@ -3042,14 +3042,14 @@ func BenchmarkAsyncMemoryProfileErrorPropagation(b *testing.B) {
 			}
 		}
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		providers := make([]Provider[map[string]interface{}], providerCount)
 		for j := 0; j < providerCount; j++ {
 			providers[j] = faultyProvider(j)
 		}
-		
+
 		// Execute and expect some errors
 		_, _ = AwaitSlice(FixedProvider(providers), SetTimeout(10*time.Second))()
 	}
@@ -3059,14 +3059,14 @@ func BenchmarkAsyncMemoryProfileGoroutineScaling(b *testing.B) {
 	// Benchmark memory usage with different numbers of concurrent goroutines
 	// Use with: go test -bench=BenchmarkAsyncMemoryProfileGoroutineScaling -memprofile=goroutine_scaling_mem.prof
 	b.ReportAllocs()
-	
+
 	// Test different concurrency levels
 	concurrencyLevels := []int{10, 100, 1000, 5000}
-	
+
 	for _, concurrency := range concurrencyLevels {
 		b.Run(fmt.Sprintf("Concurrency_%d", concurrency), func(b *testing.B) {
 			b.ReportAllocs()
-			
+
 			// Memory-allocating provider
 			provider := func(id int) Provider[[][]byte] {
 				return func(ctx context.Context, rchan chan [][]byte, echan chan error) {
@@ -3085,14 +3085,14 @@ func BenchmarkAsyncMemoryProfileGoroutineScaling(b *testing.B) {
 					}
 				}
 			}
-			
+
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
 				providers := make([]Provider[[][]byte], concurrency)
 				for j := 0; j < concurrency; j++ {
 					providers[j] = provider(j)
 				}
-				
+
 				_, err := AwaitSlice(FixedProvider(providers), SetTimeout(15*time.Second))()
 				if err != nil {
 					b.Fatalf("Unexpected error: %v", err)
@@ -3104,60 +3104,60 @@ func BenchmarkAsyncMemoryProfileGoroutineScaling(b *testing.B) {
 
 func TestEmptySliceOperations(t *testing.T) {
 	// Test how async slice operations handle empty slices as edge cases
-	
+
 	t.Run("AwaitSliceWithEmptySlice", func(t *testing.T) {
 		// Create empty slice of async providers
 		emptyProviders := []Provider[uint32]{}
 		providerSlice := model.FixedProvider(emptyProviders)
-		
+
 		ctx := context.Background()
 		result, err := AwaitSlice(providerSlice, SetContext(ctx))()
-		
+
 		if err != nil {
 			t.Errorf("Expected no error with empty async slice, got: %s", err)
 		}
-		
+
 		if result == nil {
 			t.Errorf("Expected empty slice, got nil")
 		}
-		
+
 		if len(result) != 0 {
 			t.Errorf("Expected empty result slice, got length %d", len(result))
 		}
 	})
-	
+
 	t.Run("AwaitSliceWithEmptySliceAndTimeout", func(t *testing.T) {
 		// Test empty slice with timeout - should complete immediately
 		emptyProviders := []Provider[uint32]{}
 		providerSlice := model.FixedProvider(emptyProviders)
-		
+
 		ctx := context.Background()
 		result, err := AwaitSlice(providerSlice, SetContext(ctx), SetTimeout(100*time.Millisecond))()
-		
+
 		if err != nil {
 			t.Errorf("Expected no error with empty async slice and timeout, got: %s", err)
 		}
-		
+
 		if result == nil {
 			t.Errorf("Expected empty slice, got nil")
 		}
-		
+
 		if len(result) != 0 {
 			t.Errorf("Expected empty result slice, got length %d", len(result))
 		}
 	})
-	
+
 	t.Run("AwaitSliceWithEmptySliceAndCancellation", func(t *testing.T) {
 		// Test empty slice with context cancellation - should complete before cancellation
 		emptyProviders := []Provider[uint32]{}
 		providerSlice := model.FixedProvider(emptyProviders)
-		
+
 		ctx, cancel := context.WithCancel(context.Background())
-		
+
 		// Start the operation
 		resultChan := make(chan []uint32, 1)
 		errorChan := make(chan error, 1)
-		
+
 		go func() {
 			result, err := AwaitSlice(providerSlice, SetContext(ctx))()
 			if err != nil {
@@ -3166,10 +3166,10 @@ func TestEmptySliceOperations(t *testing.T) {
 				resultChan <- result
 			}
 		}()
-		
+
 		// Cancel immediately - but empty slice should complete before cancellation takes effect
 		cancel()
-		
+
 		select {
 		case result := <-resultChan:
 			if result == nil {
@@ -3188,66 +3188,66 @@ func TestEmptySliceOperations(t *testing.T) {
 			t.Errorf("Operation should have completed quickly")
 		}
 	})
-	
+
 	t.Run("AwaitSliceWithEmptySliceFromSliceMap", func(t *testing.T) {
 		// Test AwaitSlice when the input comes from SliceMap of an empty slice
 		emptyItems := []uint32{}
-		
+
 		// Transform empty slice into async providers
 		asyncProviders := model.SliceMap(AsyncTestTransformer)(model.FixedProvider(emptyItems))()
-		
+
 		ctx := context.Background()
 		result, err := AwaitSlice(asyncProviders, SetContext(ctx))()
-		
+
 		if err != nil {
 			t.Errorf("Expected no error with empty slice from SliceMap, got: %s", err)
 		}
-		
+
 		if result == nil {
 			t.Errorf("Expected empty slice, got nil")
 		}
-		
+
 		if len(result) != 0 {
 			t.Errorf("Expected empty result slice, got length %d", len(result))
 		}
 	})
-	
+
 	t.Run("AwaitSliceWithEmptySliceMultipleConfigurators", func(t *testing.T) {
 		// Test empty slice with multiple configurators
 		emptyProviders := []Provider[uint32]{}
 		providerSlice := model.FixedProvider(emptyProviders)
-		
+
 		ctx := context.Background()
 		result, err := AwaitSlice(providerSlice, SetContext(ctx), SetTimeout(100*time.Millisecond))()
-		
+
 		if err != nil {
 			t.Errorf("Expected no error with empty slice and multiple configurators, got: %s", err)
 		}
-		
+
 		if result == nil {
 			t.Errorf("Expected empty slice, got nil")
 		}
-		
+
 		if len(result) != 0 {
 			t.Errorf("Expected empty result slice, got length %d", len(result))
 		}
 	})
-	
+
 	t.Run("AwaitSliceMemoryHandlingWithEmptySlice", func(t *testing.T) {
 		// Test that empty slices don't cause memory issues or goroutine leaks
 		emptyProviders := []Provider[uint32]{}
 		providerSlice := model.FixedProvider(emptyProviders)
-		
+
 		ctx := context.Background()
-		
+
 		// Run multiple times to check for memory/goroutine leaks
 		for i := 0; i < 100; i++ {
 			result, err := AwaitSlice(providerSlice, SetContext(ctx))()
-			
+
 			if err != nil {
 				t.Errorf("Iteration %d: Expected no error, got: %s", i, err)
 			}
-			
+
 			if len(result) != 0 {
 				t.Errorf("Iteration %d: Expected empty result, got length %d", i, len(result))
 			}
@@ -3259,9 +3259,9 @@ func BenchmarkAsyncMemoryProfileTimeoutHandling(b *testing.B) {
 	// Benchmark memory usage in timeout scenarios
 	// Use with: go test -bench=BenchmarkAsyncMemoryProfileTimeoutHandling -memprofile=timeout_mem.prof
 	b.ReportAllocs()
-	
+
 	providerCount := 1000
-	
+
 	// Mix of fast and slow providers to trigger timeouts
 	mixedProvider := func(id int) Provider[string] {
 		return func(ctx context.Context, rchan chan string, echan chan error) {
@@ -3274,13 +3274,13 @@ func BenchmarkAsyncMemoryProfileTimeoutHandling(b *testing.B) {
 					return
 				}
 			}
-			
+
 			// Allocate memory regardless of speed
 			data := make([]byte, (id%300)+100)
 			for i := range data {
 				data[i] = byte(i + id)
 			}
-			
+
 			endIdx := 50
 			if len(data) < 50 {
 				endIdx = len(data)
@@ -3293,14 +3293,14 @@ func BenchmarkAsyncMemoryProfileTimeoutHandling(b *testing.B) {
 			}
 		}
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		providers := make([]Provider[string], providerCount)
 		for j := 0; j < providerCount; j++ {
 			providers[j] = mixedProvider(j)
 		}
-		
+
 		// Short timeout to trigger timeout handling
 		_, _ = AwaitSlice(FixedProvider(providers), SetTimeout(100*time.Millisecond))()
 	}
@@ -3315,7 +3315,7 @@ func TestAsyncZeroValueAndNilPointerScenarios(t *testing.T) {
 		zeroAsyncProvider := func(ctx context.Context, rchan chan int, echan chan error) {
 			rchan <- 0
 		}
-		
+
 		result, err := Await(SingleProvider(zeroAsyncProvider))()
 		if err != nil {
 			t.Errorf("Expected no error with async zero integer, got: %v", err)
@@ -3331,7 +3331,7 @@ func TestAsyncZeroValueAndNilPointerScenarios(t *testing.T) {
 			var zeroSlice []int
 			rchan <- zeroSlice
 		}
-		
+
 		result, err := Await(SingleProvider(zeroSliceAsyncProvider))()
 		if err != nil {
 			t.Errorf("Expected no error with async zero-value slice, got: %v", err)
@@ -3356,12 +3356,12 @@ func TestAsyncZeroValueAndNilPointerScenarios(t *testing.T) {
 			zeroStruct := AsyncTestStruct{}
 			rchan <- zeroStruct
 		}
-		
+
 		result, err := Await(SingleProvider(zeroStructAsyncProvider))()
 		if err != nil {
 			t.Errorf("Expected no error with async zero-value struct, got: %v", err)
 		}
-		
+
 		// Verify all fields are zero values
 		if result.ID != 0 {
 			t.Errorf("Expected zero ID, got: %d", result.ID)
@@ -3390,7 +3390,7 @@ func TestAsyncZeroValueAndNilPointerScenarios(t *testing.T) {
 			}
 			rchan <- nilPtrStruct
 		}
-		
+
 		result, err := Await(SingleProvider(nilPtrAsyncProvider))()
 		if err != nil {
 			t.Errorf("Expected no error with async nil pointer struct, got: %v", err)
@@ -3415,7 +3415,7 @@ func TestAsyncZeroValueAndNilPointerScenarios(t *testing.T) {
 			time.Sleep(10 * time.Millisecond)
 			rchan <- 0
 		}
-		
+
 		// Longer timeout that should allow zero value processing
 		result, err := Await(SingleProvider(zeroWithDelayProvider), SetTimeout(100*time.Millisecond))()
 		if err != nil {
@@ -3429,7 +3429,7 @@ func TestAsyncZeroValueAndNilPointerScenarios(t *testing.T) {
 	t.Run("AsyncZeroValueSliceProcessing", func(t *testing.T) {
 		// Test async slice processing with zero values mixed in
 		sliceWithZeros := []int{0, 5, 0, 10, 0}
-		
+
 		// Create async providers from the slice
 		providers := make([]Provider[string], len(sliceWithZeros))
 		for i, val := range sliceWithZeros {
@@ -3440,17 +3440,17 @@ func TestAsyncZeroValueAndNilPointerScenarios(t *testing.T) {
 				}
 			}(v)
 		}
-		
+
 		results, err := AwaitSlice(FixedProvider(providers))()
 		if err != nil {
 			t.Errorf("Expected no error with async zero-value slice processing, got: %v", err)
 		}
-		
+
 		// Check we got the right number of results
 		if len(results) != 5 {
 			t.Errorf("Expected 5 results, got %d", len(results))
 		}
-		
+
 		// Count occurrences of each expected value (order may vary due to async)
 		expectedCounts := map[string]int{
 			"async_item_0":  3, // three zeros
@@ -3461,7 +3461,7 @@ func TestAsyncZeroValueAndNilPointerScenarios(t *testing.T) {
 		for _, result := range results {
 			actualCounts[result]++
 		}
-		
+
 		for expected, expectedCount := range expectedCounts {
 			if actualCounts[expected] != expectedCount {
 				t.Errorf("Expected %d occurrences of %s, got %d", expectedCount, expected, actualCounts[expected])
@@ -3475,7 +3475,7 @@ func TestAsyncZeroValueAndNilPointerScenarios(t *testing.T) {
 			var nilInterface interface{}
 			rchan <- nilInterface
 		}
-		
+
 		result, err := Await(SingleProvider(nilInterfaceAsyncProvider))()
 		if err != nil {
 			t.Errorf("Expected no error with async nil interface, got: %v", err)
@@ -3495,10 +3495,10 @@ func TestAsyncZeroValueAndNilPointerScenarios(t *testing.T) {
 				echan <- ctx.Err()
 			}
 		}
-		
+
 		ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
 		defer cancel()
-		
+
 		// Should timeout and get error
 		result, err := Await(SingleProvider(slowZeroProvider), SetContext(ctx))()
 		if err == nil {
@@ -3507,7 +3507,7 @@ func TestAsyncZeroValueAndNilPointerScenarios(t *testing.T) {
 		if err != nil && err != context.DeadlineExceeded && err != ErrAwaitTimeout {
 			t.Errorf("Expected context.DeadlineExceeded or ErrAwaitTimeout, got: %v", err)
 		}
-		
+
 		// Result should be zero value when error occurs
 		if result != 0 {
 			t.Errorf("Expected zero result when timeout occurs, got %d", result)
@@ -3526,23 +3526,23 @@ func TestAsyncZeroValueAndNilPointerScenarios(t *testing.T) {
 		zeroProvider2 := func(ctx context.Context, rchan chan int, echan chan error) {
 			rchan <- 0 // zero value
 		}
-		
+
 		mixedProviders := []Provider[int]{
 			zeroProvider1,
 			nonZeroProvider,
 			zeroProvider2,
 		}
-		
+
 		results, err := AwaitSlice(FixedProvider(mixedProviders))()
 		if err != nil {
 			t.Errorf("Expected no error with mixed zero/non-zero async values, got: %v", err)
 		}
-		
+
 		// Check we got the right number of results
 		if len(results) != 3 {
 			t.Errorf("Expected 3 results, got %d", len(results))
 		}
-		
+
 		// Count occurrences of each expected value (order may vary due to async)
 		expectedCounts := map[int]int{
 			0:  2, // two zeros
@@ -3552,11 +3552,259 @@ func TestAsyncZeroValueAndNilPointerScenarios(t *testing.T) {
 		for _, result := range results {
 			actualCounts[result]++
 		}
-		
+
 		for expected, expectedCount := range expectedCounts {
 			if actualCounts[expected] != expectedCount {
 				t.Errorf("Expected %d occurrences of %d, got %d", expectedCount, expected, actualCounts[expected])
 			}
+		}
+	})
+}
+
+func TestGoroutineCleanup(t *testing.T) {
+	// Test that async operations properly clean up goroutines and don't leak them
+
+	t.Run("AwaitSlice with successful execution", func(t *testing.T) {
+		// Get baseline goroutine count
+		runtime.GC() // Force GC to clean up any lingering goroutines
+		time.Sleep(10 * time.Millisecond) // Brief pause for cleanup
+		initialGoroutines := runtime.NumGoroutine()
+
+		// Create test data
+		data := make([]uint32, 20)
+		for i := range data {
+			data[i] = uint32(i)
+		}
+
+		// Transformer that creates async providers
+		transformer := func(n uint32) (Provider[uint32], error) {
+			return func(ctx context.Context, resultCh chan uint32, errCh chan error) {
+				time.Sleep(5 * time.Millisecond) // Small delay to ensure goroutines exist
+				select {
+				case resultCh <- n * 2:
+				case <-ctx.Done():
+					return
+				}
+			}, nil
+		}
+
+		// Use model.SliceMap to convert values to providers, then await them
+		provider := model.FixedProvider(data)
+		_, err := AwaitSlice(model.SliceMap(transformer)(provider)())()
+		if err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+
+		// Allow time for goroutine cleanup
+		runtime.GC()
+		time.Sleep(50 * time.Millisecond) // Sufficient time for cleanup
+
+		// Check that goroutines were cleaned up
+		finalGoroutines := runtime.NumGoroutine()
+		if finalGoroutines > initialGoroutines {
+			t.Errorf("Goroutine leak detected: initial=%d, final=%d, leaked=%d",
+				initialGoroutines, finalGoroutines, finalGoroutines-initialGoroutines)
+		}
+	})
+
+	t.Run("AwaitSlice with timeout and cancellation", func(t *testing.T) {
+		// Test cleanup when operations are cancelled due to context timeout
+		runtime.GC()
+		time.Sleep(10 * time.Millisecond)
+		initialGoroutines := runtime.NumGoroutine()
+
+		// Create test data
+		data := make([]uint32, 15)
+		for i := range data {
+			data[i] = uint32(i)
+		}
+
+		// Transformer that creates providers with long delays
+		transformer := func(n uint32) (Provider[uint32], error) {
+			return func(ctx context.Context, resultCh chan uint32, errCh chan error) {
+				select {
+				case <-time.After(100 * time.Millisecond): // Longer than context timeout
+					resultCh <- n * 2
+				case <-ctx.Done():
+					return // Proper cleanup on cancellation
+				}
+			}, nil
+		}
+
+		// Context with short timeout
+		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+		defer cancel()
+
+		provider := model.FixedProvider(data)
+		_, err := AwaitSlice(model.SliceMap(transformer)(provider)(), SetContext(ctx))()
+
+		// Should get timeout error
+		if err == nil {
+			t.Log("Expected timeout error, but operation completed")
+		}
+
+		// Cancel to ensure cleanup
+		cancel()
+
+		// Allow extra time for cancelled goroutine cleanup
+		runtime.GC()
+		time.Sleep(150 * time.Millisecond) // Extra time for async cleanup
+
+		finalGoroutines := runtime.NumGoroutine()
+		if finalGoroutines > initialGoroutines {
+			t.Errorf("Goroutine leak after timeout: initial=%d, final=%d, leaked=%d",
+				initialGoroutines, finalGoroutines, finalGoroutines-initialGoroutines)
+		}
+	})
+
+	t.Run("AwaitSlice with error propagation", func(t *testing.T) {
+		// Test cleanup when one provider errors and others are cancelled
+		runtime.GC()
+		time.Sleep(10 * time.Millisecond)
+		initialGoroutines := runtime.NumGoroutine()
+
+		// Create test data
+		data := make([]uint32, 25)
+		for i := range data {
+			data[i] = uint32(i)
+		}
+
+		// Transformer where one provider will error
+		transformer := func(n uint32) (Provider[uint32], error) {
+			return func(ctx context.Context, resultCh chan uint32, errCh chan error) {
+				if n == 5 { // One provider will error
+					time.Sleep(10 * time.Millisecond)
+					errCh <- fmt.Errorf("test error from provider %d", n)
+					return
+				}
+
+				select {
+				case <-time.After(50 * time.Millisecond): // Others take longer
+					resultCh <- n * 2
+				case <-ctx.Done():
+					return // Proper cleanup on cancellation
+				}
+			}, nil
+		}
+
+		ctx := context.Background()
+		provider := model.FixedProvider(data)
+		_, err := AwaitSlice(model.SliceMap(transformer)(provider)(), SetContext(ctx))()
+
+		// Should get error from provider 5
+		if err == nil {
+			t.Error("Expected error from provider, but got none")
+		}
+
+		// Allow time for error cleanup
+		runtime.GC()
+		time.Sleep(100 * time.Millisecond)
+
+		finalGoroutines := runtime.NumGoroutine()
+		if finalGoroutines > initialGoroutines {
+			t.Errorf("Goroutine leak after error: initial=%d, final=%d, leaked=%d",
+				initialGoroutines, finalGoroutines, finalGoroutines-initialGoroutines)
+		}
+	})
+
+	t.Run("Multiple sequential AwaitSlice operations", func(t *testing.T) {
+		// Test that multiple operations don't accumulate goroutines
+		runtime.GC()
+		time.Sleep(10 * time.Millisecond)
+		initialGoroutines := runtime.NumGoroutine()
+
+		for iteration := 0; iteration < 8; iteration++ {
+			// Create test data for this iteration
+			data := make([]uint32, 10)
+			for i := range data {
+				data[i] = uint32(i + iteration*10)
+			}
+
+			// Transformer that creates providers
+			transformer := func(n uint32) (Provider[uint32], error) {
+				return func(ctx context.Context, resultCh chan uint32, errCh chan error) {
+					time.Sleep(2 * time.Millisecond)
+					select {
+					case resultCh <- n + 100:
+					case <-ctx.Done():
+						return
+					}
+				}, nil
+			}
+
+			ctx := context.Background()
+			provider := model.FixedProvider(data)
+			results, err := AwaitSlice(model.SliceMap(transformer)(provider)(), SetContext(ctx))()
+			if err != nil {
+				t.Fatalf("Unexpected error in iteration %d: %s", iteration, err)
+			}
+
+			if len(results) != len(data) {
+				t.Errorf("Iteration %d: expected %d results, got %d", iteration, len(data), len(results))
+			}
+
+			// Brief cleanup between iterations
+			runtime.GC()
+			time.Sleep(10 * time.Millisecond)
+		}
+
+		// Final cleanup
+		runtime.GC()
+		time.Sleep(50 * time.Millisecond)
+
+		finalGoroutines := runtime.NumGoroutine()
+		if finalGoroutines > initialGoroutines {
+			t.Errorf("Goroutine accumulation detected: initial=%d, final=%d, accumulated=%d",
+				initialGoroutines, finalGoroutines, finalGoroutines-initialGoroutines)
+		}
+	})
+
+	t.Run("High concurrency cleanup", func(t *testing.T) {
+		// Test cleanup under high concurrency stress
+		runtime.GC()
+		time.Sleep(10 * time.Millisecond)
+		initialGoroutines := runtime.NumGoroutine()
+
+		// Create test data
+		data := make([]uint32, 50) // High number of concurrent providers
+		for i := range data {
+			data[i] = uint32(i)
+		}
+
+		// Transformer that creates providers with variable delays
+		transformer := func(n uint32) (Provider[uint32], error) {
+			return func(ctx context.Context, resultCh chan uint32, errCh chan error) {
+				// Variable delay to create different completion times
+				delay := time.Duration((n%5)+1) * time.Millisecond
+				time.Sleep(delay)
+
+				select {
+				case resultCh <- n * 3:
+				case <-ctx.Done():
+					return
+				}
+			}, nil
+		}
+
+		ctx := context.Background()
+		provider := model.FixedProvider(data)
+		results, err := AwaitSlice(model.SliceMap(transformer)(provider)(), SetContext(ctx))()
+		if err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+
+		if len(results) != len(data) {
+			t.Errorf("Expected %d results, got %d", len(data), len(results))
+		}
+
+		// Allow sufficient time for all goroutines to clean up
+		runtime.GC()
+		time.Sleep(100 * time.Millisecond)
+
+		finalGoroutines := runtime.NumGoroutine()
+		if finalGoroutines > initialGoroutines {
+			t.Errorf("Goroutine leak in high concurrency: initial=%d, final=%d, leaked=%d",
+				initialGoroutines, finalGoroutines, finalGoroutines-initialGoroutines)
 		}
 	})
 }

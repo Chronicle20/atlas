@@ -28,11 +28,26 @@ jobs:
           chmod +x scripts/benchmark-regression.sh
           # Save benchmark baseline for main branch
           ./scripts/benchmark-regression.sh baseline
+      - name: Run Memory Profiling
+        run: |
+          # Make memory profiling script executable
+          chmod +x scripts/memory-profiling.sh
+          # Run memory profiling for both tests and benchmarks
+          ./scripts/memory-profiling.sh both
       - name: Upload Benchmark Baseline
         uses: actions/upload-artifact@v4
         with:
           name: benchmark-baseline-main
           path: benchmarks/
+          retention-days: 90
+      - name: Upload Memory Profiles
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: memory-profiles-main
+          path: |
+            profiles/*.memprof
+            profiles/*.txt
           retention-days: 90
       - name: Check Coverage Threshold
         run: |

@@ -28,6 +28,12 @@ jobs:
           chmod +x scripts/benchmark-regression.sh
           # Run benchmark regression detection
           ./scripts/benchmark-regression.sh run
+      - name: Run Memory Profiling
+        run: |
+          # Make memory profiling script executable
+          chmod +x scripts/memory-profiling.sh
+          # Run memory profiling for both tests and benchmarks
+          ./scripts/memory-profiling.sh both
       - name: Upload Benchmark Results
         uses: actions/upload-artifact@v4
         if: always()
@@ -36,6 +42,15 @@ jobs:
           path: |
             benchmarks/current.json
             benchmarks/comparison.json
+          retention-days: 30
+      - name: Upload Memory Profiles
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: memory-profiles
+          path: |
+            profiles/*.memprof
+            profiles/*.txt
           retention-days: 30
       - name: Check Coverage Threshold
         run: |

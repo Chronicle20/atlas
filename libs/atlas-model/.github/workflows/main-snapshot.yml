@@ -18,5 +18,23 @@ jobs:
         run: go mod download
       - name: Build the Go Application
         run: go build -v ./...
-      - name: Run Tests
-        run: go test -v ./...
+      - name: Run Tests with Race Detection
+        run: go test -race -v ./...
+      - name: Run Tests with Coverage
+        run: go test -cover -coverprofile=coverage.out ./...
+      - name: Run Benchmarks
+        run: go test -bench=. -benchmem ./...
+      - name: Check Coverage Threshold
+        run: |
+          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+          echo "Coverage: $COVERAGE%"
+          THRESHOLD=75
+          if [ $(echo "$COVERAGE" | cut -d. -f1) -lt $THRESHOLD ]; then
+            echo "Coverage $COVERAGE% is below minimum threshold of $THRESHOLD%"
+            exit 1
+          fi
+      - name: Upload Coverage Reports
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.out
+          flags: unittests

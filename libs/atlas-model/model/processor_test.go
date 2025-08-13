@@ -7829,3 +7829,152 @@ func TestZeroValueAndNilPointerScenarios(t *testing.T) {
 		}
 	})
 }
+
+// TestGoroutineLeakDetectorUsage demonstrates proper usage pattern of goroutine leak detection
+// This test shows how the testutil.GoroutineLeakDetector should be used in tests
+func TestGoroutineLeakDetectorUsage(t *testing.T) {
+	t.Run("DemonstrateGoroutineLeakDetectionPattern", func(t *testing.T) {
+		// This test demonstrates the pattern that should be used with testutil.GoroutineLeakDetector
+		// Note: Due to circular import restrictions, we simulate the pattern here
+		
+		// Record initial goroutine count (simulating testutil.NewGoroutineLeakDetector)
+		initialGoroutines := runtime.NumGoroutine()
+		
+		// Create a cleanup function that checks for leaks
+		checkForLeaks := func() {
+			// Give goroutines time to cleanup
+			time.Sleep(time.Millisecond * 10)
+			runtime.GC()
+			time.Sleep(time.Millisecond * 10)
+			
+			currentCount := runtime.NumGoroutine()
+			if currentCount > initialGoroutines {
+				t.Errorf("Goroutine leak detected: started with %d, ended with %d", initialGoroutines, currentCount)
+			}
+		}
+		defer checkForLeaks()
+		
+		// Test parallel execution that should properly clean up goroutines
+		data := make([]uint32, 100)
+		for i := range data {
+			data[i] = uint32(i + 1)
+		}
+		provider := FixedProvider(data)
+		
+		// Transform function that simulates some work
+		transform := func(val uint32) (uint32, error) {
+			time.Sleep(time.Microsecond * 5) // Minimal delay
+			return val * 2, nil
+		}
+		
+		// Use ParallelMap which creates goroutines internally
+		transformed := SliceMap[uint32, uint32](transform)(provider)(ParallelMap())
+		
+		result, err := transformed()
+		if err != nil {
+			t.Errorf("ParallelMap should not fail: %v", err)
+		}
+		
+		// Verify the transformation worked
+		if len(result) != len(data) {
+			t.Errorf("Expected %d results, got %d", len(data), len(result))
+		}
+		
+		for i, val := range result {
+			expected := data[i] * 2
+			if val != expected {
+				t.Errorf("Index %d: expected %d, got %d", i, expected, val)
+			}
+		}
+		
+		t.Logf("Goroutine leak detection pattern demonstrated successfully")
+	})
+	
+	t.Run("DemonstrateProperGoroutineCleanupInMemoization", func(t *testing.T) {
+		initialGoroutines := runtime.NumGoroutine()
+		defer func() {
+			// Multiple retries with cleanup, simulating testutil.GoroutineLeakDetector.CheckWithRetries
+			for i := 0; i < 3; i++ {
+				runtime.GC()
+				time.Sleep(time.Millisecond * 10)
+				
+				currentCount := runtime.NumGoroutine()
+				if currentCount <= initialGoroutines {
+					return
+				}
+				
+				if i == 2 {
+					t.Errorf("Goroutine leak in memoization test: %d -> %d", initialGoroutines, currentCount)
+				}
+			}
+		}()
+
+		// Create an expensive provider that spawns goroutines
+		var callCount int64
+		expensiveProvider := func() (uint32, error) {
+			atomic.AddInt64(&callCount, 1)
+			
+			// Simulate concurrent work
+			var wg sync.WaitGroup
+			results := make([]uint32, 3)
+			
+			for i := 0; i < 3; i++ {
+				wg.Add(1)
+				go func(idx int) {
+					defer wg.Done()
+					time.Sleep(time.Microsecond)
+					results[idx] = uint32(idx + 1)
+				}(i)
+			}
+			wg.Wait()
+			
+			var sum uint32
+			for _, v := range results {
+				sum += v
+			}
+			return sum, nil
+		}
+
+		memoized := Memoize(expensiveProvider)
+		
+		// Call from multiple goroutines concurrently
+		const numCalls = 10
+		var wg sync.WaitGroup
+		results := make([]uint32, numCalls)
+		errors := make([]error, numCalls)
+		
+		for i := 0; i < numCalls; i++ {
+			wg.Add(1)
+			go func(idx int) {
+				defer wg.Done()
+				result, err := memoized()
+				results[idx] = result
+				errors[idx] = err
+			}(i)
+		}
+		wg.Wait()
+		
+		// Verify no errors and consistent results
+		for i, err := range errors {
+			if err != nil {
+				t.Errorf("Call %d failed: %v", i, err)
+			}
+		}
+		
+		if len(results) > 0 {
+			expected := results[0]
+			for i, result := range results {
+				if result != expected {
+					t.Errorf("Call %d: expected %d, got %d", i, expected, result)
+				}
+			}
+		}
+		
+		// Verify memoization worked (expensive function called only once)
+		if callCount != 1 {
+			t.Errorf("Expected memoized function called once, got %d", callCount)
+		}
+		
+		t.Logf("Memoization goroutine cleanup pattern demonstrated successfully")
+	})
+}

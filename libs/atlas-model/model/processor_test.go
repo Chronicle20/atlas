@@ -1854,14 +1854,14 @@ func TestNilProviderHandling(t *testing.T) {
 	t.Run("NilProviderFunction", func(t *testing.T) {
 		// Test behavior when provider function itself is nil
 		var nilProvider Provider[string]
-		
+
 		// Direct execution of nil provider should panic safely or handle gracefully
 		defer func() {
 			if r := recover(); r == nil {
 				t.Error("Expected panic when calling nil provider directly")
 			}
 		}()
-		
+
 		// This should panic
 		_, _ = nilProvider()
 	})
@@ -1871,7 +1871,7 @@ func TestNilProviderHandling(t *testing.T) {
 		nilStringProvider := func() (*string, error) {
 			return nil, nil
 		}
-		
+
 		result, err := nilStringProvider()
 		if err != nil {
 			t.Errorf("Expected no error from nil-returning provider, got: %v", err)
@@ -1879,7 +1879,7 @@ func TestNilProviderHandling(t *testing.T) {
 		if result != nil {
 			t.Errorf("Expected nil result, got: %v", result)
 		}
-		
+
 		// Test with Map function on nil values
 		mappedProvider := Map[*string, string](func(s *string) (string, error) {
 			if s == nil {
@@ -1887,7 +1887,7 @@ func TestNilProviderHandling(t *testing.T) {
 			}
 			return *s, nil
 		})(nilStringProvider)
-		
+
 		mappedResult, err := mappedProvider()
 		if err != nil {
 			t.Errorf("Expected no error mapping nil value, got: %v", err)
@@ -1902,7 +1902,7 @@ func TestNilProviderHandling(t *testing.T) {
 		nilSliceProvider := func() ([]string, error) {
 			return nil, nil
 		}
-		
+
 		result, err := nilSliceProvider()
 		if err != nil {
 			t.Errorf("Expected no error from nil slice provider, got: %v", err)
@@ -1910,12 +1910,12 @@ func TestNilProviderHandling(t *testing.T) {
 		if result != nil {
 			t.Errorf("Expected nil slice, got: %v", result)
 		}
-		
+
 		// Test SliceMap with nil slice
 		mapped := SliceMap[string, int](func(s string) (int, error) {
 			return len(s), nil
 		})(nilSliceProvider)()
-		
+
 		mappedResult, err := mapped()
 		if err != nil {
 			t.Errorf("Expected no error mapping nil slice, got: %v", err)
@@ -1931,14 +1931,14 @@ func TestNilProviderHandling(t *testing.T) {
 	t.Run("NilTransformerFunctions", func(t *testing.T) {
 		// Test behavior with nil transformer functions
 		provider := FixedProvider("test")
-		
+
 		// This should panic when transformer is nil and the provider is executed
 		defer func() {
 			if r := recover(); r == nil {
 				t.Error("Expected panic when using nil transformer")
 			}
 		}()
-		
+
 		var nilTransformer Transformer[string, int]
 		mappedProvider := Map[string, int](nilTransformer)(provider)
 		// This should panic when executed
@@ -1948,7 +1948,7 @@ func TestNilProviderHandling(t *testing.T) {
 	t.Run("NilFilterFunctions", func(t *testing.T) {
 		// Test behavior with nil filter functions in FilteredProvider
 		provider := FixedProvider([]string{"test1", "test2", "test3"})
-		
+
 		// Test with empty filter list (should return all items)
 		filteredProvider := FilteredProvider(provider, []Filter[string]{})
 		result, err := filteredProvider()
@@ -1958,7 +1958,7 @@ func TestNilProviderHandling(t *testing.T) {
 		if len(result) != 3 {
 			t.Errorf("Expected 3 items with no filters, got: %d", len(result))
 		}
-		
+
 		// Test with nil filter in list (should handle gracefully or panic predictably)
 		defer func() {
 			if r := recover(); r != nil {
@@ -1966,7 +1966,7 @@ func TestNilProviderHandling(t *testing.T) {
 				return
 			}
 		}()
-		
+
 		var nilFilter Filter[string]
 		filteredProvider = FilteredProvider(provider, []Filter[string]{nilFilter})
 		_, err = filteredProvider()
@@ -1979,7 +1979,7 @@ func TestNilProviderHandling(t *testing.T) {
 		// Test ErrorProvider with nil error
 		var nilErr error
 		provider := ErrorProvider[string](nilErr)
-		
+
 		result, err := provider()
 		if err != nil {
 			t.Errorf("Expected nil error to be treated as no error, got: %v", err)
@@ -1992,7 +1992,7 @@ func TestNilProviderHandling(t *testing.T) {
 	t.Run("NilContextHandling", func(t *testing.T) {
 		// Test provider operations with nil context scenarios
 		provider := FixedProvider([]uint32{1, 2, 3})
-		
+
 		// Test ForEachSlice with operations that might receive nil context
 		err := ForEachSlice[uint32](provider, func(val uint32) error {
 			// Simulate operation that handles nil context gracefully
@@ -2001,7 +2001,7 @@ func TestNilProviderHandling(t *testing.T) {
 			}
 			return nil
 		})
-		
+
 		if err != nil {
 			t.Errorf("Expected no error in context handling test, got: %v", err)
 		}
@@ -2012,10 +2012,10 @@ func TestNilProviderHandling(t *testing.T) {
 		type TestStruct struct {
 			Value *string
 		}
-		
+
 		// Provider returning struct with nil pointer field
 		provider := FixedProvider(TestStruct{Value: nil})
-		
+
 		// Map function that safely handles nil pointer
 		mappedProvider := Map[TestStruct, string](func(ts TestStruct) (string, error) {
 			if ts.Value == nil {
@@ -2023,7 +2023,7 @@ func TestNilProviderHandling(t *testing.T) {
 			}
 			return *ts.Value, nil
 		})(provider)
-		
+
 		result, err := mappedProvider()
 		if err != nil {
 			t.Errorf("Expected no error handling nil pointer, got: %v", err)
@@ -5622,7 +5622,7 @@ func TestInvalidContextHandling(t *testing.T) {
 		// Test operations that might encounter nil context scenarios
 		// Even though Go doesn't allow literal nil context.Context, we test edge cases
 		slice := []uint32{1, 2, 3}
-		
+
 		operation := func(val uint32) error {
 			// Simulate operation that might need to handle context edge cases
 			if val == 0 {
@@ -5630,22 +5630,22 @@ func TestInvalidContextHandling(t *testing.T) {
 			}
 			return nil
 		}
-		
+
 		// Test sequential execution - should handle nil-like scenarios gracefully
 		err := ExecuteForEachSlice(operation)(slice)
 		if err != nil {
 			t.Errorf("Expected no error with valid slice, got: %v", err)
 		}
 	})
-	
+
 	t.Run("Already expired context behavior", func(t *testing.T) {
 		// Test behavior with context that expires immediately
 		ctx, cancel := context.WithTimeout(context.Background(), 0) // Expires immediately
 		cancel() // Ensure it's cancelled
-		
+
 		slice := []uint32{1, 2, 3, 4, 5}
 		operationCount := int64(0)
-		
+
 		operation := func(val uint32) error {
 			select {
 			case <-ctx.Done():
@@ -5656,68 +5656,68 @@ func TestInvalidContextHandling(t *testing.T) {
 				return nil
 			}
 		}
-		
+
 		// Test with parallel execution - should handle pre-cancelled context
 		err := ExecuteForEachSlice(operation, ParallelExecute())(slice)
-		
+
 		// Should either succeed with no operations or fail with context error
 		if err != nil {
 			if !errors.Is(err, context.DeadlineExceeded) && !errors.Is(err, context.Canceled) {
 				t.Errorf("Expected context error, got: %T %v", err, err)
 			}
 		}
-		
+
 		processed := atomic.LoadInt64(&operationCount)
 		t.Logf("Operations processed with expired context: %d", processed)
 	})
-	
+
 	t.Run("Context with invalid or corrupted values", func(t *testing.T) {
 		// Test context with unusual values that might cause issues
 		type contextKey string
 		const testKey contextKey = "testKey"
-		
+
 		// Context with potentially problematic values
 		ctx := context.WithValue(context.Background(), testKey, nil)
 		ctx = context.WithValue(ctx, "anotherKey", "")
 		ctx = context.WithValue(ctx, "", "emptyKeyValue")
-		
+
 		slice := []uint32{1, 2, 3}
-		
+
 		operation := func(val uint32) error {
 			// Operation that accesses context values
 			value := ctx.Value(testKey)
 			if value != nil {
 				return fmt.Errorf("expected nil value, got: %v", value)
 			}
-			
+
 			// Test accessing non-existent key
 			nonExistent := ctx.Value("nonexistent")
 			if nonExistent != nil {
 				return fmt.Errorf("expected nil for non-existent key, got: %v", nonExistent)
 			}
-			
+
 			return nil
 		}
-		
+
 		err := ExecuteForEachSlice(operation, ParallelExecute())(slice)
 		if err != nil {
 			t.Errorf("Expected operations to handle context values gracefully, got: %v", err)
 		}
 	})
-	
+
 	t.Run("Context cancellation race conditions", func(t *testing.T) {
 		// Test race conditions between context cancellation and operation start
 		slice := []uint32{1, 2, 3, 4, 5}
 		successCount := int64(0)
 		cancelCount := int64(0)
-		
+
 		for i := 0; i < 10; i++ { // Run multiple iterations to catch race conditions
 			ctx, cancel := context.WithCancel(context.Background())
-			
+
 			operation := func(val uint32) error {
 				// Introduce small delay to increase chance of race condition
 				time.Sleep(time.Microsecond)
-				
+
 				select {
 				case <-ctx.Done():
 					atomic.AddInt64(&cancelCount, 1)
@@ -5727,40 +5727,40 @@ func TestInvalidContextHandling(t *testing.T) {
 					return nil
 				}
 			}
-			
+
 			// Cancel context after very short delay
 			go func() {
 				time.Sleep(time.Microsecond)
 				cancel()
 			}()
-			
+
 			// Execute operations
 			err := ExecuteForEachSlice(operation, ParallelExecute())(slice)
-			
+
 			// Either should succeed or fail with context error
 			if err != nil && !errors.Is(err, context.Canceled) {
 				t.Errorf("Expected either success or context.Canceled, got: %T %v", err, err)
 			}
 		}
-		
-		t.Logf("Race condition test - Success: %d, Cancelled: %d", 
+
+		t.Logf("Race condition test - Success: %d, Cancelled: %d",
 			atomic.LoadInt64(&successCount), atomic.LoadInt64(&cancelCount))
-		
+
 		// At least some operations should have run
 		total := atomic.LoadInt64(&successCount) + atomic.LoadInt64(&cancelCount)
 		if total == 0 {
 			t.Errorf("Expected at least some operations to be attempted")
 		}
 	})
-	
+
 	t.Run("Context deadline in the past", func(t *testing.T) {
 		// Test context with deadline already in the past
 		pastTime := time.Now().Add(-1 * time.Hour)
 		ctx, cancel := context.WithDeadline(context.Background(), pastTime)
 		defer cancel()
-		
+
 		slice := []uint32{1, 2}
-		
+
 		operation := func(val uint32) error {
 			select {
 			case <-ctx.Done():
@@ -5769,9 +5769,9 @@ func TestInvalidContextHandling(t *testing.T) {
 				return nil
 			}
 		}
-		
+
 		err := ExecuteForEachSlice(operation, ParallelExecute())(slice)
-		
+
 		// Should fail with deadline exceeded
 		if err == nil {
 			t.Errorf("Expected error with past deadline context")
@@ -5779,15 +5779,15 @@ func TestInvalidContextHandling(t *testing.T) {
 			t.Errorf("Expected context.DeadlineExceeded, got: %T %v", err, err)
 		}
 	})
-	
+
 	t.Run("Context with zero value timeout", func(t *testing.T) {
 		// Test context with zero-duration timeout
 		ctx, cancel := context.WithTimeout(context.Background(), 0)
 		defer cancel()
-		
+
 		slice := []uint32{1}
 		errorOccurred := false
-		
+
 		operation := func(val uint32) error {
 			select {
 			case <-ctx.Done():
@@ -5798,16 +5798,16 @@ func TestInvalidContextHandling(t *testing.T) {
 				return nil
 			}
 		}
-		
+
 		err := ExecuteForEachSlice(operation)(slice)
-		
+
 		// Should handle zero timeout gracefully
 		if err != nil {
 			if !errors.Is(err, context.DeadlineExceeded) {
 				t.Errorf("Expected context.DeadlineExceeded or no error, got: %T %v", err, err)
 			}
 		}
-		
+
 		t.Logf("Zero timeout context - Error occurred: %v", errorOccurred)
 	})
 }
@@ -5820,14 +5820,14 @@ func TestMemoryLeakDetection(t *testing.T) {
 		var m1 runtime.MemStats
 		runtime.ReadMemStats(&m1)
 		initialAlloc := m1.Alloc
-		
+
 		// Execute many provider operations
 		for i := 0; i < 10000; i++ {
 			data := make([]uint32, 100)
 			for j := range data {
 				data[j] = uint32(j)
 			}
-			
+
 			provider := FixedProvider(data)
 			transform := func(val uint32) (uint32, error) {
 				// Create some temporary objects to stress memory
@@ -5835,7 +5835,7 @@ func TestMemoryLeakDetection(t *testing.T) {
 				_ = temp
 				return val * 2, nil
 			}
-			
+
 			mapped := SliceMap(transform)(provider)()
 			results, err := mapped()
 			if err != nil {
@@ -5844,39 +5844,39 @@ func TestMemoryLeakDetection(t *testing.T) {
 			if len(results) != len(data) {
 				t.Errorf("Iteration %d: expected %d results, got %d", i, len(data), len(results))
 			}
-			
+
 			// Periodically force GC to prevent normal accumulation
 			if i%1000 == 0 {
 				runtime.GC()
 			}
 		}
-		
+
 		// Force final garbage collection and measure memory
 		runtime.GC()
 		runtime.GC() // Double GC to ensure cleanup
 		var m2 runtime.MemStats
 		runtime.ReadMemStats(&m2)
 		finalAlloc := m2.Alloc
-		
+
 		// Memory growth should be reasonable (less than 10MB for this test)
 		memoryGrowth := int64(finalAlloc) - int64(initialAlloc)
 		maxGrowth := int64(10 * 1024 * 1024) // 10MB threshold
-		
+
 		t.Logf("Memory growth: %d bytes (%.2f MB)", memoryGrowth, float64(memoryGrowth)/1024/1024)
-		
+
 		if memoryGrowth > maxGrowth {
-			t.Errorf("Excessive memory growth detected: %d bytes (%.2f MB), threshold: %d bytes", 
+			t.Errorf("Excessive memory growth detected: %d bytes (%.2f MB), threshold: %d bytes",
 				memoryGrowth, float64(memoryGrowth)/1024/1024, maxGrowth)
 		}
 	})
-	
+
 	t.Run("MemoizedProviderMemoryLeak", func(t *testing.T) {
 		// Test that memoized providers don't cause memory leaks with repeated access
 		runtime.GC()
 		var m1 runtime.MemStats
 		runtime.ReadMemStats(&m1)
 		initialAlloc := m1.Alloc
-		
+
 		// Create a memoized provider that allocates memory
 		expensiveProvider := func() ([]byte, error) {
 			// Allocate a large chunk of memory for the cached result
@@ -5886,9 +5886,9 @@ func TestMemoryLeakDetection(t *testing.T) {
 			}
 			return data, nil
 		}
-		
+
 		memoized := Memoize(expensiveProvider)
-		
+
 		// Access the memoized provider many times
 		for i := 0; i < 5000; i++ {
 			result, err := memoized()
@@ -5898,32 +5898,32 @@ func TestMemoryLeakDetection(t *testing.T) {
 			if len(result) != 1024*1024 {
 				t.Errorf("Iteration %d: expected 1MB result, got %d bytes", i, len(result))
 			}
-			
+
 			// Verify content is correct
 			if result[0] != 0 || result[255] != 255 {
 				t.Errorf("Iteration %d: result content verification failed", i)
 			}
 		}
-		
+
 		// Force garbage collection and measure memory
 		runtime.GC()
 		runtime.GC()
 		var m2 runtime.MemStats
 		runtime.ReadMemStats(&m2)
 		finalAlloc := m2.Alloc
-		
+
 		// Should only have one copy of the 1MB data plus reasonable overhead
 		memoryGrowth := int64(finalAlloc) - int64(initialAlloc)
 		maxGrowth := int64(2 * 1024 * 1024) // 2MB threshold (1MB data + overhead)
-		
+
 		t.Logf("Memoized memory growth: %d bytes (%.2f MB)", memoryGrowth, float64(memoryGrowth)/1024/1024)
-		
+
 		if memoryGrowth > maxGrowth {
-			t.Errorf("Excessive memory growth in memoized provider: %d bytes (%.2f MB), threshold: %d bytes", 
+			t.Errorf("Excessive memory growth in memoized provider: %d bytes (%.2f MB), threshold: %d bytes",
 				memoryGrowth, float64(memoryGrowth)/1024/1024, maxGrowth)
 		}
 	})
-	
+
 	t.Run("ParallelExecutionMemoryLeak", func(t *testing.T) {
 		// Test that parallel execution doesn't accumulate goroutines or memory
 		runtime.GC()
@@ -5931,16 +5931,16 @@ func TestMemoryLeakDetection(t *testing.T) {
 		runtime.ReadMemStats(&m1)
 		initialAlloc := m1.Alloc
 		initialGoroutines := runtime.NumGoroutine()
-		
+
 		// Run many parallel operations
 		for iteration := 0; iteration < 100; iteration++ {
 			data := make([]uint32, 50)
 			for i := range data {
 				data[i] = uint32(i + iteration*50)
 			}
-			
+
 			provider := FixedProvider(data)
-			
+
 			// Transform that allocates temporary memory
 			transform := func(val uint32) (uint32, error) {
 				// Allocate temporary memory to stress the system
@@ -5948,12 +5948,12 @@ func TestMemoryLeakDetection(t *testing.T) {
 				for i := range temp {
 					temp[i] = int(val) + i
 				}
-				
+
 				// Add some computation delay
 				time.Sleep(time.Microsecond)
 				return val * 2, nil
 			}
-			
+
 			mapped := SliceMap(transform)(provider)(ParallelMap())
 			results, err := mapped()
 			if err != nil {
@@ -5962,106 +5962,106 @@ func TestMemoryLeakDetection(t *testing.T) {
 			if len(results) != len(data) {
 				t.Errorf("Iteration %d: expected %d results, got %d", iteration, len(data), len(results))
 			}
-			
+
 			// Give goroutines time to clean up
 			if iteration%10 == 0 {
 				time.Sleep(10 * time.Millisecond)
 				runtime.GC()
 			}
 		}
-		
+
 		// Allow time for goroutine cleanup
 		time.Sleep(100 * time.Millisecond)
 		runtime.GC()
 		runtime.GC()
-		
+
 		var m2 runtime.MemStats
 		runtime.ReadMemStats(&m2)
 		finalAlloc := m2.Alloc
 		finalGoroutines := runtime.NumGoroutine()
-		
+
 		memoryGrowth := int64(finalAlloc) - int64(initialAlloc)
 		goroutineGrowth := finalGoroutines - initialGoroutines
-		
-		t.Logf("Parallel execution - Memory growth: %d bytes (%.2f MB), Goroutine growth: %d", 
+
+		t.Logf("Parallel execution - Memory growth: %d bytes (%.2f MB), Goroutine growth: %d",
 			memoryGrowth, float64(memoryGrowth)/1024/1024, goroutineGrowth)
-		
+
 		// Memory growth should be reasonable
 		maxMemoryGrowth := int64(5 * 1024 * 1024) // 5MB threshold
 		if memoryGrowth > maxMemoryGrowth {
-			t.Errorf("Excessive memory growth in parallel execution: %d bytes (%.2f MB)", 
+			t.Errorf("Excessive memory growth in parallel execution: %d bytes (%.2f MB)",
 				memoryGrowth, float64(memoryGrowth)/1024/1024)
 		}
-		
+
 		// Goroutine growth should be minimal (allow some variance for test runner)
 		maxGoroutineGrowth := 10
 		if goroutineGrowth > maxGoroutineGrowth {
-			t.Errorf("Excessive goroutine growth: %d goroutines, threshold: %d", 
+			t.Errorf("Excessive goroutine growth: %d goroutines, threshold: %d",
 				goroutineGrowth, maxGoroutineGrowth)
 		}
 	})
-	
+
 	t.Run("ErrorScenarioMemoryLeak", func(t *testing.T) {
 		// Test that error scenarios don't cause memory leaks
 		runtime.GC()
 		var m1 runtime.MemStats
 		runtime.ReadMemStats(&m1)
 		initialAlloc := m1.Alloc
-		
+
 		// Run many operations that fail with errors
 		for i := 0; i < 1000; i++ {
 			data := make([]uint32, 20)
 			for j := range data {
 				data[j] = uint32(j)
 			}
-			
+
 			provider := FixedProvider(data)
-			
+
 			// Transform that sometimes fails and allocates memory
 			transform := func(val uint32) (uint32, error) {
 				// Always allocate some memory
 				temp := make([]byte, 2048)
 				_ = temp
-				
+
 				// Fail on certain values
 				if val%3 == 0 {
 					return 0, fmt.Errorf("intentional error for value %d", val)
 				}
 				return val * 2, nil
 			}
-			
+
 			mapped := SliceMap(transform)(provider)()
 			_, err := mapped()
-			
+
 			// We expect errors, so that's okay
 			if err == nil && i%3 == 0 {
 				// Some iterations should have errors due to val%3==0 check
 			}
-			
+
 			// Periodically clean up
 			if i%100 == 0 {
 				runtime.GC()
 			}
 		}
-		
+
 		// Final cleanup and measurement
 		runtime.GC()
 		runtime.GC()
 		var m2 runtime.MemStats
 		runtime.ReadMemStats(&m2)
 		finalAlloc := m2.Alloc
-		
+
 		memoryGrowth := int64(finalAlloc) - int64(initialAlloc)
 		maxGrowth := int64(3 * 1024 * 1024) // 3MB threshold
-		
+
 		t.Logf("Error scenario memory growth: %d bytes (%.2f MB)", memoryGrowth, float64(memoryGrowth)/1024/1024)
-		
+
 		if memoryGrowth > maxGrowth {
-			t.Errorf("Excessive memory growth in error scenarios: %d bytes (%.2f MB), threshold: %d bytes", 
+			t.Errorf("Excessive memory growth in error scenarios: %d bytes (%.2f MB), threshold: %d bytes",
 				memoryGrowth, float64(memoryGrowth)/1024/1024, maxGrowth)
 		}
 	})
-	
+
 	t.Run("ContextCancellationMemoryLeak", func(t *testing.T) {
 		// Test that context cancellation doesn't cause memory leaks
 		runtime.GC()
@@ -6069,18 +6069,18 @@ func TestMemoryLeakDetection(t *testing.T) {
 		runtime.ReadMemStats(&m1)
 		initialAlloc := m1.Alloc
 		initialGoroutines := runtime.NumGoroutine()
-		
+
 		// Run many operations that get cancelled
 		for i := 0; i < 50; i++ {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
-			
+
 			data := make([]uint32, 30)
 			for j := range data {
 				data[j] = uint32(j + i*30)
 			}
-			
+
 			provider := FixedProvider(data)
-			
+
 			// Long-running transform that respects context
 			transform := func(val uint32) (uint32, error) {
 				// Allocate memory for processing
@@ -6088,7 +6088,7 @@ func TestMemoryLeakDetection(t *testing.T) {
 				for k := range temp {
 					temp[k] = int64(val) * int64(k)
 				}
-				
+
 				// Long processing time to ensure cancellation
 				for j := 0; j < 100; j++ {
 					select {
@@ -6100,55 +6100,55 @@ func TestMemoryLeakDetection(t *testing.T) {
 				}
 				return val * 2, nil
 			}
-			
+
 			mapped := SliceMap(transform)(provider)(ParallelMap())
-			
+
 			// Start a goroutine to cancel after a short delay
 			go func() {
 				time.Sleep(5 * time.Millisecond)
 				cancel()
 			}()
-			
+
 			_, err := mapped()
-			
+
 			// Should get cancellation error
 			if err == nil {
 				t.Logf("Iteration %d: expected cancellation error but got none", i)
 			}
-			
+
 			cancel() // Ensure cleanup
-			
+
 			// Give time for goroutines to clean up
 			time.Sleep(20 * time.Millisecond)
-			
+
 			if i%10 == 0 {
 				runtime.GC()
 			}
 		}
-		
+
 		// Final cleanup and measurement
 		time.Sleep(100 * time.Millisecond)
 		runtime.GC()
 		runtime.GC()
-		
+
 		var m2 runtime.MemStats
 		runtime.ReadMemStats(&m2)
 		finalAlloc := m2.Alloc
 		finalGoroutines := runtime.NumGoroutine()
-		
+
 		memoryGrowth := int64(finalAlloc) - int64(initialAlloc)
 		goroutineGrowth := finalGoroutines - initialGoroutines
-		
-		t.Logf("Context cancellation - Memory growth: %d bytes (%.2f MB), Goroutine growth: %d", 
+
+		t.Logf("Context cancellation - Memory growth: %d bytes (%.2f MB), Goroutine growth: %d",
 			memoryGrowth, float64(memoryGrowth)/1024/1024, goroutineGrowth)
-		
+
 		// Memory and goroutine growth should be minimal
 		maxMemoryGrowth := int64(2 * 1024 * 1024) // 2MB threshold
 		if memoryGrowth > maxMemoryGrowth {
-			t.Errorf("Excessive memory growth with context cancellation: %d bytes (%.2f MB)", 
+			t.Errorf("Excessive memory growth with context cancellation: %d bytes (%.2f MB)",
 				memoryGrowth, float64(memoryGrowth)/1024/1024)
 		}
-		
+
 		maxGoroutineGrowth := 15
 		if goroutineGrowth > maxGoroutineGrowth {
 			t.Errorf("Excessive goroutine growth with context cancellation: %d goroutines", goroutineGrowth)
@@ -6159,7 +6159,7 @@ func TestMemoryLeakDetection(t *testing.T) {
 func TestResourceCleanupInErrorScenarios(t *testing.T) {
 	// Test that resources are properly cleaned up when errors occur during various operations
 	// This ensures that error scenarios don't cause memory leaks or resource accumulation
-	
+
 	t.Run("ProviderChainErrorResourceCleanup", func(t *testing.T) {
 		// Test that resources are cleaned up when provider chains fail
 		runtime.GC()
@@ -6167,11 +6167,11 @@ func TestResourceCleanupInErrorScenarios(t *testing.T) {
 		runtime.ReadMemStats(&m1)
 		initialAlloc := m1.Alloc
 		initialGoroutines := runtime.NumGoroutine()
-		
+
 		// Run operations that fail at different points in the chain
 		for i := 0; i < 100; i++ {
 			data := []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
-			
+
 			// Transform that fails on specific values with resource allocation
 			failingTransform := func(val uint32) (uint32, error) {
 				// Allocate memory for processing (should be cleaned up on error)
@@ -6179,11 +6179,11 @@ func TestResourceCleanupInErrorScenarios(t *testing.T) {
 				for j := range temp {
 					temp[j] = byte(j % 256)
 				}
-				
+
 				if val == 7 { // Fail on the 7th item
 					return 0, fmt.Errorf("intentional error on value %d", val)
 				}
-				
+
 				// Some processing work
 				result := val
 				for k := 0; k < 100; k++ {
@@ -6191,72 +6191,72 @@ func TestResourceCleanupInErrorScenarios(t *testing.T) {
 				}
 				return result + val, nil
 			}
-			
+
 			provider := FixedProvider(data)
 			mapped := SliceMap(failingTransform)(provider)(ParallelMap())
-			
+
 			_, err := mapped()
-			
+
 			if err == nil {
 				t.Errorf("Iteration %d: expected error but got none", i)
 				continue
 			}
-			
+
 			// Verify we got the expected error
 			if err.Error() != "intentional error on value 7" {
 				t.Errorf("Iteration %d: expected specific error, got %v", i, err)
 			}
-			
+
 			// Periodic cleanup to verify no accumulation
 			if i%20 == 0 {
 				time.Sleep(10 * time.Millisecond)
 				runtime.GC()
 			}
 		}
-		
+
 		// Final cleanup and measurement
 		time.Sleep(50 * time.Millisecond)
 		runtime.GC()
 		runtime.GC()
-		
+
 		var m2 runtime.MemStats
 		runtime.ReadMemStats(&m2)
 		finalAlloc := m2.Alloc
 		finalGoroutines := runtime.NumGoroutine()
-		
+
 		memoryGrowth := int64(finalAlloc) - int64(initialAlloc)
 		goroutineGrowth := finalGoroutines - initialGoroutines
-		
-		t.Logf("Provider chain error cleanup - Memory growth: %d bytes (%.2f MB), Goroutine growth: %d", 
+
+		t.Logf("Provider chain error cleanup - Memory growth: %d bytes (%.2f MB), Goroutine growth: %d",
 			memoryGrowth, float64(memoryGrowth)/1024/1024, goroutineGrowth)
-		
+
 		// Verify minimal resource growth
 		maxMemoryGrowth := int64(3 * 1024 * 1024) // 3MB threshold
 		if memoryGrowth > maxMemoryGrowth {
-			t.Errorf("Excessive memory growth in error scenarios: %d bytes (%.2f MB)", 
+			t.Errorf("Excessive memory growth in error scenarios: %d bytes (%.2f MB)",
 				memoryGrowth, float64(memoryGrowth)/1024/1024)
 		}
-		
+
 		maxGoroutineGrowth := 10
 		if goroutineGrowth > maxGoroutineGrowth {
 			t.Errorf("Excessive goroutine growth in error scenarios: %d goroutines", goroutineGrowth)
 		}
 	})
-	
+
 	t.Run("ParallelMapErrorResourceCleanup", func(t *testing.T) {
 		// Test resource cleanup when parallel operations fail
 		runtime.GC()
 		var m1 runtime.MemStats
 		runtime.ReadMemStats(&m1)
 		initialAlloc := m1.Alloc
-		
+
 		for iteration := 0; iteration < 50; iteration++ {
 			// Create larger dataset to stress parallel processing
 			data := make([]uint32, 50)
 			for i := range data {
 				data[i] = uint32(i + 1)
 			}
-			
+
 			// Transform that fails on multiple values with heavy resource usage
 			errorTransform := func(val uint32) (uint32, error) {
 				// Allocate significant memory per operation
@@ -6264,68 +6264,68 @@ func TestResourceCleanupInErrorScenarios(t *testing.T) {
 				for j := range temp {
 					temp[j] = int64(val) * int64(j)
 				}
-				
+
 				// Fail on multiple values to test various error timing
 				if val%13 == 0 { // Fail on values 13, 26, 39
 					return 0, fmt.Errorf("parallel error on value %d", val)
 				}
-				
+
 				// CPU-intensive work that should be cleaned up on error
 				result := val
 				for k := 0; k < 500; k++ {
 					result = (result*11 + 7) % 10007
 				}
-				
+
 				return result, nil
 			}
-			
+
 			provider := FixedProvider(data)
 			mapped := SliceMap(errorTransform)(provider)(ParallelMap())
-			
+
 			_, err := mapped()
-			
+
 			if err == nil {
 				t.Errorf("Iteration %d: expected error but got none", iteration)
 			}
-			
+
 			// Give time for goroutine cleanup
 			time.Sleep(5 * time.Millisecond)
-			
+
 			if iteration%10 == 0 {
 				runtime.GC()
 			}
 		}
-		
+
 		// Final cleanup and measurement
 		time.Sleep(100 * time.Millisecond)
 		runtime.GC()
 		runtime.GC()
-		
+
 		var m2 runtime.MemStats
 		runtime.ReadMemStats(&m2)
 		finalAlloc := m2.Alloc
-		
+
 		memoryGrowth := int64(finalAlloc) - int64(initialAlloc)
 		maxGrowth := int64(5 * 1024 * 1024) // 5MB threshold for parallel operations
-		
+
 		t.Logf("Parallel map error cleanup - Memory growth: %d bytes (%.2f MB)", memoryGrowth, float64(memoryGrowth)/1024/1024)
-		
+
 		if memoryGrowth > maxGrowth {
-			t.Errorf("Excessive memory growth in parallel error scenarios: %d bytes (%.2f MB)", 
+			t.Errorf("Excessive memory growth in parallel error scenarios: %d bytes (%.2f MB)",
 				memoryGrowth, float64(memoryGrowth)/1024/1024)
 		}
 	})
-	
+
 	t.Run("MidOperationErrorResourceCleanup", func(t *testing.T) {
 		// Test cleanup when errors occur in the middle of operations
 		runtime.GC()
 		var m1 runtime.MemStats
 		runtime.ReadMemStats(&m1)
 		initialAlloc := m1.Alloc
-		
+
 		for i := 0; i < 200; i++ {
 			data := []uint32{1, 2, 3, 4, 5}
-			
+
 			// Transform that fails partway through processing
 			midErrorTransform := func(val uint32) (uint32, error) {
 				// Allocate resources at the start
@@ -6333,12 +6333,12 @@ func TestResourceCleanupInErrorScenarios(t *testing.T) {
 				for j := range temp1 {
 					temp1[j] = float64(val) * float64(j) * 0.1
 				}
-				
+
 				// Start processing
 				result := val
 				for step := 0; step < 10; step++ {
 					result = result*3 + 1
-					
+
 					// Fail partway through for certain values
 					if val == 3 && step == 5 {
 						// Allocate more resources that should be cleaned up
@@ -6349,48 +6349,48 @@ func TestResourceCleanupInErrorScenarios(t *testing.T) {
 						return 0, fmt.Errorf("mid-operation error on value %d at step %d", val, step)
 					}
 				}
-				
+
 				return result, nil
 			}
-			
+
 			provider := FixedProvider(data)
 			mapped := SliceMap(midErrorTransform)(provider)()
-			
+
 			_, err := mapped()
-			
+
 			if err == nil {
 				t.Errorf("Iteration %d: expected mid-operation error but got none", i)
 			} else if !strings.Contains(err.Error(), "mid-operation error") {
 				t.Errorf("Iteration %d: expected mid-operation error, got %v", i, err)
 			}
-			
+
 			// Periodic cleanup
 			if i%25 == 0 {
 				time.Sleep(10 * time.Millisecond)
 				runtime.GC()
 			}
 		}
-		
+
 		// Final cleanup and measurement
 		time.Sleep(50 * time.Millisecond)
 		runtime.GC()
 		runtime.GC()
-		
+
 		var m2 runtime.MemStats
 		runtime.ReadMemStats(&m2)
 		finalAlloc := m2.Alloc
-		
+
 		memoryGrowth := int64(finalAlloc) - int64(initialAlloc)
 		maxGrowth := int64(4 * 1024 * 1024) // 4MB threshold
-		
+
 		t.Logf("Mid-operation error cleanup - Memory growth: %d bytes (%.2f MB)", memoryGrowth, float64(memoryGrowth)/1024/1024)
-		
+
 		if memoryGrowth > maxGrowth {
-			t.Errorf("Excessive memory growth in mid-operation error scenarios: %d bytes (%.2f MB)", 
+			t.Errorf("Excessive memory growth in mid-operation error scenarios: %d bytes (%.2f MB)",
 				memoryGrowth, float64(memoryGrowth)/1024/1024)
 		}
 	})
-	
+
 	t.Run("ErrorPropagationResourceCleanup", func(t *testing.T) {
 		// Test that error propagation doesn't leak resources
 		runtime.GC()
@@ -6398,14 +6398,14 @@ func TestResourceCleanupInErrorScenarios(t *testing.T) {
 		runtime.ReadMemStats(&m1)
 		initialAlloc := m1.Alloc
 		initialGoroutines := runtime.NumGoroutine()
-		
+
 		// Run operations with cascading errors
 		for i := 0; i < 30; i++ {
 			data := make([]uint32, 20)
 			for j := range data {
 				data[j] = uint32(j + 1 + i*20)
 			}
-			
+
 			// First transform that allocates resources
 			firstTransform := func(val uint32) (uint32, error) {
 				temp := make([]byte, 4096)
@@ -6414,7 +6414,7 @@ func TestResourceCleanupInErrorScenarios(t *testing.T) {
 				}
 				return val * 2, nil
 			}
-			
+
 			// Second transform that fails and should clean up resources
 			secondTransform := func(val uint32) (uint32, error) {
 				// Allocate more resources
@@ -6422,81 +6422,81 @@ func TestResourceCleanupInErrorScenarios(t *testing.T) {
 				for k := range temp {
 					temp[k] = int32(val) + int32(k)
 				}
-				
+
 				// Fail on even values (will be multiple values since first transform doubles)
 				if val%4 == 0 {
 					return 0, fmt.Errorf("error propagation test on value %d", val)
 				}
-				
+
 				return val + 100, nil
 			}
-			
+
 			provider := FixedProvider(data)
 			firstMapped := SliceMap(firstTransform)(provider)(ParallelMap())
-			
+
 			// Chain the operations
 			result, err := firstMapped()
 			if err != nil {
 				t.Errorf("Iteration %d: first transform should not error, got %v", i, err)
 				continue
 			}
-			
+
 			secondMapped := SliceMap(secondTransform)(FixedProvider(result))(ParallelMap())
 			_, err = secondMapped()
-			
+
 			if err == nil {
 				t.Errorf("Iteration %d: expected error from second transform but got none", i)
 			}
-			
+
 			// Allow cleanup time
 			time.Sleep(5 * time.Millisecond)
-			
+
 			if i%10 == 0 {
 				runtime.GC()
 			}
 		}
-		
+
 		// Final cleanup and measurement
 		time.Sleep(100 * time.Millisecond)
 		runtime.GC()
 		runtime.GC()
-		
+
 		var m2 runtime.MemStats
 		runtime.ReadMemStats(&m2)
 		finalAlloc := m2.Alloc
 		finalGoroutines := runtime.NumGoroutine()
-		
+
 		memoryGrowth := int64(finalAlloc) - int64(initialAlloc)
 		goroutineGrowth := finalGoroutines - initialGoroutines
-		
-		t.Logf("Error propagation cleanup - Memory growth: %d bytes (%.2f MB), Goroutine growth: %d", 
+
+		t.Logf("Error propagation cleanup - Memory growth: %d bytes (%.2f MB), Goroutine growth: %d",
 			memoryGrowth, float64(memoryGrowth)/1024/1024, goroutineGrowth)
-		
+
 		maxMemoryGrowth := int64(6 * 1024 * 1024) // 6MB threshold for chained operations
 		if memoryGrowth > maxMemoryGrowth {
-			t.Errorf("Excessive memory growth in error propagation: %d bytes (%.2f MB)", 
+			t.Errorf("Excessive memory growth in error propagation: %d bytes (%.2f MB)",
 				memoryGrowth, float64(memoryGrowth)/1024/1024)
 		}
-		
+
 		maxGoroutineGrowth := 12
 		if goroutineGrowth > maxGoroutineGrowth {
 			t.Errorf("Excessive goroutine growth in error propagation: %d goroutines", goroutineGrowth)
 		}
 	})
-	
+
 	t.Run("FilterOperationErrorResourceCleanup", func(t *testing.T) {
 		// Test resource cleanup when filter operations encounter errors
 		runtime.GC()
 		var m1 runtime.MemStats
 		runtime.ReadMemStats(&m1)
 		initialAlloc := m1.Alloc
-		
+
 		for i := 0; i < 100; i++ {
 			data := make([]uint32, 30)
 			for j := range data {
 				data[j] = uint32(j + 1)
 			}
-			
+
 			// Filter function that allocates resources and sometimes fails
 			errorFilter := func(val uint32) bool {
 				// Allocate memory during filtering
@@ -6504,49 +6504,49 @@ func TestResourceCleanupInErrorScenarios(t *testing.T) {
 				for k := range temp {
 					temp[k] = uint64(val) * uint64(k) * uint64(k)
 				}
-				
+
 				// Fail on specific values (this will be handled as a filter non-match, but resources should still be cleaned up)
 				if val == 15 {
 					// Even though this doesn't return an error, the resources should be cleaned up
 					// when the filter doesn't match
 					return false
 				}
-				
+
 				return val%3 == 0
 			}
-			
+
 			provider := FixedProvider(data)
 			filtered, err := First(provider, Filters(errorFilter))
-			
+
 			// This should succeed (finding value 3), but resource cleanup should still occur
 			if err != nil && err.Error() != "no item found" {
 				t.Errorf("Iteration %d: unexpected error %v", i, err)
 			}
-			
+
 			if err == nil && filtered != 3 {
 				t.Errorf("Iteration %d: expected 3, got %d", i, filtered)
 			}
-			
+
 			if i%20 == 0 {
 				runtime.GC()
 			}
 		}
-		
+
 		// Final cleanup and measurement
 		runtime.GC()
 		runtime.GC()
-		
+
 		var m2 runtime.MemStats
 		runtime.ReadMemStats(&m2)
 		finalAlloc := m2.Alloc
-		
+
 		memoryGrowth := int64(finalAlloc) - int64(initialAlloc)
 		maxGrowth := int64(2 * 1024 * 1024) // 2MB threshold for filter operations
-		
+
 		t.Logf("Filter operation cleanup - Memory growth: %d bytes (%.2f MB)", memoryGrowth, float64(memoryGrowth)/1024/1024)
-		
+
 		if memoryGrowth > maxGrowth {
-			t.Errorf("Excessive memory growth in filter error scenarios: %d bytes (%.2f MB)", 
+			t.Errorf("Excessive memory growth in filter error scenarios: %d bytes (%.2f MB)",
 				memoryGrowth, float64(memoryGrowth)/1024/1024)
 		}
 	})
@@ -6559,13 +6559,13 @@ func BenchmarkProviderErrorHandling(b *testing.B) {
 	for i := range data {
 		data[i] = uint32(i + 1)
 	}
-	
+
 	b.Run("SuccessfulProvider", func(b *testing.B) {
 		// Baseline: providers that never fail
 		successfulProvider := func() ([]uint32, error) {
 			return data, nil
 		}
-		
+
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			_, err := successfulProvider()
@@ -6574,12 +6574,12 @@ func BenchmarkProviderErrorHandling(b *testing.B) {
 			}
 		}
 	})
-	
+
 	b.Run("ErrorProvider", func(b *testing.B) {
 		// Error providers to measure error handling overhead
 		testError := errors.New("benchmark test error")
 		errorProvider := ErrorProvider[[]uint32](testError)
-		
+
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			_, err := errorProvider()
@@ -6588,13 +6588,13 @@ func BenchmarkProviderErrorHandling(b *testing.B) {
 			}
 		}
 	})
-	
+
 	b.Run("SliceMapWithErrors", func(b *testing.B) {
 		// Measure overhead of error handling in SliceMap operations
 		provider := func() ([]uint32, error) {
 			return data, nil
 		}
-		
+
 		// Transform that fails on every 10th item
 		errorTransform := func(val uint32) (uint32, error) {
 			if val%10 == 0 {
@@ -6602,7 +6602,7 @@ func BenchmarkProviderErrorHandling(b *testing.B) {
 			}
 			return val * 2, nil
 		}
-		
+
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			_, err := SliceMap(errorTransform)(provider)()()
@@ -6611,13 +6611,13 @@ func BenchmarkProviderErrorHandling(b *testing.B) {
 			}
 		}
 	})
-	
+
 	b.Run("ParallelMapWithErrors", func(b *testing.B) {
 		// Measure parallel error handling overhead
 		provider := func() ([]uint32, error) {
 			return data, nil
 		}
-		
+
 		// Transform that fails on multiple values
 		errorTransform := func(val uint32) (uint32, error) {
 			if val%5 == 0 {
@@ -6627,7 +6627,7 @@ func BenchmarkProviderErrorHandling(b *testing.B) {
 			time.Sleep(time.Microsecond)
 			return val * 3, nil
 		}
-		
+
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			_, err := SliceMap(errorTransform)(provider)(ParallelMap())()
@@ -6636,23 +6636,23 @@ func BenchmarkProviderErrorHandling(b *testing.B) {
 			}
 		}
 	})
-	
+
 	b.Run("ChainedProviderErrors", func(b *testing.B) {
 		// Measure error propagation overhead through provider chains
 		baseProvider := func() (uint32, error) {
 			return 42, nil
 		}
-		
+
 		// First transform succeeds
 		firstTransform := func(val uint32) (uint32, error) {
 			return val * 2, nil
 		}
-		
+
 		// Second transform fails
 		secondTransform := func(val uint32) (uint32, error) {
 			return 0, fmt.Errorf("chained error on value %d", val)
 		}
-		
+
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			chain := Map(secondTransform)(Map(firstTransform)(baseProvider))
@@ -6662,7 +6662,7 @@ func BenchmarkProviderErrorHandling(b *testing.B) {
 			}
 		}
 	})
-	
+
 	b.Run("MemoizedProviderWithErrors", func(b *testing.B) {
 		// Measure error handling overhead with memoization
 		callCount := int64(0)
@@ -6670,9 +6670,9 @@ func BenchmarkProviderErrorHandling(b *testing.B) {
 			atomic.AddInt64(&callCount, 1)
 			return 0, fmt.Errorf("memoized error call %d", callCount)
 		}
-		
+
 		memoized := Memoize(errorProvider)
-		
+
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			_, err := memoized()
@@ -6680,23 +6680,23 @@ func BenchmarkProviderErrorHandling(b *testing.B) {
 				b.Fatal("Expected error from memoized provider")
 			}
 		}
-		
+
 		// Verify memoization worked (should only call once)
 		if atomic.LoadInt64(&callCount) != 1 {
 			b.Fatalf("Expected memoized provider to be called once, got %d calls", callCount)
 		}
 	})
-	
+
 	b.Run("ContextCancellationErrors", func(b *testing.B) {
 		// Measure performance of context cancellation error handling
 		provider := func() ([]uint32, error) {
 			return data, nil
 		}
-		
+
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			ctx, cancel := context.WithCancel(context.Background())
-			
+
 			// Transform that checks for cancellation
 			cancelTransform := func(val uint32) (uint32, error) {
 				select {
@@ -6706,21 +6706,21 @@ func BenchmarkProviderErrorHandling(b *testing.B) {
 					return val * 2, nil
 				}
 			}
-			
+
 			// Cancel immediately to trigger error
 			cancel()
-			
+
 			_, err := SliceMap(cancelTransform)(provider)()()
 			if err == nil || !errors.Is(err, context.Canceled) {
 				b.Fatal("Expected context cancellation error")
 			}
 		}
 	})
-	
+
 	b.Run("ErrorRecoveryOverhead", func(b *testing.B) {
 		// Measure overhead of attempting operations after errors
 		var successCount, errorCount int64
-		
+
 		// Provider that alternates between success and error
 		alternatingProvider := func() (uint32, error) {
 			count := atomic.AddInt64(&successCount, 1)
@@ -6730,14 +6730,14 @@ func BenchmarkProviderErrorHandling(b *testing.B) {
 			}
 			return uint32(count), nil
 		}
-		
+
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			_, err := alternatingProvider()
 			// Don't fail on expected errors - just measure the overhead
 			_ = err
 		}
-		
+
 		b.Logf("Success: %d, Errors: %d", atomic.LoadInt64(&successCount), atomic.LoadInt64(&errorCount))
 	})
 }
@@ -6745,13 +6745,13 @@ func BenchmarkProviderErrorHandling(b *testing.B) {
 func BenchmarkContextCancellation(b *testing.B) {
 	// Benchmark measuring the performance overhead of context cancellation
 	// in parallel operations vs sequential operations
-	
+
 	// Setup test data
 	data := make([]uint32, 1000)
 	for i := range data {
 		data[i] = uint32(i + 1)
 	}
-	
+
 	b.Run("ParallelWithoutCancellation", func(b *testing.B) {
 		// Baseline: parallel execution without any cancellation
 		operation := func(u uint32) error {
@@ -6759,7 +6759,7 @@ func BenchmarkContextCancellation(b *testing.B) {
 			time.Sleep(10 * time.Microsecond)
 			return nil
 		}
-		
+
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			err := ExecuteForEachSlice(operation, ParallelExecute())(data)
@@ -6768,7 +6768,7 @@ func BenchmarkContextCancellation(b *testing.B) {
 			}
 		}
 	})
-	
+
 	b.Run("ParallelWithEarlyCancellation", func(b *testing.B) {
 		// Measure overhead when context cancellation occurs early in execution
 		operation := func(u uint32) error {
@@ -6780,7 +6780,7 @@ func BenchmarkContextCancellation(b *testing.B) {
 			time.Sleep(10 * time.Microsecond)
 			return nil
 		}
-		
+
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			err := ExecuteForEachSlice(operation, ParallelExecute())(data)
@@ -6789,7 +6789,7 @@ func BenchmarkContextCancellation(b *testing.B) {
 			}
 		}
 	})
-	
+
 	b.Run("ParallelWithLateCancellation", func(b *testing.B) {
 		// Measure overhead when context cancellation occurs late in execution
 		operation := func(u uint32) error {
@@ -6801,7 +6801,7 @@ func BenchmarkContextCancellation(b *testing.B) {
 			time.Sleep(10 * time.Microsecond)
 			return nil
 		}
-		
+
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			err := ExecuteForEachSlice(operation, ParallelExecute())(data)
@@ -6810,7 +6810,7 @@ func BenchmarkContextCancellation(b *testing.B) {
 			}
 		}
 	})
-	
+
 	b.Run("SequentialVsParallelCancellationOverhead", func(b *testing.B) {
 		// Compare cancellation overhead between sequential and parallel execution
 		erroringOperation := func(u uint32) error {
@@ -6820,7 +6820,7 @@ func BenchmarkContextCancellation(b *testing.B) {
 			time.Sleep(5 * time.Microsecond)
 			return nil
 		}
-		
+
 		b.Run("Sequential", func(b *testing.B) {
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
@@ -6830,7 +6830,7 @@ func BenchmarkContextCancellation(b *testing.B) {
 				}
 			}
 		})
-		
+
 		b.Run("Parallel", func(b *testing.B) {
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
@@ -6841,7 +6841,7 @@ func BenchmarkContextCancellation(b *testing.B) {
 			}
 		})
 	})
-	
+
 	b.Run("CancellationWithVaryingWorkload", func(b *testing.B) {
 		// Measure how cancellation performance scales with different workload intensities
 		lightWork := func(u uint32) error {
@@ -6851,15 +6851,15 @@ func BenchmarkContextCancellation(b *testing.B) {
 			time.Sleep(1 * time.Microsecond)
 			return nil
 		}
-		
+
 		heavyWork := func(u uint32) error {
 			if u == 100 {
-				return errors.New("cancellation trigger") 
+				return errors.New("cancellation trigger")
 			}
 			time.Sleep(100 * time.Microsecond)
 			return nil
 		}
-		
+
 		b.Run("LightWork", func(b *testing.B) {
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
@@ -6869,7 +6869,7 @@ func BenchmarkContextCancellation(b *testing.B) {
 				}
 			}
 		})
-		
+
 		b.Run("HeavyWork", func(b *testing.B) {
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
@@ -6880,18 +6880,18 @@ func BenchmarkContextCancellation(b *testing.B) {
 			}
 		})
 	})
-	
+
 	b.Run("ContextCancellationRaceConditions", func(b *testing.B) {
 		// Measure performance impact of race conditions during context cancellation
 		var completedCount int64
 		var cancelledCount int64
-		
+
 		operation := func(u uint32) error {
 			// Fail on item 10 to trigger cancellation
 			if u == 10 {
 				return errors.New("trigger cancellation")
 			}
-			
+
 			// Simulate work that might race with cancellation
 			select {
 			case <-time.After(5 * time.Microsecond):
@@ -6899,19 +6899,19 @@ func BenchmarkContextCancellation(b *testing.B) {
 				return nil
 			}
 		}
-		
+
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			atomic.StoreInt64(&completedCount, 0)
 			atomic.StoreInt64(&cancelledCount, 0)
-			
+
 			err := ExecuteForEachSlice(operation, ParallelExecute())(data)
 			if err == nil {
 				b.Fatal("Expected cancellation error")
 			}
 		}
-		
-		b.Logf("Avg completed: %d, cancelled: %d per iteration", 
+
+		b.Logf("Avg completed: %d, cancelled: %d per iteration",
 			atomic.LoadInt64(&completedCount)/int64(b.N),
 			atomic.LoadInt64(&cancelledCount)/int64(b.N))
 	})
@@ -6922,10 +6922,10 @@ func BenchmarkContextCancellation(b *testing.B) {
 func BenchmarkHighConcurrency(b *testing.B) {
 	// Test with different dataset sizes to understand scaling characteristics
 	dataSizes := []int{100, 1000, 10000, 50000}
-	
+
 	// Test with different concurrency levels
 	concurrencyLevels := []int{10, 100, 1000, 5000}
-	
+
 	for _, dataSize := range dataSizes {
 		for _, concurrency := range concurrencyLevels {
 			b.Run(fmt.Sprintf("DataSize_%d_Concurrency_%d", dataSize, concurrency), func(b *testing.B) {
@@ -6934,7 +6934,7 @@ func BenchmarkHighConcurrency(b *testing.B) {
 				for i := range data {
 					data[i] = uint32(i + 1)
 				}
-				
+
 				// CPU-intensive operation to simulate real workload
 				operation := func(val uint32) (uint32, error) {
 					// Simulate computational work
@@ -6944,12 +6944,12 @@ func BenchmarkHighConcurrency(b *testing.B) {
 					}
 					return result, nil
 				}
-				
+
 				// Create provider with data
 				provider := func() ([]uint32, error) {
 					return data, nil
 				}
-				
+
 				b.ResetTimer()
 				for i := 0; i < b.N; i++ {
 					// Use SliceMap with high concurrency
@@ -6961,14 +6961,14 @@ func BenchmarkHighConcurrency(b *testing.B) {
 			})
 		}
 	}
-	
+
 	b.Run("StressTestMemoryPressure", func(b *testing.B) {
 		// Test behavior under memory pressure with large datasets
 		largeData := make([]uint32, 100000)
 		for i := range largeData {
 			largeData[i] = uint32(i + 1)
 		}
-		
+
 		// Memory-intensive operation
 		operation := func(val uint32) ([]uint32, error) {
 			// Create temporary slice for each operation to increase memory pressure
@@ -6978,11 +6978,11 @@ func BenchmarkHighConcurrency(b *testing.B) {
 			}
 			return temp, nil
 		}
-		
+
 		provider := func() ([]uint32, error) {
 			return largeData, nil
 		}
-		
+
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			_, err := SliceMap[uint32, []uint32](operation)(provider)(ParallelMap())()
@@ -6991,23 +6991,23 @@ func BenchmarkHighConcurrency(b *testing.B) {
 			}
 		}
 	})
-	
+
 	b.Run("StressTestGoroutineOverhead", func(b *testing.B) {
 		// Test with extremely high goroutine count to measure overhead
 		smallData := make([]uint32, 10000)
 		for i := range smallData {
 			smallData[i] = uint32(i + 1)
 		}
-		
+
 		// Minimal operation to isolate goroutine overhead
 		operation := func(val uint32) (uint32, error) {
 			return val + 1, nil
 		}
-		
+
 		provider := func() ([]uint32, error) {
 			return smallData, nil
 		}
-		
+
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			_, err := SliceMap[uint32, uint32](operation)(provider)(ParallelMap())()
@@ -7015,18 +7015,18 @@ func BenchmarkHighConcurrency(b *testing.B) {
 				b.Fatalf("Unexpected error in goroutine overhead test: %v", err)
 			}
 		}
-		
+
 		// Report goroutine overhead metrics
 		b.ReportMetric(float64(len(smallData)), "goroutines/op")
 	})
-	
+
 	b.Run("StressTestChannelThroughput", func(b *testing.B) {
 		// Test channel throughput under high load
 		mediumData := make([]uint32, 5000)
 		for i := range mediumData {
 			mediumData[i] = uint32(i + 1)
 		}
-		
+
 		// Operation that stresses channel communication
 		var channelOps int64
 		operation := func(val uint32) (uint32, error) {
@@ -7035,11 +7035,11 @@ func BenchmarkHighConcurrency(b *testing.B) {
 			time.Sleep(time.Nanosecond * 100)
 			return val * 2, nil
 		}
-		
+
 		provider := func() ([]uint32, error) {
 			return mediumData, nil
 		}
-		
+
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			atomic.StoreInt64(&channelOps, 0)
@@ -7048,10 +7048,10 @@ func BenchmarkHighConcurrency(b *testing.B) {
 				b.Fatalf("Unexpected error in channel throughput test: %v", err)
 			}
 		}
-		
+
 		b.ReportMetric(float64(atomic.LoadInt64(&channelOps))/float64(b.N), "channel_ops/iteration")
 	})
-	
+
 	b.Run("StressTestRaceConditionDetection", func(b *testing.B) {
 		// Stress test specifically designed to trigger race conditions if they exist
 		sharedCounter := int64(0)
@@ -7059,7 +7059,7 @@ func BenchmarkHighConcurrency(b *testing.B) {
 		for i := range data {
 			data[i] = uint32(i + 1)
 		}
-		
+
 		// Operation that might create race conditions with shared state
 		operation := func(val uint32) (uint32, error) {
 			// Intentionally create potential race condition scenarios
@@ -7071,11 +7071,11 @@ func BenchmarkHighConcurrency(b *testing.B) {
 			atomic.StoreInt64(&sharedCounter, current)
 			return val, nil
 		}
-		
+
 		provider := func() ([]uint32, error) {
 			return data, nil
 		}
-		
+
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			atomic.StoreInt64(&sharedCounter, 0)
@@ -7084,7 +7084,7 @@ func BenchmarkHighConcurrency(b *testing.B) {
 				b.Fatalf("Unexpected error in race condition detection test: %v", err)
 			}
 		}
-		
+
 		b.ReportMetric(float64(atomic.LoadInt64(&sharedCounter))/float64(b.N), "final_counter/iteration")
 	})
 }
@@ -7098,13 +7098,13 @@ func BenchmarkMemoryProfileProviderAllocation(b *testing.B) {
 	// Benchmark memory allocations in provider chains
 	// Use with: go test -bench=BenchmarkMemoryProfileProviderAllocation -memprofile=provider_mem.prof
 	b.ReportAllocs()
-	
+
 	dataSize := 10000
 	data := make([]uint32, dataSize)
 	for i := range data {
 		data[i] = uint32(i + 1)
 	}
-	
+
 	// Memory-allocating provider
 	provider := func() ([]uint32, error) {
 		// Create new slice each time to track allocations
@@ -7112,7 +7112,7 @@ func BenchmarkMemoryProfileProviderAllocation(b *testing.B) {
 		copy(result, data)
 		return result, nil
 	}
-	
+
 	// Memory-intensive transform
 	transform := func(val uint32) ([]byte, error) {
 		// Allocate bytes to track memory patterns
@@ -7122,7 +7122,7 @@ func BenchmarkMemoryProfileProviderAllocation(b *testing.B) {
 		}
 		return result, nil
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		mapped := SliceMap[uint32, []byte](transform)(provider)()
@@ -7137,7 +7137,7 @@ func BenchmarkMemoryProfileProviderChainComposition(b *testing.B) {
 	// Benchmark memory usage in complex provider chains
 	// Use with: go test -bench=BenchmarkMemoryProfileProviderChainComposition -memprofile=chain_mem.prof
 	b.ReportAllocs()
-	
+
 	// Multi-stage provider chain with memory allocations at each stage
 	stage1 := func() ([]uint32, error) {
 		data := make([]uint32, 5000)
@@ -7146,12 +7146,12 @@ func BenchmarkMemoryProfileProviderChainComposition(b *testing.B) {
 		}
 		return data, nil
 	}
-	
+
 	stage2 := func(val uint32) (string, error) {
 		// Convert to string with padding
 		return fmt.Sprintf("value_%08d_padded_data", val), nil
 	}
-	
+
 	stage3 := func(val string) (map[string]interface{}, error) {
 		// Create map with multiple allocations
 		result := make(map[string]interface{})
@@ -7160,7 +7160,7 @@ func BenchmarkMemoryProfileProviderChainComposition(b *testing.B) {
 		result["hash"] = make([]byte, 16) // Additional allocation
 		return result, nil
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		chain := SliceMap[string, map[string]interface{}](stage3)(SliceMap[uint32, string](stage2)(stage1)())()
@@ -7175,20 +7175,20 @@ func BenchmarkMemoryProfileParallelProcessing(b *testing.B) {
 	// Benchmark memory usage in parallel processing scenarios
 	// Use with: go test -bench=BenchmarkMemoryProfileParallelProcessing -memprofile=parallel_mem.prof
 	b.ReportAllocs()
-	
+
 	dataSize := 20000
 	data := make([]uint32, dataSize)
 	for i := range data {
 		data[i] = uint32(i + 1)
 	}
-	
+
 	provider := func() ([]uint32, error) {
 		// Create new slice for each benchmark iteration
 		result := make([]uint32, len(data))
 		copy(result, data)
 		return result, nil
 	}
-	
+
 	// Memory-heavy operation for parallel processing
 	operation := func(val uint32) ([]int64, error) {
 		// Allocate different sized slices based on input
@@ -7199,7 +7199,7 @@ func BenchmarkMemoryProfileParallelProcessing(b *testing.B) {
 		}
 		return result, nil
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		parallel, err := SliceMap[uint32, []int64](operation)(provider)(ParallelMap())()
@@ -7214,7 +7214,7 @@ func BenchmarkMemoryProfileMemoization(b *testing.B) {
 	// Benchmark memory usage patterns in memoization
 	// Use with: go test -bench=BenchmarkMemoryProfileMemoization -memprofile=memo_mem.prof
 	b.ReportAllocs()
-	
+
 	// Expensive computation that allocates memory
 	computeProvider := func(input uint32) Provider[[]string] {
 		return func() ([]string, error) {
@@ -7226,13 +7226,13 @@ func BenchmarkMemoryProfileMemoization(b *testing.B) {
 			return result, nil
 		}
 	}
-	
+
 	// Test both memoized and non-memoized versions
 	b.Run("WithMemoization", func(b *testing.B) {
 		b.ReportAllocs()
-		
+
 		memoized := Memoize(computeProvider(42))
-		
+
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			_, err := memoized()
@@ -7241,10 +7241,10 @@ func BenchmarkMemoryProfileMemoization(b *testing.B) {
 			}
 		}
 	})
-	
+
 	b.Run("WithoutMemoization", func(b *testing.B) {
 		b.ReportAllocs()
-		
+
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			provider := computeProvider(42)
@@ -7258,114 +7258,114 @@ func BenchmarkMemoryProfileMemoization(b *testing.B) {
 
 func TestEmptySliceOperations(t *testing.T) {
 	// Test how slice operations handle empty slices as edge cases
-	
+
 	t.Run("SliceMapWithEmptySlice", func(t *testing.T) {
 		emptyProvider := FixedProvider([]uint32{})
 		mappedProvider := SliceMap[uint32, uint32](byTwo)(emptyProvider)()
-		
+
 		result, err := mappedProvider()
 		if err != nil {
 			t.Errorf("Expected no error with empty slice, got: %s", err)
 		}
-		
+
 		if result == nil {
 			t.Errorf("Expected empty slice, got nil")
 		}
-		
+
 		if len(result) != 0 {
 			t.Errorf("Expected empty result slice, got length %d", len(result))
 		}
 	})
-	
+
 	t.Run("ParallelSliceMapWithEmptySlice", func(t *testing.T) {
 		emptyProvider := FixedProvider([]uint32{})
 		mappedProvider := SliceMap[uint32, uint32](byTwo)(emptyProvider)(ParallelMap())
-		
+
 		result, err := mappedProvider()
 		if err != nil {
 			t.Errorf("Expected no error with empty slice, got: %s", err)
 		}
-		
+
 		if result == nil {
 			t.Errorf("Expected empty slice, got nil")
 		}
-		
+
 		if len(result) != 0 {
 			t.Errorf("Expected empty result slice, got length %d", len(result))
 		}
 	})
-	
+
 	t.Run("ForEachSliceWithEmptySlice", func(t *testing.T) {
 		emptyProvider := FixedProvider([]uint32{})
 		operationCalled := false
-		
+
 		err := ForEachSlice(emptyProvider, func(u uint32) error {
 			operationCalled = true
 			return nil
 		})
-		
+
 		if err != nil {
 			t.Errorf("Expected no error with empty slice, got: %s", err)
 		}
-		
+
 		if operationCalled {
 			t.Errorf("Operation should not be called on empty slice")
 		}
 	})
-	
+
 	t.Run("ParallelForEachSliceWithEmptySlice", func(t *testing.T) {
 		emptyProvider := FixedProvider([]uint32{})
 		operationCalled := false
-		
+
 		err := ForEachSlice(emptyProvider, func(u uint32) error {
 			operationCalled = true
 			return nil
 		}, ParallelExecute())
-		
+
 		if err != nil {
 			t.Errorf("Expected no error with empty slice, got: %s", err)
 		}
-		
+
 		if operationCalled {
 			t.Errorf("Operation should not be called on empty slice")
 		}
 	})
-	
+
 	t.Run("MergeSliceProviderWithEmptySlices", func(t *testing.T) {
 		emptyProvider1 := FixedProvider([]uint32{})
 		emptyProvider2 := FixedProvider([]uint32{})
-		
+
 		merged := MergeSliceProvider(emptyProvider1, emptyProvider2)
 		result, err := merged()
-		
+
 		if err != nil {
 			t.Errorf("Expected no error merging empty slices, got: %s", err)
 		}
-		
+
 		if result == nil {
 			t.Errorf("Expected empty slice, got nil")
 		}
-		
+
 		if len(result) != 0 {
 			t.Errorf("Expected empty merged slice, got length %d", len(result))
 		}
 	})
-	
+
 	t.Run("MergeSliceProviderEmptyWithNonEmpty", func(t *testing.T) {
 		emptyProvider := FixedProvider([]uint32{})
 		nonEmptyProvider := FixedProvider([]uint32{1, 2, 3})
-		
+
 		merged := MergeSliceProvider(emptyProvider, nonEmptyProvider)
 		result, err := merged()
-		
+
 		if err != nil {
 			t.Errorf("Expected no error merging empty with non-empty, got: %s", err)
 		}
-		
+
 		if len(result) != 3 {
 			t.Errorf("Expected merged slice length 3, got %d", len(result))
 		}
-		
+
 		expectedValues := []uint32{1, 2, 3}
 		for i, expected := range expectedValues {
 			if result[i] != expected {
@@ -7373,44 +7373,44 @@ func TestEmptySliceOperations(t *testing.T) {
 			}
 		}
 	})
-	
+
 	t.Run("ToSliceProviderWithEmptyProvider", func(t *testing.T) {
 		// Test edge case where single item provider might have issues with empty creation
 		singleProvider := ErrorProvider[uint32](fmt.Errorf("no data available"))
 		sliceProvider := ToSliceProvider(singleProvider)
-		
+
 		_, err := sliceProvider()
 		if err == nil {
 			t.Errorf("Expected error to be propagated from empty single provider")
 		}
 	})
-	
+
 	t.Run("FirstWithEmptySlice", func(t *testing.T) {
 		emptyProvider := FixedProvider([]uint32{})
-		
+
 		_, err := First(emptyProvider, Filters(func(val uint32) bool { return true }))
 		if err == nil {
 			t.Errorf("Expected error when finding first in empty slice")
 		}
 	})
-	
+
 	t.Run("ExecuteForEachSliceWithEmptySlice", func(t *testing.T) {
 		emptySlice := []uint32{}
 		operationCalled := false
-		
+
 		operation := func(u uint32) error {
 			operationCalled = true
 			return nil
 		}
-		
+
 		// This should process an empty slice without issues
 		processor := ExecuteForEachSlice[uint32](operation)
 		err := processor(emptySlice)
-		
+
 		if err != nil {
 			t.Errorf("Expected no error with empty slice, got: %s", err)
 		}
-		
+
 		if operationCalled {
 			t.Errorf("Operation should not be called on empty slice")
 		}
@@ -7421,18 +7421,18 @@ func BenchmarkMemoryProfileErrorHandling(b *testing.B) {
 	// Benchmark memory allocations during error scenarios
 	// Use with: go test -bench=BenchmarkMemoryProfileErrorHandling -memprofile=error_mem.prof
 	b.ReportAllocs()
-	
+
 	data := make([]uint32, 1000)
 	for i := range data {
 		data[i] = uint32(i + 1)
 	}
-	
+
 	provider := func() ([]uint32, error) {
 		result := make([]uint32, len(data))
 		copy(result, data)
 		return result, nil
 	}
-	
+
 	// Operation that fails for certain values
 	faultyOperation := func(val uint32) (string, error) {
 		if val%100 == 0 {
@@ -7442,7 +7442,7 @@ func BenchmarkMemoryProfileErrorHandling(b *testing.B) {
 		// Normal processing with allocation
 		return fmt.Sprintf("processed_value_%d", val), nil
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		// Execute and expect some errors
@@ -7498,7 +7498,7 @@ func TestZeroValueAndNilPointerScenarios(t *testing.T) {
 		// Test SliceMap with empty strings in slice
 		emptyStringsSlice := []string{"", "non-empty", "", "another"}
 		provider := FixedProvider(emptyStringsSlice)
-		
+
 		// Transform empty strings to indicate their emptiness
 		mapped := SliceMap[string, string](func(s string) (string, error) {
 			if s == "" {
@@ -7536,7 +7536,7 @@ func TestZeroValueAndNilPointerScenarios(t *testing.T) {
 		// Test filtering with zero-value booleans
 		boolSlice := []bool{false, true, false, true, false}
 		boolProvider := FixedProvider(boolSlice)
-		
+
 		// Count false values (zero values)
 		falseCount := 0
 		err = ForEachSlice[bool](boolProvider, func(b bool) error {
@@ -7545,7 +7545,7 @@ func TestZeroValueAndNilPointerScenarios(t *testing.T) {
 			}
 			return nil
 		})
-		
+
 		if err != nil {
 			t.Errorf("Expected no error counting false values, got: %v", err)
 		}
@@ -7566,12 +7566,12 @@ func TestZeroValueAndNilPointerScenarios(t *testing.T) {
 		// Zero-value struct
 		zeroStruct := TestStruct{}
 		zeroStructProvider := FixedProvider(zeroStruct)
-		
+
 		result, err := zeroStructProvider()
 		if err != nil {
 			t.Errorf("Expected no error with zero-value struct, got: %v", err)
 		}
-		
+
 		// Verify all fields are zero values
 		if result.ID != 0 {
 			t.Errorf("Expected zero ID, got: %d", result.ID)
@@ -7605,7 +7605,7 @@ func TestZeroValueAndNilPointerScenarios(t *testing.T) {
 		// Test zero-value slice (nil slice)
 		var zeroSlice []int
 		zeroSliceProvider := FixedProvider(zeroSlice)
-		
+
 		result, err := zeroSliceProvider()
 		if err != nil {
 			t.Errorf("Expected no error with zero-value slice, got: %v", err)
@@ -7636,7 +7636,7 @@ func TestZeroValueAndNilPointerScenarios(t *testing.T) {
 		// Test zero-value map
 		var zeroMap map[string]int
 		zeroMapProvider := FixedProvider(zeroMap)
-		
+
 		mapResult, err := zeroMapProvider()
 		if err != nil {
 			t.Errorf("Expected no error with zero-value map, got: %v", err)
@@ -7688,19 +7688,19 @@ func TestZeroValueAndNilPointerScenarios(t *testing.T) {
 		// Test safe access to nil pointer fields
 		mappedProvider := Map[StructWithPointers, string](func(s StructWithPointers) (string, error) {
 			var parts []string
-			
+
 			if s.IntPtr == nil {
 				parts = append(parts, "IntPtr:nil")
 			} else {
 				parts = append(parts, fmt.Sprintf("IntPtr:%d", *s.IntPtr))
 			}
-			
+
 			if s.StringPtr == nil {
 				parts = append(parts, "StringPtr:nil")
 			} else {
 				parts = append(parts, fmt.Sprintf("StringPtr:%s", *s.StringPtr))
 			}
-			
+
 			return fmt.Sprintf("{%s}", strings.Join(parts, ",")), nil
 		})(provider)
 
@@ -7718,7 +7718,7 @@ func TestZeroValueAndNilPointerScenarios(t *testing.T) {
 		// Test zero-value interfaces (nil interface)
 		var zeroInterface interface{}
 		zeroInterfaceProvider := FixedProvider(zeroInterface)
-		
+
 		result, err := zeroInterfaceProvider()
 		if err != nil {
 			t.Errorf("Expected no error with zero-value interface, got: %v", err)
@@ -7748,7 +7748,7 @@ func TestZeroValueAndNilPointerScenarios(t *testing.T) {
 		// Test zero-value channel (nil channel)
 		var zeroChannel chan int
 		zeroChannelProvider := FixedProvider(zeroChannel)
-		
+
 		result, err := zeroChannelProvider()
 		if err != nil {
 			t.Errorf("Expected no error with zero-value channel, got: %v", err)
@@ -7792,7 +7792,7 @@ func TestZeroValueAndNilPointerScenarios(t *testing.T) {
 		}
 
 		provider := FixedProvider([]MixedStruct{mixed, mixed, mixed})
-		
+
 		// Process slice of structs with mixed zero/nil values
 		processed := SliceMap[MixedStruct, int](func(m MixedStruct) (int, error) {
 			// Count the number of zero/nil fields
@@ -7816,7 +7816,7 @@ func TestZeroValueAndNilPointerScenarios(t *testing.T) {
 		if err != nil {
 			t.Errorf("Expected no error processing mixed zero/nil values, got: %v", err)
 		}
-		
+
 		// Each struct should have 4 zero/nil fields
 		expected := []int{4, 4, 4}
 		if len(result) != len(expected) {
@@ -7836,60 +7836,60 @@ func TestGoroutineLeakDetectorUsage(t *testing.T) {
 	t.Run("DemonstrateGoroutineLeakDetectionPattern", func(t *testing.T) {
 		// This test demonstrates the pattern that should be used with testutil.GoroutineLeakDetector
 		// Note: Due to circular import restrictions, we simulate the pattern here
-		
+
 		// Record initial goroutine count (simulating testutil.NewGoroutineLeakDetector)
 		initialGoroutines := runtime.NumGoroutine()
-		
+
 		// Create a cleanup function that checks for leaks
 		checkForLeaks := func() {
 			// Give goroutines time to cleanup
 			time.Sleep(time.Millisecond * 10)
 			runtime.GC()
 			time.Sleep(time.Millisecond * 10)
-			
+
 			currentCount := runtime.NumGoroutine()
 			if currentCount > initialGoroutines {
 				t.Errorf("Goroutine leak detected: started with %d, ended with %d", initialGoroutines, currentCount)
 			}
 		}
 		defer checkForLeaks()
-		
+
 		// Test parallel execution that should properly clean up goroutines
 		data := make([]uint32, 100)
 		for i := range data {
 			data[i] = uint32(i + 1)
 		}
 		provider := FixedProvider(data)
-		
+
 		// Transform function that simulates some work
 		transform := func(val uint32) (uint32, error) {
 			time.Sleep(time.Microsecond * 5) // Minimal delay
 			return val * 2, nil
 		}
-		
+
 		// Use ParallelMap which creates goroutines internally
 		transformed := SliceMap[uint32, uint32](transform)(provider)(ParallelMap())
-		
+
 		result, err := transformed()
 		if err != nil {
 			t.Errorf("ParallelMap should not fail: %v", err)
 		}
-		
+
 		// Verify the transformation worked
 		if len(result) != len(data) {
 			t.Errorf("Expected %d results, got %d", len(data), len(result))
 		}
-		
+
 		for i, val := range result {
 			expected := data[i] * 2
 			if val != expected {
 				t.Errorf("Index %d: expected %d, got %d", i, expected, val)
 			}
 		}
-		
+
 		t.Logf("Goroutine leak detection pattern demonstrated successfully")
 	})
-	
+
 	t.Run("DemonstrateProperGoroutineCleanupInMemoization", func(t *testing.T) {
 		initialGoroutines := runtime.NumGoroutine()
 		defer func() {
@@ -7897,12 +7897,12 @@ func TestGoroutineLeakDetectorUsage(t *testing.T) {
 			for i := 0; i < 3; i++ {
 				runtime.GC()
 				time.Sleep(time.Millisecond * 10)
-				
+
 				currentCount := runtime.NumGoroutine()
 				if currentCount <= initialGoroutines {
 					return
 				}
-				
+
 				if i == 2 {
 					t.Errorf("Goroutine leak in memoization test: %d -> %d", initialGoroutines, currentCount)
 				}
@@ -7913,11 +7913,11 @@ func TestGoroutineLeakDetectorUsage(t *testing.T) {
 		var callCount int64
 		expensiveProvider := func() (uint32, error) {
 			atomic.AddInt64(&callCount, 1)
-			
+
 			// Simulate concurrent work
 			var wg sync.WaitGroup
 			results := make([]uint32, 3)
-			
+
 			for i := 0; i < 3; i++ {
 				wg.Add(1)
 				go func(idx int) {
@@ -7927,7 +7927,7 @@ func TestGoroutineLeakDetectorUsage(t *testing.T) {
 				}(i)
 			}
 			wg.Wait()
-			
+
 			var sum uint32
 			for _, v := range results {
 				sum += v
@@ -7936,13 +7936,13 @@ func TestGoroutineLeakDetectorUsage(t *testing.T) {
 		}
 
 		memoized := Memoize(expensiveProvider)
-		
+
 		// Call from multiple goroutines concurrently
 		const numCalls = 10
 		var wg sync.WaitGroup
 		results := make([]uint32, numCalls)
 		errors := make([]error, numCalls)
-		
+
 		for i := 0; i < numCalls; i++ {
 			wg.Add(1)
 			go func(idx int) {
@@ -7953,14 +7953,14 @@ func TestGoroutineLeakDetectorUsage(t *testing.T) {
 			}(i)
 		}
 		wg.Wait()
-		
+
 		// Verify no errors and consistent results
 		for i, err := range errors {
 			if err != nil {
 				t.Errorf("Call %d failed: %v", i, err)
 			}
 		}
-		
+
 		if len(results) > 0 {
 			expected := results[0]
 			for i, result := range results {
@@ -7969,12 +7969,229 @@ func TestGoroutineLeakDetectorUsage(t *testing.T) {
 				}
 			}
 		}
-		
+
 		// Verify memoization worked (expensive function called only once)
 		if callCount != 1 {
 			t.Errorf("Expected memoized function called once, got %d", callCount)
 		}
-		
+
 		t.Logf("Memoization goroutine cleanup pattern demonstrated successfully")
+	})
+}
+
+func TestGoroutineCleanup(t *testing.T) {
+	// Test that operations properly clean up goroutines and don't leak them
+
+	t.Run("ParallelMap with successful execution", func(t *testing.T) {
+		// Get baseline goroutine count
+		runtime.GC() // Force GC to clean up any lingering goroutines
+		time.Sleep(10 * time.Millisecond) // Brief pause for cleanup
+		initialGoroutines := runtime.NumGoroutine()
+
+		// Execute a parallel operation that creates goroutines
+		data := make([]uint32, 50) // Enough to trigger goroutine creation
+		for i := range data {
+			data[i] = uint32(i)
+		}
+
+		provider := FixedProvider(data)
+		transformer := func(n uint32) (uint32, error) {
+			time.Sleep(1 * time.Millisecond) // Small delay to ensure goroutines exist
+			return n * 2, nil
+		}
+
+		_, err := SliceMap[uint32, uint32](transformer)(provider)(ParallelMap())()
+		if err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+
+		// Allow time for goroutine cleanup
+		runtime.GC()
+		time.Sleep(50 * time.Millisecond) // Sufficient time for cleanup
+
+		// Check that goroutines were cleaned up
+		finalGoroutines := runtime.NumGoroutine()
+		if finalGoroutines > initialGoroutines {
+			t.Errorf("Goroutine leak detected: initial=%d, final=%d, leaked=%d",
+				initialGoroutines, finalGoroutines, finalGoroutines-initialGoroutines)
+		}
+	})
+
+	t.Run("ParallelMap with early error termination", func(t *testing.T) {
+		// Test cleanup when operations are cancelled due to error
+		runtime.GC()
+		time.Sleep(10 * time.Millisecond)
+		initialGoroutines := runtime.NumGoroutine()
+
+		data := make([]uint32, 100) // Large dataset to ensure multiple goroutines
+		for i := range data {
+			data[i] = uint32(i)
+		}
+
+		provider := FixedProvider(data)
+		transformer := func(n uint32) (uint32, error) {
+			time.Sleep(2 * time.Millisecond) // Delay to ensure goroutines are active
+			if n == 10 { // Error on a specific value
+				return 0, fmt.Errorf("test error") // Return error instead of panic
+			}
+			return n * 2, nil
+		}
+
+		// Execute with early error
+		_, err := SliceMap[uint32, uint32](transformer)(provider)(ParallelMap())()
+
+		// Should get an error due to the failing transformer
+		if err == nil {
+			t.Log("Expected error from transformer, but got none")
+		}
+
+		// Allow time for goroutine cleanup after error
+		runtime.GC()
+		time.Sleep(100 * time.Millisecond) // Extra time for error cleanup
+
+		finalGoroutines := runtime.NumGoroutine()
+		if finalGoroutines > initialGoroutines {
+			t.Errorf("Goroutine leak detected after error: initial=%d, final=%d, leaked=%d",
+				initialGoroutines, finalGoroutines, finalGoroutines-initialGoroutines)
+		}
+	})
+
+	t.Run("ExecuteForEach with parallel execution", func(t *testing.T) {
+		// Test ExecuteForEach goroutine cleanup
+		runtime.GC()
+		time.Sleep(10 * time.Millisecond)
+		initialGoroutines := runtime.NumGoroutine()
+
+		data := make([]uint32, 30)
+		for i := range data {
+			data[i] = uint32(i)
+		}
+
+		executed := make([]bool, len(data))
+		var executedMutex sync.Mutex
+
+		operator := func(n uint32) error {
+			time.Sleep(2 * time.Millisecond) // Ensure goroutines exist
+			executedMutex.Lock()
+			executed[n] = true
+			executedMutex.Unlock()
+			return nil
+		}
+
+		err := ExecuteForEachSlice(operator, ParallelExecute())(data)
+		if err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+
+		// Verify all operations executed
+		for i, ex := range executed {
+			if !ex {
+				t.Errorf("Operation %d was not executed", i)
+			}
+		}
+
+		// Allow cleanup
+		runtime.GC()
+		time.Sleep(50 * time.Millisecond)
+
+		finalGoroutines := runtime.NumGoroutine()
+		if finalGoroutines > initialGoroutines {
+			t.Errorf("Goroutine leak in ExecuteForEach: initial=%d, final=%d, leaked=%d",
+				initialGoroutines, finalGoroutines, finalGoroutines-initialGoroutines)
+		}
+	})
+
+	t.Run("Context cancellation cleanup", func(t *testing.T) {
+		// Test that cancelled operations properly clean up goroutines
+		runtime.GC()
+		time.Sleep(10 * time.Millisecond)
+		initialGoroutines := runtime.NumGoroutine()
+
+		data := make([]uint32, 100) // Large dataset
+		for i := range data {
+			data[i] = uint32(i)
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+		defer cancel()
+
+		provider := func() ([]uint32, error) {
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			default:
+				return data, nil
+			}
+		}
+
+		transformer := func(n uint32) (uint32, error) {
+			select {
+			case <-ctx.Done():
+				return 0, ctx.Err() // Return context error
+			default:
+				time.Sleep(20 * time.Millisecond) // Longer than context timeout
+				return n * 2, nil
+			}
+		}
+
+		// This should timeout and cancel
+		_, err := SliceMap[uint32, uint32](transformer)(provider)(ParallelMap())()
+
+		// Should get timeout error
+		if err == nil {
+			t.Log("Expected timeout error, but operation completed")
+		}
+
+		// Cancel to ensure cleanup
+		cancel()
+
+		// Allow extra time for cancelled goroutine cleanup
+		runtime.GC()
+		time.Sleep(100 * time.Millisecond)
+
+		finalGoroutines := runtime.NumGoroutine()
+		if finalGoroutines > initialGoroutines {
+			t.Errorf("Goroutine leak after cancellation: initial=%d, final=%d, leaked=%d",
+				initialGoroutines, finalGoroutines, finalGoroutines-initialGoroutines)
+		}
+	})
+
+	t.Run("Multiple sequential operations cleanup", func(t *testing.T) {
+		// Test that multiple operations don't accumulate goroutines
+		runtime.GC()
+		time.Sleep(10 * time.Millisecond)
+		initialGoroutines := runtime.NumGoroutine()
+
+		for iteration := 0; iteration < 10; iteration++ {
+			data := make([]uint32, 20)
+			for i := range data {
+				data[i] = uint32(i + iteration*20)
+			}
+
+			provider := FixedProvider(data)
+			transformer := func(n uint32) (uint32, error) {
+				time.Sleep(1 * time.Millisecond)
+				return n + 100, nil
+			}
+
+			_, err := SliceMap[uint32, uint32](transformer)(provider)(ParallelMap())()
+			if err != nil {
+				t.Fatalf("Unexpected error in iteration %d: %s", iteration, err)
+			}
+
+			// Brief cleanup between iterations
+			runtime.GC()
+			time.Sleep(5 * time.Millisecond)
+		}
+
+		// Final cleanup
+		runtime.GC()
+		time.Sleep(50 * time.Millisecond)
+
+		finalGoroutines := runtime.NumGoroutine()
+		if finalGoroutines > initialGoroutines {
+			t.Errorf("Goroutine accumulation detected: initial=%d, final=%d, accumulated=%d",
+				initialGoroutines, finalGoroutines, finalGoroutines-initialGoroutines)
+		}
 	})
 }

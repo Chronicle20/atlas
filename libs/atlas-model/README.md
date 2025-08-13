@@ -241,12 +241,149 @@ The project uses GitHub Actions for automated testing:
 - Memory profiles (30-day retention on PRs, 90-day on main)
 - Coverage reports
 
-### Coverage Requirements
+### Test Coverage Requirements
 
-- **Minimum Coverage**: 75% overall
-- **Critical Paths**: >90% coverage for core provider operations
-- **Error Handling**: All error paths must be tested
-- **Edge Cases**: Comprehensive testing of boundary conditions
+The project maintains strict test coverage requirements to ensure reliability and production readiness.
+
+#### Overall Coverage Targets
+
+- **Minimum Overall Coverage**: 75% across all packages
+- **Critical Paths Coverage**: >90% for core provider operations and parallel execution functions
+- **New Code Coverage**: 100% coverage required for all new functions and methods
+- **Package-Specific Targets**:
+  - `model` package: Minimum 80% coverage
+  - `async` package: Minimum 85% coverage (higher due to concurrency complexity)
+  - `testutil` package: Minimum 90% coverage
+
+#### Coverage Categories
+
+##### 1. Functional Coverage
+- **All Public APIs**: Every exported function must have test coverage
+- **Return Value Paths**: All possible return scenarios must be tested
+- **Parameter Combinations**: Test various input parameter combinations
+- **State Transitions**: Cover all possible state changes in stateful operations
+
+##### 2. Error Path Coverage
+- **Error Propagation**: Test that errors bubble up correctly through provider chains
+- **Error Recovery**: Verify graceful handling and recovery from error conditions
+- **Partial Failures**: Test scenarios where some operations succeed and others fail
+- **Resource Cleanup**: Ensure proper cleanup occurs even when errors are encountered
+
+##### 3. Edge Case Coverage
+- **Boundary Conditions**: Test with boundary values (zero, max, min values)
+- **Nil and Empty Inputs**: Test behavior with nil pointers, empty slices, and zero-value structs
+- **Invalid Contexts**: Test with cancelled, expired, and nil contexts
+- **Concurrent Edge Cases**: Test race conditions, concurrent access, and high-contention scenarios
+
+##### 4. Integration Coverage
+- **Provider Chain Integration**: Test end-to-end provider chain execution
+- **Cross-Package Integration**: Test interactions between `model` and `async` packages
+- **External Dependencies**: Test integration with external systems (mocked appropriately)
+
+#### Coverage Enforcement
+
+##### CI/CD Enforcement
+```yaml
+# Coverage is enforced in GitHub Actions workflows
+- Coverage check fails the build if below minimum thresholds
+- Coverage reports are generated for all pull requests
+- Coverage trends are tracked over time
+```
+
+##### Local Development
+```bash
+# Check coverage locally before committing
+go test -cover ./...
+
+# Generate detailed coverage report
+go test -cover -coverprofile=coverage.out ./...
+go tool cover -html=coverage.out
+
+# Check coverage by function
+go tool cover -func=coverage.out
+```
+
+##### Coverage Exclusions
+Some code may be excluded from coverage requirements:
+- **Generated Code**: Auto-generated files (marked with `//go:generate`)
+- **Debug/Development Code**: Code within `// +build debug` tags
+- **Deprecated Functions**: Functions marked for deprecation (must be documented)
+
+#### Coverage Quality Standards
+
+##### 1. Meaningful Tests
+- Tests must actually exercise the code, not just achieve coverage metrics
+- Avoid "coverage theater" - tests that increase coverage but don't validate behavior
+- Each test should have clear assertions and expected outcomes
+
+##### 2. Test Types Required
+- **Unit Tests**: Test individual functions and methods in isolation
+- **Integration Tests**: Test component interactions and workflows
+- **Property Tests**: Test invariants and properties across input ranges
+- **Regression Tests**: Test for previously discovered bugs
+
+##### 3. Coverage Reporting
+- **Pull Request Reports**: Coverage changes highlighted in PR reviews
+- **Trend Analysis**: Coverage tracked over time to prevent regression
+- **Package Breakdown**: Coverage reported per package and per function
+- **Differential Coverage**: Focus on coverage of changed lines in PRs
+
+#### Monitoring and Maintenance
+
+##### Coverage Tracking
+- Coverage metrics stored in CI artifacts for historical analysis
+- Weekly reports on coverage trends and package-level changes
+- Alerts for significant coverage decreases
+
+##### Review Process
+- PRs with coverage decreases require additional review
+- New features without adequate test coverage are rejected
+- Coverage exceptions require team approval and documentation
+
+##### Technical Debt
+- Areas below coverage thresholds are tracked as technical debt
+- Regular coverage improvement sprints to address gaps
+- Refactoring efforts must maintain or improve coverage
+
+#### Coverage Tools and Integration
+
+##### Supported Tools
+- **Built-in Coverage**: Standard Go coverage tools (`go test -cover`)
+- **Coverage Visualization**: HTML reports and function-level analysis
+- **CI Integration**: GitHub Actions with coverage reporting
+- **External Services**: Integration with Codecov for advanced analytics
+
+##### Coverage Commands
+```bash
+# Package-specific coverage
+go test -cover ./model
+go test -cover ./async
+
+# Detailed function coverage
+go test -cover -coverprofile=coverage.out ./...
+go tool cover -func=coverage.out | grep -E "(TOTAL|model/|async/)"
+
+# Coverage with race detection
+go test -race -cover ./...
+
+# Benchmark coverage
+go test -bench=. -cover ./...
+```
+
+#### Coverage Violation Handling
+
+##### Pull Request Failures
+When coverage requirements are not met:
+1. **Immediate Action**: PR is blocked from merging
+2. **Developer Guidance**: Clear feedback on which areas need more tests
+3. **Resolution Path**: Add tests or request coverage exception approval
+
+##### Exception Process
+For legitimate coverage exceptions:
+1. **Documentation**: Clearly document why coverage cannot be achieved
+2. **Team Review**: Technical lead approval required for exceptions  
+3. **Tracking**: Exceptions tracked and reviewed quarterly
+4. **Mitigation**: Plan for future coverage improvement where possible
 
 ### Debugging Test Failures
 

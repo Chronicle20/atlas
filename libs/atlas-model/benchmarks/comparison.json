@@ -1,0 +1,18 @@
+{
+  "total_benchmarks": 1,
+  "regressions_detected": 0,
+  "improvements_detected": 0,
+  "threshold_percent": 20,
+  "has_regressions": false,
+  "results": [
+    {
+      "name": "MapLazyEvaluation",
+      "package": "model",
+      "baseline_ns_per_op": 222.1,
+      "current_ns_per_op": 240.1,
+      "performance_change_percent": 8.104457451598378,
+      "is_regression": false,
+      "is_improvement": false
+    }
+  ]
+}

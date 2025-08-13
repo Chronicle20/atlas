@@ -77,11 +77,11 @@ go test -race -v ./...
 
 #### Coverage Analysis
 ```bash
-# Generate coverage report
-go test -cover ./...
+# Generate coverage report (functional packages only)
+go test -cover ./async ./model
 
-# Generate detailed coverage profile
-go test -cover -coverprofile=coverage.out ./...
+# Generate detailed coverage profile (functional packages only)
+go test -cover -coverprofile=coverage.out ./async ./model
 
 # View coverage in browser
 go tool cover -html=coverage.out
@@ -292,16 +292,23 @@ The project maintains strict test coverage requirements to ensure reliability an
 
 ##### Local Development
 ```bash
-# Check coverage locally before committing
-go test -cover ./...
+# Check coverage locally before committing (functional packages only)
+go test -cover ./async ./model
 
-# Generate detailed coverage report
-go test -cover -coverprofile=coverage.out ./...
+# Generate detailed coverage report (functional packages only)
+go test -cover -coverprofile=coverage.out ./async ./model
 go tool cover -html=coverage.out
 
 # Check coverage by function
 go tool cover -func=coverage.out
 ```
+
+##### Coverage Scope
+Coverage analysis focuses on functional code packages only:
+- **Included**: `async` and `model` packages (business logic)
+- **Excluded**: `scripts` (utility tools), `testutil` (test helpers)
+
+This ensures coverage metrics reflect the quality of production business logic rather than utility code.
 
 ##### Coverage Exclusions
 Some code may be excluded from coverage requirements:
@@ -359,12 +366,12 @@ Some code may be excluded from coverage requirements:
 go test -cover ./model
 go test -cover ./async
 
-# Detailed function coverage
-go test -cover -coverprofile=coverage.out ./...
+# Detailed function coverage (functional packages only)
+go test -cover -coverprofile=coverage.out ./async ./model
 go tool cover -func=coverage.out | grep -E "(TOTAL|model/|async/)"
 
-# Coverage with race detection
-go test -race -cover ./...
+# Coverage with race detection (functional packages only)
+go test -race -cover ./async ./model
 
 # Benchmark coverage
 go test -bench=. -cover ./...

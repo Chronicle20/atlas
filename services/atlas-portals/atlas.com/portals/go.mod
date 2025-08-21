@@ -6,7 +6,7 @@ require (
 	github.com/Chronicle20/atlas-kafka v1.1.12
 	github.com/Chronicle20/atlas-model v1.2.5
 	github.com/Chronicle20/atlas-rest v1.2.16
-	github.com/segmentio/kafka-go v0.4.48
+	github.com/segmentio/kafka-go v0.4.49
 	github.com/sirupsen/logrus v1.9.3
 	go.elastic.co/ecslogrus v1.0.0
 	go.opentelemetry.io/otel v1.37.0

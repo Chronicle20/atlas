@@ -55,7 +55,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9.22.0",
-    "eslint-config-next": "15.5.0",
+    "eslint-config-next": "15.5.1",
     "jest": "^30.0.4",
     "jest-environment-jsdom": "^30.0.4",
     "postcss": "^8",

@@ -14,7 +14,7 @@ require (
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/segmentio/kafka-go v0.4.49
 	github.com/sirupsen/logrus v1.9.3
-	github.com/stretchr/testify v1.11.0
+	github.com/stretchr/testify v1.11.1
 	github.com/uber/jaeger-client-go v2.30.0+incompatible
 	go.elastic.co/ecslogrus v1.0.0
 )

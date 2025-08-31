@@ -18,7 +18,7 @@ require (
 	go.elastic.co/ecslogrus v1.0.0
 	go.opentelemetry.io/otel v1.37.0
 	gorm.io/driver/postgres v1.6.0
-	gorm.io/gorm v1.30.1
+	gorm.io/gorm v1.30.2
 )
 
 require (

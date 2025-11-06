@@ -13,7 +13,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.25.3' # Specify your Go version
+          go-version: '1.25.4' # Specify your Go version
       - name: Install Dependencies
         working-directory: atlas.com/drops
         run: go mod download

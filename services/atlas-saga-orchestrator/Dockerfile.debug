@@ -20,7 +20,7 @@ RUN go mod download
 ADD ./atlas.com/saga-orchestrator /atlas.com/saga-orchestrator
 RUN go build -gcflags="all=-N -l" -o /server
 
-FROM alpine:3.22
+FROM alpine:3.23
 
 # Port 8080 belongs to our application, 40000 belongs to Delve
 EXPOSE 8080 40000

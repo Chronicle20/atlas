@@ -16,7 +16,7 @@ RUN go mod download
 ADD ./atlas.com/atlas-compartment-transfer /atlas.com/atlas-compartment-transfer
 RUN go build -o /server
 
-FROM alpine:3.22
+FROM alpine:3.23
 
 # Port 8080 belongs to our application
 EXPOSE 8080

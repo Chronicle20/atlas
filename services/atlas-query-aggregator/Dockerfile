@@ -16,7 +16,7 @@ RUN go mod download
 ADD ./atlas.com/query-aggregator /atlas.com/query-aggregator
 RUN go build -o /server
 
-FROM alpine:3.22
+FROM alpine:3.23
 
 # Port 8080 belongs to our application
 EXPOSE 8080

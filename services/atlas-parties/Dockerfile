@@ -16,7 +16,7 @@ RUN go mod download
 ADD ./atlas.com/parties /atlas.com/parties
 RUN go build -o /server
 
-FROM alpine:3.22
+FROM alpine:3.23
 
 # Port 8080 belongs to our application
 EXPOSE 8080

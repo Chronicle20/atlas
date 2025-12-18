@@ -1,0 +1,63 @@
+meta {
+  name: Add Commodity
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{scheme}}://{{host}}:{{port}}/api/npcs/{{npcId}}/shop/commodities
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "data": {
+      "type": "commodities",
+      "attributes": {
+        "templateId": 1102041,
+        "mesoPrice": 1000,
+        "discountRate": 0,
+        "tokenTemplateId": 0,
+        "tokenPrice": 0,
+        "period": 0,
+        "levelLimit": 0
+      }
+    }
+  }
+}
+
+vars:pre-request {
+  npcId: 11000
+}
+
+docs {
+  # Add Commodity
+
+  This endpoint adds a commodity to a shop.
+
+  ## Request Body
+
+  The request body should include the commodity details:
+  - `templateId`: The template ID of the item
+  - `mesoPrice`: The price in mesos
+  - `perfectPitchPrice`: The price in perfect pitch (optional)
+
+  ## Response
+
+  The response includes the created commodity details with its ID.
+
+  ```json
+  {
+    "data": {
+      "id": "00000000-0000-0000-0000-000000000000",
+      "type": "commodities",
+      "attributes": {
+        "templateId": 2000000,
+        "mesoPrice": 1000,
+        "perfectPitchPrice": 0
+      }
+    }
+  }
+  ```
+}

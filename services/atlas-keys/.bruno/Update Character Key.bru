@@ -1,0 +1,25 @@
+meta {
+  name: Update Character Key
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{scheme}}://{{host}}:{{port}}/api/characters/3/keys/18
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "data": 
+      {
+        "type": "keys",
+        "id": "18",
+        "attributes": {
+          "type": 4,
+          "action": 1
+        }
+      }
+  }
+}

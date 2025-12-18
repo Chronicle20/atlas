@@ -1,0 +1,30 @@
+[
+  {
+    "continentId": -1,
+    "itemId": 4001126,
+    "minimumQuantity": 1,
+    "maximumQuantity": 2,
+    "chance": 8000
+  },
+  {
+    "continentId": -1,
+    "itemId": 2049100,
+    "minimumQuantity": 1,
+    "maximumQuantity": 1,
+    "chance": 1200
+  },
+  {
+    "continentId": -1,
+    "itemId": 2340000,
+    "minimumQuantity": 1,
+    "maximumQuantity": 1,
+    "chance": 1200
+  },
+  {
+    "continentId": -1,
+    "itemId": 4001006,
+    "minimumQuantity": 1,
+    "maximumQuantity": 1,
+    "chance": 10000
+  }
+]

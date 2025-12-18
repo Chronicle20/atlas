@@ -1,0 +1,16 @@
+meta {
+  name: Get Characters - By World Map
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/characters?worldId=1&mapId=100000001
+  body: none
+  auth: none
+}
+
+params:query {
+  worldId: 1
+  mapId: 100000001
+}

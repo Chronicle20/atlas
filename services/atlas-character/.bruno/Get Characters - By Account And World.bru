@@ -1,0 +1,16 @@
+meta {
+  name: Get Characters - By Account And World
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/characters?accountId=1&worldId=0
+  body: none
+  auth: none
+}
+
+params:query {
+  accountId: 1
+  worldId: 0
+}

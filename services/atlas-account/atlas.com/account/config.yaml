@@ -1,0 +1,2 @@
+# Automatically register players when they login with a nonexistent username.
+automaticRegister: true

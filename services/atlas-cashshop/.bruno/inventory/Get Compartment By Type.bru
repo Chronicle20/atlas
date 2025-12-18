@@ -1,0 +1,19 @@
+meta {
+  name: Get Compartment By Type
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/accounts/{{accountId}}/cash-shop/inventory/compartments?type=explorer
+  body: none
+  auth: inherit
+}
+
+params:query {
+  type: explorer
+}
+
+vars:pre-request {
+  accountId: 1
+}

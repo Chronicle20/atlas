@@ -1,0 +1,15 @@
+meta {
+  name: Get Item
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/cash-shop/items/{{itemId}}
+  body: none
+  auth: inherit
+}
+
+vars:pre-request {
+  itemId: 1
+}

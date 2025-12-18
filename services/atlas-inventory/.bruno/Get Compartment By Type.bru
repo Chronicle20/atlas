@@ -1,0 +1,19 @@
+meta {
+  name: Get Compartment By Type
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/characters/{{characterId}}/inventory/compartments?type=1
+  body: none
+  auth: none
+}
+
+params:query {
+  type: 1
+}
+
+vars:pre-request {
+  characterId: 56
+}

@@ -1,0 +1,15 @@
+meta {
+  name: Get Compartment
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/characters/{{characterId}}/inventory/compartments/72a357e6-0ab1-4558-baca-57f0543c81e7
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  characterId: 56
+}

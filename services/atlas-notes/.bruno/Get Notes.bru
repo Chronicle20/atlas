@@ -1,0 +1,11 @@
+meta {
+  name: Get Notes
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/notes
+  body: none
+  auth: inherit
+}

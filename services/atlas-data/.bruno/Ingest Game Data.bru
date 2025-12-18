@@ -1,0 +1,15 @@
+meta {
+  name: Ingest Game Data
+  type: http
+  seq: 18
+}
+
+patch {
+  url: {{scheme}}://{{host}}:{{port}}/api/data
+  body: multipartForm
+  auth: none
+}
+
+body:multipart-form {
+  : @file(/home/tumidanski/gms83.1.zip)
+}

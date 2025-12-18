@@ -1,0 +1,32 @@
+meta {
+  name: Create Party
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{scheme}}://{{host}}:{{port}}/api/parties
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "data": {
+      "type": "parties",
+      "id": "0",
+      "attributes": {
+      },
+      "relationships": {
+        "members": {
+          "data": [
+            {
+              "id": "3",
+              "type": "members"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

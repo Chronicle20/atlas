@@ -1,0 +1,27 @@
+meta {
+  name: Remove Party Member
+  type: http
+  seq: 10
+}
+
+delete {
+  url: {{scheme}}://{{host}}:{{port}}/api/parties/1000000000/members/3
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "data": {
+      "type": "parties",
+      "id": "0",
+      "attributes": {
+        "members": [
+          {
+            "id": 3
+          }
+        ]
+      }
+    }
+  }
+}

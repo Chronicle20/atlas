@@ -1,0 +1,15 @@
+meta {
+  name: Get Map Portal By Name
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/data/maps/10000/portals?name=tuto00
+  body: none
+  auth: none
+}
+
+params:query {
+  name: tuto00
+}

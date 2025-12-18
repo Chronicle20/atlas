@@ -1,0 +1,11 @@
+meta {
+  name: Get All Services
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/configurations/services
+  body: none
+  auth: none
+}

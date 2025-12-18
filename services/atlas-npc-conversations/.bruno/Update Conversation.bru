@@ -1,0 +1,257 @@
+meta {
+  name: Update Conversation
+  type: http
+  seq: 5
+}
+
+patch {
+  url: {{scheme}}://{{host}}:{{port}}/api/npcs/conversations/{{conversationId}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "data": {
+      "id": "8f30012c-25d6-4783-a262-24dbb3d29a18",
+      "type": "conversations",
+      "attributes": {
+        "npcId": 1012000,
+        "startState": "intro",
+        "states": [
+          {
+            "id": "intro",
+            "type": "dialogue",
+            "dialogue": {
+              "dialogueType": "sendNext",
+              "text": "Hello, I drive the Regular Cab. If you want to go from town to town safely and fast, then ride our cab. We'll gladly take you to your destination with an affordable price.",
+              "choices": [
+                {
+                  "text": "Next",
+                  "nextState": "checkJob"
+                },
+                {
+                  "text": "Exit",
+                  "nextState": null
+                }
+              ]
+            }
+          },
+          {
+            "id": "checkJob",
+            "type": "genericAction",
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "type": "jobId",
+                      "operator": "=",
+                      "value": 0
+                    }
+                  ],
+                  "nextState": "destinationSelection"
+                },
+                {
+                  "conditions": [
+                    {
+                      "type": "jobId",
+                      "operator": "=",
+                      "value": 1000
+                    }
+                  ],
+                  "nextState": "destinationSelection"
+                },
+                {
+                  "conditions": [
+                    {
+                      "type": "jobId",
+                      "operator": "=",
+                      "value": 2000
+                    }
+                  ],
+                  "nextState": "destinationSelection"
+                },
+                {
+                  "conditions": [
+                    {
+                      "type": "jobId",
+                      "operator": "=",
+                      "value": 2001
+                    }
+                  ],
+                  "nextState": "destinationSelection"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "destinationSelection"
+                }
+              ]
+            }
+          },
+          {
+            "id": "destinationSelection",
+            "type": "listSelection",
+            "listSelection": {
+              "title": "Choose your destination, for fees will change from place to place.",
+              "choices": [
+                {
+                  "text": "Lith Harbor",
+                  "nextState": "confirmTrip",
+                  "context": {
+                    "destination": "104000000",
+                    "meso": "1000"
+                  }
+                },
+                {
+                  "text": "Ellinia",
+                  "nextState": "confirmTrip",
+                  "context": {
+                    "destination": "102000000",
+                    "meso": "1000"
+                  }
+                },
+                {
+                  "text": "Perion",
+                  "nextState": "confirmTrip",
+                  "context": {
+                    "destination": "101000000",
+                    "meso": "800"
+                  }
+                },
+                {
+                  "text": "Kerning City",
+                  "nextState": "confirmTrip",
+                  "context": {
+                    "destination": "103000000",
+                    "meso": "1000"
+                  }
+                },
+                {
+                  "text": "Nautilus",
+                  "nextState": "confirmTrip",
+                  "context": {
+                    "destination": "120000000",
+                    "meso": "800"
+                  }
+                },
+                {
+                  "text": "Exit",
+                  "nextState": null
+                }
+              ]
+            }
+          },
+          {
+            "id": "confirmTrip",
+            "type": "dialogue",
+            "dialogue": {
+              "dialogueType": "sendYesNo",
+              "text": "You don't have anything else to do here, huh? Do you really want to go to your selected destination? It'll cost you the appropriate amount of mesos.",
+              "choices": [
+                {
+                  "text": "Yes",
+                  "nextState": "checkMeso"
+                },
+                {
+                  "text": "No",
+                  "nextState": "declineMessage"
+                },
+                {
+                  "text": "Exit",
+                  "nextState": null
+                }
+              ]
+            }
+          },
+          {
+            "id": "checkMeso",
+            "type": "genericAction",
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "type": "meso",
+                      "operator": ">=",
+                      "value": 0
+                    }
+                  ],
+                  "nextState": "completeTrip"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "insufficientMeso"
+                }
+              ]
+            }
+          },
+          {
+            "id": "completeTrip",
+            "type": "genericAction",
+            "genericAction": {
+              "operations": [
+                {
+                  "type": "gainMeso",
+                  "params": {
+                    "amount": -1
+                  }
+                },
+                {
+                  "type": "warp",
+                  "params": {
+                    "mapId": 0,
+                    "portalId": 0
+                  }
+                }
+              ],
+              "outcomes": []
+            }
+          },
+          {
+            "id": "insufficientMeso",
+            "type": "dialogue",
+            "dialogue": {
+              "dialogueType": "sendNext",
+              "text": "You don't have enough mesos. Sorry to say this, but without them, you won't be able to ride the cab.",
+              "choices": [
+                {
+                  "text": "Next",
+                  "nextState": null
+                },
+                {
+                  "text": "Exit",
+                  "nextState": null
+                }
+              ]
+            }
+          },
+          {
+            "id": "declineMessage",
+            "type": "dialogue",
+            "dialogue": {
+              "dialogueType": "sendNext",
+              "text": "There's a lot to see in this town, too. Come back and find us when you need to go to a different town.",
+              "choices": [
+                {
+                  "text": "Next",
+                  "nextState": null
+                },
+                {
+                  "text": "Exit",
+                  "nextState": null
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  }
+}
+
+vars:pre-request {
+  conversationId: 8f30012c-25d6-4783-a262-24dbb3d29a18
+}

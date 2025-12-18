@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "atlas-configurations",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

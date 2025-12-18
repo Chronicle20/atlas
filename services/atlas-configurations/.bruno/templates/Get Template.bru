@@ -1,0 +1,17 @@
+meta {
+  name: Get Template
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/configurations/templates?region=GMS&majorVersion=83&minorVersion=1
+  body: none
+  auth: none
+}
+
+params:query {
+  region: GMS
+  majorVersion: 83
+  minorVersion: 1
+}

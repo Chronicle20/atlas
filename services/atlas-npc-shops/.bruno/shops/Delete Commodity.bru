@@ -1,0 +1,21 @@
+meta {
+  name: Delete Commodity
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{scheme}}://{{host}}:{{port}}/api/npcs/{{npcId}}/shop/commodities/{{commodityId}}
+  body: none
+  auth: none
+}
+
+docs {
+  # Delete Commodity
+  
+  This endpoint removes a commodity from a shop.
+  
+  ## Response
+  
+  The response is empty with a 204 No Content status code if the deletion was successful.
+}

@@ -1,0 +1,29 @@
+meta {
+  name: Create
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{scheme}}://{{host}}:{{port}}/api/worlds/0/channels/1/maps/1000000/reactors
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "data": {
+      "type": "reactors",
+      "id": "1",
+      "attributes": {
+        "classification": 0002001,
+        "name": "test",
+        "state": 0,
+          "x": 231,
+          "y": 253,
+        "delay": 0,
+        "direction": 0
+      }
+    }
+  }
+}

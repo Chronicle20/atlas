@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "atlas-query-aggregator",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

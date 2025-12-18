@@ -1,0 +1,30 @@
+meta {
+  name: Create Tenant Configuration Vessel
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{scheme}}://{{host}}:{{port}}/api/tenants/{{tenantId}}/configurations/vessels
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "data": {
+      "type": "vessels",
+      "id": "12aba1dd-3799-42a2-991e-f1f1633b9129",
+      "attributes": {
+        "name": "Ellinia-Orbis Ferry",
+        "routeAID": "24bb11dd-44aa-48c2-998e-a1f1644b9130",
+        "routeBID": "12aba1dd-3799-42a2-991e-f1f1633b9129",
+        "turnaroundDelay": 0
+      }
+    }
+  }
+}
+
+vars:pre-request {
+  tenantId: 083839c6-c47c-42a6-9585-76492795d123
+}

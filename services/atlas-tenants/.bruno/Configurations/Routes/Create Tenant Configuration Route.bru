@@ -1,0 +1,38 @@
+meta {
+  name: Create Tenant Configuration Route
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{scheme}}://{{host}}:{{port}}/api/tenants/{{tenantId}}/configurations/routes
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "data": {
+      "type": "routes",
+      "id": "24bb11dd-44aa-48c2-998e-a1f1644b9130",
+      "attributes": {
+        "name": "Orbis to Ellinia Ferry",
+        "startMapId": 200000100,
+        "stagingMapId": 200000112,
+        "enRouteMapIds": [
+          200090000,
+          200090001
+        ],
+        "destinationMapId": 101000300,
+        "boardingWindowDuration": 4,
+        "preDepartureDuration": 1,
+        "travelDuration": 15,
+        "cycleInterval": 40
+      }
+    }
+  }
+}
+
+vars:pre-request {
+  tenantId: 083839c6-c47c-42a6-9585-76492795d123
+}

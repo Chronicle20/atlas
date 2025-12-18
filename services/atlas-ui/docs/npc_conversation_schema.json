@@ -1,0 +1,283 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "NPC Conversation",
+  "description": "JSON:API attributes object for NPC conversations",
+  "type": "object",
+  "required": [
+    "npcId",
+    "startState",
+    "states"
+  ],
+  "properties": {
+    "npcId": {
+      "type": "integer",
+      "description": "The ID of the NPC"
+    },
+    "startState": {
+      "type": "string",
+      "description": "The ID of the starting state"
+    },
+    "states": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "type"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the state"
+          },
+          "type": {
+            "type": "string",
+            "description": "Type of state",
+            "enum": [
+              "dialogue",
+              "genericAction",
+              "craftAction",
+              "listSelection"
+            ]
+          },
+          "dialogue": {
+            "type": "object",
+            "description": "Dialogue state configuration",
+            "required": [
+              "dialogueType",
+              "text"
+            ],
+            "properties": {
+              "dialogueType": {
+                "type": "string",
+                "description": "Type of dialogue to display",
+                "enum": [
+                  "sendOk",
+                  "sendYesNo",
+                  "sendSimple",
+                  "sendNext"
+                ]
+              },
+              "text": {
+                "type": "string",
+                "description": "Text content of the dialogue"
+              },
+              "choices": {
+                "type": "array",
+                "description": "Available choices for the player",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "text",
+                    "nextState"
+                  ],
+                  "properties": {
+                    "text": {
+                      "type": "string",
+                      "description": "Text of the choice"
+                    },
+                    "nextState": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "ID of the next state to transition to, or null to end conversation"
+                    },
+                    "context": {
+                      "type": "object",
+                      "description": "Additional context data for the choice",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "genericAction": {
+            "type": "object",
+            "description": "Generic action state configuration",
+            "properties": {
+              "operations": {
+                "type": "array",
+                "description": "Operations to perform",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "type"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "description": "Type of operation"
+                    },
+                    "params": {
+                      "type": "object",
+                      "description": "Parameters for the operation",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "outcomes": {
+                "type": "array",
+                "description": "Possible outcomes based on conditions",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "conditions"
+                  ],
+                  "properties": {
+                    "conditions": {
+                      "type": "array",
+                      "description": "Conditions that determine this outcome",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "type",
+                          "operator",
+                          "value"
+                        ],
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "description": "Type of condition"
+                          },
+                          "operator": {
+                            "type": "string",
+                            "description": "Comparison operator"
+                          },
+                          "value": {
+                            "type": "string",
+                            "description": "Value to compare against"
+                          }
+                        }
+                      }
+                    },
+                    "nextState": {
+                      "type": "string",
+                      "description": "ID of the next state to transition to"
+                    },
+                    "successState": {
+                      "type": "string",
+                      "description": "ID of the state to transition to on success"
+                    },
+                    "failureState": {
+                      "type": "string",
+                      "description": "ID of the state to transition to on failure"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "craftAction": {
+            "type": "object",
+            "description": "Craft action state configuration",
+            "required": [
+              "itemId",
+              "materials",
+              "quantities",
+              "mesoCost",
+              "successState",
+              "failureState",
+              "missingMaterialsState"
+            ],
+            "properties": {
+              "itemId": {
+                "type": "integer",
+                "description": "ID of the item to craft"
+              },
+              "materials": {
+                "type": "array",
+                "description": "IDs of materials required for crafting",
+                "items": {
+                  "type": "integer"
+                }
+              },
+              "quantities": {
+                "type": "array",
+                "description": "Quantities of each material required",
+                "items": {
+                  "type": "integer"
+                }
+              },
+              "mesoCost": {
+                "type": "integer",
+                "description": "Meso cost for crafting"
+              },
+              "stimulatorId": {
+                "type": "integer",
+                "description": "ID of the stimulator item (optional)"
+              },
+              "stimulatorFailChance": {
+                "type": "number",
+                "description": "Chance of failure when using stimulator"
+              },
+              "successState": {
+                "type": "string",
+                "description": "ID of the state to transition to on successful crafting"
+              },
+              "failureState": {
+                "type": "string",
+                "description": "ID of the state to transition to on failed crafting"
+              },
+              "missingMaterialsState": {
+                "type": "string",
+                "description": "ID of the state to transition to when materials are missing"
+              }
+            }
+          },
+          "listSelection": {
+            "type": "object",
+            "description": "List selection state configuration",
+            "required": [
+              "title",
+              "choices"
+            ],
+            "properties": {
+              "title": {
+                "type": "string",
+                "description": "Title of the list selection"
+              },
+              "choices": {
+                "type": "array",
+                "description": "Available choices for the player",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "text",
+                    "nextState"
+                  ],
+                  "properties": {
+                    "text": {
+                      "type": "string",
+                      "description": "Text of the choice"
+                    },
+                    "nextState": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "ID of the next state to transition to, or null to end conversation"
+                    },
+                    "context": {
+                      "type": "object",
+                      "description": "Additional context data for the choice",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

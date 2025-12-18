@@ -1,0 +1,27 @@
+meta {
+  name: Create Character Note
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{scheme}}://{{host}}:{{port}}/api/notes
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "data": {
+      "type": "notes",
+      "id": "3",
+      "attributes": {
+        "characterId": 56,
+        "senderId": 56,
+        "message": "Dudez!",
+        "flag": 0,
+        "timestamp": "2025-06-06T09:10:34.448779-04:00"
+      }
+    }
+  }
+}

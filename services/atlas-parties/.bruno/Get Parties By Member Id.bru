@@ -1,0 +1,31 @@
+meta {
+  name: Get Parties By Member Id
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/parties?filter[members.id]=3
+  body: json
+  auth: none
+}
+
+params:query {
+  filter[members.id]: 3
+}
+
+body:json {
+  {
+    "data": {
+      "type": "parties",
+      "id": "0",
+      "attributes": {
+        "members": [
+          {
+            "id": 3
+          }
+        ]
+      }
+    }
+  }
+}

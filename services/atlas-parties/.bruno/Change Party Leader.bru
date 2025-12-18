@@ -1,0 +1,23 @@
+meta {
+  name: Change Party Leader
+  type: http
+  seq: 5
+}
+
+patch {
+  url: {{scheme}}://{{host}}:{{port}}/api/parties/1000000000
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "data": {
+      "type": "parties",
+      "id": "1000000000",
+      "attributes": {
+        "leaderId": 4
+      }
+    }
+  }
+}

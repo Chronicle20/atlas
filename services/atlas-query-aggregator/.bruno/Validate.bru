@@ -1,0 +1,50 @@
+meta {
+  name: Validate
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{scheme}}://{{host}}:{{port}}/api/validations
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "data": {
+      "id": "56",
+      "type": "validations",
+      "attributes": {
+        "conditions": [
+          {
+            "type": "jobId",
+            "operator": "=",
+            "value": 100
+          },
+          {
+            "type": "meso",
+            "operator": ">=",
+            "value": 10000
+          },
+          {
+            "type": "mapId",
+            "operator": "=",
+            "value": 0
+          },
+          {
+            "type": "fame",
+            "operator": ">=",
+            "value": 1
+          },
+          {
+            "type": "item",
+            "operator": ">=",
+            "value": 10,
+            "itemId": 2044705
+          }
+        ]
+      }
+    }
+  }
+}

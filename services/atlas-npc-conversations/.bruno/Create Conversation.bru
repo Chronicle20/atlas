@@ -1,0 +1,184 @@
+meta {
+  name: Create Conversation
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{scheme}}://{{host}}:{{port}}/api/npcs/conversations
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "data": {
+      "id": "8f30012c-25d6-4783-a262-24dbb3d29a18",
+      "type": "conversations",
+      "attributes": {
+    "npcId": 1012000,
+    "startState": "intro",
+    "states": [
+      {
+        "id": "intro",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Hello, I drive the Regular Cab. If you want to go from town to town safely and fast, then ride our cab. We'll gladly take you to your destination with an affordable price.",
+          "choices": [
+            {
+              "text": "Next",
+              "nextState": "destinationSelection"
+            },
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "destinationSelection",
+        "type": "listSelection",
+        "listSelection": {
+          "title": "Choose your destination, for fees will change from place to place.",
+          "optionsSet": "destinations",
+          "nextState": "confirmTrip"
+        }
+      },
+      {
+        "id": "confirmTrip",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendYesNo",
+          "text": "You don't have anything else to do here, huh? Do you really want to go to your selected destination? It'll cost you the appropriate amount of mesos.",
+          "choices": [
+            {
+              "text": "Yes",
+              "nextState": "checkMeso"
+            },
+            {
+              "text": "No",
+              "nextState": "declineMessage"
+            },
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "checkMeso",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "condition": "meso >= requiredCost",
+              "nextState": "completeTrip"
+            },
+            {
+              "condition": "else",
+              "nextState": "insufficientMeso"
+            }
+          ]
+        }
+      },
+      {
+        "id": "completeTrip",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {
+              "type": "gainMeso",
+              "params": {
+                "amount": -1
+              }
+            },
+            {
+              "type": "warp",
+              "params": {
+                "mapId": 0,
+                "portalId": 0
+              }
+            }
+          ],
+          "outcomes": []
+        }
+      },
+      {
+        "id": "insufficientMeso",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "You don't have enough mesos. Sorry to say this, but without them, you won't be able to ride the cab.",
+          "choices": [
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "declineMessage",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "There's a lot to see in this town, too. Come back and find us when you need to go to a different town.",
+          "choices": [
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      }
+    ],
+    "optionSets": [
+      {
+        "id": "destinations",
+        "options": [
+          {
+            "id": 104000000,
+            "name": "Lith Harbor",
+            "materials": [],
+            "quantities": [],
+            "meso": 1000
+          },
+          {
+            "id": 102000000,
+            "name": "Ellinia",
+            "materials": [],
+            "quantities": [],
+            "meso": 1000
+          },
+          {
+            "id": 101000000,
+            "name": "Perion",
+            "materials": [],
+            "quantities": [],
+            "meso": 800
+          },
+          {
+            "id": 103000000,
+            "name": "Kerning City",
+            "materials": [],
+            "quantities": [],
+            "meso": 1000
+          },
+          {
+            "id": 120000000,
+            "name": "Nautilus",
+            "materials": [],
+            "quantities": [],
+            "meso": 800
+          }
+        ]
+      }
+    ]
+  }
+    }
+  }
+}

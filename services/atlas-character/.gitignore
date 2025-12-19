@@ -1,0 +1,6 @@
+﻿.idea
+.env
+.vscode
+__debug_bin*
+atlas.com/character/atlas-character
+.DS_Store

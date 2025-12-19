@@ -1,0 +1,24 @@
+meta {
+  name: Get Foothold Below Position
+  type: http
+  seq: 17
+}
+
+post {
+  url: {{scheme}}://{{host}}:{{port}}/api/data/maps/0/footholds/below
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "data": {
+      "id": "0",
+      "type": "positions",
+      "attributes": {
+        "x": -76,
+        "y": 95
+      }
+    }
+  }
+}

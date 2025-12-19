@@ -1,0 +1,4 @@
+github.com/Chronicle20/atlas-model v1.2.5 h1:qNnPQGDNaPOg2DtT40WqK75MKDkMf9hbsfFe1YTVaE8=
+github.com/Chronicle20/atlas-model v1.2.5/go.mod h1:9dtC1uZtPTk9GfuxijS5JIr9HUyRJRUEnn+BbN5Az1E=
+github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
+github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=

@@ -1,0 +1,24 @@
+meta {
+  name: Update Skill
+  type: http
+  seq: 5
+}
+
+patch {
+  url: {{scheme}}://{{host}}:{{port}}/api/characters/1/skills/4121007
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "data": {
+      "id": "4121007",
+      "type": "skills",
+      "attributes": {
+        "level": 1,
+        "masterLevel": 10
+      }
+    }
+  }
+}

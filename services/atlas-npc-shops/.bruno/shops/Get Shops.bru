@@ -1,0 +1,45 @@
+meta {
+  name: Get Shops
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/shops
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  npcId: 11000
+}
+
+docs {
+  # Get Shop
+  
+  This endpoint retrieves a shop by NPC ID.
+  
+  ## Response
+  
+  The response includes the shop details with its commodities.
+  
+  ```json
+  {
+    "data": {
+      "id": "shop-9000001",
+      "type": "shops",
+      "attributes": {
+        "npcId": 9000001,
+        "commodities": [
+          {
+            "id": "00000000-0000-0000-0000-000000000000",
+            "templateId": 2000000,
+            "mesoPrice": 1000,
+            "perfectPitchPrice": 0
+          }
+        ]
+      }
+    }
+  }
+  ```
+}

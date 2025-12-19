@@ -1,0 +1,242 @@
+name: PR Validation
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      force-all:
+        description: 'Force validation of all services'
+        required: false
+        default: 'false'
+        type: boolean
+
+concurrency:
+  group: pr-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+env:
+  GO_VERSION: '1.25.5'
+  NODE_VERSION: '22'
+
+jobs:
+  # ============================================
+  # Detect which services/libraries have changed
+  # ============================================
+  detect-changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.detect.outputs.services }}
+      libraries: ${{ steps.detect.outputs.libraries }}
+      has-service-changes: ${{ steps.detect.outputs.has-service-changes }}
+      has-library-changes: ${{ steps.detect.outputs.has-library-changes }}
+      has-ui-changes: ${{ steps.detect.outputs.has-ui-changes }}
+      has-go-workspace-changes: ${{ steps.detect.outputs.has-go-workspace-changes }}
+      has-workflow-changes: ${{ steps.detect.outputs.has-workflow-changes }}
+      all-go-services: ${{ steps.detect.outputs.all-go-services }}
+      all-go-libraries: ${{ steps.detect.outputs.all-go-libraries }}
+      go-services-matrix: ${{ steps.matrix.outputs.go-services }}
+      go-libraries-matrix: ${{ steps.matrix.outputs.go-libraries }}
+      docker-services-matrix: ${{ steps.matrix.outputs.docker-services }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changes
+        id: detect
+        uses: ./.github/actions/detect-changes
+
+      - name: Build matrices
+        id: matrix
+        run: |
+          FORCE_ALL="${{ github.event.inputs.force-all }}"
+          HAS_WORKSPACE_CHANGES="${{ steps.detect.outputs.has-go-workspace-changes }}"
+          HAS_WORKFLOW_CHANGES="${{ steps.detect.outputs.has-workflow-changes }}"
+
+          # Determine if we should build everything
+          BUILD_ALL="false"
+          if [ "$FORCE_ALL" == "true" ] || [ "$HAS_WORKSPACE_CHANGES" == "true" ] || [ "$HAS_WORKFLOW_CHANGES" == "true" ]; then
+            BUILD_ALL="true"
+            echo "Building all services due to: force=$FORCE_ALL, workspace=$HAS_WORKSPACE_CHANGES, workflow=$HAS_WORKFLOW_CHANGES"
+          fi
+
+          # Load service configuration
+          CONFIG_FILE=".github/config/services.json"
+
+          # Build Go services matrix
+          if [ "$BUILD_ALL" == "true" ]; then
+            GO_SERVICES=$(jq -c '[.services[] | select(.type == "go-service") | {name: .name, path: .path, module_path: .module_path, docker_image: .docker_image}]' "$CONFIG_FILE")
+          else
+            CHANGED='${{ steps.detect.outputs.services }}'
+            GO_SERVICES=$(jq -c --argjson changed "$CHANGED" '[.services[] | select(.type == "go-service") | select(.name as $n | $changed | index($n)) | {name: .name, path: .path, module_path: .module_path, docker_image: .docker_image}]' "$CONFIG_FILE")
+          fi
+          echo "go-services=$GO_SERVICES" >> $GITHUB_OUTPUT
+
+          # Build Go libraries matrix
+          if [ "$BUILD_ALL" == "true" ]; then
+            GO_LIBRARIES=$(jq -c '[.libraries[] | {name: .name, path: .path, module_path: .module_path, coverage_threshold: (.coverage_threshold // 0)}]' "$CONFIG_FILE")
+          else
+            CHANGED='${{ steps.detect.outputs.libraries }}'
+            GO_LIBRARIES=$(jq -c --argjson changed "$CHANGED" '[.libraries[] | select(.name as $n | $changed | index($n)) | {name: .name, path: .path, module_path: .module_path, coverage_threshold: (.coverage_threshold // 0)}]' "$CONFIG_FILE")
+          fi
+          echo "go-libraries=$GO_LIBRARIES" >> $GITHUB_OUTPUT
+
+          # Build Docker services matrix (all services that have Docker images)
+          if [ "$BUILD_ALL" == "true" ]; then
+            DOCKER_SERVICES=$(jq -c '[.services[] | select(.docker_image != null) | {name: .name, path: .path, docker_image: .docker_image}]' "$CONFIG_FILE")
+          else
+            CHANGED='${{ steps.detect.outputs.services }}'
+            DOCKER_SERVICES=$(jq -c --argjson changed "$CHANGED" '[.services[] | select(.docker_image != null) | select(.name as $n | $changed | index($n)) | {name: .name, path: .path, docker_image: .docker_image}]' "$CONFIG_FILE")
+          fi
+          echo "docker-services=$DOCKER_SERVICES" >> $GITHUB_OUTPUT
+
+          # Summary
+          echo "### Change Detection Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Force all**: $FORCE_ALL" >> $GITHUB_STEP_SUMMARY
+          echo "- **Workspace changes**: $HAS_WORKSPACE_CHANGES" >> $GITHUB_STEP_SUMMARY
+          echo "- **Workflow changes**: $HAS_WORKFLOW_CHANGES" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build all**: $BUILD_ALL" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Go Services to test**: $(echo "$GO_SERVICES" | jq length)" >> $GITHUB_STEP_SUMMARY
+          echo "**Go Libraries to test**: $(echo "$GO_LIBRARIES" | jq length)" >> $GITHUB_STEP_SUMMARY
+          echo "**Docker images to build**: $(echo "$DOCKER_SERVICES" | jq length)" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================
+  # Test Go Libraries
+  # ============================================
+  test-go-libraries:
+    name: Test Library - ${{ matrix.library.name }}
+    needs: detect-changes
+    if: needs.detect-changes.outputs.go-libraries-matrix != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        library: ${{ fromJson(needs.detect-changes.outputs.go-libraries-matrix) }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run tests
+        uses: ./.github/actions/go-test
+        with:
+          working-directory: ${{ matrix.library.module_path }}
+          go-version: ${{ env.GO_VERSION }}
+          race-detection: 'true'
+          coverage: 'true'
+          coverage-threshold: ${{ matrix.library.coverage_threshold }}
+
+  # ============================================
+  # Test Go Services
+  # ============================================
+  test-go-services:
+    name: Test Service - ${{ matrix.service.name }}
+    needs: detect-changes
+    if: needs.detect-changes.outputs.go-services-matrix != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJson(needs.detect-changes.outputs.go-services-matrix) }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run tests
+        uses: ./.github/actions/go-test
+        with:
+          working-directory: ${{ matrix.service.module_path }}
+          go-version: ${{ env.GO_VERSION }}
+
+  # ============================================
+  # Test UI Service
+  # ============================================
+  test-ui:
+    name: Test UI
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has-ui-changes == 'true' || needs.detect-changes.outputs.has-workflow-changes == 'true' || github.event.inputs.force-all == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run tests and build
+        uses: ./.github/actions/node-test
+        with:
+          working-directory: services/atlas-ui
+          node-version: ${{ env.NODE_VERSION }}
+
+  # ============================================
+  # Build Docker Images (validation only, no push)
+  # ============================================
+  build-docker:
+    name: Build Docker - ${{ matrix.service.name }}
+    needs: [detect-changes, test-go-services, test-go-libraries, test-ui]
+    if: |
+      always() &&
+      needs.detect-changes.outputs.docker-services-matrix != '[]' &&
+      (needs.test-go-services.result == 'success' || needs.test-go-services.result == 'skipped') &&
+      (needs.test-go-libraries.result == 'success' || needs.test-go-libraries.result == 'skipped') &&
+      (needs.test-ui.result == 'success' || needs.test-ui.result == 'skipped')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJson(needs.detect-changes.outputs.docker-services-matrix) }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        uses: ./.github/actions/docker-build
+        with:
+          context: ${{ matrix.service.path }}
+          image-name: ${{ matrix.service.docker_image }}
+          tags: pr-${{ github.event.pull_request.number }}
+          push: 'false'
+
+  # ============================================
+  # Summary Job
+  # ============================================
+  pr-validation-complete:
+    name: PR Validation Complete
+    needs: [detect-changes, test-go-libraries, test-go-services, test-ui, build-docker]
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check results
+        run: |
+          echo "### PR Validation Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Check each job result
+          LIBS_RESULT="${{ needs.test-go-libraries.result }}"
+          SERVICES_RESULT="${{ needs.test-go-services.result }}"
+          UI_RESULT="${{ needs.test-ui.result }}"
+          DOCKER_RESULT="${{ needs.build-docker.result }}"
+
+          echo "| Job | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Go Libraries | $LIBS_RESULT |" >> $GITHUB_STEP_SUMMARY
+          echo "| Go Services | $SERVICES_RESULT |" >> $GITHUB_STEP_SUMMARY
+          echo "| UI | $UI_RESULT |" >> $GITHUB_STEP_SUMMARY
+          echo "| Docker Builds | $DOCKER_RESULT |" >> $GITHUB_STEP_SUMMARY
+
+          # Fail if any required job failed
+          if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ]; then
+            echo ""
+            echo "One or more jobs failed!"
+            exit 1
+          fi
+
+          echo ""
+          echo "All checks passed!"

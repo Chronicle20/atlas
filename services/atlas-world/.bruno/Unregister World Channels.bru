@@ -1,0 +1,11 @@
+meta {
+  name: Unregister World Channels
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{scheme}}://{{host}}:{{port}}/api/worlds/0/channels/3
+  body: none
+  auth: none
+}

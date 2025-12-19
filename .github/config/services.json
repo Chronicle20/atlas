@@ -1,0 +1,355 @@
+{
+  "$schema": "./services.schema.json",
+  "description": "Atlas monorepo service and library configuration for CI/CD",
+  "go_version": "1.25.5",
+  "node_version": "22",
+  "docker_registry": "ghcr.io/chronicle20",
+  "services": [
+    {
+      "name": "atlas-account",
+      "type": "go-service",
+      "path": "services/atlas-account",
+      "module_path": "services/atlas-account/atlas.com/account",
+      "docker_image": "ghcr.io/chronicle20/atlas-account/atlas-account"
+    },
+    {
+      "name": "atlas-buddies",
+      "type": "go-service",
+      "path": "services/atlas-buddies",
+      "module_path": "services/atlas-buddies/atlas.com/buddies",
+      "docker_image": "ghcr.io/chronicle20/atlas-buddies/atlas-buddies"
+    },
+    {
+      "name": "atlas-buffs",
+      "type": "go-service",
+      "path": "services/atlas-buffs",
+      "module_path": "services/atlas-buffs/atlas.com/buffs",
+      "docker_image": "ghcr.io/chronicle20/atlas-buffs/atlas-buffs"
+    },
+    {
+      "name": "atlas-cashshop",
+      "type": "go-service",
+      "path": "services/atlas-cashshop",
+      "module_path": "services/atlas-cashshop/atlas.com/cashshop",
+      "docker_image": "ghcr.io/chronicle20/atlas-cashshop/atlas-cashshop"
+    },
+    {
+      "name": "atlas-chairs",
+      "type": "go-service",
+      "path": "services/atlas-chairs",
+      "module_path": "services/atlas-chairs/atlas.com/chairs",
+      "docker_image": "ghcr.io/chronicle20/atlas-chairs/atlas-chairs"
+    },
+    {
+      "name": "atlas-chalkboards",
+      "type": "go-service",
+      "path": "services/atlas-chalkboards",
+      "module_path": "services/atlas-chalkboards/atlas.com/chalkboards",
+      "docker_image": "ghcr.io/chronicle20/atlas-chalkboards/atlas-chalkboards"
+    },
+    {
+      "name": "atlas-channel",
+      "type": "go-service",
+      "path": "services/atlas-channel",
+      "module_path": "services/atlas-channel/atlas.com/channel",
+      "docker_image": "ghcr.io/chronicle20/atlas-channel/atlas-channel"
+    },
+    {
+      "name": "atlas-character",
+      "type": "go-service",
+      "path": "services/atlas-character",
+      "module_path": "services/atlas-character/atlas.com/character",
+      "docker_image": "ghcr.io/chronicle20/atlas-character/atlas-character"
+    },
+    {
+      "name": "atlas-character-factory",
+      "type": "go-service",
+      "path": "services/atlas-character-factory",
+      "module_path": "services/atlas-character-factory/atlas.com/character-factory",
+      "docker_image": "ghcr.io/chronicle20/atlas-character-factory/atlas-character-factory"
+    },
+    {
+      "name": "atlas-compartment-transfer",
+      "type": "go-service",
+      "path": "services/atlas-compartment-transfer",
+      "module_path": "services/atlas-compartment-transfer/atlas.com/atlas-compartment-transfer",
+      "docker_image": "ghcr.io/chronicle20/atlas-compartment-transfer/atlas-compartment-transfer"
+    },
+    {
+      "name": "atlas-configurations",
+      "type": "go-service",
+      "path": "services/atlas-configurations",
+      "module_path": "services/atlas-configurations/atlas.com/configurations",
+      "docker_image": "ghcr.io/chronicle20/atlas-configurations/atlas-configurations"
+    },
+    {
+      "name": "atlas-consumables",
+      "type": "go-service",
+      "path": "services/atlas-consumables",
+      "module_path": "services/atlas-consumables/atlas.com/consumables",
+      "docker_image": "ghcr.io/chronicle20/atlas-consumables/atlas-consumables"
+    },
+    {
+      "name": "atlas-data",
+      "type": "go-service",
+      "path": "services/atlas-data",
+      "module_path": "services/atlas-data/atlas.com/data",
+      "docker_image": "ghcr.io/chronicle20/atlas-data/atlas-data"
+    },
+    {
+      "name": "atlas-drop-information",
+      "type": "go-service",
+      "path": "services/atlas-drop-information",
+      "module_path": "services/atlas-drop-information/atlas.com/dis",
+      "docker_image": "ghcr.io/chronicle20/atlas-drop-information/atlas-drop-information"
+    },
+    {
+      "name": "atlas-drops",
+      "type": "go-service",
+      "path": "services/atlas-drops",
+      "module_path": "services/atlas-drops/atlas.com/drops",
+      "docker_image": "ghcr.io/chronicle20/atlas-drops/atlas-drops"
+    },
+    {
+      "name": "atlas-equipables",
+      "type": "go-service",
+      "path": "services/atlas-equipables",
+      "module_path": "services/atlas-equipables/atlas.com/equipables",
+      "docker_image": "ghcr.io/chronicle20/atlas-equipables/atlas-equipables"
+    },
+    {
+      "name": "atlas-expressions",
+      "type": "go-service",
+      "path": "services/atlas-expressions",
+      "module_path": "services/atlas-expressions/atlas.com/expressions",
+      "docker_image": "ghcr.io/chronicle20/atlas-expressions/atlas-expressions"
+    },
+    {
+      "name": "atlas-fame",
+      "type": "go-service",
+      "path": "services/atlas-fame",
+      "module_path": "services/atlas-fame/atlas.com/fame",
+      "docker_image": "ghcr.io/chronicle20/atlas-fame/atlas-fame"
+    },
+    {
+      "name": "atlas-families",
+      "type": "go-service",
+      "path": "services/atlas-families",
+      "module_path": "services/atlas-families/atlas.com/family",
+      "docker_image": "ghcr.io/chronicle20/atlas-families/atlas-families"
+    },
+    {
+      "name": "atlas-guilds",
+      "type": "go-service",
+      "path": "services/atlas-guilds",
+      "module_path": "services/atlas-guilds/atlas.com/guilds",
+      "docker_image": "ghcr.io/chronicle20/atlas-guilds/atlas-guilds"
+    },
+    {
+      "name": "atlas-inventory",
+      "type": "go-service",
+      "path": "services/atlas-inventory",
+      "module_path": "services/atlas-inventory/atlas.com/inventory",
+      "docker_image": "ghcr.io/chronicle20/atlas-inventory/atlas-inventory"
+    },
+    {
+      "name": "atlas-invites",
+      "type": "go-service",
+      "path": "services/atlas-invites",
+      "module_path": "services/atlas-invites/atlas.com/invites",
+      "docker_image": "ghcr.io/chronicle20/atlas-invites/atlas-invites"
+    },
+    {
+      "name": "atlas-keys",
+      "type": "go-service",
+      "path": "services/atlas-keys",
+      "module_path": "services/atlas-keys/atlas.com/keys",
+      "docker_image": "ghcr.io/chronicle20/atlas-keys/atlas-keys"
+    },
+    {
+      "name": "atlas-login",
+      "type": "go-service",
+      "path": "services/atlas-login",
+      "module_path": "services/atlas-login/atlas.com/login",
+      "docker_image": "ghcr.io/chronicle20/atlas-login/atlas-login"
+    },
+    {
+      "name": "atlas-maps",
+      "type": "go-service",
+      "path": "services/atlas-maps",
+      "module_path": "services/atlas-maps/atlas.com/maps",
+      "docker_image": "ghcr.io/chronicle20/atlas-maps/atlas-maps"
+    },
+    {
+      "name": "atlas-marriages",
+      "type": "go-service",
+      "path": "services/atlas-marriages",
+      "module_path": "services/atlas-marriages/atlas.com/marriages",
+      "docker_image": "ghcr.io/chronicle20/atlas-marriages/atlas-marriages"
+    },
+    {
+      "name": "atlas-messages",
+      "type": "go-service",
+      "path": "services/atlas-messages",
+      "module_path": "services/atlas-messages/atlas.com/messages",
+      "docker_image": "ghcr.io/chronicle20/atlas-messages/atlas-messages"
+    },
+    {
+      "name": "atlas-messengers",
+      "type": "go-service",
+      "path": "services/atlas-messengers",
+      "module_path": "services/atlas-messengers/atlas.com/messengers",
+      "docker_image": "ghcr.io/chronicle20/atlas-messengers/atlas-messengers"
+    },
+    {
+      "name": "atlas-monster-death",
+      "type": "go-service",
+      "path": "services/atlas-monster-death",
+      "module_path": "services/atlas-monster-death/atlas.com/monster",
+      "docker_image": "ghcr.io/chronicle20/atlas-monster-death/atlas-monster-death"
+    },
+    {
+      "name": "atlas-monsters",
+      "type": "go-service",
+      "path": "services/atlas-monsters",
+      "module_path": "services/atlas-monsters/atlas.com/monsters",
+      "docker_image": "ghcr.io/chronicle20/atlas-monsters/atlas-monsters"
+    },
+    {
+      "name": "atlas-notes",
+      "type": "go-service",
+      "path": "services/atlas-notes",
+      "module_path": "services/atlas-notes/atlas.com/notes",
+      "docker_image": "ghcr.io/chronicle20/atlas-notes/atlas-notes"
+    },
+    {
+      "name": "atlas-npc-conversations",
+      "type": "go-service",
+      "path": "services/atlas-npc-conversations",
+      "module_path": "services/atlas-npc-conversations/atlas.com/npc",
+      "docker_image": "ghcr.io/chronicle20/atlas-npc-conversations/atlas-npc-conversations"
+    },
+    {
+      "name": "atlas-npc-shops",
+      "type": "go-service",
+      "path": "services/atlas-npc-shops",
+      "module_path": "services/atlas-npc-shops/atlas.com/npc",
+      "docker_image": "ghcr.io/chronicle20/atlas-npc-shops/atlas-npc-shops"
+    },
+    {
+      "name": "atlas-parties",
+      "type": "go-service",
+      "path": "services/atlas-parties",
+      "module_path": "services/atlas-parties/atlas.com/parties",
+      "docker_image": "ghcr.io/chronicle20/atlas-parties/atlas-parties"
+    },
+    {
+      "name": "atlas-pets",
+      "type": "go-service",
+      "path": "services/atlas-pets",
+      "module_path": "services/atlas-pets/atlas.com/pets",
+      "docker_image": "ghcr.io/chronicle20/atlas-pets/atlas-pets"
+    },
+    {
+      "name": "atlas-portals",
+      "type": "go-service",
+      "path": "services/atlas-portals",
+      "module_path": "services/atlas-portals/atlas.com/portals",
+      "docker_image": "ghcr.io/chronicle20/atlas-portals/atlas-portals"
+    },
+    {
+      "name": "atlas-query-aggregator",
+      "type": "go-service",
+      "path": "services/atlas-query-aggregator",
+      "module_path": "services/atlas-query-aggregator/atlas.com/query-aggregator",
+      "docker_image": "ghcr.io/chronicle20/atlas-query-aggregator/atlas-query-aggregator"
+    },
+    {
+      "name": "atlas-reactors",
+      "type": "go-service",
+      "path": "services/atlas-reactors",
+      "module_path": "services/atlas-reactors/atlas.com/reactors",
+      "docker_image": "ghcr.io/chronicle20/atlas-reactors/atlas-reactors"
+    },
+    {
+      "name": "atlas-saga-orchestrator",
+      "type": "go-service",
+      "path": "services/atlas-saga-orchestrator",
+      "module_path": "services/atlas-saga-orchestrator/atlas.com/saga-orchestrator",
+      "docker_image": "ghcr.io/chronicle20/atlas-saga-orchestrator/atlas-saga-orchestrator"
+    },
+    {
+      "name": "atlas-skills",
+      "type": "go-service",
+      "path": "services/atlas-skills",
+      "module_path": "services/atlas-skills/atlas.com/skills",
+      "docker_image": "ghcr.io/chronicle20/atlas-skills/atlas-skills"
+    },
+    {
+      "name": "atlas-tenants",
+      "type": "go-service",
+      "path": "services/atlas-tenants",
+      "module_path": "services/atlas-tenants/atlas.com/tenants",
+      "docker_image": "ghcr.io/chronicle20/atlas-tenants/atlas-tenants"
+    },
+    {
+      "name": "atlas-transports",
+      "type": "go-service",
+      "path": "services/atlas-transports",
+      "module_path": "services/atlas-transports/atlas.com/transports",
+      "docker_image": "ghcr.io/chronicle20/atlas-transports/atlas-transports"
+    },
+    {
+      "name": "atlas-world",
+      "type": "go-service",
+      "path": "services/atlas-world",
+      "module_path": "services/atlas-world/atlas.com/world",
+      "docker_image": "ghcr.io/chronicle20/atlas-world/atlas-world"
+    },
+    {
+      "name": "atlas-ui",
+      "type": "node-service",
+      "path": "services/atlas-ui",
+      "docker_image": "ghcr.io/chronicle20/atlas-ui/atlas-ui"
+    }
+  ],
+  "libraries": [
+    {
+      "name": "atlas-constants",
+      "type": "go-library",
+      "path": "libs/atlas-constants",
+      "module_path": "libs/atlas-constants"
+    },
+    {
+      "name": "atlas-kafka",
+      "type": "go-library",
+      "path": "libs/atlas-kafka",
+      "module_path": "libs/atlas-kafka"
+    },
+    {
+      "name": "atlas-model",
+      "type": "go-library",
+      "path": "libs/atlas-model",
+      "module_path": "libs/atlas-model",
+      "coverage_threshold": 75
+    },
+    {
+      "name": "atlas-rest",
+      "type": "go-library",
+      "path": "libs/atlas-rest",
+      "module_path": "libs/atlas-rest"
+    },
+    {
+      "name": "atlas-socket",
+      "type": "go-library",
+      "path": "libs/atlas-socket",
+      "module_path": "libs/atlas-socket"
+    },
+    {
+      "name": "atlas-tenant",
+      "type": "go-library",
+      "path": "libs/atlas-tenant",
+      "module_path": "libs/atlas-tenant"
+    }
+  ]
+}

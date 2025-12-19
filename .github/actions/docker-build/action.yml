@@ -1,0 +1,116 @@
+name: 'Docker Build'
+description: 'Build and optionally push Docker images with multi-architecture support'
+
+inputs:
+  context:
+    description: 'Docker build context path'
+    required: true
+  dockerfile:
+    description: 'Path to Dockerfile (relative to context)'
+    required: false
+    default: 'Dockerfile'
+  image-name:
+    description: 'Full image name including registry (e.g., ghcr.io/org/image)'
+    required: true
+  tags:
+    description: 'Comma-separated list of tags'
+    required: false
+    default: 'latest'
+  push:
+    description: 'Push image to registry'
+    required: false
+    default: 'false'
+  platform:
+    description: 'Target platform (linux/amd64, linux/arm64, or both)'
+    required: false
+    default: 'linux/amd64'
+  registry:
+    description: 'Container registry (e.g., ghcr.io)'
+    required: false
+    default: 'ghcr.io'
+  registry-username:
+    description: 'Registry username'
+    required: false
+    default: ''
+  registry-password:
+    description: 'Registry password/token'
+    required: false
+    default: ''
+  build-args:
+    description: 'Build arguments (one per line)'
+    required: false
+    default: ''
+  cache-from:
+    description: 'Cache sources'
+    required: false
+    default: ''
+  cache-to:
+    description: 'Cache destinations'
+    required: false
+    default: ''
+
+outputs:
+  image-digest:
+    description: 'Image digest'
+    value: ${{ steps.build.outputs.digest }}
+  image-metadata:
+    description: 'Image metadata'
+    value: ${{ steps.build.outputs.metadata }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to container registry
+      if: inputs.push == 'true' && inputs.registry-username != ''
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ inputs.registry }}
+        username: ${{ inputs.registry-username }}
+        password: ${{ inputs.registry-password }}
+
+    - name: Generate image tags
+      id: tags
+      shell: bash
+      run: |
+        IMAGE_NAME="${{ inputs.image-name }}"
+        TAGS="${{ inputs.tags }}"
+
+        # Convert comma-separated tags to newline-separated full tags
+        FULL_TAGS=""
+        IFS=',' read -ra TAG_ARRAY <<< "$TAGS"
+        for tag in "${TAG_ARRAY[@]}"; do
+          tag=$(echo "$tag" | xargs)  # trim whitespace
+          if [ -n "$FULL_TAGS" ]; then
+            FULL_TAGS="$FULL_TAGS,$IMAGE_NAME:$tag"
+          else
+            FULL_TAGS="$IMAGE_NAME:$tag"
+          fi
+        done
+
+        echo "tags=$FULL_TAGS" >> $GITHUB_OUTPUT
+        echo "Generated tags: $FULL_TAGS"
+
+    - name: Build and push
+      id: build
+      uses: docker/build-push-action@v6
+      with:
+        context: ${{ inputs.context }}
+        file: ${{ inputs.context }}/${{ inputs.dockerfile }}
+        platforms: ${{ inputs.platform }}
+        push: ${{ inputs.push }}
+        tags: ${{ steps.tags.outputs.tags }}
+        build-args: ${{ inputs.build-args }}
+        cache-from: ${{ inputs.cache-from }}
+        cache-to: ${{ inputs.cache-to }}
+
+    - name: Image summary
+      shell: bash
+      run: |
+        echo "### Docker Build Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- **Image**: ${{ inputs.image-name }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Tags**: ${{ inputs.tags }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Platform**: ${{ inputs.platform }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Pushed**: ${{ inputs.push }}" >> $GITHUB_STEP_SUMMARY

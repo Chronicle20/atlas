@@ -130,6 +130,10 @@ jobs:
           tags: ${{ matrix.service.docker_image }}:latest-amd64
           cache-from: type=gha,scope=${{ matrix.service.name }}-amd64
           cache-to: type=gha,mode=max,scope=${{ matrix.service.name }}-amd64
+          # Disable attestations to produce single-platform image (not manifest list)
+          # Required for docker manifest create to work correctly
+          provenance: false
+          sbom: false
 
   # ============================================
   # Build and Push ARM64 Images
@@ -167,6 +171,10 @@ jobs:
           tags: ${{ matrix.service.docker_image }}:latest-arm64
           cache-from: type=gha,scope=${{ matrix.service.name }}-arm64
           cache-to: type=gha,mode=max,scope=${{ matrix.service.name }}-arm64
+          # Disable attestations to produce single-platform image (not manifest list)
+          # Required for docker manifest create to work correctly
+          provenance: false
+          sbom: false
 
   # ============================================
   # Create and Push Multi-Arch Manifests

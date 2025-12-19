@@ -156,15 +156,16 @@ func (c *Consumer) start(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 
 	l.Infof("Creating topic consumer.")
 
+	// Create cancellable context before spawning goroutine to avoid race condition
+	readerCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	go func() {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithCancel(ctx)
-		defer cancel()
 		for {
 			var msg kafka.Message
 			readerFunc := func(attempt int) (bool, error) {
 				var err error
-				msg, err = c.reader.ReadMessage(ctx)
+				msg, err = c.reader.ReadMessage(readerCtx)
 				if err == io.EOF || errors.Is(err, context.Canceled) {
 					return false, err
 				} else if err != nil {
@@ -182,44 +183,45 @@ func (c *Consumer) start(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 				l.WithError(err).Errorf("Could not successfully read message.")
 			} else {
 				l.Debugf("Message received %s.", string(msg.Value))
-				go func() {
-					wctx := ctx
+
+				// Pass msg as parameter to avoid closure capture race
+				go func(m kafka.Message) {
+					wctx := readerCtx
 					for _, p := range c.headerParsers {
-						wctx = p(wctx, msg.Headers)
+						wctx = p(wctx, m.Headers)
 					}
 
 					var span trace.Span
 					wctx, span = otel.GetTracerProvider().Tracer("atlas-kafka").Start(wctx, c.name)
-					l = l.WithField("trace.id", span.SpanContext().TraceID().String()).WithField("span.id", span.SpanContext().SpanID().String())
+					// Create new logger instance instead of reassigning shared logger
+					handlerLogger := l.WithField("trace.id", span.SpanContext().TraceID().String()).WithField("span.id", span.SpanContext().SpanID().String())
 					defer span.End()
 
+					// Deep copy handlers map to avoid race condition
 					c.mu.Lock()
-					handlers := c.handlers
+					handlersCopy := make(map[string]handler.Handler, len(c.handlers))
+					for k, v := range c.handlers {
+						handlersCopy[k] = v
+					}
 					c.mu.Unlock()
 
-					for id, h := range handlers {
+					for id, h := range handlersCopy {
 						var handle = h
 						var handleId = id
 						go func() {
-							var cont bool
-							cont, err = handle(l, wctx, msg)
+							// Use local error variable to avoid closure capture race
+							cont, handlerErr := handle(handlerLogger, wctx, m)
 							if !cont {
 								c.mu.Lock()
-								var nh = make(map[string]handler.Handler)
-								for tid, th := range c.handlers {
-									if handleId != tid {
-										nh[tid] = th
-									}
-								}
-								c.handlers = nh
+								delete(c.handlers, handleId)
 								c.mu.Unlock()
 							}
-							if err != nil {
-								l.WithError(err).Errorf("Handler [%s] failed.", handleId)
+							if handlerErr != nil {
+								handlerLogger.WithError(handlerErr).Errorf("Handler [%s] failed.", handleId)
 							}
 						}()
 					}
-				}()
+				}(msg)
 			}
 		}
 	}()

@@ -126,11 +126,11 @@ runs:
           ALL_GO_LIBRARIES+=("$LIBRARY")
         done
 
-        # Convert arrays to JSON
-        services_json=$(printf '%s\n' "${CHANGED_SERVICES[@]}" | jq -R . | jq -s .)
-        libraries_json=$(printf '%s\n' "${CHANGED_LIBRARIES[@]}" | jq -R . | jq -s .)
-        all_go_services_json=$(printf '%s\n' "${ALL_GO_SERVICES[@]}" | jq -R . | jq -s .)
-        all_go_libraries_json=$(printf '%s\n' "${ALL_GO_LIBRARIES[@]}" | jq -R . | jq -s .)
+        # Convert arrays to JSON (compact, single-line format required for GITHUB_OUTPUT)
+        services_json=$(printf '%s\n' "${CHANGED_SERVICES[@]}" | jq -R . | jq -sc .)
+        libraries_json=$(printf '%s\n' "${CHANGED_LIBRARIES[@]}" | jq -R . | jq -sc .)
+        all_go_services_json=$(printf '%s\n' "${ALL_GO_SERVICES[@]}" | jq -R . | jq -sc .)
+        all_go_libraries_json=$(printf '%s\n' "${ALL_GO_LIBRARIES[@]}" | jq -R . | jq -sc .)
 
         # Handle empty arrays
         if [ ${#CHANGED_SERVICES[@]} -eq 0 ]; then

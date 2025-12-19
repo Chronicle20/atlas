@@ -1,0 +1,11 @@
+meta {
+  name: Get All Tenants
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/configurations/tenants
+  body: none
+  auth: none
+}

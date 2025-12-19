@@ -1,0 +1,101 @@
+name: 'Go Test'
+description: 'Build and test Go modules with optional coverage and race detection'
+
+inputs:
+  working-directory:
+    description: 'Working directory containing go.mod'
+    required: true
+  go-version:
+    description: 'Go version to use'
+    required: false
+    default: '1.25.5'
+  race-detection:
+    description: 'Enable race detection'
+    required: false
+    default: 'false'
+  coverage:
+    description: 'Enable coverage reporting'
+    required: false
+    default: 'false'
+  coverage-threshold:
+    description: 'Minimum coverage percentage (fails if below)'
+    required: false
+    default: '0'
+  coverage-packages:
+    description: 'Packages to include in coverage (default: ./...)'
+    required: false
+    default: './...'
+
+outputs:
+  coverage-percentage:
+    description: 'Coverage percentage if coverage is enabled'
+    value: ${{ steps.coverage.outputs.percentage }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ inputs.go-version }}
+        cache-dependency-path: ${{ inputs.working-directory }}/go.sum
+
+    - name: Download dependencies
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        go mod download
+        go mod verify
+
+    - name: Build
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: go build -v ./...
+
+    - name: Run tests
+      if: inputs.race-detection != 'true' && inputs.coverage != 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: go test -v ./...
+
+    - name: Run tests with race detection
+      if: inputs.race-detection == 'true' && inputs.coverage != 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: go test -race -v ./...
+
+    - name: Run tests with coverage
+      if: inputs.coverage == 'true' && inputs.race-detection != 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        go test -cover -coverprofile=coverage.out ${{ inputs.coverage-packages }}
+        go tool cover -func=coverage.out
+
+    - name: Run tests with race detection and coverage
+      if: inputs.coverage == 'true' && inputs.race-detection == 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        go test -race -cover -coverprofile=coverage.out ${{ inputs.coverage-packages }}
+        go tool cover -func=coverage.out
+
+    - name: Check coverage threshold
+      id: coverage
+      if: inputs.coverage == 'true' && inputs.coverage-threshold != '0'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+        echo "Coverage: $COVERAGE%"
+        echo "percentage=$COVERAGE" >> $GITHUB_OUTPUT
+
+        THRESHOLD=${{ inputs.coverage-threshold }}
+        COVERAGE_INT=$(echo "$COVERAGE" | cut -d. -f1)
+
+        if [ "$COVERAGE_INT" -lt "$THRESHOLD" ]; then
+          echo "::error::Coverage $COVERAGE% is below minimum threshold of $THRESHOLD%"
+          exit 1
+        fi
+
+        echo "Coverage $COVERAGE% meets threshold of $THRESHOLD%"

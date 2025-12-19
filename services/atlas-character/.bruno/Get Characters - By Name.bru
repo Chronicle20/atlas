@@ -1,0 +1,15 @@
+meta {
+  name: Get Characters - By Name
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/characters?name=chronicle
+  body: none
+  auth: none
+}
+
+params:query {
+  name: chronicle
+}

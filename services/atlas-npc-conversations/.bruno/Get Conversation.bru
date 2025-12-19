@@ -1,0 +1,15 @@
+meta {
+  name: Get Conversation
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/npcs/conversations/{{conversationId}}
+  body: none
+  auth: inherit
+}
+
+vars:pre-request {
+  conversationId: 8f30012c-25d6-4783-a262-24dbb3d29a18
+}

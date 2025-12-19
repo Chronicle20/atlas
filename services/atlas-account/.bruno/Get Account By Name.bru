@@ -1,0 +1,15 @@
+meta {
+  name: Get Account By Name
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/accounts?name=Chronicle
+  body: none
+  auth: none
+}
+
+params:query {
+  name: Chronicle
+}

@@ -1,0 +1,55 @@
+meta {
+  name: Create Saga
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{scheme}}://{{host}}:{{port}}/api/sagas
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "data": {
+      "id": "cb956efc-6ea8-4e2d-b2a8-991c24b0c49a",
+      "type": "sagas",
+      "attributes": {
+        "transactionId": "cb956efc-6ea8-4e2d-b2a8-991c24b0c49a",
+        "sagaType": "inventory_award",
+        "initiatedBy": "tester",
+        "steps": [
+          {
+            "stepId": "give_item",
+            "status": "pending",
+            "action": "award_inventory",
+            "payload": {
+              "characterId": 56,
+              "item": {
+                "templateId": 1102041,
+                "quantity": 1
+              }
+            },
+            "createdAt": "2023-01-01T00:00:00Z",
+            "updatedAt": "2023-01-01T00:00:00Z"
+          },
+          {
+            "stepId": "give_item",
+            "status": "pending",
+            "action": "award_inventory",
+            "payload": {
+              "characterId": 56,
+              "item": {
+                "templateId": 2041041,
+                "quantity": 10
+              }
+            },
+            "createdAt": "2023-01-01T00:00:00Z",
+            "updatedAt": "2023-01-01T00:00:00Z"
+          }
+        ]
+      }
+    }
+  }
+}

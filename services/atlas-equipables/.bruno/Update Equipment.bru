@@ -1,0 +1,39 @@
+meta {
+  name: Update Equipment
+  type: http
+  seq: 3
+}
+
+patch {
+  url: {{scheme}}://{{host}}:{{port}}/api/equipables/21
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "data": {
+      "type": "equipables",
+      "id": "21",
+      "attributes": {
+        "itemId": 1472000,
+        "strength": 0,
+        "dexterity": 0,
+        "intelligence": 0,
+        "luck": 0,
+        "hp": 0,
+        "mp": 0,
+        "weaponAttack": 10,
+        "magicAttack": 0,
+        "weaponDefense": 0,
+        "magicDefense": 0,
+        "accuracy": 0,
+        "avoidability": 0,
+        "hands": 0,
+        "speed": 0,
+        "jump": 0,
+        "slots": 7
+      }
+    }
+  }
+}

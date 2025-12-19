@@ -1,0 +1,161 @@
+name: 'Detect Changes'
+description: 'Detect which services and libraries have changed in the monorepo'
+
+inputs:
+  base-ref:
+    description: 'Base ref for comparison (default: origin/main for PRs)'
+    required: false
+    default: ''
+
+outputs:
+  services:
+    description: 'JSON array of changed services'
+    value: ${{ steps.detect.outputs.services }}
+  libraries:
+    description: 'JSON array of changed libraries'
+    value: ${{ steps.detect.outputs.libraries }}
+  has-service-changes:
+    description: 'Whether any services changed'
+    value: ${{ steps.detect.outputs.has_service_changes }}
+  has-library-changes:
+    description: 'Whether any libraries changed'
+    value: ${{ steps.detect.outputs.has_library_changes }}
+  has-ui-changes:
+    description: 'Whether atlas-ui changed'
+    value: ${{ steps.detect.outputs.has_ui_changes }}
+  has-go-workspace-changes:
+    description: 'Whether go.work changed (triggers all Go builds)'
+    value: ${{ steps.detect.outputs.has_go_workspace_changes }}
+  has-workflow-changes:
+    description: 'Whether .github workflows changed'
+    value: ${{ steps.detect.outputs.has_workflow_changes }}
+  all-go-services:
+    description: 'JSON array of all Go services (for full rebuilds)'
+    value: ${{ steps.detect.outputs.all_go_services }}
+  all-go-libraries:
+    description: 'JSON array of all Go libraries (for full rebuilds)'
+    value: ${{ steps.detect.outputs.all_go_libraries }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Fetch base branch for comparison
+      shell: bash
+      run: |
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          git fetch origin ${{ github.base_ref }} --depth=1
+        else
+          # For push events, compare with previous commit
+          git fetch origin main --depth=2
+        fi
+
+    - name: Detect changed files and services
+      id: detect
+      shell: bash
+      run: |
+        # Determine base ref for comparison
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          BASE_REF="origin/${{ github.base_ref }}"
+        elif [ -n "${{ inputs.base-ref }}" ]; then
+          BASE_REF="${{ inputs.base-ref }}"
+        else
+          BASE_REF="HEAD~1"
+        fi
+
+        echo "Comparing against: $BASE_REF"
+
+        # Get list of changed files
+        CHANGED_FILES=$(git diff --name-only $BASE_REF HEAD 2>/dev/null || echo "")
+        echo "Changed files:"
+        echo "$CHANGED_FILES"
+
+        # Initialize arrays
+        CHANGED_SERVICES=()
+        CHANGED_LIBRARIES=()
+
+        # Check for global triggers
+        HAS_GO_WORKSPACE_CHANGES="false"
+        HAS_WORKFLOW_CHANGES="false"
+        HAS_UI_CHANGES="false"
+
+        if echo "$CHANGED_FILES" | grep -q "^go\.work"; then
+          HAS_GO_WORKSPACE_CHANGES="true"
+          echo "go.work changed - will trigger all Go builds"
+        fi
+
+        if echo "$CHANGED_FILES" | grep -q "^\.github/"; then
+          HAS_WORKFLOW_CHANGES="true"
+          echo ".github changed - will trigger all builds"
+        fi
+
+        # Detect changed services
+        while IFS= read -r file; do
+          if [[ "$file" =~ ^services/([^/]+)/ ]]; then
+            SERVICE="${BASH_REMATCH[1]}"
+            if [[ ! " ${CHANGED_SERVICES[*]} " =~ " ${SERVICE} " ]]; then
+              CHANGED_SERVICES+=("$SERVICE")
+              if [[ "$SERVICE" == "atlas-ui" ]]; then
+                HAS_UI_CHANGES="true"
+              fi
+            fi
+          fi
+        done <<< "$CHANGED_FILES"
+
+        # Detect changed libraries
+        while IFS= read -r file; do
+          if [[ "$file" =~ ^libs/([^/]+)/ ]]; then
+            LIBRARY="${BASH_REMATCH[1]}"
+            if [[ ! " ${CHANGED_LIBRARIES[*]} " =~ " ${LIBRARY} " ]]; then
+              CHANGED_LIBRARIES+=("$LIBRARY")
+            fi
+          fi
+        done <<< "$CHANGED_FILES"
+
+        # Build all services/libraries lists (for full rebuilds)
+        ALL_GO_SERVICES=()
+        for dir in services/atlas-*/; do
+          SERVICE=$(basename "$dir")
+          if [[ "$SERVICE" != "atlas-ui" ]]; then
+            ALL_GO_SERVICES+=("$SERVICE")
+          fi
+        done
+
+        ALL_GO_LIBRARIES=()
+        for dir in libs/atlas-*/; do
+          LIBRARY=$(basename "$dir")
+          ALL_GO_LIBRARIES+=("$LIBRARY")
+        done
+
+        # Convert arrays to JSON
+        services_json=$(printf '%s\n' "${CHANGED_SERVICES[@]}" | jq -R . | jq -s .)
+        libraries_json=$(printf '%s\n' "${CHANGED_LIBRARIES[@]}" | jq -R . | jq -s .)
+        all_go_services_json=$(printf '%s\n' "${ALL_GO_SERVICES[@]}" | jq -R . | jq -s .)
+        all_go_libraries_json=$(printf '%s\n' "${ALL_GO_LIBRARIES[@]}" | jq -R . | jq -s .)
+
+        # Handle empty arrays
+        if [ ${#CHANGED_SERVICES[@]} -eq 0 ]; then
+          services_json="[]"
+        fi
+        if [ ${#CHANGED_LIBRARIES[@]} -eq 0 ]; then
+          libraries_json="[]"
+        fi
+
+        # Set outputs
+        echo "services=$services_json" >> $GITHUB_OUTPUT
+        echo "libraries=$libraries_json" >> $GITHUB_OUTPUT
+        echo "all_go_services=$all_go_services_json" >> $GITHUB_OUTPUT
+        echo "all_go_libraries=$all_go_libraries_json" >> $GITHUB_OUTPUT
+        echo "has_service_changes=$( [ ${#CHANGED_SERVICES[@]} -gt 0 ] && echo 'true' || echo 'false' )" >> $GITHUB_OUTPUT
+        echo "has_library_changes=$( [ ${#CHANGED_LIBRARIES[@]} -gt 0 ] && echo 'true' || echo 'false' )" >> $GITHUB_OUTPUT
+        echo "has_ui_changes=$HAS_UI_CHANGES" >> $GITHUB_OUTPUT
+        echo "has_go_workspace_changes=$HAS_GO_WORKSPACE_CHANGES" >> $GITHUB_OUTPUT
+        echo "has_workflow_changes=$HAS_WORKFLOW_CHANGES" >> $GITHUB_OUTPUT
+
+        # Summary
+        echo ""
+        echo "=== Detection Summary ==="
+        echo "Changed services: ${CHANGED_SERVICES[*]:-none}"
+        echo "Changed libraries: ${CHANGED_LIBRARIES[*]:-none}"
+        echo "UI changes: $HAS_UI_CHANGES"
+        echo "Go workspace changes: $HAS_GO_WORKSPACE_CHANGES"
+        echo "Workflow changes: $HAS_WORKFLOW_CHANGES"

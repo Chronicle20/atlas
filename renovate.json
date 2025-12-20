@@ -8,6 +8,7 @@
   "automerge": true,
   "automergeType": "pr",
   "platformAutomerge": true,
+  "allowedPostUpgradeCommands": ["go mod tidy"],
   "enabledManagers": ["gomod", "npm", "dockerfile"],
   "postUpgradeTasks": {
     "commands": ["go mod tidy"],

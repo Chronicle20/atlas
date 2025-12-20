@@ -9,11 +9,22 @@
   "automergeType": "pr",
   "platformAutomerge": true,
   "allowedCommands": ["go mod tidy"],
-  "allowedPostUpgradeCommands": ["go mod tidy"],
+  "allowedPostUpgradeCommands": [
+    "go mod tidy",
+    "cd services/atlas-ui && npm install --package-lock-only"
+  ],
   "enabledManagers": ["gomod", "npm", "dockerfile"],
   "postUpgradeTasks": {
-    "commands": ["go mod tidy"],
-    "fileFilters": ["**/go.mod", "**/go.sum"],
+    "commands": [
+      "go mod tidy",
+      "cd services/atlas-ui && npm install --package-lock-only"
+    ],
+    "fileFilters": [
+      "**/go.mod",
+      "**/go.sum",
+      "services/atlas-ui/package.json",
+      "services/atlas-ui/package-lock.json"
+    ],
     "executionMode": "branch"
   },
   "packageRules": [

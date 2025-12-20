@@ -1,0 +1,99 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":separateMajorReleases",
+    ":combinePatchMinorReleases"
+  ],
+  "automerge": true,
+  "automergeType": "pr",
+  "platformAutomerge": true,
+  "enabledManagers": ["gomod", "npm", "dockerfile"],
+  "postUpgradeTasks": {
+    "commands": ["go mod tidy"],
+    "fileFilters": ["**/go.mod", "**/go.sum"],
+    "executionMode": "branch"
+  },
+  "packageRules": [
+    {
+      "description": "Group Go version updates across all services",
+      "matchManagers": ["gomod"],
+      "matchPackageNames": ["go"],
+      "groupName": "go-version",
+      "automerge": true,
+      "matchUpdateTypes": ["minor", "patch"]
+    },
+    {
+      "description": "Manual merge for major Go version updates",
+      "matchManagers": ["gomod"],
+      "matchPackageNames": ["go"],
+      "matchUpdateTypes": ["major"],
+      "automerge": false
+    },
+    {
+      "description": "Group Dockerfile golang base image updates",
+      "matchManagers": ["dockerfile"],
+      "matchPackageNames": ["golang"],
+      "groupName": "dockerfile-golang",
+      "automerge": true
+    },
+    {
+      "description": "Group Dockerfile node base image updates",
+      "matchManagers": ["dockerfile"],
+      "matchPackageNames": ["node"],
+      "groupName": "dockerfile-node",
+      "automerge": true
+    },
+    {
+      "description": "Group Chronicle20 library updates",
+      "matchManagers": ["gomod"],
+      "matchPackagePatterns": ["^github.com/Chronicle20/"],
+      "groupName": "chronicle20-libs",
+      "automerge": true,
+      "matchUpdateTypes": ["minor", "patch"]
+    },
+    {
+      "description": "Manual merge for major Chronicle20 library updates",
+      "matchManagers": ["gomod"],
+      "matchPackagePatterns": ["^github.com/Chronicle20/"],
+      "matchUpdateTypes": ["major"],
+      "automerge": false
+    },
+    {
+      "description": "Auto-merge patch/minor Go dependencies",
+      "matchManagers": ["gomod"],
+      "matchUpdateTypes": ["patch", "minor"],
+      "automerge": true
+    },
+    {
+      "description": "Manual merge for major Go dependency updates",
+      "matchManagers": ["gomod"],
+      "matchUpdateTypes": ["major"],
+      "automerge": false
+    },
+    {
+      "description": "Group atlas-ui production dependencies",
+      "matchManagers": ["npm"],
+      "matchFileNames": ["services/atlas-ui/**"],
+      "matchDepTypes": ["dependencies"],
+      "groupName": "atlas-ui-prod-deps",
+      "automerge": true,
+      "matchUpdateTypes": ["patch", "minor"]
+    },
+    {
+      "description": "Group atlas-ui dev dependencies",
+      "matchManagers": ["npm"],
+      "matchFileNames": ["services/atlas-ui/**"],
+      "matchDepTypes": ["devDependencies"],
+      "groupName": "atlas-ui-dev-deps",
+      "automerge": true,
+      "matchUpdateTypes": ["patch", "minor"]
+    },
+    {
+      "description": "Manual merge for major npm updates",
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["major"],
+      "automerge": false
+    }
+  ]
+}

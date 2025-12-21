@@ -1,0 +1,282 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: atlas-ingress-configmap
+  namespace: atlas
+data:
+  nginx.conf: |
+    worker_processes  1;
+
+    events {
+      worker_connections  1024;
+    }
+
+
+    http {
+      include mime.types;
+      default_type  application/octet-stream;
+
+      sendfile        on;
+
+      keepalive_timeout  300;
+      proxy_read_timeout 1800;
+      proxy_connect_timeout 1800;
+      proxy_send_timeout 1800;
+      send_timeout 1800;
+
+      underscores_in_headers on;
+
+      server {
+        listen       80;
+        server_name  dev.atlas.home;
+
+        client_max_body_size 500M;
+
+        resolver 10.43.0.10 valid=30s;
+
+        proxy_pass_request_headers on;
+        proxy_set_header TENANT_ID $http_tenant_id;
+        proxy_set_header REGION $http_region;
+        proxy_set_header MAJOR_VERSION $http_major_version;
+        proxy_set_header MINOR_VERSION $http_minor_version;
+
+        location ~ ^/api/messengers(/.*)?$ {
+          proxy_pass http://atlas-messengers.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/parties(/.*)?$ {
+          proxy_pass http://atlas-parties.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/guilds(/.*)?$ {
+          proxy_pass http://atlas-guilds.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/pets(/.*)?$ {
+          proxy_pass http://atlas-pets.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/accounts/[^/]+/cash-shop(/.*)?$ {
+          proxy_pass http://atlas-cashshop.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/accounts/[^/]+/wallet(/.*)?$ {
+          proxy_pass http://atlas-cashshop.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/characters/[^/]+/buddy-list(/.*)?$ {
+          proxy_pass http://atlas-buddies.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/characters/[^/]+/buffs(/.*)?$ {
+          proxy_pass http://atlas-buffs.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/characters/[^/]+/invites(/.*)?$ {
+          proxy_pass http://atlas-invites.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/characters/[^/]+/keys(/.*)?$ {
+          proxy_pass http://atlas-keys.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/characters/[^/]+/pets(/.*)?$ {
+          proxy_pass http://atlas-pets.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/characters/[^/]+/skills(/.*)?$ {
+          proxy_pass http://atlas-skills.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/characters/[^/]+/macros(/.*)?$ {
+          proxy_pass http://atlas-skills.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/characters/[^/]+/cash-shop(/.*)?$ {
+          proxy_pass http://atlas-cashshop.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/characters/[^/]+/inventory(/.*)?$ {
+          proxy_pass http://atlas-inventory.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/characters/[^/]+/notes(/.*)?$ {
+          proxy_pass http://atlas-notes.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/cash-shop(/.*)?$ {
+          proxy_pass http://atlas-cashshop.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/drops(/.*)?$ {
+          proxy_pass http://atlas-drops.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/chalkboards(/.*)?$ {
+          proxy_pass http://atlas-chalkboards.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/chairs(/.*)?$ {
+          proxy_pass http://atlas-chairs.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/drops(/.*)?$ {
+          proxy_pass http://atlas-drops.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/configurations(/.*)?$ {
+          proxy_pass http://atlas-configurations.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/accounts(/.*)?$ {
+          proxy_pass http://atlas-account.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/characters/seed(/.*)?$ {
+          proxy_pass http://atlas-character-factory.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/characters(/.*)?$ {
+          proxy_pass http://atlas-character.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/data(/.*)?$ {
+          proxy_pass http://atlas-data.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/equipables(/.*)?$ {
+          proxy_pass http://atlas-equipables.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/characters(/.*)?$ {
+          proxy_pass http://atlas-maps.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/monsters(/.*)?$ {
+          proxy_pass http://atlas-monsters.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/monsters/[^/]+/drops(/.*)?$ {
+          proxy_pass http://atlas-drop-information.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/monsters(/.*)?$ {
+          proxy_pass http://atlas-monsters.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/npcs/conversations(/.*)?$ {
+          proxy_pass http://atlas-npc-conversations.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/npcs/[^/]+/conversations(/.*)?$ {
+          proxy_pass http://atlas-npc-conversations.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/npcs(/.*)?$ {
+          proxy_pass http://atlas-npc-shops.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/notes(/.*)?$ {
+          proxy_pass http://atlas-notes.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/shops(/.*)?$ {
+          proxy_pass http://atlas-npc-shops.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/tenants(/.*)?$ {
+          proxy_pass http://atlas-tenants.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/transports(/.*)?$ {
+          proxy_pass http://atlas-transports.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/reactors(/.*)?$ {
+          proxy_pass http://atlas-reactors.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/reactors(/.*)?$ {
+          proxy_pass http://atlas-reactors.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/sagas(/.*)?$ {
+          proxy_pass http://atlas-saga-orchestrator.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/validations(/.*)?$ {
+          proxy_pass http://atlas-query-aggregator.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/worlds(/.*)?$ {
+          proxy_pass http://atlas-world.atlas.svc.cluster.local:8080;
+        }
+
+        location / {
+          proxy_pass http://atlas-ui.atlas.svc.cluster.local:3000;
+        }
+      }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-ingress
+  namespace: atlas
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: atlas-ingress
+  template:
+    metadata:
+      labels:
+        app: atlas-ingress
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: nginx-conf-volume
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+      volumes:
+      - name: nginx-conf-volume
+        configMap:
+          name: atlas-ingress-configmap
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-ingress
+  namespace: atlas
+spec:
+  selector:
+    app: atlas-ingress
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: atlas-ingress
+  namespace: atlas
+spec:
+  ingressClassName: traefik
+  rules:
+  - host: dev.atlas.home
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: atlas-ingress
+            port:
+              number: 80

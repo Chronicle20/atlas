@@ -1,0 +1,51 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-configurations
+  namespace: atlas
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: atlas-configurations
+  template:
+    metadata:
+      labels:
+        app: atlas-configurations
+    spec:
+      containers:
+      - name: configurations
+        image: ghcr.io/chronicle20/atlas-configurations/atlas-configurations:latest
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: atlas-env
+        env:
+        - name: LOG_LEVEL
+          value: "debug"
+        - name: DB_NAME
+          value: "atlas-configurations"
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: DB_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: DB_PASSWORD
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-configurations
+  namespace: atlas
+spec:
+  selector:
+    app: atlas-configurations
+  ports:
+  - protocol: TCP
+    port: 8080

@@ -1,0 +1,39 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-query-aggregator
+  namespace: atlas
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: atlas-query-aggregator
+  template:
+    metadata:
+      labels:
+        app: atlas-query-aggregator
+    spec:
+      containers:
+      - name: guilds
+        image: ghcr.io/chronicle20/atlas-query-aggregator/atlas-query-aggregator
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: atlas-env
+        env:
+        - name: LOG_LEVEL
+          value: "debug"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-query-aggregator
+  namespace: atlas
+spec:
+  selector:
+    app: atlas-query-aggregator
+  ports:
+  - protocol: TCP
+    port: 8080

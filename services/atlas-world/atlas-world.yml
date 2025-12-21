@@ -1,0 +1,43 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-world
+  namespace: atlas
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: atlas-world
+  template:
+    metadata:
+      labels:
+        app: atlas-world
+    spec:
+      containers:
+      - name: world
+        image: ghcr.io/chronicle20/atlas-world/atlas-world:latest
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: atlas-env
+        env:
+        - name: LOG_LEVEL
+          value: "debug"
+        - name: SERVICE_ID
+          value: 00000000-0000-0000-0000-000000000000
+        - name: SERVICE_TYPE
+          value: world-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-world
+  namespace: atlas
+spec:
+  selector:
+    app: atlas-world
+  ports:
+  - protocol: TCP
+    port: 8080

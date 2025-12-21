@@ -1,0 +1,25 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-portals
+  namespace: atlas
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: atlas-portals
+  template:
+    metadata:
+      labels:
+        app: atlas-portals
+    spec:
+      containers:
+      - name: portals
+        image: ghcr.io/chronicle20/atlas-portals/atlas-portals:latest
+        envFrom:
+        - configMapRef:
+            name: atlas-env
+        env:
+        - name: LOG_LEVEL
+          value: "debug"

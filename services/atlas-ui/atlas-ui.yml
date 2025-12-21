@@ -1,0 +1,36 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-ui
+  namespace: atlas
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: atlas-ui
+  template:
+    metadata:
+      labels:
+        app: atlas-ui
+    spec:
+      containers:
+      - name: ui
+        image: ghcr.io/chronicle20/atlas-ui/atlas-ui:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: NEXT_PUBLIC_ROOT_API_URL
+          value: "http://atlas-ingress.atlas.svc.cluster.local"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-ui
+  namespace: atlas
+spec:
+  selector:
+    app: atlas-ui
+  ports:
+  - protocol: TCP
+    port: 3000

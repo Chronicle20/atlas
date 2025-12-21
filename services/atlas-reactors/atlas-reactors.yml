@@ -1,0 +1,39 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-reactors
+  namespace: atlas
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: atlas-reactors
+  template:
+    metadata:
+      labels:
+        app: atlas-reactors
+    spec:
+      containers:
+      - name: reactors
+        image: ghcr.io/chronicle20/atlas-reactors/atlas-reactors:latest
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: atlas-env
+        env:
+        - name: LOG_LEVEL
+          value: "debug"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-reactors
+  namespace: atlas
+spec:
+  selector:
+    app: atlas-reactors
+  ports:
+  - protocol: TCP
+    port: 8080

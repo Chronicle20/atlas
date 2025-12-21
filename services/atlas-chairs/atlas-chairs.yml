@@ -1,0 +1,39 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-chairs
+  namespace: atlas
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: atlas-chairs
+  template:
+    metadata:
+      labels:
+        app: atlas-chairs
+    spec:
+      containers:
+      - name: chairs
+        image: ghcr.io/chronicle20/atlas-chairs/atlas-chairs:latest
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: atlas-env
+        env:
+        - name: LOG_LEVEL
+          value: "debug"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-chairs
+  namespace: atlas
+spec:
+  selector:
+    app: atlas-chairs
+  ports:
+  - protocol: TCP
+    port: 8080

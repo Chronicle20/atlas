@@ -1,0 +1,25 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-compartment-transfer
+  namespace: atlas
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: atlas-compartment-transfer
+  template:
+    metadata:
+      labels:
+        app: atlas-compartment-transfer
+    spec:
+      containers:
+      - name: atlas-compartment-transfer
+        image: ghcr.io/chronicle20/atlas-compartment-transfer/atlas-compartment-transfer:latest
+        envFrom:
+        - configMapRef:
+            name: atlas-env
+        env:
+        - name: LOG_LEVEL
+          value: "debug"

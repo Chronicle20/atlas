@@ -1,0 +1,43 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-drops
+  namespace: atlas
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: atlas-drops
+  template:
+    metadata:
+      labels:
+        app: atlas-drops
+    spec:
+      containers:
+      - name: drops
+        image: ghcr.io/chronicle20/atlas-drops/atlas-drops:latest
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: atlas-env
+        env:
+        - name: LOG_LEVEL
+          value: "debug"
+        - name: SERVICE_ID
+          value: 00000000-0000-0000-0000-000000000000
+        - name: SERVICE_TYPE
+          value: drops-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-drops
+  namespace: atlas
+spec:
+  selector:
+    app: atlas-drops
+  ports:
+  - protocol: TCP
+    port: 8080

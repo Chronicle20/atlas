@@ -1,0 +1,39 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-maps
+  namespace: atlas
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: atlas-maps
+  template:
+    metadata:
+      labels:
+        app: atlas-maps
+    spec:
+      containers:
+      - name: maps
+        image: ghcr.io/chronicle20/atlas-maps/atlas-maps:latest
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: atlas-env
+        env:
+        - name: LOG_LEVEL
+          value: "debug"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-maps
+  namespace: atlas
+spec:
+  selector:
+    app: atlas-maps
+  ports:
+  - protocol: TCP
+    port: 8080

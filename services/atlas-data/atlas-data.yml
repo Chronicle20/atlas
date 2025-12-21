@@ -1,0 +1,93 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: atlas-data-volume
+  labels:
+    directory: atlas
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 10Gi
+  accessModes:
+  - ReadWriteMany
+  persistentVolumeReclaimPolicy: Delete
+  nfs:
+    path: /volume1/K3S/atlas/data
+    server: nas.local.dev
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: atlas-data-claim
+  namespace: atlas
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  selector:
+    matchLabels:
+      directory: atlas
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-data
+  namespace: atlas
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: atlas-data
+  template:
+    metadata:
+      labels:
+        app: atlas-data
+    spec:
+      containers:
+      - name: data
+        image: ghcr.io/chronicle20/atlas-data/atlas-data:latest
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: atlas-env
+        env:
+        - name: LOG_LEVEL
+          value: "debug"
+        - name: DB_NAME
+          value: "atlas-data"
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: DB_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: DB_PASSWORD
+        - name: ZIP_DIR
+          value: "/usr/data"
+        volumeMounts:
+          - mountPath: "/usr/data"
+            name: atlas-data-storage
+      volumes:
+        - name: atlas-data-storage
+          persistentVolumeClaim:
+            claimName: atlas-data-claim
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-data
+  namespace: atlas
+spec:
+  selector:
+    app: atlas-data
+  ports:
+  - protocol: TCP
+    port: 8080

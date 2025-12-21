@@ -1,0 +1,51 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-npc-shops
+  namespace: atlas
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: atlas-npc-shops
+  template:
+    metadata:
+      labels:
+        app: atlas-npc-shops
+    spec:
+      containers:
+      - name: npc-shops
+        image: ghcr.io/chronicle20/atlas-npc-shops/atlas-npc-shops:latest
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: atlas-env
+        env:
+        - name: LOG_LEVEL
+          value: "debug"
+        - name: DB_NAME
+          value: "atlas-npc-shops"
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: DB_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: DB_PASSWORD
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-npc-shops
+  namespace: atlas
+spec:
+  selector:
+    app: atlas-npc-shops
+  ports:
+  - protocol: TCP
+    port: 8080

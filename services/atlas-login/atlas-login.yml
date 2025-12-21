@@ -1,0 +1,74 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-login
+  namespace: atlas
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: atlas-login
+  template:
+    metadata:
+      labels:
+        app: atlas-login
+    spec:
+      containers:
+      - name: atlas-login
+        image: ghcr.io/chronicle20/atlas-login/atlas-login:latest
+        ports:
+        - containerPort: 1200
+        - containerPort: 8300
+        - containerPort: 8700
+        - containerPort: 9200
+        - containerPort: 9500
+        - containerPort: 18500
+        envFrom:
+        - configMapRef:
+            name: atlas-env
+        env:
+        - name: LOG_LEVEL
+          value: "debug"
+        - name: SERVICE_ID
+          value: e7fb1d7e-47b8-46bd-97dc-867d93530856
+        - name: SERVICE_TYPE
+          value: login-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-login-lb
+  namespace: atlas
+  labels:
+    app: atlas-login
+spec:
+  type: LoadBalancer
+  selector:
+    app: atlas-login
+  ports:
+  - port: 1200 
+    targetPort: 1200
+    protocol: TCP
+    name: atlas-login-gms-12
+  - port: 8300 
+    targetPort: 8300
+    protocol: TCP
+    name: atlas-login-gms-83
+  - port: 8700 
+    targetPort: 8700
+    protocol: TCP
+    name: atlas-login-gms-87
+  - port: 9200 
+    targetPort: 9200
+    protocol: TCP
+    name: atlas-login-gms-92
+  - port: 9500 
+    targetPort: 9500
+    protocol: TCP
+    name: atlas-login-gms-95
+  - port: 18500 
+    targetPort: 18500
+    protocol: TCP
+    name: atlas-login-jms-185
+  loadBalancerIP: 192.168.20.30

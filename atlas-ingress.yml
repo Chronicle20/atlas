@@ -29,7 +29,7 @@ data:
 
       server {
         listen       80;
-        server_name  ms.atlas.dev;
+        server_name  dev.atlas.home;
 
         client_max_body_size 500M;
 
@@ -251,7 +251,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: atlas-ingress-service
+  name: atlas-ingress
   namespace: atlas
 spec:
   selector:
@@ -262,20 +262,21 @@ spec:
       targetPort: 80
   type: ClusterIP
 ---
-apiVersion: v1
-kind: Service
+apiVersion: networking.k8s.io/v1
+kind: Ingress
 metadata:
-  name: atlas-ingress-lb
+  name: atlas-ingress
   namespace: atlas
-  labels:
-    app: atlas-ingress-service
 spec:
-  type: LoadBalancer
-  selector:
-    app: atlas-ingress
-  ports:
-  - port: 80 
-    targetPort: 80
-    protocol: TCP
-    name: atlas-ingress-http
-  loadBalancerIP: 192.168.20.29
+  ingressClassName: traefik
+  rules:
+  - host: dev.atlas.home
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: atlas-ingress
+            port:
+              number: 80

@@ -1,0 +1,26 @@
+meta {
+  name: Create Tenant
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{scheme}}://{{host}}:{{port}}/api/tenants
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "data": {
+      "type": "tenants",
+      "id": "083839c6-c47c-42a6-9585-76492795d123",
+      "attributes": {
+        "name": "GMSv83.1",
+        "region": "GMS",
+        "majorVersion": 83,
+        "minorVersion": 1
+      }
+    }
+  }
+}

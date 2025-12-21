@@ -1,0 +1,64 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-channel
+  namespace: atlas
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: atlas-channel
+  template:
+    metadata:
+      labels:
+        app: atlas-channel
+    spec:
+      containers:
+      - name: atlas-channel
+        image: ghcr.io/chronicle20/atlas-channel/atlas-channel:latest
+        ports:
+        - containerPort: 1201
+        - containerPort: 8301
+        - containerPort: 8701
+        - containerPort: 18501
+        envFrom:
+        - configMapRef:
+            name: atlas-env
+        env:
+        - name: LOG_LEVEL
+          value: "debug"
+        - name: SERVICE_ID
+          value: e7fb1d7e-47b8-46bd-97dc-867d93530000
+        - name: SERVICE_TYPE
+          value: channel-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-channel-lb
+  namespace: atlas
+  labels:
+    app: atlas-channel
+spec:
+  type: LoadBalancer
+  selector:
+    app: atlas-channel
+  ports:
+  - port: 1201
+    targetPort: 1201
+    protocol: TCP
+    name: atlas-channel-gms-12
+  - port: 8301
+    targetPort: 8301
+    protocol: TCP
+    name: atlas-channel-gms-83
+  - port: 8701
+    targetPort: 8701
+    protocol: TCP
+    name: atlas-channel-gms-87
+  - port: 18501
+    targetPort: 18501
+    protocol: TCP
+    name: atlas-channel-jms-185
+  loadBalancerIP: 192.168.20.31

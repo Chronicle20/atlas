@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: atlas
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: db-credentials
+  namespace: atlas
+type: Opaque
+data:
+  DB_USER: YXRsYXMgDQo=
+  DB_PASSWORD: YXRsYXMgDQo=

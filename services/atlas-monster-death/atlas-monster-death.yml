@@ -1,0 +1,39 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-monster-death
+  namespace: atlas
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: atlas-monster-death
+  template:
+    metadata:
+      labels:
+        app: atlas-monster-death
+    spec:
+      containers:
+      - name: atlas-monster-death
+        image: ghcr.io/chronicle20/atlas-monster-death/atlas-monster-death:latest
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: atlas-env
+        env:
+        - name: LOG_LEVEL
+          value: "debug"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-monster-death
+  namespace: atlas
+spec:
+  selector:
+    app: atlas-monster-death
+  ports:
+  - protocol: TCP
+    port: 8080

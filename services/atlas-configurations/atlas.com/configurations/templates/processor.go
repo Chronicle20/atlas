@@ -4,6 +4,7 @@ import (
 	"atlas-configurations/database"
 	"context"
 	"encoding/json"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -29,6 +30,10 @@ func (p *Processor) ByRegionAndVersionProvider(region string, majorVersion uint1
 	return model.Map(Make)(byRegionVersionEntityProvider(p.ctx)(region, majorVersion, minorVersion)(p.db))
 }
 
+func (p *Processor) ByIdProvider(templateId uuid.UUID) model.Provider[RestModel] {
+	return model.Map(Make)(byIdEntityProvider(p.ctx)(templateId)(p.db))
+}
+
 func (p *Processor) AllProvider() model.Provider[[]RestModel] {
 	return func() ([]RestModel, error) {
 		return model.SliceMap(Make)(allEntityProvider(p.ctx)(p.db))()()
@@ -51,6 +56,10 @@ func (p *Processor) GetAll() ([]RestModel, error) {
 
 func (p *Processor) GetByRegionAndVersion(region string, majorVersion uint16, minorVersion uint16) (RestModel, error) {
 	return p.ByRegionAndVersionProvider(region, majorVersion, minorVersion)()
+}
+
+func (p *Processor) GetById(templateId uuid.UUID) (RestModel, error) {
+	return p.ByIdProvider(templateId)()
 }
 
 func (p *Processor) Create(input RestModel) (uuid.UUID, error) {

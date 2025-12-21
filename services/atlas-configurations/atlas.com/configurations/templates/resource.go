@@ -2,13 +2,14 @@ package templates
 
 import (
 	"atlas-configurations/rest"
+	"net/http"
+
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"net/http"
 )
 
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
@@ -18,6 +19,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r.HandleFunc("", rest.RegisterInputHandler[RestModel](l)(si)("create_configuration_template", handleCreateConfigurationTemplate(db))).Methods(http.MethodPost)
 			r.HandleFunc("", rest.RegisterHandler(l)(si)("get_configuration_template", handleGetConfigurationTemplate(db))).Methods(http.MethodGet).Queries("region", "{region}", "majorVersion", "{majorVersion}", "minorVersion", "{minorVersion}")
 			r.HandleFunc("", rest.RegisterHandler(l)(si)("get_configuration_templates", handleGetConfigurationTemplates(db))).Methods(http.MethodGet)
+			r.HandleFunc("/{templateId}", rest.RegisterHandler(l)(si)("get_configuration_template", handleGetConfigurationTemplateById(db))).Methods(http.MethodGet)
 			r.HandleFunc("/{templateId}", rest.RegisterInputHandler[RestModel](l)(si)("update_configuration_template", handleUpdateConfigurationTemplate(db))).Methods(http.MethodPatch)
 			r.HandleFunc("/{templateId}", rest.RegisterHandler(l)(si)("delete_configuration_template", handleDeleteConfigurationTemplate(db))).Methods(http.MethodDelete)
 		}
@@ -86,6 +88,25 @@ func handleGetConfigurationTemplates(db *gorm.DB) rest.GetHandler {
 			queryParams := jsonapi.ParseQueryFields(&query)
 			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(cts)
 		}
+	}
+}
+
+func handleGetConfigurationTemplateById(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseTemplateId(d.Logger(), func(templateId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				cts, err := NewProcessor(d.Logger(), d.Context(), db).GetById(templateId)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Unable to get configuration templates.")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(cts)
+			}
+		})
 	}
 }
 

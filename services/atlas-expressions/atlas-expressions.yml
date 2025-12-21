@@ -1,0 +1,25 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-expressions
+  namespace: atlas
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: atlas-expressions
+  template:
+    metadata:
+      labels:
+        app: atlas-expressions
+    spec:
+      containers:
+      - name: expressions
+        image: ghcr.io/chronicle20/atlas-expressions/atlas-expressions:latest
+        envFrom:
+        - configMapRef:
+            name: atlas-env
+        env:
+        - name: LOG_LEVEL
+          value: "debug"

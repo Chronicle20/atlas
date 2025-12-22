@@ -1,22 +1,35 @@
 import '@testing-library/jest-dom'
 
-// Mock next/navigation
+// Configurable mock state for next/navigation
+// Tests can import and modify this to control mock behavior
+global.__mockNextNavigation = {
+  pathname: '/',
+  searchParams: new URLSearchParams(),
+  push: jest.fn(),
+  replace: jest.fn(),
+  prefetch: jest.fn(),
+  back: jest.fn(),
+  forward: jest.fn(),
+  refresh: jest.fn(),
+};
+
+// Mock next/navigation with configurable state
 jest.mock('next/navigation', () => ({
   useRouter() {
     return {
-      push: jest.fn(),
-      replace: jest.fn(),
-      prefetch: jest.fn(),
-      back: jest.fn(),
-      forward: jest.fn(),
-      refresh: jest.fn(),
+      push: (...args) => global.__mockNextNavigation.push(...args),
+      replace: (...args) => global.__mockNextNavigation.replace(...args),
+      prefetch: (...args) => global.__mockNextNavigation.prefetch(...args),
+      back: (...args) => global.__mockNextNavigation.back(...args),
+      forward: (...args) => global.__mockNextNavigation.forward(...args),
+      refresh: (...args) => global.__mockNextNavigation.refresh(...args),
     }
   },
   useSearchParams() {
-    return new URLSearchParams()
+    return global.__mockNextNavigation.searchParams
   },
   usePathname() {
-    return ''
+    return global.__mockNextNavigation.pathname
   },
 }))
 

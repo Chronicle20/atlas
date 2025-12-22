@@ -49,10 +49,10 @@ runs:
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
-        if npm run test --if-present 2>/dev/null; then
-          echo "Tests passed"
+        if grep -q '"test":' package.json; then
+          npm test
         else
-          echo "No test script found"
+          echo "No test script found, skipping tests"
         fi
 
     - name: Build

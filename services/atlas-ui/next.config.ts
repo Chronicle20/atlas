@@ -34,28 +34,9 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ['react-icons', '@tanstack/react-query'],
   },
-  // Webpack optimizations for better bundle splitting
-  webpack: (config, { dev, isServer }) => {
-    if (!dev && !isServer) {
-      // Optimize for character rendering components
-      config.optimization.splitChunks.cacheGroups = {
-        ...config.optimization.splitChunks.cacheGroups,
-        character: {
-          name: 'character-rendering',
-          chunks: 'all',
-          test: /[\\/]components[\\/]features[\\/]characters[\\/]/,
-          priority: 30,
-        },
-        maplestory: {
-          name: 'maplestory-api',
-          chunks: 'all',
-          test: /[\\/]services[\\/]api[\\/]maplestory/,
-          priority: 25,
-        },
-      };
-    }
-    return config;
-  },
+  // Turbopack configuration (default bundler in Next.js 16+)
+  // Note: Custom chunk splitting removed - Turbopack handles optimization automatically
+  turbopack: {},
 };
 
 export default nextConfig;

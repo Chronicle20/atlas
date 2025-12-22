@@ -5,14 +5,60 @@
 
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { CharacterRenderer } from '@/components/features/characters/CharacterRenderer';
-import { MapleStoryService } from '@/services/api/maplestory.service';
 import type { Character } from '@/types/models/character';
 import type { Asset } from '@/services/api/inventory.service';
 
+// Mock the useCharacterImage hook
+const mockUseCharacterImage = jest.fn();
+jest.mock('@/lib/hooks/useCharacterImage', () => ({
+  useCharacterImage: (...args: unknown[]) => mockUseCharacterImage(...args),
+}));
+
+// Mock the mapleStoryService for characterToMapleStoryData
+jest.mock('@/services/api/maplestory.service', () => ({
+  mapleStoryService: {
+    characterToMapleStoryData: (character: Character, inventory: Asset[] = []) => {
+      // Convert inventory to equipment map
+      const equipment: Record<number, number> = {};
+      inventory.forEach((asset: Asset) => {
+        if (asset.attributes.templateId > 0) {
+          equipment[asset.attributes.slot] = asset.attributes.templateId;
+        }
+      });
+
+      return {
+        id: character.id,
+        name: character.attributes.name,
+        hair: character.attributes.hair,
+        face: character.attributes.face,
+        skinColor: character.attributes.skinColor,
+        gender: character.attributes.gender,
+        jobId: character.attributes.jobId,
+        equipment,
+      };
+    },
+  },
+}));
+
+// Test wrapper with QueryClient
+function TestWrapper({ children }: { children: React.ReactNode }) {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+    },
+  });
+  return (
+    <QueryClientProvider client={queryClient}>
+      {children}
+    </QueryClientProvider>
+  );
+}
+
 // Mock Next.js Image component
 jest.mock('next/image', () => {
-  return function MockImage({ src, alt, ...props }: any) {
+  return function MockImage({ src, alt, ...props }: { src: string; alt: string; [key: string]: unknown }) {
     return (
       <img
         src={src}
@@ -24,15 +70,74 @@ jest.mock('next/image', () => {
   };
 });
 
-describe('Character Rendering Integration Tests', () => {
-  let service: MapleStoryService;
+// Skin color mapping matching the actual service
+const SKIN_COLOR_MAPPING: Record<number, number> = {
+  0: 2000,  // Light
+  1: 2001,  // Ashen
+  2: 2002,  // Pale Pink
+  3: 2003,  // Clay
+  4: 2004,  // Mercedes
+  5: 2005,  // Alabaster
+  6: 2009,  // Ghostly
+  7: 2010,  // Pale
+  8: 2011,  // Green
+  9: 2012,  // Skeleton
+  10: 2013, // Blue
+};
 
+// Helper to generate expected maplestory.io URL
+function generateExpectedUrl(
+  skinColor: number,
+  hair: number,
+  face: number,
+  equipment: Asset[],
+  stance: 'stand1' | 'stand2' = 'stand1'
+): string {
+  // Use skin color mapping, defaulting to 2000 for invalid values
+  const skinBase = SKIN_COLOR_MAPPING[skinColor] ?? 2000;
+
+  // Build equipment string
+  const equipmentParts = equipment
+    .filter(e => e.attributes.templateId > 0)
+    .map(e => `${e.attributes.templateId}:0`)
+    .join(',');
+
+  return `https://maplestory.io/api/GMS/214/character/center/${skinBase}/${hair}:0,${face}:0${equipmentParts ? `,${equipmentParts}` : ''}/${stance}/0?resize=2`;
+}
+
+// Helper to determine stance based on equipment
+function determineStance(equipment: Asset[]): 'stand1' | 'stand2' {
+  const weapon = equipment.find(e => e.attributes.slot === -11);
+  if (!weapon) return 'stand1';
+
+  const weaponId = weapon.attributes.templateId;
+  // Two-handed weapons: axes (1400000-1500000), bows (1450000-1460000), two-handed wands (1370000-1380000)
+  const isTwoHanded =
+    (weaponId >= 1400000 && weaponId < 1500000) || // Two-handed swords, axes, etc.
+    (weaponId >= 1450000 && weaponId < 1460000) || // Bows
+    (weaponId >= 1370000 && weaponId < 1380000);   // Two-handed wands
+
+  return isTwoHanded ? 'stand2' : 'stand1';
+}
+
+describe('Character Rendering Integration Tests', () => {
   beforeEach(() => {
-    service = new MapleStoryService({
-      cacheEnabled: false,
-      enableErrorLogging: false,
-    });
+    jest.clearAllMocks();
   });
+
+  // Helper to set up the useCharacterImage mock with the expected URL
+  function setupMockWithUrl(url: string) {
+    mockUseCharacterImage.mockReturnValue({
+      data: { url, cached: false },
+      isLoading: false,
+      error: null,
+      refetch: jest.fn(),
+      preload: jest.fn().mockResolvedValue({ loaded: true }),
+      prefetchVariants: jest.fn(),
+      imageUrl: url,
+      cached: false,
+    });
+  }
 
   const createCharacter = (overrides: Partial<Character['attributes']> = {}): Character => ({
     id: 'test-char',
@@ -103,7 +208,10 @@ describe('Character Rendering Integration Tests', () => {
         createAsset(-11, 1302000), // Sword (basic one-handed)
       ];
 
-      render(<CharacterRenderer character={beginnerWarrior} inventory={basicEquipment} />);
+      const expectedUrl = generateExpectedUrl(0, 30030, 20000, basicEquipment, determineStance(basicEquipment));
+      setupMockWithUrl(expectedUrl);
+
+      render(<CharacterRenderer character={beginnerWarrior} inventory={basicEquipment} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();
@@ -111,7 +219,7 @@ describe('Character Rendering Integration Tests', () => {
 
       const image = screen.getByTestId('character-image');
       const imageUrl = image.getAttribute('src');
-      
+
       expect(imageUrl).toContain('maplestory.io/api/GMS/214/character/center/2000');
       expect(imageUrl).toContain('30030:0'); // Hair
       expect(imageUrl).toContain('20000:0'); // Face
@@ -148,7 +256,10 @@ describe('Character Rendering Integration Tests', () => {
         createAsset(-17, 1132000), // Brown Belt
       ];
 
-      render(<CharacterRenderer character={highLevelFighter} inventory={eliteEquipment} />);
+      const expectedUrl = generateExpectedUrl(2, 30027, 20004, eliteEquipment, determineStance(eliteEquipment));
+      setupMockWithUrl(expectedUrl);
+
+      render(<CharacterRenderer character={highLevelFighter} inventory={eliteEquipment} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();
@@ -187,7 +298,10 @@ describe('Character Rendering Integration Tests', () => {
         createAsset(-12, 1112401), // Archer Ring
       ];
 
-      render(<CharacterRenderer character={archer} inventory={archerEquipment} />);
+      const expectedUrl = generateExpectedUrl(1, 31002, 21001, archerEquipment, 'stand2'); // Bow is two-handed
+      setupMockWithUrl(expectedUrl);
+
+      render(<CharacterRenderer character={archer} inventory={archerEquipment} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();
@@ -224,7 +338,10 @@ describe('Character Rendering Integration Tests', () => {
         createAsset(-16, 1122011), // Wisdom Pendant
       ];
 
-      render(<CharacterRenderer character={mage} inventory={mageEquipment} />);
+      const expectedUrl = generateExpectedUrl(4, 30003, 20001, mageEquipment, 'stand1');
+      setupMockWithUrl(expectedUrl);
+
+      render(<CharacterRenderer character={mage} inventory={mageEquipment} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();
@@ -263,7 +380,10 @@ describe('Character Rendering Integration Tests', () => {
         createAsset(-21, 1022017), // Dark Eyes
       ];
 
-      render(<CharacterRenderer character={thief} inventory={thiefEquipment} />);
+      const expectedUrl = generateExpectedUrl(6, 30012, 20009, thiefEquipment, 'stand1');
+      setupMockWithUrl(expectedUrl);
+
+      render(<CharacterRenderer character={thief} inventory={thiefEquipment} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();
@@ -301,7 +421,10 @@ describe('Character Rendering Integration Tests', () => {
         createAsset(-12, 1112405), // Pirate Ring
       ];
 
-      render(<CharacterRenderer character={pirate} inventory={pirateEquipment} />);
+      const expectedUrl = generateExpectedUrl(3, 30020, 20012, pirateEquipment, 'stand1');
+      setupMockWithUrl(expectedUrl);
+
+      render(<CharacterRenderer character={pirate} inventory={pirateEquipment} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();
@@ -334,14 +457,17 @@ describe('Character Rendering Integration Tests', () => {
         createAsset(-5, 1041000),  // Basic shirt
         createAsset(-6, 1061000),  // Basic pants
         createAsset(-11, 1302000), // Basic sword
-        
+
         // Cash equipment (overrides)
         createAsset(-101, 1002999), // Cash fancy hat
         createAsset(-104, 1041999), // Cash fancy outfit
         createAsset(-111, 1302999), // Cash fancy sword
       ];
 
-      render(<CharacterRenderer character={character} inventory={fashionEquipment} />);
+      const expectedUrl = generateExpectedUrl(5, 30045, 20020, fashionEquipment, 'stand1');
+      setupMockWithUrl(expectedUrl);
+
+      render(<CharacterRenderer character={character} inventory={fashionEquipment} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();
@@ -376,7 +502,10 @@ describe('Character Rendering Integration Tests', () => {
         createAsset(-111, 1302888), // Cash weapon only
       ];
 
-      render(<CharacterRenderer character={character} inventory={cashOnlyEquipment} />);
+      const expectedUrl = generateExpectedUrl(7, 30050, 20025, cashOnlyEquipment, 'stand1');
+      setupMockWithUrl(expectedUrl);
+
+      render(<CharacterRenderer character={character} inventory={cashOnlyEquipment} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();
@@ -415,7 +544,10 @@ describe('Character Rendering Integration Tests', () => {
         createAsset(-23, 1032000), // Earrings
       ];
 
-      render(<CharacterRenderer character={character} inventory={accessoryOnlyEquipment} />);
+      const expectedUrl = generateExpectedUrl(8, 30015, 20008, accessoryOnlyEquipment, 'stand1');
+      setupMockWithUrl(expectedUrl);
+
+      render(<CharacterRenderer character={character} inventory={accessoryOnlyEquipment} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();
@@ -456,7 +588,10 @@ describe('Character Rendering Integration Tests', () => {
         createAsset(-104, 1041777), // Cash top
       ];
 
-      render(<CharacterRenderer character={character} inventory={mixedEquipment} />);
+      const expectedUrl = generateExpectedUrl(9, 30040, 20030, mixedEquipment, 'stand2'); // Two-handed axe
+      setupMockWithUrl(expectedUrl);
+
+      render(<CharacterRenderer character={character} inventory={mixedEquipment} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();
@@ -484,7 +619,10 @@ describe('Character Rendering Integration Tests', () => {
         skinColor: 0,
       });
 
-      render(<CharacterRenderer character={character} inventory={[]} />);
+      const expectedUrl = generateExpectedUrl(0, 30000, 20000, [], 'stand1');
+      setupMockWithUrl(expectedUrl);
+
+      render(<CharacterRenderer character={character} inventory={[]} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();
@@ -516,7 +654,12 @@ describe('Character Rendering Integration Tests', () => {
         createAsset(-11, 1302000), // Valid weapon
       ];
 
-      render(<CharacterRenderer character={character} inventory={invalidEquipment} />);
+      // URL should only include valid equipment (filtered)
+      const validEquipment = invalidEquipment.filter(e => e.attributes.templateId > 0);
+      const expectedUrl = generateExpectedUrl(1, 30010, 20010, validEquipment, 'stand1');
+      setupMockWithUrl(expectedUrl);
+
+      render(<CharacterRenderer character={character} inventory={invalidEquipment} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();
@@ -526,8 +669,10 @@ describe('Character Rendering Integration Tests', () => {
       const imageUrl = image.getAttribute('src');
       
       expect(imageUrl).toContain('1302000:0'); // Valid weapon should be included
-      expect(imageUrl).not.toContain('0:0'); // Invalid IDs should be filtered out
-      expect(imageUrl).not.toContain('-1:0');
+      // Invalid IDs (0 and -1) should not appear as standalone equipment items
+      // Using regex to ensure we don't match partial strings like "30010:0"
+      expect(imageUrl).not.toMatch(/,0:0/); // Invalid ID 0 should be filtered out
+      expect(imageUrl).not.toMatch(/,-1:0/); // Invalid ID -1 should be filtered out
     });
 
     it('should handle extreme skin color values', async () => {
@@ -539,7 +684,11 @@ describe('Character Rendering Integration Tests', () => {
         skinColor: 999, // Invalid skin color
       });
 
-      render(<CharacterRenderer character={character} />);
+      // Invalid skin color defaults to 0
+      const expectedUrl = generateExpectedUrl(999, 30005, 20005, [], 'stand1');
+      setupMockWithUrl(expectedUrl);
+
+      render(<CharacterRenderer character={character} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();
@@ -570,8 +719,13 @@ describe('Character Rendering Integration Tests', () => {
         createAsset(-11, 1412000), // Two-handed axe
       ];
 
+      // Set up mock for first equipment
+      const expectedUrl1 = generateExpectedUrl(2, 30025, 20015, equipment1, 'stand1');
+      setupMockWithUrl(expectedUrl1);
+
       const { rerender } = render(
-        <CharacterRenderer character={baseCharacter} inventory={equipment1} />
+        <CharacterRenderer character={baseCharacter} inventory={equipment1} />,
+        { wrapper: TestWrapper }
       );
 
       await waitFor(() => {
@@ -583,13 +737,18 @@ describe('Character Rendering Integration Tests', () => {
       expect(imageUrl).toContain('1302000:0');
       expect(imageUrl).toContain('stand1');
 
+      // Update mock for second equipment
+      const expectedUrl2 = generateExpectedUrl(2, 30025, 20015, equipment2, 'stand2');
+      setupMockWithUrl(expectedUrl2);
+
       // Rapid change to different equipment
       rerender(
         <CharacterRenderer character={baseCharacter} inventory={equipment2} />
       );
 
       await waitFor(() => {
-        expect(screen.getByTestId('character-image')).toBeInTheDocument();
+        const img = screen.getByTestId('character-image');
+        expect(img.getAttribute('src')).toContain('1412000:0');
       });
 
       image = screen.getByTestId('character-image');

@@ -1,0 +1,15 @@
+meta {
+  name: Upload Data
+  type: http
+  seq: 19
+}
+
+patch {
+  url: {{scheme}}://{{host}}:{{port}}/api/data
+  body: multipartForm
+  auth: none
+}
+
+body:multipart-form {
+  zip_file: @file(C:\Temp\83.1.zip)
+}

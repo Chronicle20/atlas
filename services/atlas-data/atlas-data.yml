@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: atlas-data-volume
+  name: atlas-data-pv
   labels:
     directory: atlas
 spec:
@@ -14,12 +14,12 @@ spec:
   persistentVolumeReclaimPolicy: Delete
   nfs:
     path: /volume1/K3S/atlas/data
-    server: nas.local.dev
+    server: dev.nas.home
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: atlas-data-claim
+  name: atlas-data-pvc
   namespace: atlas
 spec:
   storageClassName: manual
@@ -78,7 +78,7 @@ spec:
       volumes:
         - name: atlas-data-storage
           persistentVolumeClaim:
-            claimName: atlas-data-claim
+            claimName: atlas-data-pvc
 ---
 apiVersion: v1
 kind: Service

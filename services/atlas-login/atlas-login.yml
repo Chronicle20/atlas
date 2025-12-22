@@ -71,4 +71,4 @@ spec:
     targetPort: 18500
     protocol: TCP
     name: atlas-login-jms-185
-  loadBalancerIP: 192.168.20.30
+  loadBalancerIP: 192.168.23.231

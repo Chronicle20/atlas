@@ -13,10 +13,12 @@ import {
 } from "@/components/ui/dropdown-menu"
 import {SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar,} from "@/components/ui/sidebar"
 import {useTenant} from "@/context/tenant-context";
+import {CreateTenantDialog} from "@/components/features/tenants/CreateTenantDialog";
 
 export function TenantSwitcher() {
     const {isMobile} = useSidebar()
-    const {tenants, activeTenant, setActiveTenant} = useTenant()
+    const {tenants, activeTenant, setActiveTenant, refreshTenants} = useTenant()
+    const [createDialogOpen, setCreateDialogOpen] = React.useState(false)
 
     return (
         <SidebarMenu>
@@ -59,7 +61,13 @@ export function TenantSwitcher() {
                             </DropdownMenuItem>
                         ))}
                         <DropdownMenuSeparator/>
-                        <DropdownMenuItem className="gap-2 p-2">
+                        <DropdownMenuItem
+                            className="gap-2 p-2"
+                            onSelect={(e) => {
+                                e.preventDefault()
+                                setCreateDialogOpen(true)
+                            }}
+                        >
                             <div className="flex size-6 items-center justify-center rounded-md border bg-background">
                                 <Plus className="size-4"/>
                             </div>
@@ -68,6 +76,12 @@ export function TenantSwitcher() {
                     </DropdownMenuContent>
                 </DropdownMenu>
             </SidebarMenuItem>
+
+            <CreateTenantDialog
+                open={createDialogOpen}
+                onOpenChange={setCreateDialogOpen}
+                onSuccess={refreshTenants}
+            />
         </SidebarMenu>
     )
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"atlas-configurations/database"
 	"atlas-configurations/logger"
+	"atlas-configurations/seeder"
 	"atlas-configurations/service"
 	"atlas-configurations/services"
 	"atlas-configurations/templates"
@@ -46,6 +47,17 @@ func main() {
 	}
 
 	db := database.Connect(l, database.SetMigrations(templates.Migration, tenants.Migration, services.Migration))
+
+	// Run seed import
+	seedConfig := seeder.DefaultConfig()
+	l.WithFields(map[string]interface{}{
+		"seedPath":    seedConfig.SeedPath,
+		"seedEnabled": seedConfig.Enabled,
+	}).Info("Seed configuration loaded")
+	s := seeder.NewSeeder(l, tdm.Context(), db, seedConfig)
+	if err := s.Run(); err != nil {
+		l.WithError(err).Error("Seed import failed")
+	}
 
 	server.New(l).
 		WithContext(tdm.Context()).

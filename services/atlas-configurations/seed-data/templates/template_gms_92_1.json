@@ -1,0 +1,734 @@
+{
+  "region": "GMS",
+  "majorVersion": 92,
+  "minorVersion": 1,
+  "usesPin": false,
+  "socket": {
+    "handlers": [{
+        "opCode": "0x01",
+        "validator": "NoOpValidator",
+        "handler": "LoginHandle"
+      },
+      {
+        "opCode": "0x04",
+        "validator": "LoggedInValidator",
+        "handler": "ServerListRequestHandle"
+      },
+      {
+        "opCode": "0x05",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterListWorldHandle"
+      },
+      {
+        "opCode": "0x06",
+        "validator": "LoggedInValidator",
+        "handler": "ServerStatusHandle"
+      },
+      {
+        "opCode": "0x07",
+        "validator": "LoggedInValidator",
+        "handler": "AcceptTosHandle"
+      },
+      {
+        "opCode": "0x08",
+        "validator": "LoggedInValidator",
+        "handler": "SetGenderHandle"
+      },
+      {
+        "opCode": "0x09",
+        "validator": "LoggedInValidator",
+        "handler": "AfterLoginHandle"
+      },
+      {
+        "opCode": "0x0A",
+        "validator": "LoggedInValidator",
+        "handler": "RegisterPinHandle"
+      },
+      {
+        "opCode": "0x0B",
+        "validator": "LoggedInValidator",
+        "handler": "ServerListRequestHandle"
+      },
+      {
+        "opCode": "0x0D",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterViewAllHandle"
+      },
+      {
+        "opCode": "0x0E",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterViewAllSelectedHandle"
+      },
+      {
+        "opCode": "0x0F",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterViewAllPongHandle"
+      },
+      {
+        "opCode": "0x13",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterSelectedHandle"
+      },
+      {
+        "opCode": "0x15",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterCheckNameHandle"
+      },
+      {
+        "opCode": "0x16",
+        "validator": "LoggedInValidator",
+        "handler": "CreateCharacterHandle"
+      },
+      {
+        "opCode": "0x17",
+        "validator": "LoggedInValidator",
+        "handler": "DeleteCharacterHandle"
+      },
+      {
+        "opCode": "0x19",
+        "validator": "NoOpValidator",
+        "handler": "NoOpHandler"
+      },
+      {
+        "opCode": "0x1D",
+        "validator": "LoggedInValidator",
+        "handler": "RegisterPicHandle"
+      },
+      {
+        "opCode": "0x1E",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterSelectedPicHandle"
+      },
+      {
+        "opCode": "0x1F",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterViewAllSelectedPicRegisterHandle"
+      },
+      {
+        "opCode": "0x20",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterViewAllSelectedPicHandle"
+      },
+      {
+        "opCode": "0x23",
+        "validator": "NoOpValidator",
+        "handler": "ClientStartHandle"
+      },
+      {
+        "opCode": "0x24",
+        "validator": "LoggedInValidator",
+        "handler": "NoOpHandler"
+      },
+      {
+        "opCode": "0x14",
+        "validator": "NoOpValidator",
+        "handler": "CharacterLoggedInHandle"
+      },
+      {
+        "opCode": "0x2B",
+        "validator": "LoggedInValidator",
+        "handler": "MapChangeHandle"
+      },
+      {
+        "opCode": "0x2C",
+        "validator": "LoggedInValidator",
+        "handler": "ChannelChangeHandle"
+      },
+      {
+        "opCode": "0x2D",
+        "validator": "LoggedInValidator",
+        "handler": "CashShopEntryHandle"
+      },
+      {
+        "opCode": "0x2E",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterMoveHandle"
+      },
+      {
+        "opCode": "0x37",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterGeneralChatHandle"
+      },
+      {
+        "opCode": "0x4E",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterInventoryMoveHandle"
+      },
+      {
+        "opCode": "0x6C",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterInfoRequestHandle"
+      },
+      {
+        "opCode": "0x6F",
+        "validator": "LoggedInValidator",
+        "handler": "PortalScriptHandle"
+      },
+      {
+        "opCode": "0xDC",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterMovementHandle"
+      },
+      {
+        "opCode": "0xEA",
+        "validator": "LoggedInValidator",
+        "handler": "NPCActionHandle"
+      }
+    ],
+    "writers": [{
+        "opCode": "0x00",
+        "writer": "AuthSuccess"
+      },
+      {
+        "opCode": "0x00",
+        "writer": "AuthTemporaryBan"
+      },
+      {
+        "opCode": "0x00",
+        "writer": "AuthPermanentBan"
+      },
+      {
+        "opCode": "0x00",
+        "writer": "AuthLoginFailed",
+        "options": {
+          "failedReasonCodes": {
+            "BANNED": 2,
+            "DELETED_OR_BLOCKED": 3,
+            "INCORRECT_PASSWORD": 4,
+            "NOT_REGISTERED": 5,
+            "SYSTEM_ERROR_1": 6,
+            "ALREADY_LOGGED_IN": 7,
+            "SYSTEM_ERROR_2": 8,
+            "SYSTEM_ERROR_3": 9,
+            "TOO_MANY_CONNECTIONS": 10,
+            "AGE_LIMIT": 11,
+            "UNABLE_TO_LOG_ON_AS_MASTER_AT_IP": 13,
+            "WRONG_GATEWAY": 14,
+            "PROCESSING_REQUEST": 15,
+            "ACCOUNT_VERIFICATION_NEEDED": 16,
+            "WRONG_PERSONAL_INFORMATION": 17,
+            "ACCOUNT_VERIFICATION_NEEDED_2": 21,
+            "LICENSE_AGREEMENT": 23,
+            "MAPLE_EUROPE_NOTICE": 25,
+            "FULL_CLIENT_NOTICE": 27
+          }
+        }
+      },
+      {
+        "opCode": "0x03",
+        "writer": "ServerStatus"
+      },
+      {
+        "opCode": "0x04",
+        "writer": "SetAccountResult"
+      },
+      {
+        "opCode": "0x06",
+        "writer": "PinOperation",
+        "options": {
+          "modes": {
+            "OK": 0,
+            "REGISTER": 1,
+            "INVALID": 2,
+            "CONNECTION_FAILED": 3,
+            "ENTER_PIN": 4,
+            "ALREADY_LOGGED_IN": 7
+          }
+        }
+      },
+      {
+        "opCode": "0x07",
+        "writer": "PinUpdate",
+        "options": {
+          "modes": {
+            "OK": 0,
+            "ERROR": 1
+          }
+        }
+      },
+      {
+        "opCode": "0x08",
+        "writer": "CharacterViewAll",
+        "options": {
+          "codes": {
+            "NORMAL": 0,
+            "CHARACTER_COUNT": 1,
+            "ERROR_VIEW_ALL": 2,
+            "SEARCH_FAILED": 3,
+            "SEARCH_FAILED_2": 4,
+            "ERROR_VIEW_ALL_2": 5
+          }
+        }
+      },
+      {
+        "opCode": "0x0A",
+        "writer": "ServerListEntry"
+      },
+      {
+        "opCode": "0x0A",
+        "writer": "ServerListEnd"
+      },
+      {
+        "opCode": "0x0B",
+        "writer": "CharacterList"
+      },
+      {
+        "opCode": "0x0C",
+        "writer": "ServerIP",
+        "options": {
+          "codes": {
+            "OK": 0,
+            "ID_DELETED_OR_BLOCKED": 2,
+            "INCORRECT_PASSWORD": 4,
+            "NOT_REGISTERED_ID": 5,
+            "SERVER_UNDER_INSPECTION": 7,
+            "TOO_MANY_CONNECTION_REQUESTS": 10,
+            "ADULT_CHANNEL": 11,
+            "TO_TITLE": 12,
+            "MASTER_IP": 13,
+            "WRONG_GATEWAY": 14,
+            "STILL_PROCESSING": 15,
+            "ACCOUNT_VERIFICATION": 16,
+            "MAPLE_EUROPE_REDIRECT": 25
+          },
+          "modes": {
+            "OK": 0,
+            "INCORRECT_LOGIN_ID": 1,
+            "INCORRECT_FORM_OF_ID": 2,
+            "SEVEN_DAY_UNVERIFIED": 3,
+            "USED_UP_GAME_TIME": 19,
+            "THIRTY_DAY_UNVERIFIED": 25,
+            "PC_ROOM_PREMIUM": 27
+          }
+        }
+      },
+      {
+        "opCode": "0x0D",
+        "writer": "CharacterNameResponse",
+        "options": {
+          "codes": {
+            "OK": 0,
+            "ALREADY_REGISTERED": 1,
+            "NOT_ALLOWED": 2,
+            "SYSTEM_ERROR": 3
+          }
+        }
+      },
+      {
+        "opCode": "0x0E",
+        "writer": "AddCharacterEntry",
+        "options": {
+          "codes": {
+            "OK": 0,
+            "TOO_MANY_CONNECTIONS": 10,
+            "ACCOUNT_REQUESTED_TRANSFER": 26,
+            "CANNOT_USE_NAME": 30,
+            "UNKNOWN_ERROR": 99
+          }
+        }
+      },
+      {
+        "opCode": "0x0F",
+        "writer": "DeleteCharacterResponse",
+        "options": {
+          "codes": {
+            "OK": 0,
+            "UNABLE_TO_CONNECT_SYSTEM_ERROR": 6,
+            "UNKNOWN_ERROR": 9,
+            "TOO_MANY_CONNECTIONS": 10,
+            "NEXON_ID_DIFFERENT_THEN_REGISTERED": 16,
+            "CANNOT_DELETE_AS_GUILD_MASTER": 22,
+            "SECONDARY_PIN_DOES_NOT_MATCH": 20,
+            "CANNOT_DELETE_WHEN_ENGAGED": 24,
+            "CANNOT_DELETE_WITH_FAMILY": 29
+          }
+        }
+      },
+      {
+        "opCode": "0x1A",
+        "writer": "SelectWorld"
+      },
+      {
+        "opCode": "0x1B",
+        "writer": "ServerListRecommendations"
+      },
+      {
+        "opCode": "0x1C",
+        "writer": "PicResult"
+      },
+      {
+        "opCode": "0x10",
+        "writer": "ChannelChange"
+      },
+      {
+        "opCode": "0x1E",
+        "writer": "CharacterInventoryChange"
+      },
+      {
+        "opCode": "0x20",
+        "writer": "StatChanged"
+      },
+      {
+        "opCode": "0x3E",
+        "writer": "CharacterInfo"
+      },
+      {
+        "opCode": "0x8C",
+        "writer": "SetField"
+      },
+      {
+        "opCode": "0x8E",
+        "writer": "CashShopOpen"
+      },
+      {
+        "opCode": "0xB1",
+        "writer": "CharacterSpawn"
+      },
+      {
+        "opCode": "0xB2",
+        "writer": "CharacterDespawn"
+      },
+      {
+        "opCode": "0xB3",
+        "writer": "CharacterGeneralChat"
+      },
+      {
+        "opCode": "0xD5",
+        "writer": "CharacterMovement"
+      },
+      {
+        "opCode": "0xE1",
+        "writer": "CharacterAppearanceUpdate"
+      },
+      {
+        "opCode": "0x114",
+        "writer": "SpawnMonster"
+      },
+      {
+        "opCode": "0x115",
+        "writer": "DestroyMonster"
+      },
+      {
+        "opCode": "0x116",
+        "writer": "ControlMonster"
+      },
+      {
+        "opCode": "0x117",
+        "writer": "MoveMonster"
+      },
+      {
+        "opCode": "0x118",
+        "writer": "MoveMonsterAck"
+      },
+      {
+        "opCode": "0x12F",
+        "writer": "SpawnNPC"
+      },
+      {
+        "opCode": "0x131",
+        "writer": "SpawnNPCRequestController"
+      },
+      {
+        "opCode": "0x132",
+        "writer": "NPCAction"
+      },
+      {
+        "opCode": "0x177",
+        "writer": "CashShopCashQueryResult"
+      },
+      {
+        "opCode": "0x178",
+        "writer": "CashShopOperation"
+      }
+    ]
+  },
+  "characters": {
+    "templates": [{
+      "jobIndex": 0,
+      "subJobIndex": 0,
+      "mapId": 130010220,
+      "gender": 0,
+      "faces": [20000, 20001, 20002],
+      "hairs": [30030, 30020, 30000],
+      "hairColors": [0, 2, 3, 7],
+      "skinColors": [0, 1, 2, 3],
+      "tops": [1040002, 1040006, 1040010],
+      "bottoms": [1060002, 1060006],
+      "shoes": [1072001, 1072005, 1072037, 1072038],
+      "weapons": [1302000, 1322005, 1312004],
+      "items": [4161047]
+    }, {
+      "jobIndex": 0,
+      "subJobIndex": 0,
+      "mapId": 130010220,
+      "gender": 1,
+      "faces": [21000, 21001, 21002],
+      "hairs": [31000, 31040, 31050],
+      "hairColors": [0, 2, 3, 7],
+      "skinColors": [0, 1, 2, 3],
+      "tops": [1041002, 1041006, 1041010, 1041011],
+      "bottoms": [1061002, 1061008],
+      "shoes": [1072001, 1072005, 1072037, 1072038],
+      "weapons": [1302000, 1322005, 1312004],
+      "items": [4161047]
+    }, {
+      "jobIndex": 1,
+      "subJobIndex": 0,
+      "mapId": 10000,
+      "gender": 0,
+      "faces": [20000, 20001, 20002],
+      "hairs": [30030, 30020, 30000],
+      "hairColors": [0, 2, 3, 7],
+      "skinColors": [0, 1, 2, 3],
+      "tops": [1040002, 1040006, 1040010],
+      "bottoms": [1060002, 1060006],
+      "shoes": [1072001, 1072005, 1072037, 1072038],
+      "weapons": [1302000, 1322005, 1312004],
+      "items": [4161001]
+    }, {
+      "jobIndex": 1,
+      "subJobIndex": 0,
+      "mapId": 10000,
+      "gender": 1,
+      "faces": [21000, 21001, 21002],
+      "hairs": [31000, 31040, 31050],
+      "hairColors": [0, 2, 3, 7],
+      "skinColors": [0, 1, 2, 3],
+      "tops": [1041002, 1041006, 1041010, 1041011],
+      "bottoms": [1061002, 1061008],
+      "shoes": [1072001, 1072005, 1072037, 1072038],
+      "weapons": [1302000, 1322005, 1312004],
+      "items": [4161001]
+    }, {
+      "jobIndex": 2,
+      "subJobIndex": 0,
+      "mapId": 140090000,
+      "gender": 0,
+      "faces": [20100, 20401, 20402],
+      "hairs": [30030, 30020, 30000],
+      "hairColors": [0, 2, 3, 7],
+      "skinColors": [0, 1, 2, 3],
+      "tops": [1042167],
+      "bottoms": [1062115],
+      "shoes": [1072383],
+      "weapons": [1442079],
+      "items": [4161048]
+    }, {
+      "jobIndex": 2,
+      "subJobIndex": 0,
+      "mapId": 140090000,
+      "gender": 1,
+      "faces": [21700, 21201, 21002],
+      "hairs": [31000, 31040, 31050],
+      "hairColors": [0, 2, 3, 7],
+      "skinColors": [0, 1, 2, 3],
+      "tops": [1042167],
+      "bottoms": [1062115],
+      "shoes": [1072383],
+      "weapons": [1442079],
+      "items": [4161048]
+    }, {
+      "jobIndex": 3,
+      "subJobIndex": 0,
+      "mapId": 100030100,
+      "gender": 0,
+      "faces": [20100, 20401, 20402],
+      "hairs": [30030, 30020, 30000],
+      "hairColors": [0, 2, 3, 7],
+      "skinColors": [0, 1, 2, 3],
+      "tops": [1042180],
+      "bottoms": [1060138],
+      "shoes": [1072418],
+      "weapons": [1302132]
+    }, {
+      "jobIndex": 3,
+      "subJobIndex": 0,
+      "mapId": 100030100,
+      "gender": 1,
+      "faces": [21700, 21201, 21002],
+      "hairs": [31000, 31040, 31050],
+      "hairColors": [0, 2, 3, 7],
+      "skinColors": [0, 1, 2, 3],
+      "tops": [1042180],
+      "bottoms": [1061160],
+      "shoes": [1072418],
+      "weapons": [1302132]
+    }, {
+      "jobIndex": 1,
+      "subJobIndex": 1,
+      "mapId": 10000,
+      "gender": 0,
+      "faces": [20000, 20001, 20002],
+      "hairs": [30030, 30027, 30000],
+      "hairColors": [0, 2, 3, 7],
+      "skinColors": [0, 1, 2, 3],
+      "tops": [1040002, 1040006, 1040010],
+      "bottoms": [1060002, 1060006],
+      "shoes": [1072001, 1072005, 1072037, 1072038],
+      "weapons": [1302000, 1322005, 1312004],
+      "items": [4161001]
+    }, {
+      "jobIndex": 1,
+      "subJobIndex": 1,
+      "mapId": 10000,
+      "gender": 1,
+      "faces": [21000, 21001, 21002],
+      "hairs": [31000, 31040, 31050],
+      "hairColors": [0, 2, 3, 7],
+      "skinColors": [0, 1, 2, 3],
+      "tops": [1041002, 1041006, 1041010, 1041011],
+      "bottoms": [1061002, 1061008],
+      "shoes": [1072001, 1072005, 1072037, 1072038],
+      "weapons": [1302000, 1322005, 1312004],
+      "items": [4161001]
+    }]
+  },
+  "worlds": [{
+      "name": "Scania",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Scania!",
+      "eventMessage": "Scania!",
+      "whyAmIRecommended": "Most Populated!"
+    },
+    {
+      "name": "Bera",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Bera!",
+      "eventMessage": "Bera!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "Broa",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Broa!",
+      "eventMessage": "Broa!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "Windia",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Windia!",
+      "eventMessage": "Windia!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "Khaini",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Khaini!",
+      "eventMessage": "Khaini!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "Bellocan",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Bellocan!",
+      "eventMessage": "Bellocan!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "Mardia",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Mardia!",
+      "eventMessage": "Mardia!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "Kradia",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Kradia!",
+      "eventMessage": "Kradia!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "Yellonde",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Yellonde!",
+      "eventMessage": "Yellonde!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "Demethos",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Demethos!",
+      "eventMessage": "Demethos!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "Galicia",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Galicia!",
+      "eventMessage": "Galicia!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "El Nido",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to El Nido!",
+      "eventMessage": "El Nido!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "Zenith",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Zenith!",
+      "eventMessage": "Zenith!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "Arcenia",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Arcenia!",
+      "eventMessage": "Arcenia!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "Kastia",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Kastia!",
+      "eventMessage": "Kastia!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "Judis",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Judis!",
+      "eventMessage": "Judis!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "Plana",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Plana!",
+      "eventMessage": "Plana!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "Kalluna",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Kalluna!",
+      "eventMessage": "Kalluna!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "Stius",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Stius!",
+      "eventMessage": "Stius!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "Croa",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Croa!",
+      "eventMessage": "Croa!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "Medere",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Medere!",
+      "eventMessage": "Medere!",
+      "whyAmIRecommended": ""
+    }
+  ]
+}

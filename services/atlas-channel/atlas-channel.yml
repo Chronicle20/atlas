@@ -61,4 +61,4 @@ spec:
     targetPort: 18501
     protocol: TCP
     name: atlas-channel-jms-185
-  loadBalancerIP: 192.168.20.31
+  loadBalancerIP: 192.168.23.232

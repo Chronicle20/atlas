@@ -3,11 +3,25 @@
  * Handles all template-related API operations with full API client feature support
  */
 import { BaseService, type QueryOptions, type ServiceOptions, type BatchOptions, type BatchResult } from './base.service';
-import type { 
-  Template, 
+import { api } from '@/lib/api/client';
+import type {
+  Template,
   TemplateAttributes,
   CharacterTemplate
 } from '@/types/models/template';
+
+/**
+ * Lightweight template option type for dropdown population
+ * Contains only the fields needed to identify a template version
+ */
+export interface TemplateOption {
+  id: string;
+  attributes: {
+    region: string;
+    majorVersion: number;
+    minorVersion: number;
+  };
+}
 
 /**
  * Request/response interfaces for API communication
@@ -262,6 +276,31 @@ class TemplatesService extends BaseService {
    */
   override async getById<T = Template>(id: string, options?: ServiceOptions): Promise<T> {
     return super.getById<T>(id, options);
+  }
+
+  /**
+   * Get template options using JSON:API sparse fieldsets
+   *
+   * Uses: GET /configurations/templates?fields[templates]=region,majorVersion,minorVersion
+   * This returns only the version metadata, not the full template data (socket handlers,
+   * character templates, NPCs, worlds, etc.). Ideal for populating dropdowns.
+   *
+   * @returns Array of lightweight template options
+   */
+  async getTemplateOptions(): Promise<TemplateOption[]> {
+    const url = `${this.basePath}?fields[templates]=region,majorVersion,minorVersion`;
+    const response = await api.getList<TemplateOption>(url);
+
+    // Sort by region, then majorVersion, then minorVersion
+    return response.sort((a, b) => {
+      if (a.attributes.region !== b.attributes.region) {
+        return a.attributes.region.localeCompare(b.attributes.region);
+      }
+      if (a.attributes.majorVersion !== b.attributes.majorVersion) {
+        return a.attributes.majorVersion - b.attributes.majorVersion;
+      }
+      return a.attributes.minorVersion - b.attributes.minorVersion;
+    });
   }
 
   /**

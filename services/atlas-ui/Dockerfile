@@ -1,5 +1,5 @@
 # Stage 1: Build the application
-FROM node:22-alpine AS builder
+FROM node:24-alpine AS builder
 
 # Set the working directory inside the container
 WORKDIR /app
@@ -17,7 +17,7 @@ COPY . .
 RUN npm run build
 
 # Stage 2: Serve the application with a smaller, production-ready image
-FROM node:22-alpine
+FROM node:24-alpine
 
 # Set the working directory inside the container
 WORKDIR /app

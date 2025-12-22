@@ -1,0 +1,1403 @@
+{
+  "region": "JMS",
+  "majorVersion": 185,
+  "minorVersion": 1,
+  "usesPin": false,
+  "socket": {
+    "handlers": [{
+        "opCode": "0x01",
+        "validator": "NoOpValidator",
+        "handler": "LoginHandle"
+      },
+      {
+        "opCode": "0x03",
+        "validator": "LoggedInValidator",
+        "handler": "ServerListRequestHandle"
+      },
+      {
+        "opCode": "0x04",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterListWorldHandle"
+      },
+      {
+        "opCode": "0x06",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterSelectedHandle"
+      },
+      {
+        "opCode": "0x08",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterCheckNameHandle"
+      },
+      {
+        "opCode": "0x0A",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterViewAllHandle"
+      },
+      {
+        "opCode": "0x0B",
+        "validator": "LoggedInValidator",
+        "handler": "CreateCharacterHandle"
+      },
+      {
+        "opCode": "0x0D",
+        "validator": "LoggedInValidator",
+        "handler": "DeleteCharacterHandle"
+      },
+      {
+        "opCode": "0x13",
+        "validator": "LoggedInValidator",
+        "handler": "RegisterPicHandle"
+      },
+      {
+        "opCode": "0x14",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterSelectedPicHandle"
+      },
+      {
+        "opCode": "0x18",
+        "validator": "NoOpValidator",
+        "handler": "ClientStartHandle"
+      },
+      {
+        "opCode": "0x1A",
+        "validator": "NoOpValidator",
+        "handler": "CreateSecurityHandle"
+      },
+      {
+        "opCode": "0x07",
+        "validator": "NoOpValidator",
+        "handler": "CharacterLoggedInHandle"
+      },
+      {
+        "opCode": "0x1D",
+        "validator": "LoggedInValidator",
+        "handler": "MapChangeHandle"
+      },
+      {
+        "opCode": "0x1E",
+        "validator": "LoggedInValidator",
+        "handler": "ChannelChangeHandle"
+      },
+      {
+        "opCode": "0x1F",
+        "validator": "LoggedInValidator",
+        "handler": "CashShopEntryHandle"
+      },
+      {
+        "opCode": "0x20",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterMoveHandle",
+        "options": {
+          "types": [{
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "JUMP",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMPACT",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMMEDIATE",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "TELEPORT",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "HANG_ON_BACK",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "ASSAULTER",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "ASSASSINATION",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "RUSH",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "SIT_DOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "START_WINGS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "WINGS",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "ARAN_ADJUST",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_TOSS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "DASH_SLIDE",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "FLYING_BLOCK",
+              "Type": "FLYING_BLOCK"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_ATK_RUSH",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "MOB_ATK_RUSH_STOP",
+              "Type": "NORMAL"
+            }
+          ]
+        }
+      },
+      {
+        "opCode": "0x29",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterGeneralChatHandle"
+      },
+      {
+        "opCode": "0x3F",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterInventoryMoveHandle"
+      },
+      {
+        "opCode": "0x5C",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterInfoRequestHandle"
+      },
+      {
+        "opCode": "0x5F",
+        "validator": "LoggedInValidator",
+        "handler": "PortalScriptHandle"
+      },
+      {
+        "opCode": "0xC2",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterMovementHandle",
+        "options": {
+          "types": [{
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "JUMP",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMPACT",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMMEDIATE",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "TELEPORT",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "HANG_ON_BACK",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "ASSAULTER",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "ASSASSINATION",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "RUSH",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "SIT_DOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "START_WINGS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "WINGS",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "ARAN_ADJUST",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_TOSS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "DASH_SLIDE",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "FLYING_BLOCK",
+              "Type": "FLYING_BLOCK"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_ATK_RUSH",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "MOB_ATK_RUSH_STOP",
+              "Type": "NORMAL"
+            }
+          ]
+        }
+      },
+      {
+        "opCode": "0xD0",
+        "validator": "LoggedInValidator",
+        "handler": "NPCActionHandle",
+        "options": {
+          "types": [{
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "JUMP",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMPACT",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMMEDIATE",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "TELEPORT",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "HANG_ON_BACK",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "ASSAULTER",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "ASSASSINATION",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "RUSH",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "SIT_DOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "START_WINGS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "WINGS",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "ARAN_ADJUST",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_TOSS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "DASH_SLIDE",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "FLYING_BLOCK",
+              "Type": "FLYING_BLOCK"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_ATK_RUSH",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "MOB_ATK_RUSH_STOP",
+              "Type": "NORMAL"
+            }
+          ]
+        }
+      }
+    ],
+    "writers": [{
+        "opCode": "0x00",
+        "writer": "AuthSuccess"
+      },
+      {
+        "opCode": "0x00",
+        "writer": "AuthTemporaryBan"
+      },
+      {
+        "opCode": "0x00",
+        "writer": "AuthPermanentBan"
+      },
+      {
+        "opCode": "0x00",
+        "writer": "AuthLoginFailed",
+        "options": {
+          "failedReasonCodes": {
+            "BANNED": 2,
+            "DELETED_OR_BLOCKED": 3,
+            "INCORRECT_PASSWORD": 4,
+            "NOT_REGISTERED_ID": 5,
+            "SYSTEM_ERROR_1": 6,
+            "ALREADY_LOGGED_IN": 7,
+            "SYSTEM_ERROR_2": 8,
+            "SYSTEM_ERROR_3": 9,
+            "CANNOT_PROCESS_SO_MANY_CONNECTIONS": 10,
+            "ONLY_USERS_OLDER_THAN_20": 11,
+            "UNABLE_TO_LOG_ON_AS_MASTER": 13,
+            "WRONG_GATEWAY": 14,
+            "PROCESSING_REQUEST": 15,
+            "WRONG_GATEWAY_2": 17,
+            "LICENSE_AGREEMENT": 23
+          }
+        }
+      },
+      {
+        "opCode": "0x02",
+        "writer": "ServerListEntry"
+      },
+      {
+        "opCode": "0x02",
+        "writer": "ServerListEnd"
+      },
+      {
+        "opCode": "0x03",
+        "writer": "CharacterList"
+      },
+      {
+        "opCode": "0x04",
+        "writer": "ServerIP",
+        "options": {
+          "codes": {
+            "OK": 0,
+            "ID_DELETED_OR_BLOCKED": 2,
+            "INCORRECT_PASSWORD": 4,
+            "NOT_REGISTERED_ID": 5,
+            "SERVER_UNDER_INSPECTION": 7,
+            "TOO_MANY_CONNECTION_REQUESTS": 10,
+            "ADULT_CHANNEL": 11,
+            "TO_TITLE": 12,
+            "MASTER_IP": 13,
+            "WRONG_GATEWAY": 14,
+            "STILL_PROCESSING": 15,
+            "ACCOUNT_VERIFICATION": 16,
+            "MAPLE_EUROPE_REDIRECT": 25
+          },
+          "modes": {
+            "OK": 0,
+            "INCORRECT_LOGIN_ID": 1,
+            "INCORRECT_FORM_OF_ID": 2,
+            "SEVEN_DAY_UNVERIFIED": 3,
+            "USED_UP_GAME_TIME": 19,
+            "THIRTY_DAY_UNVERIFIED": 25,
+            "PC_ROOM_PREMIUM": 27
+          }
+        }
+      },
+      {
+        "opCode": "0x05",
+        "writer": "CharacterNameResponse",
+        "options": {
+          "codes": {
+            "OK": 0,
+            "ALREADY_REGISTERED": 1,
+            "NOT_ALLOWED": 2,
+            "SYSTEM_ERROR": 3
+          }
+        }
+      },
+      {
+        "opCode": "0x06",
+        "writer": "AddCharacterEntry",
+        "options": {
+          "codes": {
+            "OK": 0,
+            "TOO_MANY_CONNECTIONS": 10,
+            "ACCOUNT_REQUESTED_TRANSFER": 26,
+            "CANNOT_USE_NAME": 30,
+            "UNKNOWN_ERROR": 99
+          }
+        }
+      },
+      {
+        "opCode": "0x07",
+        "writer": "DeleteCharacterResponse",
+        "options": {
+          "codes": {
+            "OK": 0,
+            "UNABLE_TO_CONNECT_SYSTEM_ERROR": 6,
+            "UNKNOWN_ERROR": 9,
+            "TOO_MANY_CONNECTIONS": 10,
+            "NEXON_ID_DIFFERENT_THEN_REGISTERED": 16,
+            "CANNOT_DELETE_AS_GUILD_MASTER": 18,
+            "SECONDARY_PIN_DOES_NOT_MATCH": 20,
+            "CANNOT_DELETE_WHEN_ENGAGED": 21,
+            "ONE_TIME_PASSWORD_DOES_NOT_MATCH": 24,
+            "ONE_TIME_PASSWORD_ATTEMPTS_EXCEEDED": 25,
+            "ONE_TIME_PASSWORD_SERVICE_NOT_AVAILABLE": 26,
+            "ONE_TIME_PASSWORD_TRIAL_PERIOD_ENDED": 28,
+            "CANNOT_DELETE_WITH_FAMILY": 29
+          }
+        }
+      },
+      {
+        "opCode": "0x14",
+        "writer": "CharacterViewAll",
+        "options": {
+          "codes": {
+            "NORMAL": 0,
+            "CHARACTER_COUNT": 1,
+            "ERROR_VIEW_ALL": 2,
+            "SEARCH_FAILED": 3,
+            "SEARCH_FAILED_2": 4,
+            "ERROR_VIEW_ALL_2": 5
+          }
+        }
+      },
+      {
+        "opCode": "0x16",
+        "writer": "SelectWorld"
+      },
+      {
+        "opCode": "0x17",
+        "writer": "ServerListRecommendations"
+      },
+      {
+        "opCode": "0x18",
+        "writer": "LoginAuth"
+      },
+      {
+        "opCode": "0x08",
+        "writer": "ChannelChange"
+      },
+      {
+        "opCode": "0x1B",
+        "writer": "CharacterInventoryChange"
+      },
+      {
+        "opCode": "0x1D",
+        "writer": "StatChanged"
+      },
+      {
+        "opCode": "0x35",
+        "writer": "CharacterInfo"
+      },
+      {
+        "opCode": "0x7B",
+        "writer": "SetField"
+      },
+      {
+        "opCode": "0x7D",
+        "writer": "CashShopOpen"
+      },
+      {
+        "opCode": "0x9E",
+        "writer": "CharacterSpawn"
+      },
+      {
+        "opCode": "0x9F",
+        "writer": "CharacterDespawn"
+      },
+      {
+        "opCode": "0xA0",
+        "writer": "CharacterGeneralChat"
+      },
+      {
+        "opCode": "0xBF",
+        "writer": "CharacterMovement",
+        "options": {
+          "types": [{
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "JUMP",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMPACT",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMMEDIATE",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "TELEPORT",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "HANG_ON_BACK",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "ASSAULTER",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "ASSASSINATION",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "RUSH",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "SIT_DOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "START_WINGS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "WINGS",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "ARAN_ADJUST",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_TOSS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "DASH_SLIDE",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "FLYING_BLOCK",
+              "Type": "FLYING_BLOCK"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_ATK_RUSH",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "MOB_ATK_RUSH_STOP",
+              "Type": "NORMAL"
+            }
+          ]
+        }
+      },
+      {
+        "opCode": "0xCB",
+        "writer": "CharacterAppearanceUpdate"
+      },
+      {
+        "opCode": "0xFD",
+        "writer": "SpawnMonster"
+      },
+      {
+        "opCode": "0xFE",
+        "writer": "DestroyMonster"
+      },
+      {
+        "opCode": "0xFF",
+        "writer": "ControlMonster"
+      },
+      {
+        "opCode": "0x100",
+        "writer": "MoveMonster",
+        "options": {
+          "types": [{
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "JUMP",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMPACT",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMMEDIATE",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "TELEPORT",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "HANG_ON_BACK",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "ASSAULTER",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "ASSASSINATION",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "RUSH",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "SIT_DOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "START_WINGS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "WINGS",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "ARAN_ADJUST",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_TOSS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "DASH_SLIDE",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "FLYING_BLOCK",
+              "Type": "FLYING_BLOCK"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_ATK_RUSH",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "MOB_ATK_RUSH_STOP",
+              "Type": "NORMAL"
+            }
+          ]
+        }
+      },
+      {
+        "opCode": "0x101",
+        "writer": "MoveMonsterAck"
+      },
+      {
+        "opCode": "0x116",
+        "writer": "SpawnNPC"
+      },
+      {
+        "opCode": "0x118",
+        "writer": "SpawnNPCRequestController"
+      },
+      {
+        "opCode": "0x119",
+        "writer": "NPCAction",
+        "options": {
+          "types": [{
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "JUMP",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMPACT",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMMEDIATE",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "TELEPORT",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "HANG_ON_BACK",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "ASSAULTER",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "ASSASSINATION",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "RUSH",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "SIT_DOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "START_WINGS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "WINGS",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "ARAN_ADJUST",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_TOSS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "DASH_SLIDE",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "FLYING_BLOCK",
+              "Type": "FLYING_BLOCK"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_ATK_RUSH",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "MOB_ATK_RUSH_STOP",
+              "Type": "NORMAL"
+            }
+          ]
+        }
+      },
+      {
+        "opCode": "0x163",
+        "writer": "CashShopCashQueryResult"
+      },
+      {
+        "opCode": "0x164",
+        "writer": "CashShopOperation"
+      }
+    ]
+  },
+  "characters": {
+    "templates": [{
+        "jobIndex": 0,
+        "subJobIndex": 0,
+        "mapId": 130010220,
+        "gender": 0,
+        "faces": [20100, 20401, 20402],
+        "hairs": [30030, 30027, 30000],
+        "hairColors": [0],
+        "skinColors": [0],
+        "tops": [1040002, 1040006, 1040010],
+        "bottoms": [1060002, 1060006],
+        "shoes": [1072001, 1072005, 1072037, 1072038],
+        "weapons": [1302000, 1322005, 1312004],
+        "items": [4161047]
+      }, {
+        "jobIndex": 0,
+        "subJobIndex": 0,
+        "mapId": 130010220,
+        "gender": 1,
+        "faces": [21700, 21201, 21002],
+        "hairs": [31002, 31047, 31057],
+        "hairColors": [0],
+        "skinColors": [0],
+        "tops": [1041002, 1041006, 1041010, 1041011],
+        "bottoms": [1061002, 1061008],
+        "shoes": [1072001, 1072005, 1072037, 1072038],
+        "weapons": [1302000, 1322005, 1312004],
+        "items": [4161047]
+      }, {
+        "jobIndex": 1,
+        "subJobIndex": 0,
+        "mapId": 10000,
+        "gender": 0,
+        "faces": [20100, 20401, 20402],
+        "hairs": [30030, 30027, 30000],
+        "hairColors": [0],
+        "skinColors": [0],
+        "tops": [1040002, 1040006, 1040010],
+        "bottoms": [1060002, 1060006],
+        "shoes": [1072001, 1072005, 1072037, 1072038],
+        "weapons": [1302000, 1322005, 1312004],
+        "items": [4161001]
+      },
+      {
+        "jobIndex": 1,
+        "subJobIndex": 0,
+        "mapId": 10000,
+        "gender": 1,
+        "faces": [21000, 21001, 21002],
+        "hairs": [31000, 31040, 31050],
+        "hairColors": [0],
+        "skinColors": [0],
+        "tops": [1041002, 1041006, 1041010, 1041011],
+        "bottoms": [1061002, 1061008],
+        "shoes": [1072001, 1072005, 1072037, 1072038],
+        "weapons": [1302000, 1322005, 1312004],
+        "items": [4161001]
+      }, {
+        "jobIndex": 2,
+        "subJobIndex": 0,
+        "mapId": 140090000,
+        "gender": 0,
+        "faces": [20100, 20401, 20402],
+        "hairs": [30030, 30027, 30000],
+        "hairColors": [0],
+        "skinColors": [0],
+        "tops": [1042167],
+        "bottoms": [1062115],
+        "shoes": [1072383],
+        "weapons": [1442079],
+        "items": [4161048]
+      }, {
+        "jobIndex": 2,
+        "subJobIndex": 0,
+        "mapId": 140090000,
+        "gender": 1,
+        "faces": [21700, 21201, 21002],
+        "hairs": [31002, 31047, 31057],
+        "hairColors": [0],
+        "skinColors": [0],
+        "tops": [1042167],
+        "bottoms": [1062115],
+        "shoes": [1072383],
+        "weapons": [1442079],
+        "items": [4161048]
+      }, {
+        "jobIndex": 3,
+        "subJobIndex": 0,
+        "mapId": 100030100,
+        "gender": 0,
+        "faces": [20100, 20401, 20402],
+        "hairs": [30030, 30027, 30000],
+        "hairColors": [0],
+        "skinColors": [0],
+        "tops": [1042180],
+        "bottoms": [1060138],
+        "shoes": [1072418],
+        "weapons": [1302132]
+      }, {
+        "jobIndex": 3,
+        "subJobIndex": 0,
+        "mapId": 100030100,
+        "gender": 1,
+        "faces": [21700, 21201, 21002],
+        "hairs": [31002, 31047, 31057],
+        "hairColors": [0],
+        "skinColors": [0],
+        "tops": [1042180],
+        "bottoms": [1061160],
+        "shoes": [1072418],
+        "weapons": [1302132]
+      }, {
+        "jobIndex": 1,
+        "subJobIndex": 1,
+        "mapId": 10000,
+        "gender": 0,
+        "faces": [20100, 20401, 20402],
+        "hairs": [30030, 30027, 30000],
+        "hairColors": [0],
+        "skinColors": [0],
+        "tops": [1052269],
+        "bottoms": [],
+        "shoes": [1072001, 1072005, 1072037, 1072038],
+        "weapons": [1302000, 1322005, 1312004],
+        "items": [4161001]
+      }, {
+        "jobIndex": 1,
+        "subJobIndex": 1,
+        "mapId": 10000,
+        "gender": 1,
+        "faces": [21700, 21201, 21002],
+        "hairs": [31002, 31047, 31057],
+        "hairColors": [0],
+        "skinColors": [0],
+        "tops": [1052269],
+        "bottoms": [],
+        "shoes": [1072001, 1072005, 1072037, 1072038],
+        "weapons": [1302000, 1322005, 1312004],
+        "items": [4161001]
+      }
+    ]
+  },
+  "worlds": [{
+      "name": "かえで",
+      "flag": "Nothing",
+      "serverMessage": "かえでへようこそ！",
+      "eventMessage": "かえで!",
+      "whyAmIRecommended": "人口が多い!"
+    },
+    {
+      "name": "もみじ",
+      "flag": "Nothing",
+      "serverMessage": "もみじへようこそ！",
+      "eventMessage": "もみじ!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "あんず",
+      "flag": "Nothing",
+      "serverMessage": "あんずへようこそ！",
+      "eventMessage": "あんず!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "かりん",
+      "flag": "Nothing",
+      "serverMessage": "かりんへようこそ！",
+      "eventMessage": "かりん!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "さくら",
+      "flag": "Nothing",
+      "serverMessage": "さくらへようこそ！",
+      "eventMessage": "さくら!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "すもも",
+      "flag": "Nothing",
+      "serverMessage": "すももへようこそ！",
+      "eventMessage": "すもも!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "ぽぷら",
+      "flag": "Nothing",
+      "serverMessage": "ぽぷらへようこそ！",
+      "eventMessage": "ぽぷら!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "けやき",
+      "flag": "Nothing",
+      "serverMessage": "けやきへようこそ！",
+      "eventMessage": "けやき!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "ぷらむ",
+      "flag": "Nothing",
+      "serverMessage": "ぷらむへようこそ！",
+      "eventMessage": "ぷらむ!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "なつめ",
+      "flag": "Nothing",
+      "serverMessage": "なつめへようこそ！",
+      "eventMessage": "なつめ!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "くぬぎ",
+      "flag": "Nothing",
+      "serverMessage": "くぬぎへようこそ！",
+      "eventMessage": "くぬぎ!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "つばき",
+      "flag": "Nothing",
+      "serverMessage": "つばきへようこそ！",
+      "eventMessage": "つばき!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "みずき",
+      "flag": "Nothing",
+      "serverMessage": "みずきへようこそ！",
+      "eventMessage": "みずき!",
+      "whyAmIRecommended": ""
+    }
+  ]
+}

@@ -29,6 +29,10 @@ func (p *Processor) ByIdProvider(id uuid.UUID) model.Provider[RestModel] {
 	return model.Map(Make)(byIdEntityProvider(p.ctx)(id)(p.db))
 }
 
+func (p *Processor) ByRegionAndVersionProvider(region string, majorVersion uint16, minorVersion uint16) model.Provider[RestModel] {
+	return model.Map(Make)(byRegionVersionEntityProvider(p.ctx)(region, majorVersion, minorVersion)(p.db))
+}
+
 func (p *Processor) AllProvider() model.Provider[[]RestModel] {
 	return func() ([]RestModel, error) {
 		return model.SliceMap(Make)(allEntityProvider(p.ctx)(p.db))()()
@@ -51,6 +55,10 @@ func (p *Processor) GetAll() ([]RestModel, error) {
 
 func (p *Processor) GetById(id uuid.UUID) (RestModel, error) {
 	return p.ByIdProvider(id)()
+}
+
+func (p *Processor) GetByRegionAndVersion(region string, majorVersion uint16, minorVersion uint16) (RestModel, error) {
+	return p.ByRegionAndVersionProvider(region, majorVersion, minorVersion)()
 }
 
 func (p *Processor) UpdateById(tenantId uuid.UUID, input RestModel) error {

@@ -27,4 +27,7 @@ WORKDIR /
 
 COPY --from=build-env /server /
 
+# Copy seed data for initial configuration import
+COPY ./seed-data /seed-data
+
 CMD ["/server"]

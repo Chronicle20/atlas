@@ -3,9 +3,8 @@
 import {DataTableWrapper} from "@/components/common/DataTableWrapper";
 import {getColumns} from "@/app/templates/columns";
 import {useEffect, useState} from "react";
-import {templatesService} from "@/services/api";
+import {templatesService, onboardingService, ConfigurationCreationError} from "@/services/api";
 import type {Template} from "@/types/models/template";
-import {tenantsService} from "@/services/api";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -185,37 +184,29 @@ export default function Page() {
         try {
             setIsCreatingTenant(true);
 
-            // Create tenant attributes from template
-            const templateAttributes = tenantsService.createTenantFromTemplate(templateForTenant);
-
-            // Create basic tenant attributes with required name field
-            const tenantAttributes = {
-                name: `Tenant from Template ${templateForTenant.id}`,
-                region: templateAttributes.region,
-                majorVersion: templateAttributes.majorVersion,  
-                minorVersion: templateAttributes.minorVersion
-            };
-
-            // Create the new tenant configuration
-            const newTenant = await tenantsService.createTenant(tenantAttributes);
+            // Use onboarding service for complete tenant creation
+            // This creates both the tenant in atlas-tenants AND the configuration in atlas-configurations
+            const tenantName = `Tenant from Template ${templateForTenant.id}`;
+            const result = await onboardingService.onboardTenant(tenantName, templateForTenant);
 
             // Show success message
-            toast.success("Tenant created successfully");
+            toast.success("Tenant created successfully with full configuration");
 
             // Close the dialog
             setCreateTenantDialogOpen(false);
             setTemplateForTenant(null);
 
             // Navigate to the new tenant
-            console.log(`Navigating to: /tenants/${newTenant.id}/properties`);
-
-            // Use window.location.replace for a more forceful navigation
-            window.location.replace(`/tenants/${newTenant.id}/properties`);
-
-            // The code below this point may not execute due to the page navigation
+            window.location.replace(`/tenants/${result.tenant.id}/properties`);
         } catch (err: unknown) {
             console.error("Failed to create tenant:", err);
-            toast.error("Failed to create tenant");
+
+            // Provide specific error messages for different failure scenarios
+            if (err instanceof ConfigurationCreationError) {
+                toast.error(`Tenant created but configuration failed. Tenant ID: ${err.tenantId}. Please retry configuration manually.`);
+            } else {
+                toast.error("Failed to create tenant");
+            }
         } finally {
             setIsCreatingTenant(false);
         }

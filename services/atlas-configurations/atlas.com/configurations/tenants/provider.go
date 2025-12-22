@@ -31,3 +31,16 @@ func byIdEntityProvider(ctx context.Context) func(id uuid.UUID) database.EntityP
 		}
 	}
 }
+
+func byRegionVersionEntityProvider(ctx context.Context) func(region string, majorVersion uint16, minorVersion uint16) database.EntityProvider[Entity] {
+	return func(region string, majorVersion uint16, minorVersion uint16) database.EntityProvider[Entity] {
+		return func(db *gorm.DB) model.Provider[Entity] {
+			var result Entity
+			err := db.WithContext(ctx).Where("region = ? AND major_version = ? AND minor_version = ?", region, majorVersion, minorVersion).First(&result).Error
+			if err != nil {
+				return model.ErrorProvider[Entity](err)
+			}
+			return model.FixedProvider[Entity](result)
+		}
+	}
+}

@@ -1,0 +1,1797 @@
+{
+  "region": "GMS",
+  "majorVersion": 83,
+  "minorVersion": 1,
+  "usesPin": false,
+  "socket": {
+    "handlers": [{
+        "opCode": "0x01",
+        "validator": "NoOpValidator",
+        "handler": "LoginHandle"
+      },
+      {
+        "opCode": "0x04",
+        "validator": "LoggedInValidator",
+        "handler": "ServerListRequestHandle"
+      },
+      {
+        "opCode": "0x05",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterListWorldHandle"
+      },
+      {
+        "opCode": "0x06",
+        "validator": "LoggedInValidator",
+        "handler": "ServerStatusHandle"
+      },
+      {
+        "opCode": "0x07",
+        "validator": "LoggedInValidator",
+        "handler": "AcceptTosHandle"
+      },
+      {
+        "opCode": "0x08",
+        "validator": "LoggedInValidator",
+        "handler": "SetGenderHandle"
+      },
+      {
+        "opCode": "0x09",
+        "validator": "LoggedInValidator",
+        "handler": "AfterLoginHandle"
+      },
+      {
+        "opCode": "0x0A",
+        "validator": "LoggedInValidator",
+        "handler": "RegisterPinHandle"
+      },
+      {
+        "opCode": "0x0B",
+        "validator": "LoggedInValidator",
+        "handler": "ServerListRequestHandle"
+      },
+      {
+        "opCode": "0x0D",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterViewAllHandle"
+      },
+      {
+        "opCode": "0x0E",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterViewAllSelectedHandle"
+      },
+      {
+        "opCode": "0x0F",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterViewAllPongHandle"
+      },
+      {
+        "opCode": "0x13",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterSelectedHandle"
+      },
+      {
+        "opCode": "0x14",
+        "validator": "NoOpValidator",
+        "handler": "CharacterLoggedInHandle"
+      },
+      {
+        "opCode": "0x15",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterCheckNameHandle"
+      },
+      {
+        "opCode": "0x16",
+        "validator": "LoggedInValidator",
+        "handler": "CreateCharacterHandle"
+      },
+      {
+        "opCode": "0x17",
+        "validator": "LoggedInValidator",
+        "handler": "DeleteCharacterHandle"
+      },
+      {
+        "opCode": "0x19",
+        "validator": "NoOpValidator",
+        "handler": "NoOpHandler"
+      },
+      {
+        "opCode": "0x1D",
+        "validator": "LoggedInValidator",
+        "handler": "RegisterPicHandle"
+      },
+      {
+        "opCode": "0x1E",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterSelectedPicHandle"
+      },
+      {
+        "opCode": "0x1F",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterViewAllSelectedPicRegisterHandle"
+      },
+      {
+        "opCode": "0x20",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterViewAllSelectedPicHandle"
+      },
+      {
+        "opCode": "0x23",
+        "validator": "NoOpValidator",
+        "handler": "ClientStartHandle"
+      },
+      {
+        "opCode": "0x24",
+        "validator": "LoggedInValidator",
+        "handler": "NoOpHandler"
+      },
+      {
+        "opCode": "0x26",
+        "validator": "LoggedInValidator",
+        "handler": "MapChangeHandle"
+      },
+      {
+        "opCode": "0x27",
+        "validator": "LoggedInValidator",
+        "handler": "ChannelChangeHandle"
+      },
+      {
+        "opCode": "0x28",
+        "validator": "LoggedInValidator",
+        "handler": "CashShopEntryHandle"
+      },
+      {
+        "opCode": "0x29",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterMoveHandle",
+        "options": {
+          "types": [{
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "JUMP",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMPACT",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMMEDIATE",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "TELEPORT",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "HANG_ON_BACK",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "ASSAULTER",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "ASSASSINATION",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "RUSH",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "SIT_DOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "START_WINGS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "WINGS",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "ARAN_ADJUST",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_TOSS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "DASH_SLIDE",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            }
+          ]
+        }
+      },
+      {
+        "opCode": "0x2A",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterChairInteractionHandle"
+      },
+      {
+        "opCode": "0x2B",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterChairPortableHandle"
+      },
+      {
+        "opCode": "0x2C",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterMeleeAttackHandle"
+      },
+      {
+        "opCode": "0x2D",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterRangedAttackHandle"
+      },
+      {
+        "opCode": "0x2E",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterMagicAttackHandle"
+      },
+      {
+        "opCode": "0x2F",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterTouchAttackHandle"
+      },
+      {
+        "opCode": "0x30",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterDamageHandle"
+      },
+      {
+        "opCode": "0x31",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterGeneralChatHandle"
+      },
+      {
+        "opCode": "0x33",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterExpressionHandle"
+      },
+      {
+        "opCode": "0x3A",
+        "validator": "LoggedInValidator",
+        "handler": "NPCStartConversationHandle"
+      },
+      {
+        "opCode": "0x3C",
+        "validator": "LoggedInValidator",
+        "handler": "NPCContinueConversationHandle"
+      },
+      {
+        "opCode": "0x47",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterInventoryMoveHandle"
+      },
+      {
+        "opCode": "0x57",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterDistributeApHandle"
+      },
+      {
+        "opCode": "0x58",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterAutoDistributeApHandle"
+      },
+      {
+        "opCode": "0x59",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterHealOverTimeHandle"
+      },
+      {
+        "opCode": "0x5A",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterDistributeSpHandle"
+      },
+      {
+        "opCode": "0x5B",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterUseSkillHandle"
+      },
+      {
+        "opCode": "0x5C",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterBuffCancel"
+      },
+      {
+        "opCode": "0x5E",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterDropMesoHandle"
+      },
+      {
+        "opCode": "0x5F",
+        "validator": "LoggedInValidator",
+        "handler": "FameChangeHandle"
+      },
+      {
+        "opCode": "0x61",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterInfoRequestHandle"
+      },
+      {
+        "opCode": "0x64",
+        "validator": "LoggedInValidator",
+        "handler": "PortalScriptHandle"
+      },
+      {
+        "opCode": "0x77",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterMultiChatHandle"
+      },
+      {
+        "opCode": "0x7C",
+        "validator": "LoggedInValidator",
+        "handler": "PartyOperationHandle",
+        "options": {
+          "operations": {
+            "CREATE": 1,
+            "LEAVE": 2,
+            "JOIN": 3,
+            "INVITE": 4,
+            "EXPEL": 5,
+            "CHANGE_LEADER": 6
+          }
+        }
+      },
+      {
+        "opCode": "0x7D",
+        "validator": "LoggedInValidator",
+        "handler": "PartyInviteRejectHandle"
+      },
+      {
+        "opCode": "0x7E",
+        "validator": "LoggedInValidator",
+        "handler": "GuildOperationHandle",
+        "options": {
+          "operations": {
+            "REQUEST_CREATE": 2,
+            "INVITE": 5,
+            "JOIN": 6,
+            "WITHDRAW": 7,
+            "KICK": 8,
+            "SET_TITLE_NAMES": 13,
+            "SET_MEMBER_TITLE": 14,
+            "SET_EMBLEM": 15,
+            "SET_NOTICE": 16,
+            "AGREEMENT_RESPONSE": 30
+          }
+        }
+      },
+      {
+        "opCode": "0x7F",
+        "validator": "LoggedInValidator",
+        "handler": "GuildInviteRejectHandle"
+      },
+      {
+        "opCode": "0x82",
+        "validator": "LoggedInValidator",
+        "handler": "BuddyOperationHandle",
+        "options": {
+          "operations": {
+            "RELOAD": 0,
+            "ADD": 1,
+            "ACCEPT": 2,
+            "DELETE": 3
+          }
+        }
+      },
+      {
+        "opCode": "0x87",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterKeyMapChangeHandle"
+      },
+      {
+        "opCode": "0x9B",
+        "validator": "LoggedInValidator",
+        "handler": "GuildBBSHandle",
+        "options": {
+          "operations": {
+            "CREATE_OR_EDIT_THREAD": 0,
+            "DELETE_THREAD": 1,
+            "LIST_THREADS": 2,
+            "DISPLAY_THREAD": 3,
+            "REPLY_THREAD": 4,
+            "DELETE_REPLY": 5
+          }
+        }
+      },
+      {
+        "opCode": "0xBC",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterMovementHandle",
+        "options": {
+          "types": [{
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "JUMP",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMPACT",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMMEDIATE",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "TELEPORT",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "HANG_ON_BACK",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "ASSAULTER",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "ASSASSINATION",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "RUSH",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "SIT_DOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "START_WINGS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "WINGS",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "ARAN_ADJUST",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_TOSS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "DASH_SLIDE",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            }
+          ]
+        }
+      },
+      {
+        "opCode": "0xC5",
+        "validator": "LoggedInValidator",
+        "handler": "NPCActionHandle",
+        "options": {
+          "types": [{
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "JUMP",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMPACT",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMMEDIATE",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "TELEPORT",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "HANG_ON_BACK",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "ASSAULTER",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "ASSASSINATION",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "RUSH",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "SIT_DOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "START_WINGS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "WINGS",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "ARAN_ADJUST",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_TOSS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "DASH_SLIDE",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            }
+          ]
+        }
+      }, {
+        "opCode": "0xCA",
+        "validator": "LoggedInValidator",
+        "handler": "DropPickUpHandle"
+      }
+    ],
+    "writers": [{
+        "opCode": "0x00",
+        "writer": "AuthSuccess"
+      },
+      {
+        "opCode": "0x00",
+        "writer": "AuthTemporaryBan"
+      },
+      {
+        "opCode": "0x00",
+        "writer": "AuthPermanentBan"
+      },
+      {
+        "opCode": "0x00",
+        "writer": "AuthLoginFailed",
+        "options": {
+          "failedReasonCodes": {
+            "BANNED": 2,
+            "DELETED_OR_BLOCKED": 3,
+            "INCORRECT_PASSWORD": 4,
+            "NOT_REGISTERED": 5,
+            "SYSTEM_ERROR_1": 6,
+            "ALREADY_LOGGED_IN": 7,
+            "SYSTEM_ERROR_2": 8,
+            "SYSTEM_ERROR_3": 9,
+            "TOO_MANY_CONNECTIONS": 10,
+            "AGE_LIMIT": 11,
+            "UNABLE_TO_LOG_ON_AS_MASTER_AT_IP": 13,
+            "WRONG_GATEWAY": 14,
+            "PROCESSING_REQUEST": 15,
+            "ACCOUNT_VERIFICATION_NEEDED": 16,
+            "WRONG_PERSONAL_INFORMATION": 17,
+            "ACCOUNT_VERIFICATION_NEEDED_2": 21,
+            "LICENSE_AGREEMENT": 23,
+            "MAPLE_EUROPE_NOTICE": 25,
+            "FULL_CLIENT_NOTICE": 27
+          }
+        }
+      },
+      {
+        "opCode": "0x03",
+        "writer": "ServerStatus"
+      },
+      {
+        "opCode": "0x04",
+        "writer": "SetAccountResult"
+      },
+      {
+        "opCode": "0x06",
+        "writer": "PinOperation",
+        "options": {
+          "modes": {
+            "OK": 0,
+            "REGISTER": 1,
+            "INVALID": 2,
+            "CONNECTION_FAILED": 3,
+            "ENTER_PIN": 4,
+            "ALREADY_LOGGED_IN": 7
+          }
+        }
+      },
+      {
+        "opCode": "0x07",
+        "writer": "PinUpdate",
+        "options": {
+          "modes": {
+            "OK": 0,
+            "ERROR": 1
+          }
+        }
+      },
+      {
+        "opCode": "0x08",
+        "writer": "CharacterViewAll",
+        "options": {
+          "codes": {
+            "NORMAL": 0,
+            "CHARACTER_COUNT": 1,
+            "ERROR_VIEW_ALL": 2,
+            "SEARCH_FAILED": 3,
+            "SEARCH_FAILED_2": 4,
+            "ERROR_VIEW_ALL_2": 5
+          }
+        }
+      },
+      {
+        "opCode": "0x0A",
+        "writer": "ServerListEntry"
+      },
+      {
+        "opCode": "0x0A",
+        "writer": "ServerListEnd"
+      },
+      {
+        "opCode": "0x0B",
+        "writer": "CharacterList"
+      },
+      {
+        "opCode": "0x0C",
+        "writer": "ServerIP",
+        "options": {
+          "codes": {
+            "OK": 0,
+            "ID_DELETED_OR_BLOCKED": 2,
+            "INCORRECT_PASSWORD": 4,
+            "NOT_REGISTERED_ID": 5,
+            "SERVER_UNDER_INSPECTION": 7,
+            "TOO_MANY_CONNECTION_REQUESTS": 10,
+            "ADULT_CHANNEL": 11,
+            "TO_TITLE": 12,
+            "MASTER_IP": 13,
+            "WRONG_GATEWAY": 14,
+            "STILL_PROCESSING": 15,
+            "ACCOUNT_VERIFICATION": 16,
+            "MAPLE_EUROPE_REDIRECT": 25
+          },
+          "modes": {
+            "OK": 0,
+            "INCORRECT_LOGIN_ID": 1,
+            "INCORRECT_FORM_OF_ID": 2,
+            "SEVEN_DAY_UNVERIFIED": 3,
+            "USED_UP_GAME_TIME": 19,
+            "THIRTY_DAY_UNVERIFIED": 25,
+            "PC_ROOM_PREMIUM": 27
+          }
+        }
+      },
+      {
+        "opCode": "0x0D",
+        "writer": "CharacterNameResponse",
+        "options": {
+          "codes": {
+            "OK": 0,
+            "ALREADY_REGISTERED": 1,
+            "NOT_ALLOWED": 2,
+            "SYSTEM_ERROR": 3
+          }
+        }
+      },
+      {
+        "opCode": "0x0E",
+        "writer": "AddCharacterEntry",
+        "options": {
+          "codes": {
+            "OK": 0,
+            "TOO_MANY_CONNECTIONS": 10,
+            "ACCOUNT_REQUESTED_TRANSFER": 26,
+            "CANNOT_USE_NAME": 30,
+            "UNKNOWN_ERROR": 99
+          }
+        }
+      },
+      {
+        "opCode": "0x0F",
+        "writer": "DeleteCharacterResponse",
+        "options": {
+          "codes": {
+            "OK": 0,
+            "UNABLE_TO_CONNECT_SYSTEM_ERROR": 6,
+            "UNKNOWN_ERROR": 9,
+            "TOO_MANY_CONNECTIONS": 10,
+            "NEXON_ID_DIFFERENT_THEN_REGISTERED": 16,
+            "CANNOT_DELETE_AS_GUILD_MASTER": 22,
+            "SECONDARY_PIN_DOES_NOT_MATCH": 20,
+            "CANNOT_DELETE_WHEN_ENGAGED": 24,
+            "CANNOT_DELETE_WITH_FAMILY": 29
+          }
+        }
+      },
+      {
+        "opCode": "0x1A",
+        "writer": "SelectWorld"
+      },
+      {
+        "opCode": "0x1B",
+        "writer": "ServerListRecommendations"
+      },
+      {
+        "opCode": "0x1C",
+        "writer": "PicResult"
+      },
+      {
+        "opCode": "0x10",
+        "writer": "ChannelChange"
+      },
+      {
+        "opCode": "0x1D",
+        "writer": "CharacterInventoryChange"
+      },
+      {
+        "opCode": "0x1F",
+        "writer": "StatChanged",
+        "options": {
+          "statistics": [
+            "SKIN",
+            "FACE",
+            "HAIR",
+            "PET_SN_1",
+            "LEVEL",
+            "JOB",
+            "STRENGTH",
+            "DEXTERITY",
+            "INTELLIGENCE",
+            "LUCK",
+            "HP",
+            "MAX_HP",
+            "MP",
+            "MAX_MP",
+            "AVAILABLE_AP",
+            "AVAILABLE_SP",
+            "EXPERIENCE",
+            "FAME",
+            "MESO",
+            "PET_SN_2",
+            "PET_SN_3",
+            "GACHAPON_EXPERIENCE"
+          ]
+        }
+      },
+      {
+        "opCode": "0x20",
+        "writer": "CharacterBuffGive"
+      },
+      {
+        "opCode": "0x21",
+        "writer": "CharacterBuffCancel"
+      },
+      {
+        "opCode": "0x24",
+        "writer": "CharacterSkillChange"
+      },
+      {
+        "opCode": "0x26",
+        "writer": "FameResponse",
+        "options": {
+          "operations": {
+            "GIVE": "0x00",
+            "INVALID_NAME": "0x01",
+            "NOT_MINIMUM_LEVEL": "0x02",
+            "NOT_TODAY": "0x03",
+            "NOT_THIS_MONTH": "0x04",
+            "RECEIVE": "0x05",
+            "UNEXPECTED": "0x06"
+          }
+        }
+      },
+      {
+        "opCode": "0x27",
+        "writer": "CharacterStatusMessage",
+        "options": {
+          "operations": {
+            "DROP_PICK_UP": "0x00",
+            "QUEST_RECORD": "0x01",
+            "CASH_ITEM_EXPIRE": "0x02",
+            "INCREASE_EXPERIENCE": "0x03",
+            "INCREASE_FAME": "0x04",
+            "INCREASE_MESO": "0x05",
+            "INCREASE_GUILD_POINT": "0x06",
+            "GIVE_BUFF": "0x07",
+            "GENERAL_ITEM_EXPIRE": "0x08",
+            "SYSTEM_MESSAGE": "0x09",
+            "QUEST_RECORD_EX": "0x0A",
+            "ITEM_PROTECT_EXPIRE": "0x0B",
+            "ITEM_EXPIRE_REPLACE": "0x0C",
+            "SKILL_EXPIRE": "0x0D"
+          }
+        }
+      },
+      {
+        "opCode": "0x3B",
+        "writer": "GuildBBS"
+      },
+      {
+        "opCode": "0x3D",
+        "writer": "CharacterInfo"
+      },
+      {
+        "opCode": "0x3F",
+        "writer": "BuddyOperation",
+        "options": {
+          "operations": {
+            "UPDATE": "0x07",
+            "BUDDY_UPDATE": "0x08",
+            "INVITE": "0x09",
+            "BUDDY_LIST_FULL": "0x0B",
+            "OTHER_BUDDY_LIST_FULL": "0x0C",
+            "ALREADY_BUDDY": "0x0D",
+            "CANNOT_BUDDY_GM": "0x0E",
+            "CHARACTER_NOT_FOUND": "0x0F",
+            "UNKNOWN_ERROR": "0x10",
+            "BUDDY_CHANNEL_CHANGE": "0x14",
+            "CAPACITY_CHANGE": "0x15"
+          }
+        }
+      },
+      {
+        "opCode": "0x3E",
+        "writer": "PartyOperation",
+        "options": {
+          "operations": {
+            "INVITE": "0x04",
+            "UPDATE": "0x07",
+            "CREATED": "0x08",
+            "ALREADY_HAVE_JOINED_A_PARTY_1": "0x09",
+            "A_BEGINNER_CANT_CREATE_A_PARTY": "0x0A",
+            "LEAVE": "0x0C",
+            "DISBAND": "0x0C",
+            "EXPEL": "0x0C",
+            "YOU_HAVE_YET_TO_JOIN_A_PARTY": "0x0D",
+            "JOIN": "0x0F",
+            "ALREADY_HAVE_JOINED_A_PARTY_2": "0x10",
+            "THE_PARTY_YOURE_TRYING_TO_JOIN_IS_ALREADY_IN_FULL_CAPACITY": "0x11",
+            "UNABLE_TO_FIND_THE_REQUESTED_CHARACTER_IN_THIS_CHANNEL": "0x13",
+            "IS_CURRENTLY_BLOCKING_ANY_PARTY_INVITATIONS": "0x15",
+            "IS_TAKING_CARE_OF_ANOTHER_INVITATION": "0x16",
+            "HAVE_DENIED_REQUEST_TO_THE_PARTY": "0x17",
+            "CANNOT_KICK_ANOTHER_USER_IN_THIS_MAP": "0x19",
+            "CHANGE_LEADER": "0x1B",
+            "THIS_CAN_ONLY_BE_GIVEN_TO_A_PARTY_MEMBER_WITHIN_THE_VICINITY": "0x1C",
+            "UNABLE_TO_HAND_OVER_THE_LEADERSHIP_POST_NO_PARTY_MEMBER_IS_CURRENTLY_WITHIN_THE": "0x1D",
+            "YOU_MAY_ONLY_CHANGE_WITH_THE_PARTY_MEMBER_THATS_ON_THE_SAME_CHANNEL": "0x1E",
+            "AS_A_GM_YOURE_FORBIDDEN_FROM_CREATING_A_PARTY": "0x20",
+            "UNABLE_TO_FIND_THE_CHARACTER": "0x21"
+          }
+        }
+      },
+      {
+        "opCode": "0x41",
+        "writer": "GuildOperation",
+        "options": {
+          "operations": {
+            "REQUEST_NAME": "0x01",
+            "REQUEST_AGREEMENT": "0x03",
+            "INVITE": "0x05",
+            "REQUEST_EMBLEM": "0x11",
+            "THE_NAME_IS_ALREADY_IN_USE_PLEASE_TRY_OTHER_ONES": "0x1C",
+            "SOMEBODY_HAS_DISAGREED_TO_FORM_A_GUILD": "0x24",
+            "THE_PROBLEM_HAS_HAPPENED_DURING_THE_PROCESS_OF_FORMING_THE_GUILD_PLEASE_TRY_AGAIN": "0x26",
+            "JOIN_SUCCESS": "0x27",
+            "ALREADY_JOINED_THE_GUILD": "0x28",
+            "THE_GUILD_YOU_ARE_TRYING_TO_JOIN_HAS_ALREADY_REACHED_THE_MAX_NUMBER_OF_USERS": "0x29",
+            "THE_CHARACTER_CANNOT_BE_FOUND_IN_THE_CURRENT_CHANNEL": "0x2A",
+            "MEMBER_QUIT_SUCCESS": "0x2C",
+            "MEMBER_QUIT_ERROR_NOT_IN_GUILD": "0x2D",
+            "MEMBER_EXPELLED_SUCCESS": "0x2F",
+            "MEMBER_EXPELLED_ERROR_NOT_IN_GUILD": "0x30",
+            "DISBAND_SUCCESS": "0x32",
+            "THE_PROBLEM_HAS_HAPPENED_DURING_THE_PROCESS_OF_DISBANDING_THE_GUILD_PLEASE_TRY_AGAIN": "0x34",
+            "IS_CURRENTLY_NOT_ACCEPTING_GUILD_INVITE_MESSAGE": "0x35",
+            "IS_TAKING_CARE_OF_ANOTHER_INVITATION": "0x36",
+            "HAS_DENIED_YOUR_GUILD_INVITATION": "0x37",
+            "ADMIN_CANNOT_MAKE_A_GUILD": "0x38",
+            "CONGRATULATION_THE_NUMBER_OF_GUILD_MEMBERS_HAS_NOW_INCREASED_TO": "0x3A",
+            "THE_PROBLEM_HAS_HAPPENED_DURING_THE_PROCESS_OF_INCREASING_THE_GUILD_PLEASE_TRY_AGAIN": "0x3B",
+            "MEMBER_UPDATE": "0x3C",
+            "MEMBER_ONLINE": "0x3D",
+            "TITLE_UPDATE": "0x3E",
+            "MEMBER_TITLE_CHANGE": "0x40",
+            "EMBLEM_CHANGE": "0x42",
+            "NOTICE_CHANGE": "0x44",
+            "SHOW_TITLES": "0x49",
+            "THERE_ARE_LESS_THAN_6_MEMBERS_REMAINING_SO_THE_QUEST_CANNOT_CONTINUE_YOUR_GUILD": "0x4A",
+            "THE_USER_THAT_REGISTERED_HAS_DISCONNECTED_SO_THE_QUEST_CANNOT_CONTINUE_YOUR_GUILD": "0x4B",
+            "QUEST_WAITING_NOTICE": "0x4C",
+            "BOARD_AUTH_KEY_UPDATE": "0x4D",
+            "SET_SKILL_RESPONSE": "0x4E"
+          }
+        }
+      },
+      {
+        "opCode": "0x7D",
+        "writer": "SetField"
+      },
+      {
+        "opCode": "0x7F",
+        "writer": "CashShopOpen"
+      },
+      {
+        "opCode": "0x86",
+        "writer": "CharacterMultiChat"
+      },
+      {
+        "opCode": "0xA0",
+        "writer": "CharacterSpawn"
+      },
+      {
+        "opCode": "0xA1",
+        "writer": "CharacterDespawn"
+      },
+      {
+        "opCode": "0xA2",
+        "writer": "CharacterGeneralChat"
+      },
+      {
+        "opCode": "0xB9",
+        "writer": "CharacterMovement",
+        "options": {
+          "types": [{
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "JUMP",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMPACT",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMMEDIATE",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "TELEPORT",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "HANG_ON_BACK",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "ASSAULTER",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "ASSASSINATION",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "RUSH",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "SIT_DOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "START_WINGS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "WINGS",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "ARAN_ADJUST",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_TOSS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "DASH_SLIDE",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            }
+          ]
+        }
+      },
+      {
+        "opCode": "0xBA",
+        "writer": "CharacterAttackMelee"
+      },
+      {
+        "opCode": "0xBB",
+        "writer": "CharacterAttackRanged"
+      },
+      {
+        "opCode": "0xBC",
+        "writer": "CharacterAttackMagic"
+      },
+      {
+        "opCode": "0xBD",
+        "writer": "CharacterAttackEnergy"
+      },
+      {
+        "opCode": "0xC0",
+        "writer": "CharacterDamage"
+      },
+      {
+        "opCode": "0xC1",
+        "writer": "CharacterExpression"
+      },
+      {
+        "opCode": "0xC4",
+        "writer": "CharacterShowChair"
+      },
+      {
+        "opCode": "0xC5",
+        "writer": "CharacterAppearanceUpdate"
+      },
+      {
+        "opCode": "0xC6",
+        "writer": "CharacterEffectForeign",
+        "options": {
+          "operations": {
+            "LEVEL_UP": "0x00",
+            "SKILL_USE": "0x01",
+            "SKILL_AFFECTED": "0x02",
+            "QUEST": "0x03",
+            "PET": "0x04",
+            "SKILL_SPECIAL": "0x05",
+            "PROTECT_ON_DIE_ITEM_USE": "0x06",
+            "PLAY_PORTAL_SOUND_EFFECT": "0x07",
+            "JOB_CHANGED": "0x08",
+            "QUEST_COMPLETE": "0x09",
+            "INC_DEC_HP_EFFECT": "0x10",
+            "BUFF_ITEM_EFFECT": "0x11",
+            "SQUIB_EFFECT": "0x12",
+            "MONSTER_BOOK_CARD_GET": "0x13",
+            "LOTTERY_USE": "0x14",
+            "ITEM_LEVEL_UP": "0x15",
+            "ITEM_MAKER": "0x16",
+            "EXP_ITEM_CONSUMED": "0x17",
+            "RESERVED_EFFECT": "0x18",
+            "BUFF": "0x19",
+            "CONSUME_EFFECT": "0x20",
+            "UPGRADE_TOMB_ITEM_USE": "0x21",
+            "BATTLEFIELD_ITEM_USE": "0x22",
+            "AVATAR_ORIENTED": "0x23",
+            "INCUBATOR_USE": "0x24",
+            "PLAY_SOUND_WITH_MUTE_BACKGROUND_MUSIC": "0x25",
+            "SOUL_STONE_USE": "0x26",
+            "DELIVERY_QUEST_ITEM_USE": "0x28",
+            "REPEAT_REPEAT_EFFECT": "0x29",
+            "EVOLUTION_RING": "0x30"
+          }
+        }
+      },
+      {
+        "opCode": "0xC7",
+        "writer": "CharacterBuffGiveForeign"
+      },
+      {
+        "opCode": "0xC8",
+        "writer": "CharacterBuffCancelForeign"
+      },
+      {
+        "opCode": "0xCA",
+        "writer": "GuildNameChanged"
+      },
+      {
+        "opCode": "0xCB",
+        "writer": "GuildEmblemChanged"
+      },
+      {
+        "opCode": "0xCD",
+        "writer": "CharacterSitResult"
+      },
+      {
+        "opCode": "0xCE",
+        "writer": "CharacterEffect",
+        "options": {
+          "operations": {
+            "LEVEL_UP": "0x00",
+            "SKILL_USE": "0x01",
+            "SKILL_AFFECTED": "0x02",
+            "QUEST": "0x03",
+            "PET": "0x04",
+            "SKILL_SPECIAL": "0x05",
+            "PROTECT_ON_DIE_ITEM_USE": "0x06",
+            "PLAY_PORTAL_SOUND_EFFECT": "0x07",
+            "JOB_CHANGED": "0x08",
+            "QUEST_COMPLETE": "0x09",
+            "INC_DEC_HP_EFFECT": "0x10",
+            "BUFF_ITEM_EFFECT": "0x11",
+            "SQUIB_EFFECT": "0x12",
+            "MONSTER_BOOK_CARD_GET": "0x13",
+            "LOTTERY_USE": "0x14",
+            "ITEM_LEVEL_UP": "0x15",
+            "ITEM_MAKER": "0x16",
+            "EXP_ITEM_CONSUMED": "0x17",
+            "RESERVED_EFFECT": "0x18",
+            "BUFF": "0x19",
+            "CONSUME_EFFECT": "0x20",
+            "UPGRADE_TOMB_ITEM_USE": "0x21",
+            "BATTLEFIELD_ITEM_USE": "0x22",
+            "AVATAR_ORIENTED": "0x23",
+            "INCUBATOR_USE": "0x24",
+            "PLAY_SOUND_WITH_MUTE_BACKGROUND_MUSIC": "0x25",
+            "SOUL_STONE_USE": "0x26",
+            "DELIVERY_QUEST_ITEM_USE": "0x28",
+            "REPEAT_REPEAT_EFFECT": "0x29",
+            "EVOLUTION_RING": "0x30"
+          }
+        }
+      },
+      {
+        "opCode": "0xEA",
+        "writer": "CharacterSkillCooldown"
+      },
+      {
+        "opCode": "0xEC",
+        "writer": "SpawnMonster"
+      },
+      {
+        "opCode": "0xED",
+        "writer": "DestroyMonster"
+      },
+      {
+        "opCode": "0xEE",
+        "writer": "ControlMonster"
+      },
+      {
+        "opCode": "0xEF",
+        "writer": "MoveMonster",
+        "options": {
+          "types": [{
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "JUMP",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMPACT",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMMEDIATE",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "TELEPORT",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "HANG_ON_BACK",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "ASSAULTER",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "ASSASSINATION",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "RUSH",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "SIT_DOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "START_WINGS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "WINGS",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "ARAN_ADJUST",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_TOSS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "DASH_SLIDE",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            }
+          ]
+        }
+      },
+      {
+        "opCode": "0xF0",
+        "writer": "MoveMonsterAck"
+      },
+      {
+        "opCode": "0x101",
+        "writer": "SpawnNPC"
+      },
+      {
+        "opCode": "0x103",
+        "writer": "SpawnNPCRequestController"
+      },
+      {
+        "opCode": "0x104",
+        "writer": "NPCAction",
+        "options": {
+          "types": [{
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "JUMP",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMPACT",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMMEDIATE",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "TELEPORT",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "HANG_ON_BACK",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "ASSAULTER",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "ASSASSINATION",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "RUSH",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "SIT_DOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "START_WINGS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "WINGS",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "ARAN_ADJUST",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_TOSS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "DASH_SLIDE",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            }
+          ]
+        }
+      },
+      {
+        "opCode": "0x10C",
+        "writer": "DropSpawn"
+      },
+      {
+        "opCode": "0x10D",
+        "writer": "DropDestroy"
+      },
+      {
+        "opCode": "0x117",
+        "writer": "ReactorSpawn"
+      },
+      {
+        "opCode": "0x118",
+        "writer": "ReactorDestroy"
+      },
+      {
+        "opCode": "0x130",
+        "writer": "NPCConversation"
+      },
+      {
+        "opCode": "0x144",
+        "writer": "CashShopCashQueryResult"
+      },
+      {
+        "opCode": "0x145",
+        "writer": "CashShopOperation"
+      },
+      {
+        "opCode": "0x14F",
+        "writer": "CharacterKeyMap"
+      }
+    ]
+  },
+  "characters": {
+    "templates": [{
+      "jobIndex": 0,
+      "subJobIndex": 0,
+      "mapId": 130010220,
+      "gender": 0,
+      "faces": [20000, 20001, 20002],
+      "hairs": [30030, 30020, 30000],
+      "hairColors": [0, 2, 3, 7],
+      "skinColors": [0, 1, 2, 3],
+      "tops": [1040002, 1040006, 1040010],
+      "bottoms": [1060002, 1060006],
+      "shoes": [1072001, 1072005, 1072037, 1072038],
+      "weapons": [1302000, 1322005, 1312004],
+      "items": [4161047],
+      "skills": []
+    }, {
+      "jobIndex": 0,
+      "subJobIndex": 0,
+      "mapId": 130010220,
+      "gender": 1,
+      "faces": [21000, 21001, 21002],
+      "hairs": [31000, 31040, 31050],
+      "hairColors": [0, 2, 3, 7],
+      "skinColors": [0, 1, 2, 3],
+      "tops": [1041002, 1041006, 1041010, 1041011],
+      "bottoms": [1061002, 1061008],
+      "shoes": [1072001, 1072005, 1072037, 1072038],
+      "weapons": [1302000, 1322005, 1312004],
+      "items": [4161047],
+      "skills": []
+    }, {
+      "jobIndex": 1,
+      "subJobIndex": 0,
+      "mapId": 10000,
+      "gender": 0,
+      "faces": [20000, 20001, 20002],
+      "hairs": [30030, 30020, 30000],
+      "hairColors": [0, 2, 3, 7],
+      "skinColors": [0, 1, 2, 3],
+      "tops": [1040002, 1040006, 1040010],
+      "bottoms": [1060002, 1060006],
+      "shoes": [1072001, 1072005, 1072037, 1072038],
+      "weapons": [1302000, 1322005, 1312004],
+      "items": [4161001],
+      "skills": []
+    }, {
+      "jobIndex": 1,
+      "subJobIndex": 0,
+      "mapId": 10000,
+      "gender": 1,
+      "faces": [21000, 21001, 21002],
+      "hairs": [31000, 31040, 31050],
+      "hairColors": [0, 2, 3, 7],
+      "skinColors": [0, 1, 2, 3],
+      "tops": [1041002, 1041006, 1041010, 1041011],
+      "bottoms": [1061002, 1061008],
+      "shoes": [1072001, 1072005, 1072037, 1072038],
+      "weapons": [1302000, 1322005, 1312004],
+      "items": [4161001],
+      "skills": []
+    }, {
+      "jobIndex": 2,
+      "subJobIndex": 0,
+      "mapId": 140090000,
+      "gender": 0,
+      "faces": [20100, 20401, 20402],
+      "hairs": [30030, 30020, 30000],
+      "hairColors": [0, 2, 3, 7],
+      "skinColors": [0, 1, 2, 3],
+      "tops": [1042167],
+      "bottoms": [1062115],
+      "shoes": [1072383],
+      "weapons": [1442079],
+      "items": [4161048],
+      "skills": []
+    }, {
+      "jobIndex": 2,
+      "subJobIndex": 0,
+      "mapId": 140090000,
+      "gender": 1,
+      "faces": [21700, 21201, 21002],
+      "hairs": [31000, 31040, 31050],
+      "hairColors": [0, 2, 3, 7],
+      "skinColors": [0, 1, 2, 3],
+      "tops": [1042167],
+      "bottoms": [1062115],
+      "shoes": [1072383],
+      "weapons": [1442079],
+      "items": [4161048],
+      "skills": []
+    }]
+  },
+  "npcs": [{
+      "npcId": 1002000,
+      "impl": "Phil"
+    },
+    {
+      "npcId": 1002007,
+      "impl": "RegularCabLithHarbor"
+    },
+    {
+      "npcId": 1012000,
+      "impl": "RegularCabHenesys"
+    },
+    {
+      "npcId": 1022001,
+      "impl": "RegularCabPerion"
+    },
+    {
+      "npcId": 1032000,
+      "impl": "RegularCabEllinia"
+    },
+    {
+      "npcId": 1052016,
+      "impl": "RegularCabKerningCity"
+    },
+    {
+      "npcId": 1092014,
+      "impl": "NautilusMidSizedTaxi"
+    },
+    {
+      "npcId": 2010007,
+      "impl": "Heracle"
+    },
+    {
+      "npcId": 2010008,
+      "impl": "Lea"
+    }
+  ],
+  "worlds": [{
+      "name": "Scania",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Scania!",
+      "eventMessage": "Scania!",
+      "whyAmIRecommended": "Most Populated!"
+    },
+    {
+      "name": "Bera",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Bera!",
+      "eventMessage": "Bera!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "Broa",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Broa!",
+      "eventMessage": "Broa!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "Windia",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Windia!",
+      "eventMessage": "Windia!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "Khaini",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Khaini!",
+      "eventMessage": "Khaini!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "Bellocan",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Bellocan!",
+      "eventMessage": "Bellocan!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "Mardia",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Mardia!",
+      "eventMessage": "Mardia!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "Kradia",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Kradia!",
+      "eventMessage": "Kradia!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "Yellonde",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Yellonde!",
+      "eventMessage": "Yellonde!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "Demethos",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Demethos!",
+      "eventMessage": "Demethos!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "Galicia",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Galicia!",
+      "eventMessage": "Galicia!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "El Nido",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to El Nido!",
+      "eventMessage": "El Nido!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "Zenith",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Zenith!",
+      "eventMessage": "Zenith!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "Arcenia",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Arcenia!",
+      "eventMessage": "Arcenia!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "Kastia",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Kastia!",
+      "eventMessage": "Kastia!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "Judis",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Judis!",
+      "eventMessage": "Judis!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "Plana",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Plana!",
+      "eventMessage": "Plana!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "Kalluna",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Kalluna!",
+      "eventMessage": "Kalluna!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "Stius",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Stius!",
+      "eventMessage": "Stius!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "Croa",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Croa!",
+      "eventMessage": "Croa!",
+      "whyAmIRecommended": ""
+    },
+    {
+      "name": "Medere",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Medere!",
+      "eventMessage": "Medere!",
+      "whyAmIRecommended": ""
+    }
+  ]
+}

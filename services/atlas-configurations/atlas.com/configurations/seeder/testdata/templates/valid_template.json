@@ -1,0 +1,15 @@
+{
+  "region": "TEST",
+  "majorVersion": 1,
+  "minorVersion": 0,
+  "usesPin": false,
+  "socket": {
+    "handlers": [],
+    "writers": []
+  },
+  "characters": {
+    "templates": []
+  },
+  "npcs": [],
+  "worlds": []
+}

@@ -151,7 +151,8 @@ describe('useBreadcrumbs', () => {
 
   describe('basic functionality', () => {
     it('should return initial breadcrumbs', () => {
-      const { result } = renderHook(() => useBreadcrumbs());
+      // Use autoResolve: false to test initial state without async resolution
+      const { result } = renderHook(() => useBreadcrumbs({ autoResolve: false }));
 
       expect(result.current.breadcrumbs).toEqual(mockBreadcrumbs);
       expect(result.current.loading).toBe(false);

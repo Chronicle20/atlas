@@ -11,6 +11,7 @@ type TenantContextType = {
     loading: boolean;
     setActiveTenant: (tenant: Tenant) => void;
     refreshTenants: () => Promise<void>;
+    refreshAndSelectTenant: (tenantId: string) => Promise<Tenant | null>;
     fetchTenantConfiguration: (tenantId: string) => Promise<TenantConfig>;
 };
 
@@ -74,6 +75,34 @@ export function TenantProvider({children}: { children: ReactNode }) {
         }
     };
 
+    // Function to refresh tenants and select a specific tenant by ID
+    // Useful after creating a new tenant
+    const refreshAndSelectTenant = async (tenantId: string): Promise<Tenant | null> => {
+        try {
+            setLoading(true);
+            setError(null);
+            const data = await tenantsService.getAllTenants();
+            setTenants(data);
+
+            // Find and select the specified tenant
+            const newTenant = data.find(t => t.id === tenantId);
+            if (newTenant) {
+                setActiveTenantState(newTenant);
+                localStorage.setItem(LOCAL_STORAGE_KEY, newTenant.id);
+                return newTenant;
+            }
+
+            return null;
+        } catch (err: unknown) {
+            const errorInfo = createErrorFromUnknown(err, "Failed to refresh tenants");
+            setError(errorInfo.message);
+            console.error("Failed to refresh tenants:", errorInfo);
+            return null;
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // Function to fetch a tenant configuration
     const fetchTenantConfig = async (tenantId: string): Promise<TenantConfig> => {
         try {
@@ -86,11 +115,12 @@ export function TenantProvider({children}: { children: ReactNode }) {
 
     return (
         <TenantContext.Provider value={{
-            tenants, 
-            activeTenant, 
+            tenants,
+            activeTenant,
             loading,
-            setActiveTenant, 
+            setActiveTenant,
             refreshTenants,
+            refreshAndSelectTenant,
             fetchTenantConfiguration: fetchTenantConfig
         }}>
             {children}

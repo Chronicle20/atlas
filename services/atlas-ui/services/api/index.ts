@@ -77,6 +77,7 @@ export type {
   TemplateUpdateRequest,
   TemplateResponse,
   TemplatesResponse,
+  TemplateOption,
 } from './templates.service';
 
 export type {
@@ -100,3 +101,5 @@ export { npcsService } from './npcs.service';
 export { conversationsService } from './conversations.service';
 export { templatesService } from './templates.service';
 export { MapleStoryService, mapleStoryService, mapSkinColor, getEquipmentSlotName, isTwoHandedWeapon } from './maplestory.service';
+export { onboardingService, TemplateNotFoundError, TenantCreationError, ConfigurationCreationError } from './onboarding.service';
+export type { OnboardResult } from './onboarding.service';

@@ -173,7 +173,7 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
     [initialBreadcrumbs]
   );
   
-  const prevBreadcrumbsKeyRef = useRef(breadcrumbsKey);
+  const prevBreadcrumbsKeyRef = useRef<string>('');
 
   // Effect to resolve dynamic labels when breadcrumbs structure changes
   useEffect(() => {

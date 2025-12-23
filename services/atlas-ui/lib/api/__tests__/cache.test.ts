@@ -33,26 +33,26 @@ describe('API Client Response Caching', () => {
       const cacheOptions = cache.defaultOptions();
       
       // First request
-      const result1 = await api.get(url, { cache: cacheOptions });
+      const result1 = await api.get(url, { cacheConfig: cacheOptions });
       expect(result1).toEqual({ data: 'test response' });
       expect(mockFetch).toHaveBeenCalledTimes(1);
-      
+
       // Second request should use cache
-      const result2 = await api.get(url, { cache: cacheOptions });
+      const result2 = await api.get(url, { cacheConfig: cacheOptions });
       expect(result2).toEqual({ data: 'test response' });
       expect(mockFetch).toHaveBeenCalledTimes(1); // Still only one fetch call
     });
 
     it('should not cache GET requests when cache is disabled', async () => {
       const url = '/test';
-      
+
       // First request
-      const result1 = await api.get(url, { cache: cache.disable(), skipDeduplication: true });
+      const result1 = await api.get(url, { cacheConfig: cache.disable(), skipDeduplication: true });
       expect(result1).toEqual({ data: 'test response' });
       expect(mockFetch).toHaveBeenCalledTimes(1);
-      
+
       // Second request should make another fetch (no caching, no deduplication)
-      const result2 = await api.get(url, { cache: cache.disable(), skipDeduplication: true });
+      const result2 = await api.get(url, { cacheConfig: cache.disable(), skipDeduplication: true });
       expect(result2).toEqual({ data: 'test response' });
       expect(mockFetch).toHaveBeenCalledTimes(2);
     });
@@ -76,17 +76,17 @@ describe('API Client Response Caching', () => {
     it('should expire cached data after TTL', async () => {
       const url = '/test';
       const cacheOptions = cache.withTTL(0.001); // 0.001 minutes = 60ms
-      
+
       // First request
-      const result1 = await api.get(url, { cache: cacheOptions });
+      const result1 = await api.get(url, { cacheConfig: cacheOptions });
       expect(result1).toEqual({ data: 'test response' });
       expect(mockFetch).toHaveBeenCalledTimes(1);
-      
+
       // Wait for cache to expire
       await new Promise(resolve => setTimeout(resolve, 100));
-      
+
       // Second request should make a new fetch
-      const result2 = await api.get(url, { cache: cacheOptions });
+      const result2 = await api.get(url, { cacheConfig: cacheOptions });
       expect(result2).toEqual({ data: 'test response' });
       expect(mockFetch).toHaveBeenCalledTimes(2);
     });
@@ -124,33 +124,33 @@ describe('API Client Response Caching', () => {
       const url1 = '/test1';
       const url2 = '/test2';
       const cacheOptions = cache.defaultOptions();
-      
+
       // Make cached requests
-      await api.get(url1, { cache: cacheOptions });
-      await api.get(url2, { cache: cacheOptions });
+      await api.get(url1, { cacheConfig: cacheOptions });
+      await api.get(url2, { cacheConfig: cacheOptions });
       expect(mockFetch).toHaveBeenCalledTimes(2);
-      
+
       // Clear cache
       api.clearCache();
-      
+
       // Subsequent requests should not use cache
-      await api.get(url1, { cache: cacheOptions });
-      await api.get(url2, { cache: cacheOptions });
+      await api.get(url1, { cacheConfig: cacheOptions });
+      await api.get(url2, { cacheConfig: cacheOptions });
       expect(mockFetch).toHaveBeenCalledTimes(4);
     });
 
     it('should provide cache statistics', async () => {
       const url = '/test';
       const cacheOptions = cache.defaultOptions();
-      
+
       // Initially no cache entries
       let stats = api.getCacheStats();
       expect(stats.size).toBe(0);
       expect(stats.entries).toEqual([]);
-      
+
       // Make a cached request
-      await api.get(url, { cache: cacheOptions });
-      
+      await api.get(url, { cacheConfig: cacheOptions });
+
       // Should have one cache entry
       stats = api.getCacheStats();
       expect(stats.size).toBe(1);
@@ -160,18 +160,18 @@ describe('API Client Response Caching', () => {
 
     it('should clear cache by pattern', async () => {
       const cacheOptions = cache.defaultOptions();
-      
+
       // Make requests with different URLs
-      await api.get('/users/1', { cache: cacheOptions });
-      await api.get('/posts/1', { cache: cacheOptions });
-      await api.get('/users/2', { cache: cacheOptions });
+      await api.get('/users/1', { cacheConfig: cacheOptions });
+      await api.get('/posts/1', { cacheConfig: cacheOptions });
+      await api.get('/users/2', { cacheConfig: cacheOptions });
       expect(mockFetch).toHaveBeenCalledTimes(3);
-      
+
       // Clear only user-related cache entries
       // Note: The actual pattern matching depends on the base64 encoded cache key
       // For this test, we'll just verify the method exists and can be called
       api.clearCacheByPattern('.*');
-      
+
       // All cache should be cleared
       const stats = api.getCacheStats();
       expect(stats.size).toBe(0);
@@ -182,16 +182,16 @@ describe('API Client Response Caching', () => {
     it('should only cache GET requests', async () => {
       const url = '/test';
       const cacheOptions = cache.defaultOptions();
-      
+
       // GET request should be cached
-      await api.get(url, { cache: cacheOptions });
-      await api.get(url, { cache: cacheOptions });
+      await api.get(url, { cacheConfig: cacheOptions });
+      await api.get(url, { cacheConfig: cacheOptions });
       expect(mockFetch).toHaveBeenCalledTimes(1);
-      
+
       // POST request should not be cached (cache option is ignored for POST)
       // We need to skip deduplication to ensure each POST makes a separate call
-      await api.post(url, { data: 'test' }, { cache: cacheOptions, skipDeduplication: true });
-      await api.post(url, { data: 'test' }, { cache: cacheOptions, skipDeduplication: true });
+      await api.post(url, { data: 'test' }, { cacheConfig: cacheOptions, skipDeduplication: true });
+      await api.post(url, { data: 'test' }, { cacheConfig: cacheOptions, skipDeduplication: true });
       expect(mockFetch).toHaveBeenCalledTimes(3); // GET (1) + POST (2)
     });
   });

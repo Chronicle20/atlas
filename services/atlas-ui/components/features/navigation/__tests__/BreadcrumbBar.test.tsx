@@ -157,7 +157,7 @@ describe('BreadcrumbBar', () => {
 
       render(<BreadcrumbBar />);
 
-      expect(screen.getByText('Loading navigation...')).toBeInTheDocument();
+      expect(screen.getByText('Loading...')).toBeInTheDocument();
     });
 
     it('should not render when route is invalid', async () => {

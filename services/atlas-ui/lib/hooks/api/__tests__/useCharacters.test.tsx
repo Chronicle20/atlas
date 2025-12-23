@@ -245,7 +245,6 @@ describe('useCharacters hooks', () => {
         expect(typeof result.current.invalidateAll).toBe('function');
         expect(typeof result.current.invalidateList).toBe('function');
         expect(typeof result.current.invalidateCharacter).toBe('function');
-        expect(typeof result.current.invalidateLegacy).toBe('function');
       });
     });
 

@@ -114,9 +114,11 @@ describe('Inventory Layout Visual Regression Tests', () => {
   });
 
   const createWrapper = () => {
-    return ({ children }: { children: React.ReactNode }) => (
+    const TestWrapper = ({ children }: { children: React.ReactNode }) => (
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     );
+    TestWrapper.displayName = 'TestWrapper';
+    return TestWrapper;
   };
 
   describe('InventoryCard Layout Tests', () => {

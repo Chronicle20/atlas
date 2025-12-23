@@ -103,6 +103,7 @@ interface UpdateTenantInput {
 
 interface CreateTenantConfigInput {
   data: {
+    id?: string;
     type: 'tenants';
     attributes: TenantConfigAttributes;
   };
@@ -314,13 +315,18 @@ class TenantsService extends BaseService {
 
   /**
    * Create a new tenant configuration
+   * @param tenantId - The tenant ID to use (from atlas-tenants). If provided, ensures the configuration uses the same ID.
+   * @param attributes - The configuration attributes
+   * @param options - Service options
    */
   async createTenantConfiguration(
+    tenantId: string,
     attributes: TenantConfigAttributes,
     options?: ServiceOptions
   ): Promise<TenantConfig> {
     const input: CreateTenantConfigInput = {
       data: {
+        id: tenantId,
         type: 'tenants',
         attributes,
       },
@@ -329,7 +335,7 @@ class TenantsService extends BaseService {
     // Override basePath temporarily for configurations
     const originalBasePath = this.basePath;
     (this as any).basePath = this.configBasePath;
-    
+
     try {
       const response = await this.create<ApiSingleResponse<TenantConfig>, CreateTenantConfigInput>(input, options);
       return response.data;

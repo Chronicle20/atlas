@@ -116,8 +116,9 @@ describe('Tenant Onboarding Integration Tests', () => {
           minorVersion: 1,
         });
 
-        // Then configuration created with full template data
+        // Then configuration created with tenant ID and full template data
         expect(mockTenantsService.createTenantConfiguration).toHaveBeenCalledWith(
+          'tenant-new-123',
           expect.objectContaining({
             region: 'GMS',
             majorVersion: 83,
@@ -144,6 +145,7 @@ describe('Tenant Onboarding Integration Tests', () => {
         await onboardingService.onboardTenant('My New Tenant', mockTemplate);
 
         expect(mockTenantsService.createTenantConfiguration).toHaveBeenCalledWith(
+          'tenant-new-123',
           expect.objectContaining({
             characters: expect.objectContaining({
               templates: expect.arrayContaining([
@@ -306,7 +308,8 @@ describe('Tenant Onboarding Integration Tests', () => {
 
       await onboardingService.onboardTenant('Data Test', fullTemplate);
 
-      const configCall = mockTenantsService.createTenantConfiguration.mock.calls[0][0];
+      // First arg is tenantId, second arg is config attributes
+      const configCall = mockTenantsService.createTenantConfiguration.mock.calls[0][1];
 
       // Verify all data is preserved
       expect(configCall.usesPin).toBe(false);

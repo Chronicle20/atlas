@@ -286,14 +286,17 @@ describe('useTenants hooks', () => {
           wrapper: createWrapper(),
         });
 
-        result.current.mutate(mockTenantConfig.attributes);
+        result.current.mutate({ tenantId: mockTenantConfig.id, attributes: mockTenantConfig.attributes });
 
         await waitFor(() => {
           expect(result.current.isSuccess).toBe(true);
         });
 
         expect(result.current.data).toEqual(mockTenantConfig);
-        expect(tenantsService.createTenantConfiguration).toHaveBeenCalledWith(mockTenantConfig.attributes);
+        expect(tenantsService.createTenantConfiguration).toHaveBeenCalledWith(
+          mockTenantConfig.id,
+          mockTenantConfig.attributes
+        );
       });
     });
 

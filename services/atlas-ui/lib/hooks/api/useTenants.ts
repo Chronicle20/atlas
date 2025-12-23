@@ -185,17 +185,26 @@ export function useTenantConfiguration(id: string, options?: ServiceOptions): Us
 }
 
 /**
+ * Input type for creating a tenant configuration
+ */
+interface CreateTenantConfigInput {
+  tenantId: string;
+  attributes: TenantConfigAttributes;
+}
+
+/**
  * Hook to create a new tenant configuration
  */
-export function useCreateTenantConfiguration(): UseMutationResult<TenantConfig, Error, TenantConfigAttributes> {
+export function useCreateTenantConfiguration(): UseMutationResult<TenantConfig, Error, CreateTenantConfigInput> {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (attributes: TenantConfigAttributes) => tenantsService.createTenantConfiguration(attributes),
+    mutationFn: ({ tenantId, attributes }: CreateTenantConfigInput) =>
+      tenantsService.createTenantConfiguration(tenantId, attributes),
     onSuccess: (newConfig) => {
       // Invalidate and refetch configuration lists
       queryClient.invalidateQueries({ queryKey: tenantKeys.configLists() });
-      
+
       // Add the new configuration to the cache
       queryClient.setQueryData(tenantKeys.configDetail(newConfig.id), newConfig);
     },

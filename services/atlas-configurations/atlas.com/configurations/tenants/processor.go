@@ -90,9 +90,20 @@ func (p *Processor) Create(input RestModel) (uuid.UUID, error) {
 		return uuid.Nil, err
 	}
 
+	// Use ID from input if provided, otherwise generate a new one
 	var tenantId uuid.UUID
+	if input.Id != "" {
+		tenantId, err = uuid.Parse(input.Id)
+		if err != nil {
+			return uuid.Nil, err
+		}
+	} else {
+		tenantId = uuid.New()
+	}
+
 	err = database.ExecuteTransaction(p.db, func(db *gorm.DB) error {
 		e := &Entity{
+			Id:           tenantId,
 			Region:       input.Region,
 			MajorVersion: input.MajorVersion,
 			MinorVersion: input.MinorVersion,
@@ -102,7 +113,6 @@ func (p *Processor) Create(input RestModel) (uuid.UUID, error) {
 		if err != nil {
 			return err
 		}
-		tenantId = e.Id
 		return nil
 	})
 	if err != nil {

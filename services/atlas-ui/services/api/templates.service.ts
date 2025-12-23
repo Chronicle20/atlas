@@ -429,27 +429,30 @@ class TemplatesService extends BaseService {
 
   /**
    * Get templates by region and version combination
+   *
+   * Uses the backend's dedicated filtering endpoint which expects direct query params
+   * (not JSON:API filter syntax).
    */
   async getByRegionAndVersion(
-    region: string, 
-    majorVersion: number, 
-    minorVersion?: number, 
-    options?: Parameters<BaseService['getAll']>[0]
+    region: string,
+    majorVersion: number,
+    minorVersion?: number,
+    options?: ServiceOptions
   ): Promise<Template[]> {
-    const filters: Record<string, unknown> = {
-      ...options?.filters,
-      region: region,
-      majorVersion: majorVersion
-    };
-
+    // Build URL with direct query params (backend expects ?region=X&majorVersion=Y&minorVersion=Z)
+    const params = new URLSearchParams();
+    params.append('region', region);
+    params.append('majorVersion', majorVersion.toString());
     if (minorVersion !== undefined) {
-      filters.minorVersion = minorVersion;
+      params.append('minorVersion', minorVersion.toString());
     }
 
-    return this.getAll({
-      ...options,
-      filters
-    });
+    const url = `${this.basePath}?${params.toString()}`;
+    const processedOptions = options ? { ...options } : {};
+
+    const response = await api.getOne<Template>(url, processedOptions);
+    // Backend returns a single template, but we return as array for consistency
+    return [this.transformResponse(response)];
   }
 
   /**

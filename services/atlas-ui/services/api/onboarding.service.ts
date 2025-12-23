@@ -104,7 +104,8 @@ class OnboardingService {
         worlds: template.attributes.worlds,
       };
 
-      config = await tenantsService.createTenantConfiguration(configAttributes);
+      // Pass tenant ID to ensure configuration uses the same UUID
+      config = await tenantsService.createTenantConfiguration(tenant.id, configAttributes);
     } catch (error) {
       // Provide tenant ID in error for potential manual recovery
       throw new ConfigurationCreationError(

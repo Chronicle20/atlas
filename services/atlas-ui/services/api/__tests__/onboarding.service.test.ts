@@ -92,16 +92,19 @@ describe('OnboardingService', () => {
         minorVersion: 1,
       });
 
-      expect(mockTenantsService.createTenantConfiguration).toHaveBeenCalledWith({
-        region: 'GMS',
-        majorVersion: 83,
-        minorVersion: 1,
-        usesPin: true,
-        characters: { templates: [] },
-        npcs: [],
-        socket: { handlers: [], writers: [] },
-        worlds: [],
-      });
+      expect(mockTenantsService.createTenantConfiguration).toHaveBeenCalledWith(
+        'tenant-456', // Tenant ID is passed first
+        {
+          region: 'GMS',
+          majorVersion: 83,
+          minorVersion: 1,
+          usesPin: true,
+          characters: { templates: [] },
+          npcs: [],
+          socket: { handlers: [], writers: [] },
+          worlds: [],
+        }
+      );
 
       expect(result.tenant).toEqual(mockTenant);
       expect(result.config).toEqual(mockTenantConfig);

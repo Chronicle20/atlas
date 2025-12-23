@@ -13,6 +13,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -680,7 +681,7 @@ func moveInCompartment(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 
 						for _, mm := range m.Members() {
 							_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(s.WorldId(), s.ChannelId())(mm.Id(), func(os session.Model) error {
-								return session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationUpdateBody(ctx)(um.Slot(), c, s.ChannelId()))(os)
+								return session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationUpdateBody(l, ctx)(um.Slot(), c, s.ChannelId()))(os)
 							})
 						}
 						errChannels <- err

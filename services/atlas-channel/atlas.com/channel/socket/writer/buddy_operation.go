@@ -3,26 +3,32 @@ package writer
 import (
 	"atlas-channel/buddylist/buddy"
 	"atlas-channel/socket/model"
+	"strconv"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
-	"strconv"
 )
 
 const (
 	BuddyOperation                       = "BuddyOperation"
-	BuddyOperationInvite                 = "INVITE"
 	BuddyOperationUpdate                 = "UPDATE"
+	BuddyOperationBuddyUpdate            = "BUDDY_UPDATE"
+	BuddyOperationInvite                 = "INVITE"
+	BuddyOperationUnknown1               = "UNKNOWN_1" // same as UPDATE
 	BuddyOperationErrorListFull          = "BUDDY_LIST_FULL"
 	BuddyOperationErrorOtherListFull     = "OTHER_BUDDY_LIST_FULL"
 	BuddyOperationErrorAlreadyBuddy      = "ALREADY_BUDDY"
 	BuddyOperationErrorCannotBuddyGm     = "CANNOT_BUDDY_GM"
 	BuddyOperationErrorCharacterNotFound = "CHARACTER_NOT_FOUND"
 	BuddyOperationErrorUnknownError      = "UNKNOWN_ERROR"
-	BuddyOperationBuddyUpdate            = "BUDDY_UPDATE"
+	BuddyOperationErrorUnknownError2     = "UNKNOWN_ERROR_2"
+	BuddyOperationUnknown2               = "UNKNOWN_2"
+	BuddyOperationErrorUnknownError3     = "UNKNOWN_ERROR_3"
 	BuddyOperationBuddyChannelChange     = "BUDDY_CHANNEL_CHANGE"
 	BuddyOperationCapacityUpdate         = "CAPACITY_CHANGE"
+	BuddyOperationErrorUnknownError4     = "UNKNOWN_ERROR_4"
 )
 
 func BuddyInviteBody(l logrus.FieldLogger, t tenant.Model) func(actorId uint32, originatorId uint32, originatorName string) BodyProducer {

@@ -2,6 +2,7 @@ package writer
 
 import (
 	"fmt"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-socket/response"

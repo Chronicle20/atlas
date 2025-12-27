@@ -416,6 +416,8 @@ func (p *ProcessorImpl) processDialogueState(ctx ConversationContext, state Stat
 	// TODO: Send the dialogue to the client
 	if dialogue.dialogueType == SendNext {
 		npc.NewProcessor(p.l, p.ctx).SendNext(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(dialogue.Text())
+	} else if dialogue.dialogueType == SendNextPrev {
+		npc.NewProcessor(p.l, p.ctx).SendNextPrevious(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(dialogue.Text())
 	} else if dialogue.dialogueType == SendOk {
 		npc.NewProcessor(p.l, p.ctx).SendOk(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(dialogue.Text())
 	} else if dialogue.dialogueType == SendYesNo {

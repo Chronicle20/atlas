@@ -1,3 +1,6 @@
 .idea
 dev/
 services/atlas-configurations/atlas.com/configurations/atlas-configurations
+services/atlas-login/atlas.com/login/atlas-login
+services/atlas-runtime-orchestrator/atlas.com/runtime-orchestrator/atlas-runtime-orchestrator
+.DS_Store

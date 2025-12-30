@@ -56,7 +56,8 @@
                   "sendYesNo",
                   "sendSimple",
                   "sendNext",
-                  "sendNextPrev"
+                  "sendNextPrev",
+                  "sendPrev"
                 ]
               },
               "text": {

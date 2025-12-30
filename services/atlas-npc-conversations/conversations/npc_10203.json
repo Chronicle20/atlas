@@ -1,0 +1,85 @@
+{
+  "npcId": 10203,
+  "startState": "intro",
+  "states": [
+    {
+      "id": "intro",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Thieves are a perfect blend of luck, dexterity, and power that are adept at the surprise attacks against helpless enemies. A high level of avoidability and speed allows Thieves to attack enemies from various angles.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "askExperience"
+          },
+          {
+            "text": "Exit",
+            "nextState": "declineExperience"
+          }
+        ]
+      }
+    },
+    {
+      "id": "declineExperience",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "If you wish to experience what it's like to be a Thief, come see me again.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "askExperience",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Would you like to experience what it's like to be a Thief?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "performWarp"
+          },
+          {
+            "text": "No",
+            "nextState": "declineExperience"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "performWarp",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "1020400",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

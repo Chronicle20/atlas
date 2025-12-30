@@ -30,7 +30,7 @@ Map.txt and NPC.txt are very large files (thousands of lines). Reading them in f
 ### 1. Analyze the JavaScript Script
 
 Identify and understand:
-- **Dialogue types**: `sendOk`, `sendNext`, `sendYesNo`, `sendSimple`
+- **Dialogue types**: `sendOk`, `sendNext`, `sendNextPrev`, `sendPrev`, `sendYesNo`, `sendSimple`
   - **IMPORTANT**: `sendSimple` with `#L0#`, `#L1#`, etc. tags → use `listSelection` state type
   - Pattern: `#L<number>#<choice text>#l` indicates list items
   - Extract title (text before first `#L`) and parse each list item
@@ -48,23 +48,26 @@ Identify and understand:
 
 ### 3. State Types (from schema)
 
-- **dialogue**: Present messages with choices (`sendOk`, `sendNext`, `sendNextPrev`, `sendYesNo`, `sendSimple`)
+- **dialogue**: Present messages with choices (`sendOk`, `sendNext`, `sendNextPrev`, `sendPrev`, `sendYesNo`, `sendSimple`)
   - **Choice count requirements**:
     - `sendOk`: exactly 2 choices
     - `sendYesNo`: exactly 3 choices
     - `sendSimple`: at least 1 choice
     - `sendNext`: exactly 2 choices
     - `sendNextPrev`: exactly 3 choices
+    - `sendPrev`: exactly 2 choices
   - **CRITICAL - Required choice text values** (case-sensitive, must match exactly):
     - `sendOk`: `"Ok"` and `"Exit"` (note: lowercase 'k')
     - `sendYesNo`: `"Yes"`, `"No"`, and `"Exit"`
     - `sendNext`: `"Next"` and `"Exit"`
     - `sendNextPrev`: `"Previous"`, `"Next"`, and `"Exit"`
+    - `sendPrev`: `"Previous"` and `"Exit"`
     - `sendSimple`: Must include `"Exit"` choice
     - `listSelection`: Must include `"Exit"` choice
-  - **When to use sendNext vs sendNextPrev**:
+  - **When to use sendNext vs sendNextPrev vs sendPrev**:
     - Use `sendNext` for first page of multi-page dialogue or single-page dialogue
-    - Use `sendNextPrev` for subsequent pages that allow backward navigation
+    - Use `sendNextPrev` for middle pages that allow both forward and backward navigation
+    - Use `sendPrev` for final page that only allows backward navigation (or ends conversation)
   - Terminal choices (nextState: null) should use text `"Exit"`
 - **genericAction**: Execute logic/validation (meso checks, warps, item operations)
   - All outcomes MUST have `conditions` array (can be empty)

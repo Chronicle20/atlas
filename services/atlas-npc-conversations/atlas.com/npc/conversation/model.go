@@ -298,6 +298,7 @@ const (
 	SendSimple   DialogueType = "sendSimple"
 	SendNext     DialogueType = "sendNext"
 	SendNextPrev DialogueType = "sendNextPrev"
+	SendPrev     DialogueType = "sendPrev"
 )
 
 // DialogueModel represents a dialogue state
@@ -337,6 +338,12 @@ func (d DialogueModel) ChoiceFromAction(action byte) (ChoiceModel, bool) {
 			choiceText = "Previous"
 		} else {
 			choiceText = "Next"
+		}
+	} else if d.dialogueType == SendPrev {
+		if action == 255 {
+			choiceText = "Exit"
+		} else {
+			choiceText = "Previous"
 		}
 	} else if d.dialogueType == SendOk {
 		if action == 255 {
@@ -422,6 +429,10 @@ func (b *DialogueBuilder) Build() (*DialogueModel, error) {
 	case SendNextPrev:
 		if len(b.choices) != 3 {
 			return nil, errors.New("sendNextPrev requires exactly 3 choices")
+		}
+	case SendPrev:
+		if len(b.choices) != 2 {
+			return nil, errors.New("sendPrev requires exactly 2 choices")
 		}
 	case SendYesNo:
 		if len(b.choices) != 3 {

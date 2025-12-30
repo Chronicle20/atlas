@@ -19,7 +19,7 @@ Each converted conversation must include:
 
 | State Type       | Description                                                                 |
 |------------------|-----------------------------------------------------------------------------|
-| `dialogue`       | Presents a message to the user. Supports `sendOk`, `sendYesNo`, `sendNext`, and `sendSimple`. |
+| `dialogue`       | Presents a message to the user. Supports `sendOk`, `sendYesNo`, `sendNext`, `sendNextPrev`, `sendPrev`, and `sendSimple`. |
 | `genericAction`  | Executes logic or validation (e.g. meso check, job check, warp).            |
 | `craftAction`    | Defines crafting logic with required items and meso cost.                   |
 | `listSelection`  | Allows the user to choose from a dynamic list. Sets context values.         |
@@ -45,7 +45,7 @@ Each converted conversation must include:
 ```
 
 - All `dialogue` states must include an explicit **exit**.
-- Use appropriate `dialogueType` values: `sendOk`, `sendNext`, `sendYesNo`, `sendSimple`.
+- Use appropriate `dialogueType` values: `sendOk`, `sendNext`, `sendNextPrev`, `sendPrev`, `sendYesNo`, `sendSimple`.
 
 ---
 

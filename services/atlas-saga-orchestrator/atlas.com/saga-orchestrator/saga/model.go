@@ -270,6 +270,7 @@ const (
 	CreateInvite                 Action = "create_invite"
 	CreateCharacter              Action = "create_character"
 	CreateAndEquipAsset          Action = "create_and_equip_asset"
+	IncreaseBuddyCapacity        Action = "increase_buddy_capacity"
 )
 
 // Step represents a single step within a saga.
@@ -380,6 +381,14 @@ type UpdateSkillPayload struct {
 	Level       byte      `json:"level"`       // New skill level
 	MasterLevel byte      `json:"masterLevel"` // New skill master level
 	Expiration  time.Time `json:"expiration"`  // New skill expiration time
+}
+
+// IncreaseBuddyCapacityPayload represents the payload required to increase a character's buddy list capacity.
+type IncreaseBuddyCapacityPayload struct {
+	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
+	WorldId     byte   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   byte   `json:"channelId"`   // ChannelId associated with the action
+	Amount      byte   `json:"amount"`      // Amount to increase buddy capacity by
 }
 
 // ValidateCharacterStatePayload represents the payload required to validate a character's state.
@@ -565,6 +574,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case CreateAndEquipAsset:
 		var payload CreateAndEquipAssetPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case IncreaseBuddyCapacity:
+		var payload IncreaseBuddyCapacityPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

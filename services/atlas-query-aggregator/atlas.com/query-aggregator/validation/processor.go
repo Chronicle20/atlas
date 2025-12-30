@@ -1,6 +1,7 @@
 package validation
 
 import (
+	"atlas-query-aggregator/buddy"
 	"atlas-query-aggregator/character"
 	"atlas-query-aggregator/inventory"
 	"atlas-query-aggregator/marriage"
@@ -27,6 +28,7 @@ type ProcessorImpl struct {
 	inventoryProcessor inventory.Processor
 	questProcessor     quest.Processor
 	marriageProcessor  marriage.Processor
+	buddyProcessor     buddy.Processor
 }
 
 // NewProcessor creates a new validation processor
@@ -38,6 +40,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		inventoryProcessor: inventory.NewProcessor(l, ctx),
 		questProcessor:     quest.NewProcessor(l, ctx),
 		marriageProcessor:  marriage.NewProcessor(l, ctx),
+		buddyProcessor:     buddy.NewProcessor(l, ctx),
 	}
 }
 
@@ -155,6 +158,9 @@ func (p *ProcessorImpl) GetValidationContextProvider() ValidationContextProvider
 		},
 		func(characterId uint32) model.Provider[marriage.Model] {
 			return p.marriageProcessor.GetMarriageGifts(characterId)
+		},
+		func(characterId uint32) model.Provider[buddy.Model] {
+			return p.buddyProcessor.GetBuddyList(characterId)
 		},
 	)
 }

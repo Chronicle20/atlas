@@ -34,6 +34,7 @@ const (
 	DexterityCondition              ConditionType = "dexterity"
 	IntelligenceCondition           ConditionType = "intelligence"
 	LuckCondition                   ConditionType = "luck"
+	BuddyCapacityCondition          ConditionType = "buddyCapacity"
 )
 
 // Operator represents the comparison operator in a condition
@@ -99,7 +100,7 @@ func (b *ConditionBuilder) SetType(condType string) *ConditionBuilder {
 	}
 
 	switch ConditionType(condType) {
-	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition, GmLevelCondition, GuildIdCondition, GuildRankCondition, QuestStatusCondition, QuestProgressCondition, UnclaimedMarriageGiftsCondition, StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition, GuildLeaderCondition:
+	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition, GmLevelCondition, GuildIdCondition, GuildRankCondition, QuestStatusCondition, QuestProgressCondition, UnclaimedMarriageGiftsCondition, StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition, GuildLeaderCondition, BuddyCapacityCondition:
 		b.conditionType = ConditionType(condType)
 	default:
 		b.err = fmt.Errorf("unsupported condition type: %s", condType)
@@ -382,6 +383,16 @@ func (c Condition) Evaluate(character character.Model) ConditionResult {
 	case LuckCondition:
 		actualValue = int(character.Luck())
 		description = fmt.Sprintf("Luck %s %d", c.operator, c.value)
+	case BuddyCapacityCondition:
+		// Buddy capacity requires context - return error state
+		return ConditionResult{
+			Passed:      false,
+			Description: fmt.Sprintf("Buddy Capacity validation requires ValidationContext"),
+			Type:        c.conditionType,
+			Operator:    c.operator,
+			Value:       c.value,
+			ActualValue: 0,
+		}
 	case ItemCondition:
 		// For item conditions, we need to check the inventory
 		itemQuantity := 0
@@ -494,6 +505,11 @@ func (c Condition) EvaluateWithContext(ctx ValidationContext) ConditionResult {
 			actualValue = 0
 		}
 		description = fmt.Sprintf("Unclaimed Marriage Gifts %s %d", c.operator, c.value)
+
+	case BuddyCapacityCondition:
+		buddyList := ctx.BuddyList()
+		actualValue = int(buddyList.Capacity())
+		description = fmt.Sprintf("Buddy Capacity %s %d", c.operator, c.value)
 
 	case GuildIdCondition:
 		actualValue = int(character.Guild().Id())

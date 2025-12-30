@@ -484,6 +484,29 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 		return stepId, saga.Pending, saga.ChangeJob, payload, nil
 
+	case "increase_buddy_capacity":
+		// Format: increase_buddy_capacity
+		// Context: amount (byte)
+		amountValue, exists := operation.Params()["amount"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing amount parameter for increase_buddy_capacity operation")
+		}
+
+		// Evaluate the amount value
+		amountInt, err := e.evaluateContextValueAsInt(characterId, "amount", amountValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		payload := saga.IncreaseBuddyCapacityPayload{
+			CharacterId: characterId,
+			WorldId:     f.WorldId(),
+			ChannelId:   f.ChannelId(),
+			Amount:      byte(amountInt),
+		}
+
+		return stepId, saga.Pending, saga.IncreaseBuddyCapacity, payload, nil
+
 	case "create_skill":
 		// Format: create_skill
 		// Context: skillId (uint32), level (byte), masterLevel (byte), expiration (time.Time)

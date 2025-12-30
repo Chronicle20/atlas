@@ -8,11 +8,12 @@ import (
 type ConditionType string
 
 const (
-	JobCondition  ConditionType = "jobId"
-	MesoCondition ConditionType = "meso"
-	MapCondition  ConditionType = "mapId"
-	FameCondition ConditionType = "fame"
-	ItemCondition ConditionType = "item"
+	JobCondition         ConditionType = "jobId"
+	MesoCondition        ConditionType = "meso"
+	MapCondition         ConditionType = "mapId"
+	FameCondition        ConditionType = "fame"
+	ItemCondition        ConditionType = "item"
+	BuddyCapacityCondition ConditionType = "buddyCapacity"
 )
 
 // Operator represents the comparison operator in a condition
@@ -74,7 +75,7 @@ func (b *ConditionBuilder) SetType(condType string) *ConditionBuilder {
 	}
 
 	switch ConditionType(condType) {
-	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition:
+	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, BuddyCapacityCondition:
 		b.conditionType = ConditionType(condType)
 	default:
 		b.err = fmt.Errorf("unsupported condition type: %s", condType)

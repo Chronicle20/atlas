@@ -1,0 +1,270 @@
+{
+  "npcId": 22000,
+  "startState": "askVictoriaIsland",
+  "states": [
+    {
+      "id": "askVictoriaIsland",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Take this ship and you'll head off to a bigger continent. For #e150 mesos#n, I'll take you to #bVictoria Island#k. The thing is, once you leave this place, you can't ever come back. What do you think? Do you want to go to Victoria Island?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkRecommendationLetter"
+          },
+          {
+            "text": "No",
+            "nextState": "declineTrip"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkRecommendationLetter",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "itemId": "4031801"
+              }
+            ],
+            "nextState": "hasRecommendationLetter"
+          },
+          {
+            "conditions": [],
+            "nextState": "noRecommendationLetter"
+          }
+        ]
+      }
+    },
+    {
+      "id": "hasRecommendationLetter",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Okay, now give me 150 mesos... Hey, what's that? Is that the recommendation letter from Lucas, the chief of Amherst? Hey, you should have told me you had this. I, Shanks, recognize greatness when I see one, and since you have been recommended by Lucas, I see that you have a great, great potential as an adventurer. No way would I charge you for this trip!",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "confirmFreeTripWithLetter"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmFreeTripWithLetter",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "Since you have the recommendation letter, I won't charge you for this. Alright, buckle up, because we're going to head to Victoria Island right now, and it might get a bit turbulent!!",
+        "choices": [
+          {
+            "text": "Previous",
+            "nextState": "hasRecommendationLetter"
+          },
+          {
+            "text": "Next",
+            "nextState": "warpWithLetter"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpWithLetter",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4031801",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "104000000",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "noRecommendationLetter",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Bored of this place? Here... Give me #e150 mesos#n first...",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "checkLevelAndMeso"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkLevelAndMeso",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "level",
+                "operator": "<=",
+                "value": "6"
+              }
+            ],
+            "nextState": "levelTooLow"
+          },
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": "<",
+                "value": "150"
+              }
+            ],
+            "nextState": "insufficientMeso"
+          },
+          {
+            "conditions": [],
+            "nextState": "confirmPaidTrip"
+          }
+        ]
+      }
+    },
+    {
+      "id": "levelTooLow",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Let's see... I don't think you are strong enough. You'll have to be at least Level 7 to go to Victoria Island.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "insufficientMeso",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "What? You're telling me you wanted to go without any money? You're one weirdo...",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmPaidTrip",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Awesome! #e150#n mesos accepted! Alright, off to Victoria Island!",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "warpWithPayment"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpWithPayment",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-150"
+            }
+          },
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "104000000",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "declineTrip",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Hmm... I guess you still have things to do here?",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

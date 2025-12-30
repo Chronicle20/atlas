@@ -1,6 +1,7 @@
 package validation
 
 import (
+	"atlas-query-aggregator/buddy"
 	"atlas-query-aggregator/character"
 	"atlas-query-aggregator/marriage"
 	"atlas-query-aggregator/quest"
@@ -13,6 +14,7 @@ type ValidationContext struct {
 	character character.Model
 	quests    map[uint32]quest.Model
 	marriage  marriage.Model
+	buddyList buddy.Model
 }
 
 // NewValidationContext creates a new validation context with the provided character
@@ -21,6 +23,7 @@ func NewValidationContext(char character.Model) ValidationContext {
 		character: char,
 		quests:    make(map[uint32]quest.Model),
 		marriage:  marriage.NewModel(char.Id(), false),
+		buddyList: buddy.NewModel(char.Id(), 0),
 	}
 }
 
@@ -40,6 +43,11 @@ func (ctx ValidationContext) Marriage() marriage.Model {
 	return ctx.marriage
 }
 
+// BuddyList returns the buddy list model
+func (ctx ValidationContext) BuddyList() buddy.Model {
+	return ctx.buddyList
+}
+
 // WithQuest adds a quest to the context
 func (ctx ValidationContext) WithQuest(questModel quest.Model) ValidationContext {
 	newQuests := make(map[uint32]quest.Model)
@@ -47,11 +55,12 @@ func (ctx ValidationContext) WithQuest(questModel quest.Model) ValidationContext
 		newQuests[k] = v
 	}
 	newQuests[questModel.Id()] = questModel
-	
+
 	return ValidationContext{
 		character: ctx.character,
 		quests:    newQuests,
 		marriage:  ctx.marriage,
+		buddyList: ctx.buddyList,
 	}
 }
 
@@ -61,6 +70,17 @@ func (ctx ValidationContext) WithMarriage(marriageModel marriage.Model) Validati
 		character: ctx.character,
 		quests:    ctx.quests,
 		marriage:  marriageModel,
+		buddyList: ctx.buddyList,
+	}
+}
+
+// WithBuddyList adds buddy list data to the context
+func (ctx ValidationContext) WithBuddyList(buddyListModel buddy.Model) ValidationContext {
+	return ValidationContext{
+		character: ctx.character,
+		quests:    ctx.quests,
+		marriage:  ctx.marriage,
+		buddyList: buddyListModel,
 	}
 }
 
@@ -69,6 +89,7 @@ type ValidationContextBuilder struct {
 	character character.Model
 	quests    map[uint32]quest.Model
 	marriage  marriage.Model
+	buddyList buddy.Model
 }
 
 // NewValidationContextBuilder creates a new validation context builder
@@ -77,6 +98,7 @@ func NewValidationContextBuilder(char character.Model) *ValidationContextBuilder
 		character: char,
 		quests:    make(map[uint32]quest.Model),
 		marriage:  marriage.NewModel(char.Id(), false),
+		buddyList: buddy.NewModel(char.Id(), 0),
 	}
 }
 
@@ -95,12 +117,19 @@ func (b *ValidationContextBuilder) SetMarriage(marriageModel marriage.Model) *Va
 	return b
 }
 
+// SetBuddyList sets the buddy list data for the context being built
+func (b *ValidationContextBuilder) SetBuddyList(buddyListModel buddy.Model) *ValidationContextBuilder {
+	b.buddyList = buddyListModel
+	return b
+}
+
 // Build creates a validation context from the builder
 func (b *ValidationContextBuilder) Build() ValidationContext {
 	return ValidationContext{
 		character: b.character,
 		quests:    b.quests,
 		marriage:  b.marriage,
+		buddyList: b.buddyList,
 	}
 }
 
@@ -115,6 +144,7 @@ type ContextBuilderProvider struct {
 	characterProvider func(uint32) model.Provider[character.Model]
 	questProvider     func(uint32) model.Provider[map[uint32]quest.Model]
 	marriageProvider  func(uint32) model.Provider[marriage.Model]
+	buddyProvider     func(uint32) model.Provider[buddy.Model]
 }
 
 // NewContextBuilderProvider creates a new context builder provider
@@ -122,11 +152,13 @@ func NewContextBuilderProvider(
 	characterProvider func(uint32) model.Provider[character.Model],
 	questProvider func(uint32) model.Provider[map[uint32]quest.Model],
 	marriageProvider func(uint32) model.Provider[marriage.Model],
+	buddyProvider func(uint32) model.Provider[buddy.Model],
 ) *ContextBuilderProvider {
 	return &ContextBuilderProvider{
 		characterProvider: characterProvider,
 		questProvider:     questProvider,
 		marriageProvider:  marriageProvider,
+		buddyProvider:     buddyProvider,
 	}
 }
 
@@ -160,6 +192,15 @@ func (p *ContextBuilderProvider) GetValidationContext(characterId uint32) model.
 				return ValidationContext{}, fmt.Errorf("failed to get marriage data: %w", err)
 			}
 			builder.SetMarriage(marriageModel)
+		}
+
+		// Get buddy list data if available
+		if p.buddyProvider != nil {
+			buddyListModel, err := p.buddyProvider(characterId)()
+			if err != nil {
+				return ValidationContext{}, fmt.Errorf("failed to get buddy list data: %w", err)
+			}
+			builder.SetBuddyList(buddyListModel)
 		}
 
 		return builder.Build(), nil

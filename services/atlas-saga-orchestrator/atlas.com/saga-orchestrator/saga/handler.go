@@ -1,6 +1,7 @@
 package saga
 
 import (
+	"atlas-saga-orchestrator/buddylist"
 	"atlas-saga-orchestrator/character"
 	"atlas-saga-orchestrator/compartment"
 	"atlas-saga-orchestrator/guild"
@@ -24,6 +25,7 @@ type Handler interface {
 	WithValidationProcessor(validation.Processor) Handler
 	WithGuildProcessor(guild.Processor) Handler
 	WithInviteProcessor(invite.Processor) Handler
+	WithBuddyListProcessor(buddylist.Processor) Handler
 
 	GetHandler(action Action) (ActionHandler, bool)
 	
@@ -49,31 +51,34 @@ type Handler interface {
 	handleCreateInvite(s Saga, st Step[any]) error
 	handleCreateCharacter(s Saga, st Step[any]) error
 	handleCreateAndEquipAsset(s Saga, st Step[any]) error
+	handleIncreaseBuddyCapacity(s Saga, st Step[any]) error
 }
 
 type HandlerImpl struct {
-	l       logrus.FieldLogger
-	ctx     context.Context
-	t       tenant.Model
-	charP   character.Processor
-	compP   compartment.Processor
-	skillP  skill.Processor
-	validP  validation.Processor
-	guildP  guild.Processor
-	inviteP invite.Processor
+	l          logrus.FieldLogger
+	ctx        context.Context
+	t          tenant.Model
+	charP      character.Processor
+	compP      compartment.Processor
+	skillP     skill.Processor
+	validP     validation.Processor
+	guildP     guild.Processor
+	inviteP    invite.Processor
+	buddyListP buddylist.Processor
 }
 
 func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
 	return &HandlerImpl{
-		l:       l,
-		ctx:     ctx,
-		t:       tenant.MustFromContext(ctx),
-		charP:   character.NewProcessor(l, ctx),
-		compP:   compartment.NewProcessor(l, ctx),
-		skillP:  skill.NewProcessor(l, ctx),
-		validP:  validation.NewProcessor(l, ctx),
-		guildP:  guild.NewProcessor(l, ctx),
-		inviteP: invite.NewProcessor(l, ctx),
+		l:          l,
+		ctx:        ctx,
+		t:          tenant.MustFromContext(ctx),
+		charP:      character.NewProcessor(l, ctx),
+		compP:      compartment.NewProcessor(l, ctx),
+		skillP:     skill.NewProcessor(l, ctx),
+		validP:     validation.NewProcessor(l, ctx),
+		guildP:     guild.NewProcessor(l, ctx),
+		inviteP:    invite.NewProcessor(l, ctx),
+		buddyListP: buddylist.NewProcessor(l, ctx),
 	}
 }
 
@@ -149,15 +154,31 @@ func (h *HandlerImpl) WithGuildProcessor(guildP guild.Processor) Handler {
 
 func (h *HandlerImpl) WithInviteProcessor(inviteP invite.Processor) Handler {
 	return &HandlerImpl{
-		l:       h.l,
-		ctx:     h.ctx,
-		t:       h.t,
-		charP:   h.charP,
-		compP:   h.compP,
-		skillP:  h.skillP,
-		validP:  h.validP,
-		guildP:  h.guildP,
-		inviteP: inviteP,
+		l:          h.l,
+		ctx:        h.ctx,
+		t:          h.t,
+		charP:      h.charP,
+		compP:      h.compP,
+		skillP:     h.skillP,
+		validP:     h.validP,
+		guildP:     h.guildP,
+		inviteP:    inviteP,
+		buddyListP: h.buddyListP,
+	}
+}
+
+func (h *HandlerImpl) WithBuddyListProcessor(buddyListP buddylist.Processor) Handler {
+	return &HandlerImpl{
+		l:          h.l,
+		ctx:        h.ctx,
+		t:          h.t,
+		charP:      h.charP,
+		compP:      h.compP,
+		skillP:     h.skillP,
+		validP:     h.validP,
+		guildP:     h.guildP,
+		inviteP:    h.inviteP,
+		buddyListP: buddyListP,
 	}
 }
 
@@ -208,6 +229,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleCreateCharacter, true
 	case CreateAndEquipAsset:
 		return h.handleCreateAndEquipAsset, true
+	case IncreaseBuddyCapacity:
+		return h.handleIncreaseBuddyCapacity, true
 
 	}
 	return nil, false
@@ -438,6 +461,22 @@ func (h *HandlerImpl) handleUpdateSkill(s Saga, st Step[any]) error {
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to update skill.")
+		return err
+	}
+
+	return nil
+}
+
+func (h *HandlerImpl) handleIncreaseBuddyCapacity(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(IncreaseBuddyCapacityPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.buddyListP.IncreaseCapacityAndEmit(s.TransactionId, payload.CharacterId, payload.WorldId, payload.Amount)
+
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to increase buddy capacity.")
 		return err
 	}
 

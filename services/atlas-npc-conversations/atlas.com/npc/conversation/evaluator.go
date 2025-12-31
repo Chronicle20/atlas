@@ -80,10 +80,11 @@ func (e *EvaluatorImpl) EvaluateCondition(characterId uint32, condition Conditio
 
 	// Create a validation condition input
 	validationCondition := validation.ConditionInput{
-		Type:     condition.Type(),
-		Operator: condition.Operator(),
-		Value:    value,
-		ItemId:   condition.ItemId(),
+		Type:        condition.Type(),
+		Operator:    condition.Operator(),
+		Value:       value,
+		ReferenceId: condition.ReferenceId(),
+		Step:        condition.Step(),
 	}
 
 	// Validate the character state using the validation processor

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
+	"strconv"
 )
 
 const (
@@ -152,10 +153,11 @@ type RestOperationModel struct {
 
 // RestConditionModel represents the REST model for conditions
 type RestConditionModel struct {
-	Type     string `json:"type"`     // Condition type
-	Operator string `json:"operator"` // Operator
-	Value    string `json:"value"`    // Value
-	ItemId   string `json:"itemId,omitempty"`
+	Type        string `json:"type"`                  // Condition type
+	Operator    string `json:"operator"`              // Operator
+	Value       string `json:"value"`                 // Value
+	ReferenceId string `json:"referenceId,omitempty"` // Reference ID (for items, quests, etc.)
+	Step        string `json:"step,omitempty"`        // Step (for quest progress)
 }
 
 // RestOutcomeModel represents the REST model for outcomes
@@ -344,11 +346,17 @@ func TransformGenericAction(m GenericActionModel) (RestGenericActionModel, error
 		// Convert ConditionModel to RestConditionModel
 		restConditions := make([]RestConditionModel, 0, len(outcome.Conditions()))
 		for _, condition := range outcome.Conditions() {
+			var referenceIdStr string
+			if condition.ReferenceId() != 0 {
+				referenceIdStr = strconv.FormatUint(uint64(condition.ReferenceId()), 10)
+			}
+
 			restConditions = append(restConditions, RestConditionModel{
-				Type:     condition.Type(),
-				Operator: condition.Operator(),
-				Value:    condition.Value(),
-				ItemId:   condition.ItemId(),
+				Type:        condition.Type(),
+				Operator:    condition.Operator(),
+				Value:       condition.Value(),
+				ReferenceId: referenceIdStr,
+				Step:        condition.Step(),
 			})
 		}
 
@@ -567,7 +575,8 @@ func ExtractOutcome(r RestOutcomeModel) (OutcomeModel, error) {
 			SetType(c.Type).
 			SetOperator(c.Operator).
 			SetValue(c.Value).
-			SetItemId(c.ItemId).
+			SetReferenceId(c.ReferenceId).
+			SetStep(c.Step).
 			Build()
 
 		if err != nil {

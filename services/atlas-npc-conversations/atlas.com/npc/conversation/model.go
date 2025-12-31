@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/google/uuid"
+	"strconv"
 	"time"
 )
 
@@ -654,7 +655,8 @@ type ConditionModel struct {
 	conditionType string
 	operator      string
 	value         string
-	itemId        string
+	referenceId   string // String from JSON, will be converted to uint32 when needed
+	step          string
 }
 
 // Type returns the condition type
@@ -672,8 +674,22 @@ func (c ConditionModel) Value() string {
 	return c.value
 }
 
-func (c ConditionModel) ItemId() string {
-	return c.itemId
+// ReferenceId returns the reference ID as uint32
+func (c ConditionModel) ReferenceId() uint32 {
+	if c.referenceId == "" {
+		return 0
+	}
+	// Convert string to uint32
+	id, err := strconv.ParseUint(c.referenceId, 10, 32)
+	if err != nil {
+		return 0
+	}
+	return uint32(id)
+}
+
+// Step returns the step for quest progress
+func (c ConditionModel) Step() string {
+	return c.step
 }
 
 // ConditionBuilder is a builder for ConditionModel
@@ -681,7 +697,8 @@ type ConditionBuilder struct {
 	conditionType string
 	operator      string
 	value         string
-	itemId        string
+	referenceId   string
+	step          string
 }
 
 // NewConditionBuilder creates a new ConditionBuilder
@@ -707,8 +724,15 @@ func (b *ConditionBuilder) SetValue(value string) *ConditionBuilder {
 	return b
 }
 
-func (b *ConditionBuilder) SetItemId(itemId string) *ConditionBuilder {
-	b.itemId = itemId
+// SetReferenceId sets the reference ID
+func (b *ConditionBuilder) SetReferenceId(referenceId string) *ConditionBuilder {
+	b.referenceId = referenceId
+	return b
+}
+
+// SetStep sets the step
+func (b *ConditionBuilder) SetStep(step string) *ConditionBuilder {
+	b.step = step
 	return b
 }
 
@@ -728,7 +752,8 @@ func (b *ConditionBuilder) Build() (ConditionModel, error) {
 		conditionType: b.conditionType,
 		operator:      b.operator,
 		value:         b.value,
-		itemId:        b.itemId,
+		referenceId:   b.referenceId,
+		step:          b.step,
 	}, nil
 }
 

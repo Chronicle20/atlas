@@ -150,6 +150,7 @@ const (
 	GenericActionType StateType = "genericAction"
 	CraftActionType   StateType = "craftAction"
 	ListSelectionType StateType = "listSelection"
+	AskNumberType     StateType = "askNumber"
 )
 
 // StateModel represents a state in a conversation
@@ -160,6 +161,7 @@ type StateModel struct {
 	genericAction *GenericActionModel
 	craftAction   *CraftActionModel
 	listSelection *ListSelectionModel
+	askNumber     *AskNumberModel
 }
 
 // Id returns the state ID
@@ -192,6 +194,11 @@ func (s StateModel) ListSelection() *ListSelectionModel {
 	return s.listSelection
 }
 
+// AskNumber returns the ask number model (if type is askNumber)
+func (s StateModel) AskNumber() *AskNumberModel {
+	return s.askNumber
+}
+
 // StateBuilder is a builder for StateModel
 type StateBuilder struct {
 	id            string
@@ -200,6 +207,7 @@ type StateBuilder struct {
 	genericAction *GenericActionModel
 	craftAction   *CraftActionModel
 	listSelection *ListSelectionModel
+	askNumber     *AskNumberModel
 }
 
 // NewStateBuilder creates a new StateBuilder
@@ -220,6 +228,7 @@ func (b *StateBuilder) SetDialogue(dialogue *DialogueModel) *StateBuilder {
 	b.genericAction = nil
 	b.craftAction = nil
 	b.listSelection = nil
+	b.askNumber = nil
 	return b
 }
 
@@ -230,6 +239,7 @@ func (b *StateBuilder) SetGenericAction(genericAction *GenericActionModel) *Stat
 	b.genericAction = genericAction
 	b.craftAction = nil
 	b.listSelection = nil
+	b.askNumber = nil
 	return b
 }
 
@@ -240,6 +250,7 @@ func (b *StateBuilder) SetCraftAction(craftAction *CraftActionModel) *StateBuild
 	b.genericAction = nil
 	b.craftAction = craftAction
 	b.listSelection = nil
+	b.askNumber = nil
 	return b
 }
 
@@ -250,6 +261,18 @@ func (b *StateBuilder) SetListSelection(listSelection *ListSelectionModel) *Stat
 	b.genericAction = nil
 	b.craftAction = nil
 	b.listSelection = listSelection
+	b.askNumber = nil
+	return b
+}
+
+// SetAskNumber sets the ask number model
+func (b *StateBuilder) SetAskNumber(askNumber *AskNumberModel) *StateBuilder {
+	b.stateType = AskNumberType
+	b.dialogue = nil
+	b.genericAction = nil
+	b.craftAction = nil
+	b.listSelection = nil
+	b.askNumber = askNumber
 	return b
 }
 
@@ -276,6 +299,10 @@ func (b *StateBuilder) Build() (StateModel, error) {
 		if b.listSelection == nil {
 			return StateModel{}, errors.New("listSelection is required for listSelection state")
 		}
+	case AskNumberType:
+		if b.askNumber == nil {
+			return StateModel{}, errors.New("askNumber is required for askNumber state")
+		}
 	default:
 		return StateModel{}, errors.New("invalid state type")
 	}
@@ -287,6 +314,7 @@ func (b *StateBuilder) Build() (StateModel, error) {
 		genericAction: b.genericAction,
 		craftAction:   b.craftAction,
 		listSelection: b.listSelection,
+		askNumber:     b.askNumber,
 	}, nil
 }
 
@@ -1036,6 +1064,127 @@ func (b *ListSelectionBuilder) Build() (*ListSelectionModel, error) {
 	return &ListSelectionModel{
 		title:   b.title,
 		choices: b.choices,
+	}, nil
+}
+
+// AskNumberModel represents an ask number state
+type AskNumberModel struct {
+	text         string
+	defaultValue uint32
+	minValue     uint32
+	maxValue     uint32
+	contextKey   string
+	nextState    string
+}
+
+// Text returns the ask number text
+func (a AskNumberModel) Text() string {
+	return a.text
+}
+
+// DefaultValue returns the default value
+func (a AskNumberModel) DefaultValue() uint32 {
+	return a.defaultValue
+}
+
+// MinValue returns the minimum value
+func (a AskNumberModel) MinValue() uint32 {
+	return a.minValue
+}
+
+// MaxValue returns the maximum value
+func (a AskNumberModel) MaxValue() uint32 {
+	return a.maxValue
+}
+
+// ContextKey returns the context key
+func (a AskNumberModel) ContextKey() string {
+	return a.contextKey
+}
+
+// NextState returns the next state ID
+func (a AskNumberModel) NextState() string {
+	return a.nextState
+}
+
+// AskNumberBuilder is a builder for AskNumberModel
+type AskNumberBuilder struct {
+	text         string
+	defaultValue uint32
+	minValue     uint32
+	maxValue     uint32
+	contextKey   string
+	nextState    string
+}
+
+// NewAskNumberBuilder creates a new AskNumberBuilder
+func NewAskNumberBuilder() *AskNumberBuilder {
+	return &AskNumberBuilder{
+		contextKey: "quantity", // Default context key
+	}
+}
+
+// SetText sets the ask number text
+func (b *AskNumberBuilder) SetText(text string) *AskNumberBuilder {
+	b.text = text
+	return b
+}
+
+// SetDefaultValue sets the default value
+func (b *AskNumberBuilder) SetDefaultValue(defaultValue uint32) *AskNumberBuilder {
+	b.defaultValue = defaultValue
+	return b
+}
+
+// SetMinValue sets the minimum value
+func (b *AskNumberBuilder) SetMinValue(minValue uint32) *AskNumberBuilder {
+	b.minValue = minValue
+	return b
+}
+
+// SetMaxValue sets the maximum value
+func (b *AskNumberBuilder) SetMaxValue(maxValue uint32) *AskNumberBuilder {
+	b.maxValue = maxValue
+	return b
+}
+
+// SetContextKey sets the context key
+func (b *AskNumberBuilder) SetContextKey(contextKey string) *AskNumberBuilder {
+	b.contextKey = contextKey
+	return b
+}
+
+// SetNextState sets the next state ID
+func (b *AskNumberBuilder) SetNextState(nextState string) *AskNumberBuilder {
+	b.nextState = nextState
+	return b
+}
+
+// Build builds the AskNumberModel
+func (b *AskNumberBuilder) Build() (*AskNumberModel, error) {
+	if b.text == "" {
+		return nil, errors.New("text is required")
+	}
+	if b.minValue > b.defaultValue {
+		return nil, errors.New("minValue must be less than or equal to defaultValue")
+	}
+	if b.defaultValue > b.maxValue {
+		return nil, errors.New("defaultValue must be less than or equal to maxValue")
+	}
+	if b.maxValue == 0 {
+		return nil, errors.New("maxValue must be greater than 0")
+	}
+	if b.contextKey == "" {
+		b.contextKey = "quantity" // Ensure default
+	}
+
+	return &AskNumberModel{
+		text:         b.text,
+		defaultValue: b.defaultValue,
+		minValue:     b.minValue,
+		maxValue:     b.maxValue,
+		contextKey:   b.contextKey,
+		nextState:    b.nextState,
 	}, nil
 }
 

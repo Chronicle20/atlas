@@ -8,6 +8,7 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 	"fmt"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -35,6 +36,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				var t string
 				t, _ = topic.EnvProvider(l)(conversation2.EnvCommandTopic)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSimpleConversationCommand(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleNumberConversationCommand(sc, wp))))
 			}
 		}
 	}
@@ -57,11 +59,38 @@ func handleSimpleConversationCommand(sc server.Model, wp writer.Producer) messag
 	}
 }
 
+func handleNumberConversationCommand(sc server.Model, wp writer.Producer) message.Handler[conversation2.CommandEvent[conversation2.CommandNumberBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c conversation2.CommandEvent[conversation2.CommandNumberBody]) {
+		if c.Type != conversation2.CommandTypeNumber {
+			return
+		}
+
+		if !sc.Is(tenant.MustFromContext(ctx), world.Id(c.WorldId), channel.Id(c.ChannelId)) {
+			return
+		}
+
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(c.CharacterId, announceNumberConversation(l)(ctx)(wp)(c.NpcId, 4, c.Message, c.Body.DefaultValue, c.Body.MinValue, c.Body.MaxValue, getNPCTalkSpeaker(c.Speaker)))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to write number conversation for character [%d].", c.CharacterId)
+		}
+	}
+}
+
 func announceSimpleConversation(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, talkType byte, message string, endType []byte, speaker byte) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, talkType byte, message string, endType []byte, speaker byte) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(npcId uint32, talkType byte, message string, endType []byte, speaker byte) model.Operator[session.Model] {
 			return func(npcId uint32, talkType byte, message string, endType []byte, speaker byte) model.Operator[session.Model] {
 				return session.Announce(l)(ctx)(wp)(writer.NPCConversation)(writer.NPCConversationBody(l)(npcId, talkType, message, endType, speaker))
+			}
+		}
+	}
+}
+
+func announceNumberConversation(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, talkType byte, message string, def uint32, min uint32, max uint32, speaker byte) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, talkType byte, message string, def uint32, min uint32, max uint32, speaker byte) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(npcId uint32, talkType byte, message string, def uint32, min uint32, max uint32, speaker byte) model.Operator[session.Model] {
+			return func(npcId uint32, talkType byte, message string, def uint32, min uint32, max uint32, speaker byte) model.Operator[session.Model] {
+				return session.Announce(l)(ctx)(wp)(writer.NPCConversation)(writer.NPCConversationAskNumberBody(l)(npcId, talkType, message, def, min, max))
 			}
 		}
 	}
@@ -116,6 +145,8 @@ func getNPCTalkType(t string) byte {
 	case "ACCEPT_DECLINE":
 		return 0x0C
 	case "SIMPLE":
+		return 4
+	case "NUM":
 		return 4
 	}
 	panic(fmt.Sprintf("unsupported talk type %s", t))

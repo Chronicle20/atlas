@@ -77,6 +77,7 @@ type RestStateModel struct {
 	GenericAction *RestGenericActionModel `json:"genericAction,omitempty"` // Generic action model (if type is genericAction)
 	CraftAction   *RestCraftActionModel   `json:"craftAction,omitempty"`   // Craft action model (if type is craftAction)
 	ListSelection *RestListSelectionModel `json:"listSelection,omitempty"` // List selection model (if type is listSelection)
+	AskNumber     *RestAskNumberModel     `json:"askNumber,omitempty"`     // Ask number model (if type is askNumber)
 }
 
 // GetID returns the resource ID
@@ -181,6 +182,16 @@ type RestCraftActionModel struct {
 type RestListSelectionModel struct {
 	Title   string            `json:"title"`             // List selection title
 	Choices []RestChoiceModel `json:"choices,omitempty"` // Dialogue choices
+}
+
+// RestAskNumberModel represents the REST model for ask number states
+type RestAskNumberModel struct {
+	Text         string `json:"text"`                  // Ask number text
+	DefaultValue uint32 `json:"default"`               // Default value
+	MinValue     uint32 `json:"min"`                   // Minimum value
+	MaxValue     uint32 `json:"max"`                   // Maximum value
+	ContextKey   string `json:"contextKey,omitempty"`  // Context key (defaults to "quantity")
+	NextState    string `json:"nextState,omitempty"`   // Next state ID
 }
 
 // RestOptionSetModel represents the REST model for option sets
@@ -308,6 +319,12 @@ func TransformState(m StateModel) (RestStateModel, error) {
 			}
 			restState.ListSelection = &restListSelection
 		}
+	case AskNumberType:
+		askNumber := m.AskNumber()
+		if askNumber != nil {
+			restAskNumber := TransformAskNumber(*askNumber)
+			restState.AskNumber = &restAskNumber
+		}
 	}
 
 	return restState, nil
@@ -400,6 +417,18 @@ func TransformListSelection(m ListSelectionModel) (RestListSelectionModel, error
 		Title:   m.Title(),
 		Choices: restChoices,
 	}, nil
+}
+
+// TransformAskNumber converts an AskNumberModel to a RestAskNumberModel
+func TransformAskNumber(m AskNumberModel) RestAskNumberModel {
+	return RestAskNumberModel{
+		Text:         m.Text(),
+		DefaultValue: m.DefaultValue(),
+		MinValue:     m.MinValue(),
+		MaxValue:     m.MaxValue(),
+		ContextKey:   m.ContextKey(),
+		NextState:    m.NextState(),
+	}
 }
 
 // TransformOptionSet converts an OptionSetModel to a RestOptionSetModel
@@ -498,6 +527,15 @@ func ExtractState(r RestStateModel) (StateModel, error) {
 			return StateModel{}, err
 		}
 		stateBuilder.SetListSelection(listSelection)
+	case AskNumberType:
+		if r.AskNumber == nil {
+			return StateModel{}, fmt.Errorf("askNumber is required for askNumber state")
+		}
+		askNumber, err := ExtractAskNumber(*r.AskNumber)
+		if err != nil {
+			return StateModel{}, err
+		}
+		stateBuilder.SetAskNumber(askNumber)
 	default:
 		return StateModel{}, fmt.Errorf("invalid state type: %s", r.StateType)
 	}
@@ -618,6 +656,22 @@ func ExtractListSelection(r RestListSelectionModel) (*ListSelectionModel, error)
 			return nil, err
 		}
 		b.AddChoice(choice)
+	}
+
+	return b.Build()
+}
+
+// ExtractAskNumber converts a RestAskNumberModel to an AskNumberModel
+func ExtractAskNumber(r RestAskNumberModel) (*AskNumberModel, error) {
+	b := NewAskNumberBuilder().
+		SetText(r.Text).
+		SetDefaultValue(r.DefaultValue).
+		SetMinValue(r.MinValue).
+		SetMaxValue(r.MaxValue).
+		SetNextState(r.NextState)
+
+	if r.ContextKey != "" {
+		b.SetContextKey(r.ContextKey)
 	}
 
 	return b.Build()

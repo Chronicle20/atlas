@@ -160,20 +160,14 @@
     },
     {
       "id": "askQuantity",
-      "type": "dialogue",
-      "dialogue": {
-        "dialogueType": "sendNext",
+      "type": "askNumber",
+      "askNumber": {
         "text": "You want #b#t{context.itemId}##k? #t{context.itemId}# allows you to recover {context.description} How many would you like to buy?",
-        "choices": [
-          {
-            "text": "Next",
-            "nextState": "confirmPurchase"
-          },
-          {
-            "text": "Exit",
-            "nextState": null
-          }
-        ]
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "confirmPurchase"
       }
     },
     {

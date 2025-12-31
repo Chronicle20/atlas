@@ -38,6 +38,7 @@ type Processor interface {
 	SendPrevious(worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32) TalkFunc
 	SendOk(worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32) TalkFunc
 	SendYesNo(worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32) TalkFunc
+	SendNumber(worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32, message string, def uint32, min uint32, max uint32) error
 	SendNPCTalk(worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32, config *TalkConfig) func(message string, configurations ...TalkConfigurator)
 }
 
@@ -96,6 +97,10 @@ func (p *ProcessorImpl) SendOk(worldId world.Id, channelId channel.Id, character
 
 func (p *ProcessorImpl) SendYesNo(worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32) TalkFunc {
 	return p.SendNPCTalk(worldId, channelId, characterId, npcId, &TalkConfig{messageType: MessageTypeYesNo, speaker: SpeakerNPCLeft})
+}
+
+func (p *ProcessorImpl) SendNumber(worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32, message string, def uint32, min uint32, max uint32) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(npc2.EnvConversationCommandTopic)(numberConversationProvider(worldId, channelId, characterId, npcId, message, def, min, max))
 }
 
 func (p *ProcessorImpl) SendNPCTalk(worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32, config *TalkConfig) func(message string, configurations ...TalkConfigurator) {

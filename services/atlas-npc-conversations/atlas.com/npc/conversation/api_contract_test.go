@@ -10,53 +10,53 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestRestModelTransformation_StringItemId validates that RestConditionModel correctly handles string ItemId
-func TestRestModelTransformation_StringItemId(t *testing.T) {
+// TestRestModelTransformation_StringReferenceId validates that RestConditionModel correctly handles string ReferenceId
+func TestRestModelTransformation_StringReferenceId(t *testing.T) {
 	tests := []struct {
 		name        string
 		itemId      string
 		description string
 	}{
 		{
-			name:        "Numeric string ItemId",
+			name:        "Numeric string ReferenceId",
 			itemId:      "4001126",
 			description: "Traditional numeric item ID as string",
 		},
 		{
-			name:        "Empty string ItemId",
+			name:        "Empty string ReferenceId",
 			itemId:      "",
-			description: "Empty ItemId (omitempty behavior)",
+			description: "Empty ReferenceId (omitempty behavior)",
 		},
 		{
-			name:        "Zero string ItemId",
+			name:        "Zero string ReferenceId",
 			itemId:      "0",
-			description: "Zero as string ItemId",
+			description: "Zero as string ReferenceId",
 		},
 		{
-			name:        "Non-numeric string ItemId",
+			name:        "Non-numeric string ReferenceId",
 			itemId:      "SPECIAL_KEY_ITEM",
 			description: "String-based item identifier",
 		},
 		{
-			name:        "ItemId with special characters",
+			name:        "ReferenceId with special characters",
 			itemId:      "item-123_special",
-			description: "ItemId with hyphens and underscores",
+			description: "ReferenceId with hyphens and underscores",
 		},
 		{
-			name:        "Unicode ItemId",
+			name:        "Unicode ReferenceId",
 			itemId:      "アイテム_123",
-			description: "ItemId with Unicode characters",
+			description: "ReferenceId with Unicode characters",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create a REST condition model with string ItemId
+			// Create a REST condition model with string ReferenceId
 			restCondition := RestConditionModel{
 				Type:     "item",
 				Operator: ">=",
 				Value:    "1",
-				ItemId:   tt.itemId,
+				ReferenceId:   tt.itemId,
 			}
 
 			// Test JSON marshaling
@@ -68,14 +68,14 @@ func TestRestModelTransformation_StringItemId(t *testing.T) {
 			err = json.Unmarshal(jsonData, &unmarshaledCondition)
 			require.NoError(t, err, "Failed to unmarshal RestConditionModel")
 
-			// Verify ItemId is preserved correctly
-			assert.Equal(t, tt.itemId, unmarshaledCondition.ItemId, "ItemId mismatch after JSON round-trip")
+			// Verify ReferenceId is preserved correctly
+			assert.Equal(t, tt.itemId, unmarshaledCondition.ReferenceId, "ReferenceId mismatch after JSON round-trip")
 
-			// If ItemId is empty, verify omitempty behavior
+			// If ReferenceId is empty, verify omitempty behavior
 			if tt.itemId == "" {
-				assert.NotContains(t, string(jsonData), `"itemId"`, "Empty ItemId should be omitted from JSON")
+				assert.NotContains(t, string(jsonData), `"referenceId"`, "Empty ReferenceId should be omitted from JSON")
 			} else {
-				assert.Contains(t, string(jsonData), `"itemId"`, "Non-empty ItemId should be included in JSON")
+				assert.Contains(t, string(jsonData), `"referenceId"`, "Non-empty ReferenceId should be included in JSON")
 			}
 		})
 	}
@@ -83,19 +83,19 @@ func TestRestModelTransformation_StringItemId(t *testing.T) {
 
 // TestRestOutcomeModel_WithoutSuccessFailureStates validates RestOutcomeModel without success/failure states
 func TestRestOutcomeModel_WithoutSuccessFailureStates(t *testing.T) {
-	// Create conditions with string ItemId
+	// Create conditions with string ReferenceId
 	conditions := []RestConditionModel{
 		{
 			Type:     "level",
 			Operator: ">=",
 			Value:    "30",
-			ItemId:   "",
+			ReferenceId:   "",
 		},
 		{
 			Type:     "item",
 			Operator: ">=",
 			Value:    "5",
-			ItemId:   "QUEST_ITEM_KEY",
+			ReferenceId:   "QUEST_ITEM_KEY",
 		},
 	}
 
@@ -128,10 +128,10 @@ func TestRestOutcomeModel_WithoutSuccessFailureStates(t *testing.T) {
 	// Verify outcome data
 	assert.Equal(t, "quest_complete", unmarshaledOutcome.NextState)
 	assert.Len(t, unmarshaledOutcome.Conditions, 2)
-	assert.Equal(t, "QUEST_ITEM_KEY", unmarshaledOutcome.Conditions[1].ItemId)
+	assert.Equal(t, "QUEST_ITEM_KEY", unmarshaledOutcome.Conditions[1].ReferenceId)
 }
 
-// TestCompleteConversationModel_APIContract validates full conversation model with string ItemId
+// TestCompleteConversationModel_APIContract validates full conversation model with string ReferenceId
 func TestCompleteConversationModel_APIContract(t *testing.T) {
 	// Create a complete conversation REST model
 	conversationRest := RestModel{
@@ -175,13 +175,13 @@ func TestCompleteConversationModel_APIContract(t *testing.T) {
 									Type:     "item",
 									Operator: ">=",
 									Value:    "3",
-									ItemId:   "GOLDEN_MAPLE_LEAF", // String ItemId
+									ReferenceId:   "GOLDEN_MAPLE_LEAF", // String ReferenceId
 								},
 								{
 									Type:     "item",
 									Operator: ">=",
 									Value:    "5",
-									ItemId:   "4000313", // Numeric string ItemId
+									ReferenceId:   "4000313", // Numeric string ReferenceId
 								},
 							},
 							NextState: "items_complete",
@@ -215,7 +215,7 @@ func TestCompleteConversationModel_APIContract(t *testing.T) {
 						{
 							OperationType: "award_item",
 							Params: map[string]string{
-								"itemId":   "SPECIAL_REWARD_TOKEN",
+								"referenceId":   "SPECIAL_REWARD_TOKEN",
 								"quantity": "1",
 							},
 						},
@@ -255,11 +255,11 @@ func TestCompleteConversationModel_APIContract(t *testing.T) {
 	require.NotNil(t, checkItemsState.GenericAction)
 	assert.Len(t, checkItemsState.GenericAction.Outcomes, 2)
 
-	// Verify first outcome with string ItemId conditions
+	// Verify first outcome with string ReferenceId conditions
 	firstOutcome := checkItemsState.GenericAction.Outcomes[0]
 	assert.Len(t, firstOutcome.Conditions, 2)
-	assert.Equal(t, "GOLDEN_MAPLE_LEAF", firstOutcome.Conditions[0].ItemId)
-	assert.Equal(t, "4000313", firstOutcome.Conditions[1].ItemId)
+	assert.Equal(t, "GOLDEN_MAPLE_LEAF", firstOutcome.Conditions[0].ReferenceId)
+	assert.Equal(t, "4000313", firstOutcome.Conditions[1].ReferenceId)
 	assert.Equal(t, "items_complete", firstOutcome.NextState)
 
 	// Verify reward state outcome has only NextState
@@ -269,14 +269,14 @@ func TestCompleteConversationModel_APIContract(t *testing.T) {
 	assert.Equal(t, "end", rewardState.GenericAction.Outcomes[0].NextState)
 }
 
-// TestDomainToRestTransformation validates Transform and Extract functions with string ItemId
+// TestDomainToRestTransformation validates Transform and Extract functions with numeric ReferenceId
 func TestDomainToRestTransformation(t *testing.T) {
-	// Create domain model with string ItemId
+	// Create domain model with numeric ReferenceId
 	condition1, err := NewConditionBuilder().
 		SetType("item").
 		SetOperator(">=").
 		SetValue("10").
-		SetItemId("RARE_CRYSTAL").
+		SetReferenceId("4001126"). // Numeric string
 		Build()
 	require.NoError(t, err)
 
@@ -284,7 +284,7 @@ func TestDomainToRestTransformation(t *testing.T) {
 		SetType("level").
 		SetOperator(">=").
 		SetValue("50").
-		SetItemId(""). // Empty for non-item conditions
+		SetReferenceId(""). // Empty for non-item conditions
 		Build()
 	require.NoError(t, err)
 
@@ -310,27 +310,27 @@ func TestDomainToRestTransformation(t *testing.T) {
 	restGenericAction, err := TransformGenericAction(*genericAction)
 	require.NoError(t, err)
 
-	// Verify transformation
+	// Verify transformation - REST model has string ReferenceId
 	assert.Len(t, restGenericAction.Outcomes, 1)
 	assert.Len(t, restGenericAction.Outcomes[0].Conditions, 2)
-	assert.Equal(t, "RARE_CRYSTAL", restGenericAction.Outcomes[0].Conditions[0].ItemId)
-	assert.Equal(t, "", restGenericAction.Outcomes[0].Conditions[1].ItemId)
+	assert.Equal(t, "4001126", restGenericAction.Outcomes[0].Conditions[0].ReferenceId)
+	assert.Equal(t, "", restGenericAction.Outcomes[0].Conditions[1].ReferenceId)
 	assert.Equal(t, "boss_battle", restGenericAction.Outcomes[0].NextState)
 
 	// Extract back to domain model
 	extractedOutcome, err := ExtractOutcome(restGenericAction.Outcomes[0])
 	require.NoError(t, err)
 
-	// Verify round-trip preservation
+	// Verify round-trip preservation - domain model has uint32 ReferenceId
 	assert.Len(t, extractedOutcome.Conditions(), 2)
-	assert.Equal(t, "RARE_CRYSTAL", extractedOutcome.Conditions()[0].ItemId())
-	assert.Equal(t, "", extractedOutcome.Conditions()[1].ItemId())
+	assert.Equal(t, uint32(4001126), extractedOutcome.Conditions()[0].ReferenceId())
+	assert.Equal(t, uint32(0), extractedOutcome.Conditions()[1].ReferenceId())
 	assert.Equal(t, "boss_battle", extractedOutcome.NextState())
 }
 
-// TestAPIRequestResponse_StringItemId validates API request/response handling with string ItemId
-func TestAPIRequestResponse_StringItemId(t *testing.T) {
-	// Create a conversation creation request with string ItemId
+// TestAPIRequestResponse_NumericReferenceId validates API request/response handling with numeric ReferenceId
+func TestAPIRequestResponse_NumericReferenceId(t *testing.T) {
+	// Create a conversation creation request with numeric ReferenceId
 	createRequest := RestModel{
 		NpcId:      1001,
 		StartState: "start",
@@ -351,10 +351,10 @@ func TestAPIRequestResponse_StringItemId(t *testing.T) {
 						{
 							Conditions: []RestConditionModel{
 								{
-									Type:     "item",
-									Operator: "==",
-									Value:    "1",
-									ItemId:   "LEGENDARY_SWORD", // String ItemId in request
+									Type:        "item",
+									Operator:    "==",
+									Value:       "1",
+									ReferenceId: "1302000", // Numeric ReferenceId in request
 								},
 							},
 							NextState: "has_sword",
@@ -386,13 +386,13 @@ func TestAPIRequestResponse_StringItemId(t *testing.T) {
 	state, err := domainModel.FindState("start")
 	require.NoError(t, err)
 	require.NotNil(t, state.GenericAction())
-	
+
 	outcomes := state.GenericAction().Outcomes()
 	require.Len(t, outcomes, 2)
-	
-	// Check first outcome with condition
+
+	// Check first outcome with condition - domain model converts to uint32
 	require.Len(t, outcomes[0].Conditions(), 1)
-	assert.Equal(t, "LEGENDARY_SWORD", outcomes[0].Conditions()[0].ItemId())
+	assert.Equal(t, uint32(1302000), outcomes[0].Conditions()[0].ReferenceId())
 
 	// Transform back to REST (what response would contain)
 	responseModel, err := Transform(domainModel)
@@ -402,30 +402,33 @@ func TestAPIRequestResponse_StringItemId(t *testing.T) {
 	responseBody, err := json.Marshal(responseModel)
 	require.NoError(t, err)
 
-	// Verify response contains string ItemId
-	assert.Contains(t, string(responseBody), "LEGENDARY_SWORD")
+	// Verify response contains numeric string ReferenceId
+	assert.Contains(t, string(responseBody), "1302000")
 }
 
-// TestBackwardCompatibility_NumericStringItemId ensures numeric strings work as before
-func TestBackwardCompatibility_NumericStringItemId(t *testing.T) {
-	// Test that existing numeric ItemIds still work as strings
-	numericItemIds := []string{
-		"4001126",
-		"2000000",
-		"1302000",
-		"5220000",
+// TestBackwardCompatibility_NumericStringReferenceId ensures numeric strings work correctly
+func TestBackwardCompatibility_NumericStringReferenceId(t *testing.T) {
+	// Test that existing numeric ReferenceIds work correctly
+	testCases := []struct {
+		itemIdStr      string
+		expectedUint32 uint32
+	}{
+		{"4001126", 4001126},
+		{"2000000", 2000000},
+		{"1302000", 1302000},
+		{"5220000", 5220000},
 	}
 
-	for _, itemId := range numericItemIds {
-		t.Run("ItemId_"+itemId, func(t *testing.T) {
+	for _, tc := range testCases {
+		t.Run("ReferenceId_"+tc.itemIdStr, func(t *testing.T) {
 			condition := RestConditionModel{
-				Type:     "item",
-				Operator: ">=",
-				Value:    "1",
-				ItemId:   itemId,
+				Type:        "item",
+				Operator:    ">=",
+				Value:       "1",
+				ReferenceId: tc.itemIdStr,
 			}
 
-			// Marshal and unmarshal
+			// Marshal and unmarshal - REST model preserves string
 			data, err := json.Marshal(condition)
 			require.NoError(t, err)
 
@@ -433,18 +436,19 @@ func TestBackwardCompatibility_NumericStringItemId(t *testing.T) {
 			err = json.Unmarshal(data, &unmarshaled)
 			require.NoError(t, err)
 
-			// Verify ItemId is preserved
-			assert.Equal(t, itemId, unmarshaled.ItemId)
-			
+			// Verify ReferenceId is preserved as string in REST model
+			assert.Equal(t, tc.itemIdStr, unmarshaled.ReferenceId)
+
 			// Verify it can be used in domain model
 			domainCondition, err := NewConditionBuilder().
 				SetType(condition.Type).
 				SetOperator(condition.Operator).
 				SetValue(condition.Value).
-				SetItemId(condition.ItemId).
+				SetReferenceId(condition.ReferenceId).
 				Build()
 			require.NoError(t, err)
-			assert.Equal(t, itemId, domainCondition.ItemId())
+			// Domain model converts to uint32
+			assert.Equal(t, tc.expectedUint32, domainCondition.ReferenceId())
 		})
 	}
 }

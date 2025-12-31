@@ -93,12 +93,17 @@ Common operations in `genericAction` states:
 
 ### 5. Condition Types
 
+**IMPORTANT:** Condition types must match what's implemented in query-aggregator. Read `services/atlas-query-aggregator/atlas.com/query-aggregator/validation/model.go` to verify supported types.
+
 Common conditions in `outcomes`:
 - **jobId**: Check character's job (operators: =, >, <, >=, <=)
 - **meso**: Check meso amount (operators: =, >, <, >=, <=)
 - **mapId**: Check current map (operators: =)
 - **fame**: Check fame level (operators: =, >, <, >=, <=)
-- **item**: Check item possession (operators: =, >, <, >=, <=, requires `itemId` field)
+- **item**: Check item possession (operators: =, >, <, >=, <=, requires `referenceId` field)
+- **questStatus**: Check quest status (operators: =, >, <, >=, <=, requires `referenceId` field)
+  - For quest completion: use value "3" (COMPLETED enum value from quest/model.go)
+- **level**: Check character level (operators: =, >, <, >=, <=)
 
 ### 6. Context Propagation Rules
 
@@ -146,21 +151,29 @@ The script to convert: **$ARGUMENTS**
 
 **Steps:**
 1. Read schema and conversion spec files (DO NOT read Map.txt or NPC.txt in full)
-2. If a file path is provided, read the script file; otherwise use the provided code
-3. Analyze the script thoroughly:
+2. **Read validation model**: Read `services/atlas-query-aggregator/atlas.com/query-aggregator/validation/model.go` to get supported condition types and operators
+3. **Read quest model** (if needed): If script has quest checks, read `services/atlas-query-aggregator/atlas.com/query-aggregator/quest/model.go` for QuestStatus enum values
+4. If a file path is provided, read the script file; otherwise use the provided code
+5. Analyze the script thoroughly:
    - Count all `cm.send*()` calls - each one becomes a dialogue state
    - Identify where `cm.dispose()` is called - those paths end (nextState: null)
    - Note map IDs and NPC IDs referenced
    - Trace the exact flow and branching logic
-4. Use Grep to look up specific map IDs in `docs/Map.txt` (pattern: `^<mapId> - `)
-5. Use Grep to look up specific NPC IDs in `docs/NPC.txt` (pattern: `^<npcId> - `)
-6. Convert to JSON following all requirements above
-7. **VALIDATE**: Verify each dialogue state has a corresponding `cm.send*()` in the original - no extra states!
-8. **VALIDATE**: Confirm all dialogue text is copied verbatim from the original script
-9. Determine appropriate output filename based on NPC ID (e.g., `npc_2003.json`)
-10. Validate against the schema
-11. Write the output file to `services/atlas-npc-conversations/conversations/` directory
-12. Report completion with summary of states created
+6. Use Grep to look up specific map IDs in `docs/Map.txt` (pattern: `^<mapId> - `)
+7. Use Grep to look up specific NPC IDs in `docs/NPC.txt` (pattern: `^<npcId> - `)
+8. Convert to JSON following all requirements above
+9. **VALIDATE - Script Accuracy**: Verify each dialogue state has a corresponding `cm.send*()` in the original - no extra states!
+10. **VALIDATE - Text Accuracy**: Confirm all dialogue text is copied verbatim from the original script
+11. **VALIDATE - Implementation**: Check that all conditions and operations used are actually implemented:
+    - Verify all condition types exist in the validation model you read
+    - Verify all operators are supported (=, >, <, >=, <=)
+    - For `questStatus` conditions, verify the value matches the QuestStatus enum (e.g., 3 for COMPLETED)
+    - Verify all operation types are supported
+    - **If validation fails**: STOP and report unsupported conditions/operations to the user, asking how to proceed
+12. Determine appropriate output filename based on NPC ID (e.g., `npc_2003.json`)
+13. Validate against the schema
+14. **ONLY if all validations pass**: Write the output file to `services/atlas-npc-conversations/conversations/` directory
+15. Report completion with summary of states created
 
 **Example Grep Usage:**
 - To find map ID 100000000: `Grep` with pattern `^100000000 - ` in `docs/Map.txt`
@@ -264,6 +277,45 @@ if (status == 1) {
   "operations": [{"type": "warp_to_map", "params": {"mapId": "104000000"}}],
   "outcomes": [{"conditions": [], "nextState": null}]  // ← Ends here, matching cm.dispose()
 }
+```
+
+**Example 4 - Validation failure (unsupported condition):**
+```javascript
+// Original script uses quest completion check
+if (cm.isQuestCompleted(2013))
+```
+
+❌ WRONG - Using unsupported condition type:
+```json
+{
+  "conditions": [
+    {
+      "type": "quest",           // ← Not in validation/model.go!
+      "operator": "completed",   // ← Not a supported operator!
+      "value": "2013"
+    }
+  ]
+}
+```
+
+✅ CORRECT - Validation catches the error:
+```
+❌ VALIDATION FAILED - Unsupported conditions found:
+
+Condition type "quest" not found in validation/model.go
+Supported types: jobId, meso, mapId, fame, item, questStatus, level, ...
+
+Did you mean "questStatus"?
+
+For quest completion check, use:
+{
+  "type": "questStatus",
+  "operator": "=",
+  "value": "3",        // COMPLETED from quest/model.go
+  "referenceId": "2013"
+}
+
+How would you like to proceed?
 ```
 
 Begin conversion now.

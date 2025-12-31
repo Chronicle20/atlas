@@ -61,7 +61,7 @@ Used for validations, logic branching, item or meso manipulation, and warp actio
     "operations": [],
     "outcomes": [
       {
-        "conditions": [{ "type": "meso", "operator": "<", "value": "context.cost" }],
+        "conditions": [{ "type": "meso", "operator": "<", "value": "{context.cost}" }],
         "nextState": "insufficientMeso"
       },
       {
@@ -168,7 +168,12 @@ Always represent outcomes clearly:
 ## 🧩 Context Propagation
 
 - When values (like cost, destination, item ID) are selected from a menu, use `context` to store them.
-- Access context later via: `context.cost`, `context.destination`, etc.
+- **Always use curly brace format** `{context.xxx}` to reference context values for consistency.
+- This format works in all locations:
+  - Dialogue text: `"Do you want #b#m{context.destination}##k for #b{context.cost} mesos#k?"`
+  - Condition values: `"value": "{context.cost}"`
+  - Operation params: `"amount": "-{context.cost}"`, `"mapId": "{context.destination}"`
+- Legacy format `context.xxx` (without braces) is still supported but deprecated.
 
 ---
 

@@ -44,31 +44,27 @@ func NewOperationExecutor(l logrus.FieldLogger, ctx context.Context) OperationEx
 }
 
 // evaluateContextValue evaluates a context value, handling references to the conversation context
+// Supports both "{context.xxx}" and "context.xxx" formats
 func (e *OperationExecutorImpl) evaluateContextValue(characterId uint32, paramName string, value string) (string, error) {
-	// Check if the value is a context reference
-	if strings.HasPrefix(value, "context.") {
-		// Get the conversation context
-		ctx, err := GetRegistry().GetPreviousContext(e.t, characterId)
-		if err != nil {
-			e.l.WithError(err).Errorf("Failed to get conversation context for character [%d]", characterId)
-			return "", err
-		}
-
-		// Extract the context key
-		contextKey := strings.TrimPrefix(value, "context.")
-
-		// Look up the value in the context map
-		contextValue, exists := ctx.Context()[contextKey]
-		if !exists {
-			e.l.Errorf("Context key [%s] not found in conversation context", contextKey)
-			return "", fmt.Errorf("context key [%s] not found", contextKey)
-		}
-
-		return contextValue, nil
+	// Get the conversation context
+	ctx, err := GetRegistry().GetPreviousContext(e.t, characterId)
+	if err != nil {
+		e.l.WithError(err).Errorf("Failed to get conversation context for character [%d]", characterId)
+		return "", err
 	}
 
-	// If it's not a context reference, return the value as is
-	return value, nil
+	// Use the new ExtractContextValue function which supports both formats
+	extractedValue, isContextRef, err := ExtractContextValue(value, ctx.Context())
+	if err != nil {
+		e.l.WithError(err).Errorf("Failed to extract context value for parameter [%s]", paramName)
+		return "", err
+	}
+
+	if isContextRef {
+		e.l.Debugf("Resolved context reference [%s] to [%s] for character [%d]", value, extractedValue, characterId)
+	}
+
+	return extractedValue, nil
 }
 
 // evaluateContextValueAsInt evaluates a context value as an integer

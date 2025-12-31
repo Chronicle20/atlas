@@ -176,3 +176,91 @@ Always represent outcomes clearly:
 
 - The result must be saved as `output.json`
 - The result **must** conform to `npc_conversation_schema.json`.
+
+---
+
+## ✅ Validation Against Implementation
+
+**CRITICAL:** Before finalizing the conversion, validate that all conditions and operations are actually implemented in the query-aggregator service.
+
+### Supported Condition Types
+
+Read `services/atlas-query-aggregator/atlas.com/query-aggregator/validation/model.go` to get the authoritative list of supported condition types.
+
+Currently supported (verify by reading the file):
+- `jobId` - Character's job ID
+- `meso` - Character's meso amount
+- `mapId` - Character's current map
+- `fame` - Character's fame level
+- `item` - Item possession check (requires `referenceId`)
+- `questStatus` - Quest status check (requires `referenceId`, value is quest.QuestStatus enum)
+- `level` - Character level
+- And others (check model.go for complete list)
+
+### Supported Operators
+
+From `services/atlas-query-aggregator/atlas.com/query-aggregator/validation/model.go`:
+- `=` - Equals
+- `>` - Greater than
+- `<` - Less than
+- `>=` - Greater than or equal
+- `<=` - Less than or equal
+
+**DO NOT** use custom operators like "completed", "started", etc.
+
+### Quest Status Values
+
+If using `questStatus` conditions, read `services/atlas-query-aggregator/atlas.com/query-aggregator/quest/model.go` for the QuestStatus enum:
+
+```go
+const (
+    UNDEFINED = 0
+    NOT_STARTED = 1
+    STARTED = 2
+    COMPLETED = 3
+)
+```
+
+For checking quest completion: `{"type": "questStatus", "operator": "=", "value": "3", "referenceId": "questId"}`
+
+### Supported Operation Types
+
+Check the saga-orchestrator service for supported operation types. Common operations:
+- `warp_to_map` - Teleport character
+- `award_item` - Give item to character
+- `award_mesos` - Give mesos to character
+- `award_exp` - Give experience
+- `destroy_item` - Remove item from character
+- `change_job` - Change character's job
+
+### Validation Steps
+
+Before writing the output file:
+
+1. **Read validation model**: Read `services/atlas-query-aggregator/atlas.com/query-aggregator/validation/model.go` to get the current list of supported condition types
+2. **Check all condition types**: Verify every condition type used in the conversion is in the supported list
+3. **Check all operators**: Verify all operators are in the supported list (=, >, <, >=, <=)
+4. **Validate enum values**: For conditions using enums (like questStatus), read the enum definition and use correct values
+5. **Check operations**: Verify all operation types are implemented
+6. **If validation fails**: Report which conditions/operations are not supported and ask the user how to proceed before writing the file
+
+### Example Validation Failure Response
+
+If you encounter unsupported conditions or operations:
+
+```
+❌ VALIDATION FAILED - Unsupported conditions/operations found:
+
+Conditions not implemented:
+- "quest" - Not found in validation/model.go
+  → Did you mean "questStatus"?
+
+Operations not implemented:
+- "teleport_player" - Not found in supported operations
+  → Did you mean "warp_to_map"?
+
+How would you like to proceed?
+1. Skip this NPC and document the missing features
+2. Use alternative conditions/operations (provide suggestions)
+3. Implement the missing features first
+```

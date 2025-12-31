@@ -11,16 +11,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestRestModelJSONSerialization_StringItemId validates JSON serialization/deserialization with string ItemId
-func TestRestModelJSONSerialization_StringItemId(t *testing.T) {
+// TestRestModelJSONSerialization_StringReferenceId validates JSON serialization/deserialization with string ReferenceId
+func TestRestModelJSONSerialization_StringReferenceId(t *testing.T) {
 	tests := []struct {
 		name           string
 		restModel      RestModel
-		expectedItemId string
+		expectedReferenceId string
 		shouldOmitId   bool
 	}{
 		{
-			name: "Numeric string ItemId",
+			name: "Numeric string ReferenceId",
 			restModel: RestModel{
 				Id:         uuid.New(),
 				NpcId:      1001,
@@ -45,7 +45,7 @@ func TestRestModelJSONSerialization_StringItemId(t *testing.T) {
 											Type:     "item",
 											Operator: ">=",
 											Value:    "1",
-											ItemId:   "4001126", // Numeric string
+											ReferenceId:   "4001126", // Numeric string
 										},
 									},
 									NextState: "has_item",
@@ -55,11 +55,11 @@ func TestRestModelJSONSerialization_StringItemId(t *testing.T) {
 					},
 				},
 			},
-			expectedItemId: "4001126",
+			expectedReferenceId: "4001126",
 			shouldOmitId:   false,
 		},
 		{
-			name: "Non-numeric string ItemId",
+			name: "Non-numeric string ReferenceId",
 			restModel: RestModel{
 				Id:         uuid.New(),
 				NpcId:      1002,
@@ -84,7 +84,7 @@ func TestRestModelJSONSerialization_StringItemId(t *testing.T) {
 											Type:     "item",
 											Operator: "==",
 											Value:    "1",
-											ItemId:   "LEGENDARY_SWORD_KEY", // Non-numeric string
+											ReferenceId:   "LEGENDARY_SWORD_KEY", // Non-numeric string
 										},
 									},
 									NextState: "quest_complete",
@@ -94,11 +94,11 @@ func TestRestModelJSONSerialization_StringItemId(t *testing.T) {
 					},
 				},
 			},
-			expectedItemId: "LEGENDARY_SWORD_KEY",
+			expectedReferenceId: "LEGENDARY_SWORD_KEY",
 			shouldOmitId:   false,
 		},
 		{
-			name: "Empty ItemId (omitempty)",
+			name: "Empty ReferenceId (omitempty)",
 			restModel: RestModel{
 				Id:         uuid.New(),
 				NpcId:      1003,
@@ -123,7 +123,7 @@ func TestRestModelJSONSerialization_StringItemId(t *testing.T) {
 											Type:     "level",
 											Operator: ">=",
 											Value:    "30",
-											ItemId:   "", // Empty string should be omitted
+											ReferenceId:   "", // Empty string should be omitted
 										},
 									},
 									NextState: "level_ok",
@@ -133,7 +133,7 @@ func TestRestModelJSONSerialization_StringItemId(t *testing.T) {
 					},
 				},
 			},
-			expectedItemId: "",
+			expectedReferenceId: "",
 			shouldOmitId:   true,
 		},
 	}
@@ -149,18 +149,18 @@ func TestRestModelJSONSerialization_StringItemId(t *testing.T) {
 			err = json.Unmarshal(jsonData, &unmarshaledModel)
 			require.NoError(t, err, "Failed to unmarshal RestModel")
 
-			// Verify ItemId is preserved correctly
+			// Verify ReferenceId is preserved correctly
 			state := unmarshaledModel.States[0]
 			condition := state.GenericAction.Outcomes[0].Conditions[0]
 			
 			if tt.shouldOmitId {
-				// Verify empty ItemId is omitted from JSON
-				assert.NotContains(t, string(jsonData), `"itemId"`, "Empty ItemId should be omitted from JSON")
-				assert.Equal(t, "", condition.ItemId, "Empty ItemId should remain empty")
+				// Verify empty ReferenceId is omitted from JSON
+				assert.NotContains(t, string(jsonData), `"referenceId"`, "Empty ReferenceId should be omitted from JSON")
+				assert.Equal(t, "", condition.ReferenceId, "Empty ReferenceId should remain empty")
 			} else {
-				// Verify non-empty ItemId is preserved
-				assert.Contains(t, string(jsonData), `"itemId"`, "Non-empty ItemId should be included in JSON")
-				assert.Equal(t, tt.expectedItemId, condition.ItemId, "ItemId mismatch after JSON round-trip")
+				// Verify non-empty ReferenceId is preserved
+				assert.Contains(t, string(jsonData), `"referenceId"`, "Non-empty ReferenceId should be included in JSON")
+				assert.Equal(t, tt.expectedReferenceId, condition.ReferenceId, "ReferenceId mismatch after JSON round-trip")
 			}
 
 			// Verify outcome structure (no success/failure states)
@@ -173,38 +173,41 @@ func TestRestModelJSONSerialization_StringItemId(t *testing.T) {
 	}
 }
 
-// TestExtractTransformRoundTrip_StringItemId validates Extract and Transform functions preserve string ItemId
-func TestExtractTransformRoundTrip_StringItemId(t *testing.T) {
+// TestExtractTransformRoundTrip_NumericReferenceId validates Extract and Transform functions preserve numeric ReferenceId
+func TestExtractTransformRoundTrip_NumericReferenceId(t *testing.T) {
 	tests := []struct {
-		name      string
-		itemId    string
-		nextState string
+		name                    string
+		itemIdStr               string
+		expectedUint32          uint32
+		nextState               string
+		expectedRoundTripString string // After round-trip, what string do we expect?
 	}{
 		{
-			name:      "Numeric string ItemId",
-			itemId:    "4001126",
-			nextState: "numeric_success",
+			name:                    "Numeric string ReferenceId",
+			itemIdStr:               "4001126",
+			expectedUint32:          4001126,
+			nextState:               "numeric_success",
+			expectedRoundTripString: "4001126",
 		},
 		{
-			name:      "Non-numeric string ItemId", 
-			itemId:    "QUEST_ITEM_KEY",
-			nextState: "string_success",
+			name:                    "Zero ReferenceId converts to empty",
+			itemIdStr:               "0",
+			expectedUint32:          0,
+			nextState:               "zero_success",
+			expectedRoundTripString: "", // "0" becomes empty after round-trip
 		},
 		{
-			name:      "Empty ItemId",
-			itemId:    "",
-			nextState: "empty_success",
-		},
-		{
-			name:      "Special characters ItemId",
-			itemId:    "item-123_special",
-			nextState: "special_success",
+			name:                    "Empty ReferenceId",
+			itemIdStr:               "",
+			expectedUint32:          0,
+			nextState:               "empty_success",
+			expectedRoundTripString: "",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create RestModel with string ItemId
+			// Create RestModel with string ReferenceId
 			restModel := RestModel{
 				Id:         uuid.New(),
 				NpcId:      1001,
@@ -226,10 +229,10 @@ func TestExtractTransformRoundTrip_StringItemId(t *testing.T) {
 								{
 									Conditions: []RestConditionModel{
 										{
-											Type:     "item",
-											Operator: ">=",
-											Value:    "1",
-											ItemId:   tt.itemId,
+											Type:        "item",
+											Operator:    ">=",
+											Value:       "1",
+											ReferenceId: tt.itemIdStr,
 										},
 									},
 									NextState: tt.nextState,
@@ -244,18 +247,18 @@ func TestExtractTransformRoundTrip_StringItemId(t *testing.T) {
 			domainModel, err := Extract(restModel)
 			require.NoError(t, err, "Failed to extract domain model")
 
-			// Verify domain model has correct string ItemId
+			// Verify domain model has correct uint32 ReferenceId
 			state, err := domainModel.FindState("start")
 			require.NoError(t, err, "Failed to find state")
 			require.NotNil(t, state.GenericAction(), "GenericAction should not be nil")
-			
+
 			outcomes := state.GenericAction().Outcomes()
 			require.Len(t, outcomes, 1, "Should have one outcome")
-			
+
 			conditions := outcomes[0].Conditions()
 			require.Len(t, conditions, 1, "Should have one condition")
-			
-			assert.Equal(t, tt.itemId, conditions[0].ItemId(), "Domain model ItemId mismatch")
+
+			assert.Equal(t, tt.expectedUint32, conditions[0].ReferenceId(), "Domain model ReferenceId mismatch")
 			assert.Equal(t, tt.nextState, outcomes[0].NextState(), "Domain model NextState mismatch")
 
 			// Transform back to REST model
@@ -266,8 +269,8 @@ func TestExtractTransformRoundTrip_StringItemId(t *testing.T) {
 			transformedState := transformedRest.States[0]
 			transformedCondition := transformedState.GenericAction.Outcomes[0].Conditions[0]
 			transformedOutcome := transformedState.GenericAction.Outcomes[0]
-			
-			assert.Equal(t, tt.itemId, transformedCondition.ItemId, "Round-trip ItemId mismatch")
+
+			assert.Equal(t, tt.expectedRoundTripString, transformedCondition.ReferenceId, "Round-trip ReferenceId mismatch")
 			assert.Equal(t, tt.nextState, transformedOutcome.NextState, "Round-trip NextState mismatch")
 		})
 	}
@@ -300,7 +303,7 @@ func TestOutcomeModelJSONValidation(t *testing.T) {
 						"type": "item",
 						"operator": ">=",
 						"value": "1",
-						"itemId": "QUEST_TOKEN"
+						"referenceId": "QUEST_TOKEN"
 					}
 				],
 				"nextState": "has_item"
@@ -362,36 +365,34 @@ func TestOutcomeModelJSONValidation(t *testing.T) {
 	}
 }
 
-// TestConditionModelStringItemIdTypes validates different string ItemId types
-func TestConditionModelStringItemIdTypes(t *testing.T) {
+// TestConditionModelNumericReferenceIdTypes validates different numeric ReferenceId types
+func TestConditionModelNumericReferenceIdTypes(t *testing.T) {
 	testCases := []struct {
-		name   string
-		itemId string
-		valid  bool
+		name           string
+		itemIdStr      string
+		expectedUint32 uint32
+		shouldBuild    bool
 	}{
-		{"Numeric string", "4001126", true},
-		{"Zero string", "0", true},
-		{"Empty string", "", true},
-		{"Non-numeric string", "SPECIAL_KEY", true},
-		{"String with hyphens", "item-123", true},
-		{"String with underscores", "item_123", true},
-		{"Unicode string", "アイテム", true},
-		{"Long string", "very_long_item_identifier_name_that_exceeds_normal_limits", true},
-		{"String with spaces", "item with spaces", true},
-		{"Alphanumeric mix", "item123abc", true},
+		{"Numeric string", "4001126", 4001126, true},
+		{"Zero string", "0", 0, true},
+		{"Empty string", "", 0, true},
+		{"Large numeric", "2147483647", 2147483647, true},
+		{"Max uint32", "4294967295", 4294967295, true},
+		{"Non-numeric string returns 0", "SPECIAL_KEY", 0, true},
+		{"String with hyphens returns 0", "item-123", 0, true},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Test REST model
 			condition := RestConditionModel{
-				Type:     "item",
-				Operator: ">=",
-				Value:    "1",
-				ItemId:   tc.itemId,
+				Type:        "item",
+				Operator:    ">=",
+				Value:       "1",
+				ReferenceId: tc.itemIdStr,
 			}
 
-			// Test JSON serialization
+			// Test JSON serialization - REST model always preserves string
 			jsonData, err := json.Marshal(condition)
 			require.NoError(t, err, "Should marshal successfully")
 
@@ -399,19 +400,20 @@ func TestConditionModelStringItemIdTypes(t *testing.T) {
 			err = json.Unmarshal(jsonData, &unmarshaled)
 			require.NoError(t, err, "Should unmarshal successfully")
 
-			assert.Equal(t, tc.itemId, unmarshaled.ItemId, "ItemId should be preserved")
+			assert.Equal(t, tc.itemIdStr, unmarshaled.ReferenceId, "REST ReferenceId should be preserved as string")
 
 			// Test domain model creation
 			domainCondition, err := NewConditionBuilder().
 				SetType(condition.Type).
 				SetOperator(condition.Operator).
 				SetValue(condition.Value).
-				SetItemId(condition.ItemId).
+				SetReferenceId(condition.ReferenceId).
 				Build()
 
-			if tc.valid {
+			if tc.shouldBuild {
 				require.NoError(t, err, "Should create domain model successfully")
-				assert.Equal(t, tc.itemId, domainCondition.ItemId(), "Domain ItemId should match")
+				// Domain model converts string to uint32
+				assert.Equal(t, tc.expectedUint32, domainCondition.ReferenceId(), "Domain ReferenceId should be converted to uint32")
 			} else {
 				assert.Error(t, err, "Should fail to create domain model")
 			}
@@ -419,8 +421,8 @@ func TestConditionModelStringItemIdTypes(t *testing.T) {
 	}
 }
 
-// TestAPIResponseFormat_StringItemId validates API response format compliance
-func TestAPIResponseFormat_StringItemId(t *testing.T) {
+// TestAPIResponseFormat_StringReferenceId validates API response format compliance
+func TestAPIResponseFormat_StringReferenceId(t *testing.T) {
 	// Create a sample conversation model for transformation
 	conversation := createTestConversationModel()
 	
@@ -461,7 +463,7 @@ func TestAPIResponseFormat_StringItemId(t *testing.T) {
 	assert.Contains(t, data, "id", "Should have id field")
 	assert.Contains(t, data, "attributes", "Should have attributes field")
 
-	// Validate string ItemId in nested structure
+	// Validate string ReferenceId in nested structure
 	attributes := data["attributes"].(map[string]interface{})
 	states := attributes["states"].([]interface{})
 	require.Greater(t, len(states), 0, "Should have at least one state")
@@ -477,9 +479,9 @@ func TestAPIResponseFormat_StringItemId(t *testing.T) {
 					conditionsSlice := conditions.([]interface{})
 					if len(conditionsSlice) > 0 {
 						condition := conditionsSlice[0].(map[string]interface{})
-						if itemId, ok := condition["itemId"]; ok {
-							// Validate that ItemId is a string
-							assert.IsType(t, "", itemId, "ItemId should be string type")
+						if itemId, ok := condition["referenceId"]; ok {
+							// Validate that ReferenceId is a string
+							assert.IsType(t, "", itemId, "ReferenceId should be string type")
 						}
 					}
 				}
@@ -498,7 +500,7 @@ func createTestConversationModel() Model {
 		SetType("item").
 		SetOperator(">=").
 		SetValue("1").
-		SetItemId("TEST_ITEM_KEY").
+		SetReferenceId("TEST_ITEM_KEY").
 		Build()
 
 	outcome, _ := NewOutcomeBuilder().

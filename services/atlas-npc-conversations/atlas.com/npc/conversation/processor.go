@@ -413,17 +413,25 @@ func (p *ProcessorImpl) processDialogueState(ctx ConversationContext, state Stat
 		return "", errors.New("dialogue is nil")
 	}
 
-	// TODO: Send the dialogue to the client
+	// Replace context placeholders in the dialogue text
+	processedText, err := ReplaceContextPlaceholders(dialogue.Text(), ctx.Context())
+	if err != nil {
+		p.l.WithError(err).Warnf("Failed to replace context placeholders in dialogue text for state [%s]. Using original text.", state.Id())
+		// Use original text if replacement fails
+		processedText = dialogue.Text()
+	}
+
+	// Send the dialogue to the client
 	if dialogue.dialogueType == SendNext {
-		npc.NewProcessor(p.l, p.ctx).SendNext(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(dialogue.Text())
+		npc.NewProcessor(p.l, p.ctx).SendNext(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText)
 	} else if dialogue.dialogueType == SendNextPrev {
-		npc.NewProcessor(p.l, p.ctx).SendNextPrevious(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(dialogue.Text())
+		npc.NewProcessor(p.l, p.ctx).SendNextPrevious(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText)
 	} else if dialogue.dialogueType == SendPrev {
-		npc.NewProcessor(p.l, p.ctx).SendPrevious(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(dialogue.Text())
+		npc.NewProcessor(p.l, p.ctx).SendPrevious(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText)
 	} else if dialogue.dialogueType == SendOk {
-		npc.NewProcessor(p.l, p.ctx).SendOk(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(dialogue.Text())
+		npc.NewProcessor(p.l, p.ctx).SendOk(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText)
 	} else if dialogue.dialogueType == SendYesNo {
-		npc.NewProcessor(p.l, p.ctx).SendYesNo(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(dialogue.Text())
+		npc.NewProcessor(p.l, p.ctx).SendYesNo(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText)
 	} else {
 		p.l.Warnf("Unhandled dialog type [%s].", dialogue.dialogueType)
 	}
@@ -512,12 +520,27 @@ func (p *ProcessorImpl) processListSelectionState(ctx ConversationContext, state
 		return "", errors.New("listSelection is nil")
 	}
 
-	mb := message.NewBuilder().AddText(listSelection.Title()).NewLine()
+	// Replace context placeholders in the title
+	processedTitle, err := ReplaceContextPlaceholders(listSelection.Title(), ctx.Context())
+	if err != nil {
+		p.l.WithError(err).Warnf("Failed to replace context placeholders in list selection title for state [%s]. Using original title.", state.Id())
+		processedTitle = listSelection.Title()
+	}
+
+	mb := message.NewBuilder().AddText(processedTitle).NewLine()
 	for i, choice := range listSelection.Choices() {
 		if choice.NextState() == "" {
 			continue
 		}
-		mb.OpenItem(i).BlueText().AddText(choice.Text()).CloseItem().NewLine()
+
+		// Replace context placeholders in choice text
+		processedChoiceText, err := ReplaceContextPlaceholders(choice.Text(), ctx.Context())
+		if err != nil {
+			p.l.WithError(err).Warnf("Failed to replace context placeholders in choice text for state [%s]. Using original text.", state.Id())
+			processedChoiceText = choice.Text()
+		}
+
+		mb.OpenItem(i).BlueText().AddText(processedChoiceText).CloseItem().NewLine()
 	}
 
 	npc.NewProcessor(p.l, p.ctx).SendSimple(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(mb.String())

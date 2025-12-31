@@ -175,6 +175,8 @@ type RestCraftActionModel struct {
 	MesoCost              uint32   `json:"mesoCost"`                       // Meso cost
 	StimulatorId          uint32   `json:"stimulatorId,omitempty"`         // Stimulator item ID
 	StimulatorFailChance  float64  `json:"stimulatorFailChance,omitempty"` // Stimulator failure chance
+	SuccessState          string   `json:"successState"`                   // Success state ID
+	FailureState          string   `json:"failureState"`                   // Failure state ID
 	MissingMaterialsState string   `json:"missingMaterialsState"`          // Missing materials state ID
 }
 
@@ -398,6 +400,8 @@ func TransformCraftAction(m CraftActionModel) (RestCraftActionModel, error) {
 		MesoCost:              m.MesoCost(),
 		StimulatorId:          m.StimulatorId(),
 		StimulatorFailChance:  m.StimulatorFailChance(),
+		SuccessState:          m.SuccessState(),
+		FailureState:          m.FailureState(),
 		MissingMaterialsState: m.MissingMaterialsState(),
 	}, nil
 }
@@ -640,6 +644,8 @@ func ExtractCraftAction(r RestCraftActionModel) (*CraftActionModel, error) {
 		SetMesoCost(r.MesoCost).
 		SetStimulatorId(r.StimulatorId).
 		SetStimulatorFailChance(r.StimulatorFailChance).
+		SetSuccessState(r.SuccessState).
+		SetFailureState(r.FailureState).
 		SetMissingMaterialsState(r.MissingMaterialsState)
 
 	return craftActionBuilder.Build()

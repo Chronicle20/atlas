@@ -3,6 +3,8 @@ package conversation
 import (
 	"atlas-npc-conversations/message"
 	"atlas-npc-conversations/npc"
+	"atlas-npc-conversations/saga"
+	"atlas-npc-conversations/validation"
 	"context"
 	"errors"
 	"fmt"
@@ -548,11 +550,134 @@ func (p *ProcessorImpl) processCraftActionState(ctx ConversationContext, state S
 		return "", errors.New("craftAction is nil")
 	}
 
-	// TODO: Implement proper craft action processing logic
-	// This could involve checking materials, costs, and determining success/failure
-	// For now, return empty string to end conversation (simplified approach)
-	// Future implementation should use outcome-based state transitions
-	return "", nil
+	// Get quantity multiplier from context (defaults to 1)
+	quantityMultiplier := uint32(1)
+	if quantityStr, exists := ctx.Context()["quantity"]; exists {
+		if qty, err := strconv.ParseUint(quantityStr, 10, 32); err == nil {
+			quantityMultiplier = uint32(qty)
+		}
+	}
+
+	// Replace context placeholders in itemId
+	itemIdStr, err := ReplaceContextPlaceholders(craftAction.ItemId(), ctx.Context())
+	if err != nil {
+		p.l.WithError(err).Errorf("Failed to replace context in itemId")
+		return craftAction.FailureState(), nil
+	}
+	itemId, err := strconv.ParseUint(itemIdStr, 10, 32)
+	if err != nil {
+		p.l.WithError(err).Errorf("Invalid itemId: %s", itemIdStr)
+		return craftAction.FailureState(), nil
+	}
+
+	// Calculate total materials and costs based on quantity multiplier
+	totalMaterials := craftAction.Materials()
+	totalQuantities := make([]uint32, len(craftAction.Quantities()))
+	for i, qty := range craftAction.Quantities() {
+		totalQuantities[i] = qty * quantityMultiplier
+	}
+	totalMesoCost := craftAction.MesoCost() * quantityMultiplier
+
+	p.l.Debugf("Crafting item %d (quantity: %d) for character %d", itemId, quantityMultiplier, ctx.CharacterId())
+
+	// Build saga to craft the item
+	sagaId := uuid.New()
+	sagaBuilder := saga.NewBuilder().
+		SetTransactionId(sagaId).
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy(fmt.Sprintf("NPC_%d", ctx.NpcId()))
+
+	// Step 1: Validate character state (has mesos and materials)
+	conditions := make([]validation.ConditionInput, 0)
+
+	// Check meso requirement
+	if totalMesoCost > 0 {
+		conditions = append(conditions, validation.ConditionInput{
+			Type:     "meso",
+			Operator: ">=",
+			Value:    int(totalMesoCost),
+		})
+	}
+
+	// Check material requirements
+	for i, materialId := range totalMaterials {
+		conditions = append(conditions, validation.ConditionInput{
+			Type:        "item",
+			Operator:    ">=",
+			Value:       int(totalQuantities[i]),
+			ReferenceId: materialId,
+		})
+	}
+
+	if len(conditions) > 0 {
+		validatePayload := saga.ValidateCharacterStatePayload{
+			CharacterId: ctx.CharacterId(),
+			Conditions:  conditions,
+		}
+		sagaBuilder.AddStep("validate_resources", saga.Pending, saga.ValidateCharacterState, validatePayload)
+	}
+
+	// Step 2: Destroy materials
+	for i, materialId := range totalMaterials {
+		destroyPayload := saga.DestroyAssetPayload{
+			CharacterId: ctx.CharacterId(),
+			TemplateId:  materialId,
+			Quantity:    totalQuantities[i],
+		}
+		sagaBuilder.AddStep(fmt.Sprintf("destroy_material_%d", materialId), saga.Pending, saga.DestroyAsset, destroyPayload)
+	}
+
+	// Step 3: Deduct mesos
+	if totalMesoCost > 0 {
+		mesoPayload := saga.AwardMesosPayload{
+			CharacterId: ctx.CharacterId(),
+			WorldId:     ctx.Field().WorldId(),
+			ChannelId:   ctx.Field().ChannelId(),
+			ActorId:     ctx.NpcId(),
+			ActorType:   "NPC",
+			Amount:      -int32(totalMesoCost),
+		}
+		sagaBuilder.AddStep("deduct_mesos", saga.Pending, saga.AwardMesos, mesoPayload)
+	}
+
+	// Step 4: Award crafted item
+	craftPayload := saga.AwardItemActionPayload{
+		CharacterId: ctx.CharacterId(),
+		Item: saga.ItemPayload{
+			TemplateId: uint32(itemId),
+			Quantity:   quantityMultiplier,
+		},
+	}
+	sagaBuilder.AddStep("award_crafted_item", saga.Pending, saga.AwardInventory, craftPayload)
+
+	// Build and execute saga
+	s := sagaBuilder.Build()
+
+	// Send saga to orchestrator
+	err = saga.NewProcessor(p.l, p.ctx).Create(s)
+	if err != nil {
+		p.l.WithError(err).Errorf("Failed to create crafting saga")
+		return craftAction.FailureState(), nil
+	}
+
+	// Store saga ID and craft action details in context for later resumption
+	ctx = ctx.SetPendingSagaId(sagaId)
+	ctx.Context()["craftAction_successState"] = craftAction.SuccessState()
+	ctx.Context()["craftAction_failureState"] = craftAction.FailureState()
+	ctx.Context()["craftAction_missingMaterialsState"] = craftAction.MissingMaterialsState()
+
+	// Update conversation context in registry
+	GetRegistry().UpdateContext(p.t, ctx.CharacterId(), ctx)
+
+	p.l.WithFields(logrus.Fields{
+		"transaction_id": sagaId.String(),
+		"character_id":   ctx.CharacterId(),
+		"npc_id":         ctx.NpcId(),
+	}).Debug("Saga created, conversation waiting for completion")
+
+	// Return current state ID to keep conversation in "waiting" state
+	// When saga completes, the saga status consumer will resume the conversation
+	return state.Id(), nil
 }
 
 // processListSelectionState processes a list selection state

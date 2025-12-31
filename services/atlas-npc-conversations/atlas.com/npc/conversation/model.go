@@ -863,6 +863,8 @@ type CraftActionModel struct {
 	mesoCost              uint32
 	stimulatorId          uint32
 	stimulatorFailChance  float64
+	successState          string
+	failureState          string
 	missingMaterialsState string
 }
 
@@ -896,6 +898,15 @@ func (c CraftActionModel) StimulatorFailChance() float64 {
 	return c.stimulatorFailChance
 }
 
+// SuccessState returns the success state ID
+func (c CraftActionModel) SuccessState() string {
+	return c.successState
+}
+
+// FailureState returns the failure state ID
+func (c CraftActionModel) FailureState() string {
+	return c.failureState
+}
 
 // MissingMaterialsState returns the missing materials state ID
 func (c CraftActionModel) MissingMaterialsState() string {
@@ -910,6 +921,8 @@ type CraftActionBuilder struct {
 	mesoCost              uint32
 	stimulatorId          uint32
 	stimulatorFailChance  float64
+	successState          string
+	failureState          string
 	missingMaterialsState string
 }
 
@@ -969,6 +982,17 @@ func (b *CraftActionBuilder) SetStimulatorFailChance(stimulatorFailChance float6
 	return b
 }
 
+// SetSuccessState sets the success state ID
+func (b *CraftActionBuilder) SetSuccessState(successState string) *CraftActionBuilder {
+	b.successState = successState
+	return b
+}
+
+// SetFailureState sets the failure state ID
+func (b *CraftActionBuilder) SetFailureState(failureState string) *CraftActionBuilder {
+	b.failureState = failureState
+	return b
+}
 
 // SetMissingMaterialsState sets the missing materials state ID
 func (b *CraftActionBuilder) SetMissingMaterialsState(missingMaterialsState string) *CraftActionBuilder {
@@ -987,6 +1011,12 @@ func (b *CraftActionBuilder) Build() (*CraftActionModel, error) {
 	if len(b.quantities) != len(b.materials) {
 		return nil, errors.New("quantities must match materials")
 	}
+	if b.successState == "" {
+		return nil, errors.New("successState is required")
+	}
+	if b.failureState == "" {
+		return nil, errors.New("failureState is required")
+	}
 	if b.missingMaterialsState == "" {
 		return nil, errors.New("missingMaterialsState is required")
 	}
@@ -998,6 +1028,8 @@ func (b *CraftActionBuilder) Build() (*CraftActionModel, error) {
 		mesoCost:              b.mesoCost,
 		stimulatorId:          b.stimulatorId,
 		stimulatorFailChance:  b.stimulatorFailChance,
+		successState:          b.successState,
+		failureState:          b.failureState,
 		missingMaterialsState: b.missingMaterialsState,
 	}, nil
 }
@@ -1366,12 +1398,13 @@ func (b *OptionBuilder) Build() (OptionModel, error) {
 
 // ConversationContext represents the current state of a conversation
 type ConversationContext struct {
-	field        field.Model
-	characterId  uint32
-	npcId        uint32
-	currentState string
-	conversation Model
-	context      map[string]string
+	field         field.Model
+	characterId   uint32
+	npcId         uint32
+	currentState  string
+	conversation  Model
+	context       map[string]string
+	pendingSagaId *uuid.UUID
 }
 
 // Field returns the field
@@ -1404,14 +1437,38 @@ func (c ConversationContext) Context() map[string]string {
 	return c.context
 }
 
+// PendingSagaId returns the pending saga ID if one exists
+func (c ConversationContext) PendingSagaId() *uuid.UUID {
+	return c.pendingSagaId
+}
+
+// SetPendingSagaId sets the pending saga ID
+func (c ConversationContext) SetPendingSagaId(sagaId uuid.UUID) ConversationContext {
+	c.pendingSagaId = &sagaId
+	return c
+}
+
+// ClearPendingSaga clears the pending saga ID
+func (c ConversationContext) ClearPendingSaga() ConversationContext {
+	c.pendingSagaId = nil
+	return c
+}
+
+// SetCurrentState sets the current state
+func (c ConversationContext) SetCurrentState(state string) ConversationContext {
+	c.currentState = state
+	return c
+}
+
 // ConversationContextBuilder is a builder for ConversationContext
 type ConversationContextBuilder struct {
-	field        field.Model
-	characterId  uint32
-	npcId        uint32
-	currentState string
-	conversation Model
-	context      map[string]string
+	field         field.Model
+	characterId   uint32
+	npcId         uint32
+	currentState  string
+	conversation  Model
+	context       map[string]string
+	pendingSagaId *uuid.UUID
 }
 
 // NewConversationContextBuilder creates a new ConversationContextBuilder
@@ -1476,11 +1533,12 @@ func (b *ConversationContextBuilder) Build() (ConversationContext, error) {
 	}
 
 	return ConversationContext{
-		characterId:  b.characterId,
-		npcId:        b.npcId,
-		field:        b.field,
-		currentState: b.currentState,
-		conversation: b.conversation,
-		context:      b.context,
+		characterId:   b.characterId,
+		npcId:         b.npcId,
+		field:         b.field,
+		currentState:  b.currentState,
+		conversation:  b.conversation,
+		context:       b.context,
+		pendingSagaId: b.pendingSagaId,
 	}, nil
 }

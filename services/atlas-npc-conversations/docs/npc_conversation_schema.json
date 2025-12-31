@@ -37,7 +37,8 @@
               "dialogue",
               "genericAction",
               "craftAction",
-              "listSelection"
+              "listSelection",
+              "askNumber"
             ]
           },
           "dialogue": {
@@ -275,6 +276,47 @@
                     }
                   }
                 }
+              }
+            }
+          },
+          "askNumber": {
+            "type": "object",
+            "description": "Ask number state configuration - prompts the player to enter a number within a specified range",
+            "required": [
+              "text",
+              "default",
+              "min",
+              "max",
+              "nextState"
+            ],
+            "properties": {
+              "text": {
+                "type": "string",
+                "description": "Prompt text asking for number input"
+              },
+              "default": {
+                "type": "integer",
+                "description": "Default value shown to the player",
+                "minimum": 0
+              },
+              "min": {
+                "type": "integer",
+                "description": "Minimum allowed value",
+                "minimum": 0
+              },
+              "max": {
+                "type": "integer",
+                "description": "Maximum allowed value",
+                "minimum": 1
+              },
+              "contextKey": {
+                "type": "string",
+                "description": "Key to store the entered value in context (defaults to 'quantity' if not specified)",
+                "default": "quantity"
+              },
+              "nextState": {
+                "type": "string",
+                "description": "ID of the next state to transition to after number is entered"
               }
             }
           }

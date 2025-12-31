@@ -11,6 +11,7 @@ const (
 const (
 	EnvStatusEventTopic      = "EVENT_TOPIC_SAGA_STATUS"
 	StatusEventTypeCompleted = "COMPLETED"
+	StatusEventTypeFailed    = "FAILED"
 )
 
 type StatusEvent[E any] struct {
@@ -20,4 +21,9 @@ type StatusEvent[E any] struct {
 }
 
 type StatusEventCompletedBody struct {
+}
+
+type StatusEventFailedBody struct {
+	Reason     string `json:"reason"`
+	FailedStep string `json:"failedStep"`
 }

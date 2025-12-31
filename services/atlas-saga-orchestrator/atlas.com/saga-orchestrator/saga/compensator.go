@@ -5,6 +5,8 @@ import (
 	"atlas-saga-orchestrator/compartment"
 	"atlas-saga-orchestrator/guild"
 	"atlas-saga-orchestrator/invite"
+	sagaMsg "atlas-saga-orchestrator/kafka/message/saga"
+	"atlas-saga-orchestrator/kafka/producer"
 	"atlas-saga-orchestrator/skill"
 	"atlas-saga-orchestrator/validation"
 	"context"
@@ -161,6 +163,33 @@ func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 		"action":         failedStep.Action,
 		"tenant_id":      c.t.Id().String(),
 	}).Debug("Compensating failed step.")
+
+	// Special handling for ValidateCharacterState failures
+	// These are terminal failures - no compensation needed, just emit FAILED event
+	if failedStep.Action == ValidateCharacterState {
+		c.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId.String(),
+			"saga_type":      s.SagaType,
+			"step_id":        failedStep.StepId,
+			"tenant_id":      c.t.Id().String(),
+		}).Info("Validation failed - terminating saga without compensation.")
+
+		// Remove saga from cache
+		GetCache().Remove(c.t.Id(), s.TransactionId)
+
+		// Emit saga failed event
+		err := producer.ProviderImpl(c.l)(c.ctx)(sagaMsg.EnvStatusEventTopic)(
+			FailedStatusEventProvider(s.TransactionId, "Validation failed", failedStep.StepId))
+		if err != nil {
+			c.l.WithError(err).WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId.String(),
+				"saga_type":      s.SagaType,
+				"tenant_id":      c.t.Id().String(),
+			}).Error("Failed to emit saga failed event.")
+		}
+
+		return nil
+	}
 
 	// Perform compensation based on the action type
 	switch failedStep.Action {

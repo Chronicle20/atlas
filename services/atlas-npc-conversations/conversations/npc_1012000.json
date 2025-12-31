@@ -1,79 +1,9 @@
 {
-  "npcId": 1002007,
-  "startState": "checkCoupon",
+  "npcId": 1012000,
+  "startState": "welcome",
   "states": [
     {
-      "id": "checkCoupon",
-      "type": "genericAction",
-      "genericAction": {
-        "operations": [],
-        "outcomes": [
-          {
-            "conditions": [
-              {
-                "type": "item",
-                "operator": ">=",
-                "value": "1",
-                "itemId": "4032313"
-              }
-            ],
-            "nextState": "couponMessage"
-          },
-          {
-            "conditions": [],
-            "nextState": "welcomeMessage"
-          }
-        ]
-      }
-    },
-    {
-      "id": "couponMessage",
-      "type": "dialogue",
-      "dialogue": {
-        "dialogueType": "sendNext",
-        "text": "I see that you have a coupon to go to Henesys. One moment, I'll bring you there right over!",
-        "choices": [
-          {
-            "text": "Next",
-            "nextState": "useCoupon"
-          },
-          {
-            "text": "Exit",
-            "nextState": null
-          }
-        ]
-      }
-    },
-    {
-      "id": "useCoupon",
-      "type": "genericAction",
-      "genericAction": {
-        "operations": [
-          {
-            "type": "destroy_item",
-            "params": {
-              "itemId": "4032313",
-              "quantity": "1"
-            }
-          },
-          {
-            "type": "warp_to_map",
-            "params": {
-              "mapId": "100000000",
-              "portalId": "0"
-            }
-          }
-        ],
-        "outcomes": [
-          {
-            "conditions": [],
-            "nextState": null
-          }
-        ]
-      }
-    },
-    {
-      "id": "welcomeMessage",
+      "id": "welcome",
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendNext",
@@ -81,7 +11,7 @@
         "choices": [
           {
             "text": "Next",
-            "nextState": "checkJobForDiscount"
+            "nextState": "checkJobForDestination"
           },
           {
             "text": "Exit",
@@ -91,7 +21,7 @@
       }
     },
     {
-      "id": "checkJobForDiscount",
+      "id": "checkJobForDestination",
       "type": "genericAction",
       "genericAction": {
         "operations": [],
@@ -108,7 +38,7 @@
           },
           {
             "conditions": [],
-            "nextState": "selectDestination"
+            "nextState": "selectDestinationRegular"
           }
         ]
       }
@@ -117,142 +47,110 @@
       "id": "selectDestinationBeginner",
       "type": "listSelection",
       "listSelection": {
-        "title": "We have a special 90% discount for beginners.Choose your destination, for fees will change from place to place.",
+        "title": "We have a special 90% discount for beginners. Choose your destination, for fees will change from place to place.",
         "choices": [
           {
-            "text": "Victoria Road - Henesys (100 mesos)",
-            "nextState": "confirmTrip",
+            "text": "Victoria Road - Lith Harbor (100 mesos)",
+            "nextState": "confirmDestination",
             "context": {
-              "destination": "100000000",
-              "destinationName": "Victoria Road - Henesys",
+              "destination": "104000000",
               "cost": "100"
             }
           },
           {
             "text": "Victoria Road - Perion (100 mesos)",
-            "nextState": "confirmTrip",
+            "nextState": "confirmDestination",
             "context": {
               "destination": "102000000",
-              "destinationName": "Victoria Road - Perion",
               "cost": "100"
             }
           },
           {
             "text": "Victoria Road - Ellinia (80 mesos)",
-            "nextState": "confirmTrip",
+            "nextState": "confirmDestination",
             "context": {
               "destination": "101000000",
-              "destinationName": "Victoria Road - Ellinia",
               "cost": "80"
             }
           },
           {
             "text": "Victoria Road - Kerning City (100 mesos)",
-            "nextState": "confirmTrip",
+            "nextState": "confirmDestination",
             "context": {
               "destination": "103000000",
-              "destinationName": "Victoria Road - Kerning City",
               "cost": "100"
             }
           },
           {
             "text": "Victoria Road - Nautilus Harbor (80 mesos)",
-            "nextState": "confirmTrip",
+            "nextState": "confirmDestination",
             "context": {
               "destination": "120000000",
-              "destinationName": "Victoria Road - Nautilus Harbor",
               "cost": "80"
             }
           },
           {
             "text": "Exit",
-            "nextState": null
+            "nextState": "declineMessage"
           }
         ]
       }
     },
     {
-      "id": "selectDestination",
+      "id": "selectDestinationRegular",
       "type": "listSelection",
       "listSelection": {
         "title": "Choose your destination, for fees will change from place to place.",
         "choices": [
           {
-            "text": "Victoria Road - Henesys (1000 mesos)",
-            "nextState": "confirmTrip",
+            "text": "Victoria Road - Lith Harbor (1000 mesos)",
+            "nextState": "confirmDestination",
             "context": {
-              "destination": "100000000",
-              "destinationName": "Victoria Road - Henesys",
+              "destination": "104000000",
               "cost": "1000"
             }
           },
           {
             "text": "Victoria Road - Perion (1000 mesos)",
-            "nextState": "confirmTrip",
+            "nextState": "confirmDestination",
             "context": {
               "destination": "102000000",
-              "destinationName": "Victoria Road - Perion",
               "cost": "1000"
             }
           },
           {
             "text": "Victoria Road - Ellinia (800 mesos)",
-            "nextState": "confirmTrip",
+            "nextState": "confirmDestination",
             "context": {
               "destination": "101000000",
-              "destinationName": "Victoria Road - Ellinia",
               "cost": "800"
             }
           },
           {
             "text": "Victoria Road - Kerning City (1000 mesos)",
-            "nextState": "confirmTrip",
+            "nextState": "confirmDestination",
             "context": {
               "destination": "103000000",
-              "destinationName": "Victoria Road - Kerning City",
               "cost": "1000"
             }
           },
           {
             "text": "Victoria Road - Nautilus Harbor (800 mesos)",
-            "nextState": "confirmTrip",
+            "nextState": "confirmDestination",
             "context": {
               "destination": "120000000",
-              "destinationName": "Victoria Road - Nautilus Harbor",
               "cost": "800"
             }
           },
           {
             "text": "Exit",
-            "nextState": null
+            "nextState": "declineMessage"
           }
         ]
       }
     },
     {
-      "id": "confirmTrip",
-      "type": "dialogue",
-      "dialogue": {
-        "dialogueType": "sendYesNo",
-        "text": "You don't have anything else to do here, huh? Do you really want to go to #bcontext.destinationName#k? It'll cost you #bcontext.cost mesos#k.",
-        "choices": [
-          {
-            "text": "Yes",
-            "nextState": "checkMesoAndWarp"
-          },
-          {
-            "text": "No",
-            "nextState": "declineTrip"
-          },
-          {
-            "text": "Exit",
-            "nextState": null
-          }
-        ]
-      }
-    },
-    {
-      "id": "declineTrip",
+      "id": "declineMessage",
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendNext",
@@ -270,7 +168,29 @@
       }
     },
     {
-      "id": "checkMesoAndWarp",
+      "id": "confirmDestination",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You don't have anything else to do here, huh? Do you really want to go to #b#m{context.destination}##k? It'll cost you #b{context.cost} mesos#k.",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkMeso"
+          },
+          {
+            "text": "No",
+            "nextState": "declineMessage"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMeso",
       "type": "genericAction",
       "genericAction": {
         "operations": [],

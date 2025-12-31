@@ -739,7 +739,7 @@
               {
                 "type": "meso",
                 "operator": "<",
-                "value": "context.cost"
+                "value": "{context.cost}"
               }
             ],
             "nextState": "insufficientMesos"
@@ -777,13 +777,13 @@
           {
             "type": "award_mesos",
             "params": {
-              "amount": "-context.cost"
+              "amount": "-{context.cost}"
             }
           },
           {
             "type": "warp_to_map",
             "params": {
-              "mapId": "context.destination",
+              "mapId": "{context.destination}",
               "portalId": "0"
             }
           }

@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
@@ -278,6 +279,44 @@ func (p *ProcessorImpl) Continue(npcId uint32, characterId uint32, action byte, 
 		// Store the choice context for later use
 		choiceContext = choice.Context()
 
+	case AskNumberType:
+		// For ask number states, the selection contains the number entered by the player
+		askNumber := state.AskNumber()
+		if askNumber == nil {
+			return errors.New("askNumber is nil")
+		}
+
+		// Validate the selection against min/max values
+		if selection < 0 {
+			p.l.Errorf("Invalid number input [%d] for character [%d]: negative value", selection, characterId)
+			return fmt.Errorf("invalid number input: negative value")
+		}
+
+		numberValue := uint32(selection)
+		if numberValue < askNumber.MinValue() {
+			p.l.Errorf("Invalid number input [%d] for character [%d]: below minimum [%d]", numberValue, characterId, askNumber.MinValue())
+			return fmt.Errorf("number below minimum value")
+		}
+		if numberValue > askNumber.MaxValue() {
+			p.l.Errorf("Invalid number input [%d] for character [%d]: above maximum [%d]", numberValue, characterId, askNumber.MaxValue())
+			return fmt.Errorf("number above maximum value")
+		}
+
+		// Store the number in the context using the configured context key
+		choiceContext = make(map[string]string)
+		choiceContext[askNumber.ContextKey()] = fmt.Sprintf("%d", numberValue)
+
+		// Calculate derived values if needed (e.g., totalCost = quantity * price)
+		if price, exists := ctx.Context()["price"]; exists {
+			if priceValue, err := strconv.ParseUint(price, 10, 32); err == nil {
+				totalCost := uint64(numberValue) * priceValue
+				choiceContext["totalCost"] = fmt.Sprintf("%d", totalCost)
+			}
+		}
+
+		// Get the next state from the askNumber model
+		nextStateId = askNumber.NextState()
+
 	default:
 		// For other state types, we shouldn't be here (they should have been processed already)
 		return fmt.Errorf("unexpected state type for Continue: %s", state.Type())
@@ -401,6 +440,9 @@ func (p *ProcessorImpl) processState(ctx ConversationContext, state StateModel) 
 	case ListSelectionType:
 		// Process list selection state
 		return p.processListSelectionState(ctx, state)
+	case AskNumberType:
+		// Process ask number state
+		return p.processAskNumberState(ctx, state)
 	default:
 		return "", errors.New("unknown state type")
 	}
@@ -544,6 +586,40 @@ func (p *ProcessorImpl) processListSelectionState(ctx ConversationContext, state
 	}
 
 	npc.NewProcessor(p.l, p.ctx).SendSimple(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(mb.String())
+	return state.Id(), nil
+}
+
+// processAskNumberState processes an ask number state
+func (p *ProcessorImpl) processAskNumberState(ctx ConversationContext, state StateModel) (string, error) {
+	askNumber := state.AskNumber()
+	if askNumber == nil {
+		return "", errors.New("askNumber is nil")
+	}
+
+	// Replace context placeholders in the ask number text
+	processedText, err := ReplaceContextPlaceholders(askNumber.Text(), ctx.Context())
+	if err != nil {
+		p.l.WithError(err).Warnf("Failed to replace context placeholders in ask number text for state [%s]. Using original text.", state.Id())
+		processedText = askNumber.Text()
+	}
+
+	// Send the ask number request to the client
+	err = npc.NewProcessor(p.l, p.ctx).SendNumber(
+		ctx.Field().WorldId(),
+		ctx.Field().ChannelId(),
+		ctx.CharacterId(),
+		ctx.NpcId(),
+		processedText,
+		askNumber.DefaultValue(),
+		askNumber.MinValue(),
+		askNumber.MaxValue())
+
+	if err != nil {
+		p.l.WithError(err).Errorf("Failed to send number request for state [%s] to character [%d]", state.Id(), ctx.CharacterId())
+		return "", err
+	}
+
+	// Return the current state ID to indicate that we're waiting for input
 	return state.Id(), nil
 }
 

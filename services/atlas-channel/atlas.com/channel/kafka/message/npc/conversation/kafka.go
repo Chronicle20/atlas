@@ -22,3 +22,9 @@ type CommandEvent[E any] struct {
 type CommandSimpleBody struct {
 	Type string `json:"type"`
 }
+
+type CommandNumberBody struct {
+	DefaultValue uint32 `json:"defaultValue"`
+	MinValue     uint32 `json:"minValue"`
+	MaxValue     uint32 `json:"maxValue"`
+}

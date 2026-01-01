@@ -7,7 +7,6 @@ import (
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"strconv"
-	"strings"
 )
 
 // Evaluator is the interface for evaluating conditions in conversations
@@ -49,41 +48,31 @@ func (e *EvaluatorImpl) EvaluateCondition(characterId uint32, condition Conditio
 	valueStr := condition.Value()
 	var value int
 
-	// Check if the value is a context reference
-	if strings.HasPrefix(valueStr, "context.") {
-		// Extract the context key
-		contextKey := strings.TrimPrefix(valueStr, "context.")
+	// Use the new ExtractContextValue function which supports both "{context.xxx}" and "context.xxx" formats
+	extractedValue, isContextRef, err := ExtractContextValue(valueStr, ctx.Context())
+	if err != nil {
+		e.l.WithError(err).Errorf("Failed to extract context value for condition")
+		return false, err
+	}
 
-		// Look up the value in the context map
-		contextValue, exists := ctx.Context()[contextKey]
-		if !exists {
-			e.l.Errorf("Context key [%s] not found in conversation context", contextKey)
-			return false, fmt.Errorf("context key [%s] not found", contextKey)
-		}
+	if isContextRef {
+		e.l.Debugf("Resolved context reference [%s] to [%s] for character [%d]", valueStr, extractedValue, characterId)
+	}
 
-		// Convert the context value to an integer
-		var err error
-		value, err = strconv.Atoi(contextValue)
-		if err != nil {
-			e.l.WithError(err).Errorf("Failed to convert context value [%s] to integer", contextValue)
-			return false, fmt.Errorf("context value [%s] is not a valid integer", contextValue)
-		}
-	} else {
-		// Try to convert the value directly to an integer
-		var err error
-		value, err = strconv.Atoi(valueStr)
-		if err != nil {
-			e.l.WithError(err).Errorf("Failed to convert value [%s] to integer", valueStr)
-			return false, fmt.Errorf("value [%s] is not a valid integer", valueStr)
-		}
+	// Convert the value to an integer
+	value, err = strconv.Atoi(extractedValue)
+	if err != nil {
+		e.l.WithError(err).Errorf("Failed to convert value [%s] to integer", extractedValue)
+		return false, fmt.Errorf("value [%s] is not a valid integer", extractedValue)
 	}
 
 	// Create a validation condition input
 	validationCondition := validation.ConditionInput{
-		Type:     condition.Type(),
-		Operator: condition.Operator(),
-		Value:    value,
-		ItemId:   condition.ItemId(),
+		Type:        condition.Type(),
+		Operator:    condition.Operator(),
+		Value:       value,
+		ReferenceId: condition.ReferenceId(),
+		Step:        condition.Step(),
 	}
 
 	// Validate the character state using the validation processor

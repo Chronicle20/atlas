@@ -37,7 +37,9 @@
               "dialogue",
               "genericAction",
               "craftAction",
-              "listSelection"
+              "listSelection",
+              "askNumber",
+              "askStyle"
             ]
           },
           "dialogue": {
@@ -55,7 +57,9 @@
                   "sendOk",
                   "sendYesNo",
                   "sendSimple",
-                  "sendNext"
+                  "sendNext",
+                  "sendNextPrev",
+                  "sendPrev"
                 ]
               },
               "text": {
@@ -273,6 +277,79 @@
                     }
                   }
                 }
+              }
+            }
+          },
+          "askNumber": {
+            "type": "object",
+            "description": "Ask number state configuration - prompts the player to enter a number within a specified range",
+            "required": [
+              "text",
+              "default",
+              "min",
+              "max",
+              "nextState"
+            ],
+            "properties": {
+              "text": {
+                "type": "string",
+                "description": "Prompt text asking for number input"
+              },
+              "default": {
+                "type": "integer",
+                "description": "Default value shown to the player",
+                "minimum": 0
+              },
+              "min": {
+                "type": "integer",
+                "description": "Minimum allowed value",
+                "minimum": 0
+              },
+              "max": {
+                "type": "integer",
+                "description": "Maximum allowed value",
+                "minimum": 1
+              },
+              "contextKey": {
+                "type": "string",
+                "description": "Key to store the entered value in context (defaults to 'quantity' if not specified)",
+                "default": "quantity"
+              },
+              "nextState": {
+                "type": "string",
+                "description": "ID of the next state to transition to after number is entered"
+              }
+            }
+          },
+          "askStyle": {
+            "type": "object",
+            "description": "Ask style state configuration - prompts the player to select from a list of avatar styles (hair, face, skin, etc.)",
+            "required": [
+              "text",
+              "styles",
+              "nextState"
+            ],
+            "properties": {
+              "text": {
+                "type": "string",
+                "description": "Prompt text for style selection"
+              },
+              "styles": {
+                "type": "array",
+                "description": "Array of style IDs available for selection",
+                "items": {
+                  "type": "integer"
+                },
+                "minItems": 1
+              },
+              "contextKey": {
+                "type": "string",
+                "description": "Key to store the selected style ID in context (defaults to 'selectedStyle' if not specified)",
+                "default": "selectedStyle"
+              },
+              "nextState": {
+                "type": "string",
+                "description": "ID of the next state to transition to after style is selected"
               }
             }
           }

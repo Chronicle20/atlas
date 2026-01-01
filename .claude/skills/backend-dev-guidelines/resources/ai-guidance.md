@@ -14,8 +14,124 @@ description: Rules for AI agents generating or editing Golang services.
 5. Never include tenant fields in public APIs.
 6. Use `server.RegisterHandler` and `server.RegisterInputHandler` for REST endpoints.
 7. Implement JSON:API interface methods on all REST models and request types.
+8. **Always verify referenced types exist before using them** - Never assume a type/constant/operation exists.
+9. **Always run tests after code changes** - Verify nothing broke before proceeding.
+10. **Always ask before implementing new features** - Get user approval before adding new functionality.
+
+## Validation Rules
+
+### Before Using Any Type/Constant/Operation:
+1. **Always verify it exists** - Read the relevant file to confirm the type/constant is implemented
+2. **Check all dependent services** - If using a condition type, verify it's in validation/model.go; if using an operation, verify it's in operation_executor.go
+3. **Never assume** - Just because it makes logical sense doesn't mean it's implemented
+
+### Examples:
+❌ **BAD** - Using condition without verification:
+```go
+// Assuming "petCount" condition exists without checking
+conditions := []validation.Condition{
+    {Type: "petCount", Operator: ">=", Value: "1"},
+}
+```
+
+✅ **GOOD** - Verify first, ask if missing:
+```
+1. Read validation/model.go
+2. Search for "petCount" in ConditionType constants
+3. If not found: "The condition type 'petCount' doesn't exist in validation/model.go.
+   Should I implement it first, or use a different approach?"
+```
+
+❌ **BAD** - Using operation without verification:
+```go
+// Assuming "gain_closeness" operation exists
+operation := Operation{
+    Type: "gain_closeness",
+    Params: map[string]string{"petIndex": "0", "amount": "2"},
+}
+```
+
+✅ **GOOD** - Verify first, ask if missing:
+```
+1. Read operation_executor.go
+2. Search for case "gain_closeness": in the switch statement
+3. If not found: "The operation 'gain_closeness' doesn't exist in operation_executor.go.
+   To implement it, I would need to:
+   - Add case in operation_executor.go
+   - Add action/payload to saga model
+   - Create Kafka producer for pets service
+
+   Should I implement this feature first?"
+```
+
+## Testing Rules
+
+### After ANY Code Change:
+1. **Always run tests** for the modified service
+2. **Report failures immediately** - Never commit/continue with failing tests
+3. **Check related services** - If you modified a shared type, test dependent services
+4. **Run builds first** - Use `go build` to catch compilation errors before running tests
+
+### Testing Workflow:
+```bash
+# After modifying atlas-npc-conversations
+cd services/atlas-npc-conversations/atlas.com/npc
+go build  # Verify it compiles
+go test ./...  # Run all tests
+
+# If tests fail:
+# 1. Report the failure to the user
+# 2. Fix the tests or code
+# 3. Re-run tests
+# 4. Only proceed when all tests pass
+```
+
+### When to Run Tests:
+- ✅ After adding new files (model.go, processor.go, etc.)
+- ✅ After modifying existing files
+- ✅ After adding new dependencies
+- ✅ Before creating a pull request
+- ✅ After implementing new features
+- ❌ Never skip tests "to save time"
+
+## Implementation Rules
+
+### Before Implementing New Features:
+1. **ALWAYS ask the user first** if you identify a missing feature during any task
+2. **Explain what's missing** and what would need to be implemented
+3. **Provide options** for how to proceed
+4. **Wait for explicit approval** before implementing
+
+### Example Dialog:
+❌ **WRONG** - Implementing without asking:
+```
+"I noticed the 'gain_closeness' operation doesn't exist. Let me implement it for you..."
+[Proceeds to implement without approval]
+```
+
+✅ **CORRECT** - Ask first:
+```
+"I need to use the 'gain_closeness' operation for this NPC conversion, but it doesn't
+exist in operation_executor.go yet.
+
+To implement it, I would need to:
+1. Add 'gain_closeness' case to operation_executor.go (npc-conversations service)
+2. Add GainCloseness action and payload to saga/model.go (saga-orchestrator service)
+3. Add handleGainCloseness to saga/handler.go (saga-orchestrator service)
+4. Create pet/producer.go for Kafka messages (saga-orchestrator service)
+5. Possibly add petCount condition to validation (query-aggregator service)
+
+This would touch 3 services and require coordination with the pets service.
+
+How would you like to proceed?
+1. Implement the missing features first
+2. Skip this NPC for now
+3. Use a different approach
+"
+```
 
 ## Generation Workflow
+0. **Validate dependencies** - Verify all types/operations you plan to use exist
 1. Create `model.go` - Immutable domain model with accessors
 2. Map `entity.go` to DB - GORM entities with migrations
 3. Implement `builder.go` - Fluent API for model construction
@@ -24,6 +140,8 @@ description: Rules for AI agents generating or editing Golang services.
 6. Add `resource.go` - Route registration and thin handlers
 7. Add Kafka producers (if needed) - Event emission
 8. Write table-driven tests
+9. **Run tests** - Verify nothing broke (`go build && go test ./...`)
+10. **Report test results** - Show pass/fail status to user
 
 ## REST Generation Specifics
 

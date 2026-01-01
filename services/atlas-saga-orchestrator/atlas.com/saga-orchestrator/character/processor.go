@@ -30,6 +30,12 @@ type Processor interface {
 	AwardMesos(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error
 	ChangeJobAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, jobId job.Id) error
 	ChangeJob(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, jobId job.Id) error
+	ChangeHairAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, styleId uint32) error
+	ChangeHair(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, styleId uint32) error
+	ChangeFaceAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, styleId uint32) error
+	ChangeFace(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, styleId uint32) error
+	ChangeSkinAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, styleId byte) error
+	ChangeSkin(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, styleId byte) error
 	RequestCreateCharacter(transactionId uuid.UUID, accountId uint32, worldId byte, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id) error
 }
 
@@ -124,6 +130,42 @@ func (p *ProcessorImpl) ChangeJobAndEmit(transactionId uuid.UUID, worldId world.
 func (p *ProcessorImpl) ChangeJob(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, jobId job.Id) error {
 	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, jobId job.Id) error {
 		return mb.Put(character2.EnvCommandTopic, ChangeJobProvider(transactionId, worldId, characterId, channelId, jobId))
+	}
+}
+
+func (p *ProcessorImpl) ChangeHairAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, styleId uint32) error {
+	return message.Emit(p.p)(func(mb *message.Buffer) error {
+		return p.ChangeHair(mb)(transactionId, worldId, characterId, channelId, styleId)
+	})
+}
+
+func (p *ProcessorImpl) ChangeHair(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, styleId uint32) error {
+	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, styleId uint32) error {
+		return mb.Put(character2.EnvCommandTopic, ChangeHairProvider(transactionId, worldId, characterId, channelId, styleId))
+	}
+}
+
+func (p *ProcessorImpl) ChangeFaceAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, styleId uint32) error {
+	return message.Emit(p.p)(func(mb *message.Buffer) error {
+		return p.ChangeFace(mb)(transactionId, worldId, characterId, channelId, styleId)
+	})
+}
+
+func (p *ProcessorImpl) ChangeFace(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, styleId uint32) error {
+	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, styleId uint32) error {
+		return mb.Put(character2.EnvCommandTopic, ChangeFaceProvider(transactionId, worldId, characterId, channelId, styleId))
+	}
+}
+
+func (p *ProcessorImpl) ChangeSkinAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, styleId byte) error {
+	return message.Emit(p.p)(func(mb *message.Buffer) error {
+		return p.ChangeSkin(mb)(transactionId, worldId, characterId, channelId, styleId)
+	})
+}
+
+func (p *ProcessorImpl) ChangeSkin(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, styleId byte) error {
+	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, styleId byte) error {
+		return mb.Put(character2.EnvCommandTopic, ChangeSkinProvider(transactionId, worldId, characterId, channelId, styleId))
 	}
 }
 

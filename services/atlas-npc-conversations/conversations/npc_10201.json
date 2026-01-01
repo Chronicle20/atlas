@@ -1,0 +1,85 @@
+{
+  "npcId": 10201,
+  "startState": "intro",
+  "states": [
+    {
+      "id": "intro",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Magicians are armed with flashy element-based spells and secondary magic that aids party as a whole. After the 2nd job adv., the elemental-based magic will provide ample amount of damage to enemies of opposite element.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "askExperience"
+          },
+          {
+            "text": "Exit",
+            "nextState": "declineExperience"
+          }
+        ]
+      }
+    },
+    {
+      "id": "declineExperience",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "If you wish to experience what it's like to be a Magician, come see me again.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "askExperience",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Would you like to experience what it's like to be a Magician?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "performWarp"
+          },
+          {
+            "text": "No",
+            "nextState": "declineExperience"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "performWarp",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "1020200",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+{
+  "npcId": 2101,
+  "startState": "askLeaveTraining",
+  "states": [
+    {
+      "id": "askLeaveTraining",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Are you done with your training? If you wish, I will send you out from this training camp.",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "confirmLeave"
+          },
+          {
+            "text": "No",
+            "nextState": "notFinished"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "notFinished",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Haven't you finished the training program yet? If you want to leave this place, please do not hesitate to tell me.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmLeave",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Then, I will send you out from here. Good job.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "performWarp"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "performWarp",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "40000",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

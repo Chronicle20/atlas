@@ -1,0 +1,85 @@
+{
+  "npcId": 10200,
+  "startState": "start",
+  "states": [
+    {
+      "id": "start",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Bowmen are blessed with dexterity and power, taking charge of long-distance attacks, providing support for those at the front line of the battle. Very adept at using landscape as part of the arsenal.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "askExperience"
+          },
+          {
+            "text": "Exit",
+            "nextState": "declineMessage"
+          }
+        ]
+      }
+    },
+    {
+      "id": "askExperience",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Would you like to experience what it's like to be a Bowman?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "warpToBowmanTrial"
+          },
+          {
+            "text": "No",
+            "nextState": "declineMessage"
+          },
+          {
+            "text": "Exit",
+            "nextState": "declineMessage"
+          }
+        ]
+      }
+    },
+    {
+      "id": "declineMessage",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "If you wish to experience what it's like to be a Bowman, come see me again.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToBowmanTrial",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "1020300",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

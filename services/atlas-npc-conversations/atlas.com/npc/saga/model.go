@@ -105,6 +105,11 @@ const (
 	CreateSkill            Action = "create_skill"
 	UpdateSkill            Action = "update_skill"
 	ValidateCharacterState Action = "validate_character_state"
+	IncreaseBuddyCapacity  Action = "increase_buddy_capacity"
+	GainCloseness          Action = "gain_closeness"
+	ChangeHair             Action = "change_hair"
+	ChangeFace             Action = "change_face"
+	ChangeSkin             Action = "change_skin"
 )
 
 // Step represents a single step within a saga.
@@ -201,10 +206,48 @@ type UpdateSkillPayload struct {
 	Expiration  time.Time `json:"expiration"`  // New skill expiration time
 }
 
+// IncreaseBuddyCapacityPayload represents the payload required to increase a character's buddy list capacity.
+type IncreaseBuddyCapacityPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	Amount      byte       `json:"amount"`      // Amount to increase buddy capacity by
+}
+
+// GainClosenessPayload represents the payload required to gain closeness with a pet.
+type GainClosenessPayload struct {
+	PetId  uint32 `json:"petId"`  // PetId associated with the action
+	Amount uint16 `json:"amount"` // Amount of closeness to gain
+}
+
 // ValidateCharacterStatePayload represents the payload required to validate a character's state.
 type ValidateCharacterStatePayload struct {
 	CharacterId uint32                      `json:"characterId"` // CharacterId associated with the action
 	Conditions  []validation.ConditionInput `json:"conditions"`  // Conditions to validate
+}
+
+// ChangeHairPayload represents the payload required to change a character's hair.
+type ChangeHairPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	StyleId     uint32     `json:"styleId"`     // Hair style ID to change to
+}
+
+// ChangeFacePayload represents the payload required to change a character's face.
+type ChangeFacePayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	StyleId     uint32     `json:"styleId"`     // Face style ID to change to
+}
+
+// ChangeSkinPayload represents the payload required to change a character's skin color.
+type ChangeSkinPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	StyleId     byte       `json:"styleId"`     // Skin color ID to change to
 }
 
 type ExperienceDistributions struct {
@@ -286,6 +329,18 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case UpdateSkill:
 		var payload UpdateSkillPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case IncreaseBuddyCapacity:
+		var payload IncreaseBuddyCapacityPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case GainCloseness:
+		var payload GainClosenessPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

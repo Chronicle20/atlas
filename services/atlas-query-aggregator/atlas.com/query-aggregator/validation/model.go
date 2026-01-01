@@ -35,6 +35,7 @@ const (
 	IntelligenceCondition           ConditionType = "intelligence"
 	LuckCondition                   ConditionType = "luck"
 	BuddyCapacityCondition          ConditionType = "buddyCapacity"
+	PetCountCondition               ConditionType = "petCount"
 )
 
 // Operator represents the comparison operator in a condition
@@ -100,7 +101,7 @@ func (b *ConditionBuilder) SetType(condType string) *ConditionBuilder {
 	}
 
 	switch ConditionType(condType) {
-	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition, GmLevelCondition, GuildIdCondition, GuildRankCondition, QuestStatusCondition, QuestProgressCondition, UnclaimedMarriageGiftsCondition, StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition, GuildLeaderCondition, BuddyCapacityCondition:
+	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition, GmLevelCondition, GuildIdCondition, GuildRankCondition, QuestStatusCondition, QuestProgressCondition, UnclaimedMarriageGiftsCondition, StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition, GuildLeaderCondition, BuddyCapacityCondition, PetCountCondition:
 		b.conditionType = ConditionType(condType)
 	default:
 		b.err = fmt.Errorf("unsupported condition type: %s", condType)
@@ -510,6 +511,10 @@ func (c Condition) EvaluateWithContext(ctx ValidationContext) ConditionResult {
 		buddyList := ctx.BuddyList()
 		actualValue = int(buddyList.Capacity())
 		description = fmt.Sprintf("Buddy Capacity %s %d", c.operator, c.value)
+
+	case PetCountCondition:
+		actualValue = ctx.PetCount()
+		description = fmt.Sprintf("Pet Count %s %d", c.operator, c.value)
 
 	case GuildIdCondition:
 		actualValue = int(character.Guild().Id())

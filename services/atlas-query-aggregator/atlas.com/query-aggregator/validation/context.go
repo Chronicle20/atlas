@@ -15,6 +15,7 @@ type ValidationContext struct {
 	quests    map[uint32]quest.Model
 	marriage  marriage.Model
 	buddyList buddy.Model
+	petCount  int
 }
 
 // NewValidationContext creates a new validation context with the provided character
@@ -24,6 +25,7 @@ func NewValidationContext(char character.Model) ValidationContext {
 		quests:    make(map[uint32]quest.Model),
 		marriage:  marriage.NewModel(char.Id(), false),
 		buddyList: buddy.NewModel(char.Id(), 0),
+		petCount:  0,
 	}
 }
 
@@ -48,6 +50,11 @@ func (ctx ValidationContext) BuddyList() buddy.Model {
 	return ctx.buddyList
 }
 
+// PetCount returns the count of spawned pets
+func (ctx ValidationContext) PetCount() int {
+	return ctx.petCount
+}
+
 // WithQuest adds a quest to the context
 func (ctx ValidationContext) WithQuest(questModel quest.Model) ValidationContext {
 	newQuests := make(map[uint32]quest.Model)
@@ -61,6 +68,7 @@ func (ctx ValidationContext) WithQuest(questModel quest.Model) ValidationContext
 		quests:    newQuests,
 		marriage:  ctx.marriage,
 		buddyList: ctx.buddyList,
+		petCount:  ctx.petCount,
 	}
 }
 
@@ -71,6 +79,7 @@ func (ctx ValidationContext) WithMarriage(marriageModel marriage.Model) Validati
 		quests:    ctx.quests,
 		marriage:  marriageModel,
 		buddyList: ctx.buddyList,
+		petCount:  ctx.petCount,
 	}
 }
 
@@ -81,6 +90,18 @@ func (ctx ValidationContext) WithBuddyList(buddyListModel buddy.Model) Validatio
 		quests:    ctx.quests,
 		marriage:  ctx.marriage,
 		buddyList: buddyListModel,
+		petCount:  ctx.petCount,
+	}
+}
+
+// WithPetCount sets the pet count in the context
+func (ctx ValidationContext) WithPetCount(count int) ValidationContext {
+	return ValidationContext{
+		character: ctx.character,
+		quests:    ctx.quests,
+		marriage:  ctx.marriage,
+		buddyList: ctx.buddyList,
+		petCount:  count,
 	}
 }
 
@@ -90,6 +111,7 @@ type ValidationContextBuilder struct {
 	quests    map[uint32]quest.Model
 	marriage  marriage.Model
 	buddyList buddy.Model
+	petCount  int
 }
 
 // NewValidationContextBuilder creates a new validation context builder
@@ -99,6 +121,7 @@ func NewValidationContextBuilder(char character.Model) *ValidationContextBuilder
 		quests:    make(map[uint32]quest.Model),
 		marriage:  marriage.NewModel(char.Id(), false),
 		buddyList: buddy.NewModel(char.Id(), 0),
+		petCount:  0,
 	}
 }
 
@@ -123,6 +146,12 @@ func (b *ValidationContextBuilder) SetBuddyList(buddyListModel buddy.Model) *Val
 	return b
 }
 
+// SetPetCount sets the pet count for the context being built
+func (b *ValidationContextBuilder) SetPetCount(count int) *ValidationContextBuilder {
+	b.petCount = count
+	return b
+}
+
 // Build creates a validation context from the builder
 func (b *ValidationContextBuilder) Build() ValidationContext {
 	return ValidationContext{
@@ -130,6 +159,7 @@ func (b *ValidationContextBuilder) Build() ValidationContext {
 		quests:    b.quests,
 		marriage:  b.marriage,
 		buddyList: b.buddyList,
+		petCount:  b.petCount,
 	}
 }
 
@@ -145,6 +175,7 @@ type ContextBuilderProvider struct {
 	questProvider     func(uint32) model.Provider[map[uint32]quest.Model]
 	marriageProvider  func(uint32) model.Provider[marriage.Model]
 	buddyProvider     func(uint32) model.Provider[buddy.Model]
+	petCountProvider  func(uint32) model.Provider[int]
 }
 
 // NewContextBuilderProvider creates a new context builder provider
@@ -153,12 +184,14 @@ func NewContextBuilderProvider(
 	questProvider func(uint32) model.Provider[map[uint32]quest.Model],
 	marriageProvider func(uint32) model.Provider[marriage.Model],
 	buddyProvider func(uint32) model.Provider[buddy.Model],
+	petCountProvider func(uint32) model.Provider[int],
 ) *ContextBuilderProvider {
 	return &ContextBuilderProvider{
 		characterProvider: characterProvider,
 		questProvider:     questProvider,
 		marriageProvider:  marriageProvider,
 		buddyProvider:     buddyProvider,
+		petCountProvider:  petCountProvider,
 	}
 }
 
@@ -201,6 +234,15 @@ func (p *ContextBuilderProvider) GetValidationContext(characterId uint32) model.
 				return ValidationContext{}, fmt.Errorf("failed to get buddy list data: %w", err)
 			}
 			builder.SetBuddyList(buddyListModel)
+		}
+
+		// Get pet count data if available
+		if p.petCountProvider != nil {
+			petCount, err := p.petCountProvider(characterId)()
+			if err != nil {
+				return ValidationContext{}, fmt.Errorf("failed to get pet count data: %w", err)
+			}
+			builder.SetPetCount(petCount)
 		}
 
 		return builder.Build(), nil

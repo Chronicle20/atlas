@@ -90,6 +90,8 @@ Common operations in `genericAction` states:
   - Params: `amount` (string), `actorId` (optional), `actorType` (optional, default "NPC")
 - **award_exp**: Award experience
   - Params: `amount` (string), `type` (optional, default "WHITE"), `attr1` (optional, default 0)
+- **award_level**: Award character levels
+  - Params: `amount` (string)
 - **destroy_item**: Remove items
   - Params: `itemId` (string), `quantity` (string)
 - **change_job**: Change character job
@@ -100,6 +102,16 @@ Common operations in `genericAction` states:
   - Params: `styleId` (string, can use context like `{context.selectedFace}`)
 - **change_skin**: Change character skin color (via saga)
   - Params: `styleId` (string, can use context like `{context.selectedSkin}`)
+- **increase_buddy_capacity**: Increase buddy list capacity
+  - Params: `amount` (string, byte value)
+- **gain_closeness**: Increase pet closeness/intimacy
+  - Params: `petId` (string, uint32) or `petIndex` (string, int8), `amount` (string, uint16)
+- **create_skill**: Create a new skill for character
+  - Params: `skillId` (string), `level` (string, optional), `masterLevel` (string, optional)
+- **update_skill**: Update an existing skill
+  - Params: `skillId` (string), `level` (string, optional), `masterLevel` (string, optional)
+- **warp_to_random_portal**: Warp to random portal in map
+  - Params: `mapId` (string)
 
 **Local Operations** (executed within npc-conversations service):
 - **local:generate_hair_styles**: Generate available hair styles for character
@@ -110,6 +122,13 @@ Common operations in `genericAction` states:
   - Params: `baseStyles`, `genderFilter`, `validateExists`, `excludeEquipped`, `outputContextKey`
 - **local:select_random_cosmetic**: Randomly select from a styles array
   - Params: `stylesContextKey`, `outputContextKey`
+- **local:fetch_map_player_counts**: Fetch player counts for multiple maps
+  - Params: `mapIds` (comma-separated map IDs, supports context references)
+  - Stores results in context with keys: `playerCount_{mapId}`
+- **local:log**: Log an informational message
+  - Params: `message` (string, supports context references)
+- **local:debug**: Log a debug message
+  - Params: `message` (string, supports context references)
 
 ### 5. Condition Types
 
@@ -120,10 +139,27 @@ Common conditions in `outcomes`:
 - **meso**: Check meso amount (operators: =, >, <, >=, <=)
 - **mapId**: Check current map (operators: =)
 - **fame**: Check fame level (operators: =, >, <, >=, <=)
-- **item**: Check item possession (operators: =, >, <, >=, <=, requires `referenceId` field)
+- **gender**: Check character's gender (operators: =) - 0 = male, 1 = female
+- **level**: Check character level (operators: =, >, <, >=, <=)
+- **reborns**: Check rebirth count (operators: =, >, <, >=, <=)
+- **dojoPoints**: Check Mu Lung Dojo points (operators: =, >, <, >=, <=)
+- **vanquisherKills**: Check vanquisher kill count (operators: =, >, <, >=, <=)
+- **gmLevel**: Check GM level (operators: =, >, <, >=, <=)
+- **guildId**: Check guild ID (operators: =, >, <, >=, <=) - 0 = not in guild
+- **guildLeader**: Check if guild leader (operators: =) - 0 = not leader, 1 = is leader
+- **guildRank**: Check guild rank (operators: =, >, <, >=, <=)
 - **questStatus**: Check quest status (operators: =, >, <, >=, <=, requires `referenceId` field)
   - For quest completion: use value "3" (COMPLETED enum value from quest/model.go)
-- **level**: Check character level (operators: =, >, <, >=, <=)
+- **questProgress**: Check quest progress (operators: =, >, <, >=, <=, requires `referenceId` and `step` fields)
+- **hasUnclaimedMarriageGifts**: Check for unclaimed marriage gifts (operators: =) - 0 = false, 1 = true
+- **strength**: Check strength stat (operators: =, >, <, >=, <=)
+- **dexterity**: Check dexterity stat (operators: =, >, <, >=, <=)
+- **intelligence**: Check intelligence stat (operators: =, >, <, >=, <=)
+- **luck**: Check luck stat (operators: =, >, <, >=, <=)
+- **buddyCapacity**: Check buddy list capacity (operators: =, >, <, >=, <=)
+- **petCount**: Check number of pets (operators: =, >, <, >=, <=)
+- **mapCapacity**: Check player count in map (operators: =, >, <, >=, <=, requires `referenceId` with map ID)
+- **item**: Check item possession (operators: =, >, <, >=, <=, requires `referenceId` field)
 
 ### 6. Context Propagation Rules
 

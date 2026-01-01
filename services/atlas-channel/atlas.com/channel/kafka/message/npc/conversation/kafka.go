@@ -28,3 +28,7 @@ type CommandNumberBody struct {
 	MinValue     uint32 `json:"minValue"`
 	MaxValue     uint32 `json:"maxValue"`
 }
+
+type CommandStyleBody struct {
+	Styles []uint32 `json:"styles"`
+}

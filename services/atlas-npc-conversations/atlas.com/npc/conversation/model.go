@@ -151,6 +151,7 @@ const (
 	CraftActionType   StateType = "craftAction"
 	ListSelectionType StateType = "listSelection"
 	AskNumberType     StateType = "askNumber"
+	AskStyleType      StateType = "askStyle"
 )
 
 // StateModel represents a state in a conversation
@@ -162,6 +163,7 @@ type StateModel struct {
 	craftAction   *CraftActionModel
 	listSelection *ListSelectionModel
 	askNumber     *AskNumberModel
+	askStyle      *AskStyleModel
 }
 
 // Id returns the state ID
@@ -199,6 +201,11 @@ func (s StateModel) AskNumber() *AskNumberModel {
 	return s.askNumber
 }
 
+// AskStyle returns the ask style model (if type is askStyle)
+func (s StateModel) AskStyle() *AskStyleModel {
+	return s.askStyle
+}
+
 // StateBuilder is a builder for StateModel
 type StateBuilder struct {
 	id            string
@@ -208,6 +215,7 @@ type StateBuilder struct {
 	craftAction   *CraftActionModel
 	listSelection *ListSelectionModel
 	askNumber     *AskNumberModel
+	askStyle      *AskStyleModel
 }
 
 // NewStateBuilder creates a new StateBuilder
@@ -229,6 +237,7 @@ func (b *StateBuilder) SetDialogue(dialogue *DialogueModel) *StateBuilder {
 	b.craftAction = nil
 	b.listSelection = nil
 	b.askNumber = nil
+	b.askStyle = nil
 	return b
 }
 
@@ -240,6 +249,7 @@ func (b *StateBuilder) SetGenericAction(genericAction *GenericActionModel) *Stat
 	b.craftAction = nil
 	b.listSelection = nil
 	b.askNumber = nil
+	b.askStyle = nil
 	return b
 }
 
@@ -251,6 +261,7 @@ func (b *StateBuilder) SetCraftAction(craftAction *CraftActionModel) *StateBuild
 	b.craftAction = craftAction
 	b.listSelection = nil
 	b.askNumber = nil
+	b.askStyle = nil
 	return b
 }
 
@@ -262,6 +273,7 @@ func (b *StateBuilder) SetListSelection(listSelection *ListSelectionModel) *Stat
 	b.craftAction = nil
 	b.listSelection = listSelection
 	b.askNumber = nil
+	b.askStyle = nil
 	return b
 }
 
@@ -273,6 +285,19 @@ func (b *StateBuilder) SetAskNumber(askNumber *AskNumberModel) *StateBuilder {
 	b.craftAction = nil
 	b.listSelection = nil
 	b.askNumber = askNumber
+	b.askStyle = nil
+	return b
+}
+
+// SetAskStyle sets the ask style model
+func (b *StateBuilder) SetAskStyle(askStyle *AskStyleModel) *StateBuilder {
+	b.stateType = AskStyleType
+	b.dialogue = nil
+	b.genericAction = nil
+	b.craftAction = nil
+	b.listSelection = nil
+	b.askNumber = nil
+	b.askStyle = askStyle
 	return b
 }
 
@@ -303,6 +328,10 @@ func (b *StateBuilder) Build() (StateModel, error) {
 		if b.askNumber == nil {
 			return StateModel{}, errors.New("askNumber is required for askNumber state")
 		}
+	case AskStyleType:
+		if b.askStyle == nil {
+			return StateModel{}, errors.New("askStyle is required for askStyle state")
+		}
 	default:
 		return StateModel{}, errors.New("invalid state type")
 	}
@@ -315,6 +344,7 @@ func (b *StateBuilder) Build() (StateModel, error) {
 		craftAction:   b.craftAction,
 		listSelection: b.listSelection,
 		askNumber:     b.askNumber,
+		askStyle:      b.askStyle,
 	}, nil
 }
 
@@ -1217,6 +1247,123 @@ func (b *AskNumberBuilder) Build() (*AskNumberModel, error) {
 		maxValue:     b.maxValue,
 		contextKey:   b.contextKey,
 		nextState:    b.nextState,
+	}, nil
+}
+
+// AskStyleModel represents an ask style state
+type AskStyleModel struct {
+	text             string
+	styles           []uint32
+	stylesContextKey string
+	contextKey       string
+	nextState        string
+}
+
+// Text returns the ask style text
+func (a AskStyleModel) Text() string {
+	return a.text
+}
+
+// Styles returns the available style IDs
+func (a AskStyleModel) Styles() []uint32 {
+	return a.styles
+}
+
+// StylesContextKey returns the context key containing dynamically generated styles
+func (a AskStyleModel) StylesContextKey() string {
+	return a.stylesContextKey
+}
+
+// ContextKey returns the context key
+func (a AskStyleModel) ContextKey() string {
+	return a.contextKey
+}
+
+// NextState returns the next state ID
+func (a AskStyleModel) NextState() string {
+	return a.nextState
+}
+
+// AskStyleBuilder is a builder for AskStyleModel
+type AskStyleBuilder struct {
+	text             string
+	styles           []uint32
+	stylesContextKey string
+	contextKey       string
+	nextState        string
+}
+
+// NewAskStyleBuilder creates a new AskStyleBuilder
+func NewAskStyleBuilder() *AskStyleBuilder {
+	return &AskStyleBuilder{
+		styles:     make([]uint32, 0),
+		contextKey: "selectedStyle", // Default context key
+	}
+}
+
+// SetText sets the ask style text
+func (b *AskStyleBuilder) SetText(text string) *AskStyleBuilder {
+	b.text = text
+	return b
+}
+
+// SetStyles sets the available style IDs
+func (b *AskStyleBuilder) SetStyles(styles []uint32) *AskStyleBuilder {
+	b.styles = styles
+	return b
+}
+
+// AddStyle adds a style ID
+func (b *AskStyleBuilder) AddStyle(styleId uint32) *AskStyleBuilder {
+	b.styles = append(b.styles, styleId)
+	return b
+}
+
+// SetStylesContextKey sets the context key containing dynamically generated styles
+func (b *AskStyleBuilder) SetStylesContextKey(key string) *AskStyleBuilder {
+	b.stylesContextKey = key
+	return b
+}
+
+// SetContextKey sets the context key
+func (b *AskStyleBuilder) SetContextKey(contextKey string) *AskStyleBuilder {
+	b.contextKey = contextKey
+	return b
+}
+
+// SetNextState sets the next state ID
+func (b *AskStyleBuilder) SetNextState(nextState string) *AskStyleBuilder {
+	b.nextState = nextState
+	return b
+}
+
+// Build builds the AskStyleModel
+func (b *AskStyleBuilder) Build() (*AskStyleModel, error) {
+	if b.text == "" {
+		return nil, errors.New("text is required")
+	}
+
+	// Require either styles OR stylesContextKey (not both, not neither)
+	hasStyles := len(b.styles) > 0
+	hasStylesContextKey := b.stylesContextKey != ""
+
+	if !hasStyles && !hasStylesContextKey {
+		return nil, errors.New("either styles or stylesContextKey is required")
+	}
+
+	if b.nextState == "" {
+		return nil, errors.New("nextState is required")
+	}
+	if b.contextKey == "" {
+		b.contextKey = "selectedStyle" // Ensure default
+	}
+
+	return &AskStyleModel{
+		text:             b.text,
+		styles:           b.styles,
+		stylesContextKey: b.stylesContextKey,
+		contextKey:       b.contextKey,
+		nextState:        b.nextState,
 	}, nil
 }
 

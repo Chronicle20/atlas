@@ -319,6 +319,29 @@ func (p *ProcessorImpl) Continue(npcId uint32, characterId uint32, action byte, 
 		// Get the next state from the askNumber model
 		nextStateId = askNumber.NextState()
 
+	case AskStyleType:
+		// For ask style states, the selection contains the index of the selected style
+		askStyle := state.AskStyle()
+		if askStyle == nil {
+			return errors.New("askStyle is nil")
+		}
+
+		// Validate the selection is within bounds
+		if selection < 0 || selection >= int32(len(askStyle.Styles())) {
+			p.l.Errorf("Invalid style selection [%d] for character [%d]: out of bounds", selection, characterId)
+			return fmt.Errorf("invalid style selection: out of bounds")
+		}
+
+		// Get the selected style ID
+		selectedStyleId := askStyle.Styles()[selection]
+
+		// Store the selected style in the context using the configured context key
+		choiceContext = make(map[string]string)
+		choiceContext[askStyle.ContextKey()] = fmt.Sprintf("%d", selectedStyleId)
+
+		// Get the next state from the askStyle model
+		nextStateId = askStyle.NextState()
+
 	default:
 		// For other state types, we shouldn't be here (they should have been processed already)
 		return fmt.Errorf("unexpected state type for Continue: %s", state.Type())
@@ -445,6 +468,9 @@ func (p *ProcessorImpl) processState(ctx ConversationContext, state StateModel) 
 	case AskNumberType:
 		// Process ask number state
 		return p.processAskNumberState(ctx, state)
+	case AskStyleType:
+		// Process ask style state
+		return p.processAskStyleState(ctx, state)
 	default:
 		return "", errors.New("unknown state type")
 	}
@@ -741,6 +767,71 @@ func (p *ProcessorImpl) processAskNumberState(ctx ConversationContext, state Sta
 
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to send number request for state [%s] to character [%d]", state.Id(), ctx.CharacterId())
+		return "", err
+	}
+
+	// Return the current state ID to indicate that we're waiting for input
+	return state.Id(), nil
+}
+
+// processAskStyleState processes an ask style state
+func (p *ProcessorImpl) processAskStyleState(ctx ConversationContext, state StateModel) (string, error) {
+	askStyle := state.AskStyle()
+	if askStyle == nil {
+		return "", errors.New("askStyle is nil")
+	}
+
+	// Resolve styles - support both static and dynamic
+	styles := askStyle.Styles()
+
+	// If no static styles, try to load from context
+	if len(styles) == 0 && askStyle.StylesContextKey() != "" {
+		contextKey := askStyle.StylesContextKey()
+
+		// Get styles from context
+		stylesStr, exists := ctx.Context()[contextKey]
+		if !exists {
+			p.l.Errorf("StylesContextKey [%s] not found in context for character [%d] in state [%s]",
+				contextKey, ctx.CharacterId(), state.Id())
+			return "", fmt.Errorf("styles not found in context: %s", contextKey)
+		}
+
+		// Decode styles
+		var err error
+		styles, err = decodeUint32Array(stylesStr)
+		if err != nil {
+			p.l.WithError(err).Errorf("Failed to decode styles from context key [%s] for state [%s]", contextKey, state.Id())
+			return "", fmt.Errorf("invalid styles in context: %w", err)
+		}
+
+		p.l.Debugf("Loaded %d styles from context key [%s] for character [%d] in state [%s]",
+			len(styles), contextKey, ctx.CharacterId(), state.Id())
+	}
+
+	// Validate we have styles
+	if len(styles) == 0 {
+		p.l.Errorf("No styles available for state [%s] (neither static nor from context)", state.Id())
+		return "", errors.New("no styles available (neither static nor from context)")
+	}
+
+	// Replace context placeholders in the ask style text
+	processedText, err := ReplaceContextPlaceholders(askStyle.Text(), ctx.Context())
+	if err != nil {
+		p.l.WithError(err).Warnf("Failed to replace context placeholders in ask style text for state [%s]. Using original text.", state.Id())
+		processedText = askStyle.Text()
+	}
+
+	// Send the ask style request to the client
+	err = npc.NewProcessor(p.l, p.ctx).SendStyle(
+		ctx.Field().WorldId(),
+		ctx.Field().ChannelId(),
+		ctx.CharacterId(),
+		ctx.NpcId(),
+		processedText,
+		styles)
+
+	if err != nil {
+		p.l.WithError(err).Errorf("Failed to send style request for state [%s] to character [%d]", state.Id(), ctx.CharacterId())
 		return "", err
 	}
 

@@ -1,6 +1,7 @@
 package conversation
 
 import (
+	"atlas-npc-conversations/cosmetic"
 	"atlas-npc-conversations/pet"
 	"atlas-npc-conversations/saga"
 	"context"
@@ -27,22 +28,25 @@ type OperationExecutor interface {
 
 // OperationExecutorImpl is the implementation of the OperationExecutor interface
 type OperationExecutorImpl struct {
-	l     logrus.FieldLogger
-	ctx   context.Context
-	t     tenant.Model
-	sagaP saga.Processor
-	petP  pet.Processor
+	l        logrus.FieldLogger
+	ctx      context.Context
+	t        tenant.Model
+	sagaP    saga.Processor
+	petP     pet.Processor
+	cosmeticP cosmetic.Processor
 }
 
 // NewOperationExecutor creates a new operation executor
 func NewOperationExecutor(l logrus.FieldLogger, ctx context.Context) OperationExecutor {
 	t := tenant.MustFromContext(ctx)
+	appearanceProvider := cosmetic.NewRestAppearanceProvider(l, ctx)
 	return &OperationExecutorImpl{
-		l:     l,
-		ctx:   ctx,
-		t:     t,
-		sagaP: saga.NewProcessor(l, ctx),
-		petP:  pet.NewProcessor(l, ctx),
+		l:        l,
+		ctx:      ctx,
+		t:        t,
+		sagaP:    saga.NewProcessor(l, ctx),
+		petP:     pet.NewProcessor(l, ctx),
+		cosmeticP: cosmetic.NewProcessor(l, ctx, appearanceProvider),
 	}
 }
 
@@ -205,6 +209,121 @@ func (e *OperationExecutorImpl) executeLocalOperation(field field.Model, charact
 		}
 
 		e.l.Debugf("NPC Debug for character [%d]: %s", characterId, message)
+		return nil
+
+	case "generate_hair_styles":
+		// Format: local:generate_hair_styles
+		// Params: baseStyles (string), genderFilter (string), preserveColor (string),
+		//         validateExists (string), excludeEquipped (string), outputContextKey (string)
+		styles, err := e.cosmeticP.GenerateHairStyles(characterId, operation.Params())
+		if err != nil {
+			e.l.WithError(err).Errorf("Failed to generate hair styles for character [%d]", characterId)
+			return fmt.Errorf("failed to generate hair styles: %w", err)
+		}
+
+		// Store in context
+		outputKey := operation.Params()["outputContextKey"]
+		if outputKey == "" {
+			outputKey = "generatedStyles"
+		}
+
+		err = e.storeStylesInContext(characterId, outputKey, styles)
+		if err != nil {
+			e.l.WithError(err).Errorf("Failed to store hair styles in context for character [%d]", characterId)
+			return err
+		}
+
+		e.l.Infof("Generated and stored %d hair styles in context key [%s] for character [%d]",
+			len(styles), outputKey, characterId)
+		return nil
+
+	case "generate_hair_colors":
+		// Format: local:generate_hair_colors
+		// Params: colors (string), outputContextKey (string)
+		colors, err := e.cosmeticP.GenerateHairColors(characterId, operation.Params())
+		if err != nil {
+			e.l.WithError(err).Errorf("Failed to generate hair colors for character [%d]", characterId)
+			return fmt.Errorf("failed to generate hair colors: %w", err)
+		}
+
+		// Store in context
+		outputKey := operation.Params()["outputContextKey"]
+		if outputKey == "" {
+			outputKey = "generatedColors"
+		}
+
+		err = e.storeStylesInContext(characterId, outputKey, colors)
+		if err != nil {
+			e.l.WithError(err).Errorf("Failed to store hair colors in context for character [%d]", characterId)
+			return err
+		}
+
+		e.l.Infof("Generated and stored %d hair colors in context key [%s] for character [%d]",
+			len(colors), outputKey, characterId)
+		return nil
+
+	case "generate_face_styles":
+		// Format: local:generate_face_styles
+		// Params: baseStyles (string), genderFilter (string), validateExists (string),
+		//         excludeEquipped (string), outputContextKey (string)
+		faces, err := e.cosmeticP.GenerateFaceStyles(characterId, operation.Params())
+		if err != nil {
+			e.l.WithError(err).Errorf("Failed to generate face styles for character [%d]", characterId)
+			return fmt.Errorf("failed to generate face styles: %w", err)
+		}
+
+		// Store in context
+		outputKey := operation.Params()["outputContextKey"]
+		if outputKey == "" {
+			outputKey = "generatedFaces"
+		}
+
+		err = e.storeStylesInContext(characterId, outputKey, faces)
+		if err != nil {
+			e.l.WithError(err).Errorf("Failed to store face styles in context for character [%d]", characterId)
+			return err
+		}
+
+		e.l.Infof("Generated and stored %d face styles in context key [%s] for character [%d]",
+			len(faces), outputKey, characterId)
+		return nil
+
+	case "apply_cosmetic":
+		// Format: local:apply_cosmetic
+		// Params: cosmeticType (string: "hair", "face", "skin"), styleId (string or context reference)
+		cosmeticTypeValue, exists := operation.Params()["cosmeticType"]
+		if !exists {
+			return errors.New("missing cosmeticType parameter for apply_cosmetic operation")
+		}
+
+		styleIdValue, exists := operation.Params()["styleId"]
+		if !exists {
+			return errors.New("missing styleId parameter for apply_cosmetic operation")
+		}
+
+		// Evaluate the styleId value (may be a context reference like "{context.selectedHair}")
+		styleIdStr, err := e.evaluateContextValue(characterId, "styleId", styleIdValue)
+		if err != nil {
+			return err
+		}
+
+		// Parse styleId to uint32
+		styleIdInt, err := strconv.ParseUint(styleIdStr, 10, 32)
+		if err != nil {
+			return fmt.Errorf("invalid styleId value '%s': %w", styleIdStr, err)
+		}
+
+		styleId := uint32(styleIdInt)
+
+		// Apply the cosmetic change
+		err = e.applyCosmetic(characterId, cosmeticTypeValue, styleId)
+		if err != nil {
+			e.l.WithError(err).Errorf("Failed to apply %s cosmetic %d to character [%d]",
+				cosmeticTypeValue, styleId, characterId)
+			return err
+		}
+
+		e.l.Infof("Applied %s cosmetic %d to character [%d]", cosmeticTypeValue, styleId, characterId)
 		return nil
 
 	default:
@@ -678,4 +797,88 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 	default:
 		return "", "", "", nil, fmt.Errorf("unknown operation type: %s", operation.Type())
 	}
+}
+
+// storeStylesInContext stores a uint32 array of styles in the conversation context
+func (e *OperationExecutorImpl) storeStylesInContext(characterId uint32, key string, styles []uint32) error {
+	// Get current context
+	ctx, err := GetRegistry().GetPreviousContext(e.t, characterId)
+	if err != nil {
+		e.l.WithError(err).Errorf("Failed to get conversation context for character [%d]", characterId)
+		return fmt.Errorf("failed to get conversation context: %w", err)
+	}
+
+	// Encode styles as comma-separated string
+	stylesStr := encodeUint32Array(styles)
+
+	// Update context
+	ctx.Context()[key] = stylesStr
+
+	// Save context
+	GetRegistry().UpdateContext(e.t, characterId, ctx)
+
+	e.l.Debugf("Stored %d styles in context key [%s] for character [%d]: %s",
+		len(styles), key, characterId, stylesStr)
+
+	return nil
+}
+
+// encodeUint32Array encodes a uint32 array as a comma-separated string
+func encodeUint32Array(arr []uint32) string {
+	if len(arr) == 0 {
+		return ""
+	}
+
+	strs := make([]string, len(arr))
+	for i, val := range arr {
+		strs[i] = strconv.FormatUint(uint64(val), 10)
+	}
+	return strings.Join(strs, ",")
+}
+
+// decodeUint32Array decodes a comma-separated string into a uint32 array
+func decodeUint32Array(str string) ([]uint32, error) {
+	if str == "" {
+		return []uint32{}, nil
+	}
+
+	parts := strings.Split(str, ",")
+	result := make([]uint32, 0, len(parts))
+
+	for _, part := range parts {
+		trimmed := strings.TrimSpace(part)
+		if trimmed == "" {
+			continue
+		}
+
+		val, err := strconv.ParseUint(trimmed, 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("invalid number '%s': %w", trimmed, err)
+		}
+
+		result = append(result, uint32(val))
+	}
+
+	return result, nil
+}
+
+// applyCosmetic applies a cosmetic change to a character
+// Makes a REST PATCH request to the character service which handles database update and event emission
+func (e *OperationExecutorImpl) applyCosmetic(characterId uint32, cosmeticType string, styleId uint32) error {
+	// Use the cosmetic processor to update character appearance
+	// This will make a REST PATCH request to the character service
+	// The character service will:
+	// 1. Validate the cosmetic value
+	// 2. Update the database
+	// 3. Emit a Kafka event (HAIR_CHANGED, FACE_CHANGED, SKIN_COLOR_CHANGED)
+	// 4. atlas-channel will consume the event and broadcast to the client
+	err := e.cosmeticP.UpdateCharacterAppearance(characterId, cosmeticType, styleId)
+	if err != nil {
+		e.l.WithError(err).Errorf("Failed to apply %s cosmetic %d to character [%d]",
+			cosmeticType, styleId, characterId)
+		return fmt.Errorf("failed to apply cosmetic: %w", err)
+	}
+
+	e.l.Infof("Successfully applied %s cosmetic %d to character [%d]", cosmeticType, styleId, characterId)
+	return nil
 }

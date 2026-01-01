@@ -90,6 +90,51 @@ func ChangeJobProvider(transactionId uuid.UUID, worldId world.Id, characterId ui
 	return producer.SingleMessageProvider(key, value)
 }
 
+func ChangeHairProvider(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, styleId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character2.Command[character2.ChangeHairCommandBody]{
+		TransactionId: transactionId,
+		WorldId:       worldId,
+		CharacterId:   characterId,
+		Type:          character2.CommandChangeHair,
+		Body: character2.ChangeHairCommandBody{
+			ChannelId: channelId,
+			StyleId:   styleId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func ChangeFaceProvider(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, styleId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character2.Command[character2.ChangeFaceCommandBody]{
+		TransactionId: transactionId,
+		WorldId:       worldId,
+		CharacterId:   characterId,
+		Type:          character2.CommandChangeFace,
+		Body: character2.ChangeFaceCommandBody{
+			ChannelId: channelId,
+			StyleId:   styleId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func ChangeSkinProvider(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, styleId byte) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character2.Command[character2.ChangeSkinCommandBody]{
+		TransactionId: transactionId,
+		WorldId:       worldId,
+		CharacterId:   characterId,
+		Type:          character2.CommandChangeSkin,
+		Body: character2.ChangeSkinCommandBody{
+			ChannelId: channelId,
+			StyleId:   styleId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func RequestCreateCharacterProvider(transactionId uuid.UUID, accountId uint32, worldId byte, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(accountId))
 	value := &character2.Command[character2.CreateCharacterCommandBody]{

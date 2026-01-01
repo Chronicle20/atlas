@@ -5,6 +5,7 @@ import (
 	"atlas-npc-conversations/pet"
 	"atlas-npc-conversations/saga"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/Chronicle20/atlas-constants/field"
@@ -12,6 +13,7 @@ import (
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
+	"math/rand"
 	"strconv"
 	"strings"
 	"time"
@@ -288,42 +290,47 @@ func (e *OperationExecutorImpl) executeLocalOperation(field field.Model, charact
 			len(faces), outputKey, characterId)
 		return nil
 
-	case "apply_cosmetic":
-		// Format: local:apply_cosmetic
-		// Params: cosmeticType (string: "hair", "face", "skin"), styleId (string or context reference)
-		cosmeticTypeValue, exists := operation.Params()["cosmeticType"]
+	case "select_random_cosmetic":
+		// Format: local:select_random_cosmetic
+		// Params: stylesContextKey (string), outputContextKey (string)
+		stylesContextKey, exists := operation.Params()["stylesContextKey"]
 		if !exists {
-			return errors.New("missing cosmeticType parameter for apply_cosmetic operation")
+			return errors.New("missing stylesContextKey parameter for select_random_cosmetic operation")
 		}
 
-		styleIdValue, exists := operation.Params()["styleId"]
+		outputContextKey, exists := operation.Params()["outputContextKey"]
 		if !exists {
-			return errors.New("missing styleId parameter for apply_cosmetic operation")
+			return errors.New("missing outputContextKey parameter for select_random_cosmetic operation")
 		}
 
-		// Evaluate the styleId value (may be a context reference like "{context.selectedHair}")
-		styleIdStr, err := e.evaluateContextValue(characterId, "styleId", styleIdValue)
+		// Get the styles array from context
+		stylesValue, err := e.getContextValue(characterId, stylesContextKey)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to get styles from context key '%s': %w", stylesContextKey, err)
 		}
 
-		// Parse styleId to uint32
-		styleIdInt, err := strconv.ParseUint(styleIdStr, 10, 32)
+		// Parse the styles array (should be a JSON array of uint32)
+		var styles []uint32
+		err = json.Unmarshal([]byte(stylesValue), &styles)
 		if err != nil {
-			return fmt.Errorf("invalid styleId value '%s': %w", styleIdStr, err)
+			return fmt.Errorf("failed to parse styles array from context: %w", err)
 		}
 
-		styleId := uint32(styleIdInt)
+		if len(styles) == 0 {
+			return errors.New("styles array is empty, cannot select random cosmetic")
+		}
 
-		// Apply the cosmetic change
-		err = e.applyCosmetic(characterId, cosmeticTypeValue, styleId)
+		// Randomly select one style
+		selectedStyle := styles[rand.Intn(len(styles))]
+
+		// Store the selected style in the output context key
+		err = e.setContextValue(characterId, outputContextKey, fmt.Sprintf("%d", selectedStyle))
 		if err != nil {
-			e.l.WithError(err).Errorf("Failed to apply %s cosmetic %d to character [%d]",
-				cosmeticTypeValue, styleId, characterId)
-			return err
+			return fmt.Errorf("failed to store selected style in context: %w", err)
 		}
 
-		e.l.Infof("Applied %s cosmetic %d to character [%d]", cosmeticTypeValue, styleId, characterId)
+		e.l.Infof("Selected random cosmetic %d from %d options for character [%d], stored in context key [%s]",
+			selectedStyle, len(styles), characterId, outputContextKey)
 		return nil
 
 	default:
@@ -794,6 +801,75 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 		return stepId, saga.Pending, saga.GainCloseness, payload, nil
 
+	case "change_hair":
+		// Format: change_hair
+		// Context: styleId (uint32)
+		styleIdValue, exists := operation.Params()["styleId"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing styleId parameter for change_hair operation")
+		}
+
+		// Evaluate the styleId value
+		styleIdInt, err := e.evaluateContextValueAsInt(characterId, "styleId", styleIdValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		payload := saga.ChangeHairPayload{
+			CharacterId: characterId,
+			WorldId:     f.WorldId(),
+			ChannelId:   f.ChannelId(),
+			StyleId:     uint32(styleIdInt),
+		}
+
+		return stepId, saga.Pending, saga.ChangeHair, payload, nil
+
+	case "change_face":
+		// Format: change_face
+		// Context: styleId (uint32)
+		styleIdValue, exists := operation.Params()["styleId"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing styleId parameter for change_face operation")
+		}
+
+		// Evaluate the styleId value
+		styleIdInt, err := e.evaluateContextValueAsInt(characterId, "styleId", styleIdValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		payload := saga.ChangeFacePayload{
+			CharacterId: characterId,
+			WorldId:     f.WorldId(),
+			ChannelId:   f.ChannelId(),
+			StyleId:     uint32(styleIdInt),
+		}
+
+		return stepId, saga.Pending, saga.ChangeFace, payload, nil
+
+	case "change_skin":
+		// Format: change_skin
+		// Context: styleId (byte)
+		styleIdValue, exists := operation.Params()["styleId"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing styleId parameter for change_skin operation")
+		}
+
+		// Evaluate the styleId value
+		styleIdInt, err := e.evaluateContextValueAsInt(characterId, "styleId", styleIdValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		payload := saga.ChangeSkinPayload{
+			CharacterId: characterId,
+			WorldId:     f.WorldId(),
+			ChannelId:   f.ChannelId(),
+			StyleId:     byte(styleIdInt),
+		}
+
+		return stepId, saga.Pending, saga.ChangeSkin, payload, nil
+
 	default:
 		return "", "", "", nil, fmt.Errorf("unknown operation type: %s", operation.Type())
 	}
@@ -860,25 +936,4 @@ func decodeUint32Array(str string) ([]uint32, error) {
 	}
 
 	return result, nil
-}
-
-// applyCosmetic applies a cosmetic change to a character
-// Makes a REST PATCH request to the character service which handles database update and event emission
-func (e *OperationExecutorImpl) applyCosmetic(characterId uint32, cosmeticType string, styleId uint32) error {
-	// Use the cosmetic processor to update character appearance
-	// This will make a REST PATCH request to the character service
-	// The character service will:
-	// 1. Validate the cosmetic value
-	// 2. Update the database
-	// 3. Emit a Kafka event (HAIR_CHANGED, FACE_CHANGED, SKIN_COLOR_CHANGED)
-	// 4. atlas-channel will consume the event and broadcast to the client
-	err := e.cosmeticP.UpdateCharacterAppearance(characterId, cosmeticType, styleId)
-	if err != nil {
-		e.l.WithError(err).Errorf("Failed to apply %s cosmetic %d to character [%d]",
-			cosmeticType, styleId, characterId)
-		return fmt.Errorf("failed to apply cosmetic: %w", err)
-	}
-
-	e.l.Infof("Successfully applied %s cosmetic %d to character [%d]", cosmeticType, styleId, characterId)
-	return nil
 }

@@ -43,6 +43,9 @@ type Handler interface {
 	handleEquipAsset(s Saga, st Step[any]) error
 	handleUnequipAsset(s Saga, st Step[any]) error
 	handleChangeJob(s Saga, st Step[any]) error
+	handleChangeHair(s Saga, st Step[any]) error
+	handleChangeFace(s Saga, st Step[any]) error
+	handleChangeSkin(s Saga, st Step[any]) error
 	handleCreateSkill(s Saga, st Step[any]) error
 	handleUpdateSkill(s Saga, st Step[any]) error
 	handleValidateCharacterState(s Saga, st Step[any]) error
@@ -231,6 +234,12 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleUnequipAsset, true
 	case ChangeJob:
 		return h.handleChangeJob, true
+	case ChangeHair:
+		return h.handleChangeHair, true
+	case ChangeFace:
+		return h.handleChangeFace, true
+	case ChangeSkin:
+		return h.handleChangeSkin, true
 	case CreateSkill:
 		return h.handleCreateSkill, true
 	case UpdateSkill:
@@ -451,6 +460,57 @@ func (h *HandlerImpl) handleChangeJob(s Saga, st Step[any]) error {
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to change job.")
+		return err
+	}
+
+	return nil
+}
+
+// handleChangeHair handles the ChangeHair action
+func (h *HandlerImpl) handleChangeHair(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(ChangeHairPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.charP.ChangeHairAndEmit(s.TransactionId, payload.WorldId, payload.CharacterId, payload.ChannelId, payload.StyleId)
+
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to change hair.")
+		return err
+	}
+
+	return nil
+}
+
+// handleChangeFace handles the ChangeFace action
+func (h *HandlerImpl) handleChangeFace(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(ChangeFacePayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.charP.ChangeFaceAndEmit(s.TransactionId, payload.WorldId, payload.CharacterId, payload.ChannelId, payload.StyleId)
+
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to change face.")
+		return err
+	}
+
+	return nil
+}
+
+// handleChangeSkin handles the ChangeSkin action
+func (h *HandlerImpl) handleChangeSkin(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(ChangeSkinPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.charP.ChangeSkinAndEmit(s.TransactionId, payload.WorldId, payload.CharacterId, payload.ChannelId, payload.StyleId)
+
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to change skin.")
 		return err
 	}
 

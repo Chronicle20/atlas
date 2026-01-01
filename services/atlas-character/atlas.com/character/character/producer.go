@@ -119,51 +119,6 @@ func jobChangedEventProvider(transactionId uuid.UUID, characterId uint32, channe
 	return producer.SingleMessageProvider(key, value)
 }
 
-func hairChangedEventProvider(transactionId uuid.UUID, characterId uint32, channel channel.Model, oldHair uint32, newHair uint32) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(characterId))
-	value := &character2.StatusEvent[character2.StatusEventHairChangedBody]{
-		TransactionId: transactionId,
-		CharacterId:   characterId,
-		WorldId:       channel.WorldId(),
-		Type:          character2.StatusEventTypeHairChanged,
-		Body: character2.StatusEventHairChangedBody{
-			OldHair: oldHair,
-			NewHair: newHair,
-		},
-	}
-	return producer.SingleMessageProvider(key, value)
-}
-
-func faceChangedEventProvider(transactionId uuid.UUID, characterId uint32, channel channel.Model, oldFace uint32, newFace uint32) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(characterId))
-	value := &character2.StatusEvent[character2.StatusEventFaceChangedBody]{
-		TransactionId: transactionId,
-		CharacterId:   characterId,
-		WorldId:       channel.WorldId(),
-		Type:          character2.StatusEventTypeFaceChanged,
-		Body: character2.StatusEventFaceChangedBody{
-			OldFace: oldFace,
-			NewFace: newFace,
-		},
-	}
-	return producer.SingleMessageProvider(key, value)
-}
-
-func skinColorChangedEventProvider(transactionId uuid.UUID, characterId uint32, channel channel.Model, oldSkinColor byte, newSkinColor byte) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(characterId))
-	value := &character2.StatusEvent[character2.StatusEventSkinColorChangedBody]{
-		TransactionId: transactionId,
-		CharacterId:   characterId,
-		WorldId:       channel.WorldId(),
-		Type:          character2.StatusEventTypeSkinColorChanged,
-		Body: character2.StatusEventSkinColorChangedBody{
-			OldSkinColor: oldSkinColor,
-			NewSkinColor: newSkinColor,
-		},
-	}
-	return producer.SingleMessageProvider(key, value)
-}
-
 func experienceChangedEventProvider(transactionId uuid.UUID, characterId uint32, channel channel.Model, experience []ExperienceModel, current uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 

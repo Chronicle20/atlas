@@ -1,0 +1,206 @@
+{
+  "npcId": 1012117,
+  "startState": "selectService",
+  "states": [
+    {
+      "id": "selectService",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Hi, I'm #p1012117#, the most charming and stylish stylist around. If you're looking for the best looking hairdos around, look no further!",
+        "choices": [
+          {
+            "text": "#i5150040##t5150040#",
+            "nextState": "confirmRandom",
+            "context": {
+              "serviceType": "random"
+            }
+          },
+          {
+            "text": "#i5150044##t5150044#",
+            "nextState": "checkVIPCoupon",
+            "context": {
+              "serviceType": "vip"
+            }
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmRandom",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "If you use this REGULAR coupon, your hair may transform into a random new look...do you still want to do it using #b#t5150040##k, I will do it anyways for you. But don't forget, it will be random!",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkRegularCoupon"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkRegularCoupon",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": "<",
+                "value": "1",
+                "referenceId": "5150040"
+              }
+            ],
+            "nextState": "noCoupon"
+          },
+          {
+            "conditions": [],
+            "nextState": "applyRandomHair"
+          }
+        ]
+      }
+    },
+    {
+      "id": "applyRandomHair",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "5150040",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "random_cosmetic",
+            "params": {
+              "cosmeticType": "HAIR",
+              "cosmeticSubCategory": "REGULAR"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "success"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkVIPCoupon",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": "<",
+                "value": "1",
+                "referenceId": "5150044"
+              }
+            ],
+            "nextState": "noCoupon"
+          },
+          {
+            "conditions": [],
+            "nextState": "selectHairStyle"
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectHairStyle",
+      "type": "askStyle",
+      "askStyle": {
+        "text": "Using the SPECIAL coupon you can choose the style your hair will become. Pick the style that best provides you delight...",
+        "styles": [],
+        "cosmeticType": "HAIR",
+        "cosmeticSubCategory": "VIP",
+        "contextKey": "selectedStyle",
+        "nextState": "applySelectedHair"
+      }
+    },
+    {
+      "id": "applySelectedHair",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "5150044",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "set_cosmetic",
+            "params": {
+              "cosmeticId": "{context.selectedStyle}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "success"
+          }
+        ]
+      }
+    },
+    {
+      "id": "success",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Enjoy your new and improved hairstyle!",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "noCoupon",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Hmmm...it looks like you don't have our designated coupon...I'm afraid I can't give you a haircut without it. I'm sorry...",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -76,6 +76,7 @@ Activate when working on:
 | REST JSON:API | [resources/patterns-rest-jsonapi.md](resources/patterns-rest-jsonapi.md) |
 | Multi-Tenancy Context | [resources/patterns-multitenancy-context.md](resources/patterns-multitenancy-context.md) |
 | Testing Conventions | [resources/testing-guide.md](resources/testing-guide.md) |
+| **Cross-Service Implementation** | **[resources/cross-service-implementation.md](resources/cross-service-implementation.md)** |
 | AI Code Guidance | [resources/ai-guidance.md](resources/ai-guidance.md) |
 | Anti-Patterns | [resources/anti-patterns.md](resources/anti-patterns.md) |
 

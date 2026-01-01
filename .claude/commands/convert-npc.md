@@ -151,7 +151,9 @@ The script to convert: **$ARGUMENTS**
 
 **Steps:**
 1. Read schema and conversion spec files (DO NOT read Map.txt or NPC.txt in full)
-2. **Read validation model**: Read `services/atlas-query-aggregator/atlas.com/query-aggregator/validation/model.go` to get supported condition types and operators
+2. **Read validation model AND operation types**:
+   - Read `services/atlas-query-aggregator/atlas.com/query-aggregator/validation/model.go` to get supported condition types (check ConditionType constants) and operators
+   - Read `services/atlas-npc-conversations/atlas.com/npc/conversation/operation_executor.go` to get supported operation types (search for `case "operation_name":` statements in the switch)
 3. **Read quest model** (if needed): If script has quest checks, read `services/atlas-query-aggregator/atlas.com/query-aggregator/quest/model.go` for QuestStatus enum values
 4. If a file path is provided, read the script file; otherwise use the provided code
 5. Analyze the script thoroughly:
@@ -165,15 +167,22 @@ The script to convert: **$ARGUMENTS**
 9. **VALIDATE - Script Accuracy**: Verify each dialogue state has a corresponding `cm.send*()` in the original - no extra states!
 10. **VALIDATE - Text Accuracy**: Confirm all dialogue text is copied verbatim from the original script
 11. **VALIDATE - Implementation**: Check that all conditions and operations used are actually implemented:
-    - Verify all condition types exist in the validation model you read
+    - Verify all condition types exist in validation/model.go (check the ConditionType constants you read in step 2)
     - Verify all operators are supported (=, >, <, >=, <=)
     - For `questStatus` conditions, verify the value matches the QuestStatus enum (e.g., 3 for COMPLETED)
-    - Verify all operation types are supported
-    - **If validation fails**: STOP and report unsupported conditions/operations to the user, asking how to proceed
+    - **Verify all operation types exist in operation_executor.go** (check against the switch/case statements you read in step 2)
+    - **If ANY validation fails**: STOP immediately, report to user with examples of what's supported, and present options:
+      - Option 1: Modify the conversion to use only supported types
+      - Option 2: Implement the missing feature first (requires user approval)
+      - Option 3: Skip this NPC conversion (mark as TODO)
 12. Determine appropriate output filename based on NPC ID (e.g., `npc_2003.json`)
 13. Validate against the schema
 14. **ONLY if all validations pass**: Write the output file to `services/atlas-npc-conversations/conversations/` directory
-15. Report completion with summary of states created
+15. **VALIDATE - Build Check**: Verify the service still compiles:
+    - Run `go build` in `services/atlas-npc-conversations/atlas.com/npc` directory
+    - If build fails, report the error and ask user how to proceed
+    - If conversion uses newly implemented operations/conditions, inform user that related services may need changes
+16. Report completion with summary of states created and build status
 
 **Example Grep Usage:**
 - To find map ID 100000000: `Grep` with pattern `^100000000 - ` in `docs/Map.txt`
@@ -316,6 +325,54 @@ For quest completion check, use:
 }
 
 How would you like to proceed?
+```
+
+**Example 5 - Validation failure (unsupported operation):**
+```javascript
+// Original script gains pet closeness
+cm.gainCloseness(2, 0);
+```
+
+❌ WRONG - Using unsupported operation type without checking:
+```json
+{
+  "operations": [
+    {
+      "type": "gain_closeness",  // ← Not verified in operation_executor.go!
+      "params": {
+        "petIndex": "0",
+        "amount": "2"
+      }
+    }
+  ]
+}
+```
+
+✅ CORRECT - Validation catches the error and asks user:
+```
+❌ VALIDATION FAILED - Unsupported operation found:
+
+Operation type "gain_closeness" not found in operation_executor.go
+
+Supported operation types found in the switch statement:
+- warp_to_map
+- award_item
+- award_mesos
+- award_exp
+- destroy_item
+- change_job
+- create_skill
+- update_skill
+- increase_buddy_capacity
+
+The script requires "gain_closeness" operation to increase pet intimacy.
+
+How would you like to proceed?
+1. Skip this NPC conversion (requires gain_closeness operation)
+2. Implement the "gain_closeness" operation first (requires changes to npc-conversations, saga-orchestrator, and query-aggregator)
+3. Convert but mark gain_closeness as TODO
+
+Please choose an option or provide guidance.
 ```
 
 Begin conversion now.

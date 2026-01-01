@@ -78,6 +78,7 @@ type RestStateModel struct {
 	CraftAction   *RestCraftActionModel   `json:"craftAction,omitempty"`   // Craft action model (if type is craftAction)
 	ListSelection *RestListSelectionModel `json:"listSelection,omitempty"` // List selection model (if type is listSelection)
 	AskNumber     *RestAskNumberModel     `json:"askNumber,omitempty"`     // Ask number model (if type is askNumber)
+	AskStyle      *RestAskStyleModel      `json:"askStyle,omitempty"`      // Ask style model (if type is askStyle)
 }
 
 // GetID returns the resource ID
@@ -194,6 +195,15 @@ type RestAskNumberModel struct {
 	MaxValue     uint32 `json:"max"`                   // Maximum value
 	ContextKey   string `json:"contextKey,omitempty"`  // Context key (defaults to "quantity")
 	NextState    string `json:"nextState,omitempty"`   // Next state ID
+}
+
+// RestAskStyleModel represents the REST model for ask style states
+type RestAskStyleModel struct {
+	Text             string   `json:"text"`                       // Ask style text
+	Styles           []uint32 `json:"styles,omitempty"`           // Available style IDs (optional if stylesContextKey provided)
+	StylesContextKey string   `json:"stylesContextKey,omitempty"` // Context key containing dynamic styles (optional if styles provided)
+	ContextKey       string   `json:"contextKey,omitempty"`       // Context key (defaults to "selectedStyle")
+	NextState        string   `json:"nextState,omitempty"`        // Next state ID
 }
 
 // RestOptionSetModel represents the REST model for option sets
@@ -327,6 +337,12 @@ func TransformState(m StateModel) (RestStateModel, error) {
 			restAskNumber := TransformAskNumber(*askNumber)
 			restState.AskNumber = &restAskNumber
 		}
+	case AskStyleType:
+		askStyle := m.AskStyle()
+		if askStyle != nil {
+			restAskStyle := TransformAskStyle(*askStyle)
+			restState.AskStyle = &restAskStyle
+		}
 	}
 
 	return restState, nil
@@ -435,6 +451,17 @@ func TransformAskNumber(m AskNumberModel) RestAskNumberModel {
 	}
 }
 
+// TransformAskStyle converts an AskStyleModel to a RestAskStyleModel
+func TransformAskStyle(m AskStyleModel) RestAskStyleModel {
+	return RestAskStyleModel{
+		Text:             m.Text(),
+		Styles:           m.Styles(),
+		StylesContextKey: m.StylesContextKey(),
+		ContextKey:       m.ContextKey(),
+		NextState:        m.NextState(),
+	}
+}
+
 // TransformOptionSet converts an OptionSetModel to a RestOptionSetModel
 func TransformOptionSet(m OptionSetModel) (RestOptionSetModel, error) {
 	restOptions := make([]RestOptionModel, 0, len(m.Options()))
@@ -540,6 +567,15 @@ func ExtractState(r RestStateModel) (StateModel, error) {
 			return StateModel{}, err
 		}
 		stateBuilder.SetAskNumber(askNumber)
+	case AskStyleType:
+		if r.AskStyle == nil {
+			return StateModel{}, fmt.Errorf("askStyle is required for askStyle state")
+		}
+		askStyle, err := ExtractAskStyle(*r.AskStyle)
+		if err != nil {
+			return StateModel{}, err
+		}
+		stateBuilder.SetAskStyle(askStyle)
 	default:
 		return StateModel{}, fmt.Errorf("invalid state type: %s", r.StateType)
 	}
@@ -675,6 +711,29 @@ func ExtractAskNumber(r RestAskNumberModel) (*AskNumberModel, error) {
 		SetMinValue(r.MinValue).
 		SetMaxValue(r.MaxValue).
 		SetNextState(r.NextState)
+
+	if r.ContextKey != "" {
+		b.SetContextKey(r.ContextKey)
+	}
+
+	return b.Build()
+}
+
+// ExtractAskStyle converts a RestAskStyleModel to an AskStyleModel
+func ExtractAskStyle(r RestAskStyleModel) (*AskStyleModel, error) {
+	b := NewAskStyleBuilder().
+		SetText(r.Text).
+		SetNextState(r.NextState)
+
+	// Set styles if provided
+	if len(r.Styles) > 0 {
+		b.SetStyles(r.Styles)
+	}
+
+	// Set stylesContextKey if provided
+	if r.StylesContextKey != "" {
+		b.SetStylesContextKey(r.StylesContextKey)
+	}
 
 	if r.ContextKey != "" {
 		b.SetContextKey(r.ContextKey)

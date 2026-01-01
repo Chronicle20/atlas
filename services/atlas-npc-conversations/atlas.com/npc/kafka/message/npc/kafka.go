@@ -56,6 +56,10 @@ type CommandNumberBody struct {
 	MaxValue     uint32 `json:"maxValue"`
 }
 
+type CommandStyleBody struct {
+	Styles []uint32 `json:"styles"`
+}
+
 const (
 	EnvEventTopicCharacterStatus        = "EVENT_TOPIC_CHARACTER_STATUS"
 	EventCharacterStatusTypeStatChanged = "STAT_CHANGED"

@@ -29,6 +29,9 @@ type Compensator interface {
 	compensateUnequipAsset(s Saga, failedStep Step[any]) error
 	compensateCreateCharacter(s Saga, failedStep Step[any]) error
 	compensateCreateAndEquipAsset(s Saga, failedStep Step[any]) error
+	compensateChangeHair(s Saga, failedStep Step[any]) error
+	compensateChangeFace(s Saga, failedStep Step[any]) error
+	compensateChangeSkin(s Saga, failedStep Step[any]) error
 }
 
 type CompensatorImpl struct {
@@ -201,6 +204,12 @@ func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 		return c.compensateCreateCharacter(s, failedStep)
 	case CreateAndEquipAsset:
 		return c.compensateCreateAndEquipAsset(s, failedStep)
+	case ChangeHair:
+		return c.compensateChangeHair(s, failedStep)
+	case ChangeFace:
+		return c.compensateChangeFace(s, failedStep)
+	case ChangeSkin:
+		return c.compensateChangeSkin(s, failedStep)
 	default:
 		c.l.WithFields(logrus.Fields{
 			"transaction_id": s.TransactionId.String(),
@@ -522,6 +531,171 @@ func (c *CompensatorImpl) compensateCreateAndEquipAsset(s Saga, failedStep Step[
 				"saga_type":      s.SagaType,
 				"tenant_id":      c.t.Id().String(),
 			}).WithError(err).Error("State consistency validation failed after CreateAndEquipAsset compensation")
+			return err
+		}
+
+		GetCache().Put(c.t.Id(), s)
+	}
+
+	return nil
+}
+
+// compensateChangeHair handles compensation for a failed ChangeHair operation
+// Note: Currently cosmetic changes cannot be fully rolled back because the saga payload
+// does not capture the original cosmetic value before the change. The character already
+// has the new hair style applied. Future enhancement could store the old value for rollback.
+func (c *CompensatorImpl) compensateChangeHair(s Saga, failedStep Step[any]) error {
+	// Extract the original payload
+	payload, ok := failedStep.Payload.(ChangeHairPayload)
+	if !ok {
+		return fmt.Errorf("invalid payload for ChangeHair compensation")
+	}
+
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId.String(),
+		"saga_type":      s.SagaType,
+		"step_id":        failedStep.StepId,
+		"character_id":   payload.CharacterId,
+		"new_style_id":   payload.StyleId,
+		"tenant_id":      c.t.Id().String(),
+	}).Info("Compensating failed ChangeHair operation - no rollback action available")
+
+	// Note: To support full rollback, we would need to:
+	// 1. Capture the old hair style before applying the change
+	// 2. Store it in the saga payload or metadata
+	// 3. Revert to the old style here
+	// For now, the character retains the new hair style even if the saga fails.
+
+	// Mark the failed step as compensated
+	failedStepIndex := s.FindFailedStepIndex()
+	if failedStepIndex != -1 {
+		if err := s.SetStepStatus(failedStepIndex, Pending); err != nil {
+			c.l.WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId.String(),
+				"saga_type":      s.SagaType,
+				"step_index":     failedStepIndex,
+				"tenant_id":      c.t.Id().String(),
+			}).WithError(err).Error("Failed to mark ChangeHair step as compensated")
+			return err
+		}
+
+		// Validate state consistency before updating cache
+		if err := s.ValidateStateConsistency(); err != nil {
+			c.l.WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId.String(),
+				"saga_type":      s.SagaType,
+				"tenant_id":      c.t.Id().String(),
+			}).WithError(err).Error("State consistency validation failed after ChangeHair compensation")
+			return err
+		}
+
+		GetCache().Put(c.t.Id(), s)
+	}
+
+	return nil
+}
+
+// compensateChangeFace handles compensation for a failed ChangeFace operation
+// Note: Currently cosmetic changes cannot be fully rolled back because the saga payload
+// does not capture the original cosmetic value before the change. The character already
+// has the new face style applied. Future enhancement could store the old value for rollback.
+func (c *CompensatorImpl) compensateChangeFace(s Saga, failedStep Step[any]) error {
+	// Extract the original payload
+	payload, ok := failedStep.Payload.(ChangeFacePayload)
+	if !ok {
+		return fmt.Errorf("invalid payload for ChangeFace compensation")
+	}
+
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId.String(),
+		"saga_type":      s.SagaType,
+		"step_id":        failedStep.StepId,
+		"character_id":   payload.CharacterId,
+		"new_style_id":   payload.StyleId,
+		"tenant_id":      c.t.Id().String(),
+	}).Info("Compensating failed ChangeFace operation - no rollback action available")
+
+	// Note: To support full rollback, we would need to:
+	// 1. Capture the old face style before applying the change
+	// 2. Store it in the saga payload or metadata
+	// 3. Revert to the old style here
+	// For now, the character retains the new face style even if the saga fails.
+
+	// Mark the failed step as compensated
+	failedStepIndex := s.FindFailedStepIndex()
+	if failedStepIndex != -1 {
+		if err := s.SetStepStatus(failedStepIndex, Pending); err != nil {
+			c.l.WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId.String(),
+				"saga_type":      s.SagaType,
+				"step_index":     failedStepIndex,
+				"tenant_id":      c.t.Id().String(),
+			}).WithError(err).Error("Failed to mark ChangeFace step as compensated")
+			return err
+		}
+
+		// Validate state consistency before updating cache
+		if err := s.ValidateStateConsistency(); err != nil {
+			c.l.WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId.String(),
+				"saga_type":      s.SagaType,
+				"tenant_id":      c.t.Id().String(),
+			}).WithError(err).Error("State consistency validation failed after ChangeFace compensation")
+			return err
+		}
+
+		GetCache().Put(c.t.Id(), s)
+	}
+
+	return nil
+}
+
+// compensateChangeSkin handles compensation for a failed ChangeSkin operation
+// Note: Currently cosmetic changes cannot be fully rolled back because the saga payload
+// does not capture the original cosmetic value before the change. The character already
+// has the new skin color applied. Future enhancement could store the old value for rollback.
+func (c *CompensatorImpl) compensateChangeSkin(s Saga, failedStep Step[any]) error {
+	// Extract the original payload
+	payload, ok := failedStep.Payload.(ChangeSkinPayload)
+	if !ok {
+		return fmt.Errorf("invalid payload for ChangeSkin compensation")
+	}
+
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId.String(),
+		"saga_type":      s.SagaType,
+		"step_id":        failedStep.StepId,
+		"character_id":   payload.CharacterId,
+		"new_style_id":   payload.StyleId,
+		"tenant_id":      c.t.Id().String(),
+	}).Info("Compensating failed ChangeSkin operation - no rollback action available")
+
+	// Note: To support full rollback, we would need to:
+	// 1. Capture the old skin color before applying the change
+	// 2. Store it in the saga payload or metadata
+	// 3. Revert to the old color here
+	// For now, the character retains the new skin color even if the saga fails.
+
+	// Mark the failed step as compensated
+	failedStepIndex := s.FindFailedStepIndex()
+	if failedStepIndex != -1 {
+		if err := s.SetStepStatus(failedStepIndex, Pending); err != nil {
+			c.l.WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId.String(),
+				"saga_type":      s.SagaType,
+				"step_index":     failedStepIndex,
+				"tenant_id":      c.t.Id().String(),
+			}).WithError(err).Error("Failed to mark ChangeSkin step as compensated")
+			return err
+		}
+
+		// Validate state consistency before updating cache
+		if err := s.ValidateStateConsistency(); err != nil {
+			c.l.WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId.String(),
+				"saga_type":      s.SagaType,
+				"tenant_id":      c.t.Id().String(),
+			}).WithError(err).Error("State consistency validation failed after ChangeSkin compensation")
 			return err
 		}
 

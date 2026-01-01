@@ -120,9 +120,8 @@
       "genericAction": {
         "operations": [
           {
-            "type": "local:apply_cosmetic",
+            "type": "change_hair",
             "params": {
-              "cosmeticType": "hair",
               "styleId": "{context.selectedHair}"
             }
           }
@@ -233,9 +232,8 @@
       "genericAction": {
         "operations": [
           {
-            "type": "local:apply_cosmetic",
+            "type": "change_hair",
             "params": {
-              "cosmeticType": "hair",
               "styleId": "{context.selectedColor}"
             }
           }

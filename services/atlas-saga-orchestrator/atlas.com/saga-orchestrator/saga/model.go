@@ -260,6 +260,9 @@ const (
 	EquipAsset                   Action = "equip_asset"
 	UnequipAsset                 Action = "unequip_asset"
 	ChangeJob                    Action = "change_job"
+	ChangeHair                   Action = "change_hair"
+	ChangeFace                   Action = "change_face"
+	ChangeSkin                   Action = "change_skin"
 	CreateSkill                  Action = "create_skill"
 	UpdateSkill                  Action = "update_skill"
 	ValidateCharacterState       Action = "validate_character_state"
@@ -364,6 +367,30 @@ type ChangeJobPayload struct {
 	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
 	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
 	JobId       job.Id     `json:"jobId"`       // JobId to change to
+}
+
+// ChangeHairPayload represents the payload required to change a character's hair.
+type ChangeHairPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	StyleId     uint32     `json:"styleId"`     // Hair style ID to change to (range: 30000-35000)
+}
+
+// ChangeFacePayload represents the payload required to change a character's face.
+type ChangeFacePayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	StyleId     uint32     `json:"styleId"`     // Face style ID to change to (range: 20000-25000)
+}
+
+// ChangeSkinPayload represents the payload required to change a character's skin.
+type ChangeSkinPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	StyleId     byte       `json:"styleId"`     // Skin color ID to change to (range: 0-9)
 }
 
 // CreateSkillPayload represents the payload required to create a skill for a character.
@@ -551,6 +578,24 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case ChangeJob:
 		var payload ChangeJobPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case ChangeHair:
+		var payload ChangeHairPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case ChangeFace:
+		var payload ChangeFacePayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case ChangeSkin:
+		var payload ChangeSkinPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

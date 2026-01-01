@@ -74,6 +74,10 @@ Identify and understand:
 - **craftAction**: Define crafting with materials, quantities, meso cost
 - **listSelection**: Dynamic choice lists that populate context
   - MUST include Exit choice
+- **askStyle**: Present cosmetic style selection interface (hair/face/skin)
+  - Used for hair salons, face shops, skin color NPCs
+  - Requires pre-populated styles in context (via local:generate_* operations)
+  - Fields: `text` (prompt), `stylesContextKey` (context key with styles array), `contextKey` (where to store selection), `nextState`
 
 ### 4. Operation Types and Parameters
 
@@ -90,6 +94,22 @@ Common operations in `genericAction` states:
   - Params: `itemId` (string), `quantity` (string)
 - **change_job**: Change character job
   - Params: `jobId` (string)
+- **change_hair**: Change character hair style (via saga)
+  - Params: `styleId` (string, can use context like `{context.selectedHair}`)
+- **change_face**: Change character face style (via saga)
+  - Params: `styleId` (string, can use context like `{context.selectedFace}`)
+- **change_skin**: Change character skin color (via saga)
+  - Params: `styleId` (string, can use context like `{context.selectedSkin}`)
+
+**Local Operations** (executed within npc-conversations service):
+- **local:generate_hair_styles**: Generate available hair styles for character
+  - Params: `baseStyles`, `genderFilter`, `preserveColor`, `validateExists`, `excludeEquipped`, `outputContextKey`
+- **local:generate_hair_colors**: Generate available hair colors for character
+  - Params: `colors`, `validateExists`, `excludeEquipped`, `outputContextKey`
+- **local:generate_face_styles**: Generate available face styles for character
+  - Params: `baseStyles`, `genderFilter`, `validateExists`, `excludeEquipped`, `outputContextKey`
+- **local:select_random_cosmetic**: Randomly select from a styles array
+  - Params: `stylesContextKey`, `outputContextKey`
 
 ### 5. Condition Types
 

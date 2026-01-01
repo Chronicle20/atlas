@@ -5,6 +5,7 @@ import (
 	"atlas-npc-conversations/database"
 	"atlas-npc-conversations/kafka/consumer/character"
 	"atlas-npc-conversations/kafka/consumer/npc"
+	"atlas-npc-conversations/kafka/consumer/saga"
 	"atlas-npc-conversations/logger"
 	"atlas-npc-conversations/service"
 	"atlas-npc-conversations/tracing"
@@ -52,9 +53,11 @@ func main() {
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	npc.InitConsumers(l)(cmf)(consumerGroupId)
+	saga.InitConsumers(l)(cmf)(consumerGroupId)
 
 	character.InitHandlers(l, db)(consumer.GetManager().RegisterHandler)
 	npc.InitHandlers(l, db)(consumer.GetManager().RegisterHandler)
+	saga.InitHandlers(l, db)(consumer.GetManager().RegisterHandler)
 
 	server.New(l).
 		WithContext(tdm.Context()).

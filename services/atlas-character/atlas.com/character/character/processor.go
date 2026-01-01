@@ -64,6 +64,12 @@ type Processor interface {
 	ChangeMap(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, field field.Model, portalId uint32) error
 	ChangeJobAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, jobId job.Id) error
 	ChangeJob(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, jobId job.Id) error
+	ChangeHairAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, styleId uint32) error
+	ChangeHair(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, styleId uint32) error
+	ChangeFaceAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, styleId uint32) error
+	ChangeFace(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, styleId uint32) error
+	ChangeSkinAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, styleId byte) error
+	ChangeSkin(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, styleId byte) error
 	AwardExperienceAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, experience []ExperienceModel) error
 	AwardExperience(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, experience []ExperienceModel) error
 	AwardLevelAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, level byte) error
@@ -387,7 +393,103 @@ func (p *ProcessorImpl) ChangeJob(mb *message.Buffer) func(transactionId uuid.UU
 	}
 }
 
-type ExperienceModel struct {
+func (p *ProcessorImpl) ChangeHairAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, styleId uint32) error {
+	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+		return p.ChangeHair(buf)(transactionId, characterId, channel, styleId)
+	})
+}
+
+func (p *ProcessorImpl) ChangeHair(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, styleId uint32) error {
+	return func(transactionId uuid.UUID, characterId uint32, channel channel.Model, styleId uint32) error {
+		p.l.Debugf("Attempting to set character [%d] hair to [%d].", characterId, styleId)
+		var oldHair uint32
+		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+			c, err := p.WithTransaction(tx).GetById()(characterId)
+			if err != nil {
+				return err
+			}
+			oldHair = c.Hair()
+			err = dynamicUpdate(tx)(SetHair(styleId))(p.t.Id())(c)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+		if txErr != nil {
+			p.l.WithError(txErr).Errorf("Could not set character [%d] hair to [%d].", characterId, styleId)
+			return txErr
+		}
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, hairChangedEventProvider(transactionId, characterId, channel.WorldId(), oldHair, styleId))
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []string{"HAIR"}))
+		return nil
+	}
+}
+
+func (p *ProcessorImpl) ChangeFaceAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, styleId uint32) error {
+	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+		return p.ChangeFace(buf)(transactionId, characterId, channel, styleId)
+	})
+}
+
+func (p *ProcessorImpl) ChangeFace(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, styleId uint32) error {
+	return func(transactionId uuid.UUID, characterId uint32, channel channel.Model, styleId uint32) error {
+		p.l.Debugf("Attempting to set character [%d] face to [%d].", characterId, styleId)
+		var oldFace uint32
+		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+			c, err := p.WithTransaction(tx).GetById()(characterId)
+			if err != nil {
+				return err
+			}
+			oldFace = c.Face()
+			err = dynamicUpdate(tx)(SetFace(styleId))(p.t.Id())(c)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+		if txErr != nil {
+			p.l.WithError(txErr).Errorf("Could not set character [%d] face to [%d].", characterId, styleId)
+			return txErr
+		}
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, faceChangedEventProvider(transactionId, characterId, channel.WorldId(), oldFace, styleId))
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []string{"FACE"}))
+		return nil
+	}
+}
+
+func (p *ProcessorImpl) ChangeSkinAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, styleId byte) error {
+	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+		return p.ChangeSkin(buf)(transactionId, characterId, channel, styleId)
+	})
+}
+
+func (p *ProcessorImpl) ChangeSkin(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, styleId byte) error {
+	return func(transactionId uuid.UUID, characterId uint32, channel channel.Model, styleId byte) error {
+		p.l.Debugf("Attempting to set character [%d] skin to [%d].", characterId, styleId)
+		var oldSkin byte
+		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+			c, err := p.WithTransaction(tx).GetById()(characterId)
+			if err != nil {
+				return err
+			}
+			oldSkin = c.SkinColor()
+			err = dynamicUpdate(tx)(SetSkinColor(styleId))(p.t.Id())(c)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+		if txErr != nil {
+			p.l.WithError(txErr).Errorf("Could not set character [%d] skin to [%d].", characterId, styleId)
+			return txErr
+		}
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, skinColorChangedEventProvider(transactionId, characterId, channel.WorldId(), oldSkin, styleId))
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []string{"SKIN_COLOR"}))
+		return nil
+	}
+}
+
+type ExperienceModel struct{
 	experienceType string
 	amount         uint32
 	attr1          uint32

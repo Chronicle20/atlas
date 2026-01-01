@@ -34,6 +34,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCreateCharacter(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeMap(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeJob(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeHair(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeFace(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeSkin(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAwardExperience(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAwardLevel(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestChangeMeso(db))))
@@ -74,6 +77,39 @@ func handleChangeJob(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context
 
 		cha := channel.NewModel(c.WorldId, c.Body.ChannelId)
 		_ = character.NewProcessor(l, ctx, db).ChangeJobAndEmit(c.TransactionId, c.CharacterId, cha, c.Body.JobId)
+	}
+}
+
+func handleChangeHair(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.ChangeHairCommandBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.ChangeHairCommandBody]) {
+		if c.Type != character2.CommandChangeHair {
+			return
+		}
+
+		cha := channel.NewModel(c.WorldId, c.Body.ChannelId)
+		_ = character.NewProcessor(l, ctx, db).ChangeHairAndEmit(c.TransactionId, c.CharacterId, cha, c.Body.StyleId)
+	}
+}
+
+func handleChangeFace(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.ChangeFaceCommandBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.ChangeFaceCommandBody]) {
+		if c.Type != character2.CommandChangeFace {
+			return
+		}
+
+		cha := channel.NewModel(c.WorldId, c.Body.ChannelId)
+		_ = character.NewProcessor(l, ctx, db).ChangeFaceAndEmit(c.TransactionId, c.CharacterId, cha, c.Body.StyleId)
+	}
+}
+
+func handleChangeSkin(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.ChangeSkinCommandBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.ChangeSkinCommandBody]) {
+		if c.Type != character2.CommandChangeSkin {
+			return
+		}
+
+		cha := channel.NewModel(c.WorldId, c.Body.ChannelId)
+		_ = character.NewProcessor(l, ctx, db).ChangeSkinAndEmit(c.TransactionId, c.CharacterId, cha, c.Body.StyleId)
 	}
 }
 

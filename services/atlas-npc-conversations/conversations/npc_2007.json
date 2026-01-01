@@ -1,0 +1,67 @@
+{
+  "npcId": 2007,
+  "startState": "askSkipTutorial",
+  "states": [
+    {
+      "id": "askSkipTutorial",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Would you like to skip the tutorials and head straight to Lith Harbor?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "warpToLithHarbor"
+          },
+          {
+            "text": "No",
+            "nextState": "declineWarp"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToLithHarbor",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "104000000",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "declineWarp",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Enjoy your trip.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

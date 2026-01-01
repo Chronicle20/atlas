@@ -50,6 +50,16 @@ type CommandSimpleBody struct {
 	Type string `json:"type"`
 }
 
+type CommandNumberBody struct {
+	DefaultValue uint32 `json:"defaultValue"`
+	MinValue     uint32 `json:"minValue"`
+	MaxValue     uint32 `json:"maxValue"`
+}
+
+type CommandStyleBody struct {
+	Styles []uint32 `json:"styles"`
+}
+
 const (
 	EnvEventTopicCharacterStatus        = "EVENT_TOPIC_CHARACTER_STATUS"
 	EventCharacterStatusTypeStatChanged = "STAT_CHANGED"

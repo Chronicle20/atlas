@@ -3,6 +3,7 @@ package conversation
 import (
 	"errors"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"sync"
 )
 
@@ -75,4 +76,33 @@ func (s *Registry) ClearContext(t tenant.Model, characterId uint32) {
 	tl.Lock()
 	delete(s.registry[t], characterId)
 	tl.Unlock()
+}
+
+// UpdateContext updates an existing conversation context (alias for SetContext)
+func (s *Registry) UpdateContext(t tenant.Model, characterId uint32, ctx ConversationContext) {
+	s.SetContext(t, characterId, ctx)
+}
+
+// GetContextBySagaId finds a conversation context by saga ID
+func (s *Registry) GetContextBySagaId(t tenant.Model, sagaId uuid.UUID) (ConversationContext, error) {
+	s.lock.RLock()
+	tenantRegistry, ok := s.registry[t]
+	if !ok {
+		s.lock.RUnlock()
+		return ConversationContext{}, errors.New("no conversations found for tenant")
+	}
+	tl := s.tenantLock[t]
+	s.lock.RUnlock()
+
+	tl.RLock()
+	defer tl.RUnlock()
+
+	// Search through all conversations for this tenant to find one with matching saga ID
+	for _, ctx := range tenantRegistry {
+		if ctx.PendingSagaId() != nil && *ctx.PendingSagaId() == sagaId {
+			return ctx, nil
+		}
+	}
+
+	return ConversationContext{}, errors.New("no conversation found for saga ID")
 }

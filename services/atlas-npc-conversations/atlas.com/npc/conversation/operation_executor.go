@@ -1,8 +1,11 @@
 package conversation
 
 import (
+	"atlas-npc-conversations/cosmetic"
+	"atlas-npc-conversations/pet"
 	"atlas-npc-conversations/saga"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/Chronicle20/atlas-constants/field"
@@ -10,6 +13,7 @@ import (
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
+	"math/rand"
 	"strconv"
 	"strings"
 	"time"
@@ -26,49 +30,85 @@ type OperationExecutor interface {
 
 // OperationExecutorImpl is the implementation of the OperationExecutor interface
 type OperationExecutorImpl struct {
-	l     logrus.FieldLogger
-	ctx   context.Context
-	t     tenant.Model
-	sagaP saga.Processor
+	l        logrus.FieldLogger
+	ctx      context.Context
+	t        tenant.Model
+	sagaP    saga.Processor
+	petP     pet.Processor
+	cosmeticP cosmetic.Processor
 }
 
 // NewOperationExecutor creates a new operation executor
 func NewOperationExecutor(l logrus.FieldLogger, ctx context.Context) OperationExecutor {
 	t := tenant.MustFromContext(ctx)
+	appearanceProvider := cosmetic.NewRestAppearanceProvider(l, ctx)
 	return &OperationExecutorImpl{
-		l:     l,
-		ctx:   ctx,
-		t:     t,
-		sagaP: saga.NewProcessor(l, ctx),
+		l:        l,
+		ctx:      ctx,
+		t:        t,
+		sagaP:    saga.NewProcessor(l, ctx),
+		petP:     pet.NewProcessor(l, ctx),
+		cosmeticP: cosmetic.NewProcessor(l, ctx, appearanceProvider),
 	}
 }
 
 // evaluateContextValue evaluates a context value, handling references to the conversation context
+// Supports both "{context.xxx}" and "context.xxx" formats
 func (e *OperationExecutorImpl) evaluateContextValue(characterId uint32, paramName string, value string) (string, error) {
-	// Check if the value is a context reference
-	if strings.HasPrefix(value, "context.") {
-		// Get the conversation context
-		ctx, err := GetRegistry().GetPreviousContext(e.t, characterId)
-		if err != nil {
-			e.l.WithError(err).Errorf("Failed to get conversation context for character [%d]", characterId)
-			return "", err
-		}
-
-		// Extract the context key
-		contextKey := strings.TrimPrefix(value, "context.")
-
-		// Look up the value in the context map
-		contextValue, exists := ctx.Context()[contextKey]
-		if !exists {
-			e.l.Errorf("Context key [%s] not found in conversation context", contextKey)
-			return "", fmt.Errorf("context key [%s] not found", contextKey)
-		}
-
-		return contextValue, nil
+	// Get the conversation context
+	ctx, err := GetRegistry().GetPreviousContext(e.t, characterId)
+	if err != nil {
+		e.l.WithError(err).Errorf("Failed to get conversation context for character [%d]", characterId)
+		return "", err
 	}
 
-	// If it's not a context reference, return the value as is
+	// Use the new ExtractContextValue function which supports both formats
+	extractedValue, isContextRef, err := ExtractContextValue(value, ctx.Context())
+	if err != nil {
+		e.l.WithError(err).Errorf("Failed to extract context value for parameter [%s]", paramName)
+		return "", err
+	}
+
+	if isContextRef {
+		e.l.Debugf("Resolved context reference [%s] to [%s] for character [%d]", value, extractedValue, characterId)
+	}
+
+	return extractedValue, nil
+}
+
+// getContextValue retrieves a value from the conversation context by key
+func (e *OperationExecutorImpl) getContextValue(characterId uint32, key string) (string, error) {
+	ctx, err := GetRegistry().GetPreviousContext(e.t, characterId)
+	if err != nil {
+		return "", fmt.Errorf("failed to get conversation context for character [%d]: %w", characterId, err)
+	}
+
+	value, exists := ctx.Context()[key]
+	if !exists {
+		return "", fmt.Errorf("context key '%s' not found for character [%d]", key, characterId)
+	}
+
 	return value, nil
+}
+
+// setContextValue stores a value in the conversation context
+func (e *OperationExecutorImpl) setContextValue(characterId uint32, key string, value string) error {
+	ctx, err := GetRegistry().GetPreviousContext(e.t, characterId)
+	if err != nil {
+		return fmt.Errorf("failed to get conversation context for character [%d]: %w", characterId, err)
+	}
+
+	// Update the context map
+	contextMap := ctx.Context()
+	if contextMap == nil {
+		return fmt.Errorf("context map is nil for character [%d]", characterId)
+	}
+	contextMap[key] = value
+
+	// Save the updated context back to the registry
+	GetRegistry().UpdateContext(e.t, characterId, ctx)
+
+	return nil
 }
 
 // evaluateContextValueAsInt evaluates a context value as an integer
@@ -206,6 +246,126 @@ func (e *OperationExecutorImpl) executeLocalOperation(field field.Model, charact
 		}
 
 		e.l.Debugf("NPC Debug for character [%d]: %s", characterId, message)
+		return nil
+
+	case "generate_hair_styles":
+		// Format: local:generate_hair_styles
+		// Params: baseStyles (string), genderFilter (string), preserveColor (string),
+		//         validateExists (string), excludeEquipped (string), outputContextKey (string)
+		styles, err := e.cosmeticP.GenerateHairStyles(characterId, operation.Params())
+		if err != nil {
+			e.l.WithError(err).Errorf("Failed to generate hair styles for character [%d]", characterId)
+			return fmt.Errorf("failed to generate hair styles: %w", err)
+		}
+
+		// Store in context
+		outputKey := operation.Params()["outputContextKey"]
+		if outputKey == "" {
+			outputKey = "generatedStyles"
+		}
+
+		err = e.storeStylesInContext(characterId, outputKey, styles)
+		if err != nil {
+			e.l.WithError(err).Errorf("Failed to store hair styles in context for character [%d]", characterId)
+			return err
+		}
+
+		e.l.Infof("Generated and stored %d hair styles in context key [%s] for character [%d]",
+			len(styles), outputKey, characterId)
+		return nil
+
+	case "generate_hair_colors":
+		// Format: local:generate_hair_colors
+		// Params: colors (string), outputContextKey (string)
+		colors, err := e.cosmeticP.GenerateHairColors(characterId, operation.Params())
+		if err != nil {
+			e.l.WithError(err).Errorf("Failed to generate hair colors for character [%d]", characterId)
+			return fmt.Errorf("failed to generate hair colors: %w", err)
+		}
+
+		// Store in context
+		outputKey := operation.Params()["outputContextKey"]
+		if outputKey == "" {
+			outputKey = "generatedColors"
+		}
+
+		err = e.storeStylesInContext(characterId, outputKey, colors)
+		if err != nil {
+			e.l.WithError(err).Errorf("Failed to store hair colors in context for character [%d]", characterId)
+			return err
+		}
+
+		e.l.Infof("Generated and stored %d hair colors in context key [%s] for character [%d]",
+			len(colors), outputKey, characterId)
+		return nil
+
+	case "generate_face_styles":
+		// Format: local:generate_face_styles
+		// Params: baseStyles (string), genderFilter (string), validateExists (string),
+		//         excludeEquipped (string), outputContextKey (string)
+		faces, err := e.cosmeticP.GenerateFaceStyles(characterId, operation.Params())
+		if err != nil {
+			e.l.WithError(err).Errorf("Failed to generate face styles for character [%d]", characterId)
+			return fmt.Errorf("failed to generate face styles: %w", err)
+		}
+
+		// Store in context
+		outputKey := operation.Params()["outputContextKey"]
+		if outputKey == "" {
+			outputKey = "generatedFaces"
+		}
+
+		err = e.storeStylesInContext(characterId, outputKey, faces)
+		if err != nil {
+			e.l.WithError(err).Errorf("Failed to store face styles in context for character [%d]", characterId)
+			return err
+		}
+
+		e.l.Infof("Generated and stored %d face styles in context key [%s] for character [%d]",
+			len(faces), outputKey, characterId)
+		return nil
+
+	case "select_random_cosmetic":
+		// Format: local:select_random_cosmetic
+		// Params: stylesContextKey (string), outputContextKey (string)
+		stylesContextKey, exists := operation.Params()["stylesContextKey"]
+		if !exists {
+			return errors.New("missing stylesContextKey parameter for select_random_cosmetic operation")
+		}
+
+		outputContextKey, exists := operation.Params()["outputContextKey"]
+		if !exists {
+			return errors.New("missing outputContextKey parameter for select_random_cosmetic operation")
+		}
+
+		// Get the styles array from context
+		stylesValue, err := e.getContextValue(characterId, stylesContextKey)
+		if err != nil {
+			return fmt.Errorf("failed to get styles from context key '%s': %w", stylesContextKey, err)
+		}
+
+		// Parse the styles array (should be a JSON array of uint32)
+		var styles []uint32
+		err = json.Unmarshal([]byte(stylesValue), &styles)
+		if err != nil {
+			return fmt.Errorf("failed to parse styles array from context: %w", err)
+		}
+
+		if len(styles) == 0 {
+			return errors.New("styles array is empty, cannot select random cosmetic")
+		}
+
+		// Randomly select one style
+		selectedStyle := styles[rand.Intn(len(styles))]
+
+		// Store the selected style in the output context key
+		err = e.setContextValue(characterId, outputContextKey, fmt.Sprintf("%d", selectedStyle))
+		if err != nil {
+			return fmt.Errorf("failed to store selected style in context: %w", err)
+		}
+
+		e.l.Infof("Selected random cosmetic %d from %d options for character [%d], stored in context key [%s]",
+			selectedStyle, len(styles), characterId, outputContextKey)
 		return nil
 
 	default:
@@ -484,6 +644,29 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 		return stepId, saga.Pending, saga.ChangeJob, payload, nil
 
+	case "increase_buddy_capacity":
+		// Format: increase_buddy_capacity
+		// Context: amount (byte)
+		amountValue, exists := operation.Params()["amount"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing amount parameter for increase_buddy_capacity operation")
+		}
+
+		// Evaluate the amount value
+		amountInt, err := e.evaluateContextValueAsInt(characterId, "amount", amountValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		payload := saga.IncreaseBuddyCapacityPayload{
+			CharacterId: characterId,
+			WorldId:     f.WorldId(),
+			ChannelId:   f.ChannelId(),
+			Amount:      byte(amountInt),
+		}
+
+		return stepId, saga.Pending, saga.IncreaseBuddyCapacity, payload, nil
+
 	case "create_skill":
 		// Format: create_skill
 		// Context: skillId (uint32), level (byte), masterLevel (byte), expiration (time.Time)
@@ -605,7 +788,187 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 		return stepId, saga.Pending, saga.DestroyAsset, payload, nil
 
+	case "gain_closeness":
+		// Format: gain_closeness
+		// Supports either petId (uint32) or petIndex (int8) + characterId lookup
+		// When petIndex is used, the pet at that slot for the character is resolved
+		var petId uint32
+
+		// Check if petId is provided directly
+		if petIdValue, exists := operation.Params()["petId"]; exists {
+			petIdInt, err := e.evaluateContextValueAsInt(characterId, "petId", petIdValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
+			petId = uint32(petIdInt)
+		} else if petIndexValue, exists := operation.Params()["petIndex"]; exists {
+			// petIndex is provided, need to resolve to petId
+			petIndexInt, err := e.evaluateContextValueAsInt(characterId, "petIndex", petIndexValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
+
+			// Query pets for the character and find the one at the specified slot
+			petIdResult, err := e.petP.GetPetIdBySlot(characterId, int8(petIndexInt))()
+			if err != nil {
+				return "", "", "", nil, fmt.Errorf("failed to resolve pet at slot %d for character %d: %w", petIndexInt, characterId, err)
+			}
+			petId = petIdResult
+		} else {
+			return "", "", "", nil, errors.New("missing petId or petIndex parameter for gain_closeness operation")
+		}
+
+		amountValue, exists := operation.Params()["amount"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing amount parameter for gain_closeness operation")
+		}
+
+		// Evaluate the amount value
+		amountInt, err := e.evaluateContextValueAsInt(characterId, "amount", amountValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		payload := saga.GainClosenessPayload{
+			PetId:  petId,
+			Amount: uint16(amountInt),
+		}
+
+		return stepId, saga.Pending, saga.GainCloseness, payload, nil
+
+	case "change_hair":
+		// Format: change_hair
+		// Context: styleId (uint32)
+		styleIdValue, exists := operation.Params()["styleId"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing styleId parameter for change_hair operation")
+		}
+
+		// Evaluate the styleId value
+		styleIdInt, err := e.evaluateContextValueAsInt(characterId, "styleId", styleIdValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		payload := saga.ChangeHairPayload{
+			CharacterId: characterId,
+			WorldId:     f.WorldId(),
+			ChannelId:   f.ChannelId(),
+			StyleId:     uint32(styleIdInt),
+		}
+
+		return stepId, saga.Pending, saga.ChangeHair, payload, nil
+
+	case "change_face":
+		// Format: change_face
+		// Context: styleId (uint32)
+		styleIdValue, exists := operation.Params()["styleId"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing styleId parameter for change_face operation")
+		}
+
+		// Evaluate the styleId value
+		styleIdInt, err := e.evaluateContextValueAsInt(characterId, "styleId", styleIdValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		payload := saga.ChangeFacePayload{
+			CharacterId: characterId,
+			WorldId:     f.WorldId(),
+			ChannelId:   f.ChannelId(),
+			StyleId:     uint32(styleIdInt),
+		}
+
+		return stepId, saga.Pending, saga.ChangeFace, payload, nil
+
+	case "change_skin":
+		// Format: change_skin
+		// Context: styleId (byte)
+		styleIdValue, exists := operation.Params()["styleId"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing styleId parameter for change_skin operation")
+		}
+
+		// Evaluate the styleId value
+		styleIdInt, err := e.evaluateContextValueAsInt(characterId, "styleId", styleIdValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		payload := saga.ChangeSkinPayload{
+			CharacterId: characterId,
+			WorldId:     f.WorldId(),
+			ChannelId:   f.ChannelId(),
+			StyleId:     byte(styleIdInt),
+		}
+
+		return stepId, saga.Pending, saga.ChangeSkin, payload, nil
+
 	default:
 		return "", "", "", nil, fmt.Errorf("unknown operation type: %s", operation.Type())
 	}
+}
+
+// storeStylesInContext stores a uint32 array of styles in the conversation context
+func (e *OperationExecutorImpl) storeStylesInContext(characterId uint32, key string, styles []uint32) error {
+	// Get current context
+	ctx, err := GetRegistry().GetPreviousContext(e.t, characterId)
+	if err != nil {
+		e.l.WithError(err).Errorf("Failed to get conversation context for character [%d]", characterId)
+		return fmt.Errorf("failed to get conversation context: %w", err)
+	}
+
+	// Encode styles as comma-separated string
+	stylesStr := encodeUint32Array(styles)
+
+	// Update context
+	ctx.Context()[key] = stylesStr
+
+	// Save context
+	GetRegistry().UpdateContext(e.t, characterId, ctx)
+
+	e.l.Debugf("Stored %d styles in context key [%s] for character [%d]: %s",
+		len(styles), key, characterId, stylesStr)
+
+	return nil
+}
+
+// encodeUint32Array encodes a uint32 array as a comma-separated string
+func encodeUint32Array(arr []uint32) string {
+	if len(arr) == 0 {
+		return ""
+	}
+
+	strs := make([]string, len(arr))
+	for i, val := range arr {
+		strs[i] = strconv.FormatUint(uint64(val), 10)
+	}
+	return strings.Join(strs, ",")
+}
+
+// decodeUint32Array decodes a comma-separated string into a uint32 array
+func decodeUint32Array(str string) ([]uint32, error) {
+	if str == "" {
+		return []uint32{}, nil
+	}
+
+	parts := strings.Split(str, ",")
+	result := make([]uint32, 0, len(parts))
+
+	for _, part := range parts {
+		trimmed := strings.TrimSpace(part)
+		if trimmed == "" {
+			continue
+		}
+
+		val, err := strconv.ParseUint(trimmed, 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("invalid number '%s': %w", trimmed, err)
+		}
+
+		result = append(result, uint32(val))
+	}
+
+	return result, nil
 }

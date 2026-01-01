@@ -1,11 +1,13 @@
 package saga
 
 import (
+	"atlas-saga-orchestrator/buddylist"
 	"atlas-saga-orchestrator/character"
 	"atlas-saga-orchestrator/compartment"
 	"atlas-saga-orchestrator/guild"
 	"atlas-saga-orchestrator/invite"
 	character2 "atlas-saga-orchestrator/kafka/message/character"
+	"atlas-saga-orchestrator/pet"
 	"atlas-saga-orchestrator/skill"
 	"atlas-saga-orchestrator/validation"
 	"context"
@@ -24,6 +26,8 @@ type Handler interface {
 	WithValidationProcessor(validation.Processor) Handler
 	WithGuildProcessor(guild.Processor) Handler
 	WithInviteProcessor(invite.Processor) Handler
+	WithBuddyListProcessor(buddylist.Processor) Handler
+	WithPetProcessor(pet.Processor) Handler
 
 	GetHandler(action Action) (ActionHandler, bool)
 	
@@ -39,6 +43,9 @@ type Handler interface {
 	handleEquipAsset(s Saga, st Step[any]) error
 	handleUnequipAsset(s Saga, st Step[any]) error
 	handleChangeJob(s Saga, st Step[any]) error
+	handleChangeHair(s Saga, st Step[any]) error
+	handleChangeFace(s Saga, st Step[any]) error
+	handleChangeSkin(s Saga, st Step[any]) error
 	handleCreateSkill(s Saga, st Step[any]) error
 	handleUpdateSkill(s Saga, st Step[any]) error
 	handleValidateCharacterState(s Saga, st Step[any]) error
@@ -49,31 +56,37 @@ type Handler interface {
 	handleCreateInvite(s Saga, st Step[any]) error
 	handleCreateCharacter(s Saga, st Step[any]) error
 	handleCreateAndEquipAsset(s Saga, st Step[any]) error
+	handleIncreaseBuddyCapacity(s Saga, st Step[any]) error
+	handleGainCloseness(s Saga, st Step[any]) error
 }
 
 type HandlerImpl struct {
-	l       logrus.FieldLogger
-	ctx     context.Context
-	t       tenant.Model
-	charP   character.Processor
-	compP   compartment.Processor
-	skillP  skill.Processor
-	validP  validation.Processor
-	guildP  guild.Processor
-	inviteP invite.Processor
+	l          logrus.FieldLogger
+	ctx        context.Context
+	t          tenant.Model
+	charP      character.Processor
+	compP      compartment.Processor
+	skillP     skill.Processor
+	validP     validation.Processor
+	guildP     guild.Processor
+	inviteP    invite.Processor
+	buddyListP buddylist.Processor
+	petP       pet.Processor
 }
 
 func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
 	return &HandlerImpl{
-		l:       l,
-		ctx:     ctx,
-		t:       tenant.MustFromContext(ctx),
-		charP:   character.NewProcessor(l, ctx),
-		compP:   compartment.NewProcessor(l, ctx),
-		skillP:  skill.NewProcessor(l, ctx),
-		validP:  validation.NewProcessor(l, ctx),
-		guildP:  guild.NewProcessor(l, ctx),
-		inviteP: invite.NewProcessor(l, ctx),
+		l:          l,
+		ctx:        ctx,
+		t:          tenant.MustFromContext(ctx),
+		charP:      character.NewProcessor(l, ctx),
+		compP:      compartment.NewProcessor(l, ctx),
+		skillP:     skill.NewProcessor(l, ctx),
+		validP:     validation.NewProcessor(l, ctx),
+		guildP:     guild.NewProcessor(l, ctx),
+		inviteP:    invite.NewProcessor(l, ctx),
+		buddyListP: buddylist.NewProcessor(l, ctx),
+		petP:       pet.NewProcessor(l, ctx),
 	}
 }
 
@@ -149,15 +162,48 @@ func (h *HandlerImpl) WithGuildProcessor(guildP guild.Processor) Handler {
 
 func (h *HandlerImpl) WithInviteProcessor(inviteP invite.Processor) Handler {
 	return &HandlerImpl{
-		l:       h.l,
-		ctx:     h.ctx,
-		t:       h.t,
-		charP:   h.charP,
-		compP:   h.compP,
-		skillP:  h.skillP,
-		validP:  h.validP,
-		guildP:  h.guildP,
-		inviteP: inviteP,
+		l:          h.l,
+		ctx:        h.ctx,
+		t:          h.t,
+		charP:      h.charP,
+		compP:      h.compP,
+		skillP:     h.skillP,
+		validP:     h.validP,
+		guildP:     h.guildP,
+		inviteP:    inviteP,
+		buddyListP: h.buddyListP,
+	}
+}
+
+func (h *HandlerImpl) WithBuddyListProcessor(buddyListP buddylist.Processor) Handler {
+	return &HandlerImpl{
+		l:          h.l,
+		ctx:        h.ctx,
+		t:          h.t,
+		charP:      h.charP,
+		compP:      h.compP,
+		skillP:     h.skillP,
+		validP:     h.validP,
+		guildP:     h.guildP,
+		inviteP:    h.inviteP,
+		buddyListP: buddyListP,
+		petP:       h.petP,
+	}
+}
+
+func (h *HandlerImpl) WithPetProcessor(petP pet.Processor) Handler {
+	return &HandlerImpl{
+		l:          h.l,
+		ctx:        h.ctx,
+		t:          h.t,
+		charP:      h.charP,
+		compP:      h.compP,
+		skillP:     h.skillP,
+		validP:     h.validP,
+		guildP:     h.guildP,
+		inviteP:    h.inviteP,
+		buddyListP: h.buddyListP,
+		petP:       petP,
 	}
 }
 
@@ -188,6 +234,12 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleUnequipAsset, true
 	case ChangeJob:
 		return h.handleChangeJob, true
+	case ChangeHair:
+		return h.handleChangeHair, true
+	case ChangeFace:
+		return h.handleChangeFace, true
+	case ChangeSkin:
+		return h.handleChangeSkin, true
 	case CreateSkill:
 		return h.handleCreateSkill, true
 	case UpdateSkill:
@@ -208,6 +260,10 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleCreateCharacter, true
 	case CreateAndEquipAsset:
 		return h.handleCreateAndEquipAsset, true
+	case IncreaseBuddyCapacity:
+		return h.handleIncreaseBuddyCapacity, true
+	case GainCloseness:
+		return h.handleGainCloseness, true
 
 	}
 	return nil, false
@@ -410,6 +466,57 @@ func (h *HandlerImpl) handleChangeJob(s Saga, st Step[any]) error {
 	return nil
 }
 
+// handleChangeHair handles the ChangeHair action
+func (h *HandlerImpl) handleChangeHair(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(ChangeHairPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.charP.ChangeHairAndEmit(s.TransactionId, payload.WorldId, payload.CharacterId, payload.ChannelId, payload.StyleId)
+
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to change hair.")
+		return err
+	}
+
+	return nil
+}
+
+// handleChangeFace handles the ChangeFace action
+func (h *HandlerImpl) handleChangeFace(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(ChangeFacePayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.charP.ChangeFaceAndEmit(s.TransactionId, payload.WorldId, payload.CharacterId, payload.ChannelId, payload.StyleId)
+
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to change face.")
+		return err
+	}
+
+	return nil
+}
+
+// handleChangeSkin handles the ChangeSkin action
+func (h *HandlerImpl) handleChangeSkin(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(ChangeSkinPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.charP.ChangeSkinAndEmit(s.TransactionId, payload.WorldId, payload.CharacterId, payload.ChannelId, payload.StyleId)
+
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to change skin.")
+		return err
+	}
+
+	return nil
+}
+
 // handleCreateSkill handles the CreateSkill action
 func (h *HandlerImpl) handleCreateSkill(s Saga, st Step[any]) error {
 	payload, ok := st.Payload.(CreateSkillPayload)
@@ -438,6 +545,38 @@ func (h *HandlerImpl) handleUpdateSkill(s Saga, st Step[any]) error {
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to update skill.")
+		return err
+	}
+
+	return nil
+}
+
+func (h *HandlerImpl) handleIncreaseBuddyCapacity(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(IncreaseBuddyCapacityPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.buddyListP.IncreaseCapacityAndEmit(s.TransactionId, payload.CharacterId, payload.WorldId, payload.Amount)
+
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to increase buddy capacity.")
+		return err
+	}
+
+	return nil
+}
+
+func (h *HandlerImpl) handleGainCloseness(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(GainClosenessPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.petP.GainClosenessAndEmit(s.TransactionId, payload.PetId, payload.Amount)
+
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to gain pet closeness.")
 		return err
 	}
 

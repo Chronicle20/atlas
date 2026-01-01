@@ -55,6 +55,7 @@ The conversation system is built around a state machine model with the following
   - **GenericAction**: Execute operations and evaluate conditions.
   - **CraftAction**: Handle crafting mechanics.
   - **ListSelection**: Present a list of options to the player.
+  - **AskStyle**: Present cosmetic style selection interface to the player (hair, face, skin).
 - **Operations**: Actions that can be performed during a conversation (e.g., award items, mesos, experience).
 - **Conditions**: Criteria that must be met to progress in the conversation.
 
@@ -91,15 +92,15 @@ Each state in the `states` array must have:
   "id": "greeting",
   "type": "dialogue",
   "dialogue": {
-    "dialogueType": "sendYesNo",    // Required: "sendOk", "sendYesNo", "sendSimple", or "sendNext"
+    "dialogueType": "sendYesNo",    // Required: "sendOk", "sendYesNo", "sendSimple", "sendNext", or "sendNextPrev"
     "text": "Hello!",               // Required: Dialogue text
     "choices": [                    // Required based on dialogueType:
       {                             // - sendOk: exactly 2 choices
         "text": "Yes",              // - sendYesNo: exactly 3 choices
         "nextState": "reward",      // - sendSimple: at least 1 choice
         "context": {                // - sendNext: exactly 2 choices
-          "key": "value"            // Optional: context data
-        }
+          "key": "value"            // - sendNextPrev: exactly 3 choices
+        }                           // Optional: context data
       }
     ]
   }
@@ -157,6 +158,25 @@ Each state in the `states` array must have:
 }
 ```
 
+#### Ask Style State
+
+Presents a cosmetic style selection interface (hair styles, hair colors, face styles, skin colors):
+
+```json
+{
+  "id": "selectHairStyle",
+  "type": "askStyle",
+  "askStyle": {
+    "text": "Choose your new hairstyle!",     // string - Required
+    "stylesContextKey": "availableStyles",  // string - Required: Context key containing styles array
+    "contextKey": "selectedStyle",          // string - Required: Context key to store selection
+    "nextState": "applyStyle"               // string - Required: Next state after selection
+  }
+}
+```
+
+**Note**: The styles must be pre-populated in context using local operations like `local:generate_hair_styles` or `local:generate_hair_colors`.
+
 ### Operations
 
 Operations are actions executed during a `genericAction` state:
@@ -193,6 +213,39 @@ Operations are actions executed during a `genericAction` state:
   - Params: `skillId`, `level` (optional, default 1), `masterLevel` (optional, default 1)
 - `destroy_item` - Remove items from inventory
   - Params: `itemId`, `quantity`
+- `change_hair` - Change character's hair style
+  - Params: `styleId` (hair style ID, can use context references like `{context.selectedHair}`)
+- `change_face` - Change character's face style
+  - Params: `styleId` (face style ID, can use context references like `{context.selectedFace}`)
+- `change_skin` - Change character's skin color
+  - Params: `styleId` (skin color ID 0-9, can use context references like `{context.selectedSkin}`)
+
+##### Local Operations (executed within npc-conversations service)
+- `local:generate_hair_styles` - Generate available hair styles for character
+  - Params:
+    - `baseStyles` (comma-separated hair base IDs)
+    - `genderFilter` (optional, "true" to filter by character gender)
+    - `preserveColor` (optional, "true" to preserve current hair color)
+    - `validateExists` (optional, "true" to validate styles exist in WZ data)
+    - `excludeEquipped` (optional, "true" to exclude current hair)
+    - `outputContextKey` (required, context key to store results)
+- `local:generate_hair_colors` - Generate available hair colors for character
+  - Params:
+    - `colors` (comma-separated color IDs 0-7)
+    - `validateExists` (optional, "true" to validate colors exist)
+    - `excludeEquipped` (optional, "true" to exclude current color)
+    - `outputContextKey` (required, context key to store results)
+- `local:generate_face_styles` - Generate available face styles for character
+  - Params:
+    - `baseStyles` (comma-separated face base IDs)
+    - `genderFilter` (optional, "true" to filter by character gender)
+    - `validateExists` (optional, "true" to validate styles exist in WZ data)
+    - `excludeEquipped` (optional, "true" to exclude current face)
+    - `outputContextKey` (required, context key to store results)
+- `local:select_random_cosmetic` - Randomly select a cosmetic from a styles array
+  - Params:
+    - `stylesContextKey` (required, context key containing styles array)
+    - `outputContextKey` (required, context key to store selected style)
 
 ### Conditions
 
@@ -476,3 +529,118 @@ Here's a simplified example of a conversation tree:
   }
 }
 ```
+
+## Cosmetic System
+
+The service supports character cosmetic changes (hair, face, skin) through a comprehensive system that integrates with the Atlas saga orchestrator for distributed transaction handling.
+
+### Architecture
+
+Cosmetic changes flow through the following architecture:
+
+1. **NPC Conversation** → 2. **atlas-saga-orchestrator** → 3. **atlas-character** (via Kafka) → 4. **Database Update** → 5. **Event Emission** → 6. **atlas-channel**
+
+This ensures:
+- **Transactional Integrity**: Changes are part of a saga with rollback support
+- **Event-Driven**: Other services are notified of cosmetic changes
+- **Audit Trail**: All changes are logged and traceable
+
+### Cosmetic Change Workflow
+
+#### Player Selection (e.g., Hair Salon NPC 1012103)
+
+1. **Generate Available Styles**:
+   ```json
+   {
+     "type": "genericAction",
+     "operations": [{
+       "type": "local:generate_hair_styles",
+       "params": {
+         "baseStyles": "30060,30140,30200,30210",
+         "genderFilter": "true",
+         "preserveColor": "true",
+         "validateExists": "true",
+         "excludeEquipped": "true",
+         "outputContextKey": "availableStyles"
+       }
+     }]
+   }
+   ```
+
+2. **Present Style Selection**:
+   ```json
+   {
+     "type": "askStyle",
+     "askStyle": {
+       "text": "Choose your new hairstyle!",
+       "stylesContextKey": "availableStyles",
+       "contextKey": "selectedHair",
+       "nextState": "checkCoupon"
+     }
+   }
+   ```
+
+3. **Validate and Apply**:
+   ```json
+   {
+     "type": "genericAction",
+     "operations": [
+       {
+         "type": "destroy_item",
+         "params": {"itemId": "5150001", "quantity": "1"}
+       },
+       {
+         "type": "change_hair",
+         "params": {"styleId": "{context.selectedHair}"}
+       }
+     ]
+   }
+   ```
+
+#### Random Selection (e.g., Brittany NPC 1012104)
+
+1. **Generate Styles** (same as above)
+
+2. **Random Selection**:
+   ```json
+   {
+     "type": "genericAction",
+     "operations": [{
+       "type": "local:select_random_cosmetic",
+       "params": {
+         "stylesContextKey": "availableStyles",
+         "outputContextKey": "selectedHair"
+       }
+     }]
+   }
+   ```
+
+3. **Apply** (same as player selection)
+
+### Saga Integration
+
+The `change_hair`, `change_face`, and `change_skin` operations create saga steps that:
+
+1. **Emit Kafka Command** to atlas-character service
+2. **Update Database** in a transaction (capturing old value)
+3. **Emit Status Events**:
+   - `HairChanged` / `FaceChanged` / `SkinColorChanged` (with old/new values)
+   - `StatChanged` (triggers client update)
+4. **Support Rollback** (compensation logic in saga-orchestrator)
+
+### Rollback Support
+
+The saga compensator handles failed cosmetic changes:
+
+- **Current Implementation**: Acknowledges compensation without reverting (character keeps new cosmetic)
+- **Future Enhancement**: Could store old cosmetic value in saga payload for full rollback
+- **Justification**: Similar to `CreateCharacter` - partial rollback is acceptable for non-critical cosmetics
+
+See: `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/compensator.go`
+
+### Example NPCs
+
+- **NPC 1012103** (Head Hair Salon): Player-selected haircuts and hair dye
+- **NPC 1012104** (Brittany): Random haircuts and hair dye
+
+Both NPCs demonstrate the full cosmetic change workflow with coupon consumption and validation.

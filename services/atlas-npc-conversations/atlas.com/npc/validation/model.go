@@ -8,11 +8,13 @@ import (
 type ConditionType string
 
 const (
-	JobCondition  ConditionType = "jobId"
-	MesoCondition ConditionType = "meso"
-	MapCondition  ConditionType = "mapId"
-	FameCondition ConditionType = "fame"
-	ItemCondition ConditionType = "item"
+	JobCondition           ConditionType = "jobId"
+	MesoCondition          ConditionType = "meso"
+	MapCondition           ConditionType = "mapId"
+	FameCondition          ConditionType = "fame"
+	ItemCondition          ConditionType = "item"
+	BuddyCapacityCondition ConditionType = "buddyCapacity"
+	QuestStatusCondition   ConditionType = "questStatus"
 )
 
 // Operator represents the comparison operator in a condition
@@ -28,10 +30,11 @@ const (
 
 // ConditionInput represents the structured input for creating a condition
 type ConditionInput struct {
-	Type     string `json:"type"`             // e.g., "jobId", "meso", "item"
-	Operator string `json:"operator"`         // e.g., "=", ">=", "<"
-	Value    int    `json:"value"`            // Value or quantity
-	ItemId   string `json:"itemId,omitempty"` // Only for item checks
+	Type        string `json:"type"`                  // e.g., "jobId", "meso", "item", "quest"
+	Operator    string `json:"operator"`              // e.g., "=", ">=", "<"
+	Value       int    `json:"value"`                 // Value or quantity
+	ReferenceId uint32 `json:"referenceId,omitempty"` // For quest validation, item checks, etc.
+	Step        string `json:"step,omitempty"`        // For quest progress validation
 }
 
 // ConditionResult represents the result of a condition evaluation
@@ -41,7 +44,7 @@ type ConditionResult struct {
 	Type        ConditionType
 	Operator    Operator
 	Value       int
-	ItemId      string
+	ReferenceId uint32
 	ActualValue int
 }
 
@@ -50,7 +53,8 @@ type Condition struct {
 	conditionType ConditionType
 	operator      Operator
 	value         int
-	itemId        string // Used for item conditions
+	referenceId   uint32 // Used for quest validation, item conditions, etc.
+	step          string // Used for quest progress validation
 }
 
 // ConditionBuilder is used to safely construct Condition objects
@@ -58,7 +62,8 @@ type ConditionBuilder struct {
 	conditionType ConditionType
 	operator      Operator
 	value         int
-	itemId        *string
+	referenceId   *uint32
+	step          string
 	err           error
 }
 
@@ -74,7 +79,7 @@ func (b *ConditionBuilder) SetType(condType string) *ConditionBuilder {
 	}
 
 	switch ConditionType(condType) {
-	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition:
+	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, BuddyCapacityCondition, QuestStatusCondition:
 		b.conditionType = ConditionType(condType)
 	default:
 		b.err = fmt.Errorf("unsupported condition type: %s", condType)
@@ -107,13 +112,23 @@ func (b *ConditionBuilder) SetValue(value int) *ConditionBuilder {
 	return b
 }
 
-// SetItemId sets the item ID (only for item conditions)
-func (b *ConditionBuilder) SetItemId(itemId string) *ConditionBuilder {
+// SetReferenceId sets the reference ID (for quest validation, item conditions, etc.)
+func (b *ConditionBuilder) SetReferenceId(referenceId uint32) *ConditionBuilder {
 	if b.err != nil {
 		return b
 	}
 
-	b.itemId = &itemId
+	b.referenceId = &referenceId
+	return b
+}
+
+// SetStep sets the step for quest progress validation
+func (b *ConditionBuilder) SetStep(step string) *ConditionBuilder {
+	if b.err != nil {
+		return b
+	}
+
+	b.step = step
 	return b
 }
 
@@ -123,10 +138,16 @@ func (b *ConditionBuilder) FromInput(input ConditionInput) *ConditionBuilder {
 	b.SetOperator(input.Operator)
 	b.SetValue(input.Value)
 
-	if input.ItemId != "" {
-		b.SetItemId(input.ItemId)
+	if input.ReferenceId != 0 {
+		b.SetReferenceId(input.ReferenceId)
 	} else if ConditionType(input.Type) == ItemCondition {
-		b.err = fmt.Errorf("itemId is required for item conditions")
+		b.err = fmt.Errorf("referenceId is required for item conditions")
+	} else if ConditionType(input.Type) == QuestStatusCondition {
+		b.err = fmt.Errorf("referenceId is required for quest status conditions")
+	}
+
+	if input.Step != "" {
+		b.SetStep(input.Step)
 	}
 
 	return b
@@ -150,9 +171,15 @@ func (b *ConditionBuilder) Validate() *ConditionBuilder {
 		return b
 	}
 
-	// Check if itemId is set for item conditions
-	if b.conditionType == ItemCondition && b.itemId == nil {
-		b.err = fmt.Errorf("itemId is required for item conditions")
+	// Check if referenceId is set for item conditions
+	if b.conditionType == ItemCondition && b.referenceId == nil {
+		b.err = fmt.Errorf("referenceId is required for item conditions")
+		return b
+	}
+
+	// Check if referenceId is set for quest status conditions
+	if b.conditionType == QuestStatusCondition && b.referenceId == nil {
+		b.err = fmt.Errorf("referenceId is required for quest status conditions")
 		return b
 	}
 
@@ -171,10 +198,11 @@ func (b *ConditionBuilder) Build() (Condition, error) {
 		conditionType: b.conditionType,
 		operator:      b.operator,
 		value:         b.value,
+		step:          b.step,
 	}
 
-	if b.itemId != nil {
-		condition.itemId = *b.itemId
+	if b.referenceId != nil {
+		condition.referenceId = *b.referenceId
 	}
 
 	return condition, nil

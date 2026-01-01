@@ -1,0 +1,280 @@
+{
+  "npcId": 1012118,
+  "startState": "checkLevel",
+  "states": [
+    {
+      "id": "checkLevel",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "level",
+                "operator": ">=",
+                "value": "20"
+              }
+            ],
+            "nextState": "levelTooHigh"
+          },
+          {
+            "conditions": [],
+            "nextState": "checkQuest"
+          }
+        ]
+      }
+    },
+    {
+      "id": "levelTooHigh",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "This training ground is available only for those under level 20.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkQuest",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "=",
+                "value": "2",
+                "referenceId": "22515"
+              }
+            ],
+            "nextState": "askSpecialTraining"
+          },
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "=",
+                "value": "2",
+                "referenceId": "22516"
+              }
+            ],
+            "nextState": "askSpecialTraining"
+          },
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "=",
+                "value": "2",
+                "referenceId": "22517"
+              }
+            ],
+            "nextState": "askSpecialTraining"
+          },
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "=",
+                "value": "2",
+                "referenceId": "22518"
+              }
+            ],
+            "nextState": "askSpecialTraining"
+          },
+          {
+            "conditions": [],
+            "nextState": "fetchMapPlayerCounts"
+          }
+        ]
+      }
+    },
+    {
+      "id": "fetchMapPlayerCounts",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:fetch_map_player_counts",
+            "params": {
+              "mapIds": "910060000,910060001,910060002,910060003,910060004"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "selectTrainingCenter"
+          }
+        ]
+      }
+    },
+    {
+      "id": "askSpecialTraining",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Would you like to go in the special Training Center?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "warpSpecial"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpSpecial",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "910060100",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectTrainingCenter",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Would you like to go into the Training Center?",
+        "choices": [
+          {
+            "text": "Training Center 0 ({context.playerCount_910060000}/5)",
+            "nextState": "checkCapacity",
+            "context": {
+              "selectedMap": "910060000"
+            }
+          },
+          {
+            "text": "Training Center 1 ({context.playerCount_910060001}/5)",
+            "nextState": "checkCapacity",
+            "context": {
+              "selectedMap": "910060001"
+            }
+          },
+          {
+            "text": "Training Center 2 ({context.playerCount_910060002}/5)",
+            "nextState": "checkCapacity",
+            "context": {
+              "selectedMap": "910060002"
+            }
+          },
+          {
+            "text": "Training Center 3 ({context.playerCount_910060003}/5)",
+            "nextState": "checkCapacity",
+            "context": {
+              "selectedMap": "910060003"
+            }
+          },
+          {
+            "text": "Training Center 4 ({context.playerCount_910060004}/5)",
+            "nextState": "checkCapacity",
+            "context": {
+              "selectedMap": "910060004"
+            }
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkCapacity",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "mapCapacity",
+                "operator": ">=",
+                "value": "5",
+                "referenceId": "{context.selectedMap}",
+                "worldId": "{context.worldId}",
+                "channelId": "{context.channelId}"
+              }
+            ],
+            "nextState": "trainingCenterFull"
+          },
+          {
+            "conditions": [],
+            "nextState": "warpToTraining"
+          }
+        ]
+      }
+    },
+    {
+      "id": "trainingCenterFull",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "This training center is full.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "selectTrainingCenter"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToTraining",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "{context.selectedMap}",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

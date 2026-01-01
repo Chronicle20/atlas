@@ -2,6 +2,7 @@ package conversation
 
 import (
 	"atlas-npc-conversations/cosmetic"
+	npcMap "atlas-npc-conversations/map"
 	"atlas-npc-conversations/pet"
 	"atlas-npc-conversations/saga"
 	"context"
@@ -30,12 +31,13 @@ type OperationExecutor interface {
 
 // OperationExecutorImpl is the implementation of the OperationExecutor interface
 type OperationExecutorImpl struct {
-	l        logrus.FieldLogger
-	ctx      context.Context
-	t        tenant.Model
-	sagaP    saga.Processor
-	petP     pet.Processor
+	l         logrus.FieldLogger
+	ctx       context.Context
+	t         tenant.Model
+	sagaP     saga.Processor
+	petP      pet.Processor
 	cosmeticP cosmetic.Processor
+	mapP      npcMap.Processor
 }
 
 // NewOperationExecutor creates a new operation executor
@@ -43,12 +45,13 @@ func NewOperationExecutor(l logrus.FieldLogger, ctx context.Context) OperationEx
 	t := tenant.MustFromContext(ctx)
 	appearanceProvider := cosmetic.NewRestAppearanceProvider(l, ctx)
 	return &OperationExecutorImpl{
-		l:        l,
-		ctx:      ctx,
-		t:        t,
-		sagaP:    saga.NewProcessor(l, ctx),
-		petP:     pet.NewProcessor(l, ctx),
+		l:         l,
+		ctx:       ctx,
+		t:         t,
+		sagaP:     saga.NewProcessor(l, ctx),
+		petP:      pet.NewProcessor(l, ctx),
 		cosmeticP: cosmetic.NewProcessor(l, ctx, appearanceProvider),
+		mapP:      npcMap.NewProcessor(l, ctx),
 	}
 }
 
@@ -366,6 +369,68 @@ func (e *OperationExecutorImpl) executeLocalOperation(field field.Model, charact
 
 		e.l.Infof("Selected random cosmetic %d from %d options for character [%d], stored in context key [%s]",
 			selectedStyle, len(styles), characterId, outputContextKey)
+		return nil
+
+	case "fetch_map_player_counts":
+		// Format: local:fetch_map_player_counts
+		// Params: mapIds (comma-separated string of map IDs)
+		mapIdsValue, exists := operation.Params()["mapIds"]
+		if !exists {
+			return errors.New("missing mapIds parameter for fetch_map_player_counts operation")
+		}
+
+		// Evaluate the mapIds value (supports context references)
+		mapIdsStr, err := e.evaluateContextValue(characterId, "mapIds", mapIdsValue)
+		if err != nil {
+			return err
+		}
+
+		// Parse comma-separated map IDs
+		mapIdStrs := strings.Split(mapIdsStr, ",")
+		mapIds := make([]uint32, 0, len(mapIdStrs))
+		for _, mapIdStr := range mapIdStrs {
+			trimmed := strings.TrimSpace(mapIdStr)
+			if trimmed == "" {
+				continue
+			}
+			mapId, err := strconv.ParseUint(trimmed, 10, 32)
+			if err != nil {
+				e.l.WithError(err).Errorf("Invalid map ID '%s' in mapIds parameter", trimmed)
+				return fmt.Errorf("invalid map ID '%s': %w", trimmed, err)
+			}
+			mapIds = append(mapIds, uint32(mapId))
+		}
+
+		if len(mapIds) == 0 {
+			return errors.New("no valid map IDs provided in mapIds parameter")
+		}
+
+		// Get world and channel from field
+		worldId := byte(field.WorldId())
+		channelId := byte(field.ChannelId())
+
+		// Fetch player counts for all maps in parallel
+		counts, err := e.mapP.GetPlayerCountsInMaps(worldId, channelId, mapIds)
+		if err != nil {
+			// Log warning but don't fail - graceful degradation
+			e.l.WithError(err).Warnf("Failed to fetch player counts for maps, using 0 for all")
+		}
+
+		// Store each count in the context with key: playerCount_{mapId}
+		for _, mapId := range mapIds {
+			count := 0
+			if counts != nil {
+				count = counts[mapId]
+			}
+			key := fmt.Sprintf("playerCount_%d", mapId)
+			err = e.setContextValue(characterId, key, strconv.Itoa(count))
+			if err != nil {
+				e.l.WithError(err).Errorf("Failed to store player count for map [%d] in context", mapId)
+				return fmt.Errorf("failed to store player count in context: %w", err)
+			}
+		}
+
+		e.l.Infof("Fetched and stored player counts for %d maps for character [%d]", len(mapIds), characterId)
 		return nil
 
 	default:

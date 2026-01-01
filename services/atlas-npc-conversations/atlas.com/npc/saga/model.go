@@ -106,6 +106,7 @@ const (
 	UpdateSkill            Action = "update_skill"
 	ValidateCharacterState Action = "validate_character_state"
 	IncreaseBuddyCapacity  Action = "increase_buddy_capacity"
+	GainCloseness          Action = "gain_closeness"
 )
 
 // Step represents a single step within a saga.
@@ -210,6 +211,12 @@ type IncreaseBuddyCapacityPayload struct {
 	Amount      byte       `json:"amount"`      // Amount to increase buddy capacity by
 }
 
+// GainClosenessPayload represents the payload required to gain closeness with a pet.
+type GainClosenessPayload struct {
+	PetId  uint32 `json:"petId"`  // PetId associated with the action
+	Amount uint16 `json:"amount"` // Amount of closeness to gain
+}
+
 // ValidateCharacterStatePayload represents the payload required to validate a character's state.
 type ValidateCharacterStatePayload struct {
 	CharacterId uint32                      `json:"characterId"` // CharacterId associated with the action
@@ -301,6 +308,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case IncreaseBuddyCapacity:
 		var payload IncreaseBuddyCapacityPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case GainCloseness:
+		var payload GainClosenessPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

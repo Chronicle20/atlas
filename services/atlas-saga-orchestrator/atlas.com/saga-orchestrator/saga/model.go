@@ -271,6 +271,7 @@ const (
 	CreateCharacter              Action = "create_character"
 	CreateAndEquipAsset          Action = "create_and_equip_asset"
 	IncreaseBuddyCapacity        Action = "increase_buddy_capacity"
+	GainCloseness                Action = "gain_closeness"
 )
 
 // Step represents a single step within a saga.
@@ -389,6 +390,12 @@ type IncreaseBuddyCapacityPayload struct {
 	WorldId     byte   `json:"worldId"`     // WorldId associated with the action
 	ChannelId   byte   `json:"channelId"`   // ChannelId associated with the action
 	Amount      byte   `json:"amount"`      // Amount to increase buddy capacity by
+}
+
+// GainClosenessPayload represents the payload required to gain closeness with a pet.
+type GainClosenessPayload struct {
+	PetId  uint32 `json:"petId"`  // Pet ID to gain closeness with
+	Amount uint16 `json:"amount"` // Amount of closeness to gain
 }
 
 // ValidateCharacterStatePayload represents the payload required to validate a character's state.

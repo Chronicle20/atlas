@@ -1,6 +1,7 @@
 package conversation
 
 import (
+	"atlas-npc-conversations/pet"
 	"atlas-npc-conversations/saga"
 	"context"
 	"errors"
@@ -30,6 +31,7 @@ type OperationExecutorImpl struct {
 	ctx   context.Context
 	t     tenant.Model
 	sagaP saga.Processor
+	petP  pet.Processor
 }
 
 // NewOperationExecutor creates a new operation executor
@@ -40,6 +42,7 @@ func NewOperationExecutor(l logrus.FieldLogger, ctx context.Context) OperationEx
 		ctx:   ctx,
 		t:     t,
 		sagaP: saga.NewProcessor(l, ctx),
+		petP:  pet.NewProcessor(l, ctx),
 	}
 }
 
@@ -623,6 +626,54 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		}
 
 		return stepId, saga.Pending, saga.DestroyAsset, payload, nil
+
+	case "gain_closeness":
+		// Format: gain_closeness
+		// Supports either petId (uint32) or petIndex (int8) + characterId lookup
+		// When petIndex is used, the pet at that slot for the character is resolved
+		var petId uint32
+
+		// Check if petId is provided directly
+		if petIdValue, exists := operation.Params()["petId"]; exists {
+			petIdInt, err := e.evaluateContextValueAsInt(characterId, "petId", petIdValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
+			petId = uint32(petIdInt)
+		} else if petIndexValue, exists := operation.Params()["petIndex"]; exists {
+			// petIndex is provided, need to resolve to petId
+			petIndexInt, err := e.evaluateContextValueAsInt(characterId, "petIndex", petIndexValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
+
+			// Query pets for the character and find the one at the specified slot
+			petIdResult, err := e.petP.GetPetIdBySlot(characterId, int8(petIndexInt))()
+			if err != nil {
+				return "", "", "", nil, fmt.Errorf("failed to resolve pet at slot %d for character %d: %w", petIndexInt, characterId, err)
+			}
+			petId = petIdResult
+		} else {
+			return "", "", "", nil, errors.New("missing petId or petIndex parameter for gain_closeness operation")
+		}
+
+		amountValue, exists := operation.Params()["amount"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing amount parameter for gain_closeness operation")
+		}
+
+		// Evaluate the amount value
+		amountInt, err := e.evaluateContextValueAsInt(characterId, "amount", amountValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		payload := saga.GainClosenessPayload{
+			PetId:  petId,
+			Amount: uint16(amountInt),
+		}
+
+		return stepId, saga.Pending, saga.GainCloseness, payload, nil
 
 	default:
 		return "", "", "", nil, fmt.Errorf("unknown operation type: %s", operation.Type())

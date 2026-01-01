@@ -5,6 +5,7 @@ import (
 	"atlas-query-aggregator/character"
 	"atlas-query-aggregator/inventory"
 	"atlas-query-aggregator/marriage"
+	"atlas-query-aggregator/pet"
 	"atlas-query-aggregator/quest"
 	"context"
 	"fmt"
@@ -29,6 +30,7 @@ type ProcessorImpl struct {
 	questProcessor     quest.Processor
 	marriageProcessor  marriage.Processor
 	buddyProcessor     buddy.Processor
+	petProcessor       pet.Processor
 }
 
 // NewProcessor creates a new validation processor
@@ -41,6 +43,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		questProcessor:     quest.NewProcessor(l, ctx),
 		marriageProcessor:  marriage.NewProcessor(l, ctx),
 		buddyProcessor:     buddy.NewProcessor(l, ctx),
+		petProcessor:       pet.NewProcessor(l, ctx),
 	}
 }
 
@@ -161,6 +164,9 @@ func (p *ProcessorImpl) GetValidationContextProvider() ValidationContextProvider
 		},
 		func(characterId uint32) model.Provider[buddy.Model] {
 			return p.buddyProcessor.GetBuddyList(characterId)
+		},
+		func(characterId uint32) model.Provider[int] {
+			return p.petProcessor.GetSpawnedPetCount(characterId)
 		},
 	)
 }

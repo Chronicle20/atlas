@@ -7,6 +7,7 @@ import (
 	"atlas-saga-orchestrator/guild"
 	"atlas-saga-orchestrator/invite"
 	character2 "atlas-saga-orchestrator/kafka/message/character"
+	"atlas-saga-orchestrator/pet"
 	"atlas-saga-orchestrator/skill"
 	"atlas-saga-orchestrator/validation"
 	"context"
@@ -26,6 +27,7 @@ type Handler interface {
 	WithGuildProcessor(guild.Processor) Handler
 	WithInviteProcessor(invite.Processor) Handler
 	WithBuddyListProcessor(buddylist.Processor) Handler
+	WithPetProcessor(pet.Processor) Handler
 
 	GetHandler(action Action) (ActionHandler, bool)
 	
@@ -52,6 +54,7 @@ type Handler interface {
 	handleCreateCharacter(s Saga, st Step[any]) error
 	handleCreateAndEquipAsset(s Saga, st Step[any]) error
 	handleIncreaseBuddyCapacity(s Saga, st Step[any]) error
+	handleGainCloseness(s Saga, st Step[any]) error
 }
 
 type HandlerImpl struct {
@@ -65,6 +68,7 @@ type HandlerImpl struct {
 	guildP     guild.Processor
 	inviteP    invite.Processor
 	buddyListP buddylist.Processor
+	petP       pet.Processor
 }
 
 func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
@@ -79,6 +83,7 @@ func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
 		guildP:     guild.NewProcessor(l, ctx),
 		inviteP:    invite.NewProcessor(l, ctx),
 		buddyListP: buddylist.NewProcessor(l, ctx),
+		petP:       pet.NewProcessor(l, ctx),
 	}
 }
 
@@ -179,6 +184,23 @@ func (h *HandlerImpl) WithBuddyListProcessor(buddyListP buddylist.Processor) Han
 		guildP:     h.guildP,
 		inviteP:    h.inviteP,
 		buddyListP: buddyListP,
+		petP:       h.petP,
+	}
+}
+
+func (h *HandlerImpl) WithPetProcessor(petP pet.Processor) Handler {
+	return &HandlerImpl{
+		l:          h.l,
+		ctx:        h.ctx,
+		t:          h.t,
+		charP:      h.charP,
+		compP:      h.compP,
+		skillP:     h.skillP,
+		validP:     h.validP,
+		guildP:     h.guildP,
+		inviteP:    h.inviteP,
+		buddyListP: h.buddyListP,
+		petP:       petP,
 	}
 }
 
@@ -231,6 +253,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleCreateAndEquipAsset, true
 	case IncreaseBuddyCapacity:
 		return h.handleIncreaseBuddyCapacity, true
+	case GainCloseness:
+		return h.handleGainCloseness, true
 
 	}
 	return nil, false
@@ -477,6 +501,22 @@ func (h *HandlerImpl) handleIncreaseBuddyCapacity(s Saga, st Step[any]) error {
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to increase buddy capacity.")
+		return err
+	}
+
+	return nil
+}
+
+func (h *HandlerImpl) handleGainCloseness(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(GainClosenessPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.petP.GainClosenessAndEmit(s.TransactionId, payload.PetId, payload.Amount)
+
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to gain pet closeness.")
 		return err
 	}
 

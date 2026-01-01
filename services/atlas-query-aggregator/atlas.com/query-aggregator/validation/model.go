@@ -36,6 +36,7 @@ const (
 	LuckCondition                   ConditionType = "luck"
 	BuddyCapacityCondition          ConditionType = "buddyCapacity"
 	PetCountCondition               ConditionType = "petCount"
+	MapCapacityCondition            ConditionType = "mapCapacity"
 )
 
 // Operator represents the comparison operator in a condition
@@ -57,6 +58,8 @@ type ConditionInput struct {
 	ReferenceId uint32 `json:"referenceId,omitempty"` // For quest validation, item checks, etc.
 	Step        string `json:"step,omitempty"`        // For quest progress validation
 	ItemId      uint32 `json:"itemId,omitempty"`      // Deprecated: use ReferenceId instead
+	WorldId     byte   `json:"worldId,omitempty"`     // For mapCapacity conditions
+	ChannelId   byte   `json:"channelId,omitempty"`   // For mapCapacity conditions
 }
 
 // ConditionResult represents the result of a condition evaluation
@@ -77,6 +80,8 @@ type Condition struct {
 	value         int
 	referenceId   uint32 // Used for quest validation, item conditions, etc.
 	step          string // Used for quest progress validation
+	worldId       byte   // Used for mapCapacity conditions
+	channelId     byte   // Used for mapCapacity conditions
 }
 
 // ConditionBuilder is used to safely construct Condition objects
@@ -86,6 +91,8 @@ type ConditionBuilder struct {
 	value         int
 	referenceId   *uint32
 	step          string
+	worldId       byte
+	channelId     byte
 	err           error
 }
 
@@ -101,7 +108,7 @@ func (b *ConditionBuilder) SetType(condType string) *ConditionBuilder {
 	}
 
 	switch ConditionType(condType) {
-	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition, GmLevelCondition, GuildIdCondition, GuildRankCondition, QuestStatusCondition, QuestProgressCondition, UnclaimedMarriageGiftsCondition, StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition, GuildLeaderCondition, BuddyCapacityCondition, PetCountCondition:
+	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition, GmLevelCondition, GuildIdCondition, GuildRankCondition, QuestStatusCondition, QuestProgressCondition, UnclaimedMarriageGiftsCondition, StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition, GuildLeaderCondition, BuddyCapacityCondition, PetCountCondition, MapCapacityCondition:
 		b.conditionType = ConditionType(condType)
 	default:
 		b.err = fmt.Errorf("unsupported condition type: %s", condType)
@@ -182,6 +189,14 @@ func (b *ConditionBuilder) FromInput(input ConditionInput) *ConditionBuilder {
 		b.SetStep(input.Step)
 	}
 
+	// Set worldId and channelId for mapCapacity conditions
+	if input.WorldId != 0 {
+		b.worldId = input.WorldId
+	}
+	if input.ChannelId != 0 {
+		b.channelId = input.ChannelId
+	}
+
 	// Validate required fields for specific condition types
 	switch ConditionType(input.Type) {
 	case ItemCondition:
@@ -198,6 +213,10 @@ func (b *ConditionBuilder) FromInput(input ConditionInput) *ConditionBuilder {
 		}
 		if input.Step == "" {
 			b.err = fmt.Errorf("step is required for quest progress conditions")
+		}
+	case MapCapacityCondition:
+		if input.ReferenceId == 0 {
+			b.err = fmt.Errorf("referenceId is required for mapCapacity conditions")
 		}
 	}
 
@@ -243,6 +262,11 @@ func (b *ConditionBuilder) Validate() *ConditionBuilder {
 			b.err = fmt.Errorf("step is required for quest progress conditions")
 			return b
 		}
+	case MapCapacityCondition:
+		if b.referenceId == nil {
+			b.err = fmt.Errorf("referenceId is required for mapCapacity conditions")
+			return b
+		}
 	}
 
 	return b
@@ -261,6 +285,8 @@ func (b *ConditionBuilder) Build() (Condition, error) {
 		operator:      b.operator,
 		value:         b.value,
 		step:          b.step,
+		worldId:       b.worldId,
+		channelId:     b.channelId,
 	}
 
 	if b.referenceId != nil {
@@ -394,6 +420,16 @@ func (c Condition) Evaluate(character character.Model) ConditionResult {
 			Value:       c.value,
 			ActualValue: 0,
 		}
+	case MapCapacityCondition:
+		// Map capacity validation requires context - return error state
+		return ConditionResult{
+			Passed:      false,
+			Description: fmt.Sprintf("Map Capacity validation for map %d requires ValidationContext", c.referenceId),
+			Type:        c.conditionType,
+			Operator:    c.operator,
+			Value:       c.value,
+			ActualValue: 0,
+		}
 	case ItemCondition:
 		// For item conditions, we need to check the inventory
 		itemQuantity := 0
@@ -515,6 +551,11 @@ func (c Condition) EvaluateWithContext(ctx ValidationContext) ConditionResult {
 	case PetCountCondition:
 		actualValue = ctx.PetCount()
 		description = fmt.Sprintf("Pet Count %s %d", c.operator, c.value)
+
+	case MapCapacityCondition:
+		// Get player count for the specified map using worldId/channelId from condition
+		actualValue = ctx.GetPlayerCountInMap(c.worldId, c.channelId, c.referenceId)
+		description = fmt.Sprintf("Map %d Player Count %s %d (world:%d channel:%d)", c.referenceId, c.operator, c.value, c.worldId, c.channelId)
 
 	case GuildIdCondition:
 		actualValue = int(character.Guild().Id())

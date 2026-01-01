@@ -75,6 +75,26 @@ func (e *EvaluatorImpl) EvaluateCondition(characterId uint32, condition Conditio
 		Step:        condition.Step(),
 	}
 
+	// Resolve worldId from condition (supports context references like {context.worldId})
+	if condition.WorldId() != "" {
+		worldIdStr, _, err := ExtractContextValue(condition.WorldId(), ctx.Context())
+		if err == nil {
+			if worldIdInt, err := strconv.Atoi(worldIdStr); err == nil {
+				validationCondition.WorldId = byte(worldIdInt)
+			}
+		}
+	}
+
+	// Resolve channelId from condition (supports context references like {context.channelId})
+	if condition.ChannelId() != "" {
+		channelIdStr, _, err := ExtractContextValue(condition.ChannelId(), ctx.Context())
+		if err == nil {
+			if channelIdInt, err := strconv.Atoi(channelIdStr); err == nil {
+				validationCondition.ChannelId = byte(channelIdInt)
+			}
+		}
+	}
+
 	// Validate the character state using the validation processor
 	result, err := e.validationP.ValidateCharacterState(characterId, []validation.ConditionInput{validationCondition})
 	if err != nil {

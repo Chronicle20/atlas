@@ -3,10 +3,13 @@ package validation
 import (
 	"atlas-query-aggregator/buddy"
 	"atlas-query-aggregator/character"
+	npcMap "atlas-query-aggregator/map"
 	"atlas-query-aggregator/marriage"
 	"atlas-query-aggregator/quest"
+	"context"
 	"fmt"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/sirupsen/logrus"
 )
 
 // ValidationContext provides all the data needed for validation
@@ -16,6 +19,9 @@ type ValidationContext struct {
 	marriage  marriage.Model
 	buddyList buddy.Model
 	petCount  int
+	mapP      npcMap.Processor
+	l         logrus.FieldLogger
+	ctx       context.Context
 }
 
 // NewValidationContext creates a new validation context with the provided character
@@ -26,6 +32,23 @@ func NewValidationContext(char character.Model) ValidationContext {
 		marriage:  marriage.NewModel(char.Id(), false),
 		buddyList: buddy.NewModel(char.Id(), 0),
 		petCount:  0,
+		mapP:      nil,
+		l:         nil,
+		ctx:       nil,
+	}
+}
+
+// NewValidationContextWithLogger creates a new validation context with logger and context for map queries
+func NewValidationContextWithLogger(char character.Model, l logrus.FieldLogger, ctx context.Context) ValidationContext {
+	return ValidationContext{
+		character: char,
+		quests:    make(map[uint32]quest.Model),
+		marriage:  marriage.NewModel(char.Id(), false),
+		buddyList: buddy.NewModel(char.Id(), 0),
+		petCount:  0,
+		mapP:      npcMap.NewProcessor(l, ctx),
+		l:         l,
+		ctx:       ctx,
 	}
 }
 
@@ -55,6 +78,34 @@ func (ctx ValidationContext) PetCount() int {
 	return ctx.petCount
 }
 
+// GetPlayerCountInMap returns the player count for a given map
+// Returns 0 if map processor is not available or on error (graceful degradation)
+func (ctx ValidationContext) GetPlayerCountInMap(worldId byte, channelId byte, mapId uint32) int {
+	// If no map processor available, return 0 (graceful degradation)
+	if ctx.mapP == nil {
+		if ctx.l != nil {
+			ctx.l.Warnf("Map processor not available, returning 0 for map [%d]", mapId)
+		}
+		return 0
+	}
+
+	// If worldId is not set, try to get from character
+	if worldId == 0 {
+		worldId = byte(ctx.character.WorldId())
+	}
+
+	// Query player count
+	count, err := ctx.mapP.GetPlayerCountInMap(worldId, channelId, mapId)
+	if err != nil {
+		if ctx.l != nil {
+			ctx.l.WithError(err).Warnf("Failed to get player count for map [%d], using 0", mapId)
+		}
+		return 0
+	}
+
+	return count
+}
+
 // WithQuest adds a quest to the context
 func (ctx ValidationContext) WithQuest(questModel quest.Model) ValidationContext {
 	newQuests := make(map[uint32]quest.Model)
@@ -69,6 +120,9 @@ func (ctx ValidationContext) WithQuest(questModel quest.Model) ValidationContext
 		marriage:  ctx.marriage,
 		buddyList: ctx.buddyList,
 		petCount:  ctx.petCount,
+		mapP:      ctx.mapP,
+		l:         ctx.l,
+		ctx:       ctx.ctx,
 	}
 }
 
@@ -80,6 +134,9 @@ func (ctx ValidationContext) WithMarriage(marriageModel marriage.Model) Validati
 		marriage:  marriageModel,
 		buddyList: ctx.buddyList,
 		petCount:  ctx.petCount,
+		mapP:      ctx.mapP,
+		l:         ctx.l,
+		ctx:       ctx.ctx,
 	}
 }
 
@@ -91,6 +148,9 @@ func (ctx ValidationContext) WithBuddyList(buddyListModel buddy.Model) Validatio
 		marriage:  ctx.marriage,
 		buddyList: buddyListModel,
 		petCount:  ctx.petCount,
+		mapP:      ctx.mapP,
+		l:         ctx.l,
+		ctx:       ctx.ctx,
 	}
 }
 
@@ -102,6 +162,9 @@ func (ctx ValidationContext) WithPetCount(count int) ValidationContext {
 		marriage:  ctx.marriage,
 		buddyList: ctx.buddyList,
 		petCount:  count,
+		mapP:      ctx.mapP,
+		l:         ctx.l,
+		ctx:       ctx.ctx,
 	}
 }
 
@@ -112,6 +175,9 @@ type ValidationContextBuilder struct {
 	marriage  marriage.Model
 	buddyList buddy.Model
 	petCount  int
+	mapP      npcMap.Processor
+	l         logrus.FieldLogger
+	ctx       context.Context
 }
 
 // NewValidationContextBuilder creates a new validation context builder
@@ -122,6 +188,23 @@ func NewValidationContextBuilder(char character.Model) *ValidationContextBuilder
 		marriage:  marriage.NewModel(char.Id(), false),
 		buddyList: buddy.NewModel(char.Id(), 0),
 		petCount:  0,
+		mapP:      nil,
+		l:         nil,
+		ctx:       nil,
+	}
+}
+
+// NewValidationContextBuilderWithLogger creates a new validation context builder with logger and context
+func NewValidationContextBuilderWithLogger(char character.Model, l logrus.FieldLogger, ctx context.Context) *ValidationContextBuilder {
+	return &ValidationContextBuilder{
+		character: char,
+		quests:    make(map[uint32]quest.Model),
+		marriage:  marriage.NewModel(char.Id(), false),
+		buddyList: buddy.NewModel(char.Id(), 0),
+		petCount:  0,
+		mapP:      npcMap.NewProcessor(l, ctx),
+		l:         l,
+		ctx:       ctx,
 	}
 }
 
@@ -160,6 +243,9 @@ func (b *ValidationContextBuilder) Build() ValidationContext {
 		marriage:  b.marriage,
 		buddyList: b.buddyList,
 		petCount:  b.petCount,
+		mapP:      b.mapP,
+		l:         b.l,
+		ctx:       b.ctx,
 	}
 }
 
@@ -176,6 +262,8 @@ type ContextBuilderProvider struct {
 	marriageProvider  func(uint32) model.Provider[marriage.Model]
 	buddyProvider     func(uint32) model.Provider[buddy.Model]
 	petCountProvider  func(uint32) model.Provider[int]
+	l                 logrus.FieldLogger
+	ctx               context.Context
 }
 
 // NewContextBuilderProvider creates a new context builder provider
@@ -185,6 +273,8 @@ func NewContextBuilderProvider(
 	marriageProvider func(uint32) model.Provider[marriage.Model],
 	buddyProvider func(uint32) model.Provider[buddy.Model],
 	petCountProvider func(uint32) model.Provider[int],
+	l logrus.FieldLogger,
+	ctx context.Context,
 ) *ContextBuilderProvider {
 	return &ContextBuilderProvider{
 		characterProvider: characterProvider,
@@ -192,6 +282,8 @@ func NewContextBuilderProvider(
 		marriageProvider:  marriageProvider,
 		buddyProvider:     buddyProvider,
 		petCountProvider:  petCountProvider,
+		l:                 l,
+		ctx:               ctx,
 	}
 }
 
@@ -204,8 +296,8 @@ func (p *ContextBuilderProvider) GetValidationContext(characterId uint32) model.
 			return ValidationContext{}, err
 		}
 
-		// Start building context
-		builder := NewValidationContextBuilder(char)
+		// Start building context with logger and context for map queries
+		builder := NewValidationContextBuilderWithLogger(char, p.l, p.ctx)
 
 		// Get quest data if available
 		if p.questProvider != nil {

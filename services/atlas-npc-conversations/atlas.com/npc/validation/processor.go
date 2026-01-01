@@ -8,6 +8,7 @@ import (
 // Processor is the interface for validation operations
 type Processor interface {
 	// ValidateCharacterState validates a character's state against a set of conditions
+	// For mapCapacity conditions, worldId and channelId should be in the condition itself
 	ValidateCharacterState(characterId uint32, conditions []ConditionInput) (ValidationResult, error)
 }
 
@@ -26,6 +27,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *ProcessorImpl {
 }
 
 // ValidateCharacterState validates a character's state against a set of conditions
+// For mapCapacity conditions, worldId and channelId should be in the condition itself
 func (p *ProcessorImpl) ValidateCharacterState(characterId uint32, conditions []ConditionInput) (ValidationResult, error) {
 	// Create the request body
 	requestBody := RestModel{

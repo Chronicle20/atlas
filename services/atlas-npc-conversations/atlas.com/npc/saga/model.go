@@ -107,6 +107,9 @@ const (
 	ValidateCharacterState Action = "validate_character_state"
 	IncreaseBuddyCapacity  Action = "increase_buddy_capacity"
 	GainCloseness          Action = "gain_closeness"
+	ChangeHair             Action = "change_hair"
+	ChangeFace             Action = "change_face"
+	ChangeSkin             Action = "change_skin"
 )
 
 // Step represents a single step within a saga.
@@ -221,6 +224,30 @@ type GainClosenessPayload struct {
 type ValidateCharacterStatePayload struct {
 	CharacterId uint32                      `json:"characterId"` // CharacterId associated with the action
 	Conditions  []validation.ConditionInput `json:"conditions"`  // Conditions to validate
+}
+
+// ChangeHairPayload represents the payload required to change a character's hair.
+type ChangeHairPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	StyleId     uint32     `json:"styleId"`     // Hair style ID to change to
+}
+
+// ChangeFacePayload represents the payload required to change a character's face.
+type ChangeFacePayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	StyleId     uint32     `json:"styleId"`     // Face style ID to change to
+}
+
+// ChangeSkinPayload represents the payload required to change a character's skin color.
+type ChangeSkinPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	StyleId     byte       `json:"styleId"`     // Skin color ID to change to
 }
 
 type ExperienceDistributions struct {

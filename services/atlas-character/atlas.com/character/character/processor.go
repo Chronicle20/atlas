@@ -419,7 +419,7 @@ func (p *ProcessorImpl) ChangeHair(mb *message.Buffer) func(transactionId uuid.U
 			p.l.WithError(txErr).Errorf("Could not set character [%d] hair to [%d].", characterId, styleId)
 			return txErr
 		}
-		_ = mb.Put(character2.EnvEventTopicCharacterStatus, hairChangedEventProvider(transactionId, characterId, channel, oldHair, styleId))
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, hairChangedEventProvider(transactionId, characterId, channel.WorldId(), oldHair, styleId))
 		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []string{"HAIR"}))
 		return nil
 	}
@@ -451,7 +451,7 @@ func (p *ProcessorImpl) ChangeFace(mb *message.Buffer) func(transactionId uuid.U
 			p.l.WithError(txErr).Errorf("Could not set character [%d] face to [%d].", characterId, styleId)
 			return txErr
 		}
-		_ = mb.Put(character2.EnvEventTopicCharacterStatus, faceChangedEventProvider(transactionId, characterId, channel, oldFace, styleId))
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, faceChangedEventProvider(transactionId, characterId, channel.WorldId(), oldFace, styleId))
 		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []string{"FACE"}))
 		return nil
 	}
@@ -483,7 +483,7 @@ func (p *ProcessorImpl) ChangeSkin(mb *message.Buffer) func(transactionId uuid.U
 			p.l.WithError(txErr).Errorf("Could not set character [%d] skin to [%d].", characterId, styleId)
 			return txErr
 		}
-		_ = mb.Put(character2.EnvEventTopicCharacterStatus, skinColorChangedEventProvider(transactionId, characterId, channel, oldSkin, styleId))
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, skinColorChangedEventProvider(transactionId, characterId, channel.WorldId(), oldSkin, styleId))
 		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []string{"SKIN_COLOR"}))
 		return nil
 	}

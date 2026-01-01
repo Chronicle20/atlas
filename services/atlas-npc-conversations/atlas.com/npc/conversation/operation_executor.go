@@ -76,6 +76,41 @@ func (e *OperationExecutorImpl) evaluateContextValue(characterId uint32, paramNa
 	return extractedValue, nil
 }
 
+// getContextValue retrieves a value from the conversation context by key
+func (e *OperationExecutorImpl) getContextValue(characterId uint32, key string) (string, error) {
+	ctx, err := GetRegistry().GetPreviousContext(e.t, characterId)
+	if err != nil {
+		return "", fmt.Errorf("failed to get conversation context for character [%d]: %w", characterId, err)
+	}
+
+	value, exists := ctx.Context()[key]
+	if !exists {
+		return "", fmt.Errorf("context key '%s' not found for character [%d]", key, characterId)
+	}
+
+	return value, nil
+}
+
+// setContextValue stores a value in the conversation context
+func (e *OperationExecutorImpl) setContextValue(characterId uint32, key string, value string) error {
+	ctx, err := GetRegistry().GetPreviousContext(e.t, characterId)
+	if err != nil {
+		return fmt.Errorf("failed to get conversation context for character [%d]: %w", characterId, err)
+	}
+
+	// Update the context map
+	contextMap := ctx.Context()
+	if contextMap == nil {
+		return fmt.Errorf("context map is nil for character [%d]", characterId)
+	}
+	contextMap[key] = value
+
+	// Save the updated context back to the registry
+	GetRegistry().UpdateContext(e.t, characterId, ctx)
+
+	return nil
+}
+
 // evaluateContextValueAsInt evaluates a context value as an integer
 func (e *OperationExecutorImpl) evaluateContextValueAsInt(characterId uint32, paramName string, value string) (int, error) {
 	// First evaluate the context value as a string

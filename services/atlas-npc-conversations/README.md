@@ -219,6 +219,10 @@ Operations are actions executed during a `genericAction` state:
   - Params: `styleId` (face style ID, can use context references like `{context.selectedFace}`)
 - `change_skin` - Change character's skin color
   - Params: `styleId` (skin color ID 0-9, can use context references like `{context.selectedSkin}`)
+- `increase_buddy_capacity` - Increase character's buddy list capacity
+  - Params: `amount` (byte, capacity increase amount)
+- `gain_closeness` - Increase pet closeness/intimacy
+  - Params: `petId` (uint32) or `petIndex` (int8, slot position), `amount` (uint16)
 
 ##### Local Operations (executed within npc-conversations service)
 - `local:generate_hair_styles` - Generate available hair styles for character
@@ -246,6 +250,16 @@ Operations are actions executed during a `genericAction` state:
   - Params:
     - `stylesContextKey` (required, context key containing styles array)
     - `outputContextKey` (required, context key to store selected style)
+- `local:fetch_map_player_counts` - Fetch current player counts for multiple maps
+  - Params:
+    - `mapIds` (comma-separated string of map IDs, supports context references)
+  - Stores results in context with keys: `playerCount_{mapId}` for each map
+- `local:log` - Log an informational message
+  - Params:
+    - `message` (string, supports context references)
+- `local:debug` - Log a debug message
+  - Params:
+    - `message` (string, supports context references)
 
 ### Conditions
 
@@ -263,9 +277,29 @@ Conditions are evaluated to determine the next state in `outcomes`:
 #### Available Condition Types
 - `jobId` - Check character's job ID
 - `meso` - Check character's meso amount
-- `mapId` - Check character's current map
+- `mapId` - Check character's current map ID
 - `fame` - Check character's fame level
-- `item` - Check if character has specific item (requires `itemId` field)
+- `gender` - Check character's gender (0 = male, 1 = female)
+- `level` - Check character's level
+- `reborns` - Check character's rebirth count
+- `dojoPoints` - Check character's Mu Lung Dojo points
+- `vanquisherKills` - Check character's vanquisher kill count
+- `gmLevel` - Check character's GM level
+- `guildId` - Check character's guild ID (0 = not in guild)
+- `guildLeader` - Check if character is guild leader (0 = not leader, 1 = is leader)
+- `guildRank` - Check character's guild rank
+- `questStatus` - Check quest status (requires `referenceId` field with quest ID)
+  - Values: 0 = UNDEFINED, 1 = NOT_STARTED, 2 = STARTED, 3 = COMPLETED
+- `questProgress` - Check quest progress (requires `referenceId` and `step` fields)
+- `hasUnclaimedMarriageGifts` - Check for unclaimed marriage gifts (0 = false, 1 = true)
+- `strength` - Check character's strength stat
+- `dexterity` - Check character's dexterity stat
+- `intelligence` - Check character's intelligence stat
+- `luck` - Check character's luck stat
+- `buddyCapacity` - Check character's buddy list capacity
+- `petCount` - Check number of pets character has
+- `mapCapacity` - Check player count in a specific map (requires `referenceId` with map ID)
+- `item` - Check if character has specific item (requires `referenceId` field with item template ID)
 
 ### Outcomes
 

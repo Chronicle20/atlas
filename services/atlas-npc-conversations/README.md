@@ -223,6 +223,10 @@ Operations are actions executed during a `genericAction` state:
   - Params: `amount` (byte, capacity increase amount)
 - `gain_closeness` - Increase pet closeness/intimacy
   - Params: `petId` (uint32) or `petIndex` (int8, slot position), `amount` (uint16)
+- `spawn_monster` - Spawn monsters at a location (foothold resolved automatically by saga-orchestrator)
+  - Params: `monsterId` (monster template ID), `x` (x coordinate), `y` (y coordinate), `count` (optional, default 1), `team` (optional, default 0)
+- `complete_quest` - Complete a quest for the character (stub implementation - no quest service yet)
+  - Params: `questId` (quest ID to complete), `npcId` (optional, defaults to conversation NPC)
 
 ##### Local Operations (executed within npc-conversations service)
 - `local:generate_hair_styles` - Generate available hair styles for character

@@ -1,0 +1,261 @@
+{
+  "npcId": 1052113,
+  "startState": "checkLevel",
+  "states": [
+    {
+      "id": "checkLevel",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:fetch_map_player_counts",
+            "params": {
+              "mapIds": "910310000,910310001,910310002,910310003,910310004"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "level",
+                "operator": ">=",
+                "value": "20"
+              }
+            ],
+            "nextState": "levelTooHigh"
+          },
+          {
+            "conditions": [],
+            "nextState": "selectTrainingCenter"
+          }
+        ]
+      }
+    },
+    {
+      "id": "levelTooHigh",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "This training ground is available only for those under level 20.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectTrainingCenter",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Would you like to go into the Training Center?",
+        "choices": [
+          {
+            "text": "Training Center 0 ({context.playerCount_910310000}/5)",
+            "nextState": "checkRoom0",
+            "context": {
+              "selectedMap": "910310000"
+            }
+          },
+          {
+            "text": "Training Center 1 ({context.playerCount_910310001}/5)",
+            "nextState": "checkRoom1",
+            "context": {
+              "selectedMap": "910310001"
+            }
+          },
+          {
+            "text": "Training Center 2 ({context.playerCount_910310002}/5)",
+            "nextState": "checkRoom2",
+            "context": {
+              "selectedMap": "910310002"
+            }
+          },
+          {
+            "text": "Training Center 3 ({context.playerCount_910310003}/5)",
+            "nextState": "checkRoom3",
+            "context": {
+              "selectedMap": "910310003"
+            }
+          },
+          {
+            "text": "Training Center 4 ({context.playerCount_910310004}/5)",
+            "nextState": "checkRoom4",
+            "context": {
+              "selectedMap": "910310004"
+            }
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkRoom0",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "mapCapacity",
+                "operator": ">=",
+                "value": "5",
+                "referenceId": 910310000
+              }
+            ],
+            "nextState": "roomFull"
+          },
+          {
+            "conditions": [],
+            "nextState": "warpToTrainingCenter"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkRoom1",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "mapCapacity",
+                "operator": ">=",
+                "value": "5",
+                "referenceId": 910310001
+              }
+            ],
+            "nextState": "roomFull"
+          },
+          {
+            "conditions": [],
+            "nextState": "warpToTrainingCenter"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkRoom2",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "mapCapacity",
+                "operator": ">=",
+                "value": "5",
+                "referenceId": 910310002
+              }
+            ],
+            "nextState": "roomFull"
+          },
+          {
+            "conditions": [],
+            "nextState": "warpToTrainingCenter"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkRoom3",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "mapCapacity",
+                "operator": ">=",
+                "value": "5",
+                "referenceId": 910310003
+              }
+            ],
+            "nextState": "roomFull"
+          },
+          {
+            "conditions": [],
+            "nextState": "warpToTrainingCenter"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkRoom4",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "mapCapacity",
+                "operator": ">=",
+                "value": "5",
+                "referenceId": 910310004
+              }
+            ],
+            "nextState": "roomFull"
+          },
+          {
+            "conditions": [],
+            "nextState": "warpToTrainingCenter"
+          }
+        ]
+      }
+    },
+    {
+      "id": "roomFull",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "This training center is full.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "selectTrainingCenter"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToTrainingCenter",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "{context.selectedMap}",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

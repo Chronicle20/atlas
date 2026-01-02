@@ -16,13 +16,17 @@ export interface DialogueState {
 
 export interface GenericActionOperation {
   type: string;
-  params?: Record<string, never>;
+  params?: Record<string, string>;
 }
 
 export interface Condition {
   type: string;
   operator: string;
   value: string;
+  referenceId?: string;
+  step?: string;
+  worldId?: number | string;
+  channelId?: number | string;
 }
 
 export interface GenericActionOutcome {
@@ -52,13 +56,32 @@ export interface ListSelectionState {
   choices: DialogueChoice[];
 }
 
+export interface AskNumberState {
+  text: string;
+  defaultValue: number;
+  minValue: number;
+  maxValue: number;
+  contextKey?: string;
+  nextState: string;
+}
+
+export interface AskStyleState {
+  text: string;
+  styles?: number[];
+  stylesContextKey?: string;
+  contextKey?: string;
+  nextState: string;
+}
+
 export interface ConversationState {
   id: string;
-  type: "dialogue" | "genericAction" | "craftAction" | "listSelection";
+  type: "dialogue" | "genericAction" | "craftAction" | "listSelection" | "askNumber" | "askStyle";
   dialogue?: DialogueState;
   genericAction?: GenericActionState;
   craftAction?: CraftActionState;
   listSelection?: ListSelectionState;
+  askNumber?: AskNumberState;
+  askStyle?: AskStyleState;
 }
 
 export interface ConversationAttributes {

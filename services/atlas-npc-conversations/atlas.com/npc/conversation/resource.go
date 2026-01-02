@@ -26,6 +26,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			router.HandleFunc("/npcs/conversations", registerInputHandler("create_conversation", CreateConversationHandler)).Methods(http.MethodPost)
 			router.HandleFunc("/npcs/conversations/{conversationId}", registerInputHandler("update_conversation", UpdateConversationHandler)).Methods(http.MethodPatch)
 			router.HandleFunc("/npcs/conversations/{conversationId}", registerHandler("delete_conversation", DeleteConversationHandler)).Methods(http.MethodDelete)
+			router.HandleFunc("/npcs/conversations/validate", registerInputHandler("validate_conversation", ValidateConversationHandler)).Methods(http.MethodPost)
 		}
 	}
 }
@@ -182,4 +183,64 @@ func GetConversationsByNpcHandler(d *rest.HandlerDependency, c *rest.HandlerCont
 			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
 		}
 	})
+}
+
+// RestValidationError represents a validation error in REST format
+type RestValidationError struct {
+	StateId   string `json:"stateId,omitempty"`
+	Field     string `json:"field"`
+	ErrorType string `json:"errorType"`
+	Message   string `json:"message"`
+}
+
+// RestValidationResult represents the validation result in REST format
+type RestValidationResult struct {
+	Valid  bool                   `json:"valid"`
+	Errors []RestValidationError  `json:"errors,omitempty"`
+}
+
+// ValidateConversationHandler handles POST /conversations/validate
+func ValidateConversationHandler(d *rest.HandlerDependency, c *rest.HandlerContext, rm RestModel) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Extract domain model from REST model
+		m, err := Extract(rm)
+		if err != nil {
+			d.Logger().WithError(err).Errorf("Extracting domain model from REST model.")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		// Validate conversation
+		validator := NewValidator()
+		result := validator.Validate(m)
+
+		// Transform to REST validation result
+		restErrors := make([]RestValidationError, len(result.Errors))
+		for i, err := range result.Errors {
+			restErrors[i] = RestValidationError{
+				StateId:   err.StateId,
+				Field:     err.Field,
+				ErrorType: err.ErrorType,
+				Message:   err.Message,
+			}
+		}
+
+		restResult := RestValidationResult{
+			Valid:  result.Valid,
+			Errors: restErrors,
+		}
+
+		// Marshal and send response
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		// Use standard JSON marshaling since this is not a JSON:API resource
+		jsonData, err := jsonapi.Marshal(restResult)
+		if err != nil {
+			d.Logger().WithError(err).Errorf("Marshaling validation result.")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.Write(jsonData)
+	}
 }

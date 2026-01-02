@@ -1,0 +1,819 @@
+{
+  "npcId": 1032100,
+  "startState": "checkLevel",
+  "states": [
+    {
+      "id": "checkLevel",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "level",
+                "operator": "<",
+                "value": "40"
+              }
+            ],
+            "nextState": "rejectLowLevel"
+          },
+          {
+            "conditions": [],
+            "nextState": "greeting"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rejectLowLevel",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "I can make rare, valuable items but unfortunately I can't make it to a stranger like you.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "greeting",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Yeah... I am the master alchemist of the fairies. But the fairies are not supposed to be in contact with a human being for a long period of time... A strong person like you will be fine, though. If you get me the materials, I'll make you a special item.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "selectItem"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectItem",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "What do you want to make?",
+        "choices": [
+          {
+            "text": "Moon Rock",
+            "nextState": "confirmMoonRock",
+            "context": {
+              "itemType": "moonRock"
+            }
+          },
+          {
+            "text": "Star Rock",
+            "nextState": "confirmStarRock",
+            "context": {
+              "itemType": "starRock"
+            }
+          },
+          {
+            "text": "Black Feather",
+            "nextState": "confirmBlackFeather",
+            "context": {
+              "itemType": "blackFeather"
+            }
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmMoonRock",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "So you want to make a Moon Rock? To do that you need to refine one of each of these: #bBronze Plate#k, #bSteel Plate#k,\r\n#bMithril Plate#k, #bAdamantium Plate#k, #bSilver Plate#k, #bOrihalcon Plate#k and #bGold Plate#k. Throw in 10,000 mesos and I'll make it for you.",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "craftMoonRock"
+          },
+          {
+            "text": "No",
+            "nextState": "declineMoonRock"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "declineMoonRock",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "It's not easy making Moon Rock. Please get the materials ready.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "craftMoonRock",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": "<",
+                "value": "1",
+                "referenceId": "4011000"
+              }
+            ],
+            "nextState": "failedMoonRock"
+          },
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": "<",
+                "value": "1",
+                "referenceId": "4011001"
+              }
+            ],
+            "nextState": "failedMoonRock"
+          },
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": "<",
+                "value": "1",
+                "referenceId": "4011002"
+              }
+            ],
+            "nextState": "failedMoonRock"
+          },
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": "<",
+                "value": "1",
+                "referenceId": "4011003"
+              }
+            ],
+            "nextState": "failedMoonRock"
+          },
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": "<",
+                "value": "1",
+                "referenceId": "4011004"
+              }
+            ],
+            "nextState": "failedMoonRock"
+          },
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": "<",
+                "value": "1",
+                "referenceId": "4011005"
+              }
+            ],
+            "nextState": "failedMoonRock"
+          },
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": "<",
+                "value": "1",
+                "referenceId": "4011006"
+              }
+            ],
+            "nextState": "failedMoonRock"
+          },
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": "<",
+                "value": "10000"
+              }
+            ],
+            "nextState": "failedMoonRock"
+          },
+          {
+            "conditions": [],
+            "nextState": "performCraftMoonRock"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performCraftMoonRock",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-10000"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011000",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011001",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011002",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011003",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011004",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011005",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011006",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4011007",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "successMoonRock"
+          }
+        ]
+      }
+    },
+    {
+      "id": "successMoonRock",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Ok here, take Moon Rock. It's well-made, probably because I'm using good materials. If you need my help down the road, feel free to come back.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "failedMoonRock",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Are you sure you have enough mesos? Please check and see if you have the refined #bBronze Plate#k, #bSteel Plate#k,\r\n#bMithril Plate#k, #bAdamantium Plate#k, #bSilver Plate#k, #bOrihalcon Plate#k and #bGold Plate#k, one of each.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmStarRock",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "So you want to make a Star Rock? To do that you need to refine one of each of these: #bGarnet#k, #bAmethyst#k, #bAquaMarine#k, #bEmerald#k, #bOpal#k, #bSapphire#k, #bTopaz#k, #bDiamond#k and #bBlack Crystal#k. Throw in 15,000 mesos and I'll make it for you.",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "craftStarRock"
+          },
+          {
+            "text": "No",
+            "nextState": "declineStarRock"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "declineStarRock",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "It's not easy making Star Rock. Please get the materials ready.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "craftStarRock",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": "<",
+                "value": "1",
+                "referenceId": "4021000"
+              }
+            ],
+            "nextState": "failedStarRock"
+          },
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": "<",
+                "value": "1",
+                "referenceId": "4021001"
+              }
+            ],
+            "nextState": "failedStarRock"
+          },
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": "<",
+                "value": "1",
+                "referenceId": "4021002"
+              }
+            ],
+            "nextState": "failedStarRock"
+          },
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": "<",
+                "value": "1",
+                "referenceId": "4021003"
+              }
+            ],
+            "nextState": "failedStarRock"
+          },
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": "<",
+                "value": "1",
+                "referenceId": "4021004"
+              }
+            ],
+            "nextState": "failedStarRock"
+          },
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": "<",
+                "value": "1",
+                "referenceId": "4021005"
+              }
+            ],
+            "nextState": "failedStarRock"
+          },
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": "<",
+                "value": "1",
+                "referenceId": "4021006"
+              }
+            ],
+            "nextState": "failedStarRock"
+          },
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": "<",
+                "value": "1",
+                "referenceId": "4021007"
+              }
+            ],
+            "nextState": "failedStarRock"
+          },
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": "<",
+                "value": "1",
+                "referenceId": "4021008"
+              }
+            ],
+            "nextState": "failedStarRock"
+          },
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": "<",
+                "value": "15000"
+              }
+            ],
+            "nextState": "failedStarRock"
+          },
+          {
+            "conditions": [],
+            "nextState": "performCraftStarRock"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performCraftStarRock",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-15000"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4021000",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4021001",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4021002",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4021003",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4021004",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4021005",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4021006",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4021007",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4021008",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4021009",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "successStarRock"
+          }
+        ]
+      }
+    },
+    {
+      "id": "successStarRock",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Ok here, take Star Rock. It's well-made, probably because I'm using good materials. If you need my help down the road, feel free to come back.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "failedStarRock",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Are you sure you have enough mesos? Please check and see if you have the refined #bGarnet#k, #bAmethyst#k, #bAquaMarine#k, #bEmerald#k, #bOpal#k, #bSapphire#k, #bTopaz#k, #bDiamond#k and #bBlack Crystal#k, one of each.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmBlackFeather",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "So you want to make a Black Feather? To do that you need #b1 Flaming Feather#k, #b1 Moon Rock#k and #b1 Black Crystal#k. Throw in 30,000 mesos and I'll make it for you. Oh yeah, this piece of feather is a very special item, so if you drop it by any chance, it'll disappear, as well as you won't be able to give it away to someone else.",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "craftBlackFeather"
+          },
+          {
+            "text": "No",
+            "nextState": "declineBlackFeather"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "declineBlackFeather",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "It's not easy making Black Feather. Please get the materials ready.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "craftBlackFeather",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": "<",
+                "value": "1",
+                "referenceId": "4001006"
+              }
+            ],
+            "nextState": "failedBlackFeather"
+          },
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": "<",
+                "value": "1",
+                "referenceId": "4011007"
+              }
+            ],
+            "nextState": "failedBlackFeather"
+          },
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": "<",
+                "value": "1",
+                "referenceId": "4021008"
+              }
+            ],
+            "nextState": "failedBlackFeather"
+          },
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": "<",
+                "value": "30000"
+              }
+            ],
+            "nextState": "failedBlackFeather"
+          },
+          {
+            "conditions": [],
+            "nextState": "performCraftBlackFeather"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performCraftBlackFeather",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-30000"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4001006",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011007",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4021008",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4031042",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "successBlackFeather"
+          }
+        ]
+      }
+    },
+    {
+      "id": "successBlackFeather",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Ok here, take Black Feather. It's well-made, probably because I'm using good materials. If you need my help down the road, feel free to come back.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "failedBlackFeather",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Are you sure you have enough mesos? Please check and see if you have the refined #bGarnet#k, #bAmethyst#k, #bAquaMarine#k, #bEmerald#k, #bOpal#k, #bSapphire#k, #bTopaz#k, #bDiamond#k and #bBlack Crystal#k, one of each.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,253 @@
+{
+  "npcId": 1061100,
+  "startState": "welcome",
+  "states": [
+    {
+      "id": "welcome",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Welcome. We're the Sleepywood Hotel. Our hotel works hard to serve you the best at all times. If you are tired and worn out from hunting, how about a relaxing stay at our hotel?",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "selectRoom"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectRoom",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "We offer two kinds of rooms for our service. Please choose the one of your liking.",
+        "choices": [
+          {
+            "text": "Regular sauna (499 mesos per use)",
+            "nextState": "confirmRegular",
+            "context": {
+              "roomType": "regular",
+              "cost": "499",
+              "destination": "105040401"
+            }
+          },
+          {
+            "text": "VIP sauna (999 mesos per use)",
+            "nextState": "confirmVip",
+            "context": {
+              "roomType": "vip",
+              "cost": "999",
+              "destination": "105040402"
+            }
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmRegular",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You have chosen the regular sauna. Your HP and MP will recover fast and you can even purchase some items there. Are you sure you want to go in?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkMesoRegular"
+          },
+          {
+            "text": "No",
+            "nextState": "declineRoom"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmVip",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You've chosen the VIP sauna. Your HP and MP will recover even faster than that of the regular sauna and you can even find a special item in there. Are you sure you want to go in?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkMesoVip"
+          },
+          {
+            "text": "No",
+            "nextState": "declineRoom"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "declineRoom",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "We offer other kinds of services, too, so please think carefully and then make your decision.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMesoRegular",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": "<",
+                "value": "499"
+              }
+            ],
+            "nextState": "insufficientMesoRegular"
+          },
+          {
+            "conditions": [],
+            "nextState": "warpRegular"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMesoVip",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": "<",
+                "value": "999"
+              }
+            ],
+            "nextState": "insufficientMesoVip"
+          },
+          {
+            "conditions": [],
+            "nextState": "warpVip"
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpRegular",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-499"
+            }
+          },
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "105040401",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpVip",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-999"
+            }
+          },
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "105040402",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "insufficientMesoRegular",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "I'm sorry. It looks like you don't have enough mesos. It will cost you at least 499mesos to stay at our hotel.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "insufficientMesoVip",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "I'm sorry. It looks like you don't have enough mesos. It will cost you at least 999mesos to stay at our hotel.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

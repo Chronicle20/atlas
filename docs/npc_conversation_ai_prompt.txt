@@ -14,6 +14,7 @@ Your task is to:
    - Dialogue structure and types (`sendOk`, `sendNext`, `sendYesNo`, `sendSimple`)
    - Conditional behavior (e.g. job checks, meso or item requirements)
    - Actions (e.g. `gainItem`, `warp`, `gainMeso`)
+   - Random selection logic (use `local:select_random_weighted` for weighted item selection)
    - Branching choices and their destinations
 
 2. **Produce a new file** named `output.json` containing a **valid state-machine conversation**:
@@ -26,7 +27,8 @@ Your task is to:
    - Always include an explicit **exit choice** in dialogues
    - Use `genericAction` for logic checks, state-based branching, item or meso operations
    - When multiple destination options exist, use `listSelection` with `context` propagation
-   - For `warp_to_map` or `award_mesos`, values like `context.destination` or `context.cost` must be inferred from upstream list selections
+   - For weighted random selection, use `local:select_random_weighted` operation with `items` (comma-separated), `weights` (comma-separated), and `outputContextKey` parameters
+   - For `warp_to_map` or `award_mesos`, values like `context.destination` or `context.cost` must be inferred from upstream list selections or operations
    - Always map human-readable destination names via `Map.txt` when provided
 
 4. **Final Output**:

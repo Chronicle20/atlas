@@ -1,0 +1,102 @@
+{
+  "npcId": 1032109,
+  "startState": "checkQuestStarted",
+  "states": [
+    {
+      "id": "checkQuestStarted",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "questProgress",
+                "operator": "=",
+                "value": "started",
+                "referenceId": "20718"
+              }
+            ],
+            "nextState": "intro"
+          },
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "intro",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "A mysterious black figure appeared and summoned a lot of angry monsters!",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": "spawnMonstersAndComplete"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "spawnMonstersAndComplete",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "spawn_monster",
+            "params": {
+              "monsterId": "2220100",
+              "x": "117",
+              "y": "183",
+              "count": "10"
+            }
+          },
+          {
+            "type": "spawn_monster",
+            "params": {
+              "monsterId": "2220100",
+              "x": "4",
+              "y": "183",
+              "count": "10"
+            }
+          },
+          {
+            "type": "spawn_monster",
+            "params": {
+              "monsterId": "2220100",
+              "x": "-109",
+              "y": "183",
+              "count": "10"
+            }
+          },
+          {
+            "type": "complete_quest",
+            "params": {
+              "questId": "20718",
+              "npcId": "1103003"
+            }
+          },
+          {
+            "type": "award_exp",
+            "params": {
+              "amount": "4000"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

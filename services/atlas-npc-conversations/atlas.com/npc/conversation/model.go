@@ -902,11 +902,8 @@ func (b *OutcomeBuilder) SetNextState(nextState string) *OutcomeBuilder {
 
 
 // Build builds the OutcomeModel
+// An empty nextState indicates a terminal state (end of conversation)
 func (b *OutcomeBuilder) Build() (OutcomeModel, error) {
-	if b.nextState == "" {
-		return OutcomeModel{}, errors.New("nextState is required")
-	}
-
 	return OutcomeModel{
 		conditions: b.conditions,
 		nextState:  b.nextState,

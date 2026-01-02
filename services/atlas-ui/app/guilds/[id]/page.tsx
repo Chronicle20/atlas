@@ -27,6 +27,8 @@ export default function GuildDetailPage() {
     useEffect(() => {
         if (!activeTenant || !id) return
 
+        let cancelled = false
+
         setLoading(true)
 
         // Fetch both guild data and tenant configuration
@@ -35,11 +37,25 @@ export default function GuildDetailPage() {
             fetchTenantConfiguration(activeTenant.id)
         ])
             .then(([guildData, tenantConfigData]) => {
-                setGuild(guildData)
-                setTenantConfig(tenantConfigData)
+                if (!cancelled) {
+                    setGuild(guildData)
+                    setTenantConfig(tenantConfigData)
+                }
             })
-            .catch((err) => setError(err.message))
-            .finally(() => setLoading(false))
+            .catch((err) => {
+                if (!cancelled) {
+                    setError(err.message)
+                }
+            })
+            .finally(() => {
+                if (!cancelled) {
+                    setLoading(false)
+                }
+            })
+
+        return () => {
+            cancelled = true
+        }
     }, [activeTenant, id, fetchTenantConfiguration])
 
     if (loading) return <PageLoader />

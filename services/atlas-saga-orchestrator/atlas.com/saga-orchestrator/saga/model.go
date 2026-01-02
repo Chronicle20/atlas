@@ -275,6 +275,8 @@ const (
 	CreateAndEquipAsset          Action = "create_and_equip_asset"
 	IncreaseBuddyCapacity        Action = "increase_buddy_capacity"
 	GainCloseness                Action = "gain_closeness"
+	SpawnMonster                 Action = "spawn_monster"
+	CompleteQuest                Action = "complete_quest"
 )
 
 // Step represents a single step within a saga.
@@ -505,6 +507,30 @@ type ExperienceDistributions struct {
 	Attr1          uint32 `json:"attr1"`
 }
 
+// SpawnMonsterPayload represents the payload required to spawn monsters.
+// Note: Foothold (fh) is not included - it is resolved dynamically by the saga-orchestrator
+// via atlas-data's foothold lookup endpoint.
+type SpawnMonsterPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId initiating the spawn
+	WorldId     world.Id   `json:"worldId"`     // WorldId for the spawn location
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId for the spawn location
+	MapId       uint32     `json:"mapId"`       // MapId for the spawn location
+	MonsterId   uint32     `json:"monsterId"`   // Monster template ID to spawn
+	X           int16      `json:"x"`           // X coordinate for spawn position
+	Y           int16      `json:"y"`           // Y coordinate for spawn position
+	Team        int8       `json:"team"`        // Team assignment (default 0)
+	Count       int        `json:"count"`       // Number of monsters to spawn (default 1)
+}
+
+// CompleteQuestPayload represents the payload required to complete a quest.
+// Note: This is currently stubbed - actual quest completion will be implemented
+// when a quest service is available.
+type CompleteQuestPayload struct {
+	CharacterId uint32 `json:"characterId"` // CharacterId completing the quest
+	QuestId     uint32 `json:"questId"`     // Quest ID to complete
+	NpcId       uint32 `json:"npcId"`       // NPC ID granting completion (for rewards)
+}
+
 // Custom UnmarshalJSON for Step[T] to handle the generics
 func (s *Step[T]) UnmarshalJSON(data []byte) error {
 	type Alias Step[T] // Alias to avoid recursion
@@ -632,6 +658,18 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case IncreaseBuddyCapacity:
 		var payload IncreaseBuddyCapacityPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case SpawnMonster:
+		var payload SpawnMonsterPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case CompleteQuest:
+		var payload CompleteQuestPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

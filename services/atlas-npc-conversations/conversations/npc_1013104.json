@@ -1,0 +1,129 @@
+{
+  "npcId": 1013104,
+  "startState": "checkQuestStarted",
+  "states": [
+    {
+      "id": "checkQuestStarted",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "=",
+                "value": "2",
+                "referenceId": 22007
+              }
+            ],
+            "nextState": "checkHasEgg"
+          },
+          {
+            "conditions": [],
+            "nextState": "noQuestActive"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkHasEgg",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": 4032451
+              }
+            ],
+            "nextState": "alreadyHasEgg"
+          },
+          {
+            "conditions": [],
+            "nextState": "giveEgg"
+          }
+        ]
+      }
+    },
+    {
+      "id": "giveEgg",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4032451",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "eggObtained"
+          }
+        ]
+      }
+    },
+    {
+      "id": "eggObtained",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "#b(You have obtained an Egg. Deliver it to Utah.)",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "alreadyHasEgg",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "#b(You have already obtained an Egg. Take the Egg you have and give it to Utah.)",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "noQuestActive",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "#b(You don't need to take an egg now.)#k",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -16,7 +16,7 @@ import (
 type Processor interface {
 	// ValidateStructured validates a list of structured condition inputs against a character
 	ValidateStructured(decorators ...model.Decorator[ValidationResult]) func(characterId uint32, conditionInputs []ConditionInput) (ValidationResult, error)
-	
+
 	// ValidateWithContext validates a list of structured condition inputs using a validation context
 	ValidateWithContext(decorators ...model.Decorator[ValidationResult]) func(ctx ValidationContext, conditionInputs []ConditionInput) (ValidationResult, error)
 }
@@ -144,6 +144,7 @@ func (p *ProcessorImpl) ValidateWithContext(decorators ...model.Decorator[Valida
 	}
 }
 
+
 // GetValidationContextProvider returns a provider that can create validation contexts
 func (p *ProcessorImpl) GetValidationContextProvider() ValidationContextProvider {
 	return NewContextBuilderProvider(
@@ -168,5 +169,7 @@ func (p *ProcessorImpl) GetValidationContextProvider() ValidationContextProvider
 		func(characterId uint32) model.Provider[int] {
 			return p.petProcessor.GetSpawnedPetCount(characterId)
 		},
+		p.l,
+		p.ctx,
 	)
 }

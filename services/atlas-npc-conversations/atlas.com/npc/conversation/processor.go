@@ -197,13 +197,22 @@ func (p *ProcessorImpl) Start(field field.Model, npcId uint32, characterId uint3
 	startStateId := conversation.StartState()
 
 	// Create a conversation context
-	ctx, err := NewConversationContextBuilder().
+	builder := NewConversationContextBuilder().
 		SetField(field).
 		SetCharacterId(characterId).
 		SetNpcId(npcId).
 		SetCurrentState(startStateId).
-		SetConversation(conversation).
-		Build()
+		SetConversation(conversation)
+
+	// Add worldId and channelId to context for use in conditions
+	if field.WorldId() > 0 {
+		builder.AddContextValue("worldId", strconv.Itoa(int(field.WorldId())))
+	}
+	if field.ChannelId() > 0 {
+		builder.AddContextValue("channelId", strconv.Itoa(int(field.ChannelId())))
+	}
+
+	ctx, err := builder.Build()
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to create conversation context for character [%d] and NPC [%d]", characterId, npcId)
 		return err

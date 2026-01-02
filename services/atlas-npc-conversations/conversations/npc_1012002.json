@@ -754,20 +754,87 @@
         "min": 1,
         "max": 100,
         "contextKey": "quantity",
-        "nextState": "craft_4003001_branch"
+        "nextState": "confirm_4003001_branch"
+      }
+    },
+    {
+      "id": "confirm_4003001_branch",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make {context.quantity} #t4003001#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "craft_4003001_branch"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
       }
     },
     {
       "id": "craft_4003001_branch",
-      "type": "craftAction",
-      "craftAction": {
-        "itemId": 4003001,
-        "materials": [4000003],
-        "quantities": [10],
-        "mesoCost": 0,
-        "successState": "craftSuccess",
-        "failureState": "craftFailure",
-        "missingMaterialsState": "missingMaterials"
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "{context.quantity}",
+                "referenceId": 4003001
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "10 * {context.quantity}",
+                "referenceId": 4000003
+              }
+            ],
+            "nextState": "executeCraft_4003001_branch"
+          },
+          {
+            "conditions": [],
+            "nextState": "missingMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "executeCraft_4003001_branch",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4000003",
+              "quantity": "10 * {context.quantity}"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4003001",
+              "quantity": "{context.quantity}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "craftSuccess"
+          }
+        ]
       }
     },
     {
@@ -779,45 +846,192 @@
         "min": 1,
         "max": 100,
         "contextKey": "quantity",
-        "nextState": "craft_4003001_firewood"
+        "nextState": "confirm_4003001_firewood"
+      }
+    },
+    {
+      "id": "confirm_4003001_firewood",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make {context.quantity} #t4003001#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "craft_4003001_firewood"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
       }
     },
     {
       "id": "craft_4003001_firewood",
-      "type": "craftAction",
-      "craftAction": {
-        "itemId": 4003001,
-        "materials": [4000018],
-        "quantities": [5],
-        "mesoCost": 0,
-        "successState": "craftSuccess",
-        "failureState": "craftFailure",
-        "missingMaterialsState": "missingMaterials"
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "{context.quantity}",
+                "referenceId": 4003001
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "5 * {context.quantity}",
+                "referenceId": 4000018
+              }
+            ],
+            "nextState": "executeCraft_4003001_firewood"
+          },
+          {
+            "conditions": [],
+            "nextState": "missingMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "executeCraft_4003001_firewood",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4000018",
+              "quantity": "5 * {context.quantity}"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4003001",
+              "quantity": "{context.quantity}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "craftSuccess"
+          }
+        ]
       }
     },
     {
       "id": "askQuantity_4003000_screws",
       "type": "askNumber",
       "askNumber": {
-        "text": "So, you want me to make some #t4003000#s? In that case, how many do you want me to make?",
+        "text": "So, you want me to make some #t4003000#s? In that case, how many packs do you want me to make?",
         "default": 1,
         "min": 1,
         "max": 100,
         "contextKey": "quantity",
-        "nextState": "craft_4003000_screws"
+        "nextState": "confirm_4003000_screws"
+      }
+    },
+    {
+      "id": "confirm_4003000_screws",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make {context.quantity} packs of #t4003000#s (15 screws each)? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "craft_4003000_screws"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
       }
     },
     {
       "id": "craft_4003000_screws",
-      "type": "craftAction",
-      "craftAction": {
-        "itemId": 4003000,
-        "materials": [4011000, 4011001],
-        "quantities": [1, 1],
-        "mesoCost": 0,
-        "successState": "craftSuccess",
-        "failureState": "craftFailure",
-        "missingMaterialsState": "missingMaterials"
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "{context.quantity}",
+                "referenceId": 4003000
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1 * {context.quantity}",
+                "referenceId": 4011000
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1 * {context.quantity}",
+                "referenceId": 4011001
+              }
+            ],
+            "nextState": "executeCraft_4003000_screws"
+          },
+          {
+            "conditions": [],
+            "nextState": "missingMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "executeCraft_4003000_screws",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011000",
+              "quantity": "1 * {context.quantity}"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011001",
+              "quantity": "1 * {context.quantity}"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4003000",
+              "quantity": "15 * {context.quantity}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "craftSuccess"
+          }
+        ]
       }
     },
     {

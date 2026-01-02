@@ -1,0 +1,238 @@
+{
+  "npcId": 1032003,
+  "startState": "checkLevel",
+  "states": [
+    {
+      "id": "checkLevel",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "level",
+                "operator": "<",
+                "value": "25"
+              }
+            ],
+            "nextState": "levelTooLow"
+          },
+          {
+            "conditions": [],
+            "nextState": "askEntry"
+          }
+        ]
+      }
+    },
+    {
+      "id": "levelTooLow",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "You must be a higher level to enter the Forest of Patience.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "askEntry",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Hi, i'm Shane. I can let you into the Forest of Patience for a small fee. Would you like to enter for #b5000#k mesos?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkMeso"
+          },
+          {
+            "text": "No",
+            "nextState": "declined"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "declined",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Alright, see you next time.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMeso",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": "<",
+                "value": "5000"
+              }
+            ],
+            "nextState": "insufficientMeso"
+          },
+          {
+            "conditions": [],
+            "nextState": "determineDestination"
+          }
+        ]
+      }
+    },
+    {
+      "id": "insufficientMeso",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Sorry but it doesn't like you have enough mesos!",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "determineDestination",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "=",
+                "value": "2",
+                "referenceId": "2050"
+              }
+            ],
+            "nextState": "warpStep1"
+          },
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "=",
+                "value": "2",
+                "referenceId": "2051"
+              }
+            ],
+            "nextState": "warpStep3"
+          },
+          {
+            "conditions": [
+              {
+                "type": "level",
+                "operator": ">=",
+                "value": "25"
+              },
+              {
+                "type": "level",
+                "operator": "<",
+                "value": "50"
+              }
+            ],
+            "nextState": "warpStep1"
+          },
+          {
+            "conditions": [
+              {
+                "type": "level",
+                "operator": ">=",
+                "value": "50"
+              }
+            ],
+            "nextState": "warpStep3"
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpStep1",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "101000100",
+              "portalId": "0"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-5000"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpStep3",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "101000102",
+              "portalId": "0"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-5000"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -464,6 +464,89 @@ func (e *OperationExecutorImpl) executeLocalOperation(field field.Model, charact
 			selectedStyle, len(styles), characterId, outputContextKey)
 		return nil
 
+	case "select_random_weighted":
+		// Format: local:select_random_weighted
+		// Params: items (comma-separated string of values), weights (comma-separated string of integers), outputContextKey (string)
+		// Example: items="1040052,1040054,1040130", weights="10,10,15", outputContextKey="selectedItem"
+		itemsValue, exists := operation.Params()["items"]
+		if !exists {
+			return errors.New("missing items parameter for select_random_weighted operation")
+		}
+
+		weightsValue, exists := operation.Params()["weights"]
+		if !exists {
+			return errors.New("missing weights parameter for select_random_weighted operation")
+		}
+
+		outputContextKey, exists := operation.Params()["outputContextKey"]
+		if !exists {
+			return errors.New("missing outputContextKey parameter for select_random_weighted operation")
+		}
+
+		// Parse items (comma-separated string)
+		itemsStr := strings.TrimSpace(itemsValue)
+		if itemsStr == "" {
+			return errors.New("items parameter is empty")
+		}
+		itemList := strings.Split(itemsStr, ",")
+		for i := range itemList {
+			itemList[i] = strings.TrimSpace(itemList[i])
+		}
+
+		// Parse weights (comma-separated string of integers)
+		weightsStr := strings.TrimSpace(weightsValue)
+		if weightsStr == "" {
+			return errors.New("weights parameter is empty")
+		}
+		weightStrs := strings.Split(weightsStr, ",")
+		weights := make([]int, len(weightStrs))
+		for i, weightStr := range weightStrs {
+			weight, err := strconv.Atoi(strings.TrimSpace(weightStr))
+			if err != nil {
+				return fmt.Errorf("invalid weight value '%s': %w", weightStr, err)
+			}
+			if weight < 0 {
+				return fmt.Errorf("weight value must be non-negative, got %d", weight)
+			}
+			weights[i] = weight
+		}
+
+		// Validate items and weights have the same length
+		if len(itemList) != len(weights) {
+			return fmt.Errorf("items and weights must have the same length (items: %d, weights: %d)", len(itemList), len(weights))
+		}
+
+		// Calculate total weight
+		totalWeight := 0
+		for _, weight := range weights {
+			totalWeight += weight
+		}
+
+		if totalWeight == 0 {
+			return errors.New("total weight is zero, cannot perform weighted random selection")
+		}
+
+		// Perform weighted random selection
+		randomPick := rand.Intn(totalWeight)
+		selectedItem := ""
+		for i := range itemList {
+			randomPick -= weights[i]
+			if randomPick < 0 {
+				selectedItem = itemList[i]
+				break
+			}
+		}
+
+		// Store the selected item in the output context key
+		err := e.setContextValue(characterId, outputContextKey, selectedItem)
+		if err != nil {
+			return fmt.Errorf("failed to store selected item in context: %w", err)
+		}
+
+		e.l.Infof("Selected random weighted item '%s' from %d options (total weight: %d) for character [%d], stored in context key [%s]",
+			selectedItem, len(itemList), totalWeight, characterId, outputContextKey)
+		return nil
+
 	case "fetch_map_player_counts":
 		// Format: local:fetch_map_player_counts
 		// Params: mapIds (comma-separated string of map IDs)

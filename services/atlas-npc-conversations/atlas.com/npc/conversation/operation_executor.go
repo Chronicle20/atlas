@@ -114,15 +114,108 @@ func (e *OperationExecutorImpl) setContextValue(characterId uint32, key string, 
 	return nil
 }
 
+// evaluateArithmeticExpression evaluates simple arithmetic expressions
+// Supports: +, -, *, / operators
+// Example: "10 * 5" -> 50, "100 / 2" -> 50
+func evaluateArithmeticExpression(expr string) (int, error) {
+	expr = strings.TrimSpace(expr)
+
+	// Check for multiplication
+	if strings.Contains(expr, "*") {
+		parts := strings.Split(expr, "*")
+		if len(parts) != 2 {
+			return 0, fmt.Errorf("invalid multiplication expression: %s", expr)
+		}
+		left, err := strconv.Atoi(strings.TrimSpace(parts[0]))
+		if err != nil {
+			return 0, fmt.Errorf("invalid left operand: %s", parts[0])
+		}
+		right, err := strconv.Atoi(strings.TrimSpace(parts[1]))
+		if err != nil {
+			return 0, fmt.Errorf("invalid right operand: %s", parts[1])
+		}
+		return left * right, nil
+	}
+
+	// Check for division
+	if strings.Contains(expr, "/") {
+		parts := strings.Split(expr, "/")
+		if len(parts) != 2 {
+			return 0, fmt.Errorf("invalid division expression: %s", expr)
+		}
+		left, err := strconv.Atoi(strings.TrimSpace(parts[0]))
+		if err != nil {
+			return 0, fmt.Errorf("invalid left operand: %s", parts[0])
+		}
+		right, err := strconv.Atoi(strings.TrimSpace(parts[1]))
+		if err != nil {
+			return 0, fmt.Errorf("invalid right operand: %s", parts[1])
+		}
+		if right == 0 {
+			return 0, fmt.Errorf("division by zero")
+		}
+		return left / right, nil
+	}
+
+	// Check for addition
+	if strings.Contains(expr, "+") {
+		parts := strings.Split(expr, "+")
+		if len(parts) != 2 {
+			return 0, fmt.Errorf("invalid addition expression: %s", expr)
+		}
+		left, err := strconv.Atoi(strings.TrimSpace(parts[0]))
+		if err != nil {
+			return 0, fmt.Errorf("invalid left operand: %s", parts[0])
+		}
+		right, err := strconv.Atoi(strings.TrimSpace(parts[1]))
+		if err != nil {
+			return 0, fmt.Errorf("invalid right operand: %s", parts[1])
+		}
+		return left + right, nil
+	}
+
+	// Check for subtraction (but not negative numbers)
+	if strings.Contains(expr, "-") && !strings.HasPrefix(expr, "-") {
+		parts := strings.Split(expr, "-")
+		if len(parts) != 2 {
+			return 0, fmt.Errorf("invalid subtraction expression: %s", expr)
+		}
+		left, err := strconv.Atoi(strings.TrimSpace(parts[0]))
+		if err != nil {
+			return 0, fmt.Errorf("invalid left operand: %s", parts[0])
+		}
+		right, err := strconv.Atoi(strings.TrimSpace(parts[1]))
+		if err != nil {
+			return 0, fmt.Errorf("invalid right operand: %s", parts[1])
+		}
+		return left - right, nil
+	}
+
+	// No operator found, try to parse as integer
+	return strconv.Atoi(expr)
+}
+
 // evaluateContextValueAsInt evaluates a context value as an integer
+// Supports arithmetic expressions like "10 * {context.quantity}"
 func (e *OperationExecutorImpl) evaluateContextValueAsInt(characterId uint32, paramName string, value string) (int, error) {
-	// First evaluate the context value as a string
+	// First evaluate the context value as a string (replaces {context.xxx} with actual values)
 	strValue, err := e.evaluateContextValue(characterId, paramName, value)
 	if err != nil {
 		return 0, err
 	}
 
-	// Convert the string value to an integer
+	// Check if the result contains arithmetic operators
+	if strings.ContainsAny(strValue, "+-*/") {
+		// Evaluate arithmetic expression
+		intValue, err := evaluateArithmeticExpression(strValue)
+		if err != nil {
+			e.l.WithError(err).Errorf("Failed to evaluate arithmetic expression [%s] for parameter [%s]", strValue, paramName)
+			return 0, fmt.Errorf("arithmetic evaluation failed for [%s]: %w", strValue, err)
+		}
+		return intValue, nil
+	}
+
+	// No arithmetic, convert directly to integer
 	intValue, err := strconv.Atoi(strValue)
 	if err != nil {
 		e.l.WithError(err).Errorf("Failed to convert value [%s] to integer for parameter [%s]", strValue, paramName)

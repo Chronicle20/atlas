@@ -184,38 +184,162 @@ Always represent outcomes clearly:
 
 ---
 
-## ✅ Validation Against Implementation
+## ✅ MANDATORY Validation Workflow
 
-**CRITICAL:** Before finalizing the conversion, validate that all conditions and operations are actually implemented in the query-aggregator service.
+**🚨 CRITICAL - DO NOT SKIP THESE STEPS 🚨**
 
-### Supported Condition Types
+You **MUST** complete validation **BEFORE** writing any output files. Never assume condition types or operation types exist - always verify against the implementation.
 
-Read `services/atlas-query-aggregator/atlas.com/query-aggregator/validation/model.go` to get the authoritative list of supported condition types.
+---
 
-Currently supported (verify by reading the file):
+### Step 1: Load Implementation Reference (DO THIS FIRST)
+
+Before analyzing the script, read these files to build your validation reference:
+
+1. **Read condition types**: `services/atlas-query-aggregator/atlas.com/query-aggregator/validation/model.go`
+   - Extract all `ConditionType` constants (lines 15-40)
+   - Note which conditions require `referenceId` (check validation logic)
+
+2. **Read quest enums** (if script uses quests): `services/atlas-query-aggregator/atlas.com/query-aggregator/quest/model.go`
+   - Extract `QuestStatus` enum values (NOT_STARTED=1, STARTED=2, COMPLETED=3, etc.)
+
+3. **Read operation types** (if needed): Check saga-orchestrator for supported operations
+
+**Build a mental/written list of valid types before proceeding.**
+
+---
+
+### Step 2: Analyze Script and Plan Conversion
+
+After loading the validation reference:
+
+1. Read and analyze the JavaScript NPC script
+2. Identify all conditions needed (level checks, quest checks, item checks, etc.)
+3. Identify all operations needed (warps, item awards, etc.)
+4. **Map each script requirement to a valid condition/operation type**
+
+---
+
+### Step 3: Pre-Conversion Validation Checklist
+
+Before writing the JSON output, **STOP** and complete this checklist:
+
+#### ✅ Condition Type Validation
+
+For each condition you plan to use, verify:
+
+- [ ] Condition type exists in `validation/model.go` ConditionType constants
+- [ ] Using exact spelling (case-sensitive): `mapCapacity` not `mapPlayerCount`
+- [ ] Operator is valid (=, >, <, >=, <=) - NO custom operators
+- [ ] If requires `referenceId`, you're providing it (item, questStatus, mapCapacity, etc.)
+- [ ] Enum values are correct (questStatus uses 1/2/3, not "started"/"completed")
+
+#### ✅ Operation Type Validation
+
+For each operation you plan to use, verify:
+
+- [ ] Operation type is implemented in saga-orchestrator
+- [ ] Using correct parameter names (`mapId`, `portalId`, `itemId`, `quantity`, etc.)
+- [ ] All required parameters are provided
+
+#### ✅ Script Accuracy Validation
+
+- [ ] Every dialogue state corresponds to a `cm.send*()` call in the original script
+- [ ] No extra dialogue states added that don't exist in original
+- [ ] All dialogue text is copied verbatim (no paraphrasing)
+- [ ] Conversation ends (nextState: null) where `cm.dispose()` is called
+
+---
+
+### Step 4: STOP and Report (if uncertain or issues found)
+
+**IF** you encounter ANY of the following, **STOP immediately and ask the user**:
+
+- ❓ Condition type you need might not exist in validation/model.go
+- ❓ Unsure which condition type to use for a script requirement
+- ❓ Operation type might not be implemented
+- ❓ Uncertain about enum values or parameter names
+- ❌ Validation checklist has unchecked items
+
+**Present a validation report:**
+
+```markdown
+## 🔍 Pre-Conversion Validation Report
+
+### ✅ Valid Conditions (verified in model.go)
+- `level` - Character level check
+- `questStatus` - Quest status check (requires referenceId)
+
+### ❓ Uncertain/Missing Conditions
+- Need to check player count in map
+  - Found: `mapCapacity` in model.go (line 39)
+  - Requires: referenceId with map ID
+  - **Confirming this is correct?**
+
+### ⚠️ Issues Found
+- Script uses `cm.getPlayerCount()` but I'm uncertain about implementation
+- **Should I proceed with `mapCapacity` condition?**
+
+### 📋 Conversion Plan
+- State 1: Level check using `level` condition
+- State 2: Quest check using `questStatus` condition
+- State 3: Map capacity check using `mapCapacity` condition
+
+**Ready to proceed? Or would you like me to adjust the approach?**
+```
+
+**Wait for user approval before proceeding.**
+
+---
+
+### Step 5: Write Output (only after validation passes)
+
+Only write the JSON file after:
+- ✅ All checklist items verified
+- ✅ User approved (if you reported uncertainties)
+- ✅ No assumption of condition/operation types
+
+---
+
+### Quick Reference: Supported Types
+
+#### Condition Types (from validation/model.go)
+
+Always verify by reading the file, but common types include:
 - `jobId` - Character's job ID
 - `meso` - Character's meso amount
 - `mapId` - Character's current map
 - `fame` - Character's fame level
-- `item` - Item possession check (requires `referenceId`)
-- `questStatus` - Quest status check (requires `referenceId`, value is quest.QuestStatus enum)
+- `gender` - Character gender (0 = male, 1 = female)
 - `level` - Character level
+- `reborns` - Rebirth count
+- `dojoPoints` - Mu Lung Dojo points
+- `vanquisherKills` - Vanquisher kill count
+- `gmLevel` - GM level
+- `guildId` - Guild ID (0 = not in guild)
+- `guildLeader` - Guild leader status (0 = not leader, 1 = is leader)
+- `guildRank` - Guild rank
+- `questStatus` - Quest status (requires `referenceId`, value is 1/2/3)
+- `questProgress` - Quest progress step (requires `referenceId` and `step`)
+- `hasUnclaimedMarriageGifts` - Unclaimed marriage gifts (0 = false, 1 = true)
+- `strength`, `dexterity`, `intelligence`, `luck` - Character stats
+- `buddyCapacity` - Buddy list capacity
+- `petCount` - Number of pets
+- `mapCapacity` - Player count in map (requires `referenceId` with map ID)
+- `item` - Item possession (requires `referenceId`)
 - And others (check model.go for complete list)
 
-### Supported Operators
+#### Operators (from validation/model.go)
 
-From `services/atlas-query-aggregator/atlas.com/query-aggregator/validation/model.go`:
 - `=` - Equals
 - `>` - Greater than
 - `<` - Less than
 - `>=` - Greater than or equal
 - `<=` - Less than or equal
 
-**DO NOT** use custom operators like "completed", "started", etc.
+**DO NOT** use custom operators like "completed", "started", "active", etc.
 
-### Quest Status Values
-
-If using `questStatus` conditions, read `services/atlas-query-aggregator/atlas.com/query-aggregator/quest/model.go` for the QuestStatus enum:
+#### Quest Status Enum Values (from quest/model.go)
 
 ```go
 const (
@@ -226,46 +350,64 @@ const (
 )
 ```
 
-For checking quest completion: `{"type": "questStatus", "operator": "=", "value": "3", "referenceId": "questId"}`
+Use numeric values: `{"type": "questStatus", "operator": "=", "value": "2", "referenceId": "22515"}`
 
-### Supported Operation Types
+#### Common Operation Types
 
-Check the saga-orchestrator service for supported operation types. Common operations:
-- `warp_to_map` - Teleport character
-- `award_item` - Give item to character
-- `award_mesos` - Give mesos to character
-- `award_exp` - Give experience
-- `destroy_item` - Remove item from character
-- `change_job` - Change character's job
+Verify in saga-orchestrator, but common operations:
+- `warp_to_map` - Teleport character (params: `mapId`, `portalId`)
+- `warp_to_random_portal` - Warp to random portal (params: `mapId`)
+- `award_item` - Give item (params: `itemId`, `quantity`)
+- `award_mesos` - Give mesos (params: `amount`, `actorId`, `actorType`)
+- `award_exp` - Give experience (params: `amount`, `type`, `attr1`)
+- `award_level` - Give levels (params: `amount`)
+- `destroy_item` - Remove item (params: `itemId`, `quantity`)
+- `change_job` - Change job (params: `jobId`)
+- `change_hair` - Change hair style (params: `styleId`)
+- `change_face` - Change face style (params: `styleId`)
+- `change_skin` - Change skin color (params: `styleId`)
+- `increase_buddy_capacity` - Increase buddy capacity (params: `amount`)
+- `gain_closeness` - Increase pet closeness (params: `petId` or `petIndex`, `amount`)
+- `create_skill` - Create skill (params: `skillId`, `level`, `masterLevel`)
+- `update_skill` - Update skill (params: `skillId`, `level`, `masterLevel`)
 
-### Validation Steps
+**Local Operations:**
+- `local:generate_hair_styles` - Generate hair styles (params: `baseStyles`, `genderFilter`, etc.)
+- `local:generate_hair_colors` - Generate hair colors (params: `colors`, etc.)
+- `local:generate_face_styles` - Generate face styles (params: `baseStyles`, etc.)
+- `local:select_random_cosmetic` - Random selection (params: `stylesContextKey`, `outputContextKey`)
+- `local:fetch_map_player_counts` - Fetch player counts (params: `mapIds`)
+- `local:log` - Log message (params: `message`)
+- `local:debug` - Debug log (params: `message`)
 
-Before writing the output file:
+---
 
-1. **Read validation model**: Read `services/atlas-query-aggregator/atlas.com/query-aggregator/validation/model.go` to get the current list of supported condition types
-2. **Check all condition types**: Verify every condition type used in the conversion is in the supported list
-3. **Check all operators**: Verify all operators are in the supported list (=, >, <, >=, <=)
-4. **Validate enum values**: For conditions using enums (like questStatus), read the enum definition and use correct values
-5. **Check operations**: Verify all operation types are implemented
-6. **If validation fails**: Report which conditions/operations are not supported and ask the user how to proceed before writing the file
-
-### Example Validation Failure Response
-
-If you encounter unsupported conditions or operations:
+### Example: Good Validation Flow
 
 ```
-❌ VALIDATION FAILED - Unsupported conditions/operations found:
-
-Conditions not implemented:
-- "quest" - Not found in validation/model.go
-  → Did you mean "questStatus"?
-
-Operations not implemented:
-- "teleport_player" - Not found in supported operations
-  → Did you mean "warp_to_map"?
-
-How would you like to proceed?
-1. Skip this NPC and document the missing features
-2. Use alternative conditions/operations (provide suggestions)
-3. Implement the missing features first
+1. Read validation/model.go → Found mapCapacity, questStatus, level
+2. Analyze script → Needs level check, quest check, map player count check
+3. Map requirements:
+   - cm.getLevel() >= 20 → `level` condition ✅
+   - cm.isQuestActive(22515) → `questStatus` with value "2" ✅
+   - cm.getPlayerCount(mapId) >= 5 → `mapCapacity` condition ✅
+4. Checklist complete → All verified
+5. Write output file
 ```
+
+### Example: Bad Validation Flow (DON'T DO THIS)
+
+```
+1. Analyze script
+2. Assume mapPlayerCount exists ❌
+3. Write output file ❌
+4. User finds error ❌
+```
+
+---
+
+## 🎯 Summary: The Golden Rule
+
+**"Read the implementation first, write the conversion second, ask when uncertain."**
+
+Never write output files based on assumptions. Always validate first.

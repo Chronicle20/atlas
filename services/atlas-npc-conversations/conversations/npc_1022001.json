@@ -1,0 +1,263 @@
+{
+  "npcId": 1022001,
+  "startState": "welcome",
+  "states": [
+    {
+      "id": "welcome",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Hello, I drive the Regular Cab. If you want to go from town to town safely and fast, then ride our cab. We'll glady take you to your destination with an affordable price.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "checkJobForDiscount"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkJobForDiscount",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "jobId",
+                "operator": "=",
+                "value": "0"
+              }
+            ],
+            "nextState": "selectDestinationBeginner"
+          },
+          {
+            "conditions": [],
+            "nextState": "selectDestinationRegular"
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectDestinationBeginner",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "We have a special 90% discount for beginners.Choose your destination, for fees will change from place to place.",
+        "choices": [
+          {
+            "text": "Victoria Road - Lith Harbor (100 mesos)",
+            "nextState": "confirmWarp",
+            "context": {
+              "destination": "104000000",
+              "cost": "100"
+            }
+          },
+          {
+            "text": "Victoria Road - Henesys (100 mesos)",
+            "nextState": "confirmWarp",
+            "context": {
+              "destination": "100000000",
+              "cost": "100"
+            }
+          },
+          {
+            "text": "Victoria Road - Ellinia (80 mesos)",
+            "nextState": "confirmWarp",
+            "context": {
+              "destination": "101000000",
+              "cost": "80"
+            }
+          },
+          {
+            "text": "Victoria Road - Kerning City (100 mesos)",
+            "nextState": "confirmWarp",
+            "context": {
+              "destination": "103000000",
+              "cost": "100"
+            }
+          },
+          {
+            "text": "Victoria Road - Nautilus Harbor (80 mesos)",
+            "nextState": "confirmWarp",
+            "context": {
+              "destination": "120000000",
+              "cost": "80"
+            }
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectDestinationRegular",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Choose your destination, for fees will change from place to place.",
+        "choices": [
+          {
+            "text": "Victoria Road - Lith Harbor (1000 mesos)",
+            "nextState": "confirmWarp",
+            "context": {
+              "destination": "104000000",
+              "cost": "1000"
+            }
+          },
+          {
+            "text": "Victoria Road - Henesys (1000 mesos)",
+            "nextState": "confirmWarp",
+            "context": {
+              "destination": "100000000",
+              "cost": "1000"
+            }
+          },
+          {
+            "text": "Victoria Road - Ellinia (800 mesos)",
+            "nextState": "confirmWarp",
+            "context": {
+              "destination": "101000000",
+              "cost": "800"
+            }
+          },
+          {
+            "text": "Victoria Road - Kerning City (1000 mesos)",
+            "nextState": "confirmWarp",
+            "context": {
+              "destination": "103000000",
+              "cost": "1000"
+            }
+          },
+          {
+            "text": "Victoria Road - Nautilus Harbor (800 mesos)",
+            "nextState": "confirmWarp",
+            "context": {
+              "destination": "120000000",
+              "cost": "800"
+            }
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmWarp",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You don't have anything else to do here, huh? Do you really want to go to #b#m{context.destination}##k? It'll cost you #b{context.cost} mesos#k.",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkMesos"
+          },
+          {
+            "text": "No",
+            "nextState": "declineWarp"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "declineWarp",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "There's a lot to see in this town, too. Come back and find us when you need to go to a different town.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMesos",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": "<",
+                "value": "{context.cost}"
+              }
+            ],
+            "nextState": "insufficientMesos"
+          },
+          {
+            "conditions": [],
+            "nextState": "performWarp"
+          }
+        ]
+      }
+    },
+    {
+      "id": "insufficientMesos",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "You don't have enough mesos. Sorry to say this, but without them, you won't be able to ride the cab.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "performWarp",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-{context.cost}",
+              "actorId": "1022001",
+              "actorType": "NPC"
+            }
+          },
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "{context.destination}",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

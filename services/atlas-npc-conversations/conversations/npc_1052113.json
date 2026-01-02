@@ -110,7 +110,7 @@
                 "type": "mapCapacity",
                 "operator": ">=",
                 "value": "5",
-                "referenceId": 910310000
+                "referenceId": "910310000"
               }
             ],
             "nextState": "roomFull"
@@ -134,7 +134,7 @@
                 "type": "mapCapacity",
                 "operator": ">=",
                 "value": "5",
-                "referenceId": 910310001
+                "referenceId": "910310001"
               }
             ],
             "nextState": "roomFull"
@@ -158,7 +158,7 @@
                 "type": "mapCapacity",
                 "operator": ">=",
                 "value": "5",
-                "referenceId": 910310002
+                "referenceId": "910310002"
               }
             ],
             "nextState": "roomFull"
@@ -182,7 +182,7 @@
                 "type": "mapCapacity",
                 "operator": ">=",
                 "value": "5",
-                "referenceId": 910310003
+                "referenceId": "910310003"
               }
             ],
             "nextState": "roomFull"
@@ -206,7 +206,7 @@
                 "type": "mapCapacity",
                 "operator": ">=",
                 "value": "5",
-                "referenceId": 910310004
+                "referenceId": "910310004"
               }
             ],
             "nextState": "roomFull"

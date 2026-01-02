@@ -791,13 +791,13 @@
                 "type": "inventorySpace",
                 "operator": ">=",
                 "value": "{context.quantity}",
-                "referenceId": 4003001
+                "referenceId": "4003001"
               },
               {
                 "type": "item",
                 "operator": ">=",
                 "value": "10 * {context.quantity}",
-                "referenceId": 4000003
+                "referenceId": "4000003"
               }
             ],
             "nextState": "executeCraft_4003001_branch"
@@ -883,13 +883,13 @@
                 "type": "inventorySpace",
                 "operator": ">=",
                 "value": "{context.quantity}",
-                "referenceId": 4003001
+                "referenceId": "4003001"
               },
               {
                 "type": "item",
                 "operator": ">=",
                 "value": "5 * {context.quantity}",
-                "referenceId": 4000018
+                "referenceId": "4000018"
               }
             ],
             "nextState": "executeCraft_4003001_firewood"
@@ -975,19 +975,19 @@
                 "type": "inventorySpace",
                 "operator": ">=",
                 "value": "{context.quantity}",
-                "referenceId": 4003000
+                "referenceId": "4003000"
               },
               {
                 "type": "item",
                 "operator": ">=",
                 "value": "1 * {context.quantity}",
-                "referenceId": 4011000
+                "referenceId": "4011000"
               },
               {
                 "type": "item",
                 "operator": ">=",
                 "value": "1 * {context.quantity}",
-                "referenceId": 4011001
+                "referenceId": "4011001"
               }
             ],
             "nextState": "executeCraft_4003000_screws"

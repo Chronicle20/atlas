@@ -14,7 +14,7 @@
                 "type": "item",
                 "operator": "<",
                 "value": "1",
-                "referenceId": 4031045
+                "referenceId": "4031045"
               }
             ],
             "nextState": "noTicket"
@@ -38,7 +38,7 @@
                 "type": "transportAvailable",
                 "operator": "=",
                 "value": "0",
-                "referenceId": 101000300
+                "referenceId": "101000300"
               }
             ],
             "nextState": "boatUnavailable"

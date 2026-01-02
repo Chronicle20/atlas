@@ -1,0 +1,139 @@
+{
+  "npcId": 1061006,
+  "startState": "mysteriousForce",
+  "states": [
+    {
+      "id": "mysteriousForce",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "You feel a mysterious force surrounding this statue.",
+        "choices": [
+          { "text": "Next", "nextState": "checkQuestProgress" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "checkQuestProgress",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": ">=", "value": "2", "referenceId": "2054" }
+            ],
+            "nextState": "selectZone3"
+          },
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": ">=", "value": "2", "referenceId": "2053" }
+            ],
+            "nextState": "selectZone2"
+          },
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": ">=", "value": "2", "referenceId": "2052" }
+            ],
+            "nextState": "selectZone1"
+          },
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectZone3",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Its power allows you to will yourself deep inside the forest.",
+        "choices": [
+          {
+            "text": "Deep Forest of Patience 1",
+            "nextState": "warpToZone",
+            "context": { "destination": "105040310" }
+          },
+          {
+            "text": "Deep Forest of Patience 2",
+            "nextState": "warpToZone",
+            "context": { "destination": "105040312" }
+          },
+          {
+            "text": "Deep Forest of Patience 3",
+            "nextState": "warpToZone",
+            "context": { "destination": "105040314" }
+          },
+          { "text": "Exit", "nextState": "declineWarp" }
+        ]
+      }
+    },
+    {
+      "id": "selectZone2",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Its power allows you to will yourself deep inside the forest.",
+        "choices": [
+          {
+            "text": "Deep Forest of Patience 1",
+            "nextState": "warpToZone",
+            "context": { "destination": "105040310" }
+          },
+          {
+            "text": "Deep Forest of Patience 2",
+            "nextState": "warpToZone",
+            "context": { "destination": "105040312" }
+          },
+          { "text": "Exit", "nextState": "declineWarp" }
+        ]
+      }
+    },
+    {
+      "id": "selectZone1",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Its power allows you to will yourself deep inside the forest.",
+        "choices": [
+          {
+            "text": "Deep Forest of Patience 1",
+            "nextState": "warpToZone",
+            "context": { "destination": "105040310" }
+          },
+          { "text": "Exit", "nextState": "declineWarp" }
+        ]
+      }
+    },
+    {
+      "id": "warpToZone",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "{context.destination}",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "declineWarp",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Alright, see you next time.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    }
+  ]
+}

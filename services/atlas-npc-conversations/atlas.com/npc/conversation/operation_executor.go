@@ -1146,6 +1146,110 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 		return stepId, saga.Pending, saga.ChangeSkin, payload, nil
 
+	case "spawn_monster":
+		// Format: spawn_monster
+		// Params: monsterId (uint32), x (int16), y (int16), count (int, optional, default 1), team (int8, optional, default 0)
+		// Note: Foothold is resolved by saga-orchestrator via atlas-data lookup
+		monsterIdValue, exists := operation.Params()["monsterId"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing monsterId parameter for spawn_monster operation")
+		}
+
+		monsterIdInt, err := e.evaluateContextValueAsInt(characterId, "monsterId", monsterIdValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		xValue, exists := operation.Params()["x"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing x parameter for spawn_monster operation")
+		}
+
+		xInt, err := e.evaluateContextValueAsInt(characterId, "x", xValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		yValue, exists := operation.Params()["y"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing y parameter for spawn_monster operation")
+		}
+
+		yInt, err := e.evaluateContextValueAsInt(characterId, "y", yValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		// Count is optional, defaults to 1
+		countInt := 1
+		if countValue, exists := operation.Params()["count"]; exists {
+			countInt, err = e.evaluateContextValueAsInt(characterId, "count", countValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
+		}
+
+		// Team is optional, defaults to 0
+		teamInt := 0
+		if teamValue, exists := operation.Params()["team"]; exists {
+			teamInt, err = e.evaluateContextValueAsInt(characterId, "team", teamValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
+		}
+
+		payload := saga.SpawnMonsterPayload{
+			CharacterId: characterId,
+			WorldId:     f.WorldId(),
+			ChannelId:   f.ChannelId(),
+			MapId:       uint32(f.MapId()),
+			MonsterId:   uint32(monsterIdInt),
+			X:           int16(xInt),
+			Y:           int16(yInt),
+			Team:        int8(teamInt),
+			Count:       countInt,
+		}
+
+		return stepId, saga.Pending, saga.SpawnMonster, payload, nil
+
+	case "complete_quest":
+		// Format: complete_quest
+		// Params: questId (uint32), npcId (uint32, optional - defaults to conversation NPC)
+		// Note: This is currently a stub as no quest service exists yet
+		questIdValue, exists := operation.Params()["questId"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing questId parameter for complete_quest operation")
+		}
+
+		questIdInt, err := e.evaluateContextValueAsInt(characterId, "questId", questIdValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		// NpcId is optional - if not provided, get from conversation context
+		var npcIdInt int
+		if npcIdValue, exists := operation.Params()["npcId"]; exists {
+			npcIdInt, err = e.evaluateContextValueAsInt(characterId, "npcId", npcIdValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
+		} else {
+			// Get NPC ID from conversation context
+			ctx, err := GetRegistry().GetPreviousContext(e.t, characterId)
+			if err != nil {
+				return "", "", "", nil, fmt.Errorf("failed to get conversation context for NPC ID: %w", err)
+			}
+			npcIdInt = int(ctx.NpcId())
+		}
+
+		payload := saga.CompleteQuestPayload{
+			CharacterId: characterId,
+			QuestId:     uint32(questIdInt),
+			NpcId:       uint32(npcIdInt),
+		}
+
+		return stepId, saga.Pending, saga.CompleteQuest, payload, nil
+
 	default:
 		return "", "", "", nil, fmt.Errorf("unknown operation type: %s", operation.Type())
 	}

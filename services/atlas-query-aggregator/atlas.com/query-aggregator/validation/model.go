@@ -7,6 +7,7 @@ import (
 
 	inventory2 "github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/item"
+	_map "github.com/Chronicle20/atlas-constants/map"
 )
 
 // ConditionType represents the type of condition to validate
@@ -38,6 +39,7 @@ const (
 	PetCountCondition               ConditionType = "petCount"
 	MapCapacityCondition            ConditionType = "mapCapacity"
 	InventorySpaceCondition         ConditionType = "inventorySpace"
+	TransportAvailableCondition     ConditionType = "transportAvailable"
 )
 
 // Operator represents the comparison operator in a condition
@@ -109,7 +111,7 @@ func (b *ConditionBuilder) SetType(condType string) *ConditionBuilder {
 	}
 
 	switch ConditionType(condType) {
-	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition, GmLevelCondition, GuildIdCondition, GuildRankCondition, QuestStatusCondition, QuestProgressCondition, UnclaimedMarriageGiftsCondition, StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition, GuildLeaderCondition, BuddyCapacityCondition, PetCountCondition, MapCapacityCondition, InventorySpaceCondition:
+	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition, GmLevelCondition, GuildIdCondition, GuildRankCondition, QuestStatusCondition, QuestProgressCondition, UnclaimedMarriageGiftsCondition, StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition, GuildLeaderCondition, BuddyCapacityCondition, PetCountCondition, MapCapacityCondition, InventorySpaceCondition, TransportAvailableCondition:
 		b.conditionType = ConditionType(condType)
 	default:
 		b.err = fmt.Errorf("unsupported condition type: %s", condType)
@@ -219,6 +221,10 @@ func (b *ConditionBuilder) FromInput(input ConditionInput) *ConditionBuilder {
 		if input.ReferenceId == 0 {
 			b.err = fmt.Errorf("referenceId is required for mapCapacity conditions")
 		}
+	case TransportAvailableCondition:
+		if input.ReferenceId == 0 {
+			b.err = fmt.Errorf("referenceId is required for transportAvailable conditions")
+		}
 	}
 
 	return b
@@ -271,6 +277,11 @@ func (b *ConditionBuilder) Validate() *ConditionBuilder {
 	case InventorySpaceCondition:
 		if b.referenceId == nil {
 			b.err = fmt.Errorf("referenceId is required for inventorySpace conditions")
+			return b
+		}
+	case TransportAvailableCondition:
+		if b.referenceId == nil {
+			b.err = fmt.Errorf("referenceId is required for transportAvailable conditions")
 			return b
 		}
 	}
@@ -632,6 +643,24 @@ func (c Condition) EvaluateWithContext(ctx ValidationContext) ConditionResult {
 			ItemId:      itemId,
 			ActualValue: actualValue,
 		}
+
+	case TransportAvailableCondition:
+		// Get transport state for the specified start map
+		state := ctx.GetTransportState(_map.Id(c.referenceId))
+
+		// Map state to numeric value (open_entry=1, other=0)
+		if state == "open_entry" {
+			actualValue = 1
+		} else {
+			actualValue = 0
+		}
+
+		description = fmt.Sprintf("Transport for map %d is %s (state: %s)", c.referenceId, func() string {
+			if actualValue == 1 {
+				return "available"
+			}
+			return "not available"
+		}(), state)
 
 	default:
 		// For non-context-specific conditions, delegate to the original Evaluate method

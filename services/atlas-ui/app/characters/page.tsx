@@ -44,8 +44,26 @@ export default function Page() {
     }, [activeTenant, fetchTenantConfiguration])
 
     useEffect(() => {
-        fetchDataAgain()
-    }, [activeTenant, fetchDataAgain])
+        if (!activeTenant) return
+
+        setLoading(true)
+
+        Promise.all([
+            charactersService.getAll(activeTenant),
+            accountsService.getAllAccounts(activeTenant),
+            fetchTenantConfiguration(activeTenant.id),
+        ])
+            .then(([characterData, accountData, tenantConfigData]) => {
+                setCharacters(characterData);
+                setAccounts(accountData);
+                setTenantConfig(tenantConfigData);
+            })
+            .catch((err: unknown) => {
+                const errorInfo = createErrorFromUnknown(err, "Failed to fetch characters data");
+                setError(errorInfo.message);
+            })
+            .finally(() => setLoading(false));
+    }, [activeTenant, fetchTenantConfiguration])
 
     const accountMap = new Map(accounts.map(a => [a.id, a]));
 

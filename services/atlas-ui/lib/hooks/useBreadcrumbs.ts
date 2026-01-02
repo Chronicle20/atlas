@@ -140,37 +140,55 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
   // Parse pathname into initial breadcrumb segments
   const initialBreadcrumbs = useMemo(() => {
     try {
-      setGlobalError(null);
-      
       // Try route-based parsing first for better accuracy
       const routeBreadcrumbs = getBreadcrumbsFromRoute(pathname);
       if (routeBreadcrumbs.length > 0) {
-        return routeBreadcrumbs.map(partial => ({
-          segment: partial.segment || '',
-          label: partial.label || 'Unknown',
-          href: partial.href || '',
-          dynamic: partial.dynamic || false,
-          isCurrentPage: partial.isCurrentPage || false,
-          ...(partial.entityId && { entityId: partial.entityId }),
-          ...(partial.entityType && { entityType: partial.entityType }),
-        })) as BreadcrumbSegment[];
+        return {
+          success: true,
+          breadcrumbs: routeBreadcrumbs.map(partial => ({
+            segment: partial.segment || '',
+            label: partial.label || 'Unknown',
+            href: partial.href || '',
+            dynamic: partial.dynamic || false,
+            isCurrentPage: partial.isCurrentPage || false,
+            ...(partial.entityId && { entityId: partial.entityId }),
+            ...(partial.entityType && { entityType: partial.entityType }),
+          })) as BreadcrumbSegment[],
+          error: null,
+        };
       }
 
       // Fallback to pathname parsing
-      return parsePathname(pathname);
+      return {
+        success: true,
+        breadcrumbs: parsePathname(pathname),
+        error: null,
+      };
     } catch (error) {
-      setGlobalError(error instanceof Error ? error : new Error('Failed to parse breadcrumbs'));
-      return [];
+      return {
+        success: false,
+        breadcrumbs: [] as BreadcrumbSegment[],
+        error: error instanceof Error ? error : new Error('Failed to parse breadcrumbs'),
+      };
     }
   }, [pathname]);
 
+  // Effect to handle parsing errors
+  useEffect(() => {
+    if (initialBreadcrumbs.error) {
+      setGlobalError(initialBreadcrumbs.error);
+    } else {
+      setGlobalError(null);
+    }
+  }, [initialBreadcrumbs.error]);
+
   // Process breadcrumbs with dynamic label resolution
-  const [processedBreadcrumbs, setProcessedBreadcrumbs] = useState<BreadcrumbSegment[]>(initialBreadcrumbs);
-  
+  const [processedBreadcrumbs, setProcessedBreadcrumbs] = useState<BreadcrumbSegment[]>(initialBreadcrumbs.breadcrumbs);
+
   // Create a stable key based on breadcrumbs structure to prevent infinite loops
-  const breadcrumbsKey = useMemo(() => 
-    initialBreadcrumbs.map(b => `${b.segment}:${b.entityId || 'static'}`).join('|'),
-    [initialBreadcrumbs]
+  const breadcrumbsKey = useMemo(() =>
+    initialBreadcrumbs.breadcrumbs.map(b => `${b.segment}:${b.entityId || 'static'}`).join('|'),
+    [initialBreadcrumbs.breadcrumbs]
   );
   
   const prevBreadcrumbsKeyRef = useRef<string>('');
@@ -185,21 +203,21 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
     prevBreadcrumbsKeyRef.current = breadcrumbsKey;
 
     if (!activeTenant || !autoResolve) {
-      setProcessedBreadcrumbs(initialBreadcrumbs);
+      setProcessedBreadcrumbs(initialBreadcrumbs.breadcrumbs);
       return;
     }
 
-    const dynamicBreadcrumbs = initialBreadcrumbs.filter(b => b.dynamic && b.entityId && b.entityType);
-    
+    const dynamicBreadcrumbs = initialBreadcrumbs.breadcrumbs.filter(b => b.dynamic && b.entityId && b.entityType);
+
     if (dynamicBreadcrumbs.length === 0) {
-      setProcessedBreadcrumbs(initialBreadcrumbs);
+      setProcessedBreadcrumbs(initialBreadcrumbs.breadcrumbs);
       return;
     }
 
     const resolveDynamicLabels = async () => {
       // Batch all resolutions first
       const resolutionResults = new Map<string, BreadcrumbResolutionState>();
-      const updatedBreadcrumbs = [...initialBreadcrumbs];
+      const updatedBreadcrumbs = [...initialBreadcrumbs.breadcrumbs];
 
       // Set all items to loading state
       dynamicBreadcrumbs.forEach(breadcrumb => {
@@ -260,7 +278,7 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
     };
 
     resolveDynamicLabels();
-  }, [breadcrumbsKey, activeTenant, autoResolve, resolverOptions, initialBreadcrumbs]);
+  }, [breadcrumbsKey, activeTenant, autoResolve, resolverOptions, initialBreadcrumbs.breadcrumbs]);
 
   // Effect to preload labels
   useEffect(() => {
@@ -270,7 +288,7 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
       const entityType = getEntityTypeFromRoute(pathname);
       if (!entityType) return;
 
-      const dynamicBreadcrumbs = initialBreadcrumbs.filter(b => 
+      const dynamicBreadcrumbs = initialBreadcrumbs.breadcrumbs.filter(b =>
         b.dynamic && b.entityId && b.entityType === entityType
       );
 
@@ -286,7 +304,7 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
     };
 
     preloadLabelsForRoute();
-  }, [pathname, initialBreadcrumbs, activeTenant, enablePreloading, resolverOptions]);
+  }, [pathname, initialBreadcrumbs.breadcrumbs, activeTenant, enablePreloading, resolverOptions]);
 
   // Build final breadcrumbs with filtering and truncation
   const finalBreadcrumbs = useMemo(() => {
@@ -340,17 +358,17 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
           return newMap;
         });
       });
-      
+
       // Reset to allow re-resolution by updating the key reference
       prevBreadcrumbsKeyRef.current = '';
-      setProcessedBreadcrumbs(initialBreadcrumbs);
+      setProcessedBreadcrumbs(initialBreadcrumbs.breadcrumbs);
     },
     preloadLabels: async (entityType: EntityType, entityIds: string[]) => {
       if (!activeTenant) throw new Error('No active tenant');
       await preloadEntityLabels(entityType, entityIds, activeTenant, resolverOptions);
     },
     resolutionStates,
-  }), [activeTenant, resolverOptions, resolutionStates, initialBreadcrumbs]);
+  }), [activeTenant, resolverOptions, resolutionStates, initialBreadcrumbs.breadcrumbs]);
 
   // Utility functions
   const utils = useMemo(() => ({

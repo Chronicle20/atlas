@@ -209,7 +209,7 @@ export function ValidationFeedback({ conversation, apiBaseUrl }: ValidationFeedb
         <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded border border-blue-200">
           <p className="font-semibold mb-1">About Validation:</p>
           <ul className="list-disc list-inside space-y-1">
-            <li>Click "Validate Conversation" to check for errors</li>
+            <li>Click &quot;Validate Conversation&quot; to check for errors</li>
             <li>Validation checks for missing required fields, invalid references, and structural issues</li>
             <li>Fix all errors before saving to ensure the conversation works correctly</li>
             <li>Validation is performed server-side for accuracy</li>

@@ -219,7 +219,7 @@ export function ConditionsBuilder({ outcomes, onChange, availableStates }: Condi
 
       {outcomes.length === 0 ? (
         <div className="text-sm text-gray-500 italic p-4 border border-dashed border-gray-300 rounded text-center">
-          No outcomes defined. Click "Add Outcome" to create one.
+          No outcomes defined. Click &quot;Add Outcome&quot; to create one.
         </div>
       ) : (
         <div className="space-y-4">

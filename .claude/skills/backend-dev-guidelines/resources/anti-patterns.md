@@ -12,6 +12,8 @@ description: Common pitfalls to avoid when implementing Golang microservices.
 | Business logic in handlers | Breaks separation of concerns |
 | Mutable public fields | Violates immutability |
 | Database logic in processors | Violates functional purity |
+| **Cache in processor constructor** | **Cache is per-request instead of singleton; defeats caching purpose** |
+| **Cache as processor instance field** | **Each request gets fresh empty cache; see [patterns-cache.md](patterns-cache.md)** |
 
 | Hardcoded topics | Breaks environment portability |
 | Missing validation | Allows invalid domain states |

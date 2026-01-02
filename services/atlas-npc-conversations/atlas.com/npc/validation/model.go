@@ -32,7 +32,7 @@ const (
 type ConditionInput struct {
 	Type        string `json:"type"`                  // e.g., "jobId", "meso", "item", "quest"
 	Operator    string `json:"operator"`              // e.g., "=", ">=", "<"
-	Value       int    `json:"value"`                 // Value or quantity
+	Value       int    `json:"value"`                 // Value to compare against
 	ReferenceId uint32 `json:"referenceId,omitempty"` // For quest validation, item checks, etc.
 	Step        string `json:"step,omitempty"`        // For quest progress validation
 	WorldId     byte   `json:"worldId,omitempty"`     // For mapCapacity conditions

@@ -37,6 +37,7 @@ const (
 	BuddyCapacityCondition          ConditionType = "buddyCapacity"
 	PetCountCondition               ConditionType = "petCount"
 	MapCapacityCondition            ConditionType = "mapCapacity"
+	InventorySpaceCondition         ConditionType = "inventorySpace"
 )
 
 // Operator represents the comparison operator in a condition
@@ -108,7 +109,7 @@ func (b *ConditionBuilder) SetType(condType string) *ConditionBuilder {
 	}
 
 	switch ConditionType(condType) {
-	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition, GmLevelCondition, GuildIdCondition, GuildRankCondition, QuestStatusCondition, QuestProgressCondition, UnclaimedMarriageGiftsCondition, StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition, GuildLeaderCondition, BuddyCapacityCondition, PetCountCondition, MapCapacityCondition:
+	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition, GmLevelCondition, GuildIdCondition, GuildRankCondition, QuestStatusCondition, QuestProgressCondition, UnclaimedMarriageGiftsCondition, StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition, GuildLeaderCondition, BuddyCapacityCondition, PetCountCondition, MapCapacityCondition, InventorySpaceCondition:
 		b.conditionType = ConditionType(condType)
 	default:
 		b.err = fmt.Errorf("unsupported condition type: %s", condType)
@@ -265,6 +266,11 @@ func (b *ConditionBuilder) Validate() *ConditionBuilder {
 	case MapCapacityCondition:
 		if b.referenceId == nil {
 			b.err = fmt.Errorf("referenceId is required for mapCapacity conditions")
+			return b
+		}
+	case InventorySpaceCondition:
+		if b.referenceId == nil {
+			b.err = fmt.Errorf("referenceId is required for inventorySpace conditions")
 			return b
 		}
 	}
@@ -571,6 +577,60 @@ func (c Condition) EvaluateWithContext(ctx ValidationContext) ConditionResult {
 			description = fmt.Sprintf("Guild Rank %s %d (character not in guild)", c.operator, c.value)
 		} else {
 			description = fmt.Sprintf("Guild Rank %s %d", c.operator, c.value)
+		}
+
+	case InventorySpaceCondition:
+		// Check if item processor is available
+		itemProcessor := ctx.ItemProcessor()
+		if itemProcessor == nil {
+			return ConditionResult{
+				Passed:      false,
+				Description: fmt.Sprintf("Item processor not available for inventory space check (item %d)", c.referenceId),
+				Type:        c.conditionType,
+				Operator:    c.operator,
+				Value:       c.value,
+				ItemId:      c.referenceId,
+				ActualValue: 0,
+			}
+		}
+
+		// Calculate inventory space
+		canHold, slotsRemaining := CalculateInventorySpace(character, c.referenceId, uint32(c.value), itemProcessor)
+
+		// For inventory space, actualValue represents slots remaining after adding items
+		// If slotsRemaining is negative, it means we don't have enough space
+		actualValue = slotsRemaining
+		itemId = c.referenceId
+		description = fmt.Sprintf("Inventory Space for item %d (quantity %d) %s required (slots remaining: %d)", c.referenceId, c.value, c.operator, slotsRemaining)
+
+		// Handle the comparison based on canHold result
+		// The value in the condition represents the quantity to add
+		// We return canHold as the result for >= operator (can we hold this quantity?)
+		if c.operator == GreaterEqual {
+			passed = canHold
+		} else {
+			// For other operators, compare slots remaining
+			// This allows more flexible conditions if needed
+			switch c.operator {
+			case Equals:
+				passed = actualValue == c.value
+			case GreaterThan:
+				passed = actualValue > c.value
+			case LessThan:
+				passed = actualValue < c.value
+			case LessEqual:
+				passed = actualValue <= c.value
+			}
+		}
+
+		return ConditionResult{
+			Passed:      passed,
+			Description: description,
+			Type:        c.conditionType,
+			Operator:    c.operator,
+			Value:       c.value,
+			ItemId:      itemId,
+			ActualValue: actualValue,
 		}
 
 	default:

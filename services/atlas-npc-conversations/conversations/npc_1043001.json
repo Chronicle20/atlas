@@ -1,0 +1,160 @@
+{
+  "npcId": 1043001,
+  "startState": "checkGender",
+  "states": [
+    {
+      "id": "checkGender",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "gender",
+                "operator": "=",
+                "value": "0"
+              }
+            ],
+            "nextState": "selectMalePrize"
+          },
+          {
+            "conditions": [],
+            "nextState": "selectFemalePrize"
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectMalePrize",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:select_random_weighted",
+            "params": {
+              "items": "1060041,1060048,1060116,1062009,1062017,1062024,1062056,1062061,1702045,1702114",
+              "weights": "10,10,10,10,10,10,10,10,5,5",
+              "outputContextKey": "selectedPrize"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "checkQuest"
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectFemalePrize",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:select_random_weighted",
+            "params": {
+              "items": "1061113,1061130,1061139,1062009,1062017,1062024,1062056,1062061,1702045,1702114",
+              "weights": "10,10,10,10,10,10,10,10,5,5",
+              "outputContextKey": "selectedPrize"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "checkQuest"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkQuest",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "=",
+                "value": "2",
+                "referenceId": 2051
+              }
+            ],
+            "nextState": "awardQuestItem"
+          },
+          {
+            "conditions": [],
+            "nextState": "awardPrize"
+          }
+        ]
+      }
+    },
+    {
+      "id": "awardQuestItem",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4031032",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "awardPrize"
+          }
+        ]
+      }
+    },
+    {
+      "id": "awardPrize",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "{context.selectedPrize}",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "warpOut"
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpOut",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "101000000",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

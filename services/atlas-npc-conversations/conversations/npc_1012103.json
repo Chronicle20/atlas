@@ -144,6 +144,10 @@
           {
             "text": "Ok",
             "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
           }
         ]
       }
@@ -256,6 +260,10 @@
           {
             "text": "Ok",
             "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
           }
         ]
       }
@@ -270,6 +278,10 @@
           {
             "text": "Ok",
             "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
           }
         ]
       }
@@ -283,6 +295,10 @@
         "choices": [
           {
             "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
             "nextState": null
           }
         ]

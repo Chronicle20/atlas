@@ -376,9 +376,106 @@ Verify in saga-orchestrator, but common operations:
 - `local:generate_hair_colors` - Generate hair colors (params: `colors`, etc.)
 - `local:generate_face_styles` - Generate face styles (params: `baseStyles`, etc.)
 - `local:select_random_cosmetic` - Random selection (params: `stylesContextKey`, `outputContextKey`)
+- `local:select_random_weighted` - Weighted random selection (params: `items`, `weights`, `outputContextKey`)
 - `local:fetch_map_player_counts` - Fetch player counts (params: `mapIds`)
 - `local:log` - Log message (params: `message`)
 - `local:debug` - Debug log (params: `message`)
+
+#### Detailed: local:select_random_weighted
+
+Performs weighted random selection from a list of items. Useful for reward systems, loot drops, or any scenario requiring probability-based item selection.
+
+**Parameters:**
+- `items` (string, required) - Comma-separated list of values to select from
+- `weights` (string, required) - Comma-separated list of integer weights (must match length of items)
+- `outputContextKey` (string, required) - Context key to store the selected value
+
+**Behavior:**
+- Items and weights must have the same length
+- Weights must be non-negative integers
+- Higher weight = higher probability of selection
+- Total weight = sum of all weights
+- Each item has probability = (weight / total weight)
+- Weight of 0 means item will never be selected
+- Selected value is stored as a string in the context
+
+**Example Usage:**
+
+```json
+{
+  "type": "genericAction",
+  "genericAction": {
+    "operations": [
+      {
+        "type": "local:select_random_weighted",
+        "params": {
+          "items": "1040052,1040054,1040130",
+          "weights": "10,20,15",
+          "outputContextKey": "selectedItem"
+        }
+      }
+    ],
+    "outcomes": [
+      {
+        "conditions": [],
+        "nextState": "awardItem"
+      }
+    ]
+  }
+}
+```
+
+In this example:
+- Item 1040052 has 10/45 (~22%) chance
+- Item 1040054 has 20/45 (~44%) chance
+- Item 1040130 has 15/45 (~33%) chance
+- Selected item ID is stored in `context.selectedItem`
+
+**Using Selected Value:**
+
+```json
+{
+  "type": "genericAction",
+  "genericAction": {
+    "operations": [
+      {
+        "type": "award_item",
+        "params": {
+          "itemId": "{context.selectedItem}",
+          "quantity": "1"
+        }
+      }
+    ]
+  }
+}
+```
+
+**Real-World Example (Gender-Based Rewards):**
+
+```json
+{
+  "id": "selectMaleReward",
+  "type": "genericAction",
+  "genericAction": {
+    "operations": [
+      {
+        "type": "local:select_random_weighted",
+        "params": {
+          "items": "1040052,1040130,1042013",
+          "weights": "10,15,5",
+          "outputContextKey": "reward"
+        }
+      }
+    ],
+    "outcomes": [
+      {
+        "conditions": [],
+        "nextState": "giveReward"
+      }
+    ]
+  }
+}
+```
 
 ---
 

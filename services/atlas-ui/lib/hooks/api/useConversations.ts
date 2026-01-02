@@ -318,8 +318,7 @@ export function useDeleteConversation(): UseMutationResult<
   const queryClient = useQueryClient();
 
   return useMutation({
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    mutationFn: ({ id, tenant, options }) => 
+    mutationFn: ({ id, tenant, options }) =>
       conversationsService.delete(id, options),
     onMutate: async ({ tenant, id }) => {
       // Cancel any outgoing refetches for this conversation
@@ -444,8 +443,7 @@ export function useDeleteConversationsBatch(): UseMutationResult<
   const queryClient = useQueryClient();
 
   return useMutation({
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    mutationFn: ({ ids, tenant, options, batchOptions }) => 
+    mutationFn: ({ ids, tenant, options, batchOptions }) =>
       conversationsService.deleteBatch(ids, options, batchOptions),
     onMutate: async ({ tenant, ids }) => {
       // Cancel outgoing refetches for affected conversations

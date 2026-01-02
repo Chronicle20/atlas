@@ -46,8 +46,26 @@ export default function Page() {
     }, [activeTenant, fetchTenantConfiguration])
 
     useEffect(() => {
-        fetchDataAgain()
-    }, [activeTenant, fetchDataAgain])
+        if (!activeTenant) return
+
+        setLoading(true)
+
+        Promise.all([
+            guildsService.getAll(activeTenant),
+            charactersService.getAll(activeTenant),
+            fetchTenantConfiguration(activeTenant.id),
+        ])
+            .then(([guildData, characterData, tenantConfigData]) => {
+                setGuilds(guildData);
+                setCharacters(characterData);
+                setTenantConfig(tenantConfigData);
+            })
+            .catch((err: unknown) => {
+                const errorInfo = createErrorFromUnknown(err, "Failed to fetch guilds and tenant config");
+                setError(errorInfo.message);
+            })
+            .finally(() => setLoading(false));
+    }, [activeTenant, fetchTenantConfiguration])
 
     const characterMap = new Map(characters.map(c => [c.id, c]));
 

@@ -72,7 +72,6 @@ function TestWrapper({ children }: { children: React.ReactNode }) {
 }
 
 describe('CharacterRenderer', () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const mockUseCharacterImage = require('@/lib/hooks/useCharacterImage').useCharacterImage as jest.MockedFunction<typeof import('@/lib/hooks/useCharacterImage').useCharacterImage>;
 
   beforeEach(() => {

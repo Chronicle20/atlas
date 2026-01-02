@@ -35,10 +35,13 @@ const DEFAULT_OPTIONS: Required<NpcErrorHandlerOptions> = {
 export function useNpcErrorHandler(options: NpcErrorHandlerOptions = {}) {
   const config = useMemo(() => ({ ...DEFAULT_OPTIONS, ...options }), [options]);
   const toastCountRef = useRef(0);
-  const lastToastResetRef = useRef(Date.now());
+  const lastToastResetRef = useRef(0);
 
-  // Reset toast count every minute
+  // Initialize and reset toast count every minute
   useEffect(() => {
+    // Initialize on first render
+    lastToastResetRef.current = Date.now();
+
     const interval = setInterval(() => {
       toastCountRef.current = 0;
       lastToastResetRef.current = Date.now();

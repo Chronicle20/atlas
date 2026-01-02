@@ -2299,7 +2299,7 @@ export default function ConversationPage() {
                     className="w-full p-2 border rounded-md"
                     placeholder="quantity"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Variable name to store the number (default: "quantity")</p>
+                  <p className="text-xs text-gray-500 mt-1">Variable name to store the number (default: &quot;quantity&quot;)</p>
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold">Next State</h3>
@@ -2370,7 +2370,7 @@ export default function ConversationPage() {
                     className="w-full p-2 border rounded-md"
                     placeholder="selectedStyle"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Variable name to store selected style (default: "selectedStyle")</p>
+                  <p className="text-xs text-gray-500 mt-1">Variable name to store selected style (default: &quot;selectedStyle&quot;)</p>
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold">Next State</h3>

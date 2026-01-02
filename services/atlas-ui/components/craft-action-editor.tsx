@@ -112,7 +112,7 @@ export function CraftActionEditor({ data, onChange, availableStates }: CraftActi
 
         {data.materials.length === 0 ? (
           <div className="text-sm text-gray-500 italic p-4 border border-dashed border-gray-300 rounded text-center">
-            No materials defined. Click "Add Material" to add one.
+            No materials defined. Click &quot;Add Material&quot; to add one.
           </div>
         ) : (
           <div className="space-y-2">

@@ -275,7 +275,7 @@ export function OperationsEditor({ operations, onChange }: OperationsEditorProps
 
       {operations.length === 0 ? (
         <div className="text-sm text-gray-500 italic p-4 border border-dashed border-gray-300 rounded text-center">
-          No operations defined. Click "Add Operation" to create one.
+          No operations defined. Click &quot;Add Operation&quot; to create one.
         </div>
       ) : (
         <div className="space-y-3">

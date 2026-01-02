@@ -38,6 +38,7 @@ jest.mock('@/lib/hooks/useIntersectionObserver', () => ({
 jest.mock('next/image', () => {
   return function MockImage(props: any) {
     const { priority, unoptimized, ...otherProps } = props;
+    // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
     return <img {...otherProps} data-testid="next-image" data-priority={priority} data-unoptimized={unoptimized} />;
   };
 });

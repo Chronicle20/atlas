@@ -149,15 +149,15 @@ export function useCharacterImage(
   // Preload management
   const preload = useCallback(async (): Promise<ImagePreloadResult | null> => {
     if (!query.data?.url) return null;
-    
+
     // Reuse existing preload promise if available
     if (preloadPromiseRef.current) {
       return preloadPromiseRef.current;
     }
-    
+
     preloadPromiseRef.current = preloadImage(query.data.url);
     return preloadPromiseRef.current;
-  }, [query.data?.url]);
+  }, [query.data]);
 
   // Prefetch related images (e.g., different stances or scales)
   const prefetchVariants = useCallback((variants: Array<Partial<CharacterRenderOptions>>) => {

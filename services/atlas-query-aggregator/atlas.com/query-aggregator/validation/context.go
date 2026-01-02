@@ -3,6 +3,7 @@ package validation
 import (
 	"atlas-query-aggregator/buddy"
 	"atlas-query-aggregator/character"
+	"atlas-query-aggregator/item"
 	npcMap "atlas-query-aggregator/map"
 	"atlas-query-aggregator/marriage"
 	"atlas-query-aggregator/quest"
@@ -20,6 +21,7 @@ type ValidationContext struct {
 	buddyList buddy.Model
 	petCount  int
 	mapP      npcMap.Processor
+	itemP     item.Processor
 	l         logrus.FieldLogger
 	ctx       context.Context
 }
@@ -33,6 +35,7 @@ func NewValidationContext(char character.Model) ValidationContext {
 		buddyList: buddy.NewModel(char.Id(), 0),
 		petCount:  0,
 		mapP:      nil,
+		itemP:     nil,
 		l:         nil,
 		ctx:       nil,
 	}
@@ -47,6 +50,7 @@ func NewValidationContextWithLogger(char character.Model, l logrus.FieldLogger, 
 		buddyList: buddy.NewModel(char.Id(), 0),
 		petCount:  0,
 		mapP:      npcMap.NewProcessor(l, ctx),
+		itemP:     item.NewProcessor(l, ctx),
 		l:         l,
 		ctx:       ctx,
 	}
@@ -76,6 +80,12 @@ func (ctx ValidationContext) BuddyList() buddy.Model {
 // PetCount returns the count of spawned pets
 func (ctx ValidationContext) PetCount() int {
 	return ctx.petCount
+}
+
+// ItemProcessor returns the item processor for querying item data
+// Returns nil if not available (graceful degradation)
+func (ctx ValidationContext) ItemProcessor() item.Processor {
+	return ctx.itemP
 }
 
 // GetPlayerCountInMap returns the player count for a given map
@@ -121,6 +131,7 @@ func (ctx ValidationContext) WithQuest(questModel quest.Model) ValidationContext
 		buddyList: ctx.buddyList,
 		petCount:  ctx.petCount,
 		mapP:      ctx.mapP,
+		itemP:     ctx.itemP,
 		l:         ctx.l,
 		ctx:       ctx.ctx,
 	}
@@ -135,6 +146,7 @@ func (ctx ValidationContext) WithMarriage(marriageModel marriage.Model) Validati
 		buddyList: ctx.buddyList,
 		petCount:  ctx.petCount,
 		mapP:      ctx.mapP,
+		itemP:     ctx.itemP,
 		l:         ctx.l,
 		ctx:       ctx.ctx,
 	}
@@ -149,6 +161,7 @@ func (ctx ValidationContext) WithBuddyList(buddyListModel buddy.Model) Validatio
 		buddyList: buddyListModel,
 		petCount:  ctx.petCount,
 		mapP:      ctx.mapP,
+		itemP:     ctx.itemP,
 		l:         ctx.l,
 		ctx:       ctx.ctx,
 	}
@@ -163,6 +176,7 @@ func (ctx ValidationContext) WithPetCount(count int) ValidationContext {
 		buddyList: ctx.buddyList,
 		petCount:  count,
 		mapP:      ctx.mapP,
+		itemP:     ctx.itemP,
 		l:         ctx.l,
 		ctx:       ctx.ctx,
 	}
@@ -176,6 +190,7 @@ type ValidationContextBuilder struct {
 	buddyList buddy.Model
 	petCount  int
 	mapP      npcMap.Processor
+	itemP     item.Processor
 	l         logrus.FieldLogger
 	ctx       context.Context
 }
@@ -189,6 +204,7 @@ func NewValidationContextBuilder(char character.Model) *ValidationContextBuilder
 		buddyList: buddy.NewModel(char.Id(), 0),
 		petCount:  0,
 		mapP:      nil,
+		itemP:     nil,
 		l:         nil,
 		ctx:       nil,
 	}
@@ -203,6 +219,7 @@ func NewValidationContextBuilderWithLogger(char character.Model, l logrus.FieldL
 		buddyList: buddy.NewModel(char.Id(), 0),
 		petCount:  0,
 		mapP:      npcMap.NewProcessor(l, ctx),
+		itemP:     item.NewProcessor(l, ctx),
 		l:         l,
 		ctx:       ctx,
 	}
@@ -244,6 +261,7 @@ func (b *ValidationContextBuilder) Build() ValidationContext {
 		buddyList: b.buddyList,
 		petCount:  b.petCount,
 		mapP:      b.mapP,
+		itemP:     b.itemP,
 		l:         b.l,
 		ctx:       b.ctx,
 	}

@@ -14,10 +14,11 @@ description: Rules for AI agents generating or editing Golang services.
 5. Never include tenant fields in public APIs.
 6. Use `server.RegisterHandler` and `server.RegisterInputHandler` for REST endpoints.
 7. Implement JSON:API interface methods on all REST models and request types.
-8. **Always verify referenced types exist before using them** - Never assume a type/constant/operation exists.
-9. **Always run builds AND tests after code changes** - Verify ALL affected services compile and pass tests.
-10. **Always ask before implementing new features** - Get user approval before adding new functionality.
-11. **Follow cross-service implementation guidelines** - See [cross-service-implementation.md](cross-service-implementation.md) when working across multiple services.
+8. **Caches MUST be singletons** - Never create cache in processor constructor; use `GetCache()` pattern (see [patterns-cache.md](patterns-cache.md)).
+9. **Always verify referenced types exist before using them** - Never assume a type/constant/operation exists.
+10. **Always run builds AND tests after code changes** - Verify ALL affected services compile and pass tests.
+11. **Always ask before implementing new features** - Get user approval before adding new functionality.
+12. **Follow cross-service implementation guidelines** - See [cross-service-implementation.md](cross-service-implementation.md) when working across multiple services.
 
 ## Validation Rules
 
@@ -217,6 +218,47 @@ res, err := ops.SliceMap(Transform)(ops.FixedProvider(models))(ops.ParallelMap()
 
 
 ## Common Anti-Patterns to Avoid
+
+### ❌ Cache in Processor Constructor
+```go
+// DON'T DO THIS - Cache is created per-request!
+type ProcessorImpl struct {
+    l     logrus.FieldLogger
+    ctx   context.Context
+    cache map[uint32]interface{}  // ❌ Per-instance cache
+    mu    sync.RWMutex
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+    return &ProcessorImpl{
+        l:     l,
+        ctx:   ctx,
+        cache: make(map[uint32]interface{}),  // ❌ Fresh cache every request
+    }
+}
+```
+
+### ✅ Use Singleton Cache
+```go
+// DO THIS - Cache is shared across all requests
+type ProcessorImpl struct {
+    l     logrus.FieldLogger
+    ctx   context.Context
+    cache CacheInterface  // ✅ Reference to singleton
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+    return &ProcessorImpl{
+        l:     l,
+        ctx:   ctx,
+        cache: GetCache(),  // ✅ Get singleton instance
+    }
+}
+```
+
+**Rule:** Caches MUST be application-scoped singletons, never request-scoped instances. See [patterns-cache.md](patterns-cache.md) for complete implementation guide.
+
+---
 
 ### ❌ Manual JSON:API Envelope Handling
 ```go

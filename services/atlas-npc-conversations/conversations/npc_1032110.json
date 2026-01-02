@@ -1,0 +1,24 @@
+{
+  "npcId": 1032110,
+  "startState": "start",
+  "states": [
+    {
+      "id": "start",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Nothing remarkable here.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

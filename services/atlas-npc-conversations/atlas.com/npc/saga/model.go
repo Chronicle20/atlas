@@ -110,6 +110,8 @@ const (
 	ChangeHair             Action = "change_hair"
 	ChangeFace             Action = "change_face"
 	ChangeSkin             Action = "change_skin"
+	SpawnMonster           Action = "spawn_monster"
+	CompleteQuest          Action = "complete_quest"
 )
 
 // Step represents a single step within a saga.
@@ -250,6 +252,28 @@ type ChangeSkinPayload struct {
 	StyleId     byte       `json:"styleId"`     // Skin color ID to change to
 }
 
+// SpawnMonsterPayload represents the payload required to spawn monsters.
+// Note: Foothold (fh) is resolved by saga-orchestrator via atlas-data lookup, not specified here.
+type SpawnMonsterPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	MapId       uint32     `json:"mapId"`       // MapId where monsters should spawn
+	MonsterId   uint32     `json:"monsterId"`   // MonsterId to spawn
+	X           int16      `json:"x"`           // X coordinate for spawn
+	Y           int16      `json:"y"`           // Y coordinate for spawn
+	Team        int8       `json:"team"`        // Team assignment (optional, defaults to 0)
+	Count       int        `json:"count"`       // Number of monsters to spawn (optional, defaults to 1)
+}
+
+// CompleteQuestPayload represents the payload required to complete a quest.
+// Note: This is currently a stub as no quest service exists yet.
+type CompleteQuestPayload struct {
+	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
+	QuestId     uint32 `json:"questId"`     // QuestId to complete
+	NpcId       uint32 `json:"npcId"`       // NpcId that completed the quest
+}
+
 type ExperienceDistributions struct {
 	ExperienceType string `json:"experienceType"`
 	Amount         uint32 `json:"amount"`
@@ -341,6 +365,18 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case GainCloseness:
 		var payload GainClosenessPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case SpawnMonster:
+		var payload SpawnMonsterPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case CompleteQuest:
+		var payload CompleteQuestPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

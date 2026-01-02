@@ -370,6 +370,8 @@ Verify in saga-orchestrator, but common operations:
 - `gain_closeness` - Increase pet closeness (params: `petId` or `petIndex`, `amount`)
 - `create_skill` - Create skill (params: `skillId`, `level`, `masterLevel`)
 - `update_skill` - Update skill (params: `skillId`, `level`, `masterLevel`)
+- `spawn_monster` - Spawn monsters at location (params: `monsterId`, `x`, `y`, `count`, `team`) - foothold resolved automatically
+- `complete_quest` - Complete a quest (params: `questId`, `npcId`) - stub implementation
 
 **Local Operations:**
 - `local:generate_hair_styles` - Generate hair styles (params: `baseStyles`, `genderFilter`, etc.)

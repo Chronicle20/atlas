@@ -1,0 +1,616 @@
+{
+  "npcId": 1052003,
+  "startState": "start",
+  "states": [
+    {
+      "id": "start",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Yes, I do own this forge. If you're willing to pay, I can offer you some of my services.",
+        "choices": [
+          {
+            "text": "Refine a mineral ore",
+            "nextState": "selectMineral"
+          },
+          {
+            "text": "Refine a jewel ore",
+            "nextState": "selectJewel"
+          },
+          {
+            "text": "I have Iron Hog's Metal Hoof...",
+            "nextState": "confirmIronHog"
+          },
+          {
+            "text": "Upgrade a claw",
+            "nextState": "selectClaw"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectMineral",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "So, what kind of mineral ore would you like to refine?",
+        "choices": [
+          {
+            "text": "Bronze",
+            "nextState": "askQuantityMineral",
+            "context": {
+              "itemId": "4011000",
+              "matId": "4010000",
+              "matQty": "10",
+              "cost": "300"
+            }
+          },
+          {
+            "text": "Steel",
+            "nextState": "askQuantityMineral",
+            "context": {
+              "itemId": "4011001",
+              "matId": "4010001",
+              "matQty": "10",
+              "cost": "300"
+            }
+          },
+          {
+            "text": "Mithril",
+            "nextState": "askQuantityMineral",
+            "context": {
+              "itemId": "4011002",
+              "matId": "4010002",
+              "matQty": "10",
+              "cost": "300"
+            }
+          },
+          {
+            "text": "Adamantium",
+            "nextState": "askQuantityMineral",
+            "context": {
+              "itemId": "4011003",
+              "matId": "4010003",
+              "matQty": "10",
+              "cost": "500"
+            }
+          },
+          {
+            "text": "Silver",
+            "nextState": "askQuantityMineral",
+            "context": {
+              "itemId": "4011004",
+              "matId": "4010004",
+              "matQty": "10",
+              "cost": "500"
+            }
+          },
+          {
+            "text": "Orihalcon",
+            "nextState": "askQuantityMineral",
+            "context": {
+              "itemId": "4011005",
+              "matId": "4010005",
+              "matQty": "10",
+              "cost": "500"
+            }
+          },
+          {
+            "text": "Gold",
+            "nextState": "askQuantityMineral",
+            "context": {
+              "itemId": "4011006",
+              "matId": "4010006",
+              "matQty": "10",
+              "cost": "800"
+            }
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectJewel",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "So, what kind of jewel ore would you like to refine?",
+        "choices": [
+          {
+            "text": "Garnet",
+            "nextState": "askQuantityJewel",
+            "context": {
+              "itemId": "4021000",
+              "matId": "4020000",
+              "matQty": "10",
+              "cost": "500"
+            }
+          },
+          {
+            "text": "Amethyst",
+            "nextState": "askQuantityJewel",
+            "context": {
+              "itemId": "4021001",
+              "matId": "4020001",
+              "matQty": "10",
+              "cost": "500"
+            }
+          },
+          {
+            "text": "Aquamarine",
+            "nextState": "askQuantityJewel",
+            "context": {
+              "itemId": "4021002",
+              "matId": "4020002",
+              "matQty": "10",
+              "cost": "500"
+            }
+          },
+          {
+            "text": "Emerald",
+            "nextState": "askQuantityJewel",
+            "context": {
+              "itemId": "4021003",
+              "matId": "4020003",
+              "matQty": "10",
+              "cost": "500"
+            }
+          },
+          {
+            "text": "Opal",
+            "nextState": "askQuantityJewel",
+            "context": {
+              "itemId": "4021004",
+              "matId": "4020004",
+              "matQty": "10",
+              "cost": "500"
+            }
+          },
+          {
+            "text": "Sapphire",
+            "nextState": "askQuantityJewel",
+            "context": {
+              "itemId": "4021005",
+              "matId": "4020005",
+              "matQty": "10",
+              "cost": "500"
+            }
+          },
+          {
+            "text": "Topaz",
+            "nextState": "askQuantityJewel",
+            "context": {
+              "itemId": "4021006",
+              "matId": "4020006",
+              "matQty": "10",
+              "cost": "500"
+            }
+          },
+          {
+            "text": "Diamond",
+            "nextState": "askQuantityJewel",
+            "context": {
+              "itemId": "4021007",
+              "matId": "4020007",
+              "matQty": "10",
+              "cost": "1000"
+            }
+          },
+          {
+            "text": "Black Crystal",
+            "nextState": "askQuantityJewel",
+            "context": {
+              "itemId": "4021008",
+              "matId": "4020008",
+              "matQty": "10",
+              "cost": "3000"
+            }
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmIronHog",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You know about that? Not many people realize the potential in the Iron Hog's Metal Hoof... I can make this into something special, if you want me to.",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "askQuantityIronHog"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "askQuantityIronHog",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "askNumberIronHog"
+          }
+        ]
+      }
+    },
+    {
+      "id": "askNumberIronHog",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "So, you want me to make some #t4011001#s? In that case, how many do you want me to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "confirmCraftIronHog"
+      }
+    },
+    {
+      "id": "confirmCraftIronHog",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make {context.quantity} #t4011001#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4000039# 100 * {context.quantity} #t4000039#\r\n#i4031138# 1000 * {context.quantity} meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "validateCraftIronHog"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "validateCraftIronHog",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4000039",
+              "quantity": "100 * {context.quantity}"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-1000 * {context.quantity}"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4011001",
+              "quantity": "{context.quantity}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "craftSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectClaw",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Ah, you wish to upgrade a claw? Then tell me, which one?",
+        "choices": [
+          {
+            "text": "Blood Gigantic - Thief Lv. 60",
+            "nextState": "confirmCraftClaw",
+            "context": {
+              "itemId": "1472023",
+              "mat1": "1472022",
+              "mat1Qty": "1",
+              "mat2": "4011007",
+              "mat2Qty": "1",
+              "mat3": "4021000",
+              "mat3Qty": "8",
+              "mat4": "2012000",
+              "mat4Qty": "10",
+              "cost": "80000"
+            }
+          },
+          {
+            "text": "Sapphire Gigantic - Thief Lv. 60",
+            "nextState": "confirmCraftClaw",
+            "context": {
+              "itemId": "1472024",
+              "mat1": "1472022",
+              "mat1Qty": "1",
+              "mat2": "4011007",
+              "mat2Qty": "1",
+              "mat3": "4021005",
+              "mat3Qty": "8",
+              "mat4": "2012002",
+              "mat4Qty": "10",
+              "cost": "80000"
+            }
+          },
+          {
+            "text": "Dark Gigantic - Thief Lv. 60",
+            "nextState": "confirmCraftClaw",
+            "context": {
+              "itemId": "1472025",
+              "mat1": "1472022",
+              "mat1Qty": "1",
+              "mat2": "4011007",
+              "mat2Qty": "1",
+              "mat3": "4021008",
+              "mat3Qty": "3",
+              "mat4": "4000046",
+              "mat4Qty": "5",
+              "cost": "100000"
+            }
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "askQuantityMineral",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "So, you want me to make some #t{context.itemId}#s? In that case, how many do you want me to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "confirmCraftMineral"
+      }
+    },
+    {
+      "id": "confirmCraftMineral",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make {context.quantity} #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.matId}# {context.matQty} * {context.quantity} #t{context.matId}#\r\n#i4031138# {context.cost} * {context.quantity} meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "validateCraftMineral"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "validateCraftMineral",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "{context.matId}",
+              "quantity": "{context.matQty} * {context.quantity}"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-{context.cost} * {context.quantity}"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "{context.itemId}",
+              "quantity": "{context.quantity}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "craftSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "askQuantityJewel",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "So, you want me to make some #t{context.itemId}#s? In that case, how many do you want me to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "confirmCraftJewel"
+      }
+    },
+    {
+      "id": "confirmCraftJewel",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make {context.quantity} #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.matId}# {context.matQty} * {context.quantity} #t{context.matId}#\r\n#i4031138# {context.cost} * {context.quantity} meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "validateCraftJewel"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "validateCraftJewel",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "{context.matId}",
+              "quantity": "{context.matQty} * {context.quantity}"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-{context.cost} * {context.quantity}"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "{context.itemId}",
+              "quantity": "{context.quantity}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "craftSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmCraftClaw",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.mat1}# {context.mat1Qty} #t{context.mat1}#\r\n#i{context.mat2}# {context.mat2Qty} #t{context.mat2}#\r\n#i{context.mat3}# {context.mat3Qty} #t{context.mat3}#\r\n#i{context.mat4}# {context.mat4Qty} #t{context.mat4}#\r\n#i4031138# {context.cost} meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "validateCraftClaw"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "validateCraftClaw",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "{context.mat1}",
+              "quantity": "{context.mat1Qty}"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "{context.mat2}",
+              "quantity": "{context.mat2Qty}"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "{context.mat3}",
+              "quantity": "{context.mat3Qty}"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "{context.mat4}",
+              "quantity": "{context.mat4Qty}"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-{context.cost}"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "{context.itemId}",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "craftSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "craftSuccess",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Phew... I almost didn't think that would work for a second... Well, I hope you enjoy it, anyway.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

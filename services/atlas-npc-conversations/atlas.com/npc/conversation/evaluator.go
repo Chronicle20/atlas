@@ -69,12 +69,32 @@ func (e *EvaluatorImpl) EvaluateCondition(characterId uint32, condition Conditio
 
 	e.l.Debugf("Evaluated condition value [%s] to [%d] for character [%d]", extractedValue, intValue, characterId)
 
+	// Resolve referenceId from condition (supports context references like {context.itemId})
+	var resolvedReferenceId uint32
+	referenceIdRaw := condition.ReferenceIdRaw()
+	if referenceIdRaw != "" {
+		resolvedRefIdStr, isRefIdContextRef, refIdErr := ExtractContextValue(referenceIdRaw, ctx.Context())
+		if refIdErr != nil {
+			e.l.WithError(refIdErr).Errorf("Failed to resolve referenceId context [%s] for character [%d]", referenceIdRaw, characterId)
+			return false, refIdErr
+		}
+		if isRefIdContextRef {
+			e.l.Debugf("Resolved referenceId [%s] to [%s] for character [%d]", referenceIdRaw, resolvedRefIdStr, characterId)
+		}
+		if refIdInt, convErr := strconv.ParseUint(resolvedRefIdStr, 10, 32); convErr == nil {
+			resolvedReferenceId = uint32(refIdInt)
+		} else {
+			e.l.Errorf("ReferenceId [%s] resolved to [%s] which is not a valid uint32 for character [%d]", referenceIdRaw, resolvedRefIdStr, characterId)
+			return false, fmt.Errorf("referenceId [%s] is not a valid uint32", resolvedRefIdStr)
+		}
+	}
+
 	// Create a validation condition input
 	validationCondition := validation.ConditionInput{
 		Type:        condition.Type(),
 		Operator:    condition.Operator(),
 		Value:       intValue,
-		ReferenceId: condition.ReferenceId(),
+		ReferenceId: resolvedReferenceId,
 		Step:        condition.Step(),
 	}
 

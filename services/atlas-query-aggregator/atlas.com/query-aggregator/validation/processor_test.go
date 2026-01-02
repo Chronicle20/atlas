@@ -720,6 +720,8 @@ func TestValidateWithContextMockingExternalServices(t *testing.T) {
 						return 0, nil
 					}
 				},
+			logger,
+			context.Background(),
 			)
 
 			// Get validation context

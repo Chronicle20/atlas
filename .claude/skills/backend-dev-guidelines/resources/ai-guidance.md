@@ -14,9 +14,11 @@ description: Rules for AI agents generating or editing Golang services.
 5. Never include tenant fields in public APIs.
 6. Use `server.RegisterHandler` and `server.RegisterInputHandler` for REST endpoints.
 7. Implement JSON:API interface methods on all REST models and request types.
-8. **Always verify referenced types exist before using them** - Never assume a type/constant/operation exists.
-9. **Always run tests after code changes** - Verify nothing broke before proceeding.
-10. **Always ask before implementing new features** - Get user approval before adding new functionality.
+8. **Caches MUST be singletons** - Never create cache in processor constructor; use `GetCache()` pattern (see [patterns-cache.md](patterns-cache.md)).
+9. **Always verify referenced types exist before using them** - Never assume a type/constant/operation exists.
+10. **Always run builds AND tests after code changes** - Verify ALL affected services compile and pass tests.
+11. **Always ask before implementing new features** - Get user approval before adding new functionality.
+12. **Follow cross-service implementation guidelines** - See [cross-service-implementation.md](cross-service-implementation.md) when working across multiple services.
 
 ## Validation Rules
 
@@ -67,24 +69,46 @@ operation := Operation{
 ## Testing Rules
 
 ### After ANY Code Change:
-1. **Always run tests** for the modified service
-2. **Report failures immediately** - Never commit/continue with failing tests
-3. **Check related services** - If you modified a shared type, test dependent services
-4. **Run builds first** - Use `go build` to catch compilation errors before running tests
+1. **Always run builds for ALL affected services** - Not just the one you modified
+2. **Always run tests** for all modified and dependent services
+3. **Report failures immediately** - Never commit/continue with failing builds or tests
+4. **Update all mocks** - When interfaces change, update ALL mock implementations
+5. **No partial implementations** - A feature isn't done until all services build and test successfully
 
-### Testing Workflow:
+### Build & Test Workflow:
 ```bash
-# After modifying atlas-npc-conversations
-cd services/atlas-npc-conversations/atlas.com/npc
-go build  # Verify it compiles
-go test ./...  # Run all tests
+# CRITICAL: Always build from workspace root to catch cross-service issues
+cd /path/to/workspace/root
+
+# Build ALL affected services (not just one!)
+go build ./services/atlas-character/atlas.com/character/...
+go build ./services/atlas-npc-conversations/atlas.com/npc/...
+go build ./services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/...
+
+# If ANY build fails:
+# 1. Report the failure to the user with error details
+# 2. Fix ALL compilation errors (missing methods, type mismatches, etc.)
+# 3. Re-run builds for ALL services
+# 4. Only proceed when ALL services build successfully
+
+# After successful builds, run tests
+cd services/atlas-saga-orchestrator/atlas.com/saga-orchestrator
+go test ./...
 
 # If tests fail:
 # 1. Report the failure to the user
-# 2. Fix the tests or code
+# 2. Fix the tests or code (usually missing mock methods)
 # 3. Re-run tests
 # 4. Only proceed when all tests pass
 ```
+
+### Common Build Failures & Fixes:
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `missing method ChangeFace` | Interface updated but mock not updated | Add method to mock struct and implement it |
+| `redeclared in this block` | Duplicate function declarations | Remove old/duplicate version |
+| `cannot use X as Y value` | Function signature changed incompletely | Update ALL call sites (use `grep -r`) |
+| `undefined: saga.ChangeHair` | Type used before defined | Add type to saga model FIRST |
 
 ### When to Run Tests:
 - ✅ After adding new files (model.go, processor.go, etc.)
@@ -140,8 +164,18 @@ How would you like to proceed?
 6. Add `resource.go` - Route registration and thin handlers
 7. Add Kafka producers (if needed) - Event emission
 8. Write table-driven tests
-9. **Run tests** - Verify nothing broke (`go build && go test ./...`)
-10. **Report test results** - Show pass/fail status to user
+9. **Build ALL affected services** - From workspace root, build every service touched
+10. **Run tests for ALL affected services** - Verify nothing broke
+11. **Report build/test results** - Show pass/fail status for EACH service to user
+12. **Fix ALL issues before proceeding** - No partial implementations allowed
+
+### For Cross-Service Features:
+See [cross-service-implementation.md](cross-service-implementation.md) for detailed checklist including:
+- Implementation order (types → implementations → mocks)
+- Interface change verification
+- Mock synchronization
+- Build verification for all services
+- Test execution for all services
 
 ## REST Generation Specifics
 
@@ -184,6 +218,47 @@ res, err := ops.SliceMap(Transform)(ops.FixedProvider(models))(ops.ParallelMap()
 
 
 ## Common Anti-Patterns to Avoid
+
+### ❌ Cache in Processor Constructor
+```go
+// DON'T DO THIS - Cache is created per-request!
+type ProcessorImpl struct {
+    l     logrus.FieldLogger
+    ctx   context.Context
+    cache map[uint32]interface{}  // ❌ Per-instance cache
+    mu    sync.RWMutex
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+    return &ProcessorImpl{
+        l:     l,
+        ctx:   ctx,
+        cache: make(map[uint32]interface{}),  // ❌ Fresh cache every request
+    }
+}
+```
+
+### ✅ Use Singleton Cache
+```go
+// DO THIS - Cache is shared across all requests
+type ProcessorImpl struct {
+    l     logrus.FieldLogger
+    ctx   context.Context
+    cache CacheInterface  // ✅ Reference to singleton
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+    return &ProcessorImpl{
+        l:     l,
+        ctx:   ctx,
+        cache: GetCache(),  // ✅ Get singleton instance
+    }
+}
+```
+
+**Rule:** Caches MUST be application-scoped singletons, never request-scoped instances. See [patterns-cache.md](patterns-cache.md) for complete implementation guide.
+
+---
 
 ### ❌ Manual JSON:API Envelope Handling
 ```go

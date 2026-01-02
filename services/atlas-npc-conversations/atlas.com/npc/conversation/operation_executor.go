@@ -2,6 +2,7 @@ package conversation
 
 import (
 	"atlas-npc-conversations/cosmetic"
+	npcMap "atlas-npc-conversations/map"
 	"atlas-npc-conversations/pet"
 	"atlas-npc-conversations/saga"
 	"context"
@@ -30,12 +31,13 @@ type OperationExecutor interface {
 
 // OperationExecutorImpl is the implementation of the OperationExecutor interface
 type OperationExecutorImpl struct {
-	l        logrus.FieldLogger
-	ctx      context.Context
-	t        tenant.Model
-	sagaP    saga.Processor
-	petP     pet.Processor
+	l         logrus.FieldLogger
+	ctx       context.Context
+	t         tenant.Model
+	sagaP     saga.Processor
+	petP      pet.Processor
 	cosmeticP cosmetic.Processor
+	mapP      npcMap.Processor
 }
 
 // NewOperationExecutor creates a new operation executor
@@ -43,12 +45,13 @@ func NewOperationExecutor(l logrus.FieldLogger, ctx context.Context) OperationEx
 	t := tenant.MustFromContext(ctx)
 	appearanceProvider := cosmetic.NewRestAppearanceProvider(l, ctx)
 	return &OperationExecutorImpl{
-		l:        l,
-		ctx:      ctx,
-		t:        t,
-		sagaP:    saga.NewProcessor(l, ctx),
-		petP:     pet.NewProcessor(l, ctx),
+		l:         l,
+		ctx:       ctx,
+		t:         t,
+		sagaP:     saga.NewProcessor(l, ctx),
+		petP:      pet.NewProcessor(l, ctx),
 		cosmeticP: cosmetic.NewProcessor(l, ctx, appearanceProvider),
+		mapP:      npcMap.NewProcessor(l, ctx),
 	}
 }
 
@@ -111,15 +114,108 @@ func (e *OperationExecutorImpl) setContextValue(characterId uint32, key string, 
 	return nil
 }
 
+// evaluateArithmeticExpression evaluates simple arithmetic expressions
+// Supports: +, -, *, / operators
+// Example: "10 * 5" -> 50, "100 / 2" -> 50
+func evaluateArithmeticExpression(expr string) (int, error) {
+	expr = strings.TrimSpace(expr)
+
+	// Check for multiplication
+	if strings.Contains(expr, "*") {
+		parts := strings.Split(expr, "*")
+		if len(parts) != 2 {
+			return 0, fmt.Errorf("invalid multiplication expression: %s", expr)
+		}
+		left, err := strconv.Atoi(strings.TrimSpace(parts[0]))
+		if err != nil {
+			return 0, fmt.Errorf("invalid left operand: %s", parts[0])
+		}
+		right, err := strconv.Atoi(strings.TrimSpace(parts[1]))
+		if err != nil {
+			return 0, fmt.Errorf("invalid right operand: %s", parts[1])
+		}
+		return left * right, nil
+	}
+
+	// Check for division
+	if strings.Contains(expr, "/") {
+		parts := strings.Split(expr, "/")
+		if len(parts) != 2 {
+			return 0, fmt.Errorf("invalid division expression: %s", expr)
+		}
+		left, err := strconv.Atoi(strings.TrimSpace(parts[0]))
+		if err != nil {
+			return 0, fmt.Errorf("invalid left operand: %s", parts[0])
+		}
+		right, err := strconv.Atoi(strings.TrimSpace(parts[1]))
+		if err != nil {
+			return 0, fmt.Errorf("invalid right operand: %s", parts[1])
+		}
+		if right == 0 {
+			return 0, fmt.Errorf("division by zero")
+		}
+		return left / right, nil
+	}
+
+	// Check for addition
+	if strings.Contains(expr, "+") {
+		parts := strings.Split(expr, "+")
+		if len(parts) != 2 {
+			return 0, fmt.Errorf("invalid addition expression: %s", expr)
+		}
+		left, err := strconv.Atoi(strings.TrimSpace(parts[0]))
+		if err != nil {
+			return 0, fmt.Errorf("invalid left operand: %s", parts[0])
+		}
+		right, err := strconv.Atoi(strings.TrimSpace(parts[1]))
+		if err != nil {
+			return 0, fmt.Errorf("invalid right operand: %s", parts[1])
+		}
+		return left + right, nil
+	}
+
+	// Check for subtraction (but not negative numbers)
+	if strings.Contains(expr, "-") && !strings.HasPrefix(expr, "-") {
+		parts := strings.Split(expr, "-")
+		if len(parts) != 2 {
+			return 0, fmt.Errorf("invalid subtraction expression: %s", expr)
+		}
+		left, err := strconv.Atoi(strings.TrimSpace(parts[0]))
+		if err != nil {
+			return 0, fmt.Errorf("invalid left operand: %s", parts[0])
+		}
+		right, err := strconv.Atoi(strings.TrimSpace(parts[1]))
+		if err != nil {
+			return 0, fmt.Errorf("invalid right operand: %s", parts[1])
+		}
+		return left - right, nil
+	}
+
+	// No operator found, try to parse as integer
+	return strconv.Atoi(expr)
+}
+
 // evaluateContextValueAsInt evaluates a context value as an integer
+// Supports arithmetic expressions like "10 * {context.quantity}"
 func (e *OperationExecutorImpl) evaluateContextValueAsInt(characterId uint32, paramName string, value string) (int, error) {
-	// First evaluate the context value as a string
+	// First evaluate the context value as a string (replaces {context.xxx} with actual values)
 	strValue, err := e.evaluateContextValue(characterId, paramName, value)
 	if err != nil {
 		return 0, err
 	}
 
-	// Convert the string value to an integer
+	// Check if the result contains arithmetic operators
+	if strings.ContainsAny(strValue, "+-*/") {
+		// Evaluate arithmetic expression
+		intValue, err := evaluateArithmeticExpression(strValue)
+		if err != nil {
+			e.l.WithError(err).Errorf("Failed to evaluate arithmetic expression [%s] for parameter [%s]", strValue, paramName)
+			return 0, fmt.Errorf("arithmetic evaluation failed for [%s]: %w", strValue, err)
+		}
+		return intValue, nil
+	}
+
+	// No arithmetic, convert directly to integer
 	intValue, err := strconv.Atoi(strValue)
 	if err != nil {
 		e.l.WithError(err).Errorf("Failed to convert value [%s] to integer for parameter [%s]", strValue, paramName)
@@ -366,6 +462,151 @@ func (e *OperationExecutorImpl) executeLocalOperation(field field.Model, charact
 
 		e.l.Infof("Selected random cosmetic %d from %d options for character [%d], stored in context key [%s]",
 			selectedStyle, len(styles), characterId, outputContextKey)
+		return nil
+
+	case "select_random_weighted":
+		// Format: local:select_random_weighted
+		// Params: items (comma-separated string of values), weights (comma-separated string of integers), outputContextKey (string)
+		// Example: items="1040052,1040054,1040130", weights="10,10,15", outputContextKey="selectedItem"
+		itemsValue, exists := operation.Params()["items"]
+		if !exists {
+			return errors.New("missing items parameter for select_random_weighted operation")
+		}
+
+		weightsValue, exists := operation.Params()["weights"]
+		if !exists {
+			return errors.New("missing weights parameter for select_random_weighted operation")
+		}
+
+		outputContextKey, exists := operation.Params()["outputContextKey"]
+		if !exists {
+			return errors.New("missing outputContextKey parameter for select_random_weighted operation")
+		}
+
+		// Parse items (comma-separated string)
+		itemsStr := strings.TrimSpace(itemsValue)
+		if itemsStr == "" {
+			return errors.New("items parameter is empty")
+		}
+		itemList := strings.Split(itemsStr, ",")
+		for i := range itemList {
+			itemList[i] = strings.TrimSpace(itemList[i])
+		}
+
+		// Parse weights (comma-separated string of integers)
+		weightsStr := strings.TrimSpace(weightsValue)
+		if weightsStr == "" {
+			return errors.New("weights parameter is empty")
+		}
+		weightStrs := strings.Split(weightsStr, ",")
+		weights := make([]int, len(weightStrs))
+		for i, weightStr := range weightStrs {
+			weight, err := strconv.Atoi(strings.TrimSpace(weightStr))
+			if err != nil {
+				return fmt.Errorf("invalid weight value '%s': %w", weightStr, err)
+			}
+			if weight < 0 {
+				return fmt.Errorf("weight value must be non-negative, got %d", weight)
+			}
+			weights[i] = weight
+		}
+
+		// Validate items and weights have the same length
+		if len(itemList) != len(weights) {
+			return fmt.Errorf("items and weights must have the same length (items: %d, weights: %d)", len(itemList), len(weights))
+		}
+
+		// Calculate total weight
+		totalWeight := 0
+		for _, weight := range weights {
+			totalWeight += weight
+		}
+
+		if totalWeight == 0 {
+			return errors.New("total weight is zero, cannot perform weighted random selection")
+		}
+
+		// Perform weighted random selection
+		randomPick := rand.Intn(totalWeight)
+		selectedItem := ""
+		for i := range itemList {
+			randomPick -= weights[i]
+			if randomPick < 0 {
+				selectedItem = itemList[i]
+				break
+			}
+		}
+
+		// Store the selected item in the output context key
+		err := e.setContextValue(characterId, outputContextKey, selectedItem)
+		if err != nil {
+			return fmt.Errorf("failed to store selected item in context: %w", err)
+		}
+
+		e.l.Infof("Selected random weighted item '%s' from %d options (total weight: %d) for character [%d], stored in context key [%s]",
+			selectedItem, len(itemList), totalWeight, characterId, outputContextKey)
+		return nil
+
+	case "fetch_map_player_counts":
+		// Format: local:fetch_map_player_counts
+		// Params: mapIds (comma-separated string of map IDs)
+		mapIdsValue, exists := operation.Params()["mapIds"]
+		if !exists {
+			return errors.New("missing mapIds parameter for fetch_map_player_counts operation")
+		}
+
+		// Evaluate the mapIds value (supports context references)
+		mapIdsStr, err := e.evaluateContextValue(characterId, "mapIds", mapIdsValue)
+		if err != nil {
+			return err
+		}
+
+		// Parse comma-separated map IDs
+		mapIdStrs := strings.Split(mapIdsStr, ",")
+		mapIds := make([]uint32, 0, len(mapIdStrs))
+		for _, mapIdStr := range mapIdStrs {
+			trimmed := strings.TrimSpace(mapIdStr)
+			if trimmed == "" {
+				continue
+			}
+			mapId, err := strconv.ParseUint(trimmed, 10, 32)
+			if err != nil {
+				e.l.WithError(err).Errorf("Invalid map ID '%s' in mapIds parameter", trimmed)
+				return fmt.Errorf("invalid map ID '%s': %w", trimmed, err)
+			}
+			mapIds = append(mapIds, uint32(mapId))
+		}
+
+		if len(mapIds) == 0 {
+			return errors.New("no valid map IDs provided in mapIds parameter")
+		}
+
+		// Get world and channel from field
+		worldId := byte(field.WorldId())
+		channelId := byte(field.ChannelId())
+
+		// Fetch player counts for all maps in parallel
+		counts, err := e.mapP.GetPlayerCountsInMaps(worldId, channelId, mapIds)
+		if err != nil {
+			// Log warning but don't fail - graceful degradation
+			e.l.WithError(err).Warnf("Failed to fetch player counts for maps, using 0 for all")
+		}
+
+		// Store each count in the context with key: playerCount_{mapId}
+		for _, mapId := range mapIds {
+			count := 0
+			if counts != nil {
+				count = counts[mapId]
+			}
+			key := fmt.Sprintf("playerCount_%d", mapId)
+			err = e.setContextValue(characterId, key, strconv.Itoa(count))
+			if err != nil {
+				e.l.WithError(err).Errorf("Failed to store player count for map [%d] in context", mapId)
+				return fmt.Errorf("failed to store player count in context: %w", err)
+			}
+		}
+
+		e.l.Infof("Fetched and stored player counts for %d maps for character [%d]", len(mapIds), characterId)
 		return nil
 
 	default:

@@ -1,7 +1,9 @@
 package transport
 
 import (
+	_map "github.com/Chronicle20/atlas-constants/map"
 	tenant "github.com/Chronicle20/atlas-tenant"
+	"fmt"
 	"github.com/google/uuid"
 	"sync"
 )
@@ -61,6 +63,20 @@ func (r *RouteRegistry) GetRoutes(t tenant.Model) ([]Model, error) {
 		return routes, nil
 	}
 	return make([]Model, 0), nil
+}
+
+func (r *RouteRegistry) GetRouteByStartMap(t tenant.Model, mapId _map.Id) (Model, error) {
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
+
+	if tenantRegister, ok := r.routeRegister[t.Id()]; ok {
+		for _, route := range tenantRegister {
+			if route.StartMapId() == mapId {
+				return route, nil
+			}
+		}
+	}
+	return Model{}, fmt.Errorf("route not found for start map %d", mapId)
 }
 
 func (r *RouteRegistry) UpdateRoute(t tenant.Model, route Model) error {

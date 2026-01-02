@@ -66,3 +66,17 @@ Serialization and transformation between domain models and JSON:API.
 ## `state.go`
 
 Domain-specific enums and constants; state transition helpers.
+
+## `cache.go`
+
+Singleton cache implementation using `sync.Once` for application-scoped data caching.
+
+**Key Responsibilities:**
+- Define `CacheInterface` for cache operations (`Get`, `Put`)
+- Implement singleton cache struct with `sync.RWMutex` for thread safety
+- Provide `GetCache()` function using `sync.Once` for singleton initialization
+- Include TTL-based expiration for cached entries
+- Provide test helper functions (`SetCacheForTesting`, `ResetCache`)
+- Support multi-tenant caching when needed (partition by tenant ID)
+
+**Pattern:** Application-scoped singleton shared across all requests, never per-instance or per-request. See [patterns-cache.md](patterns-cache.md) for complete implementation guide.

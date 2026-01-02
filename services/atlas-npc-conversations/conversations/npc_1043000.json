@@ -1,0 +1,160 @@
+{
+  "npcId": 1043000,
+  "startState": "checkGender",
+  "states": [
+    {
+      "id": "checkGender",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "gender",
+                "operator": "=",
+                "value": "0"
+              }
+            ],
+            "nextState": "selectMaleItem"
+          },
+          {
+            "conditions": [],
+            "nextState": "selectFemaleItem"
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectMaleItem",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:select_random_weighted",
+            "params": {
+              "items": "1040052,1040130,1042013,1042022,1042034,1042084,1042098,1042117,1702002,1702015",
+              "weights": "10,10,10,10,10,10,10,10,5,5",
+              "outputContextKey": "selectedItem"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "checkQuest"
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectFemaleItem",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:select_random_weighted",
+            "params": {
+              "items": "1041143,1702002,1702015",
+              "weights": "15,5,5",
+              "outputContextKey": "selectedItem"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "checkQuest"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkQuest",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "=",
+                "value": "2",
+                "referenceId": 2050
+              }
+            ],
+            "nextState": "awardQuestItem"
+          },
+          {
+            "conditions": [],
+            "nextState": "awardPrizeItem"
+          }
+        ]
+      }
+    },
+    {
+      "id": "awardQuestItem",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4031020",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "awardPrizeItem"
+          }
+        ]
+      }
+    },
+    {
+      "id": "awardPrizeItem",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "{context.selectedItem}",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "warpToEllinia"
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToEllinia",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "101000000",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

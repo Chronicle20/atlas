@@ -209,3 +209,28 @@ The service consumes messages from the following Kafka topics:
   - The auto-generated equip step uses ID format: `auto_equip_step_<timestamp>`
   - Completes when both creation and equipping operations succeed
   - Fails when either operation fails, triggering compensation logic
+
+- `change_hair` - Changes a character's hair style
+  - Payload: `{"characterId": 12345, "worldId": 0, "channelId": 0, "styleId": 30000}`
+  - Triggers a character command to change the hair style
+  - Completes when the StatusEventTypeHairChanged event is received
+
+- `change_face` - Changes a character's face style
+  - Payload: `{"characterId": 12345, "worldId": 0, "channelId": 0, "styleId": 20000}`
+  - Triggers a character command to change the face style
+  - Completes when the StatusEventTypeFaceChanged event is received
+
+- `change_skin` - Changes a character's skin color
+  - Payload: `{"characterId": 12345, "worldId": 0, "channelId": 0, "styleId": 0}`
+  - Triggers a character command to change the skin color (0-9)
+  - Completes when the StatusEventTypeSkinColorChanged event is received
+
+- `gain_closeness` - Increases pet closeness/intimacy
+  - Payload: `{"petId": 12345, "amount": 100}`
+  - Triggers a pet command to increase closeness
+  - Completes when the StatusEventTypeClosenessChanged event is received
+
+- `increase_buddy_capacity` - Increases a character's buddy list capacity
+  - Payload: `{"characterId": 12345, "worldId": 0, "channelId": 0, "amount": 5}`
+  - Triggers a buddy command to increase capacity
+  - Completes when the StatusEventTypeBuddyCapacityIncreased event is received

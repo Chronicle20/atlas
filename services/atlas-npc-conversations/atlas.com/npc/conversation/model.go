@@ -715,6 +715,8 @@ type ConditionModel struct {
 	value         string
 	referenceId   string // String from JSON, will be converted to uint32 when needed
 	step          string
+	worldId       string // String from JSON, will be resolved from context for mapCapacity
+	channelId     string // String from JSON, will be resolved from context for mapCapacity
 }
 
 // Type returns the condition type
@@ -750,6 +752,16 @@ func (c ConditionModel) Step() string {
 	return c.step
 }
 
+// WorldId returns the worldId (as string, may contain context reference)
+func (c ConditionModel) WorldId() string {
+	return c.worldId
+}
+
+// ChannelId returns the channelId (as string, may contain context reference)
+func (c ConditionModel) ChannelId() string {
+	return c.channelId
+}
+
 // ConditionBuilder is a builder for ConditionModel
 type ConditionBuilder struct {
 	conditionType string
@@ -757,6 +769,8 @@ type ConditionBuilder struct {
 	value         string
 	referenceId   string
 	step          string
+	worldId       string
+	channelId     string
 }
 
 // NewConditionBuilder creates a new ConditionBuilder
@@ -794,6 +808,18 @@ func (b *ConditionBuilder) SetStep(step string) *ConditionBuilder {
 	return b
 }
 
+// SetWorldId sets the worldId
+func (b *ConditionBuilder) SetWorldId(worldId string) *ConditionBuilder {
+	b.worldId = worldId
+	return b
+}
+
+// SetChannelId sets the channelId
+func (b *ConditionBuilder) SetChannelId(channelId string) *ConditionBuilder {
+	b.channelId = channelId
+	return b
+}
+
 // Build builds the ConditionModel
 func (b *ConditionBuilder) Build() (ConditionModel, error) {
 	if b.conditionType == "" {
@@ -812,6 +838,8 @@ func (b *ConditionBuilder) Build() (ConditionModel, error) {
 		value:         b.value,
 		referenceId:   b.referenceId,
 		step:          b.step,
+		worldId:       b.worldId,
+		channelId:     b.channelId,
 	}, nil
 }
 

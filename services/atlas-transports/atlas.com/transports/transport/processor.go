@@ -22,6 +22,7 @@ import (
 type Processor interface {
 	AddTenant(routes []Model, sharedVessels []SharedVesselModel) error
 	ByIdProvider(id uuid.UUID) model.Provider[Model]
+	ByStartMapProvider(mapId map2.Id) model.Provider[Model]
 	AllRoutesProvider() model.Provider[[]Model]
 	UpdateRoutes() error
 	UpdateRouteAndEmit(route Model) error
@@ -82,6 +83,13 @@ func (p *ProcessorImpl) ByIdProvider(id uuid.UUID) model.Provider[Model] {
 			return Model{}, errors.New("route not found")
 		}
 		return m, nil
+	}
+}
+
+// ByStartMapProvider returns a provider for a route by start map id
+func (p *ProcessorImpl) ByStartMapProvider(mapId map2.Id) model.Provider[Model] {
+	return func() (Model, error) {
+		return getRouteRegistry().GetRouteByStartMap(p.t, mapId)
 	}
 }
 

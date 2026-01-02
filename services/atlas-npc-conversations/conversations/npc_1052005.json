@@ -77,7 +77,7 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 5152000
+                "referenceId": "5152000"
               }
             ],
             "nextState": "performSurgery"

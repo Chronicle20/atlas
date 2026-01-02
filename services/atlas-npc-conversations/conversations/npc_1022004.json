@@ -189,7 +189,7 @@
                 "type": "inventorySpace",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 1082003
+                "referenceId": "1082003"
               },
               {
                 "type": "meso",
@@ -200,13 +200,13 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "15",
-                "referenceId": 4000021
+                "referenceId": "4000021"
               },
               {
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 4011001
+                "referenceId": "4011001"
               }
             ],
             "nextState": "executeCraftJuno"
@@ -293,7 +293,7 @@
                 "type": "inventorySpace",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 1082000
+                "referenceId": "1082000"
               },
               {
                 "type": "meso",
@@ -304,7 +304,7 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "2",
-                "referenceId": 4011001
+                "referenceId": "4011001"
               }
             ],
             "nextState": "executeCraftSteelFingerless"
@@ -384,7 +384,7 @@
                 "type": "inventorySpace",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 1082004
+                "referenceId": "1082004"
               },
               {
                 "type": "meso",
@@ -395,13 +395,13 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "40",
-                "referenceId": 4000021
+                "referenceId": "4000021"
               },
               {
                 "type": "item",
                 "operator": ">=",
                 "value": "2",
-                "referenceId": 4011000
+                "referenceId": "4011000"
               }
             ],
             "nextState": "executeCraftVenon"
@@ -488,7 +488,7 @@
                 "type": "inventorySpace",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 1082001
+                "referenceId": "1082001"
               },
               {
                 "type": "meso",
@@ -499,7 +499,7 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "2",
-                "referenceId": 4011001
+                "referenceId": "4011001"
               }
             ],
             "nextState": "executeCraftWhiteFingerless"
@@ -579,7 +579,7 @@
                 "type": "inventorySpace",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 1082007
+                "referenceId": "1082007"
               },
               {
                 "type": "meso",
@@ -590,19 +590,19 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "3",
-                "referenceId": 4011000
+                "referenceId": "4011000"
               },
               {
                 "type": "item",
                 "operator": ">=",
                 "value": "2",
-                "referenceId": 4011001
+                "referenceId": "4011001"
               },
               {
                 "type": "item",
                 "operator": ">=",
                 "value": "15",
-                "referenceId": 4003000
+                "referenceId": "4003000"
               }
             ],
             "nextState": "executeCraftBronzeMissel"
@@ -696,7 +696,7 @@
                 "type": "inventorySpace",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 1082008
+                "referenceId": "1082008"
               },
               {
                 "type": "meso",
@@ -707,19 +707,19 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "30",
-                "referenceId": 4000021
+                "referenceId": "4000021"
               },
               {
                 "type": "item",
                 "operator": ">=",
                 "value": "4",
-                "referenceId": 4011001
+                "referenceId": "4011001"
               },
               {
                 "type": "item",
                 "operator": ">=",
                 "value": "15",
-                "referenceId": 4003000
+                "referenceId": "4003000"
               }
             ],
             "nextState": "executeCraftSteelBriggon"
@@ -813,7 +813,7 @@
                 "type": "inventorySpace",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 1082023
+                "referenceId": "1082023"
               },
               {
                 "type": "meso",
@@ -824,19 +824,19 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "50",
-                "referenceId": 4000021
+                "referenceId": "4000021"
               },
               {
                 "type": "item",
                 "operator": ">=",
                 "value": "5",
-                "referenceId": 4011001
+                "referenceId": "4011001"
               },
               {
                 "type": "item",
                 "operator": ">=",
                 "value": "40",
-                "referenceId": 4003000
+                "referenceId": "4003000"
               }
             ],
             "nextState": "executeCraftIronKnuckle"
@@ -930,7 +930,7 @@
                 "type": "inventorySpace",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 1082009
+                "referenceId": "1082009"
               },
               {
                 "type": "meso",
@@ -941,25 +941,25 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "3",
-                "referenceId": 4011001
+                "referenceId": "4011001"
               },
               {
                 "type": "item",
                 "operator": ">=",
                 "value": "2",
-                "referenceId": 4021007
+                "referenceId": "4021007"
               },
               {
                 "type": "item",
                 "operator": ">=",
                 "value": "30",
-                "referenceId": 4000030
+                "referenceId": "4000030"
               },
               {
                 "type": "item",
                 "operator": ">=",
                 "value": "45",
-                "referenceId": 4003000
+                "referenceId": "4003000"
               }
             ],
             "nextState": "executeCraftSteelBrist"
@@ -1060,7 +1060,7 @@
                 "type": "inventorySpace",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 1082059
+                "referenceId": "1082059"
               },
               {
                 "type": "meso",
@@ -1071,31 +1071,31 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 4011007
+                "referenceId": "4011007"
               },
               {
                 "type": "item",
                 "operator": ">=",
                 "value": "8",
-                "referenceId": 4011000
+                "referenceId": "4011000"
               },
               {
                 "type": "item",
                 "operator": ">=",
                 "value": "2",
-                "referenceId": 4011006
+                "referenceId": "4011006"
               },
               {
                 "type": "item",
                 "operator": ">=",
                 "value": "50",
-                "referenceId": 4000030
+                "referenceId": "4000030"
               },
               {
                 "type": "item",
                 "operator": ">=",
                 "value": "50",
-                "referenceId": 4003000
+                "referenceId": "4003000"
               }
             ],
             "nextState": "executeCraftBronzeClench"
@@ -1203,7 +1203,7 @@
                 "type": "inventorySpace",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 1082005
+                "referenceId": "1082005"
               },
               {
                 "type": "meso",
@@ -1214,13 +1214,13 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 1082007
+                "referenceId": "1082007"
               },
               {
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 4011001
+                "referenceId": "4011001"
               }
             ],
             "nextState": "executeCraftSteelMissel"
@@ -1307,7 +1307,7 @@
                 "type": "inventorySpace",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 1082006
+                "referenceId": "1082006"
               },
               {
                 "type": "meso",
@@ -1318,13 +1318,13 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 1082007
+                "referenceId": "1082007"
               },
               {
                 "type": "item",
                 "operator": ">=",
                 "value": "2",
-                "referenceId": 4011005
+                "referenceId": "4011005"
               }
             ],
             "nextState": "executeCraftOrihalconMissel"
@@ -1411,7 +1411,7 @@
                 "type": "inventorySpace",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 1082035
+                "referenceId": "1082035"
               },
               {
                 "type": "meso",
@@ -1422,13 +1422,13 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 1082008
+                "referenceId": "1082008"
               },
               {
                 "type": "item",
                 "operator": ">=",
                 "value": "3",
-                "referenceId": 4021006
+                "referenceId": "4021006"
               }
             ],
             "nextState": "executeCraftYellowBriggon"
@@ -1515,7 +1515,7 @@
                 "type": "inventorySpace",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 1082036
+                "referenceId": "1082036"
               },
               {
                 "type": "meso",
@@ -1526,13 +1526,13 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 1082008
+                "referenceId": "1082008"
               },
               {
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 4021008
+                "referenceId": "4021008"
               }
             ],
             "nextState": "executeCraftDarkBriggon"
@@ -1619,7 +1619,7 @@
                 "type": "inventorySpace",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 1082024
+                "referenceId": "1082024"
               },
               {
                 "type": "meso",
@@ -1630,13 +1630,13 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 1082023
+                "referenceId": "1082023"
               },
               {
                 "type": "item",
                 "operator": ">=",
                 "value": "4",
-                "referenceId": 4011003
+                "referenceId": "4011003"
               }
             ],
             "nextState": "executeCraftAdamantiumKnuckle"
@@ -1723,7 +1723,7 @@
                 "type": "inventorySpace",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 1082025
+                "referenceId": "1082025"
               },
               {
                 "type": "meso",
@@ -1734,13 +1734,13 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 1082023
+                "referenceId": "1082023"
               },
               {
                 "type": "item",
                 "operator": ">=",
                 "value": "2",
-                "referenceId": 4021008
+                "referenceId": "4021008"
               }
             ],
             "nextState": "executeCraftDarkKnuckle"
@@ -1827,7 +1827,7 @@
                 "type": "inventorySpace",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 1082010
+                "referenceId": "1082010"
               },
               {
                 "type": "meso",
@@ -1838,13 +1838,13 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 1082009
+                "referenceId": "1082009"
               },
               {
                 "type": "item",
                 "operator": ">=",
                 "value": "5",
-                "referenceId": 4011002
+                "referenceId": "4011002"
               }
             ],
             "nextState": "executeCraftMithrilBrist"
@@ -1931,7 +1931,7 @@
                 "type": "inventorySpace",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 1082011
+                "referenceId": "1082011"
               },
               {
                 "type": "meso",
@@ -1942,13 +1942,13 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 1082009
+                "referenceId": "1082009"
               },
               {
                 "type": "item",
                 "operator": ">=",
                 "value": "4",
-                "referenceId": 4011006
+                "referenceId": "4011006"
               }
             ],
             "nextState": "executeCraftGoldBrist"
@@ -2035,7 +2035,7 @@
                 "type": "inventorySpace",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 1082060
+                "referenceId": "1082060"
               },
               {
                 "type": "meso",
@@ -2046,19 +2046,19 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 1082059
+                "referenceId": "1082059"
               },
               {
                 "type": "item",
                 "operator": ">=",
                 "value": "3",
-                "referenceId": 4011002
+                "referenceId": "4011002"
               },
               {
                 "type": "item",
                 "operator": ">=",
                 "value": "5",
-                "referenceId": 4021005
+                "referenceId": "4021005"
               }
             ],
             "nextState": "executeCraftSapphireClench"
@@ -2152,7 +2152,7 @@
                 "type": "inventorySpace",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 1082061
+                "referenceId": "1082061"
               },
               {
                 "type": "meso",
@@ -2163,19 +2163,19 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 1082059
+                "referenceId": "1082059"
               },
               {
                 "type": "item",
                 "operator": ">=",
                 "value": "2",
-                "referenceId": 4021007
+                "referenceId": "4021007"
               },
               {
                 "type": "item",
                 "operator": ">=",
                 "value": "2",
-                "referenceId": 4021008
+                "referenceId": "4021008"
               }
             ],
             "nextState": "executeCraftDarkClench"
@@ -2281,13 +2281,13 @@
                 "type": "inventorySpace",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 4003001
+                "referenceId": "4003001"
               },
               {
                 "type": "item",
                 "operator": ">=",
                 "value": "10 * {context.quantity}",
-                "referenceId": 4000003
+                "referenceId": "4000003"
               }
             ],
             "nextState": "executeCraftProcessedWoodBranch"
@@ -2373,13 +2373,13 @@
                 "type": "inventorySpace",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 4003001
+                "referenceId": "4003001"
               },
               {
                 "type": "item",
                 "operator": ">=",
                 "value": "5 * {context.quantity}",
-                "referenceId": 4000018
+                "referenceId": "4000018"
               }
             ],
             "nextState": "executeCraftProcessedWoodFirewood"
@@ -2465,19 +2465,19 @@
                 "type": "inventorySpace",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 4003000
+                "referenceId": "4003000"
               },
               {
                 "type": "item",
                 "operator": ">=",
                 "value": "1 * {context.quantity}",
-                "referenceId": 4011000
+                "referenceId": "4011000"
               },
               {
                 "type": "item",
                 "operator": ">=",
                 "value": "1 * {context.quantity}",
-                "referenceId": 4011001
+                "referenceId": "4011001"
               }
             ],
             "nextState": "executeCraftScrews"

@@ -22,19 +22,19 @@
         "outcomes": [
           {
             "conditions": [
-              { "type": "questStatus", "operator": ">=", "value": "2", "referenceId": 2054 }
+              { "type": "questStatus", "operator": ">=", "value": "2", "referenceId": "2054" }
             ],
             "nextState": "selectZone3"
           },
           {
             "conditions": [
-              { "type": "questStatus", "operator": ">=", "value": "2", "referenceId": 2053 }
+              { "type": "questStatus", "operator": ">=", "value": "2", "referenceId": "2053" }
             ],
             "nextState": "selectZone2"
           },
           {
             "conditions": [
-              { "type": "questStatus", "operator": ">=", "value": "2", "referenceId": 2052 }
+              { "type": "questStatus", "operator": ">=", "value": "2", "referenceId": "2052" }
             ],
             "nextState": "selectZone1"
           },

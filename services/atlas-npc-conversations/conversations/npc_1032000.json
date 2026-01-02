@@ -176,7 +176,7 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 4032288
+                "referenceId": "4032288"
               }
             ],
             "nextState": "confirmWarpWithCoupon"

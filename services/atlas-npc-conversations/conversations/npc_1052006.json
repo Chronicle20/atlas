@@ -22,7 +22,7 @@
         "outcomes": [
           {
             "conditions": [
-              { "type": "questStatus", "operator": ">=", "value": "2", "referenceId": 2055 }
+              { "type": "questStatus", "operator": ">=", "value": "2", "referenceId": "2055" }
             ],
             "nextState": "checkQuest2056_zone1"
           },
@@ -41,7 +41,7 @@
         "outcomes": [
           {
             "conditions": [
-              { "type": "questStatus", "operator": ">=", "value": "2", "referenceId": 2056 }
+              { "type": "questStatus", "operator": ">=", "value": "2", "referenceId": "2056" }
             ],
             "nextState": "checkQuest2057_zone1"
           },
@@ -60,7 +60,7 @@
         "outcomes": [
           {
             "conditions": [
-              { "type": "questStatus", "operator": ">=", "value": "2", "referenceId": 2056 }
+              { "type": "questStatus", "operator": ">=", "value": "2", "referenceId": "2056" }
             ],
             "nextState": "checkQuest2057_zone2"
           },
@@ -79,7 +79,7 @@
         "outcomes": [
           {
             "conditions": [
-              { "type": "questStatus", "operator": ">=", "value": "2", "referenceId": 2057 }
+              { "type": "questStatus", "operator": ">=", "value": "2", "referenceId": "2057" }
             ],
             "nextState": "selectTicket_1zone"
           },
@@ -98,7 +98,7 @@
         "outcomes": [
           {
             "conditions": [
-              { "type": "questStatus", "operator": ">=", "value": "2", "referenceId": 2057 }
+              { "type": "questStatus", "operator": ">=", "value": "2", "referenceId": "2057" }
             ],
             "nextState": "selectTicket_2zones"
           },
@@ -117,7 +117,7 @@
         "outcomes": [
           {
             "conditions": [
-              { "type": "questStatus", "operator": ">=", "value": "2", "referenceId": 2057 }
+              { "type": "questStatus", "operator": ">=", "value": "2", "referenceId": "2057" }
             ],
             "nextState": "selectTicket_3zones"
           },

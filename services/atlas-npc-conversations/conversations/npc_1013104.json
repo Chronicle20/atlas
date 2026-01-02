@@ -14,7 +14,7 @@
                 "type": "questStatus",
                 "operator": "=",
                 "value": "2",
-                "referenceId": 22007
+                "referenceId": "22007"
               }
             ],
             "nextState": "checkHasEgg"
@@ -38,7 +38,7 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 4032451
+                "referenceId": "4032451"
               }
             ],
             "nextState": "alreadyHasEgg"

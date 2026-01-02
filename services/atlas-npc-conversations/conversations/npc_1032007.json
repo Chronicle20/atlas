@@ -64,7 +64,7 @@
                 "type": "inventorySpace",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 4031045
+                "referenceId": "4031045"
               }
             ],
             "nextState": "purchaseTicket"

@@ -32,7 +32,7 @@
         "choices": [
           {
             "text": "Bronze (300 mesos)",
-            "nextState": "confirmBronze",
+            "nextState": "askQuantityBronze",
             "context": {
               "itemId": "4011000",
               "itemName": "Bronze Plate",
@@ -43,7 +43,7 @@
           },
           {
             "text": "Steel (300 mesos)",
-            "nextState": "confirmSteel",
+            "nextState": "askQuantitySteel",
             "context": {
               "itemId": "4011001",
               "itemName": "Steel Plate",
@@ -54,7 +54,7 @@
           },
           {
             "text": "Mithril (300 mesos)",
-            "nextState": "confirmMithril",
+            "nextState": "askQuantityMithril",
             "context": {
               "itemId": "4011002",
               "itemName": "Mithril Plate",
@@ -65,7 +65,7 @@
           },
           {
             "text": "Adamantium (500 mesos)",
-            "nextState": "confirmAdamantium",
+            "nextState": "askQuantityAdamantium",
             "context": {
               "itemId": "4011003",
               "itemName": "Adamantium Plate",
@@ -76,7 +76,7 @@
           },
           {
             "text": "Silver (500 mesos)",
-            "nextState": "confirmSilver",
+            "nextState": "askQuantitySilver",
             "context": {
               "itemId": "4011004",
               "itemName": "Silver Plate",
@@ -87,7 +87,7 @@
           },
           {
             "text": "Orihalcon (500 mesos)",
-            "nextState": "confirmOrihalcon",
+            "nextState": "askQuantityOrihalcon",
             "context": {
               "itemId": "4011005",
               "itemName": "Orihalcon Plate",
@@ -98,7 +98,7 @@
           },
           {
             "text": "Gold (800 mesos)",
-            "nextState": "confirmGold",
+            "nextState": "askQuantityGold",
             "context": {
               "itemId": "4011006",
               "itemName": "Gold Plate",
@@ -122,7 +122,7 @@
         "choices": [
           {
             "text": "Garnet (500 mesos)",
-            "nextState": "confirmGarnet",
+            "nextState": "askQuantityGarnet",
             "context": {
               "itemId": "4021000",
               "itemName": "Garnet",
@@ -133,7 +133,7 @@
           },
           {
             "text": "Amethyst (500 mesos)",
-            "nextState": "confirmAmethyst",
+            "nextState": "askQuantityAmethyst",
             "context": {
               "itemId": "4021001",
               "itemName": "Amethyst",
@@ -144,7 +144,7 @@
           },
           {
             "text": "Aquamarine (500 mesos)",
-            "nextState": "confirmAquamarine",
+            "nextState": "askQuantityAquamarine",
             "context": {
               "itemId": "4021002",
               "itemName": "Aquamarine",
@@ -155,7 +155,7 @@
           },
           {
             "text": "Emerald (500 mesos)",
-            "nextState": "confirmEmerald",
+            "nextState": "askQuantityEmerald",
             "context": {
               "itemId": "4021003",
               "itemName": "Emerald",
@@ -166,7 +166,7 @@
           },
           {
             "text": "Opal (500 mesos)",
-            "nextState": "confirmOpal",
+            "nextState": "askQuantityOpal",
             "context": {
               "itemId": "4021004",
               "itemName": "Opal",
@@ -177,7 +177,7 @@
           },
           {
             "text": "Sapphire (500 mesos)",
-            "nextState": "confirmSapphire",
+            "nextState": "askQuantitySapphire",
             "context": {
               "itemId": "4021005",
               "itemName": "Sapphire",
@@ -188,7 +188,7 @@
           },
           {
             "text": "Topaz (500 mesos)",
-            "nextState": "confirmTopaz",
+            "nextState": "askQuantityTopaz",
             "context": {
               "itemId": "4021006",
               "itemName": "Topaz",
@@ -199,7 +199,7 @@
           },
           {
             "text": "Diamond (1000 mesos)",
-            "nextState": "confirmDiamond",
+            "nextState": "askQuantityDiamond",
             "context": {
               "itemId": "4021007",
               "itemName": "Diamond",
@@ -210,7 +210,7 @@
           },
           {
             "text": "Black Crystal (3000 mesos)",
-            "nextState": "confirmBlackCrystal",
+            "nextState": "askQuantityBlackCrystal",
             "context": {
               "itemId": "4021008",
               "itemName": "Black Crystal",
@@ -227,11 +227,95 @@
       }
     },
     {
+      "id": "askQuantityBronze",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "So, you want me to make some #t{context.itemId}#s? In that case, how many do you want me to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "confirmBronze"
+      }
+    },
+    {
+      "id": "askQuantitySteel",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "So, you want me to make some #t{context.itemId}#s? In that case, how many do you want me to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "confirmSteel"
+      }
+    },
+    {
+      "id": "askQuantityMithril",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "So, you want me to make some #t{context.itemId}#s? In that case, how many do you want me to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "confirmMithril"
+      }
+    },
+    {
+      "id": "askQuantityAdamantium",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "So, you want me to make some #t{context.itemId}#s? In that case, how many do you want me to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "confirmAdamantium"
+      }
+    },
+    {
+      "id": "askQuantitySilver",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "So, you want me to make some #t{context.itemId}#s? In that case, how many do you want me to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "confirmSilver"
+      }
+    },
+    {
+      "id": "askQuantityOrihalcon",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "So, you want me to make some #t{context.itemId}#s? In that case, how many do you want me to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "confirmOrihalcon"
+      }
+    },
+    {
+      "id": "askQuantityGold",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "So, you want me to make some #t{context.itemId}#s? In that case, how many do you want me to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "confirmGold"
+      }
+    },
+    {
       "id": "confirmBronze",
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendYesNo",
-        "text": "You want me to make a #t4011000#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4010000# 10 #t4010000#\r\n#i4031138# 300 meso",
+        "text": "You want me to make {context.quantity} #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.matId}# 10 #t{context.matId}# per item\r\n#i4031138# {context.cost} meso per item",
         "choices": [
           {
             "text": "Yes",
@@ -259,19 +343,19 @@
               {
                 "type": "inventorySpace",
                 "operator": ">=",
-                "value": 1,
-                "referenceId": 4011000
+                "value": "{context.quantity}",
+                "referenceId": "{context.itemId}"
               },
               {
                 "type": "meso",
                 "operator": ">=",
-                "value": 300
+                "value": "{context.cost} * {context.quantity}"
               },
               {
                 "type": "item",
                 "operator": ">=",
-                "value": 10,
-                "referenceId": 4010000
+                "value": "10 * {context.quantity}",
+                "referenceId": "{context.matId}"
               }
             ],
             "nextState": "executeCraftBronze"
@@ -291,21 +375,21 @@
           {
             "type": "destroy_item",
             "params": {
-              "itemId": "4010000",
-              "quantity": "10"
+              "itemId": "{context.matId}",
+              "quantity": "10 * {context.quantity}"
             }
           },
           {
             "type": "award_mesos",
             "params": {
-              "amount": "-300"
+              "amount": "-{context.cost} * {context.quantity}"
             }
           },
           {
             "type": "award_item",
             "params": {
-              "itemId": "4011000",
-              "quantity": "1"
+              "itemId": "{context.itemId}",
+              "quantity": "{context.quantity}"
             }
           }
         ],
@@ -322,7 +406,7 @@
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendYesNo",
-        "text": "You want me to make a #t4011001#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4010001# 10 #t4010001#\r\n#i4031138# 300 meso",
+        "text": "You want me to make {context.quantity} #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.matId}# 10 #t{context.matId}# per item\r\n#i4031138# {context.cost} meso per item",
         "choices": [
           {
             "text": "Yes",
@@ -350,19 +434,19 @@
               {
                 "type": "inventorySpace",
                 "operator": ">=",
-                "value": 1,
-                "referenceId": 4011001
+                "value": "{context.quantity}",
+                "referenceId": "{context.itemId}"
               },
               {
                 "type": "meso",
                 "operator": ">=",
-                "value": 300
+                "value": "{context.cost} * {context.quantity}"
               },
               {
                 "type": "item",
                 "operator": ">=",
-                "value": 10,
-                "referenceId": 4010001
+                "value": "10 * {context.quantity}",
+                "referenceId": "{context.matId}"
               }
             ],
             "nextState": "executeCraftSteel"
@@ -382,21 +466,21 @@
           {
             "type": "destroy_item",
             "params": {
-              "itemId": "4010001",
-              "quantity": "10"
+              "itemId": "{context.matId}",
+              "quantity": "10 * {context.quantity}"
             }
           },
           {
             "type": "award_mesos",
             "params": {
-              "amount": "-300"
+              "amount": "-{context.cost} * {context.quantity}"
             }
           },
           {
             "type": "award_item",
             "params": {
-              "itemId": "4011001",
-              "quantity": "1"
+              "itemId": "{context.itemId}",
+              "quantity": "{context.quantity}"
             }
           }
         ],
@@ -413,7 +497,7 @@
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendYesNo",
-        "text": "You want me to make a #t4011002#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4010002# 10 #t4010002#\r\n#i4031138# 300 meso",
+        "text": "You want me to make {context.quantity} #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.matId}# 10 #t{context.matId}# per item\r\n#i4031138# {context.cost} meso per item",
         "choices": [
           {
             "text": "Yes",
@@ -441,19 +525,19 @@
               {
                 "type": "inventorySpace",
                 "operator": ">=",
-                "value": 1,
-                "referenceId": 4011002
+                "value": "{context.quantity}",
+                "referenceId": "{context.itemId}"
               },
               {
                 "type": "meso",
                 "operator": ">=",
-                "value": 300
+                "value": "{context.cost} * {context.quantity}"
               },
               {
                 "type": "item",
                 "operator": ">=",
-                "value": 10,
-                "referenceId": 4010002
+                "value": "10 * {context.quantity}",
+                "referenceId": "{context.matId}"
               }
             ],
             "nextState": "executeCraftMithril"
@@ -473,21 +557,21 @@
           {
             "type": "destroy_item",
             "params": {
-              "itemId": "4010002",
-              "quantity": "10"
+              "itemId": "{context.matId}",
+              "quantity": "10 * {context.quantity}"
             }
           },
           {
             "type": "award_mesos",
             "params": {
-              "amount": "-300"
+              "amount": "-{context.cost} * {context.quantity}"
             }
           },
           {
             "type": "award_item",
             "params": {
-              "itemId": "4011002",
-              "quantity": "1"
+              "itemId": "{context.itemId}",
+              "quantity": "{context.quantity}"
             }
           }
         ],
@@ -504,7 +588,7 @@
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendYesNo",
-        "text": "You want me to make a #t4011003#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4010003# 10 #t4010003#\r\n#i4031138# 500 meso",
+        "text": "You want me to make {context.quantity} #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.matId}# 10 #t{context.matId}# per item\r\n#i4031138# {context.cost} meso per item",
         "choices": [
           {
             "text": "Yes",
@@ -532,19 +616,19 @@
               {
                 "type": "inventorySpace",
                 "operator": ">=",
-                "value": 1,
-                "referenceId": 4011003
+                "value": "{context.quantity}",
+                "referenceId": "{context.itemId}"
               },
               {
                 "type": "meso",
                 "operator": ">=",
-                "value": 500
+                "value": "{context.cost} * {context.quantity}"
               },
               {
                 "type": "item",
                 "operator": ">=",
-                "value": 10,
-                "referenceId": 4010003
+                "value": "10 * {context.quantity}",
+                "referenceId": "{context.matId}"
               }
             ],
             "nextState": "executeCraftAdamantium"
@@ -564,21 +648,21 @@
           {
             "type": "destroy_item",
             "params": {
-              "itemId": "4010003",
-              "quantity": "10"
+              "itemId": "{context.matId}",
+              "quantity": "10 * {context.quantity}"
             }
           },
           {
             "type": "award_mesos",
             "params": {
-              "amount": "-500"
+              "amount": "-{context.cost} * {context.quantity}"
             }
           },
           {
             "type": "award_item",
             "params": {
-              "itemId": "4011003",
-              "quantity": "1"
+              "itemId": "{context.itemId}",
+              "quantity": "{context.quantity}"
             }
           }
         ],
@@ -595,7 +679,7 @@
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendYesNo",
-        "text": "You want me to make a #t4011004#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4010004# 10 #t4010004#\r\n#i4031138# 500 meso",
+        "text": "You want me to make {context.quantity} #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.matId}# 10 #t{context.matId}# per item\r\n#i4031138# {context.cost} meso per item",
         "choices": [
           {
             "text": "Yes",
@@ -623,19 +707,19 @@
               {
                 "type": "inventorySpace",
                 "operator": ">=",
-                "value": 1,
-                "referenceId": 4011004
+                "value": "{context.quantity}",
+                "referenceId": "{context.itemId}"
               },
               {
                 "type": "meso",
                 "operator": ">=",
-                "value": 500
+                "value": "{context.cost} * {context.quantity}"
               },
               {
                 "type": "item",
                 "operator": ">=",
-                "value": 10,
-                "referenceId": 4010004
+                "value": "10 * {context.quantity}",
+                "referenceId": "{context.matId}"
               }
             ],
             "nextState": "executeCraftSilver"
@@ -655,21 +739,21 @@
           {
             "type": "destroy_item",
             "params": {
-              "itemId": "4010004",
-              "quantity": "10"
+              "itemId": "{context.matId}",
+              "quantity": "10 * {context.quantity}"
             }
           },
           {
             "type": "award_mesos",
             "params": {
-              "amount": "-500"
+              "amount": "-{context.cost} * {context.quantity}"
             }
           },
           {
             "type": "award_item",
             "params": {
-              "itemId": "4011004",
-              "quantity": "1"
+              "itemId": "{context.itemId}",
+              "quantity": "{context.quantity}"
             }
           }
         ],
@@ -686,7 +770,7 @@
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendYesNo",
-        "text": "You want me to make a #t4011005#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4010005# 10 #t4010005#\r\n#i4031138# 500 meso",
+        "text": "You want me to make {context.quantity} #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.matId}# 10 #t{context.matId}# per item\r\n#i4031138# {context.cost} meso per item",
         "choices": [
           {
             "text": "Yes",
@@ -714,19 +798,19 @@
               {
                 "type": "inventorySpace",
                 "operator": ">=",
-                "value": 1,
-                "referenceId": 4011005
+                "value": "{context.quantity}",
+                "referenceId": "{context.itemId}"
               },
               {
                 "type": "meso",
                 "operator": ">=",
-                "value": 500
+                "value": "{context.cost} * {context.quantity}"
               },
               {
                 "type": "item",
                 "operator": ">=",
-                "value": 10,
-                "referenceId": 4010005
+                "value": "10 * {context.quantity}",
+                "referenceId": "{context.matId}"
               }
             ],
             "nextState": "executeCraftOrihalcon"
@@ -746,21 +830,21 @@
           {
             "type": "destroy_item",
             "params": {
-              "itemId": "4010005",
-              "quantity": "10"
+              "itemId": "{context.matId}",
+              "quantity": "10 * {context.quantity}"
             }
           },
           {
             "type": "award_mesos",
             "params": {
-              "amount": "-500"
+              "amount": "-{context.cost} * {context.quantity}"
             }
           },
           {
             "type": "award_item",
             "params": {
-              "itemId": "4011005",
-              "quantity": "1"
+              "itemId": "{context.itemId}",
+              "quantity": "{context.quantity}"
             }
           }
         ],
@@ -777,7 +861,7 @@
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendYesNo",
-        "text": "You want me to make a #t4011006#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4010006# 10 #t4010006#\r\n#i4031138# 800 meso",
+        "text": "You want me to make {context.quantity} #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.matId}# 10 #t{context.matId}# per item\r\n#i4031138# {context.cost} meso per item",
         "choices": [
           {
             "text": "Yes",
@@ -805,19 +889,19 @@
               {
                 "type": "inventorySpace",
                 "operator": ">=",
-                "value": 1,
-                "referenceId": 4011006
+                "value": "{context.quantity}",
+                "referenceId": "{context.itemId}"
               },
               {
                 "type": "meso",
                 "operator": ">=",
-                "value": 800
+                "value": "{context.cost} * {context.quantity}"
               },
               {
                 "type": "item",
                 "operator": ">=",
-                "value": 10,
-                "referenceId": 4010006
+                "value": "10 * {context.quantity}",
+                "referenceId": "{context.matId}"
               }
             ],
             "nextState": "executeCraftGold"
@@ -837,21 +921,21 @@
           {
             "type": "destroy_item",
             "params": {
-              "itemId": "4010006",
-              "quantity": "10"
+              "itemId": "{context.matId}",
+              "quantity": "10 * {context.quantity}"
             }
           },
           {
             "type": "award_mesos",
             "params": {
-              "amount": "-800"
+              "amount": "-{context.cost} * {context.quantity}"
             }
           },
           {
             "type": "award_item",
             "params": {
-              "itemId": "4011006",
-              "quantity": "1"
+              "itemId": "{context.itemId}",
+              "quantity": "{context.quantity}"
             }
           }
         ],
@@ -864,11 +948,23 @@
       }
     },
     {
+      "id": "askQuantityGarnet",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "So, you want me to make some #t{context.itemId}#s? In that case, how many do you want me to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "confirmGarnet"
+      }
+    },
+    {
       "id": "confirmGarnet",
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendYesNo",
-        "text": "You want me to make a #t4021000#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4020000# 10 #t4020000#\r\n#i4031138# 500 meso",
+        "text": "You want me to make {context.quantity} #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.matId}# 10 #t{context.matId}# per item\r\n#i4031138# {context.cost} meso per item",
         "choices": [
           {
             "text": "Yes",
@@ -896,19 +992,19 @@
               {
                 "type": "inventorySpace",
                 "operator": ">=",
-                "value": 1,
-                "referenceId": 4021000
+                "value": "{context.quantity}",
+                "referenceId": "{context.itemId}"
               },
               {
                 "type": "meso",
                 "operator": ">=",
-                "value": 500
+                "value": "{context.cost} * {context.quantity}"
               },
               {
                 "type": "item",
                 "operator": ">=",
-                "value": 10,
-                "referenceId": 4020000
+                "value": "10 * {context.quantity}",
+                "referenceId": "{context.matId}"
               }
             ],
             "nextState": "executeCraftGarnet"
@@ -928,21 +1024,21 @@
           {
             "type": "destroy_item",
             "params": {
-              "itemId": "4020000",
-              "quantity": "10"
+              "itemId": "{context.matId}",
+              "quantity": "10 * {context.quantity}"
             }
           },
           {
             "type": "award_mesos",
             "params": {
-              "amount": "-500"
+              "amount": "-{context.cost} * {context.quantity}"
             }
           },
           {
             "type": "award_item",
             "params": {
-              "itemId": "4021000",
-              "quantity": "1"
+              "itemId": "{context.itemId}",
+              "quantity": "{context.quantity}"
             }
           }
         ],
@@ -955,11 +1051,23 @@
       }
     },
     {
+      "id": "askQuantityAmethyst",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "So, you want me to make some #t{context.itemId}#s? In that case, how many do you want me to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "confirmAmethyst"
+      }
+    },
+    {
       "id": "confirmAmethyst",
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendYesNo",
-        "text": "You want me to make a #t4021001#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4020001# 10 #t4020001#\r\n#i4031138# 500 meso",
+        "text": "You want me to make {context.quantity} #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.matId}# 10 #t{context.matId}# per item\r\n#i4031138# {context.cost} meso per item",
         "choices": [
           {
             "text": "Yes",
@@ -987,19 +1095,19 @@
               {
                 "type": "inventorySpace",
                 "operator": ">=",
-                "value": 1,
-                "referenceId": 4021001
+                "value": "{context.quantity}",
+                "referenceId": "{context.itemId}"
               },
               {
                 "type": "meso",
                 "operator": ">=",
-                "value": 500
+                "value": "{context.cost} * {context.quantity}"
               },
               {
                 "type": "item",
                 "operator": ">=",
-                "value": 10,
-                "referenceId": 4020001
+                "value": "10 * {context.quantity}",
+                "referenceId": "{context.matId}"
               }
             ],
             "nextState": "executeCraftAmethyst"
@@ -1019,21 +1127,21 @@
           {
             "type": "destroy_item",
             "params": {
-              "itemId": "4020001",
-              "quantity": "10"
+              "itemId": "{context.matId}",
+              "quantity": "10 * {context.quantity}"
             }
           },
           {
             "type": "award_mesos",
             "params": {
-              "amount": "-500"
+              "amount": "-{context.cost} * {context.quantity}"
             }
           },
           {
             "type": "award_item",
             "params": {
-              "itemId": "4021001",
-              "quantity": "1"
+              "itemId": "{context.itemId}",
+              "quantity": "{context.quantity}"
             }
           }
         ],
@@ -1046,11 +1154,23 @@
       }
     },
     {
+      "id": "askQuantityAquamarine",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "So, you want me to make some #t{context.itemId}#s? In that case, how many do you want me to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "confirmAquamarine"
+      }
+    },
+    {
       "id": "confirmAquamarine",
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendYesNo",
-        "text": "You want me to make a #t4021002#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4020002# 10 #t4020002#\r\n#i4031138# 500 meso",
+        "text": "You want me to make {context.quantity} #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.matId}# 10 #t{context.matId}# per item\r\n#i4031138# {context.cost} meso per item",
         "choices": [
           {
             "text": "Yes",
@@ -1078,19 +1198,19 @@
               {
                 "type": "inventorySpace",
                 "operator": ">=",
-                "value": 1,
-                "referenceId": 4021002
+                "value": "{context.quantity}",
+                "referenceId": "{context.itemId}"
               },
               {
                 "type": "meso",
                 "operator": ">=",
-                "value": 500
+                "value": "{context.cost} * {context.quantity}"
               },
               {
                 "type": "item",
                 "operator": ">=",
-                "value": 10,
-                "referenceId": 4020002
+                "value": "10 * {context.quantity}",
+                "referenceId": "{context.matId}"
               }
             ],
             "nextState": "executeCraftAquamarine"
@@ -1110,21 +1230,21 @@
           {
             "type": "destroy_item",
             "params": {
-              "itemId": "4020002",
-              "quantity": "10"
+              "itemId": "{context.matId}",
+              "quantity": "10 * {context.quantity}"
             }
           },
           {
             "type": "award_mesos",
             "params": {
-              "amount": "-500"
+              "amount": "-{context.cost} * {context.quantity}"
             }
           },
           {
             "type": "award_item",
             "params": {
-              "itemId": "4021002",
-              "quantity": "1"
+              "itemId": "{context.itemId}",
+              "quantity": "{context.quantity}"
             }
           }
         ],
@@ -1137,11 +1257,23 @@
       }
     },
     {
+      "id": "askQuantityEmerald",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "So, you want me to make some #t{context.itemId}#s? In that case, how many do you want me to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "confirmEmerald"
+      }
+    },
+    {
       "id": "confirmEmerald",
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendYesNo",
-        "text": "You want me to make a #t4021003#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4020003# 10 #t4020003#\r\n#i4031138# 500 meso",
+        "text": "You want me to make {context.quantity} #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.matId}# 10 #t{context.matId}# per item\r\n#i4031138# {context.cost} meso per item",
         "choices": [
           {
             "text": "Yes",
@@ -1169,19 +1301,19 @@
               {
                 "type": "inventorySpace",
                 "operator": ">=",
-                "value": 1,
-                "referenceId": 4021003
+                "value": "{context.quantity}",
+                "referenceId": "{context.itemId}"
               },
               {
                 "type": "meso",
                 "operator": ">=",
-                "value": 500
+                "value": "{context.cost} * {context.quantity}"
               },
               {
                 "type": "item",
                 "operator": ">=",
-                "value": 10,
-                "referenceId": 4020003
+                "value": "10 * {context.quantity}",
+                "referenceId": "{context.matId}"
               }
             ],
             "nextState": "executeCraftEmerald"
@@ -1201,21 +1333,21 @@
           {
             "type": "destroy_item",
             "params": {
-              "itemId": "4020003",
-              "quantity": "10"
+              "itemId": "{context.matId}",
+              "quantity": "10 * {context.quantity}"
             }
           },
           {
             "type": "award_mesos",
             "params": {
-              "amount": "-500"
+              "amount": "-{context.cost} * {context.quantity}"
             }
           },
           {
             "type": "award_item",
             "params": {
-              "itemId": "4021003",
-              "quantity": "1"
+              "itemId": "{context.itemId}",
+              "quantity": "{context.quantity}"
             }
           }
         ],
@@ -1228,11 +1360,23 @@
       }
     },
     {
+      "id": "askQuantityOpal",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "So, you want me to make some #t{context.itemId}#s? In that case, how many do you want me to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "confirmOpal"
+      }
+    },
+    {
       "id": "confirmOpal",
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendYesNo",
-        "text": "You want me to make a #t4021004#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4020004# 10 #t4020004#\r\n#i4031138# 500 meso",
+        "text": "You want me to make {context.quantity} #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.matId}# 10 #t{context.matId}# per item\r\n#i4031138# {context.cost} meso per item",
         "choices": [
           {
             "text": "Yes",
@@ -1260,19 +1404,19 @@
               {
                 "type": "inventorySpace",
                 "operator": ">=",
-                "value": 1,
-                "referenceId": 4021004
+                "value": "{context.quantity}",
+                "referenceId": "{context.itemId}"
               },
               {
                 "type": "meso",
                 "operator": ">=",
-                "value": 500
+                "value": "{context.cost} * {context.quantity}"
               },
               {
                 "type": "item",
                 "operator": ">=",
-                "value": 10,
-                "referenceId": 4020004
+                "value": "10 * {context.quantity}",
+                "referenceId": "{context.matId}"
               }
             ],
             "nextState": "executeCraftOpal"
@@ -1292,21 +1436,21 @@
           {
             "type": "destroy_item",
             "params": {
-              "itemId": "4020004",
-              "quantity": "10"
+              "itemId": "{context.matId}",
+              "quantity": "10 * {context.quantity}"
             }
           },
           {
             "type": "award_mesos",
             "params": {
-              "amount": "-500"
+              "amount": "-{context.cost} * {context.quantity}"
             }
           },
           {
             "type": "award_item",
             "params": {
-              "itemId": "4021004",
-              "quantity": "1"
+              "itemId": "{context.itemId}",
+              "quantity": "{context.quantity}"
             }
           }
         ],
@@ -1319,11 +1463,23 @@
       }
     },
     {
+      "id": "askQuantitySapphire",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "So, you want me to make some #t{context.itemId}#s? In that case, how many do you want me to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "confirmSapphire"
+      }
+    },
+    {
       "id": "confirmSapphire",
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendYesNo",
-        "text": "You want me to make a #t4021005#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4020005# 10 #t4020005#\r\n#i4031138# 500 meso",
+        "text": "You want me to make {context.quantity} #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.matId}# 10 #t{context.matId}# per item\r\n#i4031138# {context.cost} meso per item",
         "choices": [
           {
             "text": "Yes",
@@ -1351,19 +1507,19 @@
               {
                 "type": "inventorySpace",
                 "operator": ">=",
-                "value": 1,
-                "referenceId": 4021005
+                "value": "{context.quantity}",
+                "referenceId": "{context.itemId}"
               },
               {
                 "type": "meso",
                 "operator": ">=",
-                "value": 500
+                "value": "{context.cost} * {context.quantity}"
               },
               {
                 "type": "item",
                 "operator": ">=",
-                "value": 10,
-                "referenceId": 4020005
+                "value": "10 * {context.quantity}",
+                "referenceId": "{context.matId}"
               }
             ],
             "nextState": "executeCraftSapphire"
@@ -1383,21 +1539,21 @@
           {
             "type": "destroy_item",
             "params": {
-              "itemId": "4020005",
-              "quantity": "10"
+              "itemId": "{context.matId}",
+              "quantity": "10 * {context.quantity}"
             }
           },
           {
             "type": "award_mesos",
             "params": {
-              "amount": "-500"
+              "amount": "-{context.cost} * {context.quantity}"
             }
           },
           {
             "type": "award_item",
             "params": {
-              "itemId": "4021005",
-              "quantity": "1"
+              "itemId": "{context.itemId}",
+              "quantity": "{context.quantity}"
             }
           }
         ],
@@ -1410,11 +1566,23 @@
       }
     },
     {
+      "id": "askQuantityTopaz",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "So, you want me to make some #t{context.itemId}#s? In that case, how many do you want me to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "confirmTopaz"
+      }
+    },
+    {
       "id": "confirmTopaz",
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendYesNo",
-        "text": "You want me to make a #t4021006#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4020006# 10 #t4020006#\r\n#i4031138# 500 meso",
+        "text": "You want me to make {context.quantity} #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.matId}# 10 #t{context.matId}# per item\r\n#i4031138# {context.cost} meso per item",
         "choices": [
           {
             "text": "Yes",
@@ -1442,19 +1610,19 @@
               {
                 "type": "inventorySpace",
                 "operator": ">=",
-                "value": 1,
-                "referenceId": 4021006
+                "value": "{context.quantity}",
+                "referenceId": "{context.itemId}"
               },
               {
                 "type": "meso",
                 "operator": ">=",
-                "value": 500
+                "value": "{context.cost} * {context.quantity}"
               },
               {
                 "type": "item",
                 "operator": ">=",
-                "value": 10,
-                "referenceId": 4020006
+                "value": "10 * {context.quantity}",
+                "referenceId": "{context.matId}"
               }
             ],
             "nextState": "executeCraftTopaz"
@@ -1474,21 +1642,21 @@
           {
             "type": "destroy_item",
             "params": {
-              "itemId": "4020006",
-              "quantity": "10"
+              "itemId": "{context.matId}",
+              "quantity": "10 * {context.quantity}"
             }
           },
           {
             "type": "award_mesos",
             "params": {
-              "amount": "-500"
+              "amount": "-{context.cost} * {context.quantity}"
             }
           },
           {
             "type": "award_item",
             "params": {
-              "itemId": "4021006",
-              "quantity": "1"
+              "itemId": "{context.itemId}",
+              "quantity": "{context.quantity}"
             }
           }
         ],
@@ -1501,11 +1669,23 @@
       }
     },
     {
+      "id": "askQuantityDiamond",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "So, you want me to make some #t{context.itemId}#s? In that case, how many do you want me to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "confirmDiamond"
+      }
+    },
+    {
       "id": "confirmDiamond",
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendYesNo",
-        "text": "You want me to make a #t4021007#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4020007# 10 #t4020007#\r\n#i4031138# 1000 meso",
+        "text": "You want me to make {context.quantity} #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.matId}# 10 #t{context.matId}# per item\r\n#i4031138# {context.cost} meso per item",
         "choices": [
           {
             "text": "Yes",
@@ -1533,19 +1713,19 @@
               {
                 "type": "inventorySpace",
                 "operator": ">=",
-                "value": 1,
-                "referenceId": 4021007
+                "value": "{context.quantity}",
+                "referenceId": "{context.itemId}"
               },
               {
                 "type": "meso",
                 "operator": ">=",
-                "value": 1000
+                "value": "{context.cost} * {context.quantity}"
               },
               {
                 "type": "item",
                 "operator": ">=",
-                "value": 10,
-                "referenceId": 4020007
+                "value": "10 * {context.quantity}",
+                "referenceId": "{context.matId}"
               }
             ],
             "nextState": "executeCraftDiamond"
@@ -1565,21 +1745,21 @@
           {
             "type": "destroy_item",
             "params": {
-              "itemId": "4020007",
-              "quantity": "10"
+              "itemId": "{context.matId}",
+              "quantity": "10 * {context.quantity}"
             }
           },
           {
             "type": "award_mesos",
             "params": {
-              "amount": "-1000"
+              "amount": "-{context.cost} * {context.quantity}"
             }
           },
           {
             "type": "award_item",
             "params": {
-              "itemId": "4021007",
-              "quantity": "1"
+              "itemId": "{context.itemId}",
+              "quantity": "{context.quantity}"
             }
           }
         ],
@@ -1592,11 +1772,23 @@
       }
     },
     {
+      "id": "askQuantityBlackCrystal",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "So, you want me to make some #t{context.itemId}#s? In that case, how many do you want me to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "confirmBlackCrystal"
+      }
+    },
+    {
       "id": "confirmBlackCrystal",
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendYesNo",
-        "text": "You want me to make a #t4021008#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4020008# 10 #t4020008#\r\n#i4031138# 3000 meso",
+        "text": "You want me to make {context.quantity} #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.matId}# 10 #t{context.matId}# per item\r\n#i4031138# {context.cost} meso per item",
         "choices": [
           {
             "text": "Yes",
@@ -1624,19 +1816,19 @@
               {
                 "type": "inventorySpace",
                 "operator": ">=",
-                "value": 1,
-                "referenceId": 4021008
+                "value": "{context.quantity}",
+                "referenceId": "{context.itemId}"
               },
               {
                 "type": "meso",
                 "operator": ">=",
-                "value": 3000
+                "value": "{context.cost} * {context.quantity}"
               },
               {
                 "type": "item",
                 "operator": ">=",
-                "value": 10,
-                "referenceId": 4020008
+                "value": "10 * {context.quantity}",
+                "referenceId": "{context.matId}"
               }
             ],
             "nextState": "executeCraftBlackCrystal"
@@ -1656,21 +1848,21 @@
           {
             "type": "destroy_item",
             "params": {
-              "itemId": "4020008",
-              "quantity": "10"
+              "itemId": "{context.matId}",
+              "quantity": "10 * {context.quantity}"
             }
           },
           {
             "type": "award_mesos",
             "params": {
-              "amount": "-3000"
+              "amount": "-{context.cost} * {context.quantity}"
             }
           },
           {
             "type": "award_item",
             "params": {
-              "itemId": "4021008",
-              "quantity": "1"
+              "itemId": "{context.itemId}",
+              "quantity": "{context.quantity}"
             }
           }
         ],

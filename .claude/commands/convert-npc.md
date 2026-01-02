@@ -112,6 +112,10 @@ Common operations in `genericAction` states:
   - Params: `skillId` (string), `level` (string, optional), `masterLevel` (string, optional)
 - **warp_to_random_portal**: Warp to random portal in map
   - Params: `mapId` (string)
+- **spawn_monster**: Spawn monsters at a location (foothold resolved automatically by saga-orchestrator)
+  - Params: `monsterId` (string), `x` (string), `y` (string), `count` (string, optional, default "1"), `team` (string, optional, default "0")
+- **complete_quest**: Complete a quest for the character (stub - no quest service yet)
+  - Params: `questId` (string), `npcId` (string, optional - defaults to conversation NPC)
 
 **Local Operations** (executed within npc-conversations service):
 - **local:generate_hair_styles**: Generate available hair styles for character

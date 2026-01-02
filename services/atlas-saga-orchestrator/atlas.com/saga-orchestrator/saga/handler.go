@@ -4,9 +4,11 @@ import (
 	"atlas-saga-orchestrator/buddylist"
 	"atlas-saga-orchestrator/character"
 	"atlas-saga-orchestrator/compartment"
+	"atlas-saga-orchestrator/data/foothold"
 	"atlas-saga-orchestrator/guild"
 	"atlas-saga-orchestrator/invite"
 	character2 "atlas-saga-orchestrator/kafka/message/character"
+	"atlas-saga-orchestrator/monster"
 	"atlas-saga-orchestrator/pet"
 	"atlas-saga-orchestrator/skill"
 	"atlas-saga-orchestrator/validation"
@@ -28,9 +30,11 @@ type Handler interface {
 	WithInviteProcessor(invite.Processor) Handler
 	WithBuddyListProcessor(buddylist.Processor) Handler
 	WithPetProcessor(pet.Processor) Handler
+	WithFootholdProcessor(foothold.Processor) Handler
+	WithMonsterProcessor(monster.Processor) Handler
 
 	GetHandler(action Action) (ActionHandler, bool)
-	
+
 	logActionError(s Saga, st Step[any], err error, errorMsg string)
 	handleAwardAsset(s Saga, st Step[any]) error
 	handleAwardInventory(s Saga, st Step[any]) error
@@ -58,6 +62,8 @@ type Handler interface {
 	handleCreateAndEquipAsset(s Saga, st Step[any]) error
 	handleIncreaseBuddyCapacity(s Saga, st Step[any]) error
 	handleGainCloseness(s Saga, st Step[any]) error
+	handleSpawnMonster(s Saga, st Step[any]) error
+	handleCompleteQuest(s Saga, st Step[any]) error
 }
 
 type HandlerImpl struct {
@@ -72,6 +78,8 @@ type HandlerImpl struct {
 	inviteP    invite.Processor
 	buddyListP buddylist.Processor
 	petP       pet.Processor
+	footholdP  foothold.Processor
+	monsterP   monster.Processor
 }
 
 func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
@@ -87,6 +95,8 @@ func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
 		inviteP:    invite.NewProcessor(l, ctx),
 		buddyListP: buddylist.NewProcessor(l, ctx),
 		petP:       pet.NewProcessor(l, ctx),
+		footholdP:  foothold.NewProcessor(l, ctx),
+		monsterP:   monster.NewProcessor(l, ctx),
 	}
 }
 
@@ -204,6 +214,44 @@ func (h *HandlerImpl) WithPetProcessor(petP pet.Processor) Handler {
 		inviteP:    h.inviteP,
 		buddyListP: h.buddyListP,
 		petP:       petP,
+		footholdP:  h.footholdP,
+		monsterP:   h.monsterP,
+	}
+}
+
+func (h *HandlerImpl) WithFootholdProcessor(footholdP foothold.Processor) Handler {
+	return &HandlerImpl{
+		l:          h.l,
+		ctx:        h.ctx,
+		t:          h.t,
+		charP:      h.charP,
+		compP:      h.compP,
+		skillP:     h.skillP,
+		validP:     h.validP,
+		guildP:     h.guildP,
+		inviteP:    h.inviteP,
+		buddyListP: h.buddyListP,
+		petP:       h.petP,
+		footholdP:  footholdP,
+		monsterP:   h.monsterP,
+	}
+}
+
+func (h *HandlerImpl) WithMonsterProcessor(monsterP monster.Processor) Handler {
+	return &HandlerImpl{
+		l:          h.l,
+		ctx:        h.ctx,
+		t:          h.t,
+		charP:      h.charP,
+		compP:      h.compP,
+		skillP:     h.skillP,
+		validP:     h.validP,
+		guildP:     h.guildP,
+		inviteP:    h.inviteP,
+		buddyListP: h.buddyListP,
+		petP:       h.petP,
+		footholdP:  h.footholdP,
+		monsterP:   monsterP,
 	}
 }
 
@@ -264,7 +312,10 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleIncreaseBuddyCapacity, true
 	case GainCloseness:
 		return h.handleGainCloseness, true
-
+	case SpawnMonster:
+		return h.handleSpawnMonster, true
+	case CompleteQuest:
+		return h.handleCompleteQuest, true
 	}
 	return nil, false
 }
@@ -760,6 +811,56 @@ func (h *HandlerImpl) handleCreateAndEquipAsset(s Saga, st Step[any]) error {
 	// Note: Step 2 (dynamic equip_asset step creation) will be handled by the compartment consumer
 	// when it receives the StatusEventTypeCreated event from the compartment service.
 	// The consumer will detect this is a CreateAndEquipAsset step and add the equip_asset step.
+
+	return nil
+}
+
+// handleSpawnMonster handles the SpawnMonster action
+func (h *HandlerImpl) handleSpawnMonster(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(SpawnMonsterPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	// Look up foothold from atlas-data
+	fh, err := h.footholdP.GetFootholdBelow(payload.MapId, payload.X, payload.Y)
+	if err != nil {
+		h.l.WithError(err).Warnf("Failed to get foothold for map %d at (%d, %d), using fh=0", payload.MapId, payload.X, payload.Y)
+		fh = 0
+	}
+
+	// Determine spawn count (default to 1 if not specified)
+	count := payload.Count
+	if count <= 0 {
+		count = 1
+	}
+
+	// Spawn monsters
+	for i := 0; i < count; i++ {
+		err := h.monsterP.SpawnMonster(payload.WorldId, payload.ChannelId, payload.MapId, payload.MonsterId, payload.X, payload.Y, int16(fh), payload.Team)
+		if err != nil {
+			h.logActionError(s, st, err, fmt.Sprintf("Failed to spawn monster %d/%d", i+1, count))
+			return err
+		}
+	}
+
+	h.l.Debugf("Successfully spawned %d monsters (id=%d) at (%d, %d, fh=%d) in world %d, channel %d, map %d",
+		count, payload.MonsterId, payload.X, payload.Y, fh, payload.WorldId, payload.ChannelId, payload.MapId)
+
+	return nil
+}
+
+// handleCompleteQuest handles the CompleteQuest action
+// Note: This is currently a stub as no quest service exists yet
+func (h *HandlerImpl) handleCompleteQuest(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(CompleteQuestPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	// TODO: Implement actual quest completion when quest service is available
+	h.l.Debugf("Quest completion stub: quest %d completed for character %d via NPC %d",
+		payload.QuestId, payload.CharacterId, payload.NpcId)
 
 	return nil
 }

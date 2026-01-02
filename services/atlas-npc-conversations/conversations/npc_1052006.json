@@ -1,0 +1,268 @@
+{
+  "npcId": 1052006,
+  "startState": "greeting",
+  "states": [
+    {
+      "id": "greeting",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Hi, I'm the ticket salesman.",
+        "choices": [
+          { "text": "Next", "nextState": "checkQuest2055" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "checkQuest2055",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": ">=", "value": "2", "referenceId": 2055 }
+            ],
+            "nextState": "checkQuest2056_zone1"
+          },
+          {
+            "conditions": [],
+            "nextState": "checkQuest2056_zone0"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkQuest2056_zone0",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": ">=", "value": "2", "referenceId": 2056 }
+            ],
+            "nextState": "checkQuest2057_zone1"
+          },
+          {
+            "conditions": [],
+            "nextState": "checkQuest2057_zone0"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkQuest2056_zone1",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": ">=", "value": "2", "referenceId": 2056 }
+            ],
+            "nextState": "checkQuest2057_zone2"
+          },
+          {
+            "conditions": [],
+            "nextState": "checkQuest2057_zone1"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkQuest2057_zone0",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": ">=", "value": "2", "referenceId": 2057 }
+            ],
+            "nextState": "selectTicket_1zone"
+          },
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkQuest2057_zone1",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": ">=", "value": "2", "referenceId": 2057 }
+            ],
+            "nextState": "selectTicket_2zones"
+          },
+          {
+            "conditions": [],
+            "nextState": "selectTicket_1zone"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkQuest2057_zone2",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": ">=", "value": "2", "referenceId": 2057 }
+            ],
+            "nextState": "selectTicket_3zones"
+          },
+          {
+            "conditions": [],
+            "nextState": "selectTicket_2zones"
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectTicket_1zone",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Which ticket would you like?",
+        "choices": [
+          {
+            "text": "Construction site B1 (1000 mesos)",
+            "nextState": "checkMeso",
+            "context": {
+              "ticketItemId": "4031036",
+              "cost": "1000"
+            }
+          },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "selectTicket_2zones",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Which ticket would you like?",
+        "choices": [
+          {
+            "text": "Construction site B1 (1000 mesos)",
+            "nextState": "checkMeso",
+            "context": {
+              "ticketItemId": "4031036",
+              "cost": "1000"
+            }
+          },
+          {
+            "text": "Construction site B2 (1000 mesos)",
+            "nextState": "checkMeso",
+            "context": {
+              "ticketItemId": "4031037",
+              "cost": "1000"
+            }
+          },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "selectTicket_3zones",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Which ticket would you like?",
+        "choices": [
+          {
+            "text": "Construction site B1 (1000 mesos)",
+            "nextState": "checkMeso",
+            "context": {
+              "ticketItemId": "4031036",
+              "cost": "1000"
+            }
+          },
+          {
+            "text": "Construction site B2 (1000 mesos)",
+            "nextState": "checkMeso",
+            "context": {
+              "ticketItemId": "4031037",
+              "cost": "1000"
+            }
+          },
+          {
+            "text": "Construction site B3 (1000 mesos)",
+            "nextState": "checkMeso",
+            "context": {
+              "ticketItemId": "4031038",
+              "cost": "1000"
+            }
+          },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "checkMeso",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "meso", "operator": "<", "value": "{context.cost}" }
+            ],
+            "nextState": "insufficientMeso"
+          },
+          {
+            "conditions": [],
+            "nextState": "purchaseTicket"
+          }
+        ]
+      }
+    },
+    {
+      "id": "insufficientMeso",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "You do not have enough mesos.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "purchaseTicket",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-{context.cost}"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "{context.ticketItemId}",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

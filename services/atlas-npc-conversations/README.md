@@ -332,6 +332,59 @@ Operation parameters can reference conversation context values using the format 
 
 This allows dynamic values to be passed between conversation states.
 
+### Arithmetic Expressions
+
+Both operation parameters and condition values support arithmetic expressions, enabling dynamic calculations based on context values. This is particularly useful for bulk crafting scenarios where material requirements scale with quantity.
+
+**Supported Operators**: `*`, `/`, `+`, `-`
+
+**Examples**:
+
+Bulk crafting with multiplied material requirements:
+```json
+{
+  "type": "genericAction",
+  "genericAction": {
+    "operations": [
+      {
+        "type": "destroy_item",
+        "params": {
+          "itemId": "4000003",
+          "quantity": "10 * {context.quantity}"  // If quantity=5, destroys 50 items
+        }
+      },
+      {
+        "type": "award_item",
+        "params": {
+          "itemId": "4003001",
+          "quantity": "{context.quantity}"  // Awards 5 items
+        }
+      }
+    ],
+    "outcomes": [
+      {
+        "conditions": [
+          {
+            "type": "item",
+            "operator": ">=",
+            "value": "10 * {context.quantity}",  // Validates player has enough materials
+            "referenceId": 4000003
+          }
+        ],
+        "nextState": "craftSuccess"
+      }
+    ]
+  }
+}
+```
+
+**How It Works**:
+1. **Context substitution happens first**: `{context.quantity}` is replaced with the actual value (e.g., `"5"`)
+2. **Expression evaluation happens second**: `"10 * 5"` is evaluated to `50`
+3. **Result is used**: The operation uses the calculated value
+
+**Evaluation Order**: Expressions are evaluated left-to-right without operator precedence. For complex calculations, use multiple steps or pre-calculate values.
+
 ## Setup Instructions
 
 ### Prerequisites

@@ -178,6 +178,80 @@ When a player selects from a list (destinations, items, etc.):
   }
   ```
 
+### 6.1. Arithmetic Expressions
+
+Both operation parameters and condition values support arithmetic expressions for dynamic calculations:
+
+**Supported Operators**: `*`, `/`, `+`, `-`
+
+**Common Use Case - Bulk Crafting**:
+When converting crafting NPCs that ask for quantity (using `askNumber`), use arithmetic expressions to scale material requirements:
+
+```json
+{
+  "id": "askQuantity",
+  "type": "askNumber",
+  "askNumber": {
+    "text": "How many would you like to craft?",
+    "default": 1,
+    "min": 1,
+    "max": 100,
+    "contextKey": "quantity",
+    "nextState": "validateMaterials"
+  }
+},
+{
+  "id": "validateMaterials",
+  "type": "genericAction",
+  "genericAction": {
+    "operations": [],
+    "outcomes": [
+      {
+        "conditions": [
+          {
+            "type": "item",
+            "operator": ">=",
+            "value": "10 * {context.quantity}",  // If quantity=5, checks for 50 items
+            "referenceId": 4000003
+          }
+        ],
+        "nextState": "performCraft"
+      }
+    ]
+  }
+},
+{
+  "id": "performCraft",
+  "type": "genericAction",
+  "genericAction": {
+    "operations": [
+      {
+        "type": "destroy_item",
+        "params": {
+          "itemId": "4000003",
+          "quantity": "10 * {context.quantity}"  // Destroys scaled amount
+        }
+      },
+      {
+        "type": "award_item",
+        "params": {
+          "itemId": "4003001",
+          "quantity": "{context.quantity}"  // Awards requested quantity
+        }
+      }
+    ],
+    "outcomes": [{"conditions": [], "nextState": "craftSuccess"}]
+  }
+}
+```
+
+**How It Works**:
+1. Context substitution happens first: `{context.quantity}` → `"5"`
+2. Expression evaluation happens second: `"10 * 5"` → `50`
+3. Result is used in the operation/condition
+
+**Evaluation Order**: Left-to-right without operator precedence.
+
 ### 7. Required Validations
 
 - ✅ All dialogue states have correct choice counts (sendOk: 2, sendYesNo: 3, sendNext: 2, sendNextPrev: 3)

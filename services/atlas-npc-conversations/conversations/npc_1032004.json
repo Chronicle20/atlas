@@ -1,0 +1,49 @@
+{
+  "npcId": 1032004,
+  "startState": "askReturnToEllinia",
+  "states": [
+    {
+      "id": "askReturnToEllinia",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Would you like to return to Ellinia?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "warpToEllinia"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToEllinia",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "101000000",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

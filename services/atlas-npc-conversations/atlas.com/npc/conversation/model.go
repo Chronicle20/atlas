@@ -735,6 +735,7 @@ func (c ConditionModel) Value() string {
 }
 
 // ReferenceId returns the reference ID as uint32
+// Note: This method does NOT support context references. Use ReferenceIdRaw() for that.
 func (c ConditionModel) ReferenceId() uint32 {
 	if c.referenceId == "" {
 		return 0
@@ -745,6 +746,11 @@ func (c ConditionModel) ReferenceId() uint32 {
 		return 0
 	}
 	return uint32(id)
+}
+
+// ReferenceIdRaw returns the raw reference ID string (may contain context reference like {context.itemId})
+func (c ConditionModel) ReferenceIdRaw() string {
+	return c.referenceId
 }
 
 // Step returns the step for quest progress

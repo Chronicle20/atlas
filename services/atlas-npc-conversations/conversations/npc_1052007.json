@@ -60,7 +60,7 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 4031036
+                "referenceId": "4031036"
               }
             ],
             "nextState": "selectConstructionTicket"
@@ -71,7 +71,7 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 4031037
+                "referenceId": "4031037"
               }
             ],
             "nextState": "selectConstructionTicket"
@@ -82,7 +82,7 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 4031038
+                "referenceId": "4031038"
               }
             ],
             "nextState": "selectConstructionTicket"
@@ -161,7 +161,7 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 4031036
+                "referenceId": "4031036"
               }
             ],
             "nextState": "useTicket1"
@@ -185,7 +185,7 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 4031037
+                "referenceId": "4031037"
               }
             ],
             "nextState": "useTicket2"
@@ -209,7 +209,7 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 4031038
+                "referenceId": "4031038"
               }
             ],
             "nextState": "useTicket3"
@@ -317,7 +317,7 @@
                 "type": "item",
                 "operator": "<",
                 "value": "1",
-                "referenceId": 4031711
+                "referenceId": "4031711"
               },
               {
                 "type": "mapId",
@@ -364,7 +364,7 @@
                 "type": "transportAvailable",
                 "operator": "=",
                 "value": "1",
-                "referenceId": 103000100
+                "referenceId": "103000100"
               }
             ],
             "nextState": "askBoardNLC"
@@ -428,7 +428,7 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 4031711
+                "referenceId": "4031711"
               }
             ],
             "nextState": "consumeNLCTicketAndBoard"

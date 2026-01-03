@@ -1,0 +1,133 @@
+{
+  "npcId": 1072004,
+  "startState": "checkItems",
+  "states": [
+    {
+      "id": "checkItems",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "30",
+                "referenceId": "4031013"
+              }
+            ],
+            "nextState": "successMessage"
+          },
+          {
+            "conditions": [],
+            "nextState": "failureMessage"
+          }
+        ]
+      }
+    },
+    {
+      "id": "successMessage",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Ohhhhh.. you collected all 30 Dark Marbles!! It should have been difficult... just incredible! Alright. You've passed the test and for that, I'll reward you #bThe Proof of a Hero#k. Take that and go back to Perion.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "giveRewardAndWarp"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "failureMessage",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "You will have to collect me #b30 #t4031013##k. Good luck.",
+        "choices": [
+          {
+            "text": "I would like to leave",
+            "nextState": "warpOut"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "giveRewardAndWarp",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4031013",
+              "removeAll": "true"
+            }
+          },
+          {
+            "type": "complete_quest",
+            "params": {
+              "questId": "100004"
+            }
+          },
+          {
+            "type": "start_quest",
+            "params": {
+              "questId": "100005"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4031012",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "102020300",
+              "portalId": "2"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpOut",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "102020300",
+              "portalId": "2"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

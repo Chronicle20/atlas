@@ -511,6 +511,8 @@ func (p *ProcessorImpl) processDialogueState(ctx ConversationContext, state Stat
 		npc.NewProcessor(p.l, p.ctx).SendOk(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText)
 	} else if dialogue.dialogueType == SendYesNo {
 		npc.NewProcessor(p.l, p.ctx).SendYesNo(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText)
+	} else if dialogue.dialogueType == SendAcceptDecline {
+		npc.NewProcessor(p.l, p.ctx).SendAcceptDecline(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText)
 	} else {
 		p.l.Warnf("Unhandled dialog type [%s].", dialogue.dialogueType)
 	}

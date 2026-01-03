@@ -352,12 +352,13 @@ func (b *StateBuilder) Build() (StateModel, error) {
 type DialogueType string
 
 const (
-	SendOk       DialogueType = "sendOk"
-	SendYesNo    DialogueType = "sendYesNo"
-	SendSimple   DialogueType = "sendSimple"
-	SendNext     DialogueType = "sendNext"
-	SendNextPrev DialogueType = "sendNextPrev"
-	SendPrev     DialogueType = "sendPrev"
+	SendOk            DialogueType = "sendOk"
+	SendYesNo         DialogueType = "sendYesNo"
+	SendAcceptDecline DialogueType = "sendAcceptDecline"
+	SendSimple        DialogueType = "sendSimple"
+	SendNext          DialogueType = "sendNext"
+	SendNextPrev      DialogueType = "sendNextPrev"
+	SendPrev          DialogueType = "sendPrev"
 )
 
 // DialogueModel represents a dialogue state
@@ -417,6 +418,14 @@ func (d DialogueModel) ChoiceFromAction(action byte) (ChoiceModel, bool) {
 			choiceText = "No"
 		} else {
 			choiceText = "Yes"
+		}
+	} else if d.dialogueType == SendAcceptDecline {
+		if action == 255 {
+			choiceText = "Exit"
+		} else if action == 0 {
+			choiceText = "Decline"
+		} else {
+			choiceText = "Accept"
 		}
 	}
 
@@ -496,6 +505,10 @@ func (b *DialogueBuilder) Build() (*DialogueModel, error) {
 	case SendYesNo:
 		if len(b.choices) != 3 {
 			return nil, errors.New("sendYesNo requires exactly 3 choices")
+		}
+	case SendAcceptDecline:
+		if len(b.choices) != 3 {
+			return nil, errors.New("sendAcceptDecline requires exactly 3 choices")
 		}
 	case SendSimple:
 		if len(b.choices) == 0 {

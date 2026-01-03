@@ -64,6 +64,7 @@ type Handler interface {
 	handleGainCloseness(s Saga, st Step[any]) error
 	handleSpawnMonster(s Saga, st Step[any]) error
 	handleCompleteQuest(s Saga, st Step[any]) error
+	handleStartQuest(s Saga, st Step[any]) error
 }
 
 type HandlerImpl struct {
@@ -316,6 +317,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleSpawnMonster, true
 	case CompleteQuest:
 		return h.handleCompleteQuest, true
+	case StartQuest:
+		return h.handleStartQuest, true
 	}
 	return nil, false
 }
@@ -456,7 +459,7 @@ func (h *HandlerImpl) handleDestroyAsset(s Saga, st Step[any]) error {
 		return errors.New("invalid payload")
 	}
 
-	err := h.compP.RequestDestroyItem(s.TransactionId, payload.CharacterId, payload.TemplateId, payload.Quantity)
+	err := h.compP.RequestDestroyItem(s.TransactionId, payload.CharacterId, payload.TemplateId, payload.Quantity, payload.RemoveAll)
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to destroy asset.")
@@ -860,6 +863,21 @@ func (h *HandlerImpl) handleCompleteQuest(s Saga, st Step[any]) error {
 
 	// TODO: Implement actual quest completion when quest service is available
 	h.l.Debugf("Quest completion stub: quest %d completed for character %d via NPC %d",
+		payload.QuestId, payload.CharacterId, payload.NpcId)
+
+	return nil
+}
+
+// handleStartQuest handles the StartQuest action
+// Note: This is currently a stub as no quest service exists yet
+func (h *HandlerImpl) handleStartQuest(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(StartQuestPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	// TODO: Implement actual quest start when quest service is available
+	h.l.Debugf("Quest start stub: quest %d started for character %d via NPC %d",
 		payload.QuestId, payload.CharacterId, payload.NpcId)
 
 	return nil

@@ -96,8 +96,9 @@ type ConsumeCommandBody struct {
 }
 
 type DestroyCommandBody struct {
-	Slot     int16  `json:"slot"`
-	Quantity uint32 `json:"quantity"`
+	Slot      int16  `json:"slot"`
+	Quantity  uint32 `json:"quantity"`
+	RemoveAll bool   `json:"removeAll"` // If true, remove all instances of the item regardless of Quantity
 }
 
 type CancelReservationCommandBody struct {

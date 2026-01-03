@@ -998,7 +998,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 	case "destroy_item":
 		// Format: destroy_item
-		// Context: itemId (uint32), quantity (uint32)
+		// Params: itemId (uint32, required), quantity (uint32, optional, default 0), removeAll (bool, optional, default false)
 		itemIdValue, exists := operation.Params()["itemId"]
 		if !exists {
 			return "", "", "", nil, errors.New("missing itemId parameter for destroy_item operation")
@@ -1010,21 +1010,30 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 			return "", "", "", nil, err
 		}
 
-		quantityValue, exists := operation.Params()["quantity"]
-		if !exists {
-			return "", "", "", nil, errors.New("missing quantity parameter for destroy_item operation")
+		// Quantity is optional, defaults to 0 (ignored when removeAll is true)
+		quantityInt := 0
+		if quantityValue, exists := operation.Params()["quantity"]; exists {
+			quantityInt, err = e.evaluateContextValueAsInt(characterId, "quantity", quantityValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
 		}
 
-		// Evaluate the quantity value
-		quantityInt, err := e.evaluateContextValueAsInt(characterId, "quantity", quantityValue)
-		if err != nil {
-			return "", "", "", nil, err
+		// Check if removeAll parameter is present
+		removeAll := false
+		if removeAllValue, exists := operation.Params()["removeAll"]; exists {
+			removeAllStr, err := e.evaluateContextValue(characterId, "removeAll", removeAllValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
+			removeAll = removeAllStr == "true"
 		}
 
 		payload := saga.DestroyAssetPayload{
 			CharacterId: characterId,
 			TemplateId:  uint32(itemIdInt),
 			Quantity:    uint32(quantityInt),
+			RemoveAll:   removeAll,
 		}
 
 		return stepId, saga.Pending, saga.DestroyAsset, payload, nil
@@ -1249,6 +1258,44 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		}
 
 		return stepId, saga.Pending, saga.CompleteQuest, payload, nil
+
+	case "start_quest":
+		// Format: start_quest
+		// Params: questId (uint32), npcId (uint32, optional - defaults to conversation NPC)
+		// Note: This is currently a stub as no quest service exists yet
+		questIdValue, exists := operation.Params()["questId"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing questId parameter for start_quest operation")
+		}
+
+		questIdInt, err := e.evaluateContextValueAsInt(characterId, "questId", questIdValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		// NpcId is optional - if not provided, get from conversation context
+		var npcIdInt int
+		if npcIdValue, exists := operation.Params()["npcId"]; exists {
+			npcIdInt, err = e.evaluateContextValueAsInt(characterId, "npcId", npcIdValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
+		} else {
+			// Get NPC ID from conversation context
+			ctx, err := GetRegistry().GetPreviousContext(e.t, characterId)
+			if err != nil {
+				return "", "", "", nil, fmt.Errorf("failed to get conversation context for NPC ID: %w", err)
+			}
+			npcIdInt = int(ctx.NpcId())
+		}
+
+		payload := saga.StartQuestPayload{
+			CharacterId: characterId,
+			QuestId:     uint32(questIdInt),
+			NpcId:       uint32(npcIdInt),
+		}
+
+		return stepId, saga.Pending, saga.StartQuest, payload, nil
 
 	default:
 		return "", "", "", nil, fmt.Errorf("unknown operation type: %s", operation.Type())

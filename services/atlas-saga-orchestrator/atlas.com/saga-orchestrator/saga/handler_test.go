@@ -889,11 +889,12 @@ func TestHandleDestroyAsset(t *testing.T) {
 			_, ctx := setupContext()
 
 			// Configure mock
-			compP.RequestDestroyItemFunc = func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32) error {
+			compP.RequestDestroyItemFunc = func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, removeAll bool) error {
 				// Verify parameters
 				assert.Equal(t, tt.payload.CharacterId, characterId)
 				assert.Equal(t, tt.payload.TemplateId, templateId)
 				assert.Equal(t, tt.payload.Quantity, quantity)
+				assert.Equal(t, tt.payload.RemoveAll, removeAll)
 				return tt.mockError
 			}
 

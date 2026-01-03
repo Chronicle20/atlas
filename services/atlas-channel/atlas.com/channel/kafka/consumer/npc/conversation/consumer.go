@@ -168,7 +168,7 @@ func getNPCTalkType(t string) model2.NpcConversationMessageType {
 	case "YES_NO":
 		return model2.NpcConversationMessageTypeAskYesNo
 	case "ACCEPT_DECLINE":
-		return model2.NpcConversationMessageTypeAskYesNo
+		return model2.NpcConversationMessageTypeAskYesNoQuest
 	case "SIMPLE":
 		return model2.NpcConversationMessageTypeSay
 	case "NUM":

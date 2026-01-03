@@ -112,6 +112,7 @@ const (
 	ChangeSkin             Action = "change_skin"
 	SpawnMonster           Action = "spawn_monster"
 	CompleteQuest          Action = "complete_quest"
+	StartQuest             Action = "start_quest"
 )
 
 // Step represents a single step within a saga.
@@ -179,7 +180,8 @@ type AwardMesosPayload struct {
 type DestroyAssetPayload struct {
 	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
 	TemplateId  uint32 `json:"templateId"`  // TemplateId of the item to destroy
-	Quantity    uint32 `json:"quantity"`    // Quantity of the item to destroy
+	Quantity    uint32 `json:"quantity"`    // Quantity of the item to destroy (ignored if RemoveAll is true)
+	RemoveAll   bool   `json:"removeAll"`   // If true, remove all instances of the item regardless of Quantity
 }
 
 // ChangeJobPayload represents the payload required to change a character's job.
@@ -272,6 +274,14 @@ type CompleteQuestPayload struct {
 	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
 	QuestId     uint32 `json:"questId"`     // QuestId to complete
 	NpcId       uint32 `json:"npcId"`       // NpcId that completed the quest
+}
+
+// StartQuestPayload represents the payload required to start a quest.
+// Note: This is currently a stub as no quest service exists yet.
+type StartQuestPayload struct {
+	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
+	QuestId     uint32 `json:"questId"`     // QuestId to start
+	NpcId       uint32 `json:"npcId"`       // NpcId that started the quest
 }
 
 type ExperienceDistributions struct {
@@ -377,6 +387,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case CompleteQuest:
 		var payload CompleteQuestPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case StartQuest:
+		var payload StartQuestPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

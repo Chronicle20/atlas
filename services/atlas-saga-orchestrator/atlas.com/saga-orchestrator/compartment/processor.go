@@ -25,7 +25,7 @@ type CreateAndEquipAssetPayload struct {
 
 type Processor interface {
 	RequestCreateItem(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32) error
-	RequestDestroyItem(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32) error
+	RequestDestroyItem(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, removeAll bool) error
 	RequestEquipAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
 	RequestUnequipAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
 	RequestCreateAndEquipAsset(transactionId uuid.UUID, payload CreateAndEquipAssetPayload) error
@@ -52,7 +52,7 @@ func (p *ProcessorImpl) RequestCreateItem(transactionId uuid.UUID, characterId u
 	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestCreateAssetCommandProvider(transactionId, characterId, inventoryType, templateId, quantity))
 }
 
-func (p *ProcessorImpl) RequestDestroyItem(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32) error {
+func (p *ProcessorImpl) RequestDestroyItem(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, removeAll bool) error {
 	inventoryType, ok := inventory.TypeFromItemId(item.Id(templateId))
 	if !ok {
 		return errors.New("invalid templateId")
@@ -65,7 +65,7 @@ func (p *ProcessorImpl) RequestDestroyItem(transactionId uuid.UUID, characterId 
 	// For now, we'll use a placeholder slot value of -1
 	slot := int16(-1)
 
-	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestDestroyAssetCommandProvider(transactionId, characterId, inventoryType, slot, quantity))
+	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestDestroyAssetCommandProvider(transactionId, characterId, inventoryType, slot, quantity, removeAll))
 }
 
 func (p *ProcessorImpl) RequestEquipAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error {

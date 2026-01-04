@@ -1,0 +1,363 @@
+{
+  "npcId": 1095001,
+  "startState": "checkLevel",
+  "states": [
+    {
+      "id": "checkLevel",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "level",
+                "operator": ">=",
+                "value": "20"
+              }
+            ],
+            "nextState": "levelTooHigh"
+          },
+          {
+            "conditions": [],
+            "nextState": "fetchPlayerCounts"
+          }
+        ]
+      }
+    },
+    {
+      "id": "levelTooHigh",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "This training ground is available only for those under level 20.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "fetchPlayerCounts",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:fetch_map_player_counts",
+            "params": {
+              "mapIds": "912030000,912030001,912030002,912030003,912030004"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "selectTrainingCenter"
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectTrainingCenter",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Would you like to go into the Training Center?",
+        "choices": [
+          {
+            "text": "Training Center 0 ({context.playerCount_912030000}/5)",
+            "nextState": "checkCapacity0",
+            "context": {
+              "selectedMap": "912030000",
+              "maxCapacity": "5"
+            }
+          },
+          {
+            "text": "Training Center 1 ({context.playerCount_912030001}/5)",
+            "nextState": "checkCapacity1",
+            "context": {
+              "selectedMap": "912030001",
+              "maxCapacity": "5"
+            }
+          },
+          {
+            "text": "Training Center 2 ({context.playerCount_912030002}/5)",
+            "nextState": "checkCapacity2",
+            "context": {
+              "selectedMap": "912030002",
+              "maxCapacity": "5"
+            }
+          },
+          {
+            "text": "Training Center 3 ({context.playerCount_912030003}/5)",
+            "nextState": "checkCapacity3",
+            "context": {
+              "selectedMap": "912030003",
+              "maxCapacity": "5"
+            }
+          },
+          {
+            "text": "Training Center 4 ({context.playerCount_912030004}/5)",
+            "nextState": "checkCapacity4",
+            "context": {
+              "selectedMap": "912030004",
+              "maxCapacity": "5"
+            }
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkCapacity0",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "mapCapacity",
+                "operator": ">=",
+                "value": "5",
+                "referenceId": "912030000"
+              }
+            ],
+            "nextState": "trainingCenterFull"
+          },
+          {
+            "conditions": [],
+            "nextState": "warpToMap0"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkCapacity1",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "mapCapacity",
+                "operator": ">=",
+                "value": "5",
+                "referenceId": "912030001"
+              }
+            ],
+            "nextState": "trainingCenterFull"
+          },
+          {
+            "conditions": [],
+            "nextState": "warpToMap1"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkCapacity2",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "mapCapacity",
+                "operator": ">=",
+                "value": "5",
+                "referenceId": "912030002"
+              }
+            ],
+            "nextState": "trainingCenterFull"
+          },
+          {
+            "conditions": [],
+            "nextState": "warpToMap2"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkCapacity3",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "mapCapacity",
+                "operator": ">=",
+                "value": "5",
+                "referenceId": "912030003"
+              }
+            ],
+            "nextState": "trainingCenterFull"
+          },
+          {
+            "conditions": [],
+            "nextState": "warpToMap3"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkCapacity4",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "mapCapacity",
+                "operator": ">=",
+                "value": "5",
+                "referenceId": "912030004"
+              }
+            ],
+            "nextState": "trainingCenterFull"
+          },
+          {
+            "conditions": [],
+            "nextState": "warpToMap4"
+          }
+        ]
+      }
+    },
+    {
+      "id": "trainingCenterFull",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "This training center is full.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "fetchPlayerCounts"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToMap0",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "912030000",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToMap1",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "912030001",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToMap2",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "912030002",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToMap3",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "912030003",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToMap4",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "912030004",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

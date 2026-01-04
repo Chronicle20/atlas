@@ -1,0 +1,3726 @@
+{
+  "npcId": 1091003,
+  "startState": "welcome",
+  "states": [
+    {
+      "id": "welcome",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "What? You want to make your own weapons and gloves? Seriously... it's tough to do it by yourself if you don't have experience... I'll help you out. I've been a pirate for 20 years, and for 20 years I have made various items for the crew here. It's easy for me.",
+        "choices": [
+          {
+            "text": "Make a Knuckler",
+            "nextState": "selectKnuckler"
+          },
+          {
+            "text": "Make a Gun",
+            "nextState": "selectGun"
+          },
+          {
+            "text": "Make a pair of gloves",
+            "nextState": "selectGloves"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectKnuckler",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "As long as you bring in the materials required, I'll make you a fine Knuckler. Which Knuckler would you like to make?",
+        "choices": [
+          {
+            "text": "Leather Arms (Level limit: 15, Pirate)",
+            "nextState": "confirmCraft_1482001"
+          },
+          {
+            "text": "Double Tail Knuckler (Level limit: 20, Pirate)",
+            "nextState": "confirmCraft_1482002"
+          },
+          {
+            "text": "Norman Grip (Level limit: 25, Pirate)",
+            "nextState": "confirmCraft_1482003"
+          },
+          {
+            "text": "Prime Hands (Level limit: 30, Pirate)",
+            "nextState": "confirmCraft_1482004"
+          },
+          {
+            "text": "Silver Maiden (Level limit: 35, Pirate)",
+            "nextState": "confirmCraft_1482005"
+          },
+          {
+            "text": "Neozard (Level limit: 40, Pirate)",
+            "nextState": "confirmCraft_1482006"
+          },
+          {
+            "text": "Fury Claw (Level limit: 50, Pirate)",
+            "nextState": "confirmCraft_1482007"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectGun",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "As long as you bring in the materials required, I'll make you a fine Gun. Which Gun would you like to make?",
+        "choices": [
+          {
+            "text": "Dellinger Special (Level limit: 15, Pirate)",
+            "nextState": "confirmCraft_1492001"
+          },
+          {
+            "text": "The Negotiator (Level limit: 20, Pirate)",
+            "nextState": "confirmCraft_1492002"
+          },
+          {
+            "text": "Golden Hook (Level limit: 25, Pirate)",
+            "nextState": "confirmCraft_1492003"
+          },
+          {
+            "text": "Cold Mind (Level limit: 30, Pirate)",
+            "nextState": "confirmCraft_1492004"
+          },
+          {
+            "text": "Shooting Star (Level limit: 35, Pirate)",
+            "nextState": "confirmCraft_1492005"
+          },
+          {
+            "text": "Lunar Shooter (Level limit: 40, Pirate)",
+            "nextState": "confirmCraft_1492006"
+          },
+          {
+            "text": "Mr. Rasfelt (Level limit: 50, Pirate)",
+            "nextState": "confirmCraft_1492007"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectGloves",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "As long as you bring in the materials required, I'll make you a fine glove. Which glove would you like to make?",
+        "choices": [
+          {
+            "text": "Green Lagger Halfglove",
+            "nextState": "confirmCraft_1082180"
+          },
+          {
+            "text": "Brown Leather Armour Glove",
+            "nextState": "confirmCraft_1082183"
+          },
+          {
+            "text": "Hard Leather Glove",
+            "nextState": "confirmCraft_1082186"
+          },
+          {
+            "text": "Yellow Tartis",
+            "nextState": "confirmCraft_1082189"
+          },
+          {
+            "text": "Brown Jewelled",
+            "nextState": "confirmCraft_1082192"
+          },
+          {
+            "text": "Brown Barbee",
+            "nextState": "confirmCraft_1082195"
+          },
+          {
+            "text": "Brown Royce",
+            "nextState": "confirmCraft_1082198"
+          },
+          {
+            "text": "Black Schult",
+            "nextState": "confirmCraft_1082201"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmCraft_1482001",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Making one #t1482001# requires the items listed below. The level limit for this item is 15, so check and make sure you really need this item before getting it. What do you think? Do you really want one?\r\n\r\n#i4000021# 20 #t4000021#\r\n#i4031138# 1000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkCraft_1482001"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkCraft_1482001",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1482001"
+              }
+            ],
+            "nextState": "checkMeso_1482001"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInventoryFull"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMeso_1482001",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "1000"
+              }
+            ],
+            "nextState": "checkMaterials_1482001"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientFunds"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMaterials_1482001",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "20",
+                "referenceId": "4000021"
+              }
+            ],
+            "nextState": "performCraft_1482001"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performCraft_1482001",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4000021",
+              "quantity": "20"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-1000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1482001",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "success"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmCraft_1482002",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Making one #t1482002# requires the items listed below. The level limit for this item is 20, so check and make sure you really need this item before getting it. What do you think? Do you really want one?\r\n\r\n#i4011001# 1 #t4011001#\r\n#i4011000# 1 #t4011000#\r\n#i4000021# 10 #t4000021#\r\n#i4003000# 5 #t4003000#\r\n#i4031138# 2000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkCraft_1482002"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkCraft_1482002",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1482002"
+              }
+            ],
+            "nextState": "checkMeso_1482002"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInventoryFull"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMeso_1482002",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "2000"
+              }
+            ],
+            "nextState": "checkMaterials_1482002"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientFunds"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMaterials_1482002",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4011001"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4011000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "10",
+                "referenceId": "4000021"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "5",
+                "referenceId": "4003000"
+              }
+            ],
+            "nextState": "performCraft_1482002"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performCraft_1482002",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011001",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011000",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4000021",
+              "quantity": "10"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4003000",
+              "quantity": "5"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-2000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1482002",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "success"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmCraft_1482003",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Making one #t1482003# requires the items listed below. The level limit for this item is 25, so check and make sure you really need this item before getting it. What do you think? Do you really want one?\r\n\r\n#i4011000# 2 #t4011000#\r\n#i4011001# 1 #t4011001#\r\n#i4003000# 10 #t4003000#\r\n#i4031138# 5000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkCraft_1482003"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkCraft_1482003",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1482003"
+              }
+            ],
+            "nextState": "checkMeso_1482003"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInventoryFull"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMeso_1482003",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "5000"
+              }
+            ],
+            "nextState": "checkMaterials_1482003"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientFunds"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMaterials_1482003",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "2",
+                "referenceId": "4011000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4011001"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "10",
+                "referenceId": "4003000"
+              }
+            ],
+            "nextState": "performCraft_1482003"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performCraft_1482003",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011000",
+              "quantity": "2"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011001",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4003000",
+              "quantity": "10"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-5000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1482003",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "success"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmCraft_1482004",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Making one #t1482004# requires the items listed below. The level limit for this item is 30, so check and make sure you really need this item before getting it. What do you think? Do you really want one?\r\n\r\n#i4011000# 1 #t4011000#\r\n#i4011001# 1 #t4011001#\r\n#i4000021# 30 #t4000021#\r\n#i4003000# 10 #t4003000#\r\n#i4031138# 15000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkCraft_1482004"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkCraft_1482004",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1482004"
+              }
+            ],
+            "nextState": "checkMeso_1482004"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInventoryFull"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMeso_1482004",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "15000"
+              }
+            ],
+            "nextState": "checkMaterials_1482004"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientFunds"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMaterials_1482004",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4011000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4011001"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "30",
+                "referenceId": "4000021"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "10",
+                "referenceId": "4003000"
+              }
+            ],
+            "nextState": "performCraft_1482004"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performCraft_1482004",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011000",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011001",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4000021",
+              "quantity": "30"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4003000",
+              "quantity": "10"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-15000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1482004",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "success"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmCraft_1482005",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Making one #t1482005# requires the items listed below. The level limit for this item is 35, so check and make sure you really need this item before getting it. What do you think? Do you really want one?\r\n\r\n#i4011000# 2 #t4011000#\r\n#i4011001# 2 #t4011001#\r\n#i4000021# 30 #t4000021#\r\n#i4003000# 20 #t4003000#\r\n#i4031138# 30000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkCraft_1482005"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkCraft_1482005",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1482005"
+              }
+            ],
+            "nextState": "checkMeso_1482005"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInventoryFull"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMeso_1482005",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "30000"
+              }
+            ],
+            "nextState": "checkMaterials_1482005"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientFunds"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMaterials_1482005",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "2",
+                "referenceId": "4011000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "2",
+                "referenceId": "4011001"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "30",
+                "referenceId": "4000021"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "20",
+                "referenceId": "4003000"
+              }
+            ],
+            "nextState": "performCraft_1482005"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performCraft_1482005",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011000",
+              "quantity": "2"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011001",
+              "quantity": "2"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4000021",
+              "quantity": "30"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4003000",
+              "quantity": "20"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-30000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1482005",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "success"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmCraft_1482006",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Making one #t1482006# requires the items listed below. The level limit for this item is 40, so check and make sure you really need this item before getting it. What do you think? Do you really want one?\r\n\r\n#i4011000# 1 #t4011000#\r\n#i4011001# 1 #t4011001#\r\n#i4021000# 2 #t4021000#\r\n#i4000021# 50 #t4000021#\r\n#i4003000# 20 #t4003000#\r\n#i4031138# 50000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkCraft_1482006"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkCraft_1482006",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1482006"
+              }
+            ],
+            "nextState": "checkMeso_1482006"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInventoryFull"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMeso_1482006",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "50000"
+              }
+            ],
+            "nextState": "checkMaterials_1482006"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientFunds"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMaterials_1482006",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4011000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4011001"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "2",
+                "referenceId": "4021000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "50",
+                "referenceId": "4000021"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "20",
+                "referenceId": "4003000"
+              }
+            ],
+            "nextState": "performCraft_1482006"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performCraft_1482006",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011000",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011001",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4021000",
+              "quantity": "2"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4000021",
+              "quantity": "50"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4003000",
+              "quantity": "20"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-50000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1482006",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "success"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmCraft_1482007",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Making one #t1482007# requires the items listed below. The level limit for this item is 50, so check and make sure you really need this item before getting it. What do you think? Do you really want one?\r\n\r\n#i4000039# 150 #t4000039#\r\n#i4011000# 1 #t4011000#\r\n#i4011001# 2 #t4011001#\r\n#i4000030# 20 #t4000030#\r\n#i4000021# 20 #t4000021#\r\n#i4003000# 20 #t4003000#\r\n#i4031138# 100000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkCraft_1482007"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkCraft_1482007",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1482007"
+              }
+            ],
+            "nextState": "checkMeso_1482007"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInventoryFull"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMeso_1482007",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "100000"
+              }
+            ],
+            "nextState": "checkMaterials_1482007"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientFunds"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMaterials_1482007",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "150",
+                "referenceId": "4000039"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4011000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "2",
+                "referenceId": "4011001"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "20",
+                "referenceId": "4000030"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "20",
+                "referenceId": "4000021"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "20",
+                "referenceId": "4003000"
+              }
+            ],
+            "nextState": "performCraft_1482007"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performCraft_1482007",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4000039",
+              "quantity": "150"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011000",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011001",
+              "quantity": "2"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4000030",
+              "quantity": "20"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4000021",
+              "quantity": "20"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4003000",
+              "quantity": "20"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-100000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1482007",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "success"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmCraft_1492001",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Making one #t1492001# requires the items listed below. The level limit for this item is 15, so check and make sure you really need this item before getting it. What do you think? Do you really want one?\r\n\r\n#i4011000# 1 #t4011000#\r\n#i4003000# 5 #t4003000#\r\n#i4003001# 1 #t4003001#\r\n#i4031138# 1000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkCraft_1492001"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkCraft_1492001",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1492001"
+              }
+            ],
+            "nextState": "checkMeso_1492001"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInventoryFull"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMeso_1492001",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "1000"
+              }
+            ],
+            "nextState": "checkMaterials_1492001"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientFunds"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMaterials_1492001",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4011000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "5",
+                "referenceId": "4003000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4003001"
+              }
+            ],
+            "nextState": "performCraft_1492001"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performCraft_1492001",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011000",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4003000",
+              "quantity": "5"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4003001",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-1000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1492001",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "success"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmCraft_1492002",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Making one #t1492002# requires the items listed below. The level limit for this item is 20, so check and make sure you really need this item before getting it. What do you think? Do you really want one?\r\n\r\n#i4011000# 1 #t4011000#\r\n#i4003000# 10 #t4003000#\r\n#i4003001# 5 #t4003001#\r\n#i4000021# 10 #t4000021#\r\n#i4031138# 2000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkCraft_1492002"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkCraft_1492002",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1492002"
+              }
+            ],
+            "nextState": "checkMeso_1492002"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInventoryFull"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMeso_1492002",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "2000"
+              }
+            ],
+            "nextState": "checkMaterials_1492002"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientFunds"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMaterials_1492002",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4011000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "10",
+                "referenceId": "4003000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "5",
+                "referenceId": "4003001"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "10",
+                "referenceId": "4000021"
+              }
+            ],
+            "nextState": "performCraft_1492002"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performCraft_1492002",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011000",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4003000",
+              "quantity": "10"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4003001",
+              "quantity": "5"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4000021",
+              "quantity": "10"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-2000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1492002",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "success"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmCraft_1492003",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Making one #t1492003# requires the items listed below. The level limit for this item is 25, so check and make sure you really need this item before getting it. What do you think? Do you really want one?\r\n\r\n#i4011000# 2 #t4011000#\r\n#i4003000# 10 #t4003000#\r\n#i4031138# 5000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkCraft_1492003"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkCraft_1492003",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1492003"
+              }
+            ],
+            "nextState": "checkMeso_1492003"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInventoryFull"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMeso_1492003",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "5000"
+              }
+            ],
+            "nextState": "checkMaterials_1492003"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientFunds"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMaterials_1492003",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "2",
+                "referenceId": "4011000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "10",
+                "referenceId": "4003000"
+              }
+            ],
+            "nextState": "performCraft_1492003"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performCraft_1492003",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011000",
+              "quantity": "2"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4003000",
+              "quantity": "10"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-5000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1492003",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "success"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmCraft_1492004",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Making one #t1492004# requires the items listed below. The level limit for this item is 30, so check and make sure you really need this item before getting it. What do you think? Do you really want one?\r\n\r\n#i4011001# 2 #t4011001#\r\n#i4000021# 10 #t4000021#\r\n#i4003000# 10 #t4003000#\r\n#i4031138# 15000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkCraft_1492004"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkCraft_1492004",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1492004"
+              }
+            ],
+            "nextState": "checkMeso_1492004"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInventoryFull"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMeso_1492004",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "15000"
+              }
+            ],
+            "nextState": "checkMaterials_1492004"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientFunds"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMaterials_1492004",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "2",
+                "referenceId": "4011001"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "10",
+                "referenceId": "4000021"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "10",
+                "referenceId": "4003000"
+              }
+            ],
+            "nextState": "performCraft_1492004"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performCraft_1492004",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011001",
+              "quantity": "2"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4000021",
+              "quantity": "10"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4003000",
+              "quantity": "10"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-15000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1492004",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "success"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmCraft_1492005",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Making one #t1492005# requires the items listed below. The level limit for this item is 35, so check and make sure you really need this item before getting it. What do you think? Do you really want one?\r\n\r\n#i4011006# 10 #t4011006#\r\n#i4011001# 2 #t4011001#\r\n#i4000021# 5 #t4000021#\r\n#i4003000# 10 #t4003000#\r\n#i4031138# 30000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkCraft_1492005"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkCraft_1492005",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1492005"
+              }
+            ],
+            "nextState": "checkMeso_1492005"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInventoryFull"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMeso_1492005",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "30000"
+              }
+            ],
+            "nextState": "checkMaterials_1492005"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientFunds"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMaterials_1492005",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "10",
+                "referenceId": "4011006"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "2",
+                "referenceId": "4011001"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "5",
+                "referenceId": "4000021"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "10",
+                "referenceId": "4003000"
+              }
+            ],
+            "nextState": "performCraft_1492005"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performCraft_1492005",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011006",
+              "quantity": "10"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011001",
+              "quantity": "2"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4000021",
+              "quantity": "5"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4003000",
+              "quantity": "10"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-30000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1492005",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "success"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmCraft_1492006",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Making one #t1492006# requires the items listed below. The level limit for this item is 40, so check and make sure you really need this item before getting it. What do you think? Do you really want one?\r\n\r\n#i4011004# 1 #t4011004#\r\n#i4011001# 2 #t4011001#\r\n#i4000021# 10 #t4000021#\r\n#i4003000# 20 #t4003000#\r\n#i4031138# 50000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkCraft_1492006"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkCraft_1492006",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1492006"
+              }
+            ],
+            "nextState": "checkMeso_1492006"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInventoryFull"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMeso_1492006",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "50000"
+              }
+            ],
+            "nextState": "checkMaterials_1492006"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientFunds"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMaterials_1492006",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4011004"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "2",
+                "referenceId": "4011001"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "10",
+                "referenceId": "4000021"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "20",
+                "referenceId": "4003000"
+              }
+            ],
+            "nextState": "performCraft_1492006"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performCraft_1492006",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011004",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011001",
+              "quantity": "2"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4000021",
+              "quantity": "10"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4003000",
+              "quantity": "20"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-50000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1492006",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "success"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmCraft_1492007",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Making one #t1492007# requires the items listed below. The level limit for this item is 50, so check and make sure you really need this item before getting it. What do you think? Do you really want one?\r\n\r\n#i4011006# 1 #t4011006#\r\n#i4011004# 2 #t4011004#\r\n#i4011001# 4 #t4011001#\r\n#i4000030# 30 #t4000030#\r\n#i4003000# 30 #t4003000#\r\n#i4031138# 100000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkCraft_1492007"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkCraft_1492007",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1492007"
+              }
+            ],
+            "nextState": "checkMeso_1492007"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInventoryFull"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMeso_1492007",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "100000"
+              }
+            ],
+            "nextState": "checkMaterials_1492007"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientFunds"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMaterials_1492007",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4011006"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "2",
+                "referenceId": "4011004"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "4",
+                "referenceId": "4011001"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "30",
+                "referenceId": "4000030"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "30",
+                "referenceId": "4003000"
+              }
+            ],
+            "nextState": "performCraft_1492007"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performCraft_1492007",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011006",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011004",
+              "quantity": "2"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011001",
+              "quantity": "4"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4000030",
+              "quantity": "30"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4003000",
+              "quantity": "30"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-100000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1492007",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "success"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmCraft_1082180",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Making one #t1082180# requires the items listed below. The level limit for this item is 15, so check and make sure you really need this item before getting it. What do you think? Do you really want one?\r\n\r\n#i4000021# 15 #t4000021#\r\n#i4021003# 1 #t4021003#\r\n#i4031138# 1000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkCraft_1082180"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkCraft_1082180",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1082180"
+              }
+            ],
+            "nextState": "checkMeso_1082180"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInventoryFull"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMeso_1082180",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "1000"
+              }
+            ],
+            "nextState": "checkMaterials_1082180"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientFunds"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMaterials_1082180",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "15",
+                "referenceId": "4000021"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4021003"
+              }
+            ],
+            "nextState": "performCraft_1082180"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performCraft_1082180",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4000021",
+              "quantity": "15"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4021003",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-1000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1082180",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "success"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmCraft_1082183",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Making one #t1082183# requires the items listed below. The level limit for this item is 20, so check and make sure you really need this item before getting it. What do you think? Do you really want one?\r\n\r\n#i4000021# 35 #t4000021#\r\n#i4031138# 8000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkCraft_1082183"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkCraft_1082183",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1082183"
+              }
+            ],
+            "nextState": "checkMeso_1082183"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInventoryFull"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMeso_1082183",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "8000"
+              }
+            ],
+            "nextState": "checkMaterials_1082183"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientFunds"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMaterials_1082183",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "35",
+                "referenceId": "4000021"
+              }
+            ],
+            "nextState": "performCraft_1082183"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performCraft_1082183",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4000021",
+              "quantity": "35"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-8000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1082183",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "success"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmCraft_1082186",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Making one #t1082186# requires the items listed below. The level limit for this item is 25, so check and make sure you really need this item before getting it. What do you think? Do you really want one?\r\n\r\n#i4011000# 2 #t4011000#\r\n#i4000021# 20 #t4000021#\r\n#i4031138# 15000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkCraft_1082186"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkCraft_1082186",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1082186"
+              }
+            ],
+            "nextState": "checkMeso_1082186"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInventoryFull"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMeso_1082186",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "15000"
+              }
+            ],
+            "nextState": "checkMaterials_1082186"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientFunds"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMaterials_1082186",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "2",
+                "referenceId": "4011000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "20",
+                "referenceId": "4000021"
+              }
+            ],
+            "nextState": "performCraft_1082186"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performCraft_1082186",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011000",
+              "quantity": "2"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4000021",
+              "quantity": "20"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-15000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1082186",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "success"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmCraft_1082189",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Making one #t1082189# requires the items listed below. The level limit for this item is 30, so check and make sure you really need this item before getting it. What do you think? Do you really want one?\r\n\r\n#i4021006# 2 #t4021006#\r\n#i4000021# 50 #t4000021#\r\n#i4003000# 10 #t4003000#\r\n#i4031138# 25000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkCraft_1082189"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkCraft_1082189",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1082189"
+              }
+            ],
+            "nextState": "checkMeso_1082189"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInventoryFull"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMeso_1082189",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "25000"
+              }
+            ],
+            "nextState": "checkMaterials_1082189"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientFunds"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMaterials_1082189",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "2",
+                "referenceId": "4021006"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "50",
+                "referenceId": "4000021"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "10",
+                "referenceId": "4003000"
+              }
+            ],
+            "nextState": "performCraft_1082189"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performCraft_1082189",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4021006",
+              "quantity": "2"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4000021",
+              "quantity": "50"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4003000",
+              "quantity": "10"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-25000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1082189",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "success"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmCraft_1082192",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Making one #t1082192# requires the items listed below. The level limit for this item is 35, so check and make sure you really need this item before getting it. What do you think? Do you really want one?\r\n\r\n#i4011000# 3 #t4011000#\r\n#i4000021# 60 #t4000021#\r\n#i4003000# 15 #t4003000#\r\n#i4031138# 30000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkCraft_1082192"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkCraft_1082192",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1082192"
+              }
+            ],
+            "nextState": "checkMeso_1082192"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInventoryFull"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMeso_1082192",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "30000"
+              }
+            ],
+            "nextState": "checkMaterials_1082192"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientFunds"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMaterials_1082192",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "3",
+                "referenceId": "4011000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "60",
+                "referenceId": "4000021"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "15",
+                "referenceId": "4003000"
+              }
+            ],
+            "nextState": "performCraft_1082192"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performCraft_1082192",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011000",
+              "quantity": "3"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4000021",
+              "quantity": "60"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4003000",
+              "quantity": "15"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-30000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1082192",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "success"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmCraft_1082195",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Making one #t1082195# requires the items listed below. The level limit for this item is 40, so check and make sure you really need this item before getting it. What do you think? Do you really want one?\r\n\r\n#i4000021# 80 #t4000021#\r\n#i4011000# 3 #t4011000#\r\n#i4011001# 3 #t4011001#\r\n#i4003000# 25 #t4003000#\r\n#i4031138# 40000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkCraft_1082195"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkCraft_1082195",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1082195"
+              }
+            ],
+            "nextState": "checkMeso_1082195"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInventoryFull"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMeso_1082195",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "40000"
+              }
+            ],
+            "nextState": "checkMaterials_1082195"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientFunds"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMaterials_1082195",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "80",
+                "referenceId": "4000021"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "3",
+                "referenceId": "4011000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "3",
+                "referenceId": "4011001"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "25",
+                "referenceId": "4003000"
+              }
+            ],
+            "nextState": "performCraft_1082195"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performCraft_1082195",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4000021",
+              "quantity": "80"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011000",
+              "quantity": "3"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011001",
+              "quantity": "3"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4003000",
+              "quantity": "25"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-40000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1082195",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "success"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmCraft_1082198",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Making one #t1082198# requires the items listed below. The level limit for this item is 50, so check and make sure you really need this item before getting it. What do you think? Do you really want one?\r\n\r\n#i4011000# 3 #t4011000#\r\n#i4000021# 20 #t4000021#\r\n#i4000030# 40 #t4000030#\r\n#i4003000# 30 #t4003000#\r\n#i4031138# 50000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkCraft_1082198"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkCraft_1082198",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1082198"
+              }
+            ],
+            "nextState": "checkMeso_1082198"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInventoryFull"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMeso_1082198",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "50000"
+              }
+            ],
+            "nextState": "checkMaterials_1082198"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientFunds"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMaterials_1082198",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "3",
+                "referenceId": "4011000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "20",
+                "referenceId": "4000021"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "40",
+                "referenceId": "4000030"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "30",
+                "referenceId": "4003000"
+              }
+            ],
+            "nextState": "performCraft_1082198"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performCraft_1082198",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011000",
+              "quantity": "3"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4000021",
+              "quantity": "20"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4000030",
+              "quantity": "40"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4003000",
+              "quantity": "30"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-50000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1082198",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "success"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmCraft_1082201",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Making one #t1082201# requires the items listed below. The level limit for this item is 60, so check and make sure you really need this item before getting it. What do you think? Do you really want one?\r\n\r\n#i4011007# 1 #t4011007#\r\n#i4021008# 1 #t4021008#\r\n#i4021007# 1 #t4021007#\r\n#i4000030# 50 #t4000030#\r\n#i4003000# 50 #t4003000#\r\n#i4031138# 70000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkCraft_1082201"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkCraft_1082201",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1082201"
+              }
+            ],
+            "nextState": "checkMeso_1082201"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInventoryFull"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMeso_1082201",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "70000"
+              }
+            ],
+            "nextState": "checkMaterials_1082201"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientFunds"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMaterials_1082201",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4011007"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4021008"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4021007"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "50",
+                "referenceId": "4000030"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "50",
+                "referenceId": "4003000"
+              }
+            ],
+            "nextState": "performCraft_1082201"
+          },
+          {
+            "conditions": [],
+            "nextState": "errorInsufficientMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performCraft_1082201",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011007",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4021008",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4021007",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4000030",
+              "quantity": "50"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4003000",
+              "quantity": "50"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-70000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1082201",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "success"
+          }
+        ]
+      }
+    },
+    {
+      "id": "errorInventoryFull",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Check your inventory for a free slot first.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "errorInsufficientFunds",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Check and make sure you have all the necessary items to make this. Also, make sure your Equips inventory has room. I can't give you the item if your inventory is full, you know.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "errorInsufficientMaterials",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Check and make sure you have all the necessary items to make this. Also, make sure your Equips inventory has room. I can't give you the item if your inventory is full, you know.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "success",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "All done. If you need anything else... Well, I'm not going anywhere.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,255 @@
+{
+  "npcId": 1092094,
+  "startState": "checkItems",
+  "states": [
+    {
+      "id": "checkItems",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": 4031848
+              }
+            ],
+            "nextState": "hasMilk1"
+          },
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": 4031849
+              }
+            ],
+            "nextState": "hasMilk2"
+          },
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": 4031850
+              }
+            ],
+            "nextState": "hasMilk3"
+          },
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": 4031847
+              }
+            ],
+            "nextState": "hasEmptyBottle"
+          },
+          {
+            "conditions": [],
+            "nextState": "noItems"
+          }
+        ]
+      }
+    },
+    {
+      "id": "hasMilk1",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "The hungry calf is drinking all the milk! The bottle is now empty.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "exchangeMilk1"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "exchangeMilk1",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4031848",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4031847",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "hasMilk2",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "The hungry calf is drinking all the milk! The bottle is now empty.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "exchangeMilk2"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "exchangeMilk2",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4031849",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4031847",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "hasMilk3",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "The hungry calf is drinking all the milk! The bottle is now empty.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "exchangeMilk3"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "exchangeMilk3",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4031850",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4031847",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "hasEmptyBottle",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "The hungry calf is drinking all the milk! The bottle remains empty...",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "emptyBottleResponse"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "emptyBottleResponse",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendPrev",
+        "text": "The hungry calf isn't interested in the empty bottle.",
+        "choices": [
+          {
+            "text": "Previous",
+            "nextState": "hasEmptyBottle"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "noItems",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "The hungry calf isn't interested in the empty bottle.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

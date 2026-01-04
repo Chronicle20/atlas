@@ -1,0 +1,24 @@
+{
+  "npcId": 1200005,
+  "startState": "greeting",
+  "states": [
+    {
+      "id": "greeting",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Ahhhh, this is so boring... The whale is controlling the ship so i'm left with nothing to do but look up and stare at the clouds.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

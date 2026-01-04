@@ -1,0 +1,134 @@
+{
+  "npcId": 1072007,
+  "startState": "checkItems",
+  "states": [
+    {
+      "id": "checkItems",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "30",
+                "referenceId": "4031013"
+              }
+            ],
+            "nextState": "hasItems"
+          },
+          {
+            "conditions": [],
+            "nextState": "needItems"
+          }
+        ]
+      }
+    },
+    {
+      "id": "hasItems",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "You're a true hero! Take this and the Dark Lord will acknowledge you.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": "completeAndWarp"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "needItems",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "You will have to collect me #b30 #t4031013##k. Good luck.",
+        "choices": [
+          {
+            "text": "I would like to leave",
+            "nextState": "warpOnly"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "completeAndWarp",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4031013",
+              "quantity": "0",
+              "removeAll": "true"
+            }
+          },
+          {
+            "type": "complete_quest",
+            "params": {
+              "questId": "100010"
+            }
+          },
+          {
+            "type": "start_quest",
+            "params": {
+              "questId": "100011"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4031012",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "102040000",
+              "portalId": "9"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpOnly",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "102040000",
+              "portalId": "9"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "npcId": 1103000,
+  "startState": "greeting",
+  "states": [
+    {
+      "id": "greeting",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "I am Advanced Knight #b#p1103000##k. Thanks to your bravery I and all of Ereve have been rescued from the grasps of Eleanor. By the kindness of our Empress, well battled!",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

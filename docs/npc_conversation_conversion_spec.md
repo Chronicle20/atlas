@@ -372,6 +372,8 @@ Verify in saga-orchestrator, but common operations:
 - `update_skill` - Update skill (params: `skillId`, `level`, `masterLevel`)
 - `spawn_monster` - Spawn monsters at location (params: `monsterId`, `x`, `y`, `count`, `team`) - foothold resolved automatically
 - `complete_quest` - Complete a quest (params: `questId`, `npcId`) - stub implementation
+- `start_quest` - Start a quest (params: `questId`, `npcId`) - stub implementation
+- `apply_consumable_effect` - Apply consumable effects without consuming (params: `itemId`) - for NPC buffs (maps to `cm.useItem()`)
 
 **Local Operations:**
 - `local:generate_hair_styles` - Generate hair styles (params: `baseStyles`, `genderFilter`, etc.)

@@ -4,6 +4,7 @@ import (
 	"atlas-saga-orchestrator/buddylist"
 	"atlas-saga-orchestrator/character"
 	"atlas-saga-orchestrator/compartment"
+	"atlas-saga-orchestrator/consumable"
 	"atlas-saga-orchestrator/data/foothold"
 	"atlas-saga-orchestrator/guild"
 	"atlas-saga-orchestrator/invite"
@@ -32,6 +33,7 @@ type Handler interface {
 	WithPetProcessor(pet.Processor) Handler
 	WithFootholdProcessor(foothold.Processor) Handler
 	WithMonsterProcessor(monster.Processor) Handler
+	WithConsumableProcessor(consumable.Processor) Handler
 
 	GetHandler(action Action) (ActionHandler, bool)
 
@@ -65,39 +67,42 @@ type Handler interface {
 	handleSpawnMonster(s Saga, st Step[any]) error
 	handleCompleteQuest(s Saga, st Step[any]) error
 	handleStartQuest(s Saga, st Step[any]) error
+	handleApplyConsumableEffect(s Saga, st Step[any]) error
 }
 
 type HandlerImpl struct {
-	l          logrus.FieldLogger
-	ctx        context.Context
-	t          tenant.Model
-	charP      character.Processor
-	compP      compartment.Processor
-	skillP     skill.Processor
-	validP     validation.Processor
-	guildP     guild.Processor
-	inviteP    invite.Processor
-	buddyListP buddylist.Processor
-	petP       pet.Processor
-	footholdP  foothold.Processor
-	monsterP   monster.Processor
+	l           logrus.FieldLogger
+	ctx         context.Context
+	t           tenant.Model
+	charP       character.Processor
+	compP       compartment.Processor
+	skillP      skill.Processor
+	validP      validation.Processor
+	guildP      guild.Processor
+	inviteP     invite.Processor
+	buddyListP  buddylist.Processor
+	petP        pet.Processor
+	footholdP   foothold.Processor
+	monsterP    monster.Processor
+	consumableP consumable.Processor
 }
 
 func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
 	return &HandlerImpl{
-		l:          l,
-		ctx:        ctx,
-		t:          tenant.MustFromContext(ctx),
-		charP:      character.NewProcessor(l, ctx),
-		compP:      compartment.NewProcessor(l, ctx),
-		skillP:     skill.NewProcessor(l, ctx),
-		validP:     validation.NewProcessor(l, ctx),
-		guildP:     guild.NewProcessor(l, ctx),
-		inviteP:    invite.NewProcessor(l, ctx),
-		buddyListP: buddylist.NewProcessor(l, ctx),
-		petP:       pet.NewProcessor(l, ctx),
-		footholdP:  foothold.NewProcessor(l, ctx),
-		monsterP:   monster.NewProcessor(l, ctx),
+		l:           l,
+		ctx:         ctx,
+		t:           tenant.MustFromContext(ctx),
+		charP:       character.NewProcessor(l, ctx),
+		compP:       compartment.NewProcessor(l, ctx),
+		skillP:      skill.NewProcessor(l, ctx),
+		validP:      validation.NewProcessor(l, ctx),
+		guildP:      guild.NewProcessor(l, ctx),
+		inviteP:     invite.NewProcessor(l, ctx),
+		buddyListP:  buddylist.NewProcessor(l, ctx),
+		petP:        pet.NewProcessor(l, ctx),
+		footholdP:   foothold.NewProcessor(l, ctx),
+		monsterP:    monster.NewProcessor(l, ctx),
+		consumableP: consumable.NewProcessor(l, ctx),
 	}
 }
 
@@ -240,19 +245,39 @@ func (h *HandlerImpl) WithFootholdProcessor(footholdP foothold.Processor) Handle
 
 func (h *HandlerImpl) WithMonsterProcessor(monsterP monster.Processor) Handler {
 	return &HandlerImpl{
-		l:          h.l,
-		ctx:        h.ctx,
-		t:          h.t,
-		charP:      h.charP,
-		compP:      h.compP,
-		skillP:     h.skillP,
-		validP:     h.validP,
-		guildP:     h.guildP,
-		inviteP:    h.inviteP,
-		buddyListP: h.buddyListP,
-		petP:       h.petP,
-		footholdP:  h.footholdP,
-		monsterP:   monsterP,
+		l:           h.l,
+		ctx:         h.ctx,
+		t:           h.t,
+		charP:       h.charP,
+		compP:       h.compP,
+		skillP:      h.skillP,
+		validP:      h.validP,
+		guildP:      h.guildP,
+		inviteP:     h.inviteP,
+		buddyListP:  h.buddyListP,
+		petP:        h.petP,
+		footholdP:   h.footholdP,
+		monsterP:    monsterP,
+		consumableP: h.consumableP,
+	}
+}
+
+func (h *HandlerImpl) WithConsumableProcessor(consumableP consumable.Processor) Handler {
+	return &HandlerImpl{
+		l:           h.l,
+		ctx:         h.ctx,
+		t:           h.t,
+		charP:       h.charP,
+		compP:       h.compP,
+		skillP:      h.skillP,
+		validP:      h.validP,
+		guildP:      h.guildP,
+		inviteP:     h.inviteP,
+		buddyListP:  h.buddyListP,
+		petP:        h.petP,
+		footholdP:   h.footholdP,
+		monsterP:    h.monsterP,
+		consumableP: consumableP,
 	}
 }
 
@@ -319,6 +344,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleCompleteQuest, true
 	case StartQuest:
 		return h.handleStartQuest, true
+	case ApplyConsumableEffect:
+		return h.handleApplyConsumableEffect, true
 	}
 	return nil, false
 }
@@ -879,6 +906,23 @@ func (h *HandlerImpl) handleStartQuest(s Saga, st Step[any]) error {
 	// TODO: Implement actual quest start when quest service is available
 	h.l.Debugf("Quest start stub: quest %d started for character %d via NPC %d",
 		payload.QuestId, payload.CharacterId, payload.NpcId)
+
+	return nil
+}
+
+// handleApplyConsumableEffect handles the ApplyConsumableEffect action
+// This applies consumable item effects to a character without consuming from inventory
+func (h *HandlerImpl) handleApplyConsumableEffect(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(ApplyConsumableEffectPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.consumableP.ApplyConsumableEffect(byte(payload.WorldId), byte(payload.ChannelId), payload.CharacterId, payload.ItemId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to apply consumable effect.")
+		return err
+	}
 
 	return nil
 }

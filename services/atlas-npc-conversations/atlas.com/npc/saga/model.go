@@ -113,6 +113,7 @@ const (
 	SpawnMonster           Action = "spawn_monster"
 	CompleteQuest          Action = "complete_quest"
 	StartQuest             Action = "start_quest"
+	ApplyConsumableEffect  Action = "apply_consumable_effect"
 )
 
 // Step represents a single step within a saga.
@@ -284,6 +285,16 @@ type StartQuestPayload struct {
 	NpcId       uint32 `json:"npcId"`       // NpcId that started the quest
 }
 
+// ApplyConsumableEffectPayload represents the payload required to apply consumable item effects to a character.
+// This is used for NPC-initiated item usage where the item effects are applied
+// without consuming from inventory (e.g., NPC buffs like Shinsoo's blessing).
+type ApplyConsumableEffectPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to apply item effects to
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	ItemId      uint32     `json:"itemId"`      // Consumable item ID whose effects should be applied
+}
+
 type ExperienceDistributions struct {
 	ExperienceType string `json:"experienceType"`
 	Amount         uint32 `json:"amount"`
@@ -393,6 +404,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case StartQuest:
 		var payload StartQuestPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case ApplyConsumableEffect:
+		var payload ApplyConsumableEffectPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

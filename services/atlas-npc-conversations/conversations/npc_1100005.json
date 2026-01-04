@@ -1,0 +1,24 @@
+{
+  "npcId": 1100005,
+  "startState": "welcome",
+  "states": [
+    {
+      "id": "welcome",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "The weather is so nice. At this rate, we should arrive in no time....",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1297,6 +1297,30 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 		return stepId, saga.Pending, saga.StartQuest, payload, nil
 
+	case "apply_consumable_effect":
+		// Format: apply_consumable_effect
+		// Params: itemId (uint32)
+		// Applies consumable item effects to a character without consuming from inventory
+		// Used for NPC-initiated buffs (e.g., cm.useItem() in scripts)
+		itemIdValue, exists := operation.Params()["itemId"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing itemId parameter for apply_consumable_effect operation")
+		}
+
+		itemIdInt, err := e.evaluateContextValueAsInt(characterId, "itemId", itemIdValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		payload := saga.ApplyConsumableEffectPayload{
+			CharacterId: characterId,
+			WorldId:     f.WorldId(),
+			ChannelId:   f.ChannelId(),
+			ItemId:      uint32(itemIdInt),
+		}
+
+		return stepId, saga.Pending, saga.ApplyConsumableEffect, payload, nil
+
 	default:
 		return "", "", "", nil, fmt.Errorf("unknown operation type: %s", operation.Type())
 	}

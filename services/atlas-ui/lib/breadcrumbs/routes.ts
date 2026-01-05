@@ -53,6 +53,17 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
     parent: '/',
   },
   {
+    pattern: '/quests',
+    label: 'Quests',
+    parent: '/',
+  },
+  {
+    pattern: '/quests/[id]',
+    label: 'Quest Details',
+    parent: '/quests',
+    entityType: 'quest',
+  },
+  {
     pattern: '/templates',
     label: 'Templates',
     parent: '/',
@@ -354,6 +365,8 @@ export const ROUTE_PATTERNS = {
   NPC_DETAIL: '/npcs/[id]',
   NPC_CONVERSATIONS: '/npcs/[id]/conversations',
   NPC_SHOP: '/npcs/[id]/shop',
+  QUESTS: '/quests',
+  QUEST_DETAIL: '/quests/[id]',
   TEMPLATES: '/templates',
   TEMPLATE_DETAIL: '/templates/[id]',
   TEMPLATE_PROPERTIES: '/templates/[id]/properties',

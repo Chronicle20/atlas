@@ -7,6 +7,10 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -40,6 +44,8 @@ func handleMonsterKilledEvent(db *gorm.DB) message.Handler[monster.StatusEvent[m
 			return
 		}
 
+		f := field.NewBuilder(world.Id(e.WorldId), channel.Id(e.ChannelId), _map.Id(e.MapId)).Build()
+
 		// Process monster kill for each character that dealt damage
 		for _, entry := range e.Body.DamageEntries {
 			if entry.CharacterId == 0 {
@@ -70,14 +76,14 @@ func handleMonsterKilledEvent(db *gorm.DB) message.Handler[monster.StatusEvent[m
 						l.Debugf("Updated monster [%d] kill progress for quest [%d] character [%d]: %d -> %d.", e.MonsterId, q.QuestId(), entry.CharacterId, currentCount, newCount)
 
 						// Check for auto-complete after progress update
-						nextQuestId, completed, err := processor.CheckAutoComplete(entry.CharacterId, q.QuestId())
+						nextQuestId, completed, err := processor.CheckAutoComplete(entry.CharacterId, q.QuestId(), f)
 						if err != nil {
 							l.WithError(err).Warnf("Unable to check auto-complete for quest [%d] character [%d].", q.QuestId(), entry.CharacterId)
 						} else if completed {
 							l.Infof("Auto-completed quest [%d] for character [%d].", q.QuestId(), entry.CharacterId)
 							// Handle quest chain - auto-start next quest if present
 							if nextQuestId > 0 {
-								_, err = processor.StartChained(entry.CharacterId, nextQuestId)
+								_, err = processor.StartChained(entry.CharacterId, nextQuestId, f)
 								if err != nil {
 									l.WithError(err).Errorf("Error starting chained quest [%d] for character [%d].", nextQuestId, entry.CharacterId)
 								}

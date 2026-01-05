@@ -6,6 +6,9 @@ import (
 	"atlas-quest/quest"
 	"context"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -41,7 +44,9 @@ func handleStartQuestCommand(db *gorm.DB) message.Handler[quest2.Command[quest2.
 		if c.Type != quest2.CommandTypeStart {
 			return
 		}
-		_, err := quest.NewProcessor(l, ctx, db).Start(c.CharacterId, c.Body.QuestId)
+		// Kafka commands skip validation by default (validation happens at the caller)
+		f := field.NewBuilder(world.Id(c.WorldId), channel.Id(c.ChannelId), 0).Build()
+		_, _, err := quest.NewProcessor(l, ctx, db).Start(c.CharacterId, c.Body.QuestId, f, true)
 		if err != nil {
 			l.WithError(err).Errorf("Error starting quest [%d] for character [%d].", c.Body.QuestId, c.CharacterId)
 		}
@@ -54,7 +59,9 @@ func handleCompleteQuestCommand(db *gorm.DB) message.Handler[quest2.Command[ques
 			return
 		}
 		processor := quest.NewProcessor(l, ctx, db)
-		nextQuestId, err := processor.Complete(c.CharacterId, c.Body.QuestId)
+		// Kafka commands skip validation (validation happens at the caller), but still process rewards
+		f := field.NewBuilder(world.Id(c.WorldId), channel.Id(c.ChannelId), 0).Build()
+		nextQuestId, err := processor.Complete(c.CharacterId, c.Body.QuestId, f, true)
 		if err != nil {
 			l.WithError(err).Errorf("Error completing quest [%d] for character [%d].", c.Body.QuestId, c.CharacterId)
 			return
@@ -63,7 +70,7 @@ func handleCompleteQuestCommand(db *gorm.DB) message.Handler[quest2.Command[ques
 		// Handle quest chain - auto-start next quest if present
 		if nextQuestId > 0 {
 			l.Infof("Quest chain detected: starting next quest [%d] for character [%d].", nextQuestId, c.CharacterId)
-			_, err = processor.StartChained(c.CharacterId, nextQuestId)
+			_, err = processor.StartChained(c.CharacterId, nextQuestId, f)
 			if err != nil {
 				l.WithError(err).Errorf("Error starting chained quest [%d] for character [%d].", nextQuestId, c.CharacterId)
 			}

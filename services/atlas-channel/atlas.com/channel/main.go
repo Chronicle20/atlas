@@ -33,6 +33,7 @@ import (
 	"atlas-channel/kafka/consumer/party"
 	"atlas-channel/kafka/consumer/party/member"
 	"atlas-channel/kafka/consumer/pet"
+	"atlas-channel/kafka/consumer/quest"
 	"atlas-channel/kafka/consumer/reactor"
 	route "atlas-channel/kafka/consumer/route"
 	session2 "atlas-channel/kafka/consumer/session"
@@ -117,6 +118,7 @@ func main() {
 	consumable.InitConsumers(l)(cmf)(consumerGroupId)
 	cashshop.InitConsumers(l)(cmf)(consumerGroupId)
 	note3.InitConsumers(l)(cmf)(consumerGroupId)
+	quest.InitConsumers(l)(cmf)(consumerGroupId)
 	route.InitConsumers(l)(cmf)(consumerGroupId)
 
 	sctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(tdm.Context(), "startup")
@@ -187,6 +189,7 @@ func main() {
 				consumable.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				cashshop.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				note3.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				quest.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				route.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 
 				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(tenantConfig.Socket.Handlers, validatorMap, handlerMap)

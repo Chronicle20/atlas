@@ -11,13 +11,14 @@ import (
 	"gorm.io/gorm"
 )
 
-func create(db *gorm.DB, t tenant.Model, characterId uint32, questId uint32) (Model, error) {
+func create(db *gorm.DB, t tenant.Model, characterId uint32, questId uint32, expirationTime time.Time) (Model, error) {
 	e := &Entity{
-		TenantId:    t.Id(),
-		CharacterId: characterId,
-		QuestId:     questId,
-		State:       StateStarted,
-		StartedAt:   time.Now(),
+		TenantId:       t.Id(),
+		CharacterId:    characterId,
+		QuestId:        questId,
+		State:          StateStarted,
+		StartedAt:      time.Now(),
+		ExpirationTime: expirationTime,
 	}
 
 	err := db.Create(e).Error
@@ -27,16 +28,57 @@ func create(db *gorm.DB, t tenant.Model, characterId uint32, questId uint32) (Mo
 	return Make(*e)
 }
 
-func updateState(db *gorm.DB, tenantId uuid.UUID, id uint32, state State) error {
+func restart(db *gorm.DB, tenantId uuid.UUID, id uint32, expirationTime time.Time) (Model, error) {
+	entity, err := byIdEntityProvider(tenantId, id)(db)()
+	if err != nil {
+		return Model{}, err
+	}
+
+	// Clear progress for restarting
+	if err := db.Where("quest_status_id = ?", entity.ID).Delete(&progress.Entity{}).Error; err != nil {
+		return Model{}, fmt.Errorf("failed to delete progress: %w", err)
+	}
+
+	entity.State = StateStarted
+	entity.StartedAt = time.Now()
+	entity.CompletedAt = time.Time{} // Clear completion time
+	entity.ExpirationTime = expirationTime
+	entity.Progress = nil
+
+	if err := db.Save(&entity).Error; err != nil {
+		return Model{}, err
+	}
+	return Make(entity)
+}
+
+func completeQuest(db *gorm.DB, tenantId uuid.UUID, id uint32) error {
 	entity, err := byIdEntityProvider(tenantId, id)(db)()
 	if err != nil {
 		return err
 	}
 
-	entity.State = state
-	if state == StateCompleted {
-		entity.CompletedAt = time.Now()
+	entity.State = StateCompleted
+	entity.CompletedAt = time.Now()
+	entity.CompletedCount++
+	return db.Save(&entity).Error
+}
+
+func forfeitQuest(db *gorm.DB, tenantId uuid.UUID, id uint32) error {
+	entity, err := byIdEntityProvider(tenantId, id)(db)()
+	if err != nil {
+		return err
 	}
+
+	// Clear progress
+	if err := db.Where("quest_status_id = ?", entity.ID).Delete(&progress.Entity{}).Error; err != nil {
+		return fmt.Errorf("failed to delete progress: %w", err)
+	}
+
+	// Reset state and increment forfeit count
+	entity.State = StateNotStarted
+	entity.ForfeitCount++
+	entity.Progress = nil
+	entity.ExpirationTime = time.Time{}
 	return db.Save(&entity).Error
 }
 
@@ -109,6 +151,37 @@ func deleteByCharacterIdWithProgress(db *gorm.DB, tenantId uuid.UUID, characterI
 		}
 		if err := db.Delete(&entity).Error; err != nil {
 			return fmt.Errorf("failed to delete entity: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// initializeProgress creates initial progress entries for mob kills and map visits
+// mobIds is a list of mob IDs to track (for kill requirements)
+// mapIds is a list of map IDs to track (for medal/fieldEnter requirements)
+func initializeProgress(db *gorm.DB, questStatusId uint32, mobIds []uint32, mapIds []uint32) error {
+	// Initialize mob progress entries (with "000" for 0 kills)
+	for _, mobId := range mobIds {
+		pe := progress.Entity{
+			QuestStatusId: questStatusId,
+			InfoNumber:    mobId,
+			Progress:      "000",
+		}
+		if err := db.Create(&pe).Error; err != nil {
+			return fmt.Errorf("failed to create mob progress for %d: %w", mobId, err)
+		}
+	}
+
+	// Initialize map progress entries (with "0" for not visited)
+	for _, mapId := range mapIds {
+		pe := progress.Entity{
+			QuestStatusId: questStatusId,
+			InfoNumber:    mapId,
+			Progress:      "0",
+		}
+		if err := db.Create(&pe).Error; err != nil {
+			return fmt.Errorf("failed to create map progress for %d: %w", mapId, err)
 		}
 	}
 

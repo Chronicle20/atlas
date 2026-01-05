@@ -1,0 +1,90 @@
+{
+  "npcId": 1101001,
+  "startState": "checkEligibility",
+  "states": [
+    {
+      "id": "checkEligibility",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "jobId",
+                "operator": ">=",
+                "value": "1111"
+              },
+              {
+                "type": "jobId",
+                "operator": "<=",
+                "value": "1512"
+              }
+            ],
+            "nextState": "applyBuff"
+          },
+          {
+            "conditions": [],
+            "nextState": "trainHarderMessage"
+          }
+        ]
+      }
+    },
+    {
+      "id": "applyBuff",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "apply_consumable_effect",
+            "params": {
+              "itemId": "2022458"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "blessedMessage"
+          }
+        ]
+      }
+    },
+    {
+      "id": "blessedMessage",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Let me cast you my blessings, my Knight. Please protect the world of Maple....",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "trainHarderMessage",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Don't stop training. Every ounce of your energy is required to protect the world of Maple....",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "npcId": 1094000,
+  "startState": "welcome",
+  "states": [
+    {
+      "id": "welcome",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "I need to keep my eyes wide open to look for the enemy although my sea gull friends help me out so it's not all that bad.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

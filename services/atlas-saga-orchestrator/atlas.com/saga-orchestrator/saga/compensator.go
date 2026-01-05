@@ -474,8 +474,8 @@ func (c *CompensatorImpl) compensateCreateAndEquipAsset(s Saga, failedStep Step[
 			"tenant_id":      c.t.Id().String(),
 		}).Info("Auto-equip step found - destroying created asset for compensation")
 
-		// Destroy the created asset
-		err := c.compP.RequestDestroyItem(s.TransactionId, payload.CharacterId, payload.Item.TemplateId, payload.Item.Quantity)
+		// Destroy the created asset (removeAll = false, destroy exact quantity created)
+		err := c.compP.RequestDestroyItem(s.TransactionId, payload.CharacterId, payload.Item.TemplateId, payload.Item.Quantity, false)
 		if err != nil {
 			c.l.WithFields(logrus.Fields{
 				"transaction_id": s.TransactionId.String(),

@@ -5,6 +5,7 @@ const (
 
 	CommandRequestItemConsume = "REQUEST_ITEM_CONSUME"
 	CommandRequestScroll      = "REQUEST_SCROLL"
+	CommandApplyConsumableEffect = "APPLY_CONSUMABLE_EFFECT"
 )
 
 type Command[E any] struct {
@@ -26,6 +27,12 @@ type RequestScrollBody struct {
 	EquipSlot       int16 `json:"equipSlot"`
 	WhiteScroll     bool  `json:"whiteScroll"`
 	LegendarySpirit bool  `json:"legendarySpirit"`
+}
+
+// ApplyConsumableEffectBody is the body for applying consumable effects without consuming from inventory
+// Used for NPC-initiated buffs (e.g., NPC blessings)
+type ApplyConsumableEffectBody struct {
+	ItemId uint32 `json:"itemId"`
 }
 
 const (

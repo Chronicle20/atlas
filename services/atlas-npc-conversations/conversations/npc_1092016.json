@@ -1,0 +1,86 @@
+{
+  "npcId": 1092016,
+  "startState": "checkQuestStatus",
+  "states": [
+    {
+      "id": "checkQuestStatus",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "=",
+                "value": "2",
+                "referenceId": "2166"
+              }
+            ],
+            "nextState": "questStartedMessage"
+          },
+          {
+            "conditions": [],
+            "nextState": "questNotStartedMessage"
+          }
+        ]
+      }
+    },
+    {
+      "id": "questStartedMessage",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "It's a beautiful, shiny rock. I can feel the mysterious power surrounding it.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "completeQuest"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "completeQuest",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "complete_quest",
+            "params": {
+              "questId": "2166"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "questNotStartedMessage",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "I touched the shiny rock with my hand, and I felt a mysterious power flowing into my body.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

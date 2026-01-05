@@ -8,7 +8,7 @@ import (
 // ProcessorMock is a mock implementation of the compartment.Processor interface
 type ProcessorMock struct {
 	RequestCreateItemFunc        func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32) error
-	RequestDestroyItemFunc       func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32) error
+	RequestDestroyItemFunc       func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, removeAll bool) error
 	RequestEquipAssetFunc        func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
 	RequestUnequipAssetFunc      func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
 	RequestCreateAndEquipAssetFunc func(transactionId uuid.UUID, payload compartment.CreateAndEquipAssetPayload) error
@@ -23,9 +23,9 @@ func (m *ProcessorMock) RequestCreateItem(transactionId uuid.UUID, characterId u
 }
 
 // RequestDestroyItem is a mock implementation of the compartment.Processor.RequestDestroyItem method
-func (m *ProcessorMock) RequestDestroyItem(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32) error {
+func (m *ProcessorMock) RequestDestroyItem(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, removeAll bool) error {
 	if m.RequestDestroyItemFunc != nil {
-		return m.RequestDestroyItemFunc(transactionId, characterId, templateId, quantity)
+		return m.RequestDestroyItemFunc(transactionId, characterId, templateId, quantity, removeAll)
 	}
 	return nil
 }

@@ -11,6 +11,8 @@ This document tracks planned features and improvements for the Atlas MapleStory 
 - [ ] Quest state management (NOT_STARTED, STARTED, COMPLETED)
 - [ ] Quest progress tracking with step-based progress
 - [ ] Quest rewards distribution via saga orchestrator
+- [ ] Implement actual `start_quest` operation (currently stubbed in saga-orchestrator)
+- [ ] Implement actual `complete_quest` operation (currently stubbed in saga-orchestrator)
 
 ### Query Aggregator - Quest Support
 - [ ] Update query-aggregator to properly support quest status lookups

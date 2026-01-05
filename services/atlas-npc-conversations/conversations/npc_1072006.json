@@ -1,0 +1,133 @@
+{
+  "npcId": 1072006,
+  "startState": "checkProgress",
+  "states": [
+    {
+      "id": "checkProgress",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "30",
+                "referenceId": "4031013"
+              }
+            ],
+            "nextState": "successMessage"
+          },
+          {
+            "conditions": [],
+            "nextState": "needMoreItems"
+          }
+        ]
+      }
+    },
+    {
+      "id": "successMessage",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "You're a true hero! Take this and Athena will acknowledge you.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": "completeAndWarp"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "needMoreItems",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "You will have to collect me #b30 #t4031013##k. Good luck.",
+        "choices": [
+          {
+            "text": "I would like to leave",
+            "nextState": "warpOut"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "completeAndWarp",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4031013",
+              "removeAll": "true"
+            }
+          },
+          {
+            "type": "complete_quest",
+            "params": {
+              "questId": "100001"
+            }
+          },
+          {
+            "type": "start_quest",
+            "params": {
+              "questId": "100002"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4031012",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "106010000",
+              "portalId": "9"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpOut",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "106010000",
+              "portalId": "9"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

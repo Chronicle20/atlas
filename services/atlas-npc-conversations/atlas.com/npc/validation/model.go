@@ -30,13 +30,14 @@ const (
 
 // ConditionInput represents the structured input for creating a condition
 type ConditionInput struct {
-	Type        string `json:"type"`                  // e.g., "jobId", "meso", "item", "quest"
-	Operator    string `json:"operator"`              // e.g., "=", ">=", "<"
-	Value       int    `json:"value"`                 // Value to compare against
-	ReferenceId uint32 `json:"referenceId,omitempty"` // For quest validation, item checks, etc.
-	Step        string `json:"step,omitempty"`        // For quest progress validation
-	WorldId     byte   `json:"worldId,omitempty"`     // For mapCapacity conditions
-	ChannelId   byte   `json:"channelId,omitempty"`   // For mapCapacity conditions
+	Type            string `json:"type"`                      // e.g., "jobId", "meso", "item", "quest"
+	Operator        string `json:"operator"`                  // e.g., "=", ">=", "<"
+	Value           int    `json:"value"`                     // Value to compare against
+	ReferenceId     uint32 `json:"referenceId,omitempty"`     // For quest validation, item checks, etc.
+	Step            string `json:"step,omitempty"`            // For quest progress validation
+	WorldId         byte   `json:"worldId,omitempty"`         // For mapCapacity conditions
+	ChannelId       byte   `json:"channelId,omitempty"`       // For mapCapacity conditions
+	IncludeEquipped bool   `json:"includeEquipped,omitempty"` // For item conditions: also check equipped items
 }
 
 // ConditionResult represents the result of a condition evaluation

@@ -55,14 +55,15 @@ const (
 
 // ConditionInput represents the structured input for creating a condition
 type ConditionInput struct {
-	Type        string `json:"type"`                  // e.g., "jobId", "meso", "item"
-	Operator    string `json:"operator"`              // e.g., "=", ">=", "<"
-	Value       int    `json:"value"`                 // Value or quantity
-	ReferenceId uint32 `json:"referenceId,omitempty"` // For quest validation, item checks, etc.
-	Step        string `json:"step,omitempty"`        // For quest progress validation
-	ItemId      uint32 `json:"itemId,omitempty"`      // Deprecated: use ReferenceId instead
-	WorldId     byte   `json:"worldId,omitempty"`     // For mapCapacity conditions
-	ChannelId   byte   `json:"channelId,omitempty"`   // For mapCapacity conditions
+	Type            string `json:"type"`                    // e.g., "jobId", "meso", "item"
+	Operator        string `json:"operator"`                // e.g., "=", ">=", "<"
+	Value           int    `json:"value"`                   // Value or quantity
+	ReferenceId     uint32 `json:"referenceId,omitempty"`   // For quest validation, item checks, etc.
+	Step            string `json:"step,omitempty"`          // For quest progress validation
+	ItemId          uint32 `json:"itemId,omitempty"`        // Deprecated: use ReferenceId instead
+	WorldId         byte   `json:"worldId,omitempty"`       // For mapCapacity conditions
+	ChannelId       byte   `json:"channelId,omitempty"`     // For mapCapacity conditions
+	IncludeEquipped bool   `json:"includeEquipped,omitempty"` // For item conditions: also check equipped items
 }
 
 // ConditionResult represents the result of a condition evaluation
@@ -78,25 +79,27 @@ type ConditionResult struct {
 
 // Condition represents a validation condition
 type Condition struct {
-	conditionType ConditionType
-	operator      Operator
-	value         int
-	referenceId   uint32 // Used for quest validation, item conditions, etc.
-	step          string // Used for quest progress validation
-	worldId       byte   // Used for mapCapacity conditions
-	channelId     byte   // Used for mapCapacity conditions
+	conditionType   ConditionType
+	operator        Operator
+	value           int
+	referenceId     uint32 // Used for quest validation, item conditions, etc.
+	step            string // Used for quest progress validation
+	worldId         byte   // Used for mapCapacity conditions
+	channelId       byte   // Used for mapCapacity conditions
+	includeEquipped bool   // For item conditions: also check equipped items
 }
 
 // ConditionBuilder is used to safely construct Condition objects
 type ConditionBuilder struct {
-	conditionType ConditionType
-	operator      Operator
-	value         int
-	referenceId   *uint32
-	step          string
-	worldId       byte
-	channelId     byte
-	err           error
+	conditionType   ConditionType
+	operator        Operator
+	value           int
+	referenceId     *uint32
+	step            string
+	worldId         byte
+	channelId       byte
+	includeEquipped bool
+	err             error
 }
 
 // NewConditionBuilder creates a new condition builder
@@ -174,6 +177,16 @@ func (b *ConditionBuilder) SetItemId(itemId uint32) *ConditionBuilder {
 	return b
 }
 
+// SetIncludeEquipped sets whether to include equipped items in item condition checks
+func (b *ConditionBuilder) SetIncludeEquipped(includeEquipped bool) *ConditionBuilder {
+	if b.err != nil {
+		return b
+	}
+
+	b.includeEquipped = includeEquipped
+	return b
+}
+
 // FromInput creates a condition builder from a ConditionInput
 func (b *ConditionBuilder) FromInput(input ConditionInput) *ConditionBuilder {
 	b.SetType(input.Type)
@@ -199,6 +212,9 @@ func (b *ConditionBuilder) FromInput(input ConditionInput) *ConditionBuilder {
 	if input.ChannelId != 0 {
 		b.channelId = input.ChannelId
 	}
+
+	// Set includeEquipped for item conditions
+	b.includeEquipped = input.IncludeEquipped
 
 	// Validate required fields for specific condition types
 	switch ConditionType(input.Type) {
@@ -298,12 +314,13 @@ func (b *ConditionBuilder) Build() (Condition, error) {
 	}
 
 	condition := Condition{
-		conditionType: b.conditionType,
-		operator:      b.operator,
-		value:         b.value,
-		step:          b.step,
-		worldId:       b.worldId,
-		channelId:     b.channelId,
+		conditionType:   b.conditionType,
+		operator:        b.operator,
+		value:           b.value,
+		step:            b.step,
+		worldId:         b.worldId,
+		channelId:       b.channelId,
+		includeEquipped: b.includeEquipped,
 	}
 
 	if b.referenceId != nil {
@@ -470,9 +487,24 @@ func (c Condition) Evaluate(character character.Model) ConditionResult {
 			}
 		}
 
+		// If includeEquipped is set, also check equipped items
+		if c.includeEquipped {
+			for _, slot := range character.Equipment().Slots() {
+				if slot.Equipable != nil && slot.Equipable.TemplateId() == c.referenceId {
+					itemQuantity++
+				}
+				if slot.CashEquipable != nil && slot.CashEquipable.TemplateId() == c.referenceId {
+					itemQuantity++
+				}
+			}
+		}
+
 		actualValue = itemQuantity
 		itemId = c.referenceId
 		description = fmt.Sprintf("Item %d quantity %s %d", c.referenceId, c.operator, c.value)
+		if c.includeEquipped {
+			description = fmt.Sprintf("Item %d quantity (including equipped) %s %d", c.referenceId, c.operator, c.value)
+		}
 	default:
 		return ConditionResult{
 			Passed:      false,

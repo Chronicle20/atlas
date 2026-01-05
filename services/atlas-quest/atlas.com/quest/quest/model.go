@@ -8,14 +8,17 @@ import (
 )
 
 type Model struct {
-	tenantId    uuid.UUID
-	id          uint32
-	characterId uint32
-	questId     uint32
-	state       State
-	startedAt   time.Time
-	completedAt time.Time
-	progress    []progress.Model
+	tenantId       uuid.UUID
+	id             uint32
+	characterId    uint32
+	questId        uint32
+	state          State
+	startedAt      time.Time
+	completedAt    time.Time
+	expirationTime time.Time
+	completedCount uint32
+	forfeitCount   uint32
+	progress       []progress.Model
 }
 
 func (m Model) TenantId() uuid.UUID {
@@ -44,6 +47,25 @@ func (m Model) StartedAt() time.Time {
 
 func (m Model) CompletedAt() time.Time {
 	return m.completedAt
+}
+
+func (m Model) ExpirationTime() time.Time {
+	return m.expirationTime
+}
+
+func (m Model) CompletedCount() uint32 {
+	return m.completedCount
+}
+
+func (m Model) ForfeitCount() uint32 {
+	return m.forfeitCount
+}
+
+func (m Model) IsExpired() bool {
+	if m.expirationTime.IsZero() {
+		return false
+	}
+	return time.Now().After(m.expirationTime)
 }
 
 func (m Model) Progress() []progress.Model {

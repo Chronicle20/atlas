@@ -156,14 +156,29 @@ func handleCompleteQuest(db *gorm.DB) rest.GetHandler {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return rest.ParseQuestId(d.Logger(), func(questId uint32) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
-					err := NewProcessor(d.Logger(), d.Context(), db).Complete(characterId, questId)
+					nextQuestId, err := NewProcessor(d.Logger(), d.Context(), db).Complete(characterId, questId)
 					if errors.Is(err, gorm.ErrRecordNotFound) {
 						w.WriteHeader(http.StatusNotFound)
+						return
+					}
+					if errors.Is(err, ErrQuestExpired) {
+						w.WriteHeader(http.StatusGone) // 410 Gone for expired quests
+						return
+					}
+					if errors.Is(err, ErrQuestNotStarted) {
+						w.WriteHeader(http.StatusConflict) // 409 Conflict
 						return
 					}
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Unable to complete quest [%d] for character [%d].", questId, characterId)
 						w.WriteHeader(http.StatusBadRequest)
+						return
+					}
+
+					// Return next quest ID in response if this is part of a chain
+					if nextQuestId > 0 {
+						result := CompleteQuestResponseRestModel{NextQuestId: nextQuestId}
+						server.Marshal[CompleteQuestResponseRestModel](d.Logger())(w)(c.ServerInformation())(result)
 						return
 					}
 

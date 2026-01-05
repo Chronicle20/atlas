@@ -44,9 +44,18 @@ func handleMapChangedEvent(db *gorm.DB) message.Handler[character.StatusEvent[ch
 		}
 
 		targetMapId := uint32(e.Body.TargetMapId)
+		processor := quest.NewProcessor(l, ctx, db)
+
+		// Check for auto-start quests on this map
+		startedQuests, err := processor.CheckAutoStart(e.CharacterId, targetMapId)
+		if err != nil {
+			l.WithError(err).Warnf("Unable to check auto-start quests for character [%d] on map [%d].", e.CharacterId, targetMapId)
+		} else if len(startedQuests) > 0 {
+			l.Infof("Auto-started %d quests for character [%d] on map [%d].", len(startedQuests), e.CharacterId, targetMapId)
+		}
 
 		// Get all started quests for this character
-		quests, err := quest.NewProcessor(l, ctx, db).GetByCharacterIdAndState(e.CharacterId, quest.StateStarted)
+		quests, err := processor.GetByCharacterIdAndState(e.CharacterId, quest.StateStarted)
 		if err != nil {
 			l.WithError(err).Debugf("Unable to get started quests for character [%d].", e.CharacterId)
 			return
@@ -58,11 +67,26 @@ func handleMapChangedEvent(db *gorm.DB) message.Handler[character.StatusEvent[ch
 			// Check if this quest tracks this map (by having progress with infoNumber = mapId)
 			if _, found := q.GetProgress(targetMapId); found {
 				// Set progress to "1" to indicate the map has been visited
-				err = quest.NewProcessor(l, ctx, db).SetProgress(e.CharacterId, q.QuestId(), targetMapId, "1")
+				err = processor.SetProgress(e.CharacterId, q.QuestId(), targetMapId, "1")
 				if err != nil {
 					l.WithError(err).Errorf("Unable to update map visit progress for quest [%d] character [%d].", q.QuestId(), e.CharacterId)
 				} else {
 					l.Debugf("Updated map [%d] visit progress for quest [%d] character [%d].", targetMapId, q.QuestId(), e.CharacterId)
+
+					// Check for auto-complete after progress update
+					nextQuestId, completed, err := processor.CheckAutoComplete(e.CharacterId, q.QuestId())
+					if err != nil {
+						l.WithError(err).Warnf("Unable to check auto-complete for quest [%d] character [%d].", q.QuestId(), e.CharacterId)
+					} else if completed {
+						l.Infof("Auto-completed quest [%d] for character [%d].", q.QuestId(), e.CharacterId)
+						// Handle quest chain - auto-start next quest if present
+						if nextQuestId > 0 {
+							_, err = processor.StartChained(e.CharacterId, nextQuestId)
+							if err != nil {
+								l.WithError(err).Errorf("Error starting chained quest [%d] for character [%d].", nextQuestId, e.CharacterId)
+							}
+						}
+					}
 				}
 			}
 		}

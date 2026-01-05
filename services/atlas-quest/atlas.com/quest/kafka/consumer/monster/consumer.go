@@ -46,8 +46,10 @@ func handleMonsterKilledEvent(db *gorm.DB) message.Handler[monster.StatusEvent[m
 				continue
 			}
 
+			processor := quest.NewProcessor(l, ctx, db)
+
 			// Get all started quests for this character
-			quests, err := quest.NewProcessor(l, ctx, db).GetByCharacterIdAndState(entry.CharacterId, quest.StateStarted)
+			quests, err := processor.GetByCharacterIdAndState(entry.CharacterId, quest.StateStarted)
 			if err != nil {
 				l.WithError(err).Debugf("Unable to get started quests for character [%d].", entry.CharacterId)
 				continue
@@ -61,11 +63,26 @@ func handleMonsterKilledEvent(db *gorm.DB) message.Handler[monster.StatusEvent[m
 					// Increment the kill count
 					currentCount := parseProgress(p.Progress())
 					newCount := currentCount + 1
-					err = quest.NewProcessor(l, ctx, db).SetProgress(entry.CharacterId, q.QuestId(), e.MonsterId, strconv.Itoa(int(newCount)))
+					err = processor.SetProgress(entry.CharacterId, q.QuestId(), e.MonsterId, strconv.Itoa(int(newCount)))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to update monster kill progress for quest [%d] character [%d].", q.QuestId(), entry.CharacterId)
 					} else {
 						l.Debugf("Updated monster [%d] kill progress for quest [%d] character [%d]: %d -> %d.", e.MonsterId, q.QuestId(), entry.CharacterId, currentCount, newCount)
+
+						// Check for auto-complete after progress update
+						nextQuestId, completed, err := processor.CheckAutoComplete(entry.CharacterId, q.QuestId())
+						if err != nil {
+							l.WithError(err).Warnf("Unable to check auto-complete for quest [%d] character [%d].", q.QuestId(), entry.CharacterId)
+						} else if completed {
+							l.Infof("Auto-completed quest [%d] for character [%d].", q.QuestId(), entry.CharacterId)
+							// Handle quest chain - auto-start next quest if present
+							if nextQuestId > 0 {
+								_, err = processor.StartChained(entry.CharacterId, nextQuestId)
+								if err != nil {
+									l.WithError(err).Errorf("Error starting chained quest [%d] for character [%d].", nextQuestId, entry.CharacterId)
+								}
+							}
+						}
 					}
 				}
 			}

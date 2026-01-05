@@ -53,9 +53,20 @@ func handleCompleteQuestCommand(db *gorm.DB) message.Handler[quest2.Command[ques
 		if c.Type != quest2.CommandTypeComplete {
 			return
 		}
-		err := quest.NewProcessor(l, ctx, db).Complete(c.CharacterId, c.Body.QuestId)
+		processor := quest.NewProcessor(l, ctx, db)
+		nextQuestId, err := processor.Complete(c.CharacterId, c.Body.QuestId)
 		if err != nil {
 			l.WithError(err).Errorf("Error completing quest [%d] for character [%d].", c.Body.QuestId, c.CharacterId)
+			return
+		}
+
+		// Handle quest chain - auto-start next quest if present
+		if nextQuestId > 0 {
+			l.Infof("Quest chain detected: starting next quest [%d] for character [%d].", nextQuestId, c.CharacterId)
+			_, err = processor.StartChained(c.CharacterId, nextQuestId)
+			if err != nil {
+				l.WithError(err).Errorf("Error starting chained quest [%d] for character [%d].", nextQuestId, c.CharacterId)
+			}
 		}
 	}
 }

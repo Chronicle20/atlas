@@ -19,6 +19,7 @@ func InitResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteIn
 
 			r := router.PathPrefix("/data/quests").Subrouter()
 			r.HandleFunc("", registerGet("get_quests", handleGetQuests(db))).Methods(http.MethodGet)
+			r.HandleFunc("/auto-start", registerGet("get_auto_start_quests", handleGetAutoStartQuests(db))).Methods(http.MethodGet)
 			r.HandleFunc("/{questId}", registerGet("get_quest", handleGetQuest(db))).Methods(http.MethodGet)
 		}
 	}
@@ -57,5 +58,31 @@ func handleGetQuest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Handler
 				server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 			}
 		})
+	}
+}
+
+func handleGetAutoStartQuests(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			s := NewStorage(d.Logger(), db)
+			allQuests, err := s.GetAll(d.Context())
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Unable to get quests for auto-start filter.")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			// Filter for auto-start quests
+			var autoStartQuests []RestModel
+			for _, q := range allQuests {
+				if q.AutoStart {
+					autoStartQuests = append(autoStartQuests, q)
+				}
+			}
+
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(autoStartQuests)
+		}
 	}
 }

@@ -1,0 +1,24 @@
+{
+  "npcId": 1104207,
+  "startState": "initialDialogue",
+  "states": [
+    {
+      "id": "initialDialogue",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "...",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,231 @@
+{
+  "npcId": 1072008,
+  "startState": "checkMap",
+  "states": [
+    {
+      "id": "checkMap",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "mapId",
+                "operator": "=",
+                "value": "108000502"
+              }
+            ],
+            "nextState": "checkCrystals502"
+          },
+          {
+            "conditions": [
+              {
+                "type": "mapId",
+                "operator": "=",
+                "value": "108000501"
+              }
+            ],
+            "nextState": "checkCrystals501"
+          },
+          {
+            "conditions": [],
+            "nextState": "error"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkCrystals502",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "15",
+                "referenceId": "4031856"
+              }
+            ],
+            "nextState": "congratulations502"
+          },
+          {
+            "conditions": [],
+            "nextState": "noCrystals502"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkCrystals501",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "15",
+                "referenceId": "4031857"
+              }
+            ],
+            "nextState": "congratulations501"
+          },
+          {
+            "conditions": [],
+            "nextState": "noCrystals501"
+          }
+        ]
+      }
+    },
+    {
+      "id": "noCrystals502",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "You haven't brought me all the crystals yet. I'm looking forward for your progress, mate!",
+        "choices": [
+          {
+            "text": "I would like to leave",
+            "nextState": "removeAndWarp"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "noCrystals501",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "You haven't brought me all the crystals yet. I'm looking forward for your progress, mate!",
+        "choices": [
+          {
+            "text": "I would like to leave",
+            "nextState": "removeAndWarp"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "congratulations502",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Wow, you have brought me 15 #b#t4031856##k! Congratulations. Let me warp you out now.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "warpOut"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "congratulations501",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Wow, you have brought me 15 #b#t4031857##k! Congratulations. Let me warp you out now.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "warpOut"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "error",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Error. Please report this.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "removeAndWarp",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4031856",
+              "removeAll": "true"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4031857",
+              "removeAll": "true"
+            }
+          },
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "120000101",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpOut",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "120000101",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

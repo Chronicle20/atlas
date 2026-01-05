@@ -158,7 +158,9 @@ func handleDestroyItemCommand(db *gorm.DB) message.Handler[compartment2.Command[
 			return
 		}
 		quantity := c.Body.Quantity
-		if quantity == 0 {
+		// If RemoveAll is true, remove all instances (use MaxInt32)
+		// Otherwise, if quantity is 0, also remove all (backward compatibility)
+		if c.Body.RemoveAll || quantity == 0 {
 			quantity = math.MaxInt32
 		}
 		_ = compartment.NewProcessor(l, ctx, db).DestroyAssetAndEmit(c.TransactionId, c.CharacterId, inventory.Type(c.InventoryType), c.Body.Slot, quantity)

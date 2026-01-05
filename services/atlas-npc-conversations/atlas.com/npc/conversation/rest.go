@@ -155,11 +155,12 @@ type RestOperationModel struct {
 
 // RestConditionModel represents the REST model for conditions
 type RestConditionModel struct {
-	Type        string `json:"type"`                  // Condition type
-	Operator    string `json:"operator"`              // Operator
-	Value       string `json:"value"`                 // Value
-	ReferenceId string `json:"referenceId,omitempty"` // Reference ID (for items, quests, etc.)
-	Step        string `json:"step,omitempty"`        // Step (for quest progress)
+	Type            string `json:"type"`                      // Condition type
+	Operator        string `json:"operator"`                  // Operator
+	Value           string `json:"value"`                     // Value
+	ReferenceId     string `json:"referenceId,omitempty"`     // Reference ID (for items, quests, etc.)
+	Step            string `json:"step,omitempty"`            // Step (for quest progress)
+	IncludeEquipped bool   `json:"includeEquipped,omitempty"` // For item conditions: also check equipped items
 }
 
 // RestOutcomeModel represents the REST model for outcomes
@@ -387,11 +388,12 @@ func TransformGenericAction(m GenericActionModel) (RestGenericActionModel, error
 			}
 
 			restConditions = append(restConditions, RestConditionModel{
-				Type:        condition.Type(),
-				Operator:    condition.Operator(),
-				Value:       condition.Value(),
-				ReferenceId: referenceIdStr,
-				Step:        condition.Step(),
+				Type:            condition.Type(),
+				Operator:        condition.Operator(),
+				Value:           condition.Value(),
+				ReferenceId:     referenceIdStr,
+				Step:            condition.Step(),
+				IncludeEquipped: condition.IncludeEquipped(),
 			})
 		}
 
@@ -655,6 +657,7 @@ func ExtractOutcome(r RestOutcomeModel) (OutcomeModel, error) {
 			SetValue(c.Value).
 			SetReferenceId(c.ReferenceId).
 			SetStep(c.Step).
+			SetIncludeEquipped(c.IncludeEquipped).
 			Build()
 
 		if err != nil {

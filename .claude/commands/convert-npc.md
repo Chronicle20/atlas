@@ -35,7 +35,8 @@ Identify and understand:
   - Pattern: `#L<number>#<choice text>#l` indicates list items
   - Extract title (text before first `#L`) and parse each list item
 - **Conditional logic**: Job checks, meso/item requirements
-- **Actions**: `gainItem`, `warp`, `gainMeso`, etc.
+- **Actions**: `gainItem`, `warp`, `gainMeso`, `useItem`, etc.
+  - **Note**: `cm.useItem(itemId)` applies item effects without consuming → use `apply_consumable_effect` operation
 - **Branching**: Choice destinations and flow control
 - **When conversations end**: Look for `cm.dispose()` calls - these indicate the conversation ends
 
@@ -116,6 +117,13 @@ Common operations in `genericAction` states:
   - Params: `monsterId` (string), `x` (string), `y` (string), `count` (string, optional, default "1"), `team` (string, optional, default "0")
 - **complete_quest**: Complete a quest for the character (stub - no quest service yet)
   - Params: `questId` (string), `npcId` (string, optional - defaults to conversation NPC)
+- **start_quest**: Start a quest for the character (stub - no quest service yet)
+  - Params: `questId` (string), `npcId` (string, optional - defaults to conversation NPC)
+- **apply_consumable_effect**: Apply consumable item effects without consuming from inventory
+  - Params: `itemId` (string)
+  - Used for NPC-initiated buffs (e.g., Shinsoo's blessing)
+  - Applies all item effects (HP/MP recovery, stat buffs) via atlas-consumables
+  - **JavaScript mapping**: `cm.useItem(itemId)` → `apply_consumable_effect`
 
 **Local Operations** (executed within npc-conversations service):
 - **local:generate_hair_styles**: Generate available hair styles for character

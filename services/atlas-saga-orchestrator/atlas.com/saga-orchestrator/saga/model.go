@@ -277,6 +277,8 @@ const (
 	GainCloseness                Action = "gain_closeness"
 	SpawnMonster                 Action = "spawn_monster"
 	CompleteQuest                Action = "complete_quest"
+	StartQuest                   Action = "start_quest"
+	ApplyConsumableEffect        Action = "apply_consumable_effect"
 )
 
 // Step represents a single step within a saga.
@@ -344,7 +346,8 @@ type AwardMesosPayload struct {
 type DestroyAssetPayload struct {
 	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
 	TemplateId  uint32 `json:"templateId"`  // TemplateId of the item to destroy
-	Quantity    uint32 `json:"quantity"`    // Quantity of the item to destroy
+	Quantity    uint32 `json:"quantity"`    // Quantity of the item to destroy (ignored if RemoveAll is true)
+	RemoveAll   bool   `json:"removeAll"`   // If true, remove all instances of the item regardless of Quantity
 }
 
 // EquipAssetPayload represents the payload required to equip an asset from one inventory slot to an equipped slot.
@@ -531,6 +534,25 @@ type CompleteQuestPayload struct {
 	NpcId       uint32 `json:"npcId"`       // NPC ID granting completion (for rewards)
 }
 
+// StartQuestPayload represents the payload required to start a quest.
+// Note: This is currently stubbed - actual quest start will be implemented
+// when a quest service is available.
+type StartQuestPayload struct {
+	CharacterId uint32 `json:"characterId"` // CharacterId starting the quest
+	QuestId     uint32 `json:"questId"`     // Quest ID to start
+	NpcId       uint32 `json:"npcId"`       // NPC ID initiating the quest
+}
+
+// ApplyConsumableEffectPayload represents the payload required to apply consumable item effects to a character.
+// This is used for NPC-initiated item usage where the item effects are applied
+// without consuming from inventory (e.g., NPC buffs like Shinsoo's blessing).
+type ApplyConsumableEffectPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to apply item effects to
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	ItemId      uint32     `json:"itemId"`      // Consumable item ID whose effects should be applied
+}
+
 // Custom UnmarshalJSON for Step[T] to handle the generics
 func (s *Step[T]) UnmarshalJSON(data []byte) error {
 	type Alias Step[T] // Alias to avoid recursion
@@ -670,6 +692,18 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case CompleteQuest:
 		var payload CompleteQuestPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case StartQuest:
+		var payload StartQuestPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case ApplyConsumableEffect:
+		var payload ApplyConsumableEffectPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

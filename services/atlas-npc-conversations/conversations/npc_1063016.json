@@ -1,0 +1,49 @@
+{
+  "npcId": 1063016,
+  "startState": "askExit",
+  "states": [
+    {
+      "id": "askExit",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Will you exit this trial?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "performWarp"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "performWarp",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "105040201",
+              "portalId": "2"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

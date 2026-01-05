@@ -91,11 +91,12 @@ func (e *EvaluatorImpl) EvaluateCondition(characterId uint32, condition Conditio
 
 	// Create a validation condition input
 	validationCondition := validation.ConditionInput{
-		Type:        condition.Type(),
-		Operator:    condition.Operator(),
-		Value:       intValue,
-		ReferenceId: resolvedReferenceId,
-		Step:        condition.Step(),
+		Type:            condition.Type(),
+		Operator:        condition.Operator(),
+		Value:           intValue,
+		ReferenceId:     resolvedReferenceId,
+		Step:            condition.Step(),
+		IncludeEquipped: condition.IncludeEquipped(),
 	}
 
 	// Resolve worldId from condition (supports context references like {context.worldId})

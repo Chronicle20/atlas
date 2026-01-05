@@ -14,7 +14,8 @@ import {
     Calendar,
     Dog,
 } from "lucide-react"
-import type { QuestRequirements, QuestRequirement, ItemRequirement, MobRequirement } from "@/types/models/quest"
+import type { QuestRequirements } from "@/types/models/quest"
+import { NpcName, ItemName, MobName, JobName } from "./EntityName"
 
 interface RequirementRendererProps {
     requirements: QuestRequirements
@@ -31,7 +32,7 @@ export function RequirementRenderer({ requirements, type }: RequirementRendererP
                 key="npc"
                 icon={<User className="h-4 w-4" />}
                 label="NPC"
-                value={`ID: ${requirements.npcId}`}
+                value={<NpcName id={requirements.npcId} showId />}
             />
         )
     }
@@ -89,7 +90,16 @@ export function RequirementRenderer({ requirements, type }: RequirementRendererP
                 key="jobs"
                 icon={<Sword className="h-4 w-4" />}
                 label="Job"
-                value={requirements.jobs.map(j => `ID: ${j}`).join(", ")}
+                value={
+                    <span>
+                        {requirements.jobs.map((j, idx) => (
+                            <span key={j}>
+                                {idx > 0 && ", "}
+                                <JobName id={j} />
+                            </span>
+                        ))}
+                    </span>
+                }
             />
         )
     }
@@ -116,7 +126,7 @@ export function RequirementRenderer({ requirements, type }: RequirementRendererP
                 <RequirementItem
                     key={`item-${index}`}
                     icon={<Package className="h-4 w-4" />}
-                    label={`Item #${item.id}`}
+                    label={<ItemName id={item.id} showId />}
                     value={item.count > 0 ? `x${item.count}` : `Remove ${Math.abs(item.count)}`}
                     variant={item.count < 0 ? "destructive" : "default"}
                 />
@@ -131,7 +141,7 @@ export function RequirementRenderer({ requirements, type }: RequirementRendererP
                 <RequirementItem
                     key={`mob-${index}`}
                     icon={<Skull className="h-4 w-4" />}
-                    label={`Monster #${mob.id}`}
+                    label={<MobName id={mob.id} showId />}
                     value={`Kill x${mob.count}`}
                 />
             )
@@ -239,8 +249,8 @@ export function RequirementRenderer({ requirements, type }: RequirementRendererP
 
 interface RequirementItemProps {
     icon: React.ReactNode
-    label: string
-    value: string
+    label: React.ReactNode
+    value: React.ReactNode
     variant?: "default" | "destructive"
 }
 

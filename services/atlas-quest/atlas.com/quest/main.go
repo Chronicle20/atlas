@@ -1,6 +1,9 @@
 package main
 
 import (
+	assetConsumer "atlas-quest/kafka/consumer/asset"
+	characterConsumer "atlas-quest/kafka/consumer/character"
+	monsterConsumer "atlas-quest/kafka/consumer/monster"
 	questConsumer "atlas-quest/kafka/consumer/quest"
 	"atlas-quest/database"
 	"atlas-quest/logger"
@@ -50,8 +53,22 @@ func main() {
 	db := database.Connect(l, database.SetMigrations(quest.Migration, progress.Migration))
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+
+	// Quest command consumer
 	questConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	questConsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+
+	// Monster kill event consumer (for quest progress tracking)
+	monsterConsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	monsterConsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+
+	// Asset/item creation event consumer (for quest progress tracking)
+	assetConsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	assetConsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+
+	// Character status event consumer (for map change quest progress)
+	characterConsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	characterConsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 
 	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), quest.InitResource(GetServer())(db))
 

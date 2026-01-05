@@ -393,7 +393,7 @@ func (c Condition) Evaluate(character character.Model) ConditionResult {
 			Type:        c.conditionType,
 			Operator:    c.operator,
 			Value:       c.value,
-			ActualValue: int(quest.UNDEFINED),
+			ActualValue: int(quest.StateNotStarted),
 		}
 	case QuestProgressCondition:
 		// Quest progress validation requires context - return error state
@@ -530,10 +530,10 @@ func (c Condition) EvaluateWithContext(ctx ValidationContext) ConditionResult {
 				Type:        c.conditionType,
 				Operator:    c.operator,
 				Value:       c.value,
-				ActualValue: int(quest.UNDEFINED),
+				ActualValue: int(quest.StateNotStarted),
 			}
 		}
-		actualValue = int(questModel.Status())
+		actualValue = int(questModel.State())
 		description = fmt.Sprintf("Quest %d Status %s %d", c.referenceId, c.operator, c.value)
 
 	case QuestProgressCondition:
@@ -548,7 +548,7 @@ func (c Condition) EvaluateWithContext(ctx ValidationContext) ConditionResult {
 				ActualValue: 0,
 			}
 		}
-		actualValue = questModel.Progress(c.step)
+		actualValue = questModel.GetProgressByKey(c.step)
 		description = fmt.Sprintf("Quest %d Progress (step: %s) %s %d", c.referenceId, c.step, c.operator, c.value)
 
 	case UnclaimedMarriageGiftsCondition:

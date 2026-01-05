@@ -14,6 +14,17 @@ const (
 	StateCompleted  State = 2
 )
 
+// Aliases for backward compatibility with tests
+const (
+	NOT_STARTED = StateNotStarted
+	STARTED     = StateStarted
+	COMPLETED   = StateCompleted
+	UNDEFINED   = State(255) // Used when quest is not found
+)
+
+// QuestStatus is an alias for State for backward compatibility
+type QuestStatus = State
+
 // String returns the string representation of the quest state
 func (s State) String() string {
 	switch s {
@@ -66,21 +77,23 @@ func (m ProgressModel) ProgressInt() int {
 
 // Model represents a quest and its progress
 type Model struct {
-	characterId uint32
-	questId     uint32
-	state       State
-	startedAt   time.Time
-	completedAt time.Time
-	progress    []ProgressModel
+	characterId    uint32
+	questId        uint32
+	state          State
+	startedAt      time.Time
+	completedAt    time.Time
+	progress       []ProgressModel
+	progressByKey  map[string]int // For string-based progress lookup (used by tests)
 }
 
 // NewModel creates a new quest model
 func NewModel(characterId uint32, questId uint32, state State) Model {
 	return Model{
-		characterId: characterId,
-		questId:     questId,
-		state:       state,
-		progress:    make([]ProgressModel, 0),
+		characterId:   characterId,
+		questId:       questId,
+		state:         state,
+		progress:      make([]ProgressModel, 0),
+		progressByKey: make(map[string]int),
 	}
 }
 
@@ -94,8 +107,18 @@ func (m Model) QuestId() uint32 {
 	return m.questId
 }
 
+// Id returns the quest ID (alias for QuestId)
+func (m Model) Id() uint32 {
+	return m.questId
+}
+
 // State returns the quest state
 func (m Model) State() State {
+	return m.state
+}
+
+// Status returns the quest state (alias for State)
+func (m Model) Status() State {
 	return m.state
 }
 
@@ -126,6 +149,13 @@ func (m Model) GetProgress(infoNumber uint32) (ProgressModel, bool) {
 
 // GetProgressByKey returns the progress value for a specific key (info number as string)
 func (m Model) GetProgressByKey(key string) int {
+	// First check the string-keyed map (used by builder)
+	if m.progressByKey != nil {
+		if val, found := m.progressByKey[key]; found {
+			return val
+		}
+	}
+	// Fall back to numeric lookup
 	infoNumber, err := strconv.ParseUint(key, 10, 32)
 	if err != nil {
 		return 0
@@ -170,4 +200,101 @@ func Extract(r RestModel) (Model, error) {
 		completedAt: r.CompletedAt,
 		progress:    progress,
 	}, nil
+}
+
+// ModelBuilder provides a fluent API for building quest models
+type ModelBuilder struct {
+	characterId uint32
+	questId     uint32
+	state       State
+	startedAt   time.Time
+	completedAt time.Time
+	progress    map[string]int
+}
+
+// NewModelBuilder creates a new ModelBuilder
+func NewModelBuilder() *ModelBuilder {
+	return &ModelBuilder{
+		progress: make(map[string]int),
+	}
+}
+
+// SetCharacterId sets the character ID
+func (b *ModelBuilder) SetCharacterId(id uint32) *ModelBuilder {
+	b.characterId = id
+	return b
+}
+
+// SetId sets the quest ID
+func (b *ModelBuilder) SetId(id uint32) *ModelBuilder {
+	b.questId = id
+	return b
+}
+
+// SetQuestId sets the quest ID (alias for SetId)
+func (b *ModelBuilder) SetQuestId(id uint32) *ModelBuilder {
+	b.questId = id
+	return b
+}
+
+// SetStatus sets the quest state
+func (b *ModelBuilder) SetStatus(state State) *ModelBuilder {
+	b.state = state
+	return b
+}
+
+// SetState sets the quest state (alias for SetStatus)
+func (b *ModelBuilder) SetState(state State) *ModelBuilder {
+	b.state = state
+	return b
+}
+
+// SetStartedAt sets the started time
+func (b *ModelBuilder) SetStartedAt(t time.Time) *ModelBuilder {
+	b.startedAt = t
+	return b
+}
+
+// SetCompletedAt sets the completed time
+func (b *ModelBuilder) SetCompletedAt(t time.Time) *ModelBuilder {
+	b.completedAt = t
+	return b
+}
+
+// SetProgress sets a progress entry by key (info number as string)
+func (b *ModelBuilder) SetProgress(key string, value int) *ModelBuilder {
+	b.progress[key] = value
+	return b
+}
+
+// Build creates the Model from the builder
+func (b *ModelBuilder) Build() Model {
+	progressModels := make([]ProgressModel, 0, len(b.progress))
+	progressByKey := make(map[string]int, len(b.progress))
+
+	for key, value := range b.progress {
+		// Store in the string-keyed map for direct lookup
+		progressByKey[key] = value
+
+		// Also try to store as numeric info number for backward compatibility
+		infoNumber, err := strconv.ParseUint(key, 10, 32)
+		if err != nil {
+			// If key is not a number, use 0
+			infoNumber = 0
+		}
+		progressModels = append(progressModels, ProgressModel{
+			infoNumber: uint32(infoNumber),
+			progress:   strconv.Itoa(value),
+		})
+	}
+
+	return Model{
+		characterId:   b.characterId,
+		questId:       b.questId,
+		state:         b.state,
+		startedAt:     b.startedAt,
+		completedAt:   b.completedAt,
+		progress:      progressModels,
+		progressByKey: progressByKey,
+	}
 }

@@ -18,6 +18,10 @@ import {
   type NpcDataResult,
   type ItemApiData,
   type ItemDataResult,
+  type MobApiData,
+  type MobDataResult,
+  type SkillApiData,
+  type SkillDataResult,
   WeaponType,
 } from '@/types/models/maplestory';
 import { type Character } from '@/types/models/character';
@@ -183,6 +187,10 @@ export class MapleStoryService {
   private npcTimestampCache = new Map<string, number>();
   private itemDataCache = new Map<string, ItemDataResult>();
   private itemTimestampCache = new Map<string, number>();
+  private mobDataCache = new Map<string, MobDataResult>();
+  private mobTimestampCache = new Map<string, number>();
+  private skillDataCache = new Map<string, SkillDataResult>();
+  private skillTimestampCache = new Map<string, number>();
   
   // Debounced API methods for batch requests - simplified for better type safety
   private debouncedGetNpcIcon: (npcId: number, region?: string, version?: string) => Promise<string>;
@@ -1092,6 +1100,328 @@ export class MapleStoryService {
     }
 
     return results;
+  }
+
+  // ==================== MOB/MONSTER DATA METHODS ====================
+
+  /**
+   * Get mob name from MapleStory.io API
+   */
+  async getMobName(mobId: number, region?: string, version?: string): Promise<string> {
+    const apiRegion = region || this.config.defaultRegion || 'GMS';
+    const apiVersion = version || this.config.apiVersion;
+
+    const nameUrl = `${this.config.apiBaseUrl}/${apiRegion}/${apiVersion}/mob/${mobId}/name`;
+
+    try {
+      const response = await cachedFetch(nameUrl, {
+        headers: OPTIMIZED_REQUEST_HEADERS,
+        cacheStrategy: 'MAPLESTORY_API',
+      });
+      if (!response.ok) {
+        throw new Error(`Mob name not found: ${response.status}`);
+      }
+      const responseText = await response.text();
+
+      try {
+        const parsed = JSON.parse(responseText);
+        if (typeof parsed === 'object' && parsed.name) {
+          return String(parsed.name).trim();
+        }
+        if (typeof parsed === 'string') {
+          return parsed.trim();
+        }
+      } catch {
+        // Not JSON, treat as plain text
+      }
+
+      return responseText.trim();
+    } catch (error) {
+      if (this.config.enableErrorLogging) {
+        console.warn(`Failed to fetch mob name for ID ${mobId}:`, error);
+      }
+      throw new Error(`Failed to fetch mob name for ID ${mobId}`);
+    }
+  }
+
+  /**
+   * Get mob icon URL from MapleStory.io API
+   */
+  async getMobIcon(mobId: number, region?: string, version?: string): Promise<string> {
+    const apiRegion = region || this.config.defaultRegion || 'GMS';
+    const apiVersion = version || this.config.apiVersion;
+
+    const iconUrl = `${this.config.apiBaseUrl}/${apiRegion}/${apiVersion}/mob/${mobId}/icon`;
+
+    try {
+      const response = await cachedFetch(iconUrl, {
+        method: 'HEAD',
+        headers: OPTIMIZED_REQUEST_HEADERS,
+        cacheStrategy: 'NPC_IMAGES',
+      });
+      if (!response.ok) {
+        throw new Error(`Mob icon not found: ${response.status}`);
+      }
+      return iconUrl;
+    } catch (error) {
+      if (this.config.enableErrorLogging) {
+        console.warn(`Failed to fetch mob icon for ID ${mobId}:`, error);
+      }
+      throw new Error(`Failed to fetch mob icon for ID ${mobId}`);
+    }
+  }
+
+  /**
+   * Generate cache key for mob data
+   */
+  private getMobCacheKey(mobId: number, region?: string, version?: string): string {
+    const apiRegion = region || this.config.defaultRegion || 'GMS';
+    const apiVersion = version || this.config.apiVersion;
+    return `mob:${apiRegion}:${apiVersion}:${mobId}`;
+  }
+
+  /**
+   * Get cached mob data if still valid
+   */
+  private getCachedMobData(cacheKey: string): MobDataResult | null {
+    if (!this.config.cacheEnabled) return null;
+
+    const data = this.mobDataCache.get(cacheKey);
+    const timestamp = this.mobTimestampCache.get(cacheKey);
+
+    if (!data || !timestamp) return null;
+
+    const now = Date.now();
+    if (now - timestamp > this.config.cacheTTL) {
+      this.mobDataCache.delete(cacheKey);
+      this.mobTimestampCache.delete(cacheKey);
+      return null;
+    }
+
+    return data;
+  }
+
+  /**
+   * Cache mob data with timestamp
+   */
+  private setCachedMobData(cacheKey: string, data: MobDataResult): void {
+    if (!this.config.cacheEnabled) return;
+
+    this.mobDataCache.set(cacheKey, data);
+    this.mobTimestampCache.set(cacheKey, Date.now());
+  }
+
+  /**
+   * Get mob data with caching and error handling
+   */
+  async getMobDataWithCache(mobId: number, region?: string, version?: string): Promise<MobDataResult> {
+    const cacheKey = this.getMobCacheKey(mobId, region, version);
+
+    if (this.config.cacheEnabled) {
+      const cachedData = this.getCachedMobData(cacheKey);
+      if (cachedData) {
+        return { ...cachedData, cached: true };
+      }
+    }
+
+    const result: MobDataResult = {
+      id: mobId,
+      cached: false,
+    };
+
+    try {
+      const [namePromise, iconPromise] = await Promise.allSettled([
+        this.getMobName(mobId, region, version),
+        this.getMobIcon(mobId, region, version),
+      ]);
+
+      if (namePromise.status === 'fulfilled') {
+        result.name = namePromise.value;
+      }
+
+      if (iconPromise.status === 'fulfilled') {
+        result.iconUrl = iconPromise.value;
+      }
+
+      if (namePromise.status === 'rejected' && iconPromise.status === 'rejected') {
+        result.error = 'Failed to fetch mob data';
+      }
+
+      if (this.config.cacheEnabled) {
+        this.setCachedMobData(cacheKey, result);
+      }
+
+      return result;
+    } catch (error) {
+      result.error = error instanceof Error ? error.message : 'Unknown error';
+
+      if (this.config.cacheEnabled) {
+        this.setCachedMobData(cacheKey, result);
+      }
+
+      return result;
+    }
+  }
+
+  // ==================== SKILL DATA METHODS ====================
+
+  /**
+   * Get skill name from MapleStory.io API
+   */
+  async getSkillName(skillId: number, region?: string, version?: string): Promise<string> {
+    const apiRegion = region || this.config.defaultRegion || 'GMS';
+    const apiVersion = version || this.config.apiVersion;
+
+    const nameUrl = `${this.config.apiBaseUrl}/${apiRegion}/${apiVersion}/skill/${skillId}/name`;
+
+    try {
+      const response = await cachedFetch(nameUrl, {
+        headers: OPTIMIZED_REQUEST_HEADERS,
+        cacheStrategy: 'MAPLESTORY_API',
+      });
+      if (!response.ok) {
+        throw new Error(`Skill name not found: ${response.status}`);
+      }
+      const responseText = await response.text();
+
+      try {
+        const parsed = JSON.parse(responseText);
+        if (typeof parsed === 'object' && parsed.name) {
+          return String(parsed.name).trim();
+        }
+        if (typeof parsed === 'string') {
+          return parsed.trim();
+        }
+      } catch {
+        // Not JSON, treat as plain text
+      }
+
+      return responseText.trim();
+    } catch (error) {
+      if (this.config.enableErrorLogging) {
+        console.warn(`Failed to fetch skill name for ID ${skillId}:`, error);
+      }
+      throw new Error(`Failed to fetch skill name for ID ${skillId}`);
+    }
+  }
+
+  /**
+   * Get skill icon URL from MapleStory.io API
+   */
+  async getSkillIcon(skillId: number, region?: string, version?: string): Promise<string> {
+    const apiRegion = region || this.config.defaultRegion || 'GMS';
+    const apiVersion = version || this.config.apiVersion;
+
+    const iconUrl = `${this.config.apiBaseUrl}/${apiRegion}/${apiVersion}/skill/${skillId}/icon`;
+
+    try {
+      const response = await cachedFetch(iconUrl, {
+        method: 'HEAD',
+        headers: OPTIMIZED_REQUEST_HEADERS,
+        cacheStrategy: 'NPC_IMAGES',
+      });
+      if (!response.ok) {
+        throw new Error(`Skill icon not found: ${response.status}`);
+      }
+      return iconUrl;
+    } catch (error) {
+      if (this.config.enableErrorLogging) {
+        console.warn(`Failed to fetch skill icon for ID ${skillId}:`, error);
+      }
+      throw new Error(`Failed to fetch skill icon for ID ${skillId}`);
+    }
+  }
+
+  /**
+   * Generate cache key for skill data
+   */
+  private getSkillCacheKey(skillId: number, region?: string, version?: string): string {
+    const apiRegion = region || this.config.defaultRegion || 'GMS';
+    const apiVersion = version || this.config.apiVersion;
+    return `skill:${apiRegion}:${apiVersion}:${skillId}`;
+  }
+
+  /**
+   * Get cached skill data if still valid
+   */
+  private getCachedSkillData(cacheKey: string): SkillDataResult | null {
+    if (!this.config.cacheEnabled) return null;
+
+    const data = this.skillDataCache.get(cacheKey);
+    const timestamp = this.skillTimestampCache.get(cacheKey);
+
+    if (!data || !timestamp) return null;
+
+    const now = Date.now();
+    if (now - timestamp > this.config.cacheTTL) {
+      this.skillDataCache.delete(cacheKey);
+      this.skillTimestampCache.delete(cacheKey);
+      return null;
+    }
+
+    return data;
+  }
+
+  /**
+   * Cache skill data with timestamp
+   */
+  private setCachedSkillData(cacheKey: string, data: SkillDataResult): void {
+    if (!this.config.cacheEnabled) return;
+
+    this.skillDataCache.set(cacheKey, data);
+    this.skillTimestampCache.set(cacheKey, Date.now());
+  }
+
+  /**
+   * Get skill data with caching and error handling
+   */
+  async getSkillDataWithCache(skillId: number, region?: string, version?: string): Promise<SkillDataResult> {
+    const cacheKey = this.getSkillCacheKey(skillId, region, version);
+
+    if (this.config.cacheEnabled) {
+      const cachedData = this.getCachedSkillData(cacheKey);
+      if (cachedData) {
+        return { ...cachedData, cached: true };
+      }
+    }
+
+    const result: SkillDataResult = {
+      id: skillId,
+      cached: false,
+    };
+
+    try {
+      const [namePromise, iconPromise] = await Promise.allSettled([
+        this.getSkillName(skillId, region, version),
+        this.getSkillIcon(skillId, region, version),
+      ]);
+
+      if (namePromise.status === 'fulfilled') {
+        result.name = namePromise.value;
+      }
+
+      if (iconPromise.status === 'fulfilled') {
+        result.iconUrl = iconPromise.value;
+      }
+
+      if (namePromise.status === 'rejected' && iconPromise.status === 'rejected') {
+        result.error = 'Failed to fetch skill data';
+      }
+
+      if (this.config.cacheEnabled) {
+        this.setCachedSkillData(cacheKey, result);
+      }
+
+      return result;
+    } catch (error) {
+      result.error = error instanceof Error ? error.message : 'Unknown error';
+
+      if (this.config.cacheEnabled) {
+        this.setCachedSkillData(cacheKey, result);
+      }
+
+      return result;
+    }
   }
 }
 

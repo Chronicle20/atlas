@@ -202,3 +202,18 @@ func ParseItemId(l logrus.FieldLogger, next ItemIdHandler) http.HandlerFunc {
 		next(uint32(itemId))(w, r)
 	}
 }
+
+type QuestIdHandler func(questId uint32) http.HandlerFunc
+
+func ParseQuestId(l logrus.FieldLogger, next QuestIdHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		questId, err := strconv.Atoi(vars["questId"])
+		if err != nil {
+			l.WithError(err).Errorf("Error parsing questId as uint32")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(uint32(questId))(w, r)
+	}
+}

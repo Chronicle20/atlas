@@ -7,6 +7,10 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
@@ -16,14 +20,14 @@ import (
 )
 
 const (
-	GetQuestsByCharacter       = "get_quests_by_character"
-	GetQuestByCharacterAndId   = "get_quest_by_character_and_id"
-	StartQuest                 = "start_quest"
-	CompleteQuest              = "complete_quest"
-	ForfeitQuest               = "forfeit_quest"
-	GetQuestProgress           = "get_quest_progress"
-	UpdateQuestProgress        = "update_quest_progress"
-	GetStartedQuestsByCharacter = "get_started_quests_by_character"
+	GetQuestsByCharacter          = "get_quests_by_character"
+	GetQuestByCharacterAndId      = "get_quest_by_character_and_id"
+	StartQuest                    = "start_quest"
+	CompleteQuest                 = "complete_quest"
+	ForfeitQuest                  = "forfeit_quest"
+	GetQuestProgress              = "get_quest_progress"
+	UpdateQuestProgress           = "update_quest_progress"
+	GetStartedQuestsByCharacter   = "get_started_quests_by_character"
 	GetCompletedQuestsByCharacter = "get_completed_quests_by_character"
 )
 
@@ -38,8 +42,8 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r.HandleFunc("/started", registerGet(GetStartedQuestsByCharacter, handleGetQuestsByCharacterAndState(db, StateStarted))).Methods(http.MethodGet)
 			r.HandleFunc("/completed", registerGet(GetCompletedQuestsByCharacter, handleGetQuestsByCharacterAndState(db, StateCompleted))).Methods(http.MethodGet)
 			r.HandleFunc("/{questId}", registerGet(GetQuestByCharacterAndId, handleGetQuestByCharacterAndId(db))).Methods(http.MethodGet)
-			r.HandleFunc("/{questId}/start", registerGet(StartQuest, handleStartQuest(db))).Methods(http.MethodPost)
-			r.HandleFunc("/{questId}/complete", registerGet(CompleteQuest, handleCompleteQuest(db))).Methods(http.MethodPost)
+			r.HandleFunc("/{questId}/start", rest.RegisterInputHandler[StartQuestInputRestModel](l)(db)(si)(StartQuest, handleStartQuest)).Methods(http.MethodPost)
+			r.HandleFunc("/{questId}/complete", rest.RegisterInputHandler[CompleteQuestInputRestModel](l)(db)(si)(CompleteQuest, handleCompleteQuest)).Methods(http.MethodPost)
 			r.HandleFunc("/{questId}/forfeit", registerGet(ForfeitQuest, handleForfeitQuest(db))).Methods(http.MethodPost)
 			r.HandleFunc("/{questId}/progress", registerGet(GetQuestProgress, handleGetQuestProgress(db))).Methods(http.MethodGet)
 			r.HandleFunc("/{questId}/progress", rest.RegisterInputHandler[progress.RestModel](l)(db)(si)(UpdateQuestProgress, handleUpdateQuestProgress)).Methods(http.MethodPatch)
@@ -125,68 +129,89 @@ func handleGetQuestByCharacterAndId(db *gorm.DB) rest.GetHandler {
 	}
 }
 
-func handleStartQuest(db *gorm.DB) rest.GetHandler {
-	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
-			return rest.ParseQuestId(d.Logger(), func(questId uint32) http.HandlerFunc {
-				return func(w http.ResponseWriter, r *http.Request) {
-					q, err := NewProcessor(d.Logger(), d.Context(), db).Start(characterId, questId)
-					if err != nil {
-						d.Logger().WithError(err).Errorf("Unable to start quest [%d] for character [%d].", questId, characterId)
-						w.WriteHeader(http.StatusBadRequest)
-						return
-					}
-
-					res, err := model.Map(Transform)(model.FixedProvider(q))()
-					if err != nil {
-						d.Logger().WithError(err).Errorf("Creating REST model.")
-						w.WriteHeader(http.StatusInternalServerError)
-						return
-					}
-
-					server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
+func handleStartQuest(d *rest.HandlerDependency, c *rest.HandlerContext, i StartQuestInputRestModel) http.HandlerFunc {
+	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+		return rest.ParseQuestId(d.Logger(), func(questId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				f := field.NewBuilder(world.Id(i.WorldId), channel.Id(i.ChannelId), _map.Id(i.MapId)).Build()
+				q, failedConditions, err := NewProcessor(d.Logger(), d.Context(), d.DB()).Start(characterId, questId, f, i.SkipValidation)
+				if errors.Is(err, ErrStartRequirementsNotMet) {
+					// Return 422 Unprocessable Entity with failed conditions
+					result := ValidationFailedRestModel{FailedConditions: failedConditions}
+					w.WriteHeader(http.StatusUnprocessableEntity)
+					server.Marshal[ValidationFailedRestModel](d.Logger())(w)(c.ServerInformation())(result)
+					return
 				}
-			})
+				if errors.Is(err, ErrQuestAlreadyStarted) {
+					w.WriteHeader(http.StatusConflict)
+					return
+				}
+				if errors.Is(err, ErrQuestAlreadyCompleted) {
+					w.WriteHeader(http.StatusConflict)
+					return
+				}
+				if errors.Is(err, ErrIntervalNotElapsed) {
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Unable to start quest [%d] for character [%d].", questId, characterId)
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+
+				res, err := model.Map(Transform)(model.FixedProvider(q))()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
+			}
 		})
-	}
+	})
 }
 
-func handleCompleteQuest(db *gorm.DB) rest.GetHandler {
-	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
-			return rest.ParseQuestId(d.Logger(), func(questId uint32) http.HandlerFunc {
-				return func(w http.ResponseWriter, r *http.Request) {
-					nextQuestId, err := NewProcessor(d.Logger(), d.Context(), db).Complete(characterId, questId)
-					if errors.Is(err, gorm.ErrRecordNotFound) {
-						w.WriteHeader(http.StatusNotFound)
-						return
-					}
-					if errors.Is(err, ErrQuestExpired) {
-						w.WriteHeader(http.StatusGone) // 410 Gone for expired quests
-						return
-					}
-					if errors.Is(err, ErrQuestNotStarted) {
-						w.WriteHeader(http.StatusConflict) // 409 Conflict
-						return
-					}
-					if err != nil {
-						d.Logger().WithError(err).Errorf("Unable to complete quest [%d] for character [%d].", questId, characterId)
-						w.WriteHeader(http.StatusBadRequest)
-						return
-					}
-
-					// Return next quest ID in response if this is part of a chain
-					if nextQuestId > 0 {
-						result := CompleteQuestResponseRestModel{NextQuestId: nextQuestId}
-						server.Marshal[CompleteQuestResponseRestModel](d.Logger())(w)(c.ServerInformation())(result)
-						return
-					}
-
-					w.WriteHeader(http.StatusNoContent)
+func handleCompleteQuest(d *rest.HandlerDependency, c *rest.HandlerContext, i CompleteQuestInputRestModel) http.HandlerFunc {
+	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+		return rest.ParseQuestId(d.Logger(), func(questId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				f := field.NewBuilder(world.Id(i.WorldId), channel.Id(i.ChannelId), _map.Id(i.MapId)).Build()
+				nextQuestId, err := NewProcessor(d.Logger(), d.Context(), d.DB()).Complete(characterId, questId, f, i.SkipValidation)
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					w.WriteHeader(http.StatusNotFound)
+					return
 				}
-			})
+				if errors.Is(err, ErrQuestExpired) {
+					w.WriteHeader(http.StatusGone) // 410 Gone for expired quests
+					return
+				}
+				if errors.Is(err, ErrQuestNotStarted) {
+					w.WriteHeader(http.StatusConflict) // 409 Conflict
+					return
+				}
+				if errors.Is(err, ErrEndRequirementsNotMet) {
+					w.WriteHeader(http.StatusUnprocessableEntity) // 422 for requirements not met
+					return
+				}
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Unable to complete quest [%d] for character [%d].", questId, characterId)
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+
+				// Return next quest ID in response if this is part of a chain
+				if nextQuestId > 0 {
+					result := CompleteQuestResponseRestModel{NextQuestId: nextQuestId}
+					server.Marshal[CompleteQuestResponseRestModel](d.Logger())(w)(c.ServerInformation())(result)
+					return
+				}
+
+				w.WriteHeader(http.StatusNoContent)
+			}
 		})
-	}
+	})
 }
 
 func handleForfeitQuest(db *gorm.DB) rest.GetHandler {
@@ -277,3 +302,4 @@ func handleUpdateQuestProgress(d *rest.HandlerDependency, c *rest.HandlerContext
 		})
 	})
 }
+

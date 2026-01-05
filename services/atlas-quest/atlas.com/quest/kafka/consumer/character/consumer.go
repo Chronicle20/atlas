@@ -6,6 +6,10 @@ import (
 	"atlas-quest/quest"
 	"context"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -44,10 +48,11 @@ func handleMapChangedEvent(db *gorm.DB) message.Handler[character.StatusEvent[ch
 		}
 
 		targetMapId := uint32(e.Body.TargetMapId)
+		f := field.NewBuilder(world.Id(e.WorldId), channel.Id(e.Body.ChannelId), _map.Id(targetMapId)).Build()
 		processor := quest.NewProcessor(l, ctx, db)
 
 		// Check for auto-start quests on this map
-		startedQuests, err := processor.CheckAutoStart(e.CharacterId, targetMapId)
+		startedQuests, err := processor.CheckAutoStart(e.CharacterId, f)
 		if err != nil {
 			l.WithError(err).Warnf("Unable to check auto-start quests for character [%d] on map [%d].", e.CharacterId, targetMapId)
 		} else if len(startedQuests) > 0 {
@@ -74,14 +79,14 @@ func handleMapChangedEvent(db *gorm.DB) message.Handler[character.StatusEvent[ch
 					l.Debugf("Updated map [%d] visit progress for quest [%d] character [%d].", targetMapId, q.QuestId(), e.CharacterId)
 
 					// Check for auto-complete after progress update
-					nextQuestId, completed, err := processor.CheckAutoComplete(e.CharacterId, q.QuestId())
+					nextQuestId, completed, err := processor.CheckAutoComplete(e.CharacterId, q.QuestId(), f)
 					if err != nil {
 						l.WithError(err).Warnf("Unable to check auto-complete for quest [%d] character [%d].", q.QuestId(), e.CharacterId)
 					} else if completed {
 						l.Infof("Auto-completed quest [%d] for character [%d].", q.QuestId(), e.CharacterId)
 						// Handle quest chain - auto-start next quest if present
 						if nextQuestId > 0 {
-							_, err = processor.StartChained(e.CharacterId, nextQuestId)
+							_, err = processor.StartChained(e.CharacterId, nextQuestId, f)
 							if err != nil {
 								l.WithError(err).Errorf("Error starting chained quest [%d] for character [%d].", nextQuestId, e.CharacterId)
 							}

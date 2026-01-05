@@ -35,6 +35,63 @@ func (r CompleteQuestResponseRestModel) GetID() string {
 	return "0"
 }
 
+// ValidationFailedRestModel is returned when validation fails
+type ValidationFailedRestModel struct {
+	FailedConditions []string `json:"failedConditions"`
+}
+
+func (r ValidationFailedRestModel) GetName() string {
+	return "validation-failed"
+}
+
+func (r ValidationFailedRestModel) GetID() string {
+	return "0"
+}
+
+// StartQuestInputRestModel is the input for starting a quest
+type StartQuestInputRestModel struct {
+	Id             string `json:"-"`
+	WorldId        byte   `json:"worldId"`
+	ChannelId      byte   `json:"channelId"`
+	MapId          uint32 `json:"mapId"`
+	SkipValidation bool   `json:"skipValidation"`
+}
+
+func (r StartQuestInputRestModel) GetName() string {
+	return "start-quest-input"
+}
+
+func (r StartQuestInputRestModel) GetID() string {
+	return r.Id
+}
+
+func (r *StartQuestInputRestModel) SetID(id string) error {
+	r.Id = id
+	return nil
+}
+
+// CompleteQuestInputRestModel is the input for completing a quest
+type CompleteQuestInputRestModel struct {
+	Id             string `json:"-"`
+	WorldId        byte   `json:"worldId"`
+	ChannelId      byte   `json:"channelId"`
+	MapId          uint32 `json:"mapId"`
+	SkipValidation bool   `json:"skipValidation"`
+}
+
+func (r CompleteQuestInputRestModel) GetName() string {
+	return "complete-quest-input"
+}
+
+func (r CompleteQuestInputRestModel) GetID() string {
+	return r.Id
+}
+
+func (r *CompleteQuestInputRestModel) SetID(id string) error {
+	r.Id = id
+	return nil
+}
+
 func (r RestModel) GetName() string {
 	return "quest-status"
 }

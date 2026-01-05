@@ -723,13 +723,14 @@ func (b *OperationBuilder) Build() (OperationModel, error) {
 
 // ConditionModel represents a condition in the conversation domain
 type ConditionModel struct {
-	conditionType string
-	operator      string
-	value         string
-	referenceId   string // String from JSON, will be converted to uint32 when needed
-	step          string
-	worldId       string // String from JSON, will be resolved from context for mapCapacity
-	channelId     string // String from JSON, will be resolved from context for mapCapacity
+	conditionType   string
+	operator        string
+	value           string
+	referenceId     string // String from JSON, will be converted to uint32 when needed
+	step            string
+	worldId         string // String from JSON, will be resolved from context for mapCapacity
+	channelId       string // String from JSON, will be resolved from context for mapCapacity
+	includeEquipped bool   // For item conditions: also check equipped items
 }
 
 // Type returns the condition type
@@ -781,15 +782,21 @@ func (c ConditionModel) ChannelId() string {
 	return c.channelId
 }
 
+// IncludeEquipped returns whether to include equipped items in item condition checks
+func (c ConditionModel) IncludeEquipped() bool {
+	return c.includeEquipped
+}
+
 // ConditionBuilder is a builder for ConditionModel
 type ConditionBuilder struct {
-	conditionType string
-	operator      string
-	value         string
-	referenceId   string
-	step          string
-	worldId       string
-	channelId     string
+	conditionType   string
+	operator        string
+	value           string
+	referenceId     string
+	step            string
+	worldId         string
+	channelId       string
+	includeEquipped bool
 }
 
 // NewConditionBuilder creates a new ConditionBuilder
@@ -839,6 +846,12 @@ func (b *ConditionBuilder) SetChannelId(channelId string) *ConditionBuilder {
 	return b
 }
 
+// SetIncludeEquipped sets whether to include equipped items in item condition checks
+func (b *ConditionBuilder) SetIncludeEquipped(includeEquipped bool) *ConditionBuilder {
+	b.includeEquipped = includeEquipped
+	return b
+}
+
 // Build builds the ConditionModel
 func (b *ConditionBuilder) Build() (ConditionModel, error) {
 	if b.conditionType == "" {
@@ -852,13 +865,14 @@ func (b *ConditionBuilder) Build() (ConditionModel, error) {
 	}
 
 	return ConditionModel{
-		conditionType: b.conditionType,
-		operator:      b.operator,
-		value:         b.value,
-		referenceId:   b.referenceId,
-		step:          b.step,
-		worldId:       b.worldId,
-		channelId:     b.channelId,
+		conditionType:   b.conditionType,
+		operator:        b.operator,
+		value:           b.value,
+		referenceId:     b.referenceId,
+		step:            b.step,
+		worldId:         b.worldId,
+		channelId:       b.channelId,
+		includeEquipped: b.includeEquipped,
 	}, nil
 }
 

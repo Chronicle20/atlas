@@ -13,6 +13,7 @@ import (
 	"atlas-data/monster"
 	"atlas-data/npc"
 	"atlas-data/pet"
+	"atlas-data/quest"
 	"atlas-data/reactor"
 	"atlas-data/setup"
 	"atlas-data/skill"
@@ -42,9 +43,10 @@ const (
 	WorkerEtc               = "ETC"
 	WorkerSetup             = "SETUP"
 	WorkerCharacterCreation = "CHARACTER_CREATION"
+	WorkerQuest             = "QUEST"
 )
 
-var Workers = []string{WorkerMap, WorkerMonster, WorkerCharacter, WorkerReactor, WorkerSkill, WorkerPet, WorkerConsume, WorkerCash, WorkerCommodity, WorkerEtc, WorkerSetup, WorkerCharacterCreation}
+var Workers = []string{WorkerMap, WorkerMonster, WorkerCharacter, WorkerReactor, WorkerSkill, WorkerPet, WorkerConsume, WorkerCash, WorkerCommodity, WorkerEtc, WorkerSetup, WorkerCharacterCreation, WorkerQuest}
 
 func ProcessZip(l logrus.FieldLogger) func(ctx context.Context) func(file multipart.File, handler *multipart.FileHeader) error {
 	return func(ctx context.Context) func(file multipart.File, handler *multipart.FileHeader) error {
@@ -185,6 +187,8 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 					err = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Install"), setup.RegisterSetup(db))()
 				} else if name == WorkerCharacterCreation {
 					err = RegisterFileData(l)(ctx)(path, filepath.Join("Etc.wz", "MakeCharInfo.img.xml"), templates.RegisterCharacterTemplate(db))()
+				} else if name == WorkerQuest {
+					err = quest.RegisterQuest(db)(l)(ctx)(filepath.Join(path, "Quest.wz"))
 				}
 				if err != nil {
 					l.WithError(err).Errorf("Worker [%s] failed with error.", name)

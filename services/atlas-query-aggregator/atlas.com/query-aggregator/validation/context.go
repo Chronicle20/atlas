@@ -150,7 +150,7 @@ func (ctx ValidationContext) WithQuest(questModel quest.Model) ValidationContext
 	for k, v := range ctx.quests {
 		newQuests[k] = v
 	}
-	newQuests[questModel.Id()] = questModel
+	newQuests[questModel.QuestId()] = questModel
 
 	return ValidationContext{
 		character:  ctx.character,
@@ -265,7 +265,7 @@ func (b *ValidationContextBuilder) AddQuest(questModel quest.Model) *ValidationC
 	if b.quests == nil {
 		b.quests = make(map[uint32]quest.Model)
 	}
-	b.quests[questModel.Id()] = questModel
+	b.quests[questModel.QuestId()] = questModel
 	return b
 }
 

@@ -16,6 +16,7 @@ import { MapPin } from "lucide-react";
 import { ChangeMapDialog } from "@/components/features/characters/ChangeMapDialog";
 import { CharacterRenderer } from "@/components/features/characters/CharacterRenderer";
 import { InventoryGrid } from "@/components/features/characters/InventoryGrid";
+import { QuestStatusTabs } from "@/components/features/quests";
 import { ErrorDisplay } from "@/components/common";
 import { CharacterDetailSkeleton } from "@/components/common/skeletons/CharacterDetailSkeleton";
 import {
@@ -185,6 +186,14 @@ export default function CharacterDetailPage() {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Quest Status Section */}
+            {activeTenant && (
+                <div className="space-y-4">
+                    <h3 className="text-xl font-bold tracking-tight">Quest Status</h3>
+                    <QuestStatusTabs characterId={String(id)} tenant={activeTenant} />
+                </div>
+            )}
 
             {/* Inventory Section */}
             {inventory && (

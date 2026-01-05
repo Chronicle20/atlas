@@ -43,6 +43,10 @@ const items = [
             {
                 title: "NPCs",
                 url: "/npcs"
+            },
+            {
+                title: "Quests",
+                url: "/quests"
             }
         ],
     },

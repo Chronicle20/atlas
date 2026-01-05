@@ -1,6 +1,7 @@
 package main
 
 import (
+	questConsumer "atlas-quest/kafka/consumer/quest"
 	"atlas-quest/database"
 	"atlas-quest/logger"
 	"atlas-quest/quest"
@@ -8,6 +9,7 @@ import (
 	"atlas-quest/service"
 	"atlas-quest/tracing"
 
+	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
 )
 
@@ -47,10 +49,9 @@ func main() {
 
 	db := database.Connect(l, database.SetMigrations(quest.Migration, progress.Migration))
 
-	// TODO: Add Kafka consumers for monster kills, item changes, etc.
-	// cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
-	// monster.InitConsumers(l)(cmf)(consumerGroupId)
-	// monster.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	questConsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	questConsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 
 	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), quest.InitResource(GetServer())(db))
 

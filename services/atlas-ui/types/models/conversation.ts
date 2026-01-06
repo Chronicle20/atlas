@@ -8,7 +8,7 @@ export interface DialogueChoice {
 }
 
 export interface DialogueState {
-  dialogueType: "sendOk" | "sendYesNo" | "sendSimple" | "sendNext";
+  dialogueType: "sendOk" | "sendYesNo" | "sendNext";
   text: string;
   choices: DialogueChoice[];
   exit?: boolean;

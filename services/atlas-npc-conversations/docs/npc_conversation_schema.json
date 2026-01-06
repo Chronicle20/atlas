@@ -57,7 +57,6 @@
                   "sendOk",
                   "sendYesNo",
                   "sendAcceptDecline",
-                  "sendSimple",
                   "sendNext",
                   "sendNextPrev",
                   "sendPrev"

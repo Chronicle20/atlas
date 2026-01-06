@@ -92,16 +92,16 @@ Each state in the `states` array must have:
   "id": "greeting",
   "type": "dialogue",
   "dialogue": {
-    "dialogueType": "sendYesNo",    // Required: "sendOk", "sendYesNo", "sendSimple", "sendNext", or "sendNextPrev"
+    "dialogueType": "sendYesNo",    // Required: "sendOk", "sendYesNo", "sendNext", "sendNextPrev", "sendPrev", or "sendAcceptDecline"
     "text": "Hello!",               // Required: Dialogue text
     "choices": [                    // Required based on dialogueType:
       {                             // - sendOk: exactly 2 choices
         "text": "Yes",              // - sendYesNo: exactly 3 choices
-        "nextState": "reward",      // - sendSimple: at least 1 choice
+        "nextState": "reward",      // - sendAcceptDecline: exactly 3 choices
         "context": {                // - sendNext: exactly 2 choices
           "key": "value"            // - sendNextPrev: exactly 3 choices
-        }                           // Optional: context data
-      }
+        }                           // - sendPrev: exactly 2 choices
+      }                             // Note: For menu selections, use listSelection state type
     ]
   }
 }

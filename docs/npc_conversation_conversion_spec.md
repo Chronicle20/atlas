@@ -19,10 +19,10 @@ Each converted conversation must include:
 
 | State Type       | Description                                                                 |
 |------------------|-----------------------------------------------------------------------------|
-| `dialogue`       | Presents a message to the user. Supports `sendOk`, `sendYesNo`, `sendNext`, `sendNextPrev`, `sendPrev`, and `sendSimple`. |
+| `dialogue`       | Presents a message to the user. Supports `sendOk`, `sendYesNo`, `sendNext`, `sendNextPrev`, `sendPrev`, and `sendAcceptDecline`. |
 | `genericAction`  | Executes logic or validation (e.g. meso check, job check, warp).            |
 | `craftAction`    | Defines crafting logic with required items and meso cost.                   |
-| `listSelection`  | Allows the user to choose from a dynamic list. Sets context values.         |
+| `listSelection`  | Allows the user to choose from a dynamic list. Sets context values. **Use for menu-style selections (formerly `sendSimple` with `#L` tags).** |
 
 ---
 
@@ -45,7 +45,8 @@ Each converted conversation must include:
 ```
 
 - All `dialogue` states must include an explicit **exit**.
-- Use appropriate `dialogueType` values: `sendOk`, `sendNext`, `sendNextPrev`, `sendPrev`, `sendYesNo`, `sendSimple`.
+- Use appropriate `dialogueType` values: `sendOk`, `sendNext`, `sendNextPrev`, `sendPrev`, `sendYesNo`, `sendAcceptDecline`.
+- **Note**: For menu-style selections (scripts using `sendSimple` with `#L` tags), use the `listSelection` state type instead of `dialogue`.
 
 ---
 

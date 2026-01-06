@@ -15,6 +15,10 @@ func (p Model) Id() uint32 {
 	return p.id
 }
 
+func (p Model) Name() string {
+	return p.name
+}
+
 func (p Model) TargetMapId() uint32 {
 	return p.targetMapId
 }
@@ -29,4 +33,10 @@ func SpawnPoint(m Model) bool {
 
 func NoTarget(m Model) bool {
 	return m.TargetMapId() == 999999999
+}
+
+func ByName(name string) func(Model) bool {
+	return func(m Model) bool {
+		return m.Name() == name
+	}
 }

@@ -6,6 +6,7 @@ import (
 	"atlas-saga-orchestrator/compartment"
 	"atlas-saga-orchestrator/consumable"
 	"atlas-saga-orchestrator/data/foothold"
+	"atlas-saga-orchestrator/data/portal"
 	"atlas-saga-orchestrator/guild"
 	"atlas-saga-orchestrator/invite"
 	character2 "atlas-saga-orchestrator/kafka/message/character"
@@ -34,6 +35,7 @@ type Handler interface {
 	WithFootholdProcessor(foothold.Processor) Handler
 	WithMonsterProcessor(monster.Processor) Handler
 	WithConsumableProcessor(consumable.Processor) Handler
+	WithPortalProcessor(portal.Processor) Handler
 
 	GetHandler(action Action) (ActionHandler, bool)
 
@@ -85,6 +87,7 @@ type HandlerImpl struct {
 	footholdP   foothold.Processor
 	monsterP    monster.Processor
 	consumableP consumable.Processor
+	portalP     portal.Processor
 }
 
 func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
@@ -259,6 +262,7 @@ func (h *HandlerImpl) WithMonsterProcessor(monsterP monster.Processor) Handler {
 		footholdP:   h.footholdP,
 		monsterP:    monsterP,
 		consumableP: h.consumableP,
+		portalP:     h.portalP,
 	}
 }
 
@@ -278,6 +282,27 @@ func (h *HandlerImpl) WithConsumableProcessor(consumableP consumable.Processor) 
 		footholdP:   h.footholdP,
 		monsterP:    h.monsterP,
 		consumableP: consumableP,
+		portalP:     h.portalP,
+	}
+}
+
+func (h *HandlerImpl) WithPortalProcessor(portalP portal.Processor) Handler {
+	return &HandlerImpl{
+		l:           h.l,
+		ctx:         h.ctx,
+		t:           h.t,
+		charP:       h.charP,
+		compP:       h.compP,
+		skillP:      h.skillP,
+		validP:      h.validP,
+		guildP:      h.guildP,
+		inviteP:     h.inviteP,
+		buddyListP:  h.buddyListP,
+		petP:        h.petP,
+		footholdP:   h.footholdP,
+		monsterP:    h.monsterP,
+		consumableP: h.consumableP,
+		portalP:     portalP,
 	}
 }
 
@@ -417,7 +442,15 @@ func (h *HandlerImpl) handleWarpToPortal(s Saga, st Step[any]) error {
 		return errors.New("invalid field id")
 	}
 
-	err := h.charP.WarpToPortalAndEmit(s.TransactionId, payload.CharacterId, f, model.FixedProvider(payload.PortalId))
+	// Determine portal provider: use name-based lookup if PortalName is provided, otherwise use PortalId
+	var portalProvider model.Provider[uint32]
+	if payload.PortalName != "" && h.portalP != nil {
+		portalProvider = h.portalP.ByNameIdProvider(f.MapId(), payload.PortalName)
+	} else {
+		portalProvider = model.FixedProvider(payload.PortalId)
+	}
+
+	err := h.charP.WarpToPortalAndEmit(s.TransactionId, payload.CharacterId, f, portalProvider)
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to warp to specific portal.")

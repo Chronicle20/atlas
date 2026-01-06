@@ -2,6 +2,7 @@ package saga
 
 import (
 	"atlas-saga-orchestrator/buddylist"
+	"atlas-saga-orchestrator/cashshop"
 	"atlas-saga-orchestrator/character"
 	"atlas-saga-orchestrator/compartment"
 	"atlas-saga-orchestrator/consumable"
@@ -36,6 +37,7 @@ type Handler interface {
 	WithMonsterProcessor(monster.Processor) Handler
 	WithConsumableProcessor(consumable.Processor) Handler
 	WithPortalProcessor(portal.Processor) Handler
+	WithCashshopProcessor(cashshop.Processor) Handler
 
 	GetHandler(action Action) (ActionHandler, bool)
 
@@ -47,6 +49,7 @@ type Handler interface {
 	handleAwardExperience(s Saga, st Step[any]) error
 	handleAwardLevel(s Saga, st Step[any]) error
 	handleAwardMesos(s Saga, st Step[any]) error
+	handleAwardCurrency(s Saga, st Step[any]) error
 	handleDestroyAsset(s Saga, st Step[any]) error
 	handleEquipAsset(s Saga, st Step[any]) error
 	handleUnequipAsset(s Saga, st Step[any]) error
@@ -88,6 +91,7 @@ type HandlerImpl struct {
 	monsterP    monster.Processor
 	consumableP consumable.Processor
 	portalP     portal.Processor
+	cashshopP   cashshop.Processor
 }
 
 func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
@@ -106,6 +110,7 @@ func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
 		footholdP:   foothold.NewProcessor(l, ctx),
 		monsterP:    monster.NewProcessor(l, ctx),
 		consumableP: consumable.NewProcessor(l, ctx),
+		cashshopP:   cashshop.NewProcessor(l, ctx),
 	}
 }
 
@@ -303,6 +308,28 @@ func (h *HandlerImpl) WithPortalProcessor(portalP portal.Processor) Handler {
 		monsterP:    h.monsterP,
 		consumableP: h.consumableP,
 		portalP:     portalP,
+		cashshopP:   h.cashshopP,
+	}
+}
+
+func (h *HandlerImpl) WithCashshopProcessor(cashshopP cashshop.Processor) Handler {
+	return &HandlerImpl{
+		l:           h.l,
+		ctx:         h.ctx,
+		t:           h.t,
+		charP:       h.charP,
+		compP:       h.compP,
+		skillP:      h.skillP,
+		validP:      h.validP,
+		guildP:      h.guildP,
+		inviteP:     h.inviteP,
+		buddyListP:  h.buddyListP,
+		petP:        h.petP,
+		footholdP:   h.footholdP,
+		monsterP:    h.monsterP,
+		consumableP: h.consumableP,
+		portalP:     h.portalP,
+		cashshopP:   cashshopP,
 	}
 }
 
@@ -325,6 +352,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleAwardLevel, true
 	case AwardMesos:
 		return h.handleAwardMesos, true
+	case AwardCurrency:
+		return h.handleAwardCurrency, true
 	case DestroyAsset:
 		return h.handleDestroyAsset, true
 	case EquipAsset:
@@ -506,6 +535,23 @@ func (h *HandlerImpl) handleAwardMesos(s Saga, st Step[any]) error {
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to award mesos.")
+		return err
+	}
+
+	return nil
+}
+
+// handleAwardCurrency handles the AwardCurrency action for cash shop currency
+func (h *HandlerImpl) handleAwardCurrency(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(AwardCurrencyPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.cashshopP.AwardCurrencyAndEmit(s.TransactionId, payload.AccountId, payload.CurrencyType, payload.Amount)
+
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to award currency.")
 		return err
 	}
 

@@ -31,7 +31,6 @@ type NpcConversation struct {
 	SpeakerTemplateId  uint32
 	MsgType            NpcConversationMessageType
 	Param              byte
-	Message            string
 	ConversationDetail Encoder
 }
 
@@ -51,7 +50,6 @@ func (b *NpcConversation) Encode(l logrus.FieldLogger, t tenant.Model, ops map[s
 		w.WriteInt(b.SpeakerTemplateId)
 		w.WriteByte(getNpcConversationMessageType(l)(ops, b.MsgType))
 		w.WriteByte(b.Param)
-		w.WriteAsciiString(b.Message)
 		b.ConversationDetail.Encode(l, t, ops)(w)
 	}
 }

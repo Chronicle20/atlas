@@ -1,0 +1,959 @@
+{
+  "npcId": 2040016,
+  "startState": "mainMenu",
+  "states": [
+    {
+      "id": "mainMenu",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Hm? Who might you be? Oh, you've heard about my forging skills? In that case, I'd be glad to process some of your ores... for a fee.",
+        "choices": [
+          {"text": "Refine a mineral ore", "nextState": "mineralMenu"},
+          {"text": "Refine a jewel ore", "nextState": "jewelMenu"},
+          {"text": "Refine a rare jewel", "nextState": "rareJewelMenu"},
+          {"text": "Refine a crystal ore", "nextState": "crystalMenu"},
+          {"text": "Create materials", "nextState": "materialsMenu"},
+          {"text": "Create Arrows", "nextState": "arrowsMenu"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "mineralMenu",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "So, what kind of mineral ore would you like to refine?",
+        "choices": [
+          {"text": "Bronze", "nextState": "askQuantity", "context": {"item": "4011000", "mats": "4010000", "matQty": "10", "cost": "270", "itemName": "Bronze Plate"}},
+          {"text": "Steel", "nextState": "askQuantity", "context": {"item": "4011001", "mats": "4010001", "matQty": "10", "cost": "270", "itemName": "Steel Plate"}},
+          {"text": "Mithril", "nextState": "askQuantity", "context": {"item": "4011002", "mats": "4010002", "matQty": "10", "cost": "270", "itemName": "Mithril Plate"}},
+          {"text": "Adamantium", "nextState": "askQuantity", "context": {"item": "4011003", "mats": "4010003", "matQty": "10", "cost": "450", "itemName": "Adamantium Plate"}},
+          {"text": "Silver", "nextState": "askQuantity", "context": {"item": "4011004", "mats": "4010004", "matQty": "10", "cost": "450", "itemName": "Silver Plate"}},
+          {"text": "Orihalcon", "nextState": "askQuantity", "context": {"item": "4011005", "mats": "4010005", "matQty": "10", "cost": "450", "itemName": "Orihalcon Plate"}},
+          {"text": "Gold", "nextState": "askQuantity", "context": {"item": "4011006", "mats": "4010006", "matQty": "10", "cost": "720", "itemName": "Gold Plate"}},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "jewelMenu",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "So, what kind of jewel ore would you like to refine?",
+        "choices": [
+          {"text": "Garnet", "nextState": "askQuantity", "context": {"item": "4021000", "mats": "4020000", "matQty": "10", "cost": "450", "itemName": "Garnet"}},
+          {"text": "Amethyst", "nextState": "askQuantity", "context": {"item": "4021001", "mats": "4020001", "matQty": "10", "cost": "450", "itemName": "Amethyst"}},
+          {"text": "Aquamarine", "nextState": "askQuantity", "context": {"item": "4021002", "mats": "4020002", "matQty": "10", "cost": "450", "itemName": "AquaMarine"}},
+          {"text": "Emerald", "nextState": "askQuantity", "context": {"item": "4021003", "mats": "4020003", "matQty": "10", "cost": "450", "itemName": "Emerald"}},
+          {"text": "Opal", "nextState": "askQuantity", "context": {"item": "4021004", "mats": "4020004", "matQty": "10", "cost": "450", "itemName": "Opal"}},
+          {"text": "Sapphire", "nextState": "askQuantity", "context": {"item": "4021005", "mats": "4020005", "matQty": "10", "cost": "450", "itemName": "Sapphire"}},
+          {"text": "Topaz", "nextState": "askQuantity", "context": {"item": "4021006", "mats": "4020006", "matQty": "10", "cost": "450", "itemName": "Topaz"}},
+          {"text": "Diamond", "nextState": "askQuantity", "context": {"item": "4021007", "mats": "4020007", "matQty": "10", "cost": "900", "itemName": "Diamond"}},
+          {"text": "Black Crystal", "nextState": "askQuantity", "context": {"item": "4021008", "mats": "4020008", "matQty": "10", "cost": "2700", "itemName": "Black Crystal"}},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "rareJewelMenu",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "A rare jewel? Which one were you thinking of?",
+        "choices": [
+          {"text": "Moon Rock", "nextState": "askQuantityMoonRock", "context": {"item": "4011007", "cost": "9000", "itemName": "Moon Rock"}},
+          {"text": "Star Rock", "nextState": "askQuantityStarRock", "context": {"item": "4021009", "cost": "13500", "itemName": "Star Rock"}},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "crystalMenu",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Crystal ore? I love refining those!",
+        "choices": [
+          {"text": "Power Crystal", "nextState": "askQuantity", "context": {"item": "4005000", "mats": "4004000", "matQty": "10", "cost": "4500", "itemName": "Power Crystal"}},
+          {"text": "Wisdom Crystal", "nextState": "askQuantity", "context": {"item": "4005001", "mats": "4004001", "matQty": "10", "cost": "4500", "itemName": "Wisdom Crystal"}},
+          {"text": "DEX Crystal", "nextState": "askQuantity", "context": {"item": "4005002", "mats": "4004002", "matQty": "10", "cost": "4500", "itemName": "DEX Crystal"}},
+          {"text": "LUK Crystal", "nextState": "askQuantity", "context": {"item": "4005003", "mats": "4004003", "matQty": "10", "cost": "4500", "itemName": "LUK Crystal"}},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "materialsMenu",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Materials? I know of a few materials that I can make for you...",
+        "choices": [
+          {"text": "Make Processed Wood with Tree Branch", "nextState": "askQuantity", "context": {"item": "4003001", "mats": "4000003", "matQty": "10", "cost": "0", "itemName": "Processed Wood"}},
+          {"text": "Make Processed Wood with Firewood", "nextState": "askQuantity", "context": {"item": "4003001", "mats": "4000018", "matQty": "5", "cost": "0", "itemName": "Processed Wood"}},
+          {"text": "Make Screws (packs of 15)", "nextState": "askQuantityScrews", "context": {"item": "4003000", "cost": "0", "itemName": "Screw"}},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "arrowsMenu",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Arrows? Not a problem at all.",
+        "choices": [
+          {"text": "Arrow for Bow", "nextState": "confirmArrowBow", "context": {"item": "2060000", "recvQty": "1000", "mat1": "4003001", "mat1Qty": "1", "mat2": "4003004", "mat2Qty": "1", "cost": "0", "itemName": "Arrow for Bow"}},
+          {"text": "Arrow for Crossbow", "nextState": "confirmArrowCrossbow", "context": {"item": "2061000", "recvQty": "1000", "mat1": "4003001", "mat1Qty": "1", "mat2": "4003004", "mat2Qty": "1", "cost": "0", "itemName": "Arrow for Crossbow"}},
+          {"text": "Bronze Arrow for Bow", "nextState": "confirmBronzeArrowBow", "context": {"item": "2060001", "recvQty": "900", "mat1": "4011000", "mat1Qty": "1", "mat2": "4003001", "mat2Qty": "3", "mat3": "4003004", "mat3Qty": "10", "cost": "0", "itemName": "Bronze Arrow for Bow"}},
+          {"text": "Bronze Arrow for Crossbow", "nextState": "confirmBronzeArrowCrossbow", "context": {"item": "2061001", "recvQty": "900", "mat1": "4011000", "mat1Qty": "1", "mat2": "4003001", "mat2Qty": "3", "mat3": "4003004", "mat3Qty": "10", "cost": "0", "itemName": "Bronze Arrow for Crossbow"}},
+          {"text": "Steel Arrow for Bow", "nextState": "confirmSteelArrowBow", "context": {"item": "2060002", "recvQty": "800", "mat1": "4011001", "mat1Qty": "1", "mat2": "4003001", "mat2Qty": "5", "mat3": "4003005", "mat3Qty": "15", "cost": "0", "itemName": "Steel Arrow for Bow"}},
+          {"text": "Steel Arrow for Crossbow", "nextState": "confirmSteelArrowCrossbow", "context": {"item": "2061002", "recvQty": "800", "mat1": "4011001", "mat1Qty": "1", "mat2": "4003001", "mat2Qty": "5", "mat3": "4003005", "mat3Qty": "15", "cost": "0", "itemName": "Steel Arrow for Crossbow"}},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "askQuantity",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "So, you want me to make some #t{context.item}#s? In that case, how many do you want me to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "confirmSimpleCraft"
+      }
+    },
+    {
+      "id": "askQuantityMoonRock",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "So, you want me to make some #t4011007#s? In that case, how many do you want me to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "confirmMoonRock"
+      }
+    },
+    {
+      "id": "askQuantityStarRock",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "So, you want me to make some #t4021009#s? In that case, how many do you want me to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "confirmStarRock"
+      }
+    },
+    {
+      "id": "askQuantityScrews",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "So, you want me to make some #t4003000#s? In that case, how many do you want me to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "confirmScrews"
+      }
+    },
+    {
+      "id": "confirmSimpleCraft",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make {context.quantity} #t{context.item}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.mats}# {context.matQty} * {context.quantity} #t{context.mats}#\r\n#i4031138# {context.cost} * {context.quantity} meso",
+        "choices": [
+          {"text": "Yes", "nextState": "validateSimpleCraft"},
+          {"text": "No", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "confirmMoonRock",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make {context.quantity} #t4011007#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4011000# {context.quantity} #t4011000#\r\n#i4011001# {context.quantity} #t4011001#\r\n#i4011002# {context.quantity} #t4011002#\r\n#i4011003# {context.quantity} #t4011003#\r\n#i4011004# {context.quantity} #t4011004#\r\n#i4011005# {context.quantity} #t4011005#\r\n#i4011006# {context.quantity} #t4011006#\r\n#i4031138# 9000 * {context.quantity} meso",
+        "choices": [
+          {"text": "Yes", "nextState": "validateMoonRock"},
+          {"text": "No", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "confirmStarRock",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make {context.quantity} #t4021009#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4021000# {context.quantity} #t4021000#\r\n#i4021001# {context.quantity} #t4021001#\r\n#i4021002# {context.quantity} #t4021002#\r\n#i4021003# {context.quantity} #t4021003#\r\n#i4021004# {context.quantity} #t4021004#\r\n#i4021005# {context.quantity} #t4021005#\r\n#i4021006# {context.quantity} #t4021006#\r\n#i4021007# {context.quantity} #t4021007#\r\n#i4021008# {context.quantity} #t4021008#\r\n#i4031138# 13500 * {context.quantity} meso",
+        "choices": [
+          {"text": "Yes", "nextState": "validateStarRock"},
+          {"text": "No", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "confirmScrews",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make {context.quantity} #t4003000#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4011000# {context.quantity} #t4011000#\r\n#i4011001# {context.quantity} #t4011001#",
+        "choices": [
+          {"text": "Yes", "nextState": "validateScrews"},
+          {"text": "No", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "confirmArrowBow",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t2060000#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4003001# 1 #t4003001#\r\n#i4003004# 1 #t4003004#",
+        "choices": [
+          {"text": "Yes", "nextState": "validateArrowBow"},
+          {"text": "No", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "confirmArrowCrossbow",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t2061000#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4003001# 1 #t4003001#\r\n#i4003004# 1 #t4003004#",
+        "choices": [
+          {"text": "Yes", "nextState": "validateArrowCrossbow"},
+          {"text": "No", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "confirmBronzeArrowBow",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t2060001#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4011000# 1 #t4011000#\r\n#i4003001# 3 #t4003001#\r\n#i4003004# 10 #t4003004#",
+        "choices": [
+          {"text": "Yes", "nextState": "validateBronzeArrowBow"},
+          {"text": "No", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "confirmBronzeArrowCrossbow",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t2061001#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4011000# 1 #t4011000#\r\n#i4003001# 3 #t4003001#\r\n#i4003004# 10 #t4003004#",
+        "choices": [
+          {"text": "Yes", "nextState": "validateBronzeArrowCrossbow"},
+          {"text": "No", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "confirmSteelArrowBow",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t2060002#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4011001# 1 #t4011001#\r\n#i4003001# 5 #t4003001#\r\n#i4003005# 15 #t4003005#",
+        "choices": [
+          {"text": "Yes", "nextState": "validateSteelArrowBow"},
+          {"text": "No", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "confirmSteelArrowCrossbow",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t2061002#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4011001# 1 #t4011001#\r\n#i4003001# 5 #t4003001#\r\n#i4003005# 15 #t4003005#",
+        "choices": [
+          {"text": "Yes", "nextState": "validateSteelArrowCrossbow"},
+          {"text": "No", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "validateSimpleCraft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "inventorySpace", "operator": ">=", "value": "{context.quantity}", "referenceId": "{context.item}"}
+            ],
+            "nextState": "checkMesoSimpleCraft"
+          },
+          {
+            "conditions": [],
+            "nextState": "noInventorySpace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMesoSimpleCraft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "meso", "operator": ">=", "value": "{context.cost} * {context.quantity}"}
+            ],
+            "nextState": "checkMaterialsSimpleCraft"
+          },
+          {
+            "conditions": [],
+            "nextState": "notEnoughMeso"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMaterialsSimpleCraft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "{context.matQty} * {context.quantity}", "referenceId": "{context.mats}"}
+            ],
+            "nextState": "doSimpleCraft"
+          },
+          {
+            "conditions": [],
+            "nextState": "notEnoughMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "doSimpleCraft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "{context.mats}", "quantity": "{context.matQty} * {context.quantity}"}},
+          {"type": "award_mesos", "params": {"amount": "-{context.cost} * {context.quantity}"}},
+          {"type": "award_item", "params": {"itemId": "{context.item}", "quantity": "{context.quantity}"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "craftSuccess"}
+        ]
+      }
+    },
+    {
+      "id": "validateMoonRock",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "inventorySpace", "operator": ">=", "value": "{context.quantity}", "referenceId": "4011007"}
+            ],
+            "nextState": "checkMesoMoonRock"
+          },
+          {
+            "conditions": [],
+            "nextState": "noInventorySpace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMesoMoonRock",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "meso", "operator": ">=", "value": "9000 * {context.quantity}"}
+            ],
+            "nextState": "checkMaterialsMoonRock"
+          },
+          {
+            "conditions": [],
+            "nextState": "notEnoughMeso"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMaterialsMoonRock",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "{context.quantity}", "referenceId": "4011000"},
+              {"type": "item", "operator": ">=", "value": "{context.quantity}", "referenceId": "4011001"},
+              {"type": "item", "operator": ">=", "value": "{context.quantity}", "referenceId": "4011002"},
+              {"type": "item", "operator": ">=", "value": "{context.quantity}", "referenceId": "4011003"},
+              {"type": "item", "operator": ">=", "value": "{context.quantity}", "referenceId": "4011004"},
+              {"type": "item", "operator": ">=", "value": "{context.quantity}", "referenceId": "4011005"},
+              {"type": "item", "operator": ">=", "value": "{context.quantity}", "referenceId": "4011006"}
+            ],
+            "nextState": "doMoonRockCraft"
+          },
+          {
+            "conditions": [],
+            "nextState": "notEnoughMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "doMoonRockCraft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4011000", "quantity": "{context.quantity}"}},
+          {"type": "destroy_item", "params": {"itemId": "4011001", "quantity": "{context.quantity}"}},
+          {"type": "destroy_item", "params": {"itemId": "4011002", "quantity": "{context.quantity}"}},
+          {"type": "destroy_item", "params": {"itemId": "4011003", "quantity": "{context.quantity}"}},
+          {"type": "destroy_item", "params": {"itemId": "4011004", "quantity": "{context.quantity}"}},
+          {"type": "destroy_item", "params": {"itemId": "4011005", "quantity": "{context.quantity}"}},
+          {"type": "destroy_item", "params": {"itemId": "4011006", "quantity": "{context.quantity}"}},
+          {"type": "award_mesos", "params": {"amount": "-9000 * {context.quantity}"}},
+          {"type": "award_item", "params": {"itemId": "4011007", "quantity": "{context.quantity}"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "craftSuccess"}
+        ]
+      }
+    },
+    {
+      "id": "validateStarRock",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "inventorySpace", "operator": ">=", "value": "{context.quantity}", "referenceId": "4021009"}
+            ],
+            "nextState": "checkMesoStarRock"
+          },
+          {
+            "conditions": [],
+            "nextState": "noInventorySpace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMesoStarRock",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "meso", "operator": ">=", "value": "13500 * {context.quantity}"}
+            ],
+            "nextState": "checkMaterialsStarRock"
+          },
+          {
+            "conditions": [],
+            "nextState": "notEnoughMeso"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMaterialsStarRock",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "{context.quantity}", "referenceId": "4021000"},
+              {"type": "item", "operator": ">=", "value": "{context.quantity}", "referenceId": "4021001"},
+              {"type": "item", "operator": ">=", "value": "{context.quantity}", "referenceId": "4021002"},
+              {"type": "item", "operator": ">=", "value": "{context.quantity}", "referenceId": "4021003"},
+              {"type": "item", "operator": ">=", "value": "{context.quantity}", "referenceId": "4021004"},
+              {"type": "item", "operator": ">=", "value": "{context.quantity}", "referenceId": "4021005"},
+              {"type": "item", "operator": ">=", "value": "{context.quantity}", "referenceId": "4021006"},
+              {"type": "item", "operator": ">=", "value": "{context.quantity}", "referenceId": "4021007"},
+              {"type": "item", "operator": ">=", "value": "{context.quantity}", "referenceId": "4021008"}
+            ],
+            "nextState": "doStarRockCraft"
+          },
+          {
+            "conditions": [],
+            "nextState": "notEnoughMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "doStarRockCraft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4021000", "quantity": "{context.quantity}"}},
+          {"type": "destroy_item", "params": {"itemId": "4021001", "quantity": "{context.quantity}"}},
+          {"type": "destroy_item", "params": {"itemId": "4021002", "quantity": "{context.quantity}"}},
+          {"type": "destroy_item", "params": {"itemId": "4021003", "quantity": "{context.quantity}"}},
+          {"type": "destroy_item", "params": {"itemId": "4021004", "quantity": "{context.quantity}"}},
+          {"type": "destroy_item", "params": {"itemId": "4021005", "quantity": "{context.quantity}"}},
+          {"type": "destroy_item", "params": {"itemId": "4021006", "quantity": "{context.quantity}"}},
+          {"type": "destroy_item", "params": {"itemId": "4021007", "quantity": "{context.quantity}"}},
+          {"type": "destroy_item", "params": {"itemId": "4021008", "quantity": "{context.quantity}"}},
+          {"type": "award_mesos", "params": {"amount": "-13500 * {context.quantity}"}},
+          {"type": "award_item", "params": {"itemId": "4021009", "quantity": "{context.quantity}"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "craftSuccess"}
+        ]
+      }
+    },
+    {
+      "id": "validateScrews",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "inventorySpace", "operator": ">=", "value": "15 * {context.quantity}", "referenceId": "4003000"}
+            ],
+            "nextState": "checkMaterialsScrews"
+          },
+          {
+            "conditions": [],
+            "nextState": "noInventorySpace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMaterialsScrews",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "{context.quantity}", "referenceId": "4011000"},
+              {"type": "item", "operator": ">=", "value": "{context.quantity}", "referenceId": "4011001"}
+            ],
+            "nextState": "doScrewsCraft"
+          },
+          {
+            "conditions": [],
+            "nextState": "notEnoughMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "doScrewsCraft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4011000", "quantity": "{context.quantity}"}},
+          {"type": "destroy_item", "params": {"itemId": "4011001", "quantity": "{context.quantity}"}},
+          {"type": "award_item", "params": {"itemId": "4003000", "quantity": "15 * {context.quantity}"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "craftSuccess"}
+        ]
+      }
+    },
+    {
+      "id": "validateArrowBow",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "inventorySpace", "operator": ">=", "value": "1000", "referenceId": "2060000"}
+            ],
+            "nextState": "checkMaterialsArrowBow"
+          },
+          {
+            "conditions": [],
+            "nextState": "noInventorySpace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMaterialsArrowBow",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "1", "referenceId": "4003001"},
+              {"type": "item", "operator": ">=", "value": "1", "referenceId": "4003004"}
+            ],
+            "nextState": "doArrowBowCraft"
+          },
+          {
+            "conditions": [],
+            "nextState": "notEnoughMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "doArrowBowCraft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4003001", "quantity": "1"}},
+          {"type": "destroy_item", "params": {"itemId": "4003004", "quantity": "1"}},
+          {"type": "award_item", "params": {"itemId": "2060000", "quantity": "1000"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "craftSuccess"}
+        ]
+      }
+    },
+    {
+      "id": "validateArrowCrossbow",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "inventorySpace", "operator": ">=", "value": "1000", "referenceId": "2061000"}
+            ],
+            "nextState": "checkMaterialsArrowCrossbow"
+          },
+          {
+            "conditions": [],
+            "nextState": "noInventorySpace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMaterialsArrowCrossbow",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "1", "referenceId": "4003001"},
+              {"type": "item", "operator": ">=", "value": "1", "referenceId": "4003004"}
+            ],
+            "nextState": "doArrowCrossbowCraft"
+          },
+          {
+            "conditions": [],
+            "nextState": "notEnoughMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "doArrowCrossbowCraft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4003001", "quantity": "1"}},
+          {"type": "destroy_item", "params": {"itemId": "4003004", "quantity": "1"}},
+          {"type": "award_item", "params": {"itemId": "2061000", "quantity": "1000"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "craftSuccess"}
+        ]
+      }
+    },
+    {
+      "id": "validateBronzeArrowBow",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "inventorySpace", "operator": ">=", "value": "900", "referenceId": "2060001"}
+            ],
+            "nextState": "checkMaterialsBronzeArrowBow"
+          },
+          {
+            "conditions": [],
+            "nextState": "noInventorySpace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMaterialsBronzeArrowBow",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "1", "referenceId": "4011000"},
+              {"type": "item", "operator": ">=", "value": "3", "referenceId": "4003001"},
+              {"type": "item", "operator": ">=", "value": "10", "referenceId": "4003004"}
+            ],
+            "nextState": "doBronzeArrowBowCraft"
+          },
+          {
+            "conditions": [],
+            "nextState": "notEnoughMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "doBronzeArrowBowCraft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4011000", "quantity": "1"}},
+          {"type": "destroy_item", "params": {"itemId": "4003001", "quantity": "3"}},
+          {"type": "destroy_item", "params": {"itemId": "4003004", "quantity": "10"}},
+          {"type": "award_item", "params": {"itemId": "2060001", "quantity": "900"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "craftSuccess"}
+        ]
+      }
+    },
+    {
+      "id": "validateBronzeArrowCrossbow",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "inventorySpace", "operator": ">=", "value": "900", "referenceId": "2061001"}
+            ],
+            "nextState": "checkMaterialsBronzeArrowCrossbow"
+          },
+          {
+            "conditions": [],
+            "nextState": "noInventorySpace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMaterialsBronzeArrowCrossbow",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "1", "referenceId": "4011000"},
+              {"type": "item", "operator": ">=", "value": "3", "referenceId": "4003001"},
+              {"type": "item", "operator": ">=", "value": "10", "referenceId": "4003004"}
+            ],
+            "nextState": "doBronzeArrowCrossbowCraft"
+          },
+          {
+            "conditions": [],
+            "nextState": "notEnoughMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "doBronzeArrowCrossbowCraft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4011000", "quantity": "1"}},
+          {"type": "destroy_item", "params": {"itemId": "4003001", "quantity": "3"}},
+          {"type": "destroy_item", "params": {"itemId": "4003004", "quantity": "10"}},
+          {"type": "award_item", "params": {"itemId": "2061001", "quantity": "900"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "craftSuccess"}
+        ]
+      }
+    },
+    {
+      "id": "validateSteelArrowBow",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "inventorySpace", "operator": ">=", "value": "800", "referenceId": "2060002"}
+            ],
+            "nextState": "checkMaterialsSteelArrowBow"
+          },
+          {
+            "conditions": [],
+            "nextState": "noInventorySpace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMaterialsSteelArrowBow",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "1", "referenceId": "4011001"},
+              {"type": "item", "operator": ">=", "value": "5", "referenceId": "4003001"},
+              {"type": "item", "operator": ">=", "value": "15", "referenceId": "4003005"}
+            ],
+            "nextState": "doSteelArrowBowCraft"
+          },
+          {
+            "conditions": [],
+            "nextState": "notEnoughMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "doSteelArrowBowCraft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4011001", "quantity": "1"}},
+          {"type": "destroy_item", "params": {"itemId": "4003001", "quantity": "5"}},
+          {"type": "destroy_item", "params": {"itemId": "4003005", "quantity": "15"}},
+          {"type": "award_item", "params": {"itemId": "2060002", "quantity": "800"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "craftSuccess"}
+        ]
+      }
+    },
+    {
+      "id": "validateSteelArrowCrossbow",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "inventorySpace", "operator": ">=", "value": "800", "referenceId": "2061002"}
+            ],
+            "nextState": "checkMaterialsSteelArrowCrossbow"
+          },
+          {
+            "conditions": [],
+            "nextState": "noInventorySpace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMaterialsSteelArrowCrossbow",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "1", "referenceId": "4011001"},
+              {"type": "item", "operator": ">=", "value": "5", "referenceId": "4003001"},
+              {"type": "item", "operator": ">=", "value": "15", "referenceId": "4003005"}
+            ],
+            "nextState": "doSteelArrowCrossbowCraft"
+          },
+          {
+            "conditions": [],
+            "nextState": "notEnoughMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "doSteelArrowCrossbowCraft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4011001", "quantity": "1"}},
+          {"type": "destroy_item", "params": {"itemId": "4003001", "quantity": "5"}},
+          {"type": "destroy_item", "params": {"itemId": "4003005", "quantity": "15"}},
+          {"type": "award_item", "params": {"itemId": "2061002", "quantity": "800"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "craftSuccess"}
+        ]
+      }
+    },
+    {
+      "id": "craftSuccess",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "All done. If you need anything else, you know where to find me.",
+        "choices": [
+          {"text": "Ok", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "noInventorySpace",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "I'm afraid you have no slots available for this transaction.",
+        "choices": [
+          {"text": "Ok", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "notEnoughMeso",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "I'm afraid you cannot afford my services.",
+        "choices": [
+          {"text": "Ok", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "notEnoughMaterials",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Hold it, I can't finish that without all of the proper materials. Bring them first, then we'll talk.",
+        "choices": [
+          {"text": "Ok", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    }
+  ]
+}

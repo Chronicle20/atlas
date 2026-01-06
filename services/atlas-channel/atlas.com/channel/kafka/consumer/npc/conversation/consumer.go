@@ -167,14 +167,14 @@ func getNPCTalkType(t string) model2.NpcConversationMessageType {
 		return model2.NpcConversationMessageTypeSay
 	case "YES_NO":
 		return model2.NpcConversationMessageTypeAskYesNo
-	case "ACCEPT_DECLINE":
-		return model2.NpcConversationMessageTypeAskYesNoQuest
-	case "SIMPLE":
-		return model2.NpcConversationMessageTypeSay
 	case "NUM":
 		return model2.NpcConversationMessageTypeAskNumber
+	case "SIMPLE":
+		return model2.NpcConversationMessageTypeAskMenu
 	case "STYLE":
 		return model2.NpcConversationMessageTypeAskAvatar
+	case "ACCEPT_DECLINE":
+		return model2.NpcConversationMessageTypeAskYesNoQuest
 	}
 	panic(fmt.Sprintf("unsupported talk type %s", t))
 }

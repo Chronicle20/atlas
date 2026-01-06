@@ -9,13 +9,15 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
+	"time"
+
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"time"
 )
 
 type Processor interface {
@@ -110,7 +112,7 @@ func (p *ProcessorImpl) Create(m Model) (Model, error) {
 		p.l.WithError(err).Errorf("Failed to convert model to entity")
 		return Model{}, err
 	}
-	
+
 	entity.ID = uuid.New()
 
 	// Save to database
@@ -341,21 +343,52 @@ func (p *ProcessorImpl) Continue(npcId uint32, characterId uint32, action byte, 
 			return errors.New("askStyle is nil")
 		}
 
-		// Validate the selection is within bounds
-		if selection < 0 || selection >= int32(len(askStyle.Styles())) {
-			p.l.Errorf("Invalid style selection [%d] for character [%d]: out of bounds", selection, characterId)
-			return fmt.Errorf("invalid style selection: out of bounds")
+		if action == 0 {
+			// action = 0 on Exit / Cancel
+		} else if action == 1 {
+			var styles []uint32
+			if len(askStyle.Styles()) > 0 {
+				for _, style := range askStyle.Styles() {
+					styles = append(styles, style)
+				}
+			} else if len(askStyle.StylesContextKey()) > 0 {
+				// Get the styles array from context
+				stylesValue, exists := ctx.Context()[askStyle.StylesContextKey()]
+				if !exists {
+					return fmt.Errorf("failed to get styles from context key '%s': %w", askStyle.StylesContextKey(), err)
+				}
+
+				// Parse the styles array (should be a JSON array of uint32)
+				styleStrs := strings.Split(stylesValue, ",")
+				if len(styleStrs) == 0 {
+					return errors.New("styles array is empty, cannot select random cosmetic")
+				}
+				for _, styleStr := range styleStrs {
+					var styleId int
+					styleId, err = strconv.Atoi(styleStr)
+					if err != nil {
+						return err
+					}
+					styles = append(styles, uint32(styleId))
+				}
+			}
+
+			// Validate the selection is within bounds
+			if selection < 0 || selection >= int32(len(styles)) {
+				p.l.Errorf("Invalid style selection [%d] for character [%d]: out of bounds", selection, characterId)
+				return fmt.Errorf("invalid style selection: out of bounds")
+			}
+
+			// Get the selected style ID
+			selectedStyleId := styles[selection]
+
+			// Store the selected style in the context using the configured context key
+			choiceContext = make(map[string]string)
+			choiceContext[askStyle.ContextKey()] = fmt.Sprintf("%d", selectedStyleId)
+
+			// Get the next state from the askStyle model
+			nextStateId = askStyle.NextState()
 		}
-
-		// Get the selected style ID
-		selectedStyleId := askStyle.Styles()[selection]
-
-		// Store the selected style in the context using the configured context key
-		choiceContext = make(map[string]string)
-		choiceContext[askStyle.ContextKey()] = fmt.Sprintf("%d", selectedStyleId)
-
-		// Get the next state from the askStyle model
-		nextStateId = askStyle.NextState()
 
 	default:
 		// For other state types, we shouldn't be here (they should have been processed already)

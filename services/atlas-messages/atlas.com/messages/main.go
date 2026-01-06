@@ -33,6 +33,7 @@ func main() {
 	command.Registry().Add(character.AwardExperienceCommandProducer)
 	command.Registry().Add(character.AwardLevelCommandProducer)
 	command.Registry().Add(character.AwardMesoCommandProducer)
+	command.Registry().Add(character.AwardCurrencyCommandProducer)
 	command.Registry().Add(character.ChangeJobCommandProducer)
 	command.Registry().Add(skill.MaxSkillCommandProducer)
 	command.Registry().Add(skill.ResetSkillCommandProducer)

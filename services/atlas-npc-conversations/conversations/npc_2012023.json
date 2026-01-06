@@ -14,13 +14,13 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 4031476
+                "referenceId": "4031476"
               },
               {
                 "type": "inventorySpace",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 4031456
+                "referenceId": "4031456"
               }
             ],
             "nextState": "performExchange"
@@ -31,7 +31,7 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 4031476
+                "referenceId": "4031476"
               }
             ],
             "nextState": "removeItemOnly"

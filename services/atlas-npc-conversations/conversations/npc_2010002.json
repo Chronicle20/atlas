@@ -65,7 +65,7 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 5152005
+                "referenceId": "5152005"
               }
             ],
             "nextState": "performFaceChange"

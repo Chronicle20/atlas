@@ -14,7 +14,7 @@
                 "type": "questStatus",
                 "operator": "=",
                 "value": "3",
-                "referenceId": 100001
+                "referenceId": "100001"
               }
             ],
             "nextState": "alreadyCompleted"
@@ -25,7 +25,7 @@
                 "type": "questStatus",
                 "operator": "=",
                 "value": "3",
-                "referenceId": 100000
+                "referenceId": "100000"
               }
             ],
             "nextState": "quest100000Completed"
@@ -36,7 +36,7 @@
                 "type": "questStatus",
                 "operator": "=",
                 "value": "2",
-                "referenceId": 100000
+                "referenceId": "100000"
               }
             ],
             "nextState": "quest100000Started"

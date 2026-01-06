@@ -14,7 +14,7 @@
                 "type": "item",
                 "operator": "<",
                 "value": "1",
-                "referenceId": 4031331
+                "referenceId": "4031331"
               }
             ],
             "nextState": "noTicketMessage"
@@ -50,7 +50,7 @@
                 "type": "transportAvailable",
                 "operator": "=",
                 "value": "0",
-                "referenceId": 200000132
+                "referenceId": "200000132"
               }
             ],
             "nextState": "transportUnavailable"
@@ -111,7 +111,7 @@
                 "type": "transportAvailable",
                 "operator": "=",
                 "value": "1",
-                "referenceId": 200000132
+                "referenceId": "200000132"
               }
             ],
             "nextState": "performBoard"

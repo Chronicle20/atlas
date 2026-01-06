@@ -1,0 +1,218 @@
+{
+  "npcId": 2081000,
+  "startState": "start",
+  "states": [
+    {
+      "id": "start",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "...Can I help you?",
+        "choices": [
+          {
+            "text": "Buy the Magic Seed",
+            "nextState": "askAboutMagicSeed"
+          },
+          {
+            "text": "Do something for Leafre",
+            "nextState": "underDevelopment"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "askAboutMagicSeed",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "You don't seem to be from out town. How can I help you?",
+        "choices": [
+          {
+            "text": "I would like some #t4031346#.",
+            "nextState": "askQuantity",
+            "context": {
+              "price": "30000"
+            }
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "underDevelopment",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Under development...",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "askQuantity",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "#b#t4031346##k is a precious iteml I cannot give it to you just like that. How about doing me a little favor? Then I'll give it to you. I'll sell the #b#t4031346##k to you for #b30,000 mesos#k each. Are you willing to make the purchase? How many would you like, then?",
+        "default": 1,
+        "min": 1,
+        "max": 99,
+        "contextKey": "quantity",
+        "nextState": "confirmPurchase"
+      }
+    },
+    {
+      "id": "confirmPurchase",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Buying #b{context.quantity} #t4031346#(s)#k will cost you #b{context.totalCost} mesos#k. Are you sure you want to make the purchase?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkMeso"
+          },
+          {
+            "text": "No",
+            "nextState": "thinkCarefully"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "thinkCarefully",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Please think carefully. Once you have made your decision, let me know.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMeso",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "meso", "operator": ">=", "value": "{context.totalCost}"}
+            ],
+            "nextState": "checkInventory"
+          },
+          {
+            "conditions": [],
+            "nextState": "notEnoughMesoOrSpace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkInventory",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "inventorySpace", "operator": ">=", "value": "{context.quantity}", "referenceId": 4031346}
+            ],
+            "nextState": "performPurchase"
+          },
+          {
+            "conditions": [],
+            "nextState": "notEnoughMesoOrSpace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "notEnoughMesoOrSpace",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Please check and see if you have enough mesos to make the purchase. Also, I suggest you check the etc. inventory and see if you have enough space available to make the purchase.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "performPurchase",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4031346",
+              "quantity": "{context.quantity}"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-{context.totalCost}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "purchaseComplete"
+          }
+        ]
+      }
+    },
+    {
+      "id": "purchaseComplete",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "See you again~",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

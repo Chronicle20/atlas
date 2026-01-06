@@ -14,7 +14,7 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 4031847
+                "referenceId": "4031847"
               }
             ],
             "nextState": "hasEmptyBottle"
@@ -25,7 +25,7 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 4031848
+                "referenceId": "4031848"
               }
             ],
             "nextState": "exchangeBottle1"
@@ -36,7 +36,7 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 4031849
+                "referenceId": "4031849"
               }
             ],
             "nextState": "exchangeBottle2"
@@ -47,7 +47,7 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 4031850
+                "referenceId": "4031850"
               }
             ],
             "nextState": "exchangeBottle3"

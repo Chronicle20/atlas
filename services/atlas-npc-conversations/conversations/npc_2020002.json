@@ -113,7 +113,7 @@
       "id": "craftWarrior0",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072147,
+        "itemId": "1072147",
         "materials": [4021008, 4011007, 4021005, 4000030, 4003000],
         "quantities": [1, 1, 8, 80, 55],
         "mesoCost": 60000,
@@ -139,7 +139,7 @@
       "id": "craftWarrior1",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072148,
+        "itemId": "1072148",
         "materials": [4021008, 4011007, 4011005, 4000030, 4003000],
         "quantities": [1, 1, 8, 80, 55],
         "mesoCost": 60000,
@@ -165,7 +165,7 @@
       "id": "craftWarrior2",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072149,
+        "itemId": "1072149",
         "materials": [4021008, 4011007, 4021000, 4000030, 4003000],
         "quantities": [1, 1, 8, 80, 55],
         "mesoCost": 60000,
@@ -191,7 +191,7 @@
       "id": "craftWarrior3",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072154,
+        "itemId": "1072154",
         "materials": [4005000, 4005002, 4011002, 4000048, 4003000],
         "quantities": [1, 3, 5, 100, 55],
         "mesoCost": 70000,
@@ -217,7 +217,7 @@
       "id": "craftWarrior4",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072155,
+        "itemId": "1072155",
         "materials": [4005000, 4005002, 4011005, 4000048, 4003000],
         "quantities": [2, 2, 5, 100, 55],
         "mesoCost": 70000,
@@ -243,7 +243,7 @@
       "id": "craftWarrior5",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072156,
+        "itemId": "1072156",
         "materials": [4005000, 4005002, 4021008, 4000048, 4003000],
         "quantities": [3, 1, 1, 100, 55],
         "mesoCost": 70000,
@@ -269,7 +269,7 @@
       "id": "craftWarrior6",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072210,
+        "itemId": "1072210",
         "materials": [4005000, 4005002, 4021000, 4000030, 4003000],
         "quantities": [2, 3, 7, 90, 65],
         "mesoCost": 80000,
@@ -295,7 +295,7 @@
       "id": "craftWarrior7",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072211,
+        "itemId": "1072211",
         "materials": [4005000, 4005002, 4021002, 4000030, 4003000],
         "quantities": [3, 2, 7, 90, 65],
         "mesoCost": 80000,
@@ -321,7 +321,7 @@
       "id": "craftWarrior8",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072212,
+        "itemId": "1072212",
         "materials": [4005000, 4005002, 4021008, 4000030, 4003000],
         "quantities": [4, 1, 2, 90, 65],
         "mesoCost": 80000,
@@ -347,7 +347,7 @@
       "id": "craftBowman0",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072144,
+        "itemId": "1072144",
         "materials": [4011006, 4021000, 4021007, 4000030, 4003000],
         "quantities": [5, 8, 1, 75, 50],
         "mesoCost": 60000,
@@ -373,7 +373,7 @@
       "id": "craftBowman1",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072145,
+        "itemId": "1072145",
         "materials": [4011006, 4021005, 4021007, 4000030, 4003000],
         "quantities": [5, 8, 1, 75, 50],
         "mesoCost": 60000,
@@ -399,7 +399,7 @@
       "id": "craftBowman2",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072146,
+        "itemId": "1072146",
         "materials": [4011006, 4021003, 4021007, 4000030, 4003000],
         "quantities": [5, 8, 1, 75, 50],
         "mesoCost": 60000,
@@ -425,7 +425,7 @@
       "id": "craftBowman3",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072164,
+        "itemId": "1072164",
         "materials": [4005002, 4005000, 4021005, 4000055, 4003000],
         "quantities": [1, 3, 5, 100, 55],
         "mesoCost": 70000,
@@ -451,7 +451,7 @@
       "id": "craftBowman4",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072165,
+        "itemId": "1072165",
         "materials": [4005002, 4005000, 4021004, 4000055, 4003000],
         "quantities": [2, 2, 5, 100, 55],
         "mesoCost": 70000,
@@ -477,7 +477,7 @@
       "id": "craftBowman5",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072166,
+        "itemId": "1072166",
         "materials": [4005002, 4005000, 4021003, 4000055, 4003000],
         "quantities": [2, 2, 5, 100, 55],
         "mesoCost": 70000,
@@ -503,7 +503,7 @@
       "id": "craftBowman6",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072167,
+        "itemId": "1072167",
         "materials": [4005002, 4005000, 4021008, 4000055, 4003000],
         "quantities": [3, 1, 1, 100, 55],
         "mesoCost": 70000,
@@ -529,7 +529,7 @@
       "id": "craftBowman7",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072182,
+        "itemId": "1072182",
         "materials": [4005002, 4005000, 4021002, 4000030, 4003000],
         "quantities": [2, 3, 7, 90, 60],
         "mesoCost": 80000,
@@ -555,7 +555,7 @@
       "id": "craftBowman8",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072183,
+        "itemId": "1072183",
         "materials": [4005002, 4005000, 4021000, 4000030, 4003000],
         "quantities": [3, 2, 7, 90, 60],
         "mesoCost": 80000,
@@ -581,7 +581,7 @@
       "id": "craftBowman9",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072184,
+        "itemId": "1072184",
         "materials": [4005002, 4005000, 4021003, 4000030, 4003000],
         "quantities": [4, 1, 7, 90, 60],
         "mesoCost": 80000,
@@ -607,7 +607,7 @@
       "id": "craftBowman10",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072185,
+        "itemId": "1072185",
         "materials": [4005002, 4021008, 4000030, 4003000],
         "quantities": [5, 2, 90, 60],
         "mesoCost": 80000,
@@ -633,7 +633,7 @@
       "id": "craftMagician0",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072136,
+        "itemId": "1072136",
         "materials": [4021009, 4011006, 4011005, 4000030, 4003000],
         "quantities": [1, 4, 5, 70, 50],
         "mesoCost": 60000,
@@ -659,7 +659,7 @@
       "id": "craftMagician1",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072137,
+        "itemId": "1072137",
         "materials": [4021009, 4011006, 4021003, 4000030, 4003000],
         "quantities": [1, 4, 5, 70, 50],
         "mesoCost": 60000,
@@ -685,7 +685,7 @@
       "id": "craftMagician2",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072138,
+        "itemId": "1072138",
         "materials": [4021009, 4011006, 4011003, 4000030, 4003000],
         "quantities": [1, 4, 5, 70, 50],
         "mesoCost": 60000,
@@ -711,7 +711,7 @@
       "id": "craftMagician3",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072139,
+        "itemId": "1072139",
         "materials": [4021009, 4011006, 4021002, 4000030, 4003000],
         "quantities": [1, 4, 5, 70, 50],
         "mesoCost": 60000,
@@ -737,7 +737,7 @@
       "id": "craftMagician4",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072157,
+        "itemId": "1072157",
         "materials": [4005001, 4005003, 4021002, 4000051, 4003000],
         "quantities": [1, 3, 5, 100, 55],
         "mesoCost": 70000,
@@ -763,7 +763,7 @@
       "id": "craftMagician5",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072158,
+        "itemId": "1072158",
         "materials": [4005001, 4005003, 4021000, 4000051, 4003000],
         "quantities": [2, 2, 5, 100, 55],
         "mesoCost": 70000,
@@ -789,7 +789,7 @@
       "id": "craftMagician6",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072159,
+        "itemId": "1072159",
         "materials": [4005001, 4005003, 4011003, 4000051, 4003000],
         "quantities": [2, 2, 5, 100, 55],
         "mesoCost": 70000,
@@ -815,7 +815,7 @@
       "id": "craftMagician7",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072160,
+        "itemId": "1072160",
         "materials": [4005001, 4005003, 4011006, 4000051, 4003000],
         "quantities": [3, 1, 3, 100, 55],
         "mesoCost": 70000,
@@ -841,7 +841,7 @@
       "id": "craftMagician8",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072177,
+        "itemId": "1072177",
         "materials": [4005001, 4005003, 4021003, 4000030, 4003000],
         "quantities": [2, 3, 7, 85, 60],
         "mesoCost": 80000,
@@ -867,7 +867,7 @@
       "id": "craftMagician9",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072178,
+        "itemId": "1072178",
         "materials": [4005001, 4005003, 4021001, 4000030, 4003000],
         "quantities": [3, 2, 7, 85, 60],
         "mesoCost": 80000,
@@ -893,7 +893,7 @@
       "id": "craftMagician10",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072179,
+        "itemId": "1072179",
         "materials": [4005001, 4005003, 4021008, 4000030, 4003000],
         "quantities": [4, 1, 2, 85, 60],
         "mesoCost": 80000,
@@ -919,7 +919,7 @@
       "id": "craftThief0",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072150,
+        "itemId": "1072150",
         "materials": [4021007, 4011007, 4021000, 4000030, 4003000],
         "quantities": [1, 1, 8, 75, 50],
         "mesoCost": 60000,
@@ -945,7 +945,7 @@
       "id": "craftThief1",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072151,
+        "itemId": "1072151",
         "materials": [4021007, 4011007, 4011006, 4000030, 4003000],
         "quantities": [1, 1, 5, 75, 50],
         "mesoCost": 60000,
@@ -971,7 +971,7 @@
       "id": "craftThief2",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072152,
+        "itemId": "1072152",
         "materials": [4021007, 4011007, 4021008, 4000030, 4003000],
         "quantities": [1, 1, 1, 75, 50],
         "mesoCost": 60000,
@@ -997,7 +997,7 @@
       "id": "craftThief3",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072161,
+        "itemId": "1072161",
         "materials": [4005003, 4005000, 4021001, 4000051, 4003000],
         "quantities": [1, 3, 5, 100, 55],
         "mesoCost": 70000,
@@ -1023,7 +1023,7 @@
       "id": "craftThief4",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072162,
+        "itemId": "1072162",
         "materials": [4005003, 4005002, 4021005, 4000051, 4003000],
         "quantities": [1, 3, 5, 100, 55],
         "mesoCost": 70000,
@@ -1049,7 +1049,7 @@
       "id": "craftThief5",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072163,
+        "itemId": "1072163",
         "materials": [4005002, 4005003, 4021000, 4000051, 4003000],
         "quantities": [1, 3, 5, 100, 55],
         "mesoCost": 70000,
@@ -1075,7 +1075,7 @@
       "id": "craftThief6",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072172,
+        "itemId": "1072172",
         "materials": [4005000, 4005003, 4021003, 4000030, 4003000],
         "quantities": [3, 2, 7, 90, 60],
         "mesoCost": 80000,
@@ -1101,7 +1101,7 @@
       "id": "craftThief7",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072173,
+        "itemId": "1072173",
         "materials": [4005002, 4005003, 4021000, 4000030, 4003000],
         "quantities": [3, 2, 7, 90, 60],
         "mesoCost": 80000,
@@ -1127,7 +1127,7 @@
       "id": "craftThief8",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 1072174,
+        "itemId": "1072174",
         "materials": [4005003, 4005002, 4021008, 4000030, 4003000],
         "quantities": [3, 2, 7, 90, 60],
         "mesoCost": 80000,

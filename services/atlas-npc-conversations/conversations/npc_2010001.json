@@ -70,7 +70,7 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 5420004
+                "referenceId": "5420004"
               }
             ],
             "nextState": "performHaircutMembership"
@@ -81,7 +81,7 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 5150005
+                "referenceId": "5150005"
               }
             ],
             "nextState": "performHaircutCoupon"
@@ -221,7 +221,7 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 5151005
+                "referenceId": "5151005"
               }
             ],
             "nextState": "performHairColor"

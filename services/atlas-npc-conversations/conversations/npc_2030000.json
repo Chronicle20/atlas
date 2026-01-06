@@ -10,7 +10,7 @@
         "outcomes": [
           {
             "conditions": [
-              { "type": "item", "operator": ">=", "value": "1", "referenceId": 4031450 }
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4031450" }
             ],
             "nextState": "warpToHiddenStreet"
           },

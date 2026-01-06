@@ -157,7 +157,19 @@
                           },
                           "value": {
                             "type": "string",
-                            "description": "Value to compare against"
+                            "description": "Value to compare against. Supports context references like {context.cost}"
+                          },
+                          "referenceId": {
+                            "type": "string",
+                            "description": "Reference ID for conditions that require it (e.g., item ID for item conditions, quest ID for quest conditions). Supports context references like {context.itemId}"
+                          },
+                          "step": {
+                            "type": "string",
+                            "description": "Step identifier for quest progress conditions"
+                          },
+                          "includeEquipped": {
+                            "type": "boolean",
+                            "description": "For item conditions: also check equipped items"
                           }
                         }
                       }

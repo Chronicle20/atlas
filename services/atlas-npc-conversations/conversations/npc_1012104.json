@@ -66,6 +66,10 @@
           {
             "text": "No",
             "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
           }
         ]
       }
@@ -204,6 +208,10 @@
           {
             "text": "No",
             "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
           }
         ]
       }
@@ -339,6 +347,10 @@
           },
           {
             "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
             "nextState": null
           }
         ]

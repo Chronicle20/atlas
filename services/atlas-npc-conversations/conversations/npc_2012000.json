@@ -1,0 +1,443 @@
+{
+  "npcId": 2012000,
+  "startState": "selectDestination",
+  "states": [
+    {
+      "id": "selectDestination",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Hello, I'm in charge of selling tickets for the ship ride for every destination. Which ticket would you like to purchase?",
+        "choices": [
+          {
+            "text": "#bEllinia of Victoria Island#k",
+            "nextState": "confirmEllinia",
+            "context": {
+              "ticketId": "4031047",
+              "cost": "5000",
+              "mapName": "Ellinia of Victoria Island",
+              "interval": "15"
+            }
+          },
+          {
+            "text": "#bLudibrium#k",
+            "nextState": "confirmLudibrium",
+            "context": {
+              "ticketId": "4031074",
+              "cost": "6000",
+              "mapName": "Ludibrium",
+              "interval": "10"
+            }
+          },
+          {
+            "text": "#bLeafre#k",
+            "nextState": "confirmLeafre",
+            "context": {
+              "ticketId": "4031331",
+              "cost": "30000",
+              "mapName": "Leafre of Minar Forest",
+              "interval": "10"
+            }
+          },
+          {
+            "text": "#bAriant#k",
+            "nextState": "confirmAriant",
+            "context": {
+              "ticketId": "4031576",
+              "cost": "6000",
+              "mapName": "Nihal Desert",
+              "interval": "10"
+            }
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmEllinia",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "The ride to Ellinia of Victoria Island takes off every 15 minutes, beginning on the hour, and it'll cost you #b5000 mesos#k. Are you sure you want to purchase #b#t4031047##k?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkMesoEllinia"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMesoEllinia",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "5000"
+              },
+              {
+                "type": "item",
+                "operator": "<",
+                "value": "100",
+                "referenceId": 4031047
+              }
+            ],
+            "nextState": "performPurchaseEllinia"
+          },
+          {
+            "conditions": [],
+            "nextState": "insufficientFundsEllinia"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performPurchaseEllinia",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-5000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4031047",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "insufficientFundsEllinia",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Are you sure you have #b5000 mesos#k? If so, then I urge you to check you etc. inventory, and see if it's full or not.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmLudibrium",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "The ride to Ludibrium takes off every 10 minutes, beginning on the hour, and it'll cost you #b6000 mesos#k. Are you sure you want to purchase #b#t4031074##k?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkMesoLudibrium"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMesoLudibrium",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "6000"
+              },
+              {
+                "type": "item",
+                "operator": "<",
+                "value": "100",
+                "referenceId": 4031074
+              }
+            ],
+            "nextState": "performPurchaseLudibrium"
+          },
+          {
+            "conditions": [],
+            "nextState": "insufficientFundsLudibrium"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performPurchaseLudibrium",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-6000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4031074",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "insufficientFundsLudibrium",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Are you sure you have #b6000 mesos#k? If so, then I urge you to check you etc. inventory, and see if it's full or not.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmLeafre",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "The ride to Leafre of Minar Forest takes off every 10 minutes, beginning on the hour, and it'll cost you #b30000 mesos#k. Are you sure you want to purchase #b#t4031331##k?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkMesoLeafre"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMesoLeafre",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "30000"
+              },
+              {
+                "type": "item",
+                "operator": "<",
+                "value": "100",
+                "referenceId": 4031331
+              }
+            ],
+            "nextState": "performPurchaseLeafre"
+          },
+          {
+            "conditions": [],
+            "nextState": "insufficientFundsLeafre"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performPurchaseLeafre",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-30000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4031331",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "insufficientFundsLeafre",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Are you sure you have #b30000 mesos#k? If so, then I urge you to check you etc. inventory, and see if it's full or not.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmAriant",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "The ride to Nihal Desert takes off every 10 minutes, beginning on the hour, and it'll cost you #b6000 mesos#k. Are you sure you want to purchase #b#t4031576##k?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkMesoAriant"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMesoAriant",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "6000"
+              },
+              {
+                "type": "item",
+                "operator": "<",
+                "value": "100",
+                "referenceId": 4031576
+              }
+            ],
+            "nextState": "performPurchaseAriant"
+          },
+          {
+            "conditions": [],
+            "nextState": "insufficientFundsAriant"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performPurchaseAriant",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-6000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4031576",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "insufficientFundsAriant",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Are you sure you have #b6000 mesos#k? If so, then I urge you to check you etc. inventory, and see if it's full or not.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

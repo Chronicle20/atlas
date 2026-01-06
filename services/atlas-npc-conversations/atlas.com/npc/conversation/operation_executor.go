@@ -813,7 +813,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 	case "warp_to_map":
 		// Format: warp_to_map
-		// Context: mapId (uint32), portalId (uint32)
+		// Context: mapId (uint32), portalId (uint32) OR portalName (string)
 		var mapIdInt int = 0
 		mapIdValue, exists := operation.Params()["mapId"]
 		if exists {
@@ -834,10 +834,21 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 			}
 		}
 
+		var portalName string
+		portalNameValue, exists := operation.Params()["portalName"]
+		if exists {
+			var err error
+			portalName, err = e.evaluateContextValue(characterId, "portalName", portalNameValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
+		}
+
 		payload := saga.WarpToPortalPayload{
 			CharacterId: characterId,
 			FieldId:     field.NewBuilder(f.WorldId(), f.ChannelId(), _map.Id(mapIdInt)).Build().Id(),
 			PortalId:    uint32(portalIdInt),
+			PortalName:  portalName,
 		}
 
 		return stepId, saga.Pending, saga.WarpToPortal, payload, nil

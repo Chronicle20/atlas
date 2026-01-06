@@ -1,0 +1,253 @@
+{
+  "npcId": 2040014,
+  "startState": "selectItem",
+  "states": [
+    {
+      "id": "selectItem",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Hey there! My name is #p2040014#, and I am a specialist in mini-games. What kind of mini-game you want me to make? #b",
+        "choices": [
+          { "text": "#i4080100# #t4080100#", "nextState": "confirmOmokTable" },
+          { "text": "#i4080006# #t4080006#", "nextState": "confirmMatchCard1" },
+          { "text": "#i4080007# #t4080007#", "nextState": "confirmMatchCard2" },
+          { "text": "#i4080008# #t4080008#", "nextState": "confirmMatchCard3" },
+          { "text": "#i4080009# #t4080009#", "nextState": "confirmMatchCard4" },
+          { "text": "#i4080010# #t4080010#", "nextState": "confirmMatchCard5" },
+          { "text": "#i4080011# #t4080011#", "nextState": "confirmMatchCard6" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "confirmOmokTable",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "So we are going for a #t4080100#, right? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4030012# 99 #t4030012#\r\n#i4031138# 10000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftOmokTable" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftOmokTable",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": 4080100,
+        "materials": [4030012],
+        "quantities": [99],
+        "mesoCost": 10000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmMatchCard1",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "So we are going for a #t4080006#, right? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4030009# 1 #t4030009#\r\n#i4030013# 99 #t4030013#\r\n#i4030014# 99 #t4030014#\r\n#i4031138# 25000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftMatchCard1" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftMatchCard1",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": 4080006,
+        "materials": [4030009, 4030013, 4030014],
+        "quantities": [1, 99, 99],
+        "mesoCost": 25000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmMatchCard2",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "So we are going for a #t4080007#, right? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4030009# 1 #t4030009#\r\n#i4030013# 99 #t4030013#\r\n#i4030016# 99 #t4030016#\r\n#i4031138# 25000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftMatchCard2" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftMatchCard2",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": 4080007,
+        "materials": [4030009, 4030013, 4030016],
+        "quantities": [1, 99, 99],
+        "mesoCost": 25000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmMatchCard3",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "So we are going for a #t4080008#, right? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4030009# 1 #t4030009#\r\n#i4030014# 99 #t4030014#\r\n#i4030016# 99 #t4030016#\r\n#i4031138# 25000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftMatchCard3" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftMatchCard3",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": 4080008,
+        "materials": [4030009, 4030014, 4030016],
+        "quantities": [1, 99, 99],
+        "mesoCost": 25000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmMatchCard4",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "So we are going for a #t4080009#, right? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4030009# 1 #t4030009#\r\n#i4030015# 99 #t4030015#\r\n#i4030013# 99 #t4030013#\r\n#i4031138# 25000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftMatchCard4" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftMatchCard4",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": 4080009,
+        "materials": [4030009, 4030015, 4030013],
+        "quantities": [1, 99, 99],
+        "mesoCost": 25000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmMatchCard5",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "So we are going for a #t4080010#, right? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4030009# 1 #t4030009#\r\n#i4030015# 99 #t4030015#\r\n#i4030014# 99 #t4030014#\r\n#i4031138# 25000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftMatchCard5" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftMatchCard5",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": 4080010,
+        "materials": [4030009, 4030015, 4030014],
+        "quantities": [1, 99, 99],
+        "mesoCost": 25000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmMatchCard6",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "So we are going for a #t4080011#, right? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4030009# 1 #t4030009#\r\n#i4030015# 99 #t4030015#\r\n#i4030016# 99 #t4030016#\r\n#i4031138# 25000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftMatchCard6" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftMatchCard6",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": 4080011,
+        "materials": [4030009, 4030015, 4030016],
+        "quantities": [1, 99, 99],
+        "mesoCost": 25000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craftSuccess",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "There is your game set. Have fun!",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "missingMeso",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "See, I need to specify my wages to support my career, that cannot be bypassed. I will gladly help you once you've got the money.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "missingMaterials",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "You are lacking some items for the set you want to make. Please provide them so that we can assemble the game set.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "noInventorySpace",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "I can't make a set for you if there's no room in your ETC inventory for it. Please free a space first and then talk to me.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    }
+  ]
+}

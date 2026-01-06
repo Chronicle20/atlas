@@ -1,0 +1,19 @@
+{
+  "npcId": 1300014,
+  "startState": "noOp",
+  "states": [
+    {
+      "id": "noOp",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

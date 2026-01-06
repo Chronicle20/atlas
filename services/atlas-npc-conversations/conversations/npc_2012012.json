@@ -1,0 +1,19 @@
+{
+  "npcId": 2012012,
+  "name": "Lisa",
+  "startState": "intro",
+  "states": [
+    {
+      "id": "intro",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Can you help me find the Ancient Book? I lost it somewhere in El Nath...",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    }
+  ]
+}

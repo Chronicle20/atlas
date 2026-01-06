@@ -11,6 +11,7 @@ import (
 	compartment2 "atlas-cashshop/kafka/consumer/cashshop/compartment"
 	"atlas-cashshop/kafka/consumer/character"
 	itemConsumer "atlas-cashshop/kafka/consumer/item"
+	walletConsumer "atlas-cashshop/kafka/consumer/wallet"
 	"atlas-cashshop/logger"
 	"atlas-cashshop/service"
 	"atlas-cashshop/tracing"
@@ -63,11 +64,13 @@ func main() {
 	compartment2.InitConsumers(l)(cmf)(consumerGroupId)
 	cashshop.InitConsumers(l)(cmf)(consumerGroupId)
 	itemConsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	walletConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	account.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 	character.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 	compartment2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 	cashshop.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 	itemConsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	walletConsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 
 	server.New(l).
 		WithContext(tdm.Context()).

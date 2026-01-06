@@ -56,7 +56,7 @@
         "outcomes": [
           {
             "conditions": [
-              { "type": "item", "operator": ">=", "value": "1", "referenceId": 5152006 }
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "5152006" }
             ],
             "nextState": "executeFaceChange"
           },

@@ -94,7 +94,7 @@
                 "type": "item",
                 "operator": "<",
                 "value": "100",
-                "referenceId": 4031047
+                "referenceId": "4031047"
               }
             ],
             "nextState": "performPurchaseEllinia"
@@ -190,7 +190,7 @@
                 "type": "item",
                 "operator": "<",
                 "value": "100",
-                "referenceId": 4031074
+                "referenceId": "4031074"
               }
             ],
             "nextState": "performPurchaseLudibrium"
@@ -286,7 +286,7 @@
                 "type": "item",
                 "operator": "<",
                 "value": "100",
-                "referenceId": 4031331
+                "referenceId": "4031331"
               }
             ],
             "nextState": "performPurchaseLeafre"
@@ -382,7 +382,7 @@
                 "type": "item",
                 "operator": "<",
                 "value": "100",
-                "referenceId": 4031576
+                "referenceId": "4031576"
               }
             ],
             "nextState": "performPurchaseAriant"

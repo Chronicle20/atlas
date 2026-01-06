@@ -1,0 +1,111 @@
+{
+  "npcId": 2041001,
+  "startState": "askLeave",
+  "states": [
+    {
+      "id": "askLeave",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Do you wish to leave the train?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "goodbye"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "goodbye",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Alright, see you next time. Take care.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "checkMapAndWarp"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMapAndWarp",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "mapId",
+                "operator": "=",
+                "value": "200000122"
+              }
+            ],
+            "nextState": "warpToOrbisStation"
+          },
+          {
+            "conditions": [],
+            "nextState": "warpToLudiStation"
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToOrbisStation",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "200000121",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToLudiStation",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "220000110",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

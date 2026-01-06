@@ -36,7 +36,7 @@
       "id": "craftOmokTable",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 4080100,
+        "itemId": "4080100",
         "materials": [4030012],
         "quantities": [99],
         "mesoCost": 10000,
@@ -62,7 +62,7 @@
       "id": "craftMatchCard1",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 4080006,
+        "itemId": "4080006",
         "materials": [4030009, 4030013, 4030014],
         "quantities": [1, 99, 99],
         "mesoCost": 25000,
@@ -88,7 +88,7 @@
       "id": "craftMatchCard2",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 4080007,
+        "itemId": "4080007",
         "materials": [4030009, 4030013, 4030016],
         "quantities": [1, 99, 99],
         "mesoCost": 25000,
@@ -114,7 +114,7 @@
       "id": "craftMatchCard3",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 4080008,
+        "itemId": "4080008",
         "materials": [4030009, 4030014, 4030016],
         "quantities": [1, 99, 99],
         "mesoCost": 25000,
@@ -140,7 +140,7 @@
       "id": "craftMatchCard4",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 4080009,
+        "itemId": "4080009",
         "materials": [4030009, 4030015, 4030013],
         "quantities": [1, 99, 99],
         "mesoCost": 25000,
@@ -166,7 +166,7 @@
       "id": "craftMatchCard5",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 4080010,
+        "itemId": "4080010",
         "materials": [4030009, 4030015, 4030014],
         "quantities": [1, 99, 99],
         "mesoCost": 25000,
@@ -192,7 +192,7 @@
       "id": "craftMatchCard6",
       "type": "craftAction",
       "craftAction": {
-        "itemId": 4080011,
+        "itemId": "4080011",
         "materials": [4030009, 4030015, 4030016],
         "quantities": [1, 99, 99],
         "mesoCost": 25000,

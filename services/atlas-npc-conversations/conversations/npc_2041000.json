@@ -1,5 +1,5 @@
 {
-  "npcId": 2012021,
+  "npcId": 2041000,
   "startState": "checkTicket",
   "states": [
     {
@@ -14,24 +14,24 @@
                 "type": "item",
                 "operator": "<",
                 "value": "1",
-                "referenceId": "4031331"
+                "referenceId": "4031045"
               }
             ],
-            "nextState": "noTicketMessage"
+            "nextState": "noTicket"
           },
           {
             "conditions": [],
-            "nextState": "checkTransportAvailable"
+            "nextState": "checkTrainEntry"
           }
         ]
       }
     },
     {
-      "id": "noTicketMessage",
+      "id": "noTicket",
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendOk",
-        "text": "Make sure you got a Leafre ticket to travel in this flight. Check your inventory.",
+        "text": "Make sure you got a Orbis ticket to travel in this train. Check your inventory.",
         "choices": [
           { "text": "Ok", "nextState": null },
           { "text": "Exit", "nextState": null }
@@ -39,7 +39,7 @@
       }
     },
     {
-      "id": "checkTransportAvailable",
+      "id": "checkTrainEntry",
       "type": "genericAction",
       "genericAction": {
         "operations": [],
@@ -50,24 +50,24 @@
                 "type": "transportAvailable",
                 "operator": "=",
                 "value": "0",
-                "referenceId": "200000132"
+                "referenceId": "220000111"
               }
             ],
-            "nextState": "transportUnavailable"
+            "nextState": "trainTravelling"
           },
           {
             "conditions": [],
-            "nextState": "askToBoard"
+            "nextState": "askBoard"
           }
         ]
       }
     },
     {
-      "id": "transportUnavailable",
+      "id": "trainTravelling",
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendOk",
-        "text": "The flight has not arrived yet. Come back soon.",
+        "text": "The train to Orbis is already travelling, please be patient for the next one.",
         "choices": [
           { "text": "Ok", "nextState": null },
           { "text": "Exit", "nextState": null }
@@ -75,20 +75,20 @@
       }
     },
     {
-      "id": "askToBoard",
+      "id": "askBoard",
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendYesNo",
-        "text": "Do you wish to board the flight?",
+        "text": "Do you want to go to Orbis?",
         "choices": [
-          { "text": "Yes", "nextState": "confirmBoard" },
-          { "text": "No", "nextState": "declinedBoarding" },
+          { "text": "Yes", "nextState": "checkTrainEntryAgain" },
+          { "text": "No", "nextState": "declined" },
           { "text": "Exit", "nextState": null }
         ]
       }
     },
     {
-      "id": "declinedBoarding",
+      "id": "declined",
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendOk",
@@ -100,7 +100,7 @@
       }
     },
     {
-      "id": "confirmBoard",
+      "id": "checkTrainEntryAgain",
       "type": "genericAction",
       "genericAction": {
         "operations": [],
@@ -110,36 +110,48 @@
               {
                 "type": "transportAvailable",
                 "operator": "=",
-                "value": "1",
-                "referenceId": "200000132"
+                "value": "0",
+                "referenceId": "220000111"
               }
             ],
-            "nextState": "performBoard"
+            "nextState": "trainReadyToDepart"
           },
           {
             "conditions": [],
-            "nextState": "transportUnavailable"
+            "nextState": "boardTrain"
           }
         ]
       }
     },
     {
-      "id": "performBoard",
+      "id": "trainReadyToDepart",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "The train to Orbis is ready to take off, please be patient for the next one.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "boardTrain",
       "type": "genericAction",
       "genericAction": {
         "operations": [
           {
-            "type": "warp_to_map",
+            "type": "destroy_item",
             "params": {
-              "mapId": "200000132",
-              "portalId": "0"
+              "itemId": "4031045",
+              "quantity": "1"
             }
           },
           {
-            "type": "destroy_item",
+            "type": "warp_to_map",
             "params": {
-              "itemId": "4031331",
-              "quantity": "1"
+              "mapId": "220000111",
+              "portalId": "0"
             }
           }
         ],

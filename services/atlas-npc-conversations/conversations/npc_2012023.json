@@ -1,0 +1,96 @@
+{
+  "npcId": 2012023,
+  "startState": "checkItem",
+  "states": [
+    {
+      "id": "checkItem",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": 4031476
+              },
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": 4031456
+              }
+            ],
+            "nextState": "performExchange"
+          },
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": 4031476
+              }
+            ],
+            "nextState": "removeItemOnly"
+          },
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "performExchange",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4031476",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4031456",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "removeItemOnly",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4031476",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -450,7 +450,7 @@ func (e *OperationExecutorImpl) executeLocalOperation(field field.Model, charact
 		selectedStyle := styles[rand.Intn(len(styles))]
 
 		// Store the selected style in the output context key
-		err = e.setContextValue(characterId, outputContextKey, fmt.Sprintf("%d", selectedStyle))
+		err = e.setContextValue(characterId, outputContextKey, fmt.Sprintf("%s", selectedStyle))
 		if err != nil {
 			return fmt.Errorf("failed to store selected style in context: %w", err)
 		}

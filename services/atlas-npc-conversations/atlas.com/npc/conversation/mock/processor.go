@@ -38,6 +38,12 @@ type ProcessorMock struct {
 
 	// AllProviderFunc is a function field for the AllProvider method
 	AllProviderFunc func() model.Provider[[]conversation.Model]
+
+	// DeleteAllForTenantFunc is a function field for the DeleteAllForTenant method
+	DeleteAllForTenantFunc func() (int64, error)
+
+	// SeedFunc is a function field for the Seed method
+	SeedFunc func() (conversation.SeedResult, error)
 }
 
 // Start is a mock implementation of the conversation.Processor.Start method
@@ -136,4 +142,22 @@ func (m *ProcessorMock) Delete(id uuid.UUID) error {
 	}
 	// Default implementation returns nil (success)
 	return nil
+}
+
+// DeleteAllForTenant is a mock implementation of the conversation.Processor.DeleteAllForTenant method
+func (m *ProcessorMock) DeleteAllForTenant() (int64, error) {
+	if m.DeleteAllForTenantFunc != nil {
+		return m.DeleteAllForTenantFunc()
+	}
+	// Default implementation returns 0 deleted
+	return 0, nil
+}
+
+// Seed is a mock implementation of the conversation.Processor.Seed method
+func (m *ProcessorMock) Seed() (conversation.SeedResult, error) {
+	if m.SeedFunc != nil {
+		return m.SeedFunc()
+	}
+	// Default implementation returns empty result
+	return conversation.SeedResult{}, nil
 }

@@ -14,7 +14,7 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "30",
-                "referenceId": 4031013
+                "referenceId": "4031013"
               }
             ],
             "nextState": "hasItems"

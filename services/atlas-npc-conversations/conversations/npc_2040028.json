@@ -1,0 +1,128 @@
+{
+  "npcId": 2040028,
+  "startState": "checkQuestAndItem",
+  "states": [
+    {
+      "id": "checkQuestAndItem",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "=",
+                "value": "1",
+                "referenceId": "3230"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4031094"
+              }
+            ],
+            "nextState": "completeQuestAndAsk"
+          },
+          {
+            "conditions": [],
+            "nextState": "askWithoutCompletion"
+          }
+        ]
+      }
+    },
+    {
+      "id": "completeQuestAndAsk",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "complete_quest",
+            "params": {
+              "questId": "3230"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4031094",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "askReturnWithPendulum"
+          }
+        ]
+      }
+    },
+    {
+      "id": "askReturnWithPendulum",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Thank you for finding the pendulum. Are you ready to return to Eos Tower?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "warpToEosTower"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "askWithoutCompletion",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You haven't found the pendulum yet. Do you want to go back to Eos Tower?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "warpToEosTower"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToEosTower",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "221024400",
+              "portalId": "4"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

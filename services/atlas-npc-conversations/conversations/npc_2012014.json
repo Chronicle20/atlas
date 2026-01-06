@@ -14,7 +14,7 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 4001019
+                "referenceId": "4001019"
               }
             ],
             "nextState": "askTeleport"

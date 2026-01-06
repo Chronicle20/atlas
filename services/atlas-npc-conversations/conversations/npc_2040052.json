@@ -1,0 +1,839 @@
+{
+  "npcId": 2040052,
+  "startState": "checkAllBooks",
+  "states": [
+    {
+      "id": "checkAllBooks",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3615" },
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3616" },
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3617" },
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3618" },
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3630" },
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3633" },
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3639" },
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3920" }
+            ],
+            "nextState": "showBooks_8"
+          },
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3615" }
+            ],
+            "nextState": "check_after_3615"
+          },
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3616" }
+            ],
+            "nextState": "check_after_3616"
+          },
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3617" }
+            ],
+            "nextState": "check_after_3617"
+          },
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3618" }
+            ],
+            "nextState": "check_after_3618"
+          },
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3630" }
+            ],
+            "nextState": "check_after_3630"
+          },
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3633" }
+            ],
+            "nextState": "check_after_3633"
+          },
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3639" }
+            ],
+            "nextState": "check_after_3639"
+          },
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3920" }
+            ],
+            "nextState": "showBooks_1_3920"
+          },
+          {
+            "conditions": [],
+            "nextState": "noBooksReturned"
+          }
+        ]
+      }
+    },
+    {
+      "id": "check_after_3615",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3616" }
+            ],
+            "nextState": "check_3615_3616"
+          },
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3617" }
+            ],
+            "nextState": "showBooks_2_3615_3617"
+          },
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3618" }
+            ],
+            "nextState": "showBooks_2_3615_3618"
+          },
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3630" }
+            ],
+            "nextState": "showBooks_2_3615_3630"
+          },
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3633" }
+            ],
+            "nextState": "showBooks_2_3615_3633"
+          },
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3639" }
+            ],
+            "nextState": "showBooks_2_3615_3639"
+          },
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3920" }
+            ],
+            "nextState": "showBooks_2_3615_3920"
+          },
+          {
+            "conditions": [],
+            "nextState": "showBooks_1_3615"
+          }
+        ]
+      }
+    },
+    {
+      "id": "check_3615_3616",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3617" }
+            ],
+            "nextState": "showBooks_3plus_3615_3616_3617"
+          },
+          {
+            "conditions": [],
+            "nextState": "showBooks_2_3615_3616"
+          }
+        ]
+      }
+    },
+    {
+      "id": "check_after_3616",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3617" }
+            ],
+            "nextState": "showBooks_2_3616_3617"
+          },
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3618" }
+            ],
+            "nextState": "showBooks_2_3616_3618"
+          },
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3630" }
+            ],
+            "nextState": "showBooks_2_3616_3630"
+          },
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3633" }
+            ],
+            "nextState": "showBooks_2_3616_3633"
+          },
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3639" }
+            ],
+            "nextState": "showBooks_2_3616_3639"
+          },
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3920" }
+            ],
+            "nextState": "showBooks_2_3616_3920"
+          },
+          {
+            "conditions": [],
+            "nextState": "showBooks_1_3616"
+          }
+        ]
+      }
+    },
+    {
+      "id": "check_after_3617",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3618" }
+            ],
+            "nextState": "showBooks_2_3617_3618"
+          },
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3630" }
+            ],
+            "nextState": "showBooks_2_3617_3630"
+          },
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3633" }
+            ],
+            "nextState": "showBooks_2_3617_3633"
+          },
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3639" }
+            ],
+            "nextState": "showBooks_2_3617_3639"
+          },
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3920" }
+            ],
+            "nextState": "showBooks_2_3617_3920"
+          },
+          {
+            "conditions": [],
+            "nextState": "showBooks_1_3617"
+          }
+        ]
+      }
+    },
+    {
+      "id": "check_after_3618",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3630" }
+            ],
+            "nextState": "showBooks_2_3618_3630"
+          },
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3633" }
+            ],
+            "nextState": "showBooks_2_3618_3633"
+          },
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3639" }
+            ],
+            "nextState": "showBooks_2_3618_3639"
+          },
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3920" }
+            ],
+            "nextState": "showBooks_2_3618_3920"
+          },
+          {
+            "conditions": [],
+            "nextState": "showBooks_1_3618"
+          }
+        ]
+      }
+    },
+    {
+      "id": "check_after_3630",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3633" }
+            ],
+            "nextState": "showBooks_2_3630_3633"
+          },
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3639" }
+            ],
+            "nextState": "showBooks_2_3630_3639"
+          },
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3920" }
+            ],
+            "nextState": "showBooks_2_3630_3920"
+          },
+          {
+            "conditions": [],
+            "nextState": "showBooks_1_3630"
+          }
+        ]
+      }
+    },
+    {
+      "id": "check_after_3633",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3639" }
+            ],
+            "nextState": "showBooks_2_3633_3639"
+          },
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3920" }
+            ],
+            "nextState": "showBooks_2_3633_3920"
+          },
+          {
+            "conditions": [],
+            "nextState": "showBooks_1_3633"
+          }
+        ]
+      }
+    },
+    {
+      "id": "check_after_3639",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "=", "value": "3", "referenceId": "3920" }
+            ],
+            "nextState": "showBooks_2_3639_3920"
+          },
+          {
+            "conditions": [],
+            "nextState": "showBooks_1_3639"
+          }
+        ]
+      }
+    },
+    {
+      "id": "noBooksReturned",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "#b#h ##k has not returned a single storybook yet.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_8",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b8#k books. The list of returned books is as follows:\r\n#v4031235# #b#t4031235##k\r\n#v4031236# #b#t4031236##k\r\n#v4031237# #b#t4031237##k\r\n#v4031238# #b#t4031238##k\r\n#v4031270# #b#t4031270##k\r\n#v4031280# #b#t4031280##k\r\n#v4031298# #b#t4031298##k\r\n#v4031591# #b#t4031591##k",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_1_3615",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b1#k books. The list of returned books is as follows:\r\n#v4031235# #b#t4031235##k",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_1_3616",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b1#k books. The list of returned books is as follows:\r\n#v4031236# #b#t4031236##k",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_1_3617",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b1#k books. The list of returned books is as follows:\r\n#v4031237# #b#t4031237##k",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_1_3618",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b1#k books. The list of returned books is as follows:\r\n#v4031238# #b#t4031238##k",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_1_3630",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b1#k books. The list of returned books is as follows:\r\n#v4031270# #b#t4031270##k",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_1_3633",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b1#k books. The list of returned books is as follows:\r\n#v4031280# #b#t4031280##k",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_1_3639",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b1#k books. The list of returned books is as follows:\r\n#v4031298# #b#t4031298##k",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_1_3920",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b1#k books. The list of returned books is as follows:\r\n#v4031591# #b#t4031591##k",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_2_3615_3616",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b2#k books. The list of returned books is as follows:\r\n#v4031235# #b#t4031235##k\r\n#v4031236# #b#t4031236##k",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_2_3615_3617",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b2#k books. The list of returned books is as follows:\r\n#v4031235# #b#t4031235##k\r\n#v4031237# #b#t4031237##k",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_2_3615_3618",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b2#k books. The list of returned books is as follows:\r\n#v4031235# #b#t4031235##k\r\n#v4031238# #b#t4031238##k",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_2_3615_3630",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b2#k books. The list of returned books is as follows:\r\n#v4031235# #b#t4031235##k\r\n#v4031270# #b#t4031270##k",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_2_3615_3633",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b2#k books. The list of returned books is as follows:\r\n#v4031235# #b#t4031235##k\r\n#v4031280# #b#t4031280##k",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_2_3615_3639",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b2#k books. The list of returned books is as follows:\r\n#v4031235# #b#t4031235##k\r\n#v4031298# #b#t4031298##k",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_2_3615_3920",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b2#k books. The list of returned books is as follows:\r\n#v4031235# #b#t4031235##k\r\n#v4031591# #b#t4031591##k",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_2_3616_3617",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b2#k books. The list of returned books is as follows:\r\n#v4031236# #b#t4031236##k\r\n#v4031237# #b#t4031237##k",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_2_3616_3618",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b2#k books. The list of returned books is as follows:\r\n#v4031236# #b#t4031236##k\r\n#v4031238# #b#t4031238##k",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_2_3616_3630",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b2#k books. The list of returned books is as follows:\r\n#v4031236# #b#t4031236##k\r\n#v4031270# #b#t4031270##k",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_2_3616_3633",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b2#k books. The list of returned books is as follows:\r\n#v4031236# #b#t4031236##k\r\n#v4031280# #b#t4031280##k",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_2_3616_3639",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b2#k books. The list of returned books is as follows:\r\n#v4031236# #b#t4031236##k\r\n#v4031298# #b#t4031298##k",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_2_3616_3920",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b2#k books. The list of returned books is as follows:\r\n#v4031236# #b#t4031236##k\r\n#v4031591# #b#t4031591##k",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_2_3617_3618",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b2#k books. The list of returned books is as follows:\r\n#v4031237# #b#t4031237##k\r\n#v4031238# #b#t4031238##k",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_2_3617_3630",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b2#k books. The list of returned books is as follows:\r\n#v4031237# #b#t4031237##k\r\n#v4031270# #b#t4031270##k",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_2_3617_3633",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b2#k books. The list of returned books is as follows:\r\n#v4031237# #b#t4031237##k\r\n#v4031280# #b#t4031280##k",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_2_3617_3639",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b2#k books. The list of returned books is as follows:\r\n#v4031237# #b#t4031237##k\r\n#v4031298# #b#t4031298##k",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_2_3617_3920",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b2#k books. The list of returned books is as follows:\r\n#v4031237# #b#t4031237##k\r\n#v4031591# #b#t4031591##k",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_2_3618_3630",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b2#k books. The list of returned books is as follows:\r\n#v4031238# #b#t4031238##k\r\n#v4031270# #b#t4031270##k",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_2_3618_3633",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b2#k books. The list of returned books is as follows:\r\n#v4031238# #b#t4031238##k\r\n#v4031280# #b#t4031280##k",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_2_3618_3639",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b2#k books. The list of returned books is as follows:\r\n#v4031238# #b#t4031238##k\r\n#v4031298# #b#t4031298##k",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_2_3618_3920",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b2#k books. The list of returned books is as follows:\r\n#v4031238# #b#t4031238##k\r\n#v4031591# #b#t4031591##k",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_2_3630_3633",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b2#k books. The list of returned books is as follows:\r\n#v4031270# #b#t4031270##k\r\n#v4031280# #b#t4031280##k",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_2_3630_3639",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b2#k books. The list of returned books is as follows:\r\n#v4031270# #b#t4031270##k\r\n#v4031298# #b#t4031298##k",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_2_3630_3920",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b2#k books. The list of returned books is as follows:\r\n#v4031270# #b#t4031270##k\r\n#v4031591# #b#t4031591##k",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_2_3633_3639",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b2#k books. The list of returned books is as follows:\r\n#v4031280# #b#t4031280##k\r\n#v4031298# #b#t4031298##k",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_2_3633_3920",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b2#k books. The list of returned books is as follows:\r\n#v4031280# #b#t4031280##k\r\n#v4031591# #b#t4031591##k",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_2_3639_3920",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b2#k books. The list of returned books is as follows:\r\n#v4031298# #b#t4031298##k\r\n#v4031591# #b#t4031591##k",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showBooks_3plus_3615_3616_3617",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let's see.. #b#h ##k have returned a total of #b3#k books or more. The list of returned books is as follows:\r\n#v4031235# #b#t4031235##k\r\n#v4031236# #b#t4031236##k\r\n#v4031237# #b#t4031237##k\r\n(And possibly more...)",
+        "choices": [
+          { "text": "Next", "nextState": "thanksMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "thanksMessage",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "The library is settling down now thanks chiefly to you, #b#h ##k's immense help. If the story gets mixed up once again, then I'll be counting on you to fix it once more.",
+        "choices": [
+          { "text": "Previous", "nextState": "checkAllBooks" },
+          { "text": "Next", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,592 @@
+{
+  "npcId": 2081200,
+  "startState": "checkRequirements",
+  "states": [
+    {
+      "id": "checkRequirements",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "level",
+                "operator": "<",
+                "value": "120"
+              }
+            ],
+            "nextState": "notReady"
+          },
+          {
+            "conditions": [
+              {
+                "type": "jobId",
+                "operator": "<",
+                "value": "200"
+              }
+            ],
+            "nextState": "notReady"
+          },
+          {
+            "conditions": [
+              {
+                "type": "jobId",
+                "operator": ">=",
+                "value": "300"
+              }
+            ],
+            "nextState": "notReady"
+          },
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "<",
+                "value": "3",
+                "referenceId": "6914"
+              }
+            ],
+            "nextState": "questNotCompleted"
+          },
+          {
+            "conditions": [
+              {
+                "type": "jobId",
+                "operator": "=",
+                "value": "211"
+              }
+            ],
+            "nextState": "askAdvance"
+          },
+          {
+            "conditions": [
+              {
+                "type": "jobId",
+                "operator": "=",
+                "value": "221"
+              }
+            ],
+            "nextState": "askAdvance"
+          },
+          {
+            "conditions": [
+              {
+                "type": "jobId",
+                "operator": "=",
+                "value": "231"
+              }
+            ],
+            "nextState": "askAdvance"
+          },
+          {
+            "conditions": [
+              {
+                "type": "jobId",
+                "operator": "=",
+                "value": "212"
+              }
+            ],
+            "nextState": "teachSkillsMenu"
+          },
+          {
+            "conditions": [
+              {
+                "type": "jobId",
+                "operator": "=",
+                "value": "222"
+              }
+            ],
+            "nextState": "teachSkillsMenu"
+          },
+          {
+            "conditions": [
+              {
+                "type": "jobId",
+                "operator": "=",
+                "value": "232"
+              }
+            ],
+            "nextState": "teachSkillsMenu"
+          },
+          {
+            "conditions": [],
+            "nextState": "notReady"
+          }
+        ]
+      }
+    },
+    {
+      "id": "notReady",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Please don't bother me right now, I am trying to concentrate.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "questNotCompleted",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "You have not yet passed my trials. I can not advance you until you do so.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "askAdvance",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You did a marvellous job passing my test. Are you ready to advance to your 4th job?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkInventorySpace"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkInventorySpace",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "2280003"
+              }
+            ],
+            "nextState": "performAdvanceFirePoison"
+          },
+          {
+            "conditions": [],
+            "nextState": "noInventorySpace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "noInventorySpace",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Please have one slot available on #bUSE#k inventory to receive a skill book.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "performAdvanceFirePoison",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "jobId",
+                "operator": "=",
+                "value": "211"
+              }
+            ],
+            "nextState": "advanceFirePoison"
+          },
+          {
+            "conditions": [
+              {
+                "type": "jobId",
+                "operator": "=",
+                "value": "221"
+              }
+            ],
+            "nextState": "advanceIceLightning"
+          },
+          {
+            "conditions": [
+              {
+                "type": "jobId",
+                "operator": "=",
+                "value": "231"
+              }
+            ],
+            "nextState": "advanceBishop"
+          },
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "advanceFirePoison",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "change_job",
+            "params": {
+              "jobId": "212"
+            }
+          },
+          {
+            "type": "create_skill",
+            "params": {
+              "skillId": "2121001",
+              "level": "0",
+              "masterLevel": "10"
+            }
+          },
+          {
+            "type": "create_skill",
+            "params": {
+              "skillId": "2121002",
+              "level": "0",
+              "masterLevel": "10"
+            }
+          },
+          {
+            "type": "create_skill",
+            "params": {
+              "skillId": "2121006",
+              "level": "0",
+              "masterLevel": "10"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "2280003",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "advanceIceLightning",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "change_job",
+            "params": {
+              "jobId": "222"
+            }
+          },
+          {
+            "type": "create_skill",
+            "params": {
+              "skillId": "2221001",
+              "level": "0",
+              "masterLevel": "10"
+            }
+          },
+          {
+            "type": "create_skill",
+            "params": {
+              "skillId": "2221002",
+              "level": "0",
+              "masterLevel": "10"
+            }
+          },
+          {
+            "type": "create_skill",
+            "params": {
+              "skillId": "2221006",
+              "level": "0",
+              "masterLevel": "10"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "2280003",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "advanceBishop",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "change_job",
+            "params": {
+              "jobId": "232"
+            }
+          },
+          {
+            "type": "create_skill",
+            "params": {
+              "skillId": "2321001",
+              "level": "0",
+              "masterLevel": "10"
+            }
+          },
+          {
+            "type": "create_skill",
+            "params": {
+              "skillId": "2321002",
+              "level": "0",
+              "masterLevel": "10"
+            }
+          },
+          {
+            "type": "create_skill",
+            "params": {
+              "skillId": "2321005",
+              "level": "0",
+              "masterLevel": "10"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "2280003",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "teachSkillsMenu",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "If I must, I can teach you the art of your class.",
+        "choices": [
+          {
+            "text": "Teach me the skills of my class.",
+            "nextState": "teachRemainingSkills"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "teachRemainingSkills",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "jobId",
+                "operator": "=",
+                "value": "212"
+              }
+            ],
+            "nextState": "teachFirePoisonSkills"
+          },
+          {
+            "conditions": [
+              {
+                "type": "jobId",
+                "operator": "=",
+                "value": "222"
+              }
+            ],
+            "nextState": "teachIceLightningSkills"
+          },
+          {
+            "conditions": [
+              {
+                "type": "jobId",
+                "operator": "=",
+                "value": "232"
+              }
+            ],
+            "nextState": "teachBishopSkills"
+          },
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "teachFirePoisonSkills",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "create_skill",
+            "params": {
+              "skillId": "2121007",
+              "level": "0",
+              "masterLevel": "10"
+            }
+          },
+          {
+            "type": "create_skill",
+            "params": {
+              "skillId": "2121005",
+              "level": "0",
+              "masterLevel": "10"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "teachComplete"
+          }
+        ]
+      }
+    },
+    {
+      "id": "teachIceLightningSkills",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "create_skill",
+            "params": {
+              "skillId": "2221007",
+              "level": "0",
+              "masterLevel": "10"
+            }
+          },
+          {
+            "type": "create_skill",
+            "params": {
+              "skillId": "2221005",
+              "level": "0",
+              "masterLevel": "10"
+            }
+          },
+          {
+            "type": "create_skill",
+            "params": {
+              "skillId": "2221003",
+              "level": "0",
+              "masterLevel": "10"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "teachComplete"
+          }
+        ]
+      }
+    },
+    {
+      "id": "teachBishopSkills",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "create_skill",
+            "params": {
+              "skillId": "2321008",
+              "level": "0",
+              "masterLevel": "10"
+            }
+          },
+          {
+            "type": "create_skill",
+            "params": {
+              "skillId": "2321006",
+              "level": "0",
+              "masterLevel": "10"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "teachComplete"
+          }
+        ]
+      }
+    },
+    {
+      "id": "teachComplete",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "It is done. Leave me now.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -10,8 +10,8 @@
         "outcomes": [
           {
             "conditions": [
-              { "type": "item", "operator": ">=", "value": "1", "referenceId": 4031450 },
-              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": 2280011 }
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4031450" },
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "2280011" }
             ],
             "nextState": "performExchange"
           },

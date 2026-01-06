@@ -1,0 +1,33 @@
+{
+  "npcId": 2030011,
+  "startState": "exitRoom",
+  "states": [
+    {
+      "id": "exitRoom",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "warp_to_map", "params": {"mapId": "211042300", "portalId": "0"}},
+          {"type": "destroy_item", "params": {"itemId": "4001015", "quantity": "0", "removeAll": "true"}},
+          {"type": "destroy_item", "params": {"itemId": "4001016", "quantity": "0", "removeAll": "true"}},
+          {"type": "destroy_item", "params": {"itemId": "4001018", "quantity": "0", "removeAll": "true"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "goodbye"}
+        ]
+      }
+    },
+    {
+      "id": "goodbye",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "See you next time.",
+        "choices": [
+          {"text": "Ok", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    }
+  ]
+}

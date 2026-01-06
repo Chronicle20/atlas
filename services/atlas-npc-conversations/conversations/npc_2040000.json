@@ -1,0 +1,76 @@
+{
+  "npcId": 2040000,
+  "startState": "offerTicket",
+  "states": [
+    {
+      "id": "offerTicket",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Hello, I'm in charge of selling tickets for the ship ride to Orbis Station of Ossyria. The ride to Orbis takes off every 10 minutes, beginning on the hour, and it'll cost you #b6000 mesos#k. Are you sure you want to purchase #b#t4031045##k?",
+        "choices": [
+          {"text": "Yes", "nextState": "checkRequirements"},
+          {"text": "No", "nextState": "declineMessage"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "declineMessage",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "You must have some business to take care of here, right?",
+        "choices": [
+          {"text": "Next", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "checkRequirements",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "meso", "operator": ">=", "value": "6000"},
+              {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "4031045"}
+            ],
+            "nextState": "doPurchase"
+          },
+          {
+            "conditions": [],
+            "nextState": "notEnoughResources"
+          }
+        ]
+      }
+    },
+    {
+      "id": "notEnoughResources",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Are you sure you have #b6000 mesos#k? If so, then I urge you to check your etc. inventory, and see if it's full or not.",
+        "choices": [
+          {"text": "Ok", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "doPurchase",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "award_item", "params": {"itemId": "4031045", "quantity": "1"}},
+          {"type": "award_mesos", "params": {"amount": "-6000"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    }
+  ]
+}

@@ -52,7 +52,7 @@
       "type": "askNumber",
       "askNumber": {
         "text": "Is #b#t{context.item}##k really the item that you need? It's the item {context.msg}. It may not be the easiest item to acquire, but I'll give you a good deal on it. It'll cost you #b{context.cost} mesos#k per item. How many would you like to purchase?",
-        "default": 0,
+        "default": 1,
         "min": 1,
         "max": 100,
         "contextKey": "amount",

@@ -14,7 +14,7 @@
                 "type": "questStatus",
                 "operator": "=",
                 "value": "2",
-                "referenceId": 2186
+                "referenceId": "2186"
               }
             ],
             "nextState": "askGlasses"
@@ -74,7 +74,7 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 4031853
+                "referenceId": "4031853"
               }
             ],
             "nextState": "alreadyHaveGlasses"
@@ -85,7 +85,7 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 4031854
+                "referenceId": "4031854"
               }
             ],
             "nextState": "alreadyHaveGlasses"
@@ -96,7 +96,7 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 4031855
+                "referenceId": "4031855"
               }
             ],
             "nextState": "alreadyHaveGlasses"

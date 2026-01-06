@@ -1,23 +1,23 @@
 {
-  "npcId": 1012104,
+  "npcId": 2041009,
   "startState": "askService",
   "states": [
     {
       "id": "askService",
       "type": "listSelection",
       "listSelection": {
-        "title": "I'm Brittany the assistant. If you have #b#t5150000##k, #b#t5150010##k or #b#t5151000##k by any chance, then how about letting me change your hairdo?",
+        "title": "Hi, I'm the assistant here. Don't worry, I'm plenty good enough for this. If you have #b#t5150006##k, #b#t5150012##k or #b#t5151006##k by any chance, then allow me to take care of the rest, alright?",
         "choices": [
           {
-            "text": "Haircut: #i5150000##t5150000#",
+            "text": "Haircut: #i5150006##t5150006#",
             "nextState": "prepareRegHairStyles"
           },
           {
-            "text": "Haircut: #i5150010##t5150010#",
+            "text": "Haircut: #i5150012##t5150012#",
             "nextState": "prepareExpHairStyles"
           },
           {
-            "text": "Dye your hair: #i5151000##t5151000#",
+            "text": "Dye your hair: #i5151006##t5151006#",
             "nextState": "prepareHairColors"
           },
           {
@@ -35,7 +35,7 @@
           {
             "type": "local:generate_hair_styles",
             "params": {
-              "baseStyles": "30060,30140,30200,30210,30310,30610,33040,33100,31070,31080,31150,31300,31350,31700,34050,34110",
+              "baseStyles": "30190,30220,30250,30540,30610,30620,30640,30650,30660,30840,30870,30940,30990,31170,31270,31290,31510,31540,31550,31600,31640,31680,31810,31830,31840,31870",
               "genderFilter": "true",
               "preserveColor": "true",
               "validateExists": "true",
@@ -47,17 +47,17 @@
         "outcomes": [
           {
             "conditions": [],
-            "nextState": "selectRegHairStyle"
+            "nextState": "confirmRegHaircut"
           }
         ]
       }
     },
     {
-      "id": "selectRegHairStyle",
+      "id": "confirmRegHaircut",
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendYesNo",
-        "text": "If you use the REG coupon your hair will change RANDOMLY with a chance to obtain a new experimental style that even you didn't think was possible. Are you going to use #b#t5150000##k and really change your hairstyle?",
+        "text": "If you use the REG coupon your hair will change RANDOMLY with a chance to obtain a new experimental style that I came up with. Are you going to use #b#t5150012##k and really change your hairstyle?",
         "choices": [
           {
             "text": "Yes",
@@ -94,7 +94,7 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": "5150000"
+                "referenceId": "5150006"
               }
             ],
             "nextState": "applyRegHaircut"
@@ -114,7 +114,7 @@
           {
             "type": "destroy_item",
             "params": {
-              "itemId": "5150000",
+              "itemId": "5150006",
               "quantity": "1"
             }
           },
@@ -138,7 +138,7 @@
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendOk",
-        "text": "Enjoy your new and improved hairstyle!",
+        "text": "Enjoy your new and improved haircolor!",
         "choices": [
           {
             "text": "Ok",
@@ -156,7 +156,7 @@
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendOk",
-        "text": "Hmmm...it looks like you don't have our designated coupon...I'm afraid I can't give you a haircut without it. I'm sorry...",
+        "text": "Hmmm...it looks like you don't have our designated coupon...I'm afraid I can't dye your hair without it. I'm sorry...",
         "choices": [
           {
             "text": "Ok",
@@ -177,7 +177,7 @@
           {
             "type": "local:generate_hair_styles",
             "params": {
-              "baseStyles": "30030,30140,30200,30210,30310,30610,33040,33100,31070,31150,31300,31350,31430,31700,34050,34110",
+              "baseStyles": "30030,30190,30220,30250,30540,30610,30620,30640,30650,30660,30840,30990,31170,31270,31430,31510,31540,31550,31600,31680,31810,31830,31840,31870",
               "genderFilter": "true",
               "preserveColor": "true",
               "validateExists": "true",
@@ -189,17 +189,17 @@
         "outcomes": [
           {
             "conditions": [],
-            "nextState": "selectExpHairStyle"
+            "nextState": "confirmExpHaircut"
           }
         ]
       }
     },
     {
-      "id": "selectExpHairStyle",
+      "id": "confirmExpHaircut",
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendYesNo",
-        "text": "If you use the EXP coupon your hair will change RANDOMLY with a chance to obtain a new experimental style that even you didn't think was possible. Are you going to use #b#t5150010##k and really change your hairstyle?",
+        "text": "If you use the EXP coupon your hair will change RANDOMLY with a chance to obtain a new experimental style that I came up with. Are you going to use #b#t5150012##k and really change your hairstyle?",
         "choices": [
           {
             "text": "Yes",
@@ -236,7 +236,7 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": "5150010"
+                "referenceId": "5150012"
               }
             ],
             "nextState": "applyExpHaircut"
@@ -256,7 +256,7 @@
           {
             "type": "destroy_item",
             "params": {
-              "itemId": "5150010",
+              "itemId": "5150012",
               "quantity": "1"
             }
           },
@@ -329,17 +329,17 @@
         "outcomes": [
           {
             "conditions": [],
-            "nextState": "selectHairColor"
+            "nextState": "confirmHairDye"
           }
         ]
       }
     },
     {
-      "id": "selectHairColor",
+      "id": "confirmHairDye",
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendYesNo",
-        "text": "If you use a regular coupon your hair will change RANDOMLY. Do you still want to use #b#t5151000##k and change it up?",
+        "text": "If you use a regular coupon your hair will change RANDOMLY. Do you still want to use #b#t5151006##k and change it up?",
         "choices": [
           {
             "text": "Yes",
@@ -376,7 +376,7 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": "5151000"
+                "referenceId": "5151006"
               }
             ],
             "nextState": "applyHairDye"
@@ -396,7 +396,7 @@
           {
             "type": "destroy_item",
             "params": {
-              "itemId": "5151000",
+              "itemId": "5151006",
               "quantity": "1"
             }
           },

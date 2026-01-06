@@ -14,13 +14,13 @@
                 "type": "questStatus",
                 "operator": "<=",
                 "value": "2",
-                "referenceId": 2162
+                "referenceId": "2162"
               },
               {
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 4031839
+                "referenceId": "4031839"
               }
             ],
             "nextState": null
@@ -44,7 +44,7 @@
                 "type": "inventorySpace",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 4031839
+                "referenceId": "4031839"
               }
             ],
             "nextState": "giveItem"

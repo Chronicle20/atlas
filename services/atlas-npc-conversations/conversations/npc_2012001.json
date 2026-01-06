@@ -14,13 +14,13 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 4031047
+                "referenceId": "4031047"
               },
               {
                 "type": "transportAvailable",
                 "operator": "=",
                 "value": "1",
-                "referenceId": 200000111
+                "referenceId": "200000111"
               }
             ],
             "nextState": "askBoard"
@@ -31,7 +31,7 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 4031047
+                "referenceId": "4031047"
               }
             ],
             "nextState": "boatNotReady"
@@ -77,7 +77,7 @@
                 "type": "transportAvailable",
                 "operator": "=",
                 "value": "1",
-                "referenceId": 200000111
+                "referenceId": "200000111"
               }
             ],
             "nextState": "performBoard"

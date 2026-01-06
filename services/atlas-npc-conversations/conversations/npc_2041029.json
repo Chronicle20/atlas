@@ -1,0 +1,24 @@
+{
+  "npcId": 2041029,
+  "startState": "greeting",
+  "states": [
+    {
+      "id": "greeting",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Up ahead is the mysterious forest of #bEllin#k. Go through #bthe portal of time#k if you are ready to unveil some of the mysteries of the past of Victoria Island, as how it used to be at it's dawn.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

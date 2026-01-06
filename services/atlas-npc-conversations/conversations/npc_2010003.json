@@ -1,0 +1,1175 @@
+{
+  "npcId": 2010003,
+  "name": "Neve - Orbis Glove Maker",
+  "startState": "welcome",
+  "states": [
+    {
+      "id": "welcome",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Hello there. I'm Orbis' number one glove maker. Would you like me to make you something?",
+        "choices": [
+          { "text": "Create or upgrade a Warrior glove", "nextState": "warriorMenu" },
+          { "text": "Create or upgrade a Bowman glove", "nextState": "bowmanMenu" },
+          { "text": "Create or upgrade a Magician glove", "nextState": "magicianMenu" },
+          { "text": "Create or upgrade a Thief glove", "nextState": "thiefMenu" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "warriorMenu",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Warrior glove? Okay, then which one?",
+        "choices": [
+          { "text": "Bronze Husk - Warrior Lv. 70", "nextState": "confirmBronzeHusk" },
+          { "text": "Mithril Husk - Warrior Lv. 70", "nextState": "confirmMithrilHusk" },
+          { "text": "Dark Husk - Warrior Lv. 70", "nextState": "confirmDarkHusk" },
+          { "text": "Sapphire Emperor - Warrior Lv. 80", "nextState": "confirmSapphireEmperor" },
+          { "text": "Emerald Emperor - Warrior Lv. 80", "nextState": "confirmEmeraldEmperor" },
+          { "text": "Blood Emperor - Warrior Lv. 80", "nextState": "confirmBloodEmperor" },
+          { "text": "Dark Emperor - Warrior Lv. 80", "nextState": "confirmDarkEmperor" },
+          { "text": "Back", "nextState": "welcome" }
+        ]
+      }
+    },
+    {
+      "id": "bowmanMenu",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Bowman glove? Okay, then which one?",
+        "choices": [
+          { "text": "Blue Eyes - Bowman Lv. 70", "nextState": "confirmBlueEyes" },
+          { "text": "Gold Eyes - Bowman Lv. 70", "nextState": "confirmGoldEyes" },
+          { "text": "Dark Eyes - Bowman Lv. 70", "nextState": "confirmDarkEyes" },
+          { "text": "Red Cordon - Bowman Lv. 80", "nextState": "confirmRedCordon" },
+          { "text": "Blue Cordon - Bowman Lv. 80", "nextState": "confirmBlueCordon" },
+          { "text": "Green Cordon - Bowman Lv. 80", "nextState": "confirmGreenCordon" },
+          { "text": "Dark Cordon - Bowman Lv. 80", "nextState": "confirmDarkCordon" },
+          { "text": "Back", "nextState": "welcome" }
+        ]
+      }
+    },
+    {
+      "id": "magicianMenu",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Magician glove? Okay, then which one?",
+        "choices": [
+          { "text": "Brown Lorin - Magician Lv. 70", "nextState": "confirmBrownLorin" },
+          { "text": "Blue Lorin - Magician Lv. 70", "nextState": "confirmBlueLorin" },
+          { "text": "Dark Lorin - Magician Lv. 70", "nextState": "confirmDarkLorin" },
+          { "text": "Green Clarity - Magician Lv. 80", "nextState": "confirmGreenClarity" },
+          { "text": "Blue Clarity - Magician Lv. 80", "nextState": "confirmBlueClarity" },
+          { "text": "Dark Clarity - Magician Lv. 80", "nextState": "confirmDarkClarity" },
+          { "text": "Back", "nextState": "welcome" }
+        ]
+      }
+    },
+    {
+      "id": "thiefMenu",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Thief glove? Okay, then which one?",
+        "choices": [
+          { "text": "Bronze Rover - Thief Lv. 70", "nextState": "confirmBronzeRover" },
+          { "text": "Silver Rover - Thief Lv. 70", "nextState": "confirmSilverRover" },
+          { "text": "Gold Rover - Thief Lv. 70", "nextState": "confirmGoldRover" },
+          { "text": "Green Larceny - Thief Lv. 80", "nextState": "confirmGreenLarceny" },
+          { "text": "Purple Larceny - Thief Lv. 80", "nextState": "confirmPurpleLarceny" },
+          { "text": "Dark Larceny - Thief Lv. 80", "nextState": "confirmDarkLarceny" },
+          { "text": "Back", "nextState": "welcome" }
+        ]
+      }
+    },
+    {
+      "id": "confirmBronzeHusk",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082103#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!\r\n\r\n#i4005000# 2 #t4005000#\r\n#i4011000# 8 #t4011000#\r\n#i4011006# 3 #t4011006#\r\n#i4000030# 70 #t4000030#\r\n#i4003000# 55 #t4003000#\r\n#i4031138# 90,000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftBronzeHusk" },
+          { "text": "No", "nextState": "warriorMenu" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftBronzeHusk",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "4005000", "quantity": "2" } },
+          { "type": "destroy_item", "params": { "itemId": "4011000", "quantity": "8" } },
+          { "type": "destroy_item", "params": { "itemId": "4011006", "quantity": "3" } },
+          { "type": "destroy_item", "params": { "itemId": "4000030", "quantity": "70" } },
+          { "type": "destroy_item", "params": { "itemId": "4003000", "quantity": "55" } },
+          { "type": "award_mesos", "params": { "amount": "-90000" } },
+          { "type": "award_item", "params": { "itemId": "1082103", "quantity": "1" } }
+        ],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1082103" },
+              { "type": "meso", "operator": ">=", "value": "90000" },
+              { "type": "item", "operator": ">=", "value": "2", "referenceId": "4005000" },
+              { "type": "item", "operator": ">=", "value": "8", "referenceId": "4011000" },
+              { "type": "item", "operator": ">=", "value": "3", "referenceId": "4011006" },
+              { "type": "item", "operator": ">=", "value": "70", "referenceId": "4000030" },
+              { "type": "item", "operator": ">=", "value": "55", "referenceId": "4003000" }
+            ],
+            "nextState": "craftSuccess"
+          },
+          { "conditions": [], "nextState": "craftFailure" }
+        ]
+      }
+    },
+    {
+      "id": "confirmMithrilHusk",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082104#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!\r\n\r\n#i1082103# 1 #t1082103#\r\n#i4011002# 6 #t4011002#\r\n#i4021006# 4 #t4021006#\r\n#i4031138# 90,000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftMithrilHusk" },
+          { "text": "No", "nextState": "warriorMenu" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftMithrilHusk",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "1082103", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4011002", "quantity": "6" } },
+          { "type": "destroy_item", "params": { "itemId": "4021006", "quantity": "4" } },
+          { "type": "award_mesos", "params": { "amount": "-90000" } },
+          { "type": "award_item", "params": { "itemId": "1082104", "quantity": "1" } }
+        ],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1082104" },
+              { "type": "meso", "operator": ">=", "value": "90000" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "1082103" },
+              { "type": "item", "operator": ">=", "value": "6", "referenceId": "4011002" },
+              { "type": "item", "operator": ">=", "value": "4", "referenceId": "4021006" }
+            ],
+            "nextState": "craftSuccess"
+          },
+          { "conditions": [], "nextState": "craftFailure" }
+        ]
+      }
+    },
+    {
+      "id": "confirmDarkHusk",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082105#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!\r\n\r\n#i1082103# 1 #t1082103#\r\n#i4021006# 8 #t4021006#\r\n#i4021008# 3 #t4021008#\r\n#i4031138# 100,000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftDarkHusk" },
+          { "text": "No", "nextState": "warriorMenu" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftDarkHusk",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "1082103", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4021006", "quantity": "8" } },
+          { "type": "destroy_item", "params": { "itemId": "4021008", "quantity": "3" } },
+          { "type": "award_mesos", "params": { "amount": "-100000" } },
+          { "type": "award_item", "params": { "itemId": "1082105", "quantity": "1" } }
+        ],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1082105" },
+              { "type": "meso", "operator": ">=", "value": "100000" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "1082103" },
+              { "type": "item", "operator": ">=", "value": "8", "referenceId": "4021006" },
+              { "type": "item", "operator": ">=", "value": "3", "referenceId": "4021008" }
+            ],
+            "nextState": "craftSuccess"
+          },
+          { "conditions": [], "nextState": "craftFailure" }
+        ]
+      }
+    },
+    {
+      "id": "confirmSapphireEmperor",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082114#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!\r\n\r\n#i4005000# 2 #t4005000#\r\n#i4005002# 1 #t4005002#\r\n#i4021005# 8 #t4021005#\r\n#i4000030# 90 #t4000030#\r\n#i4003000# 60 #t4003000#\r\n#i4031138# 100,000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftSapphireEmperor" },
+          { "text": "No", "nextState": "warriorMenu" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftSapphireEmperor",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "4005000", "quantity": "2" } },
+          { "type": "destroy_item", "params": { "itemId": "4005002", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4021005", "quantity": "8" } },
+          { "type": "destroy_item", "params": { "itemId": "4000030", "quantity": "90" } },
+          { "type": "destroy_item", "params": { "itemId": "4003000", "quantity": "60" } },
+          { "type": "award_mesos", "params": { "amount": "-100000" } },
+          { "type": "award_item", "params": { "itemId": "1082114", "quantity": "1" } }
+        ],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1082114" },
+              { "type": "meso", "operator": ">=", "value": "100000" },
+              { "type": "item", "operator": ">=", "value": "2", "referenceId": "4005000" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4005002" },
+              { "type": "item", "operator": ">=", "value": "8", "referenceId": "4021005" },
+              { "type": "item", "operator": ">=", "value": "90", "referenceId": "4000030" },
+              { "type": "item", "operator": ">=", "value": "60", "referenceId": "4003000" }
+            ],
+            "nextState": "craftSuccess"
+          },
+          { "conditions": [], "nextState": "craftFailure" }
+        ]
+      }
+    },
+    {
+      "id": "confirmEmeraldEmperor",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082115#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!\r\n\r\n#i1082114# 1 #t1082114#\r\n#i4005000# 1 #t4005000#\r\n#i4005002# 1 #t4005002#\r\n#i4021003# 7 #t4021003#\r\n#i4031138# 110,000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftEmeraldEmperor" },
+          { "text": "No", "nextState": "warriorMenu" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftEmeraldEmperor",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "1082114", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4005000", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4005002", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4021003", "quantity": "7" } },
+          { "type": "award_mesos", "params": { "amount": "-110000" } },
+          { "type": "award_item", "params": { "itemId": "1082115", "quantity": "1" } }
+        ],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1082115" },
+              { "type": "meso", "operator": ">=", "value": "110000" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "1082114" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4005000" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4005002" },
+              { "type": "item", "operator": ">=", "value": "7", "referenceId": "4021003" }
+            ],
+            "nextState": "craftSuccess"
+          },
+          { "conditions": [], "nextState": "craftFailure" }
+        ]
+      }
+    },
+    {
+      "id": "confirmBloodEmperor",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082116#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!\r\n\r\n#i1082114# 1 #t1082114#\r\n#i4005002# 3 #t4005002#\r\n#i4021000# 8 #t4021000#\r\n#i4031138# 110,000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftBloodEmperor" },
+          { "text": "No", "nextState": "warriorMenu" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftBloodEmperor",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "1082114", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4005002", "quantity": "3" } },
+          { "type": "destroy_item", "params": { "itemId": "4021000", "quantity": "8" } },
+          { "type": "award_mesos", "params": { "amount": "-110000" } },
+          { "type": "award_item", "params": { "itemId": "1082116", "quantity": "1" } }
+        ],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1082116" },
+              { "type": "meso", "operator": ">=", "value": "110000" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "1082114" },
+              { "type": "item", "operator": ">=", "value": "3", "referenceId": "4005002" },
+              { "type": "item", "operator": ">=", "value": "8", "referenceId": "4021000" }
+            ],
+            "nextState": "craftSuccess"
+          },
+          { "conditions": [], "nextState": "craftFailure" }
+        ]
+      }
+    },
+    {
+      "id": "confirmDarkEmperor",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082117#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!\r\n\r\n#i1082114# 1 #t1082114#\r\n#i4005000# 2 #t4005000#\r\n#i4005002# 1 #t4005002#\r\n#i4021008# 4 #t4021008#\r\n#i4031138# 120,000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftDarkEmperor" },
+          { "text": "No", "nextState": "warriorMenu" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftDarkEmperor",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "1082114", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4005000", "quantity": "2" } },
+          { "type": "destroy_item", "params": { "itemId": "4005002", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4021008", "quantity": "4" } },
+          { "type": "award_mesos", "params": { "amount": "-120000" } },
+          { "type": "award_item", "params": { "itemId": "1082117", "quantity": "1" } }
+        ],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1082117" },
+              { "type": "meso", "operator": ">=", "value": "120000" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "1082114" },
+              { "type": "item", "operator": ">=", "value": "2", "referenceId": "4005000" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4005002" },
+              { "type": "item", "operator": ">=", "value": "4", "referenceId": "4021008" }
+            ],
+            "nextState": "craftSuccess"
+          },
+          { "conditions": [], "nextState": "craftFailure" }
+        ]
+      }
+    },
+    {
+      "id": "confirmBlueEyes",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082106#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!\r\n\r\n#i4005002# 2 #t4005002#\r\n#i4021005# 8 #t4021005#\r\n#i4011004# 3 #t4011004#\r\n#i4000030# 70 #t4000030#\r\n#i4003000# 55 #t4003000#\r\n#i4031138# 90,000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftBlueEyes" },
+          { "text": "No", "nextState": "bowmanMenu" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftBlueEyes",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "4005002", "quantity": "2" } },
+          { "type": "destroy_item", "params": { "itemId": "4021005", "quantity": "8" } },
+          { "type": "destroy_item", "params": { "itemId": "4011004", "quantity": "3" } },
+          { "type": "destroy_item", "params": { "itemId": "4000030", "quantity": "70" } },
+          { "type": "destroy_item", "params": { "itemId": "4003000", "quantity": "55" } },
+          { "type": "award_mesos", "params": { "amount": "-90000" } },
+          { "type": "award_item", "params": { "itemId": "1082106", "quantity": "1" } }
+        ],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1082106" },
+              { "type": "meso", "operator": ">=", "value": "90000" },
+              { "type": "item", "operator": ">=", "value": "2", "referenceId": "4005002" },
+              { "type": "item", "operator": ">=", "value": "8", "referenceId": "4021005" },
+              { "type": "item", "operator": ">=", "value": "3", "referenceId": "4011004" },
+              { "type": "item", "operator": ">=", "value": "70", "referenceId": "4000030" },
+              { "type": "item", "operator": ">=", "value": "55", "referenceId": "4003000" }
+            ],
+            "nextState": "craftSuccess"
+          },
+          { "conditions": [], "nextState": "craftFailure" }
+        ]
+      }
+    },
+    {
+      "id": "confirmGoldEyes",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082107#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!\r\n\r\n#i1082106# 1 #t1082106#\r\n#i4021006# 5 #t4021006#\r\n#i4011006# 3 #t4011006#\r\n#i4031138# 90,000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftGoldEyes" },
+          { "text": "No", "nextState": "bowmanMenu" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftGoldEyes",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "1082106", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4021006", "quantity": "5" } },
+          { "type": "destroy_item", "params": { "itemId": "4011006", "quantity": "3" } },
+          { "type": "award_mesos", "params": { "amount": "-90000" } },
+          { "type": "award_item", "params": { "itemId": "1082107", "quantity": "1" } }
+        ],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1082107" },
+              { "type": "meso", "operator": ">=", "value": "90000" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "1082106" },
+              { "type": "item", "operator": ">=", "value": "5", "referenceId": "4021006" },
+              { "type": "item", "operator": ">=", "value": "3", "referenceId": "4011006" }
+            ],
+            "nextState": "craftSuccess"
+          },
+          { "conditions": [], "nextState": "craftFailure" }
+        ]
+      }
+    },
+    {
+      "id": "confirmDarkEyes",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082108#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!\r\n\r\n#i1082106# 1 #t1082106#\r\n#i4021007# 2 #t4021007#\r\n#i4021008# 3 #t4021008#\r\n#i4031138# 100,000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftDarkEyes" },
+          { "text": "No", "nextState": "bowmanMenu" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftDarkEyes",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "1082106", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4021007", "quantity": "2" } },
+          { "type": "destroy_item", "params": { "itemId": "4021008", "quantity": "3" } },
+          { "type": "award_mesos", "params": { "amount": "-100000" } },
+          { "type": "award_item", "params": { "itemId": "1082108", "quantity": "1" } }
+        ],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1082108" },
+              { "type": "meso", "operator": ">=", "value": "100000" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "1082106" },
+              { "type": "item", "operator": ">=", "value": "2", "referenceId": "4021007" },
+              { "type": "item", "operator": ">=", "value": "3", "referenceId": "4021008" }
+            ],
+            "nextState": "craftSuccess"
+          },
+          { "conditions": [], "nextState": "craftFailure" }
+        ]
+      }
+    },
+    {
+      "id": "confirmRedCordon",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082109#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!\r\n\r\n#i4005002# 2 #t4005002#\r\n#i4005000# 1 #t4005000#\r\n#i4021000# 8 #t4021000#\r\n#i4000030# 90 #t4000030#\r\n#i4003000# 60 #t4003000#\r\n#i4031138# 100,000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftRedCordon" },
+          { "text": "No", "nextState": "bowmanMenu" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftRedCordon",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "4005002", "quantity": "2" } },
+          { "type": "destroy_item", "params": { "itemId": "4005000", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4021000", "quantity": "8" } },
+          { "type": "destroy_item", "params": { "itemId": "4000030", "quantity": "90" } },
+          { "type": "destroy_item", "params": { "itemId": "4003000", "quantity": "60" } },
+          { "type": "award_mesos", "params": { "amount": "-100000" } },
+          { "type": "award_item", "params": { "itemId": "1082109", "quantity": "1" } }
+        ],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1082109" },
+              { "type": "meso", "operator": ">=", "value": "100000" },
+              { "type": "item", "operator": ">=", "value": "2", "referenceId": "4005002" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4005000" },
+              { "type": "item", "operator": ">=", "value": "8", "referenceId": "4021000" },
+              { "type": "item", "operator": ">=", "value": "90", "referenceId": "4000030" },
+              { "type": "item", "operator": ">=", "value": "60", "referenceId": "4003000" }
+            ],
+            "nextState": "craftSuccess"
+          },
+          { "conditions": [], "nextState": "craftFailure" }
+        ]
+      }
+    },
+    {
+      "id": "confirmBlueCordon",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082110#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!\r\n\r\n#i1082109# 1 #t1082109#\r\n#i4005002# 1 #t4005002#\r\n#i4005000# 1 #t4005000#\r\n#i4021005# 7 #t4021005#\r\n#i4031138# 110,000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftBlueCordon" },
+          { "text": "No", "nextState": "bowmanMenu" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftBlueCordon",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "1082109", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4005002", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4005000", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4021005", "quantity": "7" } },
+          { "type": "award_mesos", "params": { "amount": "-110000" } },
+          { "type": "award_item", "params": { "itemId": "1082110", "quantity": "1" } }
+        ],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1082110" },
+              { "type": "meso", "operator": ">=", "value": "110000" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "1082109" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4005002" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4005000" },
+              { "type": "item", "operator": ">=", "value": "7", "referenceId": "4021005" }
+            ],
+            "nextState": "craftSuccess"
+          },
+          { "conditions": [], "nextState": "craftFailure" }
+        ]
+      }
+    },
+    {
+      "id": "confirmGreenCordon",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082111#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!\r\n\r\n#i1082109# 1 #t1082109#\r\n#i4005002# 1 #t4005002#\r\n#i4005000# 1 #t4005000#\r\n#i4021003# 7 #t4021003#\r\n#i4031138# 110,000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftGreenCordon" },
+          { "text": "No", "nextState": "bowmanMenu" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftGreenCordon",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "1082109", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4005002", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4005000", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4021003", "quantity": "7" } },
+          { "type": "award_mesos", "params": { "amount": "-110000" } },
+          { "type": "award_item", "params": { "itemId": "1082111", "quantity": "1" } }
+        ],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1082111" },
+              { "type": "meso", "operator": ">=", "value": "110000" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "1082109" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4005002" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4005000" },
+              { "type": "item", "operator": ">=", "value": "7", "referenceId": "4021003" }
+            ],
+            "nextState": "craftSuccess"
+          },
+          { "conditions": [], "nextState": "craftFailure" }
+        ]
+      }
+    },
+    {
+      "id": "confirmDarkCordon",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082112#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!\r\n\r\n#i1082109# 1 #t1082109#\r\n#i4005002# 2 #t4005002#\r\n#i4005000# 1 #t4005000#\r\n#i4021008# 4 #t4021008#\r\n#i4031138# 120,000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftDarkCordon" },
+          { "text": "No", "nextState": "bowmanMenu" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftDarkCordon",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "1082109", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4005002", "quantity": "2" } },
+          { "type": "destroy_item", "params": { "itemId": "4005000", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4021008", "quantity": "4" } },
+          { "type": "award_mesos", "params": { "amount": "-120000" } },
+          { "type": "award_item", "params": { "itemId": "1082112", "quantity": "1" } }
+        ],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1082112" },
+              { "type": "meso", "operator": ">=", "value": "120000" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "1082109" },
+              { "type": "item", "operator": ">=", "value": "2", "referenceId": "4005002" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4005000" },
+              { "type": "item", "operator": ">=", "value": "4", "referenceId": "4021008" }
+            ],
+            "nextState": "craftSuccess"
+          },
+          { "conditions": [], "nextState": "craftFailure" }
+        ]
+      }
+    },
+    {
+      "id": "confirmBrownLorin",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082098#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!\r\n\r\n#i4005001# 2 #t4005001#\r\n#i4011000# 6 #t4011000#\r\n#i4011004# 6 #t4011004#\r\n#i4000030# 70 #t4000030#\r\n#i4003000# 55 #t4003000#\r\n#i4031138# 90,000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftBrownLorin" },
+          { "text": "No", "nextState": "magicianMenu" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftBrownLorin",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "4005001", "quantity": "2" } },
+          { "type": "destroy_item", "params": { "itemId": "4011000", "quantity": "6" } },
+          { "type": "destroy_item", "params": { "itemId": "4011004", "quantity": "6" } },
+          { "type": "destroy_item", "params": { "itemId": "4000030", "quantity": "70" } },
+          { "type": "destroy_item", "params": { "itemId": "4003000", "quantity": "55" } },
+          { "type": "award_mesos", "params": { "amount": "-90000" } },
+          { "type": "award_item", "params": { "itemId": "1082098", "quantity": "1" } }
+        ],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1082098" },
+              { "type": "meso", "operator": ">=", "value": "90000" },
+              { "type": "item", "operator": ">=", "value": "2", "referenceId": "4005001" },
+              { "type": "item", "operator": ">=", "value": "6", "referenceId": "4011000" },
+              { "type": "item", "operator": ">=", "value": "6", "referenceId": "4011004" },
+              { "type": "item", "operator": ">=", "value": "70", "referenceId": "4000030" },
+              { "type": "item", "operator": ">=", "value": "55", "referenceId": "4003000" }
+            ],
+            "nextState": "craftSuccess"
+          },
+          { "conditions": [], "nextState": "craftFailure" }
+        ]
+      }
+    },
+    {
+      "id": "confirmBlueLorin",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082099#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!\r\n\r\n#i1082098# 1 #t1082098#\r\n#i4021002# 6 #t4021002#\r\n#i4021007# 2 #t4021007#\r\n#i4031138# 90,000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftBlueLorin" },
+          { "text": "No", "nextState": "magicianMenu" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftBlueLorin",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "1082098", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4021002", "quantity": "6" } },
+          { "type": "destroy_item", "params": { "itemId": "4021007", "quantity": "2" } },
+          { "type": "award_mesos", "params": { "amount": "-90000" } },
+          { "type": "award_item", "params": { "itemId": "1082099", "quantity": "1" } }
+        ],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1082099" },
+              { "type": "meso", "operator": ">=", "value": "90000" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "1082098" },
+              { "type": "item", "operator": ">=", "value": "6", "referenceId": "4021002" },
+              { "type": "item", "operator": ">=", "value": "2", "referenceId": "4021007" }
+            ],
+            "nextState": "craftSuccess"
+          },
+          { "conditions": [], "nextState": "craftFailure" }
+        ]
+      }
+    },
+    {
+      "id": "confirmDarkLorin",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082100#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!\r\n\r\n#i1082098# 1 #t1082098#\r\n#i4021008# 3 #t4021008#\r\n#i4011006# 3 #t4011006#\r\n#i4031138# 100,000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftDarkLorin" },
+          { "text": "No", "nextState": "magicianMenu" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftDarkLorin",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "1082098", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4021008", "quantity": "3" } },
+          { "type": "destroy_item", "params": { "itemId": "4011006", "quantity": "3" } },
+          { "type": "award_mesos", "params": { "amount": "-100000" } },
+          { "type": "award_item", "params": { "itemId": "1082100", "quantity": "1" } }
+        ],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1082100" },
+              { "type": "meso", "operator": ">=", "value": "100000" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "1082098" },
+              { "type": "item", "operator": ">=", "value": "3", "referenceId": "4021008" },
+              { "type": "item", "operator": ">=", "value": "3", "referenceId": "4011006" }
+            ],
+            "nextState": "craftSuccess"
+          },
+          { "conditions": [], "nextState": "craftFailure" }
+        ]
+      }
+    },
+    {
+      "id": "confirmGreenClarity",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082121#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!\r\n\r\n#i4005001# 2 #t4005001#\r\n#i4005003# 1 #t4005003#\r\n#i4021003# 8 #t4021003#\r\n#i4000030# 90 #t4000030#\r\n#i4003000# 60 #t4003000#\r\n#i4031138# 100,000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftGreenClarity" },
+          { "text": "No", "nextState": "magicianMenu" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftGreenClarity",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "4005001", "quantity": "2" } },
+          { "type": "destroy_item", "params": { "itemId": "4005003", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4021003", "quantity": "8" } },
+          { "type": "destroy_item", "params": { "itemId": "4000030", "quantity": "90" } },
+          { "type": "destroy_item", "params": { "itemId": "4003000", "quantity": "60" } },
+          { "type": "award_mesos", "params": { "amount": "-100000" } },
+          { "type": "award_item", "params": { "itemId": "1082121", "quantity": "1" } }
+        ],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1082121" },
+              { "type": "meso", "operator": ">=", "value": "100000" },
+              { "type": "item", "operator": ">=", "value": "2", "referenceId": "4005001" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4005003" },
+              { "type": "item", "operator": ">=", "value": "8", "referenceId": "4021003" },
+              { "type": "item", "operator": ">=", "value": "90", "referenceId": "4000030" },
+              { "type": "item", "operator": ">=", "value": "60", "referenceId": "4003000" }
+            ],
+            "nextState": "craftSuccess"
+          },
+          { "conditions": [], "nextState": "craftFailure" }
+        ]
+      }
+    },
+    {
+      "id": "confirmBlueClarity",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082122#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!\r\n\r\n#i1082121# 1 #t1082121#\r\n#i4005001# 1 #t4005001#\r\n#i4005003# 1 #t4005003#\r\n#i4021005# 7 #t4021005#\r\n#i4031138# 110,000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftBlueClarity" },
+          { "text": "No", "nextState": "magicianMenu" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftBlueClarity",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "1082121", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4005001", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4005003", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4021005", "quantity": "7" } },
+          { "type": "award_mesos", "params": { "amount": "-110000" } },
+          { "type": "award_item", "params": { "itemId": "1082122", "quantity": "1" } }
+        ],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1082122" },
+              { "type": "meso", "operator": ">=", "value": "110000" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "1082121" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4005001" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4005003" },
+              { "type": "item", "operator": ">=", "value": "7", "referenceId": "4021005" }
+            ],
+            "nextState": "craftSuccess"
+          },
+          { "conditions": [], "nextState": "craftFailure" }
+        ]
+      }
+    },
+    {
+      "id": "confirmDarkClarity",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082123#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!\r\n\r\n#i1082121# 1 #t1082121#\r\n#i4005001# 2 #t4005001#\r\n#i4005003# 1 #t4005003#\r\n#i4021008# 4 #t4021008#\r\n#i4031138# 120,000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftDarkClarity" },
+          { "text": "No", "nextState": "magicianMenu" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftDarkClarity",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "1082121", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4005001", "quantity": "2" } },
+          { "type": "destroy_item", "params": { "itemId": "4005003", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4021008", "quantity": "4" } },
+          { "type": "award_mesos", "params": { "amount": "-120000" } },
+          { "type": "award_item", "params": { "itemId": "1082123", "quantity": "1" } }
+        ],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1082123" },
+              { "type": "meso", "operator": ">=", "value": "120000" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "1082121" },
+              { "type": "item", "operator": ">=", "value": "2", "referenceId": "4005001" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4005003" },
+              { "type": "item", "operator": ">=", "value": "4", "referenceId": "4021008" }
+            ],
+            "nextState": "craftSuccess"
+          },
+          { "conditions": [], "nextState": "craftFailure" }
+        ]
+      }
+    },
+    {
+      "id": "confirmBronzeRover",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082095#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!\r\n\r\n#i4005003# 2 #t4005003#\r\n#i4011000# 6 #t4011000#\r\n#i4011003# 6 #t4011003#\r\n#i4000030# 70 #t4000030#\r\n#i4003000# 55 #t4003000#\r\n#i4031138# 90,000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftBronzeRover" },
+          { "text": "No", "nextState": "thiefMenu" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftBronzeRover",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "4005003", "quantity": "2" } },
+          { "type": "destroy_item", "params": { "itemId": "4011000", "quantity": "6" } },
+          { "type": "destroy_item", "params": { "itemId": "4011003", "quantity": "6" } },
+          { "type": "destroy_item", "params": { "itemId": "4000030", "quantity": "70" } },
+          { "type": "destroy_item", "params": { "itemId": "4003000", "quantity": "55" } },
+          { "type": "award_mesos", "params": { "amount": "-90000" } },
+          { "type": "award_item", "params": { "itemId": "1082095", "quantity": "1" } }
+        ],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1082095" },
+              { "type": "meso", "operator": ">=", "value": "90000" },
+              { "type": "item", "operator": ">=", "value": "2", "referenceId": "4005003" },
+              { "type": "item", "operator": ">=", "value": "6", "referenceId": "4011000" },
+              { "type": "item", "operator": ">=", "value": "6", "referenceId": "4011003" },
+              { "type": "item", "operator": ">=", "value": "70", "referenceId": "4000030" },
+              { "type": "item", "operator": ">=", "value": "55", "referenceId": "4003000" }
+            ],
+            "nextState": "craftSuccess"
+          },
+          { "conditions": [], "nextState": "craftFailure" }
+        ]
+      }
+    },
+    {
+      "id": "confirmSilverRover",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082096#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!\r\n\r\n#i1082095# 1 #t1082095#\r\n#i4011004# 6 #t4011004#\r\n#i4021007# 2 #t4021007#\r\n#i4031138# 90,000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftSilverRover" },
+          { "text": "No", "nextState": "thiefMenu" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftSilverRover",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "1082095", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4011004", "quantity": "6" } },
+          { "type": "destroy_item", "params": { "itemId": "4021007", "quantity": "2" } },
+          { "type": "award_mesos", "params": { "amount": "-90000" } },
+          { "type": "award_item", "params": { "itemId": "1082096", "quantity": "1" } }
+        ],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1082096" },
+              { "type": "meso", "operator": ">=", "value": "90000" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "1082095" },
+              { "type": "item", "operator": ">=", "value": "6", "referenceId": "4011004" },
+              { "type": "item", "operator": ">=", "value": "2", "referenceId": "4021007" }
+            ],
+            "nextState": "craftSuccess"
+          },
+          { "conditions": [], "nextState": "craftFailure" }
+        ]
+      }
+    },
+    {
+      "id": "confirmGoldRover",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082097#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!\r\n\r\n#i1082095# 1 #t1082095#\r\n#i4021007# 3 #t4021007#\r\n#i4011006# 3 #t4011006#\r\n#i4031138# 100,000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftGoldRover" },
+          { "text": "No", "nextState": "thiefMenu" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftGoldRover",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "1082095", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4021007", "quantity": "3" } },
+          { "type": "destroy_item", "params": { "itemId": "4011006", "quantity": "3" } },
+          { "type": "award_mesos", "params": { "amount": "-100000" } },
+          { "type": "award_item", "params": { "itemId": "1082097", "quantity": "1" } }
+        ],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1082097" },
+              { "type": "meso", "operator": ">=", "value": "100000" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "1082095" },
+              { "type": "item", "operator": ">=", "value": "3", "referenceId": "4021007" },
+              { "type": "item", "operator": ">=", "value": "3", "referenceId": "4011006" }
+            ],
+            "nextState": "craftSuccess"
+          },
+          { "conditions": [], "nextState": "craftFailure" }
+        ]
+      }
+    },
+    {
+      "id": "confirmGreenLarceny",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082118#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!\r\n\r\n#i4005003# 2 #t4005003#\r\n#i4005002# 1 #t4005002#\r\n#i4011002# 8 #t4011002#\r\n#i4000030# 90 #t4000030#\r\n#i4003000# 60 #t4003000#\r\n#i4031138# 100,000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftGreenLarceny" },
+          { "text": "No", "nextState": "thiefMenu" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftGreenLarceny",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "4005003", "quantity": "2" } },
+          { "type": "destroy_item", "params": { "itemId": "4005002", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4011002", "quantity": "8" } },
+          { "type": "destroy_item", "params": { "itemId": "4000030", "quantity": "90" } },
+          { "type": "destroy_item", "params": { "itemId": "4003000", "quantity": "60" } },
+          { "type": "award_mesos", "params": { "amount": "-100000" } },
+          { "type": "award_item", "params": { "itemId": "1082118", "quantity": "1" } }
+        ],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1082118" },
+              { "type": "meso", "operator": ">=", "value": "100000" },
+              { "type": "item", "operator": ">=", "value": "2", "referenceId": "4005003" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4005002" },
+              { "type": "item", "operator": ">=", "value": "8", "referenceId": "4011002" },
+              { "type": "item", "operator": ">=", "value": "90", "referenceId": "4000030" },
+              { "type": "item", "operator": ">=", "value": "60", "referenceId": "4003000" }
+            ],
+            "nextState": "craftSuccess"
+          },
+          { "conditions": [], "nextState": "craftFailure" }
+        ]
+      }
+    },
+    {
+      "id": "confirmPurpleLarceny",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082119#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!\r\n\r\n#i1082118# 1 #t1082118#\r\n#i4005003# 1 #t4005003#\r\n#i4005002# 1 #t4005002#\r\n#i4021001# 7 #t4021001#\r\n#i4031138# 110,000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftPurpleLarceny" },
+          { "text": "No", "nextState": "thiefMenu" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftPurpleLarceny",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "1082118", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4005003", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4005002", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4021001", "quantity": "7" } },
+          { "type": "award_mesos", "params": { "amount": "-110000" } },
+          { "type": "award_item", "params": { "itemId": "1082119", "quantity": "1" } }
+        ],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1082119" },
+              { "type": "meso", "operator": ">=", "value": "110000" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "1082118" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4005003" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4005002" },
+              { "type": "item", "operator": ">=", "value": "7", "referenceId": "4021001" }
+            ],
+            "nextState": "craftSuccess"
+          },
+          { "conditions": [], "nextState": "craftFailure" }
+        ]
+      }
+    },
+    {
+      "id": "confirmDarkLarceny",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082120#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!\r\n\r\n#i1082118# 1 #t1082118#\r\n#i4005003# 2 #t4005003#\r\n#i4005002# 1 #t4005002#\r\n#i4021000# 8 #t4021000#\r\n#i4031138# 120,000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftDarkLarceny" },
+          { "text": "No", "nextState": "thiefMenu" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftDarkLarceny",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "1082118", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4005003", "quantity": "2" } },
+          { "type": "destroy_item", "params": { "itemId": "4005002", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4021000", "quantity": "8" } },
+          { "type": "award_mesos", "params": { "amount": "-120000" } },
+          { "type": "award_item", "params": { "itemId": "1082120", "quantity": "1" } }
+        ],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1082120" },
+              { "type": "meso", "operator": ">=", "value": "120000" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "1082118" },
+              { "type": "item", "operator": ">=", "value": "2", "referenceId": "4005003" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4005002" },
+              { "type": "item", "operator": ">=", "value": "8", "referenceId": "4021000" }
+            ],
+            "nextState": "craftSuccess"
+          },
+          { "conditions": [], "nextState": "craftFailure" }
+        ]
+      }
+    },
+    {
+      "id": "craftSuccess",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Done. If you need anything else, just ask again.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftFailure",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "I'm afraid you don't have enough materials or mesos. Please check your inventory and make sure you have enough space for the item.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    }
+  ]
+}

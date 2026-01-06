@@ -1,0 +1,18 @@
+{
+  "npcId": 1209005,
+  "startState": "intro",
+  "states": [
+    {
+      "id": "intro",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Alright, embarking in...",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "npcId": 1300006,
+  "startState": "intro",
+  "states": [
+    {
+      "id": "intro",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Hey guys, what's going on? I'm already getting married at this age? But I'm only a child!!! How comes?",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    }
+  ]
+}

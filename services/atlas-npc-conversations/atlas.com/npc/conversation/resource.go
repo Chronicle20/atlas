@@ -2,6 +2,7 @@ package conversation
 
 import (
 	"atlas-npc-conversations/rest"
+	"encoding/json"
 	"errors"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
@@ -27,6 +28,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			router.HandleFunc("/npcs/conversations/{conversationId}", registerInputHandler("update_conversation", UpdateConversationHandler)).Methods(http.MethodPatch)
 			router.HandleFunc("/npcs/conversations/{conversationId}", registerHandler("delete_conversation", DeleteConversationHandler)).Methods(http.MethodDelete)
 			router.HandleFunc("/npcs/conversations/validate", registerInputHandler("validate_conversation", ValidateConversationHandler)).Methods(http.MethodPost)
+			router.HandleFunc("/npcs/conversations/seed", registerHandler("seed_conversations", SeedConversationsHandler)).Methods(http.MethodPost)
 		}
 	}
 }
@@ -242,5 +244,22 @@ func ValidateConversationHandler(d *rest.HandlerDependency, c *rest.HandlerConte
 			return
 		}
 		w.Write(jsonData)
+	}
+}
+
+// SeedConversationsHandler handles POST /npcs/conversations/seed
+func SeedConversationsHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		result, err := NewProcessor(d.Logger(), d.Context(), d.DB()).Seed()
+		if err != nil {
+			d.Logger().WithError(err).Errorf("Seeding conversations.")
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(result)
 	}
 }

@@ -1500,7 +1500,25 @@
       },
       {
         "opCode": "0x130",
-        "writer": "NPCConversation"
+        "writer": "NPCConversation",
+        "options": {
+          "messageType": {
+            "SAY": 0,
+            "ASK_YES_NO": 1,
+            "ASK_TEXT": 2,
+            "ASK_NUMBER": 3,
+            "ASK_MENU": 4,
+            "ASK_QUIZ": 5,
+            "ASK_SPEED_QUIZ": 6,
+            "ASK_AVATAR": 7,
+            "ASK_MEMBER_SHOP_AVATAR": 8,
+            "ASK_PET": 9,
+            "ASK_PET_ALL": 10,
+            "ASK_YES_NO_QUEST": 11,
+            "ASK_BOX_TEXT": 12,
+            "ASK_SLIDE_MENU": 13
+          }
+        }
       },
       {
         "opCode": "0x144",

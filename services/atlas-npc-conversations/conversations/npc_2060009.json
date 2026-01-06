@@ -1,0 +1,355 @@
+{
+  "npcId": 2060009,
+  "startState": "checkLocation",
+  "states": [
+    {
+      "id": "checkLocation",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "mapId", "operator": "=", "value": "251000100" }
+            ],
+            "nextState": "checkTicketAtHerbTown"
+          },
+          {
+            "conditions": [],
+            "nextState": "checkTicketNotAtHerbTown"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkTicketAtHerbTown",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": 4031242 }
+            ],
+            "nextState": "menuWithTicketAtHerbTown"
+          },
+          {
+            "conditions": [],
+            "nextState": "menuNoTicketAtHerbTown"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkTicketNotAtHerbTown",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": 4031242 }
+            ],
+            "nextState": "menuWithTicketNotAtHerbTown"
+          },
+          {
+            "conditions": [],
+            "nextState": "menuNoTicketNotAtHerbTown"
+          }
+        ]
+      }
+    },
+    {
+      "id": "menuWithTicketAtHerbTown",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Ocean are all connected to each other. Place you can't reach by foot can easily reached oversea. How about taking #bDolphin Taxi#k with us today?",
+        "choices": [
+          {
+            "text": "#bI will use #t4031242##k to move to #b#m230030200##k.",
+            "nextState": "useTicketWarpSharpUnknown",
+            "context": {
+              "useTicket": "true"
+            }
+          },
+          {
+            "text": "Go to #b#m230000000##k after paying #b10000mesos#k.",
+            "nextState": "checkMeso10000Aquarium",
+            "context": {
+              "destination": "230000000",
+              "cost": "10000"
+            }
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "menuWithTicketNotAtHerbTown",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Ocean are all connected to each other. Place you can't reach by foot can easily reached oversea. How about taking #bDolphin Taxi#k with us today?",
+        "choices": [
+          {
+            "text": "#bI will use #t4031242##k to move to #b#m230030200##k.",
+            "nextState": "useTicketWarpSharpUnknown",
+            "context": {
+              "useTicket": "true"
+            }
+          },
+          {
+            "text": "Go to #b#m251000000##k after paying #b10000mesos#k.",
+            "nextState": "checkMeso10000HerbTown",
+            "context": {
+              "destination": "251000000",
+              "cost": "10000"
+            }
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "menuNoTicketAtHerbTown",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Ocean are all connected to each other. Place you can't reach by foot can easily reached oversea. How about taking #bDolphin Taxi#k with us today?",
+        "choices": [
+          {
+            "text": "Go to #b#m230030200##k after paying #b1000mesos#k.",
+            "nextState": "checkMeso1000SharpUnknown",
+            "context": {
+              "destination": "230030200",
+              "cost": "1000"
+            }
+          },
+          {
+            "text": "Go to #b#m230000000##k after paying #b10000mesos#k.",
+            "nextState": "checkMeso10000Aquarium",
+            "context": {
+              "destination": "230000000",
+              "cost": "10000"
+            }
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "menuNoTicketNotAtHerbTown",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Ocean are all connected to each other. Place you can't reach by foot can easily reached oversea. How about taking #bDolphin Taxi#k with us today?",
+        "choices": [
+          {
+            "text": "Go to #b#m230030200##k after paying #b1000mesos#k.",
+            "nextState": "checkMeso1000SharpUnknown",
+            "context": {
+              "destination": "230030200",
+              "cost": "1000"
+            }
+          },
+          {
+            "text": "Go to #b#m251000000##k after paying #b10000mesos#k.",
+            "nextState": "checkMeso10000HerbTown",
+            "context": {
+              "destination": "251000000",
+              "cost": "10000"
+            }
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "useTicketWarpSharpUnknown",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4031242",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "230030200",
+              "portalId": "2"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMeso1000SharpUnknown",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "meso", "operator": "<", "value": "1000" }
+            ],
+            "nextState": "insufficientMesos"
+          },
+          {
+            "conditions": [],
+            "nextState": "payAndWarpSharpUnknown"
+          }
+        ]
+      }
+    },
+    {
+      "id": "payAndWarpSharpUnknown",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-1000"
+            }
+          },
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "230030200",
+              "portalId": "2"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMeso10000Aquarium",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "meso", "operator": "<", "value": "10000" }
+            ],
+            "nextState": "insufficientMesos"
+          },
+          {
+            "conditions": [],
+            "nextState": "payAndWarpAquarium"
+          }
+        ]
+      }
+    },
+    {
+      "id": "payAndWarpAquarium",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-10000"
+            }
+          },
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "230000000",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMeso10000HerbTown",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "meso", "operator": "<", "value": "10000" }
+            ],
+            "nextState": "insufficientMesos"
+          },
+          {
+            "conditions": [],
+            "nextState": "payAndWarpHerbTown"
+          }
+        ]
+      }
+    },
+    {
+      "id": "payAndWarpHerbTown",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-10000"
+            }
+          },
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "251000100",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "insufficientMesos",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "I don't think you have enough money...",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    }
+  ]
+}

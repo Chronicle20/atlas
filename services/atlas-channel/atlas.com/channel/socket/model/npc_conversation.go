@@ -211,7 +211,7 @@ type AskAvatarConversationDetail struct {
 func (a *AskAvatarConversationDetail) Encode(_ logrus.FieldLogger, _ tenant.Model, _ map[string]interface{}) func(w *response.Writer) {
 	return func(w *response.Writer) {
 		w.WriteAsciiString(a.Message)
-		w.WriteInt(uint32(len(a.Styles)))
+		w.WriteByte(byte(len(a.Styles)))
 		for _, style := range a.Styles {
 			w.WriteInt(style)
 		}

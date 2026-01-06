@@ -6,18 +6,18 @@ import (
 	"atlas-npc-conversations/pet"
 	"atlas-npc-conversations/saga"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
-	"math/rand"
-	"strconv"
-	"strings"
-	"time"
 )
 
 // OperationExecutor is the interface for executing operations in conversations
@@ -247,7 +247,7 @@ func (e *OperationExecutorImpl) ExecuteOperation(field field.Model, characterId 
 		e.l.WithError(err).Errorf("Failed to create saga for operation [%s] - saga orchestrator communication failed", operation.Type())
 		return fmt.Errorf("saga orchestrator communication failed: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -293,7 +293,7 @@ func (e *OperationExecutorImpl) ExecuteOperations(field field.Model, characterId
 		e.l.WithError(err).Errorf("Failed to create saga for remote operations - saga orchestrator communication failed")
 		return fmt.Errorf("saga orchestrator communication failed for remote operations: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -441,12 +441,7 @@ func (e *OperationExecutorImpl) executeLocalOperation(field field.Model, charact
 		}
 
 		// Parse the styles array (should be a JSON array of uint32)
-		var styles []uint32
-		err = json.Unmarshal([]byte(stylesValue), &styles)
-		if err != nil {
-			return fmt.Errorf("failed to parse styles array from context: %w", err)
-		}
-
+		styles := strings.Split(stylesValue, ",")
 		if len(styles) == 0 {
 			return errors.New("styles array is empty, cannot select random cosmetic")
 		}
@@ -455,7 +450,7 @@ func (e *OperationExecutorImpl) executeLocalOperation(field field.Model, charact
 		selectedStyle := styles[rand.Intn(len(styles))]
 
 		// Store the selected style in the output context key
-		err = e.setContextValue(characterId, outputContextKey, fmt.Sprintf("%d", selectedStyle))
+		err = e.setContextValue(characterId, outputContextKey, fmt.Sprintf("%s", selectedStyle))
 		if err != nil {
 			return fmt.Errorf("failed to store selected style in context: %w", err)
 		}

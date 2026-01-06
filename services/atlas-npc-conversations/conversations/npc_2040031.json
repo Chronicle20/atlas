@@ -1,0 +1,24 @@
+{
+  "npcId": 2040031,
+  "startState": "info",
+  "states": [
+    {
+      "id": "info",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "A document roll on the ground.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

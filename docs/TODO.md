@@ -6,19 +6,17 @@ This document tracks planned features and improvements for the Atlas MapleStory 
 
 ## Services
 
-### Quest Service
-- [ ] Design and implement a dedicated Quest Service
-- [ ] Quest state management (NOT_STARTED, STARTED, COMPLETED)
-- [ ] Quest progress tracking with step-based progress
-- [ ] Quest rewards distribution via saga orchestrator
-- [ ] Implement actual `start_quest` operation (currently stubbed in saga-orchestrator)
-- [ ] Implement actual `complete_quest` operation (currently stubbed in saga-orchestrator)
+### Channel Service
+- [ ] Cash Item Usage should verify inventory contains item being used.
+- [ ] Timing issue with loading pre-existing chalkboards.
+- [ ] Timing issue with loading pre-existing chairs.
+- [ ] Parties. Party Portals missing. Party member map, level, job, and name changes need to be considered.
 
-### Query Aggregator - Quest Support
-- [ ] Update query-aggregator to properly support quest status lookups
-- [ ] Implement quest data provider for ValidationContext
-- [ ] `questStatus` condition currently returns "quest not found" without a quest service backend
-- [ ] `questProgress` condition needs quest service integration for step-based progress checks
+
+### Invite Service
+- [ ] Character deletion should remove pending invites.
+- [ ] Invites should be able to be queued.
+
 
 ### Instance Based Transports
 - [ ] Extend atlas-transports to support instance-based transport events

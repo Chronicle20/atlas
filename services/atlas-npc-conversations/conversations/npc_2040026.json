@@ -1,0 +1,122 @@
+{
+  "npcId": 2040026,
+  "startState": "checkScroll",
+  "states": [
+    {
+      "id": "checkScroll",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": 4001020
+              }
+            ],
+            "nextState": "selectDestination"
+          },
+          {
+            "conditions": [],
+            "nextState": "noScroll"
+          }
+        ]
+      }
+    },
+    {
+      "id": "noScroll",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "There's a rock that will enable you to teleport to #bSecond Eos Rock or Fourth Eos Rock#k, but it cannot be activated without the scroll.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "selectDestination",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "You can use #bEos Rock Scroll#k to activate #bThird Eos Rock#k. Which of these rocks would you like to teleport to?",
+        "choices": [
+          {
+            "text": "Second Eos Rock (71st Floor)",
+            "nextState": "confirmSecondRock",
+            "context": {
+              "destination": "221022900",
+              "portalId": "3"
+            }
+          },
+          {
+            "text": "Fourth Eos Rock (1st Floor)",
+            "nextState": "confirmFourthRock",
+            "context": {
+              "destination": "221020000",
+              "portalId": "4"
+            }
+          },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "confirmSecondRock",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You can use #bEos Rock Scroll#k to activate #bThird Eos Rock#k. Will you teleport to #bSecond Eos Rock#k at the 71st Floor?",
+        "choices": [
+          { "text": "Yes", "nextState": "teleport" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "confirmFourthRock",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You can use #bEos Rock Scroll#k to activate #bThird Eos Rock#k. Will you teleport to #bFourth Eos Rock#k at the 1st Floor?",
+        "choices": [
+          { "text": "Yes", "nextState": "teleport" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "teleport",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4001020",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "{context.destination}",
+              "portalId": "{context.portalId}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,92 @@
+{
+  "npcId": 2032003,
+  "startState": "congratulations",
+  "states": [
+    {
+      "id": "congratulations",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Congratulations on getting this far! Well, I suppose I'd better give you the #bBreath of Fire#k. You've certainly earned it!",
+        "choices": [
+          { "text": "Next", "nextState": "checkInventory" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "checkInventory",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": 4031062 }
+            ],
+            "nextState": "headOff"
+          },
+          {
+            "conditions": [],
+            "nextState": "noInventorySpace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "noInventorySpace",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Try freeing a slot to receive the #b#t4031062##k.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "headOff",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Well, time for you to head off.",
+        "choices": [
+          { "text": "Next", "nextState": "giveRewardsAndWarp" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "giveRewardsAndWarp",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4031062",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "award_exp",
+            "params": {
+              "amount": "10000"
+            }
+          },
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "211042300",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": null }
+        ]
+      }
+    }
+  ]
+}

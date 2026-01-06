@@ -1,0 +1,101 @@
+{
+  "npcId": 2012013,
+  "name": "Sunny - Orbis Station to Ludibrium",
+  "startState": "checkTicket",
+  "states": [
+    {
+      "id": "checkTicket",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "item", "operator": "<", "value": "1", "referenceId": "4031074" }
+            ],
+            "nextState": "noTicket"
+          },
+          { "conditions": [], "nextState": "checkBoarding" }
+        ]
+      }
+    },
+    {
+      "id": "checkBoarding",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "transportAvailable", "operator": "=", "value": "0", "referenceId": "200000122" }
+            ],
+            "nextState": "trainUnavailable"
+          },
+          { "conditions": [], "nextState": "askToBoard" }
+        ]
+      }
+    },
+    {
+      "id": "noTicket",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Make sure you got a Ludibrium ticket to travel in this train. Check your inventory.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "trainUnavailable",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "The train to Ludibrium is already travelling, please be patient for the next one.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "askToBoard",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Do you want to go to Ludibrium?",
+        "choices": [
+          { "text": "Yes", "nextState": "boardTrain" },
+          { "text": "No", "nextState": "declineBoard" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "declineBoard",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Okay, talk to me if you change your mind!",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "boardTrain",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "4031074", "quantity": "1" } },
+          { "type": "warp_to_map", "params": { "mapId": "200000122" } }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": null }
+        ]
+      }
+    }
+  ]
+}

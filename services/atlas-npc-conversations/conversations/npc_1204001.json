@@ -1,0 +1,75 @@
+{
+  "npcId": 1204001,
+  "startState": "intro",
+  "states": [
+    {
+      "id": "intro",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "I'm Francis, the Puppeteer of the Black Wings. How dare you disturb my puppets... It really upsets me, but I'll let it slide this time. If I catch you doing it again though, I swear in the name of the Black Mage, I will make you pay for it.",
+        "speaker": 9,
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "reflection"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "reflection",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "#b(The Black Wings? Huh? Who are they? And how is all this related to the Black Mage? Hm, maybe you should report this info to Tru.)#k",
+        "speaker": 3,
+        "choices": [
+          {
+            "text": "Previous",
+            "nextState": "intro"
+          },
+          {
+            "text": "Next",
+            "nextState": "completeAndWarp"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "completeAndWarp",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "complete_quest",
+            "params": {
+              "questId": "21719"
+            }
+          },
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "105040200",
+              "portalId": "10"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

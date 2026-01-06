@@ -1,0 +1,86 @@
+{
+  "npcId": 2001000,
+  "startState": "page1",
+  "states": [
+    {
+      "id": "page1",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Do you see a bunch of snowmen standing around there? Go talk to one of them, and it'll take you to the famous Christmas tree here that is just humongous. The tree can be decorated using various kinds of ornaments. What do you think? Sounds fun, right?",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "page2"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "page2",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "Only 6 can be at the place where the tree is at once, and you can't #btrade or open store#k there. The ornaments that you drop can only be picked back up by yourself, so don't worry about losing your ornaments here.",
+        "choices": [
+          {
+            "text": "Previous",
+            "nextState": "page1"
+          },
+          {
+            "text": "Next",
+            "nextState": "page3"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "page3",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "Of course, the items that are dropped in there will never disappear. Once you get out of there through the snowman that's inside, all the items you've dropped at that map will come back to you, so you won't have to pick all those items up before leaving the place. Isn't that sweet?",
+        "choices": [
+          {
+            "text": "Previous",
+            "nextState": "page2"
+          },
+          {
+            "text": "Next",
+            "nextState": "page4"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "page4",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendPrev",
+        "text": "Well then, go see #p2002001#, buy some Christmas ornaments there, and then decorate the tree with those~ Oh yeah! The biggest, the most beautiful ornament cannot be bought from him. It's probably ... taken by a monster ... huh huh ..",
+        "choices": [
+          {
+            "text": "Previous",
+            "nextState": "page3"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

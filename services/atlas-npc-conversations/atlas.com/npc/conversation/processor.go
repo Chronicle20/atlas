@@ -48,6 +48,12 @@ type Processor interface {
 
 	// AllProvider returns a provider for retrieving all conversations
 	AllProvider() model.Provider[[]Model]
+
+	// DeleteAllForTenant deletes all conversations for the current tenant
+	DeleteAllForTenant() (int64, error)
+
+	// Seed clears existing conversations and loads them from the conversations directory
+	Seed() (SeedResult, error)
 }
 
 type ProcessorImpl struct {
@@ -854,4 +860,65 @@ func (p *ProcessorImpl) End(characterId uint32) error {
 	p.l.Debugf("Ending conversation with character [%d].", characterId)
 	GetRegistry().ClearContext(p.t, characterId)
 	return nil
+}
+
+// DeleteAllForTenant deletes all conversations for the current tenant using hard delete
+func (p *ProcessorImpl) DeleteAllForTenant() (int64, error) {
+	p.l.Debugf("Deleting all conversations for tenant [%s]", p.t.Id())
+	result := p.db.Unscoped().Where("tenant_id = ?", p.t.Id()).Delete(&Entity{})
+	if result.Error != nil {
+		p.l.WithError(result.Error).Errorf("Failed to delete conversations for tenant [%s]", p.t.Id())
+		return 0, result.Error
+	}
+	p.l.Debugf("Deleted [%d] conversations for tenant [%s]", result.RowsAffected, p.t.Id())
+	return result.RowsAffected, nil
+}
+
+// Seed clears existing conversations and loads them from the conversations directory
+func (p *ProcessorImpl) Seed() (SeedResult, error) {
+	p.l.Infof("Seeding conversations for tenant [%s]", p.t.Id())
+
+	result := SeedResult{}
+
+	// Delete all existing conversations for this tenant
+	deletedCount, err := p.DeleteAllForTenant()
+	if err != nil {
+		return result, fmt.Errorf("failed to clear existing conversations: %w", err)
+	}
+	result.DeletedCount = int(deletedCount)
+
+	// Load conversation files from the filesystem
+	models, loadErrors := LoadConversationFiles()
+
+	// Track load errors
+	for _, err := range loadErrors {
+		result.Errors = append(result.Errors, err.Error())
+		result.FailedCount++
+	}
+
+	// Create each conversation
+	for _, rm := range models {
+		// Extract domain model from REST model
+		m, err := Extract(rm)
+		if err != nil {
+			result.Errors = append(result.Errors, fmt.Sprintf("npc_%d: failed to extract model: %v", rm.NpcId, err))
+			result.FailedCount++
+			continue
+		}
+
+		// Create the conversation
+		_, err = p.Create(m)
+		if err != nil {
+			result.Errors = append(result.Errors, fmt.Sprintf("npc_%d: failed to create: %v", rm.NpcId, err))
+			result.FailedCount++
+			continue
+		}
+
+		result.CreatedCount++
+	}
+
+	p.l.Infof("Seed complete for tenant [%s]: deleted=%d, created=%d, failed=%d",
+		p.t.Id(), result.DeletedCount, result.CreatedCount, result.FailedCount)
+
+	return result, nil
 }

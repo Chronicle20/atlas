@@ -1,0 +1,442 @@
+{
+  "npcId": 2040022,
+  "startState": "mainMenu",
+  "states": [
+    {
+      "id": "mainMenu",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Ah, you've found me! I spend most of my time here, working on weapons to make for travellers like yourself. Did you have a request?#b",
+        "choices": [
+          {"text": "What's a stimulator?", "nextState": "stimulatorExplanation"},
+          {"text": "Create a Warrior weapon", "nextState": "warriorMenu"},
+          {"text": "Create a Bowman weapon", "nextState": "bowmanMenu"},
+          {"text": "Create a Magician weapon", "nextState": "magicianMenu"},
+          {"text": "Create a Thief weapon", "nextState": "thiefMenu"},
+          {"text": "Create a Warrior weapon with a Stimulator", "nextState": "warriorMenuStim"},
+          {"text": "Create a Bowman weapon with a Stimulator", "nextState": "bowmanMenuStim"},
+          {"text": "Create a Magician weapon with a Stimulator", "nextState": "magicianMenuStim"},
+          {"text": "Create a Thief weapon with a Stimulator", "nextState": "thiefMenuStim"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "stimulatorExplanation",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "A stimulator is a special potion that I can add into the process of creating certain items. It gives it stats as though it had dropped from a monster. However, it is possible to have no change, and it is also possible for the item to be below average. There's also a 10% chance of not getting any item when using a stimulator, so please choose wisely.",
+        "choices": [
+          {"text": "Next", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+
+    {
+      "id": "warriorMenu",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Very well, then which Warrior weapon shall I work on?#b",
+        "choices": [
+          {"text": "Gladius#k - Lv. 30 One-Handed Sword#b", "nextState": "craft_1302008"},
+          {"text": "Cutlus#k - Lv. 35 One-Handed Sword#b", "nextState": "craft_1302004"},
+          {"text": "Traus#k - Lv. 40 One-Handed Sword#b", "nextState": "craft_1302009"},
+          {"text": "Jeweled Katar#k - Lv. 50 One-Handed Sword#b", "nextState": "craft_1302010"},
+          {"text": "Fireman's Axe#k - Lv. 30 One-Handed Axe#b", "nextState": "craft_1312005"},
+          {"text": "Dankke#k - Lv. 35 One-Handed Axe#b", "nextState": "craft_1312006"},
+          {"text": "Blue Counter#k - Lv. 40 One-Handed Axe#b", "nextState": "craft_1312007"},
+          {"text": "Buck#k - Lv. 50 One-Handed Axe#b", "nextState": "craft_1312008"},
+          {"text": "War Hammer#k - Lv. 30 One-Handed BW#b", "nextState": "craft_1322014"},
+          {"text": "Heavy Hammer#k - Lv. 35 One-Handed BW#b", "nextState": "craft_1322015"},
+          {"text": "Jacker#k - Lv. 40 One-Handed BW#b", "nextState": "craft_1322016"},
+          {"text": "Knuckle Mace#k - Lv. 50 One-Handed BW#b", "nextState": "craft_1322017"},
+          {"text": "Scimitar#k - Lv. 30 Two-Handed Sword#b", "nextState": "craft_1402002"},
+          {"text": "Lionheart#k - Lv. 35 Two-Handed Sword#b", "nextState": "craft_1402006"},
+          {"text": "Zard#k - Lv. 40 Two-Handed Sword#b", "nextState": "craft_1402007"},
+          {"text": "Lion's Fang#k - Lv. 50 Two-Handed Sword#b", "nextState": "craft_1402003"},
+          {"text": "Blue Axe#k - Lv. 30 Two-Handed Axe#b", "nextState": "craft_1412006"},
+          {"text": "Niam#k - Lv. 35 Two-Handed Axe#b", "nextState": "craft_1412004"},
+          {"text": "Sabretooth#k - Lv. 40 Two-Handed Axe#b", "nextState": "craft_1412005"},
+          {"text": "The Rising#k - Lv. 50 Two-Handed Axe#b", "nextState": "craft_1412003"},
+          {"text": "Mithril Maul#k - Lv. 30 Two-Handed BW#b", "nextState": "craft_1422001"},
+          {"text": "Sledgehammer#k - Lv. 35 Two-Handed BW#b", "nextState": "craft_1422008"},
+          {"text": "Titan#k - Lv. 40 Two-Handed BW#b", "nextState": "craft_1422007"},
+          {"text": "Golden Mole#k - Lv. 50 Two-Handed BW#b", "nextState": "craft_1422005"},
+          {"text": "Forked Spear#k - Lv. 30 Spear#b", "nextState": "craft_1432002"},
+          {"text": "Nakimaki#k - Lv. 35 Spear#b", "nextState": "craft_1432003"},
+          {"text": "Zeco#k - Lv. 40 Spear#b", "nextState": "craft_1432005"},
+          {"text": "Serpent's Tongue#k - Lv. 50 Spear#b", "nextState": "craft_1432004"},
+          {"text": "Mithril Polearm#k - Lv. 30 Polearm#b", "nextState": "craft_1442001"},
+          {"text": "Axe Polearm#k - Lv. 35 Polearm#b", "nextState": "craft_1442003"},
+          {"text": "Crescent Polearm#k - Lv. 40 Polearm#b", "nextState": "craft_1442009"},
+          {"text": "The Nine Dragons#k - Lv. 50 Polearm#b", "nextState": "craft_1442005"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "warriorMenuStim",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Very well, then which Warrior weapon shall I work on?#b",
+        "choices": [
+          {"text": "Gladius#k - Lv. 30 One-Handed Sword#b", "nextState": "craft_1302008_stim"},
+          {"text": "Cutlus#k - Lv. 35 One-Handed Sword#b", "nextState": "craft_1302004_stim"},
+          {"text": "Traus#k - Lv. 40 One-Handed Sword#b", "nextState": "craft_1302009_stim"},
+          {"text": "Jeweled Katar#k - Lv. 50 One-Handed Sword#b", "nextState": "craft_1302010_stim"},
+          {"text": "Fireman's Axe#k - Lv. 30 One-Handed Axe#b", "nextState": "craft_1312005_stim"},
+          {"text": "Dankke#k - Lv. 35 One-Handed Axe#b", "nextState": "craft_1312006_stim"},
+          {"text": "Blue Counter#k - Lv. 40 One-Handed Axe#b", "nextState": "craft_1312007_stim"},
+          {"text": "Buck#k - Lv. 50 One-Handed Axe#b", "nextState": "craft_1312008_stim"},
+          {"text": "War Hammer#k - Lv. 30 One-Handed BW#b", "nextState": "craft_1322014_stim"},
+          {"text": "Heavy Hammer#k - Lv. 35 One-Handed BW#b", "nextState": "craft_1322015_stim"},
+          {"text": "Jacker#k - Lv. 40 One-Handed BW#b", "nextState": "craft_1322016_stim"},
+          {"text": "Knuckle Mace#k - Lv. 50 One-Handed BW#b", "nextState": "craft_1322017_stim"},
+          {"text": "Scimitar#k - Lv. 30 Two-Handed Sword#b", "nextState": "craft_1402002_stim"},
+          {"text": "Lionheart#k - Lv. 35 Two-Handed Sword#b", "nextState": "craft_1402006_stim"},
+          {"text": "Zard#k - Lv. 40 Two-Handed Sword#b", "nextState": "craft_1402007_stim"},
+          {"text": "Lion's Fang#k - Lv. 50 Two-Handed Sword#b", "nextState": "craft_1402003_stim"},
+          {"text": "Blue Axe#k - Lv. 30 Two-Handed Axe#b", "nextState": "craft_1412006_stim"},
+          {"text": "Niam#k - Lv. 35 Two-Handed Axe#b", "nextState": "craft_1412004_stim"},
+          {"text": "Sabretooth#k - Lv. 40 Two-Handed Axe#b", "nextState": "craft_1412005_stim"},
+          {"text": "The Rising#k - Lv. 50 Two-Handed Axe#b", "nextState": "craft_1412003_stim"},
+          {"text": "Mithril Maul#k - Lv. 30 Two-Handed BW#b", "nextState": "craft_1422001_stim"},
+          {"text": "Sledgehammer#k - Lv. 35 Two-Handed BW#b", "nextState": "craft_1422008_stim"},
+          {"text": "Titan#k - Lv. 40 Two-Handed BW#b", "nextState": "craft_1422007_stim"},
+          {"text": "Golden Mole#k - Lv. 50 Two-Handed BW#b", "nextState": "craft_1422005_stim"},
+          {"text": "Forked Spear#k - Lv. 30 Spear#b", "nextState": "craft_1432002_stim"},
+          {"text": "Nakimaki#k - Lv. 35 Spear#b", "nextState": "craft_1432003_stim"},
+          {"text": "Zeco#k - Lv. 40 Spear#b", "nextState": "craft_1432005_stim"},
+          {"text": "Serpent's Tongue#k - Lv. 50 Spear#b", "nextState": "craft_1432004_stim"},
+          {"text": "Mithril Polearm#k - Lv. 30 Polearm#b", "nextState": "craft_1442001_stim"},
+          {"text": "Axe Polearm#k - Lv. 35 Polearm#b", "nextState": "craft_1442003_stim"},
+          {"text": "Crescent Polearm#k - Lv. 40 Polearm#b", "nextState": "craft_1442009_stim"},
+          {"text": "The Nine Dragons#k - Lv. 50 Polearm#b", "nextState": "craft_1442005_stim"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+
+    {
+      "id": "bowmanMenu",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Very well, then which Bowman weapon shall I work on?#b",
+        "choices": [
+          {"text": "Ryden#k - Lv. 30 Bow#b", "nextState": "craft_1452005"},
+          {"text": "Red Viper#k - Lv. 35 Bow#b", "nextState": "craft_1452006"},
+          {"text": "Vaulter 2000#k - Lv. 40 Bow#b", "nextState": "craft_1452007"},
+          {"text": "Olympus#k - Lv. 50 Bow#b", "nextState": "craft_1452008"},
+          {"text": "Eagle Crow#k - Bowman Lv. 32#b", "nextState": "craft_1462004"},
+          {"text": "Heckler#k - Bowman Lv. 38#b", "nextState": "craft_1462005"},
+          {"text": "Silver Crow#k - Bowman Lv. 42#b", "nextState": "craft_1462006"},
+          {"text": "Rower#k - Bowman Lv. 50#b", "nextState": "craft_1462007"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "bowmanMenuStim",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Very well, then which Bowman weapon shall I work on?#b",
+        "choices": [
+          {"text": "Ryden#k - Lv. 30 Bow#b", "nextState": "craft_1452005_stim"},
+          {"text": "Red Viper#k - Lv. 35 Bow#b", "nextState": "craft_1452006_stim"},
+          {"text": "Vaulter 2000#k - Lv. 40 Bow#b", "nextState": "craft_1452007_stim"},
+          {"text": "Olympus#k - Lv. 50 Bow#b", "nextState": "craft_1452008_stim"},
+          {"text": "Eagle Crow#k - Bowman Lv. 32#b", "nextState": "craft_1462004_stim"},
+          {"text": "Heckler#k - Bowman Lv. 38#b", "nextState": "craft_1462005_stim"},
+          {"text": "Silver Crow#k - Bowman Lv. 42#b", "nextState": "craft_1462006_stim"},
+          {"text": "Rower#k - Bowman Lv. 50#b", "nextState": "craft_1462007_stim"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+
+    {
+      "id": "magicianMenu",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Very well, then which Magician weapon shall I work on?#b",
+        "choices": [
+          {"text": "Mithril Wand#k - Lv. 28 Wand#b", "nextState": "craft_1372003"},
+          {"text": "Wizard Wand#k - Lv. 33 Wand#b", "nextState": "craft_1372001"},
+          {"text": "Fairy Wand#k - Lv. 38 Wand#b", "nextState": "craft_1372000"},
+          {"text": "Cromi#k - Lv. 48 Wand#b", "nextState": "craft_1372007"},
+          {"text": "Wizard Staff#k - Lv. 25 Staff#b", "nextState": "craft_1382002"},
+          {"text": "Arc Staff#k - Lv. 45 Staff#b", "nextState": "craft_1382001"},
+          {"text": "Thorns#k - Lv. 55 Staff#b", "nextState": "craft_1382006"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "magicianMenuStim",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Very well, then which Magician weapon shall I work on?#b",
+        "choices": [
+          {"text": "Mithril Wand#k - Lv. 28 Wand#b", "nextState": "craft_1372003_stim"},
+          {"text": "Wizard Wand#k - Lv. 33 Wand#b", "nextState": "craft_1372001_stim"},
+          {"text": "Fairy Wand#k - Lv. 38 Wand#b", "nextState": "craft_1372000_stim"},
+          {"text": "Cromi#k - Lv. 48 Wand#b", "nextState": "craft_1372007_stim"},
+          {"text": "Wizard Staff#k - Lv. 25 Staff#b", "nextState": "craft_1382002_stim"},
+          {"text": "Arc Staff#k - Lv. 45 Staff#b", "nextState": "craft_1382001_stim"},
+          {"text": "Thorns#k - Lv. 55 Staff#b", "nextState": "craft_1382006_stim"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+
+    {
+      "id": "thiefMenu",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Very well, then which Thief weapon shall I work on?#b",
+        "choices": [
+          {"text": "Reef Claw#k - Lv. 30 LUK Dagger#b", "nextState": "craft_1332012"},
+          {"text": "Cass#k - Lv. 30 STR Dagger#b", "nextState": "craft_1332009"},
+          {"text": "Gephart#k - Lv. 35 LUK Dagger#b", "nextState": "craft_1332014"},
+          {"text": "Bazlud#k - Lv. 40 STR Dagger#b", "nextState": "craft_1332011"},
+          {"text": "Sai#k - Lv. 50 STR Dagger#b", "nextState": "craft_1332016"},
+          {"text": "Shinkita#k - Lv. 50 LUK Dagger#b", "nextState": "craft_1332003"},
+          {"text": "Steel Guards#k - Lv. 30 Claw#b", "nextState": "craft_1472008"},
+          {"text": "Bronze Guardian#k - Lv. 35 Claw#b", "nextState": "craft_1472011"},
+          {"text": "Steel Avarice#k - Lv. 40 Claw#b", "nextState": "craft_1472014"},
+          {"text": "Steel Slain#k - Lv. 50 Claw#b", "nextState": "craft_1472018"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "thiefMenuStim",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Very well, then which Thief weapon shall I work on?#b",
+        "choices": [
+          {"text": "Reef Claw#k - Lv. 30 LUK Dagger#b", "nextState": "craft_1332012_stim"},
+          {"text": "Cass#k - Lv. 30 STR Dagger#b", "nextState": "craft_1332009_stim"},
+          {"text": "Gephart#k - Lv. 35 LUK Dagger#b", "nextState": "craft_1332014_stim"},
+          {"text": "Bazlud#k - Lv. 40 STR Dagger#b", "nextState": "craft_1332011_stim"},
+          {"text": "Sai#k - Lv. 50 STR Dagger#b", "nextState": "craft_1332016_stim"},
+          {"text": "Shinkita#k - Lv. 50 LUK Dagger#b", "nextState": "craft_1332003_stim"},
+          {"text": "Mithril Guards#k - Lv. 30 Claw#b", "nextState": "craft_1472009_stim"},
+          {"text": "Adamantium Guards#k - Lv. 30 Claw#b", "nextState": "craft_1472010_stim"},
+          {"text": "Silver Guardian#k - Lv. 35 Claw#b", "nextState": "craft_1472012_stim"},
+          {"text": "Dark Guardian#k - Lv. 35 Claw#b", "nextState": "craft_1472013_stim"},
+          {"text": "Blood Avarice#k - Lv. 40 Claw#b", "nextState": "craft_1472015_stim"},
+          {"text": "Adamantium Avarice#k - Lv. 40 Claw#b", "nextState": "craft_1472016_stim"},
+          {"text": "Dark Avarice#k - Lv. 40 Claw#b", "nextState": "craft_1472017_stim"},
+          {"text": "Blood Slain#k - Lv. 50 Claw#b", "nextState": "craft_1472019_stim"},
+          {"text": "Sapphire Slain#k - Lv. 50 Claw#b", "nextState": "craft_1472020_stim"},
+          {"text": "Dark Slain#k - Lv. 50 Claw#b", "nextState": "craft_1472021_stim"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+
+    {"id": "craft_1302008", "type": "craftAction", "craftAction": {"itemId": 1302008, "materials": [4131000, 4011001, 4011004, 4003000], "quantities": [1, 2, 2, 30], "mesoCost": 18000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1302004", "type": "craftAction", "craftAction": {"itemId": 1302004, "materials": [4131000, 4011006, 4011001, 4021006, 4003000], "quantities": [1, 1, 5, 3, 35], "mesoCost": 35000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1302009", "type": "craftAction", "craftAction": {"itemId": 1302009, "materials": [4131000, 4011006, 4011001, 4021000, 4003000], "quantities": [1, 3, 5, 5, 40], "mesoCost": 70000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1302010", "type": "craftAction", "craftAction": {"itemId": 1302010, "materials": [4131000, 4005000, 4021008, 4011006, 4021003, 4003000], "quantities": [1, 1, 2, 4, 10, 50], "mesoCost": 200000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1312005", "type": "craftAction", "craftAction": {"itemId": 1312005, "materials": [4131001, 4011001, 4021000, 4003000], "quantities": [1, 2, 2, 30], "mesoCost": 18000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1312006", "type": "craftAction", "craftAction": {"itemId": 1312006, "materials": [4131001, 4011001, 4021000, 4011004, 4003000], "quantities": [1, 5, 5, 3, 35], "mesoCost": 35000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1312007", "type": "craftAction", "craftAction": {"itemId": 1312007, "materials": [4131001, 4021005, 4011001, 4021001, 4003000], "quantities": [1, 7, 5, 5, 40], "mesoCost": 70000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1312008", "type": "craftAction", "craftAction": {"itemId": 1312008, "materials": [4131001, 4005000, 4021008, 4011004, 4011001, 4003000], "quantities": [1, 1, 2, 8, 10, 50], "mesoCost": 200000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1322014", "type": "craftAction", "craftAction": {"itemId": 1322014, "materials": [4131002, 4011001, 4011000, 4003000], "quantities": [1, 2, 2, 30], "mesoCost": 18000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1322015", "type": "craftAction", "craftAction": {"itemId": 1322015, "materials": [4131002, 4011001, 4011000, 4011003, 4003000], "quantities": [1, 5, 5, 3, 35], "mesoCost": 35000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1322016", "type": "craftAction", "craftAction": {"itemId": 1322016, "materials": [4131002, 4011003, 4011001, 4011004, 4003000], "quantities": [1, 7, 5, 5, 40], "mesoCost": 70000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1322017", "type": "craftAction", "craftAction": {"itemId": 1322017, "materials": [4131002, 4005000, 4021008, 4011006, 4011001, 4003000], "quantities": [1, 1, 2, 4, 10, 50], "mesoCost": 200000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1402002", "type": "craftAction", "craftAction": {"itemId": 1402002, "materials": [4131003, 4011001, 4021000, 4021004, 4003000], "quantities": [1, 2, 1, 2, 35], "mesoCost": 20000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1402006", "type": "craftAction", "craftAction": {"itemId": 1402006, "materials": [4131003, 4011006, 4011001, 4021004, 4003000], "quantities": [1, 1, 5, 5, 40], "mesoCost": 37000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1402007", "type": "craftAction", "craftAction": {"itemId": 1402007, "materials": [4131003, 4021003, 4011000, 4011001, 4003000], "quantities": [1, 7, 5, 5, 45], "mesoCost": 72000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1402003", "type": "craftAction", "craftAction": {"itemId": 1402003, "materials": [4131003, 4005000, 4021007, 4011006, 4011001, 4003000], "quantities": [1, 1, 2, 4, 10, 55], "mesoCost": 220000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1412006", "type": "craftAction", "craftAction": {"itemId": 1412006, "materials": [4131004, 4021005, 4011001, 4003001, 4003000], "quantities": [1, 2, 2, 5, 35], "mesoCost": 20000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1412004", "type": "craftAction", "craftAction": {"itemId": 1412004, "materials": [4131004, 4011004, 4011000, 4021003, 4003000], "quantities": [1, 5, 5, 3, 40], "mesoCost": 37000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1412005", "type": "craftAction", "craftAction": {"itemId": 1412005, "materials": [4131004, 4011006, 4011004, 4011001, 4003000], "quantities": [1, 3, 5, 5, 45], "mesoCost": 72000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1412003", "type": "craftAction", "craftAction": {"itemId": 1412003, "materials": [4131004, 4005000, 4021007, 4011006, 4021006, 4003000], "quantities": [1, 1, 2, 5, 7, 55], "mesoCost": 220000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1422001", "type": "craftAction", "craftAction": {"itemId": 1422001, "materials": [4131005, 4011001, 4011004, 4003000], "quantities": [1, 2, 3, 35], "mesoCost": 20000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1422008", "type": "craftAction", "craftAction": {"itemId": 1422008, "materials": [4131005, 4011001, 4011000, 4003001, 4003000], "quantities": [1, 5, 5, 10, 40], "mesoCost": 37000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1422007", "type": "craftAction", "craftAction": {"itemId": 1422007, "materials": [4131005, 4011001, 4011004, 4011006, 4003000], "quantities": [1, 5, 5, 3, 45], "mesoCost": 72000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1422005", "type": "craftAction", "craftAction": {"itemId": 1422005, "materials": [4131005, 4005000, 4021008, 4021006, 4011006, 4003000], "quantities": [1, 1, 2, 7, 5, 55], "mesoCost": 220000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1432002", "type": "craftAction", "craftAction": {"itemId": 1432002, "materials": [4131006, 4011000, 4011004, 4003000], "quantities": [1, 2, 3, 40], "mesoCost": 22000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1432003", "type": "craftAction", "craftAction": {"itemId": 1432003, "materials": [4131006, 4011001, 4011002, 4021000, 4003000], "quantities": [1, 5, 5, 3, 45], "mesoCost": 39000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1432005", "type": "craftAction", "craftAction": {"itemId": 1432005, "materials": [4131006, 4011004, 4011001, 4011000, 4003000], "quantities": [1, 3, 5, 5, 50], "mesoCost": 74000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1432004", "type": "craftAction", "craftAction": {"itemId": 1432004, "materials": [4131006, 4005000, 4021008, 4011000, 4021000, 4003000], "quantities": [1, 1, 2, 7, 5, 60], "mesoCost": 240000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1442001", "type": "craftAction", "craftAction": {"itemId": 1442001, "materials": [4131007, 4011000, 4011002, 4003000], "quantities": [1, 2, 3, 40], "mesoCost": 22000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1442003", "type": "craftAction", "craftAction": {"itemId": 1442003, "materials": [4131007, 4011001, 4011002, 4003000], "quantities": [1, 5, 5, 40], "mesoCost": 39000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1442009", "type": "craftAction", "craftAction": {"itemId": 1442009, "materials": [4131007, 4011006, 4011002, 4011001, 4003000], "quantities": [1, 3, 5, 5, 50], "mesoCost": 74000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1442005", "type": "craftAction", "craftAction": {"itemId": 1442005, "materials": [4131007, 4005000, 4021007, 4011001, 4011002, 4003000], "quantities": [1, 1, 2, 7, 5, 60], "mesoCost": 240000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+
+    {"id": "craft_1302008_stim", "type": "craftAction", "craftAction": {"itemId": 1302008, "materials": [4131000, 4011001, 4011004, 4003000], "quantities": [1, 2, 2, 30], "mesoCost": 18000, "stimulatorId": 4130002, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1302004_stim", "type": "craftAction", "craftAction": {"itemId": 1302004, "materials": [4131000, 4011006, 4011001, 4021006, 4003000], "quantities": [1, 1, 5, 3, 35], "mesoCost": 35000, "stimulatorId": 4130002, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1302009_stim", "type": "craftAction", "craftAction": {"itemId": 1302009, "materials": [4131000, 4011006, 4011001, 4021000, 4003000], "quantities": [1, 3, 5, 5, 40], "mesoCost": 70000, "stimulatorId": 4130002, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1302010_stim", "type": "craftAction", "craftAction": {"itemId": 1302010, "materials": [4131000, 4005000, 4021008, 4011006, 4021003, 4003000], "quantities": [1, 1, 2, 4, 10, 50], "mesoCost": 200000, "stimulatorId": 4130002, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1312005_stim", "type": "craftAction", "craftAction": {"itemId": 1312005, "materials": [4131001, 4011001, 4021000, 4003000], "quantities": [1, 2, 2, 30], "mesoCost": 18000, "stimulatorId": 4130002, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1312006_stim", "type": "craftAction", "craftAction": {"itemId": 1312006, "materials": [4131001, 4011001, 4021000, 4011004, 4003000], "quantities": [1, 5, 5, 3, 35], "mesoCost": 35000, "stimulatorId": 4130002, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1312007_stim", "type": "craftAction", "craftAction": {"itemId": 1312007, "materials": [4131001, 4021005, 4011001, 4021001, 4003000], "quantities": [1, 7, 5, 5, 40], "mesoCost": 70000, "stimulatorId": 4130002, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1312008_stim", "type": "craftAction", "craftAction": {"itemId": 1312008, "materials": [4131001, 4005000, 4021008, 4011004, 4011001, 4003000], "quantities": [1, 1, 2, 8, 10, 50], "mesoCost": 200000, "stimulatorId": 4130002, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1322014_stim", "type": "craftAction", "craftAction": {"itemId": 1322014, "materials": [4131002, 4011001, 4011000, 4003000], "quantities": [1, 2, 2, 30], "mesoCost": 18000, "stimulatorId": 4130002, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1322015_stim", "type": "craftAction", "craftAction": {"itemId": 1322015, "materials": [4131002, 4011001, 4011000, 4011003, 4003000], "quantities": [1, 5, 5, 3, 35], "mesoCost": 35000, "stimulatorId": 4130002, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1322016_stim", "type": "craftAction", "craftAction": {"itemId": 1322016, "materials": [4131002, 4011003, 4011001, 4011004, 4003000], "quantities": [1, 7, 5, 5, 40], "mesoCost": 70000, "stimulatorId": 4130002, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1322017_stim", "type": "craftAction", "craftAction": {"itemId": 1322017, "materials": [4131002, 4005000, 4021008, 4011006, 4011001, 4003000], "quantities": [1, 1, 2, 4, 10, 50], "mesoCost": 200000, "stimulatorId": 4130002, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1402002_stim", "type": "craftAction", "craftAction": {"itemId": 1402002, "materials": [4131003, 4011001, 4021000, 4021004, 4003000], "quantities": [1, 2, 1, 2, 35], "mesoCost": 20000, "stimulatorId": 4130002, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1402006_stim", "type": "craftAction", "craftAction": {"itemId": 1402006, "materials": [4131003, 4011006, 4011001, 4021004, 4003000], "quantities": [1, 1, 5, 5, 40], "mesoCost": 37000, "stimulatorId": 4130002, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1402007_stim", "type": "craftAction", "craftAction": {"itemId": 1402007, "materials": [4131003, 4021003, 4011000, 4011001, 4003000], "quantities": [1, 7, 5, 5, 45], "mesoCost": 72000, "stimulatorId": 4130002, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1402003_stim", "type": "craftAction", "craftAction": {"itemId": 1402003, "materials": [4131003, 4005000, 4021007, 4011006, 4011001, 4003000], "quantities": [1, 1, 2, 4, 10, 55], "mesoCost": 220000, "stimulatorId": 4130002, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1412006_stim", "type": "craftAction", "craftAction": {"itemId": 1412006, "materials": [4131004, 4021005, 4011001, 4003001, 4003000], "quantities": [1, 2, 2, 5, 35], "mesoCost": 20000, "stimulatorId": 4130002, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1412004_stim", "type": "craftAction", "craftAction": {"itemId": 1412004, "materials": [4131004, 4011004, 4011000, 4021003, 4003000], "quantities": [1, 5, 5, 3, 40], "mesoCost": 37000, "stimulatorId": 4130002, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1412005_stim", "type": "craftAction", "craftAction": {"itemId": 1412005, "materials": [4131004, 4011006, 4011004, 4011001, 4003000], "quantities": [1, 3, 5, 5, 45], "mesoCost": 72000, "stimulatorId": 4130002, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1412003_stim", "type": "craftAction", "craftAction": {"itemId": 1412003, "materials": [4131004, 4005000, 4021007, 4011006, 4021006, 4003000], "quantities": [1, 1, 2, 5, 7, 55], "mesoCost": 220000, "stimulatorId": 4130002, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1422001_stim", "type": "craftAction", "craftAction": {"itemId": 1422001, "materials": [4131005, 4011001, 4011004, 4003000], "quantities": [1, 2, 3, 35], "mesoCost": 20000, "stimulatorId": 4130002, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1422008_stim", "type": "craftAction", "craftAction": {"itemId": 1422008, "materials": [4131005, 4011001, 4011000, 4003001, 4003000], "quantities": [1, 5, 5, 10, 40], "mesoCost": 37000, "stimulatorId": 4130002, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1422007_stim", "type": "craftAction", "craftAction": {"itemId": 1422007, "materials": [4131005, 4011001, 4011004, 4011006, 4003000], "quantities": [1, 5, 5, 3, 45], "mesoCost": 72000, "stimulatorId": 4130002, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1422005_stim", "type": "craftAction", "craftAction": {"itemId": 1422005, "materials": [4131005, 4005000, 4021008, 4021006, 4011006, 4003000], "quantities": [1, 1, 2, 7, 5, 55], "mesoCost": 220000, "stimulatorId": 4130002, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1432002_stim", "type": "craftAction", "craftAction": {"itemId": 1432002, "materials": [4131006, 4011000, 4011004, 4003000], "quantities": [1, 2, 3, 40], "mesoCost": 22000, "stimulatorId": 4130002, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1432003_stim", "type": "craftAction", "craftAction": {"itemId": 1432003, "materials": [4131006, 4011001, 4011002, 4021000, 4003000], "quantities": [1, 5, 5, 3, 45], "mesoCost": 39000, "stimulatorId": 4130002, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1432005_stim", "type": "craftAction", "craftAction": {"itemId": 1432005, "materials": [4131006, 4011004, 4011001, 4011000, 4003000], "quantities": [1, 3, 5, 5, 50], "mesoCost": 74000, "stimulatorId": 4130002, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1432004_stim", "type": "craftAction", "craftAction": {"itemId": 1432004, "materials": [4131006, 4005000, 4021008, 4011000, 4021000, 4003000], "quantities": [1, 1, 2, 7, 5, 60], "mesoCost": 240000, "stimulatorId": 4130002, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1442001_stim", "type": "craftAction", "craftAction": {"itemId": 1442001, "materials": [4131007, 4011000, 4011002, 4003000], "quantities": [1, 2, 3, 40], "mesoCost": 22000, "stimulatorId": 4130002, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1442003_stim", "type": "craftAction", "craftAction": {"itemId": 1442003, "materials": [4131007, 4011001, 4011002, 4003000], "quantities": [1, 5, 5, 40], "mesoCost": 39000, "stimulatorId": 4130002, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1442009_stim", "type": "craftAction", "craftAction": {"itemId": 1442009, "materials": [4131007, 4011006, 4011002, 4011001, 4003000], "quantities": [1, 3, 5, 5, 50], "mesoCost": 74000, "stimulatorId": 4130002, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1442005_stim", "type": "craftAction", "craftAction": {"itemId": 1442005, "materials": [4131007, 4005000, 4021007, 4011001, 4011002, 4003000], "quantities": [1, 1, 2, 7, 5, 60], "mesoCost": 240000, "stimulatorId": 4130002, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+
+    {"id": "craft_1452005", "type": "craftAction", "craftAction": {"itemId": 1452005, "materials": [4131010, 4011001, 4011006, 4021003, 4021006, 4003000], "quantities": [1, 5, 5, 3, 3, 30], "mesoCost": 15000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1452006", "type": "craftAction", "craftAction": {"itemId": 1452006, "materials": [4131010, 4011004, 4021000, 4021004, 4003000], "quantities": [1, 7, 6, 3, 35], "mesoCost": 20000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1452007", "type": "craftAction", "craftAction": {"itemId": 1452007, "materials": [4131010, 4021008, 4011001, 4011006, 4003000, 4000112], "quantities": [1, 1, 10, 3, 40, 100], "mesoCost": 40000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1452008", "type": "craftAction", "craftAction": {"itemId": 1452008, "materials": [4131010, 4005002, 4021008, 4011001, 4021005, 4003000], "quantities": [1, 1, 2, 10, 6, 50], "mesoCost": 100000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1462004", "type": "craftAction", "craftAction": {"itemId": 1462004, "materials": [4131011, 4011001, 4011005, 4021006, 4003001, 4003000], "quantities": [1, 5, 5, 3, 50, 15], "mesoCost": 15000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1462005", "type": "craftAction", "craftAction": {"itemId": 1462005, "materials": [4131011, 4021008, 4011001, 4011006, 4021006, 4003000], "quantities": [1, 1, 8, 4, 2, 30], "mesoCost": 25000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1462006", "type": "craftAction", "craftAction": {"itemId": 1462006, "materials": [4131011, 4021008, 4011004, 4003001, 4003000], "quantities": [1, 2, 6, 30, 30], "mesoCost": 41000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1462007", "type": "craftAction", "craftAction": {"itemId": 1462007, "materials": [4131011, 4021008, 4011006, 4021006, 4003001, 4003000], "quantities": [1, 2, 5, 3, 40, 40], "mesoCost": 100000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+
+    {"id": "craft_1452005_stim", "type": "craftAction", "craftAction": {"itemId": 1452005, "materials": [4131010, 4011001, 4011006, 4021003, 4021006, 4003000], "quantities": [1, 5, 5, 3, 3, 30], "mesoCost": 15000, "stimulatorId": 4130012, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1452006_stim", "type": "craftAction", "craftAction": {"itemId": 1452006, "materials": [4131010, 4011004, 4021000, 4021004, 4003000], "quantities": [1, 7, 6, 3, 35], "mesoCost": 20000, "stimulatorId": 4130012, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1452007_stim", "type": "craftAction", "craftAction": {"itemId": 1452007, "materials": [4131010, 4021008, 4011001, 4011006, 4003000, 4000112], "quantities": [1, 1, 10, 3, 40, 100], "mesoCost": 40000, "stimulatorId": 4130012, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1452008_stim", "type": "craftAction", "craftAction": {"itemId": 1452008, "materials": [4131010, 4005002, 4021008, 4011001, 4021005, 4003000], "quantities": [1, 1, 2, 10, 6, 50], "mesoCost": 100000, "stimulatorId": 4130012, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1462004_stim", "type": "craftAction", "craftAction": {"itemId": 1462004, "materials": [4131011, 4011001, 4011005, 4021006, 4003001, 4003000], "quantities": [1, 5, 5, 3, 50, 15], "mesoCost": 15000, "stimulatorId": 4130012, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1462005_stim", "type": "craftAction", "craftAction": {"itemId": 1462005, "materials": [4131011, 4021008, 4011001, 4011006, 4021006, 4003000], "quantities": [1, 1, 8, 4, 2, 30], "mesoCost": 25000, "stimulatorId": 4130012, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1462006_stim", "type": "craftAction", "craftAction": {"itemId": 1462006, "materials": [4131011, 4021008, 4011004, 4003001, 4003000], "quantities": [1, 2, 6, 30, 30], "mesoCost": 41000, "stimulatorId": 4130012, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1462007_stim", "type": "craftAction", "craftAction": {"itemId": 1462007, "materials": [4131011, 4021008, 4011006, 4021006, 4003001, 4003000], "quantities": [1, 2, 5, 3, 40, 40], "mesoCost": 100000, "stimulatorId": 4130012, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+
+    {"id": "craft_1372003", "type": "craftAction", "craftAction": {"itemId": 1372003, "materials": [4131008, 4011002, 4021002, 4003000], "quantities": [1, 3, 1, 10], "mesoCost": 15000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1372001", "type": "craftAction", "craftAction": {"itemId": 1372001, "materials": [4131008, 4021006, 4011002, 4011001, 4003000], "quantities": [1, 5, 3, 1, 15], "mesoCost": 30000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1372000", "type": "craftAction", "craftAction": {"itemId": 1372000, "materials": [4131008, 4021006, 4021005, 4021007, 4003003, 4003000], "quantities": [1, 5, 5, 1, 1, 20], "mesoCost": 60000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1372007", "type": "craftAction", "craftAction": {"itemId": 1372007, "materials": [4131008, 4011006, 4021003, 4021007, 4021002, 4003000], "quantities": [1, 4, 3, 2, 1, 30], "mesoCost": 100000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1382002", "type": "craftAction", "craftAction": {"itemId": 1382002, "materials": [4131009, 4021006, 4021001, 4011001, 4003000], "quantities": [1, 2, 1, 1, 15], "mesoCost": 10000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1382001", "type": "craftAction", "craftAction": {"itemId": 1382001, "materials": [4131009, 4011001, 4021006, 4021001, 4021005, 4003000], "quantities": [1, 8, 5, 5, 5, 30], "mesoCost": 80000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1382006", "type": "craftAction", "craftAction": {"itemId": 1382006, "materials": [4131009, 4005001, 4021008, 4011006, 4011004, 4003000], "quantities": [1, 2, 2, 5, 10, 40], "mesoCost": 200000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+
+    {"id": "craft_1372003_stim", "type": "craftAction", "craftAction": {"itemId": 1372003, "materials": [4131008, 4011002, 4021002, 4003000], "quantities": [1, 3, 1, 10], "mesoCost": 15000, "stimulatorId": 4130010, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1372001_stim", "type": "craftAction", "craftAction": {"itemId": 1372001, "materials": [4131008, 4021006, 4011002, 4011001, 4003000], "quantities": [1, 5, 3, 1, 15], "mesoCost": 30000, "stimulatorId": 4130010, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1372000_stim", "type": "craftAction", "craftAction": {"itemId": 1372000, "materials": [4131008, 4021006, 4021005, 4021007, 4003003, 4003000], "quantities": [1, 5, 5, 1, 1, 20], "mesoCost": 60000, "stimulatorId": 4130010, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1372007_stim", "type": "craftAction", "craftAction": {"itemId": 1372007, "materials": [4131008, 4011006, 4021003, 4021007, 4021002, 4003000], "quantities": [1, 4, 3, 2, 1, 30], "mesoCost": 100000, "stimulatorId": 4130010, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1382002_stim", "type": "craftAction", "craftAction": {"itemId": 1382002, "materials": [4131009, 4021006, 4021001, 4011001, 4003000], "quantities": [1, 2, 1, 1, 15], "mesoCost": 10000, "stimulatorId": 4130010, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1382001_stim", "type": "craftAction", "craftAction": {"itemId": 1382001, "materials": [4131009, 4011001, 4021006, 4021001, 4021005, 4003000], "quantities": [1, 8, 5, 5, 5, 30], "mesoCost": 80000, "stimulatorId": 4130010, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1382006_stim", "type": "craftAction", "craftAction": {"itemId": 1382006, "materials": [4131009, 4005001, 4021008, 4011006, 4011004, 4003000], "quantities": [1, 2, 2, 5, 10, 40], "mesoCost": 200000, "stimulatorId": 4130010, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+
+    {"id": "craft_1332012", "type": "craftAction", "craftAction": {"itemId": 1332012, "materials": [4131012, 4011002, 4011001, 4003000], "quantities": [1, 2, 3, 30], "mesoCost": 20000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1332009", "type": "craftAction", "craftAction": {"itemId": 1332009, "materials": [4131012, 4021005, 4011001, 4003000], "quantities": [1, 2, 3, 30], "mesoCost": 20000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1332014", "type": "craftAction", "craftAction": {"itemId": 1332014, "materials": [4131012, 4021005, 4011001, 4011002, 4003000], "quantities": [1, 1, 5, 3, 35], "mesoCost": 33000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1332011", "type": "craftAction", "craftAction": {"itemId": 1332011, "materials": [4131012, 4011001, 4011006, 4021006, 4003000], "quantities": [1, 7, 3, 6, 40], "mesoCost": 73000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1332016", "type": "craftAction", "craftAction": {"itemId": 1332016, "materials": [4131012, 4005003, 4021008, 4011004, 4011001, 4003000], "quantities": [1, 1, 2, 7, 10, 50], "mesoCost": 230000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1332003", "type": "craftAction", "craftAction": {"itemId": 1332003, "materials": [4131012, 4005003, 4021007, 4011006, 4011001, 4003000], "quantities": [1, 1, 2, 5, 10, 50], "mesoCost": 230000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1472008", "type": "craftAction", "craftAction": {"itemId": 1472008, "materials": [4131013, 4011000, 4011001, 4000021, 4003000], "quantities": [1, 3, 2, 50, 20], "mesoCost": 15000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1472011", "type": "craftAction", "craftAction": {"itemId": 1472011, "materials": [4131013, 4011000, 4011001, 4000021, 4003000], "quantities": [1, 4, 2, 80, 25], "mesoCost": 30000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1472014", "type": "craftAction", "craftAction": {"itemId": 1472014, "materials": [4131013, 4011000, 4011001, 4000021, 4003000], "quantities": [1, 3, 2, 100, 30], "mesoCost": 40000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1472018", "type": "craftAction", "craftAction": {"itemId": 1472018, "materials": [4131013, 4011000, 4011001, 4000030, 4003000], "quantities": [1, 4, 2, 40, 35], "mesoCost": 50000, "successState": "craftSuccess", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+
+    {"id": "craft_1332012_stim", "type": "craftAction", "craftAction": {"itemId": 1332012, "materials": [4131012, 4011002, 4011001, 4003000], "quantities": [1, 2, 3, 30], "mesoCost": 20000, "stimulatorId": 4130014, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1332009_stim", "type": "craftAction", "craftAction": {"itemId": 1332009, "materials": [4131012, 4021005, 4011001, 4003000], "quantities": [1, 2, 3, 30], "mesoCost": 20000, "stimulatorId": 4130014, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1332014_stim", "type": "craftAction", "craftAction": {"itemId": 1332014, "materials": [4131012, 4021005, 4011001, 4011002, 4003000], "quantities": [1, 1, 5, 3, 35], "mesoCost": 33000, "stimulatorId": 4130014, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1332011_stim", "type": "craftAction", "craftAction": {"itemId": 1332011, "materials": [4131012, 4011001, 4011006, 4021006, 4003000], "quantities": [1, 7, 3, 6, 40], "mesoCost": 73000, "stimulatorId": 4130014, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1332016_stim", "type": "craftAction", "craftAction": {"itemId": 1332016, "materials": [4131012, 4005003, 4021008, 4011004, 4011001, 4003000], "quantities": [1, 1, 2, 7, 10, 50], "mesoCost": 230000, "stimulatorId": 4130014, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1332003_stim", "type": "craftAction", "craftAction": {"itemId": 1332003, "materials": [4131012, 4005003, 4021007, 4011006, 4011001, 4003000], "quantities": [1, 1, 2, 5, 10, 50], "mesoCost": 230000, "stimulatorId": 4130014, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1472009_stim", "type": "craftAction", "craftAction": {"itemId": 1472009, "materials": [4131013, 1472008, 4011002], "quantities": [1, 1, 3], "mesoCost": 10000, "stimulatorId": 4130015, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1472010_stim", "type": "craftAction", "craftAction": {"itemId": 1472010, "materials": [4131013, 1472008, 4011003], "quantities": [1, 1, 3], "mesoCost": 15000, "stimulatorId": 4130015, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1472012_stim", "type": "craftAction", "craftAction": {"itemId": 1472012, "materials": [4131013, 1472011, 4011004], "quantities": [1, 1, 4], "mesoCost": 20000, "stimulatorId": 4130015, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1472013_stim", "type": "craftAction", "craftAction": {"itemId": 1472013, "materials": [4131013, 1472011, 4021008], "quantities": [1, 1, 1], "mesoCost": 25000, "stimulatorId": 4130015, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1472015_stim", "type": "craftAction", "craftAction": {"itemId": 1472015, "materials": [4131013, 1472014, 4021000], "quantities": [1, 1, 5], "mesoCost": 30000, "stimulatorId": 4130015, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1472016_stim", "type": "craftAction", "craftAction": {"itemId": 1472016, "materials": [4131013, 1472014, 4011003], "quantities": [1, 1, 5], "mesoCost": 30000, "stimulatorId": 4130015, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1472017_stim", "type": "craftAction", "craftAction": {"itemId": 1472017, "materials": [4131013, 1472014, 4021008], "quantities": [1, 1, 2], "mesoCost": 35000, "stimulatorId": 4130015, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1472019_stim", "type": "craftAction", "craftAction": {"itemId": 1472019, "materials": [4131013, 1472018, 4021000], "quantities": [1, 1, 6], "mesoCost": 40000, "stimulatorId": 4130015, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1472020_stim", "type": "craftAction", "craftAction": {"itemId": 1472020, "materials": [4131013, 1472018, 4021005], "quantities": [1, 1, 6], "mesoCost": 40000, "stimulatorId": 4130015, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+    {"id": "craft_1472021_stim", "type": "craftAction", "craftAction": {"itemId": 1472021, "materials": [4131013, 1472018, 4005003, 4021008], "quantities": [1, 1, 1, 3], "mesoCost": 50000, "stimulatorId": 4130015, "stimulatorFailChance": 0.1, "successState": "craftSuccessStim", "failureState": "craftFailureMeso", "missingMaterialsState": "missingMaterials"}},
+
+    {
+      "id": "craftSuccess",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Heeere you go! What do you think? Marvellous, isn't it?",
+        "choices": [
+          {"text": "Ok", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "craftSuccessStim",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Heeere you go! What do you think? Marvellous, isn't it?",
+        "choices": [
+          {"text": "Ok", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "craftStimulatorFailed",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "...ACK! My attention wandered, and before I knew it... Uh, sorry, but there's nothing I can do for you now.",
+        "choices": [
+          {"text": "Ok", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "craftFailureMeso",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "I'm afraid my fees are non-negotiable.",
+        "choices": [
+          {"text": "Ok", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "missingMaterials",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Sorry, but you're missing a required item. Possibly a manual? Or one of the ores?",
+        "choices": [
+          {"text": "Ok", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "noInventorySpace",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Verify for a slot in your inventory first.",
+        "choices": [
+          {"text": "Ok", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    }
+  ]
+}

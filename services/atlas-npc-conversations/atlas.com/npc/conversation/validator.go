@@ -131,10 +131,6 @@ func (v *Validator) validateDialogue(stateId string, dialogue *DialogueModel, st
 		if choiceCount != 3 {
 			result.addError(stateId, "dialogue.choices", "invalid_count", fmt.Sprintf("%s requires exactly 3 choices", dialogue.DialogueType()))
 		}
-	case SendSimple:
-		if choiceCount == 0 {
-			result.addError(stateId, "dialogue.choices", "invalid_count", "sendSimple requires at least 1 choice")
-		}
 	}
 
 	// Validate each choice

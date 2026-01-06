@@ -355,7 +355,6 @@ const (
 	SendOk            DialogueType = "sendOk"
 	SendYesNo         DialogueType = "sendYesNo"
 	SendAcceptDecline DialogueType = "sendAcceptDecline"
-	SendSimple        DialogueType = "sendSimple"
 	SendNext          DialogueType = "sendNext"
 	SendNextPrev      DialogueType = "sendNextPrev"
 	SendPrev          DialogueType = "sendPrev"
@@ -509,10 +508,6 @@ func (b *DialogueBuilder) Build() (*DialogueModel, error) {
 	case SendAcceptDecline:
 		if len(b.choices) != 3 {
 			return nil, errors.New("sendAcceptDecline requires exactly 3 choices")
-		}
-	case SendSimple:
-		if len(b.choices) == 0 {
-			return nil, errors.New("sendSimple requires at least 1 choice")
 		}
 	}
 

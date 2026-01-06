@@ -30,8 +30,8 @@ Map.txt and NPC.txt are very large files (thousands of lines). Reading them in f
 ### 1. Analyze the JavaScript Script
 
 Identify and understand:
-- **Dialogue types**: `sendOk`, `sendNext`, `sendNextPrev`, `sendPrev`, `sendYesNo`, `sendSimple`
-  - **IMPORTANT**: `sendSimple` with `#L0#`, `#L1#`, etc. tags → use `listSelection` state type
+- **Dialogue types**: `sendOk`, `sendNext`, `sendNextPrev`, `sendPrev`, `sendYesNo`, `sendAcceptDecline`
+  - **IMPORTANT**: `sendSimple` in scripts with `#L0#`, `#L1#`, etc. tags → use `listSelection` state type (NOT dialogue)
   - Pattern: `#L<number>#<choice text>#l` indicates list items
   - Extract title (text before first `#L`) and parse each list item
 - **Conditional logic**: Job checks, meso/item requirements
@@ -49,21 +49,21 @@ Identify and understand:
 
 ### 3. State Types (from schema)
 
-- **dialogue**: Present messages with choices (`sendOk`, `sendNext`, `sendNextPrev`, `sendPrev`, `sendYesNo`, `sendSimple`)
+- **dialogue**: Present messages with choices (`sendOk`, `sendNext`, `sendNextPrev`, `sendPrev`, `sendYesNo`, `sendAcceptDecline`)
   - **Choice count requirements**:
     - `sendOk`: exactly 2 choices
     - `sendYesNo`: exactly 3 choices
-    - `sendSimple`: at least 1 choice
+    - `sendAcceptDecline`: exactly 3 choices
     - `sendNext`: exactly 2 choices
     - `sendNextPrev`: exactly 3 choices
     - `sendPrev`: exactly 2 choices
   - **CRITICAL - Required choice text values** (case-sensitive, must match exactly):
     - `sendOk`: `"Ok"` and `"Exit"` (note: lowercase 'k')
     - `sendYesNo`: `"Yes"`, `"No"`, and `"Exit"`
+    - `sendAcceptDecline`: `"Accept"`, `"Decline"`, and `"Exit"`
     - `sendNext`: `"Next"` and `"Exit"`
     - `sendNextPrev`: `"Previous"`, `"Next"`, and `"Exit"`
     - `sendPrev`: `"Previous"` and `"Exit"`
-    - `sendSimple`: Must include `"Exit"` choice
     - `listSelection`: Must include `"Exit"` choice
   - **When to use sendNext vs sendNextPrev vs sendPrev**:
     - Use `sendNext` for first page of multi-page dialogue or single-page dialogue
@@ -275,9 +275,10 @@ When converting crafting NPCs that ask for quantity (using `askNumber`), use ari
 - ✅ **Choice text uses exact required values** (case-sensitive):
   - sendOk: "Ok" and "Exit"
   - sendYesNo: "Yes", "No", and "Exit"
+  - sendAcceptDecline: "Accept", "Decline", and "Exit"
   - sendNext: "Next" and "Exit"
   - sendNextPrev: "Previous", "Next", and "Exit"
-  - listSelection/sendSimple: includes "Exit"
+  - listSelection: includes "Exit"
 - ✅ `nextState` is `null` (not string) when ending conversation
 - ✅ Map IDs are mapped to human-readable names from Map.txt
 - ✅ NPC IDs are mapped to names from NPC.txt (when referenced)
@@ -372,24 +373,24 @@ cm.sendYesNo("Do you want to continue?");
 }
 ```
 
-**Example 2 - sendSimple with list tags:**
+**Example 2 - Converting cm.sendSimple() with list tags:**
 ```javascript
-// Original script
+// Original script uses cm.sendSimple() with #L tags for menu options
 cm.sendSimple("Choose a destination:\r\n#L0#Henesys#l\r\n#L1#Ellinia#l\r\n#L2#Perion#l");
 ```
-❌ WRONG - Using dialogue type:
+❌ WRONG - Do NOT use dialogue type (sendSimple is not a valid dialogueType):
 ```json
 {
   "type": "dialogue",
   "dialogue": {
-    "dialogueType": "sendSimple",
+    "dialogueType": "sendSimple",  // ← sendSimple is NOT a valid dialogueType!
     "text": "Choose a destination:\r\n#L0#Henesys#l\r\n#L1#Ellinia#l\r\n#L2#Perion#l",
-    "choices": [...]  // ← Listing out choices manually
+    "choices": [...]
   }
 }
 ```
 
-✅ CORRECT - Using listSelection type:
+✅ CORRECT - Use listSelection state type:
 ```json
 {
   "type": "listSelection",

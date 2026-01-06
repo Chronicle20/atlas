@@ -4,13 +4,12 @@
   "states": [
     {
       "id": "start",
-      "type": "dialogue",
-      "dialogue": {
-        "dialogueType": "sendSimple",
-        "text": "Well, hello! Welcome to the Henesys Plastic Surgery! Would you like to transform your face into something new? With a #b#t5152001##k, you can let us take care of the rest and have the face you've always wanted~!\r\n#L2#Plastic Surgery: #i5152001##t5152001##l",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Well, hello! Welcome to the Henesys Plastic Surgery! Would you like to transform your face into something new? With a #b#t5152001##k, you can let us take care of the rest and have the face you've always wanted~!",
         "choices": [
           {
-            "text": "Plastic Surgery: VIP Face Coupon (Henesys)",
+            "text": "Plastic Surgery: #i5152001##t5152001#",
             "nextState": "generateFaceStyles"
           },
           {

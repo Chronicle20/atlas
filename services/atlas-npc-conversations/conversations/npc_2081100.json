@@ -1,0 +1,283 @@
+{
+  "npcId": 2081100,
+  "startState": "checkRequirements",
+  "states": [
+    {
+      "id": "checkRequirements",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "level", "operator": "<", "value": "120" }
+            ],
+            "nextState": "notReady"
+          },
+          {
+            "conditions": [
+              { "type": "jobId", "operator": "<", "value": "100" }
+            ],
+            "nextState": "notReady"
+          },
+          {
+            "conditions": [
+              { "type": "jobId", "operator": ">=", "value": "200" }
+            ],
+            "nextState": "notReady"
+          },
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "<", "value": "3", "referenceId": 6904 }
+            ],
+            "nextState": "questNotComplete"
+          },
+          {
+            "conditions": [
+              { "type": "jobId", "operator": "=", "value": "112" }
+            ],
+            "nextState": "teachSkillsHero"
+          },
+          {
+            "conditions": [
+              { "type": "jobId", "operator": "=", "value": "122" }
+            ],
+            "nextState": "teachSkillsPaladin"
+          },
+          {
+            "conditions": [
+              { "type": "jobId", "operator": "=", "value": "132" }
+            ],
+            "nextState": "teachSkillsDarkKnight"
+          },
+          {
+            "conditions": []
+          ,
+            "nextState": "askAdvance"
+          }
+        ]
+      }
+    },
+    {
+      "id": "notReady",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Please don't bother me right now, I am trying to concentrate.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "questNotComplete",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "You have not yet passed my trials. I can not advance you until you do so.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "askAdvance",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You did a marvellous job passing my test. Are you ready to advance to your 4th job?",
+        "choices": [
+          { "text": "Yes", "nextState": "checkInventorySpace" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "checkInventorySpace",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": "<", "value": "1", "referenceId": 2280003 }
+            ],
+            "nextState": "noInventorySpace"
+          },
+          {
+            "conditions": [
+              { "type": "jobId", "operator": "=", "value": "111" }
+            ],
+            "nextState": "advanceToHero"
+          },
+          {
+            "conditions": [
+              { "type": "jobId", "operator": "=", "value": "121" }
+            ],
+            "nextState": "advanceToPaladin"
+          },
+          {
+            "conditions": [
+              { "type": "jobId", "operator": "=", "value": "131" }
+            ],
+            "nextState": "advanceToDarkKnight"
+          },
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "noInventorySpace",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Please have one slot available on #bUSE#k inventory to receive a skill book.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "advanceToHero",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "change_job", "params": { "jobId": "112" } },
+          { "type": "create_skill", "params": { "skillId": "1121001", "level": "0", "masterLevel": "10" } },
+          { "type": "create_skill", "params": { "skillId": "1120004", "level": "0", "masterLevel": "10" } },
+          { "type": "create_skill", "params": { "skillId": "1121008", "level": "0", "masterLevel": "10" } },
+          { "type": "award_item", "params": { "itemId": "2280003", "quantity": "1" } }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "advanceToPaladin",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "change_job", "params": { "jobId": "122" } },
+          { "type": "create_skill", "params": { "skillId": "1221001", "level": "0", "masterLevel": "10" } },
+          { "type": "create_skill", "params": { "skillId": "1220005", "level": "0", "masterLevel": "10" } },
+          { "type": "create_skill", "params": { "skillId": "1221009", "level": "0", "masterLevel": "10" } },
+          { "type": "award_item", "params": { "itemId": "2280003", "quantity": "1" } }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "advanceToDarkKnight",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "change_job", "params": { "jobId": "132" } },
+          { "type": "create_skill", "params": { "skillId": "1321001", "level": "0", "masterLevel": "10" } },
+          { "type": "create_skill", "params": { "skillId": "1320005", "level": "0", "masterLevel": "10" } },
+          { "type": "create_skill", "params": { "skillId": "1321007", "level": "0", "masterLevel": "10" } },
+          { "type": "award_item", "params": { "itemId": "2280003", "quantity": "1" } }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "teachSkillsHero",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "If I must, I can teach you the art of your class.",
+        "choices": [
+          { "text": "Teach me the skills of my class.", "nextState": "grantHeroSkills" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "teachSkillsPaladin",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "If I must, I can teach you the art of your class.",
+        "choices": [
+          { "text": "Teach me the skills of my class.", "nextState": "grantPaladinSkills" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "teachSkillsDarkKnight",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "If I must, I can teach you the art of your class.",
+        "choices": [
+          { "text": "Teach me the skills of my class.", "nextState": "grantDarkKnightSkills" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "grantHeroSkills",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "create_skill", "params": { "skillId": "1121010", "level": "0", "masterLevel": "10" } },
+          { "type": "create_skill", "params": { "skillId": "1120005", "level": "0", "masterLevel": "10" } },
+          { "type": "create_skill", "params": { "skillId": "1121002", "level": "0", "masterLevel": "10" } }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": "skillsGranted" }
+        ]
+      }
+    },
+    {
+      "id": "grantPaladinSkills",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "create_skill", "params": { "skillId": "1221002", "level": "0", "masterLevel": "10" } },
+          { "type": "create_skill", "params": { "skillId": "1221003", "level": "0", "masterLevel": "10" } },
+          { "type": "create_skill", "params": { "skillId": "1221004", "level": "0", "masterLevel": "10" } }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": "skillsGranted" }
+        ]
+      }
+    },
+    {
+      "id": "grantDarkKnightSkills",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "create_skill", "params": { "skillId": "1321002", "level": "0", "masterLevel": "10" } },
+          { "type": "create_skill", "params": { "skillId": "1320008", "level": "0", "masterLevel": "10" } },
+          { "type": "create_skill", "params": { "skillId": "1320009", "level": "0", "masterLevel": "10" } }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": "skillsGranted" }
+        ]
+      }
+    },
+    {
+      "id": "skillsGranted",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "It is done. Leave me now.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    }
+  ]
+}

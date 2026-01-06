@@ -1,0 +1,158 @@
+{
+  "npcId": 2020005,
+  "startState": "checkQuest",
+  "states": [
+    {
+      "id": "checkQuest",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "questStatus", "operator": "=", "value": "3", "referenceId": "3035"}
+            ],
+            "nextState": "mainMenu"
+          },
+          {
+            "conditions": [],
+            "nextState": "questNotCompleted"
+          }
+        ]
+      }
+    },
+    {
+      "id": "questNotCompleted",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "If you decide to help me out, then in return, I'll make the item available for sale.",
+        "choices": [
+          {"text": "Next", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "mainMenu",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Thanks to you #b#t4031056##k is safely sealed. Of course, also as a result, I used up about half of the power I have accumulated over the last 800 years or so...but now I can die in peace. Oh, by the way... are you looking for rare items by any chance? As a sign of appreciation for your hard work, I'll sell some items I have to you, and ONLY you. Pick out the one you want!",
+        "choices": [
+          {"text": "#b#t2050003# (Price: 300 mesos)#k", "nextState": "askQuantity", "context": {"item": "2050003", "cost": "300", "msg": "that cures the state of being sealed and cursed"}},
+          {"text": "#b#t2050004# (Price: 400 mesos)#k", "nextState": "askQuantity", "context": {"item": "2050004", "cost": "400", "msg": "that cures all"}},
+          {"text": "#b#t4006000# (Price: 5000 mesos)#k", "nextState": "askQuantity", "context": {"item": "4006000", "cost": "5000", "msg": ", possessing magical power, that is used for high-quality skills"}},
+          {"text": "#b#t4006001# (Price: 5000 mesos)#k", "nextState": "askQuantity", "context": {"item": "4006001", "cost": "5000", "msg": ", possessing the power of summoning that is used for high-quality skills"}},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "askQuantity",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "Is #b#t{context.item}##k really the item that you need? It's the item {context.msg}. It may not be the easiest item to acquire, but I'll give you a good deal on it. It'll cost you #b{context.cost} mesos#k per item. How many would you like to purchase?",
+        "default": 0,
+        "min": 1,
+        "max": 100,
+        "contextKey": "amount",
+        "nextState": "checkZeroAmount"
+      }
+    },
+    {
+      "id": "checkZeroAmount",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "confirmPurchase"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmPurchase",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Are you sure you want to buy #r{context.amount} #t{context.item}#(s)##k? It'll cost you {context.cost} mesos per #t{context.item}#, which will cost you #r{context.cost} * {context.amount} mesos#k in total.",
+        "choices": [
+          {"text": "Yes", "nextState": "validatePurchase"},
+          {"text": "No", "nextState": "declinePurchase"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "declinePurchase",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "I see. Understand that I have many different items here. Take a look around. I'm only selling these items to you, so I won't be ripping you off in any way shape or form.",
+        "choices": [
+          {"text": "Next", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "validatePurchase",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "meso", "operator": ">=", "value": "{context.cost} * {context.amount}"},
+              {"type": "inventorySpace", "operator": ">=", "value": "{context.amount}", "referenceId": "{context.item}"}
+            ],
+            "nextState": "doPurchase"
+          },
+          {
+            "conditions": [],
+            "nextState": "notEnoughResources"
+          }
+        ]
+      }
+    },
+    {
+      "id": "notEnoughResources",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Are you sure you have enough mesos? Please check and see if your etc. or use inventory is full, or if you have at least #r{context.cost} * {context.amount}#k mesos.",
+        "choices": [
+          {"text": "Next", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "doPurchase",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "award_mesos", "params": {"amount": "-{context.cost} * {context.amount}"}},
+          {"type": "award_item", "params": {"itemId": "{context.item}", "quantity": "{context.amount}"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "purchaseSuccess"}
+        ]
+      }
+    },
+    {
+      "id": "purchaseSuccess",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Thank you. If you ever find yourself needing items down the road, make sure to drop by here. I may have gotten old over the years, but I can still make magic items with ease.",
+        "choices": [
+          {"text": "Next", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    }
+  ]
+}

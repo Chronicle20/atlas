@@ -172,6 +172,11 @@ Common conditions in `outcomes`:
 - **petCount**: Check number of pets (operators: =, >, <, >=, <=)
 - **mapCapacity**: Check player count in map (operators: =, >, <, >=, <=, requires `referenceId` with map ID)
 - **item**: Check item possession (operators: =, >, <, >=, <=, requires `referenceId` field)
+- **transportAvailable**: Check if a transport (train, boat, genie, etc.) is available for boarding (operators: =, requires `referenceId` with destination map ID)
+  - Value "0" = transport unavailable (already departed/travelling)
+  - Value "1" = transport available for boarding
+  - **Use this when script checks**: `cm.getEventManager("Trains")`, `cm.getEventManager("Boats")`, or similar event manager availability checks
+  - Example: `{ "type": "transportAvailable", "operator": "=", "value": "0", "referenceId": "200000122" }` checks if train to Ludibrium is unavailable
 
 ### 6. Context Propagation Rules
 

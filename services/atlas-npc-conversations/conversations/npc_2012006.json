@@ -1,0 +1,295 @@
+{
+  "npcId": 2012006,
+  "startState": "selectPlatform",
+  "states": [
+    {
+      "id": "selectPlatform",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Orbis Station has lots of platforms available to choose from. You need to choose the one that'll take you to the destination of your choice. Which platform will you take?",
+        "choices": [
+          {
+            "text": "#bThe platform to the ship that heads to Ellinia.#k",
+            "nextState": "confirmEllinia",
+            "context": {
+              "mapId": "200000110"
+            }
+          },
+          {
+            "text": "#bThe platform to the train that heads to Ludibrium.#k",
+            "nextState": "confirmLudibrium",
+            "context": {
+              "mapId": "200000120"
+            }
+          },
+          {
+            "text": "#bThe platform to the bird that heads to Leafre.#k",
+            "nextState": "confirmLeafre",
+            "context": {
+              "mapId": "200000130"
+            }
+          },
+          {
+            "text": "#bThe platform to Hak that heads to Mu Lung.#k",
+            "nextState": "confirmMuLung",
+            "context": {
+              "mapId": "200000140"
+            }
+          },
+          {
+            "text": "#bThe platform to Genie that heads to Ariant.#k",
+            "nextState": "confirmAriant",
+            "context": {
+              "mapId": "200000150"
+            }
+          },
+          {
+            "text": "#bThe platform to the ship that heads to Ereve.#k",
+            "nextState": "confirmEreve",
+            "context": {
+              "mapId": "200000160"
+            }
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmEllinia",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Ok #h #, I will send you to the platform for #b#m200000110##k.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "warpEllinia"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpEllinia",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "200000110",
+              "portalName": "west00"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmLudibrium",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Ok #h #, I will send you to the platform for #b#m200000120##k.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "warpLudibrium"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpLudibrium",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "200000120",
+              "portalName": "west00"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmLeafre",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Ok #h #, I will send you to the platform for #b#m200000130##k.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "warpLeafre"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpLeafre",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "200000130",
+              "portalName": "west00"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmMuLung",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Ok #h #, I will send you to the platform for #b#m200000140##k.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "warpMuLung"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpMuLung",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "200000140",
+              "portalName": "west00"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmAriant",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Ok #h #, I will send you to the platform for #b#m200000150##k.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "warpAriant"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpAriant",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "200000150",
+              "portalName": "west00"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmEreve",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Ok #h #, I will send you to the platform for #b#m200000160##k.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "warpEreve"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpEreve",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "200000160",
+              "portalName": "west00"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

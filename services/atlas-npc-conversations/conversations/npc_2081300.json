@@ -1,0 +1,229 @@
+{
+  "npcId": 2081300,
+  "startState": "checkRequirements",
+  "states": [
+    {
+      "id": "checkRequirements",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "level", "operator": "<", "value": "120" }
+            ],
+            "nextState": "notReady"
+          },
+          {
+            "conditions": [
+              { "type": "jobId", "operator": "<", "value": "300" }
+            ],
+            "nextState": "notReady"
+          },
+          {
+            "conditions": [
+              { "type": "jobId", "operator": ">=", "value": "400" }
+            ],
+            "nextState": "notReady"
+          },
+          {
+            "conditions": [
+              { "type": "questStatus", "operator": "<", "value": "2", "referenceId": 6924 }
+            ],
+            "nextState": "questNotComplete"
+          },
+          {
+            "conditions": [
+              { "type": "jobId", "operator": "=", "value": "312" }
+            ],
+            "nextState": "teachSkillsBowmaster"
+          },
+          {
+            "conditions": [
+              { "type": "jobId", "operator": "=", "value": "322" }
+            ],
+            "nextState": "teachSkillsMarksman"
+          },
+          {
+            "conditions": [],
+            "nextState": "askAdvance"
+          }
+        ]
+      }
+    },
+    {
+      "id": "notReady",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Please don't bother me right now, I am trying to concentrate.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "questNotComplete",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "You have not yet passed my trials. I can not advance you until you do so.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "askAdvance",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You did a marvellous job passing my test. Are you ready to advance to your 4th job?",
+        "choices": [
+          { "text": "Yes", "nextState": "checkInventorySpace" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "checkInventorySpace",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": "<", "value": "1", "referenceId": 2280003 }
+            ],
+            "nextState": "noInventorySpace"
+          },
+          {
+            "conditions": [
+              { "type": "jobId", "operator": "=", "value": "311" }
+            ],
+            "nextState": "advanceToBowmaster"
+          },
+          {
+            "conditions": [
+              { "type": "jobId", "operator": "=", "value": "321" }
+            ],
+            "nextState": "advanceToMarksman"
+          },
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "noInventorySpace",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Please have one slot available on #bUSE#k inventory to receive a skill book.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "advanceToBowmaster",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "change_job", "params": { "jobId": "312" } },
+          { "type": "create_skill", "params": { "skillId": "3121002", "level": "0", "masterLevel": "10" } },
+          { "type": "create_skill", "params": { "skillId": "3120005", "level": "0", "masterLevel": "10" } },
+          { "type": "create_skill", "params": { "skillId": "3121007", "level": "0", "masterLevel": "10" } },
+          { "type": "award_item", "params": { "itemId": "2280003", "quantity": "1" } }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "advanceToMarksman",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "change_job", "params": { "jobId": "322" } },
+          { "type": "create_skill", "params": { "skillId": "3221002", "level": "0", "masterLevel": "10" } },
+          { "type": "create_skill", "params": { "skillId": "3220004", "level": "0", "masterLevel": "10" } },
+          { "type": "create_skill", "params": { "skillId": "3221006", "level": "0", "masterLevel": "10" } },
+          { "type": "award_item", "params": { "itemId": "2280003", "quantity": "1" } }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "teachSkillsBowmaster",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "If I must, I can teach you the art of your class.",
+        "choices": [
+          { "text": "Teach me the skills of my class.", "nextState": "grantBowmasterSkills" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "teachSkillsMarksman",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "If I must, I can teach you the art of your class.",
+        "choices": [
+          { "text": "Teach me the skills of my class.", "nextState": "grantMarksmanSkills" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "grantBowmasterSkills",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "create_skill", "params": { "skillId": "3121008", "level": "0", "masterLevel": "10" } },
+          { "type": "create_skill", "params": { "skillId": "3121006", "level": "0", "masterLevel": "10" } },
+          { "type": "create_skill", "params": { "skillId": "3121004", "level": "0", "masterLevel": "10" } }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": "skillsGranted" }
+        ]
+      }
+    },
+    {
+      "id": "grantMarksmanSkills",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "create_skill", "params": { "skillId": "3221007", "level": "0", "masterLevel": "10" } },
+          { "type": "create_skill", "params": { "skillId": "3221005", "level": "0", "masterLevel": "10" } },
+          { "type": "create_skill", "params": { "skillId": "3221001", "level": "0", "masterLevel": "10" } }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": "skillsGranted" }
+        ]
+      }
+    },
+    {
+      "id": "skillsGranted",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "It is done. Leave me now.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    }
+  ]
+}

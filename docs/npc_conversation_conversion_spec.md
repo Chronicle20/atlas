@@ -380,6 +380,7 @@ Verify in saga-orchestrator, but common operations:
 - `local:generate_hair_styles` - Generate hair styles (params: `baseStyles`, `genderFilter`, etc.)
 - `local:generate_hair_colors` - Generate hair colors (params: `colors`, etc.)
 - `local:generate_face_styles` - Generate face styles (params: `baseStyles`, etc.)
+- `local:generate_face_colors_for_onetime_lens` - Generate face colors filtered by owned one-time lens items (params: `validateExists`, `excludeEquipped`, `outputContextKey`)
 - `local:select_random_cosmetic` - Random selection (params: `stylesContextKey`, `outputContextKey`)
 - `local:select_random_weighted` - Weighted random selection (params: `items`, `weights`, `outputContextKey`)
 - `local:fetch_map_player_counts` - Fetch player counts (params: `mapIds`)
@@ -554,6 +555,71 @@ The color is encoded in the hundreds place of face IDs:
   }
 }
 ```
+
+#### Detailed: local:generate_face_colors_for_onetime_lens
+
+Generates face color variants based on which one-time cosmetic lens items (5152100-5152107) the character owns. This is used by beauty NPCs like Dr.Roberts that allow using one-time lens coupons.
+
+**Parameters:**
+- `validateExists` (string, optional) - If "true", validates that generated face IDs exist
+- `excludeEquipped` (string, optional) - If "true", excludes the currently equipped face color
+- `outputContextKey` (string, optional) - Context key to store the generated face colors (defaults to "onetimeLensColors")
+
+**Behavior:**
+- Checks inventory for items 5152100-5152107 (one-time lens coupons)
+- For each item the character owns, generates the corresponding face color:
+  - Item 5152100 → color offset 0 (base color)
+  - Item 5152101 → color offset 100
+  - Item 5152102 → color offset 200
+  - ... and so on up to 5152107 → color offset 700
+- Face IDs are calculated as: genderOffset + baseFace + colorOffset
+  - Male genderOffset: 20000
+  - Female genderOffset: 21000
+- Returns an error if the character has no one-time lens items
+
+**Example Usage:**
+
+```json
+{
+  "id": "prepareOnetimeLens",
+  "type": "genericAction",
+  "genericAction": {
+    "operations": [
+      {
+        "type": "local:generate_face_colors_for_onetime_lens",
+        "params": {
+          "validateExists": "true",
+          "excludeEquipped": "true",
+          "outputContextKey": "onetimeLensColors"
+        }
+      }
+    ],
+    "outcomes": [
+      {
+        "conditions": [],
+        "nextState": "chooseOnetimeLens"
+      }
+    ]
+  }
+},
+{
+  "id": "chooseOnetimeLens",
+  "type": "askStyle",
+  "askStyle": {
+    "text": "What kind of lens would you like to wear? Please choose the style of your liking.",
+    "stylesContextKey": "onetimeLensColors",
+    "contextKey": "selectedFace",
+    "nextState": "calculateOnetimeLensCoupon"
+  }
+}
+```
+
+**Typical Flow for One-Time Lens NPCs:**
+1. Check if character has any one-time lens items (5152100-5152107)
+2. Use `local:generate_face_colors_for_onetime_lens` to generate available colors
+3. Use `askStyle` to let player select a color
+4. Use `local:calculate_lens_coupon` to determine which item to consume
+5. Consume the item and apply the face change
 
 ---
 

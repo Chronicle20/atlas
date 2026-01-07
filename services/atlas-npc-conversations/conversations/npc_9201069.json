@@ -1,0 +1,145 @@
+{
+  "npcId": 9201069,
+  "startState": "start",
+  "states": [
+    {
+      "id": "start",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Well, hello! Welcome to the New Leaf City Plastic Surgery! Would you like to transform your face into something new? With a #b#t5152034##k, you can let us take care of the rest and have the face you've always wanted~!",
+        "choices": [
+          {
+            "text": "Plastic Surgery: #i5152034##t5152034#",
+            "nextState": "generateFaceStyles"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "generateFaceStyles",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:generate_face_styles",
+            "params": {
+              "baseStyles": "20000,20001,20003,20004,20005,20006,20008,20012,20031,21001,21002,21003,21004,21005,21006,21008,21012,21016",
+              "genderFilter": "true",
+              "preserveColor": "true",
+              "validateExists": "true",
+              "excludeEquipped": "true",
+              "outputContextKey": "generatedFaces"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "chooseFace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "chooseFace",
+      "type": "askStyle",
+      "askStyle": {
+        "text": "Let's see... I can totally transform your face into something new. Don't you want to try it? For #b#t5152034##k, you can get the face of your liking. Take your time in choosing the face of your preference.",
+        "stylesContextKey": "generatedFaces",
+        "contextKey": "selectedFace",
+        "nextState": "checkCoupon"
+      }
+    },
+    {
+      "id": "checkCoupon",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "5152034"
+              }
+            ],
+            "nextState": "applyFaceChange"
+          },
+          {
+            "conditions": [],
+            "nextState": "noCoupon"
+          }
+        ]
+      }
+    },
+    {
+      "id": "applyFaceChange",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "5152034",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "change_face",
+            "params": {
+              "styleId": "{context.selectedFace}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "success"
+          }
+        ]
+      }
+    },
+    {
+      "id": "success",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Enjoy your new and improved face!",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "noCoupon",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Hmm ... it looks like you don't have the coupon specifically for this place. Sorry to say this, but without the coupon, there's no plastic surgery for you...",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

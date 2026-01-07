@@ -1,0 +1,24 @@
+{
+  "npcId": 9201106,
+  "startState": "welcome",
+  "states": [
+    {
+      "id": "welcome",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "I came from far-away places looking for people powerful enough to join my expedition against the evil that lays waste on this land. Are you, by any chance, one of those people?",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

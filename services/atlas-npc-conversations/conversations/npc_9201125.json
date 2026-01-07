@@ -1,0 +1,112 @@
+{
+  "npcId": 9201125,
+  "startState": "checkJob",
+  "states": [
+    {
+      "id": "checkJob",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "jobId", "operator": "=", "value": "0" }
+            ],
+            "nextState": "checkRequirements"
+          },
+          {
+            "conditions": [],
+            "nextState": "alreadyAdvanced"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkRequirements",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "level", "operator": ">=", "value": "8" },
+              { "type": "intelligence", "operator": ">=", "value": "20" }
+            ],
+            "nextState": "askWarp"
+          },
+          {
+            "conditions": [],
+            "nextState": "notReady"
+          }
+        ]
+      }
+    },
+    {
+      "id": "askWarp",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Hey #h #, I can send you to #b#m101000003##k if you want to be a #bMagician#k. Do you want to go now?",
+        "choices": [
+          { "text": "Yes", "nextState": "warp" },
+          { "text": "No", "nextState": "declined" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "warp",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "101000003",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "declined",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Come back to me if you decided to be a #bMagician#k.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "notReady",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "If you want to be a #bMagician#k, train yourself further until you reach #blevel 8, 20 INT#k.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "alreadyAdvanced",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "You're much stronger now. Keep training!",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    }
+  ]
+}

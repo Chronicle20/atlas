@@ -1,0 +1,169 @@
+{
+  "npcId": 9102100,
+  "startState": "checkQuestActive",
+  "states": [
+    {
+      "id": "checkQuestActive",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "=",
+                "value": "1",
+                "referenceId": "4646"
+              }
+            ],
+            "nextState": "checkHasItem"
+          },
+          {
+            "conditions": [],
+            "nextState": "nothingFound"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkHasItem",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4031921"
+              }
+            ],
+            "nextState": "alreadyHasItem"
+          },
+          {
+            "conditions": [],
+            "nextState": "askPullOut"
+          }
+        ]
+      }
+    },
+    {
+      "id": "nothingFound",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "#b(I couldn't find anything.)",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "alreadyHasItem",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "#b(What's this... eww... a pet's poop was in there!)",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "askPullOut",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "#b(I can see something covered in grass. Should I pull it out?)",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "grantItemAndShowResult"
+          },
+          {
+            "text": "No",
+            "nextState": "declinedPullOut"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "declinedPullOut",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "#b(I didn't touch this hidden item covered in grass)",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "grantItemAndShowResult",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4031921",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "foundItem"
+          }
+        ]
+      }
+    },
+    {
+      "id": "foundItem",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "I found the item that Pet Trainer Bartos hid... this note.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

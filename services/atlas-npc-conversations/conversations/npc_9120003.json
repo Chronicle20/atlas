@@ -1,0 +1,159 @@
+{
+  "npcId": 9120003,
+  "startState": "askEntry",
+  "states": [
+    {
+      "id": "askEntry",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Would you like to enter the bathhouse? That'll be 300 mesos for you.",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkMeso"
+          },
+          {
+            "text": "No",
+            "nextState": "declineMessage"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "declineMessage",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Please come back some other time.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMeso",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": "<",
+                "value": "300"
+              }
+            ],
+            "nextState": "insufficientMeso"
+          },
+          {
+            "conditions": [],
+            "nextState": "checkGenderAndWarp"
+          }
+        ]
+      }
+    },
+    {
+      "id": "insufficientMeso",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Please check and see if you have 300 mesos to enter this place.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkGenderAndWarp",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-300"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "gender",
+                "operator": "=",
+                "value": "0"
+              }
+            ],
+            "nextState": "warpMale"
+          },
+          {
+            "conditions": [],
+            "nextState": "warpFemale"
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpMale",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "801000100",
+              "portalName": "out00"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpFemale",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "801000200",
+              "portalName": "out00"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

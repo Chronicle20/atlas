@@ -15,6 +15,7 @@ type Processor interface {
 	GenerateHairStyles(characterId uint32, params map[string]string) ([]uint32, error)
 	GenerateHairColors(characterId uint32, params map[string]string) ([]uint32, error)
 	GenerateFaceStyles(characterId uint32, params map[string]string) ([]uint32, error)
+	GenerateFaceColors(characterId uint32, params map[string]string) ([]uint32, error)
 	UpdateCharacterAppearance(characterId uint32, cosmeticType string, styleId uint32) error
 }
 
@@ -187,6 +188,58 @@ func (p *ProcessorImpl) GenerateFaceStyles(
 	}
 
 	p.l.Infof("Generated %d face styles for character %d", len(styles), characterId)
+	return styles, nil
+}
+
+// GenerateFaceColors generates color variants for the character's current face
+// This is used for cosmetic lens NPCs that change eye color
+func (p *ProcessorImpl) GenerateFaceColors(
+	characterId uint32,
+	params map[string]string,
+) ([]uint32, error) {
+	p.l.Debugf("Generating face colors for character %d with params: %v", characterId, params)
+
+	// Get character appearance
+	appearance, err := p.appearanceProvider.GetCharacterAppearance(p.ctx, characterId)
+	if err != nil {
+		p.l.WithError(err).Errorf("Failed to get character appearance for character %d", characterId)
+		return nil, fmt.Errorf("failed to get character appearance: %w", err)
+	}
+
+	// Parse color offsets from params
+	// Colors are specified as offsets: 0, 100, 200, 300, 400, 500, 600, 700
+	// These correspond to eye color indices 0-7
+	colorOffsetsStr := params["colorOffsets"]
+	if colorOffsetsStr == "" {
+		colorOffsetsStr = "100,300,400,700" // Default: common lens colors (indices 1, 3, 4, 7)
+	}
+
+	colorOffsets, err := p.parseUint32Array(colorOffsetsStr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid colorOffsets parameter: %w", err)
+	}
+
+	// Parse boolean options
+	validateExists := params["validateExists"] == "true"
+	excludeEquipped := params["excludeEquipped"] == "true"
+
+	p.l.Debugf("Options: validateExists=%v, excludeEquipped=%v, colorOffsets=%v",
+		validateExists, excludeEquipped, colorOffsets)
+
+	// Generate color variants
+	styles := p.generator.GenerateFaceColors(appearance, colorOffsets)
+
+	// Validate if requested
+	if validateExists {
+		styles = p.validator.FilterValid(characterId, styles, CosmeticTypeFace, excludeEquipped)
+	}
+
+	if len(styles) == 0 {
+		p.l.Warnf("No valid face color variants generated for character %d", characterId)
+		return nil, fmt.Errorf("no valid face color variants available after filtering")
+	}
+
+	p.l.Infof("Generated %d face color variants for character %d", len(styles), characterId)
 	return styles, nil
 }
 

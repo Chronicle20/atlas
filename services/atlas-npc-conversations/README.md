@@ -250,6 +250,13 @@ Operations are actions executed during a `genericAction` state:
     - `validateExists` (optional, "true" to validate styles exist in WZ data)
     - `excludeEquipped` (optional, "true" to exclude current face)
     - `outputContextKey` (required, context key to store results)
+- `local:generate_face_colors` - Generate available face/eye colors for character (cosmetic lenses)
+  - Params:
+    - `colorOffsets` (comma-separated color offsets: 0, 100, 200, 300, 400, 500, 600, 700)
+    - `validateExists` (optional, "true" to validate colors exist in WZ data)
+    - `excludeEquipped` (optional, "true" to exclude current face color)
+    - `outputContextKey` (required, context key to store results)
+  - Note: Face colors use offset-based IDs (e.g., base face + 100 for color 1, + 400 for color 4)
 - `local:select_random_cosmetic` - Randomly select a cosmetic from a styles array
   - Params:
     - `stylesContextKey` (required, context key containing styles array)

@@ -1,6 +1,6 @@
 ---
 description: Convert quest conversation JavaScript script to JSON state machine format
-argument-hint: Path to quest script file (e.g., "services/atlas-npc-conversations/tmp/quest_2013.js") or paste JavaScript code
+argument-hint: Path to quest script file (e.g., "services/atlas-npc-conversations/tmp/quest/quest_2013.js") or paste JavaScript code
 ---
 
 You are an AI implementer converting MapleStory quest conversation scripts from JavaScript to a structured JSON state machine format.

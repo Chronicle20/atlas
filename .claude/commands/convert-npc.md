@@ -1,6 +1,6 @@
 ---
 description: Convert NPC conversation JavaScript script to JSON state machine format
-argument-hint: Path to NPC script file (e.g., "services/atlas-npc-conversations/tmp/2003.js") or paste JavaScript code
+argument-hint: Path to NPC script file (e.g., "services/atlas-npc-conversations/tmp/npc/2003.js") or paste JavaScript code
 ---
 
 You are an AI implementer converting MapleStory NPC conversation scripts from JavaScript to a structured JSON state machine format.

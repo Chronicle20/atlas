@@ -6,5 +6,3 @@ services/atlas-runtime-orchestrator/atlas.com/runtime-orchestrator/atlas-runtime
 .DS_Store
 services/atlas-npc-conversations/tmp
 services/atlas-npc-conversations/atlas.com/npc/atlas-npc-conversations
-services/atlas-npc-conversations/tmp2
-services/atlas-quest/tmp

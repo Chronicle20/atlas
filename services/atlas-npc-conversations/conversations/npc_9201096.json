@@ -1,0 +1,247 @@
+{
+  "npcId": 9201096,
+  "startState": "introduction",
+  "states": [
+    {
+      "id": "introduction",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Hey, are you aware about the expeditions running right now at the Crimsonwood Keep? So, there is a great opportunity for one to improve themselves, one can rack up experience and loot pretty fast there.",
+        "choices": [
+          { "text": "Next", "nextState": "askCraft" },
+          { "text": "Exit", "nextState": "decline" }
+        ]
+      }
+    },
+    {
+      "id": "askCraft",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Said so, methinks making use of some strong utility potions can potentially create some differential on the front, and by this I mean to start crafting #b#t2022284##k's to help on the efforts. So, getting right down to business, I'm currently pursuing #rplenty#k of those items: #r#t4032010##k, #r#t4032011##k, #r#t4032012##k, and some funds to support the cause. Would you want to get some of these boosters?",
+        "choices": [
+          { "text": "Yes", "nextState": "askQuantity" },
+          { "text": "No", "nextState": "decline" },
+          { "text": "Exit", "nextState": "decline" }
+        ]
+      }
+    },
+    {
+      "id": "askQuantity",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "Ok, I'll be crafting some #t2022284#. In that case, how many of those do you want me to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "confirmCraft"
+      }
+    },
+    {
+      "id": "confirmCraft",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "So, you want me to make {context.quantity} #t2022284#? In that case, I'm going to need specific items from you in order to make it. And make sure you have room in your inventory!#b\r\n#i4032010# {context.quantity} * 60 #t4032010#\r\n#i4032011# {context.quantity} * 60 #t4032011#\r\n#i4032012# {context.quantity} * 45 #t4032012#\r\n#i4031138# {context.quantity} * 75000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "validateMeso" },
+          { "text": "No", "nextState": "decline" },
+          { "text": "Exit", "nextState": "decline" }
+        ]
+      }
+    },
+    {
+      "id": "validateMeso",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": "<",
+                "value": "75000 * {context.quantity}"
+              }
+            ],
+            "nextState": "insufficientMeso"
+          },
+          {
+            "conditions": [],
+            "nextState": "validateInventorySpace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "validateInventorySpace",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "{context.quantity}",
+                "referenceId": "2022284"
+              }
+            ],
+            "nextState": "validateMaterials"
+          },
+          {
+            "conditions": [],
+            "nextState": "noInventorySpace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "validateMaterials",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "60 * {context.quantity}",
+                "referenceId": "4032010"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "60 * {context.quantity}",
+                "referenceId": "4032011"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "45 * {context.quantity}",
+                "referenceId": "4032012"
+              }
+            ],
+            "nextState": "performCraft"
+          },
+          {
+            "conditions": [],
+            "nextState": "insufficientMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performCraft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4032010",
+              "quantity": "60 * {context.quantity}"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4032011",
+              "quantity": "60 * {context.quantity}"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4032012",
+              "quantity": "45 * {context.quantity}"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-75000 * {context.quantity}"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "2022284",
+              "quantity": "{context.quantity}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "craftSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "craftSuccess",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "There it is! Thanks for your cooperation.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "insufficientMeso",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Well, I DID say I would be needing some funds to craft it, wasn't it?",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "noInventorySpace",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "You didn't check if you got a slot to spare on your inventory before crafting, right?",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "insufficientMaterials",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "There are not enough resources on your inventory. Please check it again.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "decline",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Very well, see you around.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,112 @@
+{
+  "npcId": 9201126,
+  "startState": "checkJob",
+  "states": [
+    {
+      "id": "checkJob",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "jobId", "operator": "=", "value": "0" }
+            ],
+            "nextState": "checkRequirements"
+          },
+          {
+            "conditions": [],
+            "nextState": "notBeginner"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkRequirements",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "level", "operator": ">=", "value": "10" },
+              { "type": "dexterity", "operator": ">=", "value": "25" }
+            ],
+            "nextState": "askWarp"
+          },
+          {
+            "conditions": [],
+            "nextState": "notQualified"
+          }
+        ]
+      }
+    },
+    {
+      "id": "askWarp",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Hey #h #, I can send you to #b#m103000003##k if you want to be a #bThief#k. Do you want to go now?",
+        "choices": [
+          { "text": "Yes", "nextState": "performWarp" },
+          { "text": "No", "nextState": "decline" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "performWarp",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "103000003",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "decline",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Come back to me if you decided to be a #bThief#k.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "notQualified",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "If you want to be a #bThief#k, train yourself further until you reach #blevel 10, 25 DEX#k.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "notBeginner",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "You're much stronger now. Keep training!",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    }
+  ]
+}

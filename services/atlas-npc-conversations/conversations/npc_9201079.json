@@ -1,0 +1,27 @@
+{
+  "npcId": 9201079,
+  "startState": "warpToFoyer",
+  "states": [
+    {
+      "id": "warpToFoyer",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "682000100",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

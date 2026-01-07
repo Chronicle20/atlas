@@ -19,6 +19,7 @@ import (
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -59,6 +60,8 @@ type Processor interface {
 	ClearPositions(ownerId uint32) error
 	AwardClosenessAndEmit(petId uint32, amount uint16) error
 	AwardCloseness(mb *message.Buffer) func(petId uint32) func(amount uint16) error
+	AwardClosenessWithTransactionAndEmit(transactionId uuid.UUID, petId uint32, amount uint16) error
+	AwardClosenessWithTransaction(mb *message.Buffer) func(transactionId uuid.UUID, petId uint32, amount uint16) error
 	AwardFullnessAndEmit(petId uint32, amount byte) error
 	AwardFullness(mb *message.Buffer) func(petId uint32) func(amount byte) error
 	AwardLevelAndEmit(petId uint32, amount byte) error
@@ -630,69 +633,81 @@ func (p *ProcessorImpl) ClearPositions(ownerId uint32) error {
 }
 
 func (p *ProcessorImpl) AwardClosenessAndEmit(petId uint32, amount uint16) error {
-	return message.Emit(p.kp)(model.Flip(model.Flip(p.AwardCloseness)(petId))(amount))
+	return p.AwardClosenessWithTransactionAndEmit(uuid.Nil, petId, amount)
+}
+
+func (p *ProcessorImpl) AwardClosenessWithTransactionAndEmit(transactionId uuid.UUID, petId uint32, amount uint16) error {
+	return message.Emit(p.kp)(func(mb *message.Buffer) error {
+		return p.AwardClosenessWithTransaction(mb)(transactionId, petId, amount)
+	})
 }
 
 func (p *ProcessorImpl) AwardCloseness(mb *message.Buffer) func(petId uint32) func(amount uint16) error {
 	return func(petId uint32) func(amount uint16) error {
 		return func(amount uint16) error {
-			p.l.Debugf("Awarding [%d] closeness for pet [%d].", amount, petId)
-			txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
-				pe, err := p.With(WithTransaction(tx)).GetById(petId)
-				if err != nil {
-					return err
-				}
-				if amount == 0 {
-					return nil
-				}
-
-				newCloseness := pe.Closeness() + amount
-				levels := byte(0)
-
-				for {
-					if pe.Level() >= MaxLevel {
-						if newCloseness > MaxCloseness {
-							newCloseness = MaxCloseness
-						}
-						break
-					}
-
-					levelExp := petExpTable[pe.Level()+levels]
-					if newCloseness >= levelExp {
-						if pe.Level()+levels >= MaxLevel {
-							newCloseness = petExpTable[len(petExpTable)]
-						} else {
-							levels += 1
-						}
-					} else {
-						break
-					}
-				}
-
-				err = updateCloseness(tx)(p.t, petId, newCloseness)
-				if err != nil {
-					return err
-				}
-				if levels > 0 {
-					err = p.With(WithTransaction(tx)).AwardLevel(mb)(pe.Id())(levels)
-					if err != nil {
-						return err
-					}
-				}
-				pe = Clone(pe).SetCloseness(newCloseness).SetLevel(pe.Level() + levels).Build()
-				err = mb.Put(pet.EnvStatusEventTopic, closenessChangedEventProvider(pe, int16(amount)))
-				if err != nil {
-					return err
-				}
-				return nil
-			})
-			if txErr != nil {
-				p.l.WithError(txErr).Errorf("Unable to award closeness [%d].", petId)
-				return txErr
-			}
-			p.l.Infof("Awarded [%d] closeness for pet [%d].", amount, petId)
-			return nil
+			return p.AwardClosenessWithTransaction(mb)(uuid.Nil, petId, amount)
 		}
+	}
+}
+
+func (p *ProcessorImpl) AwardClosenessWithTransaction(mb *message.Buffer) func(transactionId uuid.UUID, petId uint32, amount uint16) error {
+	return func(transactionId uuid.UUID, petId uint32, amount uint16) error {
+		p.l.Debugf("Awarding [%d] closeness for pet [%d].", amount, petId)
+		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+			pe, err := p.With(WithTransaction(tx)).GetById(petId)
+			if err != nil {
+				return err
+			}
+			if amount == 0 {
+				return nil
+			}
+
+			newCloseness := pe.Closeness() + amount
+			levels := byte(0)
+
+			for {
+				if pe.Level() >= MaxLevel {
+					if newCloseness > MaxCloseness {
+						newCloseness = MaxCloseness
+					}
+					break
+				}
+
+				levelExp := petExpTable[pe.Level()+levels]
+				if newCloseness >= levelExp {
+					if pe.Level()+levels >= MaxLevel {
+						newCloseness = petExpTable[len(petExpTable)]
+					} else {
+						levels += 1
+					}
+				} else {
+					break
+				}
+			}
+
+			err = updateCloseness(tx)(p.t, petId, newCloseness)
+			if err != nil {
+				return err
+			}
+			if levels > 0 {
+				err = p.With(WithTransaction(tx)).AwardLevel(mb)(pe.Id())(levels)
+				if err != nil {
+					return err
+				}
+			}
+			pe = Clone(pe).SetCloseness(newCloseness).SetLevel(pe.Level() + levels).Build()
+			err = mb.Put(pet.EnvStatusEventTopic, closenessChangedEventWithTransactionProvider(pe, int16(amount), transactionId))
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+		if txErr != nil {
+			p.l.WithError(txErr).Errorf("Unable to award closeness [%d].", petId)
+			return txErr
+		}
+		p.l.Infof("Awarded [%d] closeness for pet [%d].", amount, petId)
+		return nil
 	}
 }
 

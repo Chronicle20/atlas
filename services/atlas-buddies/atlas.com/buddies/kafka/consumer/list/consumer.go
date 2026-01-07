@@ -81,11 +81,11 @@ func handleRequestBuddyDeleteCommand(db *gorm.DB) message.Handler[list2.Command[
 // Processing:
 //   - Validates command type matches INCREASE_CAPACITY
 //   - Creates a processor with tenant context and span tracing
-//   - Delegates to processor's IncreaseCapacityAndEmit method
+//   - Delegates to processor's IncreaseCapacityWithTransactionAndEmit method
 //   - Logs errors if the operation fails
 //
 // Event Emission:
-//   - Success: CAPACITY_CHANGE event with new capacity
+//   - Success: CAPACITY_CHANGE event with new capacity and transaction ID
 //   - Failure: ERROR event with specific error type (INVALID_CAPACITY, CHARACTER_NOT_FOUND, UNKNOWN_ERROR)
 //
 // Parameters:
@@ -98,9 +98,9 @@ func handleIncreaseCapacityCommand(db *gorm.DB) message.Handler[list2.Command[li
 		if c.Type != list2.CommandTypeIncreaseCapacity {
 			return
 		}
-		err := list.NewProcessor(l, ctx, db).IncreaseCapacityAndEmit(c.CharacterId, c.WorldId, c.Body.NewCapacity)
+		err := list.NewProcessor(l, ctx, db).IncreaseCapacityWithTransactionAndEmit(c.TransactionId, c.CharacterId, c.WorldId, c.Body.NewCapacity)
 		if err != nil {
-			l.WithError(err).Errorf("Failed to increase buddy list capacity for character [%d].", c.CharacterId)
+			l.WithError(err).Errorf("Failed to increase buddy list capacity for character [%d]. Transaction: %s", c.CharacterId, c.TransactionId.String())
 		}
 	}
 }

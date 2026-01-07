@@ -281,6 +281,7 @@ const (
 	StartQuest                   Action = "start_quest"
 	ApplyConsumableEffect        Action = "apply_consumable_effect"
 	SendMessage                  Action = "send_message"
+	AwardFame                    Action = "award_fame"
 )
 
 // Step represents a single step within a saga.
@@ -574,6 +575,15 @@ type SendMessagePayload struct {
 	Message     string     `json:"message"`     // The message text to display
 }
 
+// AwardFamePayload represents the payload required to award fame to a character.
+// This is used for NPC/quest-initiated fame rewards (e.g., qm.gainFame() in scripts).
+type AwardFamePayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to award fame to
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	Amount      int16      `json:"amount"`      // Amount of fame to award (can be negative)
+}
+
 // Custom UnmarshalJSON for Step[T] to handle the generics
 func (s *Step[T]) UnmarshalJSON(data []byte) error {
 	type Alias Step[T] // Alias to avoid recursion
@@ -737,6 +747,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case SendMessage:
 		var payload SendMessagePayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case AwardFame:
+		var payload AwardFamePayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

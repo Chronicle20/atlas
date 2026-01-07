@@ -1,0 +1,59 @@
+{
+  "questId": 2216,
+  "questName": "Dyle Information",
+  "startStateMachine": {
+    "startState": "intro",
+    "states": [
+      {
+        "id": "intro",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "I've just gathered an interesting information, #rDyle looks just like regular Ligators#k, but bigger.",
+          "choices": [
+            {"text": "Next", "nextState": "completeQuest"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {"force": "true"}},
+            {"type": "award_exp", "params": {"amount": "7000"}}
+          ],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "questStatus", "operator": "=", "value": "3", "referenceId": "2216"},
+                {"type": "questStatus", "operator": "=", "value": "3", "referenceId": "2217"},
+                {"type": "questStatus", "operator": "=", "value": "3", "referenceId": "2218"},
+                {"type": "questStatus", "operator": "=", "value": "3", "referenceId": "2219"},
+                {"type": "item", "operator": ">=", "value": "1", "referenceId": "4031894"}
+              ],
+              "nextState": "removeSubquestItem"
+            },
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "removeSubquestItem",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "destroy_item", "params": {"itemId": "4031894", "quantity": "1"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

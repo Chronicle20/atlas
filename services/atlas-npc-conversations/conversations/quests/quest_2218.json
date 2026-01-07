@@ -1,0 +1,59 @@
+{
+  "questId": 2218,
+  "questName": "Lakelis Information",
+  "startStateMachine": {
+    "startState": "intro",
+    "states": [
+      {
+        "id": "intro",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Hey did you see how strange #rLakelis#k has been acting these days? We should see what's going on aabout her, her actions have been so weird lately...",
+          "choices": [
+            {"text": "Next", "nextState": "completeQuest"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {"force": "true"}},
+            {"type": "award_exp", "params": {"amount": "7000"}}
+          ],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "questStatus", "operator": "=", "value": "3", "referenceId": "2216"},
+                {"type": "questStatus", "operator": "=", "value": "3", "referenceId": "2217"},
+                {"type": "questStatus", "operator": "=", "value": "3", "referenceId": "2218"},
+                {"type": "questStatus", "operator": "=", "value": "3", "referenceId": "2219"},
+                {"type": "item", "operator": ">=", "value": "1", "referenceId": "4031894"}
+              ],
+              "nextState": "removeSubquestItem"
+            },
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "removeSubquestItem",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "destroy_item", "params": {"itemId": "4031894", "quantity": "1"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

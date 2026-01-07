@@ -1,0 +1,34 @@
+{
+  "questId": 2228,
+  "questName": "Quest 2228 - Faust Defeat Reward",
+  "startStateMachine": {
+    "startState": "thankYou",
+    "states": [
+      {
+        "id": "thankYou",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Thank you for defeating #rFaust#k. That will finally settle my spirit to rest.",
+          "choices": [
+            {"text": "Next", "nextState": "completeQuest"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {"force": "true"}},
+            {"type": "award_fame", "params": {"amount": "8"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -1544,6 +1544,30 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 		return stepId, saga.Pending, saga.SendMessage, payload, nil
 
+	case "award_fame":
+		// Format: award_fame
+		// Params: amount (int16)
+		// Awards fame to a character (can be negative to remove fame)
+		// Used for quest rewards (e.g., qm.gainFame() in scripts)
+		amountValue, exists := operation.Params()["amount"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing amount parameter for award_fame operation")
+		}
+
+		amountInt, err := e.evaluateContextValueAsInt(characterId, "amount", amountValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		payload := saga.AwardFamePayload{
+			CharacterId: characterId,
+			WorldId:     f.WorldId(),
+			ChannelId:   f.ChannelId(),
+			Amount:      int16(amountInt),
+		}
+
+		return stepId, saga.Pending, saga.AwardFame, payload, nil
+
 	default:
 		return "", "", "", nil, fmt.Errorf("unknown operation type: %s", operation.Type())
 	}

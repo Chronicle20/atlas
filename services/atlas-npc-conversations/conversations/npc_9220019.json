@@ -1,0 +1,118 @@
+{
+  "npcId": 9220019,
+  "startState": "checkMap",
+  "states": [
+    {
+      "id": "checkMap",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "mapId",
+                "operator": "=",
+                "value": "674030100"
+              }
+            ],
+            "nextState": "greetingEntrance"
+          },
+          {
+            "conditions": [
+              {
+                "type": "mapId",
+                "operator": "=",
+                "value": "674030300"
+              }
+            ],
+            "nextState": "greetingTreasure"
+          },
+          {
+            "conditions": [],
+            "nextState": "confirmReturn"
+          }
+        ]
+      }
+    },
+    {
+      "id": "greetingEntrance",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Hi, I'm #p9220019#.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "greetingTreasure",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Hi there, #h0#. This is the MV's treasure room. Use the time you have here to do whatever you want, there are a lot of things to uncover here, actually. Or else you can use the portal here to #rgo back#k to the entrance.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmReturn",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Are you sure you want to return? By returning now you are leaving your partners behind, do you really want to do it?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "performWarp"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "performWarp",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "674030100",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

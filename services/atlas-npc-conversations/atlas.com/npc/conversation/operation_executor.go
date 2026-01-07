@@ -1297,7 +1297,8 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 	case "spawn_monster":
 		// Format: spawn_monster
-		// Params: monsterId (uint32), x (int16), y (int16), count (int, optional, default 1), team (int8, optional, default 0)
+		// Params: monsterId (uint32), x (int16), y (int16), mapId (uint32, optional - defaults to character's current map),
+		//         count (int, optional, default 1), team (int8, optional, default 0)
 		// Note: Foothold is resolved by saga-orchestrator via atlas-data lookup
 		monsterIdValue, exists := operation.Params()["monsterId"]
 		if !exists {
@@ -1329,6 +1330,15 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 			return "", "", "", nil, err
 		}
 
+		// MapId is optional, defaults to character's current map
+		mapIdInt := int(f.MapId())
+		if mapIdValue, exists := operation.Params()["mapId"]; exists {
+			mapIdInt, err = e.evaluateContextValueAsInt(characterId, "mapId", mapIdValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
+		}
+
 		// Count is optional, defaults to 1
 		countInt := 1
 		if countValue, exists := operation.Params()["count"]; exists {
@@ -1351,7 +1361,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 			CharacterId: characterId,
 			WorldId:     f.WorldId(),
 			ChannelId:   f.ChannelId(),
-			MapId:       uint32(f.MapId()),
+			MapId:       uint32(mapIdInt),
 			MonsterId:   uint32(monsterIdInt),
 			X:           int16(xInt),
 			Y:           int16(yInt),

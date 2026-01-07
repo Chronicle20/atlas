@@ -1,0 +1,1563 @@
+{
+  "npcId": 9201095,
+  "startState": "checkQuestComplete",
+  "states": [
+    {
+      "id": "checkQuestComplete",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "=",
+                "value": "2",
+                "referenceId": "8225"
+              }
+            ],
+            "nextState": "selectCategory"
+          },
+          {
+            "conditions": [],
+            "nextState": "questNotComplete"
+          }
+        ]
+      }
+    },
+    {
+      "id": "questNotComplete",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Step aside, novice, we're doing business here.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "selectCategory",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Hey, partner! If you have the right goods, I can turn it into something very nice...",
+        "choices": [
+          { "text": "Weapon Forging", "nextState": "selectForgeWeapon", "context": { "selectedType": "0" } },
+          { "text": "Weapon Upgrading", "nextState": "selectUpgradeWeapon", "context": { "selectedType": "1" } },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "selectForgeWeapon",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "So, what kind of weapon would you like me to forge?",
+        "choices": [
+          {
+            "text": "#t2070018#",
+            "nextState": "confirmForge_0",
+            "context": {
+              "item": "2070018",
+              "mat0": "4032015", "matQty0": "1",
+              "mat1": "4032016", "matQty1": "1",
+              "mat2": "4032017", "matQty2": "1",
+              "mat3": "4021008", "matQty3": "100",
+              "mat4": "4032005", "matQty4": "30",
+              "matCount": "5",
+              "cost": "70000"
+            }
+          },
+          {
+            "text": "#t1382060#",
+            "nextState": "confirmForge_1",
+            "context": {
+              "item": "1382060",
+              "mat0": "4032016", "matQty0": "1",
+              "mat1": "4032017", "matQty1": "1",
+              "mat2": "4032004", "matQty2": "400",
+              "mat3": "4032005", "matQty3": "10",
+              "mat4": "4032012", "matQty4": "30",
+              "mat5": "4005001", "matQty5": "4",
+              "matCount": "6",
+              "cost": "70000"
+            }
+          },
+          {
+            "text": "#t1442068#",
+            "nextState": "confirmForge_2",
+            "context": {
+              "item": "1442068",
+              "mat0": "4032015", "matQty0": "1",
+              "mat1": "4032017", "matQty1": "1",
+              "mat2": "4032004", "matQty2": "500",
+              "mat3": "4032005", "matQty3": "40",
+              "mat4": "4032012", "matQty4": "20",
+              "mat5": "4005000", "matQty5": "4",
+              "matCount": "6",
+              "cost": "70000"
+            }
+          },
+          {
+            "text": "#t1452060#",
+            "nextState": "confirmForge_3",
+            "context": {
+              "item": "1452060",
+              "mat0": "4032015", "matQty0": "1",
+              "mat1": "4032016", "matQty1": "1",
+              "mat2": "4032004", "matQty2": "300",
+              "mat3": "4032005", "matQty3": "75",
+              "mat4": "4032012", "matQty4": "10",
+              "mat5": "4005002", "matQty5": "4",
+              "matCount": "6",
+              "cost": "70000"
+            }
+          },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "confirmForge_0",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t2070018#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4032015# 1 #t4032015#\r\n#i4032016# 1 #t4032016#\r\n#i4032017# 1 #t4032017#\r\n#i4021008# 100 #t4021008#\r\n#i4032005# 30 #t4032005#\r\n#i4031138# 70000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "validateForge_0" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "validateForge_0",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "2070018" }
+            ],
+            "nextState": "checkMesoForge_0"
+          },
+          {
+            "conditions": [],
+            "nextState": "noInventorySpace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMesoForge_0",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "meso", "operator": ">=", "value": "70000" }
+            ],
+            "nextState": "checkMatsForge_0"
+          },
+          {
+            "conditions": [],
+            "nextState": "notEnoughMeso"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMatsForge_0",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4032015" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4032016" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4032017" },
+              { "type": "item", "operator": ">=", "value": "100", "referenceId": "4021008" },
+              { "type": "item", "operator": ">=", "value": "30", "referenceId": "4032005" }
+            ],
+            "nextState": "craftForge_0"
+          },
+          {
+            "conditions": [],
+            "nextState": "missingMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "craftForge_0",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "4032015", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4032016", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4032017", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4021008", "quantity": "100" } },
+          { "type": "destroy_item", "params": { "itemId": "4032005", "quantity": "30" } },
+          { "type": "award_mesos", "params": { "amount": "-70000" } },
+          { "type": "award_item", "params": { "itemId": "2070018", "quantity": "1" } }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": "craftSuccess" }
+        ]
+      }
+    },
+    {
+      "id": "confirmForge_1",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1382060#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4032016# 1 #t4032016#\r\n#i4032017# 1 #t4032017#\r\n#i4032004# 400 #t4032004#\r\n#i4032005# 10 #t4032005#\r\n#i4032012# 30 #t4032012#\r\n#i4005001# 4 #t4005001#\r\n#i4031138# 70000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "validateForge_1" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "validateForge_1",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1382060" }
+            ],
+            "nextState": "checkMesoForge_1"
+          },
+          {
+            "conditions": [],
+            "nextState": "noInventorySpace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMesoForge_1",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "meso", "operator": ">=", "value": "70000" }
+            ],
+            "nextState": "checkMatsForge_1"
+          },
+          {
+            "conditions": [],
+            "nextState": "notEnoughMeso"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMatsForge_1",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4032016" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4032017" },
+              { "type": "item", "operator": ">=", "value": "400", "referenceId": "4032004" },
+              { "type": "item", "operator": ">=", "value": "10", "referenceId": "4032005" },
+              { "type": "item", "operator": ">=", "value": "30", "referenceId": "4032012" },
+              { "type": "item", "operator": ">=", "value": "4", "referenceId": "4005001" }
+            ],
+            "nextState": "craftForge_1"
+          },
+          {
+            "conditions": [],
+            "nextState": "missingMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "craftForge_1",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "4032016", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4032017", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4032004", "quantity": "400" } },
+          { "type": "destroy_item", "params": { "itemId": "4032005", "quantity": "10" } },
+          { "type": "destroy_item", "params": { "itemId": "4032012", "quantity": "30" } },
+          { "type": "destroy_item", "params": { "itemId": "4005001", "quantity": "4" } },
+          { "type": "award_mesos", "params": { "amount": "-70000" } },
+          { "type": "award_item", "params": { "itemId": "1382060", "quantity": "1" } }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": "craftSuccess" }
+        ]
+      }
+    },
+    {
+      "id": "confirmForge_2",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1442068#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4032015# 1 #t4032015#\r\n#i4032017# 1 #t4032017#\r\n#i4032004# 500 #t4032004#\r\n#i4032005# 40 #t4032005#\r\n#i4032012# 20 #t4032012#\r\n#i4005000# 4 #t4005000#\r\n#i4031138# 70000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "validateForge_2" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "validateForge_2",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1442068" }
+            ],
+            "nextState": "checkMesoForge_2"
+          },
+          {
+            "conditions": [],
+            "nextState": "noInventorySpace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMesoForge_2",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "meso", "operator": ">=", "value": "70000" }
+            ],
+            "nextState": "checkMatsForge_2"
+          },
+          {
+            "conditions": [],
+            "nextState": "notEnoughMeso"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMatsForge_2",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4032015" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4032017" },
+              { "type": "item", "operator": ">=", "value": "500", "referenceId": "4032004" },
+              { "type": "item", "operator": ">=", "value": "40", "referenceId": "4032005" },
+              { "type": "item", "operator": ">=", "value": "20", "referenceId": "4032012" },
+              { "type": "item", "operator": ">=", "value": "4", "referenceId": "4005000" }
+            ],
+            "nextState": "craftForge_2"
+          },
+          {
+            "conditions": [],
+            "nextState": "missingMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "craftForge_2",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "4032015", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4032017", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4032004", "quantity": "500" } },
+          { "type": "destroy_item", "params": { "itemId": "4032005", "quantity": "40" } },
+          { "type": "destroy_item", "params": { "itemId": "4032012", "quantity": "20" } },
+          { "type": "destroy_item", "params": { "itemId": "4005000", "quantity": "4" } },
+          { "type": "award_mesos", "params": { "amount": "-70000" } },
+          { "type": "award_item", "params": { "itemId": "1442068", "quantity": "1" } }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": "craftSuccess" }
+        ]
+      }
+    },
+    {
+      "id": "confirmForge_3",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1452060#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4032015# 1 #t4032015#\r\n#i4032016# 1 #t4032016#\r\n#i4032004# 300 #t4032004#\r\n#i4032005# 75 #t4032005#\r\n#i4032012# 10 #t4032012#\r\n#i4005002# 4 #t4005002#\r\n#i4031138# 70000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "validateForge_3" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "validateForge_3",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1452060" }
+            ],
+            "nextState": "checkMesoForge_3"
+          },
+          {
+            "conditions": [],
+            "nextState": "noInventorySpace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMesoForge_3",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "meso", "operator": ">=", "value": "70000" }
+            ],
+            "nextState": "checkMatsForge_3"
+          },
+          {
+            "conditions": [],
+            "nextState": "notEnoughMeso"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMatsForge_3",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4032015" },
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4032016" },
+              { "type": "item", "operator": ">=", "value": "300", "referenceId": "4032004" },
+              { "type": "item", "operator": ">=", "value": "75", "referenceId": "4032005" },
+              { "type": "item", "operator": ">=", "value": "10", "referenceId": "4032012" },
+              { "type": "item", "operator": ">=", "value": "4", "referenceId": "4005002" }
+            ],
+            "nextState": "craftForge_3"
+          },
+          {
+            "conditions": [],
+            "nextState": "missingMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "craftForge_3",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "4032015", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4032016", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4032004", "quantity": "300" } },
+          { "type": "destroy_item", "params": { "itemId": "4032005", "quantity": "75" } },
+          { "type": "destroy_item", "params": { "itemId": "4032012", "quantity": "10" } },
+          { "type": "destroy_item", "params": { "itemId": "4005002", "quantity": "4" } },
+          { "type": "award_mesos", "params": { "amount": "-70000" } },
+          { "type": "award_item", "params": { "itemId": "1452060", "quantity": "1" } }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": "craftSuccess" }
+        ]
+      }
+    },
+    {
+      "id": "selectUpgradeWeapon",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "An upgraded weapon? Of course, but note that upgrades won't carry over to the new item...",
+        "choices": [
+          {
+            "text": "#t1472074#",
+            "nextState": "confirmUpgrade_0",
+            "context": { "item": "1472074", "mat0": "4032017", "matQty0": "1", "mat1": "4005001", "matQty1": "10", "mat2": "4021008", "matQty2": "20", "matCount": "3", "cost": "75000" }
+          },
+          {
+            "text": "#t1472073#",
+            "nextState": "confirmUpgrade_1",
+            "context": { "item": "1472073", "mat0": "4032015", "matQty0": "1", "mat1": "4005002", "matQty1": "10", "mat2": "4021008", "matQty2": "30", "matCount": "3", "cost": "50000" }
+          },
+          {
+            "text": "#t1472075#",
+            "nextState": "confirmUpgrade_2",
+            "context": { "item": "1472075", "mat0": "4032016", "matQty0": "1", "mat1": "4005000", "matQty1": "5", "mat2": "4021008", "matQty2": "20", "matCount": "3", "cost": "50000" }
+          },
+          {
+            "text": "#t1332079#",
+            "nextState": "confirmUpgrade_3",
+            "context": { "item": "1332079", "mat0": "4032017", "matQty0": "1", "mat1": "4005001", "matQty1": "10", "mat2": "4021008", "matQty2": "20", "matCount": "3", "cost": "75000" }
+          },
+          {
+            "text": "#t1332078#",
+            "nextState": "confirmUpgrade_4",
+            "context": { "item": "1332078", "mat0": "4032015", "matQty0": "1", "mat1": "4005002", "matQty1": "10", "mat2": "4021008", "matQty2": "30", "matCount": "3", "cost": "50000" }
+          },
+          {
+            "text": "#t1332080#",
+            "nextState": "confirmUpgrade_5",
+            "context": { "item": "1332080", "mat0": "4032016", "matQty0": "1", "mat1": "4005000", "matQty1": "5", "mat2": "4021008", "matQty2": "20", "matCount": "3", "cost": "50000" }
+          },
+          {
+            "text": "#t1462054#",
+            "nextState": "confirmUpgrade_6",
+            "context": { "item": "1462054", "mat0": "4032017", "matQty0": "1", "mat1": "4005001", "matQty1": "10", "mat2": "4021008", "matQty2": "20", "matCount": "3", "cost": "75000" }
+          },
+          {
+            "text": "#t1462053#",
+            "nextState": "confirmUpgrade_7",
+            "context": { "item": "1462053", "mat0": "4032015", "matQty0": "1", "mat1": "4005002", "matQty1": "10", "mat2": "4021008", "matQty2": "30", "matCount": "3", "cost": "50000" }
+          },
+          {
+            "text": "#t1462055#",
+            "nextState": "confirmUpgrade_8",
+            "context": { "item": "1462055", "mat0": "4032016", "matQty0": "1", "mat1": "4005000", "matQty1": "5", "mat2": "4021008", "matQty2": "20", "matCount": "3", "cost": "50000" }
+          },
+          {
+            "text": "#t1402050#",
+            "nextState": "confirmUpgrade_9",
+            "context": { "item": "1402050", "mat0": "4032017", "matQty0": "1", "mat1": "4005001", "matQty1": "10", "mat2": "4021008", "matQty2": "20", "matCount": "3", "cost": "75000" }
+          },
+          {
+            "text": "#t1402049#",
+            "nextState": "confirmUpgrade_10",
+            "context": { "item": "1402049", "mat0": "4032015", "matQty0": "1", "mat1": "4005002", "matQty1": "10", "mat2": "4021008", "matQty2": "30", "matCount": "3", "cost": "50000" }
+          },
+          {
+            "text": "#t1402051#",
+            "nextState": "confirmUpgrade_11",
+            "context": { "item": "1402051", "mat0": "4032016", "matQty0": "1", "mat1": "4005000", "matQty1": "5", "mat2": "4021008", "matQty2": "20", "matCount": "3", "cost": "50000" }
+          },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "confirmUpgrade_0",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1472074#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4032017# 1 #t4032017#\r\n#i4005001# 10 #t4005001#\r\n#i4021008# 20 #t4021008#\r\n#i4031138# 75000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "validateUpgrade_0" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "validateUpgrade_0",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1472074" }
+            ],
+            "nextState": "checkMesoUpgrade_0"
+          },
+          { "conditions": [], "nextState": "noInventorySpace" }
+        ]
+      }
+    },
+    {
+      "id": "checkMesoUpgrade_0",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "meso", "operator": ">=", "value": "75000" }
+            ],
+            "nextState": "checkMatsUpgrade_0"
+          },
+          { "conditions": [], "nextState": "notEnoughMeso" }
+        ]
+      }
+    },
+    {
+      "id": "checkMatsUpgrade_0",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4032017" },
+              { "type": "item", "operator": ">=", "value": "10", "referenceId": "4005001" },
+              { "type": "item", "operator": ">=", "value": "20", "referenceId": "4021008" }
+            ],
+            "nextState": "craftUpgrade_0"
+          },
+          { "conditions": [], "nextState": "missingMaterials" }
+        ]
+      }
+    },
+    {
+      "id": "craftUpgrade_0",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "4032017", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4005001", "quantity": "10" } },
+          { "type": "destroy_item", "params": { "itemId": "4021008", "quantity": "20" } },
+          { "type": "award_mesos", "params": { "amount": "-75000" } },
+          { "type": "award_item", "params": { "itemId": "1472074", "quantity": "1" } }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": "craftSuccess" }
+        ]
+      }
+    },
+    {
+      "id": "confirmUpgrade_1",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1472073#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4032015# 1 #t4032015#\r\n#i4005002# 10 #t4005002#\r\n#i4021008# 30 #t4021008#\r\n#i4031138# 50000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "validateUpgrade_1" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "validateUpgrade_1",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1472073" }
+            ],
+            "nextState": "checkMesoUpgrade_1"
+          },
+          { "conditions": [], "nextState": "noInventorySpace" }
+        ]
+      }
+    },
+    {
+      "id": "checkMesoUpgrade_1",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "meso", "operator": ">=", "value": "50000" }
+            ],
+            "nextState": "checkMatsUpgrade_1"
+          },
+          { "conditions": [], "nextState": "notEnoughMeso" }
+        ]
+      }
+    },
+    {
+      "id": "checkMatsUpgrade_1",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4032015" },
+              { "type": "item", "operator": ">=", "value": "10", "referenceId": "4005002" },
+              { "type": "item", "operator": ">=", "value": "30", "referenceId": "4021008" }
+            ],
+            "nextState": "craftUpgrade_1"
+          },
+          { "conditions": [], "nextState": "missingMaterials" }
+        ]
+      }
+    },
+    {
+      "id": "craftUpgrade_1",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "4032015", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4005002", "quantity": "10" } },
+          { "type": "destroy_item", "params": { "itemId": "4021008", "quantity": "30" } },
+          { "type": "award_mesos", "params": { "amount": "-50000" } },
+          { "type": "award_item", "params": { "itemId": "1472073", "quantity": "1" } }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": "craftSuccess" }
+        ]
+      }
+    },
+    {
+      "id": "confirmUpgrade_2",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1472075#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4032016# 1 #t4032016#\r\n#i4005000# 5 #t4005000#\r\n#i4021008# 20 #t4021008#\r\n#i4031138# 50000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "validateUpgrade_2" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "validateUpgrade_2",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1472075" }
+            ],
+            "nextState": "checkMesoUpgrade_2"
+          },
+          { "conditions": [], "nextState": "noInventorySpace" }
+        ]
+      }
+    },
+    {
+      "id": "checkMesoUpgrade_2",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "meso", "operator": ">=", "value": "50000" }
+            ],
+            "nextState": "checkMatsUpgrade_2"
+          },
+          { "conditions": [], "nextState": "notEnoughMeso" }
+        ]
+      }
+    },
+    {
+      "id": "checkMatsUpgrade_2",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4032016" },
+              { "type": "item", "operator": ">=", "value": "5", "referenceId": "4005000" },
+              { "type": "item", "operator": ">=", "value": "20", "referenceId": "4021008" }
+            ],
+            "nextState": "craftUpgrade_2"
+          },
+          { "conditions": [], "nextState": "missingMaterials" }
+        ]
+      }
+    },
+    {
+      "id": "craftUpgrade_2",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "4032016", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4005000", "quantity": "5" } },
+          { "type": "destroy_item", "params": { "itemId": "4021008", "quantity": "20" } },
+          { "type": "award_mesos", "params": { "amount": "-50000" } },
+          { "type": "award_item", "params": { "itemId": "1472075", "quantity": "1" } }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": "craftSuccess" }
+        ]
+      }
+    },
+    {
+      "id": "confirmUpgrade_3",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1332079#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4032017# 1 #t4032017#\r\n#i4005001# 10 #t4005001#\r\n#i4021008# 20 #t4021008#\r\n#i4031138# 75000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "validateUpgrade_3" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "validateUpgrade_3",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1332079" }
+            ],
+            "nextState": "checkMesoUpgrade_3"
+          },
+          { "conditions": [], "nextState": "noInventorySpace" }
+        ]
+      }
+    },
+    {
+      "id": "checkMesoUpgrade_3",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "meso", "operator": ">=", "value": "75000" }
+            ],
+            "nextState": "checkMatsUpgrade_3"
+          },
+          { "conditions": [], "nextState": "notEnoughMeso" }
+        ]
+      }
+    },
+    {
+      "id": "checkMatsUpgrade_3",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4032017" },
+              { "type": "item", "operator": ">=", "value": "10", "referenceId": "4005001" },
+              { "type": "item", "operator": ">=", "value": "20", "referenceId": "4021008" }
+            ],
+            "nextState": "craftUpgrade_3"
+          },
+          { "conditions": [], "nextState": "missingMaterials" }
+        ]
+      }
+    },
+    {
+      "id": "craftUpgrade_3",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "4032017", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4005001", "quantity": "10" } },
+          { "type": "destroy_item", "params": { "itemId": "4021008", "quantity": "20" } },
+          { "type": "award_mesos", "params": { "amount": "-75000" } },
+          { "type": "award_item", "params": { "itemId": "1332079", "quantity": "1" } }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": "craftSuccess" }
+        ]
+      }
+    },
+    {
+      "id": "confirmUpgrade_4",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1332078#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4032015# 1 #t4032015#\r\n#i4005002# 10 #t4005002#\r\n#i4021008# 30 #t4021008#\r\n#i4031138# 50000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "validateUpgrade_4" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "validateUpgrade_4",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1332078" }
+            ],
+            "nextState": "checkMesoUpgrade_4"
+          },
+          { "conditions": [], "nextState": "noInventorySpace" }
+        ]
+      }
+    },
+    {
+      "id": "checkMesoUpgrade_4",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "meso", "operator": ">=", "value": "50000" }
+            ],
+            "nextState": "checkMatsUpgrade_4"
+          },
+          { "conditions": [], "nextState": "notEnoughMeso" }
+        ]
+      }
+    },
+    {
+      "id": "checkMatsUpgrade_4",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4032015" },
+              { "type": "item", "operator": ">=", "value": "10", "referenceId": "4005002" },
+              { "type": "item", "operator": ">=", "value": "30", "referenceId": "4021008" }
+            ],
+            "nextState": "craftUpgrade_4"
+          },
+          { "conditions": [], "nextState": "missingMaterials" }
+        ]
+      }
+    },
+    {
+      "id": "craftUpgrade_4",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "4032015", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4005002", "quantity": "10" } },
+          { "type": "destroy_item", "params": { "itemId": "4021008", "quantity": "30" } },
+          { "type": "award_mesos", "params": { "amount": "-50000" } },
+          { "type": "award_item", "params": { "itemId": "1332078", "quantity": "1" } }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": "craftSuccess" }
+        ]
+      }
+    },
+    {
+      "id": "confirmUpgrade_5",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1332080#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4032016# 1 #t4032016#\r\n#i4005000# 5 #t4005000#\r\n#i4021008# 20 #t4021008#\r\n#i4031138# 50000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "validateUpgrade_5" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "validateUpgrade_5",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1332080" }
+            ],
+            "nextState": "checkMesoUpgrade_5"
+          },
+          { "conditions": [], "nextState": "noInventorySpace" }
+        ]
+      }
+    },
+    {
+      "id": "checkMesoUpgrade_5",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "meso", "operator": ">=", "value": "50000" }
+            ],
+            "nextState": "checkMatsUpgrade_5"
+          },
+          { "conditions": [], "nextState": "notEnoughMeso" }
+        ]
+      }
+    },
+    {
+      "id": "checkMatsUpgrade_5",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4032016" },
+              { "type": "item", "operator": ">=", "value": "5", "referenceId": "4005000" },
+              { "type": "item", "operator": ">=", "value": "20", "referenceId": "4021008" }
+            ],
+            "nextState": "craftUpgrade_5"
+          },
+          { "conditions": [], "nextState": "missingMaterials" }
+        ]
+      }
+    },
+    {
+      "id": "craftUpgrade_5",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "4032016", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4005000", "quantity": "5" } },
+          { "type": "destroy_item", "params": { "itemId": "4021008", "quantity": "20" } },
+          { "type": "award_mesos", "params": { "amount": "-50000" } },
+          { "type": "award_item", "params": { "itemId": "1332080", "quantity": "1" } }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": "craftSuccess" }
+        ]
+      }
+    },
+    {
+      "id": "confirmUpgrade_6",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1462054#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4032017# 1 #t4032017#\r\n#i4005001# 10 #t4005001#\r\n#i4021008# 20 #t4021008#\r\n#i4031138# 75000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "validateUpgrade_6" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "validateUpgrade_6",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1462054" }
+            ],
+            "nextState": "checkMesoUpgrade_6"
+          },
+          { "conditions": [], "nextState": "noInventorySpace" }
+        ]
+      }
+    },
+    {
+      "id": "checkMesoUpgrade_6",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "meso", "operator": ">=", "value": "75000" }
+            ],
+            "nextState": "checkMatsUpgrade_6"
+          },
+          { "conditions": [], "nextState": "notEnoughMeso" }
+        ]
+      }
+    },
+    {
+      "id": "checkMatsUpgrade_6",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4032017" },
+              { "type": "item", "operator": ">=", "value": "10", "referenceId": "4005001" },
+              { "type": "item", "operator": ">=", "value": "20", "referenceId": "4021008" }
+            ],
+            "nextState": "craftUpgrade_6"
+          },
+          { "conditions": [], "nextState": "missingMaterials" }
+        ]
+      }
+    },
+    {
+      "id": "craftUpgrade_6",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "4032017", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4005001", "quantity": "10" } },
+          { "type": "destroy_item", "params": { "itemId": "4021008", "quantity": "20" } },
+          { "type": "award_mesos", "params": { "amount": "-75000" } },
+          { "type": "award_item", "params": { "itemId": "1462054", "quantity": "1" } }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": "craftSuccess" }
+        ]
+      }
+    },
+    {
+      "id": "confirmUpgrade_7",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1462053#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4032015# 1 #t4032015#\r\n#i4005002# 10 #t4005002#\r\n#i4021008# 30 #t4021008#\r\n#i4031138# 50000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "validateUpgrade_7" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "validateUpgrade_7",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1462053" }
+            ],
+            "nextState": "checkMesoUpgrade_7"
+          },
+          { "conditions": [], "nextState": "noInventorySpace" }
+        ]
+      }
+    },
+    {
+      "id": "checkMesoUpgrade_7",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "meso", "operator": ">=", "value": "50000" }
+            ],
+            "nextState": "checkMatsUpgrade_7"
+          },
+          { "conditions": [], "nextState": "notEnoughMeso" }
+        ]
+      }
+    },
+    {
+      "id": "checkMatsUpgrade_7",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4032015" },
+              { "type": "item", "operator": ">=", "value": "10", "referenceId": "4005002" },
+              { "type": "item", "operator": ">=", "value": "30", "referenceId": "4021008" }
+            ],
+            "nextState": "craftUpgrade_7"
+          },
+          { "conditions": [], "nextState": "missingMaterials" }
+        ]
+      }
+    },
+    {
+      "id": "craftUpgrade_7",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "4032015", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4005002", "quantity": "10" } },
+          { "type": "destroy_item", "params": { "itemId": "4021008", "quantity": "30" } },
+          { "type": "award_mesos", "params": { "amount": "-50000" } },
+          { "type": "award_item", "params": { "itemId": "1462053", "quantity": "1" } }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": "craftSuccess" }
+        ]
+      }
+    },
+    {
+      "id": "confirmUpgrade_8",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1462055#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4032016# 1 #t4032016#\r\n#i4005000# 5 #t4005000#\r\n#i4021008# 20 #t4021008#\r\n#i4031138# 50000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "validateUpgrade_8" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "validateUpgrade_8",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1462055" }
+            ],
+            "nextState": "checkMesoUpgrade_8"
+          },
+          { "conditions": [], "nextState": "noInventorySpace" }
+        ]
+      }
+    },
+    {
+      "id": "checkMesoUpgrade_8",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "meso", "operator": ">=", "value": "50000" }
+            ],
+            "nextState": "checkMatsUpgrade_8"
+          },
+          { "conditions": [], "nextState": "notEnoughMeso" }
+        ]
+      }
+    },
+    {
+      "id": "checkMatsUpgrade_8",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4032016" },
+              { "type": "item", "operator": ">=", "value": "5", "referenceId": "4005000" },
+              { "type": "item", "operator": ">=", "value": "20", "referenceId": "4021008" }
+            ],
+            "nextState": "craftUpgrade_8"
+          },
+          { "conditions": [], "nextState": "missingMaterials" }
+        ]
+      }
+    },
+    {
+      "id": "craftUpgrade_8",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "4032016", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4005000", "quantity": "5" } },
+          { "type": "destroy_item", "params": { "itemId": "4021008", "quantity": "20" } },
+          { "type": "award_mesos", "params": { "amount": "-50000" } },
+          { "type": "award_item", "params": { "itemId": "1462055", "quantity": "1" } }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": "craftSuccess" }
+        ]
+      }
+    },
+    {
+      "id": "confirmUpgrade_9",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1402050#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4032017# 1 #t4032017#\r\n#i4005001# 10 #t4005001#\r\n#i4021008# 20 #t4021008#\r\n#i4031138# 75000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "validateUpgrade_9" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "validateUpgrade_9",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1402050" }
+            ],
+            "nextState": "checkMesoUpgrade_9"
+          },
+          { "conditions": [], "nextState": "noInventorySpace" }
+        ]
+      }
+    },
+    {
+      "id": "checkMesoUpgrade_9",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "meso", "operator": ">=", "value": "75000" }
+            ],
+            "nextState": "checkMatsUpgrade_9"
+          },
+          { "conditions": [], "nextState": "notEnoughMeso" }
+        ]
+      }
+    },
+    {
+      "id": "checkMatsUpgrade_9",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4032017" },
+              { "type": "item", "operator": ">=", "value": "10", "referenceId": "4005001" },
+              { "type": "item", "operator": ">=", "value": "20", "referenceId": "4021008" }
+            ],
+            "nextState": "craftUpgrade_9"
+          },
+          { "conditions": [], "nextState": "missingMaterials" }
+        ]
+      }
+    },
+    {
+      "id": "craftUpgrade_9",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "4032017", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4005001", "quantity": "10" } },
+          { "type": "destroy_item", "params": { "itemId": "4021008", "quantity": "20" } },
+          { "type": "award_mesos", "params": { "amount": "-75000" } },
+          { "type": "award_item", "params": { "itemId": "1402050", "quantity": "1" } }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": "craftSuccess" }
+        ]
+      }
+    },
+    {
+      "id": "confirmUpgrade_10",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1402049#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4032015# 1 #t4032015#\r\n#i4005002# 10 #t4005002#\r\n#i4021008# 30 #t4021008#\r\n#i4031138# 50000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "validateUpgrade_10" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "validateUpgrade_10",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1402049" }
+            ],
+            "nextState": "checkMesoUpgrade_10"
+          },
+          { "conditions": [], "nextState": "noInventorySpace" }
+        ]
+      }
+    },
+    {
+      "id": "checkMesoUpgrade_10",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "meso", "operator": ">=", "value": "50000" }
+            ],
+            "nextState": "checkMatsUpgrade_10"
+          },
+          { "conditions": [], "nextState": "notEnoughMeso" }
+        ]
+      }
+    },
+    {
+      "id": "checkMatsUpgrade_10",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4032015" },
+              { "type": "item", "operator": ">=", "value": "10", "referenceId": "4005002" },
+              { "type": "item", "operator": ">=", "value": "30", "referenceId": "4021008" }
+            ],
+            "nextState": "craftUpgrade_10"
+          },
+          { "conditions": [], "nextState": "missingMaterials" }
+        ]
+      }
+    },
+    {
+      "id": "craftUpgrade_10",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "4032015", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4005002", "quantity": "10" } },
+          { "type": "destroy_item", "params": { "itemId": "4021008", "quantity": "30" } },
+          { "type": "award_mesos", "params": { "amount": "-50000" } },
+          { "type": "award_item", "params": { "itemId": "1402049", "quantity": "1" } }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": "craftSuccess" }
+        ]
+      }
+    },
+    {
+      "id": "confirmUpgrade_11",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1402051#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4032016# 1 #t4032016#\r\n#i4005000# 5 #t4005000#\r\n#i4021008# 20 #t4021008#\r\n#i4031138# 50000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "validateUpgrade_11" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "validateUpgrade_11",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1402051" }
+            ],
+            "nextState": "checkMesoUpgrade_11"
+          },
+          { "conditions": [], "nextState": "noInventorySpace" }
+        ]
+      }
+    },
+    {
+      "id": "checkMesoUpgrade_11",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "meso", "operator": ">=", "value": "50000" }
+            ],
+            "nextState": "checkMatsUpgrade_11"
+          },
+          { "conditions": [], "nextState": "notEnoughMeso" }
+        ]
+      }
+    },
+    {
+      "id": "checkMatsUpgrade_11",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4032016" },
+              { "type": "item", "operator": ">=", "value": "5", "referenceId": "4005000" },
+              { "type": "item", "operator": ">=", "value": "20", "referenceId": "4021008" }
+            ],
+            "nextState": "craftUpgrade_11"
+          },
+          { "conditions": [], "nextState": "missingMaterials" }
+        ]
+      }
+    },
+    {
+      "id": "craftUpgrade_11",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "4032016", "quantity": "1" } },
+          { "type": "destroy_item", "params": { "itemId": "4005000", "quantity": "5" } },
+          { "type": "destroy_item", "params": { "itemId": "4021008", "quantity": "20" } },
+          { "type": "award_mesos", "params": { "amount": "-50000" } },
+          { "type": "award_item", "params": { "itemId": "1402051", "quantity": "1" } }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": "craftSuccess" }
+        ]
+      }
+    },
+    {
+      "id": "noInventorySpace",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Check your inventory for a free slot first.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "notEnoughMeso",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "I am afraid you don't have enough to pay me, partner. Please check this out first, ok?",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "missingMaterials",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Hey, I need those items to craft properly, you know?",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftSuccess",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "All done. If you need anything else... Well, I'm not going anywhere.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    }
+  ]
+}

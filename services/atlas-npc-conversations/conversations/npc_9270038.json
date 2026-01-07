@@ -1,0 +1,317 @@
+{
+  "npcId": 9270038,
+  "startState": "start",
+  "states": [
+    {
+      "id": "start",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Hello, I am Shalon from Singapore Airport. I can assist you in getting you to Kerning City in no time. Do you want to go to Kerning City?",
+        "choices": [
+          {
+            "text": "I would like to buy a plane ticket to Kerning City",
+            "nextState": "confirmBuyTicket"
+          },
+          {
+            "text": "Let me go in to the departure point.",
+            "nextState": "confirmEnterDeparture"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmBuyTicket",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "The ticket will cost you 5,000 mesos. Will you purchase the ticket?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkCanBuyTicket"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkCanBuyTicket",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "5000"
+              },
+              {
+                "type": "item",
+                "operator": "=",
+                "value": "0",
+                "referenceId": "4031732"
+              }
+            ],
+            "nextState": "checkInventorySpace"
+          },
+          {
+            "conditions": [],
+            "nextState": "notEnoughMesoOrHasTicket"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkInventorySpace",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4031732"
+              }
+            ],
+            "nextState": "performBuyTicket"
+          },
+          {
+            "conditions": [],
+            "nextState": "noInventorySpace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performBuyTicket",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-5000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4031732",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "buyTicketSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "buyTicketSuccess",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Thank you for choosing Wizet Airline! Enjoy your flight!",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "noInventorySpace",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "You don't have a free slot on your ETC inventory for the ticket, please make a room beforehand.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "notEnoughMesoOrHasTicket",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "You do not have enough mesos or you've already purchased a ticket.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmEnterDeparture",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Would you like to go in now? You will lose your ticket once you go in! Thank you for choosing Wizet Airline.",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkHasTicket"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkHasTicket",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4031732"
+              }
+            ],
+            "nextState": "checkPlaneAvailable"
+          },
+          {
+            "conditions": [],
+            "nextState": "noTicket"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkPlaneAvailable",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "transportAvailable",
+                "operator": "=",
+                "value": "1",
+                "referenceId": "540010001"
+              }
+            ],
+            "nextState": "boardPlane"
+          },
+          {
+            "conditions": [],
+            "nextState": "planeTakenOff"
+          }
+        ]
+      }
+    },
+    {
+      "id": "boardPlane",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4031732",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "540010001",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "planeTakenOff",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Sorry the plane has taken off, please wait a few minutes.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "noTicket",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "You need a #b#t4031732##k to get on the plane!",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

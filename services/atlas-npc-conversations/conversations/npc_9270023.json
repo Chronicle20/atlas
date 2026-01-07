@@ -1,0 +1,178 @@
+{
+  "npcId": 9270023,
+  "startState": "start",
+  "states": [
+    {
+      "id": "start",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "If you use this regular coupon, your face may transform into a random new look...do you still want to do it using #b#t5152037##k, I will do it anyways for you. But don't forget, it will be random!",
+        "choices": [
+          {
+            "text": "OK! (Uses #i5152037# #t5152037#)",
+            "nextState": "checkCoupon"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkCoupon",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": "<",
+                "value": "1",
+                "referenceId": "5152037"
+              }
+            ],
+            "nextState": "noCoupon"
+          },
+          {
+            "conditions": [],
+            "nextState": "generateFaces"
+          }
+        ]
+      }
+    },
+    {
+      "id": "noCoupon",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Hmm ... it looks like you don't have the coupon specifically for this place. Sorry to say this, but without the coupon, there's no plastic surgery for you...",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "generateFaces",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:generate_face_styles",
+            "params": {
+              "baseStyles": "20002,20005,20006,20013,20017,20021,20024,21002,21003,21014,21016,21017,21021,21027",
+              "genderFilter": "true",
+              "preserveColor": "true",
+              "validateExists": "true",
+              "excludeEquipped": "true",
+              "outputContextKey": "availableFaces"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "confirmChange"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmChange",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "If you use the regular coupon, your face may transform into a random new look...do you still want to do it using #b#t5152037##k?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "selectRandomFace"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectRandomFace",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:select_random_cosmetic",
+            "params": {
+              "stylesContextKey": "availableFaces",
+              "outputContextKey": "selectedFace"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "performChange"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performChange",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "5152037",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "change_face",
+            "params": {
+              "styleId": "{context.selectedFace}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "success"
+          }
+        ]
+      }
+    },
+    {
+      "id": "success",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Enjoy your new and improved face!",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

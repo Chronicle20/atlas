@@ -1,0 +1,107 @@
+{
+  "npcId": 1063017,
+  "startState": "askReady",
+  "states": [
+    {
+      "id": "askReady",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Ahead awaits the Master himself. Are you ready to face him?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkMapCapacity"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMapCapacity",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:fetch_map_player_counts",
+            "params": {
+              "mapIds": "925020010"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "mapCapacity",
+                "operator": ">",
+                "value": "0",
+                "referenceId": "925020010"
+              }
+            ],
+            "nextState": "alreadyChallenging"
+          },
+          {
+            "conditions": [],
+            "nextState": "spawnAndWarp"
+          }
+        ]
+      }
+    },
+    {
+      "id": "alreadyChallenging",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Someone is already challenging the Master. Try again later.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "spawnAndWarp",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "spawn_monster",
+            "params": {
+              "monsterId": "9300346",
+              "mapId": "910510202",
+              "x": "95",
+              "y": "200"
+            }
+          },
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "910510202",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

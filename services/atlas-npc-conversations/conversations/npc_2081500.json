@@ -1,5 +1,5 @@
 {
-  "npcId": 2081200,
+  "npcId": 2081500,
   "startState": "checkRequirements",
   "states": [
     {
@@ -16,13 +16,13 @@
           },
           {
             "conditions": [
-              {"type": "jobId", "operator": "<", "value": "200"}
+              {"type": "jobId", "operator": "<", "value": "500"}
             ],
             "nextState": "notQualifiedDialogue"
           },
           {
             "conditions": [
-              {"type": "jobId", "operator": ">=", "value": "300"}
+              {"type": "jobId", "operator": ">=", "value": "600"}
             ],
             "nextState": "notQualifiedDialogue"
           },
@@ -53,7 +53,7 @@
         "outcomes": [
           {
             "conditions": [
-              {"type": "questStatus", "operator": "<", "value": "2", "referenceId": "6914"}
+              {"type": "questStatus", "operator": "<", "value": "2", "referenceId": "6944"}
             ],
             "nextState": "questNotCompleteDialogue"
           },
@@ -83,27 +83,19 @@
         "operations": [],
         "outcomes": [
           {
-            "conditions": [{"type": "jobId", "operator": "=", "value": "211"}],
-            "nextState": "readyToAdvanceDialogueFPMage"
+            "conditions": [{"type": "jobId", "operator": "=", "value": "511"}],
+            "nextState": "readyToAdvanceDialogueMarauder"
           },
           {
-            "conditions": [{"type": "jobId", "operator": "=", "value": "221"}],
-            "nextState": "readyToAdvanceDialogueILMage"
+            "conditions": [{"type": "jobId", "operator": "=", "value": "521"}],
+            "nextState": "readyToAdvanceDialogueOutlaw"
           },
           {
-            "conditions": [{"type": "jobId", "operator": "=", "value": "231"}],
-            "nextState": "readyToAdvanceDialoguePriest"
-          },
-          {
-            "conditions": [{"type": "jobId", "operator": "=", "value": "212"}],
+            "conditions": [{"type": "jobId", "operator": "=", "value": "512"}],
             "nextState": "alreadyFourthJobMenu"
           },
           {
-            "conditions": [{"type": "jobId", "operator": "=", "value": "222"}],
-            "nextState": "alreadyFourthJobMenu"
-          },
-          {
-            "conditions": [{"type": "jobId", "operator": "=", "value": "232"}],
+            "conditions": [{"type": "jobId", "operator": "=", "value": "522"}],
             "nextState": "alreadyFourthJobMenu"
           },
           {
@@ -114,46 +106,33 @@
       }
     },
     {
-      "id": "readyToAdvanceDialogueFPMage",
+      "id": "readyToAdvanceDialogueMarauder",
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendYesNo",
         "text": "You did a marvellous job passing my test. Are you ready to advance to your 4th job?",
         "choices": [
-          {"text": "Yes", "nextState": "checkInventoryFPMage"},
+          {"text": "Yes", "nextState": "checkInventoryMarauder"},
           {"text": "No", "nextState": null},
           {"text": "Exit", "nextState": null}
         ]
       }
     },
     {
-      "id": "readyToAdvanceDialogueILMage",
+      "id": "readyToAdvanceDialogueOutlaw",
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendYesNo",
         "text": "You did a marvellous job passing my test. Are you ready to advance to your 4th job?",
         "choices": [
-          {"text": "Yes", "nextState": "checkInventoryILMage"},
+          {"text": "Yes", "nextState": "checkInventoryOutlaw"},
           {"text": "No", "nextState": null},
           {"text": "Exit", "nextState": null}
         ]
       }
     },
     {
-      "id": "readyToAdvanceDialoguePriest",
-      "type": "dialogue",
-      "dialogue": {
-        "dialogueType": "sendYesNo",
-        "text": "You did a marvellous job passing my test. Are you ready to advance to your 4th job?",
-        "choices": [
-          {"text": "Yes", "nextState": "checkInventoryPriest"},
-          {"text": "No", "nextState": null},
-          {"text": "Exit", "nextState": null}
-        ]
-      }
-    },
-    {
-      "id": "checkInventoryFPMage",
+      "id": "checkInventoryMarauder",
       "type": "genericAction",
       "genericAction": {
         "operations": [],
@@ -162,7 +141,7 @@
             "conditions": [
               {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "2280003"}
             ],
-            "nextState": "performAdvancementFPMage"
+            "nextState": "performAdvancementMarauder"
           },
           {
             "conditions": [],
@@ -172,7 +151,7 @@
       }
     },
     {
-      "id": "checkInventoryILMage",
+      "id": "checkInventoryOutlaw",
       "type": "genericAction",
       "genericAction": {
         "operations": [],
@@ -181,26 +160,7 @@
             "conditions": [
               {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "2280003"}
             ],
-            "nextState": "performAdvancementILMage"
-          },
-          {
-            "conditions": [],
-            "nextState": "insufficientInventoryDialogue"
-          }
-        ]
-      }
-    },
-    {
-      "id": "checkInventoryPriest",
-      "type": "genericAction",
-      "genericAction": {
-        "operations": [],
-        "outcomes": [
-          {
-            "conditions": [
-              {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "2280003"}
-            ],
-            "nextState": "performAdvancementPriest"
+            "nextState": "performAdvancementOutlaw"
           },
           {
             "conditions": [],
@@ -222,14 +182,15 @@
       }
     },
     {
-      "id": "performAdvancementFPMage",
+      "id": "performAdvancementMarauder",
       "type": "genericAction",
       "genericAction": {
         "operations": [
-          {"type": "change_job", "params": {"jobId": "212"}},
-          {"type": "create_skill", "params": {"skillId": "2121001", "level": "0", "masterLevel": "10"}},
-          {"type": "create_skill", "params": {"skillId": "2121002", "level": "0", "masterLevel": "10"}},
-          {"type": "create_skill", "params": {"skillId": "2121006", "level": "0", "masterLevel": "10"}},
+          {"type": "change_job", "params": {"jobId": "512"}},
+          {"type": "create_skill", "params": {"skillId": "5121001", "level": "0", "masterLevel": "10"}},
+          {"type": "create_skill", "params": {"skillId": "5121002", "level": "0", "masterLevel": "10"}},
+          {"type": "create_skill", "params": {"skillId": "5121007", "level": "0", "masterLevel": "10"}},
+          {"type": "create_skill", "params": {"skillId": "5121009", "level": "0", "masterLevel": "10"}},
           {"type": "award_item", "params": {"itemId": "2280003", "quantity": "1"}}
         ],
         "outcomes": [
@@ -238,30 +199,15 @@
       }
     },
     {
-      "id": "performAdvancementILMage",
+      "id": "performAdvancementOutlaw",
       "type": "genericAction",
       "genericAction": {
         "operations": [
-          {"type": "change_job", "params": {"jobId": "222"}},
-          {"type": "create_skill", "params": {"skillId": "2221001", "level": "0", "masterLevel": "10"}},
-          {"type": "create_skill", "params": {"skillId": "2221002", "level": "0", "masterLevel": "10"}},
-          {"type": "create_skill", "params": {"skillId": "2221006", "level": "0", "masterLevel": "10"}},
-          {"type": "award_item", "params": {"itemId": "2280003", "quantity": "1"}}
-        ],
-        "outcomes": [
-          {"conditions": [], "nextState": null}
-        ]
-      }
-    },
-    {
-      "id": "performAdvancementPriest",
-      "type": "genericAction",
-      "genericAction": {
-        "operations": [
-          {"type": "change_job", "params": {"jobId": "232"}},
-          {"type": "create_skill", "params": {"skillId": "2321001", "level": "0", "masterLevel": "10"}},
-          {"type": "create_skill", "params": {"skillId": "2321002", "level": "0", "masterLevel": "10"}},
-          {"type": "create_skill", "params": {"skillId": "2321005", "level": "0", "masterLevel": "10"}},
+          {"type": "change_job", "params": {"jobId": "522"}},
+          {"type": "create_skill", "params": {"skillId": "5220001", "level": "0", "masterLevel": "10"}},
+          {"type": "create_skill", "params": {"skillId": "5220002", "level": "0", "masterLevel": "10"}},
+          {"type": "create_skill", "params": {"skillId": "5221004", "level": "0", "masterLevel": "10"}},
+          {"type": "create_skill", "params": {"skillId": "5220011", "level": "0", "masterLevel": "10"}},
           {"type": "award_item", "params": {"itemId": "2280003", "quantity": "1"}}
         ],
         "outcomes": [
@@ -287,16 +233,12 @@
         "operations": [],
         "outcomes": [
           {
-            "conditions": [{"type": "jobId", "operator": "=", "value": "212"}],
-            "nextState": "checkFPArchMageSkill1"
+            "conditions": [{"type": "jobId", "operator": "=", "value": "512"}],
+            "nextState": "checkBuccaneerSkill1"
           },
           {
-            "conditions": [{"type": "jobId", "operator": "=", "value": "222"}],
-            "nextState": "checkILArchMageSkill1"
-          },
-          {
-            "conditions": [{"type": "jobId", "operator": "=", "value": "232"}],
-            "nextState": "checkBishopSkill1"
+            "conditions": [{"type": "jobId", "operator": "=", "value": "522"}],
+            "nextState": "checkCorsairSkill1"
           },
           {
             "conditions": [],
@@ -306,47 +248,109 @@
       }
     },
     {
-      "id": "checkFPArchMageSkill1",
+      "id": "checkBuccaneerSkill1",
       "type": "genericAction",
       "genericAction": {
         "operations": [],
         "outcomes": [
           {
             "conditions": [
-              {"type": "skillLevel", "operator": "=", "value": "0", "referenceId": "2121007"}
+              {"type": "skillLevel", "operator": "=", "value": "0", "referenceId": "5121003"}
             ],
-            "nextState": "teachFPArchMageSkill1"
+            "nextState": "teachBuccaneerSkill1"
           },
           {
             "conditions": [],
-            "nextState": "checkFPArchMageSkill2"
+            "nextState": "checkBuccaneerSkill2"
           }
         ]
       }
     },
     {
-      "id": "teachFPArchMageSkill1",
+      "id": "teachBuccaneerSkill1",
       "type": "genericAction",
       "genericAction": {
         "operations": [
-          {"type": "create_skill", "params": {"skillId": "2121007", "level": "0", "masterLevel": "10"}}
+          {"type": "create_skill", "params": {"skillId": "5121003", "level": "0", "masterLevel": "10"}}
         ],
         "outcomes": [
-          {"conditions": [], "nextState": "checkFPArchMageSkill2"}
+          {"conditions": [], "nextState": "checkBuccaneerSkill2"}
         ]
       }
     },
     {
-      "id": "checkFPArchMageSkill2",
+      "id": "checkBuccaneerSkill2",
       "type": "genericAction",
       "genericAction": {
         "operations": [],
         "outcomes": [
           {
             "conditions": [
-              {"type": "skillLevel", "operator": "=", "value": "0", "referenceId": "2121005"}
+              {"type": "skillLevel", "operator": "=", "value": "0", "referenceId": "5121004"}
             ],
-            "nextState": "teachFPArchMageSkill2"
+            "nextState": "teachBuccaneerSkill2"
+          },
+          {
+            "conditions": [],
+            "nextState": "checkBuccaneerSkill3"
+          }
+        ]
+      }
+    },
+    {
+      "id": "teachBuccaneerSkill2",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "create_skill", "params": {"skillId": "5121004", "level": "0", "masterLevel": "10"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "checkBuccaneerSkill3"}
+        ]
+      }
+    },
+    {
+      "id": "checkBuccaneerSkill3",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "skillLevel", "operator": "=", "value": "0", "referenceId": "5121005"}
+            ],
+            "nextState": "teachBuccaneerSkill3"
+          },
+          {
+            "conditions": [],
+            "nextState": "checkBuccaneerSkill4"
+          }
+        ]
+      }
+    },
+    {
+      "id": "teachBuccaneerSkill3",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "create_skill", "params": {"skillId": "5121005", "level": "0", "masterLevel": "10"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "checkBuccaneerSkill4"}
+        ]
+      }
+    },
+    {
+      "id": "checkBuccaneerSkill4",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "skillLevel", "operator": "=", "value": "0", "referenceId": "5121010"}
+            ],
+            "nextState": "teachBuccaneerSkill4"
           },
           {
             "conditions": [],
@@ -356,11 +360,11 @@
       }
     },
     {
-      "id": "teachFPArchMageSkill2",
+      "id": "teachBuccaneerSkill4",
       "type": "genericAction",
       "genericAction": {
         "operations": [
-          {"type": "create_skill", "params": {"skillId": "2121005", "level": "0", "masterLevel": "10"}}
+          {"type": "create_skill", "params": {"skillId": "5121010", "level": "0", "masterLevel": "10"}}
         ],
         "outcomes": [
           {"conditions": [], "nextState": "completionDialogue"}
@@ -368,78 +372,140 @@
       }
     },
     {
-      "id": "checkILArchMageSkill1",
+      "id": "checkCorsairSkill1",
       "type": "genericAction",
       "genericAction": {
         "operations": [],
         "outcomes": [
           {
             "conditions": [
-              {"type": "skillLevel", "operator": "=", "value": "0", "referenceId": "2221007"}
+              {"type": "skillLevel", "operator": "=", "value": "0", "referenceId": "5221006"}
             ],
-            "nextState": "teachILArchMageSkill1"
+            "nextState": "teachCorsairSkill1"
           },
           {
             "conditions": [],
-            "nextState": "checkILArchMageSkill2"
+            "nextState": "checkCorsairSkill2"
           }
         ]
       }
     },
     {
-      "id": "teachILArchMageSkill1",
+      "id": "teachCorsairSkill1",
       "type": "genericAction",
       "genericAction": {
         "operations": [
-          {"type": "create_skill", "params": {"skillId": "2221007", "level": "0", "masterLevel": "10"}}
+          {"type": "create_skill", "params": {"skillId": "5221006", "level": "0", "masterLevel": "10"}}
         ],
         "outcomes": [
-          {"conditions": [], "nextState": "checkILArchMageSkill2"}
+          {"conditions": [], "nextState": "checkCorsairSkill2"}
         ]
       }
     },
     {
-      "id": "checkILArchMageSkill2",
+      "id": "checkCorsairSkill2",
       "type": "genericAction",
       "genericAction": {
         "operations": [],
         "outcomes": [
           {
             "conditions": [
-              {"type": "skillLevel", "operator": "=", "value": "0", "referenceId": "2221005"}
+              {"type": "skillLevel", "operator": "=", "value": "0", "referenceId": "5221007"}
             ],
-            "nextState": "teachILArchMageSkill2"
+            "nextState": "teachCorsairSkill2"
           },
           {
             "conditions": [],
-            "nextState": "checkILArchMageSkill3"
+            "nextState": "checkCorsairSkill3"
           }
         ]
       }
     },
     {
-      "id": "teachILArchMageSkill2",
+      "id": "teachCorsairSkill2",
       "type": "genericAction",
       "genericAction": {
         "operations": [
-          {"type": "create_skill", "params": {"skillId": "2221005", "level": "0", "masterLevel": "10"}}
+          {"type": "create_skill", "params": {"skillId": "5221007", "level": "0", "masterLevel": "10"}}
         ],
         "outcomes": [
-          {"conditions": [], "nextState": "checkILArchMageSkill3"}
+          {"conditions": [], "nextState": "checkCorsairSkill3"}
         ]
       }
     },
     {
-      "id": "checkILArchMageSkill3",
+      "id": "checkCorsairSkill3",
       "type": "genericAction",
       "genericAction": {
         "operations": [],
         "outcomes": [
           {
             "conditions": [
-              {"type": "skillLevel", "operator": "=", "value": "0", "referenceId": "2221003"}
+              {"type": "skillLevel", "operator": "=", "value": "0", "referenceId": "5221008"}
             ],
-            "nextState": "teachILArchMageSkill3"
+            "nextState": "teachCorsairSkill3"
+          },
+          {
+            "conditions": [],
+            "nextState": "checkCorsairSkill4"
+          }
+        ]
+      }
+    },
+    {
+      "id": "teachCorsairSkill3",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "create_skill", "params": {"skillId": "5221008", "level": "0", "masterLevel": "10"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "checkCorsairSkill4"}
+        ]
+      }
+    },
+    {
+      "id": "checkCorsairSkill4",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "skillLevel", "operator": "=", "value": "0", "referenceId": "5221009"}
+            ],
+            "nextState": "teachCorsairSkill4"
+          },
+          {
+            "conditions": [],
+            "nextState": "checkCorsairSkill5"
+          }
+        ]
+      }
+    },
+    {
+      "id": "teachCorsairSkill4",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "create_skill", "params": {"skillId": "5221009", "level": "0", "masterLevel": "10"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "checkCorsairSkill5"}
+        ]
+      }
+    },
+    {
+      "id": "checkCorsairSkill5",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "skillLevel", "operator": "=", "value": "0", "referenceId": "5221003"}
+            ],
+            "nextState": "teachCorsairSkill5"
           },
           {
             "conditions": [],
@@ -449,73 +515,11 @@
       }
     },
     {
-      "id": "teachILArchMageSkill3",
+      "id": "teachCorsairSkill5",
       "type": "genericAction",
       "genericAction": {
         "operations": [
-          {"type": "create_skill", "params": {"skillId": "2221003", "level": "0", "masterLevel": "10"}}
-        ],
-        "outcomes": [
-          {"conditions": [], "nextState": "completionDialogue"}
-        ]
-      }
-    },
-    {
-      "id": "checkBishopSkill1",
-      "type": "genericAction",
-      "genericAction": {
-        "operations": [],
-        "outcomes": [
-          {
-            "conditions": [
-              {"type": "skillLevel", "operator": "=", "value": "0", "referenceId": "2321008"}
-            ],
-            "nextState": "teachBishopSkill1"
-          },
-          {
-            "conditions": [],
-            "nextState": "checkBishopSkill2"
-          }
-        ]
-      }
-    },
-    {
-      "id": "teachBishopSkill1",
-      "type": "genericAction",
-      "genericAction": {
-        "operations": [
-          {"type": "create_skill", "params": {"skillId": "2321008", "level": "0", "masterLevel": "10"}}
-        ],
-        "outcomes": [
-          {"conditions": [], "nextState": "checkBishopSkill2"}
-        ]
-      }
-    },
-    {
-      "id": "checkBishopSkill2",
-      "type": "genericAction",
-      "genericAction": {
-        "operations": [],
-        "outcomes": [
-          {
-            "conditions": [
-              {"type": "skillLevel", "operator": "=", "value": "0", "referenceId": "2321006"}
-            ],
-            "nextState": "teachBishopSkill2"
-          },
-          {
-            "conditions": [],
-            "nextState": "completionDialogue"
-          }
-        ]
-      }
-    },
-    {
-      "id": "teachBishopSkill2",
-      "type": "genericAction",
-      "genericAction": {
-        "operations": [
-          {"type": "create_skill", "params": {"skillId": "2321006", "level": "0", "masterLevel": "10"}}
+          {"type": "create_skill", "params": {"skillId": "5221003", "level": "0", "masterLevel": "10"}}
         ],
         "outcomes": [
           {"conditions": [], "nextState": "completionDialogue"}

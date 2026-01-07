@@ -1,0 +1,341 @@
+{
+  "npcId": 2090104,
+  "startState": "selectService",
+  "states": [
+    {
+      "id": "selectService",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Hey, I'm Noma, and I am assisting Pata in changing faces and applying lenses as my internship studies. With #b#t5152027##k or #b#t5152042##k, I can change the way you look. Now, what would you like to use?",
+        "choices": [
+          {
+            "text": "Plastic Surgery: #i5152027##t5152027#",
+            "nextState": "confirmPlasticSurgery",
+            "context": {
+              "beauty": "1"
+            }
+          },
+          {
+            "text": "Cosmetic Lenses: #i5152042##t5152042#",
+            "nextState": "confirmCosmeticLenses",
+            "context": {
+              "beauty": "2"
+            }
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmPlasticSurgery",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "If you use the regular coupon, your face may transform into a random new look...do you still want to do it using #b#t5152027##k?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkPlasticSurgeryCoupon"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmCosmeticLenses",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "If you use the regular coupon, you'll be awarded a random pair of cosmetic lenses. Are you going to use a #b#t5152042##k and really make the change to your eyes?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkCosmeticLensesCoupon"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkPlasticSurgeryCoupon",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "5152027"
+              }
+            ],
+            "nextState": "generateFaceStyles"
+          },
+          {
+            "conditions": [],
+            "nextState": "noPlasticSurgeryCoupon"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkCosmeticLensesCoupon",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "5152042"
+              }
+            ],
+            "nextState": "generateLensColors"
+          },
+          {
+            "conditions": [],
+            "nextState": "noCosmeticLensesCoupon"
+          }
+        ]
+      }
+    },
+    {
+      "id": "generateFaceStyles",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:generate_face_styles",
+            "params": {
+              "baseStyles": "20002,20005,20007,20011,20014,20017,20029,21001,21010,21013,21018,21020,21021,21030",
+              "genderFilter": "true",
+              "validateExists": "true",
+              "excludeEquipped": "true",
+              "outputContextKey": "generatedFaces"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "selectRandomFace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "generateLensColors",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:generate_hair_colors",
+            "params": {
+              "colors": "0,100,300,500,600,700",
+              "validateExists": "true",
+              "excludeEquipped": "true",
+              "outputContextKey": "generatedColors",
+              "cosmeticType": "face"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "selectRandomLensColor"
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectRandomFace",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:select_random_cosmetic",
+            "params": {
+              "stylesContextKey": "generatedFaces",
+              "outputContextKey": "selectedFace"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "applyPlasticSurgery"
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectRandomLensColor",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:select_random_cosmetic",
+            "params": {
+              "stylesContextKey": "generatedColors",
+              "outputContextKey": "selectedFace"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "applyCosmeticLenses"
+          }
+        ]
+      }
+    },
+    {
+      "id": "applyPlasticSurgery",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "5152027",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "change_face",
+            "params": {
+              "styleId": "{context.selectedFace}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "plasticSurgerySuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "applyCosmeticLenses",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "5152042",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "change_face",
+            "params": {
+              "styleId": "{context.selectedFace}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "cosmeticLensesSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "plasticSurgerySuccess",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Enjoy your new and improved face!",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "cosmeticLensesSuccess",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Enjoy your new and improved cosmetic lenses!",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "noPlasticSurgeryCoupon",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "I'm sorry, but I don't think you have our plastic surgery coupon with you right now. Without the coupon, I'm afraid I can't do it for you..",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "noCosmeticLensesCoupon",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "I'm sorry, but I don't think you have our cosmetic lens coupon with you right now. Without the coupon, I'm afraid I can't do it for you..",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

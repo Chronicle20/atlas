@@ -7,6 +7,7 @@ import (
 	npcMap "atlas-query-aggregator/map"
 	"atlas-query-aggregator/marriage"
 	"atlas-query-aggregator/quest"
+	"atlas-query-aggregator/skill"
 	"atlas-query-aggregator/transport"
 	"context"
 	"fmt"
@@ -19,12 +20,14 @@ import (
 type ValidationContext struct {
 	character  character.Model
 	quests     map[uint32]quest.Model
+	skills     map[uint32]skill.Model
 	marriage   marriage.Model
 	buddyList  buddy.Model
 	petCount   int
 	mapP       npcMap.Processor
 	itemP      item.Processor
 	transportP transport.Processor
+	skillP     skill.Processor
 	l          logrus.FieldLogger
 	ctx        context.Context
 }
@@ -34,12 +37,14 @@ func NewValidationContext(char character.Model) ValidationContext {
 	return ValidationContext{
 		character:  char,
 		quests:     make(map[uint32]quest.Model),
+		skills:     make(map[uint32]skill.Model),
 		marriage:   marriage.NewModel(char.Id(), false),
 		buddyList:  buddy.NewModel(char.Id(), 0),
 		petCount:   0,
 		mapP:       nil,
 		itemP:      nil,
 		transportP: nil,
+		skillP:     nil,
 		l:          nil,
 		ctx:        nil,
 	}
@@ -50,12 +55,14 @@ func NewValidationContextWithLogger(char character.Model, l logrus.FieldLogger, 
 	return ValidationContext{
 		character:  char,
 		quests:     make(map[uint32]quest.Model),
+		skills:     make(map[uint32]skill.Model),
 		marriage:   marriage.NewModel(char.Id(), false),
 		buddyList:  buddy.NewModel(char.Id(), 0),
 		petCount:   0,
 		mapP:       npcMap.NewProcessor(l, ctx),
 		itemP:      item.NewProcessor(l, ctx),
 		transportP: transport.NewProcessor(l, ctx),
+		skillP:     skill.NewProcessor(l, ctx),
 		l:          l,
 		ctx:        ctx,
 	}
@@ -70,6 +77,41 @@ func (ctx ValidationContext) Character() character.Model {
 func (ctx ValidationContext) Quest(questId uint32) (quest.Model, bool) {
 	q, exists := ctx.quests[questId]
 	return q, exists
+}
+
+// Skill returns the skill model for the given skill ID
+func (ctx ValidationContext) Skill(skillId uint32) (skill.Model, bool) {
+	s, exists := ctx.skills[skillId]
+	return s, exists
+}
+
+// GetSkillLevel returns the level of a skill, or 0 if not found
+// This method supports lazy loading via the skill processor if available
+func (ctx ValidationContext) GetSkillLevel(skillId uint32) byte {
+	// First check local cache
+	if s, exists := ctx.skills[skillId]; exists {
+		return s.Level()
+	}
+
+	// If skill processor is available, query it
+	if ctx.skillP != nil {
+		level, err := ctx.skillP.GetSkillLevel(ctx.character.Id(), skillId)()
+		if err != nil {
+			if ctx.l != nil {
+				ctx.l.WithError(err).Debugf("Failed to get skill level for skill %d", skillId)
+			}
+			return 0
+		}
+		return level
+	}
+
+	return 0
+}
+
+// SkillProcessor returns the skill processor for querying skill data
+// Returns nil if not available (graceful degradation)
+func (ctx ValidationContext) SkillProcessor() skill.Processor {
+	return ctx.skillP
 }
 
 // Marriage returns the marriage model
@@ -155,12 +197,38 @@ func (ctx ValidationContext) WithQuest(questModel quest.Model) ValidationContext
 	return ValidationContext{
 		character:  ctx.character,
 		quests:     newQuests,
+		skills:     ctx.skills,
 		marriage:   ctx.marriage,
 		buddyList:  ctx.buddyList,
 		petCount:   ctx.petCount,
 		mapP:       ctx.mapP,
 		itemP:      ctx.itemP,
 		transportP: ctx.transportP,
+		skillP:     ctx.skillP,
+		l:          ctx.l,
+		ctx:        ctx.ctx,
+	}
+}
+
+// WithSkill adds a skill to the context
+func (ctx ValidationContext) WithSkill(skillModel skill.Model) ValidationContext {
+	newSkills := make(map[uint32]skill.Model)
+	for k, v := range ctx.skills {
+		newSkills[k] = v
+	}
+	newSkills[skillModel.Id()] = skillModel
+
+	return ValidationContext{
+		character:  ctx.character,
+		quests:     ctx.quests,
+		skills:     newSkills,
+		marriage:   ctx.marriage,
+		buddyList:  ctx.buddyList,
+		petCount:   ctx.petCount,
+		mapP:       ctx.mapP,
+		itemP:      ctx.itemP,
+		transportP: ctx.transportP,
+		skillP:     ctx.skillP,
 		l:          ctx.l,
 		ctx:        ctx.ctx,
 	}
@@ -171,12 +239,14 @@ func (ctx ValidationContext) WithMarriage(marriageModel marriage.Model) Validati
 	return ValidationContext{
 		character:  ctx.character,
 		quests:     ctx.quests,
+		skills:     ctx.skills,
 		marriage:   marriageModel,
 		buddyList:  ctx.buddyList,
 		petCount:   ctx.petCount,
 		mapP:       ctx.mapP,
 		itemP:      ctx.itemP,
 		transportP: ctx.transportP,
+		skillP:     ctx.skillP,
 		l:          ctx.l,
 		ctx:        ctx.ctx,
 	}
@@ -187,12 +257,14 @@ func (ctx ValidationContext) WithBuddyList(buddyListModel buddy.Model) Validatio
 	return ValidationContext{
 		character:  ctx.character,
 		quests:     ctx.quests,
+		skills:     ctx.skills,
 		marriage:   ctx.marriage,
 		buddyList:  buddyListModel,
 		petCount:   ctx.petCount,
 		mapP:       ctx.mapP,
 		itemP:      ctx.itemP,
 		transportP: ctx.transportP,
+		skillP:     ctx.skillP,
 		l:          ctx.l,
 		ctx:        ctx.ctx,
 	}
@@ -203,12 +275,14 @@ func (ctx ValidationContext) WithPetCount(count int) ValidationContext {
 	return ValidationContext{
 		character:  ctx.character,
 		quests:     ctx.quests,
+		skills:     ctx.skills,
 		marriage:   ctx.marriage,
 		buddyList:  ctx.buddyList,
 		petCount:   count,
 		mapP:       ctx.mapP,
 		itemP:      ctx.itemP,
 		transportP: ctx.transportP,
+		skillP:     ctx.skillP,
 		l:          ctx.l,
 		ctx:        ctx.ctx,
 	}
@@ -218,12 +292,14 @@ func (ctx ValidationContext) WithPetCount(count int) ValidationContext {
 type ValidationContextBuilder struct {
 	character  character.Model
 	quests     map[uint32]quest.Model
+	skills     map[uint32]skill.Model
 	marriage   marriage.Model
 	buddyList  buddy.Model
 	petCount   int
 	mapP       npcMap.Processor
 	itemP      item.Processor
 	transportP transport.Processor
+	skillP     skill.Processor
 	l          logrus.FieldLogger
 	ctx        context.Context
 }
@@ -233,12 +309,14 @@ func NewValidationContextBuilder(char character.Model) *ValidationContextBuilder
 	return &ValidationContextBuilder{
 		character:  char,
 		quests:     make(map[uint32]quest.Model),
+		skills:     make(map[uint32]skill.Model),
 		marriage:   marriage.NewModel(char.Id(), false),
 		buddyList:  buddy.NewModel(char.Id(), 0),
 		petCount:   0,
 		mapP:       nil,
 		itemP:      nil,
 		transportP: nil,
+		skillP:     nil,
 		l:          nil,
 		ctx:        nil,
 	}
@@ -249,12 +327,14 @@ func NewValidationContextBuilderWithLogger(char character.Model, l logrus.FieldL
 	return &ValidationContextBuilder{
 		character:  char,
 		quests:     make(map[uint32]quest.Model),
+		skills:     make(map[uint32]skill.Model),
 		marriage:   marriage.NewModel(char.Id(), false),
 		buddyList:  buddy.NewModel(char.Id(), 0),
 		petCount:   0,
 		mapP:       npcMap.NewProcessor(l, ctx),
 		itemP:      item.NewProcessor(l, ctx),
 		transportP: transport.NewProcessor(l, ctx),
+		skillP:     skill.NewProcessor(l, ctx),
 		l:          l,
 		ctx:        ctx,
 	}
@@ -266,6 +346,15 @@ func (b *ValidationContextBuilder) AddQuest(questModel quest.Model) *ValidationC
 		b.quests = make(map[uint32]quest.Model)
 	}
 	b.quests[questModel.QuestId()] = questModel
+	return b
+}
+
+// AddSkill adds a skill to the context being built
+func (b *ValidationContextBuilder) AddSkill(skillModel skill.Model) *ValidationContextBuilder {
+	if b.skills == nil {
+		b.skills = make(map[uint32]skill.Model)
+	}
+	b.skills[skillModel.Id()] = skillModel
 	return b
 }
 
@@ -292,12 +381,14 @@ func (b *ValidationContextBuilder) Build() ValidationContext {
 	return ValidationContext{
 		character:  b.character,
 		quests:     b.quests,
+		skills:     b.skills,
 		marriage:   b.marriage,
 		buddyList:  b.buddyList,
 		petCount:   b.petCount,
 		mapP:       b.mapP,
 		itemP:      b.itemP,
 		transportP: b.transportP,
+		skillP:     b.skillP,
 		l:          b.l,
 		ctx:        b.ctx,
 	}

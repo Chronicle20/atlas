@@ -74,7 +74,8 @@
           {
             "type": "complete_quest",
             "params": {
-              "questId": "20706"
+              "questId": "20706",
+              "force": "true"
             }
           }
         ],

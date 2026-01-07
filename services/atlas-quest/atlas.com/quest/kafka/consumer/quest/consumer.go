@@ -59,9 +59,11 @@ func handleCompleteQuestCommand(db *gorm.DB) message.Handler[quest2.Command[ques
 			return
 		}
 		processor := quest.NewProcessor(l, ctx, db)
-		// Kafka commands skip validation (validation happens at the caller), but still process rewards
+		// Use Force flag to determine whether to skip validation
+		// When Force=true, skip requirement checks (forceCompleteQuest behavior)
+		// When Force=false, validate end requirements before completing
 		f := field.NewBuilder(world.Id(c.WorldId), channel.Id(c.ChannelId), 0).Build()
-		nextQuestId, err := processor.Complete(c.CharacterId, c.Body.QuestId, f, true)
+		nextQuestId, err := processor.Complete(c.CharacterId, c.Body.QuestId, f, c.Body.Force)
 		if err != nil {
 			l.WithError(err).Errorf("Error completing quest [%d] for character [%d].", c.Body.QuestId, c.CharacterId)
 			return

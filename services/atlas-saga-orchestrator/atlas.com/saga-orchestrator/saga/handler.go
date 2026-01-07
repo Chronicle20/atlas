@@ -13,6 +13,7 @@ import (
 	character2 "atlas-saga-orchestrator/kafka/message/character"
 	"atlas-saga-orchestrator/monster"
 	"atlas-saga-orchestrator/pet"
+	"atlas-saga-orchestrator/quest"
 	"atlas-saga-orchestrator/skill"
 	system_message "atlas-saga-orchestrator/system_message"
 	"atlas-saga-orchestrator/validation"
@@ -40,6 +41,7 @@ type Handler interface {
 	WithPortalProcessor(portal.Processor) Handler
 	WithCashshopProcessor(cashshop.Processor) Handler
 	WithSystemMessageProcessor(system_message.Processor) Handler
+	WithQuestProcessor(quest.Processor) Handler
 
 	GetHandler(action Action) (ActionHandler, bool)
 
@@ -96,6 +98,7 @@ type HandlerImpl struct {
 	portalP        portal.Processor
 	cashshopP      cashshop.Processor
 	systemMessageP system_message.Processor
+	questP         quest.Processor
 }
 
 func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
@@ -116,6 +119,7 @@ func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
 		consumableP:    consumable.NewProcessor(l, ctx),
 		cashshopP:      cashshop.NewProcessor(l, ctx),
 		systemMessageP: system_message.NewProcessor(l, ctx),
+		questP:         quest.NewProcessor(l, ctx),
 	}
 }
 
@@ -358,6 +362,29 @@ func (h *HandlerImpl) WithSystemMessageProcessor(systemMessageP system_message.P
 		portalP:        h.portalP,
 		cashshopP:      h.cashshopP,
 		systemMessageP: systemMessageP,
+	}
+}
+
+func (h *HandlerImpl) WithQuestProcessor(questP quest.Processor) Handler {
+	return &HandlerImpl{
+		l:              h.l,
+		ctx:            h.ctx,
+		t:              h.t,
+		charP:          h.charP,
+		compP:          h.compP,
+		skillP:         h.skillP,
+		validP:         h.validP,
+		guildP:         h.guildP,
+		inviteP:        h.inviteP,
+		buddyListP:     h.buddyListP,
+		petP:           h.petP,
+		footholdP:      h.footholdP,
+		monsterP:       h.monsterP,
+		consumableP:    h.consumableP,
+		portalP:        h.portalP,
+		cashshopP:      h.cashshopP,
+		systemMessageP: h.systemMessageP,
+		questP:         questP,
 	}
 }
 
@@ -990,16 +1017,18 @@ func (h *HandlerImpl) handleSpawnMonster(s Saga, st Step[any]) error {
 }
 
 // handleCompleteQuest handles the CompleteQuest action
-// Note: This is currently a stub as no quest service exists yet
 func (h *HandlerImpl) handleCompleteQuest(s Saga, st Step[any]) error {
 	payload, ok := st.Payload.(CompleteQuestPayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
 
-	// TODO: Implement actual quest completion when quest service is available
-	h.l.Debugf("Quest completion stub: quest %d completed for character %d via NPC %d",
-		payload.QuestId, payload.CharacterId, payload.NpcId)
+	// Selection is not currently used in NPC conversations, default to 0
+	err := h.questP.RequestCompleteQuest(byte(payload.WorldId), payload.CharacterId, payload.QuestId, payload.NpcId, 0, payload.Force)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to complete quest.")
+		return err
+	}
 
 	return nil
 }

@@ -25,8 +25,32 @@ Quest scripts differ from NPC scripts in that they typically have TWO phases:
 2. **End Phase** (`end()` function) - Dialogue when quest is STARTED (completing the quest)
 
 These map to the JSON structure:
-- `startStateMachine` - For the start phase
+- `startStateMachine` - For the start phase **(REQUIRED by schema)**
 - `endStateMachine` - For the end phase (optional if quest has no completion dialogue)
+
+### Handling Missing `start()` Function
+
+Some quest scripts only have an `end()` function (quest is started by another NPC or mechanism). Since the schema **requires** `startStateMachine`, create a minimal state machine that immediately ends:
+
+```json
+"startStateMachine": {
+  "startState": "noDialogue",
+  "states": [
+    {
+      "id": "noDialogue",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    }
+  ]
+}
+```
+
+This handles the case where the player interacts with the quest before it's been started through its intended mechanism - the conversation simply ends silently.
 
 ## Conversion Requirements
 
@@ -121,6 +145,7 @@ Common conditions for quest scripts:
 - ✅ Operation params use correct names
 - ✅ Output conforms to quest_conversation_schema.json (validate before finalizing)
 - ✅ Both `startStateMachine` and `endStateMachine` have their own `startState` and `states`
+- ✅ `startStateMachine` is ALWAYS present (use minimal no-op state machine if script has no `start()` function)
 
 ## Task
 

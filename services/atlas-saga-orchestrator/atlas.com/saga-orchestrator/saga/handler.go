@@ -78,6 +78,7 @@ type Handler interface {
 	handleStartQuest(s Saga, st Step[any]) error
 	handleApplyConsumableEffect(s Saga, st Step[any]) error
 	handleSendMessage(s Saga, st Step[any]) error
+	handleAwardFame(s Saga, st Step[any]) error
 }
 
 type HandlerImpl struct {
@@ -457,6 +458,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleApplyConsumableEffect, true
 	case SendMessage:
 		return h.handleSendMessage, true
+	case AwardFame:
+		return h.handleAwardFame, true
 	}
 	return nil, false
 }
@@ -1076,6 +1079,23 @@ func (h *HandlerImpl) handleSendMessage(s Saga, st Step[any]) error {
 	err := h.systemMessageP.SendMessage(s.TransactionId, byte(payload.WorldId), byte(payload.ChannelId), payload.CharacterId, payload.MessageType, payload.Message)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to send message.")
+		return err
+	}
+
+	return nil
+}
+
+// handleAwardFame handles the AwardFame action
+// This awards fame to a character (e.g., qm.gainFame() in quest scripts)
+func (h *HandlerImpl) handleAwardFame(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(AwardFamePayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.charP.AwardFameAndEmit(s.TransactionId, payload.WorldId, payload.CharacterId, payload.ChannelId, payload.Amount)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to award fame.")
 		return err
 	}
 

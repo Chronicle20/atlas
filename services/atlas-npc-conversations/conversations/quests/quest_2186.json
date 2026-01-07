@@ -1,0 +1,207 @@
+{
+  "questId": 2186,
+  "npcId": 1094001,
+  "questName": "Abel Glasses Quest",
+  "endStateMachine": {
+    "startState": "checkQuestCompleted",
+    "states": [
+      {
+        "id": "checkQuestCompleted",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "questStatus", "operator": "=", "value": "3", "referenceId": "2186"}
+              ],
+              "nextState": null
+            },
+            {
+              "conditions": [],
+              "nextState": "checkCorrectGlasses"
+            }
+          ]
+        }
+      },
+      {
+        "id": "checkCorrectGlasses",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "item", "operator": ">=", "value": "1", "referenceId": "4031853"}
+              ],
+              "nextState": "checkInventoryCorrectGlasses"
+            },
+            {
+              "conditions": [
+                {"type": "item", "operator": ">=", "value": "1", "referenceId": "4031854"}
+              ],
+              "nextState": "checkInventoryWrongGlasses"
+            },
+            {
+              "conditions": [
+                {"type": "item", "operator": ">=", "value": "1", "referenceId": "4031855"}
+              ],
+              "nextState": "checkInventoryWrongGlasses"
+            },
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "checkInventoryCorrectGlasses",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "inventorySpace", "operator": ">=", "value": "10", "referenceId": "2030019"}
+              ],
+              "nextState": "rewardCorrectGlasses"
+            },
+            {
+              "conditions": [],
+              "nextState": "inventoryFull"
+            }
+          ]
+        }
+      },
+      {
+        "id": "checkInventoryWrongGlasses",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "inventorySpace", "operator": ">=", "value": "5", "referenceId": "2030019"}
+              ],
+              "nextState": "determineWrongGlassesType"
+            },
+            {
+              "conditions": [],
+              "nextState": "inventoryFull"
+            }
+          ]
+        }
+      },
+      {
+        "id": "determineWrongGlassesType",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "item", "operator": ">=", "value": "1", "referenceId": "4031854"}
+              ],
+              "nextState": "rewardWrongGlasses4031854"
+            },
+            {
+              "conditions": [],
+              "nextState": "rewardWrongGlasses4031855"
+            }
+          ]
+        }
+      },
+      {
+        "id": "rewardCorrectGlasses",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "destroy_item", "params": {"itemId": "4031853", "quantity": "1"}},
+            {"type": "award_exp", "params": {"amount": "1700"}},
+            {"type": "award_item", "params": {"itemId": "2030019", "quantity": "10"}},
+            {"type": "complete_quest", "params": {"force": "true"}}
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": "successCorrectGlasses"
+            }
+          ]
+        }
+      },
+      {
+        "id": "rewardWrongGlasses4031854",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "destroy_item", "params": {"itemId": "4031854", "quantity": "1"}},
+            {"type": "award_exp", "params": {"amount": "1000"}},
+            {"type": "award_item", "params": {"itemId": "2030019", "quantity": "5"}},
+            {"type": "complete_quest", "params": {"force": "true"}}
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": "successWrongGlasses"
+            }
+          ]
+        }
+      },
+      {
+        "id": "rewardWrongGlasses4031855",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "destroy_item", "params": {"itemId": "4031855", "quantity": "1"}},
+            {"type": "award_exp", "params": {"amount": "1000"}},
+            {"type": "award_item", "params": {"itemId": "2030019", "quantity": "5"}},
+            {"type": "complete_quest", "params": {"force": "true"}}
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": "successWrongGlasses"
+            }
+          ]
+        }
+      },
+      {
+        "id": "successCorrectGlasses",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Geez, you found my glasses! Thank you, thank you so much. Now I'm able to see everything again!",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "inventoryFull",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "I need you to have an USE slot available to reward you properly!",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "successWrongGlasses",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Hm, those aren't my glasses... But alas, I'll take it anyway. Thanks.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

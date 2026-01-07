@@ -1,0 +1,193 @@
+{
+  "npcId": 9201039,
+  "startState": "checkQuestAndItem",
+  "states": [
+    {
+      "id": "checkQuestAndItem",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "=",
+                "value": "2",
+                "referenceId": "8860"
+              },
+              {
+                "type": "item",
+                "operator": "<",
+                "value": "1",
+                "referenceId": "4031528"
+              }
+            ],
+            "nextState": "alreadyDoneHair"
+          },
+          {
+            "conditions": [],
+            "nextState": "askReady"
+          }
+        ]
+      }
+    },
+    {
+      "id": "alreadyDoneHair",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "I've already done your hair once as a trade-for-services, sport. You'll have to snag an EXP Hair coupon from the Cash Shop if you want to change it again!",
+        "choices": [
+          { "text": "Next", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "askReady",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Ready for an awesome hairdo? I think you are! Just say the word, and we'll get started!",
+        "choices": [
+          { "text": "Yes", "nextState": "generateStyles" },
+          { "text": "No", "nextState": "giveMinute" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "giveMinute",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Ok, I'll give you a minute.",
+        "choices": [
+          { "text": "Next", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "generateStyles",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:generate_hair_styles",
+            "params": {
+              "baseStyles": "30270,30240,30020,30000,30132,30192,30032,30112,30162,31150,31250,31310,31050,31050,31030,31070,31091,31001",
+              "genderFilter": "true",
+              "preserveColor": "false",
+              "validateExists": "true",
+              "excludeEquipped": "true",
+              "outputContextKey": "availableHairStyles"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "hereWeGo"
+          }
+        ]
+      }
+    },
+    {
+      "id": "hereWeGo",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Here we go!",
+        "choices": [
+          { "text": "Next", "nextState": "checkCoupon" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "checkCoupon",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4031528"
+              }
+            ],
+            "nextState": "selectRandomAndApply"
+          },
+          {
+            "conditions": [],
+            "nextState": "noCoupon"
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectRandomAndApply",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:select_random_cosmetic",
+            "params": {
+              "stylesContextKey": "availableHairStyles",
+              "outputContextKey": "selectedHair"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4031528",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "change_hair",
+            "params": {
+              "styleId": "{context.selectedHair}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "successMessage"
+          }
+        ]
+      }
+    },
+    {
+      "id": "successMessage",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "Not bad, if I do say so myself! I knew those books I studied would come in handy...",
+        "choices": [
+          { "text": "Previous", "nextState": null },
+          { "text": "Next", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "noCoupon",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Hmmm...are you sure you have our designated free coupon? Sorry but no haircut without it.",
+        "choices": [
+          { "text": "Next", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    }
+  ]
+}

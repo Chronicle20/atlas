@@ -1,0 +1,169 @@
+{
+  "npcId": 9201022,
+  "startState": "checkMap",
+  "states": [
+    {
+      "id": "checkMap",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "mapId",
+                "operator": "=",
+                "value": "100000000"
+              }
+            ],
+            "nextState": "askWarpFromHenesys"
+          },
+          {
+            "conditions": [],
+            "nextState": "askWarpFromAmoria"
+          }
+        ]
+      }
+    },
+    {
+      "id": "askWarpFromHenesys",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "I can take you to the Amoria Village. Are you ready to go?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "confirmWarpFromHenesys"
+          },
+          {
+            "text": "No",
+            "nextState": "declineWarp"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "askWarpFromAmoria",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "I can take you back to Henesys. Are you ready to go?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "confirmWarpFromAmoria"
+          },
+          {
+            "text": "No",
+            "nextState": "declineWarp"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "declineWarp",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Ok, feel free to hang around until you're ready to go!",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmWarpFromHenesys",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "I hope you had a great time! See you around!",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "warpToAmoria"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmWarpFromAmoria",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "I hope you had a great time! See you around!",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "warpToHenesys"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToAmoria",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "680000000",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToHenesys",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "100000000",
+              "portalId": "5"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

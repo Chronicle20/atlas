@@ -1,0 +1,271 @@
+{
+  "npcId": 9201133,
+  "startState": "checkLocation",
+  "states": [
+    {
+      "id": "checkLocation",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "mapId",
+                "operator": ">=",
+                "value": "677000010"
+              },
+              {
+                "type": "mapId",
+                "operator": "<=",
+                "value": "677000012"
+              }
+            ],
+            "nextState": "checkWhichHuntingMap"
+          },
+          {
+            "conditions": [],
+            "nextState": "checkQuestStarted"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkQuestStarted",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "=",
+                "value": "1",
+                "referenceId": "28283"
+              }
+            ],
+            "nextState": "checkGasMaskEquipped"
+          },
+          {
+            "conditions": [],
+            "nextState": "entranceBlocked"
+          }
+        ]
+      }
+    },
+    {
+      "id": "entranceBlocked",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "The entrance is blocked by a strange force.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkGasMaskEquipped",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1003036",
+                "includeEquipped": true
+              }
+            ],
+            "nextState": "confirmWarpToFogForest"
+          },
+          {
+            "conditions": [],
+            "nextState": "needGasMask"
+          }
+        ]
+      }
+    },
+    {
+      "id": "needGasMask",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "The path ahead has a weird stench... Equip the #rgas mask#k before entering.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmWarpToFogForest",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Would you like to move to #b#m677000010##k?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "warpToFogForest"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToFogForest",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "677000010",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkWhichHuntingMap",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "mapId",
+                "operator": "=",
+                "value": "677000011"
+              }
+            ],
+            "nextState": "confirmWarpToHidingPlace"
+          },
+          {
+            "conditions": [],
+            "nextState": "confirmExit"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmWarpToHidingPlace",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Would you like to move to #b#m677000012##k?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "warpToHidingPlace"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToHidingPlace",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "677000012",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmExit",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Would you like to #bexit this place#k?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "warpToDarkCave"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToDarkCave",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "105050400",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

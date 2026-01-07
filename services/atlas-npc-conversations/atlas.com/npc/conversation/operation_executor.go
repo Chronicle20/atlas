@@ -421,6 +421,33 @@ func (e *OperationExecutorImpl) executeLocalOperation(field field.Model, charact
 			len(faces), outputKey, characterId)
 		return nil
 
+	case "generate_face_colors":
+		// Format: local:generate_face_colors
+		// Params: colorOffsets (string, comma-separated offsets like "100,300,400,700"),
+		//         validateExists (string), excludeEquipped (string), outputContextKey (string)
+		// Used for cosmetic lens NPCs that change eye/face color
+		colors, err := e.cosmeticP.GenerateFaceColors(characterId, operation.Params())
+		if err != nil {
+			e.l.WithError(err).Errorf("Failed to generate face colors for character [%d]", characterId)
+			return fmt.Errorf("failed to generate face colors: %w", err)
+		}
+
+		// Store in context
+		outputKey := operation.Params()["outputContextKey"]
+		if outputKey == "" {
+			outputKey = "generatedFaceColors"
+		}
+
+		err = e.storeStylesInContext(characterId, outputKey, colors)
+		if err != nil {
+			e.l.WithError(err).Errorf("Failed to store face colors in context for character [%d]", characterId)
+			return err
+		}
+
+		e.l.Infof("Generated and stored %d face colors in context key [%s] for character [%d]",
+			len(colors), outputKey, characterId)
+		return nil
+
 	case "select_random_cosmetic":
 		// Format: local:select_random_cosmetic
 		// Params: stylesContextKey (string), outputContextKey (string)

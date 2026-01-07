@@ -1,0 +1,70 @@
+{
+  "npcId": 2133002,
+  "startState": "askExit",
+  "states": [
+    {
+      "id": "askExit",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Would you like to exit this instance? Your party members may have to abandon it as well, so take that in mind.",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "performExit"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "performExit",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4001163",
+              "removeAll": "true"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4001169",
+              "removeAll": "true"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "2270004",
+              "removeAll": "true"
+            }
+          },
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "930000800",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,862 @@
+{
+  "npcId": 9200101,
+  "startState": "selectService",
+  "states": [
+    {
+      "id": "selectService",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Hello, I'm Dr. Rhomes, head of the cosmetic lens department here at the Orbis Plastic Surgery Shop.\r\nMy goal here is to add personality to everyone's eyes through the wonders of cosmetic lenses, and with #b#t5152011##k or #b#t5152014##k, I can do the same for you, too! Now, what would you like to use?",
+        "choices": [
+          {
+            "text": "Cosmetic Lenses: #i5152011##t5152011#",
+            "nextState": "generateRegularLensColors",
+            "context": {
+              "beauty": "1"
+            }
+          },
+          {
+            "text": "Cosmetic Lenses: #i5152014##t5152014#",
+            "nextState": "generateVipLensColors",
+            "context": {
+              "beauty": "2"
+            }
+          },
+          {
+            "text": "One-time Cosmetic Lenses: #i5152104# (any color)",
+            "nextState": "checkOneTimeCoupons",
+            "context": {
+              "beauty": "3"
+            }
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "generateRegularLensColors",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:generate_face_colors",
+            "params": {
+              "colorOffsets": "100,300,400,700",
+              "validateExists": "true",
+              "excludeEquipped": "true",
+              "outputContextKey": "availableLensColors"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "confirmRegularCoupon"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmRegularCoupon",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "If you use the regular coupon, you'll be awarded a random pair of cosmetic lenses. Are you going to use a #b#t5152011##k and really make the change to your eyes?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkRegularCoupon"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkRegularCoupon",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "5152011"
+              }
+            ],
+            "nextState": "applyRegularLens"
+          },
+          {
+            "conditions": [],
+            "nextState": "noCoupon"
+          }
+        ]
+      }
+    },
+    {
+      "id": "applyRegularLens",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:select_random_cosmetic",
+            "params": {
+              "stylesContextKey": "availableLensColors",
+              "outputContextKey": "selectedFace"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "5152011",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "change_face",
+            "params": {
+              "styleId": "{context.selectedFace}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "lensSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "generateVipLensColors",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:generate_face_colors",
+            "params": {
+              "colorOffsets": "100,300,400,700",
+              "validateExists": "true",
+              "excludeEquipped": "true",
+              "outputContextKey": "availableLensColors"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "selectVipStyle"
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectVipStyle",
+      "type": "askStyle",
+      "askStyle": {
+        "text": "With our new computer program, you can see yourself after the treatment in advance. What kind of lens would you like to wear? Please choose the style of your liking.",
+        "stylesContextKey": "availableLensColors",
+        "contextKey": "selectedFace",
+        "nextState": "checkVipCoupon"
+      }
+    },
+    {
+      "id": "checkVipCoupon",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "5152014"
+              }
+            ],
+            "nextState": "applyVipLens"
+          },
+          {
+            "conditions": [],
+            "nextState": "noCoupon"
+          }
+        ]
+      }
+    },
+    {
+      "id": "applyVipLens",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "5152014",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "change_face",
+            "params": {
+              "styleId": "{context.selectedFace}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "lensSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkOneTimeCoupons",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "5152100"
+              }
+            ],
+            "nextState": "oneTimeColor0"
+          },
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "5152101"
+              }
+            ],
+            "nextState": "oneTimeColor1"
+          },
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "5152102"
+              }
+            ],
+            "nextState": "oneTimeColor2"
+          },
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "5152103"
+              }
+            ],
+            "nextState": "oneTimeColor3"
+          },
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "5152104"
+              }
+            ],
+            "nextState": "oneTimeColor4"
+          },
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "5152105"
+              }
+            ],
+            "nextState": "oneTimeColor5"
+          },
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "5152106"
+              }
+            ],
+            "nextState": "oneTimeColor6"
+          },
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "5152107"
+              }
+            ],
+            "nextState": "oneTimeColor7"
+          },
+          {
+            "conditions": [],
+            "nextState": "noOneTimeCoupons"
+          }
+        ]
+      }
+    },
+    {
+      "id": "noOneTimeCoupons",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "You don't have any One-Time Cosmetic Lens to use.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "oneTimeColor0",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:generate_face_colors",
+            "params": {
+              "colorOffsets": "0",
+              "validateExists": "true",
+              "excludeEquipped": "true",
+              "outputContextKey": "availableLensColors"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "selectOneTimeStyle0"
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectOneTimeStyle0",
+      "type": "askStyle",
+      "askStyle": {
+        "text": "What kind of lens would you like to wear? Please choose the style of your liking.",
+        "stylesContextKey": "availableLensColors",
+        "contextKey": "selectedFace",
+        "nextState": "applyOneTimeLens0"
+      }
+    },
+    {
+      "id": "applyOneTimeLens0",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "5152100",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "change_face",
+            "params": {
+              "styleId": "{context.selectedFace}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "lensSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "oneTimeColor1",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:generate_face_colors",
+            "params": {
+              "colorOffsets": "100",
+              "validateExists": "true",
+              "excludeEquipped": "true",
+              "outputContextKey": "availableLensColors"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "selectOneTimeStyle1"
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectOneTimeStyle1",
+      "type": "askStyle",
+      "askStyle": {
+        "text": "What kind of lens would you like to wear? Please choose the style of your liking.",
+        "stylesContextKey": "availableLensColors",
+        "contextKey": "selectedFace",
+        "nextState": "applyOneTimeLens1"
+      }
+    },
+    {
+      "id": "applyOneTimeLens1",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "5152101",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "change_face",
+            "params": {
+              "styleId": "{context.selectedFace}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "lensSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "oneTimeColor2",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:generate_face_colors",
+            "params": {
+              "colorOffsets": "200",
+              "validateExists": "true",
+              "excludeEquipped": "true",
+              "outputContextKey": "availableLensColors"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "selectOneTimeStyle2"
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectOneTimeStyle2",
+      "type": "askStyle",
+      "askStyle": {
+        "text": "What kind of lens would you like to wear? Please choose the style of your liking.",
+        "stylesContextKey": "availableLensColors",
+        "contextKey": "selectedFace",
+        "nextState": "applyOneTimeLens2"
+      }
+    },
+    {
+      "id": "applyOneTimeLens2",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "5152102",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "change_face",
+            "params": {
+              "styleId": "{context.selectedFace}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "lensSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "oneTimeColor3",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:generate_face_colors",
+            "params": {
+              "colorOffsets": "300",
+              "validateExists": "true",
+              "excludeEquipped": "true",
+              "outputContextKey": "availableLensColors"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "selectOneTimeStyle3"
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectOneTimeStyle3",
+      "type": "askStyle",
+      "askStyle": {
+        "text": "What kind of lens would you like to wear? Please choose the style of your liking.",
+        "stylesContextKey": "availableLensColors",
+        "contextKey": "selectedFace",
+        "nextState": "applyOneTimeLens3"
+      }
+    },
+    {
+      "id": "applyOneTimeLens3",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "5152103",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "change_face",
+            "params": {
+              "styleId": "{context.selectedFace}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "lensSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "oneTimeColor4",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:generate_face_colors",
+            "params": {
+              "colorOffsets": "400",
+              "validateExists": "true",
+              "excludeEquipped": "true",
+              "outputContextKey": "availableLensColors"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "selectOneTimeStyle4"
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectOneTimeStyle4",
+      "type": "askStyle",
+      "askStyle": {
+        "text": "What kind of lens would you like to wear? Please choose the style of your liking.",
+        "stylesContextKey": "availableLensColors",
+        "contextKey": "selectedFace",
+        "nextState": "applyOneTimeLens4"
+      }
+    },
+    {
+      "id": "applyOneTimeLens4",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "5152104",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "change_face",
+            "params": {
+              "styleId": "{context.selectedFace}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "lensSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "oneTimeColor5",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:generate_face_colors",
+            "params": {
+              "colorOffsets": "500",
+              "validateExists": "true",
+              "excludeEquipped": "true",
+              "outputContextKey": "availableLensColors"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "selectOneTimeStyle5"
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectOneTimeStyle5",
+      "type": "askStyle",
+      "askStyle": {
+        "text": "What kind of lens would you like to wear? Please choose the style of your liking.",
+        "stylesContextKey": "availableLensColors",
+        "contextKey": "selectedFace",
+        "nextState": "applyOneTimeLens5"
+      }
+    },
+    {
+      "id": "applyOneTimeLens5",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "5152105",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "change_face",
+            "params": {
+              "styleId": "{context.selectedFace}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "lensSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "oneTimeColor6",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:generate_face_colors",
+            "params": {
+              "colorOffsets": "600",
+              "validateExists": "true",
+              "excludeEquipped": "true",
+              "outputContextKey": "availableLensColors"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "selectOneTimeStyle6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectOneTimeStyle6",
+      "type": "askStyle",
+      "askStyle": {
+        "text": "What kind of lens would you like to wear? Please choose the style of your liking.",
+        "stylesContextKey": "availableLensColors",
+        "contextKey": "selectedFace",
+        "nextState": "applyOneTimeLens6"
+      }
+    },
+    {
+      "id": "applyOneTimeLens6",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "5152106",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "change_face",
+            "params": {
+              "styleId": "{context.selectedFace}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "lensSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "oneTimeColor7",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:generate_face_colors",
+            "params": {
+              "colorOffsets": "700",
+              "validateExists": "true",
+              "excludeEquipped": "true",
+              "outputContextKey": "availableLensColors"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "selectOneTimeStyle7"
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectOneTimeStyle7",
+      "type": "askStyle",
+      "askStyle": {
+        "text": "What kind of lens would you like to wear? Please choose the style of your liking.",
+        "stylesContextKey": "availableLensColors",
+        "contextKey": "selectedFace",
+        "nextState": "applyOneTimeLens7"
+      }
+    },
+    {
+      "id": "applyOneTimeLens7",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "5152107",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "change_face",
+            "params": {
+              "styleId": "{context.selectedFace}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "lensSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "lensSuccess",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Enjoy your new and improved cosmetic lenses!",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "noCoupon",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "I'm sorry, but I don't think you have our cosmetic lens coupon with you right now. Without the coupon, I'm afraid I can't do it for you..",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

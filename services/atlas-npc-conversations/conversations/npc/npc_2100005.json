@@ -1,0 +1,331 @@
+{
+  "npcId": 2100005,
+  "startState": "welcome",
+  "states": [
+    {
+      "id": "welcome",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Hey there! I'm Shatti, and I'm Mazra's apprentice. If you have #bAriant hair style coupon(REG)#k or #bAriant hair color coupon(REG)#k with you, how about allowing me to work on your hair?",
+        "choices": [
+          {
+            "text": "Haircut: #i5150026##t5150026#",
+            "nextState": "confirmHaircut",
+            "context": {
+              "service": "haircut"
+            }
+          },
+          {
+            "text": "Dye your hair: #i5151021##t5151021#",
+            "nextState": "confirmDye",
+            "context": {
+              "service": "dye"
+            }
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmHaircut",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "If you use the REG coupon, your hairstyle will be changed to a random new look. You'll also have access to new hairstyles I worked on that's not available for VIP coupons. Would you like to use #bAriant hair style coupon(REG)#k for a fabulous new look?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkHaircutCoupon"
+          },
+          {
+            "text": "No",
+            "nextState": "notReady"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmDye",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "If you use the regular coupon, your hair color will change to a random new color. Are you sure you want to use #b#t5151021##k and randomly change your hair color?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkDyeCoupon"
+          },
+          {
+            "text": "No",
+            "nextState": "notReady"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkHaircutCoupon",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "5150026"
+              }
+            ],
+            "nextState": "prepareHaircutStyles"
+          },
+          {
+            "conditions": [],
+            "nextState": "noCouponHaircut"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkDyeCoupon",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "5151021"
+              }
+            ],
+            "nextState": "prepareHairColorStyles"
+          },
+          {
+            "conditions": [],
+            "nextState": "noCouponDye"
+          }
+        ]
+      }
+    },
+    {
+      "id": "prepareHaircutStyles",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:generate_hair_styles",
+            "params": {
+              "baseStyles": "30150,30170,30180,30320,30330,30410,30460,30680,30800,30820,30900,31090,31190,31330,31340,31400,31420,31520,31620,31650,31660,34000",
+              "genderFilter": "true",
+              "preserveColor": "true",
+              "validateExists": "true",
+              "excludeEquipped": "true",
+              "outputContextKey": "haircutStyles"
+            }
+          },
+          {
+            "type": "local:select_random_cosmetic",
+            "params": {
+              "stylesContextKey": "haircutStyles",
+              "outputContextKey": "selectedHair"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "consumeHaircutCoupon"
+          }
+        ]
+      }
+    },
+    {
+      "id": "consumeHaircutCoupon",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "5150026",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "change_hair",
+            "params": {
+              "styleId": "{context.selectedHair}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "haircutSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "haircutSuccess",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Enjoy your new and improved hairstyle!",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "prepareHairColorStyles",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:generate_hair_colors",
+            "params": {
+              "colors": "0,1,2,3,4,5,6,7",
+              "validateExists": "true",
+              "excludeEquipped": "true",
+              "outputContextKey": "hairColorStyles"
+            }
+          },
+          {
+            "type": "local:select_random_cosmetic",
+            "params": {
+              "stylesContextKey": "hairColorStyles",
+              "outputContextKey": "selectedColor"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "consumeDyeCoupon"
+          }
+        ]
+      }
+    },
+    {
+      "id": "consumeDyeCoupon",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "5151021",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "change_hair",
+            "params": {
+              "styleId": "{context.selectedColor}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "dyeSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "dyeSuccess",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Enjoy your new and improved haircolor!",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "noCouponHaircut",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "I can only change your hairstyle if you bring me the coupon. You didn't forget that, did you?",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "noCouponDye",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "I can only change your hairstyle if you bring me the coupon. You didn't forget that, did you?",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "notReady",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "I guess you aren't ready to make the change yet. Let me know when you are!",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

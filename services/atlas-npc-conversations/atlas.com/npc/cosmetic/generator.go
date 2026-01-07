@@ -10,6 +10,7 @@ type Generator interface {
 	GenerateHairStyles(char CharacterAppearance, baseStyles []uint32, genderFilter bool, preserveColor bool) []uint32
 	GenerateHairColors(char CharacterAppearance, colors []byte) []uint32
 	GenerateFaceStyles(char CharacterAppearance, baseStyles []uint32, genderFilter bool) []uint32
+	GenerateFaceColors(char CharacterAppearance, colorOffsets []uint32) []uint32
 }
 
 type GeneratorImpl struct {
@@ -91,6 +92,44 @@ func (g *GeneratorImpl) GenerateFaceStyles(
 	}
 
 	return styles
+}
+
+// GenerateFaceColors generates color variants for the character's current face
+// Face colors work differently than hair colors:
+// - Hair: base * 10 + color (e.g., 30067 = base 3006, color 7)
+// - Face: genderOffset + baseStyle + (colorIndex * 100)
+//   e.g., 20401 = male (20000) + base 1 + color 4 (400)
+//
+// The colorOffsets parameter specifies which color offsets to generate
+// Common values: 0 (base), 100 (color 1), 200, 300, 400, 500, 600, 700
+func (g *GeneratorImpl) GenerateFaceColors(
+	char CharacterAppearance,
+	colorOffsets []uint32,
+) []uint32 {
+	// Get the base face style (0-99) from current face
+	baseFace := char.FaceBase()
+
+	// Determine gender offset (20000 for male, 21000 for female)
+	var genderOffset uint32 = 20000
+	if char.IsFemale() {
+		genderOffset = 21000
+	}
+
+	// Calculate base face ID (gender offset + base style)
+	baseFaceId := genderOffset + baseFace
+
+	result := make([]uint32, 0, len(colorOffsets))
+
+	g.l.Debugf("Generating face colors for character %d: currentFace=%d, baseFace=%d, genderOffset=%d, colorOffsets=%d",
+		char.CharacterId(), char.Face(), baseFace, genderOffset, len(colorOffsets))
+
+	for _, offset := range colorOffsets {
+		faceId := baseFaceId + offset
+		result = append(result, faceId)
+	}
+
+	g.l.Debugf("Generated %d face color variants", len(result))
+	return result
 }
 
 // filterByGender filters hair styles based on gender

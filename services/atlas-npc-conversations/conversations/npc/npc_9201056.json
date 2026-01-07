@@ -1,0 +1,209 @@
+{
+  "npcId": 9201056,
+  "startState": "checkMap",
+  "states": [
+    {
+      "id": "checkMap",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "mapId",
+                "operator": "=",
+                "value": "682000000"
+              }
+            ],
+            "nextState": "askReturnToCivilization"
+          },
+          {
+            "conditions": [],
+            "nextState": "askGoToHauntedMansion"
+          }
+        ]
+      }
+    },
+    {
+      "id": "askReturnToCivilization",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Would you like to return back to #bcivilization#k? The fee is 15000 mesos.",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkMesoForReturn"
+          },
+          {
+            "text": "No",
+            "nextState": "decline"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "askGoToHauntedMansion",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Would you like to go to the #bHaunted Mansion#k? The fee is 15000 mesos.",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkMesoForMansion"
+          },
+          {
+            "text": "No",
+            "nextState": "decline"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "decline",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Alright, see you next time.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMesoForReturn",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "15000"
+              }
+            ],
+            "nextState": "warpToNewLeafCity"
+          },
+          {
+            "conditions": [],
+            "nextState": "insufficientMeso"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMesoForMansion",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "15000"
+              }
+            ],
+            "nextState": "warpToHauntedMansion"
+          },
+          {
+            "conditions": [],
+            "nextState": "insufficientMeso"
+          }
+        ]
+      }
+    },
+    {
+      "id": "insufficientMeso",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Hey, what are you trying to pull on? You don't have enough meso to pay the fee.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToNewLeafCity",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-15000"
+            }
+          },
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "600000000",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToHauntedMansion",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-15000"
+            }
+          },
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "682000000",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

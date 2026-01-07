@@ -1,49 +1,59 @@
 package quest
 
-const (
-	// EnvStatusEventTopic defines the environment variable for the quest status event topic
-	EnvStatusEventTopic = "EVENT_TOPIC_QUEST_STATUS"
-
-	// Status event types
-	StatusEventTypeStarted         = "STARTED"
-	StatusEventTypeCompleted       = "COMPLETED"
-	StatusEventTypeForfeited       = "FORFEITED"
-	StatusEventTypeProgressUpdated = "PROGRESS_UPDATED"
-	StatusEventTypeError           = "ERROR"
+import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 )
 
-// StatusEvent represents a quest status event message
-type StatusEvent[E any] struct {
-	WorldId     byte   `json:"worldId"`
+const (
+	EnvCommandTopic                   = "COMMAND_TOPIC_QUEST_CONVERSATION"
+	CommandTypeStartQuestConversation = "START_QUEST_CONVERSATION"
+)
+
+type Command[E any] struct {
+	QuestId     uint32 `json:"questId"`
+	NpcId       uint32 `json:"npcId"`
 	CharacterId uint32 `json:"characterId"`
 	Type        string `json:"type"`
 	Body        E      `json:"body"`
 }
 
-// QuestStartedEventBody is the body for quest started events
+type StartQuestConversationCommandBody struct {
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
+	MapId     _map.Id    `json:"mapId"`
+}
+
+// Status event types for quest status changes from atlas-quest service
+const (
+	EnvStatusEventTopic              = "EVENT_TOPIC_QUEST_STATUS"
+	StatusEventTypeStarted           = "STARTED"
+	StatusEventTypeCompleted         = "COMPLETED"
+	StatusEventTypeForfeited         = "FORFEITED"
+	StatusEventTypeProgressUpdated   = "PROGRESS_UPDATED"
+)
+
+type StatusEvent[E any] struct {
+	CharacterId uint32 `json:"characterId"`
+	WorldId     byte   `json:"worldId"`
+	Type        string `json:"type"`
+	Body        E      `json:"body"`
+}
+
 type QuestStartedEventBody struct {
 	QuestId uint32 `json:"questId"`
 }
 
-// QuestCompletedEventBody is the body for quest completed events
 type QuestCompletedEventBody struct {
 	QuestId uint32 `json:"questId"`
 }
 
-// QuestForfeitedEventBody is the body for quest forfeited events
 type QuestForfeitedEventBody struct {
 	QuestId uint32 `json:"questId"`
 }
 
-// QuestProgressUpdatedEventBody is the body for progress updated events
 type QuestProgressUpdatedEventBody struct {
-	QuestId    uint32 `json:"questId"`
-	InfoNumber uint32 `json:"infoNumber"`
-	Progress   string `json:"progress"`
-}
-
-// ErrorStatusEventBody is the body for error events
-type ErrorStatusEventBody struct {
-	QuestId uint32 `json:"questId,omitempty"`
-	Error   string `json:"error"`
+	QuestId  uint32 `json:"questId"`
+	Progress string `json:"progress"`
 }

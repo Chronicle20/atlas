@@ -1,0 +1,119 @@
+{
+  "npcId": 9270018,
+  "startState": "checkMap",
+  "states": [
+    {
+      "id": "checkMap",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "mapId", "operator": "=", "value": "540010001" }
+            ],
+            "nextState": "askLeave"
+          },
+          {
+            "conditions": [
+              { "type": "mapId", "operator": "=", "value": "540010002" }
+            ],
+            "nextState": "reachingKerning"
+          },
+          {
+            "conditions": [
+              { "type": "mapId", "operator": "=", "value": "540010101" }
+            ],
+            "nextState": "reachingSingapore"
+          },
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "askLeave",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "The plane is taking off soon, are you sure you want to leave now? The ticket is not refundable.",
+        "choices": [
+          { "text": "Yes", "nextState": "warpToAirport" },
+          { "text": "No", "nextState": "pleaseWaitKerning" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "pleaseWaitKerning",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Please hold on for a sec, and we're reaching Kerning City! Thanks for your patience.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "reachingKerning",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "We're reaching Kerning City in a minute, please sit down and wait.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "reachingSingapore",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "We're reaching Singapore in a minute, please sit down and wait.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "warpToAirport",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "540010000",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "goodbyeAirport"
+          }
+        ]
+      }
+    },
+    {
+      "id": "goodbyeAirport",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Hope to see you again soon!",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,112 @@
+{
+  "npcId": 9201123,
+  "startState": "checkJob",
+  "states": [
+    {
+      "id": "checkJob",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "jobId", "operator": "=", "value": "0" }
+            ],
+            "nextState": "checkRequirements"
+          },
+          {
+            "conditions": [],
+            "nextState": "notBeginner"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkRequirements",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "level", "operator": ">=", "value": "10" },
+              { "type": "strength", "operator": ">=", "value": "35" }
+            ],
+            "nextState": "offerWarp"
+          },
+          {
+            "conditions": [],
+            "nextState": "requirementsNotMet"
+          }
+        ]
+      }
+    },
+    {
+      "id": "offerWarp",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Hey #h #, I can send you to #b#m102000003##k if you want to be a #bWarrior#k. Do you want to go now?",
+        "choices": [
+          { "text": "Yes", "nextState": "performWarp" },
+          { "text": "No", "nextState": "declineMessage" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "performWarp",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "102000003",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "declineMessage",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Come back to me if you decided to be a #bWarrior#k.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "requirementsNotMet",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "If you want to be a #bWarrior#k, train yourself further until you reach #blevel 10, 35 STR#k.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "notBeginner",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "You're much stronger now. Keep training!",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    }
+  ]
+}

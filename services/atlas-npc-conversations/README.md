@@ -92,16 +92,16 @@ Each state in the `states` array must have:
   "id": "greeting",
   "type": "dialogue",
   "dialogue": {
-    "dialogueType": "sendYesNo",    // Required: "sendOk", "sendYesNo", "sendSimple", "sendNext", or "sendNextPrev"
+    "dialogueType": "sendYesNo",    // Required: "sendOk", "sendYesNo", "sendNext", "sendNextPrev", "sendPrev", or "sendAcceptDecline"
     "text": "Hello!",               // Required: Dialogue text
     "choices": [                    // Required based on dialogueType:
       {                             // - sendOk: exactly 2 choices
         "text": "Yes",              // - sendYesNo: exactly 3 choices
-        "nextState": "reward",      // - sendSimple: at least 1 choice
+        "nextState": "reward",      // - sendAcceptDecline: exactly 3 choices
         "context": {                // - sendNext: exactly 2 choices
           "key": "value"            // - sendNextPrev: exactly 3 choices
-        }                           // Optional: context data
-      }
+        }                           // - sendPrev: exactly 2 choices
+      }                             // Note: For menu selections, use listSelection state type
     ]
   }
 }
@@ -250,6 +250,13 @@ Operations are actions executed during a `genericAction` state:
     - `validateExists` (optional, "true" to validate styles exist in WZ data)
     - `excludeEquipped` (optional, "true" to exclude current face)
     - `outputContextKey` (required, context key to store results)
+- `local:generate_face_colors` - Generate available face/eye colors for character (cosmetic lenses)
+  - Params:
+    - `colorOffsets` (comma-separated color offsets: 0, 100, 200, 300, 400, 500, 600, 700)
+    - `validateExists` (optional, "true" to validate colors exist in WZ data)
+    - `excludeEquipped` (optional, "true" to exclude current face color)
+    - `outputContextKey` (required, context key to store results)
+  - Note: Face colors use offset-based IDs (e.g., base face + 100 for color 1, + 400 for color 4)
 - `local:select_random_cosmetic` - Randomly select a cosmetic from a styles array
   - Params:
     - `stylesContextKey` (required, context key containing styles array)
@@ -258,6 +265,12 @@ Operations are actions executed during a `genericAction` state:
   - Params:
     - `mapIds` (comma-separated string of map IDs, supports context references)
   - Stores results in context with keys: `playerCount_{mapId}` for each map
+- `local:calculate_lens_coupon` - Calculate one-time lens item ID from selected face
+  - Params:
+    - `selectedFaceContextKey` (required, context key containing the selected face ID)
+    - `outputContextKey` (required, context key to store calculated lens item ID)
+  - Formula: `lensItemId = 5152100 + (selectedFace / 100) % 10`
+  - Maps face colors (0-7) to items 5152100-5152107
 - `local:log` - Log an informational message
   - Params:
     - `message` (string, supports context references)

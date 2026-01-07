@@ -1,0 +1,45 @@
+{
+  "npcId": 9103003,
+  "startState": "askReturn",
+  "states": [
+    {
+      "id": "askReturn",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Come this way to return to Ludibrium.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "warpToLudibrium"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToLudibrium",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "220000000",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

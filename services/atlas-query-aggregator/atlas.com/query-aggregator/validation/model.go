@@ -40,6 +40,7 @@ const (
 	MapCapacityCondition            ConditionType = "mapCapacity"
 	InventorySpaceCondition         ConditionType = "inventorySpace"
 	TransportAvailableCondition     ConditionType = "transportAvailable"
+	SkillLevelCondition             ConditionType = "skillLevel"
 )
 
 // Operator represents the comparison operator in a condition
@@ -114,7 +115,7 @@ func (b *ConditionBuilder) SetType(condType string) *ConditionBuilder {
 	}
 
 	switch ConditionType(condType) {
-	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition, GmLevelCondition, GuildIdCondition, GuildRankCondition, QuestStatusCondition, QuestProgressCondition, UnclaimedMarriageGiftsCondition, StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition, GuildLeaderCondition, BuddyCapacityCondition, PetCountCondition, MapCapacityCondition, InventorySpaceCondition, TransportAvailableCondition:
+	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition, GmLevelCondition, GuildIdCondition, GuildRankCondition, QuestStatusCondition, QuestProgressCondition, UnclaimedMarriageGiftsCondition, StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition, GuildLeaderCondition, BuddyCapacityCondition, PetCountCondition, MapCapacityCondition, InventorySpaceCondition, TransportAvailableCondition, SkillLevelCondition:
 		b.conditionType = ConditionType(condType)
 	default:
 		b.err = fmt.Errorf("unsupported condition type: %s", condType)
@@ -241,6 +242,10 @@ func (b *ConditionBuilder) FromInput(input ConditionInput) *ConditionBuilder {
 		if input.ReferenceId == 0 {
 			b.err = fmt.Errorf("referenceId is required for transportAvailable conditions")
 		}
+	case SkillLevelCondition:
+		if input.ReferenceId == 0 {
+			b.err = fmt.Errorf("referenceId is required for skillLevel conditions")
+		}
 	}
 
 	return b
@@ -298,6 +303,11 @@ func (b *ConditionBuilder) Validate() *ConditionBuilder {
 	case TransportAvailableCondition:
 		if b.referenceId == nil {
 			b.err = fmt.Errorf("referenceId is required for transportAvailable conditions")
+			return b
+		}
+	case SkillLevelCondition:
+		if b.referenceId == nil {
+			b.err = fmt.Errorf("referenceId is required for skillLevel conditions")
 			return b
 		}
 	}
@@ -693,6 +703,12 @@ func (c Condition) EvaluateWithContext(ctx ValidationContext) ConditionResult {
 			}
 			return "not available"
 		}(), state)
+
+	case SkillLevelCondition:
+		// Get skill level for the specified skill ID
+		skillLevel := ctx.GetSkillLevel(c.referenceId)
+		actualValue = int(skillLevel)
+		description = fmt.Sprintf("Skill %d Level %s %d", c.referenceId, c.operator, c.value)
 
 	default:
 		// For non-context-specific conditions, delegate to the original Evaluate method

@@ -39,6 +39,6 @@ func (p *ProcessorImpl) IncreaseCapacityAndEmit(transactionId uuid.UUID, charact
 
 func (p *ProcessorImpl) IncreaseCapacity(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, worldId byte, newCapacity byte) error {
 	return func(transactionId uuid.UUID, characterId uint32, worldId byte, newCapacity byte) error {
-		return mb.Put(buddylist2.EnvCommandTopic, IncreaseCapacityProvider(characterId, worldId, newCapacity))
+		return mb.Put(buddylist2.EnvCommandTopic, IncreaseCapacityProvider(transactionId, characterId, worldId, newCapacity))
 	}
 }

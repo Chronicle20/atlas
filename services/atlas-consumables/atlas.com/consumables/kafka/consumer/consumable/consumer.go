@@ -56,7 +56,7 @@ func handleApplyConsumableEffect(l logrus.FieldLogger, ctx context.Context, c co
 	if c.Type != consumable2.CommandApplyConsumableEffect {
 		return
 	}
-	err := consumable.NewProcessor(l, ctx).ApplyConsumableEffect(c.WorldId, c.ChannelId, c.CharacterId, item.Id(c.Body.ItemId))
+	err := consumable.NewProcessor(l, ctx).ApplyConsumableEffect(c.TransactionId, c.WorldId, c.ChannelId, c.CharacterId, item.Id(c.Body.ItemId))
 	if err != nil {
 		l.WithError(err).Errorf("Character [%d] unable to apply consumable effect [%d] as expected.", c.CharacterId, c.Body.ItemId)
 	}

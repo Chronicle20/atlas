@@ -25,9 +25,10 @@ type StatusEventCreatedBody struct {
 }
 
 type StatusEventUpdatedBody struct {
-	Credit  uint32 `json:"credit"`
-	Points  uint32 `json:"points"`
-	Prepaid uint32 `json:"prepaid"`
+	Credit        uint32    `json:"credit"`
+	Points        uint32    `json:"points"`
+	Prepaid       uint32    `json:"prepaid"`
+	TransactionId uuid.UUID `json:"transactionId,omitempty"`
 }
 
 type StatusEventDeletedBody struct {

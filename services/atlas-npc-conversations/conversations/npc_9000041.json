@@ -1,0 +1,24 @@
+{
+  "npcId": 9000041,
+  "startState": "unavailable",
+  "states": [
+    {
+      "id": "unavailable",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "The medal ranking system is currently unavailable...",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

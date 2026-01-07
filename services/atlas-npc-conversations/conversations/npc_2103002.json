@@ -1,0 +1,117 @@
+{
+  "npcId": 2103002,
+  "startState": "checkQuestAndItem",
+  "states": [
+    {
+      "id": "checkQuestAndItem",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "=",
+                "value": "2",
+                "referenceId": "3923"
+              },
+              {
+                "type": "item",
+                "operator": "<",
+                "value": "1",
+                "referenceId": "4031578"
+              }
+            ],
+            "nextState": "checkInventorySpace"
+          },
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkInventorySpace",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4031578"
+              }
+            ],
+            "nextState": "giveRing"
+          },
+          {
+            "conditions": [],
+            "nextState": "noSpace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "giveRing",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4031578",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "successMessage"
+          }
+        ]
+      }
+    },
+    {
+      "id": "successMessage",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "You have just swiped the ring. Clear the area asap!",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "noSpace",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "You don't have a ETC slot available.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

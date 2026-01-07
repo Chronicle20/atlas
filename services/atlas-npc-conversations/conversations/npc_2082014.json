@@ -1,0 +1,48 @@
+{
+  "npcId": 2082014,
+  "startState": "checkQuestStatus",
+  "states": [
+    {
+      "id": "checkQuestStatus",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "=",
+                "value": "1",
+                "referenceId": "3749"
+              }
+            ],
+            "nextState": "questStartedDialogue"
+          },
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "questStartedDialogue",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "We've already located the enemy's ultimate weapon! Follow along the ship's bow area ahead and you will find my sister #b#p2082013##k. Report to her for futher instructions on the mission.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

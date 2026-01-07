@@ -673,7 +673,7 @@ func (p *Processor) PassScroll(characterId uint32, legendarySpirit bool, whiteSc
 
 // ApplyConsumableEffect applies item effects to a character without consuming from inventory
 // This is used for NPC-initiated buffs (e.g., NPC blessings via cm.useItem())
-func (p *Processor) ApplyConsumableEffect(worldId byte, channelId byte, characterId uint32, itemId item2.Id) error {
+func (p *Processor) ApplyConsumableEffect(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32, itemId item2.Id) error {
 	cp := character.NewProcessor(p.l, p.ctx)
 
 	c, err := cp.GetById()(characterId)
@@ -696,6 +696,13 @@ func (p *Processor) ApplyConsumableEffect(worldId byte, channelId byte, characte
 
 	ApplyItemEffects(p.l, p.ctx, c, m, ci, characterId, itemId)
 	p.l.Debugf("Successfully applied consumable [%d] effects to character [%d]", itemId, characterId)
+
+	// Emit the effect applied event for saga completion
+	err = producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(EffectAppliedEventProvider(characterId, uint32(itemId), transactionId))
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to emit effect applied event for character [%d] item [%d]", characterId, itemId)
+		return err
+	}
 	return nil
 }
 

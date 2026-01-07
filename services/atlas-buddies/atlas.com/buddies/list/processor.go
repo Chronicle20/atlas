@@ -13,6 +13,7 @@ import (
 	"errors"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -40,10 +41,14 @@ type Processor interface {
 	// This method validates the new capacity and updates the database in a transaction.
 	// On success, emits a CAPACITY_CHANGE event. On failure, emits an ERROR event.
 	IncreaseCapacityAndEmit(characterId uint32, worldId byte, newCapacity byte) error
+	// IncreaseCapacityWithTransactionAndEmit increases buddy list capacity with transaction ID tracking for saga completion.
+	IncreaseCapacityWithTransactionAndEmit(transactionId uuid.UUID, characterId uint32, worldId byte, newCapacity byte) error
 	// IncreaseCapacity is the pure business logic version that accepts a message buffer
 	// for transactional event emission. Use this when you need to coordinate multiple
 	// operations within a single transaction.
 	IncreaseCapacity(mb *message.Buffer) func(characterId uint32, worldId byte, newCapacity byte) error
+	// IncreaseCapacityWithTransaction is the pure business logic version with transaction ID tracking.
+	IncreaseCapacityWithTransaction(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, worldId byte, newCapacity byte) error
 }
 
 type ProcessorImpl struct {
@@ -533,29 +538,41 @@ func (p *ProcessorImpl) UpdateBuddyShopStatus(mb *message.Buffer) func(character
 //   - New capacity must be strictly greater than current capacity
 //   - All operations are performed within a database transaction
 func (p *ProcessorImpl) IncreaseCapacityAndEmit(characterId uint32, worldId byte, newCapacity byte) error {
+	return p.IncreaseCapacityWithTransactionAndEmit(uuid.Nil, characterId, worldId, newCapacity)
+}
+
+func (p *ProcessorImpl) IncreaseCapacityWithTransactionAndEmit(transactionId uuid.UUID, characterId uint32, worldId byte, newCapacity byte) error {
 	return message.Emit(p.p)(func(buf *message.Buffer) error {
-		return p.IncreaseCapacity(buf)(characterId, worldId, newCapacity)
+		return p.IncreaseCapacityWithTransaction(buf)(transactionId, characterId, worldId, newCapacity)
 	})
 }
 
 // IncreaseCapacity returns a curried function that increases buddy list capacity within a transaction.
 // This is the pure business logic version that works with a message buffer for event coordination.
+func (p *ProcessorImpl) IncreaseCapacity(mb *message.Buffer) func(characterId uint32, worldId byte, newCapacity byte) error {
+	return func(characterId uint32, worldId byte, newCapacity byte) error {
+		return p.IncreaseCapacityWithTransaction(mb)(uuid.Nil, characterId, worldId, newCapacity)
+	}
+}
+
+// IncreaseCapacityWithTransaction returns a curried function that increases buddy list capacity within a transaction
+// with transaction ID tracking for saga completion.
 //
 // Parameters:
 //   - mb: Message buffer for accumulating events within the transaction
 //
 // Returns:
-//   - A function that takes (characterId, worldId, newCapacity) and returns an error
+//   - A function that takes (transactionId, characterId, worldId, newCapacity) and returns an error
 //
 // Implementation Details:
 //   - Retrieves current buddy list to validate existing capacity
 //   - Validates newCapacity > currentCapacity (emits INVALID_CAPACITY error if not)
 //   - Updates capacity using administrator function
-//   - Emits CAPACITY_CHANGE event on success
+//   - Emits CAPACITY_CHANGE event on success with transaction ID
 //   - All operations are wrapped in a database transaction
 //   - Follows the Atlas pattern of pure functions with message buffer coordination
-func (p *ProcessorImpl) IncreaseCapacity(mb *message.Buffer) func(characterId uint32, worldId byte, newCapacity byte) error {
-	return func(characterId uint32, worldId byte, newCapacity byte) error {
+func (p *ProcessorImpl) IncreaseCapacityWithTransaction(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, worldId byte, newCapacity byte) error {
+	return func(transactionId uuid.UUID, characterId uint32, worldId byte, newCapacity byte) error {
 		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
 			// Get current buddy list to validate capacity
 			bl, err := p.WithTransaction(tx).GetByCharacterId(characterId)
@@ -580,9 +597,9 @@ func (p *ProcessorImpl) IncreaseCapacity(mb *message.Buffer) func(characterId ui
 				return err
 			}
 
-			// Emit success event
-			_ = mb.Put(list2.EnvStatusEventTopic, list3.BuddyCapacityChangeStatusEventProvider(characterId, worldId, newCapacity))
-			p.l.Debugf("Successfully increased buddy list capacity for character [%d] to [%d].", characterId, newCapacity)
+			// Emit success event with transaction ID
+			_ = mb.Put(list2.EnvStatusEventTopic, list3.BuddyCapacityChangeStatusEventWithTransactionProvider(characterId, worldId, newCapacity, transactionId))
+			p.l.Debugf("Successfully increased buddy list capacity for character [%d] to [%d]. Transaction: %s", characterId, newCapacity, transactionId.String())
 			return nil
 		})
 		if txErr != nil {

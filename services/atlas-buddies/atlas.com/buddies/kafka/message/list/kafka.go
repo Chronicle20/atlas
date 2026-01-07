@@ -1,5 +1,7 @@
 package list
 
+import "github.com/google/uuid"
+
 const (
 	// EnvCommandTopic defines the environment variable for the buddy list command topic
 	EnvCommandTopic            = "COMMAND_TOPIC_BUDDY_LIST"
@@ -14,10 +16,11 @@ const (
 )
 
 type Command[E any] struct {
-	WorldId     byte   `json:"worldId"`
-	CharacterId uint32 `json:"characterId"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	TransactionId uuid.UUID `json:"transactionId"`
+	WorldId       byte      `json:"worldId"`
+	CharacterId   uint32    `json:"characterId"`
+	Type          string    `json:"type"`
+	Body          E         `json:"body"`
 }
 
 type CreateCommandBody struct {
@@ -105,7 +108,8 @@ type BuddyChannelChangeStatusEventBody struct {
 }
 
 type BuddyCapacityChangeStatusEventBody struct {
-	Capacity byte `json:"capacity"`
+	Capacity      byte      `json:"capacity"`
+	TransactionId uuid.UUID `json:"transactionId,omitempty"`
 }
 
 type ErrorStatusEventBody struct {

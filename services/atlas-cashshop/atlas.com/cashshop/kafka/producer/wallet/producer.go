@@ -4,6 +4,7 @@ import (
 	"atlas-cashshop/kafka/message/wallet"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -22,14 +23,19 @@ func CreateStatusEventProvider(accountId uint32, credit uint32, points uint32, p
 }
 
 func UpdateStatusEventProvider(accountId uint32, credit uint32, points uint32, prepaid uint32) model.Provider[[]kafka.Message] {
+	return UpdateStatusEventWithTransactionProvider(accountId, credit, points, prepaid, uuid.Nil)
+}
+
+func UpdateStatusEventWithTransactionProvider(accountId uint32, credit uint32, points uint32, prepaid uint32, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(accountId))
 	value := &wallet.StatusEvent[wallet.StatusEventUpdatedBody]{
 		AccountId: accountId,
 		Type:      wallet.StatusEventTypeUpdated,
 		Body: wallet.StatusEventUpdatedBody{
-			Credit:  credit,
-			Points:  points,
-			Prepaid: prepaid,
+			Credit:        credit,
+			Points:        points,
+			Prepaid:       prepaid,
+			TransactionId: transactionId,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

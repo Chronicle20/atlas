@@ -997,7 +997,7 @@ func (h *HandlerImpl) handleApplyConsumableEffect(s Saga, st Step[any]) error {
 		return errors.New("invalid payload")
 	}
 
-	err := h.consumableP.ApplyConsumableEffect(byte(payload.WorldId), byte(payload.ChannelId), payload.CharacterId, payload.ItemId)
+	err := h.consumableP.ApplyConsumableEffect(s.TransactionId, byte(payload.WorldId), byte(payload.ChannelId), payload.CharacterId, payload.ItemId)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to apply consumable effect.")
 		return err

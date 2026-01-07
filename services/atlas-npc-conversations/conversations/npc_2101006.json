@@ -1,0 +1,24 @@
+{
+  "npcId": 2101006,
+  "startState": "start",
+  "states": [
+    {
+      "id": "start",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Home is so boring... my parents ignore me so much it's unbearable. And ever since we moved from #rAriant#k, they've been trying to get a new palace built so they don't have to live outdoors. But I love the outdoors...",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

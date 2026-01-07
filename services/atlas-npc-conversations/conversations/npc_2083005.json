@@ -1,0 +1,82 @@
+{
+  "npcId": 2083005,
+  "startState": "checkQuest",
+  "states": [
+    {
+      "id": "checkQuest",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "=",
+                "value": "1",
+                "referenceId": 6280
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": 4031454
+              }
+            ],
+            "nextState": "fillCup"
+          },
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "fillCup",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4031454",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4031455",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "showMessage"
+          }
+        ]
+      }
+    },
+    {
+      "id": "showMessage",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "(You poured some water from the fountain into the cup.)",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

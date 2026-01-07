@@ -40,7 +40,7 @@ func handleAdjustCurrencyCommand(db *gorm.DB) message.Handler[wallet.AdjustCurre
 		l.Debugf("Received adjust currency command for account [%d]. Currency type: %d, Amount: %d, Transaction: %s",
 			c.AccountId, c.CurrencyType, c.Amount, c.TransactionId.String())
 
-		_, err := wallet2.NewProcessor(l, ctx, db).AdjustCurrency(c.AccountId, c.CurrencyType, c.Amount)
+		_, err := wallet2.NewProcessor(l, ctx, db).AdjustCurrencyWithTransaction(c.TransactionId, c.AccountId, c.CurrencyType, c.Amount)
 		if err != nil {
 			l.WithError(err).Errorf("Could not adjust currency for account [%d].", c.AccountId)
 			return

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -21,7 +22,10 @@ type Processor interface {
 	CreateAndEmit(accountId uint32, credit uint32, points uint32, prepaid uint32) (Model, error)
 	Update(mb *message.Buffer) func(accountId uint32) func(credit uint32) func(points uint32) func(prepaid uint32) (Model, error)
 	UpdateAndEmit(accountId uint32, credit uint32, points uint32, prepaid uint32) (Model, error)
+	UpdateWithTransaction(mb *message.Buffer) func(transactionId uuid.UUID) func(accountId uint32) func(credit uint32) func(points uint32) func(prepaid uint32) (Model, error)
+	UpdateAndEmitWithTransaction(transactionId uuid.UUID, accountId uint32, credit uint32, points uint32, prepaid uint32) (Model, error)
 	AdjustCurrency(accountId uint32, currencyType uint32, amount int32) (Model, error)
+	AdjustCurrencyWithTransaction(transactionId uuid.UUID, accountId uint32, currencyType uint32, amount int32) (Model, error)
 	Delete(mb *message.Buffer) func(accountId uint32) error
 	DeleteAndEmit(accountId uint32) error
 }
@@ -111,7 +115,37 @@ func (p *ProcessorImpl) UpdateAndEmit(accountId uint32, credit uint32, points ui
 	return message.EmitWithResult[Model, uint32](p.p)(model.Flip(model.Flip(model.Flip(p.Update)(accountId))(credit))(points))(prepaid)
 }
 
+func (p *ProcessorImpl) UpdateWithTransaction(mb *message.Buffer) func(transactionId uuid.UUID) func(accountId uint32) func(credit uint32) func(points uint32) func(prepaid uint32) (Model, error) {
+	return func(transactionId uuid.UUID) func(accountId uint32) func(credit uint32) func(points uint32) func(prepaid uint32) (Model, error) {
+		return func(accountId uint32) func(credit uint32) func(points uint32) func(prepaid uint32) (Model, error) {
+			return func(credit uint32) func(points uint32) func(prepaid uint32) (Model, error) {
+				return func(points uint32) func(prepaid uint32) (Model, error) {
+					return func(prepaid uint32) (Model, error) {
+						p.l.Debugf("Updating wallet information for account [%d] with transaction [%s]. Credit [%d], Points [%d], and Prepaid [%d].", accountId, transactionId.String(), credit, points, prepaid)
+						c, err := updateEntity(p.db, p.t, accountId, credit, points, prepaid)
+						if err != nil {
+							p.l.WithError(err).Errorf("Could not update wallet information for account [%d].", accountId)
+							return Model{}, err
+						}
+
+						_ = mb.Put(wallet.EnvEventTopicStatus, wallet2.UpdateStatusEventWithTransactionProvider(accountId, credit, points, prepaid, transactionId))
+						return c, err
+					}
+				}
+			}
+		}
+	}
+}
+
+func (p *ProcessorImpl) UpdateAndEmitWithTransaction(transactionId uuid.UUID, accountId uint32, credit uint32, points uint32, prepaid uint32) (Model, error) {
+	return message.EmitWithResult[Model, uint32](p.p)(model.Flip(model.Flip(model.Flip(model.Flip(p.UpdateWithTransaction)(transactionId))(accountId))(credit))(points))(prepaid)
+}
+
 func (p *ProcessorImpl) AdjustCurrency(accountId uint32, currencyType uint32, amount int32) (Model, error) {
+	return p.AdjustCurrencyWithTransaction(uuid.Nil, accountId, currencyType, amount)
+}
+
+func (p *ProcessorImpl) AdjustCurrencyWithTransaction(transactionId uuid.UUID, accountId uint32, currencyType uint32, amount int32) (Model, error) {
 	// Get current wallet
 	m, err := p.GetByAccountId(accountId)
 	if err != nil {
@@ -148,10 +182,10 @@ func (p *ProcessorImpl) AdjustCurrency(accountId uint32, currencyType uint32, am
 		return Model{}, fmt.Errorf("invalid currency type: %d", currencyType)
 	}
 
-	p.l.Debugf("Adjusting currency for account [%d]. Type: %d, Amount: %d. New values - Credit: %d, Points: %d, Prepaid: %d",
-		accountId, currencyType, amount, newCredit, newPoints, newPrepaid)
+	p.l.Debugf("Adjusting currency for account [%d]. Type: %d, Amount: %d, Transaction: %s. New values - Credit: %d, Points: %d, Prepaid: %d",
+		accountId, currencyType, amount, transactionId.String(), newCredit, newPoints, newPrepaid)
 
-	return p.UpdateAndEmit(accountId, newCredit, newPoints, newPrepaid)
+	return p.UpdateAndEmitWithTransaction(transactionId, accountId, newCredit, newPoints, newPrepaid)
 }
 
 func (p *ProcessorImpl) Delete(mb *message.Buffer) func(accountId uint32) error {

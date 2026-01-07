@@ -1,0 +1,98 @@
+{
+  "npcId": 2100007,
+  "startState": "welcome",
+  "states": [
+    {
+      "id": "welcome",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Hohoh~ welcome welcome. Welcome to Ariant Skin Care. You have stepped into a renowned Skin Care shop that even the Queen herself frequents this place. If you have #bAriant skin care coupon#k with you, we'll take care of the rest. How about letting work on your skin today?",
+        "choices": [
+          { "text": "Next", "nextState": "selectSkin" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "selectSkin",
+      "type": "askStyle",
+      "askStyle": {
+        "text": "With our specialized machine, you can see yourself after the treatment in advance. What kind of skin-treatment would you like to do? Choose the style of your liking...",
+        "styles": [0, 1, 2, 3, 4],
+        "contextKey": "selectedSkin",
+        "nextState": "checkCoupon"
+      }
+    },
+    {
+      "id": "checkCoupon",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "5153007" }
+            ],
+            "nextState": "applySkin"
+          },
+          {
+            "conditions": [],
+            "nextState": "noCoupon"
+          }
+        ]
+      }
+    },
+    {
+      "id": "applySkin",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "5153007",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "change_skin",
+            "params": {
+              "styleId": "{context.selectedSkin}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "success"
+          }
+        ]
+      }
+    },
+    {
+      "id": "success",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Enjoy your new and improved skin!",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "noCoupon",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Hmmm... I don't think you have our Skin Care coupon with you. Without it, I can't give you the treatment",
+        "choices": [
+          { "text": "Next", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    }
+  ]
+}

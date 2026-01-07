@@ -2,144 +2,31 @@ package conversation
 
 import (
 	"errors"
+	"strconv"
+
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/google/uuid"
-	"strconv"
-	"time"
 )
 
-// Model represents a conversation tree for an NPC
-type Model struct {
-	id         uuid.UUID
-	npcId      uint32
-	startState string
-	states     []StateModel
-	createdAt  time.Time
-	updatedAt  time.Time
+// StateContainer is an interface for state machine containers
+// Both NPC conversations (npc.Model) and quest state machines (quest.StateMachine) implement this
+type StateContainer interface {
+	StartState() string
+	FindState(stateId string) (StateModel, error)
 }
 
-// GetId returns the conversation ID
-func (m Model) Id() uuid.UUID {
-	return m.id
+// NpcConversation extends StateContainer with NPC-specific fields
+// This is implemented by npc.Model
+type NpcConversation interface {
+	StateContainer
+	NpcId() uint32
+	States() []StateModel
 }
 
-// GetNpcId returns the NPC ID
-func (m Model) NpcId() uint32 {
-	return m.npcId
-}
-
-// GetStartState returns the starting state ID
-func (m Model) StartState() string {
-	return m.startState
-}
-
-// GetStates returns the conversation states
-func (m Model) States() []StateModel {
-	return m.states
-}
-
-// GetCreatedAt returns the creation timestamp
-func (m Model) CreatedAt() time.Time {
-	return m.createdAt
-}
-
-// GetUpdatedAt returns the last update timestamp
-func (m Model) UpdatedAt() time.Time {
-	return m.updatedAt
-}
-
-// FindState finds a state by ID
-func (m Model) FindState(stateId string) (StateModel, error) {
-	for _, state := range m.states {
-		if state.Id() == stateId {
-			return state, nil
-		}
-	}
-	return StateModel{}, errors.New("state not found")
-}
-
-// Builder is a builder for Model
-type Builder struct {
-	id         uuid.UUID
-	npcId      uint32
-	startState string
-	states     []StateModel
-	createdAt  time.Time
-	updatedAt  time.Time
-}
-
-// NewBuilder creates a new Builder
-func NewBuilder() *Builder {
-	return &Builder{
-		id:        uuid.Nil,
-		states:    make([]StateModel, 0),
-		createdAt: time.Now(),
-		updatedAt: time.Now(),
-	}
-}
-
-// SetId sets the conversation ID
-func (b *Builder) SetId(id uuid.UUID) *Builder {
-	b.id = id
-	return b
-}
-
-// SetNpcId sets the NPC ID
-func (b *Builder) SetNpcId(npcId uint32) *Builder {
-	b.npcId = npcId
-	return b
-}
-
-// SetStartState sets the starting state ID
-func (b *Builder) SetStartState(startState string) *Builder {
-	b.startState = startState
-	return b
-}
-
-// SetStates sets the conversation states
-func (b *Builder) SetStates(states []StateModel) *Builder {
-	b.states = states
-	return b
-}
-
-// AddState adds a conversation state
-func (b *Builder) AddState(state StateModel) *Builder {
-	b.states = append(b.states, state)
-	return b
-}
-
-// SetCreatedAt sets the creation timestamp
-func (b *Builder) SetCreatedAt(createdAt time.Time) *Builder {
-	b.createdAt = createdAt
-	return b
-}
-
-// SetUpdatedAt sets the last update timestamp
-func (b *Builder) SetUpdatedAt(updatedAt time.Time) *Builder {
-	b.updatedAt = updatedAt
-	return b
-}
-
-// Build builds the Model
-func (b *Builder) Build() (Model, error) {
-	if b.npcId == 0 {
-		return Model{}, errors.New("npcId is required")
-	}
-	if b.startState == "" {
-		return Model{}, errors.New("startState is required")
-	}
-	if len(b.states) == 0 {
-		return Model{}, errors.New("at least one state is required")
-	}
-
-	return Model{
-		id:         b.id,
-		npcId:      b.npcId,
-		startState: b.startState,
-		states:     b.states,
-		createdAt:  b.createdAt,
-		updatedAt:  b.updatedAt,
-	}, nil
+// NpcConversationProvider is an interface for NPC conversation data access
+// This is implemented by npc.Processor to break the import cycle
+type NpcConversationProvider interface {
+	ByNpcIdProvider(npcId uint32) func() (NpcConversation, error)
 }
 
 // StateType represents the type of a conversation state
@@ -355,7 +242,6 @@ const (
 	SendOk            DialogueType = "sendOk"
 	SendYesNo         DialogueType = "sendYesNo"
 	SendAcceptDecline DialogueType = "sendAcceptDecline"
-	SendSimple        DialogueType = "sendSimple"
 	SendNext          DialogueType = "sendNext"
 	SendNextPrev      DialogueType = "sendNextPrev"
 	SendPrev          DialogueType = "sendPrev"
@@ -509,10 +395,6 @@ func (b *DialogueBuilder) Build() (*DialogueModel, error) {
 	case SendAcceptDecline:
 		if len(b.choices) != 3 {
 			return nil, errors.New("sendAcceptDecline requires exactly 3 choices")
-		}
-	case SendSimple:
-		if len(b.choices) == 0 {
-			return nil, errors.New("sendSimple requires at least 1 choice")
 		}
 	}
 
@@ -892,7 +774,6 @@ func (o OutcomeModel) NextState() string {
 	return o.nextState
 }
 
-
 // OutcomeBuilder is a builder for OutcomeModel
 type OutcomeBuilder struct {
 	conditions []ConditionModel
@@ -932,7 +813,6 @@ func (b *OutcomeBuilder) SetNextState(nextState string) *OutcomeBuilder {
 	b.nextState = nextState
 	return b
 }
-
 
 // Build builds the OutcomeModel
 // An empty nextState indicates a terminal state (end of conversation)
@@ -1601,15 +1481,25 @@ func (b *OptionBuilder) Build() (OptionModel, error) {
 	}, nil
 }
 
+// ConversationType represents the type of conversation (NPC or Quest)
+type ConversationType string
+
+const (
+	NpcConversationType   ConversationType = "npc"
+	QuestConversationType ConversationType = "quest"
+)
+
 // ConversationContext represents the current state of a conversation
 type ConversationContext struct {
-	field         field.Model
-	characterId   uint32
-	npcId         uint32
-	currentState  string
-	conversation  Model
-	context       map[string]string
-	pendingSagaId *uuid.UUID
+	field            field.Model
+	characterId      uint32
+	npcId            uint32
+	currentState     string
+	conversation     StateContainer
+	context          map[string]string
+	pendingSagaId    *uuid.UUID
+	conversationType ConversationType
+	sourceId         uint32
 }
 
 // Field returns the field
@@ -1632,8 +1522,8 @@ func (c ConversationContext) CurrentState() string {
 	return c.currentState
 }
 
-// Conversation returns the conversation model
-func (c ConversationContext) Conversation() Model {
+// Conversation returns the conversation state container (Model for NPC, StateMachine for Quest)
+func (c ConversationContext) Conversation() StateContainer {
 	return c.conversation
 }
 
@@ -1665,15 +1555,27 @@ func (c ConversationContext) SetCurrentState(state string) ConversationContext {
 	return c
 }
 
+// ConversationType returns the conversation type (NPC or Quest)
+func (c ConversationContext) ConversationType() ConversationType {
+	return c.conversationType
+}
+
+// SourceId returns the source ID (NpcId or QuestId depending on Type)
+func (c ConversationContext) SourceId() uint32 {
+	return c.sourceId
+}
+
 // ConversationContextBuilder is a builder for ConversationContext
 type ConversationContextBuilder struct {
-	field         field.Model
-	characterId   uint32
-	npcId         uint32
-	currentState  string
-	conversation  Model
-	context       map[string]string
-	pendingSagaId *uuid.UUID
+	field            field.Model
+	characterId      uint32
+	npcId            uint32
+	currentState     string
+	conversation     StateContainer
+	context          map[string]string
+	pendingSagaId    *uuid.UUID
+	conversationType ConversationType
+	sourceId         uint32
 }
 
 // NewConversationContextBuilder creates a new ConversationContextBuilder
@@ -1707,8 +1609,8 @@ func (b *ConversationContextBuilder) SetCurrentState(currentState string) *Conve
 	return b
 }
 
-// SetConversation sets the conversation model
-func (b *ConversationContextBuilder) SetConversation(conversation Model) *ConversationContextBuilder {
+// SetConversation sets the conversation state container (Model for NPC, StateMachine for Quest)
+func (b *ConversationContextBuilder) SetConversation(conversation StateContainer) *ConversationContextBuilder {
 	b.conversation = conversation
 	return b
 }
@@ -1725,25 +1627,41 @@ func (b *ConversationContextBuilder) AddContextValue(key, value string) *Convers
 	return b
 }
 
+// SetConversationType sets the conversation type
+func (b *ConversationContextBuilder) SetConversationType(conversationType ConversationType) *ConversationContextBuilder {
+	b.conversationType = conversationType
+	return b
+}
+
+// SetSourceId sets the source ID (NpcId or QuestId)
+func (b *ConversationContextBuilder) SetSourceId(sourceId uint32) *ConversationContextBuilder {
+	b.sourceId = sourceId
+	return b
+}
+
 // Build builds the ConversationContext
-func (b *ConversationContextBuilder) Build() (ConversationContext, error) {
-	if b.characterId == 0 {
-		return ConversationContext{}, errors.New("characterId is required")
+func (b *ConversationContextBuilder) Build() ConversationContext {
+	// Default to NPC conversation type if not set
+	conversationType := b.conversationType
+	if conversationType == "" {
+		conversationType = NpcConversationType
 	}
-	if b.npcId == 0 {
-		return ConversationContext{}, errors.New("npcId is required")
-	}
-	if b.currentState == "" {
-		return ConversationContext{}, errors.New("currentState is required")
+
+	// Default sourceId to npcId for backwards compatibility
+	sourceId := b.sourceId
+	if sourceId == 0 && b.npcId != 0 {
+		sourceId = b.npcId
 	}
 
 	return ConversationContext{
-		characterId:   b.characterId,
-		npcId:         b.npcId,
-		field:         b.field,
-		currentState:  b.currentState,
-		conversation:  b.conversation,
-		context:       b.context,
-		pendingSagaId: b.pendingSagaId,
-	}, nil
+		characterId:      b.characterId,
+		npcId:            b.npcId,
+		field:            b.field,
+		currentState:     b.currentState,
+		conversation:     b.conversation,
+		context:          b.context,
+		pendingSagaId:    b.pendingSagaId,
+		conversationType: conversationType,
+		sourceId:         sourceId,
+	}
 }

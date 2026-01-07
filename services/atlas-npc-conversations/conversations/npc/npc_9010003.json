@@ -1,0 +1,24 @@
+{
+  "npcId": 9010003,
+  "startState": "greeting",
+  "states": [
+    {
+      "id": "greeting",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Hi, I'm #p9010003#.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

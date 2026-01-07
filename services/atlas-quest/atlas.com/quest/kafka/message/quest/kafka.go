@@ -28,9 +28,10 @@ type StartCommandBody struct {
 
 // CompleteCommandBody is the body for completing a quest
 type CompleteCommandBody struct {
-	QuestId    uint32 `json:"questId"`
-	NpcId      uint32 `json:"npcId,omitempty"`
-	Selection  int32  `json:"selection,omitempty"`
+	QuestId   uint32 `json:"questId"`
+	NpcId     uint32 `json:"npcId,omitempty"`
+	Selection int32  `json:"selection,omitempty"`
+	Force     bool   `json:"force,omitempty"` // If true, skip requirement checks and just mark complete
 }
 
 // ForfeitCommandBody is the body for forfeiting a quest

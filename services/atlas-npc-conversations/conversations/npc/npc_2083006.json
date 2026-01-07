@@ -1,0 +1,471 @@
+{
+  "npcId": 2083006,
+  "startState": "checkTimeMachineActivated",
+  "states": [
+    {
+      "id": "checkTimeMachineActivated",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "<",
+                "value": "3",
+                "referenceId": 3718
+              }
+            ],
+            "nextState": "notActivated"
+          },
+          {
+            "conditions": [],
+            "nextState": "checkQuest3719"
+          }
+        ]
+      }
+    },
+    {
+      "id": "notActivated",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "The time machine has not been activated yet.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "checkQuest3719",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "<",
+                "value": "3",
+                "referenceId": 3719
+              }
+            ],
+            "nextState": "proveValor"
+          },
+          {
+            "conditions": [],
+            "nextState": "checkQuest3724"
+          }
+        ]
+      }
+    },
+    {
+      "id": "proveValor",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Prove your valor against the #bGuardian Nex#k before unlocking next Neo City maps.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "checkQuest3724",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "<",
+                "value": "3",
+                "referenceId": 3724
+              }
+            ],
+            "nextState": "selectDestination1"
+          },
+          {
+            "conditions": [],
+            "nextState": "checkQuest3730"
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectDestination1",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "",
+        "choices": [
+          {
+            "text": "Year 2021 - Average Town Entrance",
+            "nextState": "warpYear2021",
+            "context": { "destination": "240070100" }
+          },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "checkQuest3730",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "<",
+                "value": "3",
+                "referenceId": 3730
+              }
+            ],
+            "nextState": "selectDestination2"
+          },
+          {
+            "conditions": [],
+            "nextState": "checkQuest3736"
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectDestination2",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "",
+        "choices": [
+          {
+            "text": "Year 2021 - Average Town Entrance",
+            "nextState": "warpYear2021",
+            "context": { "destination": "240070100" }
+          },
+          {
+            "text": "Year 2099 - Midnight Harbor Entrance",
+            "nextState": "warpYear2099",
+            "context": { "destination": "240070200" }
+          },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "checkQuest3736",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "<",
+                "value": "3",
+                "referenceId": 3736
+              }
+            ],
+            "nextState": "selectDestination3"
+          },
+          {
+            "conditions": [],
+            "nextState": "checkQuest3742"
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectDestination3",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "",
+        "choices": [
+          {
+            "text": "Year 2021 - Average Town Entrance",
+            "nextState": "warpYear2021",
+            "context": { "destination": "240070100" }
+          },
+          {
+            "text": "Year 2099 - Midnight Harbor Entrance",
+            "nextState": "warpYear2099",
+            "context": { "destination": "240070200" }
+          },
+          {
+            "text": "Year 2215 - Bombed City Center Retail District",
+            "nextState": "warpYear2215",
+            "context": { "destination": "240070300" }
+          },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "checkQuest3742",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "<",
+                "value": "3",
+                "referenceId": 3742
+              }
+            ],
+            "nextState": "selectDestination4"
+          },
+          {
+            "conditions": [],
+            "nextState": "checkQuest3748"
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectDestination4",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "",
+        "choices": [
+          {
+            "text": "Year 2021 - Average Town Entrance",
+            "nextState": "warpYear2021",
+            "context": { "destination": "240070100" }
+          },
+          {
+            "text": "Year 2099 - Midnight Harbor Entrance",
+            "nextState": "warpYear2099",
+            "context": { "destination": "240070200" }
+          },
+          {
+            "text": "Year 2215 - Bombed City Center Retail District",
+            "nextState": "warpYear2215",
+            "context": { "destination": "240070300" }
+          },
+          {
+            "text": "Year 2216 - Ruined City Intersection",
+            "nextState": "warpYear2216",
+            "context": { "destination": "240070400" }
+          },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "checkQuest3748",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "<",
+                "value": "3",
+                "referenceId": 3748
+              }
+            ],
+            "nextState": "selectDestination5"
+          },
+          {
+            "conditions": [],
+            "nextState": "selectDestination6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectDestination5",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "",
+        "choices": [
+          {
+            "text": "Year 2021 - Average Town Entrance",
+            "nextState": "warpYear2021",
+            "context": { "destination": "240070100" }
+          },
+          {
+            "text": "Year 2099 - Midnight Harbor Entrance",
+            "nextState": "warpYear2099",
+            "context": { "destination": "240070200" }
+          },
+          {
+            "text": "Year 2215 - Bombed City Center Retail District",
+            "nextState": "warpYear2215",
+            "context": { "destination": "240070300" }
+          },
+          {
+            "text": "Year 2216 - Ruined City Intersection",
+            "nextState": "warpYear2216",
+            "context": { "destination": "240070400" }
+          },
+          {
+            "text": "Year 2230 - Dangerous Tower Lobby",
+            "nextState": "warpYear2230",
+            "context": { "destination": "240070500" }
+          },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "selectDestination6",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "",
+        "choices": [
+          {
+            "text": "Year 2021 - Average Town Entrance",
+            "nextState": "warpYear2021",
+            "context": { "destination": "240070100" }
+          },
+          {
+            "text": "Year 2099 - Midnight Harbor Entrance",
+            "nextState": "warpYear2099",
+            "context": { "destination": "240070200" }
+          },
+          {
+            "text": "Year 2215 - Bombed City Center Retail District",
+            "nextState": "warpYear2215",
+            "context": { "destination": "240070300" }
+          },
+          {
+            "text": "Year 2216 - Ruined City Intersection",
+            "nextState": "warpYear2216",
+            "context": { "destination": "240070400" }
+          },
+          {
+            "text": "Year 2230 - Dangerous Tower Lobby",
+            "nextState": "warpYear2230",
+            "context": { "destination": "240070500" }
+          },
+          {
+            "text": "Year 2503 - Air Battleship Bow",
+            "nextState": "warpYear2503",
+            "context": { "destination": "240070600" }
+          },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "warpYear2021",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "240070100",
+              "portalId": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "warpYear2099",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "240070200",
+              "portalId": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "warpYear2215",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "240070300",
+              "portalId": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "warpYear2216",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "240070400",
+              "portalId": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "warpYear2230",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "240070500",
+              "portalId": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "warpYear2503",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "240070600",
+              "portalId": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": null }
+        ]
+      }
+    }
+  ]
+}

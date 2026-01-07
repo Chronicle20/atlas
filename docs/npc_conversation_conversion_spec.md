@@ -19,10 +19,10 @@ Each converted conversation must include:
 
 | State Type       | Description                                                                 |
 |------------------|-----------------------------------------------------------------------------|
-| `dialogue`       | Presents a message to the user. Supports `sendOk`, `sendYesNo`, `sendNext`, `sendNextPrev`, `sendPrev`, and `sendSimple`. |
+| `dialogue`       | Presents a message to the user. Supports `sendOk`, `sendYesNo`, `sendNext`, `sendNextPrev`, `sendPrev`, and `sendAcceptDecline`. |
 | `genericAction`  | Executes logic or validation (e.g. meso check, job check, warp).            |
 | `craftAction`    | Defines crafting logic with required items and meso cost.                   |
-| `listSelection`  | Allows the user to choose from a dynamic list. Sets context values.         |
+| `listSelection`  | Allows the user to choose from a dynamic list. Sets context values. **Use for menu-style selections (formerly `sendSimple` with `#L` tags).** |
 
 ---
 
@@ -45,7 +45,8 @@ Each converted conversation must include:
 ```
 
 - All `dialogue` states must include an explicit **exit**.
-- Use appropriate `dialogueType` values: `sendOk`, `sendNext`, `sendNextPrev`, `sendPrev`, `sendYesNo`, `sendSimple`.
+- Use appropriate `dialogueType` values: `sendOk`, `sendNext`, `sendNextPrev`, `sendPrev`, `sendYesNo`, `sendAcceptDecline`.
+- **Note**: For menu-style selections (scripts using `sendSimple` with `#L` tags), use the `listSelection` state type instead of `dialogue`.
 
 ---
 
@@ -374,14 +375,18 @@ Verify in saga-orchestrator, but common operations:
 - `complete_quest` - Complete a quest (params: `questId`, `npcId`) - stub implementation
 - `start_quest` - Start a quest (params: `questId`, `npcId`) - stub implementation
 - `apply_consumable_effect` - Apply consumable effects without consuming (params: `itemId`) - for NPC buffs (maps to `cm.useItem()`)
+- `send_message` - Send a system message to the character (params: `messageType`, `message`) - maps to `cm.playerMessage()`
+  - `messageType` values: `"NOTICE"` (type 0), `"POP_UP"` (type 1), `"PINK_TEXT"` (type 5), `"BLUE_TEXT"` (type 6)
 
 **Local Operations:**
 - `local:generate_hair_styles` - Generate hair styles (params: `baseStyles`, `genderFilter`, etc.)
 - `local:generate_hair_colors` - Generate hair colors (params: `colors`, etc.)
 - `local:generate_face_styles` - Generate face styles (params: `baseStyles`, etc.)
+- `local:generate_face_colors_for_onetime_lens` - Generate face colors filtered by owned one-time lens items (params: `validateExists`, `excludeEquipped`, `outputContextKey`)
 - `local:select_random_cosmetic` - Random selection (params: `stylesContextKey`, `outputContextKey`)
 - `local:select_random_weighted` - Weighted random selection (params: `items`, `weights`, `outputContextKey`)
 - `local:fetch_map_player_counts` - Fetch player counts (params: `mapIds`)
+- `local:calculate_lens_coupon` - Calculate one-time lens item ID from face (params: `selectedFaceContextKey`, `outputContextKey`)
 - `local:log` - Log message (params: `message`)
 - `local:debug` - Debug log (params: `message`)
 
@@ -480,6 +485,143 @@ In this example:
   }
 }
 ```
+
+#### Detailed: local:calculate_lens_coupon
+
+Calculates the one-time cosmetic lens item ID based on a selected face ID. Used by beauty NPCs that offer one-time lens changes.
+
+**Parameters:**
+- `selectedFaceContextKey` (string, required) - Context key containing the selected face ID
+- `outputContextKey` (string, required) - Context key to store the calculated lens item ID
+
+**Formula:**
+```
+lensItemId = 5152100 + (selectedFace / 100) % 10
+```
+
+The color is encoded in the hundreds place of face IDs:
+- Face 20000 → color 0 → item 5152100
+- Face 20100 → color 1 → item 5152101
+- Face 20200 → color 2 → item 5152102
+- etc.
+
+**Example Usage:**
+
+```json
+{
+  "id": "applyOneTimeLens",
+  "type": "genericAction",
+  "genericAction": {
+    "operations": [
+      {
+        "type": "local:calculate_lens_coupon",
+        "params": {
+          "selectedFaceContextKey": "selectedFace",
+          "outputContextKey": "lensItemId"
+        }
+      }
+    ],
+    "outcomes": [
+      {
+        "conditions": [],
+        "nextState": "consumeAndApply"
+      }
+    ]
+  }
+},
+{
+  "id": "consumeAndApply",
+  "type": "genericAction",
+  "genericAction": {
+    "operations": [
+      {
+        "type": "destroy_item",
+        "params": {
+          "itemId": "{context.lensItemId}",
+          "quantity": "1"
+        }
+      },
+      {
+        "type": "change_face",
+        "params": {
+          "styleId": "{context.selectedFace}"
+        }
+      }
+    ],
+    "outcomes": [
+      {
+        "conditions": [],
+        "nextState": "success"
+      }
+    ]
+  }
+}
+```
+
+#### Detailed: local:generate_face_colors_for_onetime_lens
+
+Generates face color variants based on which one-time cosmetic lens items (5152100-5152107) the character owns. This is used by beauty NPCs like Dr.Roberts that allow using one-time lens coupons.
+
+**Parameters:**
+- `validateExists` (string, optional) - If "true", validates that generated face IDs exist
+- `excludeEquipped` (string, optional) - If "true", excludes the currently equipped face color
+- `outputContextKey` (string, optional) - Context key to store the generated face colors (defaults to "onetimeLensColors")
+
+**Behavior:**
+- Checks inventory for items 5152100-5152107 (one-time lens coupons)
+- For each item the character owns, generates the corresponding face color:
+  - Item 5152100 → color offset 0 (base color)
+  - Item 5152101 → color offset 100
+  - Item 5152102 → color offset 200
+  - ... and so on up to 5152107 → color offset 700
+- Face IDs are calculated as: genderOffset + baseFace + colorOffset
+  - Male genderOffset: 20000
+  - Female genderOffset: 21000
+- Returns an error if the character has no one-time lens items
+
+**Example Usage:**
+
+```json
+{
+  "id": "prepareOnetimeLens",
+  "type": "genericAction",
+  "genericAction": {
+    "operations": [
+      {
+        "type": "local:generate_face_colors_for_onetime_lens",
+        "params": {
+          "validateExists": "true",
+          "excludeEquipped": "true",
+          "outputContextKey": "onetimeLensColors"
+        }
+      }
+    ],
+    "outcomes": [
+      {
+        "conditions": [],
+        "nextState": "chooseOnetimeLens"
+      }
+    ]
+  }
+},
+{
+  "id": "chooseOnetimeLens",
+  "type": "askStyle",
+  "askStyle": {
+    "text": "What kind of lens would you like to wear? Please choose the style of your liking.",
+    "stylesContextKey": "onetimeLensColors",
+    "contextKey": "selectedFace",
+    "nextState": "calculateOnetimeLensCoupon"
+  }
+}
+```
+
+**Typical Flow for One-Time Lens NPCs:**
+1. Check if character has any one-time lens items (5152100-5152107)
+2. Use `local:generate_face_colors_for_onetime_lens` to generate available colors
+3. Use `askStyle` to let player select a color
+4. Use `local:calculate_lens_coupon` to determine which item to consume
+5. Consume the item and apply the face change
 
 ---
 

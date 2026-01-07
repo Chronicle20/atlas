@@ -1,0 +1,24 @@
+{
+  "npcId": 9310058,
+  "startState": "greeting",
+  "states": [
+    {
+      "id": "greeting",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Welcome to #bHappyville#k, young traveler. Do you have any wishes?",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "npcId": 2111008,
+  "startState": "greeting",
+  "states": [
+    {
+      "id": "greeting",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Make it clear of your position! Are you Zenumist or Alcadno?",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    }
+  ]
+}

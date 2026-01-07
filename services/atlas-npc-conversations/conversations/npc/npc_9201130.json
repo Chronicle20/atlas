@@ -1,0 +1,223 @@
+{
+  "npcId": 9201130,
+  "startState": "checkQuestStarted",
+  "states": [
+    {
+      "id": "checkQuestStarted",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "=",
+                "value": "2",
+                "referenceId": "28219"
+              }
+            ],
+            "nextState": "checkQuestItem"
+          },
+          {
+            "conditions": [],
+            "nextState": "questNotStarted"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkQuestItem",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4032493"
+              }
+            ],
+            "nextState": "askWarp"
+          },
+          {
+            "conditions": [],
+            "nextState": "noEmblem"
+          }
+        ]
+      }
+    },
+    {
+      "id": "questNotStarted",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "The entrance is blocked by a strange force.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "noEmblem",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "The entrance is blocked by a force that can only be lifted by those holding an emblem.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "askWarp",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Would you like to move to #b#m677000008##k?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkAndRemoveItems"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkAndRemoveItems",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4032485"
+              }
+            ],
+            "nextState": "removeItem4032485"
+          },
+          {
+            "conditions": [],
+            "nextState": "checkItem4001355"
+          }
+        ]
+      }
+    },
+    {
+      "id": "removeItem4032485",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4032485",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "checkItem4001355"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkItem4001355",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4001355"
+              }
+            ],
+            "nextState": "removeItem4001355"
+          },
+          {
+            "conditions": [],
+            "nextState": "performWarp"
+          }
+        ]
+      }
+    },
+    {
+      "id": "removeItem4001355",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4001355",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "performWarp"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performWarp",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "677000008",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "npcId": 9201019,
+  "name": "Intern Shakihands - Amoria Random Eye Change",
+  "startState": "welcome",
+  "states": [
+    {
+      "id": "welcome",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Hi, I pretty much shouldn't be doing this, but with a #b#t5152021##k, I will do it anyways for you. But don't forget, it will be random!",
+        "choices": [
+          { "text": "Plastic Surgery: #i5152021##t5152021#", "nextState": "generateFaceStyles" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "generateFaceStyles",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:generate_face_styles",
+            "params": {
+              "baseStyles": "20002,20005,20007,20011,20014,20027,20029,21001,21005,21007,21017,21018,21020,21022",
+              "genderFilter": "true",
+              "validateExists": "true",
+              "excludeEquipped": "true",
+              "outputContextKey": "generatedFaces"
+            }
+          }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": "confirmSurgery" }
+        ]
+      }
+    },
+    {
+      "id": "confirmSurgery",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "If you use the regular coupon, your face may transform into a random new look...do you still want to do it using #b#t5152021##k?",
+        "choices": [
+          { "text": "Yes", "nextState": "checkCoupon" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "checkCoupon",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "5152021" }
+            ],
+            "nextState": "executeFaceChange"
+          },
+          { "conditions": [], "nextState": "noCoupon" }
+        ]
+      }
+    },
+    {
+      "id": "executeFaceChange",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "5152021", "quantity": "1" } },
+          { "type": "local:select_random_cosmetic", "params": { "stylesContextKey": "generatedFaces", "outputContextKey": "selectedFace" } },
+          { "type": "change_face", "params": { "styleId": "{context.selectedFace}" } }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": "faceSuccess" }
+        ]
+      }
+    },
+    {
+      "id": "faceSuccess",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Enjoy your new and improved face!",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "noCoupon",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Hmm ... it looks like you don't have the coupon specifically for this place. Sorry to say this, but without the coupon, there's no plastic surgery for you...",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    }
+  ]
+}

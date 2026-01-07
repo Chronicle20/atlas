@@ -845,7 +845,7 @@ export default function ConversationPage() {
   const [editNodeType, setEditNodeType] = useState<string>('');
   const [editNodeText, setEditNodeText] = useState<string>('');
   const [editNodeTitle, setEditNodeTitle] = useState<string>('');
-  const [editDialogueType, setEditDialogueType] = useState<"sendOk" | "sendYesNo" | "sendSimple" | "sendNext">("sendOk");
+  const [editDialogueType, setEditDialogueType] = useState<"sendOk" | "sendYesNo" | "sendNext">("sendOk");
 
   // State for askNumber editing
   const [editAskNumberText, setEditAskNumberText] = useState<string>('');
@@ -893,7 +893,7 @@ export default function ConversationPage() {
   const [editingText, setEditingText] = useState<string>('');
 
   // Handle dialogue type change - defined first to avoid circular dependency
-  const handleDialogueTypeChange = useCallback((newDialogueType: "sendOk" | "sendYesNo" | "sendSimple" | "sendNext") => {
+  const handleDialogueTypeChange = useCallback((newDialogueType: "sendOk" | "sendYesNo" | "sendNext") => {
     setEditDialogueType(newDialogueType);
 
     // Create blank choices based on dialogue type
@@ -910,12 +910,6 @@ export default function ConversationPage() {
         blankChoices = [
           { text: "Yes", nextState: null },
           { text: "No", nextState: null },
-          { text: "Exit", nextState: null }
-        ];
-        break;
-      case "sendSimple":
-        blankChoices = [
-          { text: "Ok", nextState: null },
           { text: "Exit", nextState: null }
         ];
         break;
@@ -2159,14 +2153,13 @@ export default function ConversationPage() {
               {editNodeType === 'dialogue' && (
                 <div>
                   <h3 className="text-lg font-semibold">Dialogue Type</h3>
-                  <select 
-                    value={editDialogueType} 
-                    onChange={(e) => handleDialogueTypeChange(e.target.value as "sendOk" | "sendYesNo" | "sendSimple" | "sendNext")}
+                  <select
+                    value={editDialogueType}
+                    onChange={(e) => handleDialogueTypeChange(e.target.value as "sendOk" | "sendYesNo" | "sendNext")}
                     className="w-full p-2 border rounded-md"
                   >
                     <option value="sendOk">sendOk</option>
                     <option value="sendYesNo">sendYesNo</option>
-                    <option value="sendSimple">sendSimple</option>
                     <option value="sendNext">sendNext</option>
                   </select>
                 </div>
@@ -2236,12 +2229,11 @@ export default function ConversationPage() {
                 <h3 className="text-lg font-semibold">Dialogue Type</h3>
                 <select
                   value={editDialogueType}
-                  onChange={(e) => handleDialogueTypeChange(e.target.value as "sendOk" | "sendYesNo" | "sendSimple" | "sendNext")}
+                  onChange={(e) => handleDialogueTypeChange(e.target.value as "sendOk" | "sendYesNo" | "sendNext")}
                   className="w-full p-2 border rounded-md"
                 >
                   <option value="sendOk">sendOk</option>
                   <option value="sendYesNo">sendYesNo</option>
-                  <option value="sendSimple">sendSimple</option>
                   <option value="sendNext">sendNext</option>
                 </select>
               </div>

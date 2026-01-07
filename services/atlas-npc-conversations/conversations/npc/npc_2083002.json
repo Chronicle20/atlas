@@ -1,0 +1,93 @@
+{
+  "npcId": 2083002,
+  "startState": "askLeave",
+  "states": [
+    {
+      "id": "askLeave",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Do you wish to leave?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkMap"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMap",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "mapId",
+                "operator": ">",
+                "value": "240050400"
+              }
+            ],
+            "nextState": "warpToRoadBetween"
+          },
+          {
+            "conditions": [],
+            "nextState": "warpToCaveEntrance"
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToRoadBetween",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "240050600",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToCaveEntrance",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "240040700",
+              "portalName": "out00"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

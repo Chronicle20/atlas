@@ -1,0 +1,75 @@
+{
+  "npcId": 2111000,
+  "startState": "checkConditions",
+  "states": [
+    {
+      "id": "checkConditions",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "=",
+                "value": "1",
+                "referenceId": "3310"
+              },
+              {
+                "type": "item",
+                "operator": "<",
+                "value": "1",
+                "referenceId": "4031709"
+              }
+            ],
+            "nextState": "warpToLab"
+          },
+          {
+            "conditions": [],
+            "nextState": "showDialogue"
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToLab",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "926120100",
+              "portalName": "out00"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "showDialogue",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Alchemy....and Alchemist.....both of them are important. But more importantly, it is the Magatia that tolerate everything. The honor of Magatia should be protected by me.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

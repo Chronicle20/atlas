@@ -5,6 +5,7 @@ import (
 	npcMap "atlas-npc-conversations/map"
 	"atlas-npc-conversations/pet"
 	"atlas-npc-conversations/saga"
+	"atlas-npc-conversations/validation"
 	"context"
 	"errors"
 	"fmt"
@@ -31,13 +32,14 @@ type OperationExecutor interface {
 
 // OperationExecutorImpl is the implementation of the OperationExecutor interface
 type OperationExecutorImpl struct {
-	l         logrus.FieldLogger
-	ctx       context.Context
-	t         tenant.Model
-	sagaP     saga.Processor
-	petP      pet.Processor
-	cosmeticP cosmetic.Processor
-	mapP      npcMap.Processor
+	l           logrus.FieldLogger
+	ctx         context.Context
+	t           tenant.Model
+	sagaP       saga.Processor
+	petP        pet.Processor
+	cosmeticP   cosmetic.Processor
+	mapP        npcMap.Processor
+	validationP validation.Processor
 }
 
 // NewOperationExecutor creates a new operation executor
@@ -45,14 +47,39 @@ func NewOperationExecutor(l logrus.FieldLogger, ctx context.Context) OperationEx
 	t := tenant.MustFromContext(ctx)
 	appearanceProvider := cosmetic.NewRestAppearanceProvider(l, ctx)
 	return &OperationExecutorImpl{
-		l:         l,
-		ctx:       ctx,
-		t:         t,
-		sagaP:     saga.NewProcessor(l, ctx),
-		petP:      pet.NewProcessor(l, ctx),
-		cosmeticP: cosmetic.NewProcessor(l, ctx, appearanceProvider),
-		mapP:      npcMap.NewProcessor(l, ctx),
+		l:           l,
+		ctx:         ctx,
+		t:           t,
+		sagaP:       saga.NewProcessor(l, ctx),
+		petP:        pet.NewProcessor(l, ctx),
+		cosmeticP:   cosmetic.NewProcessor(l, ctx, appearanceProvider),
+		mapP:        npcMap.NewProcessor(l, ctx),
+		validationP: validation.NewProcessor(l, ctx),
 	}
+}
+
+// inventoryCheckerImpl implements cosmetic.InventoryChecker using the validation processor
+type inventoryCheckerImpl struct {
+	l           logrus.FieldLogger
+	validationP validation.Processor
+}
+
+// HasItem checks if a character has at least one of the specified item
+func (c *inventoryCheckerImpl) HasItem(characterId uint32, itemId uint32) (bool, error) {
+	condition := validation.ConditionInput{
+		Type:        "item",
+		Operator:    ">=",
+		Value:       1,
+		ReferenceId: itemId,
+	}
+
+	result, err := c.validationP.ValidateCharacterState(characterId, []validation.ConditionInput{condition})
+	if err != nil {
+		c.l.WithError(err).Errorf("Failed to check item %d for character %d", itemId, characterId)
+		return false, err
+	}
+
+	return result.Passed(), nil
 }
 
 // evaluateContextValue evaluates a context value, handling references to the conversation context
@@ -421,6 +448,33 @@ func (e *OperationExecutorImpl) executeLocalOperation(field field.Model, charact
 			len(faces), outputKey, characterId)
 		return nil
 
+	case "generate_face_colors":
+		// Format: local:generate_face_colors
+		// Params: colorOffsets (string, comma-separated offsets like "100,300,400,700"),
+		//         validateExists (string), excludeEquipped (string), outputContextKey (string)
+		// Used for cosmetic lens NPCs that change eye/face color
+		colors, err := e.cosmeticP.GenerateFaceColors(characterId, operation.Params())
+		if err != nil {
+			e.l.WithError(err).Errorf("Failed to generate face colors for character [%d]", characterId)
+			return fmt.Errorf("failed to generate face colors: %w", err)
+		}
+
+		// Store in context
+		outputKey := operation.Params()["outputContextKey"]
+		if outputKey == "" {
+			outputKey = "generatedFaceColors"
+		}
+
+		err = e.storeStylesInContext(characterId, outputKey, colors)
+		if err != nil {
+			e.l.WithError(err).Errorf("Failed to store face colors in context for character [%d]", characterId)
+			return err
+		}
+
+		e.l.Infof("Generated and stored %d face colors in context key [%s] for character [%d]",
+			len(colors), outputKey, characterId)
+		return nil
+
 	case "select_random_cosmetic":
 		// Format: local:select_random_cosmetic
 		// Params: stylesContextKey (string), outputContextKey (string)
@@ -542,6 +596,51 @@ func (e *OperationExecutorImpl) executeLocalOperation(field field.Model, charact
 			selectedItem, len(itemList), totalWeight, characterId, outputContextKey)
 		return nil
 
+	case "calculate_lens_coupon":
+		// Format: local:calculate_lens_coupon
+		// Params: selectedFaceContextKey (string), outputContextKey (string)
+		// Calculates the one-time lens item ID based on the selected face color
+		// Formula: itemId = 5152100 + (selectedFace / 100) % 10
+		// This maps face colors (0-7) to items 5152100-5152107
+		selectedFaceContextKey, exists := operation.Params()["selectedFaceContextKey"]
+		if !exists {
+			return errors.New("missing selectedFaceContextKey parameter for calculate_lens_coupon operation")
+		}
+
+		outputContextKey, exists := operation.Params()["outputContextKey"]
+		if !exists {
+			return errors.New("missing outputContextKey parameter for calculate_lens_coupon operation")
+		}
+
+		// Get the selected face from context
+		selectedFaceStr, err := e.getContextValue(characterId, selectedFaceContextKey)
+		if err != nil {
+			return fmt.Errorf("failed to get selected face from context key '%s': %w", selectedFaceContextKey, err)
+		}
+
+		// Parse the face ID
+		selectedFace, err := strconv.ParseUint(selectedFaceStr, 10, 32)
+		if err != nil {
+			return fmt.Errorf("invalid selected face value '%s': %w", selectedFaceStr, err)
+		}
+
+		// Calculate the color from face ID: (faceId / 100) % 10
+		// Face IDs like 20000, 20100, 20200, etc. have color encoded in the hundreds place
+		color := (selectedFace / 100) % 10
+
+		// Calculate the lens item ID: 5152100 + color
+		lensItemId := 5152100 + color
+
+		// Store the calculated item ID in context
+		err = e.setContextValue(characterId, outputContextKey, strconv.FormatUint(lensItemId, 10))
+		if err != nil {
+			return fmt.Errorf("failed to store lens item ID in context: %w", err)
+		}
+
+		e.l.Infof("Calculated lens coupon item ID %d for face %d (color %d) for character [%d], stored in context key [%s]",
+			lensItemId, selectedFace, color, characterId, outputContextKey)
+		return nil
+
 	case "fetch_map_player_counts":
 		// Format: local:fetch_map_player_counts
 		// Params: mapIds (comma-separated string of map IDs)
@@ -602,6 +701,41 @@ func (e *OperationExecutorImpl) executeLocalOperation(field field.Model, charact
 		}
 
 		e.l.Infof("Fetched and stored player counts for %d maps for character [%d]", len(mapIds), characterId)
+		return nil
+
+	case "generate_face_colors_for_onetime_lens":
+		// Format: local:generate_face_colors_for_onetime_lens
+		// Params: validateExists (string), excludeEquipped (string), outputContextKey (string)
+		// Checks which one-time lens items (5152100-5152107) the character owns
+		// and generates corresponding face colors for those items
+
+		// Create inventory checker
+		inventoryChecker := &inventoryCheckerImpl{
+			l:           e.l,
+			validationP: e.validationP,
+		}
+
+		// Call cosmetic processor with inventory checker
+		colors, err := e.cosmeticP.GenerateFaceColorsForOnetimeLens(characterId, inventoryChecker, operation.Params())
+		if err != nil {
+			e.l.WithError(err).Errorf("Failed to generate face colors for one-time lens for character [%d]", characterId)
+			return fmt.Errorf("failed to generate face colors for one-time lens: %w", err)
+		}
+
+		// Store in context
+		outputKey := operation.Params()["outputContextKey"]
+		if outputKey == "" {
+			outputKey = "onetimeLensColors"
+		}
+
+		err = e.storeStylesInContext(characterId, outputKey, colors)
+		if err != nil {
+			e.l.WithError(err).Errorf("Failed to store one-time lens colors in context for character [%d]", characterId)
+			return err
+		}
+
+		e.l.Infof("Generated and stored %d one-time lens face colors in context key [%s] for character [%d]",
+			len(colors), outputKey, characterId)
 		return nil
 
 	default:
@@ -1163,7 +1297,8 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 	case "spawn_monster":
 		// Format: spawn_monster
-		// Params: monsterId (uint32), x (int16), y (int16), count (int, optional, default 1), team (int8, optional, default 0)
+		// Params: monsterId (uint32), x (int16), y (int16), mapId (uint32, optional - defaults to character's current map),
+		//         count (int, optional, default 1), team (int8, optional, default 0)
 		// Note: Foothold is resolved by saga-orchestrator via atlas-data lookup
 		monsterIdValue, exists := operation.Params()["monsterId"]
 		if !exists {
@@ -1195,6 +1330,15 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 			return "", "", "", nil, err
 		}
 
+		// MapId is optional, defaults to character's current map
+		mapIdInt := int(f.MapId())
+		if mapIdValue, exists := operation.Params()["mapId"]; exists {
+			mapIdInt, err = e.evaluateContextValueAsInt(characterId, "mapId", mapIdValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
+		}
+
 		// Count is optional, defaults to 1
 		countInt := 1
 		if countValue, exists := operation.Params()["count"]; exists {
@@ -1217,7 +1361,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 			CharacterId: characterId,
 			WorldId:     f.WorldId(),
 			ChannelId:   f.ChannelId(),
-			MapId:       uint32(f.MapId()),
+			MapId:       uint32(mapIdInt),
 			MonsterId:   uint32(monsterIdInt),
 			X:           int16(xInt),
 			Y:           int16(yInt),
@@ -1229,16 +1373,29 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 	case "complete_quest":
 		// Format: complete_quest
-		// Params: questId (uint32), npcId (uint32, optional - defaults to conversation NPC)
-		// Note: This is currently a stub as no quest service exists yet
-		questIdValue, exists := operation.Params()["questId"]
-		if !exists {
-			return "", "", "", nil, errors.New("missing questId parameter for complete_quest operation")
-		}
-
-		questIdInt, err := e.evaluateContextValueAsInt(characterId, "questId", questIdValue)
-		if err != nil {
-			return "", "", "", nil, err
+		// Params: questId (uint32), npcId (uint32, optional - defaults to conversation NPC),
+		//         force (bool, optional - if true, skip requirement checks)
+		var questIdInt int
+		var err error
+		if questIdValue, exists := operation.Params()["questId"]; exists {
+			questIdInt, err = e.evaluateContextValueAsInt(characterId, "questId", questIdValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
+		} else {
+			// Check context for questId (set by quest conversations)
+			ctx, err := GetRegistry().GetPreviousContext(e.t, characterId)
+			if err != nil {
+				return "", "", "", nil, fmt.Errorf("failed to get conversation context for questId: %w", err)
+			}
+			if contextQuestId, exists := ctx.Context()["questId"]; exists {
+				questIdInt, err = strconv.Atoi(contextQuestId)
+				if err != nil {
+					return "", "", "", nil, fmt.Errorf("invalid questId in context: %w", err)
+				}
+			} else {
+				return "", "", "", nil, errors.New("missing questId parameter for complete_quest operation")
+			}
 		}
 
 		// NpcId is optional - if not provided, get from conversation context
@@ -1257,26 +1414,51 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 			npcIdInt = int(ctx.NpcId())
 		}
 
+		// Force is optional - if true, skip requirement validation (forceCompleteQuest behavior)
+		force := false
+		if forceValue, exists := operation.Params()["force"]; exists {
+			forceStr, err := e.evaluateContextValue(characterId, "force", forceValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
+			force = forceStr == "true"
+		}
+
 		payload := saga.CompleteQuestPayload{
 			CharacterId: characterId,
+			WorldId:     f.WorldId(),
 			QuestId:     uint32(questIdInt),
 			NpcId:       uint32(npcIdInt),
+			Force:       force,
 		}
 
 		return stepId, saga.Pending, saga.CompleteQuest, payload, nil
 
 	case "start_quest":
 		// Format: start_quest
-		// Params: questId (uint32), npcId (uint32, optional - defaults to conversation NPC)
-		// Note: This is currently a stub as no quest service exists yet
-		questIdValue, exists := operation.Params()["questId"]
-		if !exists {
-			return "", "", "", nil, errors.New("missing questId parameter for start_quest operation")
-		}
-
-		questIdInt, err := e.evaluateContextValueAsInt(characterId, "questId", questIdValue)
-		if err != nil {
-			return "", "", "", nil, err
+		// Params: questId (uint32, optional - defaults to context questId for quest conversations),
+		//         npcId (uint32, optional - defaults to conversation NPC)
+		var questIdInt int
+		var err error
+		if questIdValue, exists := operation.Params()["questId"]; exists {
+			questIdInt, err = e.evaluateContextValueAsInt(characterId, "questId", questIdValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
+		} else {
+			// Check context for questId (set by quest conversations)
+			ctx, err := GetRegistry().GetPreviousContext(e.t, characterId)
+			if err != nil {
+				return "", "", "", nil, fmt.Errorf("failed to get conversation context for questId: %w", err)
+			}
+			if contextQuestId, exists := ctx.Context()["questId"]; exists {
+				questIdInt, err = strconv.Atoi(contextQuestId)
+				if err != nil {
+					return "", "", "", nil, fmt.Errorf("invalid questId in context: %w", err)
+				}
+			} else {
+				return "", "", "", nil, errors.New("missing questId parameter for start_quest operation")
+			}
 		}
 
 		// NpcId is optional - if not provided, get from conversation context
@@ -1326,6 +1508,41 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		}
 
 		return stepId, saga.Pending, saga.ApplyConsumableEffect, payload, nil
+
+	case "send_message":
+		// Format: send_message
+		// Params: messageType (string: "NOTICE", "POP_UP", "PINK_TEXT", "BLUE_TEXT"), message (string)
+		// Sends a system message to the character
+		// Used for NPC-initiated messages (e.g., cm.playerMessage() in scripts)
+		messageTypeValue, exists := operation.Params()["messageType"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing messageType parameter for send_message operation")
+		}
+
+		messageType, err := e.evaluateContextValue(characterId, "messageType", messageTypeValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		messageValue, exists := operation.Params()["message"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing message parameter for send_message operation")
+		}
+
+		message, err := e.evaluateContextValue(characterId, "message", messageValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		payload := saga.SendMessagePayload{
+			CharacterId: characterId,
+			WorldId:     f.WorldId(),
+			ChannelId:   f.ChannelId(),
+			MessageType: messageType,
+			Message:     message,
+		}
+
+		return stepId, saga.Pending, saga.SendMessage, payload, nil
 
 	default:
 		return "", "", "", nil, fmt.Errorf("unknown operation type: %s", operation.Type())

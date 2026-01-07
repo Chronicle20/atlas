@@ -64,7 +64,7 @@ A dedicated state type for presenting cosmetic style selection interfaces.
 - `contextKey` (string, required): Context key where selected style ID will be stored
 - `nextState` (string, required): Next state to transition to after selection
 
-**Prerequisites**: The styles array must be populated in context before reaching an askStyle state, typically using `local:generate_hair_styles`, `local:generate_hair_colors`, or `local:generate_face_styles` operations.
+**Prerequisites**: The styles array must be populated in context before reaching an askStyle state, typically using `local:generate_hair_styles`, `local:generate_hair_colors`, `local:generate_face_styles`, or `local:generate_face_colors` operations.
 
 ### 2. Local Operations
 
@@ -144,6 +144,38 @@ Generates available face styles for the character based on configuration.
   }
 }
 ```
+
+#### local:generate_face_colors
+
+Generates available face/eye color variations for the character's current face (cosmetic lenses).
+
+**Parameters**:
+- `colorOffsets` (string, required): Comma-separated list of color offsets (0, 100, 200, 300, 400, 500, 600, 700)
+- `validateExists` (string, optional): Set to "true" to validate colors exist in WZ data
+- `excludeEquipped` (string, optional): Set to "true" to exclude current face color
+- `outputContextKey` (string, required): Context key to store the generated colors array
+
+**Note**: Face colors use offset-based IDs, where the color is encoded in the hundreds digit of the face ID:
+- Color 0: base face (offset 0)
+- Color 1: base face + 100
+- Color 2: base face + 200
+- ...
+- Color 7: base face + 700
+
+**Example**:
+```json
+{
+  "type": "local:generate_face_colors",
+  "params": {
+    "colorOffsets": "100,300,400,700",
+    "validateExists": "true",
+    "excludeEquipped": "true",
+    "outputContextKey": "availableLensColors"
+  }
+}
+```
+
+**Use Case**: Cosmetic lens NPCs like Dr. Rhomes (NPC 9200101) that change eye/face color.
 
 #### local:select_random_cosmetic
 
@@ -489,6 +521,25 @@ To support full rollback, the system would need to:
 - Cosmetic application
 - Success/failure messages
 
+### NPC 9200101 - Dr. Rhomes (Orbis Cosmetic Lens Shop)
+
+**Features**:
+- Regular cosmetic lens (random color, #5152011#)
+- VIP cosmetic lens (player-selected color, #5152014#)
+- One-time cosmetic lenses (#5152100# - #5152107#, one per color)
+- Face color generation using `local:generate_face_colors`
+
+**States**: 34 total
+- Service selection (Regular/VIP/One-time coupons)
+- Face color generation for each service type
+- Style selection (askStyle for VIP/One-time)
+- Random selection (for Regular coupon)
+- Coupon validation and consumption
+- 8 separate one-time coupon flows (one per color index)
+- Success/failure messages
+
+**Pattern**: Demonstrates face color cosmetics using `local:generate_face_colors` operation with color offsets (100, 300, 400, 700 for standard coupons).
+
 ## Testing
 
 ### Unit Tests
@@ -497,6 +548,7 @@ Test local operations independently:
 - `local:generate_hair_styles` with various configurations
 - `local:generate_hair_colors` with color validation
 - `local:generate_face_styles` with gender filtering
+- `local:generate_face_colors` with color offset validation
 - `local:select_random_cosmetic` with different array sizes
 
 ### Integration Tests

@@ -27,8 +27,8 @@ func NewValidator() *Validator {
 	return &Validator{}
 }
 
-// Validate validates a conversation model
-func (v *Validator) Validate(m Model) ValidationResult {
+// ValidateNpc validates an NPC conversation model
+func (v *Validator) ValidateNpc(m NpcConversation) ValidationResult {
 	result := ValidationResult{
 		Valid:  true,
 		Errors: []ValidationError{},
@@ -130,10 +130,6 @@ func (v *Validator) validateDialogue(stateId string, dialogue *DialogueModel, st
 	case SendYesNo, SendNextPrev:
 		if choiceCount != 3 {
 			result.addError(stateId, "dialogue.choices", "invalid_count", fmt.Sprintf("%s requires exactly 3 choices", dialogue.DialogueType()))
-		}
-	case SendSimple:
-		if choiceCount == 0 {
-			result.addError(stateId, "dialogue.choices", "invalid_count", "sendSimple requires at least 1 choice")
 		}
 	}
 
@@ -314,7 +310,7 @@ func (v *Validator) validateAskStyle(stateId string, askStyle *AskStyleModel, st
 }
 
 // findReachableStates performs a graph traversal to find all reachable states
-func (v *Validator) findReachableStates(m Model) map[string]bool {
+func (v *Validator) findReachableStates(m NpcConversation) map[string]bool {
 	reachable := make(map[string]bool)
 	visited := make(map[string]bool)
 
@@ -374,7 +370,7 @@ func (v *Validator) findReachableStates(m Model) map[string]bool {
 }
 
 // detectCircularReferences detects circular references (infinite loops)
-func (v *Validator) detectCircularReferences(m Model, result *ValidationResult) {
+func (v *Validator) detectCircularReferences(m NpcConversation, result *ValidationResult) {
 	// Build adjacency list
 	graph := make(map[string][]string)
 

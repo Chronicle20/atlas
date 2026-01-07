@@ -1,0 +1,24 @@
+{
+  "npcId": 9201073,
+  "startState": "initial",
+  "states": [
+    {
+      "id": "initial",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "(This enigmatic tombstone keeps emmiting strange forces... Better look another way.)",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

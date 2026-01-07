@@ -1,0 +1,99 @@
+{
+  "npcId": 2111010,
+  "startState": "checkQuestAndItem",
+  "states": [
+    {
+      "id": "checkQuestAndItem",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "=",
+                "value": "1",
+                "referenceId": "3309"
+              },
+              {
+                "type": "item",
+                "operator": "=",
+                "value": "0",
+                "referenceId": "4031708"
+              }
+            ],
+            "nextState": "checkInventorySpace"
+          },
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkInventorySpace",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4031708"
+              }
+            ],
+            "nextState": "giveItem"
+          },
+          {
+            "conditions": [],
+            "nextState": "noSpace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "giveItem",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4031708",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "noSpace",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Have a ETC slot available to get the Alcadno's secret document.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "npcId": 9000007,
+  "startState": "greeting",
+  "states": [
+    {
+      "id": "greeting",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Just a kid... Don't talk to me...",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

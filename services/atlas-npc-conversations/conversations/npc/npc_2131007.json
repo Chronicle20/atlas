@@ -1,0 +1,165 @@
+{
+  "npcId": 2131007,
+  "startState": "initial",
+  "states": [
+    {
+      "id": "initial",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "These monsters are a piece of cake! One hit with my sword and I will kill them... better get a sword first.#b",
+        "choices": [
+          {
+            "text": "Hey, take these tree trunks. You can build a better sword with them.",
+            "nextState": "checkItems"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkItems",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": "<",
+                "value": "100",
+                "referenceId": "4000438"
+              }
+            ],
+            "nextState": "notEnoughItems"
+          },
+          {
+            "conditions": [],
+            "nextState": "askQuantity"
+          }
+        ]
+      }
+    },
+    {
+      "id": "notEnoughItems",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "You don't have enough... I need at least 100.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "askQuantity",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "Hey, that's a good idea! I can give you #i4310000#Perfect Pitch for each 100 #i4000438##t4000438# you give me. How many do you want?",
+        "default": 1,
+        "min": 1,
+        "max": 300,
+        "contextKey": "quantity",
+        "nextState": "validateAndExchange"
+      }
+    },
+    {
+      "id": "validateAndExchange",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "{context.quantity}",
+                "referenceId": "4310000"
+              }
+            ],
+            "nextState": "performExchange"
+          },
+          {
+            "conditions": [],
+            "nextState": "noInventorySpace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "noInventorySpace",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Please make some space in ETC tab.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "performExchange",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4310000",
+              "quantity": "{context.quantity}"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4000438",
+              "quantity": "100 * {context.quantity}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "exchangeSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "exchangeSuccess",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Thanks!",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "npcId": 9201071,
+  "startState": "tombstoneMessage",
+  "states": [
+    {
+      "id": "tombstoneMessage",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "(This tombstone keeps emmiting ever oddier light waves the more I stare to it...)",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

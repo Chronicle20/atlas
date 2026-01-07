@@ -39,6 +39,6 @@ func (p *ProcessorImpl) GainClosenessAndEmit(transactionId uuid.UUID, petId uint
 
 func (p *ProcessorImpl) GainCloseness(mb *message.Buffer) func(transactionId uuid.UUID, petId uint32, amount uint16) error {
 	return func(transactionId uuid.UUID, petId uint32, amount uint16) error {
-		return mb.Put(pet2.EnvCommandTopic, GainClosenessProvider(petId, amount))
+		return mb.Put(pet2.EnvCommandTopic, AwardClosenessProvider(transactionId, petId, amount))
 	}
 }

@@ -1,0 +1,143 @@
+{
+  "npcId": 9201033,
+  "startState": "checkLocation",
+  "states": [
+    {
+      "id": "checkLocation",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "mapId",
+                "operator": "=",
+                "value": "209000000"
+              }
+            ],
+            "nextState": "askToShalom"
+          },
+          {
+            "conditions": [
+              {
+                "type": "mapId",
+                "operator": "=",
+                "value": "681000000"
+              }
+            ],
+            "nextState": "askToHappyville"
+          },
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "askToShalom",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "The Shalom Temple is unlike any other place in Happyville, would you like to head to #bShalom Temple#k?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "warpToShalom"
+          },
+          {
+            "text": "No",
+            "nextState": "declineMessage"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "askToHappyville",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Would you like to head back to Happyville?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "warpToHappyville"
+          },
+          {
+            "text": "No",
+            "nextState": "declineMessage"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "declineMessage",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Let me know if you've changed your mind!",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToShalom",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "681000000",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToHappyville",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "209000000",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

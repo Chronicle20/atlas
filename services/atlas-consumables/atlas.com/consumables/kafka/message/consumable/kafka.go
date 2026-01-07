@@ -1,19 +1,22 @@
 package consumable
 
+import "github.com/google/uuid"
+
 const (
 	EnvCommandTopic = "COMMAND_TOPIC_CONSUMABLE"
 
-	CommandRequestItemConsume = "REQUEST_ITEM_CONSUME"
-	CommandRequestScroll      = "REQUEST_SCROLL"
+	CommandRequestItemConsume    = "REQUEST_ITEM_CONSUME"
+	CommandRequestScroll         = "REQUEST_SCROLL"
 	CommandApplyConsumableEffect = "APPLY_CONSUMABLE_EFFECT"
 )
 
 type Command[E any] struct {
-	WorldId     byte   `json:"worldId"`
-	ChannelId   byte   `json:"channelId"`
-	CharacterId uint32 `json:"characterId"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	TransactionId uuid.UUID `json:"transactionId"`
+	WorldId       byte      `json:"worldId"`
+	ChannelId     byte      `json:"channelId"`
+	CharacterId   uint32    `json:"characterId"`
+	Type          string    `json:"type"`
+	Body          E         `json:"body"`
 }
 
 type RequestItemConsumeBody struct {
@@ -39,6 +42,7 @@ const (
 	EnvEventTopic   = "EVENT_TOPIC_CONSUMABLE_STATUS"
 	EventTypeError  = "ERROR"
 	EventTypeScroll = "SCROLL"
+	EventTypeEffectApplied = "EFFECT_APPLIED"
 
 	ErrorTypePetCannotConsume = "PET_CANNOT_CONSUME"
 )
@@ -58,4 +62,9 @@ type ScrollBody struct {
 	Cursed          bool `json:"cursed"`
 	LegendarySpirit bool `json:"legendarySpirit"`
 	WhiteScroll     bool `json:"whiteScroll"`
+}
+
+type EffectAppliedBody struct {
+	ItemId        uint32    `json:"itemId"`
+	TransactionId uuid.UUID `json:"transactionId,omitempty"`
 }

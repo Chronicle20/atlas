@@ -3,17 +3,42 @@ package drop
 import (
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
-	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
-func GetAll(_ logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func() ([]Model, error) {
+type Processor interface {
+	GetAll() model.Provider[[]Model]
+}
+
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+	db  *gorm.DB
+	t   tenant.Model
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
+	t := tenant.MustFromContext(ctx)
+	return &ProcessorImpl{
+		l:   l,
+		ctx: ctx,
+		db:  db,
+		t:   t,
+	}
+}
+
+func (p *ProcessorImpl) GetAll() model.Provider[[]Model] {
+	return model.SliceMap(makeDrop)(getAll(p.t.Id())(p.db))()
+}
+
+// Legacy function wrapper for backward compatibility during migration
+func GetAll(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func() ([]Model, error) {
 	return func(ctx context.Context) func(db *gorm.DB) func() ([]Model, error) {
-		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func() ([]Model, error) {
 			return func() ([]Model, error) {
-				return model.SliceMap(makeDrop)(getAll(t.Id())(db))()()
+				return NewProcessor(l, ctx, db).GetAll()()
 			}
 		}
 	}

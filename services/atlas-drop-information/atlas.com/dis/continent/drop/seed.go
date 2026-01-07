@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-const ContinentDropsPath = "/drops/continents"
+var ContinentDropsPath = "/drops/continents"
 
 // LoadContinentDropFiles reads all JSON files from the continent drops directory
 // and parses them into JSONModel structs. Returns the successfully parsed models

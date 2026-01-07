@@ -19,13 +19,23 @@ func (r RestModel) GetID() string {
 	return strconv.Itoa(int(r.Id))
 }
 
-func Transform(model Model) RestModel {
-	rm := RestModel{
-		Id:              model.id,
-		ItemId:          model.itemId,
-		MinimumQuantity: model.minimumQuantity,
-		MaximumQuantity: model.maximumQuantity,
-		Chance:          model.chance,
+func (r *RestModel) SetID(idStr string) error {
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		return err
 	}
-	return rm
+	r.Id = uint32(id)
+	return nil
+}
+
+func Transform(model Model) (RestModel, error) {
+	rm := RestModel{
+		Id:              model.Id(),
+		ItemId:          model.ItemId(),
+		MinimumQuantity: model.MinimumQuantity(),
+		MaximumQuantity: model.MaximumQuantity(),
+		QuestId:         model.QuestId(),
+		Chance:          model.Chance(),
+	}
+	return rm, nil
 }

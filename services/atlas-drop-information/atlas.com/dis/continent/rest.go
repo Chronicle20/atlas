@@ -45,13 +45,22 @@ func (p RestModel) GetID() string {
 	return p.ID
 }
 
+func (p *RestModel) SetID(idStr string) error {
+	p.ID = idStr
+	return nil
+}
+
 func Transform(model Model) (RestModel, error) {
 	rm := RestModel{
-		ID:    strconv.Itoa(int(model.id)),
+		ID:    strconv.Itoa(int(model.Id())),
 		Drops: make([]drop.RestModel, 0),
 	}
-	for _, m := range model.drops {
-		rm.Drops = append(rm.Drops, drop.Transform(m))
+	for _, m := range model.Drops() {
+		dropRest, err := drop.Transform(m)
+		if err != nil {
+			return RestModel{}, err
+		}
+		rm.Drops = append(rm.Drops, dropRest)
 	}
 	return rm, nil
 }

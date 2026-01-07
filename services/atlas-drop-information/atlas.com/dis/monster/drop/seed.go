@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-const MonsterDropsPath = "/drops/monsters"
+var MonsterDropsPath = "/drops/monsters"
 
 // LoadMonsterDropFiles reads all JSON files from the monster drops directory
 // and parses them into JSONModel structs. Returns the successfully parsed models

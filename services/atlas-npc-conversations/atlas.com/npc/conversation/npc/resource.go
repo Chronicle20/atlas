@@ -1,6 +1,7 @@
-package conversation
+package npc
 
 import (
+	"atlas-npc-conversations/conversation"
 	"atlas-npc-conversations/rest"
 	"encoding/json"
 	"errors"
@@ -197,8 +198,8 @@ type RestValidationError struct {
 
 // RestValidationResult represents the validation result in REST format
 type RestValidationResult struct {
-	Valid  bool                   `json:"valid"`
-	Errors []RestValidationError  `json:"errors,omitempty"`
+	Valid  bool                  `json:"valid"`
+	Errors []RestValidationError `json:"errors,omitempty"`
 }
 
 // ValidateConversationHandler handles POST /conversations/validate
@@ -213,8 +214,8 @@ func ValidateConversationHandler(d *rest.HandlerDependency, c *rest.HandlerConte
 		}
 
 		// Validate conversation
-		validator := NewValidator()
-		result := validator.Validate(m)
+		validator := conversation.NewValidator()
+		result := validator.ValidateNpc(m)
 
 		// Transform to REST validation result
 		restErrors := make([]RestValidationError, len(result.Errors))

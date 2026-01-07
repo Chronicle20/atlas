@@ -1,4 +1,4 @@
-package conversation
+package npc
 
 import (
 	"encoding/json"
@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-const ConversationsPath = "/conversations"
+const ConversationsPath = "/conversations/npc"
 
 // SeedResult represents the result of a seed operation
 type SeedResult struct {

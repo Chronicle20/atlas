@@ -1,0 +1,412 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Quest Conversation",
+  "description": "JSON:API attributes object for quest conversations with dual state machines for start/end phases",
+  "type": "object",
+  "required": [
+    "questId",
+    "startStateMachine"
+  ],
+  "properties": {
+    "questId": {
+      "type": "integer",
+      "description": "The ID of the quest"
+    },
+    "npcId": {
+      "type": "integer",
+      "description": "The ID of the NPC that gives this quest (metadata)"
+    },
+    "questName": {
+      "type": "string",
+      "description": "Human-readable name of the quest (metadata)"
+    },
+    "startStateMachine": {
+      "type": "object",
+      "description": "State machine for quest acceptance (when quest is NOT_STARTED)",
+      "required": [
+        "startState",
+        "states"
+      ],
+      "properties": {
+        "startState": {
+          "type": "string",
+          "description": "The ID of the starting state for quest acceptance"
+        },
+        "states": {
+          "$ref": "#/$defs/statesArray"
+        }
+      }
+    },
+    "endStateMachine": {
+      "type": "object",
+      "description": "State machine for quest completion (when quest is STARTED). Optional - some quests may only have start dialogue.",
+      "required": [
+        "startState",
+        "states"
+      ],
+      "properties": {
+        "startState": {
+          "type": "string",
+          "description": "The ID of the starting state for quest completion"
+        },
+        "states": {
+          "$ref": "#/$defs/statesArray"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "statesArray": {
+      "type": "array",
+      "description": "Array of conversation states",
+      "items": {
+        "$ref": "#/$defs/state"
+      }
+    },
+    "state": {
+      "type": "object",
+      "required": [
+        "id",
+        "type"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the state"
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of state",
+          "enum": [
+            "dialogue",
+            "genericAction",
+            "craftAction",
+            "listSelection",
+            "askNumber",
+            "askStyle"
+          ]
+        },
+        "dialogue": {
+          "$ref": "#/$defs/dialogue"
+        },
+        "genericAction": {
+          "$ref": "#/$defs/genericAction"
+        },
+        "craftAction": {
+          "$ref": "#/$defs/craftAction"
+        },
+        "listSelection": {
+          "$ref": "#/$defs/listSelection"
+        },
+        "askNumber": {
+          "$ref": "#/$defs/askNumber"
+        },
+        "askStyle": {
+          "$ref": "#/$defs/askStyle"
+        }
+      }
+    },
+    "dialogue": {
+      "type": "object",
+      "description": "Dialogue state configuration",
+      "required": [
+        "dialogueType",
+        "text"
+      ],
+      "properties": {
+        "dialogueType": {
+          "type": "string",
+          "description": "Type of dialogue to display",
+          "enum": [
+            "sendOk",
+            "sendYesNo",
+            "sendAcceptDecline",
+            "sendNext",
+            "sendNextPrev",
+            "sendPrev"
+          ]
+        },
+        "text": {
+          "type": "string",
+          "description": "Text content of the dialogue. Supports context references like {context.characterName}"
+        },
+        "choices": {
+          "type": "array",
+          "description": "Available choices for the player",
+          "items": {
+            "$ref": "#/$defs/choice"
+          }
+        }
+      }
+    },
+    "choice": {
+      "type": "object",
+      "required": [
+        "text",
+        "nextState"
+      ],
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "Text of the choice (e.g., 'Ok', 'Yes', 'No', 'Accept', 'Decline', 'Exit')"
+        },
+        "nextState": {
+          "type": ["string", "null"],
+          "description": "ID of the next state to transition to, or null to end conversation"
+        },
+        "context": {
+          "type": "object",
+          "description": "Additional context data to set when this choice is selected",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "genericAction": {
+      "type": "object",
+      "description": "Generic action state configuration for executing operations and evaluating conditions",
+      "properties": {
+        "operations": {
+          "type": "array",
+          "description": "Operations to perform (executed in order)",
+          "items": {
+            "$ref": "#/$defs/operation"
+          }
+        },
+        "outcomes": {
+          "type": "array",
+          "description": "Possible outcomes based on conditions (evaluated in order, first match wins)",
+          "items": {
+            "$ref": "#/$defs/outcome"
+          }
+        }
+      }
+    },
+    "operation": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Type of operation (e.g., 'start_quest', 'complete_quest', 'give_item', 'give_meso', 'give_exp', 'remove_item', 'warp', etc.)"
+        },
+        "params": {
+          "type": "object",
+          "description": "Parameters for the operation. Supports context references like {context.itemId}",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "condition": {
+      "type": "object",
+      "required": [
+        "type",
+        "operator",
+        "value"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Type of condition (e.g., 'level', 'job', 'item', 'meso', 'quest_status', 'quest_progress', etc.)"
+        },
+        "operator": {
+          "type": "string",
+          "description": "Comparison operator (e.g., 'eq', 'ne', 'gt', 'gte', 'lt', 'lte')"
+        },
+        "value": {
+          "type": "string",
+          "description": "Value to compare against. Supports context references like {context.requiredLevel}"
+        },
+        "referenceId": {
+          "type": "string",
+          "description": "Reference ID for conditions that require it (e.g., item ID, quest ID). Supports context references"
+        },
+        "step": {
+          "type": "string",
+          "description": "Step identifier for quest progress conditions"
+        },
+        "includeEquipped": {
+          "type": "boolean",
+          "description": "For item conditions: also check equipped items"
+        }
+      }
+    },
+    "outcome": {
+      "type": "object",
+      "required": [
+        "conditions"
+      ],
+      "properties": {
+        "conditions": {
+          "type": "array",
+          "description": "Conditions that must ALL be true for this outcome (AND logic). Empty array = always matches (default outcome)",
+          "items": {
+            "$ref": "#/$defs/condition"
+          }
+        },
+        "nextState": {
+          "type": ["string", "null"],
+          "description": "ID of the next state to transition to, or null to end conversation"
+        }
+      }
+    },
+    "craftAction": {
+      "type": "object",
+      "description": "Craft action state configuration (rarely used in quests)",
+      "required": [
+        "itemId",
+        "materials",
+        "quantities",
+        "mesoCost",
+        "successState",
+        "failureState",
+        "missingMaterialsState"
+      ],
+      "properties": {
+        "itemId": {
+          "type": ["integer", "string"],
+          "description": "ID of the item to craft. Can be a context reference like {context.itemId}"
+        },
+        "materials": {
+          "type": "array",
+          "description": "IDs of materials required for crafting",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "quantities": {
+          "type": "array",
+          "description": "Quantities of each material required",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "mesoCost": {
+          "type": "integer",
+          "description": "Meso cost for crafting"
+        },
+        "stimulatorId": {
+          "type": "integer",
+          "description": "ID of the stimulator item (optional)"
+        },
+        "stimulatorFailChance": {
+          "type": "number",
+          "description": "Chance of failure when using stimulator"
+        },
+        "successState": {
+          "type": "string",
+          "description": "ID of the state to transition to on successful crafting"
+        },
+        "failureState": {
+          "type": "string",
+          "description": "ID of the state to transition to on failed crafting"
+        },
+        "missingMaterialsState": {
+          "type": "string",
+          "description": "ID of the state to transition to when materials are missing"
+        }
+      }
+    },
+    "listSelection": {
+      "type": "object",
+      "description": "List selection state configuration",
+      "required": [
+        "title",
+        "choices"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Title/header of the list selection. Supports context references"
+        },
+        "choices": {
+          "type": "array",
+          "description": "Available choices for the player",
+          "items": {
+            "$ref": "#/$defs/choice"
+          }
+        }
+      }
+    },
+    "askNumber": {
+      "type": "object",
+      "description": "Ask number state configuration - prompts the player to enter a number within a specified range",
+      "required": [
+        "text",
+        "default",
+        "min",
+        "max",
+        "nextState"
+      ],
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "Prompt text asking for number input. Supports context references"
+        },
+        "default": {
+          "type": "integer",
+          "description": "Default value shown to the player",
+          "minimum": 0
+        },
+        "min": {
+          "type": "integer",
+          "description": "Minimum allowed value",
+          "minimum": 0
+        },
+        "max": {
+          "type": "integer",
+          "description": "Maximum allowed value",
+          "minimum": 1
+        },
+        "contextKey": {
+          "type": "string",
+          "description": "Key to store the entered value in context (defaults to 'quantity')",
+          "default": "quantity"
+        },
+        "nextState": {
+          "type": "string",
+          "description": "ID of the next state to transition to after number is entered"
+        }
+      }
+    },
+    "askStyle": {
+      "type": "object",
+      "description": "Ask style state configuration - prompts the player to select from a list of avatar styles",
+      "required": [
+        "text",
+        "nextState"
+      ],
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "Prompt text for style selection"
+        },
+        "styles": {
+          "type": "array",
+          "description": "Array of style IDs available for selection (provide either styles or stylesContextKey)",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "stylesContextKey": {
+          "type": "string",
+          "description": "Context key containing comma-separated style IDs (provide either styles or stylesContextKey)"
+        },
+        "contextKey": {
+          "type": "string",
+          "description": "Key to store the selected style ID in context (defaults to 'selectedStyle')",
+          "default": "selectedStyle"
+        },
+        "nextState": {
+          "type": "string",
+          "description": "ID of the next state to transition to after style is selected"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "npcId": 1013200,
+  "startState": "checkQuestStatus",
+  "states": [
+    {
+      "id": "checkQuestStatus",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "=",
+                "value": "2",
+                "referenceId": "22015"
+              }
+            ],
+            "nextState": "rescuePiglet"
+          },
+          {
+            "conditions": [],
+            "nextState": "tooFar"
+          }
+        ]
+      }
+    },
+    {
+      "id": "tooFar",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "#b(You are too far from the Piglet. Go closer to grab it.)",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "rescuePiglet",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4032449",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "complete_quest",
+            "params": {
+              "questId": "22015",
+              "force": "true"
+            }
+          },
+          {
+            "type": "send_message",
+            "params": {
+              "messageType": "BLUE_TEXT",
+              "message": "You have rescued the Piglet."
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

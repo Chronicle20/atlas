@@ -1297,7 +1297,8 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 	case "spawn_monster":
 		// Format: spawn_monster
-		// Params: monsterId (uint32), x (int16), y (int16), count (int, optional, default 1), team (int8, optional, default 0)
+		// Params: monsterId (uint32), x (int16), y (int16), mapId (uint32, optional - defaults to character's current map),
+		//         count (int, optional, default 1), team (int8, optional, default 0)
 		// Note: Foothold is resolved by saga-orchestrator via atlas-data lookup
 		monsterIdValue, exists := operation.Params()["monsterId"]
 		if !exists {
@@ -1329,6 +1330,15 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 			return "", "", "", nil, err
 		}
 
+		// MapId is optional, defaults to character's current map
+		mapIdInt := int(f.MapId())
+		if mapIdValue, exists := operation.Params()["mapId"]; exists {
+			mapIdInt, err = e.evaluateContextValueAsInt(characterId, "mapId", mapIdValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
+		}
+
 		// Count is optional, defaults to 1
 		countInt := 1
 		if countValue, exists := operation.Params()["count"]; exists {
@@ -1351,7 +1361,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 			CharacterId: characterId,
 			WorldId:     f.WorldId(),
 			ChannelId:   f.ChannelId(),
-			MapId:       uint32(f.MapId()),
+			MapId:       uint32(mapIdInt),
 			MonsterId:   uint32(monsterIdInt),
 			X:           int16(xInt),
 			Y:           int16(yInt),
@@ -1363,8 +1373,8 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 	case "complete_quest":
 		// Format: complete_quest
-		// Params: questId (uint32, optional - defaults to context questId for quest conversations),
-		//         npcId (uint32, optional - defaults to conversation NPC)
+		// Params: questId (uint32), npcId (uint32, optional - defaults to conversation NPC),
+		//         force (bool, optional - if true, skip requirement checks)
 		var questIdInt int
 		var err error
 		if questIdValue, exists := operation.Params()["questId"]; exists {
@@ -1404,10 +1414,22 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 			npcIdInt = int(ctx.NpcId())
 		}
 
+		// Force is optional - if true, skip requirement validation (forceCompleteQuest behavior)
+		force := false
+		if forceValue, exists := operation.Params()["force"]; exists {
+			forceStr, err := e.evaluateContextValue(characterId, "force", forceValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
+			force = forceStr == "true"
+		}
+
 		payload := saga.CompleteQuestPayload{
 			CharacterId: characterId,
+			WorldId:     f.WorldId(),
 			QuestId:     uint32(questIdInt),
 			NpcId:       uint32(npcIdInt),
+			Force:       force,
 		}
 
 		return stepId, saga.Pending, saga.CompleteQuest, payload, nil
@@ -1486,6 +1508,41 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		}
 
 		return stepId, saga.Pending, saga.ApplyConsumableEffect, payload, nil
+
+	case "send_message":
+		// Format: send_message
+		// Params: messageType (string: "NOTICE", "POP_UP", "PINK_TEXT", "BLUE_TEXT"), message (string)
+		// Sends a system message to the character
+		// Used for NPC-initiated messages (e.g., cm.playerMessage() in scripts)
+		messageTypeValue, exists := operation.Params()["messageType"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing messageType parameter for send_message operation")
+		}
+
+		messageType, err := e.evaluateContextValue(characterId, "messageType", messageTypeValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		messageValue, exists := operation.Params()["message"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing message parameter for send_message operation")
+		}
+
+		message, err := e.evaluateContextValue(characterId, "message", messageValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		payload := saga.SendMessagePayload{
+			CharacterId: characterId,
+			WorldId:     f.WorldId(),
+			ChannelId:   f.ChannelId(),
+			MessageType: messageType,
+			Message:     message,
+		}
+
+		return stepId, saga.Pending, saga.SendMessage, payload, nil
 
 	default:
 		return "", "", "", nil, fmt.Errorf("unknown operation type: %s", operation.Type())

@@ -1,0 +1,18 @@
+{
+  "npcId": 2111009,
+  "startState": "greeting",
+  "states": [
+    {
+      "id": "greeting",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Definitely Alcadno is excluded.....Huhuhuhu.....Stupid people....cannot see the real important things..",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    }
+  ]
+}

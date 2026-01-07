@@ -1,0 +1,143 @@
+{
+  "npcId": 9020002,
+  "startState": "checkMap",
+  "states": [
+    {
+      "id": "checkMap",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "mapId",
+                "operator": "=",
+                "value": "103000890"
+              }
+            ],
+            "nextState": "exitMapDialogue"
+          },
+          {
+            "conditions": [
+              {
+                "type": "mapId",
+                "operator": "=",
+                "value": "103000805"
+              }
+            ],
+            "nextState": "bonusMapDialogue"
+          },
+          {
+            "conditions": [],
+            "nextState": "questMapDialogue"
+          }
+        ]
+      }
+    },
+    {
+      "id": "exitMapDialogue",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "To return back to the city, follow this way.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "warpToKerningCity"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToKerningCity",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "103000000",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "bonusMapDialogue",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Are you ready to leave this map?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "warpToExitMap"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "questMapDialogue",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Once you leave the map, you'll have to restart the whole quest if you want to try it again.  Do you still want to leave this map?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "warpToExitMap"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToExitMap",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "103000890",
+              "portalName": "st00"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

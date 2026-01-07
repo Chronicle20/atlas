@@ -1,0 +1,24 @@
+{
+  "npcId": 2131004,
+  "startState": "sleeping",
+  "states": [
+    {
+      "id": "sleeping",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Zzzzz...",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

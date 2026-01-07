@@ -1,0 +1,18 @@
+{
+  "npcId": 2111004,
+  "startState": "greeting",
+  "states": [
+    {
+      "id": "greeting",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Even though Alchemists and Fairies have antipathy for each other, I can still be in this town because the Zenumist President has been protecting us.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    }
+  ]
+}

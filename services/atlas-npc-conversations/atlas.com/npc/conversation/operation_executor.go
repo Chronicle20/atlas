@@ -1461,6 +1461,41 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 		return stepId, saga.Pending, saga.ApplyConsumableEffect, payload, nil
 
+	case "send_message":
+		// Format: send_message
+		// Params: messageType (string: "NOTICE", "POP_UP", "PINK_TEXT", "BLUE_TEXT"), message (string)
+		// Sends a system message to the character
+		// Used for NPC-initiated messages (e.g., cm.playerMessage() in scripts)
+		messageTypeValue, exists := operation.Params()["messageType"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing messageType parameter for send_message operation")
+		}
+
+		messageType, err := e.evaluateContextValue(characterId, "messageType", messageTypeValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		messageValue, exists := operation.Params()["message"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing message parameter for send_message operation")
+		}
+
+		message, err := e.evaluateContextValue(characterId, "message", messageValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		payload := saga.SendMessagePayload{
+			CharacterId: characterId,
+			WorldId:     f.WorldId(),
+			ChannelId:   f.ChannelId(),
+			MessageType: messageType,
+			Message:     message,
+		}
+
+		return stepId, saga.Pending, saga.SendMessage, payload, nil
+
 	default:
 		return "", "", "", nil, fmt.Errorf("unknown operation type: %s", operation.Type())
 	}

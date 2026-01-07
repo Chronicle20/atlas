@@ -14,6 +14,7 @@ import (
 	"atlas-saga-orchestrator/monster"
 	"atlas-saga-orchestrator/pet"
 	"atlas-saga-orchestrator/skill"
+	system_message "atlas-saga-orchestrator/system_message"
 	"atlas-saga-orchestrator/validation"
 	"context"
 	"errors"
@@ -38,6 +39,7 @@ type Handler interface {
 	WithConsumableProcessor(consumable.Processor) Handler
 	WithPortalProcessor(portal.Processor) Handler
 	WithCashshopProcessor(cashshop.Processor) Handler
+	WithSystemMessageProcessor(system_message.Processor) Handler
 
 	GetHandler(action Action) (ActionHandler, bool)
 
@@ -73,6 +75,7 @@ type Handler interface {
 	handleCompleteQuest(s Saga, st Step[any]) error
 	handleStartQuest(s Saga, st Step[any]) error
 	handleApplyConsumableEffect(s Saga, st Step[any]) error
+	handleSendMessage(s Saga, st Step[any]) error
 }
 
 type HandlerImpl struct {
@@ -89,9 +92,10 @@ type HandlerImpl struct {
 	petP        pet.Processor
 	footholdP   foothold.Processor
 	monsterP    monster.Processor
-	consumableP consumable.Processor
-	portalP     portal.Processor
-	cashshopP   cashshop.Processor
+	consumableP    consumable.Processor
+	portalP        portal.Processor
+	cashshopP      cashshop.Processor
+	systemMessageP system_message.Processor
 }
 
 func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
@@ -109,8 +113,9 @@ func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
 		petP:        pet.NewProcessor(l, ctx),
 		footholdP:   foothold.NewProcessor(l, ctx),
 		monsterP:    monster.NewProcessor(l, ctx),
-		consumableP: consumable.NewProcessor(l, ctx),
-		cashshopP:   cashshop.NewProcessor(l, ctx),
+		consumableP:    consumable.NewProcessor(l, ctx),
+		cashshopP:      cashshop.NewProcessor(l, ctx),
+		systemMessageP: system_message.NewProcessor(l, ctx),
 	}
 }
 
@@ -314,22 +319,45 @@ func (h *HandlerImpl) WithPortalProcessor(portalP portal.Processor) Handler {
 
 func (h *HandlerImpl) WithCashshopProcessor(cashshopP cashshop.Processor) Handler {
 	return &HandlerImpl{
-		l:           h.l,
-		ctx:         h.ctx,
-		t:           h.t,
-		charP:       h.charP,
-		compP:       h.compP,
-		skillP:      h.skillP,
-		validP:      h.validP,
-		guildP:      h.guildP,
-		inviteP:     h.inviteP,
-		buddyListP:  h.buddyListP,
-		petP:        h.petP,
-		footholdP:   h.footholdP,
-		monsterP:    h.monsterP,
-		consumableP: h.consumableP,
-		portalP:     h.portalP,
-		cashshopP:   cashshopP,
+		l:              h.l,
+		ctx:            h.ctx,
+		t:              h.t,
+		charP:          h.charP,
+		compP:          h.compP,
+		skillP:         h.skillP,
+		validP:         h.validP,
+		guildP:         h.guildP,
+		inviteP:        h.inviteP,
+		buddyListP:     h.buddyListP,
+		petP:           h.petP,
+		footholdP:      h.footholdP,
+		monsterP:       h.monsterP,
+		consumableP:    h.consumableP,
+		portalP:        h.portalP,
+		cashshopP:      cashshopP,
+		systemMessageP: h.systemMessageP,
+	}
+}
+
+func (h *HandlerImpl) WithSystemMessageProcessor(systemMessageP system_message.Processor) Handler {
+	return &HandlerImpl{
+		l:              h.l,
+		ctx:            h.ctx,
+		t:              h.t,
+		charP:          h.charP,
+		compP:          h.compP,
+		skillP:         h.skillP,
+		validP:         h.validP,
+		guildP:         h.guildP,
+		inviteP:        h.inviteP,
+		buddyListP:     h.buddyListP,
+		petP:           h.petP,
+		footholdP:      h.footholdP,
+		monsterP:       h.monsterP,
+		consumableP:    h.consumableP,
+		portalP:        h.portalP,
+		cashshopP:      h.cashshopP,
+		systemMessageP: systemMessageP,
 	}
 }
 
@@ -400,6 +428,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleStartQuest, true
 	case ApplyConsumableEffect:
 		return h.handleApplyConsumableEffect, true
+	case SendMessage:
+		return h.handleSendMessage, true
 	}
 	return nil, false
 }
@@ -1000,6 +1030,23 @@ func (h *HandlerImpl) handleApplyConsumableEffect(s Saga, st Step[any]) error {
 	err := h.consumableP.ApplyConsumableEffect(s.TransactionId, byte(payload.WorldId), byte(payload.ChannelId), payload.CharacterId, payload.ItemId)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to apply consumable effect.")
+		return err
+	}
+
+	return nil
+}
+
+// handleSendMessage handles the SendMessage action
+// This sends a system message to a character (e.g., "You have acquired a Dragon Egg.")
+func (h *HandlerImpl) handleSendMessage(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(SendMessagePayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.systemMessageP.SendMessage(s.TransactionId, byte(payload.WorldId), byte(payload.ChannelId), payload.CharacterId, payload.MessageType, payload.Message)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to send message.")
 		return err
 	}
 

@@ -375,6 +375,8 @@ Verify in saga-orchestrator, but common operations:
 - `complete_quest` - Complete a quest (params: `questId`, `npcId`) - stub implementation
 - `start_quest` - Start a quest (params: `questId`, `npcId`) - stub implementation
 - `apply_consumable_effect` - Apply consumable effects without consuming (params: `itemId`) - for NPC buffs (maps to `cm.useItem()`)
+- `send_message` - Send a system message to the character (params: `messageType`, `message`) - maps to `cm.playerMessage()`
+  - `messageType` values: `"NOTICE"` (type 0), `"POP_UP"` (type 1), `"PINK_TEXT"` (type 5), `"BLUE_TEXT"` (type 6)
 
 **Local Operations:**
 - `local:generate_hair_styles` - Generate hair styles (params: `baseStyles`, `genderFilter`, etc.)

@@ -5,6 +5,7 @@ import (
 	npcMap "atlas-npc-conversations/map"
 	"atlas-npc-conversations/pet"
 	"atlas-npc-conversations/saga"
+	"atlas-npc-conversations/validation"
 	"context"
 	"errors"
 	"fmt"
@@ -31,13 +32,14 @@ type OperationExecutor interface {
 
 // OperationExecutorImpl is the implementation of the OperationExecutor interface
 type OperationExecutorImpl struct {
-	l         logrus.FieldLogger
-	ctx       context.Context
-	t         tenant.Model
-	sagaP     saga.Processor
-	petP      pet.Processor
-	cosmeticP cosmetic.Processor
-	mapP      npcMap.Processor
+	l           logrus.FieldLogger
+	ctx         context.Context
+	t           tenant.Model
+	sagaP       saga.Processor
+	petP        pet.Processor
+	cosmeticP   cosmetic.Processor
+	mapP        npcMap.Processor
+	validationP validation.Processor
 }
 
 // NewOperationExecutor creates a new operation executor
@@ -45,14 +47,39 @@ func NewOperationExecutor(l logrus.FieldLogger, ctx context.Context) OperationEx
 	t := tenant.MustFromContext(ctx)
 	appearanceProvider := cosmetic.NewRestAppearanceProvider(l, ctx)
 	return &OperationExecutorImpl{
-		l:         l,
-		ctx:       ctx,
-		t:         t,
-		sagaP:     saga.NewProcessor(l, ctx),
-		petP:      pet.NewProcessor(l, ctx),
-		cosmeticP: cosmetic.NewProcessor(l, ctx, appearanceProvider),
-		mapP:      npcMap.NewProcessor(l, ctx),
+		l:           l,
+		ctx:         ctx,
+		t:           t,
+		sagaP:       saga.NewProcessor(l, ctx),
+		petP:        pet.NewProcessor(l, ctx),
+		cosmeticP:   cosmetic.NewProcessor(l, ctx, appearanceProvider),
+		mapP:        npcMap.NewProcessor(l, ctx),
+		validationP: validation.NewProcessor(l, ctx),
 	}
+}
+
+// inventoryCheckerImpl implements cosmetic.InventoryChecker using the validation processor
+type inventoryCheckerImpl struct {
+	l           logrus.FieldLogger
+	validationP validation.Processor
+}
+
+// HasItem checks if a character has at least one of the specified item
+func (c *inventoryCheckerImpl) HasItem(characterId uint32, itemId uint32) (bool, error) {
+	condition := validation.ConditionInput{
+		Type:        "item",
+		Operator:    ">=",
+		Value:       1,
+		ReferenceId: itemId,
+	}
+
+	result, err := c.validationP.ValidateCharacterState(characterId, []validation.ConditionInput{condition})
+	if err != nil {
+		c.l.WithError(err).Errorf("Failed to check item %d for character %d", itemId, characterId)
+		return false, err
+	}
+
+	return result.Passed(), nil
 }
 
 // evaluateContextValue evaluates a context value, handling references to the conversation context
@@ -674,6 +701,41 @@ func (e *OperationExecutorImpl) executeLocalOperation(field field.Model, charact
 		}
 
 		e.l.Infof("Fetched and stored player counts for %d maps for character [%d]", len(mapIds), characterId)
+		return nil
+
+	case "generate_face_colors_for_onetime_lens":
+		// Format: local:generate_face_colors_for_onetime_lens
+		// Params: validateExists (string), excludeEquipped (string), outputContextKey (string)
+		// Checks which one-time lens items (5152100-5152107) the character owns
+		// and generates corresponding face colors for those items
+
+		// Create inventory checker
+		inventoryChecker := &inventoryCheckerImpl{
+			l:           e.l,
+			validationP: e.validationP,
+		}
+
+		// Call cosmetic processor with inventory checker
+		colors, err := e.cosmeticP.GenerateFaceColorsForOnetimeLens(characterId, inventoryChecker, operation.Params())
+		if err != nil {
+			e.l.WithError(err).Errorf("Failed to generate face colors for one-time lens for character [%d]", characterId)
+			return fmt.Errorf("failed to generate face colors for one-time lens: %w", err)
+		}
+
+		// Store in context
+		outputKey := operation.Params()["outputContextKey"]
+		if outputKey == "" {
+			outputKey = "onetimeLensColors"
+		}
+
+		err = e.storeStylesInContext(characterId, outputKey, colors)
+		if err != nil {
+			e.l.WithError(err).Errorf("Failed to store one-time lens colors in context for character [%d]", characterId)
+			return err
+		}
+
+		e.l.Infof("Generated and stored %d one-time lens face colors in context key [%s] for character [%d]",
+			len(colors), outputKey, characterId)
 		return nil
 
 	default:

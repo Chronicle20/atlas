@@ -1,0 +1,24 @@
+{
+  "npcId": 2101002,
+  "startState": "greet",
+  "states": [
+    {
+      "id": "greet",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Stay away from me, if you don't want any danger.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

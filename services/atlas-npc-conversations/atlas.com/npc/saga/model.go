@@ -272,11 +272,12 @@ type SpawnMonsterPayload struct {
 }
 
 // CompleteQuestPayload represents the payload required to complete a quest.
-// Note: This is currently a stub as no quest service exists yet.
 type CompleteQuestPayload struct {
-	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
-	QuestId     uint32 `json:"questId"`     // QuestId to complete
-	NpcId       uint32 `json:"npcId"`       // NpcId that completed the quest
+	CharacterId uint32   `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id `json:"worldId"`     // WorldId associated with the action
+	QuestId     uint32   `json:"questId"`     // QuestId to complete
+	NpcId       uint32   `json:"npcId"`       // NpcId that completed the quest
+	Force       bool     `json:"force"`       // If true, skip requirement checks and just mark complete
 }
 
 // StartQuestPayload represents the payload required to start a quest.

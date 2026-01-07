@@ -1363,8 +1363,8 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 	case "complete_quest":
 		// Format: complete_quest
-		// Params: questId (uint32), npcId (uint32, optional - defaults to conversation NPC)
-		// Note: This is currently a stub as no quest service exists yet
+		// Params: questId (uint32), npcId (uint32, optional - defaults to conversation NPC),
+		//         force (bool, optional - if true, skip requirement checks)
 		questIdValue, exists := operation.Params()["questId"]
 		if !exists {
 			return "", "", "", nil, errors.New("missing questId parameter for complete_quest operation")
@@ -1391,10 +1391,22 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 			npcIdInt = int(ctx.NpcId())
 		}
 
+		// Force is optional - if true, skip requirement validation (forceCompleteQuest behavior)
+		force := false
+		if forceValue, exists := operation.Params()["force"]; exists {
+			forceStr, err := e.evaluateContextValue(characterId, "force", forceValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
+			force = forceStr == "true"
+		}
+
 		payload := saga.CompleteQuestPayload{
 			CharacterId: characterId,
+			WorldId:     f.WorldId(),
 			QuestId:     uint32(questIdInt),
 			NpcId:       uint32(npcIdInt),
+			Force:       force,
 		}
 
 		return stepId, saga.Pending, saga.CompleteQuest, payload, nil

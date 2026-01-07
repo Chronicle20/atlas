@@ -542,6 +542,51 @@ func (e *OperationExecutorImpl) executeLocalOperation(field field.Model, charact
 			selectedItem, len(itemList), totalWeight, characterId, outputContextKey)
 		return nil
 
+	case "calculate_lens_coupon":
+		// Format: local:calculate_lens_coupon
+		// Params: selectedFaceContextKey (string), outputContextKey (string)
+		// Calculates the one-time lens item ID based on the selected face color
+		// Formula: itemId = 5152100 + (selectedFace / 100) % 10
+		// This maps face colors (0-7) to items 5152100-5152107
+		selectedFaceContextKey, exists := operation.Params()["selectedFaceContextKey"]
+		if !exists {
+			return errors.New("missing selectedFaceContextKey parameter for calculate_lens_coupon operation")
+		}
+
+		outputContextKey, exists := operation.Params()["outputContextKey"]
+		if !exists {
+			return errors.New("missing outputContextKey parameter for calculate_lens_coupon operation")
+		}
+
+		// Get the selected face from context
+		selectedFaceStr, err := e.getContextValue(characterId, selectedFaceContextKey)
+		if err != nil {
+			return fmt.Errorf("failed to get selected face from context key '%s': %w", selectedFaceContextKey, err)
+		}
+
+		// Parse the face ID
+		selectedFace, err := strconv.ParseUint(selectedFaceStr, 10, 32)
+		if err != nil {
+			return fmt.Errorf("invalid selected face value '%s': %w", selectedFaceStr, err)
+		}
+
+		// Calculate the color from face ID: (faceId / 100) % 10
+		// Face IDs like 20000, 20100, 20200, etc. have color encoded in the hundreds place
+		color := (selectedFace / 100) % 10
+
+		// Calculate the lens item ID: 5152100 + color
+		lensItemId := 5152100 + color
+
+		// Store the calculated item ID in context
+		err = e.setContextValue(characterId, outputContextKey, strconv.FormatUint(lensItemId, 10))
+		if err != nil {
+			return fmt.Errorf("failed to store lens item ID in context: %w", err)
+		}
+
+		e.l.Infof("Calculated lens coupon item ID %d for face %d (color %d) for character [%d], stored in context key [%s]",
+			lensItemId, selectedFace, color, characterId, outputContextKey)
+		return nil
+
 	case "fetch_map_player_counts":
 		// Format: local:fetch_map_player_counts
 		// Params: mapIds (comma-separated string of map IDs)

@@ -383,6 +383,7 @@ Verify in saga-orchestrator, but common operations:
 - `local:select_random_cosmetic` - Random selection (params: `stylesContextKey`, `outputContextKey`)
 - `local:select_random_weighted` - Weighted random selection (params: `items`, `weights`, `outputContextKey`)
 - `local:fetch_map_player_counts` - Fetch player counts (params: `mapIds`)
+- `local:calculate_lens_coupon` - Calculate one-time lens item ID from face (params: `selectedFaceContextKey`, `outputContextKey`)
 - `local:log` - Log message (params: `message`)
 - `local:debug` - Debug log (params: `message`)
 
@@ -476,6 +477,78 @@ In this example:
       {
         "conditions": [],
         "nextState": "giveReward"
+      }
+    ]
+  }
+}
+```
+
+#### Detailed: local:calculate_lens_coupon
+
+Calculates the one-time cosmetic lens item ID based on a selected face ID. Used by beauty NPCs that offer one-time lens changes.
+
+**Parameters:**
+- `selectedFaceContextKey` (string, required) - Context key containing the selected face ID
+- `outputContextKey` (string, required) - Context key to store the calculated lens item ID
+
+**Formula:**
+```
+lensItemId = 5152100 + (selectedFace / 100) % 10
+```
+
+The color is encoded in the hundreds place of face IDs:
+- Face 20000 → color 0 → item 5152100
+- Face 20100 → color 1 → item 5152101
+- Face 20200 → color 2 → item 5152102
+- etc.
+
+**Example Usage:**
+
+```json
+{
+  "id": "applyOneTimeLens",
+  "type": "genericAction",
+  "genericAction": {
+    "operations": [
+      {
+        "type": "local:calculate_lens_coupon",
+        "params": {
+          "selectedFaceContextKey": "selectedFace",
+          "outputContextKey": "lensItemId"
+        }
+      }
+    ],
+    "outcomes": [
+      {
+        "conditions": [],
+        "nextState": "consumeAndApply"
+      }
+    ]
+  }
+},
+{
+  "id": "consumeAndApply",
+  "type": "genericAction",
+  "genericAction": {
+    "operations": [
+      {
+        "type": "destroy_item",
+        "params": {
+          "itemId": "{context.lensItemId}",
+          "quantity": "1"
+        }
+      },
+      {
+        "type": "change_face",
+        "params": {
+          "styleId": "{context.selectedFace}"
+        }
+      }
+    ],
+    "outcomes": [
+      {
+        "conditions": [],
+        "nextState": "success"
       }
     ]
   }

@@ -1,0 +1,61 @@
+{
+  "npcId": 9102101,
+  "startState": "askPullOut",
+  "states": [
+    {
+      "id": "askPullOut",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "#b(I can see something covered in grass. Should I pull it out?)",
+        "choices": [
+          { "text": "Yes", "nextState": "giveItem" },
+          { "text": "No", "nextState": "didntTouch" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "didntTouch",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "#b(I didn't think much of it, so I didn't touch it.)",
+        "choices": [
+          { "text": "Next", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "giveItem",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4031922",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": "foundPoop" }
+        ]
+      }
+    },
+    {
+      "id": "foundPoop",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "#b(Yuck... it's pet poop!)",
+        "choices": [
+          { "text": "Next", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    }
+  ]
+}

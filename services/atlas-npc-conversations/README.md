@@ -258,6 +258,12 @@ Operations are actions executed during a `genericAction` state:
   - Params:
     - `mapIds` (comma-separated string of map IDs, supports context references)
   - Stores results in context with keys: `playerCount_{mapId}` for each map
+- `local:calculate_lens_coupon` - Calculate one-time lens item ID from selected face
+  - Params:
+    - `selectedFaceContextKey` (required, context key containing the selected face ID)
+    - `outputContextKey` (required, context key to store calculated lens item ID)
+  - Formula: `lensItemId = 5152100 + (selectedFace / 100) % 10`
+  - Maps face colors (0-7) to items 5152100-5152107
 - `local:log` - Log an informational message
   - Params:
     - `message` (string, supports context references)

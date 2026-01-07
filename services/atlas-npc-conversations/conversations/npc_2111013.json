@@ -1,0 +1,122 @@
+{
+  "npcId": 2111013,
+  "startState": "checkQuestAndItem",
+  "states": [
+    {
+      "id": "checkQuestAndItem",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "=",
+                "value": "0",
+                "referenceId": "3322"
+              }
+            ],
+            "nextState": null
+          },
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4031697"
+              }
+            ],
+            "nextState": null
+          },
+          {
+            "conditions": [],
+            "nextState": "foundPendant"
+          }
+        ]
+      }
+    },
+    {
+      "id": "foundPendant",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "The hook behind the frame was unhooked, revealing a secret space within the frame. There inside, a silver pendant was found. After carefully removing the pendant, the frame was closed and placed back onto the table.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": "checkInventory"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkInventory",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4031697"
+              }
+            ],
+            "nextState": "giveItem"
+          },
+          {
+            "conditions": [],
+            "nextState": "inventoryFull"
+          }
+        ]
+      }
+    },
+    {
+      "id": "giveItem",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4031697",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "inventoryFull",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Your inventory is full, please make sure you have an ETC slot available.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

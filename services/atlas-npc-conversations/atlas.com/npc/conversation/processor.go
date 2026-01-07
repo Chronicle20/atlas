@@ -2,7 +2,7 @@ package conversation
 
 import (
 	"atlas-npc-conversations/message"
-	"atlas-npc-conversations/npc"
+	npcSender "atlas-npc-conversations/npc"
 	"atlas-npc-conversations/saga"
 	"atlas-npc-conversations/validation"
 	"context"
@@ -10,10 +10,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/Chronicle20/atlas-constants/field"
-	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -24,47 +22,37 @@ type Processor interface {
 	// Start starts a conversation with an NPC
 	Start(field field.Model, npcId uint32, characterId uint32) error
 
+	// StartQuest starts a quest conversation with the provided state machine
+	// The caller is responsible for selecting the correct state machine (start or end) based on quest status
+	StartQuest(field field.Model, questId uint32, npcId uint32, characterId uint32, stateMachine StateContainer) error
+
 	// Continue continues a conversation with an NPC
 	Continue(npcId uint32, characterId uint32, action byte, lastMessageType byte, selection int32) error
 
 	// End ends a conversation
 	End(characterId uint32) error
-
-	// Create creates a new conversation
-	Create(model Model) (Model, error)
-
-	// Update updates an existing conversation
-	Update(id uuid.UUID, model Model) (Model, error)
-
-	// Delete deletes a conversation
-	Delete(id uuid.UUID) error
-
-	// ByIdProvider returns a provider for retrieving a conversation by ID
-	ByIdProvider(id uuid.UUID) model.Provider[Model]
-
-	// ByNpcIdProvider returns a provider for retrieving a conversation by NPC ID
-	ByNpcIdProvider(npcId uint32) model.Provider[Model]
-
-	// AllByNpcIdProvider returns a provider for retrieving all conversations for a specific NPC ID
-	AllByNpcIdProvider(npcId uint32) model.Provider[[]Model]
-
-	// AllProvider returns a provider for retrieving all conversations
-	AllProvider() model.Provider[[]Model]
-
-	// DeleteAllForTenant deletes all conversations for the current tenant
-	DeleteAllForTenant() (int64, error)
-
-	// Seed clears existing conversations and loads them from the conversations directory
-	Seed() (SeedResult, error)
 }
 
 type ProcessorImpl struct {
-	l         logrus.FieldLogger
-	ctx       context.Context
-	t         tenant.Model
-	db        *gorm.DB
-	evaluator Evaluator
-	executor  OperationExecutor
+	l                   logrus.FieldLogger
+	ctx                 context.Context
+	t                   tenant.Model
+	db                  *gorm.DB
+	evaluator           Evaluator
+	executor            OperationExecutor
+	npcConversationProvider NpcConversationProvider
+}
+
+// NewProcessorFactory is the factory function type for creating NpcConversationProvider
+type NewProcessorFactory func(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) NpcConversationProvider
+
+// npcConversationProviderFactory stores the factory function for creating NpcConversationProvider
+// This is set by the npc package during initialization to break the import cycle
+var npcConversationProviderFactory NewProcessorFactory
+
+// SetNpcConversationProviderFactory sets the factory function for creating NpcConversationProvider
+func SetNpcConversationProviderFactory(factory NewProcessorFactory) {
+	npcConversationProviderFactory = factory
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
@@ -72,116 +60,20 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	evaluator := NewEvaluator(l, ctx, t)
 	executor := NewOperationExecutor(l, ctx)
 
+	var npcProvider NpcConversationProvider
+	if npcConversationProviderFactory != nil {
+		npcProvider = npcConversationProviderFactory(l, ctx, db)
+	}
+
 	return &ProcessorImpl{
-		l:         l,
-		ctx:       ctx,
-		t:         t,
-		db:        db,
-		evaluator: evaluator,
-		executor:  executor,
+		l:                       l,
+		ctx:                     ctx,
+		t:                       t,
+		db:                      db,
+		evaluator:               evaluator,
+		executor:                executor,
+		npcConversationProvider: npcProvider,
 	}
-}
-
-// ByIdProvider returns a provider for retrieving a conversation by ID
-func (p *ProcessorImpl) ByIdProvider(id uuid.UUID) model.Provider[Model] {
-	return model.Map[Entity, Model](Make)(GetByIdProvider(p.t.Id())(id)(p.db))
-}
-
-// ByNpcIdProvider returns a provider for retrieving a conversation by NPC ID
-func (p *ProcessorImpl) ByNpcIdProvider(npcId uint32) model.Provider[Model] {
-	return model.Map[Entity, Model](Make)(GetByNpcIdProvider(p.t.Id())(npcId)(p.db))
-}
-
-// AllProvider returns a provider for retrieving all conversations
-func (p *ProcessorImpl) AllProvider() model.Provider[[]Model] {
-	return model.SliceMap[Entity, Model](Make)(GetAllProvider(p.t.Id())(p.db))(model.ParallelMap())
-}
-
-// AllByNpcIdProvider returns a provider for retrieving all conversations for a specific NPC ID
-func (p *ProcessorImpl) AllByNpcIdProvider(npcId uint32) model.Provider[[]Model] {
-	return model.SliceMap[Entity, Model](Make)(GetAllByNpcIdProvider(p.t.Id())(npcId)(p.db))(model.ParallelMap())
-}
-
-// Create creates a new conversation
-func (p *ProcessorImpl) Create(m Model) (Model, error) {
-	p.l.Debugf("Creating conversation for NPC [%d]", m.NpcId())
-
-	// Convert model to entity
-	entity, err := ToEntity(m, p.t.Id())
-	if err != nil {
-		p.l.WithError(err).Errorf("Failed to convert model to entity")
-		return Model{}, err
-	}
-
-	entity.ID = uuid.New()
-
-	// Save to database
-	result := p.db.Create(&entity)
-	if result.Error != nil {
-		p.l.WithError(result.Error).Errorf("Failed to create conversation")
-		return Model{}, result.Error
-	}
-
-	// Convert back to model
-	return Make(entity)
-}
-
-// Update updates an existing conversation
-func (p *ProcessorImpl) Update(id uuid.UUID, m Model) (Model, error) {
-	p.l.Debugf("Updating conversation [%s]", id)
-
-	// Check if conversation exists
-	var existingEntity Entity
-	result := p.db.Where("tenant_id = ? AND id = ?", p.t.Id(), id).First(&existingEntity)
-	if result.Error != nil {
-		p.l.WithError(result.Error).Errorf("Failed to find conversation [%s]", id)
-		return Model{}, result.Error
-	}
-
-	// Convert model to entity
-	entity, err := ToEntity(m, p.t.Id())
-	if err != nil {
-		p.l.WithError(err).Errorf("Failed to convert model to entity")
-		return Model{}, err
-	}
-
-	// Ensure ID is preserved
-	entity.ID = id
-
-	// Update in database
-	result = p.db.Model(&Entity{}).Where("tenant_id = ? AND id = ?", p.t.Id(), id).Updates(map[string]interface{}{
-		"npc_id":     entity.NpcID,
-		"data":       entity.Data,
-		"updated_at": time.Now(),
-	})
-	if result.Error != nil {
-		p.l.WithError(result.Error).Errorf("Failed to update conversation [%s]", id)
-		return Model{}, result.Error
-	}
-
-	// Retrieve updated entity
-	result = p.db.Where("tenant_id = ? AND id = ?", p.t.Id(), id).First(&entity)
-	if result.Error != nil {
-		p.l.WithError(result.Error).Errorf("Failed to retrieve updated conversation [%s]", id)
-		return Model{}, result.Error
-	}
-
-	// Convert back to model
-	return Make(entity)
-}
-
-// Delete deletes a conversation
-func (p *ProcessorImpl) Delete(id uuid.UUID) error {
-	p.l.Debugf("Deleting conversation [%s]", id)
-
-	// Delete from database
-	result := p.db.Where("tenant_id = ? AND id = ?", p.t.Id(), id).Delete(&Entity{})
-	if result.Error != nil {
-		p.l.WithError(result.Error).Errorf("Failed to delete conversation [%s]", id)
-		return result.Error
-	}
-
-	return nil
 }
 
 func (p *ProcessorImpl) Start(field field.Model, npcId uint32, characterId uint32) error {
@@ -195,7 +87,10 @@ func (p *ProcessorImpl) Start(field field.Model, npcId uint32, characterId uint3
 	}
 
 	// Get the conversation for this NPC
-	conversation, err := p.ByNpcIdProvider(npcId)()
+	if p.npcConversationProvider == nil {
+		return errors.New("NPC conversation provider not initialized")
+	}
+	conversation, err := p.npcConversationProvider.ByNpcIdProvider(npcId)()
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to retrieve conversation for NPC [%d]", npcId)
 		return err
@@ -220,11 +115,7 @@ func (p *ProcessorImpl) Start(field field.Model, npcId uint32, characterId uint3
 		builder.AddContextValue("channelId", strconv.Itoa(int(field.ChannelId())))
 	}
 
-	ctx, err := builder.Build()
-	if err != nil {
-		p.l.WithError(err).Errorf("Failed to create conversation context for character [%d] and NPC [%d]", characterId, npcId)
-		return err
-	}
+	ctx := builder.Build()
 
 	// Store the context
 	GetRegistry().SetContext(p.t, ctx.CharacterId(), ctx)
@@ -240,6 +131,62 @@ func (p *ProcessorImpl) Start(field field.Model, npcId uint32, characterId uint3
 		cont, err = p.ProcessState(ctx)
 		if err != nil {
 			p.l.WithError(err).Errorf("Failed to process state [%s] for character [%d] and NPC [%d]", startStateId, characterId, npcId)
+			return err
+		}
+	}
+	return nil
+}
+
+func (p *ProcessorImpl) StartQuest(f field.Model, questId uint32, npcId uint32, characterId uint32, stateMachine StateContainer) error {
+	p.l.Debugf("Starting quest [%d] conversation with NPC [%d] for character [%d] in map [%d].", questId, npcId, characterId, f.MapId())
+
+	// Check if there's already a conversation in progress
+	_, err := GetRegistry().GetPreviousContext(p.t, characterId)
+	if err == nil {
+		p.l.Debugf("Previous conversation for character [%d] exists, avoiding starting quest [%d] conversation.", characterId, questId)
+		return errors.New("another conversation exists")
+	}
+
+	// Get the start state from the provided state machine
+	startStateId := stateMachine.StartState()
+
+	// Create a conversation context for quest
+	builder := NewConversationContextBuilder().
+		SetField(f).
+		SetCharacterId(characterId).
+		SetNpcId(npcId).
+		SetCurrentState(startStateId).
+		SetConversation(stateMachine).
+		SetConversationType(QuestConversationType).
+		SetSourceId(questId)
+
+	// Add questId to context for use in operations
+	builder.AddContextValue("questId", strconv.FormatUint(uint64(questId), 10))
+
+	// Add worldId and channelId to context for use in conditions
+	if f.WorldId() > 0 {
+		builder.AddContextValue("worldId", strconv.Itoa(int(f.WorldId())))
+	}
+	if f.ChannelId() > 0 {
+		builder.AddContextValue("channelId", strconv.Itoa(int(f.ChannelId())))
+	}
+
+	ctx := builder.Build()
+
+	// Store the context
+	GetRegistry().SetContext(p.t, ctx.CharacterId(), ctx)
+
+	cont := true
+	for cont {
+		ctx, err = GetRegistry().GetPreviousContext(p.t, characterId)
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to retrieve conversation context for [%d].", characterId)
+			return errors.New("conversation context not found")
+		}
+
+		cont, err = p.ProcessState(ctx)
+		if err != nil {
+			p.l.WithError(err).Errorf("Failed to process state [%s] for character [%d] and quest [%d]", startStateId, characterId, questId)
 			return err
 		}
 	}
@@ -421,17 +368,14 @@ func (p *ProcessorImpl) Continue(npcId uint32, characterId uint32, action byte, 
 		builder.AddContextValue(k, v)
 	}
 
-	ctx, err = builder.Build()
-	if err != nil {
-		p.l.WithError(err).Errorf("Failed to update conversation context for character [%d] and NPC [%d]", ctx.CharacterId(), ctx.NpcId())
-		return err
-	}
+	ctx = builder.Build()
 
 	// Store the context
 	GetRegistry().SetContext(p.t, ctx.CharacterId(), ctx)
 
 	cont := true
 	for cont {
+		var err error
 		ctx, err = GetRegistry().GetPreviousContext(p.t, characterId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to retrieve conversation context for [%d].", characterId)
@@ -478,11 +422,7 @@ func (p *ProcessorImpl) ProcessState(ctx ConversationContext) (bool, error) {
 			builder.AddContextValue(k, v)
 		}
 
-		ctx, err = builder.Build()
-		if err != nil {
-			p.l.WithError(err).Errorf("Failed to update conversation context for character [%d] and NPC [%d]", ctx.CharacterId(), ctx.NpcId())
-			return false, err
-		}
+		ctx = builder.Build()
 
 		// Store the context
 		GetRegistry().SetContext(p.t, ctx.CharacterId(), ctx)
@@ -541,17 +481,17 @@ func (p *ProcessorImpl) processDialogueState(ctx ConversationContext, state Stat
 
 	// Send the dialogue to the client
 	if dialogue.dialogueType == SendNext {
-		npc.NewProcessor(p.l, p.ctx).SendNext(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText)
+		npcSender.NewProcessor(p.l, p.ctx).SendNext(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText)
 	} else if dialogue.dialogueType == SendNextPrev {
-		npc.NewProcessor(p.l, p.ctx).SendNextPrevious(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText)
+		npcSender.NewProcessor(p.l, p.ctx).SendNextPrevious(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText)
 	} else if dialogue.dialogueType == SendPrev {
-		npc.NewProcessor(p.l, p.ctx).SendPrevious(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText)
+		npcSender.NewProcessor(p.l, p.ctx).SendPrevious(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText)
 	} else if dialogue.dialogueType == SendOk {
-		npc.NewProcessor(p.l, p.ctx).SendOk(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText)
+		npcSender.NewProcessor(p.l, p.ctx).SendOk(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText)
 	} else if dialogue.dialogueType == SendYesNo {
-		npc.NewProcessor(p.l, p.ctx).SendYesNo(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText)
+		npcSender.NewProcessor(p.l, p.ctx).SendYesNo(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText)
 	} else if dialogue.dialogueType == SendAcceptDecline {
-		npc.NewProcessor(p.l, p.ctx).SendAcceptDecline(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText)
+		npcSender.NewProcessor(p.l, p.ctx).SendAcceptDecline(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText)
 	} else {
 		p.l.Warnf("Unhandled dialog type [%s].", dialogue.dialogueType)
 	}
@@ -786,7 +726,7 @@ func (p *ProcessorImpl) processListSelectionState(ctx ConversationContext, state
 		mb.OpenItem(i).BlueText().AddText(processedChoiceText).CloseItem().NewLine()
 	}
 
-	npc.NewProcessor(p.l, p.ctx).SendSimple(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(mb.String())
+	npcSender.NewProcessor(p.l, p.ctx).SendSimple(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(mb.String())
 	return state.Id(), nil
 }
 
@@ -805,7 +745,7 @@ func (p *ProcessorImpl) processAskNumberState(ctx ConversationContext, state Sta
 	}
 
 	// Send the ask number request to the client
-	err = npc.NewProcessor(p.l, p.ctx).SendNumber(
+	err = npcSender.NewProcessor(p.l, p.ctx).SendNumber(
 		ctx.Field().WorldId(),
 		ctx.Field().ChannelId(),
 		ctx.CharacterId(),
@@ -872,7 +812,7 @@ func (p *ProcessorImpl) processAskStyleState(ctx ConversationContext, state Stat
 	}
 
 	// Send the ask style request to the client
-	err = npc.NewProcessor(p.l, p.ctx).SendStyle(
+	err = npcSender.NewProcessor(p.l, p.ctx).SendStyle(
 		ctx.Field().WorldId(),
 		ctx.Field().ChannelId(),
 		ctx.CharacterId(),
@@ -893,65 +833,4 @@ func (p *ProcessorImpl) End(characterId uint32) error {
 	p.l.Debugf("Ending conversation with character [%d].", characterId)
 	GetRegistry().ClearContext(p.t, characterId)
 	return nil
-}
-
-// DeleteAllForTenant deletes all conversations for the current tenant using hard delete
-func (p *ProcessorImpl) DeleteAllForTenant() (int64, error) {
-	p.l.Debugf("Deleting all conversations for tenant [%s]", p.t.Id())
-	result := p.db.Unscoped().Where("tenant_id = ?", p.t.Id()).Delete(&Entity{})
-	if result.Error != nil {
-		p.l.WithError(result.Error).Errorf("Failed to delete conversations for tenant [%s]", p.t.Id())
-		return 0, result.Error
-	}
-	p.l.Debugf("Deleted [%d] conversations for tenant [%s]", result.RowsAffected, p.t.Id())
-	return result.RowsAffected, nil
-}
-
-// Seed clears existing conversations and loads them from the conversations directory
-func (p *ProcessorImpl) Seed() (SeedResult, error) {
-	p.l.Infof("Seeding conversations for tenant [%s]", p.t.Id())
-
-	result := SeedResult{}
-
-	// Delete all existing conversations for this tenant
-	deletedCount, err := p.DeleteAllForTenant()
-	if err != nil {
-		return result, fmt.Errorf("failed to clear existing conversations: %w", err)
-	}
-	result.DeletedCount = int(deletedCount)
-
-	// Load conversation files from the filesystem
-	models, loadErrors := LoadConversationFiles()
-
-	// Track load errors
-	for _, err := range loadErrors {
-		result.Errors = append(result.Errors, err.Error())
-		result.FailedCount++
-	}
-
-	// Create each conversation
-	for _, rm := range models {
-		// Extract domain model from REST model
-		m, err := Extract(rm)
-		if err != nil {
-			result.Errors = append(result.Errors, fmt.Sprintf("npc_%d: failed to extract model: %v", rm.NpcId, err))
-			result.FailedCount++
-			continue
-		}
-
-		// Create the conversation
-		_, err = p.Create(m)
-		if err != nil {
-			result.Errors = append(result.Errors, fmt.Sprintf("npc_%d: failed to create: %v", rm.NpcId, err))
-			result.FailedCount++
-			continue
-		}
-
-		result.CreatedCount++
-	}
-
-	p.l.Infof("Seed complete for tenant [%s]: deleted=%d, created=%d, failed=%d",
-		p.t.Id(), result.DeletedCount, result.CreatedCount, result.FailedCount)
-
-	return result, nil
 }

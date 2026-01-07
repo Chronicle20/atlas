@@ -429,3 +429,225 @@ cd services/atlas-saga-orchestrator/atlas.com/saga-orchestrator && go test ./...
 8. ✅ No orphaned call sites
 
 **Remember:** A feature that doesn't build or test is not complete!
+
+---
+
+## REST Client Pattern for Cross-Service Calls
+
+When one service needs to call another service's REST API (not via Kafka), use the `requests.go` / `rest.go` pattern.
+
+### File Structure
+
+Create a sub-package for the external service call:
+
+```
+myservice/
+└── domain/
+    └── external_service/      # Sub-package for REST client
+        ├── rest.go            # RestModel for response deserialization
+        └── requests.go        # Request functions
+```
+
+### Step 1: Create `rest.go`
+
+Define a `RestModel` struct implementing JSON:API interface methods:
+
+```go
+package status
+
+const Resource = "quests"
+
+// RestModel represents the response from the external service
+type RestModel struct {
+    Id     string `json:"-"`          // ID set via SetID, not from JSON body
+    Status uint8  `json:"status"`     // Actual response field
+}
+
+// JSON:API interface methods
+func (r RestModel) GetName() string { return Resource }
+func (r RestModel) GetID() string   { return r.Id }
+```
+
+**Key Points:**
+- `Id` field uses `json:"-"` tag (populated via SetID from JSON:API wrapper)
+- Other fields match the JSON response structure
+- Implement `GetName()` and `GetID()` for JSON:API compliance
+
+### Step 2: Create `requests.go`
+
+Define request functions using `atlas-rest` library:
+
+```go
+package status
+
+import (
+    "myservice/rest"
+    "fmt"
+    "github.com/Chronicle20/atlas-rest/requests"
+)
+
+// getBaseRequest returns the base URL from environment variable
+// SERVICE_NAME maps to SERVICE_NAME_BASE_URL environment variable
+func getBaseRequest() string {
+    return requests.RootUrl("QUEST")  // Uses QUEST_BASE_URL env var
+}
+
+// GET request example
+func requestByCharacterAndQuest(characterId, questId uint32) requests.Request[RestModel] {
+    return rest.MakeGetRequest[RestModel](
+        fmt.Sprintf(getBaseRequest()+"/characters/%d/quests/%d", characterId, questId),
+    )
+}
+
+// POST request example
+func requestValidation(body RestModel) requests.Request[RestModel] {
+    return rest.MakePostRequest[RestModel](
+        getBaseRequest()+"/validations",
+        body,
+    )
+}
+```
+
+**Key Points:**
+- `getBaseRequest()` uses `requests.RootUrl("SERVICE")` which reads `SERVICE_BASE_URL` env var
+- Request functions return `requests.Request[T]` (a curried function)
+- Use `rest.MakeGetRequest[T]` for GET, `rest.MakePostRequest[T]` for POST
+- Build URLs with `fmt.Sprintf` for path parameters
+
+### Step 3: Call from Processor
+
+Execute the request by calling with `(logger, context)`:
+
+```go
+func (p *Processor) doSomething(ctx context.Context, characterId, questId uint32) error {
+    // Execute the request - note the (l, ctx) call pattern
+    resp, err := status.requestByCharacterAndQuest(characterId, questId)(p.l, ctx)
+    if err != nil {
+        p.l.WithError(err).Error("Failed to get quest status")
+        return err
+    }
+
+    // Use the response
+    questStatus := resp.Status
+    // ...
+}
+```
+
+**Key Points:**
+- Request functions are curried: `requestFn(params)(logger, context)`
+- Context propagates tenant headers automatically
+- Logger is used for request/error logging
+
+### Complete Example: Quest Status Client
+
+**Package structure:**
+```
+conversation/quest/status/
+├── rest.go
+└── requests.go
+```
+
+**rest.go:**
+```go
+package status
+
+const Resource = "quests"
+
+type QuestStatus int
+const (
+    QuestNotStarted QuestStatus = 1
+    QuestStarted    QuestStatus = 2
+    QuestCompleted  QuestStatus = 3
+)
+
+type RestModel struct {
+    Id     string `json:"-"`
+    Status uint8  `json:"status"`
+}
+
+func (r RestModel) GetName() string { return Resource }
+func (r RestModel) GetID() string   { return r.Id }
+```
+
+**requests.go:**
+```go
+package status
+
+import (
+    "atlas-npc-conversations/rest"
+    "fmt"
+    "github.com/Chronicle20/atlas-rest/requests"
+)
+
+func getBaseRequest() string {
+    return requests.RootUrl("QUEST")
+}
+
+func requestByCharacterAndQuest(characterId, questId uint32) requests.Request[RestModel] {
+    return rest.MakeGetRequest[RestModel](
+        fmt.Sprintf(getBaseRequest()+"/characters/%d/quests/%d", characterId, questId),
+    )
+}
+```
+
+**Usage in processor:**
+```go
+import "atlas-npc-conversations/atlas.com/npc/conversation/quest/status"
+
+func (p *Processor) startQuestConversation(ctx context.Context, req StartRequest) {
+    resp, err := status.requestByCharacterAndQuest(req.CharacterId, req.QuestId)(p.l, ctx)
+    if err != nil {
+        // Handle error
+        return
+    }
+    questStatus := status.QuestStatus(resp.Status)
+    // Route based on status...
+}
+```
+
+### Anti-Patterns
+
+❌ **Don't use provider pattern for REST calls:**
+```go
+// WRONG - this is for database access, not REST calls
+func QuestStatusProvider(l logrus.FieldLogger) func(ctx context.Context) func(id uint32) model.Provider[Status] {
+    // ...
+}
+```
+
+❌ **Don't define client interfaces:**
+```go
+// WRONG - unnecessary abstraction
+type QuestClient interface {
+    GetStatus(characterId, questId uint32) (Status, error)
+}
+```
+
+✅ **Do use requests.go pattern:**
+```go
+// CORRECT - simple request function
+func requestByCharacterAndQuest(characterId, questId uint32) requests.Request[RestModel] {
+    return rest.MakeGetRequest[RestModel](url)
+}
+```
+
+### Environment Variables
+
+The `requests.RootUrl("SERVICE")` function reads from environment:
+
+| RootUrl Parameter | Environment Variable |
+|-------------------|---------------------|
+| `"QUEST"` | `QUEST_BASE_URL` |
+| `"QUERY_AGGREGATOR"` | `QUERY_AGGREGATOR_BASE_URL` |
+| `"MAPS"` | `MAPS_BASE_URL` |
+
+### Existing Examples in Codebase
+
+Reference these for additional patterns:
+
+| Service | Package | Purpose |
+|---------|---------|---------|
+| atlas-npc-conversations | `validation/` | POST request to query-aggregator |
+| atlas-npc-conversations | `map/` | GET characters in map |
+| atlas-npc-conversations | `cosmetic/` | GET appearance data |
+| atlas-channel | `character/` | GET/POST character data |

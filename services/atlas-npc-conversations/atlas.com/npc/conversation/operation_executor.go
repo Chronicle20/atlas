@@ -1363,16 +1363,29 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 	case "complete_quest":
 		// Format: complete_quest
-		// Params: questId (uint32), npcId (uint32, optional - defaults to conversation NPC)
-		// Note: This is currently a stub as no quest service exists yet
-		questIdValue, exists := operation.Params()["questId"]
-		if !exists {
-			return "", "", "", nil, errors.New("missing questId parameter for complete_quest operation")
-		}
-
-		questIdInt, err := e.evaluateContextValueAsInt(characterId, "questId", questIdValue)
-		if err != nil {
-			return "", "", "", nil, err
+		// Params: questId (uint32, optional - defaults to context questId for quest conversations),
+		//         npcId (uint32, optional - defaults to conversation NPC)
+		var questIdInt int
+		var err error
+		if questIdValue, exists := operation.Params()["questId"]; exists {
+			questIdInt, err = e.evaluateContextValueAsInt(characterId, "questId", questIdValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
+		} else {
+			// Check context for questId (set by quest conversations)
+			ctx, err := GetRegistry().GetPreviousContext(e.t, characterId)
+			if err != nil {
+				return "", "", "", nil, fmt.Errorf("failed to get conversation context for questId: %w", err)
+			}
+			if contextQuestId, exists := ctx.Context()["questId"]; exists {
+				questIdInt, err = strconv.Atoi(contextQuestId)
+				if err != nil {
+					return "", "", "", nil, fmt.Errorf("invalid questId in context: %w", err)
+				}
+			} else {
+				return "", "", "", nil, errors.New("missing questId parameter for complete_quest operation")
+			}
 		}
 
 		// NpcId is optional - if not provided, get from conversation context
@@ -1401,16 +1414,29 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 	case "start_quest":
 		// Format: start_quest
-		// Params: questId (uint32), npcId (uint32, optional - defaults to conversation NPC)
-		// Note: This is currently a stub as no quest service exists yet
-		questIdValue, exists := operation.Params()["questId"]
-		if !exists {
-			return "", "", "", nil, errors.New("missing questId parameter for start_quest operation")
-		}
-
-		questIdInt, err := e.evaluateContextValueAsInt(characterId, "questId", questIdValue)
-		if err != nil {
-			return "", "", "", nil, err
+		// Params: questId (uint32, optional - defaults to context questId for quest conversations),
+		//         npcId (uint32, optional - defaults to conversation NPC)
+		var questIdInt int
+		var err error
+		if questIdValue, exists := operation.Params()["questId"]; exists {
+			questIdInt, err = e.evaluateContextValueAsInt(characterId, "questId", questIdValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
+		} else {
+			// Check context for questId (set by quest conversations)
+			ctx, err := GetRegistry().GetPreviousContext(e.t, characterId)
+			if err != nil {
+				return "", "", "", nil, fmt.Errorf("failed to get conversation context for questId: %w", err)
+			}
+			if contextQuestId, exists := ctx.Context()["questId"]; exists {
+				questIdInt, err = strconv.Atoi(contextQuestId)
+				if err != nil {
+					return "", "", "", nil, fmt.Errorf("invalid questId in context: %w", err)
+				}
+			} else {
+				return "", "", "", nil, errors.New("missing questId parameter for start_quest operation")
+			}
 		}
 
 		// NpcId is optional - if not provided, get from conversation context

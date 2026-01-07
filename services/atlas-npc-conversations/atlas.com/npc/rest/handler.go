@@ -124,3 +124,19 @@ func ParseNpcId(l logrus.FieldLogger, next NpcIdHandler) http.HandlerFunc {
 		next(npcId)(w, r)
 	}
 }
+
+type QuestIdHandler func(questId uint32) http.HandlerFunc
+
+func ParseQuestId(l logrus.FieldLogger, next QuestIdHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		questIdStr := mux.Vars(r)["questId"]
+		var questId uint32
+		_, err := fmt.Sscanf(questIdStr, "%d", &questId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to properly parse questId from path.")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(questId)(w, r)
+	}
+}

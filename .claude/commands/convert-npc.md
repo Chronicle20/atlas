@@ -325,7 +325,7 @@ The script to convert: **$ARGUMENTS**
       - Option 3: Skip this NPC conversion (mark as TODO)
 12. Determine appropriate output filename based on NPC ID (e.g., `npc_2003.json`)
 13. Validate against the schema
-14. **ONLY if all validations pass**: Write the output file to `services/atlas-npc-conversations/conversations/` directory
+14. **ONLY if all validations pass**: Write the output file to `services/atlas-npc-conversations/conversations/npc/` directory
 15. **VALIDATE - Build Check**: Verify the service still compiles:
     - Run `go build` in `services/atlas-npc-conversations/atlas.com/npc` directory
     - If build fails, report the error and ask user how to proceed

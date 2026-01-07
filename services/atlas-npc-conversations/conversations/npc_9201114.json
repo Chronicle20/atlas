@@ -1,0 +1,72 @@
+{
+  "npcId": 9201114,
+  "startState": "checkKey",
+  "states": [
+    {
+      "id": "checkKey",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "3992041"
+              }
+            ],
+            "nextState": "warpToInnerSanctum"
+          },
+          {
+            "conditions": [],
+            "nextState": "noKey"
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToInnerSanctum",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "610030020",
+              "portalName": "out00"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "noKey",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "send_message",
+            "params": {
+              "messageType": "BLUE_TEXT",
+              "message": "The giant gate of iron will not budge no matter what, however there is a visible key-shaped socket."
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

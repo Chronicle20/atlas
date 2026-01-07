@@ -1,0 +1,42 @@
+{
+  "npcId": 1013002,
+  "npcName": "Dragon Egg NPC",
+  "startState": "start",
+  "states": [
+    {
+      "id": "start",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "complete_quest",
+            "params": {
+              "questId": "22011",
+              "force": "true"
+            }
+          },
+          {
+            "type": "send_message",
+            "params": {
+              "messageType": "PINK_TEXT",
+              "message": "You have acquired a Dragon Egg."
+            }
+          },
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "900090103",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

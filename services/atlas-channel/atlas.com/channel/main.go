@@ -38,6 +38,7 @@ import (
 	route "atlas-channel/kafka/consumer/route"
 	session2 "atlas-channel/kafka/consumer/session"
 	"atlas-channel/kafka/consumer/skill"
+	system_message "atlas-channel/kafka/consumer/system_message"
 	"atlas-channel/logger"
 	"atlas-channel/server"
 	"atlas-channel/service"
@@ -116,6 +117,7 @@ func main() {
 	messenger.InitConsumers(l)(cmf)(consumerGroupId)
 	pet.InitConsumers(l)(cmf)(consumerGroupId)
 	consumable.InitConsumers(l)(cmf)(consumerGroupId)
+	system_message.InitConsumers(l)(cmf)(consumerGroupId)
 	cashshop.InitConsumers(l)(cmf)(consumerGroupId)
 	note3.InitConsumers(l)(cmf)(consumerGroupId)
 	quest.InitConsumers(l)(cmf)(consumerGroupId)
@@ -187,6 +189,7 @@ func main() {
 				messenger.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				pet.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				consumable.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				system_message.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				cashshop.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				note3.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				quest.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)

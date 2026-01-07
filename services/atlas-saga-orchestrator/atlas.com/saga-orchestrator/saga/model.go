@@ -280,6 +280,7 @@ const (
 	CompleteQuest                Action = "complete_quest"
 	StartQuest                   Action = "start_quest"
 	ApplyConsumableEffect        Action = "apply_consumable_effect"
+	SendMessage                  Action = "send_message"
 )
 
 // Step represents a single step within a saga.
@@ -536,12 +537,12 @@ type SpawnMonsterPayload struct {
 }
 
 // CompleteQuestPayload represents the payload required to complete a quest.
-// Note: This is currently stubbed - actual quest completion will be implemented
-// when a quest service is available.
 type CompleteQuestPayload struct {
-	CharacterId uint32 `json:"characterId"` // CharacterId completing the quest
-	QuestId     uint32 `json:"questId"`     // Quest ID to complete
-	NpcId       uint32 `json:"npcId"`       // NPC ID granting completion (for rewards)
+	CharacterId uint32   `json:"characterId"` // CharacterId completing the quest
+	WorldId     world.Id `json:"worldId"`     // WorldId associated with the action
+	QuestId     uint32   `json:"questId"`     // Quest ID to complete
+	NpcId       uint32   `json:"npcId"`       // NPC ID granting completion (for rewards)
+	Force       bool     `json:"force"`       // If true, skip requirement checks and just mark complete
 }
 
 // StartQuestPayload represents the payload required to start a quest.
@@ -561,6 +562,16 @@ type ApplyConsumableEffectPayload struct {
 	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
 	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
 	ItemId      uint32     `json:"itemId"`      // Consumable item ID whose effects should be applied
+}
+
+// SendMessagePayload represents the payload required to send a system message to a character.
+// This is used for NPC-initiated messages like "You have acquired a Dragon Egg."
+type SendMessagePayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to send message to
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	MessageType string     `json:"messageType"` // Message type: "NOTICE", "POP_UP", "PINK_TEXT", "BLUE_TEXT"
+	Message     string     `json:"message"`     // The message text to display
 }
 
 // Custom UnmarshalJSON for Step[T] to handle the generics
@@ -720,6 +731,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case ApplyConsumableEffect:
 		var payload ApplyConsumableEffectPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case SendMessage:
+		var payload SendMessagePayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

@@ -125,6 +125,14 @@ data:
           proxy_pass http://atlas-chairs.atlas.svc.cluster.local:8080;
         }
 
+        location ~ ^/api/drops/seed$ {
+          proxy_pass http://atlas-drop-information.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/continents/drops$ {
+          proxy_pass http://atlas-drop-information.atlas.svc.cluster.local:8080;
+        }
+
         location ~ ^/api/drops(/.*)?$ {
           proxy_pass http://atlas-drops.atlas.svc.cluster.local:8080;
         }

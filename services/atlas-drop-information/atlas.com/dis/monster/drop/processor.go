@@ -8,35 +8,50 @@ import (
 	"gorm.io/gorm"
 )
 
-func allProvider(ctx context.Context) func(db *gorm.DB) model.Provider[[]Model] {
+type Processor interface {
+	GetAll() model.Provider[[]Model]
+	GetForMonster(monsterId uint32) model.Provider[[]Model]
+}
+
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+	db  *gorm.DB
+	t   tenant.Model
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
 	t := tenant.MustFromContext(ctx)
-	return func(db *gorm.DB) model.Provider[[]Model] {
-		return model.SliceMap(makeDrop)(getAll(t.Id())(db))()
+	return &ProcessorImpl{
+		l:   l,
+		ctx: ctx,
+		db:  db,
+		t:   t,
 	}
 }
 
-func GetAll(_ logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) ([]Model, error) {
+func (p *ProcessorImpl) GetAll() model.Provider[[]Model] {
+	return model.SliceMap(makeDrop)(getAll(p.t.Id())(p.db))()
+}
+
+func (p *ProcessorImpl) GetForMonster(monsterId uint32) model.Provider[[]Model] {
+	return model.SliceMap(makeDrop)(getByMonsterId(p.t.Id(), monsterId)(p.db))()
+}
+
+// Legacy function wrappers for backward compatibility during migration
+func GetAll(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) ([]Model, error) {
 	return func(ctx context.Context) func(db *gorm.DB) ([]Model, error) {
 		return func(db *gorm.DB) ([]Model, error) {
-			return allProvider(ctx)(db)()
+			return NewProcessor(l, ctx, db).GetAll()()
 		}
 	}
 }
 
-func forMonsterProvider(ctx context.Context) func(db *gorm.DB) func(monsterId uint32) model.Provider[[]Model] {
-	t := tenant.MustFromContext(ctx)
-	return func(db *gorm.DB) func(monsterId uint32) model.Provider[[]Model] {
-		return func(monsterId uint32) model.Provider[[]Model] {
-			return model.SliceMap(makeDrop)(getByMonsterId(t.Id(), monsterId)(db))()
-		}
-	}
-}
-
-func GetForMonster(_ logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(monsterId uint32) ([]Model, error) {
+func GetForMonster(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(monsterId uint32) ([]Model, error) {
 	return func(ctx context.Context) func(db *gorm.DB) func(monsterId uint32) ([]Model, error) {
 		return func(db *gorm.DB) func(monsterId uint32) ([]Model, error) {
 			return func(monsterId uint32) ([]Model, error) {
-				return forMonsterProvider(ctx)(db)(monsterId)()
+				return NewProcessor(l, ctx, db).GetForMonster(monsterId)()
 			}
 		}
 	}

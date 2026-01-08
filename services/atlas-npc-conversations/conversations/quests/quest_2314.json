@@ -1,0 +1,113 @@
+{
+  "questId": 2314,
+  "questName": "Exploring Mushroom Forest(1)",
+  "startStateMachine": {
+    "startState": "askAccept",
+    "states": [
+      {
+        "id": "askAccept",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendAcceptDecline",
+          "text": "In order to rescue the princess, you must first navigate the Mushroom Forest. King Pepe set up a powerful barrier forbidding anyone from entering the castle. Please investigate this matter for us.",
+          "choices": [
+            { "text": "Accept", "nextState": "explainBarrier" },
+            { "text": "Decline", "nextState": "declined" },
+            { "text": "Exit", "nextState": null }
+          ]
+        }
+      },
+      {
+        "id": "declined",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Please do not lose faith in our Kingdom of Mushroom.",
+          "choices": [
+            { "text": "Next", "nextState": null },
+            { "text": "Exit", "nextState": null }
+          ]
+        }
+      },
+      {
+        "id": "explainBarrier",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "You'll run into the barrier at the Mushroom Forest by heading east of where you are standing right now. Please be careful. I hear that the area is infested with crazy, fear-inducing monsters.",
+          "choices": [
+            { "text": "Next", "nextState": "completeQuest" },
+            { "text": "Exit", "nextState": null }
+          ]
+        }
+      },
+      {
+        "id": "completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            { "type": "award_exp", "params": { "amount": "8300" } },
+            { "type": "complete_quest", "params": {} }
+          ],
+          "outcomes": [
+            { "conditions": [], "nextState": "confirmComplete" }
+          ]
+        }
+      },
+      {
+        "id": "confirmComplete",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "I see, so it was indeed not a regular barrier by any means. Great work there. If not for you help, we wouldn't have had a clue as to what that was all about.",
+          "choices": [
+            { "text": "Ok", "nextState": null },
+            { "text": "Exit", "nextState": null }
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "askBarrier",
+    "states": [
+      {
+        "id": "askBarrier",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "I see that you have thoroughly investigated the barrier at the Mushroom Forest. What was it like?",
+          "choices": [
+            { "text": "Ok", "nextState": "completeQuestEnd" },
+            { "text": "Exit", "nextState": null }
+          ]
+        }
+      },
+      {
+        "id": "completeQuestEnd",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            { "type": "complete_quest", "params": {} },
+            { "type": "award_exp", "params": { "amount": "8300" } }
+          ],
+          "outcomes": [
+            { "conditions": [], "nextState": "confirmCompleteEnd" }
+          ]
+        }
+      },
+      {
+        "id": "confirmCompleteEnd",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "I see, so it was indeed not a regular barrier by any means. Great work there. If not for you help, we wouldn't have had a clue as to what that was all about.",
+          "choices": [
+            { "text": "Ok", "nextState": null },
+            { "text": "Exit", "nextState": null }
+          ]
+        }
+      }
+    ]
+  }
+}

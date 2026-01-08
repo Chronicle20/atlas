@@ -1,0 +1,101 @@
+{
+  "questId": 2312,
+  "questName": "The Test",
+  "startStateMachine": {
+    "startState": "askAccept",
+    "states": [
+      {
+        "id": "askAccept",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendAcceptDecline",
+          "text": "We need your help, noble explorer. Our kingdom is currently facing a big threat, and we are in desperate need of a courageous explorer willing to fight for us, and that's how you ended up here. Please understand, though, that since we need place our faith in you, we'll have to test your skills first before we can stand firmly behind you. Will it be okay for you to do this for us?",
+          "choices": [
+            {"text": "Accept", "nextState": "startQuest"},
+            {"text": "Decline", "nextState": "decline"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "decline",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Hmmm... you must be unsure of your combat skills. We'll be here waiting for you, so come see us when you're ready.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "startQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "instructions"}
+          ]
+        }
+      },
+      {
+        "id": "instructions",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Keep moving forward, and you'll see #bRenegade Spores#k, the Spores that turned their backs on the Kingdom of Mushroom. We'd appreciate it if you can teach them a lesson or two, and bring back #b50 Mutated Spores#k in return.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "askComplete",
+    "states": [
+      {
+        "id": "askComplete",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Did you teach those Renegade Spores a lesson?",
+          "choices": [
+            {"text": "Ok", "nextState": "completeQuest"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {}},
+            {"type": "award_exp", "params": {"amount": "11500"}},
+            {"type": "destroy_item", "params": {"itemId": "4000499", "quantity": "50"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "reward"}
+          ]
+        }
+      },
+      {
+        "id": "reward",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "That was amazing. I apologize for doubting your abilities. Please save our Kingdom of Mushroom from this crisis!",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

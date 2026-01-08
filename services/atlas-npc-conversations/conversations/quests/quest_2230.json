@@ -1,0 +1,197 @@
+{
+  "questId": 2230,
+  "npcId": 1032102,
+  "questName": "A Mysterious Small Egg",
+  "startStateMachine": {
+    "startState": "intro",
+    "states": [
+      {
+        "id": "intro",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "I put this small, precious life in your hands...Guard it with your life...",
+          "choices": [
+            {"text": "Next", "nextState": "askAccept"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "askAccept",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendYesNo",
+          "text": "Looking after another life...That is the inevitable mission given to you...Follow the force that leads you to me.",
+          "choices": [
+            {"text": "Yes", "nextState": "startQuestActions"},
+            {"text": "No", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "startQuestActions",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}},
+            {"type": "award_item", "params": {"itemId": "4032086", "quantity": "1"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "confirmStart"}
+          ]
+        }
+      },
+      {
+        "id": "confirmStart",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Put your hand in your pocket. I think your friend has already found you.\r\nThe purple bellflower that soaks in the sun in between the skyscraping trees...Follow the path to the unknown that leads you to the bellflower. I will wait for you here.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "greeting",
+    "states": [
+      {
+        "id": "greeting",
+        "type": "listSelection",
+        "listSelection": {
+          "title": "Hello, traveler... You have finally come to see me. Have you fulfilled your duties?",
+          "choices": [
+            {"text": "What duties? Who are you?", "nextState": "explainPets"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "explainPets",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Have you found a small egg in your pocket? That egg is your duty, your responsibility. Life is hard when you're all by yourself. In times like this, there's nothing quite like having a friend that will be there for you at all times. Have you heard of a #bpet#k?\r\nPeople raise pets to ease the burden, sorrow, and loneliness, because knowing that you have someone, or something in this matter, on your side will really bring a peace of mind. But everything has consequences, and with it comes responsibility...",
+          "choices": [
+            {"text": "Next", "nextState": "petResponsibility"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "petResponsibility",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "Raising a pet requires a huge amount of responsibility. Remember a pet is a form of life, as well, so you'll need to feed it, name it, share your thoughts with it, and ultimately form a bond. That's how the owners get attached to these pets.",
+          "choices": [
+            {"text": "Previous", "nextState": "explainPets"},
+            {"text": "Next", "nextState": "aboutRuneSnail"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "aboutRuneSnail",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "I wanted to instill this in you, and that's why I sent you a baby that I cherish. The egg you have brought is #bRune Snail#k, a creature that is born through the power of Mana. Since you took great care of it as you brought the egg here, the egg will hatch soon.",
+          "choices": [
+            {"text": "Previous", "nextState": "petResponsibility"},
+            {"text": "Next", "nextState": "petLifespan"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "petLifespan",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "Rune Snail is a pet of many skills. It'll pick up items, feed you with potions, and do other things that will astound you. The downside is that since Rune Snail was born out of power of Mana, it's lifespan is very short. Once it turns into a doll, it'll never be able to be revived.",
+          "choices": [
+            {"text": "Previous", "nextState": "aboutRuneSnail"},
+            {"text": "Next", "nextState": "askUnderstand"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "askUnderstand",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendYesNo",
+          "text": "Now do you understand? Every action comes with consequences, and pets are no exception. The egg of the snail shall hatch soon.",
+          "choices": [
+            {"text": "Yes", "nextState": "checkInventorySpace"},
+            {"text": "No", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "checkInventorySpace",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "inventorySpace", "operator": "<", "value": "1", "referenceId": "5000054"}
+              ],
+              "nextState": "noInventorySpace"
+            },
+            {
+              "conditions": [],
+              "nextState": "snailInfo"
+            }
+          ]
+        }
+      },
+      {
+        "id": "noInventorySpace",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Please free a slot in your CASH inventory before you try to receive the pet...",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "snailInfo",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "This snail will only be alive for #b5 hours#k. Shower it with love. Your love will be reciprocated in the end.",
+          "choices": [
+            {"text": "Next", "nextState": "completeQuestActions"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "completeQuestActions",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "destroy_item", "params": {"itemId": "4032086", "quantity": "1"}},
+            {"type": "complete_quest", "params": {}},
+            {"type": "award_item", "params": {"itemId": "5000054", "quantity": "1", "expiration": "18000000"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,102 @@
+{
+  "questId": 2319,
+  "questName": "Killer Mushroom Spores(3)",
+  "startStateMachine": {
+    "startState": "askAccept",
+    "states": [
+      {
+        "id": "askAccept",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendAcceptDecline",
+          "text": "Oh, I almost forgot! What was I thinking? I need you to hand this #bSample of Killer Mushroom Spores#k to #bMinister of Magic#k and report the results.",
+          "choices": [
+            {"text": "Accept", "nextState": "startQuestAndGiveItem"},
+            {"text": "Decline", "nextState": "declineMessage"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "declineMessage",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "I know it's not a tough task, so come back to me if you're ready.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "startQuestAndGiveItem",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}},
+            {"type": "award_item", "params": {"itemId": "4032389", "quantity": "1"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "confirmStart"}
+          ]
+        }
+      },
+      {
+        "id": "confirmStart",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "The #bMinister of Magic#k told me once the #bKiller Mushroom Spores#k is complete, that he'll want a sample of it as well. I'll give you the sample; now go please hand it in to our #bMinister of Magic.#k",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "askComplete",
+    "states": [
+      {
+        "id": "askComplete",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Are the #bKiller Mushroom Spores#k finally completed?",
+          "choices": [
+            {"text": "Ok", "nextState": "completeQuestAndReward"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "completeQuestAndReward",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {}},
+            {"type": "award_exp", "params": {"amount": "4200"}},
+            {"type": "destroy_item", "params": {"itemId": "4032389", "quantity": "1"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "rewardMessage"}
+          ]
+        }
+      },
+      {
+        "id": "rewardMessage",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Okay, so this is the #bKiller Mushroom Spores.#k Thank you, thank you, and please tell #bScarrs#k the same.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

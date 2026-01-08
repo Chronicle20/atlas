@@ -1,0 +1,79 @@
+{
+  "questId": 3953,
+  "questName": "Quest 3953",
+  "endStateMachine": {
+    "startState": "askAboutMerchants",
+    "states": [
+      {
+        "id": "askAboutMerchants",
+        "type": "listSelection",
+        "listSelection": {
+          "title": "Eh, are you still saying Deo is a monster? No, Deo is not a monster, he is a peaceful leader of the Royal cactus from the region.\r\n\r\n",
+          "choices": [
+            {"text": "Have you heard that a group of merchants crossing through the desert were attacked by the monsters?", "nextState": "askAboutQueen"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "askAboutQueen",
+        "type": "listSelection",
+        "listSelection": {
+          "title": "Is that so? I wonder why these merchants were wandering so recklessly in the desert. They trespassed the territory of the Cactus'! They shouldn't be wandering around in the first place, they should first have the leave of the Ariant Counsel.\r\n\r\n",
+          "choices": [
+            {"text": "This is all because of the Queen's negligence in maintaining the safety of the town.", "nextState": "askAboutGuardian"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "askAboutGuardian",
+        "type": "listSelection",
+        "listSelection": {
+          "title": "Ehh... Yeah, the city is not really doing well because of the currently ruling govern, that's indeed a fact. If only the Guardians of the Deserts returned to put order on this mess...\r\n\r\n",
+          "choices": [
+            {"text": "What is the Guardian of the Deserts doing when we're under the Queen's tyranny?", "nextState": "askAboutDeo"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "askAboutDeo",
+        "type": "listSelection",
+        "listSelection": {
+          "title": "They have departed on an expedition to get rid of some major threats in the desert that were ravaging Ariant, for quite some time now... It's strange, they should have already returned... Thinking about it now, the last attack on the merchants was around the direction the Guardians departed... No, that can't be... Can it?\r\n\r\n",
+          "choices": [
+            {"text": "Perhaps Deo has already turned into a monster.", "nextState": "completeQuestActions"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "completeQuestActions",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {}},
+            {"type": "destroy_item", "params": {"itemId": "4011008", "quantity": "1"}},
+            {"type": "award_exp", "params": {"amount": "20000"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "finalMessage"}
+          ]
+        }
+      },
+      {
+        "id": "finalMessage",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "We're in great trouble, if it is like this. And it really seems like it. If the Royal Cactus Deo has gone insane, Ariant is done for. You, can you do something to defeat Deo? We really need your help now.",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

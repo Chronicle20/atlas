@@ -1,0 +1,86 @@
+{
+  "questId": 8235,
+  "npcId": 9201054,
+  "questName": "Bounty Hunter - One Step A-Head",
+  "startStateMachine": {
+    "startState": "askAccept",
+    "states": [
+      {
+        "id": "askAccept",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendAcceptDecline",
+          "text": "Hey, traveler! I need your help. A new threat has appeared to the citizens of the New Leaf City. I'm currently recruiting anyone, and this time's target #ris the Headless Horseman#k. Are you in?",
+          "choices": [
+            {
+              "text": "Accept",
+              "nextState": "startQuest"
+            },
+            {
+              "text": "Decline",
+              "nextState": "decline"
+            },
+            {
+              "text": "Exit",
+              "nextState": "decline"
+            }
+          ]
+        }
+      },
+      {
+        "id": "decline",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Okay, then. See you around.",
+          "choices": [
+            {
+              "text": "Ok",
+              "nextState": null
+            },
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "startQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {
+              "type": "start_quest",
+              "params": {}
+            }
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": "confirmStart"
+            }
+          ]
+        }
+      },
+      {
+        "id": "confirmStart",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Very well. Get me #r1 #t4031903##k, asap. The NLC is counting on you.",
+          "choices": [
+            {
+              "text": "Ok",
+              "nextState": null
+            },
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

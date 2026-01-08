@@ -1,0 +1,192 @@
+{
+  "questId": 3833,
+  "questName": "Herb Delivery",
+  "startStateMachine": {
+    "startState": "noDialogue",
+    "states": [
+      {
+        "id": "noDialogue",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "intro",
+    "states": [
+      {
+        "id": "intro",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Great! You managed to get the herb I need. As a #btoken of gratitude#k, take this item to help on your journey.",
+          "choices": [
+            {"text": "Ok", "nextState": "checkInventorySpace"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "checkInventorySpace",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "inventorySpace", "operator": "<", "value": "2", "referenceId": "2000005"}
+              ],
+              "nextState": "noInventorySpace"
+            },
+            {
+              "conditions": [
+                {"type": "item", "operator": ">=", "value": "1000", "referenceId": "4000294"}
+              ],
+              "nextState": "rewardTier1000"
+            },
+            {
+              "conditions": [
+                {"type": "item", "operator": ">=", "value": "600", "referenceId": "4000294"}
+              ],
+              "nextState": "rewardTier600"
+            },
+            {
+              "conditions": [
+                {"type": "item", "operator": ">=", "value": "500", "referenceId": "4000294"}
+              ],
+              "nextState": "rewardTier500"
+            },
+            {
+              "conditions": [
+                {"type": "item", "operator": ">=", "value": "100", "referenceId": "4000294"}
+              ],
+              "nextState": "rewardTier100"
+            },
+            {
+              "conditions": [
+                {"type": "item", "operator": ">=", "value": "50", "referenceId": "4000294"}
+              ],
+              "nextState": "rewardTier50"
+            },
+            {
+              "conditions": [
+                {"type": "item", "operator": ">=", "value": "1", "referenceId": "4000294"}
+              ],
+              "nextState": "rewardTier1"
+            },
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "noInventorySpace",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Could you make #b2 slots available#k on your USE inventory before receiving your reward?",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "rewardTier1000",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "destroy_item", "params": {"itemId": "4000294", "quantity": "1000"}},
+            {"type": "award_item", "params": {"itemId": "2040501", "quantity": "1"}},
+            {"type": "award_item", "params": {"itemId": "2000005", "quantity": "50"}},
+            {"type": "award_exp", "params": {"amount": "54000"}},
+            {"type": "complete_quest", "params": {"force": "true"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "rewardTier600",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "destroy_item", "params": {"itemId": "4000294", "quantity": "600"}},
+            {"type": "award_item", "params": {"itemId": "2020013", "quantity": "50"}},
+            {"type": "award_exp", "params": {"amount": "54000"}},
+            {"type": "complete_quest", "params": {"force": "true"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "rewardTier500",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "destroy_item", "params": {"itemId": "4000294", "quantity": "500"}},
+            {"type": "award_exp", "params": {"amount": "54000"}},
+            {"type": "complete_quest", "params": {"force": "true"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "rewardTier100",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "destroy_item", "params": {"itemId": "4000294", "quantity": "100"}},
+            {"type": "award_exp", "params": {"amount": "45000"}},
+            {"type": "complete_quest", "params": {"force": "true"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "rewardTier50",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "destroy_item", "params": {"itemId": "4000294", "quantity": "50"}},
+            {"type": "award_item", "params": {"itemId": "2020007", "quantity": "50"}},
+            {"type": "award_exp", "params": {"amount": "10000"}},
+            {"type": "complete_quest", "params": {"force": "true"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "rewardTier1",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "destroy_item", "params": {"itemId": "4000294", "quantity": "1"}},
+            {"type": "award_item", "params": {"itemId": "2000000", "quantity": "1"}},
+            {"type": "award_exp", "params": {"amount": "10"}},
+            {"type": "complete_quest", "params": {"force": "true"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

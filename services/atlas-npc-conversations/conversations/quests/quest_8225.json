@@ -1,0 +1,86 @@
+{
+  "questId": 8225,
+  "npcId": 9201100,
+  "questName": "The Right Path",
+  "startStateMachine": {
+    "startState": "askAccept",
+    "states": [
+      {
+        "id": "askAccept",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendAcceptDecline",
+          "text": "Hey, partner. Now that you make part of the Raven Claws team, I have a task for you. Are you up now?",
+          "choices": [
+            {
+              "text": "Accept",
+              "nextState": "startQuest"
+            },
+            {
+              "text": "Decline",
+              "nextState": "declineQuest"
+            },
+            {
+              "text": "Exit",
+              "nextState": "declineQuest"
+            }
+          ]
+        }
+      },
+      {
+        "id": "declineQuest",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Okay, then. See you around.",
+          "choices": [
+            {
+              "text": "Ok",
+              "nextState": null
+            },
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "startQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {
+              "type": "start_quest",
+              "params": {}
+            }
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": "confirmStart"
+            }
+          ]
+        }
+      },
+      {
+        "id": "confirmStart",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Very well. To prove your valor among our ranks, you must first pass on a little challenge: you have to be able to move extraordinaly well around here, known of all secrets these woods holds. Trace a #bmap of the Phantom Forest#k, then come talk to me. I shall then evaluate if you're worth to be with us.",
+          "choices": [
+            {
+              "text": "Ok",
+              "nextState": null
+            },
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

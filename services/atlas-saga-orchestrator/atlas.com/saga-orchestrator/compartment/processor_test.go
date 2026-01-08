@@ -354,7 +354,7 @@ func TestRequestCreateAndEquipAsset_BehaviorConsistency(t *testing.T) {
 			// Test RequestCreateItem with same parameters
 			done2 := make(chan error, 1)
 			go func() {
-				done2 <- processor.RequestCreateItem(transactionId, payload.CharacterId, tc.templateId, tc.quantity)
+				done2 <- processor.RequestCreateItem(transactionId, payload.CharacterId, tc.templateId, tc.quantity, time.Time{})
 			}()
 
 			var err2 error

@@ -481,7 +481,7 @@ func (h *HandlerImpl) handleAwardAsset(s Saga, st Step[any]) error {
 		return errors.New("invalid payload")
 	}
 
-	err := h.compP.RequestCreateItem(s.TransactionId, payload.CharacterId, payload.Item.TemplateId, payload.Item.Quantity)
+	err := h.compP.RequestCreateItem(s.TransactionId, payload.CharacterId, payload.Item.TemplateId, payload.Item.Quantity, payload.Item.Expiration)
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to award asset.")

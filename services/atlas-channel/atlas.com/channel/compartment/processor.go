@@ -63,3 +63,25 @@ func (p *ProcessorImpl) Transfer(accountId uint32, characterId uint32, assetId u
 	p.l.Debugf("Character [%d] attempting to transfer asset [%d] from [%s] to [%s] inventory.", characterId, assetId, fromId, toId)
 	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopicCompartmentTransfer)(TransferProvider(accountId, characterId, assetId, fromId, fromType, fromInventoryType, toId, toType, toInventoryType, referenceId))
 }
+
+// TransferToStorage transfers an asset from character inventory to storage
+func (p *ProcessorImpl) TransferToStorage(worldId byte, accountId uint32, characterId uint32, assetId uint32, fromId uuid.UUID, fromType byte, referenceId uint32, templateId uint32, referenceType string, slot int16) error {
+	p.l.Debugf("Character [%d] attempting to transfer asset [%d] to storage.", characterId, assetId)
+	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopicCompartmentTransfer)(StorageTransferProvider(
+		worldId, accountId, characterId, assetId,
+		fromId, fromType, compartment.InventoryTypeCharacter,
+		uuid.Nil, 0, compartment.InventoryTypeStorage,
+		referenceId, templateId, referenceType, slot,
+	))
+}
+
+// TransferFromStorage transfers an asset from storage to character inventory
+func (p *ProcessorImpl) TransferFromStorage(worldId byte, accountId uint32, characterId uint32, assetId uint32, toId uuid.UUID, toType byte, referenceId uint32) error {
+	p.l.Debugf("Character [%d] attempting to transfer asset [%d] from storage.", characterId, assetId)
+	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopicCompartmentTransfer)(StorageTransferProvider(
+		worldId, accountId, characterId, assetId,
+		uuid.Nil, 0, compartment.InventoryTypeStorage,
+		toId, toType, compartment.InventoryTypeCharacter,
+		referenceId, 0, "", 0,
+	))
+}

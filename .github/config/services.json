@@ -293,6 +293,13 @@
       "docker_image": "ghcr.io/chronicle20/atlas-skills/atlas-skills"
     },
     {
+      "name": "atlas-storage",
+      "type": "go-service",
+      "path": "services/atlas-storage",
+      "module_path": "services/atlas-storage/atlas.com/storage",
+      "docker_image": "ghcr.io/chronicle20/atlas-storage/atlas-storage"
+    },
+    {
       "name": "atlas-tenants",
       "type": "go-service",
       "path": "services/atlas-tenants",

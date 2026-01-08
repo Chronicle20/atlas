@@ -1,0 +1,57 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-storage
+  namespace: atlas
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: atlas-storage
+  template:
+    metadata:
+      labels:
+        app: atlas-storage
+    spec:
+      containers:
+      - name: storage
+        image: ghcr.io/chronicle20/atlas-storage/atlas-storage:latest
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: atlas-env
+        env:
+        - name: LOG_LEVEL
+          value: "debug"
+        - name: SERVICE_MODE
+          value: "MIXED"
+        - name: DB_NAME
+          value: "atlas-storage"
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: DB_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: DB_PASSWORD
+        - name: COMMAND_TOPIC_STORAGE
+          value: "COMMAND_TOPIC_STORAGE"
+        - name: EVENT_TOPIC_STORAGE_STATUS
+          value: "EVENT_TOPIC_STORAGE_STATUS"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-storage
+  namespace: atlas
+spec:
+  selector:
+    app: atlas-storage
+  ports:
+  - protocol: TCP
+    port: 8080

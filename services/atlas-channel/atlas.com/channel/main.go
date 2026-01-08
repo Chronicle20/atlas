@@ -49,6 +49,10 @@ import (
 	"atlas-channel/tasks"
 	"atlas-channel/tracing"
 	"fmt"
+	"os"
+	"strconv"
+	"time"
+
 	channel2 "github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -58,9 +62,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
-	"os"
-	"strconv"
-	"time"
 )
 
 const serviceName = "atlas-channel"
@@ -302,6 +303,7 @@ func produceWriters() []string {
 		writer.DestroyKite,
 		writer.Clock,
 		writer.FieldTransportState,
+		writer.StorageOperation,
 	}
 }
 
@@ -371,6 +373,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.CharacterItemUseSummonBagHandle] = handler.CharacterItemUseSummonBagHandleFunc
 	handlerMap[handler.NoteOperationHandle] = handler.NoteOperationHandleFunc
 	handlerMap[handler.QuestActionHandle] = handler.QuestActionHandleFunc
+	handlerMap[handler.StorageOperationHandle] = handler.StorageOperationHandleFunc
 	return handlerMap
 }
 

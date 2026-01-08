@@ -48,6 +48,53 @@ Each converted conversation must include:
 - Use appropriate `dialogueType` values: `sendOk`, `sendNext`, `sendNextPrev`, `sendPrev`, `sendYesNo`, `sendAcceptDecline`.
 - **Note**: For menu-style selections (scripts using `sendSimple` with `#L` tags), use the `listSelection` state type instead of `dialogue`.
 
+### Speaker Override
+
+By default, all dialogue is spoken by the NPC (`NPC_LEFT`). You can optionally override the speaker using the `speaker` field. This is useful when the player character speaks dialogue (common in quest conversations).
+
+**Available speaker values:**
+| Speaker | Description |
+|---------|-------------|
+| `NPC_LEFT` | NPC portrait on the left (default) |
+| `NPC_RIGHT` | NPC portrait on the right |
+| `CHARACTER_LEFT` | Player character portrait on the left |
+| `CHARACTER_RIGHT` | Player character portrait on the right |
+| `UNKNOWN` | Unknown speaker type |
+| `UNKNOWN2` | Unknown speaker type 2 |
+
+**Example with speaker override:**
+```json
+{
+  "id": "playerResponse",
+  "type": "dialogue",
+  "dialogue": {
+    "dialogueType": "sendNextPrev",
+    "text": "Don't be afraid, #b#p1300005##k sent me here.",
+    "speaker": "CHARACTER_LEFT",
+    "choices": [
+      { "text": "Previous", "nextState": "npcDialogue" },
+      { "text": "Next", "nextState": "thankYou" },
+      { "text": "Exit", "nextState": null }
+    ]
+  }
+}
+```
+
+**When to use speaker override:**
+- When converting scripts that use `cm.sendNext("...", 2)` or similar with a speaker parameter
+- In quest conversations where the player responds to an NPC
+- When the original script explicitly sets a non-default speaker type
+
+**Mapping from JavaScript speaker types:**
+| JS Type | JSON Speaker |
+|---------|--------------|
+| 0 | `NPC_LEFT` |
+| 1 | `NPC_RIGHT` |
+| 2 | `CHARACTER_LEFT` |
+| 3 | `CHARACTER_RIGHT` |
+| 4 | `UNKNOWN` |
+| 5 | `UNKNOWN2` |
+
 ---
 
 ## ⚙️ `genericAction` States
@@ -358,7 +405,7 @@ Use numeric values: `{"type": "questStatus", "operator": "=", "value": "2", "ref
 Verify in saga-orchestrator, but common operations:
 - `warp_to_map` - Teleport character (params: `mapId`, `portalId`)
 - `warp_to_random_portal` - Warp to random portal (params: `mapId`)
-- `award_item` - Give item (params: `itemId`, `quantity`)
+- `award_item` - Give item (params: `itemId`, `quantity`, `expiration` - optional, milliseconds from now)
 - `award_mesos` - Give mesos (params: `amount`, `actorId`, `actorType`)
 - `award_exp` - Give experience (params: `amount`, `type`, `attr1`)
 - `award_level` - Give levels (params: `amount`)

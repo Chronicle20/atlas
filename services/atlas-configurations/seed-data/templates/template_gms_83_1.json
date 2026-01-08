@@ -277,7 +277,7 @@
       {
         "opCode": "0x31",
         "validator": "LoggedInValidator",
-        "handler": "CharacterGeneralChatHandle"
+        "handler": "CharacterChatGeneralHandle"
       },
       {
         "opCode": "0x33",
@@ -1027,7 +1027,7 @@
       },
       {
         "opCode": "0xA2",
-        "writer": "CharacterGeneralChat"
+        "writer": "CharacterChatGeneral"
       },
       {
         "opCode": "0xB9",

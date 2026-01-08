@@ -1,0 +1,206 @@
+{
+  "questId": 29926,
+  "questName": "Aran Lv70 Item Reward",
+  "startStateMachine": {
+    "startState": "checkRequirements",
+    "states": [
+      {
+        "id": "checkRequirements",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {
+                  "type": "level",
+                  "operator": "<",
+                  "value": "70"
+                }
+              ],
+              "nextState": null
+            },
+            {
+              "conditions": [
+                {
+                  "type": "jobId",
+                  "operator": "<",
+                  "value": "2100"
+                }
+              ],
+              "nextState": null
+            },
+            {
+              "conditions": [
+                {
+                  "type": "jobId",
+                  "operator": ">=",
+                  "value": "2200"
+                }
+              ],
+              "nextState": null
+            },
+            {
+              "conditions": [
+                {
+                  "type": "item",
+                  "operator": ">=",
+                  "value": "1",
+                  "referenceId": "1142131"
+                }
+              ],
+              "nextState": null
+            },
+            {
+              "conditions": [
+                {
+                  "type": "inventorySpace",
+                  "operator": ">=",
+                  "value": "1",
+                  "referenceId": "1142131"
+                }
+              ],
+              "nextState": "awardReward"
+            },
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "awardReward",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {
+              "type": "award_item",
+              "params": {
+                "itemId": "1142131",
+                "quantity": "1"
+              }
+            },
+            {
+              "type": "start_quest",
+              "params": {}
+            },
+            {
+              "type": "complete_quest",
+              "params": {
+                "force": "true"
+              }
+            }
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "checkRequirements",
+    "states": [
+      {
+        "id": "checkRequirements",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {
+                  "type": "level",
+                  "operator": "<",
+                  "value": "70"
+                }
+              ],
+              "nextState": null
+            },
+            {
+              "conditions": [
+                {
+                  "type": "jobId",
+                  "operator": "<",
+                  "value": "2100"
+                }
+              ],
+              "nextState": null
+            },
+            {
+              "conditions": [
+                {
+                  "type": "jobId",
+                  "operator": ">=",
+                  "value": "2200"
+                }
+              ],
+              "nextState": null
+            },
+            {
+              "conditions": [
+                {
+                  "type": "item",
+                  "operator": ">=",
+                  "value": "1",
+                  "referenceId": "1142131"
+                }
+              ],
+              "nextState": null
+            },
+            {
+              "conditions": [
+                {
+                  "type": "inventorySpace",
+                  "operator": ">=",
+                  "value": "1",
+                  "referenceId": "1142131"
+                }
+              ],
+              "nextState": "awardReward"
+            },
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "awardReward",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {
+              "type": "award_item",
+              "params": {
+                "itemId": "1142131",
+                "quantity": "1"
+              }
+            },
+            {
+              "type": "start_quest",
+              "params": {}
+            },
+            {
+              "type": "complete_quest",
+              "params": {
+                "force": "true"
+              }
+            }
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

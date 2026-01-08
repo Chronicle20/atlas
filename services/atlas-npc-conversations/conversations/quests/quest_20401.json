@@ -1,0 +1,70 @@
+{
+  "questId": 20401,
+  "questName": "Chasing the Knight's Target",
+  "startStateMachine": {
+    "startState": "end",
+    "states": [
+      {
+        "id": "end",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "This quest has no start dialogue.",
+          "choices": [
+            {
+              "text": "Ok",
+              "nextState": null
+            },
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "explainMission",
+    "states": [
+      {
+        "id": "explainMission",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Last time #bAdvanced Knight #p1103000##k was seen, he was investigating the surging increase on #rzombies#k lately on the #rhigh-grounds of El Nath#k. You should get yourself there to see if you can find any clue of what could have happened.",
+          "choices": [
+            {
+              "text": "Next",
+              "nextState": "completeQuest"
+            },
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {
+              "type": "complete_quest",
+              "params": {
+                "force": "true"
+              }
+            }
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "questId": 21729,
+  "questName": "Unknown Quest",
+  "startStateMachine": {
+    "startState": "intro",
+    "states": [
+      {
+        "id": "intro",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Okay, you should not return to #bTru#k for further details on your next steps. ... Oh wait!! I remembered something. See the #rMysterious Statue#k over there? That statue has it's origins unknwown, and there's something scribbled onto it that resembles something big, it probably is the password for the cave? #rGet the password there#k, it may help you on your journey.",
+          "choices": [
+            {"text": "Next", "nextState": "startQuest"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "startQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

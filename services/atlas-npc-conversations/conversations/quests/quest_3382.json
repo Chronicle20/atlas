@@ -1,0 +1,191 @@
+{
+  "questId": 3382,
+  "npcId": 2112000,
+  "questName": "Yulete's Reward",
+  "startStateMachine": {
+    "startState": "noStartDialogue",
+    "states": [
+      {
+        "id": "noStartDialogue",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "checkPendantReward",
+    "states": [
+      {
+        "id": "checkPendantReward",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "item", "operator": ">=", "value": "25", "referenceId": "4001159"},
+                {"type": "item", "operator": ">=", "value": "25", "referenceId": "4001160"},
+                {"type": "item", "operator": "<", "value": "1", "referenceId": "1122010", "includeEquipped": true}
+              ],
+              "nextState": "checkPendantSpace"
+            },
+            {
+              "conditions": [
+                {"type": "item", "operator": ">=", "value": "10", "referenceId": "4001159"},
+                {"type": "item", "operator": ">=", "value": "10", "referenceId": "4001160"}
+              ],
+              "nextState": "checkScrollSpace"
+            },
+            {
+              "conditions": [],
+              "nextState": "notEnoughMarbles"
+            }
+          ]
+        }
+      },
+      {
+        "id": "checkPendantSpace",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1122010"}
+              ],
+              "nextState": "awardPendant"
+            },
+            {
+              "conditions": [],
+              "nextState": "noEquipSpace"
+            }
+          ]
+        }
+      },
+      {
+        "id": "noEquipSpace",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Free a slot on your EQUIP tab before claiming a prize.",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "awardPendant",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "destroy_item", "params": {"itemId": "4001159", "quantity": "25"}},
+            {"type": "destroy_item", "params": {"itemId": "4001160", "quantity": "25"}},
+            {"type": "award_item", "params": {"itemId": "1122010", "quantity": "1"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "pendantRewardMessage"}
+          ]
+        }
+      },
+      {
+        "id": "pendantRewardMessage",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Thank you for retrieving the marbles. Accept this pendant as a token of my appreciation.",
+          "choices": [
+            {"text": "Ok", "nextState": "completeQuest"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "checkScrollSpace",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "2041212"}
+              ],
+              "nextState": "awardScroll"
+            },
+            {
+              "conditions": [],
+              "nextState": "noUseSpace"
+            }
+          ]
+        }
+      },
+      {
+        "id": "noUseSpace",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Free a slot on your USE tab before claiming a prize.",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "awardScroll",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "destroy_item", "params": {"itemId": "4001159", "quantity": "10"}},
+            {"type": "destroy_item", "params": {"itemId": "4001160", "quantity": "10"}},
+            {"type": "award_item", "params": {"itemId": "2041212", "quantity": "1"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "scrollRewardMessage"}
+          ]
+        }
+      },
+      {
+        "id": "scrollRewardMessage",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Thank you for retrieving the marbles. This rock, that I am giving to you, can be used to improve the stats on the #b#t1122010##k. Take it as a token of my appreciation and use it wisely.",
+          "choices": [
+            {"text": "Ok", "nextState": "completeQuest"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "notEnoughMarbles",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "I need at least #b10 of both #t4001159# and #t4001160##k to reward you appropriately. If you happen to come with #b25 of these#k instead, I can reward you with a valuable gear. Fare well.",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {"force": "true"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "questId": 8224,
+  "npcId": 9201100,
+  "questName": "The Fallen Woods",
+  "startStateMachine": {
+    "startState": "askAccept",
+    "states": [
+      {
+        "id": "askAccept",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendAcceptDecline",
+          "text": "Hey traveler, come here! I am Taggrin, leader of the Raven Ninja Clan. We are mercenaries currently under the payload of the New Leaf City county. Our job here is to hunt down those creatures that have been lurking around here these days. Are you interested to make a little errand for us? Of course, the pay off will be advantageous for both parties.",
+          "choices": [
+            {"text": "Accept", "nextState": "explainTask"},
+            {"text": "Decline", "nextState": "declined"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "declined",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Okay, then. See you around.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "explainTask",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Ok. I need you to hunt down #bthose fake trees#k in the forest, and collect 50 of their drops as proof that you made your part on this.",
+          "choices": [
+            {"text": "Ok", "nextState": "startQuest"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "startQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

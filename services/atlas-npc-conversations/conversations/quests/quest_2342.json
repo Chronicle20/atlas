@@ -1,0 +1,92 @@
+{
+  "questId": 2342,
+  "npcId": 1300002,
+  "questName": "Recovered Royal Seal",
+  "startStateMachine": {
+    "startState": "checkConditions",
+    "states": [
+      {
+        "id": "checkConditions",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "item", "operator": ">=", "value": "1", "referenceId": "4001318"}
+              ],
+              "nextState": null
+            },
+            {
+              "conditions": [
+                {"type": "questStatus", "operator": "=", "value": "2", "referenceId": "2331"}
+              ],
+              "nextState": "checkInventory"
+            },
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "checkInventory",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "4001318"}
+              ],
+              "nextState": "startAndCompleteQuest"
+            },
+            {
+              "conditions": [],
+              "nextState": "noInventorySpace"
+            }
+          ]
+        }
+      },
+      {
+        "id": "startAndCompleteQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}},
+            {"type": "award_item", "params": {"itemId": "4001318", "quantity": "1"}},
+            {"type": "complete_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "sealRecovered"}
+          ]
+        }
+      },
+      {
+        "id": "sealRecovered",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Looks like you forgot to pick up the #b#t4001318##k when you fought with the #bPrime Minister#k. This is very important to our kingdom, so please deliver this to my father as soon as possible.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "noInventorySpace",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Please free up one spot in your ETC inventory",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

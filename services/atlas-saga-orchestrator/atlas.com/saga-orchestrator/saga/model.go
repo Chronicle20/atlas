@@ -281,6 +281,9 @@ const (
 	StartQuest                   Action = "start_quest"
 	ApplyConsumableEffect        Action = "apply_consumable_effect"
 	SendMessage                  Action = "send_message"
+	DepositToStorage             Action = "deposit_to_storage"
+	WithdrawFromStorage          Action = "withdraw_from_storage"
+	UpdateStorageMesos           Action = "update_storage_mesos"
 	AwardFame                    Action = "award_fame"
 )
 
@@ -576,6 +579,39 @@ type SendMessagePayload struct {
 	Message     string     `json:"message"`     // The message text to display
 }
 
+// DepositToStoragePayload represents the payload required to deposit an item to account storage.
+type DepositToStoragePayload struct {
+	CharacterId   uint32    `json:"characterId"`   // CharacterId initiating the deposit
+	AccountId     uint32    `json:"accountId"`     // AccountId that owns the storage
+	WorldId       byte      `json:"worldId"`       // WorldId for the storage (storage is world-scoped)
+	Slot          int16     `json:"slot"`          // Target slot in storage
+	TemplateId    uint32    `json:"templateId"`    // Item template ID
+	ReferenceId   uint32    `json:"referenceId"`   // Reference ID for the item data (external service ID)
+	ReferenceType string    `json:"referenceType"` // Type of reference: "equipable", "consumable", "setup", "etc", "cash", "pet"
+	Expiration    time.Time `json:"expiration"`    // Item expiration time
+	Quantity      uint32    `json:"quantity"`      // Quantity (for stackables)
+	OwnerId       uint32    `json:"ownerId"`       // Owner ID (for stackables)
+	Flag          uint16    `json:"flag"`          // Item flag (for stackables)
+}
+
+// WithdrawFromStoragePayload represents the payload required to withdraw an item from account storage.
+type WithdrawFromStoragePayload struct {
+	CharacterId uint32 `json:"characterId"` // CharacterId initiating the withdrawal
+	AccountId   uint32 `json:"accountId"`   // AccountId that owns the storage
+	WorldId     byte   `json:"worldId"`     // WorldId for the storage
+	AssetId     uint32 `json:"assetId"`     // Asset ID to withdraw
+	Quantity    uint32 `json:"quantity"`    // Quantity to withdraw (0 = full withdrawal)
+}
+
+// UpdateStorageMesosPayload represents the payload required to update mesos in account storage.
+type UpdateStorageMesosPayload struct {
+	CharacterId uint32 `json:"characterId"` // CharacterId initiating the update
+	AccountId   uint32 `json:"accountId"`   // AccountId that owns the storage
+	WorldId     byte   `json:"worldId"`     // WorldId for the storage
+	Operation   string `json:"operation"`   // Operation: "SET", "ADD", "SUBTRACT"
+	Mesos       uint32 `json:"mesos"`       // Mesos amount
+}
+
 // AwardFamePayload represents the payload required to award fame to a character.
 // This is used for NPC/quest-initiated fame rewards (e.g., qm.gainFame() in scripts).
 type AwardFamePayload struct {
@@ -748,6 +784,24 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case SendMessage:
 		var payload SendMessagePayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case DepositToStorage:
+		var payload DepositToStoragePayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case WithdrawFromStorage:
+		var payload WithdrawFromStoragePayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case UpdateStorageMesos:
+		var payload UpdateStorageMesosPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

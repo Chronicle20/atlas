@@ -11,10 +11,12 @@ import (
 	"atlas-saga-orchestrator/guild"
 	"atlas-saga-orchestrator/invite"
 	character2 "atlas-saga-orchestrator/kafka/message/character"
+	storage2 "atlas-saga-orchestrator/kafka/message/storage"
 	"atlas-saga-orchestrator/monster"
 	"atlas-saga-orchestrator/pet"
 	"atlas-saga-orchestrator/quest"
 	"atlas-saga-orchestrator/skill"
+	"atlas-saga-orchestrator/storage"
 	system_message "atlas-saga-orchestrator/system_message"
 	"atlas-saga-orchestrator/validation"
 	"context"
@@ -42,6 +44,7 @@ type Handler interface {
 	WithCashshopProcessor(cashshop.Processor) Handler
 	WithSystemMessageProcessor(system_message.Processor) Handler
 	WithQuestProcessor(quest.Processor) Handler
+	WithStorageProcessor(storage.Processor) Handler
 
 	GetHandler(action Action) (ActionHandler, bool)
 
@@ -78,6 +81,9 @@ type Handler interface {
 	handleStartQuest(s Saga, st Step[any]) error
 	handleApplyConsumableEffect(s Saga, st Step[any]) error
 	handleSendMessage(s Saga, st Step[any]) error
+	handleDepositToStorage(s Saga, st Step[any]) error
+	handleWithdrawFromStorage(s Saga, st Step[any]) error
+	handleUpdateStorageMesos(s Saga, st Step[any]) error
 	handleAwardFame(s Saga, st Step[any]) error
 }
 
@@ -100,6 +106,7 @@ type HandlerImpl struct {
 	cashshopP      cashshop.Processor
 	systemMessageP system_message.Processor
 	questP         quest.Processor
+	storageP       storage.Processor
 }
 
 func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
@@ -121,6 +128,7 @@ func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
 		cashshopP:      cashshop.NewProcessor(l, ctx),
 		systemMessageP: system_message.NewProcessor(l, ctx),
 		questP:         quest.NewProcessor(l, ctx),
+		storageP:       storage.NewProcessor(l, ctx),
 	}
 }
 
@@ -386,6 +394,31 @@ func (h *HandlerImpl) WithQuestProcessor(questP quest.Processor) Handler {
 		cashshopP:      h.cashshopP,
 		systemMessageP: h.systemMessageP,
 		questP:         questP,
+		storageP:       h.storageP,
+	}
+}
+
+func (h *HandlerImpl) WithStorageProcessor(storageP storage.Processor) Handler {
+	return &HandlerImpl{
+		l:              h.l,
+		ctx:            h.ctx,
+		t:              h.t,
+		charP:          h.charP,
+		compP:          h.compP,
+		skillP:         h.skillP,
+		validP:         h.validP,
+		guildP:         h.guildP,
+		inviteP:        h.inviteP,
+		buddyListP:     h.buddyListP,
+		petP:           h.petP,
+		footholdP:      h.footholdP,
+		monsterP:       h.monsterP,
+		consumableP:    h.consumableP,
+		portalP:        h.portalP,
+		cashshopP:      h.cashshopP,
+		systemMessageP: h.systemMessageP,
+		questP:         h.questP,
+		storageP:       storageP,
 	}
 }
 
@@ -458,6 +491,12 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleApplyConsumableEffect, true
 	case SendMessage:
 		return h.handleSendMessage, true
+	case DepositToStorage:
+		return h.handleDepositToStorage, true
+	case WithdrawFromStorage:
+		return h.handleWithdrawFromStorage, true
+	case UpdateStorageMesos:
+		return h.handleUpdateStorageMesos, true
 	case AwardFame:
 		return h.handleAwardFame, true
 	}
@@ -1079,6 +1118,63 @@ func (h *HandlerImpl) handleSendMessage(s Saga, st Step[any]) error {
 	err := h.systemMessageP.SendMessage(s.TransactionId, byte(payload.WorldId), byte(payload.ChannelId), payload.CharacterId, payload.MessageType, payload.Message)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to send message.")
+		return err
+	}
+
+	return nil
+}
+
+// handleDepositToStorage handles the DepositToStorage action
+// This deposits an item into account storage
+func (h *HandlerImpl) handleDepositToStorage(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(DepositToStoragePayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	refData := storage2.ReferenceData{
+		Quantity: payload.Quantity,
+		OwnerId:  payload.OwnerId,
+		Flag:     payload.Flag,
+	}
+
+	err := h.storageP.DepositAndEmit(s.TransactionId, payload.WorldId, payload.AccountId, payload.Slot, payload.TemplateId, payload.Expiration, payload.ReferenceId, payload.ReferenceType, refData)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to deposit to storage.")
+		return err
+	}
+
+	return nil
+}
+
+// handleWithdrawFromStorage handles the WithdrawFromStorage action
+// This withdraws an item from account storage
+func (h *HandlerImpl) handleWithdrawFromStorage(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(WithdrawFromStoragePayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.storageP.WithdrawAndEmit(s.TransactionId, payload.WorldId, payload.AccountId, payload.AssetId, payload.Quantity)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to withdraw from storage.")
+		return err
+	}
+
+	return nil
+}
+
+// handleUpdateStorageMesos handles the UpdateStorageMesos action
+// This updates the mesos in account storage
+func (h *HandlerImpl) handleUpdateStorageMesos(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(UpdateStorageMesosPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.storageP.UpdateMesosAndEmit(s.TransactionId, payload.WorldId, payload.AccountId, payload.Mesos, payload.Operation)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to update storage mesos.")
 		return err
 	}
 

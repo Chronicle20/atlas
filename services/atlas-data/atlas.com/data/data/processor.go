@@ -44,9 +44,10 @@ const (
 	WorkerSetup             = "SETUP"
 	WorkerCharacterCreation = "CHARACTER_CREATION"
 	WorkerQuest             = "QUEST"
+	WorkerNPC               = "NPC"
 )
 
-var Workers = []string{WorkerMap, WorkerMonster, WorkerCharacter, WorkerReactor, WorkerSkill, WorkerPet, WorkerConsume, WorkerCash, WorkerCommodity, WorkerEtc, WorkerSetup, WorkerCharacterCreation, WorkerQuest}
+var Workers = []string{WorkerMap, WorkerMonster, WorkerCharacter, WorkerReactor, WorkerSkill, WorkerPet, WorkerConsume, WorkerCash, WorkerCommodity, WorkerEtc, WorkerSetup, WorkerCharacterCreation, WorkerQuest, WorkerNPC}
 
 func ProcessZip(l logrus.FieldLogger) func(ctx context.Context) func(file multipart.File, handler *multipart.FileHeader) error {
 	return func(ctx context.Context) func(file multipart.File, handler *multipart.FileHeader) error {
@@ -189,6 +190,10 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 					err = RegisterFileData(l)(ctx)(path, filepath.Join("Etc.wz", "MakeCharInfo.img.xml"), templates.RegisterCharacterTemplate(db))()
 				} else if name == WorkerQuest {
 					err = quest.RegisterQuest(db)(l)(ctx)(filepath.Join(path, "Quest.wz"))
+				} else if name == WorkerNPC {
+					_ = npc.InitString(t, filepath.Join(path, "String.wz", "Npc.img.xml"))
+					err = RegisterAllData(l)(ctx)(path, "Npc.wz", npc.RegisterNpc(db))()
+					_ = npc.GetNpcStringRegistry().Clear(t)
 				}
 				if err != nil {
 					l.WithError(err).Errorf("Worker [%s] failed with error.", name)

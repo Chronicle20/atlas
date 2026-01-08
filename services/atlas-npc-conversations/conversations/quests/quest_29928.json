@@ -1,0 +1,166 @@
+{
+  "questId": 29928,
+  "questName": "Aran High Level Reward",
+  "startStateMachine": {
+    "startState": "checkEligibility",
+    "states": [
+      {
+        "id": "checkEligibility",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {
+                  "type": "inventorySpace",
+                  "operator": ">=",
+                  "value": "1",
+                  "referenceId": "1142133"
+                },
+                {
+                  "type": "item",
+                  "operator": "<",
+                  "value": "1",
+                  "referenceId": "1142133"
+                },
+                {
+                  "type": "level",
+                  "operator": ">=",
+                  "value": "200"
+                },
+                {
+                  "type": "jobId",
+                  "operator": ">=",
+                  "value": "2100"
+                },
+                {
+                  "type": "jobId",
+                  "operator": "<=",
+                  "value": "2199"
+                }
+              ],
+              "nextState": "awardReward"
+            },
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "awardReward",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {
+              "type": "award_item",
+              "params": {
+                "itemId": "1142133",
+                "quantity": "1"
+              }
+            },
+            {
+              "type": "start_quest",
+              "params": {}
+            },
+            {
+              "type": "complete_quest",
+              "params": {
+                "force": "true"
+              }
+            }
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "checkEligibility",
+    "states": [
+      {
+        "id": "checkEligibility",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {
+                  "type": "inventorySpace",
+                  "operator": ">=",
+                  "value": "1",
+                  "referenceId": "1142133"
+                },
+                {
+                  "type": "item",
+                  "operator": "<",
+                  "value": "1",
+                  "referenceId": "1142133"
+                },
+                {
+                  "type": "level",
+                  "operator": ">=",
+                  "value": "200"
+                },
+                {
+                  "type": "jobId",
+                  "operator": ">=",
+                  "value": "2100"
+                },
+                {
+                  "type": "jobId",
+                  "operator": "<=",
+                  "value": "2199"
+                }
+              ],
+              "nextState": "awardReward"
+            },
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "awardReward",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {
+              "type": "award_item",
+              "params": {
+                "itemId": "1142133",
+                "quantity": "1"
+              }
+            },
+            {
+              "type": "start_quest",
+              "params": {}
+            },
+            {
+              "type": "complete_quest",
+              "params": {
+                "force": "true"
+              }
+            }
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

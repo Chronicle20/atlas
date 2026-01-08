@@ -1,0 +1,156 @@
+{
+  "questId": 29909,
+  "startStateMachine": {
+    "startState": "checkCygnus4thJob",
+    "states": [
+      {
+        "id": "checkCygnus4thJob",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "jobId", "operator": "=", "value": "1112"}
+              ],
+              "nextState": "startQuest"
+            },
+            {
+              "conditions": [
+                {"type": "jobId", "operator": "=", "value": "1212"}
+              ],
+              "nextState": "startQuest"
+            },
+            {
+              "conditions": [
+                {"type": "jobId", "operator": "=", "value": "1312"}
+              ],
+              "nextState": "startQuest"
+            },
+            {
+              "conditions": [
+                {"type": "jobId", "operator": "=", "value": "1412"}
+              ],
+              "nextState": "startQuest"
+            },
+            {
+              "conditions": [
+                {"type": "jobId", "operator": "=", "value": "1512"}
+              ],
+              "nextState": "startQuest"
+            },
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "startQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {
+              "type": "start_quest",
+              "params": {}
+            }
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "checkCygnus4thJobEnd",
+    "states": [
+      {
+        "id": "checkCygnus4thJobEnd",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "jobId", "operator": "=", "value": "1112"},
+                {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1142069"},
+                {"type": "item", "operator": "<", "value": "1", "referenceId": "1142069"}
+              ],
+              "nextState": "awardReward"
+            },
+            {
+              "conditions": [
+                {"type": "jobId", "operator": "=", "value": "1212"},
+                {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1142069"},
+                {"type": "item", "operator": "<", "value": "1", "referenceId": "1142069"}
+              ],
+              "nextState": "awardReward"
+            },
+            {
+              "conditions": [
+                {"type": "jobId", "operator": "=", "value": "1312"},
+                {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1142069"},
+                {"type": "item", "operator": "<", "value": "1", "referenceId": "1142069"}
+              ],
+              "nextState": "awardReward"
+            },
+            {
+              "conditions": [
+                {"type": "jobId", "operator": "=", "value": "1412"},
+                {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1142069"},
+                {"type": "item", "operator": "<", "value": "1", "referenceId": "1142069"}
+              ],
+              "nextState": "awardReward"
+            },
+            {
+              "conditions": [
+                {"type": "jobId", "operator": "=", "value": "1512"},
+                {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1142069"},
+                {"type": "item", "operator": "<", "value": "1", "referenceId": "1142069"}
+              ],
+              "nextState": "awardReward"
+            },
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "awardReward",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {
+              "type": "award_item",
+              "params": {
+                "itemId": "1142069",
+                "quantity": "1"
+              }
+            },
+            {
+              "type": "start_quest",
+              "params": {}
+            },
+            {
+              "type": "complete_quest",
+              "params": {}
+            }
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

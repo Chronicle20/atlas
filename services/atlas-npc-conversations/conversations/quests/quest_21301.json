@@ -1,0 +1,119 @@
+{
+  "questId": 21301,
+  "npcId": 1201002,
+  "questName": "Maha - Lost Red Jade",
+  "endStateMachine": {
+    "startState": "dialogue1",
+    "states": [
+      {
+        "id": "dialogue1",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Did you manage to slay #o9001013#? Hahaha... you're my master, indeed. Okay, now give me the Red Jade that you found there. I'll have to put it back on the body, and... wait, why aren't you saying a word? Don't tell me... that you didn't bring that back!",
+          "choices": [
+            {"text": "Next", "nextState": "dialogue2"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "dialogue2",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "What?! You really didn't bring back the Red Jade? Why? Did you just completely forget it? Ahh... even with the curse of the Black Mage, and the amount of time that has passed and all, never did I think my master would turn out to be stupid...",
+          "choices": [
+            {"text": "Previous", "nextState": "dialogue1"},
+            {"text": "Next", "nextState": "dialogue3"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "dialogue3",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "No, no, I can't let this put me in despair. This is when I should remain calm and in control, unlike my master...\r\noosah...",
+          "choices": [
+            {"text": "Previous", "nextState": "dialogue2"},
+            {"text": "Next", "nextState": "dialogue4"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "dialogue4",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "Even if you go back there now, the thief probably made its way out of there. This means you'll have to make the Red Jade anew. You've made one before, so you do remember the materials required to make one, right? Now go...",
+          "choices": [
+            {"text": "Previous", "nextState": "dialogue3"},
+            {"text": "Next", "nextState": "dialogue5"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "dialogue5",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "\r\n\r\n\r\nTHIS GUY HAS DEFINITELY LOST ALL MEMORIES!",
+          "choices": [
+            {"text": "Previous", "nextState": "dialogue4"},
+            {"text": "Next", "nextState": "dialogue6"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "dialogue6",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "...No hope, no dreams... Nooooo!!",
+          "choices": [
+            {"text": "Previous", "nextState": "dialogue5"},
+            {"text": "Next", "nextState": "completeQuest"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {
+              "type": "complete_quest",
+              "params": {}
+            }
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": "dialogue7"
+            }
+          ]
+        }
+      },
+      {
+        "id": "dialogue7",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "#b(Maha is beginning to really get hysterical. I better leave right this minute. Maybe Lilin can do something about it.)",
+          "speaker": "CHARACTER_LEFT",
+          "choices": [
+            {"text": "Previous", "nextState": "dialogue6"},
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

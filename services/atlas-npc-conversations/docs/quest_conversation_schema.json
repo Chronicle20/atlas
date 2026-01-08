@@ -130,6 +130,18 @@
           "type": "string",
           "description": "Text content of the dialogue. Supports context references like {context.characterName}"
         },
+        "speaker": {
+          "type": "string",
+          "description": "Optional speaker override. Defaults to NPC_LEFT if not specified.",
+          "enum": [
+            "NPC_LEFT",
+            "NPC_RIGHT",
+            "CHARACTER_LEFT",
+            "CHARACTER_RIGHT",
+            "UNKNOWN",
+            "UNKNOWN2"
+          ]
+        },
         "choices": {
           "type": "array",
           "description": "Available choices for the player",

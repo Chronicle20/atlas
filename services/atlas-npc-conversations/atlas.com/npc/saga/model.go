@@ -136,8 +136,9 @@ type AwardItemActionPayload struct {
 
 // ItemPayload represents an individual item in a transaction, such as in inventory manipulation.
 type ItemPayload struct {
-	TemplateId uint32 `json:"templateId"` // TemplateId of the item
-	Quantity   uint32 `json:"quantity"`   // Quantity of the item
+	TemplateId uint32    `json:"templateId"`           // TemplateId of the item
+	Quantity   uint32    `json:"quantity"`             // Quantity of the item
+	Expiration time.Time `json:"expiration,omitempty"` // Expiration time for the item (zero value = no expiration)
 }
 
 // WarpToRandomPortalPayload represents the payload required to warp to a random portal within a specific field.

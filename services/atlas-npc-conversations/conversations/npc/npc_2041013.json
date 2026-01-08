@@ -41,7 +41,7 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 5153002
+                "referenceId": "5153002"
               }
             ],
             "nextState": "applySkin"

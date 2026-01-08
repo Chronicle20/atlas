@@ -14,7 +14,7 @@
                 "type": "questStatus",
                 "operator": "<",
                 "value": "3",
-                "referenceId": 3718
+                "referenceId": "3718"
               }
             ],
             "nextState": "notActivated"
@@ -50,7 +50,7 @@
                 "type": "questStatus",
                 "operator": "<",
                 "value": "3",
-                "referenceId": 3719
+                "referenceId": "3719"
               }
             ],
             "nextState": "proveValor"
@@ -86,7 +86,7 @@
                 "type": "questStatus",
                 "operator": "<",
                 "value": "3",
-                "referenceId": 3724
+                "referenceId": "3724"
               }
             ],
             "nextState": "selectDestination1"
@@ -125,7 +125,7 @@
                 "type": "questStatus",
                 "operator": "<",
                 "value": "3",
-                "referenceId": 3730
+                "referenceId": "3730"
               }
             ],
             "nextState": "selectDestination2"
@@ -169,7 +169,7 @@
                 "type": "questStatus",
                 "operator": "<",
                 "value": "3",
-                "referenceId": 3736
+                "referenceId": "3736"
               }
             ],
             "nextState": "selectDestination3"
@@ -218,7 +218,7 @@
                 "type": "questStatus",
                 "operator": "<",
                 "value": "3",
-                "referenceId": 3742
+                "referenceId": "3742"
               }
             ],
             "nextState": "selectDestination4"
@@ -272,7 +272,7 @@
                 "type": "questStatus",
                 "operator": "<",
                 "value": "3",
-                "referenceId": 3748
+                "referenceId": "3748"
               }
             ],
             "nextState": "selectDestination5"

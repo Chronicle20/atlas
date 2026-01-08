@@ -36,7 +36,7 @@
           {
             "conditions": [
               {"type": "meso", "operator": ">=", "value": "30000"},
-              {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": 4031045}
+              {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "4031045"}
             ],
             "nextState": "giveTicket"
           },

@@ -44,6 +44,7 @@ func Create(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID) func(storageI
 		e := Entity{
 			TenantId:      tenantId,
 			StorageId:     storageId,
+			InventoryType: InventoryTypeFromTemplateId(templateId),
 			Slot:          slot,
 			TemplateId:    templateId,
 			Expiration:    expiration,

@@ -7,10 +7,12 @@ import (
 
 const (
 	EnvCommandTopic            = "COMMAND_TOPIC_STORAGE"
+	EnvShowStorageCommandTopic = "COMMAND_TOPIC_STORAGE_SHOW"
 	CommandTypeDeposit         = "DEPOSIT"
 	CommandTypeWithdraw        = "WITHDRAW"
 	CommandTypeUpdateMesos     = "UPDATE_MESOS"
 	CommandTypeDepositRollback = "DEPOSIT_ROLLBACK"
+	CommandTypeShowStorage     = "SHOW_STORAGE"
 )
 
 type Command[E any] struct {
@@ -92,4 +94,15 @@ type WithdrawnEventBody struct {
 type MesosUpdatedEventBody struct {
 	OldMesos uint32 `json:"oldMesos"`
 	NewMesos uint32 `json:"newMesos"`
+}
+
+// ShowStorageCommand is sent to the channel service to display storage UI
+type ShowStorageCommand struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	WorldId       byte      `json:"worldId"`
+	ChannelId     byte      `json:"channelId"`
+	CharacterId   uint32    `json:"characterId"`
+	NpcId         uint32    `json:"npcId"`
+	AccountId     uint32    `json:"accountId"`
+	Type          string    `json:"type"`
 }

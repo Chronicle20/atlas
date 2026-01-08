@@ -10,6 +10,7 @@ type Entity struct {
 	TenantId      uuid.UUID     `gorm:"not null;index:idx_asset_tenant_storage"`
 	Id            uint32        `gorm:"primaryKey;autoIncrement"`
 	StorageId     uuid.UUID     `gorm:"not null;index:idx_asset_tenant_storage"`
+	InventoryType InventoryType `gorm:"not null;default:4"`
 	Slot          int16         `gorm:"not null"`
 	TemplateId    uint32        `gorm:"not null"`
 	Expiration    time.Time     `gorm:"not null"`
@@ -30,6 +31,7 @@ func Make(e Entity) Model[any] {
 	return NewModelBuilder[any]().
 		SetId(e.Id).
 		SetStorageId(e.StorageId).
+		SetInventoryType(e.InventoryType).
 		SetSlot(e.Slot).
 		SetTemplateId(e.TemplateId).
 		SetExpiration(e.Expiration).

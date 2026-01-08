@@ -17,9 +17,21 @@ const (
 	ReferenceTypePet           = ReferenceType("pet")
 )
 
+// InventoryType represents the inventory category for the asset
+type InventoryType byte
+
+const (
+	InventoryTypeEquip InventoryType = 1
+	InventoryTypeUse   InventoryType = 2
+	InventoryTypeSetup InventoryType = 3
+	InventoryTypeEtc   InventoryType = 4
+	InventoryTypeCash  InventoryType = 5
+)
+
 type Model[E any] struct {
 	id            uint32
 	compartmentId uuid.UUID
+	inventoryType InventoryType
 	slot          int16
 	templateId    uint32
 	expiration    time.Time
@@ -30,6 +42,10 @@ type Model[E any] struct {
 
 func (m Model[E]) Id() uint32 {
 	return m.id
+}
+
+func (m Model[E]) InventoryType() InventoryType {
+	return m.inventoryType
 }
 
 func (m Model[E]) Slot() int16 {
@@ -108,6 +124,7 @@ func Clone[E any](m Model[E]) *ModelBuilder[E] {
 	return &ModelBuilder[E]{
 		id:            m.id,
 		compartmentId: m.compartmentId,
+		inventoryType: m.inventoryType,
 		slot:          m.slot,
 		templateId:    m.templateId,
 		expiration:    m.expiration,
@@ -120,6 +137,7 @@ func Clone[E any](m Model[E]) *ModelBuilder[E] {
 type ModelBuilder[E any] struct {
 	id            uint32
 	compartmentId uuid.UUID
+	inventoryType InventoryType
 	slot          int16
 	templateId    uint32
 	expiration    time.Time
@@ -138,6 +156,11 @@ func NewBuilder[E any](id uint32, compartmentId uuid.UUID, templateId uint32, re
 		referenceId:   referenceId,
 		referenceType: referenceType,
 	}
+}
+
+func (b *ModelBuilder[E]) SetInventoryType(inventoryType InventoryType) *ModelBuilder[E] {
+	b.inventoryType = inventoryType
+	return b
 }
 
 func (b *ModelBuilder[E]) SetSlot(slot int16) *ModelBuilder[E] {
@@ -159,6 +182,7 @@ func (b *ModelBuilder[E]) Build() Model[E] {
 	return Model[E]{
 		id:            b.id,
 		compartmentId: b.compartmentId,
+		inventoryType: b.inventoryType,
 		slot:          b.slot,
 		templateId:    b.templateId,
 		expiration:    b.expiration,

@@ -443,7 +443,7 @@ func TestHandleAwardAsset(t *testing.T) {
 			_, ctx := setupContext()
 
 			// Configure mock
-			compP.RequestCreateItemFunc = func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32) error {
+			compP.RequestCreateItemFunc = func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time) error {
 				// Verify parameters
 				assert.Equal(t, tt.payload.CharacterId, characterId)
 				assert.Equal(t, tt.payload.Item.TemplateId, templateId)
@@ -531,7 +531,7 @@ func TestHandleAwardInventory(t *testing.T) {
 			_, ctx := setupContext()
 
 			// Configure mock
-			compP.RequestCreateItemFunc = func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32) error {
+			compP.RequestCreateItemFunc = func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time) error {
 				// Verify parameters
 				assert.Equal(t, tt.payload.CharacterId, characterId)
 				assert.Equal(t, tt.payload.Item.TemplateId, templateId)

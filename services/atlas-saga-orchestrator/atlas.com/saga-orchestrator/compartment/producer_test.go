@@ -80,7 +80,7 @@ func TestRequestCreateAssetCommandProvider(t *testing.T) {
 	inventoryType := inventory.Type(1)
 
 	t.Run("creates valid Kafka message", func(t *testing.T) {
-		provider := RequestCreateAssetCommandProvider(transactionId, characterId, inventoryType, templateId, quantity)
+		provider := RequestCreateAssetCommandProvider(transactionId, characterId, inventoryType, templateId, quantity, time.Time{})
 		require.NotNil(t, provider)
 
 		messages, err := provider()
@@ -110,7 +110,7 @@ func TestRequestCreateAssetCommandProvider(t *testing.T) {
 	})
 
 	t.Run("handles zero quantity", func(t *testing.T) {
-		provider := RequestCreateAssetCommandProvider(transactionId, characterId, inventoryType, templateId, 0)
+		provider := RequestCreateAssetCommandProvider(transactionId, characterId, inventoryType, templateId, 0, time.Time{})
 		messages, err := provider()
 		require.NoError(t, err)
 		require.Len(t, messages, 1)
@@ -123,7 +123,7 @@ func TestRequestCreateAssetCommandProvider(t *testing.T) {
 
 	t.Run("handles maximum quantity", func(t *testing.T) {
 		maxQuantity := uint32(4294967295) // max uint32
-		provider := RequestCreateAssetCommandProvider(transactionId, characterId, inventoryType, templateId, maxQuantity)
+		provider := RequestCreateAssetCommandProvider(transactionId, characterId, inventoryType, templateId, maxQuantity, time.Time{})
 		messages, err := provider()
 		require.NoError(t, err)
 		require.Len(t, messages, 1)
@@ -232,7 +232,7 @@ func TestMessageKeyGeneration(t *testing.T) {
 		characterId := uint32(12345)
 		
 		// Create multiple messages for same character
-		provider1 := RequestCreateAssetCommandProvider(uuid.New(), characterId, inventory.Type(1), 1302000, 1)
+		provider1 := RequestCreateAssetCommandProvider(uuid.New(), characterId, inventory.Type(1), 1302000, 1, time.Time{})
 		provider2 := RequestEquipAssetCommandProvider(uuid.New(), characterId, 1, 5, -1)
 
 		messages1, err1 := provider1()
@@ -252,8 +252,8 @@ func TestMessageKeyGeneration(t *testing.T) {
 		char1 := uint32(12345)
 		char2 := uint32(67890)
 
-		provider1 := RequestCreateAssetCommandProvider(uuid.New(), char1, inventory.Type(1), 1302000, 1)
-		provider2 := RequestCreateAssetCommandProvider(uuid.New(), char2, inventory.Type(1), 1302000, 1)
+		provider1 := RequestCreateAssetCommandProvider(uuid.New(), char1, inventory.Type(1), 1302000, 1, time.Time{})
+		provider2 := RequestCreateAssetCommandProvider(uuid.New(), char2, inventory.Type(1), 1302000, 1, time.Time{})
 
 		messages1, err1 := provider1()
 		require.NoError(t, err1)
@@ -274,7 +274,7 @@ func TestCommandTimestampValidation(t *testing.T) {
 		quantity := uint32(1)
 
 		beforeTime := time.Now()
-		provider := RequestCreateAssetCommandProvider(transactionId, characterId, inventory.Type(1), templateId, quantity)
+		provider := RequestCreateAssetCommandProvider(transactionId, characterId, inventory.Type(1), templateId, quantity, time.Time{})
 		messages, err := provider()
 		afterTime := time.Now()
 

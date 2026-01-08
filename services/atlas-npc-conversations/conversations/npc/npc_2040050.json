@@ -194,11 +194,11 @@
         "outcomes": [
           {
             "conditions": [
-              {"type": "item", "operator": ">=", "value": "20", "referenceId": 4000046},
-              {"type": "item", "operator": ">=", "value": "20", "referenceId": 4000027},
-              {"type": "item", "operator": ">=", "value": "1", "referenceId": 4021001},
+              {"type": "item", "operator": ">=", "value": "20", "referenceId": "4000046"},
+              {"type": "item", "operator": ">=", "value": "20", "referenceId": "4000027"},
+              {"type": "item", "operator": ">=", "value": "1", "referenceId": "4021001"},
               {"type": "meso", "operator": ">=", "value": "4000"},
-              {"type": "inventorySpace", "operator": ">=", "value": "5", "referenceId": 4006000}
+              {"type": "inventorySpace", "operator": ">=", "value": "5", "referenceId": "4006000"}
             ],
             "nextState": "performCraftMagic1"
           },
@@ -217,11 +217,11 @@
         "outcomes": [
           {
             "conditions": [
-              {"type": "item", "operator": ">=", "value": "20", "referenceId": 4000025},
-              {"type": "item", "operator": ">=", "value": "20", "referenceId": 4000049},
-              {"type": "item", "operator": ">=", "value": "1", "referenceId": 4021006},
+              {"type": "item", "operator": ">=", "value": "20", "referenceId": "4000025"},
+              {"type": "item", "operator": ">=", "value": "20", "referenceId": "4000049"},
+              {"type": "item", "operator": ">=", "value": "1", "referenceId": "4021006"},
               {"type": "meso", "operator": ">=", "value": "4000"},
-              {"type": "inventorySpace", "operator": ">=", "value": "5", "referenceId": 4006000}
+              {"type": "inventorySpace", "operator": ">=", "value": "5", "referenceId": "4006000"}
             ],
             "nextState": "performCraftMagic2"
           },
@@ -240,11 +240,11 @@
         "outcomes": [
           {
             "conditions": [
-              {"type": "item", "operator": ">=", "value": "15", "referenceId": 4000129},
-              {"type": "item", "operator": ">=", "value": "15", "referenceId": 4000130},
-              {"type": "item", "operator": ">=", "value": "1", "referenceId": 4021002},
+              {"type": "item", "operator": ">=", "value": "15", "referenceId": "4000129"},
+              {"type": "item", "operator": ">=", "value": "15", "referenceId": "4000130"},
+              {"type": "item", "operator": ">=", "value": "1", "referenceId": "4021002"},
               {"type": "meso", "operator": ">=", "value": "4000"},
-              {"type": "inventorySpace", "operator": ">=", "value": "5", "referenceId": 4006000}
+              {"type": "inventorySpace", "operator": ">=", "value": "5", "referenceId": "4006000"}
             ],
             "nextState": "performCraftMagic3"
           },
@@ -263,11 +263,11 @@
         "outcomes": [
           {
             "conditions": [
-              {"type": "item", "operator": ">=", "value": "15", "referenceId": 4000074},
-              {"type": "item", "operator": ">=", "value": "15", "referenceId": 4000057},
-              {"type": "item", "operator": ">=", "value": "1", "referenceId": 4021005},
+              {"type": "item", "operator": ">=", "value": "15", "referenceId": "4000074"},
+              {"type": "item", "operator": ">=", "value": "15", "referenceId": "4000057"},
+              {"type": "item", "operator": ">=", "value": "1", "referenceId": "4021005"},
               {"type": "meso", "operator": ">=", "value": "4000"},
-              {"type": "inventorySpace", "operator": ">=", "value": "5", "referenceId": 4006000}
+              {"type": "inventorySpace", "operator": ">=", "value": "5", "referenceId": "4006000"}
             ],
             "nextState": "performCraftMagic4"
           },
@@ -286,11 +286,11 @@
         "outcomes": [
           {
             "conditions": [
-              {"type": "item", "operator": ">=", "value": "7", "referenceId": 4000054},
-              {"type": "item", "operator": ">=", "value": "7", "referenceId": 4000053},
-              {"type": "item", "operator": ">=", "value": "1", "referenceId": 4021003},
+              {"type": "item", "operator": ">=", "value": "7", "referenceId": "4000054"},
+              {"type": "item", "operator": ">=", "value": "7", "referenceId": "4000053"},
+              {"type": "item", "operator": ">=", "value": "1", "referenceId": "4021003"},
               {"type": "meso", "operator": ">=", "value": "4000"},
-              {"type": "inventorySpace", "operator": ">=", "value": "5", "referenceId": 4006000}
+              {"type": "inventorySpace", "operator": ">=", "value": "5", "referenceId": "4006000"}
             ],
             "nextState": "performCraftMagic5"
           },
@@ -309,11 +309,11 @@
         "outcomes": [
           {
             "conditions": [
-              {"type": "item", "operator": ">=", "value": "20", "referenceId": 4000046},
-              {"type": "item", "operator": ">=", "value": "20", "referenceId": 4000027},
-              {"type": "item", "operator": ">=", "value": "1", "referenceId": 4011001},
+              {"type": "item", "operator": ">=", "value": "20", "referenceId": "4000046"},
+              {"type": "item", "operator": ">=", "value": "20", "referenceId": "4000027"},
+              {"type": "item", "operator": ">=", "value": "1", "referenceId": "4011001"},
               {"type": "meso", "operator": ">=", "value": "4000"},
-              {"type": "inventorySpace", "operator": ">=", "value": "5", "referenceId": 4006001}
+              {"type": "inventorySpace", "operator": ">=", "value": "5", "referenceId": "4006001"}
             ],
             "nextState": "performCraftSummoning1"
           },
@@ -332,11 +332,11 @@
         "outcomes": [
           {
             "conditions": [
-              {"type": "item", "operator": ">=", "value": "20", "referenceId": 4000014},
-              {"type": "item", "operator": ">=", "value": "20", "referenceId": 4000049},
-              {"type": "item", "operator": ">=", "value": "1", "referenceId": 4011003},
+              {"type": "item", "operator": ">=", "value": "20", "referenceId": "4000014"},
+              {"type": "item", "operator": ">=", "value": "20", "referenceId": "4000049"},
+              {"type": "item", "operator": ">=", "value": "1", "referenceId": "4011003"},
               {"type": "meso", "operator": ">=", "value": "4000"},
-              {"type": "inventorySpace", "operator": ">=", "value": "5", "referenceId": 4006001}
+              {"type": "inventorySpace", "operator": ">=", "value": "5", "referenceId": "4006001"}
             ],
             "nextState": "performCraftSummoning2"
           },
@@ -355,11 +355,11 @@
         "outcomes": [
           {
             "conditions": [
-              {"type": "item", "operator": ">=", "value": "15", "referenceId": 4000132},
-              {"type": "item", "operator": ">=", "value": "15", "referenceId": 4000128},
-              {"type": "item", "operator": ">=", "value": "1", "referenceId": 4011005},
+              {"type": "item", "operator": ">=", "value": "15", "referenceId": "4000132"},
+              {"type": "item", "operator": ">=", "value": "15", "referenceId": "4000128"},
+              {"type": "item", "operator": ">=", "value": "1", "referenceId": "4011005"},
               {"type": "meso", "operator": ">=", "value": "4000"},
-              {"type": "inventorySpace", "operator": ">=", "value": "5", "referenceId": 4006001}
+              {"type": "inventorySpace", "operator": ">=", "value": "5", "referenceId": "4006001"}
             ],
             "nextState": "performCraftSummoning3"
           },
@@ -378,11 +378,11 @@
         "outcomes": [
           {
             "conditions": [
-              {"type": "item", "operator": ">=", "value": "15", "referenceId": 4000074},
-              {"type": "item", "operator": ">=", "value": "15", "referenceId": 4000069},
-              {"type": "item", "operator": ">=", "value": "1", "referenceId": 4011002},
+              {"type": "item", "operator": ">=", "value": "15", "referenceId": "4000074"},
+              {"type": "item", "operator": ">=", "value": "15", "referenceId": "4000069"},
+              {"type": "item", "operator": ">=", "value": "1", "referenceId": "4011002"},
               {"type": "meso", "operator": ">=", "value": "4000"},
-              {"type": "inventorySpace", "operator": ">=", "value": "5", "referenceId": 4006001}
+              {"type": "inventorySpace", "operator": ">=", "value": "5", "referenceId": "4006001"}
             ],
             "nextState": "performCraftSummoning4"
           },
@@ -401,11 +401,11 @@
         "outcomes": [
           {
             "conditions": [
-              {"type": "item", "operator": ">=", "value": "7", "referenceId": 4000080},
-              {"type": "item", "operator": ">=", "value": "7", "referenceId": 4000079},
-              {"type": "item", "operator": ">=", "value": "1", "referenceId": 4011004},
+              {"type": "item", "operator": ">=", "value": "7", "referenceId": "4000080"},
+              {"type": "item", "operator": ">=", "value": "7", "referenceId": "4000079"},
+              {"type": "item", "operator": ">=", "value": "1", "referenceId": "4011004"},
               {"type": "meso", "operator": ">=", "value": "4000"},
-              {"type": "inventorySpace", "operator": ">=", "value": "5", "referenceId": 4006001}
+              {"type": "inventorySpace", "operator": ">=", "value": "5", "referenceId": "4006001"}
             ],
             "nextState": "performCraftSummoning5"
           },

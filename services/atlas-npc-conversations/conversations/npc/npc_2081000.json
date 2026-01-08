@@ -140,7 +140,7 @@
         "outcomes": [
           {
             "conditions": [
-              {"type": "inventorySpace", "operator": ">=", "value": "{context.quantity}", "referenceId": 4031346}
+              {"type": "inventorySpace", "operator": ">=", "value": "{context.quantity}", "referenceId": "4031346"}
             ],
             "nextState": "performPurchase"
           },

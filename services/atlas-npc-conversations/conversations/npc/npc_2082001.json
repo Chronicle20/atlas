@@ -14,7 +14,7 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 4031045
+                "referenceId": "4031045"
               }
             ],
             "nextState": "checkFlightAvailable"
@@ -38,7 +38,7 @@
                 "type": "transportAvailable",
                 "operator": "=",
                 "value": "1",
-                "referenceId": 240000111
+                "referenceId": "240000111"
               }
             ],
             "nextState": "askBoard"
@@ -84,7 +84,7 @@
                 "type": "transportAvailable",
                 "operator": "=",
                 "value": "1",
-                "referenceId": 240000111
+                "referenceId": "240000111"
               }
             ],
             "nextState": "boardFlight"

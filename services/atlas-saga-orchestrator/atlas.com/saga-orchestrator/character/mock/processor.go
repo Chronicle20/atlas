@@ -24,6 +24,8 @@ type ProcessorMock struct {
 	AwardLevelFunc             func(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount byte) error
 	AwardMesosAndEmitFunc      func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error
 	AwardMesosFunc             func(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error
+	AwardFameAndEmitFunc       func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount int16) error
+	AwardFameFunc              func(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount int16) error
 	ChangeJobAndEmitFunc       func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, jobId job.Id) error
 	ChangeJobFunc              func(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, jobId job.Id) error
 	ChangeHairAndEmitFunc      func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, styleId uint32) error
@@ -121,6 +123,24 @@ func (m *ProcessorMock) AwardMesos(mb *message.Buffer) func(transactionId uuid.U
 		return m.AwardMesosFunc(mb)
 	}
 	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error {
+		return nil
+	}
+}
+
+// AwardFameAndEmit is a mock implementation of the character.Processor.AwardFameAndEmit method
+func (m *ProcessorMock) AwardFameAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount int16) error {
+	if m.AwardFameAndEmitFunc != nil {
+		return m.AwardFameAndEmitFunc(transactionId, worldId, characterId, channelId, amount)
+	}
+	return nil
+}
+
+// AwardFame is a mock implementation of the character.Processor.AwardFame method
+func (m *ProcessorMock) AwardFame(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount int16) error {
+	if m.AwardFameFunc != nil {
+		return m.AwardFameFunc(mb)
+	}
+	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount int16) error {
 		return nil
 	}
 }

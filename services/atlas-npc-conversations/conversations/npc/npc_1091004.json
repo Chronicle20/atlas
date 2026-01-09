@@ -1,0 +1,26 @@
+{
+  "npcId": 1091004,
+  "startState": "openStorage",
+  "states": [
+    {
+      "id": "openStorage",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "open_storage",
+            "params": {
+              "accountId": "{accountId}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

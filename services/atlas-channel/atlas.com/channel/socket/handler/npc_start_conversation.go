@@ -31,7 +31,7 @@ func NPCStartConversationHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 			}
 			return
 		}
-		err = npc.NewProcessor(l, ctx).StartConversation(s.Map(), n.Template(), s.CharacterId())
+		err = npc.NewProcessor(l, ctx).StartConversation(s.Map(), n.Template(), s.CharacterId(), s.AccountId())
 		if err != nil {
 			l.WithError(err).Errorf("Failed to send conversation start command for character [%d] and NPC [%d].", s.CharacterId(), n.Template())
 		}

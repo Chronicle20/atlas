@@ -8,6 +8,7 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
@@ -108,7 +109,7 @@ func handleMessengerCreatedStatusEvent(l logrus.FieldLogger) func(ctx context.Co
 	return func(ctx context.Context) func(wp writer.Producer) func(originatorId uint32, originatorName string) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(originatorId uint32, originatorName string) model.Operator[session.Model] {
 			return func(originatorId uint32, originatorName string) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationInviteBody(originatorName, originatorId))
+				return session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationInviteBody(l)(originatorName, originatorId))
 			}
 		}
 	}
@@ -171,7 +172,7 @@ func handleMessengerRejectedStatusEvent(l logrus.FieldLogger) func(ctx context.C
 	return func(ctx context.Context) func(wp writer.Producer) func(targetName string) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(targetName string) model.Operator[session.Model] {
 			return func(targetName string) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationInviteDeclinedBody(targetName, 0))
+				return session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationInviteDeclinedBody(l)(targetName, 0))
 			}
 		}
 	}

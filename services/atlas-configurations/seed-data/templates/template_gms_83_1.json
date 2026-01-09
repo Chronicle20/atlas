@@ -4,7 +4,8 @@
   "minorVersion": 1,
   "usesPin": false,
   "socket": {
-    "handlers": [{
+    "handlers": [
+      {
         "opCode": "0x01",
         "validator": "NoOpValidator",
         "handler": "LoginHandle"
@@ -144,7 +145,8 @@
         "validator": "LoggedInValidator",
         "handler": "CharacterMoveHandle",
         "options": {
-          "types": [{
+          "types": [
+            {
               "Name": "NORMAL",
               "Type": "NORMAL"
             },
@@ -280,6 +282,11 @@
         "handler": "CharacterChatGeneralHandle"
       },
       {
+        "opCode": "0x32",
+        "validator": "LoggedInValidator",
+        "handler": "ChalkboardCloseHandle"
+      },
+      {
         "opCode": "0x33",
         "validator": "LoggedInValidator",
         "handler": "CharacterExpressionHandle"
@@ -295,9 +302,67 @@
         "handler": "NPCContinueConversationHandle"
       },
       {
+        "opCode": "0x3D",
+        "validator": "LoggedInValidator",
+        "handler": "NPCShopHandle",
+        "options": {
+          "operations": {
+            "BUY": 0,
+            "SELL": 1,
+            "RECHARGE": 2,
+            "LEAVE": 3
+          }
+        }
+      },
+      {
+        "opCode": "0x45",
+        "validator": "LoggedInValidator",
+        "handler": "CompartmentMergeHandle"
+      },
+      {
+        "opCode": "0x46",
+        "validator": "LoggedInValidator",
+        "handler": "CompartmentSortHandle"
+      },
+      {
         "opCode": "0x47",
         "validator": "LoggedInValidator",
         "handler": "CharacterInventoryMoveHandle"
+      },
+      {
+        "opCode": "0x48",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseHandle"
+      },
+      {
+        "opCode": "0x49",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemCancelHandle"
+      },
+      {
+        "opCode": "0x4B",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseSummonBagHandle"
+      },
+      {
+        "opCode": "0x4C",
+        "validator": "LoggedInValidator",
+        "handler": "PetFoodHandle"
+      },
+      {
+        "opCode": "0x4F",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterCashItemUseHandle"
+      },
+      {
+        "opCode": "0x55",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseTownScrollHandle"
+      },
+      {
+        "opCode": "0x56",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseScrollHandle"
       },
       {
         "opCode": "0x57",
@@ -345,14 +410,43 @@
         "handler": "CharacterInfoRequestHandle"
       },
       {
+        "opCode": "0x62",
+        "validator": "LoggedInValidator",
+        "handler": "PetSpawnHandle"
+      },
+      {
         "opCode": "0x64",
         "validator": "LoggedInValidator",
         "handler": "PortalScriptHandle"
       },
       {
+        "opCode": "0x6E",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterSkillMacroHandle"
+      },
+      {
         "opCode": "0x77",
         "validator": "LoggedInValidator",
         "handler": "CharacterMultiChatHandle"
+      },
+      {
+        "opCode": "0x78",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterChatWhisperHandle"
+      },
+      {
+        "opCode": "0x7A",
+        "validator": "LoggedInValidator",
+        "handler": "MessengerOperationHandle",
+        "options": {
+          "operations": {
+            "ANSWER_INVITE": 0,
+            "CLOSE": 2,
+            "INVITE": 3,
+            "DECLINE_INVITE": 5,
+            "CHAT": 6
+          }
+        }
       },
       {
         "opCode": "0x7C",
@@ -412,6 +506,18 @@
         }
       },
       {
+        "opCode": "0x83",
+        "validator": "LoggedInValidator",
+        "handler": "NoteOperationHandle",
+        "options": {
+          "operations": {
+            "SEND": 0,
+            "DISCARD": 1,
+            "REQUEST": 2
+          }
+        }
+      },
+      {
         "opCode": "0x87",
         "validator": "LoggedInValidator",
         "handler": "CharacterKeyMapChangeHandle"
@@ -432,11 +538,138 @@
         }
       },
       {
+        "opCode": "0xA7",
+        "validator": "LoggedInValidator",
+        "handler": "PetMovementHandle",
+        "options": {
+          "types": [
+            {
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "JUMP",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMPACT",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMMEDIATE",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "TELEPORT",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "HANG_ON_BACK",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "ASSAULTER",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "ASSASSINATION",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "RUSH",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "SIT_DOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "START_WINGS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "WINGS",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "ARAN_ADJUST",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_TOSS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "DASH_SLIDE",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            }
+          ]
+        }
+      },
+      {
+        "opCode": "0xA8",
+        "validator": "LoggedInValidator",
+        "handler": "PetChatHandle"
+      },
+      {
+        "opCode": "0xA9",
+        "validator": "LoggedInValidator",
+        "handler": "PetCommandHandle"
+      },
+      {
+        "opCode": "0xAA",
+        "validator": "LoggedInValidator",
+        "handler": "PetDropPickUpHandle"
+      },
+      {
+        "opCode": "0xAB",
+        "validator": "LoggedInValidator",
+        "handler": "PetItemUseHandle"
+      },
+      {
+        "opCode": "0xAC",
+        "validator": "LoggedInValidator",
+        "handler": "PetItemExcludeHandle"
+      },
+      {
         "opCode": "0xBC",
         "validator": "LoggedInValidator",
         "handler": "MonsterMovementHandle",
         "options": {
-          "types": [{
+          "types": [
+            {
               "Name": "NORMAL",
               "Type": "NORMAL"
             },
@@ -536,7 +769,8 @@
         "validator": "LoggedInValidator",
         "handler": "NPCActionHandle",
         "options": {
-          "types": [{
+          "types": [
+            {
               "Name": "NORMAL",
               "Type": "NORMAL"
             },
@@ -630,13 +864,15 @@
             }
           ]
         }
-      }, {
+      },
+      {
         "opCode": "0xCA",
         "validator": "LoggedInValidator",
         "handler": "DropPickUpHandle"
       }
     ],
-    "writers": [{
+    "writers": [
+      {
         "opCode": "0x00",
         "writer": "AuthSuccess"
       },
@@ -806,6 +1042,10 @@
         }
       },
       {
+        "opCode": "0x10",
+        "writer": "ChannelChange"
+      },
+      {
         "opCode": "0x1A",
         "writer": "SelectWorld"
       },
@@ -816,10 +1056,6 @@
       {
         "opCode": "0x1C",
         "writer": "PicResult"
-      },
-      {
-        "opCode": "0x10",
-        "writer": "ChannelChange"
       },
       {
         "opCode": "0x1D",
@@ -905,31 +1141,37 @@
         }
       },
       {
+        "opCode": "0x29",
+        "writer": "NoteOperation",
+        "options": {
+          "operations": {
+            "SHOW": 3,
+            "SEND_SUCCESS": 4,
+            "SEND_ERROR": 5,
+            "REFRESH": 7
+          },
+          "errors": {
+            "RECEIVER_ONLINE": 0,
+            "RECEIVER_UNKNOWN": 1,
+            "RECEIVER_INBOX_FULL": 2
+          }
+        }
+      },
+      {
+        "opCode": "0x34",
+        "writer": "CompartmentMerge"
+      },
+      {
+        "opCode": "0x35",
+        "writer": "CompartmentSort"
+      },
+      {
         "opCode": "0x3B",
         "writer": "GuildBBS"
       },
       {
         "opCode": "0x3D",
         "writer": "CharacterInfo"
-      },
-      {
-        "opCode": "0x3F",
-        "writer": "BuddyOperation",
-        "options": {
-          "operations": {
-            "UPDATE": "0x07",
-            "BUDDY_UPDATE": "0x08",
-            "INVITE": "0x09",
-            "BUDDY_LIST_FULL": "0x0B",
-            "OTHER_BUDDY_LIST_FULL": "0x0C",
-            "ALREADY_BUDDY": "0x0D",
-            "CANNOT_BUDDY_GM": "0x0E",
-            "CHARACTER_NOT_FOUND": "0x0F",
-            "UNKNOWN_ERROR": "0x10",
-            "BUDDY_CHANNEL_CHANGE": "0x14",
-            "CAPACITY_CHANGE": "0x15"
-          }
-        }
       },
       {
         "opCode": "0x3E",
@@ -959,6 +1201,30 @@
             "YOU_MAY_ONLY_CHANGE_WITH_THE_PARTY_MEMBER_THATS_ON_THE_SAME_CHANNEL": "0x1E",
             "AS_A_GM_YOURE_FORBIDDEN_FROM_CREATING_A_PARTY": "0x20",
             "UNABLE_TO_FIND_THE_CHARACTER": "0x21"
+          }
+        }
+      },
+      {
+        "opCode": "0x3F",
+        "writer": "BuddyOperation",
+        "options": {
+          "operations": {
+            "UPDATE": "0x07",
+            "BUDDY_UPDATE": "0x08",
+            "INVITE": "0x09",
+            "UNKNOWN_1": "0xA",
+            "BUDDY_LIST_FULL": "0x0B",
+            "OTHER_BUDDY_LIST_FULL": "0x0C",
+            "ALREADY_BUDDY": "0x0D",
+            "CANNOT_BUDDY_GM": "0x0E",
+            "CHARACTER_NOT_FOUND": "0x0F",
+            "UNKNOWN_ERROR": "0x10",
+            "UNKNOWN_ERROR_2": "0x11",
+            "UNKNOWN_2": "0x12",
+            "UNKNOWN_ERROR_3": "0x13",
+            "BUDDY_CHANNEL_CHANGE": "0x14",
+            "CAPACITY_CHANGE": "0x15",
+            "UNKNOWN_ERROR_4": "0x16"
           }
         }
       },
@@ -1006,6 +1272,41 @@
         }
       },
       {
+        "opCode": "0x44",
+        "writer": "WorldMessage",
+        "options": {
+          "operations": {
+            "NOTICE": 0,
+            "POP_UP": 1,
+            "MEGAPHONE": 2,
+            "SUPER_MEGAPHONE": 3,
+            "TOP_SCROLL": 4,
+            "PINK_TEXT": 5,
+            "BLUE_TEXT": 6,
+            "NPC":7,
+            "ITEM_MEGAPHONE": 8,
+            "YELLOW_MEGAPHONE": 9,
+            "MULTI_MEGAPHONE": 10,
+            "WEATHER": 11,
+            "GACHAPON": 12,
+            "UNKNOWN_3": 13,
+            "UNKNOWN_4": 14,
+            "CLIPBOARD_NOTICE_1": 15,
+            "CLIPBOARD_NOTICE_2": 16,
+            "UNKNOWN_7": 17,
+            "UNKNOWN_8": 18
+          }
+        }
+      },
+      {
+        "opCode": "0x4C",
+        "writer": "PetCashFoodResult"
+      },
+      {
+        "opCode": "0x7C",
+        "writer": "CharacterSkillMacro"
+      },
+      {
         "opCode": "0x7D",
         "writer": "SetField"
       },
@@ -1016,6 +1317,18 @@
       {
         "opCode": "0x86",
         "writer": "CharacterMultiChat"
+      },
+      {
+        "opCode": "0x87",
+        "writer": "CharacterChatWhisper"
+      },
+      {
+        "opCode": "0x93",
+        "writer": "Clock"
+      },
+      {
+        "opCode": "0x95",
+        "writer": "FieldTransportState"
       },
       {
         "opCode": "0xA0",
@@ -1030,10 +1343,144 @@
         "writer": "CharacterChatGeneral"
       },
       {
+        "opCode": "0xA4",
+        "writer": "ChalkboardUse"
+      },
+      {
+        "opCode": "0xA7",
+        "writer": "CharacterItemUpgrade"
+      },
+      {
+        "opCode": "0xA8",
+        "writer": "PetActivated",
+        "options": {
+          "operations": {
+            "NORMAL": 0,
+            "HUNGER": 1,
+            "EXPIRED": 2,
+            "UNKNOWN_1": 3,
+            "UNKNOWN_2": 4
+          }
+        }
+      },
+      {
+        "opCode": "0xAA",
+        "writer": "PetMovement",
+        "options": {
+          "types": [
+            {
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "JUMP",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMPACT",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMMEDIATE",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "TELEPORT",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "HANG_ON_BACK",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "ASSAULTER",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "ASSASSINATION",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "RUSH",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "SIT_DOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "START_WINGS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "WINGS",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "ARAN_ADJUST",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_TOSS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "DASH_SLIDE",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            }
+          ]
+        }
+      },
+      {
+        "opCode": "0xAB",
+        "writer": "PetChat"
+      },
+      {
+        "opCode": "0xAD",
+        "writer": "PetExcludeResponse"
+      },
+      {
+        "opCode": "0xAE",
+        "writer": "PetCommandResponse"
+      },
+      {
         "opCode": "0xB9",
         "writer": "CharacterMovement",
         "options": {
-          "types": [{
+          "types": [
+            {
               "Name": "NORMAL",
               "Type": "NORMAL"
             },
@@ -1207,6 +1654,10 @@
         "writer": "CharacterBuffCancelForeign"
       },
       {
+        "opCode": "0xC9",
+        "writer": "PartyMemberHP"
+      },
+      {
         "opCode": "0xCA",
         "writer": "GuildNameChanged"
       },
@@ -1276,7 +1727,8 @@
         "opCode": "0xEF",
         "writer": "MoveMonster",
         "options": {
-          "types": [{
+          "types": [
+            {
               "Name": "NORMAL",
               "Type": "NORMAL"
             },
@@ -1376,6 +1828,10 @@
         "writer": "MoveMonsterAck"
       },
       {
+        "opCode": "0xFA",
+        "writer": "MonsterHealth"
+      },
+      {
         "opCode": "0x101",
         "writer": "SpawnNPC"
       },
@@ -1387,7 +1843,8 @@
         "opCode": "0x104",
         "writer": "NPCAction",
         "options": {
-          "types": [{
+          "types": [
+            {
               "Name": "NORMAL",
               "Type": "NORMAL"
             },
@@ -1521,113 +1978,385 @@
         }
       },
       {
+        "opCode": "0x131",
+        "writer": "NPCShop"
+      },
+      {
+        "opCode": "0x132",
+        "writer": "NPCShopOperation",
+        "options": {
+          "operations": {
+            "OK": 0,
+            "OUT_OF_STOCK": 1,
+            "NOT_ENOUGH_MONEY": 2,
+            "INVENTORY_FULL": 3,
+            "OUT_OF_STOCK_2": 5,
+            "OUT_OF_STOCK_3": 9,
+            "NOT_ENOUGH_MONEY_2": 10,
+            "NEED_MORE_ITEMS": 13,
+            "OVER_LEVEL_REQUIREMENT": 14,
+            "UNDER_LEVEL_REQUIREMENT": 15,
+            "TRADE_LIMIT": 16,
+            "GENERIC_ERROR": 17,
+            "GENERIC_ERROR_WITH_REASON": 17
+          }
+        }
+      },
+      {
+        "opCode": "0x139",
+        "writer": "MessengerOperation",
+        "options": {
+          "operations": {
+            "ADD": 0,
+            "JOIN": 1,
+            "REMOVE": 2,
+            "REQUEST_INVITE": 3,
+            "INVITE_SENT": 4,
+            "INVITE_DECLINED": 5,
+            "CHAT": 6,
+            "UPDATE": 7
+          }
+        }
+      },
+      {
         "opCode": "0x144",
         "writer": "CashShopCashQueryResult"
       },
       {
         "opCode": "0x145",
-        "writer": "CashShopOperation"
+        "writer": "CashShopOperation",
+        "options": {
+          "operations": {
+            "LOAD_INVENTORY_SUCCESS": 75,
+            "LOAD_INVENTORY_FAILURE": 76,
+            "LOAD_WISHLIST": 79,
+            "UPDATE_WISHLIST": 85,
+            "PURCHASE_SUCCESS": 87,
+            "INVENTORY_CAPACITY_INCREASE_SUCCESS": 96,
+            "INVENTORY_CAPACITY_INCREASE_FAILED": 97,
+            "CASH_ITEM_MOVED_TO_INVENTORY": 104,
+            "CASH_ITEM_MOVED_TO_CASH_INVENTORY": 106
+          }
+        }
       },
       {
         "opCode": "0x14F",
         "writer": "CharacterKeyMap"
+      },
+      {
+        "opCode": "0x150",
+        "writer": "CharacterKeyMapAutoHp"
+      },
+      {
+        "opCode": "0x151",
+        "writer": "CharacterKeyMapAutoMp"
       }
     ]
   },
   "characters": {
-    "templates": [{
-      "jobIndex": 0,
-      "subJobIndex": 0,
-      "mapId": 130010220,
-      "gender": 0,
-      "faces": [20000, 20001, 20002],
-      "hairs": [30030, 30020, 30000],
-      "hairColors": [0, 2, 3, 7],
-      "skinColors": [0, 1, 2, 3],
-      "tops": [1040002, 1040006, 1040010],
-      "bottoms": [1060002, 1060006],
-      "shoes": [1072001, 1072005, 1072037, 1072038],
-      "weapons": [1302000, 1322005, 1312004],
-      "items": [4161047],
-      "skills": []
-    }, {
-      "jobIndex": 0,
-      "subJobIndex": 0,
-      "mapId": 130010220,
-      "gender": 1,
-      "faces": [21000, 21001, 21002],
-      "hairs": [31000, 31040, 31050],
-      "hairColors": [0, 2, 3, 7],
-      "skinColors": [0, 1, 2, 3],
-      "tops": [1041002, 1041006, 1041010, 1041011],
-      "bottoms": [1061002, 1061008],
-      "shoes": [1072001, 1072005, 1072037, 1072038],
-      "weapons": [1302000, 1322005, 1312004],
-      "items": [4161047],
-      "skills": []
-    }, {
-      "jobIndex": 1,
-      "subJobIndex": 0,
-      "mapId": 10000,
-      "gender": 0,
-      "faces": [20000, 20001, 20002],
-      "hairs": [30030, 30020, 30000],
-      "hairColors": [0, 2, 3, 7],
-      "skinColors": [0, 1, 2, 3],
-      "tops": [1040002, 1040006, 1040010],
-      "bottoms": [1060002, 1060006],
-      "shoes": [1072001, 1072005, 1072037, 1072038],
-      "weapons": [1302000, 1322005, 1312004],
-      "items": [4161001],
-      "skills": []
-    }, {
-      "jobIndex": 1,
-      "subJobIndex": 0,
-      "mapId": 10000,
-      "gender": 1,
-      "faces": [21000, 21001, 21002],
-      "hairs": [31000, 31040, 31050],
-      "hairColors": [0, 2, 3, 7],
-      "skinColors": [0, 1, 2, 3],
-      "tops": [1041002, 1041006, 1041010, 1041011],
-      "bottoms": [1061002, 1061008],
-      "shoes": [1072001, 1072005, 1072037, 1072038],
-      "weapons": [1302000, 1322005, 1312004],
-      "items": [4161001],
-      "skills": []
-    }, {
-      "jobIndex": 2,
-      "subJobIndex": 0,
-      "mapId": 140090000,
-      "gender": 0,
-      "faces": [20100, 20401, 20402],
-      "hairs": [30030, 30020, 30000],
-      "hairColors": [0, 2, 3, 7],
-      "skinColors": [0, 1, 2, 3],
-      "tops": [1042167],
-      "bottoms": [1062115],
-      "shoes": [1072383],
-      "weapons": [1442079],
-      "items": [4161048],
-      "skills": []
-    }, {
-      "jobIndex": 2,
-      "subJobIndex": 0,
-      "mapId": 140090000,
-      "gender": 1,
-      "faces": [21700, 21201, 21002],
-      "hairs": [31000, 31040, 31050],
-      "hairColors": [0, 2, 3, 7],
-      "skinColors": [0, 1, 2, 3],
-      "tops": [1042167],
-      "bottoms": [1062115],
-      "shoes": [1072383],
-      "weapons": [1442079],
-      "items": [4161048],
-      "skills": []
-    }]
+    "templates": [
+      {
+        "jobIndex": 0,
+        "subJobIndex": 0,
+        "mapId": 130010220,
+        "gender": 0,
+        "faces": [
+          20000,
+          20001,
+          20002
+        ],
+        "hairs": [
+          30030,
+          30020,
+          30000
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1040002,
+          1040006,
+          1040010
+        ],
+        "bottoms": [
+          1060002,
+          1060006
+        ],
+        "shoes": [
+          1072001,
+          1072005,
+          1072037,
+          1072038
+        ],
+        "weapons": [
+          1302000,
+          1322005,
+          1312004
+        ],
+        "items": [
+          4161047
+        ],
+        "skills": []
+      },
+      {
+        "jobIndex": 0,
+        "subJobIndex": 0,
+        "mapId": 130010220,
+        "gender": 1,
+        "faces": [
+          21000,
+          21001,
+          21002
+        ],
+        "hairs": [
+          31000,
+          31040,
+          31050
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1041002,
+          1041006,
+          1041010,
+          1041011
+        ],
+        "bottoms": [
+          1061002,
+          1061008
+        ],
+        "shoes": [
+          1072001,
+          1072005,
+          1072037,
+          1072038
+        ],
+        "weapons": [
+          1302000,
+          1322005,
+          1312004
+        ],
+        "items": [
+          4161047
+        ],
+        "skills": []
+      },
+      {
+        "jobIndex": 1,
+        "subJobIndex": 0,
+        "mapId": 10000,
+        "gender": 0,
+        "faces": [
+          20000,
+          20001,
+          20002
+        ],
+        "hairs": [
+          30030,
+          30020,
+          30000
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1040002,
+          1040006,
+          1040010
+        ],
+        "bottoms": [
+          1060002,
+          1060006
+        ],
+        "shoes": [
+          1072001,
+          1072005,
+          1072037,
+          1072038
+        ],
+        "weapons": [
+          1302000,
+          1322005,
+          1312004
+        ],
+        "items": [
+          4161001
+        ],
+        "skills": []
+      },
+      {
+        "jobIndex": 1,
+        "subJobIndex": 0,
+        "mapId": 10000,
+        "gender": 1,
+        "faces": [
+          21000,
+          21001,
+          21002
+        ],
+        "hairs": [
+          31000,
+          31040,
+          31050
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1041002,
+          1041006,
+          1041010,
+          1041011
+        ],
+        "bottoms": [
+          1061002,
+          1061008
+        ],
+        "shoes": [
+          1072001,
+          1072005,
+          1072037,
+          1072038
+        ],
+        "weapons": [
+          1302000,
+          1322005,
+          1312004
+        ],
+        "items": [
+          4161001
+        ],
+        "skills": []
+      },
+      {
+        "jobIndex": 2,
+        "subJobIndex": 0,
+        "mapId": 140090000,
+        "gender": 0,
+        "faces": [
+          20100,
+          20401,
+          20402
+        ],
+        "hairs": [
+          30030,
+          30020,
+          30000
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1042167
+        ],
+        "bottoms": [
+          1062115
+        ],
+        "shoes": [
+          1072383
+        ],
+        "weapons": [
+          1442079
+        ],
+        "items": [
+          4161048
+        ],
+        "skills": []
+      },
+      {
+        "jobIndex": 2,
+        "subJobIndex": 0,
+        "mapId": 140090000,
+        "gender": 1,
+        "faces": [
+          21700,
+          21201,
+          21002
+        ],
+        "hairs": [
+          31000,
+          31040,
+          31050
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1042167
+        ],
+        "bottoms": [
+          1062115
+        ],
+        "shoes": [
+          1072383
+        ],
+        "weapons": [
+          1442079
+        ],
+        "items": [
+          4161048
+        ],
+        "skills": []
+      }
+    ]
   },
-  "npcs": [{
+  "npcs": [
+    {
       "npcId": 1002000,
       "impl": "Phil"
     },
@@ -1664,7 +2393,8 @@
       "impl": "Lea"
     }
   ],
-  "worlds": [{
+  "worlds": [
+    {
       "name": "Scania",
       "flag": "Nothing",
       "serverMessage": "Welcome to Scania!",

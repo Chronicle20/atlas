@@ -1,0 +1,24 @@
+{
+  "npcId": 99999,
+  "recharger": true,
+  "commodities": [
+    {
+      "templateId": 2000000,
+      "mesoPrice": 100,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 2000001,
+      "mesoPrice": 200,
+      "discountRate": 10,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 50
+    }
+  ]
+}

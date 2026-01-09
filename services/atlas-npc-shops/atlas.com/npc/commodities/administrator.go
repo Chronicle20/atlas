@@ -1,6 +1,7 @@
 package commodities
 
 import (
+	"atlas-npc/database"
 	"context"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -75,4 +76,34 @@ func deleteAllCommodities(ctx context.Context, db *gorm.DB) func() error {
 		t := tenant.MustFromContext(ctx)
 		return db.Where(&Entity{TenantId: t.Id()}).Delete(&Entity{}).Error
 	}
+}
+
+// DeleteAllCommoditiesForTenant deletes all commodities for a specific tenant and returns the count
+func DeleteAllCommoditiesForTenant(db *gorm.DB, tenantId uuid.UUID) (int64, error) {
+	result := db.Unscoped().Where("tenant_id = ?", tenantId).Delete(&Entity{})
+	return result.RowsAffected, result.Error
+}
+
+// BulkCreateCommodities creates multiple commodities in a single transaction
+func BulkCreateCommodities(db *gorm.DB, tenantId uuid.UUID, npcCommodities []Model) error {
+	return database.ExecuteTransaction(db, func(tx *gorm.DB) error {
+		for _, c := range npcCommodities {
+			entity := &Entity{
+				Id:              uuid.New(),
+				TenantId:        tenantId,
+				NpcId:           c.NpcId(),
+				TemplateId:      c.TemplateId(),
+				MesoPrice:       c.MesoPrice(),
+				DiscountRate:    c.DiscountRate(),
+				TokenTemplateId: c.TokenTemplateId(),
+				TokenPrice:      c.TokenPrice(),
+				Period:          c.Period(),
+				LevelLimit:      c.LevelLimit(),
+			}
+			if err := tx.Create(entity).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }

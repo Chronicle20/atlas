@@ -504,6 +504,87 @@ Deletes all commodities associated with a specific NPC's shop.
 
 - **URL**: `/api/npcs/{npcId}/shop/relationships/commodities`
 - **Method**: DELETE
-- **URL Parameters**: 
+- **URL Parameters**:
   - `npcId` - The ID of the NPC
 - **Response**: No content (204)
+
+#### Seed Shops
+
+Seeds the database with shop data from JSON files included in the container. This operation deletes all existing shops and commodities for the tenant and creates new ones from the seed data.
+
+- **URL**: `/api/shops/seed`
+- **Method**: POST
+- **Request Body**: None
+- **Response**: JSON object containing seed operation results
+  ```json
+  {
+    "deletedShops": 50,
+    "deletedCommodities": 1500,
+    "createdShops": 99,
+    "createdCommodities": 3194,
+    "failedCount": 0
+  }
+  ```
+
+Example Request:
+```bash
+curl -X POST http://localhost:8080/api/shops/seed \
+  -H "TENANT_ID: 083839c6-c47c-42a6-9585-76492795d123" \
+  -H "REGION: GMS" \
+  -H "MAJOR_VERSION: 83" \
+  -H "MINOR_VERSION: 1"
+```
+
+## Shop Seed Data
+
+The service includes default shop data in JSON format, located in the `/shops` directory within the container. Each JSON file represents one NPC shop.
+
+### JSON File Format
+
+**Example shop file (`11000.json`):**
+```json
+{
+  "npcId": 11000,
+  "recharger": false,
+  "commodities": [
+    {
+      "templateId": 1332005,
+      "mesoPrice": 500,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    }
+  ]
+}
+```
+
+### Field Descriptions
+
+**Shop Fields:**
+- `npcId` (required): The NPC identifier
+- `recharger` (optional, default: false): Whether the shop supports recharging throwable items
+- `commodities` (required): Array of items sold in the shop
+
+**Commodity Fields:**
+- `templateId` (required): Item template ID
+- `mesoPrice` (required): Price in mesos
+- `discountRate` (optional, default: 0): Discount percentage (0-100)
+- `tokenTemplateId` (optional, default: 0): Alternative currency item ID
+- `tokenPrice` (optional, default: 0): Price in alternative currency
+- `period` (optional, default: 0): Time limit on purchase in minutes (0 = unlimited)
+- `levelLimit` (optional, default: 0): Minimum level required to purchase (0 = no limit)
+
+### JSON Schema
+
+A JSON schema is provided at `/shops/schema.json` for validating shop definition files.
+
+### Modifying Seed Data
+
+To add or modify default shop data:
+
+1. Edit or create JSON files in the `shops/` directory of the source
+2. Rebuild the Docker image
+3. Deploy the new image
+4. Call `POST /api/shops/seed` to load the updated data for each tenant

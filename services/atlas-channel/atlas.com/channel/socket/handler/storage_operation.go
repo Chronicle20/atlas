@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"atlas-channel/compartment"
 	npcTemplate "atlas-channel/data/npc/template"
 	"atlas-channel/saga"
 	"atlas-channel/session"
@@ -69,7 +68,7 @@ func getStorageNpcFees(l logrus.FieldLogger, ctx context.Context, npcId uint32) 
 	return npc.GetDepositFee(), npc.GetWithdrawFee()
 }
 
-// handleRetrieveAsset withdraws an item from storage to character inventory
+// handleRetrieveAsset withdraws an item from storage to character inventory via saga
 func handleRetrieveAsset(l logrus.FieldLogger, ctx context.Context, s session.Model, r *request.Reader) {
 	it := inventory.Type(r.ReadByte())
 	slot := r.ReadByte()
@@ -77,19 +76,6 @@ func handleRetrieveAsset(l logrus.FieldLogger, ctx context.Context, s session.Mo
 
 	// Get storage NPC fees
 	_, withdrawFee := getStorageNpcFees(l, ctx, s.StorageNpcId())
-	if withdrawFee > 0 {
-		l.Debugf("Storage withdrawal fee for NPC [%d]: %d mesos", s.StorageNpcId(), withdrawFee)
-		// TODO: Deduct fee from character's mesos before transfer
-		// This requires integration with the character meso system
-	}
-
-	// Get the compartment for the target inventory type
-	cp := compartment.NewProcessor(l, ctx)
-	targetCompartment, err := cp.GetByType(s.CharacterId(), it)
-	if err != nil {
-		l.WithError(err).Errorf("Unable to get compartment for character [%d] inventory type [%d].", s.CharacterId(), it)
-		return
-	}
 
 	// Get the asset from storage by slot
 	storageData, err := storage.NewProcessor(l, ctx).GetStorageData(s.AccountId(), byte(s.WorldId()))
@@ -100,12 +86,18 @@ func handleRetrieveAsset(l logrus.FieldLogger, ctx context.Context, s session.Mo
 
 	// Find the asset at the given slot
 	var assetId uint32
-	var referenceId uint32
+	var templateId uint32
+	var quantity uint32
 	found := false
 	for _, a := range storageData.Assets {
 		if a.Slot() == int16(slot) {
 			assetId = a.Id()
-			referenceId = a.ReferenceId()
+			templateId = a.TemplateId()
+			if a.HasQuantity() {
+				quantity = a.Quantity()
+			} else {
+				quantity = 1
+			}
 			found = true
 			break
 		}
@@ -116,15 +108,84 @@ func handleRetrieveAsset(l logrus.FieldLogger, ctx context.Context, s session.Mo
 		return
 	}
 
-	// Transfer asset from storage to character inventory
-	err = cp.TransferFromStorage(byte(s.WorldId()), s.AccountId(), s.CharacterId(), assetId, targetCompartment.Id(), byte(it), referenceId)
+	// Create saga transaction
+	sagaP := saga.NewProcessor(l, ctx)
+	transactionId := uuid.New()
+	now := time.Now()
+
+	// Build saga steps
+	steps := make([]saga.Step[any], 0, 3)
+
+	// Step 1: Charge withdrawal fee (if applicable)
+	if withdrawFee > 0 {
+		l.Debugf("Storage withdrawal fee for NPC [%d]: %d mesos", s.StorageNpcId(), withdrawFee)
+		steps = append(steps, saga.Step[any]{
+			StepId:  "charge_withdrawal_fee",
+			Status:  saga.Pending,
+			Action:  saga.AwardMesos,
+			Payload: saga.AwardMesosPayload{
+				WorldId:     s.WorldId(),
+				CharacterId: s.CharacterId(),
+				ChannelId:   s.ChannelId(),
+				ActorId:     s.StorageNpcId(),
+				ActorType:   "NPC",
+				Amount:      -withdrawFee, // Negative to deduct
+			},
+			CreatedAt: now,
+			UpdatedAt: now,
+		})
+	}
+
+	// Step 2: Remove item from storage
+	steps = append(steps, saga.Step[any]{
+		StepId:  "remove_from_storage",
+		Status:  saga.Pending,
+		Action:  saga.WithdrawFromStorage,
+		Payload: saga.WithdrawFromStoragePayload{
+			CharacterId: s.CharacterId(),
+			AccountId:   s.AccountId(),
+			WorldId:     byte(s.WorldId()),
+			AssetId:     assetId,
+			Quantity:    0, // 0 = full withdrawal
+		},
+		CreatedAt: now,
+		UpdatedAt: now,
+	})
+
+	// Step 3: Add item to character inventory
+	steps = append(steps, saga.Step[any]{
+		StepId:  "add_to_inventory",
+		Status:  saga.Pending,
+		Action:  saga.AwardAsset,
+		Payload: saga.AwardAssetPayload{
+			CharacterId: s.CharacterId(),
+			Item: saga.ItemPayload{
+				TemplateId: templateId,
+				Quantity:   quantity,
+				Expiration: time.Time{}, // No expiration
+			},
+		},
+		CreatedAt: now,
+		UpdatedAt: now,
+	})
+
+	// Create saga transaction
+	sagaTx := saga.Saga{
+		TransactionId: transactionId,
+		SagaType:      saga.InventoryTransaction,
+		InitiatedBy:   "STORAGE",
+		Steps:         steps,
+	}
+
+	err = sagaP.Create(sagaTx)
 	if err != nil {
-		l.WithError(err).Errorf("Unable to transfer asset [%d] from storage to character [%d].", assetId, s.CharacterId())
-		return
+		l.WithError(err).Errorf("Unable to create saga for withdrawing asset [%d] from storage for character [%d].", assetId, s.CharacterId())
+	} else {
+		l.Debugf("Created withdrawal saga [%s] for character [%d] withdrawing asset [%d].", transactionId.String(), s.CharacterId(), assetId)
 	}
 }
 
-// handleStoreAsset deposits an item from character inventory to storage
+// handleStoreAsset deposits an item from character inventory to storage via saga
 func handleStoreAsset(l logrus.FieldLogger, ctx context.Context, s session.Model, r *request.Reader) {
 	slot := r.ReadInt16()
 	itemId := r.ReadUint32()
@@ -133,11 +194,6 @@ func handleStoreAsset(l logrus.FieldLogger, ctx context.Context, s session.Model
 
 	// Get storage NPC fees
 	depositFee, _ := getStorageNpcFees(l, ctx, s.StorageNpcId())
-	if depositFee > 0 {
-		l.Debugf("Storage deposit fee for NPC [%d]: %d mesos", s.StorageNpcId(), depositFee)
-		// TODO: Deduct fee from character's mesos before transfer
-		// This requires integration with the character meso system
-	}
 
 	// Determine inventory type from itemId
 	it, ok := inventory.TypeFromItemId(item.Id(itemId))
@@ -145,18 +201,6 @@ func handleStoreAsset(l logrus.FieldLogger, ctx context.Context, s session.Model
 		l.Warnf("Unable to determine inventory type from item [%d].", itemId)
 		return
 	}
-
-	// Get the source compartment
-	cp := compartment.NewProcessor(l, ctx)
-	sourceCompartment, err := cp.GetByType(s.CharacterId(), it)
-	if err != nil {
-		l.WithError(err).Errorf("Unable to get compartment for character [%d] inventory type [%d].", s.CharacterId(), it)
-		return
-	}
-
-	// Get the asset from the source compartment at the given slot
-	// For now, we pass the slot as the assetId placeholder since we need to look it up
-	// The compartment-transfer service will look up the actual asset
 
 	// Get reference type from inventory type
 	var refType string
@@ -175,13 +219,84 @@ func handleStoreAsset(l logrus.FieldLogger, ctx context.Context, s session.Model
 		refType = "ETC"
 	}
 
-	// Transfer asset from character inventory to storage
-	// Note: assetId and referenceId need to be looked up from the character's inventory
-	// For now we pass 0 - the actual implementation would need to look up the asset
-	err = cp.TransferToStorage(byte(s.WorldId()), s.AccountId(), s.CharacterId(), 0, sourceCompartment.Id(), byte(it), 0, itemId, refType, slot)
+	// Create saga transaction
+	sagaP := saga.NewProcessor(l, ctx)
+	transactionId := uuid.New()
+	now := time.Now()
+
+	// Build saga steps
+	steps := make([]saga.Step[any], 0, 3)
+
+	// Step 1: Charge deposit fee (if applicable)
+	if depositFee > 0 {
+		l.Debugf("Storage deposit fee for NPC [%d]: %d mesos", s.StorageNpcId(), depositFee)
+		steps = append(steps, saga.Step[any]{
+			StepId:  "charge_deposit_fee",
+			Status:  saga.Pending,
+			Action:  saga.AwardMesos,
+			Payload: saga.AwardMesosPayload{
+				WorldId:     s.WorldId(),
+				CharacterId: s.CharacterId(),
+				ChannelId:   s.ChannelId(),
+				ActorId:     s.StorageNpcId(),
+				ActorType:   "NPC",
+				Amount:      -depositFee, // Negative to deduct
+			},
+			CreatedAt: now,
+			UpdatedAt: now,
+		})
+	}
+
+	// Step 2: Remove item from character inventory
+	steps = append(steps, saga.Step[any]{
+		StepId:  "remove_from_inventory",
+		Status:  saga.Pending,
+		Action:  saga.DestroyAsset,
+		Payload: saga.DestroyAssetPayload{
+			CharacterId: s.CharacterId(),
+			TemplateId:  itemId,
+			Quantity:    uint32(quantity),
+			RemoveAll:   false,
+		},
+		CreatedAt: now,
+		UpdatedAt: now,
+	})
+
+	// Step 3: Add item to storage
+	steps = append(steps, saga.Step[any]{
+		StepId:  "add_to_storage",
+		Status:  saga.Pending,
+		Action:  saga.DepositToStorage,
+		Payload: saga.DepositToStoragePayload{
+			CharacterId:   s.CharacterId(),
+			AccountId:     s.AccountId(),
+			WorldId:       byte(s.WorldId()),
+			Slot:          slot,
+			TemplateId:    itemId,
+			ReferenceId:   0, // Will be set by storage service
+			ReferenceType: refType,
+			Expiration:    time.Time{}, // No expiration
+			Quantity:      uint32(quantity),
+			OwnerId:       s.CharacterId(),
+			Flag:          0,
+		},
+		CreatedAt: now,
+		UpdatedAt: now,
+	})
+
+	// Create saga transaction
+	sagaTx := saga.Saga{
+		TransactionId: transactionId,
+		SagaType:      saga.InventoryTransaction,
+		InitiatedBy:   "STORAGE",
+		Steps:         steps,
+	}
+
+	err := sagaP.Create(sagaTx)
 	if err != nil {
-		l.WithError(err).Errorf("Unable to transfer asset from inventory slot [%d] to storage for character [%d].", slot, s.CharacterId())
-		return
+		l.WithError(err).Errorf("Unable to create saga for depositing item [%d] to storage for character [%d].", itemId, s.CharacterId())
+	} else {
+		l.Debugf("Created deposit saga [%s] for character [%d] depositing item [%d].", transactionId.String(), s.CharacterId(), itemId)
 	}
 }
 

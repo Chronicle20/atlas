@@ -55,3 +55,27 @@ func deleteAllShops(tenantId uuid.UUID) database.EntityProvider[bool] {
 		return model.FixedProvider(true)
 	}
 }
+
+// DeleteAllShopsForTenant deletes all shops for a specific tenant and returns the count
+func DeleteAllShopsForTenant(db *gorm.DB, tenantId uuid.UUID) (int64, error) {
+	result := db.Unscoped().Where("tenant_id = ?", tenantId).Delete(&Entity{})
+	return result.RowsAffected, result.Error
+}
+
+// BulkCreateShops creates multiple shops in a single transaction
+func BulkCreateShops(db *gorm.DB, tenantId uuid.UUID, shops []Model) error {
+	return database.ExecuteTransaction(db, func(tx *gorm.DB) error {
+		for _, s := range shops {
+			entity := &Entity{
+				Id:        uuid.New(),
+				TenantId:  tenantId,
+				NpcId:     s.NpcId(),
+				Recharger: s.Recharger(),
+			}
+			if err := tx.Create(entity).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}

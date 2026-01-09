@@ -1,0 +1,33 @@
+{
+  "questId": 20400,
+  "questName": "Cygnus Knight Distress Signal",
+  "startStateMachine": {
+    "startState": "start",
+    "states": [
+      {
+        "id": "start",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Not long ago, we received a distress signal of #bAdvanced Knight #p1103000##k, currently stationed somewhere in #rEl Nath#k. His Your job is to find him, first go talk to #b#p1101002##k and receive further instructions on your mission.",
+          "choices": [
+            {"text": "Next", "nextState": "completeQuest"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {"force": "true"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

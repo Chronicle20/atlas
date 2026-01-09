@@ -1,0 +1,114 @@
+{
+  "questId": 29924,
+  "questName": "Aran Medal",
+  "startStateMachine": {
+    "startState": "checkRequirements",
+    "states": [
+      {
+        "id": "checkRequirements",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "level", "operator": "<", "value": "10"}
+              ],
+              "nextState": null
+            },
+            {
+              "conditions": [
+                {"type": "jobId", "operator": "<", "value": "2100"}
+              ],
+              "nextState": null
+            },
+            {
+              "conditions": [
+                {"type": "jobId", "operator": ">=", "value": "2200"}
+              ],
+              "nextState": null
+            },
+            {
+              "conditions": [],
+              "nextState": "checkHasItem"
+            }
+          ]
+        }
+      },
+      {
+        "id": "checkHasItem",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "item", "operator": ">=", "value": "1", "referenceId": "1142129"}
+              ],
+              "nextState": "alreadyHasItem"
+            },
+            {
+              "conditions": [],
+              "nextState": "checkCanHold"
+            }
+          ]
+        }
+      },
+      {
+        "id": "checkCanHold",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1142129"}
+              ],
+              "nextState": "awardMedal"
+            },
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "awardMedal",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "award_item", "params": {"itemId": "1142129", "quantity": "1"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "sendMessageAndComplete"}
+          ]
+        }
+      },
+      {
+        "id": "alreadyHasItem",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {"conditions": [], "nextState": "sendMessageAndComplete"}
+          ]
+        }
+      },
+      {
+        "id": "sendMessageAndComplete",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "send_message", "params": {"messageType": "PINK_TEXT", "message": "<Aran Medal> has been awarded."}},
+            {"type": "start_quest", "params": {}},
+            {"type": "complete_quest", "params": {"force": "true"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

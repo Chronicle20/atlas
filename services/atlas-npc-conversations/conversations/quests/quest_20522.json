@@ -1,0 +1,195 @@
+{
+  "questId": 20522,
+  "questName": "Raising Mimiana",
+  "startStateMachine": {
+    "startState": "intro1",
+    "states": [
+      {
+        "id": "intro1",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "The riding for Knights are a bit different from the rides available for regular folks. The takes place through a creature that is of the Mimi race that can be found on this island; they are called #bMimianas#k. Instead of riding monsters, the Knights ride Mimiana. There's one thing that you should never, ever forget.",
+          "choices": [
+            {"text": "Next", "nextState": "intro2"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "intro2",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "Dont't think of this as just a form of mount or transportation. These mounts can be your friend, your comrade, your colleague... all of the above. Even a friend close enough to entrust your life! That's why the Knights of Ereve actually grow their own mounts.",
+          "choices": [
+            {"text": "Previous", "nextState": "intro1"},
+            {"text": "Next", "nextState": "offerEgg"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "offerEgg",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendAcceptDecline",
+          "text": "Now, here's a Mimiana egg. Are you ready to raise a Mimiana and have it as your traveling companion for the rest of its life?",
+          "choices": [
+            {"text": "Accept", "nextState": "checkInventory"},
+            {"text": "Decline", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "checkInventory",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "item", "operator": ">=", "value": "1", "referenceId": "4220137"}
+              ],
+              "nextState": "startQuestAlreadyHasEgg"
+            },
+            {
+              "conditions": [
+                {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "4220137"}
+              ],
+              "nextState": "startQuestGiveEgg"
+            },
+            {
+              "conditions": [],
+              "nextState": "noInventorySpace"
+            }
+          ]
+        }
+      },
+      {
+        "id": "noInventorySpace",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Make up a room on your ETC tab so I can give you the Mimiana egg.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "startQuestAlreadyHasEgg",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "confirmStart"}
+          ]
+        }
+      },
+      {
+        "id": "startQuestGiveEgg",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}},
+            {"type": "award_item", "params": {"itemId": "4220137", "quantity": "1"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "confirmStart"}
+          ]
+        }
+      },
+      {
+        "id": "confirmStart",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Mimiana's egg can be raised by #bsharing your daily experiences with it#k. Once Mimiana fully grows up, please come see me.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "greetEnd",
+    "states": [
+      {
+        "id": "greetEnd",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Hey there! How's Mimiana's egg?",
+          "choices": [
+            {"text": "Next", "nextState": "checkEgg"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "checkEgg",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "item", "operator": "<", "value": "1", "referenceId": "4220137"}
+              ],
+              "nextState": "lostEgg"
+            },
+            {
+              "conditions": [],
+              "nextState": "completeQuest"
+            }
+          ]
+        }
+      },
+      {
+        "id": "lostEgg",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "I see, you lost your egg... You need to be more careful when raising a baby Mimiana!",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {}},
+            {"type": "destroy_item", "params": {"itemId": "4220137", "quantity": "1"}},
+            {"type": "award_exp", "params": {"amount": "37600"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "completionMessage"}
+          ]
+        }
+      },
+      {
+        "id": "completionMessage",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Oh, were you able to awaken Mimiana Egg? That's amazing... Most knights can't even dream of awakening it in such a short amount of time.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

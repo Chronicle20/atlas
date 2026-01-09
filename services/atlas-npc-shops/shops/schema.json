@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://chronicle20.com/schemas/npc-shop.json",
+  "title": "NPC Shop",
+  "description": "Definition of an NPC shop and its commodities for seeding",
+  "type": "object",
+  "required": ["npcId", "commodities"],
+  "properties": {
+    "npcId": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "The NPC identifier that owns this shop"
+    },
+    "recharger": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this shop supports recharging throwable items (stars, arrows)"
+    },
+    "commodities": {
+      "type": "array",
+      "description": "List of items sold in this shop",
+      "items": {
+        "type": "object",
+        "required": ["templateId", "mesoPrice"],
+        "properties": {
+          "templateId": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The item template ID"
+          },
+          "mesoPrice": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Price in mesos (in-game currency)"
+          },
+          "discountRate": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "default": 0,
+            "description": "Discount percentage (0-100)"
+          },
+          "tokenTemplateId": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0,
+            "description": "Alternative currency item template ID (0 for none)"
+          },
+          "tokenPrice": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0,
+            "description": "Price in alternative currency tokens"
+          },
+          "period": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0,
+            "description": "Time limit on purchase in minutes (0 for unlimited)"
+          },
+          "levelLimit": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0,
+            "description": "Minimum character level required to purchase (0 for no limit)"
+          }
+        }
+      }
+    }
+  }
+}

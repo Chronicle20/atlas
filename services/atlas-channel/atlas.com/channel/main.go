@@ -36,6 +36,7 @@ import (
 	"atlas-channel/kafka/consumer/quest"
 	"atlas-channel/kafka/consumer/reactor"
 	route "atlas-channel/kafka/consumer/route"
+	"atlas-channel/kafka/consumer/saga"
 	session2 "atlas-channel/kafka/consumer/session"
 	"atlas-channel/kafka/consumer/skill"
 	storage3 "atlas-channel/kafka/consumer/storage"
@@ -124,6 +125,7 @@ func main() {
 	note3.InitConsumers(l)(cmf)(consumerGroupId)
 	quest.InitConsumers(l)(cmf)(consumerGroupId)
 	route.InitConsumers(l)(cmf)(consumerGroupId)
+	saga.InitConsumers(l)(cmf)(consumerGroupId)
 	storage3.InitConsumers(l)(cmf)(consumerGroupId)
 
 	sctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(tdm.Context(), "startup")
@@ -197,6 +199,7 @@ func main() {
 				note3.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				quest.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				route.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				saga.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				storage3.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 
 				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(tenantConfig.Socket.Handlers, validatorMap, handlerMap)

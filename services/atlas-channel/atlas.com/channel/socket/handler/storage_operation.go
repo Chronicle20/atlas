@@ -216,7 +216,7 @@ func handleMeso(l logrus.FieldLogger, ctx context.Context, s session.Model, r *r
 			Payload: saga.AwardMesosPayload{
 				WorldId:     s.WorldId(),
 				CharacterId: s.CharacterId(),
-				ChannelId:   byte(s.ChannelId()),
+				ChannelId:   s.ChannelId(),
 				ActorId:     s.CharacterId(),
 				ActorType:   "STORAGE",
 				Amount:      amount, // Negative to deduct
@@ -243,7 +243,7 @@ func handleMeso(l logrus.FieldLogger, ctx context.Context, s session.Model, r *r
 
 		sagaTx := saga.Saga{
 			TransactionId: transactionId,
-			SagaType:      saga.StorageTransaction,
+			SagaType:      saga.InventoryTransaction,
 			InitiatedBy:   "STORAGE",
 			Steps:         []saga.Step[any]{step1, step2},
 		}
@@ -282,7 +282,7 @@ func handleMeso(l logrus.FieldLogger, ctx context.Context, s session.Model, r *r
 			Payload: saga.AwardMesosPayload{
 				WorldId:     s.WorldId(),
 				CharacterId: s.CharacterId(),
-				ChannelId:   byte(s.ChannelId()),
+				ChannelId:   s.ChannelId(),
 				ActorId:     s.CharacterId(),
 				ActorType:   "STORAGE",
 				Amount:      amount, // Positive to add
@@ -293,7 +293,7 @@ func handleMeso(l logrus.FieldLogger, ctx context.Context, s session.Model, r *r
 
 		sagaTx := saga.Saga{
 			TransactionId: transactionId,
-			SagaType:      saga.StorageTransaction,
+			SagaType:      saga.InventoryTransaction,
 			InitiatedBy:   "STORAGE",
 			Steps:         []saga.Step[any]{step1, step2},
 		}

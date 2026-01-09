@@ -62,6 +62,7 @@ const (
 	StatusEventTypeDeposited   = "DEPOSITED"
 	StatusEventTypeWithdrawn   = "WITHDRAWN"
 	StatusEventTypeMesosUpdate = "MESOS_UPDATED"
+	StatusEventTypeError       = "ERROR"
 )
 
 type StatusEvent[E any] struct {
@@ -94,6 +95,12 @@ type WithdrawnEventBody struct {
 type MesosUpdatedEventBody struct {
 	OldMesos uint32 `json:"oldMesos"`
 	NewMesos uint32 `json:"newMesos"`
+}
+
+// ErrorEventBody contains the data for an error event
+type ErrorEventBody struct {
+	ErrorCode string `json:"errorCode"`
+	Message   string `json:"message"`
 }
 
 // ShowStorageCommand is sent to the channel service to display storage UI

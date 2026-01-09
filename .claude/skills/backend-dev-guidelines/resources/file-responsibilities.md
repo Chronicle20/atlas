@@ -35,17 +35,20 @@ Route registration and handler definitions for REST endpoints.
 
 **Key Responsibilities:**
 - Define `InitializeRoutes(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer` for route registration
-
 - Use `server.RegisterHandler(l)(si)` for GET/DELETE handlers (no request body)
 - Use `server.RegisterInputHandler[T](l)(si)` for POST/PATCH handlers (with typed request model)
 - Implement handler functions matching `server.GetHandler` or `server.InputHandler[T]` signatures
 - Map domain errors to HTTP status codes (400, 404, 409, 500)
-- Delegate business logic to processors
+- **Delegate ALL business logic to processors - NEVER call provider functions directly**
 - Use `server.MarshalResponse[T]` for successful responses
-
 - Log errors with context using `d.Logger().WithError(err)`
 
 **Pattern:** Thin handlers that parse input, invoke processors, handle errors, and marshal responses.
+
+**Critical Rules:**
+- ✅ `resource.go` → `processor.go` (correct)
+- ❌ `resource.go` → `provider.go` (WRONG - bypasses business logic layer)
+- ❌ `resource.go` → database/GORM (WRONG - bypasses all layers)
 
 
 ## `rest.go`

@@ -9,6 +9,7 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
@@ -16,19 +17,19 @@ import (
 type MessengerOperation byte
 
 const (
-	MessengerOperationHandle       = "MessengerOperationHandle"
-	MessengerOperationAnswerInvite = MessengerOperation(0)
-	//MessengerOperationCreate        = MessengerOperation(1)
-	MessengerOperationClose         = MessengerOperation(2)
-	MessengerOperationInvite        = MessengerOperation(3)
-	MessengerOperationDeclineInvite = MessengerOperation(5)
-	MessengerOperationChat          = MessengerOperation(6)
+	MessengerOperationHandle        = "MessengerOperationHandle"
+	MessengerOperationAnswerInvite  = "ANSWER_INVITE"
+	MessengerOperationCreate        = "CREATE"
+	MessengerOperationClose         = "CLOSE"
+	MessengerOperationInvite        = "INVITE"
+	MessengerOperationDeclineInvite = "DECLINE_INVITE"
+	MessengerOperationChat          = "CHAT"
 )
 
 func MessengerOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		mode := MessengerOperation(r.ReadByte())
-		if mode == MessengerOperationAnswerInvite {
+		if isMessengerShopOperation(l)(readerOptions, mode, MessengerOperationAnswerInvite) {
 			messengerId := r.ReadUint32()
 			l.Debugf("Character [%d] answered messenger [%d] invite.", s.CharacterId(), messengerId)
 			if messengerId == 0 {
@@ -44,7 +45,7 @@ func MessengerOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 			}
 			return
 		}
-		if mode == MessengerOperationClose {
+		if isMessengerShopOperation(l)(readerOptions, mode, MessengerOperationClose) {
 			l.Debugf("Character [%d] exited messenger.", s.CharacterId())
 			m, err := messenger.NewProcessor(l, ctx).GetByMemberId(s.CharacterId())
 			if err != nil {
@@ -56,13 +57,13 @@ func MessengerOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 			}
 			return
 		}
-		if mode == MessengerOperationInvite {
+		if isMessengerShopOperation(l)(readerOptions, mode, MessengerOperationInvite) {
 			targetCharacter := r.ReadAsciiString()
 			l.Debugf("Character [%d] attempting to invite [%s] to messenger.", s.CharacterId(), targetCharacter)
 			tc, err := character.NewProcessor(l, ctx).GetByName(targetCharacter)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to locate character by name [%s] to invite to messenger.", targetCharacter)
-				err = session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationInviteSentBody(targetCharacter, false))(s)
+				err = session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationInviteSentBody(l)(targetCharacter, false))(s)
 				if err != nil {
 					l.WithError(err).Errorf("Character [%d] was unable to request [%d] to invite messenger.", s.CharacterId(), tc.Id())
 				}
@@ -74,13 +75,13 @@ func MessengerOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 				l.WithError(err).Errorf("Character [%d] was unable to request [%d] to invite messenger.", s.CharacterId(), tc.Id())
 			}
 
-			err = session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationInviteSentBody(targetCharacter, true))(s)
+			err = session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationInviteSentBody(l)(targetCharacter, true))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Character [%d] was unable to request [%d] to invite messenger.", s.CharacterId(), tc.Id())
 			}
 			return
 		}
-		if mode == MessengerOperationDeclineInvite {
+		if isMessengerShopOperation(l)(readerOptions, mode, MessengerOperationDeclineInvite) {
 			fromName := r.ReadAsciiString()
 			myName := r.ReadAsciiString()
 			alwaysZero := r.ReadByte()
@@ -96,7 +97,7 @@ func MessengerOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 			}
 			return
 		}
-		if mode == MessengerOperationChat {
+		if isMessengerShopOperation(l)(readerOptions, mode, MessengerOperationChat) {
 			msg := r.ReadAsciiString()
 			l.Debugf("Character [%d] sending message [%s] to messenger.", s.CharacterId(), msg)
 			m, err := messenger.NewProcessor(l, ctx).GetByMemberId(s.CharacterId())
@@ -115,5 +116,29 @@ func MessengerOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 			}
 			return
 		}
+	}
+}
+
+func isMessengerShopOperation(l logrus.FieldLogger) func(options map[string]interface{}, op MessengerOperation, key string) bool {
+	return func(options map[string]interface{}, op MessengerOperation, key string) bool {
+		var genericCodes interface{}
+		var ok bool
+		if genericCodes, ok = options["operations"]; !ok {
+			l.Errorf("Code [%s] not configured for use.", key)
+			return false
+		}
+
+		var codes map[string]interface{}
+		if codes, ok = genericCodes.(map[string]interface{}); !ok {
+			l.Errorf("Code [%s] not configured for use.", key)
+			return false
+		}
+
+		res, ok := codes[key].(float64)
+		if !ok {
+			l.Errorf("Code [%s] not configured for use.", key)
+			return false
+		}
+		return MessengerOperation(res) == op
 	}
 }

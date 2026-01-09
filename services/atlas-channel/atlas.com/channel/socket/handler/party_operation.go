@@ -8,9 +8,12 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
+
+type PartyOperation byte
 
 const (
 	PartyOperationHandle       = "PartyOperationHandle"
@@ -24,7 +27,7 @@ const (
 
 func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		op := r.ReadByte()
+		op := PartyOperation(r.ReadByte())
 		if isPartyOperation(l)(readerOptions, op, PartyOperationCreate) {
 			err := party.NewProcessor(l, ctx).Create(s.CharacterId())
 			if err != nil {
@@ -108,8 +111,8 @@ func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writ
 	}
 }
 
-func isPartyOperation(l logrus.FieldLogger) func(options map[string]interface{}, op byte, key string) bool {
-	return func(options map[string]interface{}, op byte, key string) bool {
+func isPartyOperation(l logrus.FieldLogger) func(options map[string]interface{}, op PartyOperation, key string) bool {
+	return func(options map[string]interface{}, op PartyOperation, key string) bool {
 		var genericCodes interface{}
 		var ok bool
 		if genericCodes, ok = options["operations"]; !ok {
@@ -128,6 +131,6 @@ func isPartyOperation(l logrus.FieldLogger) func(options map[string]interface{},
 			l.Errorf("Code [%s] not configured for use.", key)
 			return false
 		}
-		return byte(res) == op
+		return PartyOperation(res) == op
 	}
 }

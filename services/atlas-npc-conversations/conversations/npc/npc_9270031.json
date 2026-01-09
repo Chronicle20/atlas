@@ -9,14 +9,8 @@
         "dialogueType": "sendOk",
         "text": "We had our wedding at Amoria, such a beautiful place, and their people are even more amiable. Now our honeymoon on this paradisiac place... Ah, glorious, glorious!",
         "choices": [
-          {
-            "text": "Ok",
-            "nextState": null
-          },
-          {
-            "text": "Exit",
-            "nextState": null
-          }
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
         ]
       }
     }

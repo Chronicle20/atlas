@@ -1,16 +1,16 @@
 {
   "npcId": 9270023,
-  "startState": "askUseCoupon",
+  "startState": "start",
   "states": [
     {
-      "id": "askUseCoupon",
+      "id": "start",
       "type": "listSelection",
       "listSelection": {
         "title": "If you use this regular coupon, your face may transform into a random new look...do you still want to do it using #b#t5152037##k, I will do it anyways for you. But don't forget, it will be random!",
         "choices": [
           {
             "text": "OK! (Uses #i5152037# #t5152037#)",
-            "nextState": "checkHasCoupon"
+            "nextState": "checkCoupon"
           },
           {
             "text": "Exit",
@@ -20,7 +20,7 @@
       }
     },
     {
-      "id": "checkHasCoupon",
+      "id": "checkCoupon",
       "type": "genericAction",
       "genericAction": {
         "operations": [],
@@ -38,7 +38,7 @@
           },
           {
             "conditions": [],
-            "nextState": "generateFaceStyles"
+            "nextState": "generateFaces"
           }
         ]
       }
@@ -62,7 +62,7 @@
       }
     },
     {
-      "id": "generateFaceStyles",
+      "id": "generateFaces",
       "type": "genericAction",
       "genericAction": {
         "operations": [
@@ -71,9 +71,10 @@
             "params": {
               "baseStyles": "20002,20005,20006,20013,20017,20021,20024,21002,21003,21014,21016,21017,21021,21027",
               "genderFilter": "true",
+              "preserveColor": "true",
               "validateExists": "true",
               "excludeEquipped": "true",
-              "outputContextKey": "generatedFaces"
+              "outputContextKey": "availableFaces"
             }
           }
         ],
@@ -115,7 +116,7 @@
           {
             "type": "local:select_random_cosmetic",
             "params": {
-              "stylesContextKey": "generatedFaces",
+              "stylesContextKey": "availableFaces",
               "outputContextKey": "selectedFace"
             }
           }
@@ -123,13 +124,13 @@
         "outcomes": [
           {
             "conditions": [],
-            "nextState": "applyFaceChange"
+            "nextState": "performChange"
           }
         ]
       }
     },
     {
-      "id": "applyFaceChange",
+      "id": "performChange",
       "type": "genericAction",
       "genericAction": {
         "operations": [

@@ -1,16 +1,16 @@
 {
   "npcId": 9270024,
-  "startState": "welcome",
+  "startState": "start",
   "states": [
     {
-      "id": "welcome",
+      "id": "start",
       "type": "listSelection",
       "listSelection": {
         "title": "Let's see...I can totally transform your face into something new. Don't you want to try it? For #b#t5152038##k, you can get the face of your liking. Take your time in choosing the face of your preference...",
         "choices": [
           {
             "text": "Let me get my dream face! (Uses #i5152038# #t5152038#)",
-            "nextState": "checkCoupon"
+            "nextState": "checkVipCoupon"
           },
           {
             "text": "Exit",
@@ -20,7 +20,7 @@
       }
     },
     {
-      "id": "checkCoupon",
+      "id": "checkVipCoupon",
       "type": "genericAction",
       "genericAction": {
         "operations": [],
@@ -38,7 +38,7 @@
           },
           {
             "conditions": [],
-            "nextState": "checkGender"
+            "nextState": "generateFaceStyles"
           }
         ]
       }
@@ -62,71 +62,19 @@
       }
     },
     {
-      "id": "checkGender",
-      "type": "genericAction",
-      "genericAction": {
-        "operations": [],
-        "outcomes": [
-          {
-            "conditions": [
-              {
-                "type": "gender",
-                "operator": "=",
-                "value": "0"
-              }
-            ],
-            "nextState": "generateMaleFaces"
-          },
-          {
-            "conditions": [
-              {
-                "type": "gender",
-                "operator": "=",
-                "value": "1"
-              }
-            ],
-            "nextState": "generateFemaleFaces"
-          }
-        ]
-      }
-    },
-    {
-      "id": "generateMaleFaces",
+      "id": "generateFaceStyles",
       "type": "genericAction",
       "genericAction": {
         "operations": [
           {
             "type": "local:generate_face_styles",
             "params": {
-              "baseStyles": "20005,20012,20013,20020,20021,20026",
-              "genderFilter": "male",
+              "baseStyles": "20005,20012,20013,20020,20021,20026,21006,21009,21011,21012,21021,21025",
+              "genderFilter": "true",
+              "preserveColor": "true",
               "validateExists": "true",
               "excludeEquipped": "true",
-              "outputContextKey": "availableFaces"
-            }
-          }
-        ],
-        "outcomes": [
-          {
-            "conditions": [],
-            "nextState": "chooseFace"
-          }
-        ]
-      }
-    },
-    {
-      "id": "generateFemaleFaces",
-      "type": "genericAction",
-      "genericAction": {
-        "operations": [
-          {
-            "type": "local:generate_face_styles",
-            "params": {
-              "baseStyles": "21006,21009,21011,21012,21021,21025",
-              "genderFilter": "female",
-              "validateExists": "true",
-              "excludeEquipped": "true",
-              "outputContextKey": "availableFaces"
+              "outputContextKey": "generatedFaces"
             }
           }
         ],
@@ -143,7 +91,7 @@
       "type": "askStyle",
       "askStyle": {
         "text": "Let's see... I can totally transform your face into something new. Don't you want to try it? For #b#t5152038##k, you can get the face of your liking. Take your time in choosing the face of your preference...",
-        "stylesContextKey": "availableFaces",
+        "stylesContextKey": "generatedFaces",
         "contextKey": "selectedFace",
         "nextState": "applyFace"
       }

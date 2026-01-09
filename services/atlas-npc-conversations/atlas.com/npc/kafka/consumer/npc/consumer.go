@@ -41,7 +41,7 @@ func handleStartConversationCommand(db *gorm.DB) message.Handler[npc2.Command[np
 		if c.Type != npc2.CommandTypeStartConversation {
 			return
 		}
-		_ = conversation.NewProcessor(l, ctx, db).Start(field.NewBuilder(world.Id(c.Body.WorldId), channel.Id(c.Body.ChannelId), _map.Id(c.Body.MapId)).Build(), c.NpcId, c.CharacterId)
+		_ = conversation.NewProcessor(l, ctx, db).Start(field.NewBuilder(world.Id(c.Body.WorldId), channel.Id(c.Body.ChannelId), _map.Id(c.Body.MapId)).Build(), c.NpcId, c.CharacterId, c.Body.AccountId)
 	}
 }
 

@@ -20,7 +20,7 @@ import (
 
 type Processor interface {
 	// Start starts a conversation with an NPC
-	Start(field field.Model, npcId uint32, characterId uint32) error
+	Start(field field.Model, npcId uint32, characterId uint32, accountId uint32) error
 
 	// StartQuest starts a quest conversation with the provided state machine
 	// The caller is responsible for selecting the correct state machine (start or end) based on quest status
@@ -76,7 +76,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
-func (p *ProcessorImpl) Start(field field.Model, npcId uint32, characterId uint32) error {
+func (p *ProcessorImpl) Start(field field.Model, npcId uint32, characterId uint32, accountId uint32) error {
 	p.l.Debugf("Starting conversation with NPC [%d] with character [%d] in map [%d].", npcId, characterId, field.MapId())
 
 	// Check if there's already a conversation in progress
@@ -113,6 +113,12 @@ func (p *ProcessorImpl) Start(field field.Model, npcId uint32, characterId uint3
 	}
 	if field.ChannelId() > 0 {
 		builder.AddContextValue("channelId", strconv.Itoa(int(field.ChannelId())))
+	}
+
+	// Add accountId to context
+	if accountId > 0 {
+		builder.AddContextValue("accountId", strconv.Itoa(int(accountId)))
+		p.l.Debugf("Added accountId [%d] to context for character [%d]", accountId, characterId)
 	}
 
 	ctx := builder.Build()

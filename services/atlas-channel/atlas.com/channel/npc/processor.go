@@ -9,7 +9,7 @@ import (
 )
 
 type Processor interface {
-	StartConversation(m _map.Model, npcId uint32, characterId uint32) error
+	StartConversation(m _map.Model, npcId uint32, characterId uint32, accountId uint32) error
 	ContinueConversation(characterId uint32, action byte, lastMessageType byte, selection int32) error
 	DisposeConversation(characterId uint32) error
 }
@@ -27,9 +27,9 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return p
 }
 
-func (p *ProcessorImpl) StartConversation(m _map.Model, npcId uint32, characterId uint32) error {
+func (p *ProcessorImpl) StartConversation(m _map.Model, npcId uint32, characterId uint32, accountId uint32) error {
 	p.l.Debugf("Starting NPC [%d] conversation for character [%d].", npcId, characterId)
-	return producer.ProviderImpl(p.l)(p.ctx)(npc.EnvCommandTopic)(StartConversationCommandProvider(m, npcId, characterId))
+	return producer.ProviderImpl(p.l)(p.ctx)(npc.EnvCommandTopic)(StartConversationCommandProvider(m, npcId, characterId, accountId))
 }
 
 func (p *ProcessorImpl) ContinueConversation(characterId uint32, action byte, lastMessageType byte, selection int32) error {

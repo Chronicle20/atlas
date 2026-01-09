@@ -62,8 +62,10 @@ Stackable (local storage for consumable/setup/etc)
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/gis/{worldId}/accounts/{accountId}/storage` | Get storage with assets |
-| GET | `/api/gis/{worldId}/accounts/{accountId}/storage/assets` | Get storage assets only |
+| GET | `/api/storage/accounts/{accountId}?worldId={worldId}` | Get storage metadata (capacity, mesos) |
+| POST | `/api/storage/accounts/{accountId}?worldId={worldId}` | Create storage (default capacity: 4, mesos: 0) |
+| GET | `/api/storage/accounts/{accountId}/assets?worldId={worldId}` | Get all assets in storage |
+| GET | `/api/storage/accounts/{accountId}/assets/{assetId}?worldId={worldId}` | Get single asset by ID |
 
 ### Kafka Commands
 
@@ -75,6 +77,7 @@ Stackable (local storage for consumable/setup/etc)
 | `WITHDRAW` | Withdraw item from storage |
 | `UPDATE_MESOS` | Update storage mesos |
 | `DEPOSIT_ROLLBACK` | Rollback a deposit (saga compensation) |
+| `ARRANGE` | Merge and sort stackable items in storage |
 
 ### Kafka Events
 
@@ -85,6 +88,8 @@ Stackable (local storage for consumable/setup/etc)
 | `DEPOSITED` | Item was deposited |
 | `WITHDRAWN` | Item was withdrawn |
 | `MESOS_UPDATED` | Mesos amount changed |
+| `ARRANGED` | Items were merged and sorted |
+| `ERROR` | Operation failed |
 
 ## Configuration
 

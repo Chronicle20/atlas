@@ -37,6 +37,53 @@ Activate when working on:
 
 ---
 
+## Standard Implementation Workflow
+
+**MANDATORY:** Follow this workflow for ALL code changes to ensure quality and prevent regressions.
+
+### Implementation Steps
+
+When modifying any service code:
+
+1. **Implement changes** to primary files (model.go, processor.go, etc.)
+2. **Update mocks immediately** if any interfaces changed
+   - Add corresponding function fields to mock struct
+   - Implement new methods with nil-check and default behavior
+   - See [Testing Conventions](resources/testing-guide.md#interface-change-workflow) for details
+3. **Run tests BEFORE claiming completion**:
+   ```bash
+   go test ./... -count=1
+   ```
+4. **Fix any failures** - Do NOT skip or ignore test failures
+5. **Verify build**:
+   ```bash
+   go build
+   ```
+6. **Report test results** with actual command output, not assumptions
+
+### Critical Rules
+
+- ❌ **Never skip test execution** - Running tests is mandatory, not optional
+- ❌ **Never assume tests will pass** - Always verify with actual execution
+- ❌ **Never update interface without updating mocks** - Causes immediate test failures
+- ✅ **Always run full test suite** (`go test ./...`) not just modified packages
+- ✅ **Always use `-count=1` flag** to disable test caching
+- ✅ **Always verify test output** before marking work complete
+
+### When Tests Fail
+
+If `go test ./... -count=1` reports failures:
+
+1. **Read the error message completely** - Understand what broke
+2. **Check for missing mock methods** - Most common cause of failures
+3. **Update mocks to match interface** - Add/modify methods as needed
+4. **Re-run tests** - Verify the fix didn't break other tests
+5. **Do not proceed** until all tests pass
+
+See [Testing Conventions](resources/testing-guide.md) for comprehensive testing guidelines.
+
+---
+
 ## Key Principles
 1. **Immutability** — Models never mutate; all state changes yield new instances.
 2. **Functional Composition** — Use curried functions and providers for composition.

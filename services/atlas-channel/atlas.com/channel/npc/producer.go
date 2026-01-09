@@ -8,7 +8,7 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func StartConversationCommandProvider(m _map.Model, npcId uint32, characterId uint32) model.Provider[[]kafka.Message] {
+func StartConversationCommandProvider(m _map.Model, npcId uint32, characterId uint32, accountId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &npc2.Command[npc2.StartConversationCommandBody]{
 		NpcId:       npcId,
@@ -18,6 +18,7 @@ func StartConversationCommandProvider(m _map.Model, npcId uint32, characterId ui
 			WorldId:   m.WorldId(),
 			ChannelId: m.ChannelId(),
 			MapId:     m.MapId(),
+			AccountId: accountId,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

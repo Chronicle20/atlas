@@ -10,17 +10,11 @@
         "choices": [
           {
             "text": "I would like to buy a plane ticket to Singapore",
-            "nextState": "confirmBuyTicket",
-            "context": {
-              "action": "buy"
-            }
+            "nextState": "confirmPurchase"
           },
           {
             "text": "Let me go in to the departure point.",
-            "nextState": "confirmEnterDeparture",
-            "context": {
-              "action": "enter"
-            }
+            "nextState": "confirmDeparture"
           },
           {
             "text": "Exit",
@@ -30,7 +24,7 @@
       }
     },
     {
-      "id": "confirmBuyTicket",
+      "id": "confirmPurchase",
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendYesNo",
@@ -38,7 +32,7 @@
         "choices": [
           {
             "text": "Yes",
-            "nextState": "checkBuyRequirements"
+            "nextState": "checkPurchaseRequirements"
           },
           {
             "text": "No",
@@ -52,7 +46,29 @@
       }
     },
     {
-      "id": "checkBuyRequirements",
+      "id": "confirmDeparture",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Would you like to go in now? You will lose your ticket once you go in! Thank you for choosing Wizet Airline.",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkDepartureRequirements"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkPurchaseRequirements",
       "type": "genericAction",
       "genericAction": {
         "operations": [],
@@ -65,7 +81,7 @@
                 "value": "5000"
               }
             ],
-            "nextState": "notEnoughMesosOrHasTicket"
+            "nextState": "insufficientMesoOrHasTicket"
           },
           {
             "conditions": [
@@ -76,7 +92,7 @@
                 "referenceId": "4031731"
               }
             ],
-            "nextState": "notEnoughMesosOrHasTicket"
+            "nextState": "insufficientMesoOrHasTicket"
           },
           {
             "conditions": [
@@ -87,7 +103,7 @@
                 "referenceId": "4031731"
               }
             ],
-            "nextState": "purchaseTicket"
+            "nextState": "performPurchase"
           },
           {
             "conditions": [],
@@ -97,7 +113,7 @@
       }
     },
     {
-      "id": "purchaseTicket",
+      "id": "performPurchase",
       "type": "genericAction",
       "genericAction": {
         "operations": [
@@ -160,7 +176,7 @@
       }
     },
     {
-      "id": "notEnoughMesosOrHasTicket",
+      "id": "insufficientMesoOrHasTicket",
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendOk",
@@ -178,29 +194,7 @@
       }
     },
     {
-      "id": "confirmEnterDeparture",
-      "type": "dialogue",
-      "dialogue": {
-        "dialogueType": "sendYesNo",
-        "text": "Would you like to go in now? You will lose your ticket once you go in! Thank you for choosing Wizet Airline.",
-        "choices": [
-          {
-            "text": "Yes",
-            "nextState": "checkHasTicket"
-          },
-          {
-            "text": "No",
-            "nextState": null
-          },
-          {
-            "text": "Exit",
-            "nextState": null
-          }
-        ]
-      }
-    },
-    {
-      "id": "checkHasTicket",
+      "id": "checkDepartureRequirements",
       "type": "genericAction",
       "genericAction": {
         "operations": [],
@@ -209,26 +203,13 @@
             "conditions": [
               {
                 "type": "item",
-                "operator": ">=",
+                "operator": "<",
                 "value": "1",
                 "referenceId": "4031731"
               }
             ],
-            "nextState": "checkTransportAvailable"
+            "nextState": "noTicket"
           },
-          {
-            "conditions": [],
-            "nextState": "needTicket"
-          }
-        ]
-      }
-    },
-    {
-      "id": "checkTransportAvailable",
-      "type": "genericAction",
-      "genericAction": {
-        "operations": [],
-        "outcomes": [
           {
             "conditions": [
               {
@@ -238,7 +219,7 @@
                 "referenceId": "540010100"
               }
             ],
-            "nextState": "warpToDeparture"
+            "nextState": "performDeparture"
           },
           {
             "conditions": [],
@@ -248,7 +229,7 @@
       }
     },
     {
-      "id": "warpToDeparture",
+      "id": "performDeparture",
       "type": "genericAction",
       "genericAction": {
         "operations": [
@@ -276,11 +257,11 @@
       }
     },
     {
-      "id": "planeTakenOff",
+      "id": "noTicket",
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendOk",
-        "text": "Sorry the plane has taken off, please wait a few minutes.",
+        "text": "You need a #b#t4031731##k to get on the plane!",
         "choices": [
           {
             "text": "Ok",
@@ -294,11 +275,11 @@
       }
     },
     {
-      "id": "needTicket",
+      "id": "planeTakenOff",
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendOk",
-        "text": "You need a #b#t4031731##k to get on the plane!",
+        "text": "Sorry the plane has taken off, please wait a few minutes.",
         "choices": [
           {
             "text": "Ok",

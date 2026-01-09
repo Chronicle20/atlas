@@ -89,6 +89,14 @@ data:
           proxy_pass http://atlas-quest.atlas.svc.cluster.local:8080;
         }
 
+        location ~ ^/api/quests/conversations(/.*)?$ {
+          proxy_pass http://atlas-npc-conversations.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/quests/[^/]+/conversation(/.*)?$ {
+          proxy_pass http://atlas-npc-conversations.atlas.svc.cluster.local:8080;
+        }
+
         location ~ ^/api/characters/[^/]+/skills(/.*)?$ {
           proxy_pass http://atlas-skills.atlas.svc.cluster.local:8080;
         }

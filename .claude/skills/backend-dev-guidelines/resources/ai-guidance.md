@@ -6,6 +6,18 @@ description: Rules for AI agents generating or editing Golang services.
 
 # AI Code Generation Guidance
 
+## Mandatory Implementation Workflow
+
+**CRITICAL:** Before implementing ANY code changes, review the [Standard Implementation Workflow](../SKILL.md#standard-implementation-workflow) in the main skill document.
+
+**Key Requirements:**
+- ✅ Update mocks immediately when interfaces change
+- ✅ Run `go test ./... -count=1` BEFORE claiming completion
+- ✅ Fix all test failures before proceeding
+- ✅ Report actual test output, not assumptions
+- ❌ NEVER skip test execution
+- ❌ NEVER assume tests will pass
+
 ## Core Rules
 1. Respect file responsibilities (see file-responsibilities.md).
 2. Maintain immutability and functional composition.

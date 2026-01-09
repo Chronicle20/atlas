@@ -24,6 +24,7 @@ type StartConversationCommandBody struct {
 	WorldId   world.Id   `json:"worldId"`
 	ChannelId channel.Id `json:"channelId"`
 	MapId     _map.Id    `json:"mapId"`
+	AccountId uint32     `json:"accountId"`
 }
 
 type ContinueConversationCommandBody struct {

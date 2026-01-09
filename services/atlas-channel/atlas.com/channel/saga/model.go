@@ -1,6 +1,7 @@
 package saga
 
 import (
+	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 	"time"
@@ -10,7 +11,7 @@ import (
 type Type string
 
 const (
-	StorageTransaction Type = "storage_transaction"
+	InventoryTransaction Type = "inventory_transaction"
 )
 
 // Saga represents the entire saga transaction
@@ -50,12 +51,12 @@ type Step[T any] struct {
 
 // AwardMesosPayload is the payload for the award_mesos action
 type AwardMesosPayload struct {
-	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
-	WorldId     world.Id `json:"worldId"`   // WorldId associated with the action
-	ChannelId   byte     `json:"channelId"` // ChannelId associated with the action
-	ActorId     uint32   `json:"actorId"`   // ActorId identifies who is giving/taking the mesos
-	ActorType   string   `json:"actorType"` // ActorType identifies the type of actor (e.g., "STORAGE")
-	Amount      int32    `json:"amount"`    // Amount of mesos to award (can be negative for deduction)
+	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	ActorId     uint32     `json:"actorId"`     // ActorId identifies who is giving/taking the mesos
+	ActorType   string     `json:"actorType"`   // ActorType identifies the type of actor (e.g., "STORAGE")
+	Amount      int32      `json:"amount"`      // Amount of mesos to award (can be negative for deduction)
 }
 
 // UpdateStorageMesosPayload is the payload for the update_storage_mesos action

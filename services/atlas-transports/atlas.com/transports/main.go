@@ -4,6 +4,7 @@ import (
 	"atlas-transports/kafka/consumer/channel"
 	"atlas-transports/kafka/consumer/character"
 	"atlas-transports/logger"
+	"atlas-transports/seed"
 	"atlas-transports/service"
 	tenant2 "atlas-transports/tenant"
 	"atlas-transports/tracing"
@@ -98,6 +99,7 @@ func main() {
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(transport.InitResource(GetServer())).
+		AddRouteInitializer(seed.InitResource(GetServer())).
 		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

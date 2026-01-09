@@ -26,5 +26,6 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /
 
 COPY --from=build-env /server /
+COPY ./routes /routes
 
 CMD ["/server"]

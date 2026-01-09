@@ -10,3 +10,5 @@ services/atlas-npc-conversations/tmp2
 services/atlas-data/tmp/Npc.wz
 services/atlas-storage/atlas.com/storage/atlas-storage
 services/atlas-npc-shops/tmp
+services/atlas-transports/tmp/event
+services/atlas-transports/atlas.com/transports/atlas-transports

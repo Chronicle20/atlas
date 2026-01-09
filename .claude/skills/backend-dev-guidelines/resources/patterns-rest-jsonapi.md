@@ -9,7 +9,8 @@ description: Handler and transport conventions for JSON:API-compliant endpoints 
 ## Principles
 - Use `server.RegisterHandler` and `server.RegisterInputHandler` for automatic tenant parsing, tracing, and JSON:API deserialization
 - REST models implement JSON:API interface methods (`GetName()`, `GetID()`, `SetID()`)
-- Handlers are thin - delegate business logic to processors
+- **Handlers are thin - delegate ALL business logic to processors**
+- **NEVER call provider functions directly from handlers** - always go through processor layer
 - Use `server.MarshalResponse` for success responses
 - Map domain errors to HTTP status codes explicitly
 
@@ -357,6 +358,33 @@ func (r *AssociateHouseholdRequest) SetID(idStr string) error {
 
 ## Anti-Patterns to Avoid
 
+❌ **Calling provider functions directly from handlers:**
+```go
+// DON'T DO THIS
+func handleGetUserRequest(db *gorm.DB) server.GetHandler {
+	return func(d *server.HandlerDependency, c *server.HandlerContext) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			// ❌ WRONG - bypassing processor layer
+			user, err := GetById(d.Logger(), db, tenantId)(userId)
+			// ...
+		}
+	}
+}
+```
+
+✅ **Use processor for all business logic:**
+```go
+// DO THIS
+func handleGetUserRequest(db *gorm.DB) server.GetHandler {
+	return func(d *server.HandlerDependency, c *server.HandlerContext) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			// ✅ CORRECT - calling through processor
+			user, err := NewProcessor(d.Logger(), d.Context(), db).GetById(userId)()
+			// ...
+		}
+	}
+}
+```
 
 ❌ **Manual JSON encoding/decoding:**
 ```go

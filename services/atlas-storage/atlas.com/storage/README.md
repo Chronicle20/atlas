@@ -7,6 +7,7 @@ Cross-character, account-level storage microservice for the Atlas platform. Mana
 The storage service provides:
 
 - **Account-scoped storage**: Each storage is uniquely identified by `(worldId, accountId)` with a default capacity of 4 slots
+- **Lazy initialization**: Storage is automatically created on first access (GET request or deposit operation)
 - **Asset management**: Supports deposits and withdrawals of items with slot tracking
 - **Mesos management**: Store and manage mesos in storage with SET, ADD, and SUBTRACT operations
 - **Stackable items**: Local storage of quantity/owner/flag data for consumables, setup, and etc items
@@ -62,8 +63,10 @@ Stackable (local storage for consumable/setup/etc)
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/gis/{worldId}/accounts/{accountId}/storage` | Get storage with assets |
-| GET | `/api/gis/{worldId}/accounts/{accountId}/storage/assets` | Get storage assets only |
+| GET | `/api/storage/accounts/{accountId}?worldId={worldId}` | Get storage metadata (lazy initialization - creates if not exists) |
+| POST | `/api/storage/accounts/{accountId}?worldId={worldId}` | Explicitly create storage (409 Conflict if exists, 201 Created on success) |
+| GET | `/api/storage/accounts/{accountId}/assets?worldId={worldId}` | Get all assets in storage |
+| GET | `/api/storage/accounts/{accountId}/assets/{assetId}?worldId={worldId}` | Get single asset by ID |
 
 ### Kafka Commands
 
@@ -75,6 +78,7 @@ Stackable (local storage for consumable/setup/etc)
 | `WITHDRAW` | Withdraw item from storage |
 | `UPDATE_MESOS` | Update storage mesos |
 | `DEPOSIT_ROLLBACK` | Rollback a deposit (saga compensation) |
+| `ARRANGE` | Merge and sort stackable items in storage |
 
 ### Kafka Events
 
@@ -85,6 +89,8 @@ Stackable (local storage for consumable/setup/etc)
 | `DEPOSITED` | Item was deposited |
 | `WITHDRAWN` | Item was withdrawn |
 | `MESOS_UPDATED` | Mesos amount changed |
+| `ARRANGED` | Items were merged and sorted |
+| `ERROR` | Operation failed |
 
 ## Configuration
 

@@ -29,12 +29,11 @@ func handleGetStorageRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *res
 		return rest.ParseAccountId(d.Logger(), func(accountId uint32) http.HandlerFunc {
 			return rest.ParseWorldId(d.Logger(), func(worldId byte) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
-					t := tenant.MustFromContext(d.Context())
-
-					s, err := GetByWorldAndAccountId(d.Logger(), db, t.Id())(worldId, accountId)
+					// Use processor to get or create storage lazily
+					s, err := NewProcessor(d.Logger(), d.Context(), db).GetOrCreateStorage(worldId, accountId)
 					if err != nil {
-						d.Logger().WithError(err).Debugf("Unable to locate storage for world %d account %d.", worldId, accountId)
-						w.WriteHeader(http.StatusNotFound)
+						d.Logger().WithError(err).Errorf("Unable to get or create storage for world %d account %d.", worldId, accountId)
+						w.WriteHeader(http.StatusInternalServerError)
 						return
 					}
 

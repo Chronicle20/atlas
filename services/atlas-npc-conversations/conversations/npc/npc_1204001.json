@@ -8,7 +8,6 @@
       "dialogue": {
         "dialogueType": "sendNext",
         "text": "I'm Francis, the Puppeteer of the Black Wings. How dare you disturb my puppets... It really upsets me, but I'll let it slide this time. If I catch you doing it again though, I swear in the name of the Black Mage, I will make you pay for it.",
-        "speaker": "9",
         "choices": [
           {
             "text": "Next",
@@ -27,7 +26,7 @@
       "dialogue": {
         "dialogueType": "sendNextPrev",
         "text": "#b(The Black Wings? Huh? Who are they? And how is all this related to the Black Mage? Hm, maybe you should report this info to Tru.)#k",
-        "speaker": 3,
+        "speaker": "CHARACTER_RIGHT",
         "choices": [
           {
             "text": "Previous",

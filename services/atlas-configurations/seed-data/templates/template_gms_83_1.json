@@ -2003,6 +2003,25 @@
         }
       },
       {
+        "opCode": "0x135",
+        "writer": "StorageOperation",
+        "options": {
+          "operations": {
+            "RETRIEVE_ASSETS": 9,
+            "INVENTORY_FULL": 10,
+            "NOT_ENOUGH_MESOS": 11,
+            "ONE_OF_A_KIND": 12,
+            "STORE_ASSETS": 13,
+            "NOT_ENOUGH_MESOS_2": 16,
+            "UNKNOWN": 17,
+            "UPDATE_MESO": 19,
+            "SHOW": 22,
+            "UNKNOWN_2": 23,
+            "ERROR_MESSAGE": 24
+          }
+        }
+      },
+      {
         "opCode": "0x139",
         "writer": "MessengerOperation",
         "options": {

@@ -10,7 +10,7 @@
           {
             "type": "open_storage",
             "params": {
-              "accountId": "{accountId}"
+              "accountId": "{context.accountId}"
             }
           }
         ],

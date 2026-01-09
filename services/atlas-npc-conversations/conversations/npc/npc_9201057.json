@@ -1,0 +1,281 @@
+{
+  "npcId": 9201057,
+  "startState": "checkMap",
+  "states": [
+    {
+      "id": "checkMap",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "mapId", "operator": "=", "value": "103000100" }
+            ],
+            "nextState": "askBuyTicketKerning"
+          },
+          {
+            "conditions": [
+              { "type": "mapId", "operator": "=", "value": "600010001" }
+            ],
+            "nextState": "askBuyTicketNLC"
+          },
+          {
+            "conditions": [
+              { "type": "mapId", "operator": "=", "value": "600010002" }
+            ],
+            "nextState": "askLeaveWaitingRoom"
+          },
+          {
+            "conditions": [
+              { "type": "mapId", "operator": "=", "value": "600010004" }
+            ],
+            "nextState": "askLeaveWaitingRoom"
+          },
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "askBuyTicketKerning",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "The ride to New Leaf City of Masteria takes off every minute, beginning on the hour, and it'll cost you #b5000 mesos#k. Are you sure you want to purchase #b#t4031711##k?",
+        "choices": [
+          { "text": "Yes", "nextState": "checkCanHoldKerning", "context": { "itemId": "4031711" } },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "askBuyTicketNLC",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "The ride to Kerning City of Victoria Island takes off every minute, beginning on the hour, and it'll cost you #b5000 mesos#k. Are you sure you want to purchase #b#t4031713##k?",
+        "choices": [
+          { "text": "Yes", "nextState": "checkCanHoldNLC", "context": { "itemId": "4031713" } },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "checkCanHoldKerning",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "4031711" }
+            ],
+            "nextState": "checkMesoKerning"
+          },
+          {
+            "conditions": [],
+            "nextState": "noInventorySpace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkCanHoldNLC",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "4031713" }
+            ],
+            "nextState": "checkMesoNLC"
+          },
+          {
+            "conditions": [],
+            "nextState": "noInventorySpace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "noInventorySpace",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "You don't have a etc. slot available.",
+        "choices": [
+          { "text": "Next", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "checkMesoKerning",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "meso", "operator": ">=", "value": "5000" }
+            ],
+            "nextState": "purchaseTicketKerning"
+          },
+          {
+            "conditions": [],
+            "nextState": "notEnoughMesos"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMesoNLC",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "meso", "operator": ">=", "value": "5000" }
+            ],
+            "nextState": "purchaseTicketNLC"
+          },
+          {
+            "conditions": [],
+            "nextState": "notEnoughMesos"
+          }
+        ]
+      }
+    },
+    {
+      "id": "notEnoughMesos",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "You don't have enough mesos.",
+        "choices": [
+          { "text": "Next", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "purchaseTicketKerning",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "award_mesos", "params": { "amount": "-5000" } },
+          { "type": "award_item", "params": { "itemId": "4031711", "quantity": "1" } }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "purchaseSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "purchaseTicketNLC",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "award_mesos", "params": { "amount": "-5000" } },
+          { "type": "award_item", "params": { "itemId": "4031713", "quantity": "1" } }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "purchaseSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "purchaseSuccess",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "There you go.",
+        "choices": [
+          { "text": "Next", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "askLeaveWaitingRoom",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Do you want to leave before the train start? There will be no refund.",
+        "choices": [
+          { "text": "Yes", "nextState": "checkWarpDestination" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "checkWarpDestination",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "mapId", "operator": "=", "value": "600010002" }
+            ],
+            "nextState": "warpToNLCStation"
+          },
+          {
+            "conditions": [
+              { "type": "mapId", "operator": "=", "value": "600010004" }
+            ],
+            "nextState": "warpToKerningStation"
+          },
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToNLCStation",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "warp_to_map", "params": { "mapId": "600010001", "portalId": "0" } }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToKerningStation",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "warp_to_map", "params": { "mapId": "103000100", "portalId": "0" } }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

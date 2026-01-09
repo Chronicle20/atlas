@@ -1,0 +1,81 @@
+{
+  "npcId": 2012008,
+  "name": "Romi - Orbis Skin Change",
+  "startState": "welcome",
+  "states": [
+    {
+      "id": "welcome",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Well, hello! Welcome to the Orbis Skin-Care~! Would you like to have a firm, tight, healthy looking skin like mine?  With #b#t5153001##k, you can let us take care of the rest and have the kind of skin you've always wanted~!",
+        "choices": [
+          { "text": "Skin Care: #i5153001##t5153001#", "nextState": "selectSkin" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "selectSkin",
+      "type": "askStyle",
+      "askStyle": {
+        "text": "With our specialized machine, you can see the way you'll look after the treatment PRIOR to the procedure. What kind of a look are you looking for? Go ahead and choose the style of your liking~!",
+        "styles": [0, 1, 2, 3, 4],
+        "contextKey": "selectedSkin",
+        "nextState": "checkCoupon"
+      }
+    },
+    {
+      "id": "checkCoupon",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "5153001" }
+            ],
+            "nextState": "executeSkinChange"
+          },
+          { "conditions": [], "nextState": "noCoupon" }
+        ]
+      }
+    },
+    {
+      "id": "executeSkinChange",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          { "type": "destroy_item", "params": { "itemId": "5153001", "quantity": "1" } },
+          { "type": "change_skin", "params": { "styleId": "{context.selectedSkin}" } }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": "skinSuccess" }
+        ]
+      }
+    },
+    {
+      "id": "skinSuccess",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Enjoy your new and improved skin!",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "noCoupon",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Um...you don't have the skin-care coupon you need to receive the treatment. Sorry, but I am afraid we can't do it for you...",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    }
+  ]
+}

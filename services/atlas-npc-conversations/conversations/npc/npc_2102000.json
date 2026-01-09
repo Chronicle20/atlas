@@ -1,0 +1,155 @@
+{
+  "npcId": 2102000,
+  "startState": "checkTicket",
+  "states": [
+    {
+      "id": "checkTicket",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": "<",
+                "value": "1",
+                "referenceId": "4031045"
+              }
+            ],
+            "nextState": "noTicket"
+          },
+          {
+            "conditions": [],
+            "nextState": "checkTransport"
+          }
+        ]
+      }
+    },
+    {
+      "id": "noTicket",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Make sure you got an Ariant ticket to travel in this genie. Check your inventory.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "checkTransport",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "transportAvailable",
+                "operator": "=",
+                "value": "0",
+                "referenceId": "200000152"
+              }
+            ],
+            "nextState": "transportNotAvailable"
+          },
+          {
+            "conditions": [],
+            "nextState": "askBoard"
+          }
+        ]
+      }
+    },
+    {
+      "id": "transportNotAvailable",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "This genie is getting ready for takeoff. I'm sorry, but you'll have to get on the next ride. The ride schedule is available through the guide at the ticketing booth.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "askBoard",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "This will not be a short flight, so you need to take care of some things, I suggest you do that first before getting on board. Do you still wish to board the genie?",
+        "choices": [
+          { "text": "Yes", "nextState": "recheckTransport" },
+          { "text": "No", "nextState": "declined" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "declined",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Okay, talk to me if you change your mind!",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "recheckTransport",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "transportAvailable",
+                "operator": "=",
+                "value": "0",
+                "referenceId": "200000152"
+              }
+            ],
+            "nextState": "transportNotAvailable"
+          },
+          {
+            "conditions": [],
+            "nextState": "boardGenie"
+          }
+        ]
+      }
+    },
+    {
+      "id": "boardGenie",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4031045",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "260000110",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

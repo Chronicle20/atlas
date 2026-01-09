@@ -1,0 +1,40 @@
+{
+  "npcId": 2001003,
+  "startState": "askDecorate",
+  "states": [
+    {
+      "id": "askDecorate",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "We have a beautiful christmas tree.\r\nDo you want to see/decorate it?",
+        "choices": [
+          { "text": "Yes", "nextState": "warpToTree" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "warpToTree",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "209000003",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

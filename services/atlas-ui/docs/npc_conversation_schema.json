@@ -54,7 +54,6 @@
                 "enum": [
                   "sendOk",
                   "sendYesNo",
-                  "sendSimple",
                   "sendNext"
                 ]
               },

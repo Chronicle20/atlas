@@ -63,6 +63,89 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 	return p
 }
 
+// ApplyItemEffects applies the effects of a consumable item to a character.
+// This is the shared logic used by both regular item consumption and NPC-initiated item use.
+// It handles stat buffs (accuracy, evasion, attack, defense, speed, jump) and HP/MP recovery.
+func ApplyItemEffects(l logrus.FieldLogger, ctx context.Context, c character.Model, m _map2.Model, ci consumable3.Model, characterId uint32, itemId item2.Id) {
+	bp := buff.NewProcessor(l, ctx)
+	cp := character.NewProcessor(l, ctx)
+
+	statups := make([]stat.Model, 0)
+	duration := int32(0)
+
+	if val, ok := ci.GetSpec(consumable3.SpecTypeAccuracy); ok && val > 0 {
+		statups = append(statups, stat.Model{
+			Type:   ts.TemporaryStatTypeAccuracy,
+			Amount: val,
+		})
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeEvasion); ok && val > 0 {
+		statups = append(statups, stat.Model{
+			Type:   ts.TemporaryStatTypeAvoidability,
+			Amount: val,
+		})
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeHP); ok && val > 0 {
+		_ = cp.ChangeHP(m, characterId, int16(val))
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeHPRecovery); ok && val > 0 {
+		pct := float64(val) / float64(100)
+		res := int16(math.Floor(float64(c.MaxHp()) * pct))
+		_ = cp.ChangeHP(m, characterId, res)
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeJump); ok && val > 0 {
+		statups = append(statups, stat.Model{
+			Type:   ts.TemporaryStatTypeJump,
+			Amount: val,
+		})
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeMagicAttack); ok && val > 0 {
+		statups = append(statups, stat.Model{
+			Type:   ts.TemporaryStatTypeMagicAttack,
+			Amount: val,
+		})
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeMagicDefense); ok && val > 0 {
+		statups = append(statups, stat.Model{
+			Type:   ts.TemporaryStatTypeMagicDefense,
+			Amount: val,
+		})
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeMP); ok && val > 0 {
+		_ = cp.ChangeMP(m, characterId, int16(val))
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeMPRecovery); ok && val > 0 {
+		pct := float64(val) / float64(100)
+		res := int16(math.Floor(float64(c.MaxMp()) * pct))
+		_ = cp.ChangeMP(m, characterId, res)
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeWeaponAttack); ok && val > 0 {
+		statups = append(statups, stat.Model{
+			Type:   ts.TemporaryStatTypeWeaponAttack,
+			Amount: val,
+		})
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeWeaponDefense); ok && val > 0 {
+		statups = append(statups, stat.Model{
+			Type:   ts.TemporaryStatTypeWeaponDefense,
+			Amount: val,
+		})
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeSpeed); ok && val > 0 {
+		statups = append(statups, stat.Model{
+			Type:   ts.TemporaryStatTypeSpeed,
+			Amount: val,
+		})
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeTime); ok && val > 0 {
+		duration = val / 1000
+	}
+
+	if len(statups) > 0 {
+		_ = bp.Apply(m, characterId, -int32(itemId), duration, statups)(characterId)
+	}
+}
+
 func (p *Processor) RequestItemConsume(worldId byte, channelId byte, characterId uint32, slot int16, itemId item2.Id, quantity int16) error {
 	transactionId := uuid.New()
 	p.l.Debugf("Creating OneTime topic consumer to await transaction [%s] completion or cancellation.", transactionId.String())
@@ -121,7 +204,6 @@ func ConsumeStandard(transactionId uuid.UUID, characterId uint32, slot int16, it
 	return func(l logrus.FieldLogger) func(ctx context.Context) error {
 		return func(ctx context.Context) error {
 			p := NewProcessor(l, ctx)
-			bp := buff.NewProcessor(l, ctx)
 			cp := character.NewProcessor(l, ctx)
 
 			c, err := cp.GetById()(characterId)
@@ -144,79 +226,7 @@ func ConsumeStandard(transactionId uuid.UUID, characterId uint32, slot int16, it
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
 
-			statups := make([]stat.Model, 0)
-			duration := int32(0)
-			if val, ok := ci.GetSpec(consumable3.SpecTypeAccuracy); ok && val > 0 {
-				statups = append(statups, stat.Model{
-					Type:   ts.TemporaryStatTypeAccuracy,
-					Amount: val,
-				})
-			}
-			if val, ok := ci.GetSpec(consumable3.SpecTypeEvasion); ok && val > 0 {
-				statups = append(statups, stat.Model{
-					Type:   ts.TemporaryStatTypeAvoidability,
-					Amount: val,
-				})
-			}
-			if val, ok := ci.GetSpec(consumable3.SpecTypeHP); ok && val > 0 {
-				_ = cp.ChangeHP(m, characterId, int16(val))
-			}
-			if val, ok := ci.GetSpec(consumable3.SpecTypeHPRecovery); ok && val > 0 {
-				pct := float64(val) / float64(100)
-				res := int16(math.Floor(float64(c.MaxHp()) * pct))
-				_ = cp.ChangeHP(m, characterId, res)
-			}
-			if val, ok := ci.GetSpec(consumable3.SpecTypeJump); ok && val > 0 {
-				statups = append(statups, stat.Model{
-					Type:   ts.TemporaryStatTypeJump,
-					Amount: val,
-				})
-			}
-			if val, ok := ci.GetSpec(consumable3.SpecTypeMagicAttack); ok && val > 0 {
-				statups = append(statups, stat.Model{
-					Type:   ts.TemporaryStatTypeMagicAttack,
-					Amount: val,
-				})
-			}
-			if val, ok := ci.GetSpec(consumable3.SpecTypeMagicDefense); ok && val > 0 {
-				statups = append(statups, stat.Model{
-					Type:   ts.TemporaryStatTypeMagicDefense,
-					Amount: val,
-				})
-			}
-			if val, ok := ci.GetSpec(consumable3.SpecTypeMP); ok && val > 0 {
-				_ = cp.ChangeMP(m, characterId, int16(val))
-			}
-			if val, ok := ci.GetSpec(consumable3.SpecTypeMPRecovery); ok && val > 0 {
-				pct := float64(val) / float64(100)
-				res := int16(math.Floor(float64(c.MaxMp()) * pct))
-				_ = cp.ChangeMP(m, characterId, res)
-			}
-			if val, ok := ci.GetSpec(consumable3.SpecTypeWeaponAttack); ok && val > 0 {
-				statups = append(statups, stat.Model{
-					Type:   ts.TemporaryStatTypeWeaponAttack,
-					Amount: val,
-				})
-			}
-			if val, ok := ci.GetSpec(consumable3.SpecTypeWeaponDefense); ok && val > 0 {
-				statups = append(statups, stat.Model{
-					Type:   ts.TemporaryStatTypeWeaponDefense,
-					Amount: val,
-				})
-			}
-			if val, ok := ci.GetSpec(consumable3.SpecTypeSpeed); ok && val > 0 {
-				statups = append(statups, stat.Model{
-					Type:   ts.TemporaryStatTypeSpeed,
-					Amount: val,
-				})
-			}
-			if val, ok := ci.GetSpec(consumable3.SpecTypeTime); ok && val > 0 {
-				duration = val / 1000
-			}
-
-			if len(statups) > 0 {
-				_ = bp.Apply(m, characterId, -int32(itemId), duration, statups)(characterId)
-			}
+			ApplyItemEffects(l, ctx, c, m, ci, characterId, itemId)
 			return nil
 		}
 	}
@@ -659,6 +669,41 @@ func rollStatAdjustment() int16 {
 
 func (p *Processor) PassScroll(characterId uint32, legendarySpirit bool, whiteScroll bool) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(ScrollEventProvider(characterId)(true, false, legendarySpirit, whiteScroll))
+}
+
+// ApplyConsumableEffect applies item effects to a character without consuming from inventory
+// This is used for NPC-initiated buffs (e.g., NPC blessings via cm.useItem())
+func (p *Processor) ApplyConsumableEffect(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32, itemId item2.Id) error {
+	cp := character.NewProcessor(p.l, p.ctx)
+
+	c, err := cp.GetById()(characterId)
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to get character [%d] for apply consumable effect", characterId)
+		return err
+	}
+
+	m, err := character2.NewProcessor(p.l, p.ctx).GetMap(characterId)
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to get map for character [%d] for apply consumable effect", characterId)
+		return err
+	}
+
+	ci, err := p.cdp.GetById(uint32(itemId))
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to get consumable data for item [%d]", itemId)
+		return err
+	}
+
+	ApplyItemEffects(p.l, p.ctx, c, m, ci, characterId, itemId)
+	p.l.Debugf("Successfully applied consumable [%d] effects to character [%d]", itemId, characterId)
+
+	// Emit the effect applied event for saga completion
+	err = producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(EffectAppliedEventProvider(characterId, uint32(itemId), transactionId))
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to emit effect applied event for character [%d] item [%d]", characterId, itemId)
+		return err
+	}
+	return nil
 }
 
 func (p *Processor) FailScroll(characterId uint32, cursed bool, legendarySpirit bool, whiteScroll bool) error {

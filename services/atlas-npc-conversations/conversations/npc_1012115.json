@@ -1,0 +1,127 @@
+{
+  "npcId": 1012115,
+  "startState": "checkQuestStatus",
+  "states": [
+    {
+      "id": "checkQuestStatus",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "=",
+                "value": "0",
+                "referenceId": "20706"
+              }
+            ],
+            "nextState": "nothingSuspicious"
+          },
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "=",
+                "value": "1",
+                "referenceId": "20706"
+              }
+            ],
+            "nextState": "completeQuest"
+          },
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "=",
+                "value": "2",
+                "referenceId": "20706"
+              }
+            ],
+            "nextState": "alreadySpotted"
+          },
+          {
+            "conditions": [],
+            "nextState": "nothingSuspicious"
+          }
+        ]
+      }
+    },
+    {
+      "id": "nothingSuspicious",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "It looks like there's nothing suspicious in the area.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "completeQuest",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "complete_quest",
+            "params": {
+              "questId": "20706",
+              "force": "true"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "shadowSpotted"
+          }
+        ]
+      }
+    },
+    {
+      "id": "shadowSpotted",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "You have spotted the shadow! Better report to #p1103001#.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "alreadySpotted",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "The shadow has already been spotted. Better report to #p1103001#.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

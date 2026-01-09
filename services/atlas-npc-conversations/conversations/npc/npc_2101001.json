@@ -1,0 +1,18 @@
+{
+  "npcId": 2101001,
+  "startState": "greeting",
+  "states": [
+    {
+      "id": "greeting",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "I miss my sister... She's always working at the palace as the servant and I only get to see her on Sundays. The King and Queen are so selfish.",
+        "choices": [
+          { "text": "Next", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    }
+  ]
+}

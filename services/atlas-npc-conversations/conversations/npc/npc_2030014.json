@@ -1,0 +1,51 @@
+{
+  "npcId": 2030014,
+  "startState": "checkItemAndExchange",
+  "states": [
+    {
+      "id": "checkItemAndExchange",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4031450" },
+              { "type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "2280011" }
+            ],
+            "nextState": "performExchange"
+          },
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "performExchange",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "2280011",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4031450",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": null }
+        ]
+      }
+    }
+  ]
+}

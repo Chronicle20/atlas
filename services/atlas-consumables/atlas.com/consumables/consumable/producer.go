@@ -4,6 +4,7 @@ import (
 	"atlas-consumables/kafka/message/consumable"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -34,4 +35,17 @@ func ScrollEventProvider(characterId uint32) func(success bool, cursed bool, leg
 		}
 		return producer.SingleMessageProvider(key, value)
 	}
+}
+
+func EffectAppliedEventProvider(characterId uint32, itemId uint32, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &consumable.Event[consumable.EffectAppliedBody]{
+		CharacterId: characterId,
+		Type:        consumable.EventTypeEffectApplied,
+		Body: consumable.EffectAppliedBody{
+			ItemId:        itemId,
+			TransactionId: transactionId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
 }

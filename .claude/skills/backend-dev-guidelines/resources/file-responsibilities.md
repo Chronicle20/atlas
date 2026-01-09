@@ -66,3 +66,58 @@ Serialization and transformation between domain models and JSON:API.
 ## `state.go`
 
 Domain-specific enums and constants; state transition helpers.
+
+## `cache.go`
+
+Singleton cache implementation using `sync.Once` for application-scoped data caching.
+
+**Key Responsibilities:**
+- Define `CacheInterface` for cache operations (`Get`, `Put`)
+- Implement singleton cache struct with `sync.RWMutex` for thread safety
+- Provide `GetCache()` function using `sync.Once` for singleton initialization
+- Include TTL-based expiration for cached entries
+- Provide test helper functions (`SetCacheForTesting`, `ResetCache`)
+- Support multi-tenant caching when needed (partition by tenant ID)
+
+**Pattern:** Application-scoped singleton shared across all requests, never per-instance or per-request. See [patterns-cache.md](patterns-cache.md) for complete implementation guide.
+
+## `requests.go`
+
+REST client functions for calling other microservices. Always paired with a `rest.go` in the same package.
+
+**Key Responsibilities:**
+- Define `getBaseRequest()` returning `requests.RootUrl("SERVICE_NAME")`
+- Implement request functions returning `requests.Request[RestModel]`
+- Use `rest.MakeGetRequest[T]` for GET requests
+- Use `rest.MakePostRequest[T]` for POST requests
+- Build URLs using `fmt.Sprintf` with path parameters
+
+**Example:**
+```go
+package status
+
+import (
+    "myservice/rest"
+    "fmt"
+    "github.com/Chronicle20/atlas-rest/requests"
+)
+
+func getBaseRequest() string {
+    return requests.RootUrl("QUEST")  // Uses QUEST_BASE_URL env var
+}
+
+func requestByCharacterAndQuest(characterId, questId uint32) requests.Request[RestModel] {
+    return rest.MakeGetRequest[RestModel](
+        fmt.Sprintf(getBaseRequest()+"/characters/%d/quests/%d", characterId, questId),
+    )
+}
+```
+
+**Calling pattern in processor:**
+```go
+resp, err := status.requestByCharacterAndQuest(charId, questId)(l, ctx)
+```
+
+**Pattern:** Request functions are curried - they return a `requests.Request[T]` which is then called with `(logger, context)` to execute. The `rest.go` in the same package defines the `RestModel` for JSON:API deserialization.
+
+See [cross-service-implementation.md](cross-service-implementation.md) for the complete REST client pattern.

@@ -1,0 +1,193 @@
+{
+  "npcId": 2012001,
+  "startState": "checkTicket",
+  "states": [
+    {
+      "id": "checkTicket",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4031047"
+              },
+              {
+                "type": "transportAvailable",
+                "operator": "=",
+                "value": "1",
+                "referenceId": "200000111"
+              }
+            ],
+            "nextState": "askBoard"
+          },
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4031047"
+              }
+            ],
+            "nextState": "boatNotReady"
+          },
+          {
+            "conditions": [],
+            "nextState": "noTicket"
+          }
+        ]
+      }
+    },
+    {
+      "id": "askBoard",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Do you want to go to Ellinia?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkEntryAgain"
+          },
+          {
+            "text": "No",
+            "nextState": "declineBoard"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkEntryAgain",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "transportAvailable",
+                "operator": "=",
+                "value": "1",
+                "referenceId": "200000111"
+              }
+            ],
+            "nextState": "performBoard"
+          },
+          {
+            "conditions": [],
+            "nextState": "boatDeparting"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performBoard",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4031047",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "200000112",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "declineBoard",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Okay, talk to me if you change your mind!",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "noTicket",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Make sure you got a Ellinia ticket to travel in this boat. Check your inventory.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "boatNotReady",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "The boat to Ellinia is already travelling, please be patient for the next one.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "boatDeparting",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "The boat to Ellinia is ready to take off, please be patient for the next one.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

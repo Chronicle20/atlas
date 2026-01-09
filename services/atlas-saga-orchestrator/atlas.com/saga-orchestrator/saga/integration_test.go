@@ -262,11 +262,12 @@ func TestCreateAndEquipAsset_CompensationFlow(t *testing.T) {
 		RequestEquipAssetFunc: func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error {
 			return errors.New("equip failed")
 		},
-		RequestDestroyItemFunc: func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32) error {
+		RequestDestroyItemFunc: func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, removeAll bool) error {
 			// Compensation method - verify parameters
 			assert.Equal(t, uint32(12345), characterId)
 			assert.Equal(t, uint32(1302000), templateId)
 			assert.Equal(t, uint32(1), quantity)
+			assert.Equal(t, false, removeAll)
 			return nil
 		},
 	}
@@ -444,11 +445,12 @@ func TestCreateAndEquipAsset_EquipPhaseFailure(t *testing.T) {
 		RequestEquipAssetFunc: func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error {
 			return errors.New("equip failed - slot occupied")
 		},
-		RequestDestroyItemFunc: func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32) error {
+		RequestDestroyItemFunc: func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, removeAll bool) error {
 			// Compensation - destroy the successfully created asset
 			assert.Equal(t, uint32(12345), characterId)
 			assert.Equal(t, uint32(1302000), templateId)
 			assert.Equal(t, uint32(1), quantity)
+			assert.Equal(t, false, removeAll)
 			return nil
 		},
 	}
@@ -588,7 +590,7 @@ func TestCreateAndEquipAsset_MultipleFailureRecovery(t *testing.T) {
 		RequestUnequipAssetFunc: func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error {
 			return nil // Compensation succeeds
 		},
-		RequestDestroyItemFunc: func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32) error {
+		RequestDestroyItemFunc: func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, removeAll bool) error {
 			return nil // Compensation succeeds
 		},
 	}
@@ -717,7 +719,7 @@ func TestCreateAndEquipAsset_CompensationFailure(t *testing.T) {
 		RequestUnequipAssetFunc: func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error {
 			return errors.New("compensation failed - cannot unequip")
 		},
-		RequestDestroyItemFunc: func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32) error {
+		RequestDestroyItemFunc: func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, removeAll bool) error {
 			return errors.New("compensation failed - cannot destroy item")
 		},
 	}

@@ -97,6 +97,7 @@ const (
 	AwardExperience    Action = "award_experience"
 	AwardLevel         Action = "award_level"
 	AwardMesos         Action = "award_mesos"
+	AwardCurrency      Action = "award_currency"
 	WarpToRandomPortal Action = "warp_to_random_portal"
 	WarpToPortal       Action = "warp_to_portal"
 	DestroyAsset       Action = "destroy_asset"
@@ -135,9 +136,10 @@ type WarpToRandomPortalPayload struct {
 
 // WarpToPortalPayload represents the payload required to warp a character to a specific portal in a field.
 type WarpToPortalPayload struct {
-	CharacterId uint32   `json:"characterId"` // CharacterId associated with the action
-	FieldId     field.Id `json:"fieldId"`     // FieldId references the unique identifier of the field associated with the warp action.
-	PortalId    uint32   `json:"portalId"`    // PortalId specifies the unique identifier of the portal for the warp action.
+	CharacterId uint32   `json:"characterId"`         // CharacterId associated with the action
+	FieldId     field.Id `json:"fieldId"`             // FieldId references the unique identifier of the field associated with the warp action.
+	PortalId    uint32   `json:"portalId"`            // PortalId specifies the unique identifier of the portal for the warp action.
+	PortalName  string   `json:"portalName,omitempty"` // PortalName specifies the name of the portal (resolved to ID if provided).
 }
 
 // AwardExperiencePayload represents the payload required to award experience to a character.
@@ -164,6 +166,14 @@ type AwardMesosPayload struct {
 	ActorId     uint32     `json:"actorId"`     // ActorId identifies who is giving/taking the mesos
 	ActorType   string     `json:"actorType"`   // ActorType identifies the type of actor (e.g., "SYSTEM", "NPC", "CHARACTER")
 	Amount      int32      `json:"amount"`      // Amount of mesos to award (can be negative for deduction)
+}
+
+// AwardCurrencyPayload represents the payload required to award cash shop currency to a character.
+type AwardCurrencyPayload struct {
+	CharacterId  uint32 `json:"characterId"`  // CharacterId associated with the action
+	AccountId    uint32 `json:"accountId"`    // AccountId that owns the wallet
+	CurrencyType uint32 `json:"currencyType"` // CurrencyType: 1=credit, 2=points, 3=prepaid
+	Amount       int32  `json:"amount"`       // Amount of currency to award (can be negative for deduction)
 }
 
 // DestroyAssetPayload represents the payload required to destroy an asset in a compartment.
@@ -242,6 +252,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case AwardMesos:
 		var payload AwardMesosPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case AwardCurrency:
+		var payload AwardCurrencyPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

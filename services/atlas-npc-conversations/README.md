@@ -55,6 +55,7 @@ The conversation system is built around a state machine model with the following
   - **GenericAction**: Execute operations and evaluate conditions.
   - **CraftAction**: Handle crafting mechanics.
   - **ListSelection**: Present a list of options to the player.
+  - **AskStyle**: Present cosmetic style selection interface to the player (hair, face, skin).
 - **Operations**: Actions that can be performed during a conversation (e.g., award items, mesos, experience).
 - **Conditions**: Criteria that must be met to progress in the conversation.
 
@@ -91,16 +92,16 @@ Each state in the `states` array must have:
   "id": "greeting",
   "type": "dialogue",
   "dialogue": {
-    "dialogueType": "sendYesNo",    // Required: "sendOk", "sendYesNo", "sendSimple", or "sendNext"
+    "dialogueType": "sendYesNo",    // Required: "sendOk", "sendYesNo", "sendNext", "sendNextPrev", "sendPrev", or "sendAcceptDecline"
     "text": "Hello!",               // Required: Dialogue text
     "choices": [                    // Required based on dialogueType:
       {                             // - sendOk: exactly 2 choices
         "text": "Yes",              // - sendYesNo: exactly 3 choices
-        "nextState": "reward",      // - sendSimple: at least 1 choice
+        "nextState": "reward",      // - sendAcceptDecline: exactly 3 choices
         "context": {                // - sendNext: exactly 2 choices
-          "key": "value"            // Optional: context data
-        }
-      }
+          "key": "value"            // - sendNextPrev: exactly 3 choices
+        }                           // - sendPrev: exactly 2 choices
+      }                             // Note: For menu selections, use listSelection state type
     ]
   }
 }
@@ -157,6 +158,25 @@ Each state in the `states` array must have:
 }
 ```
 
+#### Ask Style State
+
+Presents a cosmetic style selection interface (hair styles, hair colors, face styles, skin colors):
+
+```json
+{
+  "id": "selectHairStyle",
+  "type": "askStyle",
+  "askStyle": {
+    "text": "Choose your new hairstyle!",     // string - Required
+    "stylesContextKey": "availableStyles",  // string - Required: Context key containing styles array
+    "contextKey": "selectedStyle",          // string - Required: Context key to store selection
+    "nextState": "applyStyle"               // string - Required: Next state after selection
+  }
+}
+```
+
+**Note**: The styles must be pre-populated in context using local operations like `local:generate_hair_styles` or `local:generate_hair_colors`.
+
 ### Operations
 
 Operations are actions executed during a `genericAction` state:
@@ -193,6 +213,70 @@ Operations are actions executed during a `genericAction` state:
   - Params: `skillId`, `level` (optional, default 1), `masterLevel` (optional, default 1)
 - `destroy_item` - Remove items from inventory
   - Params: `itemId`, `quantity`
+- `change_hair` - Change character's hair style
+  - Params: `styleId` (hair style ID, can use context references like `{context.selectedHair}`)
+- `change_face` - Change character's face style
+  - Params: `styleId` (face style ID, can use context references like `{context.selectedFace}`)
+- `change_skin` - Change character's skin color
+  - Params: `styleId` (skin color ID 0-9, can use context references like `{context.selectedSkin}`)
+- `increase_buddy_capacity` - Increase character's buddy list capacity
+  - Params: `amount` (byte, capacity increase amount)
+- `gain_closeness` - Increase pet closeness/intimacy
+  - Params: `petId` (uint32) or `petIndex` (int8, slot position), `amount` (uint16)
+- `spawn_monster` - Spawn monsters at a location (foothold resolved automatically by saga-orchestrator)
+  - Params: `monsterId` (monster template ID), `x` (x coordinate), `y` (y coordinate), `count` (optional, default 1), `team` (optional, default 0)
+- `complete_quest` - Complete a quest for the character (stub implementation - no quest service yet)
+  - Params: `questId` (quest ID to complete), `npcId` (optional, defaults to conversation NPC)
+
+##### Local Operations (executed within npc-conversations service)
+- `local:generate_hair_styles` - Generate available hair styles for character
+  - Params:
+    - `baseStyles` (comma-separated hair base IDs)
+    - `genderFilter` (optional, "true" to filter by character gender)
+    - `preserveColor` (optional, "true" to preserve current hair color)
+    - `validateExists` (optional, "true" to validate styles exist in WZ data)
+    - `excludeEquipped` (optional, "true" to exclude current hair)
+    - `outputContextKey` (required, context key to store results)
+- `local:generate_hair_colors` - Generate available hair colors for character
+  - Params:
+    - `colors` (comma-separated color IDs 0-7)
+    - `validateExists` (optional, "true" to validate colors exist)
+    - `excludeEquipped` (optional, "true" to exclude current color)
+    - `outputContextKey` (required, context key to store results)
+- `local:generate_face_styles` - Generate available face styles for character
+  - Params:
+    - `baseStyles` (comma-separated face base IDs)
+    - `genderFilter` (optional, "true" to filter by character gender)
+    - `validateExists` (optional, "true" to validate styles exist in WZ data)
+    - `excludeEquipped` (optional, "true" to exclude current face)
+    - `outputContextKey` (required, context key to store results)
+- `local:generate_face_colors` - Generate available face/eye colors for character (cosmetic lenses)
+  - Params:
+    - `colorOffsets` (comma-separated color offsets: 0, 100, 200, 300, 400, 500, 600, 700)
+    - `validateExists` (optional, "true" to validate colors exist in WZ data)
+    - `excludeEquipped` (optional, "true" to exclude current face color)
+    - `outputContextKey` (required, context key to store results)
+  - Note: Face colors use offset-based IDs (e.g., base face + 100 for color 1, + 400 for color 4)
+- `local:select_random_cosmetic` - Randomly select a cosmetic from a styles array
+  - Params:
+    - `stylesContextKey` (required, context key containing styles array)
+    - `outputContextKey` (required, context key to store selected style)
+- `local:fetch_map_player_counts` - Fetch current player counts for multiple maps
+  - Params:
+    - `mapIds` (comma-separated string of map IDs, supports context references)
+  - Stores results in context with keys: `playerCount_{mapId}` for each map
+- `local:calculate_lens_coupon` - Calculate one-time lens item ID from selected face
+  - Params:
+    - `selectedFaceContextKey` (required, context key containing the selected face ID)
+    - `outputContextKey` (required, context key to store calculated lens item ID)
+  - Formula: `lensItemId = 5152100 + (selectedFace / 100) % 10`
+  - Maps face colors (0-7) to items 5152100-5152107
+- `local:log` - Log an informational message
+  - Params:
+    - `message` (string, supports context references)
+- `local:debug` - Log a debug message
+  - Params:
+    - `message` (string, supports context references)
 
 ### Conditions
 
@@ -210,9 +294,29 @@ Conditions are evaluated to determine the next state in `outcomes`:
 #### Available Condition Types
 - `jobId` - Check character's job ID
 - `meso` - Check character's meso amount
-- `mapId` - Check character's current map
+- `mapId` - Check character's current map ID
 - `fame` - Check character's fame level
-- `item` - Check if character has specific item (requires `itemId` field)
+- `gender` - Check character's gender (0 = male, 1 = female)
+- `level` - Check character's level
+- `reborns` - Check character's rebirth count
+- `dojoPoints` - Check character's Mu Lung Dojo points
+- `vanquisherKills` - Check character's vanquisher kill count
+- `gmLevel` - Check character's GM level
+- `guildId` - Check character's guild ID (0 = not in guild)
+- `guildLeader` - Check if character is guild leader (0 = not leader, 1 = is leader)
+- `guildRank` - Check character's guild rank
+- `questStatus` - Check quest status (requires `referenceId` field with quest ID)
+  - Values: 0 = UNDEFINED, 1 = NOT_STARTED, 2 = STARTED, 3 = COMPLETED
+- `questProgress` - Check quest progress (requires `referenceId` and `step` fields)
+- `hasUnclaimedMarriageGifts` - Check for unclaimed marriage gifts (0 = false, 1 = true)
+- `strength` - Check character's strength stat
+- `dexterity` - Check character's dexterity stat
+- `intelligence` - Check character's intelligence stat
+- `luck` - Check character's luck stat
+- `buddyCapacity` - Check character's buddy list capacity
+- `petCount` - Check number of pets character has
+- `mapCapacity` - Check player count in a specific map (requires `referenceId` with map ID)
+- `item` - Check if character has specific item (requires `referenceId` field with item template ID)
 
 ### Outcomes
 
@@ -244,6 +348,59 @@ Operation parameters can reference conversation context values using the format 
 ```
 
 This allows dynamic values to be passed between conversation states.
+
+### Arithmetic Expressions
+
+Both operation parameters and condition values support arithmetic expressions, enabling dynamic calculations based on context values. This is particularly useful for bulk crafting scenarios where material requirements scale with quantity.
+
+**Supported Operators**: `*`, `/`, `+`, `-`
+
+**Examples**:
+
+Bulk crafting with multiplied material requirements:
+```json
+{
+  "type": "genericAction",
+  "genericAction": {
+    "operations": [
+      {
+        "type": "destroy_item",
+        "params": {
+          "itemId": "4000003",
+          "quantity": "10 * {context.quantity}"  // If quantity=5, destroys 50 items
+        }
+      },
+      {
+        "type": "award_item",
+        "params": {
+          "itemId": "4003001",
+          "quantity": "{context.quantity}"  // Awards 5 items
+        }
+      }
+    ],
+    "outcomes": [
+      {
+        "conditions": [
+          {
+            "type": "item",
+            "operator": ">=",
+            "value": "10 * {context.quantity}",  // Validates player has enough materials
+            "referenceId": 4000003
+          }
+        ],
+        "nextState": "craftSuccess"
+      }
+    ]
+  }
+}
+```
+
+**How It Works**:
+1. **Context substitution happens first**: `{context.quantity}` is replaced with the actual value (e.g., `"5"`)
+2. **Expression evaluation happens second**: `"10 * 5"` is evaluated to `50`
+3. **Result is used**: The operation uses the calculated value
+
+**Evaluation Order**: Expressions are evaluated left-to-right without operator precedence. For complex calculations, use multiple steps or pre-calculate values.
 
 ## Setup Instructions
 
@@ -476,3 +633,118 @@ Here's a simplified example of a conversation tree:
   }
 }
 ```
+
+## Cosmetic System
+
+The service supports character cosmetic changes (hair, face, skin) through a comprehensive system that integrates with the Atlas saga orchestrator for distributed transaction handling.
+
+### Architecture
+
+Cosmetic changes flow through the following architecture:
+
+1. **NPC Conversation** → 2. **atlas-saga-orchestrator** → 3. **atlas-character** (via Kafka) → 4. **Database Update** → 5. **Event Emission** → 6. **atlas-channel**
+
+This ensures:
+- **Transactional Integrity**: Changes are part of a saga with rollback support
+- **Event-Driven**: Other services are notified of cosmetic changes
+- **Audit Trail**: All changes are logged and traceable
+
+### Cosmetic Change Workflow
+
+#### Player Selection (e.g., Hair Salon NPC 1012103)
+
+1. **Generate Available Styles**:
+   ```json
+   {
+     "type": "genericAction",
+     "operations": [{
+       "type": "local:generate_hair_styles",
+       "params": {
+         "baseStyles": "30060,30140,30200,30210",
+         "genderFilter": "true",
+         "preserveColor": "true",
+         "validateExists": "true",
+         "excludeEquipped": "true",
+         "outputContextKey": "availableStyles"
+       }
+     }]
+   }
+   ```
+
+2. **Present Style Selection**:
+   ```json
+   {
+     "type": "askStyle",
+     "askStyle": {
+       "text": "Choose your new hairstyle!",
+       "stylesContextKey": "availableStyles",
+       "contextKey": "selectedHair",
+       "nextState": "checkCoupon"
+     }
+   }
+   ```
+
+3. **Validate and Apply**:
+   ```json
+   {
+     "type": "genericAction",
+     "operations": [
+       {
+         "type": "destroy_item",
+         "params": {"itemId": "5150001", "quantity": "1"}
+       },
+       {
+         "type": "change_hair",
+         "params": {"styleId": "{context.selectedHair}"}
+       }
+     ]
+   }
+   ```
+
+#### Random Selection (e.g., Brittany NPC 1012104)
+
+1. **Generate Styles** (same as above)
+
+2. **Random Selection**:
+   ```json
+   {
+     "type": "genericAction",
+     "operations": [{
+       "type": "local:select_random_cosmetic",
+       "params": {
+         "stylesContextKey": "availableStyles",
+         "outputContextKey": "selectedHair"
+       }
+     }]
+   }
+   ```
+
+3. **Apply** (same as player selection)
+
+### Saga Integration
+
+The `change_hair`, `change_face`, and `change_skin` operations create saga steps that:
+
+1. **Emit Kafka Command** to atlas-character service
+2. **Update Database** in a transaction (capturing old value)
+3. **Emit Status Events**:
+   - `HairChanged` / `FaceChanged` / `SkinColorChanged` (with old/new values)
+   - `StatChanged` (triggers client update)
+4. **Support Rollback** (compensation logic in saga-orchestrator)
+
+### Rollback Support
+
+The saga compensator handles failed cosmetic changes:
+
+- **Current Implementation**: Acknowledges compensation without reverting (character keeps new cosmetic)
+- **Future Enhancement**: Could store old cosmetic value in saga payload for full rollback
+- **Justification**: Similar to `CreateCharacter` - partial rollback is acceptable for non-critical cosmetics
+
+See: `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/compensator.go`
+
+### Example NPCs
+
+- **NPC 1012103** (Head Hair Salon): Player-selected haircuts and hair dye
+- **NPC 1012104** (Brittany): Random haircuts and hair dye
+
+Both NPCs demonstrate the full cosmetic change workflow with coupon consumption and validation.

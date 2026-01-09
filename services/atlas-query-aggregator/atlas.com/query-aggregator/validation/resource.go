@@ -28,6 +28,7 @@ func validationHandler(d *rest.HandlerDependency, c *rest.HandlerContext, im Res
 		}
 
 		// Validate the conditions using the structured validation
+		// World/channel context for mapCapacity conditions is now in the conditions themselves
 		result, err := NewProcessor(d.Logger(), d.Context()).ValidateStructured()(characterId, conditions)
 		if err != nil {
 			d.Logger().WithError(err).Errorln("Failed to validate conditions")

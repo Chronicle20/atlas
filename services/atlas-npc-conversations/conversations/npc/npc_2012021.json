@@ -1,0 +1,155 @@
+{
+  "npcId": 2012021,
+  "startState": "checkTicket",
+  "states": [
+    {
+      "id": "checkTicket",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": "<",
+                "value": "1",
+                "referenceId": "4031331"
+              }
+            ],
+            "nextState": "noTicketMessage"
+          },
+          {
+            "conditions": [],
+            "nextState": "checkTransportAvailable"
+          }
+        ]
+      }
+    },
+    {
+      "id": "noTicketMessage",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Make sure you got a Leafre ticket to travel in this flight. Check your inventory.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "checkTransportAvailable",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "transportAvailable",
+                "operator": "=",
+                "value": "0",
+                "referenceId": "200000132"
+              }
+            ],
+            "nextState": "transportUnavailable"
+          },
+          {
+            "conditions": [],
+            "nextState": "askToBoard"
+          }
+        ]
+      }
+    },
+    {
+      "id": "transportUnavailable",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "The flight has not arrived yet. Come back soon.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "askToBoard",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Do you wish to board the flight?",
+        "choices": [
+          { "text": "Yes", "nextState": "confirmBoard" },
+          { "text": "No", "nextState": "declinedBoarding" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "declinedBoarding",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Okay, talk to me if you change your mind!",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "confirmBoard",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "transportAvailable",
+                "operator": "=",
+                "value": "1",
+                "referenceId": "200000132"
+              }
+            ],
+            "nextState": "performBoard"
+          },
+          {
+            "conditions": [],
+            "nextState": "transportUnavailable"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performBoard",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "200000132",
+              "portalId": "0"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4031331",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -33,10 +33,13 @@ import (
 	"atlas-channel/kafka/consumer/party"
 	"atlas-channel/kafka/consumer/party/member"
 	"atlas-channel/kafka/consumer/pet"
+	"atlas-channel/kafka/consumer/quest"
 	"atlas-channel/kafka/consumer/reactor"
 	route "atlas-channel/kafka/consumer/route"
 	session2 "atlas-channel/kafka/consumer/session"
 	"atlas-channel/kafka/consumer/skill"
+	storage3 "atlas-channel/kafka/consumer/storage"
+	system_message "atlas-channel/kafka/consumer/system_message"
 	"atlas-channel/logger"
 	"atlas-channel/server"
 	"atlas-channel/service"
@@ -47,6 +50,10 @@ import (
 	"atlas-channel/tasks"
 	"atlas-channel/tracing"
 	"fmt"
+	"os"
+	"strconv"
+	"time"
+
 	channel2 "github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -56,9 +63,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
-	"os"
-	"strconv"
-	"time"
 )
 
 const serviceName = "atlas-channel"
@@ -115,9 +119,12 @@ func main() {
 	messenger.InitConsumers(l)(cmf)(consumerGroupId)
 	pet.InitConsumers(l)(cmf)(consumerGroupId)
 	consumable.InitConsumers(l)(cmf)(consumerGroupId)
+	system_message.InitConsumers(l)(cmf)(consumerGroupId)
 	cashshop.InitConsumers(l)(cmf)(consumerGroupId)
 	note3.InitConsumers(l)(cmf)(consumerGroupId)
+	quest.InitConsumers(l)(cmf)(consumerGroupId)
 	route.InitConsumers(l)(cmf)(consumerGroupId)
+	storage3.InitConsumers(l)(cmf)(consumerGroupId)
 
 	sctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(tdm.Context(), "startup")
 
@@ -185,9 +192,12 @@ func main() {
 				messenger.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				pet.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				consumable.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				system_message.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				cashshop.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				note3.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				quest.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				route.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				storage3.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 
 				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(tenantConfig.Socket.Handlers, validatorMap, handlerMap)
 				socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, sc, ten.IPAddress, c.Port)
@@ -296,6 +306,7 @@ func produceWriters() []string {
 		writer.DestroyKite,
 		writer.Clock,
 		writer.FieldTransportState,
+		writer.StorageOperation,
 	}
 }
 
@@ -364,6 +375,8 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.CompartmentSort] = handler.CompartmentSortHandleFunc
 	handlerMap[handler.CharacterItemUseSummonBagHandle] = handler.CharacterItemUseSummonBagHandleFunc
 	handlerMap[handler.NoteOperationHandle] = handler.NoteOperationHandleFunc
+	handlerMap[handler.QuestActionHandle] = handler.QuestActionHandleFunc
+	handlerMap[handler.StorageOperationHandle] = handler.StorageOperationHandleFunc
 	return handlerMap
 }
 

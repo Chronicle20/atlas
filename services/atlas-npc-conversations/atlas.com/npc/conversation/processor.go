@@ -2,58 +2,57 @@ package conversation
 
 import (
 	"atlas-npc-conversations/message"
-	"atlas-npc-conversations/npc"
+	npcSender "atlas-npc-conversations/npc"
+	"atlas-npc-conversations/saga"
+	"atlas-npc-conversations/validation"
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
+
 	"github.com/Chronicle20/atlas-constants/field"
-	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"time"
 )
 
 type Processor interface {
 	// Start starts a conversation with an NPC
 	Start(field field.Model, npcId uint32, characterId uint32) error
 
+	// StartQuest starts a quest conversation with the provided state machine
+	// The caller is responsible for selecting the correct state machine (start or end) based on quest status
+	StartQuest(field field.Model, questId uint32, npcId uint32, characterId uint32, stateMachine StateContainer) error
+
 	// Continue continues a conversation with an NPC
 	Continue(npcId uint32, characterId uint32, action byte, lastMessageType byte, selection int32) error
 
 	// End ends a conversation
 	End(characterId uint32) error
-
-	// Create creates a new conversation
-	Create(model Model) (Model, error)
-
-	// Update updates an existing conversation
-	Update(id uuid.UUID, model Model) (Model, error)
-
-	// Delete deletes a conversation
-	Delete(id uuid.UUID) error
-
-	// ByIdProvider returns a provider for retrieving a conversation by ID
-	ByIdProvider(id uuid.UUID) model.Provider[Model]
-
-	// ByNpcIdProvider returns a provider for retrieving a conversation by NPC ID
-	ByNpcIdProvider(npcId uint32) model.Provider[Model]
-
-	// AllByNpcIdProvider returns a provider for retrieving all conversations for a specific NPC ID
-	AllByNpcIdProvider(npcId uint32) model.Provider[[]Model]
-
-	// AllProvider returns a provider for retrieving all conversations
-	AllProvider() model.Provider[[]Model]
 }
 
 type ProcessorImpl struct {
-	l         logrus.FieldLogger
-	ctx       context.Context
-	t         tenant.Model
-	db        *gorm.DB
-	evaluator Evaluator
-	executor  OperationExecutor
+	l                   logrus.FieldLogger
+	ctx                 context.Context
+	t                   tenant.Model
+	db                  *gorm.DB
+	evaluator           Evaluator
+	executor            OperationExecutor
+	npcConversationProvider NpcConversationProvider
+}
+
+// NewProcessorFactory is the factory function type for creating NpcConversationProvider
+type NewProcessorFactory func(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) NpcConversationProvider
+
+// npcConversationProviderFactory stores the factory function for creating NpcConversationProvider
+// This is set by the npc package during initialization to break the import cycle
+var npcConversationProviderFactory NewProcessorFactory
+
+// SetNpcConversationProviderFactory sets the factory function for creating NpcConversationProvider
+func SetNpcConversationProviderFactory(factory NewProcessorFactory) {
+	npcConversationProviderFactory = factory
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
@@ -61,116 +60,20 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	evaluator := NewEvaluator(l, ctx, t)
 	executor := NewOperationExecutor(l, ctx)
 
+	var npcProvider NpcConversationProvider
+	if npcConversationProviderFactory != nil {
+		npcProvider = npcConversationProviderFactory(l, ctx, db)
+	}
+
 	return &ProcessorImpl{
-		l:         l,
-		ctx:       ctx,
-		t:         t,
-		db:        db,
-		evaluator: evaluator,
-		executor:  executor,
+		l:                       l,
+		ctx:                     ctx,
+		t:                       t,
+		db:                      db,
+		evaluator:               evaluator,
+		executor:                executor,
+		npcConversationProvider: npcProvider,
 	}
-}
-
-// ByIdProvider returns a provider for retrieving a conversation by ID
-func (p *ProcessorImpl) ByIdProvider(id uuid.UUID) model.Provider[Model] {
-	return model.Map[Entity, Model](Make)(GetByIdProvider(p.t.Id())(id)(p.db))
-}
-
-// ByNpcIdProvider returns a provider for retrieving a conversation by NPC ID
-func (p *ProcessorImpl) ByNpcIdProvider(npcId uint32) model.Provider[Model] {
-	return model.Map[Entity, Model](Make)(GetByNpcIdProvider(p.t.Id())(npcId)(p.db))
-}
-
-// AllProvider returns a provider for retrieving all conversations
-func (p *ProcessorImpl) AllProvider() model.Provider[[]Model] {
-	return model.SliceMap[Entity, Model](Make)(GetAllProvider(p.t.Id())(p.db))(model.ParallelMap())
-}
-
-// AllByNpcIdProvider returns a provider for retrieving all conversations for a specific NPC ID
-func (p *ProcessorImpl) AllByNpcIdProvider(npcId uint32) model.Provider[[]Model] {
-	return model.SliceMap[Entity, Model](Make)(GetAllByNpcIdProvider(p.t.Id())(npcId)(p.db))(model.ParallelMap())
-}
-
-// Create creates a new conversation
-func (p *ProcessorImpl) Create(m Model) (Model, error) {
-	p.l.Debugf("Creating conversation for NPC [%d]", m.NpcId())
-
-	// Convert model to entity
-	entity, err := ToEntity(m, p.t.Id())
-	if err != nil {
-		p.l.WithError(err).Errorf("Failed to convert model to entity")
-		return Model{}, err
-	}
-	
-	entity.ID = uuid.New()
-
-	// Save to database
-	result := p.db.Create(&entity)
-	if result.Error != nil {
-		p.l.WithError(result.Error).Errorf("Failed to create conversation")
-		return Model{}, result.Error
-	}
-
-	// Convert back to model
-	return Make(entity)
-}
-
-// Update updates an existing conversation
-func (p *ProcessorImpl) Update(id uuid.UUID, m Model) (Model, error) {
-	p.l.Debugf("Updating conversation [%s]", id)
-
-	// Check if conversation exists
-	var existingEntity Entity
-	result := p.db.Where("tenant_id = ? AND id = ?", p.t.Id(), id).First(&existingEntity)
-	if result.Error != nil {
-		p.l.WithError(result.Error).Errorf("Failed to find conversation [%s]", id)
-		return Model{}, result.Error
-	}
-
-	// Convert model to entity
-	entity, err := ToEntity(m, p.t.Id())
-	if err != nil {
-		p.l.WithError(err).Errorf("Failed to convert model to entity")
-		return Model{}, err
-	}
-
-	// Ensure ID is preserved
-	entity.ID = id
-
-	// Update in database
-	result = p.db.Model(&Entity{}).Where("tenant_id = ? AND id = ?", p.t.Id(), id).Updates(map[string]interface{}{
-		"npc_id":     entity.NpcID,
-		"data":       entity.Data,
-		"updated_at": time.Now(),
-	})
-	if result.Error != nil {
-		p.l.WithError(result.Error).Errorf("Failed to update conversation [%s]", id)
-		return Model{}, result.Error
-	}
-
-	// Retrieve updated entity
-	result = p.db.Where("tenant_id = ? AND id = ?", p.t.Id(), id).First(&entity)
-	if result.Error != nil {
-		p.l.WithError(result.Error).Errorf("Failed to retrieve updated conversation [%s]", id)
-		return Model{}, result.Error
-	}
-
-	// Convert back to model
-	return Make(entity)
-}
-
-// Delete deletes a conversation
-func (p *ProcessorImpl) Delete(id uuid.UUID) error {
-	p.l.Debugf("Deleting conversation [%s]", id)
-
-	// Delete from database
-	result := p.db.Where("tenant_id = ? AND id = ?", p.t.Id(), id).Delete(&Entity{})
-	if result.Error != nil {
-		p.l.WithError(result.Error).Errorf("Failed to delete conversation [%s]", id)
-		return result.Error
-	}
-
-	return nil
 }
 
 func (p *ProcessorImpl) Start(field field.Model, npcId uint32, characterId uint32) error {
@@ -184,7 +87,10 @@ func (p *ProcessorImpl) Start(field field.Model, npcId uint32, characterId uint3
 	}
 
 	// Get the conversation for this NPC
-	conversation, err := p.ByNpcIdProvider(npcId)()
+	if p.npcConversationProvider == nil {
+		return errors.New("NPC conversation provider not initialized")
+	}
+	conversation, err := p.npcConversationProvider.ByNpcIdProvider(npcId)()
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to retrieve conversation for NPC [%d]", npcId)
 		return err
@@ -194,17 +100,22 @@ func (p *ProcessorImpl) Start(field field.Model, npcId uint32, characterId uint3
 	startStateId := conversation.StartState()
 
 	// Create a conversation context
-	ctx, err := NewConversationContextBuilder().
+	builder := NewConversationContextBuilder().
 		SetField(field).
 		SetCharacterId(characterId).
 		SetNpcId(npcId).
 		SetCurrentState(startStateId).
-		SetConversation(conversation).
-		Build()
-	if err != nil {
-		p.l.WithError(err).Errorf("Failed to create conversation context for character [%d] and NPC [%d]", characterId, npcId)
-		return err
+		SetConversation(conversation)
+
+	// Add worldId and channelId to context for use in conditions
+	if field.WorldId() > 0 {
+		builder.AddContextValue("worldId", strconv.Itoa(int(field.WorldId())))
 	}
+	if field.ChannelId() > 0 {
+		builder.AddContextValue("channelId", strconv.Itoa(int(field.ChannelId())))
+	}
+
+	ctx := builder.Build()
 
 	// Store the context
 	GetRegistry().SetContext(p.t, ctx.CharacterId(), ctx)
@@ -220,6 +131,62 @@ func (p *ProcessorImpl) Start(field field.Model, npcId uint32, characterId uint3
 		cont, err = p.ProcessState(ctx)
 		if err != nil {
 			p.l.WithError(err).Errorf("Failed to process state [%s] for character [%d] and NPC [%d]", startStateId, characterId, npcId)
+			return err
+		}
+	}
+	return nil
+}
+
+func (p *ProcessorImpl) StartQuest(f field.Model, questId uint32, npcId uint32, characterId uint32, stateMachine StateContainer) error {
+	p.l.Debugf("Starting quest [%d] conversation with NPC [%d] for character [%d] in map [%d].", questId, npcId, characterId, f.MapId())
+
+	// Check if there's already a conversation in progress
+	_, err := GetRegistry().GetPreviousContext(p.t, characterId)
+	if err == nil {
+		p.l.Debugf("Previous conversation for character [%d] exists, avoiding starting quest [%d] conversation.", characterId, questId)
+		return errors.New("another conversation exists")
+	}
+
+	// Get the start state from the provided state machine
+	startStateId := stateMachine.StartState()
+
+	// Create a conversation context for quest
+	builder := NewConversationContextBuilder().
+		SetField(f).
+		SetCharacterId(characterId).
+		SetNpcId(npcId).
+		SetCurrentState(startStateId).
+		SetConversation(stateMachine).
+		SetConversationType(QuestConversationType).
+		SetSourceId(questId)
+
+	// Add questId to context for use in operations
+	builder.AddContextValue("questId", strconv.FormatUint(uint64(questId), 10))
+
+	// Add worldId and channelId to context for use in conditions
+	if f.WorldId() > 0 {
+		builder.AddContextValue("worldId", strconv.Itoa(int(f.WorldId())))
+	}
+	if f.ChannelId() > 0 {
+		builder.AddContextValue("channelId", strconv.Itoa(int(f.ChannelId())))
+	}
+
+	ctx := builder.Build()
+
+	// Store the context
+	GetRegistry().SetContext(p.t, ctx.CharacterId(), ctx)
+
+	cont := true
+	for cont {
+		ctx, err = GetRegistry().GetPreviousContext(p.t, characterId)
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to retrieve conversation context for [%d].", characterId)
+			return errors.New("conversation context not found")
+		}
+
+		cont, err = p.ProcessState(ctx)
+		if err != nil {
+			p.l.WithError(err).Errorf("Failed to process state [%s] for character [%d] and quest [%d]", startStateId, characterId, questId)
 			return err
 		}
 	}
@@ -278,6 +245,98 @@ func (p *ProcessorImpl) Continue(npcId uint32, characterId uint32, action byte, 
 		// Store the choice context for later use
 		choiceContext = choice.Context()
 
+	case AskNumberType:
+		// For ask number states, the selection contains the number entered by the player
+		askNumber := state.AskNumber()
+		if askNumber == nil {
+			return errors.New("askNumber is nil")
+		}
+
+		// Validate the selection against min/max values
+		if selection < 0 {
+			p.l.Errorf("Invalid number input [%d] for character [%d]: negative value", selection, characterId)
+			return fmt.Errorf("invalid number input: negative value")
+		}
+
+		numberValue := uint32(selection)
+		if numberValue < askNumber.MinValue() {
+			p.l.Errorf("Invalid number input [%d] for character [%d]: below minimum [%d]", numberValue, characterId, askNumber.MinValue())
+			return fmt.Errorf("number below minimum value")
+		}
+		if numberValue > askNumber.MaxValue() {
+			p.l.Errorf("Invalid number input [%d] for character [%d]: above maximum [%d]", numberValue, characterId, askNumber.MaxValue())
+			return fmt.Errorf("number above maximum value")
+		}
+
+		// Store the number in the context using the configured context key
+		choiceContext = make(map[string]string)
+		choiceContext[askNumber.ContextKey()] = fmt.Sprintf("%d", numberValue)
+
+		// Calculate derived values if needed (e.g., totalCost = quantity * price)
+		if price, exists := ctx.Context()["price"]; exists {
+			if priceValue, err := strconv.ParseUint(price, 10, 32); err == nil {
+				totalCost := uint64(numberValue) * priceValue
+				choiceContext["totalCost"] = fmt.Sprintf("%d", totalCost)
+			}
+		}
+
+		// Get the next state from the askNumber model
+		nextStateId = askNumber.NextState()
+
+	case AskStyleType:
+		// For ask style states, the selection contains the index of the selected style
+		askStyle := state.AskStyle()
+		if askStyle == nil {
+			return errors.New("askStyle is nil")
+		}
+
+		if action == 0 {
+			// action = 0 on Exit / Cancel
+		} else if action == 1 {
+			var styles []uint32
+			if len(askStyle.Styles()) > 0 {
+				for _, style := range askStyle.Styles() {
+					styles = append(styles, style)
+				}
+			} else if len(askStyle.StylesContextKey()) > 0 {
+				// Get the styles array from context
+				stylesValue, exists := ctx.Context()[askStyle.StylesContextKey()]
+				if !exists {
+					return fmt.Errorf("failed to get styles from context key '%s': %w", askStyle.StylesContextKey(), err)
+				}
+
+				// Parse the styles array (should be a JSON array of uint32)
+				styleStrs := strings.Split(stylesValue, ",")
+				if len(styleStrs) == 0 {
+					return errors.New("styles array is empty, cannot select random cosmetic")
+				}
+				for _, styleStr := range styleStrs {
+					var styleId int
+					styleId, err = strconv.Atoi(styleStr)
+					if err != nil {
+						return err
+					}
+					styles = append(styles, uint32(styleId))
+				}
+			}
+
+			// Validate the selection is within bounds
+			if selection < 0 || selection >= int32(len(styles)) {
+				p.l.Errorf("Invalid style selection [%d] for character [%d]: out of bounds", selection, characterId)
+				return fmt.Errorf("invalid style selection: out of bounds")
+			}
+
+			// Get the selected style ID
+			selectedStyleId := styles[selection]
+
+			// Store the selected style in the context using the configured context key
+			choiceContext = make(map[string]string)
+			choiceContext[askStyle.ContextKey()] = fmt.Sprintf("%d", selectedStyleId)
+
+			// Get the next state from the askStyle model
+			nextStateId = askStyle.NextState()
+		}
+
 	default:
 		// For other state types, we shouldn't be here (they should have been processed already)
 		return fmt.Errorf("unexpected state type for Continue: %s", state.Type())
@@ -309,17 +368,14 @@ func (p *ProcessorImpl) Continue(npcId uint32, characterId uint32, action byte, 
 		builder.AddContextValue(k, v)
 	}
 
-	ctx, err = builder.Build()
-	if err != nil {
-		p.l.WithError(err).Errorf("Failed to update conversation context for character [%d] and NPC [%d]", ctx.CharacterId(), ctx.NpcId())
-		return err
-	}
+	ctx = builder.Build()
 
 	// Store the context
 	GetRegistry().SetContext(p.t, ctx.CharacterId(), ctx)
 
 	cont := true
 	for cont {
+		var err error
 		ctx, err = GetRegistry().GetPreviousContext(p.t, characterId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to retrieve conversation context for [%d].", characterId)
@@ -366,11 +422,7 @@ func (p *ProcessorImpl) ProcessState(ctx ConversationContext) (bool, error) {
 			builder.AddContextValue(k, v)
 		}
 
-		ctx, err = builder.Build()
-		if err != nil {
-			p.l.WithError(err).Errorf("Failed to update conversation context for character [%d] and NPC [%d]", ctx.CharacterId(), ctx.NpcId())
-			return false, err
-		}
+		ctx = builder.Build()
 
 		// Store the context
 		GetRegistry().SetContext(p.t, ctx.CharacterId(), ctx)
@@ -401,6 +453,12 @@ func (p *ProcessorImpl) processState(ctx ConversationContext, state StateModel) 
 	case ListSelectionType:
 		// Process list selection state
 		return p.processListSelectionState(ctx, state)
+	case AskNumberType:
+		// Process ask number state
+		return p.processAskNumberState(ctx, state)
+	case AskStyleType:
+		// Process ask style state
+		return p.processAskStyleState(ctx, state)
 	default:
 		return "", errors.New("unknown state type")
 	}
@@ -413,13 +471,27 @@ func (p *ProcessorImpl) processDialogueState(ctx ConversationContext, state Stat
 		return "", errors.New("dialogue is nil")
 	}
 
-	// TODO: Send the dialogue to the client
+	// Replace context placeholders in the dialogue text
+	processedText, err := ReplaceContextPlaceholders(dialogue.Text(), ctx.Context())
+	if err != nil {
+		p.l.WithError(err).Warnf("Failed to replace context placeholders in dialogue text for state [%s]. Using original text.", state.Id())
+		// Use original text if replacement fails
+		processedText = dialogue.Text()
+	}
+
+	// Send the dialogue to the client
 	if dialogue.dialogueType == SendNext {
-		npc.NewProcessor(p.l, p.ctx).SendNext(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(dialogue.Text())
+		npcSender.NewProcessor(p.l, p.ctx).SendNext(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText)
+	} else if dialogue.dialogueType == SendNextPrev {
+		npcSender.NewProcessor(p.l, p.ctx).SendNextPrevious(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText)
+	} else if dialogue.dialogueType == SendPrev {
+		npcSender.NewProcessor(p.l, p.ctx).SendPrevious(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText)
 	} else if dialogue.dialogueType == SendOk {
-		npc.NewProcessor(p.l, p.ctx).SendOk(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(dialogue.Text())
+		npcSender.NewProcessor(p.l, p.ctx).SendOk(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText)
 	} else if dialogue.dialogueType == SendYesNo {
-		npc.NewProcessor(p.l, p.ctx).SendYesNo(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(dialogue.Text())
+		npcSender.NewProcessor(p.l, p.ctx).SendYesNo(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText)
+	} else if dialogue.dialogueType == SendAcceptDecline {
+		npcSender.NewProcessor(p.l, p.ctx).SendAcceptDecline(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText)
 	} else {
 		p.l.Warnf("Unhandled dialog type [%s].", dialogue.dialogueType)
 	}
@@ -494,11 +566,134 @@ func (p *ProcessorImpl) processCraftActionState(ctx ConversationContext, state S
 		return "", errors.New("craftAction is nil")
 	}
 
-	// TODO: Implement proper craft action processing logic
-	// This could involve checking materials, costs, and determining success/failure
-	// For now, return empty string to end conversation (simplified approach)
-	// Future implementation should use outcome-based state transitions
-	return "", nil
+	// Get quantity multiplier from context (defaults to 1)
+	quantityMultiplier := uint32(1)
+	if quantityStr, exists := ctx.Context()["quantity"]; exists {
+		if qty, err := strconv.ParseUint(quantityStr, 10, 32); err == nil {
+			quantityMultiplier = uint32(qty)
+		}
+	}
+
+	// Replace context placeholders in itemId
+	itemIdStr, err := ReplaceContextPlaceholders(craftAction.ItemId(), ctx.Context())
+	if err != nil {
+		p.l.WithError(err).Errorf("Failed to replace context in itemId")
+		return craftAction.FailureState(), nil
+	}
+	itemId, err := strconv.ParseUint(itemIdStr, 10, 32)
+	if err != nil {
+		p.l.WithError(err).Errorf("Invalid itemId: %s", itemIdStr)
+		return craftAction.FailureState(), nil
+	}
+
+	// Calculate total materials and costs based on quantity multiplier
+	totalMaterials := craftAction.Materials()
+	totalQuantities := make([]uint32, len(craftAction.Quantities()))
+	for i, qty := range craftAction.Quantities() {
+		totalQuantities[i] = qty * quantityMultiplier
+	}
+	totalMesoCost := craftAction.MesoCost() * quantityMultiplier
+
+	p.l.Debugf("Crafting item %d (quantity: %d) for character %d", itemId, quantityMultiplier, ctx.CharacterId())
+
+	// Build saga to craft the item
+	sagaId := uuid.New()
+	sagaBuilder := saga.NewBuilder().
+		SetTransactionId(sagaId).
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy(fmt.Sprintf("NPC_%d", ctx.NpcId()))
+
+	// Step 1: Validate character state (has mesos and materials)
+	conditions := make([]validation.ConditionInput, 0)
+
+	// Check meso requirement
+	if totalMesoCost > 0 {
+		conditions = append(conditions, validation.ConditionInput{
+			Type:     "meso",
+			Operator: ">=",
+			Value:    int(totalMesoCost),
+		})
+	}
+
+	// Check material requirements
+	for i, materialId := range totalMaterials {
+		conditions = append(conditions, validation.ConditionInput{
+			Type:        "item",
+			Operator:    ">=",
+			Value:       int(totalQuantities[i]),
+			ReferenceId: materialId,
+		})
+	}
+
+	if len(conditions) > 0 {
+		validatePayload := saga.ValidateCharacterStatePayload{
+			CharacterId: ctx.CharacterId(),
+			Conditions:  conditions,
+		}
+		sagaBuilder.AddStep("validate_resources", saga.Pending, saga.ValidateCharacterState, validatePayload)
+	}
+
+	// Step 2: Destroy materials
+	for i, materialId := range totalMaterials {
+		destroyPayload := saga.DestroyAssetPayload{
+			CharacterId: ctx.CharacterId(),
+			TemplateId:  materialId,
+			Quantity:    totalQuantities[i],
+		}
+		sagaBuilder.AddStep(fmt.Sprintf("destroy_material_%d", materialId), saga.Pending, saga.DestroyAsset, destroyPayload)
+	}
+
+	// Step 3: Deduct mesos
+	if totalMesoCost > 0 {
+		mesoPayload := saga.AwardMesosPayload{
+			CharacterId: ctx.CharacterId(),
+			WorldId:     ctx.Field().WorldId(),
+			ChannelId:   ctx.Field().ChannelId(),
+			ActorId:     ctx.NpcId(),
+			ActorType:   "NPC",
+			Amount:      -int32(totalMesoCost),
+		}
+		sagaBuilder.AddStep("deduct_mesos", saga.Pending, saga.AwardMesos, mesoPayload)
+	}
+
+	// Step 4: Award crafted item
+	craftPayload := saga.AwardItemActionPayload{
+		CharacterId: ctx.CharacterId(),
+		Item: saga.ItemPayload{
+			TemplateId: uint32(itemId),
+			Quantity:   quantityMultiplier,
+		},
+	}
+	sagaBuilder.AddStep("award_crafted_item", saga.Pending, saga.AwardInventory, craftPayload)
+
+	// Build and execute saga
+	s := sagaBuilder.Build()
+
+	// Send saga to orchestrator
+	err = saga.NewProcessor(p.l, p.ctx).Create(s)
+	if err != nil {
+		p.l.WithError(err).Errorf("Failed to create crafting saga")
+		return craftAction.FailureState(), nil
+	}
+
+	// Store saga ID and craft action details in context for later resumption
+	ctx = ctx.SetPendingSagaId(sagaId)
+	ctx.Context()["craftAction_successState"] = craftAction.SuccessState()
+	ctx.Context()["craftAction_failureState"] = craftAction.FailureState()
+	ctx.Context()["craftAction_missingMaterialsState"] = craftAction.MissingMaterialsState()
+
+	// Update conversation context in registry
+	GetRegistry().UpdateContext(p.t, ctx.CharacterId(), ctx)
+
+	p.l.WithFields(logrus.Fields{
+		"transaction_id": sagaId.String(),
+		"character_id":   ctx.CharacterId(),
+		"npc_id":         ctx.NpcId(),
+	}).Debug("Saga created, conversation waiting for completion")
+
+	// Return current state ID to keep conversation in "waiting" state
+	// When saga completes, the saga status consumer will resume the conversation
+	return state.Id(), nil
 }
 
 // processListSelectionState processes a list selection state
@@ -508,15 +703,129 @@ func (p *ProcessorImpl) processListSelectionState(ctx ConversationContext, state
 		return "", errors.New("listSelection is nil")
 	}
 
-	mb := message.NewBuilder().AddText(listSelection.Title()).NewLine()
+	// Replace context placeholders in the title
+	processedTitle, err := ReplaceContextPlaceholders(listSelection.Title(), ctx.Context())
+	if err != nil {
+		p.l.WithError(err).Warnf("Failed to replace context placeholders in list selection title for state [%s]. Using original title.", state.Id())
+		processedTitle = listSelection.Title()
+	}
+
+	mb := message.NewBuilder().AddText(processedTitle).NewLine()
 	for i, choice := range listSelection.Choices() {
 		if choice.NextState() == "" {
 			continue
 		}
-		mb.OpenItem(i).BlueText().AddText(choice.Text()).CloseItem().NewLine()
+
+		// Replace context placeholders in choice text
+		processedChoiceText, err := ReplaceContextPlaceholders(choice.Text(), ctx.Context())
+		if err != nil {
+			p.l.WithError(err).Warnf("Failed to replace context placeholders in choice text for state [%s]. Using original text.", state.Id())
+			processedChoiceText = choice.Text()
+		}
+
+		mb.OpenItem(i).BlueText().AddText(processedChoiceText).CloseItem().NewLine()
 	}
 
-	npc.NewProcessor(p.l, p.ctx).SendSimple(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(mb.String())
+	npcSender.NewProcessor(p.l, p.ctx).SendSimple(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(mb.String())
+	return state.Id(), nil
+}
+
+// processAskNumberState processes an ask number state
+func (p *ProcessorImpl) processAskNumberState(ctx ConversationContext, state StateModel) (string, error) {
+	askNumber := state.AskNumber()
+	if askNumber == nil {
+		return "", errors.New("askNumber is nil")
+	}
+
+	// Replace context placeholders in the ask number text
+	processedText, err := ReplaceContextPlaceholders(askNumber.Text(), ctx.Context())
+	if err != nil {
+		p.l.WithError(err).Warnf("Failed to replace context placeholders in ask number text for state [%s]. Using original text.", state.Id())
+		processedText = askNumber.Text()
+	}
+
+	// Send the ask number request to the client
+	err = npcSender.NewProcessor(p.l, p.ctx).SendNumber(
+		ctx.Field().WorldId(),
+		ctx.Field().ChannelId(),
+		ctx.CharacterId(),
+		ctx.NpcId(),
+		processedText,
+		askNumber.DefaultValue(),
+		askNumber.MinValue(),
+		askNumber.MaxValue())
+
+	if err != nil {
+		p.l.WithError(err).Errorf("Failed to send number request for state [%s] to character [%d]", state.Id(), ctx.CharacterId())
+		return "", err
+	}
+
+	// Return the current state ID to indicate that we're waiting for input
+	return state.Id(), nil
+}
+
+// processAskStyleState processes an ask style state
+func (p *ProcessorImpl) processAskStyleState(ctx ConversationContext, state StateModel) (string, error) {
+	askStyle := state.AskStyle()
+	if askStyle == nil {
+		return "", errors.New("askStyle is nil")
+	}
+
+	// Resolve styles - support both static and dynamic
+	styles := askStyle.Styles()
+
+	// If no static styles, try to load from context
+	if len(styles) == 0 && askStyle.StylesContextKey() != "" {
+		contextKey := askStyle.StylesContextKey()
+
+		// Get styles from context
+		stylesStr, exists := ctx.Context()[contextKey]
+		if !exists {
+			p.l.Errorf("StylesContextKey [%s] not found in context for character [%d] in state [%s]",
+				contextKey, ctx.CharacterId(), state.Id())
+			return "", fmt.Errorf("styles not found in context: %s", contextKey)
+		}
+
+		// Decode styles
+		var err error
+		styles, err = decodeUint32Array(stylesStr)
+		if err != nil {
+			p.l.WithError(err).Errorf("Failed to decode styles from context key [%s] for state [%s]", contextKey, state.Id())
+			return "", fmt.Errorf("invalid styles in context: %w", err)
+		}
+
+		p.l.Debugf("Loaded %d styles from context key [%s] for character [%d] in state [%s]",
+			len(styles), contextKey, ctx.CharacterId(), state.Id())
+	}
+
+	// Validate we have styles
+	if len(styles) == 0 {
+		p.l.Errorf("No styles available for state [%s] (neither static nor from context)", state.Id())
+		return "", errors.New("no styles available (neither static nor from context)")
+	}
+
+	// Replace context placeholders in the ask style text
+	processedText, err := ReplaceContextPlaceholders(askStyle.Text(), ctx.Context())
+	if err != nil {
+		p.l.WithError(err).Warnf("Failed to replace context placeholders in ask style text for state [%s]. Using original text.", state.Id())
+		processedText = askStyle.Text()
+	}
+
+	// Send the ask style request to the client
+	err = npcSender.NewProcessor(p.l, p.ctx).SendStyle(
+		ctx.Field().WorldId(),
+		ctx.Field().ChannelId(),
+		ctx.CharacterId(),
+		ctx.NpcId(),
+		processedText,
+		styles)
+
+	if err != nil {
+		p.l.WithError(err).Errorf("Failed to send style request for state [%s] to character [%d]", state.Id(), ctx.CharacterId())
+		return "", err
+	}
+
+	// Return the current state ID to indicate that we're waiting for input
 	return state.Id(), nil
 }
 

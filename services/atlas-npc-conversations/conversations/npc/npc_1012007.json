@@ -1,0 +1,161 @@
+{
+  "npcId": 1012007,
+  "startState": "checkForLetter",
+  "states": [
+    {
+      "id": "checkForLetter",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4031035"
+              }
+            ],
+            "nextState": "hasLetter"
+          },
+          {
+            "conditions": [],
+            "nextState": "noLetter"
+          }
+        ]
+      }
+    },
+    {
+      "id": "hasLetter",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Eh, that's my brother's letter! Probably scolding me for thinking I'm not working and stuff...Eh? Ahhh...you followed my brother's advice and trained your pet and got up here, huh? Nice!! Since you worked hard to get here, I'll boost your intimacy level with your pet.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "checkForPet"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "noLetter",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "My brother told me to take care of the pet obstacle course, but ... since I'm so far away from him, I can't help but wanting to goof around ...hehe, since I don't see him in sight, might as well just chill for a few minutes.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkForPet",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "petCount",
+                "operator": "=",
+                "value": "0"
+              }
+            ],
+            "nextState": "noPet"
+          },
+          {
+            "conditions": [],
+            "nextState": "rewardPlayer"
+          }
+        ]
+      }
+    },
+    {
+      "id": "noPet",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "Hmmm ... did you really get here with your pet? These obstacles are for pets. What are you here for without it?? Get outta here!",
+        "choices": [
+          {
+            "text": "Previous",
+            "nextState": "hasLetter"
+          },
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "rewardPlayer",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4031035",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "gain_closeness",
+            "params": {
+              "amount": "2",
+              "petIndex": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "closenessIncreased"
+          }
+        ]
+      }
+    },
+    {
+      "id": "closenessIncreased",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "What do you think? Don't you think you have gotten much closer with your pet? If you have time, train your pet again on this obstacle course...of course, with my brother's permission.",
+        "choices": [
+          {
+            "text": "Previous",
+            "nextState": "hasLetter"
+          },
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

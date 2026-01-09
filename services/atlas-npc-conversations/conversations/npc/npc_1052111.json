@@ -1,0 +1,153 @@
+{
+  "npcId": 1052111,
+  "startState": "checkQuestStarted",
+  "states": [
+    {
+      "id": "checkQuestStarted",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "=",
+                "value": "2",
+                "referenceId": "20710"
+              }
+            ],
+            "nextState": "checkHasItem"
+          },
+          {
+            "conditions": [],
+            "nextState": "justTrashCan"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkHasItem",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4032136"
+              }
+            ],
+            "nextState": "justTrashCan"
+          },
+          {
+            "conditions": [],
+            "nextState": "checkCanHold"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkCanHold",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4032136"
+              }
+            ],
+            "nextState": "giveItem"
+          },
+          {
+            "conditions": [],
+            "nextState": "noSpace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "giveItem",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4032136",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "foundItem"
+          }
+        ]
+      }
+    },
+    {
+      "id": "foundItem",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "You have found a #b#t4032136##k in the trash can!   #i4032136#",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "noSpace",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "#i4032136# Not enough space in your ETC inventory.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "justTrashCan",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Just a trash can sitting there.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

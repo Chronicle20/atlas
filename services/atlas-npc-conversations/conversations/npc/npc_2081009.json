@@ -1,0 +1,159 @@
+{
+  "npcId": 2081009,
+  "startState": "checkQuest",
+  "states": [
+    {
+      "id": "checkQuest",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "=",
+                "value": "1",
+                "referenceId": "6180"
+              },
+              {
+                "type": "questProgress",
+                "operator": "<",
+                "value": "200",
+                "referenceId": "6180",
+                "step": "9300096"
+              }
+            ],
+            "nextState": "askReady"
+          },
+          {
+            "conditions": [],
+            "nextState": "notAssigned"
+          }
+        ]
+      }
+    },
+    {
+      "id": "askReady",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Pay attention: during the time you stay inside the training ground make sure you #bhave equipped your #t1092041##k, it is of the utmost importance. Are you ready to proceed to the training area?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkShieldEquipped"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "notAssigned",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Only assigned personnel can access the training ground.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkShieldEquipped",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1092041",
+                "includeEquipped": true
+              }
+            ],
+            "nextState": "shieldEquipped"
+          },
+          {
+            "conditions": [],
+            "nextState": "shieldNotEquipped"
+          }
+        ]
+      }
+    },
+    {
+      "id": "shieldEquipped",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Have your shield equipped until the end of the quest, or else you will need to start all over again!",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "warpToTraining"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "shieldNotEquipped",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Please equip the #r#t1092041##k before entering the training ground.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToTraining",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "924000001",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

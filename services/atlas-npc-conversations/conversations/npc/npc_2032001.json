@@ -1,0 +1,181 @@
+{
+  "npcId": 2032001,
+  "startState": "checkQuest",
+  "states": [
+    {
+      "id": "checkQuest",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "questStatus", "operator": "=", "value": "3", "referenceId": "3034"}
+            ],
+            "nextState": "offerService"
+          },
+          {
+            "conditions": [],
+            "nextState": "questNotCompleted"
+          }
+        ]
+      }
+    },
+    {
+      "id": "questNotCompleted",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Go away, I'm trying to meditate.",
+        "choices": [
+          {"text": "Ok", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "offerService",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You've been so much of a help to me... If you have any Dark Crystal Ore, I can refine it for you for only #b500000 meso#k each.",
+        "choices": [
+          {"text": "Yes", "nextState": "askQuantity"},
+          {"text": "No", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "askQuantity",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "Okay, so how many do you want me to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "checkMeso"
+      }
+    },
+    {
+      "id": "checkMeso",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "meso", "operator": ">=", "value": "500000 * {context.quantity}"}
+            ],
+            "nextState": "checkInventory"
+          },
+          {
+            "conditions": [],
+            "nextState": "notEnoughMeso"
+          }
+        ]
+      }
+    },
+    {
+      "id": "notEnoughMeso",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "I'm sorry, but I am NOT doing this for free.",
+        "choices": [
+          {"text": "Ok", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "checkInventory",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "inventorySpace", "operator": ">=", "value": "{context.quantity}", "referenceId": "4005004"}
+            ],
+            "nextState": "checkOre"
+          },
+          {
+            "conditions": [],
+            "nextState": "noInventorySpace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "noInventorySpace",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Are you having trouble with no empty slots on your inventory? Sort that out first!",
+        "choices": [
+          {"text": "Ok", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "checkOre",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "10 * {context.quantity}", "referenceId": "4004004"}
+            ],
+            "nextState": "doRefine"
+          },
+          {
+            "conditions": [],
+            "nextState": "notEnoughOre"
+          }
+        ]
+      }
+    },
+    {
+      "id": "notEnoughOre",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "I need that ore to refine the Crystal. No exceptions..",
+        "choices": [
+          {"text": "Ok", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "doRefine",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4004004", "quantity": "10 * {context.quantity}"}},
+          {"type": "award_mesos", "params": {"amount": "-500000 * {context.quantity}"}},
+          {"type": "award_item", "params": {"itemId": "4005004", "quantity": "{context.quantity}"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "success"}
+        ]
+      }
+    },
+    {
+      "id": "success",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Use it wisely.",
+        "choices": [
+          {"text": "Ok", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    }
+  ]
+}

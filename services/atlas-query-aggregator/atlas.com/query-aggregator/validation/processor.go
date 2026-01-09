@@ -1,9 +1,11 @@
 package validation
 
 import (
+	"atlas-query-aggregator/buddy"
 	"atlas-query-aggregator/character"
 	"atlas-query-aggregator/inventory"
 	"atlas-query-aggregator/marriage"
+	"atlas-query-aggregator/pet"
 	"atlas-query-aggregator/quest"
 	"context"
 	"fmt"
@@ -14,7 +16,7 @@ import (
 type Processor interface {
 	// ValidateStructured validates a list of structured condition inputs against a character
 	ValidateStructured(decorators ...model.Decorator[ValidationResult]) func(characterId uint32, conditionInputs []ConditionInput) (ValidationResult, error)
-	
+
 	// ValidateWithContext validates a list of structured condition inputs using a validation context
 	ValidateWithContext(decorators ...model.Decorator[ValidationResult]) func(ctx ValidationContext, conditionInputs []ConditionInput) (ValidationResult, error)
 }
@@ -27,6 +29,8 @@ type ProcessorImpl struct {
 	inventoryProcessor inventory.Processor
 	questProcessor     quest.Processor
 	marriageProcessor  marriage.Processor
+	buddyProcessor     buddy.Processor
+	petProcessor       pet.Processor
 }
 
 // NewProcessor creates a new validation processor
@@ -38,6 +42,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		inventoryProcessor: inventory.NewProcessor(l, ctx),
 		questProcessor:     quest.NewProcessor(l, ctx),
 		marriageProcessor:  marriage.NewProcessor(l, ctx),
+		buddyProcessor:     buddy.NewProcessor(l, ctx),
+		petProcessor:       pet.NewProcessor(l, ctx),
 	}
 }
 
@@ -138,6 +144,7 @@ func (p *ProcessorImpl) ValidateWithContext(decorators ...model.Decorator[Valida
 	}
 }
 
+
 // GetValidationContextProvider returns a provider that can create validation contexts
 func (p *ProcessorImpl) GetValidationContextProvider() ValidationContextProvider {
 	return NewContextBuilderProvider(
@@ -156,5 +163,13 @@ func (p *ProcessorImpl) GetValidationContextProvider() ValidationContextProvider
 		func(characterId uint32) model.Provider[marriage.Model] {
 			return p.marriageProcessor.GetMarriageGifts(characterId)
 		},
+		func(characterId uint32) model.Provider[buddy.Model] {
+			return p.buddyProcessor.GetBuddyList(characterId)
+		},
+		func(characterId uint32) model.Provider[int] {
+			return p.petProcessor.GetSpawnedPetCount(characterId)
+		},
+		p.l,
+		p.ctx,
 	)
 }

@@ -1,0 +1,111 @@
+{
+  "npcId": 2040047,
+  "startState": "checkMap",
+  "states": [
+    {
+      "id": "checkMap",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "mapId",
+                "operator": "=",
+                "value": "922010000"
+              }
+            ],
+            "nextState": "endOfJourneyDialogue"
+          },
+          {
+            "conditions": [],
+            "nextState": "stageDialogue"
+          }
+        ]
+      }
+    },
+    {
+      "id": "endOfJourneyDialogue",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "To return back to the recruitment map, follow this way.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "warpToEosTower"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToEosTower",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "221024500",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "stageDialogue",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Once you leave the map, you'll have to restart the whole quest if you want to try it again.  Do you still want to leave this map?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "warpToEndOfJourney"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToEndOfJourney",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "922010000",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

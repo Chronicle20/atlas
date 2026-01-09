@@ -1,0 +1,2701 @@
+{
+  "npcId": 2090004,
+  "startState": "checkQuestConditions",
+  "states": [
+    {
+      "id": "checkQuestConditions",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "questStatus", "operator": "=", "value": "2", "referenceId": "3821"},
+              {"type": "item", "operator": "<", "value": "1", "referenceId": "4031554"},
+              {"type": "item", "operator": "<", "value": "1", "referenceId": "4161030"},
+              {"type": "questStatus", "operator": "=", "value": "3", "referenceId": "3830"}
+            ],
+            "nextState": "checkQuestBookInventory"
+          },
+          {
+            "conditions": [],
+            "nextState": "mainMenu"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkQuestBookInventory",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "4031554"}
+            ],
+            "nextState": "giveQuestBook"
+          },
+          {
+            "conditions": [],
+            "nextState": "questBookNoSpace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "giveQuestBook",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "award_item", "params": {"itemId": "4031554", "quantity": "1"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "questBookSuccess"}
+        ]
+      }
+    },
+    {
+      "id": "questBookSuccess",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Oh, the boy wanted you to bring him a #t4031554#? No problem, I was on his debt anyway. Now, tell him I am repaying the debt, OK?",
+        "choices": [
+          {"text": "Ok", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "questBookNoSpace",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Oh, the boy wanted you to bring him a #t4031554#? Make room at your ETC inventory first.",
+        "choices": [
+          {"text": "Ok", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "mainMenu",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "I am a man of many talents. Let me know what you'd like to do. #b",
+        "choices": [
+          {"text": "Make a medicine", "nextState": "checkHasBook"},
+          {"text": "Make a scroll", "nextState": "scrollMenu"},
+          {"text": "Donate medicine ingredients", "nextState": "donationMenu"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "decline",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Oh, talk to me when you have decided what you want from me. I am very busy right now.",
+        "choices": [
+          {"text": "Ok", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "checkHasBook",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "1", "referenceId": "4161030"}
+            ],
+            "nextState": "medicineMenu"
+          },
+          {
+            "conditions": [],
+            "nextState": "noBook"
+          }
+        ]
+      }
+    },
+    {
+      "id": "noBook",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "If you want to make a medicine, you must study the Book on Herbal Medicine first. Nothing is more dangerous than practicing a medicine without proper knowledge.",
+        "choices": [
+          {"text": "Next", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "medicineMenu",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "What kind of medicine are you interested in making?#b",
+        "choices": [
+          {"text": "#v2022145# #t2022145#", "nextState": "medicine0_quantity", "context": {"medicineId": "2022145", "medicineName": "#t2022145#"}},
+          {"text": "#v2022146# #t2022146#", "nextState": "medicine1_quantity", "context": {"medicineId": "2022146", "medicineName": "#t2022146#"}},
+          {"text": "#v2022147# #t2022147#", "nextState": "medicine2_quantity", "context": {"medicineId": "2022147", "medicineName": "#t2022147#"}},
+          {"text": "#v2022148# #t2022148#", "nextState": "medicine3_quantity", "context": {"medicineId": "2022148", "medicineName": "#t2022148#"}},
+          {"text": "#v2022149# #t2022149#", "nextState": "medicine4_quantity", "context": {"medicineId": "2022149", "medicineName": "#t2022149#"}},
+          {"text": "#v2022150# #t2022150#", "nextState": "medicine5_quantity", "context": {"medicineId": "2022150", "medicineName": "#t2022150#"}},
+          {"text": "#v2050004# #t2050004#", "nextState": "medicine6_quantity", "context": {"medicineId": "2050004", "medicineName": "#t2050004#"}},
+          {"text": "#v4031554# #t4031554#", "nextState": "medicine7_quantity", "context": {"medicineId": "4031554", "medicineName": "#t4031554#"}},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "medicine0_quantity",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "How many #b#t2022145##k do you want to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "medicine0_confirm"
+      }
+    },
+    {
+      "id": "medicine0_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want to make #b{context.quantity} #t2022145##k? In order to make {context.quantity} #t2022145#, you'll need the following items:\r\n\r\n#i2022116# {context.quantity} * 3 #t2022116#",
+        "choices": [
+          {"text": "Yes", "nextState": "medicine0_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "medicine0_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "3 * {context.quantity}", "referenceId": "2022116"},
+              {"type": "inventorySpace", "operator": ">=", "value": "{context.quantity}", "referenceId": "2022145"}
+            ],
+            "nextState": "medicine0_craft"
+          },
+          {
+            "conditions": [],
+            "nextState": "medicineFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "medicine0_craft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "2022116", "quantity": "3 * {context.quantity}"}},
+          {"type": "award_item", "params": {"itemId": "2022145", "quantity": "{context.quantity}"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "medicine1_quantity",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "How many #b#t2022146##k do you want to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "medicine1_confirm"
+      }
+    },
+    {
+      "id": "medicine1_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want to make #b{context.quantity} #t2022146##k? In order to make {context.quantity} #t2022146#, you'll need the following items:\r\n\r\n#i2022116# {context.quantity} * 3 #t2022116#",
+        "choices": [
+          {"text": "Yes", "nextState": "medicine1_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "medicine1_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "3 * {context.quantity}", "referenceId": "2022116"},
+              {"type": "inventorySpace", "operator": ">=", "value": "{context.quantity}", "referenceId": "2022146"}
+            ],
+            "nextState": "medicine1_craft"
+          },
+          {
+            "conditions": [],
+            "nextState": "medicineFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "medicine1_craft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "2022116", "quantity": "3 * {context.quantity}"}},
+          {"type": "award_item", "params": {"itemId": "2022146", "quantity": "{context.quantity}"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "medicine2_quantity",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "How many #b#t2022147##k do you want to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "medicine2_confirm"
+      }
+    },
+    {
+      "id": "medicine2_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want to make #b{context.quantity} #t2022147##k? In order to make {context.quantity} #t2022147#, you'll need the following items:\r\n\r\n#i4000281# {context.quantity} * 10 #t4000281#\r\n#i4000293# {context.quantity} * 10 #t4000293#\r\n#i4031138# {context.quantity} * 910 meso",
+        "choices": [
+          {"text": "Yes", "nextState": "medicine2_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "medicine2_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "10 * {context.quantity}", "referenceId": "4000281"},
+              {"type": "item", "operator": ">=", "value": "10 * {context.quantity}", "referenceId": "4000293"},
+              {"type": "meso", "operator": ">=", "value": "910 * {context.quantity}"},
+              {"type": "inventorySpace", "operator": ">=", "value": "{context.quantity}", "referenceId": "2022147"}
+            ],
+            "nextState": "medicine2_craft"
+          },
+          {
+            "conditions": [],
+            "nextState": "medicineFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "medicine2_craft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4000281", "quantity": "10 * {context.quantity}"}},
+          {"type": "destroy_item", "params": {"itemId": "4000293", "quantity": "10 * {context.quantity}"}},
+          {"type": "award_mesos", "params": {"amount": "-910 * {context.quantity}"}},
+          {"type": "award_item", "params": {"itemId": "2022147", "quantity": "{context.quantity}"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "medicine3_quantity",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "How many #b#t2022148##k do you want to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "medicine3_confirm"
+      }
+    },
+    {
+      "id": "medicine3_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want to make #b{context.quantity} #t2022148##k? In order to make {context.quantity} #t2022148#, you'll need the following items:\r\n\r\n#i4000276# {context.quantity} * 20 #t4000276#\r\n#i2002005# {context.quantity} * 1 #t2002005#\r\n#i4031138# {context.quantity} * 950 meso",
+        "choices": [
+          {"text": "Yes", "nextState": "medicine3_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "medicine3_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "20 * {context.quantity}", "referenceId": "4000276"},
+              {"type": "item", "operator": ">=", "value": "1 * {context.quantity}", "referenceId": "2002005"},
+              {"type": "meso", "operator": ">=", "value": "950 * {context.quantity}"},
+              {"type": "inventorySpace", "operator": ">=", "value": "{context.quantity}", "referenceId": "2022148"}
+            ],
+            "nextState": "medicine3_craft"
+          },
+          {
+            "conditions": [],
+            "nextState": "medicineFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "medicine3_craft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4000276", "quantity": "20 * {context.quantity}"}},
+          {"type": "destroy_item", "params": {"itemId": "2002005", "quantity": "1 * {context.quantity}"}},
+          {"type": "award_mesos", "params": {"amount": "-950 * {context.quantity}"}},
+          {"type": "award_item", "params": {"itemId": "2022148", "quantity": "{context.quantity}"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "medicine4_quantity",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "How many #b#t2022149##k do you want to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "medicine4_confirm"
+      }
+    },
+    {
+      "id": "medicine4_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want to make #b{context.quantity} #t2022149##k? In order to make {context.quantity} #t2022149#, you'll need the following items:\r\n\r\n#i4000288# {context.quantity} * 20 #t4000288#\r\n#i4000292# {context.quantity} * 20 #t4000292#\r\n#i4031138# {context.quantity} * 1940 meso",
+        "choices": [
+          {"text": "Yes", "nextState": "medicine4_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "medicine4_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "20 * {context.quantity}", "referenceId": "4000288"},
+              {"type": "item", "operator": ">=", "value": "20 * {context.quantity}", "referenceId": "4000292"},
+              {"type": "meso", "operator": ">=", "value": "1940 * {context.quantity}"},
+              {"type": "inventorySpace", "operator": ">=", "value": "{context.quantity}", "referenceId": "2022149"}
+            ],
+            "nextState": "medicine4_craft"
+          },
+          {
+            "conditions": [],
+            "nextState": "medicineFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "medicine4_craft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4000288", "quantity": "20 * {context.quantity}"}},
+          {"type": "destroy_item", "params": {"itemId": "4000292", "quantity": "20 * {context.quantity}"}},
+          {"type": "award_mesos", "params": {"amount": "-1940 * {context.quantity}"}},
+          {"type": "award_item", "params": {"itemId": "2022149", "quantity": "{context.quantity}"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "medicine5_quantity",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "How many #b#t2022150##k do you want to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "medicine5_confirm"
+      }
+    },
+    {
+      "id": "medicine5_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want to make #b{context.quantity} #t2022150##k? In order to make {context.quantity} #t2022150#, you'll need the following items:\r\n\r\n#i4000295# {context.quantity} * 10 #t4000295#\r\n#i4031138# {context.quantity} * 600 meso",
+        "choices": [
+          {"text": "Yes", "nextState": "medicine5_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "medicine5_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "10 * {context.quantity}", "referenceId": "4000295"},
+              {"type": "meso", "operator": ">=", "value": "600 * {context.quantity}"},
+              {"type": "inventorySpace", "operator": ">=", "value": "{context.quantity}", "referenceId": "2022150"}
+            ],
+            "nextState": "medicine5_craft"
+          },
+          {
+            "conditions": [],
+            "nextState": "medicineFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "medicine5_craft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4000295", "quantity": "10 * {context.quantity}"}},
+          {"type": "award_mesos", "params": {"amount": "-600 * {context.quantity}"}},
+          {"type": "award_item", "params": {"itemId": "2022150", "quantity": "{context.quantity}"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "medicine6_quantity",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "How many #b#t2050004##k do you want to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "medicine6_confirm"
+      }
+    },
+    {
+      "id": "medicine6_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want to make #b{context.quantity} #t2050004##k? In order to make {context.quantity} #t2050004#, you'll need the following items:\r\n\r\n#i2022131# {context.quantity} * 1 #t2022131#\r\n#i2022132# {context.quantity} * 1 #t2022132#\r\n#i4031138# {context.quantity} * 700 meso",
+        "choices": [
+          {"text": "Yes", "nextState": "medicine6_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "medicine6_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "1 * {context.quantity}", "referenceId": "2022131"},
+              {"type": "item", "operator": ">=", "value": "1 * {context.quantity}", "referenceId": "2022132"},
+              {"type": "meso", "operator": ">=", "value": "700 * {context.quantity}"},
+              {"type": "inventorySpace", "operator": ">=", "value": "{context.quantity}", "referenceId": "2050004"}
+            ],
+            "nextState": "medicine6_craft"
+          },
+          {
+            "conditions": [],
+            "nextState": "medicineFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "medicine6_craft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "2022131", "quantity": "1 * {context.quantity}"}},
+          {"type": "destroy_item", "params": {"itemId": "2022132", "quantity": "1 * {context.quantity}"}},
+          {"type": "award_mesos", "params": {"amount": "-700 * {context.quantity}"}},
+          {"type": "award_item", "params": {"itemId": "2050004", "quantity": "{context.quantity}"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "medicine7_quantity",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "How many #b#t4031554##k do you want to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "medicine7_confirm"
+      }
+    },
+    {
+      "id": "medicine7_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want to make #b{context.quantity} #t4031554##k? In order to make {context.quantity} #t4031554#, you'll need the following items:\r\n\r\n#i4000286# {context.quantity} * 20 #t4000286#\r\n#i4000287# {context.quantity} * 20 #t4000287#\r\n#i4000293# {context.quantity} * 20 #t4000293#\r\n#i4031138# {context.quantity} * 1000 meso",
+        "choices": [
+          {"text": "Yes", "nextState": "medicine7_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "medicine7_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "20 * {context.quantity}", "referenceId": "4000286"},
+              {"type": "item", "operator": ">=", "value": "20 * {context.quantity}", "referenceId": "4000287"},
+              {"type": "item", "operator": ">=", "value": "20 * {context.quantity}", "referenceId": "4000293"},
+              {"type": "meso", "operator": ">=", "value": "1000 * {context.quantity}"},
+              {"type": "inventorySpace", "operator": ">=", "value": "{context.quantity}", "referenceId": "4031554"}
+            ],
+            "nextState": "medicine7_craft"
+          },
+          {
+            "conditions": [],
+            "nextState": "medicineFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "medicine7_craft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4000286", "quantity": "20 * {context.quantity}"}},
+          {"type": "destroy_item", "params": {"itemId": "4000287", "quantity": "20 * {context.quantity}"}},
+          {"type": "destroy_item", "params": {"itemId": "4000293", "quantity": "20 * {context.quantity}"}},
+          {"type": "award_mesos", "params": {"amount": "-1000 * {context.quantity}"}},
+          {"type": "award_item", "params": {"itemId": "4031554", "quantity": "{context.quantity}"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "medicineFail",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Please make sure you are neither lacking ingredients or lacking space in your use inventory.",
+        "choices": [
+          {"text": "Ok", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "scrollMenu",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "What kind of scrolls are you interested in making?#b",
+        "choices": [
+          {"text": "Scroll for One-Handed Sword for ATT", "nextState": "scroll0_confirm", "context": {"scrollId": "2043000", "scrollIdLucky": "2043001"}},
+          {"text": "Scroll for One-Handed Axe for ATT", "nextState": "scroll1_confirm", "context": {"scrollId": "2043100", "scrollIdLucky": "2043101"}},
+          {"text": "Scroll for One-Handed BW for ATT", "nextState": "scroll2_confirm", "context": {"scrollId": "2043200", "scrollIdLucky": "2043201"}},
+          {"text": "Scroll for Dagger for ATT", "nextState": "scroll3_confirm", "context": {"scrollId": "2043300", "scrollIdLucky": "2043301"}},
+          {"text": "Scroll for Wand for Magic Att.", "nextState": "scroll4_confirm", "context": {"scrollId": "2043700", "scrollIdLucky": "2043701"}},
+          {"text": "Scroll for Staff for Magic Att.", "nextState": "scroll5_confirm", "context": {"scrollId": "2043800", "scrollIdLucky": "2043801"}},
+          {"text": "Scroll for Two-handed Sword for ATT.", "nextState": "scroll6_confirm", "context": {"scrollId": "2044000", "scrollIdLucky": "2044001"}},
+          {"text": "Scroll for Two-handed Axe for ATT", "nextState": "scroll7_confirm", "context": {"scrollId": "2044100", "scrollIdLucky": "2044101"}},
+          {"text": "Scroll for Two-handed BW for ATT", "nextState": "scroll8_confirm", "context": {"scrollId": "2044200", "scrollIdLucky": "2044201"}},
+          {"text": "Scroll for Spear for ATT", "nextState": "scroll9_confirm", "context": {"scrollId": "2044300", "scrollIdLucky": "2044301"}},
+          {"text": "Scroll for Pole Arm for ATT", "nextState": "scroll10_confirm", "context": {"scrollId": "2044400", "scrollIdLucky": "2044401"}},
+          {"text": "Scroll for Bow for ATT", "nextState": "scroll11_confirm", "context": {"scrollId": "2044500", "scrollIdLucky": "2044501"}},
+          {"text": "Scroll for Crossbow for ATT", "nextState": "scroll12_confirm", "context": {"scrollId": "2044600", "scrollIdLucky": "2044601"}},
+          {"text": "Scroll for Claw for ATT", "nextState": "scroll13_confirm", "context": {"scrollId": "2044700", "scrollIdLucky": "2044701"}},
+          {"text": "Scroll for Knuckle for ATT", "nextState": "scroll14_confirm", "context": {"scrollId": "2044800", "scrollIdLucky": "2044801"}},
+          {"text": "Scroll for Gun for ATT", "nextState": "scroll15_confirm", "context": {"scrollId": "2044900", "scrollIdLucky": "2044901"}},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "scroll0_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want to make #b#t2043000##k? In order to make #t2043000# you'll need the following items:\r\n#i4001124# 100 #t4001124#\r\n#i4010001# 10 #t4010001#",
+        "choices": [
+          {"text": "Yes", "nextState": "scroll0_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "scroll0_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "100", "referenceId": "4001124"},
+              {"type": "item", "operator": ">=", "value": "10", "referenceId": "4010001"},
+              {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "2043000"}
+            ],
+            "nextState": "scroll0_random"
+          },
+          {
+            "conditions": [],
+            "nextState": "scrollFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "scroll0_random",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "local:select_random_weighted", "params": {"items": "2043000,2043001", "weights": "90,10", "outputContextKey": "selectedScroll"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "scroll0_craft"}
+        ]
+      }
+    },
+    {
+      "id": "scroll0_craft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4001124", "quantity": "100"}},
+          {"type": "destroy_item", "params": {"itemId": "4010001", "quantity": "10"}},
+          {"type": "award_item", "params": {"itemId": "{context.selectedScroll}", "quantity": "1"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "scroll1_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want to make #b#t2043100##k? In order to make #t2043100# you'll need the following items:\r\n#i4001124# 100 #t4001124#\r\n#i4010001# 10 #t4010001#",
+        "choices": [
+          {"text": "Yes", "nextState": "scroll1_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "scroll1_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "100", "referenceId": "4001124"},
+              {"type": "item", "operator": ">=", "value": "10", "referenceId": "4010001"},
+              {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "2043100"}
+            ],
+            "nextState": "scroll1_random"
+          },
+          {
+            "conditions": [],
+            "nextState": "scrollFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "scroll1_random",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "local:select_random_weighted", "params": {"items": "2043100,2043101", "weights": "90,10", "outputContextKey": "selectedScroll"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "scroll1_craft"}
+        ]
+      }
+    },
+    {
+      "id": "scroll1_craft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4001124", "quantity": "100"}},
+          {"type": "destroy_item", "params": {"itemId": "4010001", "quantity": "10"}},
+          {"type": "award_item", "params": {"itemId": "{context.selectedScroll}", "quantity": "1"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "scroll2_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want to make #b#t2043200##k? In order to make #t2043200# you'll need the following items:\r\n#i4001124# 100 #t4001124#\r\n#i4010001# 10 #t4010001#",
+        "choices": [
+          {"text": "Yes", "nextState": "scroll2_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "scroll2_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "100", "referenceId": "4001124"},
+              {"type": "item", "operator": ">=", "value": "10", "referenceId": "4010001"},
+              {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "2043200"}
+            ],
+            "nextState": "scroll2_random"
+          },
+          {
+            "conditions": [],
+            "nextState": "scrollFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "scroll2_random",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "local:select_random_weighted", "params": {"items": "2043200,2043201", "weights": "90,10", "outputContextKey": "selectedScroll"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "scroll2_craft"}
+        ]
+      }
+    },
+    {
+      "id": "scroll2_craft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4001124", "quantity": "100"}},
+          {"type": "destroy_item", "params": {"itemId": "4010001", "quantity": "10"}},
+          {"type": "award_item", "params": {"itemId": "{context.selectedScroll}", "quantity": "1"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "scroll3_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want to make #b#t2043300##k? In order to make #t2043300# you'll need the following items:\r\n#i4001124# 100 #t4001124#\r\n#i4010001# 10 #t4010001#",
+        "choices": [
+          {"text": "Yes", "nextState": "scroll3_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "scroll3_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "100", "referenceId": "4001124"},
+              {"type": "item", "operator": ">=", "value": "10", "referenceId": "4010001"},
+              {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "2043300"}
+            ],
+            "nextState": "scroll3_random"
+          },
+          {
+            "conditions": [],
+            "nextState": "scrollFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "scroll3_random",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "local:select_random_weighted", "params": {"items": "2043300,2043301", "weights": "90,10", "outputContextKey": "selectedScroll"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "scroll3_craft"}
+        ]
+      }
+    },
+    {
+      "id": "scroll3_craft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4001124", "quantity": "100"}},
+          {"type": "destroy_item", "params": {"itemId": "4010001", "quantity": "10"}},
+          {"type": "award_item", "params": {"itemId": "{context.selectedScroll}", "quantity": "1"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "scroll4_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want to make #b#t2043700##k? In order to make #t2043700# you'll need the following items:\r\n#i4001124# 100 #t4001124#\r\n#i4010001# 10 #t4010001#",
+        "choices": [
+          {"text": "Yes", "nextState": "scroll4_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "scroll4_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "100", "referenceId": "4001124"},
+              {"type": "item", "operator": ">=", "value": "10", "referenceId": "4010001"},
+              {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "2043700"}
+            ],
+            "nextState": "scroll4_random"
+          },
+          {
+            "conditions": [],
+            "nextState": "scrollFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "scroll4_random",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "local:select_random_weighted", "params": {"items": "2043700,2043701", "weights": "90,10", "outputContextKey": "selectedScroll"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "scroll4_craft"}
+        ]
+      }
+    },
+    {
+      "id": "scroll4_craft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4001124", "quantity": "100"}},
+          {"type": "destroy_item", "params": {"itemId": "4010001", "quantity": "10"}},
+          {"type": "award_item", "params": {"itemId": "{context.selectedScroll}", "quantity": "1"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "scroll5_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want to make #b#t2043800##k? In order to make #t2043800# you'll need the following items:\r\n#i4001124# 100 #t4001124#\r\n#i4010001# 10 #t4010001#",
+        "choices": [
+          {"text": "Yes", "nextState": "scroll5_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "scroll5_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "100", "referenceId": "4001124"},
+              {"type": "item", "operator": ">=", "value": "10", "referenceId": "4010001"},
+              {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "2043800"}
+            ],
+            "nextState": "scroll5_random"
+          },
+          {
+            "conditions": [],
+            "nextState": "scrollFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "scroll5_random",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "local:select_random_weighted", "params": {"items": "2043800,2043801", "weights": "90,10", "outputContextKey": "selectedScroll"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "scroll5_craft"}
+        ]
+      }
+    },
+    {
+      "id": "scroll5_craft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4001124", "quantity": "100"}},
+          {"type": "destroy_item", "params": {"itemId": "4010001", "quantity": "10"}},
+          {"type": "award_item", "params": {"itemId": "{context.selectedScroll}", "quantity": "1"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "scroll6_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want to make #b#t2044000##k? In order to make #t2044000# you'll need the following items:\r\n#i4001124# 100 #t4001124#\r\n#i4010001# 10 #t4010001#",
+        "choices": [
+          {"text": "Yes", "nextState": "scroll6_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "scroll6_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "100", "referenceId": "4001124"},
+              {"type": "item", "operator": ">=", "value": "10", "referenceId": "4010001"},
+              {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "2044000"}
+            ],
+            "nextState": "scroll6_random"
+          },
+          {
+            "conditions": [],
+            "nextState": "scrollFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "scroll6_random",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "local:select_random_weighted", "params": {"items": "2044000,2044001", "weights": "90,10", "outputContextKey": "selectedScroll"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "scroll6_craft"}
+        ]
+      }
+    },
+    {
+      "id": "scroll6_craft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4001124", "quantity": "100"}},
+          {"type": "destroy_item", "params": {"itemId": "4010001", "quantity": "10"}},
+          {"type": "award_item", "params": {"itemId": "{context.selectedScroll}", "quantity": "1"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "scroll7_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want to make #b#t2044100##k? In order to make #t2044100# you'll need the following items:\r\n#i4001124# 100 #t4001124#\r\n#i4010001# 10 #t4010001#",
+        "choices": [
+          {"text": "Yes", "nextState": "scroll7_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "scroll7_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "100", "referenceId": "4001124"},
+              {"type": "item", "operator": ">=", "value": "10", "referenceId": "4010001"},
+              {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "2044100"}
+            ],
+            "nextState": "scroll7_random"
+          },
+          {
+            "conditions": [],
+            "nextState": "scrollFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "scroll7_random",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "local:select_random_weighted", "params": {"items": "2044100,2044101", "weights": "90,10", "outputContextKey": "selectedScroll"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "scroll7_craft"}
+        ]
+      }
+    },
+    {
+      "id": "scroll7_craft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4001124", "quantity": "100"}},
+          {"type": "destroy_item", "params": {"itemId": "4010001", "quantity": "10"}},
+          {"type": "award_item", "params": {"itemId": "{context.selectedScroll}", "quantity": "1"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "scroll8_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want to make #b#t2044200##k? In order to make #t2044200# you'll need the following items:\r\n#i4001124# 100 #t4001124#\r\n#i4010001# 10 #t4010001#",
+        "choices": [
+          {"text": "Yes", "nextState": "scroll8_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "scroll8_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "100", "referenceId": "4001124"},
+              {"type": "item", "operator": ">=", "value": "10", "referenceId": "4010001"},
+              {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "2044200"}
+            ],
+            "nextState": "scroll8_random"
+          },
+          {
+            "conditions": [],
+            "nextState": "scrollFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "scroll8_random",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "local:select_random_weighted", "params": {"items": "2044200,2044201", "weights": "90,10", "outputContextKey": "selectedScroll"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "scroll8_craft"}
+        ]
+      }
+    },
+    {
+      "id": "scroll8_craft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4001124", "quantity": "100"}},
+          {"type": "destroy_item", "params": {"itemId": "4010001", "quantity": "10"}},
+          {"type": "award_item", "params": {"itemId": "{context.selectedScroll}", "quantity": "1"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "scroll9_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want to make #b#t2044300##k? In order to make #t2044300# you'll need the following items:\r\n#i4001124# 100 #t4001124#\r\n#i4010001# 10 #t4010001#",
+        "choices": [
+          {"text": "Yes", "nextState": "scroll9_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "scroll9_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "100", "referenceId": "4001124"},
+              {"type": "item", "operator": ">=", "value": "10", "referenceId": "4010001"},
+              {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "2044300"}
+            ],
+            "nextState": "scroll9_random"
+          },
+          {
+            "conditions": [],
+            "nextState": "scrollFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "scroll9_random",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "local:select_random_weighted", "params": {"items": "2044300,2044301", "weights": "90,10", "outputContextKey": "selectedScroll"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "scroll9_craft"}
+        ]
+      }
+    },
+    {
+      "id": "scroll9_craft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4001124", "quantity": "100"}},
+          {"type": "destroy_item", "params": {"itemId": "4010001", "quantity": "10"}},
+          {"type": "award_item", "params": {"itemId": "{context.selectedScroll}", "quantity": "1"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "scroll10_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want to make #b#t2044400##k? In order to make #t2044400# you'll need the following items:\r\n#i4001124# 100 #t4001124#\r\n#i4010001# 10 #t4010001#",
+        "choices": [
+          {"text": "Yes", "nextState": "scroll10_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "scroll10_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "100", "referenceId": "4001124"},
+              {"type": "item", "operator": ">=", "value": "10", "referenceId": "4010001"},
+              {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "2044400"}
+            ],
+            "nextState": "scroll10_random"
+          },
+          {
+            "conditions": [],
+            "nextState": "scrollFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "scroll10_random",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "local:select_random_weighted", "params": {"items": "2044400,2044401", "weights": "90,10", "outputContextKey": "selectedScroll"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "scroll10_craft"}
+        ]
+      }
+    },
+    {
+      "id": "scroll10_craft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4001124", "quantity": "100"}},
+          {"type": "destroy_item", "params": {"itemId": "4010001", "quantity": "10"}},
+          {"type": "award_item", "params": {"itemId": "{context.selectedScroll}", "quantity": "1"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "scroll11_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want to make #b#t2044500##k? In order to make #t2044500# you'll need the following items:\r\n#i4001124# 100 #t4001124#\r\n#i4010001# 10 #t4010001#",
+        "choices": [
+          {"text": "Yes", "nextState": "scroll11_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "scroll11_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "100", "referenceId": "4001124"},
+              {"type": "item", "operator": ">=", "value": "10", "referenceId": "4010001"},
+              {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "2044500"}
+            ],
+            "nextState": "scroll11_random"
+          },
+          {
+            "conditions": [],
+            "nextState": "scrollFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "scroll11_random",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "local:select_random_weighted", "params": {"items": "2044500,2044501", "weights": "90,10", "outputContextKey": "selectedScroll"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "scroll11_craft"}
+        ]
+      }
+    },
+    {
+      "id": "scroll11_craft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4001124", "quantity": "100"}},
+          {"type": "destroy_item", "params": {"itemId": "4010001", "quantity": "10"}},
+          {"type": "award_item", "params": {"itemId": "{context.selectedScroll}", "quantity": "1"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "scroll12_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want to make #b#t2044600##k? In order to make #t2044600# you'll need the following items:\r\n#i4001124# 100 #t4001124#\r\n#i4010001# 10 #t4010001#",
+        "choices": [
+          {"text": "Yes", "nextState": "scroll12_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "scroll12_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "100", "referenceId": "4001124"},
+              {"type": "item", "operator": ">=", "value": "10", "referenceId": "4010001"},
+              {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "2044600"}
+            ],
+            "nextState": "scroll12_random"
+          },
+          {
+            "conditions": [],
+            "nextState": "scrollFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "scroll12_random",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "local:select_random_weighted", "params": {"items": "2044600,2044601", "weights": "90,10", "outputContextKey": "selectedScroll"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "scroll12_craft"}
+        ]
+      }
+    },
+    {
+      "id": "scroll12_craft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4001124", "quantity": "100"}},
+          {"type": "destroy_item", "params": {"itemId": "4010001", "quantity": "10"}},
+          {"type": "award_item", "params": {"itemId": "{context.selectedScroll}", "quantity": "1"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "scroll13_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want to make #b#t2044700##k? In order to make #t2044700# you'll need the following items:\r\n#i4001124# 100 #t4001124#\r\n#i4010001# 10 #t4010001#",
+        "choices": [
+          {"text": "Yes", "nextState": "scroll13_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "scroll13_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "100", "referenceId": "4001124"},
+              {"type": "item", "operator": ">=", "value": "10", "referenceId": "4010001"},
+              {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "2044700"}
+            ],
+            "nextState": "scroll13_random"
+          },
+          {
+            "conditions": [],
+            "nextState": "scrollFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "scroll13_random",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "local:select_random_weighted", "params": {"items": "2044700,2044701", "weights": "90,10", "outputContextKey": "selectedScroll"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "scroll13_craft"}
+        ]
+      }
+    },
+    {
+      "id": "scroll13_craft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4001124", "quantity": "100"}},
+          {"type": "destroy_item", "params": {"itemId": "4010001", "quantity": "10"}},
+          {"type": "award_item", "params": {"itemId": "{context.selectedScroll}", "quantity": "1"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "scroll14_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want to make #b#t2044800##k? In order to make #t2044800# you'll need the following items:\r\n#i4001124# 100 #t4001124#\r\n#i4010001# 10 #t4010001#",
+        "choices": [
+          {"text": "Yes", "nextState": "scroll14_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "scroll14_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "100", "referenceId": "4001124"},
+              {"type": "item", "operator": ">=", "value": "10", "referenceId": "4010001"},
+              {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "2044800"}
+            ],
+            "nextState": "scroll14_random"
+          },
+          {
+            "conditions": [],
+            "nextState": "scrollFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "scroll14_random",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "local:select_random_weighted", "params": {"items": "2044800,2044801", "weights": "90,10", "outputContextKey": "selectedScroll"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "scroll14_craft"}
+        ]
+      }
+    },
+    {
+      "id": "scroll14_craft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4001124", "quantity": "100"}},
+          {"type": "destroy_item", "params": {"itemId": "4010001", "quantity": "10"}},
+          {"type": "award_item", "params": {"itemId": "{context.selectedScroll}", "quantity": "1"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "scroll15_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want to make #b#t2044900##k? In order to make #t2044900# you'll need the following items:\r\n#i4001124# 100 #t4001124#\r\n#i4010001# 10 #t4010001#",
+        "choices": [
+          {"text": "Yes", "nextState": "scroll15_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "scroll15_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "100", "referenceId": "4001124"},
+              {"type": "item", "operator": ">=", "value": "10", "referenceId": "4010001"},
+              {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "2044900"}
+            ],
+            "nextState": "scroll15_random"
+          },
+          {
+            "conditions": [],
+            "nextState": "scrollFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "scroll15_random",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "local:select_random_weighted", "params": {"items": "2044900,2044901", "weights": "90,10", "outputContextKey": "selectedScroll"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "scroll15_craft"}
+        ]
+      }
+    },
+    {
+      "id": "scroll15_craft",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4001124", "quantity": "100"}},
+          {"type": "destroy_item", "params": {"itemId": "4010001", "quantity": "10"}},
+          {"type": "award_item", "params": {"itemId": "{context.selectedScroll}", "quantity": "1"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "scrollFail",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Please make sure you are neither lacking ingredients or lacking space in your use inventory.",
+        "choices": [
+          {"text": "Ok", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "donationMenu",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "So you wish to donate some medicine ingredients? This is great news! Donations will be accepted in the unit of #b100#k. The donator will receive a marble that enables one to make a scroll. Which of these would you like to donate? #b",
+        "choices": [
+          {"text": "#v4000276# #t4000276#", "nextState": "donate0_confirm", "context": {"donateItemId": "4000276", "rewardAmount": "7"}},
+          {"text": "#v4000277# #t4000277#", "nextState": "donate1_confirm", "context": {"donateItemId": "4000277", "rewardAmount": "7"}},
+          {"text": "#v4000278# #t4000278#", "nextState": "donate2_confirm", "context": {"donateItemId": "4000278"}},
+          {"text": "#v4000279# #t4000279#", "nextState": "donate3_confirm", "context": {"donateItemId": "4000279", "rewardAmount": "10"}},
+          {"text": "#v4000280# #t4000280#", "nextState": "donate4_confirm", "context": {"donateItemId": "4000280", "rewardAmount": "11"}},
+          {"text": "#v4000291# #t4000291#", "nextState": "donate5_confirm", "context": {"donateItemId": "4000291", "rewardAmount": "8"}},
+          {"text": "#v4000292# #t4000292#", "nextState": "donate6_confirm", "context": {"donateItemId": "4000292"}},
+          {"text": "#v4000286# #t4000286#", "nextState": "donate7_confirm", "context": {"donateItemId": "4000286"}},
+          {"text": "#v4000287# #t4000287#", "nextState": "donate8_confirm", "context": {"donateItemId": "4000287"}},
+          {"text": "#v4000293# #t4000293#", "nextState": "donate9_confirm", "context": {"donateItemId": "4000293", "rewardAmount": "9"}},
+          {"text": "#v4000294# #t4000294#", "nextState": "donate10_confirm", "context": {"donateItemId": "4000294", "rewardAmount": "10"}},
+          {"text": "#v4000298# #t4000298#", "nextState": "donate11_confirm", "context": {"donateItemId": "4000298"}},
+          {"text": "#v4000284# #t4000284#", "nextState": "donate12_confirm", "context": {"donateItemId": "4000284", "rewardAmount": "11"}},
+          {"text": "#v4000288# #t4000288#", "nextState": "donate13_confirm", "context": {"donateItemId": "4000288"}},
+          {"text": "#v4000285# #t4000285#", "nextState": "donate14_confirm", "context": {"donateItemId": "4000285", "rewardAmount": "13"}},
+          {"text": "#v4000282# #t4000282#", "nextState": "donate15_confirm", "context": {"donateItemId": "4000282", "rewardAmount": "13"}},
+          {"text": "#v4000295# #t4000295#", "nextState": "donate16_confirm", "context": {"donateItemId": "4000295", "rewardAmount": "14"}},
+          {"text": "#v4000289# #t4000289#", "nextState": "donate17_confirm", "context": {"donateItemId": "4000289", "rewardAmount": "15"}},
+          {"text": "#v4000296# #t4000296#", "nextState": "donate18_confirm", "context": {"donateItemId": "4000296"}},
+          {"text": "#v4000297# #t4000297#", "nextState": "donate19_confirm", "context": {"donateItemId": "4000297", "rewardAmount": "17"}},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "donate0_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Are you sure you want to donate #b100 #t4000276##k?",
+        "choices": [
+          {"text": "Yes", "nextState": "donate0_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "donate0_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "100", "referenceId": "4000276"},
+              {"type": "inventorySpace", "operator": ">=", "value": "7", "referenceId": "4001124"}
+            ],
+            "nextState": "donate0_exchange"
+          },
+          {
+            "conditions": [],
+            "nextState": "donationFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "donate0_exchange",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4000276", "quantity": "100"}},
+          {"type": "award_item", "params": {"itemId": "4001124", "quantity": "7"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "donate1_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Are you sure you want to donate #b100 #t4000277##k?",
+        "choices": [
+          {"text": "Yes", "nextState": "donate1_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "donate1_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "100", "referenceId": "4000277"},
+              {"type": "inventorySpace", "operator": ">=", "value": "7", "referenceId": "4001124"}
+            ],
+            "nextState": "donate1_exchange"
+          },
+          {
+            "conditions": [],
+            "nextState": "donationFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "donate1_exchange",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4000277", "quantity": "100"}},
+          {"type": "award_item", "params": {"itemId": "4001124", "quantity": "7"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "donate2_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Are you sure you want to donate #b100 #t4000278##k?",
+        "choices": [
+          {"text": "Yes", "nextState": "donate2_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "donate2_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "100", "referenceId": "4000278"},
+              {"type": "inventorySpace", "operator": ">=", "value": "8", "referenceId": "4001124"}
+            ],
+            "nextState": "donate2_random"
+          },
+          {
+            "conditions": [],
+            "nextState": "donationFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "donate2_random",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "local:select_random_weighted", "params": {"items": "7,8", "weights": "50,50", "outputContextKey": "rewardAmount"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "donate2_exchange"}
+        ]
+      }
+    },
+    {
+      "id": "donate2_exchange",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4000278", "quantity": "100"}},
+          {"type": "award_item", "params": {"itemId": "4001124", "quantity": "{context.rewardAmount}"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "donate3_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Are you sure you want to donate #b100 #t4000279##k?",
+        "choices": [
+          {"text": "Yes", "nextState": "donate3_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "donate3_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "100", "referenceId": "4000279"},
+              {"type": "inventorySpace", "operator": ">=", "value": "10", "referenceId": "4001124"}
+            ],
+            "nextState": "donate3_exchange"
+          },
+          {
+            "conditions": [],
+            "nextState": "donationFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "donate3_exchange",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4000279", "quantity": "100"}},
+          {"type": "award_item", "params": {"itemId": "4001124", "quantity": "10"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "donate4_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Are you sure you want to donate #b100 #t4000280##k?",
+        "choices": [
+          {"text": "Yes", "nextState": "donate4_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "donate4_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "100", "referenceId": "4000280"},
+              {"type": "inventorySpace", "operator": ">=", "value": "11", "referenceId": "4001124"}
+            ],
+            "nextState": "donate4_exchange"
+          },
+          {
+            "conditions": [],
+            "nextState": "donationFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "donate4_exchange",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4000280", "quantity": "100"}},
+          {"type": "award_item", "params": {"itemId": "4001124", "quantity": "11"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "donate5_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Are you sure you want to donate #b100 #t4000291##k?",
+        "choices": [
+          {"text": "Yes", "nextState": "donate5_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "donate5_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "100", "referenceId": "4000291"},
+              {"type": "inventorySpace", "operator": ">=", "value": "8", "referenceId": "4001124"}
+            ],
+            "nextState": "donate5_exchange"
+          },
+          {
+            "conditions": [],
+            "nextState": "donationFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "donate5_exchange",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4000291", "quantity": "100"}},
+          {"type": "award_item", "params": {"itemId": "4001124", "quantity": "8"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "donate6_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Are you sure you want to donate #b100 #t4000292##k?",
+        "choices": [
+          {"text": "Yes", "nextState": "donate6_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "donate6_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "100", "referenceId": "4000292"},
+              {"type": "inventorySpace", "operator": ">=", "value": "8", "referenceId": "4001124"}
+            ],
+            "nextState": "donate6_random"
+          },
+          {
+            "conditions": [],
+            "nextState": "donationFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "donate6_random",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "local:select_random_weighted", "params": {"items": "7,8", "weights": "50,50", "outputContextKey": "rewardAmount"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "donate6_exchange"}
+        ]
+      }
+    },
+    {
+      "id": "donate6_exchange",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4000292", "quantity": "100"}},
+          {"type": "award_item", "params": {"itemId": "4001124", "quantity": "{context.rewardAmount}"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "donate7_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Are you sure you want to donate #b100 #t4000286##k?",
+        "choices": [
+          {"text": "Yes", "nextState": "donate7_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "donate7_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "100", "referenceId": "4000286"},
+              {"type": "inventorySpace", "operator": ">=", "value": "9", "referenceId": "4001124"}
+            ],
+            "nextState": "donate7_random"
+          },
+          {
+            "conditions": [],
+            "nextState": "donationFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "donate7_random",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "local:select_random_weighted", "params": {"items": "7,8,9", "weights": "33,34,33", "outputContextKey": "rewardAmount"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "donate7_exchange"}
+        ]
+      }
+    },
+    {
+      "id": "donate7_exchange",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4000286", "quantity": "100"}},
+          {"type": "award_item", "params": {"itemId": "4001124", "quantity": "{context.rewardAmount}"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "donate8_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Are you sure you want to donate #b100 #t4000287##k?",
+        "choices": [
+          {"text": "Yes", "nextState": "donate8_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "donate8_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "100", "referenceId": "4000287"},
+              {"type": "inventorySpace", "operator": ">=", "value": "8", "referenceId": "4001124"}
+            ],
+            "nextState": "donate8_random"
+          },
+          {
+            "conditions": [],
+            "nextState": "donationFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "donate8_random",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "local:select_random_weighted", "params": {"items": "7,8", "weights": "50,50", "outputContextKey": "rewardAmount"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "donate8_exchange"}
+        ]
+      }
+    },
+    {
+      "id": "donate8_exchange",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4000287", "quantity": "100"}},
+          {"type": "award_item", "params": {"itemId": "4001124", "quantity": "{context.rewardAmount}"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "donate9_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Are you sure you want to donate #b100 #t4000293##k?",
+        "choices": [
+          {"text": "Yes", "nextState": "donate9_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "donate9_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "100", "referenceId": "4000293"},
+              {"type": "inventorySpace", "operator": ">=", "value": "9", "referenceId": "4001124"}
+            ],
+            "nextState": "donate9_exchange"
+          },
+          {
+            "conditions": [],
+            "nextState": "donationFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "donate9_exchange",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4000293", "quantity": "100"}},
+          {"type": "award_item", "params": {"itemId": "4001124", "quantity": "9"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "donate10_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Are you sure you want to donate #b100 #t4000294##k?",
+        "choices": [
+          {"text": "Yes", "nextState": "donate10_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "donate10_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "100", "referenceId": "4000294"},
+              {"type": "inventorySpace", "operator": ">=", "value": "10", "referenceId": "4001124"}
+            ],
+            "nextState": "donate10_exchange"
+          },
+          {
+            "conditions": [],
+            "nextState": "donationFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "donate10_exchange",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4000294", "quantity": "100"}},
+          {"type": "award_item", "params": {"itemId": "4001124", "quantity": "10"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "donate11_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Are you sure you want to donate #b100 #t4000298##k?",
+        "choices": [
+          {"text": "Yes", "nextState": "donate11_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "donate11_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "100", "referenceId": "4000298"},
+              {"type": "inventorySpace", "operator": ">=", "value": "11", "referenceId": "4001124"}
+            ],
+            "nextState": "donate11_random"
+          },
+          {
+            "conditions": [],
+            "nextState": "donationFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "donate11_random",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "local:select_random_weighted", "params": {"items": "10,11", "weights": "50,50", "outputContextKey": "rewardAmount"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "donate11_exchange"}
+        ]
+      }
+    },
+    {
+      "id": "donate11_exchange",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4000298", "quantity": "100"}},
+          {"type": "award_item", "params": {"itemId": "4001124", "quantity": "{context.rewardAmount}"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "donate12_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Are you sure you want to donate #b100 #t4000284##k?",
+        "choices": [
+          {"text": "Yes", "nextState": "donate12_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "donate12_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "100", "referenceId": "4000284"},
+              {"type": "inventorySpace", "operator": ">=", "value": "11", "referenceId": "4001124"}
+            ],
+            "nextState": "donate12_exchange"
+          },
+          {
+            "conditions": [],
+            "nextState": "donationFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "donate12_exchange",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4000284", "quantity": "100"}},
+          {"type": "award_item", "params": {"itemId": "4001124", "quantity": "11"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "donate13_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Are you sure you want to donate #b100 #t4000288##k?",
+        "choices": [
+          {"text": "Yes", "nextState": "donate13_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "donate13_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "100", "referenceId": "4000288"},
+              {"type": "inventorySpace", "operator": ">=", "value": "12", "referenceId": "4001124"}
+            ],
+            "nextState": "donate13_random"
+          },
+          {
+            "conditions": [],
+            "nextState": "donationFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "donate13_random",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "local:select_random_weighted", "params": {"items": "11,12", "weights": "50,50", "outputContextKey": "rewardAmount"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "donate13_exchange"}
+        ]
+      }
+    },
+    {
+      "id": "donate13_exchange",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4000288", "quantity": "100"}},
+          {"type": "award_item", "params": {"itemId": "4001124", "quantity": "{context.rewardAmount}"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "donate14_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Are you sure you want to donate #b100 #t4000285##k?",
+        "choices": [
+          {"text": "Yes", "nextState": "donate14_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "donate14_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "100", "referenceId": "4000285"},
+              {"type": "inventorySpace", "operator": ">=", "value": "13", "referenceId": "4001124"}
+            ],
+            "nextState": "donate14_exchange"
+          },
+          {
+            "conditions": [],
+            "nextState": "donationFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "donate14_exchange",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4000285", "quantity": "100"}},
+          {"type": "award_item", "params": {"itemId": "4001124", "quantity": "13"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "donate15_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Are you sure you want to donate #b100 #t4000282##k?",
+        "choices": [
+          {"text": "Yes", "nextState": "donate15_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "donate15_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "100", "referenceId": "4000282"},
+              {"type": "inventorySpace", "operator": ">=", "value": "13", "referenceId": "4001124"}
+            ],
+            "nextState": "donate15_exchange"
+          },
+          {
+            "conditions": [],
+            "nextState": "donationFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "donate15_exchange",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4000282", "quantity": "100"}},
+          {"type": "award_item", "params": {"itemId": "4001124", "quantity": "13"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "donate16_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Are you sure you want to donate #b100 #t4000295##k?",
+        "choices": [
+          {"text": "Yes", "nextState": "donate16_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "donate16_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "100", "referenceId": "4000295"},
+              {"type": "inventorySpace", "operator": ">=", "value": "14", "referenceId": "4001124"}
+            ],
+            "nextState": "donate16_exchange"
+          },
+          {
+            "conditions": [],
+            "nextState": "donationFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "donate16_exchange",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4000295", "quantity": "100"}},
+          {"type": "award_item", "params": {"itemId": "4001124", "quantity": "14"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "donate17_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Are you sure you want to donate #b100 #t4000289##k?",
+        "choices": [
+          {"text": "Yes", "nextState": "donate17_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "donate17_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "100", "referenceId": "4000289"},
+              {"type": "inventorySpace", "operator": ">=", "value": "15", "referenceId": "4001124"}
+            ],
+            "nextState": "donate17_exchange"
+          },
+          {
+            "conditions": [],
+            "nextState": "donationFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "donate17_exchange",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4000289", "quantity": "100"}},
+          {"type": "award_item", "params": {"itemId": "4001124", "quantity": "15"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "donate18_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Are you sure you want to donate #b100 #t4000296##k?",
+        "choices": [
+          {"text": "Yes", "nextState": "donate18_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "donate18_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "100", "referenceId": "4000296"},
+              {"type": "inventorySpace", "operator": ">=", "value": "16", "referenceId": "4001124"}
+            ],
+            "nextState": "donate18_random"
+          },
+          {
+            "conditions": [],
+            "nextState": "donationFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "donate18_random",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "local:select_random_weighted", "params": {"items": "15,16", "weights": "50,50", "outputContextKey": "rewardAmount"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "donate18_exchange"}
+        ]
+      }
+    },
+    {
+      "id": "donate18_exchange",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4000296", "quantity": "100"}},
+          {"type": "award_item", "params": {"itemId": "4001124", "quantity": "{context.rewardAmount}"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "donate19_confirm",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Are you sure you want to donate #b100 #t4000297##k?",
+        "choices": [
+          {"text": "Yes", "nextState": "donate19_validate"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": "decline"}
+        ]
+      }
+    },
+    {
+      "id": "donate19_validate",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "item", "operator": ">=", "value": "100", "referenceId": "4000297"},
+              {"type": "inventorySpace", "operator": ">=", "value": "17", "referenceId": "4001124"}
+            ],
+            "nextState": "donate19_exchange"
+          },
+          {
+            "conditions": [],
+            "nextState": "donationFail"
+          }
+        ]
+      }
+    },
+    {
+      "id": "donate19_exchange",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4000297", "quantity": "100"}},
+          {"type": "award_item", "params": {"itemId": "4001124", "quantity": "17"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "donationFail",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Please make sure you are neither lacking ingredients or lacking space in your etc inventory.",
+        "choices": [
+          {"text": "Ok", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    }
+  ]
+}

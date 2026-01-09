@@ -14,7 +14,9 @@ import (
 	"atlas-data/logger"
 	_map "atlas-data/map"
 	"atlas-data/monster"
+	"atlas-data/npc"
 	"atlas-data/pet"
+	"atlas-data/quest"
 	"atlas-data/reactor"
 	"atlas-data/service"
 	"atlas-data/setup"
@@ -83,6 +85,8 @@ func main() {
 		AddRouteInitializer(etc.InitResource(db)(GetServer())).
 		AddRouteInitializer(setup.InitResource(db)(GetServer())).
 		AddRouteInitializer(templates.InitResource(db)(GetServer())).
+		AddRouteInitializer(quest.InitResource(db)(GetServer())).
+		AddRouteInitializer(npc.InitResource(db)(GetServer())).
 		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

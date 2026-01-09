@@ -1,0 +1,120 @@
+{
+  "npcId": 9270025,
+  "startState": "start",
+  "states": [
+    {
+      "id": "start",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Well, hello! Welcome to the Lian Hua Hua Skin-Care! Would you like to have a firm, tight, healthy looking skin like mine?  With #b#tCBD Skin Coupon##k, you can let us take care of the rest and have the kind of skin you've always wanted!",
+        "choices": [
+          {
+            "text": "Sounds Good! (uses #i5153010# #t5153010#)",
+            "nextState": "checkCoupon"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkCoupon",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": "<",
+                "value": "1",
+                "referenceId": "5153010"
+              }
+            ],
+            "nextState": "noCoupon"
+          },
+          {
+            "conditions": [],
+            "nextState": "chooseSkin"
+          }
+        ]
+      }
+    },
+    {
+      "id": "noCoupon",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "It looks like you don't have the coupon you need to receive the treatment. I'm sorry but it looks like we cannot do it for you.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "chooseSkin",
+      "type": "askStyle",
+      "askStyle": {
+        "text": "With our specialized service, you can see the way you'll look after the treatment in advance. What kind of a skin-treatment would you like to do? Go ahead and choose the style of your liking...",
+        "styles": [0, 1, 2, 3, 4],
+        "contextKey": "selectedSkin",
+        "nextState": "applySkin"
+      }
+    },
+    {
+      "id": "applySkin",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "5153010",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "change_skin",
+            "params": {
+              "styleId": "{context.selectedSkin}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "success"
+          }
+        ]
+      }
+    },
+    {
+      "id": "success",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Enjoy your new and improved skin!",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

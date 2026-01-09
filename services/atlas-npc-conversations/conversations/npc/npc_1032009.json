@@ -1,0 +1,67 @@
+{
+  "npcId": 1032009,
+  "startState": "askLeaveBoat",
+  "states": [
+    {
+      "id": "askLeaveBoat",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Do you wish to leave the boat?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "confirmLeave"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmLeave",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Alright, see you next time. Take care.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "warpToEllinia"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToEllinia",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "101000300",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

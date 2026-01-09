@@ -1,10 +1,13 @@
 package main
 
 import (
-	"atlas-npc-conversations/conversation"
+	npcConversation "atlas-npc-conversations/conversation/npc"
+	"atlas-npc-conversations/conversation/quest"
 	"atlas-npc-conversations/database"
 	"atlas-npc-conversations/kafka/consumer/character"
 	"atlas-npc-conversations/kafka/consumer/npc"
+	questConsumer "atlas-npc-conversations/kafka/consumer/quest"
+	"atlas-npc-conversations/kafka/consumer/saga"
 	"atlas-npc-conversations/logger"
 	"atlas-npc-conversations/service"
 	"atlas-npc-conversations/tracing"
@@ -47,21 +50,26 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	db := database.Connect(l, database.SetMigrations(conversation.MigrateTable))
+	db := database.Connect(l, database.SetMigrations(npcConversation.MigrateTable, quest.MigrateTable))
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	npc.InitConsumers(l)(cmf)(consumerGroupId)
+	questConsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	saga.InitConsumers(l)(cmf)(consumerGroupId)
 
 	character.InitHandlers(l, db)(consumer.GetManager().RegisterHandler)
 	npc.InitHandlers(l, db)(consumer.GetManager().RegisterHandler)
+	questConsumer.InitHandlers(l, db)(consumer.GetManager().RegisterHandler)
+	saga.InitHandlers(l, db)(consumer.GetManager().RegisterHandler)
 
 	server.New(l).
 		WithContext(tdm.Context()).
 		WithWaitGroup(tdm.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
-		AddRouteInitializer(conversation.InitResource(GetServer())(db)).
+		AddRouteInitializer(npcConversation.InitResource(GetServer())(db)).
+		AddRouteInitializer(quest.InitResource(GetServer())(db)).
 		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

@@ -86,7 +86,7 @@ func handleAwardClosenessCommand(db *gorm.DB) message.Handler[pet2.Command[pet2.
 		if c.Type != pet2.CommandAwardCloseness {
 			return
 		}
-		_ = pet.NewProcessor(l, ctx, db).AwardClosenessAndEmit(c.PetId, c.Body.Amount)
+		_ = pet.NewProcessor(l, ctx, db).AwardClosenessWithTransactionAndEmit(c.TransactionId, c.PetId, c.Body.Amount)
 	}
 }
 

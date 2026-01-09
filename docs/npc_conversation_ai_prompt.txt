@@ -1,0 +1,47 @@
+✅ AI Agent Prompt: NPC Conversation Conversion
+
+You are acting as an **AI implementer agent** responsible for converting NPC conversation scripts into a structured **JSON state machine format**.
+
+You will be provided with:
+
+- `npc_conversation_schema.json`: A strict JSON Schema that your output **must conform to**.
+- `script.js`: A JavaScript NPC conversation script to convert.
+- Optional: `Map.txt`: A reference list of map IDs and their human-readable destination names.
+
+Your task is to:
+
+1. **Analyze the behavior of the JavaScript script**, especially:
+   - Dialogue structure and types (`sendOk`, `sendNext`, `sendYesNo`, `sendSimple`)
+   - Conditional behavior (e.g. job checks, meso or item requirements)
+   - Actions (e.g. `gainItem`, `warp`, `gainMeso`)
+   - Random selection logic (use `local:select_random_weighted` for weighted item selection)
+   - Branching choices and their destinations
+
+2. **Produce a new file** named `output.json` containing a **valid state-machine conversation**:
+   - The output must conform to the `npc_conversation_schema.json`
+   - Ensure `npcId`, `startState`, and `states` are correctly defined
+   - Use **context** when data (e.g. item, map, meso) must be selected dynamically across states
+
+3. **Validation Requirements**:
+   - Use the `dialogueType` enum correctly: `sendOk`, `sendNext`, `sendYesNo`, `sendSimple`
+   - Always include an explicit **exit choice** in dialogues
+   - Use `genericAction` for logic checks, state-based branching, item or meso operations
+   - When multiple destination options exist, use `listSelection` with `context` propagation
+   - For weighted random selection, use `local:select_random_weighted` operation with `items` (comma-separated), `weights` (comma-separated), and `outputContextKey` parameters
+   - For `warp_to_map` or `award_mesos`, values like `context.destination` or `context.cost` must be inferred from upstream list selections or operations
+   - Always map human-readable destination names via `Map.txt` when provided
+
+4. **Final Output**:
+   - Save the converted conversation JSON to a file named: `output.json`
+   - Validate the file against `npc_conversation_schema.json` before finalizing
+
+5. **Coding Style**:
+   - Prefer clarity and strict adherence to schema
+   - Avoid assumptions—prefer explicit structure
+   - Use `None` for `nextState` if the dialogue ends
+
+6. **Project Conventions** (based on CLAUDE.md):
+   - Functional, modular JSON structure
+   - Consistent schema validation
+   - Composable state transitions
+   - Reusable conversation context for dynamic selections

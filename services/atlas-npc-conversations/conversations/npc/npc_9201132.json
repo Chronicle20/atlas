@@ -1,0 +1,175 @@
+{
+  "npcId": 9201132,
+  "startState": "checkQuestStarted",
+  "states": [
+    {
+      "id": "checkQuestStarted",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "=",
+                "value": "2",
+                "referenceId": "28256"
+              }
+            ],
+            "nextState": "checkHasEmblem"
+          },
+          {
+            "conditions": [],
+            "nextState": "blockedByStrangeForce"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkHasEmblem",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4032494"
+              }
+            ],
+            "nextState": "askWarp"
+          },
+          {
+            "conditions": [],
+            "nextState": "blockedByEmblem"
+          }
+        ]
+      }
+    },
+    {
+      "id": "askWarp",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Would you like to move to #b#m677000006##k?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "removeItemsAndWarp"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "blockedByEmblem",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "The entrance is blocked by a force that can only be lifted by those holding an emblem.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "blockedByStrangeForce",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "The entrance is blocked by a strange force.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "removeItemsAndWarp",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4001362",
+              "removeAll": "true"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4001363",
+              "removeAll": "true"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4032486",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4032488",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4032489",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4220153",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "677000006",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

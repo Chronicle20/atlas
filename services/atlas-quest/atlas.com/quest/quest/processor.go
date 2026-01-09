@@ -1,0 +1,697 @@
+package quest
+
+import (
+	"atlas-quest/database"
+	dataquest "atlas-quest/data/quest"
+	"atlas-quest/data/validation"
+	"atlas-quest/kafka/message/saga"
+	sagaproducer "atlas-quest/kafka/producer/saga"
+	"context"
+	"errors"
+	"fmt"
+	"strconv"
+	"time"
+
+	"github.com/Chronicle20/atlas-constants/field"
+	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-tenant"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+)
+
+var (
+	ErrQuestAlreadyStarted      = errors.New("quest already started")
+	ErrQuestAlreadyCompleted    = errors.New("quest already completed")
+	ErrQuestNotStarted          = errors.New("quest not started")
+	ErrIntervalNotElapsed       = errors.New("interval has not elapsed since last completion")
+	ErrQuestExpired             = errors.New("quest has expired")
+	ErrStartRequirementsNotMet  = errors.New("start requirements not met")
+	ErrEndRequirementsNotMet    = errors.New("end requirements not met")
+)
+
+type Processor interface {
+	WithTransaction(*gorm.DB) Processor
+	ByIdProvider(id uint32) model.Provider[Model]
+	ByCharacterIdProvider(characterId uint32) model.Provider[[]Model]
+	ByCharacterIdAndQuestIdProvider(characterId uint32, questId uint32) model.Provider[Model]
+	ByCharacterIdAndStateProvider(characterId uint32, state State) model.Provider[[]Model]
+	GetById(id uint32) (Model, error)
+	GetByCharacterId(characterId uint32) ([]Model, error)
+	GetByCharacterIdAndQuestId(characterId uint32, questId uint32) (Model, error)
+	GetByCharacterIdAndState(characterId uint32, state State) ([]Model, error)
+	// Start starts a quest with validation and processes start actions
+	// Returns the quest model and any failed conditions (empty if validation passed)
+	// field is needed for exp/meso start actions
+	// If skipValidation is true, start requirements are not checked
+	Start(characterId uint32, questId uint32, f field.Model, skipValidation bool) (Model, []string, error)
+	// StartChained starts a quest as part of a chain (skips interval check but still validates)
+	StartChained(characterId uint32, questId uint32, f field.Model) (Model, error)
+	// Complete completes a quest with validation and processes rewards via saga
+	// Returns the next quest ID if this is part of a chain (0 if no chain)
+	// field is needed for meso/exp/fame rewards
+	// If skipValidation is true, end requirements are not checked
+	Complete(characterId uint32, questId uint32, f field.Model, skipValidation bool) (uint32, error)
+	Forfeit(characterId uint32, questId uint32) error
+	SetProgress(characterId uint32, questId uint32, infoNumber uint32, progress string) error
+	DeleteByCharacterId(characterId uint32) error
+	// GetQuestDefinition fetches the quest definition from atlas-data
+	GetQuestDefinition(questId uint32) (dataquest.RestModel, error)
+	// CheckAutoComplete checks if a quest can be auto-completed and completes it if requirements are met
+	// Returns the next quest ID if this is part of a chain (0 if no chain), and whether it was completed
+	CheckAutoComplete(characterId uint32, questId uint32, f field.Model) (uint32, bool, error)
+	// CheckAutoStart checks for auto-start quests that should start for a character on a given map
+	// Returns the list of quest IDs that were auto-started
+	CheckAutoStart(characterId uint32, f field.Model) ([]uint32, error)
+}
+
+type ProcessorImpl struct {
+	l                   logrus.FieldLogger
+	ctx                 context.Context
+	db                  *gorm.DB
+	t                   tenant.Model
+	dataProcessor       dataquest.Processor
+	validationProcessor validation.Processor
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
+	return &ProcessorImpl{
+		l:                   l,
+		ctx:                 ctx,
+		db:                  db,
+		t:                   tenant.MustFromContext(ctx),
+		dataProcessor:       dataquest.NewProcessor(l, ctx),
+		validationProcessor: validation.NewProcessor(l, ctx),
+	}
+}
+
+func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
+	return &ProcessorImpl{
+		l:                   p.l,
+		ctx:                 p.ctx,
+		db:                  tx,
+		t:                   p.t,
+		dataProcessor:       p.dataProcessor,
+		validationProcessor: p.validationProcessor,
+	}
+}
+
+func (p *ProcessorImpl) ByIdProvider(id uint32) model.Provider[Model] {
+	return model.Map(Make)(byIdEntityProvider(p.t.Id(), id)(p.db))
+}
+
+func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
+	return model.SliceMap(Make)(byCharacterIdEntityProvider(p.t.Id(), characterId)(p.db))()
+}
+
+func (p *ProcessorImpl) ByCharacterIdAndQuestIdProvider(characterId uint32, questId uint32) model.Provider[Model] {
+	return model.Map(Make)(byCharacterIdAndQuestIdEntityProvider(p.t.Id(), characterId, questId)(p.db))
+}
+
+func (p *ProcessorImpl) ByCharacterIdAndStateProvider(characterId uint32, state State) model.Provider[[]Model] {
+	return model.SliceMap(Make)(byCharacterIdAndStateEntityProvider(p.t.Id(), characterId, state)(p.db))()
+}
+
+func (p *ProcessorImpl) GetById(id uint32) (Model, error) {
+	return p.ByIdProvider(id)()
+}
+
+func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {
+	return p.ByCharacterIdProvider(characterId)()
+}
+
+func (p *ProcessorImpl) GetByCharacterIdAndQuestId(characterId uint32, questId uint32) (Model, error) {
+	return p.ByCharacterIdAndQuestIdProvider(characterId, questId)()
+}
+
+func (p *ProcessorImpl) GetByCharacterIdAndState(characterId uint32, state State) ([]Model, error) {
+	return p.ByCharacterIdAndStateProvider(characterId, state)()
+}
+
+func (p *ProcessorImpl) Start(characterId uint32, questId uint32, f field.Model, skipValidation bool) (Model, []string, error) {
+	// Fetch quest definition to check interval and time limit
+	questDef, err := p.dataProcessor.GetQuestDefinition(questId)
+	if err != nil {
+		p.l.WithError(err).Warnf("Unable to fetch quest definition for quest [%d], proceeding without interval/time limit checks.", questId)
+		// Continue without quest definition - we can still start the quest
+		questDef = dataquest.RestModel{}
+	}
+
+	// Validate start requirements (unless skipped)
+	if !skipValidation {
+		passed, failedConditions, err := p.validationProcessor.ValidateStartRequirements(characterId, questDef)
+		if err != nil {
+			p.l.WithError(err).Warnf("Unable to validate start requirements for quest [%d] character [%d], proceeding anyway.", questId, characterId)
+			// Continue without validation on error
+		} else if !passed {
+			p.l.Debugf("Start requirements not met for quest [%d] character [%d]. Failed: %v", questId, characterId, failedConditions)
+			return Model{}, failedConditions, ErrStartRequirementsNotMet
+		}
+	}
+
+	// Start the quest (core logic)
+	m, err := p.startCore(characterId, questId, questDef)
+	if err != nil {
+		return Model{}, nil, err
+	}
+
+	// Process start actions (items consumed, exp given on start, etc.)
+	if err := p.processStartActions(characterId, questId, questDef, f); err != nil {
+		p.l.WithError(err).Warnf("Unable to process start actions for quest [%d] character [%d].", questId, characterId)
+		// Don't fail the quest start, just log the error
+	}
+
+	return m, nil, nil
+}
+
+// startCore handles the core quest start logic without validation or action processing
+func (p *ProcessorImpl) startCore(characterId uint32, questId uint32, questDef dataquest.RestModel) (Model, error) {
+	// Check if quest already exists
+	existing, err := p.GetByCharacterIdAndQuestId(characterId, questId)
+	if err == nil {
+		// Quest already exists
+		if existing.State() == StateStarted {
+			p.l.Debugf("Quest [%d] already started for character [%d].", questId, characterId)
+			return existing, ErrQuestAlreadyStarted
+		}
+		if existing.State() == StateCompleted {
+			// Check if this is a repeatable quest (has interval requirement)
+			interval := questDef.StartRequirements.Interval
+			if interval > 0 {
+				// Check if enough time has elapsed since last completion
+				elapsed := time.Since(existing.CompletedAt())
+				requiredDuration := time.Duration(interval) * time.Minute
+				if elapsed < requiredDuration {
+					p.l.Debugf("Quest [%d] interval not elapsed for character [%d]. Elapsed: %v, Required: %v", questId, characterId, elapsed, requiredDuration)
+					return Model{}, ErrIntervalNotElapsed
+				}
+				// Interval has elapsed, we can restart this quest
+				p.l.Debugf("Quest [%d] interval elapsed for character [%d], restarting.", questId, characterId)
+			} else {
+				p.l.Debugf("Quest [%d] already completed for character [%d] (not repeatable).", questId, characterId)
+				return Model{}, ErrQuestAlreadyCompleted
+			}
+		}
+	}
+
+	// Calculate expiration time for time-limited quests
+	var expirationTime time.Time
+	timeLimit := questDef.TimeLimit
+	if timeLimit == 0 {
+		timeLimit = questDef.TimeLimit2
+	}
+	if timeLimit > 0 {
+		// TimeLimit is in seconds
+		expirationTime = time.Now().Add(time.Duration(timeLimit) * time.Second)
+		p.l.Debugf("Quest [%d] has time limit of %d seconds, expires at %v", questId, timeLimit, expirationTime)
+	}
+
+	// Collect mob and map requirements for progress initialization
+	var mobIds []uint32
+	var mapIds []uint32
+
+	// Get mob requirements from end requirements (completion requirements)
+	for _, mob := range questDef.EndRequirements.Mobs {
+		mobIds = append(mobIds, mob.Id)
+	}
+
+	// Get map requirements from end requirements (medal/fieldEnter quests)
+	mapIds = append(mapIds, questDef.EndRequirements.FieldEnter...)
+
+	var m Model
+	txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		var err error
+		// If quest was previously completed (repeatable), restart it
+		if existing.Id() > 0 && existing.State() == StateCompleted {
+			m, err = restart(tx, p.t.Id(), existing.Id(), expirationTime)
+		} else {
+			m, err = create(tx, p.t, characterId, questId, expirationTime)
+		}
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to create/restart quest [%d] for character [%d].", questId, characterId)
+			return err
+		}
+
+		// Initialize progress for mob kills and map visits
+		if len(mobIds) > 0 || len(mapIds) > 0 {
+			if err = initializeProgress(tx, m.Id(), mobIds, mapIds); err != nil {
+				p.l.WithError(err).Errorf("Unable to initialize progress for quest [%d] for character [%d].", questId, characterId)
+				return err
+			}
+		}
+
+		return nil
+	})
+	if txErr != nil {
+		return Model{}, txErr
+	}
+
+	p.l.Debugf("Started quest [%d] for character [%d].", questId, characterId)
+	return m, nil
+}
+
+func (p *ProcessorImpl) StartChained(characterId uint32, questId uint32, f field.Model) (Model, error) {
+	// Chained quests skip interval checking but still validate and process start actions
+	questDef, err := p.dataProcessor.GetQuestDefinition(questId)
+	if err != nil {
+		p.l.WithError(err).Warnf("Unable to fetch quest definition for quest [%d], proceeding without validation.", questId)
+		questDef = dataquest.RestModel{}
+	}
+
+	// Check if quest already exists and is started
+	existing, err := p.GetByCharacterIdAndQuestId(characterId, questId)
+	if err == nil && existing.State() == StateStarted {
+		return existing, nil
+	}
+
+	// Validate start requirements (chained quests still need to meet requirements)
+	passed, _, err := p.validationProcessor.ValidateStartRequirements(characterId, questDef)
+	if err != nil {
+		p.l.WithError(err).Warnf("Unable to validate start requirements for chained quest [%d], proceeding anyway.", questId)
+	} else if !passed {
+		p.l.Warnf("Start requirements not met for chained quest [%d], proceeding anyway.", questId)
+		// For chained quests, we proceed even if requirements aren't met
+	}
+
+	// Start the quest using startChainedCore (skips interval check)
+	m, err := p.startChainedCore(characterId, questId, questDef)
+	if err != nil {
+		return Model{}, err
+	}
+
+	// Process start actions
+	if err := p.processStartActions(characterId, questId, questDef, f); err != nil {
+		p.l.WithError(err).Warnf("Unable to process start actions for chained quest [%d].", questId)
+	}
+
+	p.l.Debugf("Started chained quest [%d] for character [%d].", questId, characterId)
+	return m, nil
+}
+
+// startChainedCore handles chained quest start (skips interval check)
+func (p *ProcessorImpl) startChainedCore(characterId uint32, questId uint32, questDef dataquest.RestModel) (Model, error) {
+	existing, _ := p.GetByCharacterIdAndQuestId(characterId, questId)
+
+	// Calculate expiration time for time-limited quests
+	var expirationTime time.Time
+	timeLimit := questDef.TimeLimit
+	if timeLimit == 0 {
+		timeLimit = questDef.TimeLimit2
+	}
+	if timeLimit > 0 {
+		expirationTime = time.Now().Add(time.Duration(timeLimit) * time.Second)
+	}
+
+	// Collect mob and map requirements for progress initialization
+	var mobIds []uint32
+	var mapIds []uint32
+	for _, mob := range questDef.EndRequirements.Mobs {
+		mobIds = append(mobIds, mob.Id)
+	}
+	mapIds = append(mapIds, questDef.EndRequirements.FieldEnter...)
+
+	var m Model
+	txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		var err error
+		if existing.Id() > 0 {
+			m, err = restart(tx, p.t.Id(), existing.Id(), expirationTime)
+		} else {
+			m, err = create(tx, p.t, characterId, questId, expirationTime)
+		}
+		if err != nil {
+			return err
+		}
+
+		// Initialize progress for mob kills and map visits
+		if len(mobIds) > 0 || len(mapIds) > 0 {
+			if err = initializeProgress(tx, m.Id(), mobIds, mapIds); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+	if txErr != nil {
+		return Model{}, txErr
+	}
+
+	return m, nil
+}
+
+func (p *ProcessorImpl) Complete(characterId uint32, questId uint32, f field.Model, skipValidation bool) (uint32, error) {
+	// Fetch quest definition for requirements and rewards
+	questDef, err := p.dataProcessor.GetQuestDefinition(questId)
+	if err != nil {
+		p.l.WithError(err).Warnf("Unable to fetch quest definition for quest [%d].", questId)
+		questDef = dataquest.RestModel{}
+	}
+
+	// Validate end requirements (unless skipped)
+	if !skipValidation {
+		passed, failedConditions, err := p.validationProcessor.ValidateEndRequirements(characterId, questDef)
+		if err != nil {
+			p.l.WithError(err).Warnf("Unable to validate end requirements for quest [%d] character [%d], proceeding anyway.", questId, characterId)
+		} else if !passed {
+			p.l.Debugf("End requirements not met for quest [%d] character [%d]. Failed: %v", questId, characterId, failedConditions)
+			return 0, ErrEndRequirementsNotMet
+		}
+	}
+
+	// Complete the quest (core logic)
+	nextQuestId, err := p.completeCore(characterId, questId, questDef)
+	if err != nil {
+		return 0, err
+	}
+
+	// Process end actions/rewards
+	if err := p.processEndActions(characterId, questId, questDef, f); err != nil {
+		p.l.WithError(err).Warnf("Unable to process end actions for quest [%d] character [%d].", questId, characterId)
+		// Don't fail the completion, just log the error
+	}
+
+	return nextQuestId, nil
+}
+
+// completeCore handles the core quest completion logic without validation or reward processing
+func (p *ProcessorImpl) completeCore(characterId uint32, questId uint32, questDef dataquest.RestModel) (uint32, error) {
+	existing, err := p.GetByCharacterIdAndQuestId(characterId, questId)
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to find quest [%d] for character [%d] to complete.", questId, characterId)
+		return 0, err
+	}
+
+	if existing.State() == StateCompleted {
+		p.l.Debugf("Quest [%d] already completed for character [%d].", questId, characterId)
+		return 0, nil
+	}
+
+	if existing.State() != StateStarted {
+		p.l.Debugf("Quest [%d] not in started state for character [%d].", questId, characterId)
+		return 0, ErrQuestNotStarted
+	}
+
+	// Check if quest has expired
+	if existing.IsExpired() {
+		p.l.Debugf("Quest [%d] has expired for character [%d].", questId, characterId)
+		return 0, ErrQuestExpired
+	}
+
+	txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		return completeQuest(tx, p.t.Id(), existing.Id())
+	})
+	if txErr != nil {
+		p.l.WithError(txErr).Errorf("Unable to complete quest [%d] for character [%d].", questId, characterId)
+		return 0, txErr
+	}
+
+	p.l.Debugf("Completed quest [%d] for character [%d].", questId, characterId)
+
+	// Return next quest ID if this is part of a chain
+	nextQuestId := questDef.EndActions.NextQuest
+	if nextQuestId > 0 {
+		p.l.Debugf("Quest [%d] has next quest [%d] in chain.", questId, nextQuestId)
+	}
+
+	return nextQuestId, nil
+}
+
+func (p *ProcessorImpl) Forfeit(characterId uint32, questId uint32) error {
+	existing, err := p.GetByCharacterIdAndQuestId(characterId, questId)
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to find quest [%d] for character [%d] to forfeit.", questId, characterId)
+		return err
+	}
+
+	if existing.State() != StateStarted {
+		p.l.Debugf("Quest [%d] not in started state for character [%d], cannot forfeit.", questId, characterId)
+		return ErrQuestNotStarted
+	}
+
+	txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		return forfeitQuest(tx, p.t.Id(), existing.Id())
+	})
+	if txErr != nil {
+		p.l.WithError(txErr).Errorf("Unable to forfeit quest [%d] for character [%d].", questId, characterId)
+		return txErr
+	}
+
+	p.l.Debugf("Forfeited quest [%d] for character [%d].", questId, characterId)
+	return nil
+}
+
+func (p *ProcessorImpl) SetProgress(characterId uint32, questId uint32, infoNumber uint32, progressValue string) error {
+	existing, err := p.GetByCharacterIdAndQuestId(characterId, questId)
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to find quest [%d] for character [%d] to set progress.", questId, characterId)
+		return err
+	}
+
+	if existing.State() != StateStarted {
+		p.l.Debugf("Quest [%d] not in started state for character [%d], cannot set progress.", questId, characterId)
+		return errors.New("quest not started")
+	}
+
+	txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		return setProgress(tx, p.t.Id(), existing.Id(), infoNumber, progressValue)
+	})
+	if txErr != nil {
+		p.l.WithError(txErr).Errorf("Unable to set progress for quest [%d] for character [%d].", questId, characterId)
+		return txErr
+	}
+
+	p.l.Debugf("Set progress for quest [%d], infoNumber [%d] for character [%d].", questId, infoNumber, characterId)
+	return nil
+}
+
+func (p *ProcessorImpl) DeleteByCharacterId(characterId uint32) error {
+	txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		return deleteByCharacterIdWithProgress(tx, p.t.Id(), characterId)
+	})
+	if txErr != nil {
+		p.l.WithError(txErr).Errorf("Unable to delete quests for character [%d].", characterId)
+		return txErr
+	}
+
+	p.l.Debugf("Deleted all quests for character [%d].", characterId)
+	return nil
+}
+
+func (p *ProcessorImpl) GetQuestDefinition(questId uint32) (dataquest.RestModel, error) {
+	return p.dataProcessor.GetQuestDefinition(questId)
+}
+
+func (p *ProcessorImpl) CheckAutoComplete(characterId uint32, questId uint32, f field.Model) (uint32, bool, error) {
+	// Get the quest status
+	existing, err := p.GetByCharacterIdAndQuestId(characterId, questId)
+	if err != nil {
+		return 0, false, err
+	}
+
+	if existing.State() != StateStarted {
+		return 0, false, nil
+	}
+
+	// Fetch quest definition to check if it supports auto-complete
+	questDef, err := p.dataProcessor.GetQuestDefinition(questId)
+	if err != nil {
+		p.l.WithError(err).Warnf("Unable to fetch quest definition for quest [%d] for auto-complete check.", questId)
+		return 0, false, nil
+	}
+
+	if !questDef.AutoComplete {
+		return 0, false, nil
+	}
+
+	// Check if all end requirements are met (internal check for mob kills/map visits)
+	if !p.areEndRequirementsMet(existing, questDef) {
+		return 0, false, nil
+	}
+
+	// All requirements met, complete the quest (skip external validation as we've already checked locally)
+	nextQuestId, err := p.Complete(characterId, questId, f, true)
+	if err != nil {
+		return 0, false, err
+	}
+
+	p.l.Infof("Auto-completed quest [%d] for character [%d].", questId, characterId)
+	return nextQuestId, true, nil
+}
+
+func (p *ProcessorImpl) areEndRequirementsMet(q Model, questDef dataquest.RestModel) bool {
+	// Check mob kill requirements
+	for _, mobReq := range questDef.EndRequirements.Mobs {
+		prog, found := q.GetProgress(mobReq.Id)
+		if !found {
+			return false
+		}
+		count := parseProgressValue(prog.Progress())
+		if count < mobReq.Count {
+			return false
+		}
+	}
+
+	// Check map visit requirements (fieldEnter)
+	for _, mapId := range questDef.EndRequirements.FieldEnter {
+		prog, found := q.GetProgress(mapId)
+		if !found {
+			return false
+		}
+		if prog.Progress() != "1" {
+			return false
+		}
+	}
+
+	// Note: Item requirements are not checked here as they require fetching character inventory
+	// which should be done by the calling service. Auto-complete for item-based quests
+	// should be triggered externally when items are obtained.
+
+	return true
+}
+
+func parseProgressValue(progress string) uint32 {
+	if progress == "" {
+		return 0
+	}
+	val, err := strconv.Atoi(progress)
+	if err != nil {
+		return 0
+	}
+	return uint32(val)
+}
+
+func (p *ProcessorImpl) CheckAutoStart(characterId uint32, f field.Model) ([]uint32, error) {
+	// Fetch all auto-start quests from atlas-data
+	autoStartQuests, err := p.dataProcessor.GetAutoStartQuests(uint32(f.MapId()))
+	if err != nil {
+		p.l.WithError(err).Warnf("Unable to fetch auto-start quests for map [%d].", f.MapId())
+		return nil, nil
+	}
+
+	var startedQuests []uint32
+	for _, questDef := range autoStartQuests {
+		// Check if quest is already started or completed
+		existing, err := p.GetByCharacterIdAndQuestId(characterId, questDef.Id)
+		if err == nil {
+			// Quest exists - check if we can restart it
+			if existing.State() == StateStarted {
+				continue // Already started
+			}
+			if existing.State() == StateCompleted {
+				// Check if it's repeatable
+				interval := questDef.StartRequirements.Interval
+				if interval == 0 {
+					continue // Not repeatable
+				}
+				elapsed := time.Since(existing.CompletedAt())
+				if elapsed < time.Duration(interval)*time.Minute {
+					continue // Interval not elapsed
+				}
+			}
+		}
+
+		// Start the quest (auto-start quests still validate requirements)
+		_, _, err = p.Start(characterId, questDef.Id, f, false)
+		if err != nil {
+			if !errors.Is(err, ErrQuestAlreadyStarted) && !errors.Is(err, ErrQuestAlreadyCompleted) && !errors.Is(err, ErrStartRequirementsNotMet) {
+				p.l.WithError(err).Warnf("Unable to auto-start quest [%d] for character [%d].", questDef.Id, characterId)
+			}
+			continue
+		}
+
+		p.l.Infof("Auto-started quest [%d] for character [%d] on map [%d].", questDef.Id, characterId, f.MapId())
+		startedQuests = append(startedQuests, questDef.Id)
+	}
+
+	return startedQuests, nil
+}
+
+func (p *ProcessorImpl) processStartActions(characterId uint32, questId uint32, questDef dataquest.RestModel, f field.Model) error {
+	actions := questDef.StartActions
+
+	// Build saga for start actions
+	builder := sagaproducer.NewBuilder(saga.QuestStart, fmt.Sprintf("quest_%d", questId))
+
+	// Consume required items (negative count items in requirements)
+	for _, item := range questDef.StartRequirements.Items {
+		if item.Count < 0 {
+			builder.AddConsumeItem(characterId, item.Id, uint32(-item.Count))
+		}
+	}
+
+	// Award items on start
+	for _, item := range actions.Items {
+		if item.Count > 0 {
+			builder.AddAwardItem(characterId, item.Id, uint32(item.Count))
+		} else if item.Count < 0 {
+			builder.AddConsumeItem(characterId, item.Id, uint32(-item.Count))
+		}
+	}
+
+	// Award exp on start
+	if actions.Exp > 0 {
+		builder.AddAwardExperience(characterId, byte(f.WorldId()), byte(f.ChannelId()), actions.Exp)
+	}
+
+	// Award meso on start
+	if actions.Money != 0 {
+		builder.AddAwardMesos(characterId, byte(f.WorldId()), byte(f.ChannelId()), actions.Money, questId)
+	}
+
+	// Emit saga if there are steps
+	if builder.HasSteps() {
+		s := builder.Build()
+		return sagaproducer.EmitSaga(p.l, p.ctx, s)
+	}
+
+	return nil
+}
+
+func (p *ProcessorImpl) processEndActions(characterId uint32, questId uint32, questDef dataquest.RestModel, f field.Model) error {
+	actions := questDef.EndActions
+
+	// Build saga for end actions
+	builder := sagaproducer.NewBuilder(saga.QuestComplete, fmt.Sprintf("quest_%d", questId))
+
+	// Consume required items (items consumed on completion)
+	for _, item := range questDef.EndRequirements.Items {
+		if item.Count < 0 {
+			builder.AddConsumeItem(characterId, item.Id, uint32(-item.Count))
+		}
+	}
+
+	// Award items
+	for _, item := range actions.Items {
+		if item.Count > 0 {
+			builder.AddAwardItem(characterId, item.Id, uint32(item.Count))
+		} else if item.Count < 0 {
+			builder.AddConsumeItem(characterId, item.Id, uint32(-item.Count))
+		}
+	}
+
+	// Award experience
+	if actions.Exp > 0 {
+		builder.AddAwardExperience(characterId, byte(f.WorldId()), byte(f.ChannelId()), actions.Exp)
+	}
+
+	// Award meso
+	if actions.Money != 0 {
+		builder.AddAwardMesos(characterId, byte(f.WorldId()), byte(f.ChannelId()), actions.Money, questId)
+	}
+
+	// Award fame
+	if actions.Fame != 0 {
+		builder.AddAwardFame(characterId, byte(f.WorldId()), byte(f.ChannelId()), actions.Fame, questId)
+	}
+
+	// Award skills
+	for _, skill := range actions.Skills {
+		builder.AddCreateSkill(characterId, skill.Id, byte(skill.Level), byte(skill.MasterLevel))
+	}
+
+	// Emit saga if there are steps
+	if builder.HasSteps() {
+		s := builder.Build()
+		return sagaproducer.EmitSaga(p.l, p.ctx, s)
+	}
+
+	return nil
+}

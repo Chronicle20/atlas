@@ -1,0 +1,49 @@
+{
+  "npcId": 2081010,
+  "startState": "askExit",
+  "states": [
+    {
+      "id": "askExit",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Do you want to exit the area? If you quit, you will need to start this task from the scratch.",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "warp"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warp",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "240010400",
+              "portalName": "st00"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

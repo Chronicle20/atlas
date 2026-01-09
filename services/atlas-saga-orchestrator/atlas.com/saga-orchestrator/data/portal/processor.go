@@ -12,6 +12,7 @@ type Processor interface {
 	InMapProvider(mapId _map.Id) model.Provider[[]Model]
 	RandomSpawnPointProvider(mapId _map.Id) model.Provider[Model]
 	RandomSpawnPointIdProvider(mapId _map.Id) model.Provider[uint32]
+	ByNameIdProvider(mapId _map.Id, name string) model.Provider[uint32]
 }
 
 type ProcessorImpl struct {
@@ -47,4 +48,17 @@ func (p *ProcessorImpl) RandomSpawnPointIdProvider(mapId _map.Id) model.Provider
 
 func getId(m Model) (uint32, error) {
 	return m.Id(), nil
+}
+
+func (p *ProcessorImpl) ByNameIdProvider(mapId _map.Id, name string) model.Provider[uint32] {
+	return func() (uint32, error) {
+		portals, err := model.FilteredProvider(p.InMapProvider(mapId), model.Filters(ByName(name)))()
+		if err != nil {
+			return 0, err
+		}
+		if len(portals) == 0 {
+			return 0, nil
+		}
+		return portals[0].Id(), nil
+	}
 }

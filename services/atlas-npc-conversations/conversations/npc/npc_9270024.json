@@ -1,0 +1,197 @@
+{
+  "npcId": 9270024,
+  "startState": "welcome",
+  "states": [
+    {
+      "id": "welcome",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Let's see...I can totally transform your face into something new. Don't you want to try it? For #b#t5152038##k, you can get the face of your liking. Take your time in choosing the face of your preference...",
+        "choices": [
+          {
+            "text": "Let me get my dream face! (Uses #i5152038# #t5152038#)",
+            "nextState": "checkCoupon"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkCoupon",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": "<",
+                "value": "1",
+                "referenceId": "5152038"
+              }
+            ],
+            "nextState": "noCoupon"
+          },
+          {
+            "conditions": [],
+            "nextState": "checkGender"
+          }
+        ]
+      }
+    },
+    {
+      "id": "noCoupon",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Hmm ... it looks like you don't have the coupon specifically for this place. Sorry to say this, but without the coupon, there's no plastic surgery for you...",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkGender",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "gender",
+                "operator": "=",
+                "value": "0"
+              }
+            ],
+            "nextState": "generateMaleFaces"
+          },
+          {
+            "conditions": [
+              {
+                "type": "gender",
+                "operator": "=",
+                "value": "1"
+              }
+            ],
+            "nextState": "generateFemaleFaces"
+          }
+        ]
+      }
+    },
+    {
+      "id": "generateMaleFaces",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:generate_face_styles",
+            "params": {
+              "baseStyles": "20005,20012,20013,20020,20021,20026",
+              "genderFilter": "male",
+              "validateExists": "true",
+              "excludeEquipped": "true",
+              "outputContextKey": "availableFaces"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "chooseFace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "generateFemaleFaces",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:generate_face_styles",
+            "params": {
+              "baseStyles": "21006,21009,21011,21012,21021,21025",
+              "genderFilter": "female",
+              "validateExists": "true",
+              "excludeEquipped": "true",
+              "outputContextKey": "availableFaces"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "chooseFace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "chooseFace",
+      "type": "askStyle",
+      "askStyle": {
+        "text": "Let's see... I can totally transform your face into something new. Don't you want to try it? For #b#t5152038##k, you can get the face of your liking. Take your time in choosing the face of your preference...",
+        "stylesContextKey": "availableFaces",
+        "contextKey": "selectedFace",
+        "nextState": "applyFace"
+      }
+    },
+    {
+      "id": "applyFace",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "5152038",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "change_face",
+            "params": {
+              "styleId": "{context.selectedFace}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "success"
+          }
+        ]
+      }
+    },
+    {
+      "id": "success",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Enjoy your new and improved face!",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

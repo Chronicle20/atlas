@@ -21,6 +21,7 @@ import (
 
 type Processor interface {
 	AddTenant(routes []Model, sharedVessels []SharedVesselModel) error
+	ClearTenant() int
 	ByIdProvider(id uuid.UUID) model.Provider[Model]
 	ByStartMapProvider(mapId map2.Id) model.Provider[Model]
 	AllRoutesProvider() model.Provider[[]Model]
@@ -73,6 +74,12 @@ func (p *ProcessorImpl) AddTenant(distinctRoutes []Model, sharedVessels []Shared
 
 	getRouteRegistry().AddTenant(p.t, scheduledRoutes)
 	return nil
+}
+
+// ClearTenant removes all routes for the current tenant and returns the count of deleted routes
+func (p *ProcessorImpl) ClearTenant() int {
+	p.l.Debugf("Clearing routes for tenant [%s].", p.t.Id())
+	return getRouteRegistry().ClearTenant(p.t)
 }
 
 // ByIdProvider returns a provider for a route by id

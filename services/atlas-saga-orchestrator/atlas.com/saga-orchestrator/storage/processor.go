@@ -19,6 +19,8 @@ type Processor interface {
 	UpdateMesos(mb *message.Buffer) func(transactionId uuid.UUID, worldId byte, accountId uint32, mesos uint32, operation string) error
 	DepositRollbackAndEmit(transactionId uuid.UUID, worldId byte, accountId uint32, assetId uint32) error
 	DepositRollback(mb *message.Buffer) func(transactionId uuid.UUID, worldId byte, accountId uint32, assetId uint32) error
+	ShowStorageAndEmit(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32, npcId uint32, accountId uint32) error
+	ShowStorage(mb *message.Buffer) func(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32, npcId uint32, accountId uint32) error
 }
 
 type ProcessorImpl struct {
@@ -80,5 +82,17 @@ func (p *ProcessorImpl) DepositRollbackAndEmit(transactionId uuid.UUID, worldId 
 func (p *ProcessorImpl) DepositRollback(mb *message.Buffer) func(transactionId uuid.UUID, worldId byte, accountId uint32, assetId uint32) error {
 	return func(transactionId uuid.UUID, worldId byte, accountId uint32, assetId uint32) error {
 		return mb.Put(storage2.EnvCommandTopic, DepositRollbackCommandProvider(transactionId, worldId, accountId, assetId))
+	}
+}
+
+func (p *ProcessorImpl) ShowStorageAndEmit(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32, npcId uint32, accountId uint32) error {
+	return message.Emit(p.p)(func(mb *message.Buffer) error {
+		return p.ShowStorage(mb)(transactionId, worldId, channelId, characterId, npcId, accountId)
+	})
+}
+
+func (p *ProcessorImpl) ShowStorage(mb *message.Buffer) func(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32, npcId uint32, accountId uint32) error {
+	return func(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32, npcId uint32, accountId uint32) error {
+		return mb.Put(storage2.EnvShowStorageCommandTopic, ShowStorageCommandProvider(transactionId, worldId, channelId, characterId, npcId, accountId))
 	}
 }

@@ -38,6 +38,7 @@ import (
 	route "atlas-channel/kafka/consumer/route"
 	session2 "atlas-channel/kafka/consumer/session"
 	"atlas-channel/kafka/consumer/skill"
+	storage3 "atlas-channel/kafka/consumer/storage"
 	system_message "atlas-channel/kafka/consumer/system_message"
 	"atlas-channel/logger"
 	"atlas-channel/server"
@@ -49,6 +50,10 @@ import (
 	"atlas-channel/tasks"
 	"atlas-channel/tracing"
 	"fmt"
+	"os"
+	"strconv"
+	"time"
+
 	channel2 "github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -58,9 +63,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
-	"os"
-	"strconv"
-	"time"
 )
 
 const serviceName = "atlas-channel"
@@ -122,6 +124,7 @@ func main() {
 	note3.InitConsumers(l)(cmf)(consumerGroupId)
 	quest.InitConsumers(l)(cmf)(consumerGroupId)
 	route.InitConsumers(l)(cmf)(consumerGroupId)
+	storage3.InitConsumers(l)(cmf)(consumerGroupId)
 
 	sctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(tdm.Context(), "startup")
 
@@ -194,6 +197,7 @@ func main() {
 				note3.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				quest.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				route.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				storage3.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 
 				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(tenantConfig.Socket.Handlers, validatorMap, handlerMap)
 				socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, sc, ten.IPAddress, c.Port)
@@ -302,6 +306,7 @@ func produceWriters() []string {
 		writer.DestroyKite,
 		writer.Clock,
 		writer.FieldTransportState,
+		writer.StorageOperation,
 	}
 }
 
@@ -371,6 +376,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.CharacterItemUseSummonBagHandle] = handler.CharacterItemUseSummonBagHandleFunc
 	handlerMap[handler.NoteOperationHandle] = handler.NoteOperationHandleFunc
 	handlerMap[handler.QuestActionHandle] = handler.QuestActionHandleFunc
+	handlerMap[handler.StorageOperationHandle] = handler.StorageOperationHandleFunc
 	return handlerMap
 }
 

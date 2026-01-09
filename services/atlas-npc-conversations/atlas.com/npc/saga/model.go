@@ -116,6 +116,7 @@ const (
 	ApplyConsumableEffect  Action = "apply_consumable_effect"
 	SendMessage            Action = "send_message"
 	AwardFame              Action = "award_fame"
+	ShowStorage            Action = "show_storage"
 )
 
 // Step represents a single step within a saga.
@@ -318,6 +319,16 @@ type AwardFamePayload struct {
 	Amount      int16      `json:"amount"`      // Amount of fame to award (can be negative)
 }
 
+// ShowStoragePayload represents the payload required to show the storage UI to a character.
+// This is triggered by NPC interactions and sends a command to the channel service to display storage.
+type ShowStoragePayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to show storage to
+	NpcId       uint32     `json:"npcId"`       // NpcId of the storage keeper
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	AccountId   uint32     `json:"accountId"`   // AccountId that owns the storage
+}
+
 type ExperienceDistributions struct {
 	ExperienceType string `json:"experienceType"`
 	Amount         uint32 `json:"amount"`
@@ -445,6 +456,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case AwardFame:
 		var payload AwardFamePayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case ShowStorage:
+		var payload ShowStoragePayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

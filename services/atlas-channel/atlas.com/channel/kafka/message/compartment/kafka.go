@@ -109,10 +109,12 @@ const (
 	EnvCommandTopicCompartmentTransfer = "COMMAND_TOPIC_COMPARTMENT_TRANSFER"
 	InventoryTypeCharacter             = "CHARACTER"
 	InventoryTypeCashShop              = "CASH_SHOP"
+	InventoryTypeStorage               = "STORAGE"
 )
 
 type TransferCommand struct {
 	TransactionId       uuid.UUID `json:"transactionId"`
+	WorldId             byte      `json:"worldId"`
 	AccountId           uint32    `json:"accountId"`
 	CharacterId         uint32    `json:"characterId"`
 	AssetId             uint32    `json:"assetId"`
@@ -123,6 +125,9 @@ type TransferCommand struct {
 	ToCompartmentType   byte      `json:"toCompartmentType"`
 	ToInventoryType     string    `json:"toInventoryType"`
 	ReferenceId         uint32    `json:"referenceId"`
+	TemplateId          uint32    `json:"templateId,omitempty"`
+	ReferenceType       string    `json:"referenceType,omitempty"`
+	Slot                int16     `json:"slot,omitempty"`
 }
 
 const (

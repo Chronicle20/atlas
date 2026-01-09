@@ -16,6 +16,7 @@ const (
 	CommandTypeWithdraw        = "WITHDRAW"
 	CommandTypeUpdateMesos     = "UPDATE_MESOS"
 	CommandTypeDepositRollback = "DEPOSIT_ROLLBACK"
+	CommandTypeArrange         = "ARRANGE"
 )
 
 // Event types
@@ -23,6 +24,16 @@ const (
 	StatusEventTypeDeposited    = "DEPOSITED"
 	StatusEventTypeWithdrawn    = "WITHDRAWN"
 	StatusEventTypeMesosUpdated = "MESOS_UPDATED"
+	StatusEventTypeArranged     = "ARRANGED"
+	StatusEventTypeError        = "ERROR"
+)
+
+// Error codes
+const (
+	ErrorCodeStorageFull    = "STORAGE_FULL"
+	ErrorCodeNotEnoughMesos = "NOT_ENOUGH_MESOS"
+	ErrorCodeOneOfAKind     = "ONE_OF_A_KIND"
+	ErrorCodeGeneric        = "GENERIC"
 )
 
 // Command is the base command structure for storage operations
@@ -101,4 +112,18 @@ type WithdrawnEventBody struct {
 type MesosUpdatedEventBody struct {
 	OldMesos uint32 `json:"oldMesos"`
 	NewMesos uint32 `json:"newMesos"`
+}
+
+// ArrangeBody contains the data needed to arrange storage (empty for now)
+type ArrangeBody struct {
+}
+
+// ArrangedEventBody contains the data for an arranged event
+type ArrangedEventBody struct {
+}
+
+// ErrorEventBody contains the data for an error event
+type ErrorEventBody struct {
+	ErrorCode string `json:"errorCode"`
+	Message   string `json:"message,omitempty"`
 }

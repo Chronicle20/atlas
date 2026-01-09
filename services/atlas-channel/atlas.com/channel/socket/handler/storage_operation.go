@@ -3,14 +3,17 @@ package handler
 import (
 	"atlas-channel/compartment"
 	npcTemplate "atlas-channel/data/npc/template"
+	"atlas-channel/saga"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"atlas-channel/storage"
 	"context"
+	"time"
 
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-socket/request"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -22,7 +25,7 @@ const (
 	StorageOperationModeStore    = "STORE_ASSET"    // 5
 	StorageOperationModeArrange  = "ARRANGE_ASSET"  // 6
 	StorageOperationModeMeso     = "MESO"           // 7
-	StorageOperationModeClose    = "CLOSE"
+	StorageOperationModeClose    = "CLOSE"          // 8
 )
 
 func StorageOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
@@ -192,26 +195,112 @@ func handleArrangeAsset(l logrus.FieldLogger, ctx context.Context, s session.Mod
 	}
 }
 
-// handleMeso handles meso deposit/withdrawal operations
+// handleMeso handles meso deposit/withdrawal operations via saga
 func handleMeso(l logrus.FieldLogger, ctx context.Context, s session.Model, r *request.Reader) {
 	amount := r.ReadInt32()
-	sp := storage.NewProcessor(l, ctx)
+	sagaP := saga.NewProcessor(l, ctx)
+	transactionId := uuid.New()
+	now := time.Now()
 
 	if amount < 0 {
 		// Negative amount = deposit mesos to storage
+		// Saga: 1) Deduct from character, 2) Add to storage
 		mesos := uint32(-amount)
-		l.Debugf("Character [%d] is attempting to deposit [%d] mesos to storage.", s.CharacterId(), mesos)
-		err := sp.DepositMesos(byte(s.WorldId()), s.AccountId(), mesos)
+		l.Debugf("Character [%d] is attempting to deposit [%d] mesos to storage via saga [%s].", s.CharacterId(), mesos, transactionId.String())
+
+		// Step 1: Deduct mesos from character (negative amount)
+		step1 := saga.Step[any]{
+			StepId:  "deduct_character_mesos",
+			Status:  saga.Pending,
+			Action:  saga.AwardMesos,
+			Payload: saga.AwardMesosPayload{
+				WorldId:     s.WorldId(),
+				CharacterId: s.CharacterId(),
+				ChannelId:   s.ChannelId(),
+				ActorId:     s.CharacterId(),
+				ActorType:   "STORAGE",
+				Amount:      amount, // Negative to deduct
+			},
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		// Step 2: Add mesos to storage
+		step2 := saga.Step[any]{
+			StepId:  "add_storage_mesos",
+			Status:  saga.Pending,
+			Action:  saga.UpdateStorageMesos,
+			Payload: saga.UpdateStorageMesosPayload{
+				CharacterId: s.CharacterId(),
+				AccountId:   s.AccountId(),
+				WorldId:     byte(s.WorldId()),
+				Operation:   "ADD",
+				Mesos:       mesos,
+			},
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		sagaTx := saga.Saga{
+			TransactionId: transactionId,
+			SagaType:      saga.InventoryTransaction,
+			InitiatedBy:   "STORAGE",
+			Steps:         []saga.Step[any]{step1, step2},
+		}
+
+		err := sagaP.Create(sagaTx)
 		if err != nil {
-			l.WithError(err).Errorf("Unable to deposit [%d] mesos to storage for account [%d].", mesos, s.AccountId())
+			l.WithError(err).Errorf("Unable to create saga for depositing [%d] mesos to storage for character [%d].", mesos, s.CharacterId())
 		}
 	} else if amount > 0 {
 		// Positive amount = withdraw mesos from storage
+		// Saga: 1) Deduct from storage, 2) Add to character
 		mesos := uint32(amount)
-		l.Debugf("Character [%d] is attempting to withdraw [%d] mesos from storage.", s.CharacterId(), mesos)
-		err := sp.WithdrawMesos(byte(s.WorldId()), s.AccountId(), mesos)
+		l.Debugf("Character [%d] is attempting to withdraw [%d] mesos from storage via saga [%s].", s.CharacterId(), mesos, transactionId.String())
+
+		// Step 1: Deduct mesos from storage
+		step1 := saga.Step[any]{
+			StepId:  "subtract_storage_mesos",
+			Status:  saga.Pending,
+			Action:  saga.UpdateStorageMesos,
+			Payload: saga.UpdateStorageMesosPayload{
+				CharacterId: s.CharacterId(),
+				AccountId:   s.AccountId(),
+				WorldId:     byte(s.WorldId()),
+				Operation:   "SUBTRACT",
+				Mesos:       mesos,
+			},
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		// Step 2: Add mesos to character
+		step2 := saga.Step[any]{
+			StepId:  "add_character_mesos",
+			Status:  saga.Pending,
+			Action:  saga.AwardMesos,
+			Payload: saga.AwardMesosPayload{
+				WorldId:     s.WorldId(),
+				CharacterId: s.CharacterId(),
+				ChannelId:   s.ChannelId(),
+				ActorId:     s.CharacterId(),
+				ActorType:   "STORAGE",
+				Amount:      amount, // Positive to add
+			},
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		sagaTx := saga.Saga{
+			TransactionId: transactionId,
+			SagaType:      saga.InventoryTransaction,
+			InitiatedBy:   "STORAGE",
+			Steps:         []saga.Step[any]{step1, step2},
+		}
+
+		err := sagaP.Create(sagaTx)
 		if err != nil {
-			l.WithError(err).Errorf("Unable to withdraw [%d] mesos from storage for account [%d].", mesos, s.AccountId())
+			l.WithError(err).Errorf("Unable to create saga for withdrawing [%d] mesos from storage for character [%d].", mesos, s.CharacterId())
 		}
 	}
 }

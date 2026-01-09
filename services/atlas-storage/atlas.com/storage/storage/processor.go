@@ -6,10 +6,13 @@ import (
 	"atlas-storage/data/etc"
 	"atlas-storage/data/setup"
 	"atlas-storage/kafka/message"
+	"atlas-storage/kafka/message/compartment"
 	"atlas-storage/kafka/producer"
 	"atlas-storage/stackable"
 	"context"
 	"sort"
+	"time"
+
 	atlasProducer "github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -226,6 +229,159 @@ func (p *Processor) DepositRollback(worldId byte, accountId uint32, body message
 
 	// Delete asset
 	return asset.Delete(p.l, p.db, t.Id())(body.AssetId)
+}
+
+// Accept accepts an item into storage as part of a transfer saga
+// This creates a placeholder asset that will be fully populated when the transfer completes
+func (p *Processor) Accept(worldId byte, accountId uint32, body compartment.AcceptCommandBody) (uint32, int16, error) {
+	t := tenant.MustFromContext(p.ctx)
+
+	// Get or create storage
+	s, err := p.GetOrCreateStorage(worldId, accountId)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	// Determine the slot to use
+	var slot int16
+	if body.Slot > 0 {
+		slot = body.Slot
+	} else {
+		// Find next available slot
+		assets, err := asset.GetByStorageId(p.l, p.db, t.Id())(s.Id())
+		if err != nil {
+			return 0, 0, err
+		}
+		slot = int16(len(assets) + 1)
+	}
+
+	// Create asset with the reference data
+	refType := asset.ReferenceType(body.ReferenceType)
+	a, err := asset.Create(p.l, p.db, t.Id())(
+		s.Id(),
+		slot,
+		body.TemplateId,
+		time.Time{}, // No expiration for storage items
+		body.ReferenceId,
+		refType,
+	)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	// For stackable items, we need to create a placeholder stackable record
+	// The actual quantity will be handled by the character inventory service
+	if refType == asset.ReferenceTypeConsumable ||
+		refType == asset.ReferenceTypeSetup ||
+		refType == asset.ReferenceTypeEtc {
+		_, err = stackable.Create(p.l, p.db)(
+			a.Id(),
+			1, // Default quantity - will be updated with actual data
+			0, // OwnerId
+			0, // Flag
+		)
+		if err != nil {
+			// Rollback asset creation
+			_ = asset.Delete(p.l, p.db, t.Id())(a.Id())
+			return 0, 0, err
+		}
+	}
+
+	return a.Id(), slot, nil
+}
+
+// AcceptAndEmit accepts an item and emits an ACCEPTED status event
+func (p *Processor) AcceptAndEmit(worldId byte, accountId uint32, body compartment.AcceptCommandBody) error {
+	assetId, slot, err := p.Accept(worldId, accountId, body)
+	if err != nil {
+		// Emit error event
+		_ = p.emitCompartmentErrorEvent(worldId, accountId, body.TransactionId, "ACCEPT_FAILED", err.Error())
+		return err
+	}
+
+	// Emit accepted event
+	return p.emitCompartmentAcceptedEvent(worldId, accountId, body.TransactionId, assetId, slot)
+}
+
+// Release releases an item from storage as part of a transfer saga
+func (p *Processor) Release(worldId byte, accountId uint32, body compartment.ReleaseCommandBody) error {
+	t := tenant.MustFromContext(p.ctx)
+
+	// Get asset
+	a, err := asset.GetById(p.l, p.db, t.Id())(body.AssetId)
+	if err != nil {
+		return err
+	}
+
+	// Delete stackable data if exists
+	if a.IsStackable() {
+		_ = stackable.Delete(p.l, p.db)(body.AssetId)
+	}
+
+	// Delete asset
+	return asset.Delete(p.l, p.db, t.Id())(body.AssetId)
+}
+
+// ReleaseAndEmit releases an item and emits a RELEASED status event
+func (p *Processor) ReleaseAndEmit(worldId byte, accountId uint32, body compartment.ReleaseCommandBody) error {
+	err := p.Release(worldId, accountId, body)
+	if err != nil {
+		// Emit error event
+		_ = p.emitCompartmentErrorEvent(worldId, accountId, body.TransactionId, "RELEASE_FAILED", err.Error())
+		return err
+	}
+
+	// Emit released event
+	return p.emitCompartmentReleasedEvent(worldId, accountId, body.TransactionId, body.AssetId)
+}
+
+func (p *Processor) emitCompartmentAcceptedEvent(worldId byte, accountId uint32, transactionId uuid.UUID, assetId uint32, slot int16) error {
+	event := &compartment.StatusEvent[compartment.StatusEventAcceptedBody]{
+		WorldId:   worldId,
+		AccountId: accountId,
+		Type:      compartment.StatusEventTypeAccepted,
+		Body: compartment.StatusEventAcceptedBody{
+			TransactionId: transactionId,
+			AssetId:       assetId,
+			Slot:          slot,
+		},
+	}
+
+	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvEventTopicStatus)(createCompartmentMessageProvider(accountId, event))
+}
+
+func (p *Processor) emitCompartmentReleasedEvent(worldId byte, accountId uint32, transactionId uuid.UUID, assetId uint32) error {
+	event := &compartment.StatusEvent[compartment.StatusEventReleasedBody]{
+		WorldId:   worldId,
+		AccountId: accountId,
+		Type:      compartment.StatusEventTypeReleased,
+		Body: compartment.StatusEventReleasedBody{
+			TransactionId: transactionId,
+			AssetId:       assetId,
+		},
+	}
+
+	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvEventTopicStatus)(createCompartmentMessageProvider(accountId, event))
+}
+
+func (p *Processor) emitCompartmentErrorEvent(worldId byte, accountId uint32, transactionId uuid.UUID, errorCode string, errorMessage string) error {
+	event := &compartment.StatusEvent[compartment.StatusEventErrorBody]{
+		WorldId:   worldId,
+		AccountId: accountId,
+		Type:      compartment.StatusEventTypeError,
+		Body: compartment.StatusEventErrorBody{
+			TransactionId: transactionId,
+			ErrorCode:     errorCode,
+			Message:       errorMessage,
+		},
+	}
+
+	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvEventTopicStatus)(createCompartmentMessageProvider(accountId, event))
+}
+
+func createCompartmentMessageProvider[E any](accountId uint32, event *compartment.StatusEvent[E]) func() ([]kafka.Message, error) {
+	key := atlasProducer.CreateKey(int(accountId))
+	return atlasProducer.SingleMessageProvider(key, event)
 }
 
 func (p *Processor) emitDepositedEvent(transactionId uuid.UUID, worldId byte, accountId uint32, assetId uint32, body message.DepositBody) error {
@@ -445,20 +601,32 @@ func (p *Processor) MergeAndSort(worldId byte, accountId uint32) error {
 	return p.sortAssets(t.Id(), allAssets)
 }
 
-// sortAssets sorts assets by templateId and updates their slots
+// sortAssets sorts assets by inventory type, then by templateId within each type, and updates their slots
 func (p *Processor) sortAssets(tenantId uuid.UUID, assets []asset.Model[any]) error {
-	// Sort by templateId
-	sort.Slice(assets, func(i, j int) bool {
-		return assets[i].TemplateId() < assets[j].TemplateId()
-	})
+	// Group assets by inventory type
+	byInventoryType := make(map[asset.InventoryType][]asset.Model[any])
+	for _, a := range assets {
+		byInventoryType[a.InventoryType()] = append(byInventoryType[a.InventoryType()], a)
+	}
 
-	// Update slots
-	for i, a := range assets {
-		newSlot := int16(i + 1) // Slots are 1-indexed
-		if a.Slot() != newSlot {
-			err := asset.UpdateSlot(p.l, p.db, tenantId)(a.Id(), newSlot)
-			if err != nil {
-				return err
+	// Sort each inventory type group by templateId
+	for it := range byInventoryType {
+		group := byInventoryType[it]
+		sort.Slice(group, func(i, j int) bool {
+			return group[i].TemplateId() < group[j].TemplateId()
+		})
+		byInventoryType[it] = group
+	}
+
+	// Assign slots within each inventory type (1-indexed per type)
+	for _, group := range byInventoryType {
+		for i, a := range group {
+			newSlot := int16(i + 1) // Slots are 1-indexed within each inventory type
+			if a.Slot() != newSlot {
+				err := asset.UpdateSlot(p.l, p.db, tenantId)(a.Id(), newSlot)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -506,6 +674,46 @@ func (p *Processor) getSlotMax(templateId uint32, refType asset.ReferenceType) (
 	default:
 		return 0, nil
 	}
+}
+
+// ArrangeAndEmit arranges storage and emits an event
+func (p *Processor) ArrangeAndEmit(transactionId uuid.UUID, worldId byte, accountId uint32) error {
+	err := p.MergeAndSort(worldId, accountId)
+	if err != nil {
+		// Emit error event
+		_ = p.emitErrorEvent(transactionId, worldId, accountId, message.ErrorCodeGeneric, err.Error())
+		return err
+	}
+
+	// Emit arranged event
+	return p.emitArrangedEvent(transactionId, worldId, accountId)
+}
+
+func (p *Processor) emitArrangedEvent(transactionId uuid.UUID, worldId byte, accountId uint32) error {
+	event := &message.StatusEvent[message.ArrangedEventBody]{
+		TransactionId: transactionId,
+		WorldId:       worldId,
+		AccountId:     accountId,
+		Type:          message.StatusEventTypeArranged,
+		Body:          message.ArrangedEventBody{},
+	}
+
+	return producer.ProviderImpl(p.l)(p.ctx)(message.EnvEventTopic)(createMessageProvider(accountId, event))
+}
+
+func (p *Processor) emitErrorEvent(transactionId uuid.UUID, worldId byte, accountId uint32, errorCode string, errorMessage string) error {
+	event := &message.StatusEvent[message.ErrorEventBody]{
+		TransactionId: transactionId,
+		WorldId:       worldId,
+		AccountId:     accountId,
+		Type:          message.StatusEventTypeError,
+		Body: message.ErrorEventBody{
+			ErrorCode: errorCode,
+			Message:   errorMessage,
+		},
+	}
+
+	return producer.ProviderImpl(p.l)(p.ctx)(message.EnvEventTopic)(createMessageProvider(accountId, event))
 }
 
 func min(a, b uint32) uint32 {

@@ -110,3 +110,26 @@ func TransferProvider(accountId uint32, characterId uint32, assetId uint32, from
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+// StorageTransferProvider creates a transfer command for storage operations
+func StorageTransferProvider(worldId byte, accountId uint32, characterId uint32, assetId uint32, fromId uuid.UUID, fromType byte, fromInventoryType string, toId uuid.UUID, toType byte, toInventoryType string, referenceId uint32, templateId uint32, referenceType string, slot int16) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &compartment.TransferCommand{
+		TransactionId:       uuid.New(),
+		WorldId:             worldId,
+		AccountId:           accountId,
+		CharacterId:         characterId,
+		AssetId:             assetId,
+		FromCompartmentId:   fromId,
+		FromCompartmentType: fromType,
+		FromInventoryType:   fromInventoryType,
+		ToCompartmentId:     toId,
+		ToCompartmentType:   toType,
+		ToInventoryType:     toInventoryType,
+		ReferenceId:         referenceId,
+		TemplateId:          templateId,
+		ReferenceType:       referenceType,
+		Slot:                slot,
+	}
+	return producer.SingleMessageProvider(key, value)
+}

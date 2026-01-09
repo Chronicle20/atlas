@@ -1544,6 +1544,38 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 		return stepId, saga.Pending, saga.SendMessage, payload, nil
 
+	case "open_storage":
+		// Format: open_storage
+		// Params: accountId (uint32, required)
+		// Opens the storage UI for the character via the NPC they're talking to
+		// Used for storage keeper NPCs (e.g., Fredrick in FM)
+		accountIdValue, exists := operation.Params()["accountId"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing accountId parameter for open_storage operation")
+		}
+
+		accountIdInt, err := e.evaluateContextValueAsInt(characterId, "accountId", accountIdValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		// Get NPC ID from conversation context
+		ctx, err := GetRegistry().GetPreviousContext(e.t, characterId)
+		if err != nil {
+			return "", "", "", nil, fmt.Errorf("failed to get conversation context for NPC ID: %w", err)
+		}
+		npcId := ctx.NpcId()
+
+		payload := saga.ShowStoragePayload{
+			CharacterId: characterId,
+			NpcId:       npcId,
+			WorldId:     f.WorldId(),
+			ChannelId:   f.ChannelId(),
+			AccountId:   uint32(accountIdInt),
+		}
+
+		return stepId, saga.Pending, saga.ShowStorage, payload, nil
+
 	default:
 		return "", "", "", nil, fmt.Errorf("unknown operation type: %s", operation.Type())
 	}

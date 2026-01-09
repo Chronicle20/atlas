@@ -8,7 +8,7 @@ The storage service provides:
 
 - **Account-scoped storage**: Each storage is uniquely identified by `(worldId, accountId)` with a default capacity of 4 slots
 - **Lazy initialization**: Storage is automatically created on first access (GET request or deposit operation)
-- **Asset management**: Supports deposits and withdrawals of items with slot tracking
+- **Asset management**: Supports deposits and withdrawals of items with slot tracking (0-indexed, following MapleStory convention)
 - **Mesos management**: Store and manage mesos in storage with SET, ADD, and SUBTRACT operations
 - **Stackable items**: Local storage of quantity/owner/flag data for consumables, setup, and etc items
 - **Reference data**: External lookups for equipables (atlas-equipables) and pets (atlas-pets)
@@ -63,7 +63,7 @@ Stackable (local storage for consumable/setup/etc)
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/storage/accounts/{accountId}?worldId={worldId}` | Get storage metadata (lazy initialization - creates if not exists) |
+| GET | `/api/storage/accounts/{accountId}?worldId={worldId}` | Get complete storage with all assets (lazy initialization - creates if not exists) |
 | POST | `/api/storage/accounts/{accountId}?worldId={worldId}` | Explicitly create storage (409 Conflict if exists, 201 Created on success) |
 | GET | `/api/storage/accounts/{accountId}/assets?worldId={worldId}` | Get all assets in storage |
 | GET | `/api/storage/accounts/{accountId}/assets/{assetId}?worldId={worldId}` | Get single asset by ID |
@@ -123,7 +123,7 @@ Deposits an item from character inventory into storage.
   "characterId": 12345,
   "accountId": 1001,
   "worldId": 0,
-  "slot": 1,
+  "slot": 0,
   "templateId": 1302000,
   "referenceId": 100,
   "referenceType": "equipable",
@@ -144,7 +144,7 @@ Withdraws an item from storage to character inventory.
   "accountId": 1001,
   "worldId": 0,
   "assetId": 500,
-  "targetSlot": 1,
+  "targetSlot": 0,
   "quantity": 10
 }
 ```

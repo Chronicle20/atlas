@@ -1,6 +1,7 @@
 package compartment
 
 import (
+	"encoding/json"
 	"github.com/google/uuid"
 	"time"
 )
@@ -109,8 +110,11 @@ type SortCommandBody struct {
 }
 
 type AcceptCommandBody struct {
-	TransactionId uuid.UUID `json:"transactionId"`
-	ReferenceId   uint32    `json:"referenceId"`
+	TransactionId uuid.UUID       `json:"transactionId"`
+	TemplateId    uint32          `json:"templateId"`
+	ReferenceId   uint32          `json:"referenceId"`
+	ReferenceType string          `json:"referenceType"`
+	ReferenceData json.RawMessage `json:"referenceData,omitempty"` // Type-specific data based on ReferenceType
 }
 
 type ReleaseCommandBody struct {

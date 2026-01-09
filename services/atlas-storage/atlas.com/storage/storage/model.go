@@ -50,8 +50,8 @@ func (m Model) NextFreeSlot() (int16, error) {
 		occupied[a.Slot()] = true
 	}
 
-	// Find the first free slot (1-indexed)
-	for i := int16(1); i <= int16(m.capacity); i++ {
+	// Find the first free slot (0-indexed)
+	for i := int16(0); i < int16(m.capacity); i++ {
 		if !occupied[i] {
 			return i, nil
 		}

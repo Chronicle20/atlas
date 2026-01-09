@@ -6,9 +6,13 @@ import (
 )
 
 const (
-	EnvCommandTopic = "COMMAND_TOPIC_STORAGE_COMPARTMENT"
-	CommandAccept   = "ACCEPT"
-	CommandRelease  = "RELEASE"
+	EnvCommandTopic         = "COMMAND_TOPIC_STORAGE_COMPARTMENT"
+	EnvEventTopicStatus     = "EVENT_TOPIC_STORAGE_COMPARTMENT_STATUS"
+	CommandAccept           = "ACCEPT"
+	CommandRelease          = "RELEASE"
+	StatusEventTypeAccepted = "ACCEPTED"
+	StatusEventTypeReleased = "RELEASED"
+	StatusEventTypeError    = "ERROR"
 )
 
 // Command represents a storage compartment command (ACCEPT/RELEASE)
@@ -24,8 +28,8 @@ type AcceptCommandBody struct {
 	TransactionId uuid.UUID       `json:"transactionId"`
 	Slot          int16           `json:"slot"`
 	TemplateId    uint32          `json:"templateId"`
-	ReferenceId   uint32          `json:"referenceId"`
-	ReferenceType string          `json:"referenceType"`
+	ReferenceId   uint32          `json:"referenceId"`    // For equipables/pets - points to external service data
+	ReferenceType string          `json:"referenceType"`  // "EQUIPABLE", "CONSUMABLE", "SETUP", "ETC", "CASH", "PET"
 	ReferenceData json.RawMessage `json:"referenceData,omitempty"` // Type-specific data based on ReferenceType
 }
 
@@ -34,13 +38,6 @@ type ReleaseCommandBody struct {
 	TransactionId uuid.UUID `json:"transactionId"`
 	AssetId       uint32    `json:"assetId"`
 }
-
-const (
-	EnvEventTopicStatus     = "EVENT_TOPIC_STORAGE_COMPARTMENT_STATUS"
-	StatusEventTypeAccepted = "ACCEPTED"
-	StatusEventTypeReleased = "RELEASED"
-	StatusEventTypeError    = "ERROR"
-)
 
 // StatusEvent represents a storage compartment status event
 type StatusEvent[E any] struct {

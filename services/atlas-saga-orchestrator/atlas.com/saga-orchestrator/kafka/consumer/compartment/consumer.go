@@ -29,6 +29,8 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCompartmentCreatedEvent)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCompartmentCreationFailedEvent)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCompartmentDeletedEvent)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCompartmentAcceptedEvent)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCompartmentReleasedEvent)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCompartmentErrorEvent)))
 	}
 }
@@ -64,6 +66,50 @@ func handleCompartmentDeletedEvent(l logrus.FieldLogger, ctx context.Context, e 
 		return
 	}
 	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
+}
+
+func handleCompartmentAcceptedEvent(l logrus.FieldLogger, ctx context.Context, e compartment.StatusEvent[compartment.AcceptedEventBody]) {
+	if e.Type != compartment.StatusEventTypeAccepted {
+		return
+	}
+
+	l.WithFields(logrus.Fields{
+		"transaction_id": e.TransactionId.String(),
+		"character_id":   e.CharacterId,
+		"compartment_id": e.CompartmentId.String(),
+	}).Debug("Character inventory accepted asset successfully")
+
+	// Mark the saga step as completed
+	err := saga.NewProcessor(l, ctx).StepCompleted(e.Body.TransactionId, true)
+	if err != nil {
+		l.WithFields(logrus.Fields{
+			"transaction_id": e.Body.TransactionId.String(),
+			"character_id":   e.CharacterId,
+			"compartment_id": e.CompartmentId.String(),
+		}).WithError(err).Error("Failed to mark saga step as completed after accept")
+	}
+}
+
+func handleCompartmentReleasedEvent(l logrus.FieldLogger, ctx context.Context, e compartment.StatusEvent[compartment.ReleasedEventBody]) {
+	if e.Type != compartment.StatusEventTypeReleased {
+		return
+	}
+
+	l.WithFields(logrus.Fields{
+		"transaction_id": e.TransactionId.String(),
+		"character_id":   e.CharacterId,
+		"compartment_id": e.CompartmentId.String(),
+	}).Debug("Character inventory released asset successfully")
+
+	// Mark the saga step as completed
+	err := saga.NewProcessor(l, ctx).StepCompleted(e.Body.TransactionId, true)
+	if err != nil {
+		l.WithFields(logrus.Fields{
+			"transaction_id": e.Body.TransactionId.String(),
+			"character_id":   e.CharacterId,
+			"compartment_id": e.CompartmentId.String(),
+		}).WithError(err).Error("Failed to mark saga step as completed after release")
+	}
 }
 
 func handleCompartmentErrorEvent(l logrus.FieldLogger, ctx context.Context, e compartment.StatusEvent[compartment.ErrorEventBody]) {

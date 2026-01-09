@@ -5,6 +5,7 @@ import "github.com/google/uuid"
 const (
 	EnvShowStorageCommandTopic = "COMMAND_TOPIC_STORAGE_SHOW"
 	CommandTypeShowStorage     = "SHOW_STORAGE"
+	CommandTypeCloseStorage    = "CLOSE_STORAGE"
 
 	// Storage command topic for operations
 	EnvCommandTopic        = "COMMAND_TOPIC_STORAGE"
@@ -26,6 +27,12 @@ type ShowStorageCommand struct {
 	NpcId         uint32    `json:"npcId"`
 	AccountId     uint32    `json:"accountId"`
 	Type          string    `json:"type"`
+}
+
+// CloseStorageCommand is sent when a character closes storage
+type CloseStorageCommand struct {
+	CharacterId uint32 `json:"characterId"`
+	Type        string `json:"type"`
 }
 
 // Command represents a storage command sent to the storage service

@@ -284,6 +284,7 @@ const (
 	DepositToStorage             Action = "deposit_to_storage"
 	WithdrawFromStorage          Action = "withdraw_from_storage"
 	UpdateStorageMesos           Action = "update_storage_mesos"
+	ShowStorage                  Action = "show_storage"
 )
 
 // Step represents a single step within a saga.
@@ -610,6 +611,16 @@ type UpdateStorageMesosPayload struct {
 	Mesos       uint32 `json:"mesos"`       // Mesos amount
 }
 
+// ShowStoragePayload represents the payload required to show the storage UI to a character.
+// This is triggered by NPC interactions and sends a command to the channel service to display storage.
+type ShowStoragePayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to show storage to
+	NpcId       uint32     `json:"npcId"`       // NpcId of the storage keeper
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	AccountId   uint32     `json:"accountId"`   // AccountId that owns the storage
+}
+
 // Custom UnmarshalJSON for Step[T] to handle the generics
 func (s *Step[T]) UnmarshalJSON(data []byte) error {
 	type Alias Step[T] // Alias to avoid recursion
@@ -791,6 +802,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case UpdateStorageMesos:
 		var payload UpdateStorageMesosPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case ShowStorage:
+		var payload ShowStoragePayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

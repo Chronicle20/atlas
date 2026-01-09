@@ -101,6 +101,12 @@ func CharacterIdFilter(referenceId uint32) model.Filter[Model] {
 	}
 }
 
+func AccountIdFilter(accountId uint32) model.Filter[Model] {
+	return func(model Model) bool {
+		return model.AccountId() == accountId
+	}
+}
+
 func WorldIdFilter(worldId world.Id) model.Filter[Model] {
 	return func(model Model) bool {
 		return model.WorldId() == worldId
@@ -110,6 +116,23 @@ func WorldIdFilter(worldId world.Id) model.Filter[Model] {
 func ChannelIdFilter(channelId channel.Id) model.Filter[Model] {
 	return func(model Model) bool {
 		return model.ChannelId() == channelId
+	}
+}
+
+func (p *Processor) ByAccountIdModelProvider(worldId world.Id, channelId channel.Id) func(accountId uint32) model.Provider[Model] {
+	return func(accountId uint32) model.Provider[Model] {
+		return model.FirstProvider[Model](p.AllInTenantProvider, model.Filters(AccountIdFilter(accountId), WorldIdFilter(worldId), ChannelIdFilter(channelId)))
+	}
+}
+
+// IfPresentByAccountId executes an Operator if a session exists for the accountId
+func (p *Processor) IfPresentByAccountId(worldId world.Id, channelId channel.Id) func(accountId uint32, f model.Operator[Model]) error {
+	return func(accountId uint32, f model.Operator[Model]) error {
+		s, err := p.ByAccountIdModelProvider(worldId, channelId)(accountId)()
+		if err != nil {
+			return nil
+		}
+		return f(s)
 	}
 }
 
@@ -264,4 +287,26 @@ func (p *Processor) Destroy(s Model) error {
 	s.Disconnect()
 	p.sp.Destroy(s.SessionId(), s.AccountId())
 	return p.kp(session2.EnvEventTopicSessionStatus)(DestroyedStatusEventProvider(s.SessionId(), s.AccountId(), s.CharacterId(), s.WorldId(), s.ChannelId()))
+}
+
+func (p *Processor) SetStorageNpcId(id uuid.UUID, npcId uint32) Model {
+	s := Model{}
+	var ok bool
+	if s, ok = getRegistry().Get(p.t.Id(), id); ok {
+		s = s.setStorageNpcId(npcId)
+		getRegistry().Update(p.t.Id(), s)
+		return s
+	}
+	return s
+}
+
+func (p *Processor) ClearStorageNpcId(id uuid.UUID) Model {
+	s := Model{}
+	var ok bool
+	if s, ok = getRegistry().Get(p.t.Id(), id); ok {
+		s = s.clearStorageNpcId()
+		getRegistry().Update(p.t.Id(), s)
+		return s
+	}
+	return s
 }

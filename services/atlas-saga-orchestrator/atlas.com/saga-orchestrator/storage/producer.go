@@ -71,3 +71,17 @@ func DepositRollbackCommandProvider(transactionId uuid.UUID, worldId byte, accou
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func ShowStorageCommandProvider(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32, npcId uint32, accountId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &storage2.ShowStorageCommand{
+		TransactionId: transactionId,
+		WorldId:       worldId,
+		ChannelId:     channelId,
+		CharacterId:   characterId,
+		NpcId:         npcId,
+		AccountId:     accountId,
+		Type:          storage2.CommandTypeShowStorage,
+	}
+	return producer.SingleMessageProvider(key, value)
+}

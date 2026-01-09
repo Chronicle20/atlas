@@ -84,6 +84,7 @@ type Handler interface {
 	handleDepositToStorage(s Saga, st Step[any]) error
 	handleWithdrawFromStorage(s Saga, st Step[any]) error
 	handleUpdateStorageMesos(s Saga, st Step[any]) error
+	handleShowStorage(s Saga, st Step[any]) error
 }
 
 type HandlerImpl struct {
@@ -496,6 +497,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleWithdrawFromStorage, true
 	case UpdateStorageMesos:
 		return h.handleUpdateStorageMesos, true
+	case ShowStorage:
+		return h.handleShowStorage, true
 	}
 	return nil, false
 }
@@ -1172,6 +1175,23 @@ func (h *HandlerImpl) handleUpdateStorageMesos(s Saga, st Step[any]) error {
 	err := h.storageP.UpdateMesosAndEmit(s.TransactionId, payload.WorldId, payload.AccountId, payload.Mesos, payload.Operation)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to update storage mesos.")
+		return err
+	}
+
+	return nil
+}
+
+// handleShowStorage handles the ShowStorage action
+// This sends a command to the channel service to display the storage UI to the character
+func (h *HandlerImpl) handleShowStorage(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(ShowStoragePayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.storageP.ShowStorageAndEmit(s.TransactionId, byte(payload.WorldId), byte(payload.ChannelId), payload.CharacterId, payload.NpcId, payload.AccountId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to show storage.")
 		return err
 	}
 

@@ -238,13 +238,10 @@ func ValidateConversationHandler(d *rest.HandlerDependency, c *rest.HandlerConte
 		w.WriteHeader(http.StatusOK)
 
 		// Use standard JSON marshaling since this is not a JSON:API resource
-		jsonData, err := jsonapi.Marshal(restResult)
-		if err != nil {
+		if err := json.NewEncoder(w).Encode(restResult); err != nil {
 			d.Logger().WithError(err).Errorf("Marshaling validation result.")
-			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		w.Write(jsonData)
 	}
 }
 

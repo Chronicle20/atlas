@@ -9,6 +9,7 @@ import (
 type RestModel struct {
 	Id            string    `json:"-"`
 	StorageId     string    `json:"storage_id"`
+	InventoryType byte      `json:"inventory_type"`
 	Slot          int16     `json:"slot"`
 	TemplateId    uint32    `json:"template_id"`
 	Expiration    time.Time `json:"expiration"`
@@ -38,6 +39,7 @@ func Transform(m Model[any]) RestModel {
 	return RestModel{
 		Id:            strconv.Itoa(int(m.Id())),
 		StorageId:     m.StorageId().String(),
+		InventoryType: byte(m.InventoryType()),
 		Slot:          m.Slot(),
 		TemplateId:    m.TemplateId(),
 		Expiration:    m.Expiration(),

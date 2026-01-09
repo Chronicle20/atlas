@@ -5,10 +5,12 @@ import (
 	compartment4 "atlas-compartment-transfer/kafka/message/cashshop/compartment"
 	compartment2 "atlas-compartment-transfer/kafka/message/character/compartment"
 	"atlas-compartment-transfer/kafka/message/compartment"
+	compartment7 "atlas-compartment-transfer/kafka/message/storage/compartment"
 	"atlas-compartment-transfer/kafka/producer"
 	compartment5 "atlas-compartment-transfer/kafka/producer/cashshop/compartment"
 	compartment3 "atlas-compartment-transfer/kafka/producer/character/compartment"
 	compartment6 "atlas-compartment-transfer/kafka/producer/compartment"
+	compartment8 "atlas-compartment-transfer/kafka/producer/storage/compartment"
 	"context"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -21,6 +23,7 @@ type TransactionStep func(mb *message.Buffer) error
 // TransferInfo holds information about a transfer
 type TransferInfo struct {
 	Step              TransactionStep
+	WorldId           byte
 	CharacterId       uint32
 	AccountId         uint32
 	AssetId           uint32
@@ -136,6 +139,20 @@ func (p *ProcessorImpl) Process(mb *message.Buffer) func(cmd compartment.Transfe
 				ToCompartmentType: cmd.ToCompartmentType,
 				ToInventoryType:   cmd.ToInventoryType,
 			}
+		} else if cmd.ToInventoryType == compartment.InventoryTypeStorage {
+			p.l.Debugf("Informing [%s] inventory to receive that [%d] via transfer [%s].", cmd.ToInventoryType, cmd.AssetId, cmd.TransactionId)
+			_ = mb.Put(compartment7.EnvCommandTopic, compartment8.AcceptCommandProvider(cmd.WorldId, cmd.AccountId, cmd.TransactionId, cmd.Slot, cmd.TemplateId, cmd.ReferenceId, cmd.ReferenceType))
+
+			info = TransferInfo{
+				Step:              nextStep,
+				WorldId:           cmd.WorldId,
+				CharacterId:       cmd.CharacterId,
+				AccountId:         cmd.AccountId,
+				AssetId:           cmd.ReferenceId,
+				ToCompartmentId:   cmd.ToCompartmentId,
+				ToCompartmentType: cmd.ToCompartmentType,
+				ToInventoryType:   cmd.ToInventoryType,
+			}
 		}
 
 		// Store transaction and transfer info in cache
@@ -158,6 +175,8 @@ func (p *ProcessorImpl) createReleaseStep(cmd compartment.TransferCommand) Trans
 			_ = mb.Put(compartment2.EnvCommandTopic, compartment3.ReleaseCommandProvider(cmd.CharacterId, cmd.FromCompartmentType, cmd.TransactionId, cmd.ReferenceId))
 		} else if cmd.FromInventoryType == compartment.InventoryTypeCashShop {
 			_ = mb.Put(compartment4.EnvCommandTopic, compartment5.ReleaseCommandProvider(cmd.AccountId, cmd.FromCompartmentId, cmd.FromCompartmentType, cmd.TransactionId, cmd.ReferenceId))
+		} else if cmd.FromInventoryType == compartment.InventoryTypeStorage {
+			_ = mb.Put(compartment7.EnvCommandTopic, compartment8.ReleaseCommandProvider(cmd.WorldId, cmd.AccountId, cmd.TransactionId, cmd.AssetId))
 		}
 		return nil
 	}

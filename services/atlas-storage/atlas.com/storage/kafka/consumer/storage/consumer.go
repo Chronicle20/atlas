@@ -31,6 +31,7 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			_, _ = rf(t, kafkaMessage.AdaptHandler(kafkaMessage.PersistentConfig(handleWithdrawCommand(db))))
 			_, _ = rf(t, kafkaMessage.AdaptHandler(kafkaMessage.PersistentConfig(handleUpdateMesosCommand(db))))
 			_, _ = rf(t, kafkaMessage.AdaptHandler(kafkaMessage.PersistentConfig(handleDepositRollbackCommand(db))))
+			_, _ = rf(t, kafkaMessage.AdaptHandler(kafkaMessage.PersistentConfig(handleArrangeCommand(db))))
 		}
 	}
 }
@@ -83,6 +84,19 @@ func handleDepositRollbackCommand(db *gorm.DB) kafkaMessage.Handler[message.Comm
 		err := storage.NewProcessor(l, ctx, db).DepositRollback(c.WorldId, c.AccountId, c.Body)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to rollback deposit for asset [%d] account [%d] world [%d].", c.Body.AssetId, c.AccountId, c.WorldId)
+		}
+	}
+}
+
+func handleArrangeCommand(db *gorm.DB) kafkaMessage.Handler[message.Command[message.ArrangeBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c message.Command[message.ArrangeBody]) {
+		if c.Type != message.CommandTypeArrange {
+			return
+		}
+
+		err := storage.NewProcessor(l, ctx, db).ArrangeAndEmit(c.TransactionId, c.WorldId, c.AccountId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to arrange storage for account [%d] world [%d].", c.AccountId, c.WorldId)
 		}
 	}
 }

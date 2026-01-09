@@ -29,7 +29,7 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import {Button} from "@/components/ui/button";
-import {RefreshCw, ZoomIn, ZoomOut, Info, Edit, Trash, MessageSquare, Cog, Hammer, List, X} from "lucide-react";
+import {RefreshCw, ZoomIn, ZoomOut, Info, Edit, Trash, MessageSquare, Cog, Hammer, List, X, Hash, Palette} from "lucide-react";
 import {
   Card,
   CardContent,
@@ -48,6 +48,11 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { OperationsEditor, type Operation } from "@/components/operations-editor";
+import { ConditionsBuilder, type Outcome, type Condition } from "@/components/conditions-builder";
+import { ContextVariableManager } from "@/components/context-variable-manager";
+import { CraftActionEditor, type CraftActionData } from "@/components/craft-action-editor";
+import { ValidationFeedback } from "@/components/validation-feedback";
 
 // Node types and colors
 const NODE_TYPES = {
@@ -94,6 +99,21 @@ interface NodeData {
     failureState?: string;
     missingMaterialsState?: string;
   };
+  askNumber?: {
+    text: string;
+    minValue: number;
+    defaultValue: number;
+    maxValue: number;
+    contextKey?: string;
+    nextState: string;
+  };
+  askStyle?: {
+    text: string;
+    styles?: number[];
+    stylesContextKey?: string;
+    contextKey?: string;
+    nextState: string;
+  };
   id: string; // Add id to NodeData
 }
 
@@ -107,7 +127,7 @@ interface CustomNodeProps extends NodeProps {
 }
 
 const CustomNode = ({data, isConnectable, onNodeEdit, onNodeDelete, onEdgeRemove, onTextEdit, ...props}: CustomNodeProps) => {
-  const {label, type, text, operations, outcomes, choices, craftAction, id} = data as NodeData;
+  const {label, type, text, operations, outcomes, choices, craftAction, askNumber, askStyle, id} = data as NodeData;
 
   return (
       <div style={props.style} className="custom-node">
@@ -126,6 +146,8 @@ const CustomNode = ({data, isConnectable, onNodeEdit, onNodeDelete, onEdgeRemove
               {type === 'genericAction' && <Cog className="h-4 w-4 mr-1" />}
               {type === 'craftAction' && <Hammer className="h-4 w-4 mr-1" />}
               {type === 'listSelection' && <List className="h-4 w-4 mr-1" />}
+              {type === 'askNumber' && <Hash className="h-4 w-4 mr-1" />}
+              {type === 'askStyle' && <Palette className="h-4 w-4 mr-1" />}
               <div className="font-bold">{label}</div>
             </div>
             <div className="flex">
@@ -340,6 +362,65 @@ const CustomNode = ({data, isConnectable, onNodeEdit, onNodeDelete, onEdgeRemove
                 </div>
               </div>
           )}
+
+          {/* AskNumber UI */}
+          {type === 'askNumber' && askNumber && (
+              <div className="text-xs mt-2">
+                <div className="font-medium">Number Input:</div>
+                <div className="space-y-1 mt-1 bg-black/10 rounded p-2">
+                  <div>Min: {askNumber.minValue}, Default: {askNumber.defaultValue}, Max: {askNumber.maxValue}</div>
+                  <div className="text-gray-600">Context: {askNumber.contextKey || 'quantity'}</div>
+                  <div className="relative min-h-[20px] mt-2">
+                    <div>→ {askNumber.nextState}</div>
+                    <Handle
+                      type="source"
+                      position={Position.Right}
+                      style={{
+                        background: '#555',
+                        width: 8,
+                        height: 8,
+                        right: -14,
+                        top: '50%',
+                        transform: 'translateY(-50%)'
+                      }}
+                      isConnectable={isConnectable}
+                    />
+                  </div>
+                </div>
+              </div>
+          )}
+
+          {/* AskStyle UI */}
+          {type === 'askStyle' && askStyle && (
+              <div className="text-xs mt-2">
+                <div className="font-medium">Style Selection:</div>
+                <div className="space-y-1 mt-1 bg-black/10 rounded p-2">
+                  {askStyle.styles && askStyle.styles.length > 0 && (
+                    <div>Styles: {askStyle.styles.join(', ')}</div>
+                  )}
+                  {askStyle.stylesContextKey && (
+                    <div>Styles from: {askStyle.stylesContextKey}</div>
+                  )}
+                  <div className="text-gray-600">Context: {askStyle.contextKey || 'selectedStyle'}</div>
+                  <div className="relative min-h-[20px] mt-2">
+                    <div>→ {askStyle.nextState}</div>
+                    <Handle
+                      type="source"
+                      position={Position.Right}
+                      style={{
+                        background: '#555',
+                        width: 8,
+                        height: 8,
+                        right: -14,
+                        top: '50%',
+                        transform: 'translateY(-50%)'
+                      }}
+                      isConnectable={isConnectable}
+                    />
+                  </div>
+                </div>
+              </div>
+          )}
         </div>
       </div>
   );
@@ -401,6 +482,10 @@ const processConversationData = (conversation: Conversation) => {
           statesWithOutgoingTransitions.add(state.id);
         }
       });
+    } else if (state.type === 'askNumber' && state.askNumber?.nextState) {
+      statesWithOutgoingTransitions.add(state.id);
+    } else if (state.type === 'askStyle' && state.askStyle?.nextState) {
+      statesWithOutgoingTransitions.add(state.id);
     }
   });
 
@@ -423,6 +508,10 @@ const processConversationData = (conversation: Conversation) => {
       textContent = state.dialogue.text;
     } else if (state.type === 'listSelection' && state.listSelection?.title) {
       textContent = state.listSelection.title;
+    } else if (state.type === 'askNumber' && state.askNumber?.text) {
+      textContent = state.askNumber.text;
+    } else if (state.type === 'askStyle' && state.askStyle?.text) {
+      textContent = state.askStyle.text;
     }
 
     // Prepare operations and outcomes for genericAction nodes
@@ -430,6 +519,8 @@ const processConversationData = (conversation: Conversation) => {
     let outcomes: { nextState: string; conditions: string[]; }[] = [];
     let choices: { text: string; nextState: string | null; }[] = [];
     let craftActionData = null;
+    let askNumberData = null;
+    let askStyleData = null;
 
     if (state.type === 'genericAction' && state.genericAction) {
       // Extract operation types and convert to pascal case with spaces
@@ -474,6 +565,25 @@ const processConversationData = (conversation: Conversation) => {
         failureState: state.craftAction.failureState,
         missingMaterialsState: state.craftAction.missingMaterialsState
       };
+    } else if (state.type === 'askNumber' && state.askNumber) {
+      // Include askNumber data
+      askNumberData = {
+        text: state.askNumber.text,
+        minValue: state.askNumber.minValue,
+        defaultValue: state.askNumber.defaultValue,
+        maxValue: state.askNumber.maxValue,
+        contextKey: state.askNumber.contextKey,
+        nextState: state.askNumber.nextState
+      };
+    } else if (state.type === 'askStyle' && state.askStyle) {
+      // Include askStyle data
+      askStyleData = {
+        text: state.askStyle.text,
+        styles: state.askStyle.styles,
+        stylesContextKey: state.askStyle.stylesContextKey,
+        contextKey: state.askStyle.contextKey,
+        nextState: state.askStyle.nextState
+      };
     }
 
     nodes.push({
@@ -487,6 +597,8 @@ const processConversationData = (conversation: Conversation) => {
         outcomes: outcomes,
         choices: choices,
         craftAction: craftActionData,
+        askNumber: askNumberData,
+        askStyle: askStyleData,
         id: state.id, // Add the node ID to the data
       },
       position: {x: 100 + (index % 3) * 200, y: 100 + Math.floor(index / 3) * 100},
@@ -590,6 +702,24 @@ const processConversationData = (conversation: Conversation) => {
             style: {stroke: '#64748b'},
           });
         }
+      });
+    } else if (state.type === 'askNumber' && state.askNumber?.nextState) {
+      edges.push({
+        id: `${state.id}-to-${state.askNumber.nextState}`,
+        source: state.id,
+        target: state.askNumber.nextState,
+        type: 'smoothstep',
+        animated: false,
+        style: {stroke: '#64748b'},
+      });
+    } else if (state.type === 'askStyle' && state.askStyle?.nextState) {
+      edges.push({
+        id: `${state.id}-to-${state.askStyle.nextState}`,
+        source: state.id,
+        target: state.askStyle.nextState,
+        type: 'smoothstep',
+        animated: false,
+        style: {stroke: '#64748b'},
       });
     }
   });
@@ -715,7 +845,38 @@ export default function ConversationPage() {
   const [editNodeType, setEditNodeType] = useState<string>('');
   const [editNodeText, setEditNodeText] = useState<string>('');
   const [editNodeTitle, setEditNodeTitle] = useState<string>('');
-  const [editDialogueType, setEditDialogueType] = useState<"sendOk" | "sendYesNo" | "sendSimple" | "sendNext">("sendOk");
+  const [editDialogueType, setEditDialogueType] = useState<"sendOk" | "sendYesNo" | "sendNext">("sendOk");
+
+  // State for askNumber editing
+  const [editAskNumberText, setEditAskNumberText] = useState<string>('');
+  const [editAskNumberMin, setEditAskNumberMin] = useState<number>(0);
+  const [editAskNumberDefault, setEditAskNumberDefault] = useState<number>(1);
+  const [editAskNumberMax, setEditAskNumberMax] = useState<number>(100);
+  const [editAskNumberContextKey, setEditAskNumberContextKey] = useState<string>('quantity');
+  const [editAskNumberNextState, setEditAskNumberNextState] = useState<string>('');
+
+  // State for askStyle editing
+  const [editAskStyleText, setEditAskStyleText] = useState<string>('');
+  const [editAskStyleStyles, setEditAskStyleStyles] = useState<string>('');
+  const [editAskStyleStylesContextKey, setEditAskStyleStylesContextKey] = useState<string>('');
+  const [editAskStyleContextKey, setEditAskStyleContextKey] = useState<string>('selectedStyle');
+  const [editAskStyleNextState, setEditAskStyleNextState] = useState<string>('');
+  const [editAskStyleUseContext, setEditAskStyleUseContext] = useState<boolean>(false);
+
+  // GenericAction state
+  const [editOperations, setEditOperations] = useState<Operation[]>([]);
+  const [editOutcomes, setEditOutcomes] = useState<Outcome[]>([]);
+
+  // CraftAction state
+  const [editCraftAction, setEditCraftAction] = useState<CraftActionData>({
+    itemId: 0,
+    materials: [],
+    quantities: [],
+    mesoCost: 0,
+    successState: '',
+    failureState: '',
+    missingMaterialsState: ''
+  });
 
   // State for tracking edge updates
   const [, setEdgeUpdateSuccessful] = useState(false);
@@ -732,7 +893,7 @@ export default function ConversationPage() {
   const [editingText, setEditingText] = useState<string>('');
 
   // Handle dialogue type change - defined first to avoid circular dependency
-  const handleDialogueTypeChange = useCallback((newDialogueType: "sendOk" | "sendYesNo" | "sendSimple" | "sendNext") => {
+  const handleDialogueTypeChange = useCallback((newDialogueType: "sendOk" | "sendYesNo" | "sendNext") => {
     setEditDialogueType(newDialogueType);
 
     // Create blank choices based on dialogue type
@@ -749,12 +910,6 @@ export default function ConversationPage() {
         blankChoices = [
           { text: "Yes", nextState: null },
           { text: "No", nextState: null },
-          { text: "Exit", nextState: null }
-        ];
-        break;
-      case "sendSimple":
-        blankChoices = [
-          { text: "Ok", nextState: null },
           { text: "Exit", nextState: null }
         ];
         break;
@@ -781,6 +936,23 @@ export default function ConversationPage() {
 
     if (newType !== 'listSelection') {
       setEditNodeTitle('');
+    }
+
+    if (newType !== 'genericAction') {
+      setEditOperations([]);
+      setEditOutcomes([]);
+    }
+
+    if (newType !== 'craftAction') {
+      setEditCraftAction({
+        itemId: 0,
+        materials: [],
+        quantities: [],
+        mesoCost: 0,
+        successState: '',
+        failureState: '',
+        missingMaterialsState: ''
+      });
     }
 
     // If changing to dialogue type, set up choices based on the current dialogue type
@@ -839,16 +1011,26 @@ export default function ConversationPage() {
         choices: choices
       };
     } else if (updatedState.type === 'genericAction') {
-      updatedState.genericAction = currentState.genericAction || { operations: [], outcomes: [] };
+      updatedState.genericAction = {
+        operations: editOperations.map(op => ({ type: op.type, params: op.params })),
+        outcomes: editOutcomes.map(outcome => ({
+          conditions: outcome.conditions.map(cond => ({
+            type: cond.type,
+            operator: cond.operator,
+            value: cond.value,
+            ...(cond.referenceId && { referenceId: cond.referenceId }),
+            ...(cond.step && { step: cond.step }),
+            ...(cond.worldId && { worldId: cond.worldId }),
+            ...(cond.channelId && { channelId: cond.channelId })
+          })),
+          nextState: outcome.nextState
+        }))
+      };
     } else if (updatedState.type === 'craftAction') {
-      updatedState.craftAction = currentState.craftAction || {
-        itemId: 0,
-        materials: [],
-        quantities: [],
-        mesoCost: 0,
-        successState: '', 
-        failureState: '', 
-        missingMaterialsState: '' 
+      updatedState.craftAction = {
+        ...editCraftAction,
+        ...(editCraftAction.stimulatorId && { stimulatorId: editCraftAction.stimulatorId }),
+        ...(editCraftAction.stimulatorFailChance && { stimulatorFailChance: editCraftAction.stimulatorFailChance })
       };
     }
 
@@ -922,7 +1104,7 @@ export default function ConversationPage() {
 
     // Show success message
     toast.success("Node updated successfully");
-  }, [conversation, selectedNodeId, editNodeId, editNodeType, editNodeText, editNodeTitle, editChoices, editDialogueType, setNodes, setEdges]);
+  }, [conversation, selectedNodeId, editNodeId, editNodeType, editNodeText, editNodeTitle, editChoices, editDialogueType, editOperations, editOutcomes, editCraftAction, setNodes, setEdges]);
 
   // Handle adding a new node
   const handleAddNode = useCallback(() => {
@@ -956,7 +1138,7 @@ export default function ConversationPage() {
     // Create a new state object
     const newState: ConversationState = {
       id: editNodeId,
-      type: editNodeType as "dialogue" | "genericAction" | "craftAction" | "listSelection",
+      type: editNodeType as "dialogue" | "genericAction" | "craftAction" | "listSelection" | "askNumber" | "askStyle",
     };
 
     // Add type-specific properties
@@ -974,16 +1156,43 @@ export default function ConversationPage() {
         ]
       };
     } else if (newState.type === 'genericAction') {
-      newState.genericAction = { operations: [], outcomes: [] };
+      newState.genericAction = {
+        operations: editOperations.map(op => ({ type: op.type, params: op.params })),
+        outcomes: editOutcomes.map(outcome => ({
+          conditions: outcome.conditions.map(cond => ({
+            type: cond.type,
+            operator: cond.operator,
+            value: cond.value,
+            ...(cond.referenceId && { referenceId: cond.referenceId }),
+            ...(cond.step && { step: cond.step }),
+            ...(cond.worldId && { worldId: cond.worldId }),
+            ...(cond.channelId && { channelId: cond.channelId })
+          })),
+          nextState: outcome.nextState
+        }))
+      };
     } else if (newState.type === 'craftAction') {
       newState.craftAction = {
-        itemId: 0,
-        materials: [],
-        quantities: [],
-        mesoCost: 0,
-        successState: '', 
-        failureState: '', 
-        missingMaterialsState: '' 
+        ...editCraftAction,
+        ...(editCraftAction.stimulatorId && { stimulatorId: editCraftAction.stimulatorId }),
+        ...(editCraftAction.stimulatorFailChance && { stimulatorFailChance: editCraftAction.stimulatorFailChance })
+      };
+    } else if (newState.type === 'askNumber') {
+      newState.askNumber = {
+        text: editAskNumberText,
+        defaultValue: editAskNumberDefault,
+        minValue: editAskNumberMin,
+        maxValue: editAskNumberMax,
+        contextKey: editAskNumberContextKey || 'quantity',
+        nextState: editAskNumberNextState
+      };
+    } else if (newState.type === 'askStyle') {
+      newState.askStyle = {
+        text: editAskStyleText,
+        ...(!editAskStyleUseContext && { styles: editAskStyleStyles.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n)) }),
+        ...(editAskStyleUseContext && { stylesContextKey: editAskStyleStylesContextKey }),
+        contextKey: editAskStyleContextKey || 'selectedStyle',
+        nextState: editAskStyleNextState
       };
     }
 
@@ -1011,7 +1220,11 @@ export default function ConversationPage() {
 
     // Show success message
     toast.success("Node added successfully");
-  }, [conversation, editNodeId, editNodeType, editNodeText, editNodeTitle, editChoices, editDialogueType, setNodes, setEdges]);
+  }, [conversation, editNodeId, editNodeType, editNodeText, editNodeTitle, editChoices, editDialogueType,
+      editAskNumberText, editAskNumberMin, editAskNumberDefault, editAskNumberMax, editAskNumberContextKey, editAskNumberNextState,
+      editAskStyleText, editAskStyleStyles, editAskStyleStylesContextKey, editAskStyleContextKey, editAskStyleNextState, editAskStyleUseContext,
+      editOperations, editOutcomes, editCraftAction,
+      setNodes, setEdges]);
 
   // Handle node edit
   const handleNodeEdit = useCallback((nodeId: string) => {
@@ -1057,6 +1270,81 @@ export default function ConversationPage() {
       } else {
         setEditNodeTitle('');
       }
+
+      // Set values for askNumber nodes
+      if (nodeState.type === 'askNumber' && nodeState.askNumber) {
+        setEditAskNumberText(nodeState.askNumber.text || '');
+        setEditAskNumberMin(nodeState.askNumber.minValue || 0);
+        setEditAskNumberDefault(nodeState.askNumber.defaultValue || 1);
+        setEditAskNumberMax(nodeState.askNumber.maxValue || 100);
+        setEditAskNumberContextKey(nodeState.askNumber.contextKey || 'quantity');
+        setEditAskNumberNextState(nodeState.askNumber.nextState || '');
+      }
+
+      // Set values for askStyle nodes
+      if (nodeState.type === 'askStyle' && nodeState.askStyle) {
+        setEditAskStyleText(nodeState.askStyle.text || '');
+        if (nodeState.askStyle.styles && nodeState.askStyle.styles.length > 0) {
+          setEditAskStyleStyles(nodeState.askStyle.styles.join(', '));
+          setEditAskStyleUseContext(false);
+        } else if (nodeState.askStyle.stylesContextKey) {
+          setEditAskStyleStylesContextKey(nodeState.askStyle.stylesContextKey);
+          setEditAskStyleUseContext(true);
+        }
+        setEditAskStyleContextKey(nodeState.askStyle.contextKey || 'selectedStyle');
+        setEditAskStyleNextState(nodeState.askStyle.nextState || '');
+      }
+
+      // Set values for genericAction nodes
+      if (nodeState.type === 'genericAction' && nodeState.genericAction) {
+        const operations = nodeState.genericAction.operations || [];
+        setEditOperations(operations.map(op => ({
+          type: op.type,
+          params: op.params || {}
+        })));
+
+        const outcomes = nodeState.genericAction.outcomes || [];
+        setEditOutcomes(outcomes.map(outcome => ({
+          conditions: outcome.conditions.map(cond => ({
+            type: cond.type,
+            operator: cond.operator,
+            value: cond.value,
+            ...(cond.referenceId && { referenceId: cond.referenceId }),
+            ...(cond.step && { step: cond.step }),
+            ...(cond.worldId && { worldId: cond.worldId }),
+            ...(cond.channelId && { channelId: cond.channelId })
+          })),
+          nextState: outcome.nextState
+        })));
+      } else {
+        setEditOperations([]);
+        setEditOutcomes([]);
+      }
+
+      // Set values for craftAction nodes
+      if (nodeState.type === 'craftAction' && nodeState.craftAction) {
+        setEditCraftAction({
+          itemId: nodeState.craftAction.itemId,
+          materials: nodeState.craftAction.materials || [],
+          quantities: nodeState.craftAction.quantities || [],
+          mesoCost: nodeState.craftAction.mesoCost || 0,
+          ...(nodeState.craftAction.stimulatorId !== undefined && { stimulatorId: nodeState.craftAction.stimulatorId }),
+          ...(nodeState.craftAction.stimulatorFailChance !== undefined && { stimulatorFailChance: nodeState.craftAction.stimulatorFailChance }),
+          successState: nodeState.craftAction.successState,
+          failureState: nodeState.craftAction.failureState,
+          missingMaterialsState: nodeState.craftAction.missingMaterialsState
+        });
+      } else {
+        setEditCraftAction({
+          itemId: 0,
+          materials: [],
+          quantities: [],
+          mesoCost: 0,
+          successState: '',
+          failureState: '',
+          missingMaterialsState: ''
+        });
+      }
     }
 
     setIsDialogOpen(true);
@@ -1096,6 +1384,10 @@ export default function ConversationPage() {
         nodeState.dialogue.text = editingText;
       } else if (nodeState.type === 'listSelection' && nodeState.listSelection) {
         nodeState.listSelection.title = editingText;
+      } else if (nodeState.type === 'askNumber' && nodeState.askNumber) {
+        nodeState.askNumber.text = editingText;
+      } else if (nodeState.type === 'askStyle' && nodeState.askStyle) {
+        nodeState.askStyle.text = editingText;
       }
 
       // Update the conversation in state
@@ -1861,14 +2153,13 @@ export default function ConversationPage() {
               {editNodeType === 'dialogue' && (
                 <div>
                   <h3 className="text-lg font-semibold">Dialogue Type</h3>
-                  <select 
-                    value={editDialogueType} 
-                    onChange={(e) => handleDialogueTypeChange(e.target.value as "sendOk" | "sendYesNo" | "sendSimple" | "sendNext")}
+                  <select
+                    value={editDialogueType}
+                    onChange={(e) => handleDialogueTypeChange(e.target.value as "sendOk" | "sendYesNo" | "sendNext")}
                     className="w-full p-2 border rounded-md"
                   >
                     <option value="sendOk">sendOk</option>
                     <option value="sendYesNo">sendYesNo</option>
-                    <option value="sendSimple">sendSimple</option>
                     <option value="sendNext">sendNext</option>
                   </select>
                 </div>
@@ -1918,8 +2209,8 @@ export default function ConversationPage() {
               </div>
               <div>
                 <h3 className="text-lg font-semibold">Node Type</h3>
-                <select 
-                  value={editNodeType} 
+                <select
+                  value={editNodeType}
                   onChange={(e) => handleNodeTypeChange(e.target.value)}
                   className="w-full p-2 border rounded-md"
                 >
@@ -1927,6 +2218,8 @@ export default function ConversationPage() {
                   <option value="genericAction">genericAction</option>
                   <option value="craftAction">craftAction</option>
                   <option value="listSelection">listSelection</option>
+                  <option value="askNumber">askNumber</option>
+                  <option value="askStyle">askStyle</option>
                 </select>
               </div>
             </div>
@@ -1934,16 +2227,184 @@ export default function ConversationPage() {
             {editNodeType === 'dialogue' && (
               <div>
                 <h3 className="text-lg font-semibold">Dialogue Type</h3>
-                <select 
-                  value={editDialogueType} 
-                  onChange={(e) => handleDialogueTypeChange(e.target.value as "sendOk" | "sendYesNo" | "sendSimple" | "sendNext")}
+                <select
+                  value={editDialogueType}
+                  onChange={(e) => handleDialogueTypeChange(e.target.value as "sendOk" | "sendYesNo" | "sendNext")}
                   className="w-full p-2 border rounded-md"
                 >
                   <option value="sendOk">sendOk</option>
                   <option value="sendYesNo">sendYesNo</option>
-                  <option value="sendSimple">sendSimple</option>
                   <option value="sendNext">sendNext</option>
                 </select>
+              </div>
+            )}
+
+            {editNodeType === 'askNumber' && (
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-semibold">Prompt Text</h3>
+                  <textarea
+                    value={editAskNumberText}
+                    onChange={(e) => setEditAskNumberText(e.target.value)}
+                    className="w-full p-2 border rounded-md min-h-[100px]"
+                    placeholder="Enter the prompt text (e.g., 'How many would you like?')"
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <h3 className="text-sm font-semibold">Min Value</h3>
+                    <input
+                      type="number"
+                      value={editAskNumberMin}
+                      onChange={(e) => setEditAskNumberMin(Number(e.target.value))}
+                      className="w-full p-2 border rounded-md"
+                      min={0}
+                    />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold">Default Value</h3>
+                    <input
+                      type="number"
+                      value={editAskNumberDefault}
+                      onChange={(e) => setEditAskNumberDefault(Number(e.target.value))}
+                      className="w-full p-2 border rounded-md"
+                      min={0}
+                    />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold">Max Value</h3>
+                    <input
+                      type="number"
+                      value={editAskNumberMax}
+                      onChange={(e) => setEditAskNumberMax(Number(e.target.value))}
+                      className="w-full p-2 border rounded-md"
+                      min={1}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold">Context Key (optional)</h3>
+                  <input
+                    type="text"
+                    value={editAskNumberContextKey}
+                    onChange={(e) => setEditAskNumberContextKey(e.target.value)}
+                    className="w-full p-2 border rounded-md"
+                    placeholder="quantity"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Variable name to store the number (default: &quot;quantity&quot;)</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold">Next State</h3>
+                  <input
+                    type="text"
+                    value={editAskNumberNextState}
+                    onChange={(e) => setEditAskNumberNextState(e.target.value)}
+                    className="w-full p-2 border rounded-md"
+                    placeholder="State ID to go to after input"
+                  />
+                </div>
+              </div>
+            )}
+
+            {editNodeType === 'askStyle' && (
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-semibold">Prompt Text</h3>
+                  <textarea
+                    value={editAskStyleText}
+                    onChange={(e) => setEditAskStyleText(e.target.value)}
+                    className="w-full p-2 border rounded-md min-h-[100px]"
+                    placeholder="Enter the prompt text (e.g., 'Choose your hairstyle')"
+                  />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold">Style Source</h3>
+                  <select
+                    value={editAskStyleUseContext ? "context" : "static"}
+                    onChange={(e) => setEditAskStyleUseContext(e.target.value === "context")}
+                    className="w-full p-2 border rounded-md"
+                  >
+                    <option value="static">Static Style List</option>
+                    <option value="context">From Context Variable</option>
+                  </select>
+                </div>
+                {!editAskStyleUseContext ? (
+                  <div>
+                    <h3 className="text-sm font-semibold">Style IDs (comma-separated)</h3>
+                    <input
+                      type="text"
+                      value={editAskStyleStyles}
+                      onChange={(e) => setEditAskStyleStyles(e.target.value)}
+                      className="w-full p-2 border rounded-md"
+                      placeholder="e.g., 30000,30010,30020"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Enter style IDs separated by commas</p>
+                  </div>
+                ) : (
+                  <div>
+                    <h3 className="text-sm font-semibold">Styles Context Key</h3>
+                    <input
+                      type="text"
+                      value={editAskStyleStylesContextKey}
+                      onChange={(e) => setEditAskStyleStylesContextKey(e.target.value)}
+                      className="w-full p-2 border rounded-md"
+                      placeholder="e.g., availableHairs"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Context variable containing the array of style IDs</p>
+                  </div>
+                )}
+                <div>
+                  <h3 className="text-sm font-semibold">Context Key (optional)</h3>
+                  <input
+                    type="text"
+                    value={editAskStyleContextKey}
+                    onChange={(e) => setEditAskStyleContextKey(e.target.value)}
+                    className="w-full p-2 border rounded-md"
+                    placeholder="selectedStyle"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Variable name to store selected style (default: &quot;selectedStyle&quot;)</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold">Next State</h3>
+                  <input
+                    type="text"
+                    value={editAskStyleNextState}
+                    onChange={(e) => setEditAskStyleNextState(e.target.value)}
+                    className="w-full p-2 border rounded-md"
+                    placeholder="State ID to go to after selection"
+                  />
+                </div>
+              </div>
+            )}
+
+            {editNodeType === 'genericAction' && (
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Generic actions execute operations and determine the next state based on conditions.
+                  </p>
+                  <OperationsEditor
+                    operations={editOperations}
+                    onChange={setEditOperations}
+                  />
+                </div>
+                <div>
+                  <ConditionsBuilder
+                    outcomes={editOutcomes}
+                    onChange={setEditOutcomes}
+                    availableStates={conversation?.attributes.states.map(s => s.id) || []}
+                  />
+                </div>
+              </div>
+            )}
+
+            {editNodeType === 'craftAction' && (
+              <div className="space-y-4">
+                <CraftActionEditor
+                  data={editCraftAction}
+                  onChange={setEditCraftAction}
+                  availableStates={conversation?.attributes.states.map(s => s.id) || []}
+                />
               </div>
             )}
           </div>
@@ -2059,12 +2520,40 @@ export default function ConversationPage() {
                   <Badge variant="outline">genericAction</Badge>
                   <Badge variant="outline">craftAction</Badge>
                   <Badge variant="outline">listSelection</Badge>
+                  <Badge variant="outline">askNumber</Badge>
+                  <Badge variant="outline">askStyle</Badge>
                 </div>
               </div>
 
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Context Variable Manager & Validation */}
+      {conversation && (
+        <div className="grid grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Context Variables</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ContextVariableManager conversation={conversation} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Validation</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ValidationFeedback
+                conversation={conversation}
+                apiBaseUrl={process.env.NEXT_PUBLIC_ROOT_API_URL || ''}
+              />
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       <div className="flex-1 border rounded-md bg-background">

@@ -23,8 +23,9 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 
 func handleGetContinents(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ms, err := GetAll(d.Logger())(d.Context())(d.DB())()
+		ms, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetAll()()
 		if err != nil {
+			d.Logger().WithError(err).Errorf("Retrieving continent drops.")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -35,6 +36,8 @@ func handleGetContinents(d *rest.HandlerDependency, c *rest.HandlerContext) http
 			return
 		}
 
-		server.Marshal[[]RestModel](d.Logger())(w)(c.ServerInformation())(res)
+		query := r.URL.Query()
+		queryParams := jsonapi.ParseQueryFields(&query)
+		server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 	}
 }

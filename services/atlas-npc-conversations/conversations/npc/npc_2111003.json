@@ -1,0 +1,75 @@
+{
+  "npcId": 2111003,
+  "startState": "checkConditions",
+  "states": [
+    {
+      "id": "checkConditions",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "=",
+                "value": "1",
+                "referenceId": "3335"
+              },
+              {
+                "type": "item",
+                "operator": "<",
+                "value": "1",
+                "referenceId": "4031695"
+              }
+            ],
+            "nextState": "warpToSnowRose"
+          },
+          {
+            "conditions": [],
+            "nextState": "showDialogue"
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToSnowRose",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "926120300",
+              "portalName": "out00"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "showDialogue",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Emotion that I feel is real? Or just illusion coming from mechanical error?",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

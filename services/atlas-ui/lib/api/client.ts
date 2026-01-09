@@ -451,7 +451,6 @@ class ApiClient {
         },
         options?.timeout,
 {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           ...(options ? (({ onProgress: _onProgress, ...rest }) => rest)(options) : {}),
         }
       );
@@ -1370,7 +1369,6 @@ class ApiClient {
       },
       options?.timeout,
 // Don't use the built-in progress tracking since we're handling it manually
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       options ? (({ onProgress: _onProgress, ...rest }) => rest)(options) : {}
     );
 

@@ -1,0 +1,19 @@
+{
+  "npcId": 2111012,
+  "startState": "end",
+  "states": [
+    {
+      "id": "end",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

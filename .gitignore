@@ -1,3 +1,10 @@
 .idea
 dev/
 services/atlas-configurations/atlas.com/configurations/atlas-configurations
+services/atlas-login/atlas.com/login/atlas-login
+services/atlas-runtime-orchestrator/atlas.com/runtime-orchestrator/atlas-runtime-orchestrator
+.DS_Store
+services/atlas-npc-conversations/tmp
+services/atlas-npc-conversations/atlas.com/npc/atlas-npc-conversations
+services/atlas-npc-conversations/tmp2
+services/atlas-data/tmp/Npc.wz

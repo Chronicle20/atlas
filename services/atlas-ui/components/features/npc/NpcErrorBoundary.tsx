@@ -20,12 +20,12 @@ interface NpcErrorFallbackProps {
 /**
  * Specialized error fallback for NPC cards that provides context-specific recovery options
  */
-function NpcErrorFallback({ 
-  error, 
-  errorInfo: _errorInfo, // eslint-disable-line @typescript-eslint/no-unused-vars
-  resetError, 
+function NpcErrorFallback({
+  error,
+  errorInfo: _errorInfo,
+  resetError,
   npcId,
-  className 
+  className
 }: NpcErrorFallbackProps) {
   const isNetworkError = error.message.includes('fetch') || 
                         error.message.includes('network') ||

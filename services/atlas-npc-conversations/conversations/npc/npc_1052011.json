@@ -1,0 +1,107 @@
+{
+  "npcId": 1052011,
+  "startState": "welcome",
+  "states": [
+    {
+      "id": "welcome",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "This device is connected to outside.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "askLeave"
+          },
+          {
+            "text": "Exit",
+            "nextState": "decline"
+          }
+        ]
+      }
+    },
+    {
+      "id": "askLeave",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "Are you going to give up and leave this place?",
+        "choices": [
+          {
+            "text": "Previous",
+            "nextState": "welcome"
+          },
+          {
+            "text": "Next",
+            "nextState": "confirmLeave"
+          },
+          {
+            "text": "Exit",
+            "nextState": "decline"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmLeave",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You'll have to start from scratch the next time you come in...",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "performWarp"
+          },
+          {
+            "text": "No",
+            "nextState": "decline"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "decline",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Alright, see you next time.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "performWarp",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "103000100",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

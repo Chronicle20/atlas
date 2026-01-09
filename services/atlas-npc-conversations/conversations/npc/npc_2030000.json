@@ -1,0 +1,129 @@
+{
+  "npcId": 2030000,
+  "startState": "checkItem",
+  "states": [
+    {
+      "id": "checkItem",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "item", "operator": ">=", "value": "1", "referenceId": "4031450" }
+            ],
+            "nextState": "warpToHiddenStreet"
+          },
+          {
+            "conditions": [],
+            "nextState": "warning"
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToHiddenStreet",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "921100100",
+              "portalId": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "warning",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Hey, you look like you want to go farther and deeper past this place. Over there, though, you'll find yourself surrounded by aggressive, dangerous monsters, so even if you feel that you're ready to go, please be careful. Long ago, a few brave men from our town went in wanting to eliminate anyone threatening the town, but never came back out...",
+        "choices": [
+          { "text": "Next", "nextState": "checkLevel" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "checkLevel",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "level", "operator": ">=", "value": "50" }
+            ],
+            "nextState": "askEnter"
+          },
+          {
+            "conditions": [],
+            "nextState": "tooLowLevel"
+          }
+        ]
+      }
+    },
+    {
+      "id": "askEnter",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "If you are thinking of going in, I suggest you change your mind. But if you really want to go in... I'm only letting in the ones that are strong enough to stay alive in there. I do not wish to see anyone else die. Let's see... Hmmm...! You look pretty strong. All right, do you want to go in?",
+        "choices": [
+          { "text": "Yes", "nextState": "warpToSharpCliff" },
+          { "text": "No", "nextState": "declineHighLevel" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "warpToSharpCliff",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "211040300",
+              "portalId": "5"
+            }
+          }
+        ],
+        "outcomes": [
+          { "conditions": [], "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "declineHighLevel",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Even if your level's high it's hard to actually go in there, but if you ever change your mind, please find me. After all, my job is to protect this place.",
+        "choices": [
+          { "text": "Next", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "tooLowLevel",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendPrev",
+        "text": "If you are thinking of going in, I suggest you change your mind. But if you really want to go in... I'm only letting in the ones that are strong enough to stay alive in there. I do not wish to see anyone else die. Let's see... Hmmm... You haven't reached Level 50 yet. I can't let you in, then, so forget it.",
+        "choices": [
+          { "text": "Previous", "nextState": "warning" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    }
+  ]
+}

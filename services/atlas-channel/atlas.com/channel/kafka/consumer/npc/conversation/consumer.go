@@ -5,9 +5,11 @@ import (
 	conversation2 "atlas-channel/kafka/message/npc/conversation"
 	"atlas-channel/server"
 	"atlas-channel/session"
+	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
 	"fmt"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -35,6 +37,8 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				var t string
 				t, _ = topic.EnvProvider(l)(conversation2.EnvCommandTopic)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSimpleConversationCommand(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleNumberConversationCommand(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStyleConversationCommand(sc, wp))))
 			}
 		}
 	}
@@ -50,18 +54,88 @@ func handleSimpleConversationCommand(sc server.Model, wp writer.Producer) messag
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(c.CharacterId, announceSimpleConversation(l)(ctx)(wp)(c.NpcId, getNPCTalkType(c.Body.Type), c.Message, getNPCTalkEnd(c.Body.Type), getNPCTalkSpeaker(c.Speaker)))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(c.CharacterId, announceSimpleConversation(l)(ctx)(wp)(c.NpcId, c.Body.Type, c.Message, c.Speaker))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, c.CharacterId)
 		}
 	}
 }
 
-func announceSimpleConversation(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, talkType byte, message string, endType []byte, speaker byte) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, talkType byte, message string, endType []byte, speaker byte) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(npcId uint32, talkType byte, message string, endType []byte, speaker byte) model.Operator[session.Model] {
-			return func(npcId uint32, talkType byte, message string, endType []byte, speaker byte) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.NPCConversation)(writer.NPCConversationBody(l)(npcId, talkType, message, endType, speaker))
+func handleNumberConversationCommand(sc server.Model, wp writer.Producer) message.Handler[conversation2.CommandEvent[conversation2.CommandNumberBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c conversation2.CommandEvent[conversation2.CommandNumberBody]) {
+		if c.Type != conversation2.CommandTypeNumber {
+			return
+		}
+
+		if !sc.Is(tenant.MustFromContext(ctx), world.Id(c.WorldId), channel.Id(c.ChannelId)) {
+			return
+		}
+
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(c.CharacterId, announceNumberConversation(l)(ctx)(wp)(c.NpcId, "NUM", c.Message, c.Body.DefaultValue, c.Body.MinValue, c.Body.MaxValue, getNPCTalkSpeaker(c.Speaker)))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to write number conversation for character [%d].", c.CharacterId)
+		}
+	}
+}
+
+func handleStyleConversationCommand(sc server.Model, wp writer.Producer) message.Handler[conversation2.CommandEvent[conversation2.CommandStyleBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c conversation2.CommandEvent[conversation2.CommandStyleBody]) {
+		if c.Type != conversation2.CommandTypeStyle {
+			return
+		}
+
+		if !sc.Is(tenant.MustFromContext(ctx), world.Id(c.WorldId), channel.Id(c.ChannelId)) {
+			return
+		}
+
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(c.CharacterId, announceStyleConversation(l)(ctx)(wp)(c.NpcId, "STYLE", c.Message, c.Body.Styles, getNPCTalkSpeaker(c.Speaker)))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to write style conversation for character [%d].", c.CharacterId)
+		}
+	}
+}
+
+func announceSimpleConversation(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, talkType string, message string, speaker string) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, talkType string, message string, speaker string) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(npcId uint32, talkType string, message string, speaker string) model.Operator[session.Model] {
+			return func(npcId uint32, talkType string, message string, speaker string) model.Operator[session.Model] {
+				t := tenant.MustFromContext(ctx)
+				scm := &model2.SayConversationDetail{Message: message}
+				if talkType == "NEXT" || talkType == "NEXT_PREVIOUS" {
+					scm.Next = true
+				}
+				if talkType == "PREVIOUS" || talkType == "NEXT_PREVIOUS" {
+					scm.Previous = true
+				}
+				ncm := model2.NewNpcConversation(npcId, getNPCTalkType(talkType), getNPCTalkSpeaker(speaker), scm)
+
+				return session.Announce(l)(ctx)(wp)(writer.NPCConversation)(writer.NPCConversationBody(l, t)(ncm))
+			}
+		}
+	}
+}
+
+func announceNumberConversation(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, talkType string, message string, def uint32, min uint32, max uint32, speaker byte) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, talkType string, message string, def uint32, min uint32, max uint32, speaker byte) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(npcId uint32, talkType string, message string, def uint32, min uint32, max uint32, speaker byte) model.Operator[session.Model] {
+			return func(npcId uint32, talkType string, message string, def uint32, min uint32, max uint32, speaker byte) model.Operator[session.Model] {
+				t := tenant.MustFromContext(ctx)
+				scm := &model2.AskNumberConversationDetail{Message: message, Def: def, Min: min, Max: max}
+				ncm := model2.NewNpcConversation(npcId, getNPCTalkType(talkType), 0, scm)
+				return session.Announce(l)(ctx)(wp)(writer.NPCConversation)(writer.NPCConversationBody(l, t)(ncm))
+			}
+		}
+	}
+}
+
+func announceStyleConversation(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, talkType string, message string, styles []uint32, speaker byte) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, talkType string, message string, styles []uint32, speaker byte) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(npcId uint32, talkType string, message string, styles []uint32, speaker byte) model.Operator[session.Model] {
+			return func(npcId uint32, talkType string, message string, styles []uint32, speaker byte) model.Operator[session.Model] {
+				t := tenant.MustFromContext(ctx)
+				scm := &model2.AskAvatarConversationDetail{Message: message, Styles: styles}
+				ncm := model2.NewNpcConversation(npcId, getNPCTalkType(talkType), 0, scm)
+				return session.Announce(l)(ctx)(wp)(writer.NPCConversation)(writer.NPCConversationBody(l, t)(ncm))
 			}
 		}
 	}
@@ -81,42 +155,26 @@ func getNPCTalkSpeaker(speaker string) byte {
 	panic(fmt.Sprintf("unsupported npc talk speaker %s", speaker))
 }
 
-func getNPCTalkEnd(t string) []byte {
+func getNPCTalkType(t string) model2.NpcConversationMessageType {
 	switch t {
 	case "NEXT":
-		return []byte{00, 01}
+		return model2.NpcConversationMessageTypeSay
 	case "PREVIOUS":
-		return []byte{01, 00}
+		return model2.NpcConversationMessageTypeSay
 	case "NEXT_PREVIOUS":
-		return []byte{01, 01}
+		return model2.NpcConversationMessageTypeSay
 	case "OK":
-		return []byte{00, 00}
+		return model2.NpcConversationMessageTypeSay
 	case "YES_NO":
-		return []byte{}
-	case "ACCEPT_DECLINE":
-		return []byte{}
+		return model2.NpcConversationMessageTypeAskYesNo
+	case "NUM":
+		return model2.NpcConversationMessageTypeAskNumber
 	case "SIMPLE":
-		return []byte{}
-	}
-	panic(fmt.Sprintf("unsupported talk type %s", t))
-}
-
-func getNPCTalkType(t string) byte {
-	switch t {
-	case "NEXT":
-		return 0
-	case "PREVIOUS":
-		return 0
-	case "NEXT_PREVIOUS":
-		return 0
-	case "OK":
-		return 0
-	case "YES_NO":
-		return 1
+		return model2.NpcConversationMessageTypeAskMenu
+	case "STYLE":
+		return model2.NpcConversationMessageTypeAskAvatar
 	case "ACCEPT_DECLINE":
-		return 0x0C
-	case "SIMPLE":
-		return 4
+		return model2.NpcConversationMessageTypeAskYesNoQuest
 	}
 	panic(fmt.Sprintf("unsupported talk type %s", t))
 }

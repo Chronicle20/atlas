@@ -1,0 +1,2600 @@
+{
+  "npcId": 1022004,
+  "name": "Mr. Smith - Perion Glove Crafting NPC",
+  "startState": "welcome",
+  "states": [
+    {
+      "id": "welcome",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Um... Hi, I'm Mr. Thunder's apprentice. He's getting up there in age, so he handles most of the heavy-duty work while I handle some of the lighter jobs. What can I do for you?",
+        "choices": [
+          {
+            "text": "Make a glove",
+            "nextState": "makeGloveMenu"
+          },
+          {
+            "text": "Upgrade a glove",
+            "nextState": "upgradeGloveMenu"
+          },
+          {
+            "text": "Create materials",
+            "nextState": "createMaterialsMenu"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "makeGloveMenu",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Okay, so which glove do you want me to make?",
+        "choices": [
+          {
+            "text": "Juno - Warrior Lv. 10",
+            "nextState": "confirmJuno"
+          },
+          {
+            "text": "Steel Fingerless Gloves - Warrior Lv. 15",
+            "nextState": "confirmSteelFingerless"
+          },
+          {
+            "text": "Venon - Warrior Lv. 20",
+            "nextState": "confirmVenon"
+          },
+          {
+            "text": "White Fingerless Gloves - Warrior Lv. 25",
+            "nextState": "confirmWhiteFingerless"
+          },
+          {
+            "text": "Bronze Missel - Warrior Lv. 30",
+            "nextState": "confirmBronzeMissel"
+          },
+          {
+            "text": "Steel Briggon - Warrior Lv. 35",
+            "nextState": "confirmSteelBriggon"
+          },
+          {
+            "text": "Iron Knuckle - Warrior Lv. 40",
+            "nextState": "confirmIronKnuckle"
+          },
+          {
+            "text": "Steel Brist - Warrior Lv. 50",
+            "nextState": "confirmSteelBrist"
+          },
+          {
+            "text": "Bronze Clench - Warrior Lv. 60",
+            "nextState": "confirmBronzeClench"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "upgradeGloveMenu",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Upgrade a glove? That shouldn't be too difficult. Which did you have in mind?",
+        "choices": [
+          {
+            "text": "Steel Missel - Warrior Lv. 30",
+            "nextState": "confirmSteelMissel"
+          },
+          {
+            "text": "Orihalcon Missel - Warrior Lv. 30",
+            "nextState": "confirmOrihalconMissel"
+          },
+          {
+            "text": "Yellow Briggon - Warrior Lv. 35",
+            "nextState": "confirmYellowBriggon"
+          },
+          {
+            "text": "Dark Briggon - Warrior Lv. 35",
+            "nextState": "confirmDarkBriggon"
+          },
+          {
+            "text": "Adamantium Knuckle - Warrior Lv. 40",
+            "nextState": "confirmAdamantiumKnuckle"
+          },
+          {
+            "text": "Dark Knuckle - Warrior Lv. 40",
+            "nextState": "confirmDarkKnuckle"
+          },
+          {
+            "text": "Mithril Brist - Warrior Lv. 50",
+            "nextState": "confirmMithrilBrist"
+          },
+          {
+            "text": "Gold Brist - Warrior Lv. 50",
+            "nextState": "confirmGoldBrist"
+          },
+          {
+            "text": "Sapphire Clench - Warrior Lv. 60",
+            "nextState": "confirmSapphireClench"
+          },
+          {
+            "text": "Dark Clench - Warrior Lv. 60",
+            "nextState": "confirmDarkClench"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "createMaterialsMenu",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Materials? I know of a few materials that I can make for you...",
+        "choices": [
+          {
+            "text": "Make Processed Wood with Tree Branch",
+            "nextState": "askQuantityProcessedWoodBranch"
+          },
+          {
+            "text": "Make Processed Wood with Firewood",
+            "nextState": "askQuantityProcessedWoodFirewood"
+          },
+          {
+            "text": "Make Screws (packs of 15)",
+            "nextState": "askQuantityScrews"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmJuno",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082003#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4000021# 15 #t4000021#\r\n#i4011001# 1 #t4011001#\r\n#i4031138# 1000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "craftJuno"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "craftJuno",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1082003"
+              },
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "1000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "15",
+                "referenceId": "4000021"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4011001"
+              }
+            ],
+            "nextState": "executeCraftJuno"
+          },
+          {
+            "conditions": [],
+            "nextState": "insufficientResources"
+          }
+        ]
+      }
+    },
+    {
+      "id": "executeCraftJuno",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4000021",
+              "quantity": "15"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011001",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-1000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1082003",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "craftSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmSteelFingerless",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082000#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4011001# 2 #t4011001#\r\n#i4031138# 2000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "craftSteelFingerless"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "craftSteelFingerless",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1082000"
+              },
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "2000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "2",
+                "referenceId": "4011001"
+              }
+            ],
+            "nextState": "executeCraftSteelFingerless"
+          },
+          {
+            "conditions": [],
+            "nextState": "insufficientResources"
+          }
+        ]
+      }
+    },
+    {
+      "id": "executeCraftSteelFingerless",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011001",
+              "quantity": "2"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-2000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1082000",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "craftSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmVenon",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082004#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4000021# 40 #t4000021#\r\n#i4011000# 2 #t4011000#\r\n#i4031138# 5000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "craftVenon"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "craftVenon",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1082004"
+              },
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "5000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "40",
+                "referenceId": "4000021"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "2",
+                "referenceId": "4011000"
+              }
+            ],
+            "nextState": "executeCraftVenon"
+          },
+          {
+            "conditions": [],
+            "nextState": "insufficientResources"
+          }
+        ]
+      }
+    },
+    {
+      "id": "executeCraftVenon",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4000021",
+              "quantity": "40"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011000",
+              "quantity": "2"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-5000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1082004",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "craftSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmWhiteFingerless",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082001#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4011001# 2 #t4011001#\r\n#i4031138# 10000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "craftWhiteFingerless"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "craftWhiteFingerless",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1082001"
+              },
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "10000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "2",
+                "referenceId": "4011001"
+              }
+            ],
+            "nextState": "executeCraftWhiteFingerless"
+          },
+          {
+            "conditions": [],
+            "nextState": "insufficientResources"
+          }
+        ]
+      }
+    },
+    {
+      "id": "executeCraftWhiteFingerless",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011001",
+              "quantity": "2"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-10000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1082001",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "craftSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmBronzeMissel",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082007#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4011000# 3 #t4011000#\r\n#i4011001# 2 #t4011001#\r\n#i4003000# 15 #t4003000#\r\n#i4031138# 20000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "craftBronzeMissel"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "craftBronzeMissel",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1082007"
+              },
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "20000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "3",
+                "referenceId": "4011000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "2",
+                "referenceId": "4011001"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "15",
+                "referenceId": "4003000"
+              }
+            ],
+            "nextState": "executeCraftBronzeMissel"
+          },
+          {
+            "conditions": [],
+            "nextState": "insufficientResources"
+          }
+        ]
+      }
+    },
+    {
+      "id": "executeCraftBronzeMissel",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011000",
+              "quantity": "3"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011001",
+              "quantity": "2"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4003000",
+              "quantity": "15"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-20000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1082007",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "craftSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmSteelBriggon",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082008#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4000021# 30 #t4000021#\r\n#i4011001# 4 #t4011001#\r\n#i4003000# 15 #t4003000#\r\n#i4031138# 30000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "craftSteelBriggon"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "craftSteelBriggon",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1082008"
+              },
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "30000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "30",
+                "referenceId": "4000021"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "4",
+                "referenceId": "4011001"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "15",
+                "referenceId": "4003000"
+              }
+            ],
+            "nextState": "executeCraftSteelBriggon"
+          },
+          {
+            "conditions": [],
+            "nextState": "insufficientResources"
+          }
+        ]
+      }
+    },
+    {
+      "id": "executeCraftSteelBriggon",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4000021",
+              "quantity": "30"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011001",
+              "quantity": "4"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4003000",
+              "quantity": "15"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-30000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1082008",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "craftSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmIronKnuckle",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082023#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4000021# 50 #t4000021#\r\n#i4011001# 5 #t4011001#\r\n#i4003000# 40 #t4003000#\r\n#i4031138# 40000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "craftIronKnuckle"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "craftIronKnuckle",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1082023"
+              },
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "40000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "50",
+                "referenceId": "4000021"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "5",
+                "referenceId": "4011001"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "40",
+                "referenceId": "4003000"
+              }
+            ],
+            "nextState": "executeCraftIronKnuckle"
+          },
+          {
+            "conditions": [],
+            "nextState": "insufficientResources"
+          }
+        ]
+      }
+    },
+    {
+      "id": "executeCraftIronKnuckle",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4000021",
+              "quantity": "50"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011001",
+              "quantity": "5"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4003000",
+              "quantity": "40"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-40000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1082023",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "craftSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmSteelBrist",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082009#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4011001# 3 #t4011001#\r\n#i4021007# 2 #t4021007#\r\n#i4000030# 30 #t4000030#\r\n#i4003000# 45 #t4003000#\r\n#i4031138# 50000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "craftSteelBrist"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "craftSteelBrist",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1082009"
+              },
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "50000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "3",
+                "referenceId": "4011001"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "2",
+                "referenceId": "4021007"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "30",
+                "referenceId": "4000030"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "45",
+                "referenceId": "4003000"
+              }
+            ],
+            "nextState": "executeCraftSteelBrist"
+          },
+          {
+            "conditions": [],
+            "nextState": "insufficientResources"
+          }
+        ]
+      }
+    },
+    {
+      "id": "executeCraftSteelBrist",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011001",
+              "quantity": "3"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4021007",
+              "quantity": "2"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4000030",
+              "quantity": "30"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4003000",
+              "quantity": "45"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-50000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1082009",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "craftSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmBronzeClench",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082059#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4011007# 1 #t4011007#\r\n#i4011000# 8 #t4011000#\r\n#i4011006# 2 #t4011006#\r\n#i4000030# 50 #t4000030#\r\n#i4003000# 50 #t4003000#\r\n#i4031138# 70000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "craftBronzeClench"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "craftBronzeClench",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1082059"
+              },
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "70000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4011007"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "8",
+                "referenceId": "4011000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "2",
+                "referenceId": "4011006"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "50",
+                "referenceId": "4000030"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "50",
+                "referenceId": "4003000"
+              }
+            ],
+            "nextState": "executeCraftBronzeClench"
+          },
+          {
+            "conditions": [],
+            "nextState": "insufficientResources"
+          }
+        ]
+      }
+    },
+    {
+      "id": "executeCraftBronzeClench",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011007",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011000",
+              "quantity": "8"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011006",
+              "quantity": "2"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4000030",
+              "quantity": "50"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4003000",
+              "quantity": "50"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-70000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1082059",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "craftSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmSteelMissel",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082005#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i1082007# 1 #t1082007#\r\n#i4011001# 1 #t4011001#\r\n#i4031138# 20000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "craftSteelMissel"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "craftSteelMissel",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1082005"
+              },
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "20000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1082007"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4011001"
+              }
+            ],
+            "nextState": "executeCraftSteelMissel"
+          },
+          {
+            "conditions": [],
+            "nextState": "insufficientResources"
+          }
+        ]
+      }
+    },
+    {
+      "id": "executeCraftSteelMissel",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "1082007",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011001",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-20000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1082005",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "craftSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmOrihalconMissel",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082006#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i1082007# 1 #t1082007#\r\n#i4011005# 2 #t4011005#\r\n#i4031138# 25000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "craftOrihalconMissel"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "craftOrihalconMissel",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1082006"
+              },
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "25000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1082007"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "2",
+                "referenceId": "4011005"
+              }
+            ],
+            "nextState": "executeCraftOrihalconMissel"
+          },
+          {
+            "conditions": [],
+            "nextState": "insufficientResources"
+          }
+        ]
+      }
+    },
+    {
+      "id": "executeCraftOrihalconMissel",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "1082007",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011005",
+              "quantity": "2"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-25000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1082006",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "craftSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmYellowBriggon",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082035#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i1082008# 1 #t1082008#\r\n#i4021006# 3 #t4021006#\r\n#i4031138# 30000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "craftYellowBriggon"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "craftYellowBriggon",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1082035"
+              },
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "30000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1082008"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "3",
+                "referenceId": "4021006"
+              }
+            ],
+            "nextState": "executeCraftYellowBriggon"
+          },
+          {
+            "conditions": [],
+            "nextState": "insufficientResources"
+          }
+        ]
+      }
+    },
+    {
+      "id": "executeCraftYellowBriggon",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "1082008",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4021006",
+              "quantity": "3"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-30000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1082035",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "craftSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmDarkBriggon",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082036#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i1082008# 1 #t1082008#\r\n#i4021008# 1 #t4021008#\r\n#i4031138# 40000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "craftDarkBriggon"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "craftDarkBriggon",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1082036"
+              },
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "40000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1082008"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4021008"
+              }
+            ],
+            "nextState": "executeCraftDarkBriggon"
+          },
+          {
+            "conditions": [],
+            "nextState": "insufficientResources"
+          }
+        ]
+      }
+    },
+    {
+      "id": "executeCraftDarkBriggon",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "1082008",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4021008",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-40000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1082036",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "craftSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmAdamantiumKnuckle",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082024#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i1082023# 1 #t1082023#\r\n#i4011003# 4 #t4011003#\r\n#i4031138# 45000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "craftAdamantiumKnuckle"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "craftAdamantiumKnuckle",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1082024"
+              },
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "45000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1082023"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "4",
+                "referenceId": "4011003"
+              }
+            ],
+            "nextState": "executeCraftAdamantiumKnuckle"
+          },
+          {
+            "conditions": [],
+            "nextState": "insufficientResources"
+          }
+        ]
+      }
+    },
+    {
+      "id": "executeCraftAdamantiumKnuckle",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "1082023",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011003",
+              "quantity": "4"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-45000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1082024",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "craftSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmDarkKnuckle",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082025#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i1082023# 1 #t1082023#\r\n#i4021008# 2 #t4021008#\r\n#i4031138# 50000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "craftDarkKnuckle"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "craftDarkKnuckle",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1082025"
+              },
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "50000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1082023"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "2",
+                "referenceId": "4021008"
+              }
+            ],
+            "nextState": "executeCraftDarkKnuckle"
+          },
+          {
+            "conditions": [],
+            "nextState": "insufficientResources"
+          }
+        ]
+      }
+    },
+    {
+      "id": "executeCraftDarkKnuckle",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "1082023",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4021008",
+              "quantity": "2"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-50000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1082025",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "craftSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmMithrilBrist",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082010#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i1082009# 1 #t1082009#\r\n#i4011002# 5 #t4011002#\r\n#i4031138# 55000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "craftMithrilBrist"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "craftMithrilBrist",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1082010"
+              },
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "55000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1082009"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "5",
+                "referenceId": "4011002"
+              }
+            ],
+            "nextState": "executeCraftMithrilBrist"
+          },
+          {
+            "conditions": [],
+            "nextState": "insufficientResources"
+          }
+        ]
+      }
+    },
+    {
+      "id": "executeCraftMithrilBrist",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "1082009",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011002",
+              "quantity": "5"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-55000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1082010",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "craftSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmGoldBrist",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082011#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i1082009# 1 #t1082009#\r\n#i4011006# 4 #t4011006#\r\n#i4031138# 60000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "craftGoldBrist"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "craftGoldBrist",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1082011"
+              },
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "60000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1082009"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "4",
+                "referenceId": "4011006"
+              }
+            ],
+            "nextState": "executeCraftGoldBrist"
+          },
+          {
+            "conditions": [],
+            "nextState": "insufficientResources"
+          }
+        ]
+      }
+    },
+    {
+      "id": "executeCraftGoldBrist",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "1082009",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011006",
+              "quantity": "4"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-60000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1082011",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "craftSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmSapphireClench",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082060#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i1082059# 1 #t1082059#\r\n#i4011002# 3 #t4011002#\r\n#i4021005# 5 #t4021005#\r\n#i4031138# 70000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "craftSapphireClench"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "craftSapphireClench",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1082060"
+              },
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "70000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1082059"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "3",
+                "referenceId": "4011002"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "5",
+                "referenceId": "4021005"
+              }
+            ],
+            "nextState": "executeCraftSapphireClench"
+          },
+          {
+            "conditions": [],
+            "nextState": "insufficientResources"
+          }
+        ]
+      }
+    },
+    {
+      "id": "executeCraftSapphireClench",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "1082059",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011002",
+              "quantity": "3"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4021005",
+              "quantity": "5"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-70000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1082060",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "craftSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmDarkClench",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1082061#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i1082059# 1 #t1082059#\r\n#i4021007# 2 #t4021007#\r\n#i4021008# 2 #t4021008#\r\n#i4031138# 80000 meso",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "craftDarkClench"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "craftDarkClench",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1082061"
+              },
+              {
+                "type": "meso",
+                "operator": ">=",
+                "value": "80000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "1082059"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "2",
+                "referenceId": "4021007"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "2",
+                "referenceId": "4021008"
+              }
+            ],
+            "nextState": "executeCraftDarkClench"
+          },
+          {
+            "conditions": [],
+            "nextState": "insufficientResources"
+          }
+        ]
+      }
+    },
+    {
+      "id": "executeCraftDarkClench",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "1082059",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4021007",
+              "quantity": "2"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4021008",
+              "quantity": "2"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-80000"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "1082061",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "craftSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "askQuantityProcessedWoodBranch",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "So, you want me to make some #t4003001#s? In that case, how many do you want me to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "confirmProcessedWoodBranch"
+      }
+    },
+    {
+      "id": "confirmProcessedWoodBranch",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make {context.quantity} #t4003001#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "craftProcessedWoodBranch"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "craftProcessedWoodBranch",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4003001"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "10 * {context.quantity}",
+                "referenceId": "4000003"
+              }
+            ],
+            "nextState": "executeCraftProcessedWoodBranch"
+          },
+          {
+            "conditions": [],
+            "nextState": "insufficientSpace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "executeCraftProcessedWoodBranch",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4000003",
+              "quantity": "10 * {context.quantity}"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4003001",
+              "quantity": "{context.quantity}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "craftSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "askQuantityProcessedWoodFirewood",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "So, you want me to make some #t4003001#s? In that case, how many do you want me to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "confirmProcessedWoodFirewood"
+      }
+    },
+    {
+      "id": "confirmProcessedWoodFirewood",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make {context.quantity} #t4003001#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "craftProcessedWoodFirewood"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "craftProcessedWoodFirewood",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4003001"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "5 * {context.quantity}",
+                "referenceId": "4000018"
+              }
+            ],
+            "nextState": "executeCraftProcessedWoodFirewood"
+          },
+          {
+            "conditions": [],
+            "nextState": "insufficientSpace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "executeCraftProcessedWoodFirewood",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4000018",
+              "quantity": "5 * {context.quantity}"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4003001",
+              "quantity": "{context.quantity}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "craftSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "askQuantityScrews",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "So, you want me to make some #t4003000#s? In that case, how many packs do you want me to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "confirmScrews"
+      }
+    },
+    {
+      "id": "confirmScrews",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make {context.quantity} packs of #t4003000#s (15 screws each)? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "craftScrews"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "craftScrews",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4003000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1 * {context.quantity}",
+                "referenceId": "4011000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1 * {context.quantity}",
+                "referenceId": "4011001"
+              }
+            ],
+            "nextState": "executeCraftScrews"
+          },
+          {
+            "conditions": [],
+            "nextState": "insufficientSpace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "executeCraftScrews",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011000",
+              "quantity": "1 * {context.quantity}"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011001",
+              "quantity": "1 * {context.quantity}"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4003000",
+              "quantity": "15 * {context.quantity}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "craftSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "insufficientResources",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "I'm still an apprentice, I don't know if I can substitute other items in yet... Can you please bring what the recipe calls for?",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "insufficientSpace",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Check your inventory for a free slot first.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "insufficientMesos",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "I may still be an apprentice, but I do need to earn a living.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "craftSuccess",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Did that come out right? Come by me again if you have anything for me to practice on.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

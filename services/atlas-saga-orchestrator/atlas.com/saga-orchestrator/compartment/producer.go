@@ -29,7 +29,7 @@ func RequestCreateAssetCommandProvider(transactionId uuid.UUID, characterId uint
 	return producer.SingleMessageProvider(key, value)
 }
 
-func RequestDestroyAssetCommandProvider(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, quantity uint32) model.Provider[[]kafka.Message] {
+func RequestDestroyAssetCommandProvider(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, quantity uint32, removeAll bool) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &compartment.Command[compartment.DestroyCommandBody]{
 		TransactionId: transactionId,
@@ -37,8 +37,9 @@ func RequestDestroyAssetCommandProvider(transactionId uuid.UUID, characterId uin
 		InventoryType: byte(inventoryType),
 		Type:          compartment.CommandDestroy,
 		Body: compartment.DestroyCommandBody{
-			Slot:     slot,
-			Quantity: quantity,
+			Slot:      slot,
+			Quantity:  quantity,
+			RemoveAll: removeAll,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

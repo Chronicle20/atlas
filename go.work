@@ -44,9 +44,11 @@ use (
 	./services/atlas-pets/atlas.com/pets
 	./services/atlas-portals/atlas.com/portals
 	./services/atlas-query-aggregator/atlas.com/query-aggregator
+	./services/atlas-quest/atlas.com/quest
 	./services/atlas-reactors/atlas.com/reactors
 	./services/atlas-saga-orchestrator/atlas.com/saga-orchestrator
 	./services/atlas-skills/atlas.com/skills
+	./services/atlas-storage/atlas.com/storage
 	./services/atlas-tenants/atlas.com/tenants
 	./services/atlas-transports/atlas.com/transports
 	./services/atlas-world/atlas.com/world

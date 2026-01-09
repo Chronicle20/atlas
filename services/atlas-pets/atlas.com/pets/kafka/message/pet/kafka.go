@@ -1,5 +1,7 @@
 package pet
 
+import "github.com/google/uuid"
+
 const (
 	EnvCommandTopic          = "COMMAND_TOPIC_PET"
 	CommandPetSpawn          = "SPAWN"
@@ -12,10 +14,11 @@ const (
 )
 
 type Command[E any] struct {
-	ActorId uint32 `json:"actorId"`
-	PetId   uint32 `json:"petId"`
-	Type    string `json:"type"`
-	Body    E      `json:"body"`
+	TransactionId uuid.UUID `json:"transactionId"`
+	ActorId       uint32    `json:"actorId"`
+	PetId         uint32    `json:"petId"`
+	Type          string    `json:"type"`
+	Body          E         `json:"body"`
 }
 
 type SpawnCommandBody struct {
@@ -125,9 +128,10 @@ type CommandResponseStatusEventBody struct {
 }
 
 type ClosenessChangedStatusEventBody struct {
-	Slot      int8   `json:"slot"`
-	Closeness uint16 `json:"closeness"`
-	Amount    int16  `json:"amount"`
+	Slot          int8      `json:"slot"`
+	Closeness     uint16    `json:"closeness"`
+	Amount        int16     `json:"amount"`
+	TransactionId uuid.UUID `json:"transactionId,omitempty"`
 }
 
 type FullnessChangedStatusEventBody struct {

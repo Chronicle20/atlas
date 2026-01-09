@@ -105,6 +105,17 @@ const (
 	CreateSkill            Action = "create_skill"
 	UpdateSkill            Action = "update_skill"
 	ValidateCharacterState Action = "validate_character_state"
+	IncreaseBuddyCapacity  Action = "increase_buddy_capacity"
+	GainCloseness          Action = "gain_closeness"
+	ChangeHair             Action = "change_hair"
+	ChangeFace             Action = "change_face"
+	ChangeSkin             Action = "change_skin"
+	SpawnMonster           Action = "spawn_monster"
+	CompleteQuest          Action = "complete_quest"
+	StartQuest             Action = "start_quest"
+	ApplyConsumableEffect  Action = "apply_consumable_effect"
+	SendMessage            Action = "send_message"
+	ShowStorage            Action = "show_storage"
 )
 
 // Step represents a single step within a saga.
@@ -137,9 +148,10 @@ type WarpToRandomPortalPayload struct {
 
 // WarpToPortalPayload represents the payload required to warp a character to a specific portal in a field.
 type WarpToPortalPayload struct {
-	CharacterId uint32   `json:"characterId"` // CharacterId associated with the action
-	FieldId     field.Id `json:"fieldId"`     // FieldId references the unique identifier of the field associated with the warp action.
-	PortalId    uint32   `json:"portalId"`    // PortalId specifies the unique identifier of the portal for the warp action.
+	CharacterId uint32   `json:"characterId"`         // CharacterId associated with the action
+	FieldId     field.Id `json:"fieldId"`             // FieldId references the unique identifier of the field associated with the warp action.
+	PortalId    uint32   `json:"portalId"`            // PortalId specifies the unique identifier of the portal for the warp action.
+	PortalName  string   `json:"portalName,omitempty"` // PortalName specifies the name of the portal (resolved to ID if provided).
 }
 
 // AwardExperiencePayload represents the payload required to award experience to a character.
@@ -172,7 +184,8 @@ type AwardMesosPayload struct {
 type DestroyAssetPayload struct {
 	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
 	TemplateId  uint32 `json:"templateId"`  // TemplateId of the item to destroy
-	Quantity    uint32 `json:"quantity"`    // Quantity of the item to destroy
+	Quantity    uint32 `json:"quantity"`    // Quantity of the item to destroy (ignored if RemoveAll is true)
+	RemoveAll   bool   `json:"removeAll"`   // If true, remove all instances of the item regardless of Quantity
 }
 
 // ChangeJobPayload represents the payload required to change a character's job.
@@ -201,10 +214,109 @@ type UpdateSkillPayload struct {
 	Expiration  time.Time `json:"expiration"`  // New skill expiration time
 }
 
+// IncreaseBuddyCapacityPayload represents the payload required to increase a character's buddy list capacity.
+type IncreaseBuddyCapacityPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	Amount      byte       `json:"amount"`      // Amount to increase buddy capacity by
+}
+
+// GainClosenessPayload represents the payload required to gain closeness with a pet.
+type GainClosenessPayload struct {
+	PetId  uint32 `json:"petId"`  // PetId associated with the action
+	Amount uint16 `json:"amount"` // Amount of closeness to gain
+}
+
 // ValidateCharacterStatePayload represents the payload required to validate a character's state.
 type ValidateCharacterStatePayload struct {
 	CharacterId uint32                      `json:"characterId"` // CharacterId associated with the action
 	Conditions  []validation.ConditionInput `json:"conditions"`  // Conditions to validate
+}
+
+// ChangeHairPayload represents the payload required to change a character's hair.
+type ChangeHairPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	StyleId     uint32     `json:"styleId"`     // Hair style ID to change to
+}
+
+// ChangeFacePayload represents the payload required to change a character's face.
+type ChangeFacePayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	StyleId     uint32     `json:"styleId"`     // Face style ID to change to
+}
+
+// ChangeSkinPayload represents the payload required to change a character's skin color.
+type ChangeSkinPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	StyleId     byte       `json:"styleId"`     // Skin color ID to change to
+}
+
+// SpawnMonsterPayload represents the payload required to spawn monsters.
+// Note: Foothold (fh) is resolved by saga-orchestrator via atlas-data lookup, not specified here.
+type SpawnMonsterPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	MapId       uint32     `json:"mapId"`       // MapId where monsters should spawn
+	MonsterId   uint32     `json:"monsterId"`   // MonsterId to spawn
+	X           int16      `json:"x"`           // X coordinate for spawn
+	Y           int16      `json:"y"`           // Y coordinate for spawn
+	Team        int8       `json:"team"`        // Team assignment (optional, defaults to 0)
+	Count       int        `json:"count"`       // Number of monsters to spawn (optional, defaults to 1)
+}
+
+// CompleteQuestPayload represents the payload required to complete a quest.
+type CompleteQuestPayload struct {
+	CharacterId uint32   `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id `json:"worldId"`     // WorldId associated with the action
+	QuestId     uint32   `json:"questId"`     // QuestId to complete
+	NpcId       uint32   `json:"npcId"`       // NpcId that completed the quest
+	Force       bool     `json:"force"`       // If true, skip requirement checks and just mark complete
+}
+
+// StartQuestPayload represents the payload required to start a quest.
+// Note: This is currently a stub as no quest service exists yet.
+type StartQuestPayload struct {
+	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
+	QuestId     uint32 `json:"questId"`     // QuestId to start
+	NpcId       uint32 `json:"npcId"`       // NpcId that started the quest
+}
+
+// ApplyConsumableEffectPayload represents the payload required to apply consumable item effects to a character.
+// This is used for NPC-initiated item usage where the item effects are applied
+// without consuming from inventory (e.g., NPC buffs like Shinsoo's blessing).
+type ApplyConsumableEffectPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to apply item effects to
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	ItemId      uint32     `json:"itemId"`      // Consumable item ID whose effects should be applied
+}
+
+// SendMessagePayload represents the payload required to send a system message to a character.
+// This is used for NPC-initiated messages like "You have acquired a Dragon Egg."
+type SendMessagePayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to send message to
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	MessageType string     `json:"messageType"` // Message type: "NOTICE", "POP_UP", "PINK_TEXT", "BLUE_TEXT"
+	Message     string     `json:"message"`     // The message text to display
+}
+
+// ShowStoragePayload represents the payload required to show the storage UI to a character.
+// This is triggered by NPC interactions and sends a command to the channel service to display storage.
+type ShowStoragePayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to show storage to
+	NpcId       uint32     `json:"npcId"`       // NpcId of the storage keeper
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	AccountId   uint32     `json:"accountId"`   // AccountId that owns the storage
 }
 
 type ExperienceDistributions struct {
@@ -286,6 +398,54 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case UpdateSkill:
 		var payload UpdateSkillPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case IncreaseBuddyCapacity:
+		var payload IncreaseBuddyCapacityPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case GainCloseness:
+		var payload GainClosenessPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case SpawnMonster:
+		var payload SpawnMonsterPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case CompleteQuest:
+		var payload CompleteQuestPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case StartQuest:
+		var payload StartQuestPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case ApplyConsumableEffect:
+		var payload ApplyConsumableEffectPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case SendMessage:
+		var payload SendMessagePayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case ShowStorage:
+		var payload ShowStoragePayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

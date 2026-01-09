@@ -28,6 +28,7 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		t, _ = topic.EnvProvider(l)(consumable2.EnvCommandTopic)()
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestItemConsume)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestScroll)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleApplyConsumableEffect)))
 	}
 }
 
@@ -48,5 +49,15 @@ func handleRequestScroll(l logrus.FieldLogger, ctx context.Context, c consumable
 	err := consumable.NewProcessor(l, ctx).RequestScroll(c.CharacterId, c.Body.ScrollSlot, c.Body.EquipSlot, c.Body.WhiteScroll, c.Body.LegendarySpirit)
 	if err != nil {
 		l.WithError(err).Errorf("Character [%d] unable to use scroll in slot [%d] as expected.", c.CharacterId, c.Body.ScrollSlot)
+	}
+}
+
+func handleApplyConsumableEffect(l logrus.FieldLogger, ctx context.Context, c consumable2.Command[consumable2.ApplyConsumableEffectBody]) {
+	if c.Type != consumable2.CommandApplyConsumableEffect {
+		return
+	}
+	err := consumable.NewProcessor(l, ctx).ApplyConsumableEffect(c.TransactionId, c.WorldId, c.ChannelId, c.CharacterId, item.Id(c.Body.ItemId))
+	if err != nil {
+		l.WithError(err).Errorf("Character [%d] unable to apply consumable effect [%d] as expected.", c.CharacterId, c.Body.ItemId)
 	}
 }

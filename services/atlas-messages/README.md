@@ -64,6 +64,26 @@ The service supports the following GM commands:
   - Example: `@award map item 2000000 5` - Awards 5 of item 2000000 to all characters in the current map
   - Example: `@award PlayerName item 2000000 3` - Awards 3 of item 2000000 to the player named "PlayerName"
 
+### Cash Shop Currency Commands
+
+- `@award <target> credit <amount>` - Awards credit (cash shop currency) to a character
+  - Example: `@award me credit 1000` - Awards 1000 credit to yourself
+  - Example: `@award PlayerName credit 500` - Awards 500 credit to the player named "PlayerName"
+  - Example: `@award me credit -100` - Deducts 100 credit from yourself
+  - Note: The `map` target is not supported for currency commands
+
+- `@award <target> points <amount>` - Awards maple points (cash shop currency) to a character
+  - Example: `@award me points 1000` - Awards 1000 maple points to yourself
+  - Example: `@award PlayerName points 500` - Awards 500 maple points to the player named "PlayerName"
+  - Example: `@award me points -100` - Deducts 100 maple points from yourself
+  - Note: The `map` target is not supported for currency commands
+
+- `@award <target> prepaid <amount>` - Awards prepaid (cash shop currency) to a character
+  - Example: `@award me prepaid 1000` - Awards 1000 prepaid to yourself
+  - Example: `@award PlayerName prepaid 500` - Awards 500 prepaid to the player named "PlayerName"
+  - Example: `@award me prepaid -100` - Deducts 100 prepaid from yourself
+  - Note: The `map` target is not supported for currency commands
+
 ### Skill Commands
 
 - `@skill max <skillId>` - Maximizes a skill level for the character issuing the command

@@ -4,10 +4,11 @@ import (
 	"atlas-npc-conversations/validation"
 	"context"
 	"fmt"
-	"github.com/Chronicle20/atlas-tenant"
-	"github.com/sirupsen/logrus"
 	"strconv"
 	"strings"
+
+	"github.com/Chronicle20/atlas-tenant"
+	"github.com/sirupsen/logrus"
 )
 
 // Evaluator is the interface for evaluating conditions in conversations
@@ -47,43 +48,75 @@ func (e *EvaluatorImpl) EvaluateCondition(characterId uint32, condition Conditio
 
 	// Get the value from the condition
 	valueStr := condition.Value()
-	var value int
 
-	// Check if the value is a context reference
-	if strings.HasPrefix(valueStr, "context.") {
-		// Extract the context key
-		contextKey := strings.TrimPrefix(valueStr, "context.")
+	// Use the new ExtractContextValue function which supports both "{context.xxx}" and "context.xxx" formats
+	extractedValue, isContextRef, err := ExtractContextValue(valueStr, ctx.Context())
+	if err != nil {
+		e.l.WithError(err).Errorf("Failed to extract context value for condition")
+		return false, err
+	}
 
-		// Look up the value in the context map
-		contextValue, exists := ctx.Context()[contextKey]
-		if !exists {
-			e.l.Errorf("Context key [%s] not found in conversation context", contextKey)
-			return false, fmt.Errorf("context key [%s] not found", contextKey)
+	if isContextRef {
+		e.l.Debugf("Resolved context reference [%s] to [%s] for character [%d]", valueStr, extractedValue, characterId)
+	}
+
+	// Evaluate arithmetic expressions if present (e.g., "10 * 5" -> 50)
+	intValue, err := evaluateValueAsInt(extractedValue)
+	if err != nil {
+		e.l.WithError(err).Errorf("Failed to evaluate value [%s] for condition", extractedValue)
+		return false, err
+	}
+
+	e.l.Debugf("Evaluated condition value [%s] to [%d] for character [%d]", extractedValue, intValue, characterId)
+
+	// Resolve referenceId from condition (supports context references like {context.itemId})
+	var resolvedReferenceId uint32
+	referenceIdRaw := condition.ReferenceIdRaw()
+	if referenceIdRaw != "" {
+		resolvedRefIdStr, isRefIdContextRef, refIdErr := ExtractContextValue(referenceIdRaw, ctx.Context())
+		if refIdErr != nil {
+			e.l.WithError(refIdErr).Errorf("Failed to resolve referenceId context [%s] for character [%d]", referenceIdRaw, characterId)
+			return false, refIdErr
 		}
-
-		// Convert the context value to an integer
-		var err error
-		value, err = strconv.Atoi(contextValue)
-		if err != nil {
-			e.l.WithError(err).Errorf("Failed to convert context value [%s] to integer", contextValue)
-			return false, fmt.Errorf("context value [%s] is not a valid integer", contextValue)
+		if isRefIdContextRef {
+			e.l.Debugf("Resolved referenceId [%s] to [%s] for character [%d]", referenceIdRaw, resolvedRefIdStr, characterId)
 		}
-	} else {
-		// Try to convert the value directly to an integer
-		var err error
-		value, err = strconv.Atoi(valueStr)
-		if err != nil {
-			e.l.WithError(err).Errorf("Failed to convert value [%s] to integer", valueStr)
-			return false, fmt.Errorf("value [%s] is not a valid integer", valueStr)
+		if refIdInt, convErr := strconv.ParseUint(resolvedRefIdStr, 10, 32); convErr == nil {
+			resolvedReferenceId = uint32(refIdInt)
+		} else {
+			e.l.Errorf("ReferenceId [%s] resolved to [%s] which is not a valid uint32 for character [%d]", referenceIdRaw, resolvedRefIdStr, characterId)
+			return false, fmt.Errorf("referenceId [%s] is not a valid uint32", resolvedRefIdStr)
 		}
 	}
 
 	// Create a validation condition input
 	validationCondition := validation.ConditionInput{
-		Type:     condition.Type(),
-		Operator: condition.Operator(),
-		Value:    value,
-		ItemId:   condition.ItemId(),
+		Type:            condition.Type(),
+		Operator:        condition.Operator(),
+		Value:           intValue,
+		ReferenceId:     resolvedReferenceId,
+		Step:            condition.Step(),
+		IncludeEquipped: condition.IncludeEquipped(),
+	}
+
+	// Resolve worldId from condition (supports context references like {context.worldId})
+	if condition.WorldId() != "" {
+		worldIdStr, _, err := ExtractContextValue(condition.WorldId(), ctx.Context())
+		if err == nil {
+			if worldIdInt, convErr := strconv.Atoi(worldIdStr); convErr == nil {
+				validationCondition.WorldId = byte(worldIdInt)
+			}
+		}
+	}
+
+	// Resolve channelId from condition (supports context references like {context.channelId})
+	if condition.ChannelId() != "" {
+		channelIdStr, _, err := ExtractContextValue(condition.ChannelId(), ctx.Context())
+		if err == nil {
+			if channelIdInt, convErr := strconv.Atoi(channelIdStr); convErr == nil {
+				validationCondition.ChannelId = byte(channelIdInt)
+			}
+		}
 	}
 
 	// Validate the character state using the validation processor
@@ -93,6 +126,23 @@ func (e *EvaluatorImpl) EvaluateCondition(characterId uint32, condition Conditio
 		return false, err
 	}
 
-	e.l.Debugf("Condition [%s] evaluated to [%t] for character [%d]. Operator [%s], Value [%d].", condition.Type(), result.Passed(), characterId, condition.Operator(), value)
+	e.l.Debugf("Condition [%s] evaluated to [%t] for character [%d]. Operator [%s], Value [%d].", condition.Type(), result.Passed(), characterId, condition.Operator(), intValue)
 	return result.Passed(), nil
+}
+
+// evaluateValueAsInt evaluates a string value as an integer, supporting arithmetic expressions
+func evaluateValueAsInt(value string) (int, error) {
+	// Check if the value contains arithmetic operators
+	if strings.ContainsAny(value, "+-*/") {
+		// Evaluate arithmetic expression using the shared function
+		return evaluateArithmeticExpression(value)
+	}
+
+	// No arithmetic, convert directly to integer
+	intValue, err := strconv.Atoi(value)
+	if err != nil {
+		return 0, fmt.Errorf("value [%s] is not a valid integer", value)
+	}
+
+	return intValue, nil
 }

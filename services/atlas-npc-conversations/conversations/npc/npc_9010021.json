@@ -1,0 +1,18 @@
+{
+  "npcId": 9010021,
+  "startState": "greeting",
+  "states": [
+    {
+      "id": "greeting",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "... I came from distant planes to assist the fight against the #rBlack Magician#k. Right now I search my master, have you seen him?",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    }
+  ]
+}

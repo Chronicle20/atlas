@@ -12,10 +12,11 @@ Provide a composable entry point that activates when working on any Golang servi
 ## When to Use
 Activate when working on:
 - Any Go microservice
-- Files: `model.go`, `entity.go`, `builder.go`, `processor.go`, `provider.go`, `producer.go`, `resource.go`, `rest.go`, or `state.go`
+- Files: `model.go`, `entity.go`, `builder.go`, `processor.go`, `provider.go`, `producer.go`, `resource.go`, `rest.go`, `requests.go`, `state.go`, or `cache.go`
 - Kafka producers/consumers
-
+- Caching layers and singleton patterns
 - REST JSON:API endpoints
+- Cross-service REST client calls
 - Multi-tenancy context logic
 - Testing domain logic, providers, or emission paths
 
@@ -29,6 +30,7 @@ Activate when working on:
 - [ ] Lazy **Provider** for data access
 - [ ] Kafka **Producer** initialized with context decorators
 - [ ] **Resource** file for route registration and handlers
+- [ ] **Requests** + **rest.go** for cross-service REST calls (if needed)
 - [ ] Context-based multi-tenancy (`tenant.MustFromContext`)
 - [ ] Table-driven **tests** for all logic layers
 
@@ -56,9 +58,10 @@ Activate when working on:
 | `processor.go` | Core business logic | Model, Provider |
 | `provider.go` | Lazy database access | GORM, Entity |
 | `producer.go` | Kafka event creation | Kafka, Provider |
-
+| `cache.go` | Singleton cache implementation | sync.Once, sync.RWMutex |
 | `resource.go` | Route registration and handlers | REST, Processor |
 | `rest.go` | JSON:API resource mappings | Model |
+| `requests.go` | Cross-service REST client functions | atlas-rest, rest.go |
 | `state.go` | Domain states or enums | Model |
 
 ---
@@ -72,10 +75,12 @@ Activate when working on:
 | File Responsibilities | [resources/file-responsibilities.md](resources/file-responsibilities.md) |
 | Functional & Builder Patterns | [resources/patterns-functional.md](resources/patterns-functional.md) |
 | Provider Pattern | [resources/patterns-provider.md](resources/patterns-provider.md) |
+| **Cache Patterns** | **[resources/patterns-cache.md](resources/patterns-cache.md)** |
 | Kafka Integration | [resources/patterns-kafka.md](resources/patterns-kafka.md) |
 | REST JSON:API | [resources/patterns-rest-jsonapi.md](resources/patterns-rest-jsonapi.md) |
 | Multi-Tenancy Context | [resources/patterns-multitenancy-context.md](resources/patterns-multitenancy-context.md) |
 | Testing Conventions | [resources/testing-guide.md](resources/testing-guide.md) |
+| **Cross-Service Implementation** | **[resources/cross-service-implementation.md](resources/cross-service-implementation.md)** |
 | AI Code Guidance | [resources/ai-guidance.md](resources/ai-guidance.md) |
 | Anti-Patterns | [resources/anti-patterns.md](resources/anti-patterns.md) |
 

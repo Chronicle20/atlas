@@ -1,0 +1,472 @@
+{
+  "npcId": 1052007,
+  "startState": "selectDestination",
+  "states": [
+    {
+      "id": "selectDestination",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Pick your destination.",
+        "choices": [
+          {
+            "text": "Kerning Square Shopping Center",
+            "nextState": "warpKerningSquare"
+          },
+          {
+            "text": "Enter Construction Site",
+            "nextState": "checkConstructionTickets"
+          },
+          {
+            "text": "New Leaf City",
+            "nextState": "checkNLCTicket"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpKerningSquare",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "103000310",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkConstructionTickets",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4031036"
+              }
+            ],
+            "nextState": "selectConstructionTicket"
+          },
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4031037"
+              }
+            ],
+            "nextState": "selectConstructionTicket"
+          },
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4031038"
+              }
+            ],
+            "nextState": "selectConstructionTicket"
+          },
+          {
+            "conditions": [],
+            "nextState": "noConstructionTicket"
+          }
+        ]
+      }
+    },
+    {
+      "id": "noConstructionTicket",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "It seems as though you don't have a ticket!",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectConstructionTicket",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Here's the ticket reader. You will be brought in immediately. Which ticket you would like to use?",
+        "choices": [
+          {
+            "text": "#t4031036#",
+            "nextState": "checkTicket1",
+            "context": {
+              "ticketId": "4031036",
+              "warpMap": "103000900"
+            }
+          },
+          {
+            "text": "#t4031037#",
+            "nextState": "checkTicket2",
+            "context": {
+              "ticketId": "4031037",
+              "warpMap": "103000903"
+            }
+          },
+          {
+            "text": "#t4031038#",
+            "nextState": "checkTicket3",
+            "context": {
+              "ticketId": "4031038",
+              "warpMap": "103000906"
+            }
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkTicket1",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4031036"
+              }
+            ],
+            "nextState": "useTicket1"
+          },
+          {
+            "conditions": [],
+            "nextState": "selectConstructionTicket"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkTicket2",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4031037"
+              }
+            ],
+            "nextState": "useTicket2"
+          },
+          {
+            "conditions": [],
+            "nextState": "selectConstructionTicket"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkTicket3",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4031038"
+              }
+            ],
+            "nextState": "useTicket3"
+          },
+          {
+            "conditions": [],
+            "nextState": "selectConstructionTicket"
+          }
+        ]
+      }
+    },
+    {
+      "id": "useTicket1",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4031036",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "103000900",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "useTicket2",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4031037",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "103000903",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "useTicket3",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4031038",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "103000906",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkNLCTicket",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": "<",
+                "value": "1",
+                "referenceId": "4031711"
+              },
+              {
+                "type": "mapId",
+                "operator": "=",
+                "value": "103000100"
+              }
+            ],
+            "nextState": "noNLCTicket"
+          },
+          {
+            "conditions": [],
+            "nextState": "checkNLCBoarding"
+          }
+        ]
+      }
+    },
+    {
+      "id": "noNLCTicket",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "It seems you don't have a ticket! You can buy one from Bell.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkNLCBoarding",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "transportAvailable",
+                "operator": "=",
+                "value": "1",
+                "referenceId": "103000100"
+              }
+            ],
+            "nextState": "askBoardNLC"
+          },
+          {
+            "conditions": [],
+            "nextState": "nlcNotBoarding"
+          }
+        ]
+      }
+    },
+    {
+      "id": "nlcNotBoarding",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "We will begin boarding 1 minute before the takeoff. Please be patient and wait for a few minutes. Be aware that the subway will take off right on time, and we stop receiving tickets 1 minute before that, so please make sure to be here on time.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "askBoardNLC",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "It looks like there's plenty of room for this ride. Please have your ticket ready so I can let you in. The ride will be long, but you'll get to your destination just fine. What do you think? Do you want to get on this ride?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "boardNLC"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "boardNLC",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4031711"
+              }
+            ],
+            "nextState": "consumeNLCTicketAndBoard"
+          },
+          {
+            "conditions": [],
+            "nextState": "nlcNotBoarding"
+          }
+        ]
+      }
+    },
+    {
+      "id": "consumeNLCTicketAndBoard",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4031711",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "600010004",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

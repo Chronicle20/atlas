@@ -1,0 +1,1207 @@
+{
+  "npcId": 1012002,
+  "startState": "start",
+  "states": [
+    {
+      "id": "start",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Hello. I am Vicious, retired Sniper. However, I used to be the top student of Athena Pierce. Though I no longer hunt, I can make some archer items that will be useful for you...",
+        "choices": [
+          {
+            "text": "Create a bow",
+            "nextState": "bowMenu"
+          },
+          {
+            "text": "Create a crossbow",
+            "nextState": "crossbowMenu"
+          },
+          {
+            "text": "Make a glove",
+            "nextState": "gloveMenu"
+          },
+          {
+            "text": "Upgrade a glove",
+            "nextState": "gloveUpgradeMenu"
+          },
+          {
+            "text": "Create materials",
+            "nextState": "materialMenu"
+          },
+          {
+            "text": "Create Arrows",
+            "nextState": "arrowMenu"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "bowMenu",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "I may have been a Sniper, but bows and crossbows aren't too much different. Anyway, which would you like to make?",
+        "choices": [
+          {
+            "text": "#t1452002# - Bowman Lv. 10",
+            "nextState": "craft_1452002"
+          },
+          {
+            "text": "#t1452003# - Bowman Lv. 15",
+            "nextState": "craft_1452003"
+          },
+          {
+            "text": "#t1452001# - Bowman Lv. 20",
+            "nextState": "craft_1452001"
+          },
+          {
+            "text": "#t1452000# - Bowman Lv. 25",
+            "nextState": "craft_1452000"
+          },
+          {
+            "text": "#t1452005# - Bowman Lv. 30",
+            "nextState": "craft_1452005"
+          },
+          {
+            "text": "#t1452006# - Bowman Lv. 35",
+            "nextState": "craft_1452006"
+          },
+          {
+            "text": "#t1452007# - Bowman Lv. 40",
+            "nextState": "craft_1452007"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "craft_1452002",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1452002",
+        "materials": [4003001, 4000000],
+        "quantities": [5, 30],
+        "mesoCost": 800,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_1452003",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1452003",
+        "materials": [4011001, 4003000],
+        "quantities": [1, 3],
+        "mesoCost": 2000,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_1452001",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1452001",
+        "materials": [4003001, 4000016],
+        "quantities": [30, 50],
+        "mesoCost": 3000,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_1452000",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1452000",
+        "materials": [4011001, 4021006, 4003000],
+        "quantities": [2, 2, 8],
+        "mesoCost": 5000,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_1452005",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1452005",
+        "materials": [4011001, 4011006, 4021003, 4021006, 4003000],
+        "quantities": [5, 5, 3, 3, 30],
+        "mesoCost": 30000,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_1452006",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1452006",
+        "materials": [4011004, 4021000, 4021004, 4003000],
+        "quantities": [7, 6, 3, 35],
+        "mesoCost": 40000,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_1452007",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1452007",
+        "materials": [4021008, 4011001, 4011006, 4003000, 4000014],
+        "quantities": [1, 10, 3, 40, 50],
+        "mesoCost": 80000,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "crossbowMenu",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "I was a Sniper. Crossbows are my specialty. Which would you like me to make for you?",
+        "choices": [
+          {
+            "text": "#t1462001# - Bowman Lv. 10",
+            "nextState": "craft_1462001"
+          },
+          {
+            "text": "#t1462002# - Bowman Lv. 15",
+            "nextState": "craft_1462002"
+          },
+          {
+            "text": "#t1462003# - Bowman Lv. 20",
+            "nextState": "craft_1462003"
+          },
+          {
+            "text": "#t1462000# - Bowman Lv. 25",
+            "nextState": "craft_1462000"
+          },
+          {
+            "text": "#t1462004# - Bowman Lv. 30",
+            "nextState": "craft_1462004"
+          },
+          {
+            "text": "#t1462005# - Bowman Lv. 35",
+            "nextState": "craft_1462005"
+          },
+          {
+            "text": "#t1462006# - Bowman Lv. 40",
+            "nextState": "craft_1462006"
+          },
+          {
+            "text": "#t1462007# - Bowman Lv. 45",
+            "nextState": "craft_1462007"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "craft_1462001",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1462001",
+        "materials": [4003001, 4003000],
+        "quantities": [7, 2],
+        "mesoCost": 1000,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_1462002",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1462002",
+        "materials": [4011001, 4003001, 4003000],
+        "quantities": [1, 20, 5],
+        "mesoCost": 2000,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_1462003",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1462003",
+        "materials": [4011001, 4003001, 4003000],
+        "quantities": [1, 50, 8],
+        "mesoCost": 3000,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_1462000",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1462000",
+        "materials": [4011001, 4021006, 4021002, 4003000],
+        "quantities": [2, 1, 1, 10],
+        "mesoCost": 10000,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_1462004",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1462004",
+        "materials": [4011001, 4011005, 4021006, 4003001, 4003000],
+        "quantities": [5, 5, 3, 50, 15],
+        "mesoCost": 30000,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_1462005",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1462005",
+        "materials": [4021008, 4011001, 4011006, 4021006, 4003000],
+        "quantities": [1, 8, 4, 2, 30],
+        "mesoCost": 50000,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_1462006",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1462006",
+        "materials": [4021008, 4011004, 4003001, 4003000],
+        "quantities": [2, 6, 30, 30],
+        "mesoCost": 80000,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_1462007",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1462007",
+        "materials": [4021008, 4011006, 4021006, 4003001, 4003000],
+        "quantities": [2, 5, 3, 40, 40],
+        "mesoCost": 200000,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "gloveMenu",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Okay, so which glove do you want me to make?",
+        "choices": [
+          {
+            "text": "#t1082012# - Bowman Lv. 15",
+            "nextState": "craft_1082012"
+          },
+          {
+            "text": "#t1082013# - Bowman Lv. 20",
+            "nextState": "craft_1082013"
+          },
+          {
+            "text": "#t1082016# - Bowman Lv. 25",
+            "nextState": "craft_1082016"
+          },
+          {
+            "text": "#t1082048# - Bowman Lv. 30",
+            "nextState": "craft_1082048"
+          },
+          {
+            "text": "#t1082068# - Bowman Lv. 35",
+            "nextState": "craft_1082068"
+          },
+          {
+            "text": "#t1082071# - Bowman Lv. 40",
+            "nextState": "craft_1082071"
+          },
+          {
+            "text": "#t1082084# - Bowman Lv. 50",
+            "nextState": "craft_1082084"
+          },
+          {
+            "text": "#t1082089# - Bowman Lv. 60",
+            "nextState": "craft_1082089"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "craft_1082012",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1082012",
+        "materials": [4000021, 4000009],
+        "quantities": [15, 20],
+        "mesoCost": 5000,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_1082013",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1082013",
+        "materials": [4000021, 4000009, 4011001],
+        "quantities": [20, 20, 2],
+        "mesoCost": 10000,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_1082016",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1082016",
+        "materials": [4000021, 4000009, 4011006],
+        "quantities": [40, 50, 2],
+        "mesoCost": 15000,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_1082048",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1082048",
+        "materials": [4000021, 4011006, 4021001],
+        "quantities": [50, 2, 1],
+        "mesoCost": 20000,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_1082068",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1082068",
+        "materials": [4011000, 4011001, 4000021, 4003000],
+        "quantities": [1, 3, 60, 15],
+        "mesoCost": 30000,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_1082071",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1082071",
+        "materials": [4011001, 4021000, 4021002, 4000021, 4003000],
+        "quantities": [3, 1, 3, 80, 25],
+        "mesoCost": 40000,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_1082084",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1082084",
+        "materials": [4011004, 4011006, 4021002, 4000030, 4003000],
+        "quantities": [3, 1, 2, 40, 35],
+        "mesoCost": 50000,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_1082089",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1082089",
+        "materials": [4011006, 4011007, 4021006, 4000030, 4003000],
+        "quantities": [2, 1, 8, 50, 50],
+        "mesoCost": 70000,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "gloveUpgradeMenu",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Upgrade a glove? That shouldn't be too difficult. Which did you have in mind?",
+        "choices": [
+          {
+            "text": "#t1082015# - Bowman Lv. 20",
+            "nextState": "craft_1082015"
+          },
+          {
+            "text": "#t1082014# - Bowman Lv. 20",
+            "nextState": "craft_1082014"
+          },
+          {
+            "text": "#t1082017# - Bowman Lv. 25",
+            "nextState": "craft_1082017"
+          },
+          {
+            "text": "#t1082018# - Bowman Lv. 25",
+            "nextState": "craft_1082018"
+          },
+          {
+            "text": "#t1082049# - Bowman Lv. 30",
+            "nextState": "craft_1082049"
+          },
+          {
+            "text": "#t1082050# - Bowman Lv. 30",
+            "nextState": "craft_1082050"
+          },
+          {
+            "text": "#t1082069# - Bowman Lv. 35",
+            "nextState": "craft_1082069"
+          },
+          {
+            "text": "#t1082070# - Bowman Lv. 35",
+            "nextState": "craft_1082070"
+          },
+          {
+            "text": "#t1082072# - Bowman Lv. 40",
+            "nextState": "craft_1082072"
+          },
+          {
+            "text": "#t1082073# - Bowman Lv. 40",
+            "nextState": "craft_1082073"
+          },
+          {
+            "text": "#t1082085# - Bowman Lv. 50",
+            "nextState": "craft_1082085"
+          },
+          {
+            "text": "#t1082083# - Bowman Lv. 50",
+            "nextState": "craft_1082083"
+          },
+          {
+            "text": "#t1082090# - Bowman Lv. 60",
+            "nextState": "craft_1082090"
+          },
+          {
+            "text": "#t1082091# - Bowman Lv. 60",
+            "nextState": "craft_1082091"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "craft_1082015",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1082015",
+        "materials": [1082013, 4021003],
+        "quantities": [1, 2],
+        "mesoCost": 7000,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_1082014",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1082014",
+        "materials": [1082013, 4021000],
+        "quantities": [1, 1],
+        "mesoCost": 7000,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_1082017",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1082017",
+        "materials": [1082016, 4021000],
+        "quantities": [1, 3],
+        "mesoCost": 10000,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_1082018",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1082018",
+        "materials": [1082016, 4021008],
+        "quantities": [1, 1],
+        "mesoCost": 12000,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_1082049",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1082049",
+        "materials": [1082048, 4021003],
+        "quantities": [1, 3],
+        "mesoCost": 15000,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_1082050",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1082050",
+        "materials": [1082048, 4021008],
+        "quantities": [1, 1],
+        "mesoCost": 20000,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_1082069",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1082069",
+        "materials": [1082068, 4011002],
+        "quantities": [1, 4],
+        "mesoCost": 22000,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_1082070",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1082070",
+        "materials": [1082068, 4011006],
+        "quantities": [1, 2],
+        "mesoCost": 25000,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_1082072",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1082072",
+        "materials": [1082071, 4011006],
+        "quantities": [1, 4],
+        "mesoCost": 30000,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_1082073",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1082073",
+        "materials": [1082071, 4021008],
+        "quantities": [1, 2],
+        "mesoCost": 40000,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_1082085",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1082085",
+        "materials": [1082084, 4011000, 4021000],
+        "quantities": [1, 1, 5],
+        "mesoCost": 55000,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_1082083",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1082083",
+        "materials": [1082084, 4011006, 4021008],
+        "quantities": [1, 2, 2],
+        "mesoCost": 60000,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_1082090",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1082090",
+        "materials": [1082089, 4021000, 4021007],
+        "quantities": [1, 5, 1],
+        "mesoCost": 70000,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_1082091",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1082091",
+        "materials": [1082089, 4021007, 4021008],
+        "quantities": [1, 2, 2],
+        "mesoCost": 80000,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "materialMenu",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Materials? I know of a few materials that I can make for you...",
+        "choices": [
+          {
+            "text": "Make Processed Wood with Tree Branch",
+            "nextState": "askQuantity_4003001_branch"
+          },
+          {
+            "text": "Make Processed Wood with Firewood",
+            "nextState": "askQuantity_4003001_firewood"
+          },
+          {
+            "text": "Make Screws (packs of 15)",
+            "nextState": "askQuantity_4003000_screws"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "askQuantity_4003001_branch",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "So, you want me to make some #t4003001#s? In that case, how many do you want me to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "confirm_4003001_branch"
+      }
+    },
+    {
+      "id": "confirm_4003001_branch",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make {context.quantity} #t4003001#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "craft_4003001_branch"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "craft_4003001_branch",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "{context.quantity}",
+                "referenceId": "4003001"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "10 * {context.quantity}",
+                "referenceId": "4000003"
+              }
+            ],
+            "nextState": "executeCraft_4003001_branch"
+          },
+          {
+            "conditions": [],
+            "nextState": "missingMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "executeCraft_4003001_branch",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4000003",
+              "quantity": "10 * {context.quantity}"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4003001",
+              "quantity": "{context.quantity}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "craftSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "askQuantity_4003001_firewood",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "So, you want me to make some #t4003001#s? In that case, how many do you want me to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "confirm_4003001_firewood"
+      }
+    },
+    {
+      "id": "confirm_4003001_firewood",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make {context.quantity} #t4003001#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "craft_4003001_firewood"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "craft_4003001_firewood",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "{context.quantity}",
+                "referenceId": "4003001"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "5 * {context.quantity}",
+                "referenceId": "4000018"
+              }
+            ],
+            "nextState": "executeCraft_4003001_firewood"
+          },
+          {
+            "conditions": [],
+            "nextState": "missingMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "executeCraft_4003001_firewood",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4000018",
+              "quantity": "5 * {context.quantity}"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4003001",
+              "quantity": "{context.quantity}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "craftSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "askQuantity_4003000_screws",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "So, you want me to make some #t4003000#s? In that case, how many packs do you want me to make?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "confirm_4003000_screws"
+      }
+    },
+    {
+      "id": "confirm_4003000_screws",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make {context.quantity} packs of #t4003000#s (15 screws each)? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "craft_4003000_screws"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "craft_4003000_screws",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "{context.quantity}",
+                "referenceId": "4003000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1 * {context.quantity}",
+                "referenceId": "4011000"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1 * {context.quantity}",
+                "referenceId": "4011001"
+              }
+            ],
+            "nextState": "executeCraft_4003000_screws"
+          },
+          {
+            "conditions": [],
+            "nextState": "missingMaterials"
+          }
+        ]
+      }
+    },
+    {
+      "id": "executeCraft_4003000_screws",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011000",
+              "quantity": "1 * {context.quantity}"
+            }
+          },
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4011001",
+              "quantity": "1 * {context.quantity}"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4003000",
+              "quantity": "15 * {context.quantity}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "craftSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "arrowMenu",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Arrows? Not a problem at all.",
+        "choices": [
+          {
+            "text": "#t2060000#",
+            "nextState": "craft_2060000"
+          },
+          {
+            "text": "#t2061000#",
+            "nextState": "craft_2061000"
+          },
+          {
+            "text": "#t2060001#",
+            "nextState": "craft_2060001"
+          },
+          {
+            "text": "#t2061001#",
+            "nextState": "craft_2061001"
+          },
+          {
+            "text": "#t2060002#",
+            "nextState": "craft_2060002"
+          },
+          {
+            "text": "#t2061002#",
+            "nextState": "craft_2061002"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "craft_2060000",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "2060000",
+        "materials": [4003001, 4003004],
+        "quantities": [1, 1],
+        "mesoCost": 0,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_2061000",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "2061000",
+        "materials": [4003001, 4003004],
+        "quantities": [1, 1],
+        "mesoCost": 0,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_2060001",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "2060001",
+        "materials": [4011000, 4003001, 4003004],
+        "quantities": [1, 3, 10],
+        "mesoCost": 0,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_2061001",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "2061001",
+        "materials": [4011000, 4003001, 4003004],
+        "quantities": [1, 3, 10],
+        "mesoCost": 0,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_2060002",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "2060002",
+        "materials": [4011001, 4003001, 4003005],
+        "quantities": [1, 5, 15],
+        "mesoCost": 0,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craft_2061002",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "2061002",
+        "materials": [4011001, 4003001, 4003005],
+        "quantities": [1, 5, 15],
+        "mesoCost": 0,
+        "successState": "craftSuccess",
+        "failureState": "craftFailure",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craftSuccess",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "A perfect item, as usual. Come and see me if you need anything else.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "craftFailure",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Sorry, but this is how I make my living. No meso, no item.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "missingMaterials",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Surely you, of all people, would understand the value of having quality items? I can't do that without the items I require.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

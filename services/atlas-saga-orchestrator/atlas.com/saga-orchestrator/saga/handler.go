@@ -1,12 +1,23 @@
 package saga
 
 import (
+	"atlas-saga-orchestrator/buddylist"
+	"atlas-saga-orchestrator/cashshop"
 	"atlas-saga-orchestrator/character"
 	"atlas-saga-orchestrator/compartment"
+	"atlas-saga-orchestrator/consumable"
+	"atlas-saga-orchestrator/data/foothold"
+	"atlas-saga-orchestrator/data/portal"
 	"atlas-saga-orchestrator/guild"
 	"atlas-saga-orchestrator/invite"
 	character2 "atlas-saga-orchestrator/kafka/message/character"
+	storage2 "atlas-saga-orchestrator/kafka/message/storage"
+	"atlas-saga-orchestrator/monster"
+	"atlas-saga-orchestrator/pet"
+	"atlas-saga-orchestrator/quest"
 	"atlas-saga-orchestrator/skill"
+	"atlas-saga-orchestrator/storage"
+	system_message "atlas-saga-orchestrator/system_message"
 	"atlas-saga-orchestrator/validation"
 	"context"
 	"errors"
@@ -24,9 +35,19 @@ type Handler interface {
 	WithValidationProcessor(validation.Processor) Handler
 	WithGuildProcessor(guild.Processor) Handler
 	WithInviteProcessor(invite.Processor) Handler
+	WithBuddyListProcessor(buddylist.Processor) Handler
+	WithPetProcessor(pet.Processor) Handler
+	WithFootholdProcessor(foothold.Processor) Handler
+	WithMonsterProcessor(monster.Processor) Handler
+	WithConsumableProcessor(consumable.Processor) Handler
+	WithPortalProcessor(portal.Processor) Handler
+	WithCashshopProcessor(cashshop.Processor) Handler
+	WithSystemMessageProcessor(system_message.Processor) Handler
+	WithQuestProcessor(quest.Processor) Handler
+	WithStorageProcessor(storage.Processor) Handler
 
 	GetHandler(action Action) (ActionHandler, bool)
-	
+
 	logActionError(s Saga, st Step[any], err error, errorMsg string)
 	handleAwardAsset(s Saga, st Step[any]) error
 	handleAwardInventory(s Saga, st Step[any]) error
@@ -35,10 +56,14 @@ type Handler interface {
 	handleAwardExperience(s Saga, st Step[any]) error
 	handleAwardLevel(s Saga, st Step[any]) error
 	handleAwardMesos(s Saga, st Step[any]) error
+	handleAwardCurrency(s Saga, st Step[any]) error
 	handleDestroyAsset(s Saga, st Step[any]) error
 	handleEquipAsset(s Saga, st Step[any]) error
 	handleUnequipAsset(s Saga, st Step[any]) error
 	handleChangeJob(s Saga, st Step[any]) error
+	handleChangeHair(s Saga, st Step[any]) error
+	handleChangeFace(s Saga, st Step[any]) error
+	handleChangeSkin(s Saga, st Step[any]) error
 	handleCreateSkill(s Saga, st Step[any]) error
 	handleUpdateSkill(s Saga, st Step[any]) error
 	handleValidateCharacterState(s Saga, st Step[any]) error
@@ -49,31 +74,61 @@ type Handler interface {
 	handleCreateInvite(s Saga, st Step[any]) error
 	handleCreateCharacter(s Saga, st Step[any]) error
 	handleCreateAndEquipAsset(s Saga, st Step[any]) error
+	handleIncreaseBuddyCapacity(s Saga, st Step[any]) error
+	handleGainCloseness(s Saga, st Step[any]) error
+	handleSpawnMonster(s Saga, st Step[any]) error
+	handleCompleteQuest(s Saga, st Step[any]) error
+	handleStartQuest(s Saga, st Step[any]) error
+	handleApplyConsumableEffect(s Saga, st Step[any]) error
+	handleSendMessage(s Saga, st Step[any]) error
+	handleDepositToStorage(s Saga, st Step[any]) error
+	handleWithdrawFromStorage(s Saga, st Step[any]) error
+	handleUpdateStorageMesos(s Saga, st Step[any]) error
+	handleShowStorage(s Saga, st Step[any]) error
 }
 
 type HandlerImpl struct {
-	l       logrus.FieldLogger
-	ctx     context.Context
-	t       tenant.Model
-	charP   character.Processor
-	compP   compartment.Processor
-	skillP  skill.Processor
-	validP  validation.Processor
-	guildP  guild.Processor
-	inviteP invite.Processor
+	l           logrus.FieldLogger
+	ctx         context.Context
+	t           tenant.Model
+	charP       character.Processor
+	compP       compartment.Processor
+	skillP      skill.Processor
+	validP      validation.Processor
+	guildP      guild.Processor
+	inviteP     invite.Processor
+	buddyListP  buddylist.Processor
+	petP        pet.Processor
+	footholdP   foothold.Processor
+	monsterP    monster.Processor
+	consumableP    consumable.Processor
+	portalP        portal.Processor
+	cashshopP      cashshop.Processor
+	systemMessageP system_message.Processor
+	questP         quest.Processor
+	storageP       storage.Processor
 }
 
 func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
 	return &HandlerImpl{
-		l:       l,
-		ctx:     ctx,
-		t:       tenant.MustFromContext(ctx),
-		charP:   character.NewProcessor(l, ctx),
-		compP:   compartment.NewProcessor(l, ctx),
-		skillP:  skill.NewProcessor(l, ctx),
-		validP:  validation.NewProcessor(l, ctx),
-		guildP:  guild.NewProcessor(l, ctx),
-		inviteP: invite.NewProcessor(l, ctx),
+		l:           l,
+		ctx:         ctx,
+		t:           tenant.MustFromContext(ctx),
+		charP:       character.NewProcessor(l, ctx),
+		compP:       compartment.NewProcessor(l, ctx),
+		skillP:      skill.NewProcessor(l, ctx),
+		validP:      validation.NewProcessor(l, ctx),
+		guildP:      guild.NewProcessor(l, ctx),
+		inviteP:     invite.NewProcessor(l, ctx),
+		buddyListP:  buddylist.NewProcessor(l, ctx),
+		petP:        pet.NewProcessor(l, ctx),
+		footholdP:   foothold.NewProcessor(l, ctx),
+		monsterP:    monster.NewProcessor(l, ctx),
+		consumableP:    consumable.NewProcessor(l, ctx),
+		cashshopP:      cashshop.NewProcessor(l, ctx),
+		systemMessageP: system_message.NewProcessor(l, ctx),
+		questP:         quest.NewProcessor(l, ctx),
+		storageP:       storage.NewProcessor(l, ctx),
 	}
 }
 
@@ -149,15 +204,221 @@ func (h *HandlerImpl) WithGuildProcessor(guildP guild.Processor) Handler {
 
 func (h *HandlerImpl) WithInviteProcessor(inviteP invite.Processor) Handler {
 	return &HandlerImpl{
-		l:       h.l,
-		ctx:     h.ctx,
-		t:       h.t,
-		charP:   h.charP,
-		compP:   h.compP,
-		skillP:  h.skillP,
-		validP:  h.validP,
-		guildP:  h.guildP,
-		inviteP: inviteP,
+		l:          h.l,
+		ctx:        h.ctx,
+		t:          h.t,
+		charP:      h.charP,
+		compP:      h.compP,
+		skillP:     h.skillP,
+		validP:     h.validP,
+		guildP:     h.guildP,
+		inviteP:    inviteP,
+		buddyListP: h.buddyListP,
+	}
+}
+
+func (h *HandlerImpl) WithBuddyListProcessor(buddyListP buddylist.Processor) Handler {
+	return &HandlerImpl{
+		l:          h.l,
+		ctx:        h.ctx,
+		t:          h.t,
+		charP:      h.charP,
+		compP:      h.compP,
+		skillP:     h.skillP,
+		validP:     h.validP,
+		guildP:     h.guildP,
+		inviteP:    h.inviteP,
+		buddyListP: buddyListP,
+		petP:       h.petP,
+	}
+}
+
+func (h *HandlerImpl) WithPetProcessor(petP pet.Processor) Handler {
+	return &HandlerImpl{
+		l:          h.l,
+		ctx:        h.ctx,
+		t:          h.t,
+		charP:      h.charP,
+		compP:      h.compP,
+		skillP:     h.skillP,
+		validP:     h.validP,
+		guildP:     h.guildP,
+		inviteP:    h.inviteP,
+		buddyListP: h.buddyListP,
+		petP:       petP,
+		footholdP:  h.footholdP,
+		monsterP:   h.monsterP,
+	}
+}
+
+func (h *HandlerImpl) WithFootholdProcessor(footholdP foothold.Processor) Handler {
+	return &HandlerImpl{
+		l:          h.l,
+		ctx:        h.ctx,
+		t:          h.t,
+		charP:      h.charP,
+		compP:      h.compP,
+		skillP:     h.skillP,
+		validP:     h.validP,
+		guildP:     h.guildP,
+		inviteP:    h.inviteP,
+		buddyListP: h.buddyListP,
+		petP:       h.petP,
+		footholdP:  footholdP,
+		monsterP:   h.monsterP,
+	}
+}
+
+func (h *HandlerImpl) WithMonsterProcessor(monsterP monster.Processor) Handler {
+	return &HandlerImpl{
+		l:           h.l,
+		ctx:         h.ctx,
+		t:           h.t,
+		charP:       h.charP,
+		compP:       h.compP,
+		skillP:      h.skillP,
+		validP:      h.validP,
+		guildP:      h.guildP,
+		inviteP:     h.inviteP,
+		buddyListP:  h.buddyListP,
+		petP:        h.petP,
+		footholdP:   h.footholdP,
+		monsterP:    monsterP,
+		consumableP: h.consumableP,
+		portalP:     h.portalP,
+	}
+}
+
+func (h *HandlerImpl) WithConsumableProcessor(consumableP consumable.Processor) Handler {
+	return &HandlerImpl{
+		l:           h.l,
+		ctx:         h.ctx,
+		t:           h.t,
+		charP:       h.charP,
+		compP:       h.compP,
+		skillP:      h.skillP,
+		validP:      h.validP,
+		guildP:      h.guildP,
+		inviteP:     h.inviteP,
+		buddyListP:  h.buddyListP,
+		petP:        h.petP,
+		footholdP:   h.footholdP,
+		monsterP:    h.monsterP,
+		consumableP: consumableP,
+		portalP:     h.portalP,
+	}
+}
+
+func (h *HandlerImpl) WithPortalProcessor(portalP portal.Processor) Handler {
+	return &HandlerImpl{
+		l:           h.l,
+		ctx:         h.ctx,
+		t:           h.t,
+		charP:       h.charP,
+		compP:       h.compP,
+		skillP:      h.skillP,
+		validP:      h.validP,
+		guildP:      h.guildP,
+		inviteP:     h.inviteP,
+		buddyListP:  h.buddyListP,
+		petP:        h.petP,
+		footholdP:   h.footholdP,
+		monsterP:    h.monsterP,
+		consumableP: h.consumableP,
+		portalP:     portalP,
+		cashshopP:   h.cashshopP,
+	}
+}
+
+func (h *HandlerImpl) WithCashshopProcessor(cashshopP cashshop.Processor) Handler {
+	return &HandlerImpl{
+		l:              h.l,
+		ctx:            h.ctx,
+		t:              h.t,
+		charP:          h.charP,
+		compP:          h.compP,
+		skillP:         h.skillP,
+		validP:         h.validP,
+		guildP:         h.guildP,
+		inviteP:        h.inviteP,
+		buddyListP:     h.buddyListP,
+		petP:           h.petP,
+		footholdP:      h.footholdP,
+		monsterP:       h.monsterP,
+		consumableP:    h.consumableP,
+		portalP:        h.portalP,
+		cashshopP:      cashshopP,
+		systemMessageP: h.systemMessageP,
+	}
+}
+
+func (h *HandlerImpl) WithSystemMessageProcessor(systemMessageP system_message.Processor) Handler {
+	return &HandlerImpl{
+		l:              h.l,
+		ctx:            h.ctx,
+		t:              h.t,
+		charP:          h.charP,
+		compP:          h.compP,
+		skillP:         h.skillP,
+		validP:         h.validP,
+		guildP:         h.guildP,
+		inviteP:        h.inviteP,
+		buddyListP:     h.buddyListP,
+		petP:           h.petP,
+		footholdP:      h.footholdP,
+		monsterP:       h.monsterP,
+		consumableP:    h.consumableP,
+		portalP:        h.portalP,
+		cashshopP:      h.cashshopP,
+		systemMessageP: systemMessageP,
+	}
+}
+
+func (h *HandlerImpl) WithQuestProcessor(questP quest.Processor) Handler {
+	return &HandlerImpl{
+		l:              h.l,
+		ctx:            h.ctx,
+		t:              h.t,
+		charP:          h.charP,
+		compP:          h.compP,
+		skillP:         h.skillP,
+		validP:         h.validP,
+		guildP:         h.guildP,
+		inviteP:        h.inviteP,
+		buddyListP:     h.buddyListP,
+		petP:           h.petP,
+		footholdP:      h.footholdP,
+		monsterP:       h.monsterP,
+		consumableP:    h.consumableP,
+		portalP:        h.portalP,
+		cashshopP:      h.cashshopP,
+		systemMessageP: h.systemMessageP,
+		questP:         questP,
+		storageP:       h.storageP,
+	}
+}
+
+func (h *HandlerImpl) WithStorageProcessor(storageP storage.Processor) Handler {
+	return &HandlerImpl{
+		l:              h.l,
+		ctx:            h.ctx,
+		t:              h.t,
+		charP:          h.charP,
+		compP:          h.compP,
+		skillP:         h.skillP,
+		validP:         h.validP,
+		guildP:         h.guildP,
+		inviteP:        h.inviteP,
+		buddyListP:     h.buddyListP,
+		petP:           h.petP,
+		footholdP:      h.footholdP,
+		monsterP:       h.monsterP,
+		consumableP:    h.consumableP,
+		portalP:        h.portalP,
+		cashshopP:      h.cashshopP,
+		systemMessageP: h.systemMessageP,
+		questP:         h.questP,
+		storageP:       storageP,
 	}
 }
 
@@ -180,6 +441,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleAwardLevel, true
 	case AwardMesos:
 		return h.handleAwardMesos, true
+	case AwardCurrency:
+		return h.handleAwardCurrency, true
 	case DestroyAsset:
 		return h.handleDestroyAsset, true
 	case EquipAsset:
@@ -188,6 +451,12 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleUnequipAsset, true
 	case ChangeJob:
 		return h.handleChangeJob, true
+	case ChangeHair:
+		return h.handleChangeHair, true
+	case ChangeFace:
+		return h.handleChangeFace, true
+	case ChangeSkin:
+		return h.handleChangeSkin, true
 	case CreateSkill:
 		return h.handleCreateSkill, true
 	case UpdateSkill:
@@ -208,7 +477,28 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleCreateCharacter, true
 	case CreateAndEquipAsset:
 		return h.handleCreateAndEquipAsset, true
-
+	case IncreaseBuddyCapacity:
+		return h.handleIncreaseBuddyCapacity, true
+	case GainCloseness:
+		return h.handleGainCloseness, true
+	case SpawnMonster:
+		return h.handleSpawnMonster, true
+	case CompleteQuest:
+		return h.handleCompleteQuest, true
+	case StartQuest:
+		return h.handleStartQuest, true
+	case ApplyConsumableEffect:
+		return h.handleApplyConsumableEffect, true
+	case SendMessage:
+		return h.handleSendMessage, true
+	case DepositToStorage:
+		return h.handleDepositToStorage, true
+	case WithdrawFromStorage:
+		return h.handleWithdrawFromStorage, true
+	case UpdateStorageMesos:
+		return h.handleUpdateStorageMesos, true
+	case ShowStorage:
+		return h.handleShowStorage, true
 	}
 	return nil, false
 }
@@ -280,7 +570,15 @@ func (h *HandlerImpl) handleWarpToPortal(s Saga, st Step[any]) error {
 		return errors.New("invalid field id")
 	}
 
-	err := h.charP.WarpToPortalAndEmit(s.TransactionId, payload.CharacterId, f, model.FixedProvider(payload.PortalId))
+	// Determine portal provider: use name-based lookup if PortalName is provided, otherwise use PortalId
+	var portalProvider model.Provider[uint32]
+	if payload.PortalName != "" && h.portalP != nil {
+		portalProvider = h.portalP.ByNameIdProvider(f.MapId(), payload.PortalName)
+	} else {
+		portalProvider = model.FixedProvider(payload.PortalId)
+	}
+
+	err := h.charP.WarpToPortalAndEmit(s.TransactionId, payload.CharacterId, f, portalProvider)
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to warp to specific portal.")
@@ -342,6 +640,23 @@ func (h *HandlerImpl) handleAwardMesos(s Saga, st Step[any]) error {
 	return nil
 }
 
+// handleAwardCurrency handles the AwardCurrency action for cash shop currency
+func (h *HandlerImpl) handleAwardCurrency(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(AwardCurrencyPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.cashshopP.AwardCurrencyAndEmit(s.TransactionId, payload.AccountId, payload.CurrencyType, payload.Amount)
+
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to award currency.")
+		return err
+	}
+
+	return nil
+}
+
 // handleDestroyAsset handles the DestroyAsset action
 func (h *HandlerImpl) handleDestroyAsset(s Saga, st Step[any]) error {
 	payload, ok := st.Payload.(DestroyAssetPayload)
@@ -349,7 +664,7 @@ func (h *HandlerImpl) handleDestroyAsset(s Saga, st Step[any]) error {
 		return errors.New("invalid payload")
 	}
 
-	err := h.compP.RequestDestroyItem(s.TransactionId, payload.CharacterId, payload.TemplateId, payload.Quantity)
+	err := h.compP.RequestDestroyItem(s.TransactionId, payload.CharacterId, payload.TemplateId, payload.Quantity, payload.RemoveAll)
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to destroy asset.")
@@ -410,6 +725,57 @@ func (h *HandlerImpl) handleChangeJob(s Saga, st Step[any]) error {
 	return nil
 }
 
+// handleChangeHair handles the ChangeHair action
+func (h *HandlerImpl) handleChangeHair(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(ChangeHairPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.charP.ChangeHairAndEmit(s.TransactionId, payload.WorldId, payload.CharacterId, payload.ChannelId, payload.StyleId)
+
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to change hair.")
+		return err
+	}
+
+	return nil
+}
+
+// handleChangeFace handles the ChangeFace action
+func (h *HandlerImpl) handleChangeFace(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(ChangeFacePayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.charP.ChangeFaceAndEmit(s.TransactionId, payload.WorldId, payload.CharacterId, payload.ChannelId, payload.StyleId)
+
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to change face.")
+		return err
+	}
+
+	return nil
+}
+
+// handleChangeSkin handles the ChangeSkin action
+func (h *HandlerImpl) handleChangeSkin(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(ChangeSkinPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.charP.ChangeSkinAndEmit(s.TransactionId, payload.WorldId, payload.CharacterId, payload.ChannelId, payload.StyleId)
+
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to change skin.")
+		return err
+	}
+
+	return nil
+}
+
 // handleCreateSkill handles the CreateSkill action
 func (h *HandlerImpl) handleCreateSkill(s Saga, st Step[any]) error {
 	payload, ok := st.Payload.(CreateSkillPayload)
@@ -438,6 +804,38 @@ func (h *HandlerImpl) handleUpdateSkill(s Saga, st Step[any]) error {
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to update skill.")
+		return err
+	}
+
+	return nil
+}
+
+func (h *HandlerImpl) handleIncreaseBuddyCapacity(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(IncreaseBuddyCapacityPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.buddyListP.IncreaseCapacityAndEmit(s.TransactionId, payload.CharacterId, payload.WorldId, payload.Amount)
+
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to increase buddy capacity.")
+		return err
+	}
+
+	return nil
+}
+
+func (h *HandlerImpl) handleGainCloseness(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(GainClosenessPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.petP.GainClosenessAndEmit(s.TransactionId, payload.PetId, payload.Amount)
+
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to gain pet closeness.")
 		return err
 	}
 
@@ -621,6 +1019,181 @@ func (h *HandlerImpl) handleCreateAndEquipAsset(s Saga, st Step[any]) error {
 	// Note: Step 2 (dynamic equip_asset step creation) will be handled by the compartment consumer
 	// when it receives the StatusEventTypeCreated event from the compartment service.
 	// The consumer will detect this is a CreateAndEquipAsset step and add the equip_asset step.
+
+	return nil
+}
+
+// handleSpawnMonster handles the SpawnMonster action
+func (h *HandlerImpl) handleSpawnMonster(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(SpawnMonsterPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	// Look up foothold from atlas-data
+	fh, err := h.footholdP.GetFootholdBelow(payload.MapId, payload.X, payload.Y)
+	if err != nil {
+		h.l.WithError(err).Warnf("Failed to get foothold for map %d at (%d, %d), using fh=0", payload.MapId, payload.X, payload.Y)
+		fh = 0
+	}
+
+	// Determine spawn count (default to 1 if not specified)
+	count := payload.Count
+	if count <= 0 {
+		count = 1
+	}
+
+	// Spawn monsters
+	for i := 0; i < count; i++ {
+		err := h.monsterP.SpawnMonster(payload.WorldId, payload.ChannelId, payload.MapId, payload.MonsterId, payload.X, payload.Y, int16(fh), payload.Team)
+		if err != nil {
+			h.logActionError(s, st, err, fmt.Sprintf("Failed to spawn monster %d/%d", i+1, count))
+			return err
+		}
+	}
+
+	h.l.Debugf("Successfully spawned %d monsters (id=%d) at (%d, %d, fh=%d) in world %d, channel %d, map %d",
+		count, payload.MonsterId, payload.X, payload.Y, fh, payload.WorldId, payload.ChannelId, payload.MapId)
+
+	return nil
+}
+
+// handleCompleteQuest handles the CompleteQuest action
+func (h *HandlerImpl) handleCompleteQuest(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(CompleteQuestPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	// Selection is not currently used in NPC conversations, default to 0
+	err := h.questP.RequestCompleteQuest(byte(payload.WorldId), payload.CharacterId, payload.QuestId, payload.NpcId, 0, payload.Force)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to complete quest.")
+		return err
+	}
+
+	return nil
+}
+
+// handleStartQuest handles the StartQuest action
+// Note: This is currently a stub as no quest service exists yet
+func (h *HandlerImpl) handleStartQuest(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(StartQuestPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	// TODO: Implement actual quest start when quest service is available
+	h.l.Debugf("Quest start stub: quest %d started for character %d via NPC %d",
+		payload.QuestId, payload.CharacterId, payload.NpcId)
+
+	return nil
+}
+
+// handleApplyConsumableEffect handles the ApplyConsumableEffect action
+// This applies consumable item effects to a character without consuming from inventory
+func (h *HandlerImpl) handleApplyConsumableEffect(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(ApplyConsumableEffectPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.consumableP.ApplyConsumableEffect(s.TransactionId, byte(payload.WorldId), byte(payload.ChannelId), payload.CharacterId, payload.ItemId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to apply consumable effect.")
+		return err
+	}
+
+	return nil
+}
+
+// handleSendMessage handles the SendMessage action
+// This sends a system message to a character (e.g., "You have acquired a Dragon Egg.")
+func (h *HandlerImpl) handleSendMessage(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(SendMessagePayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.systemMessageP.SendMessage(s.TransactionId, byte(payload.WorldId), byte(payload.ChannelId), payload.CharacterId, payload.MessageType, payload.Message)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to send message.")
+		return err
+	}
+
+	return nil
+}
+
+// handleDepositToStorage handles the DepositToStorage action
+// This deposits an item into account storage
+func (h *HandlerImpl) handleDepositToStorage(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(DepositToStoragePayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	refData := storage2.ReferenceData{
+		Quantity: payload.Quantity,
+		OwnerId:  payload.OwnerId,
+		Flag:     payload.Flag,
+	}
+
+	err := h.storageP.DepositAndEmit(s.TransactionId, payload.WorldId, payload.AccountId, payload.Slot, payload.TemplateId, payload.Expiration, payload.ReferenceId, payload.ReferenceType, refData)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to deposit to storage.")
+		return err
+	}
+
+	return nil
+}
+
+// handleWithdrawFromStorage handles the WithdrawFromStorage action
+// This withdraws an item from account storage
+func (h *HandlerImpl) handleWithdrawFromStorage(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(WithdrawFromStoragePayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.storageP.WithdrawAndEmit(s.TransactionId, payload.WorldId, payload.AccountId, payload.AssetId, payload.Quantity)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to withdraw from storage.")
+		return err
+	}
+
+	return nil
+}
+
+// handleUpdateStorageMesos handles the UpdateStorageMesos action
+// This updates the mesos in account storage
+func (h *HandlerImpl) handleUpdateStorageMesos(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(UpdateStorageMesosPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.storageP.UpdateMesosAndEmit(s.TransactionId, payload.WorldId, payload.AccountId, payload.Mesos, payload.Operation)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to update storage mesos.")
+		return err
+	}
+
+	return nil
+}
+
+// handleShowStorage handles the ShowStorage action
+// This sends a command to the channel service to display the storage UI to the character
+func (h *HandlerImpl) handleShowStorage(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(ShowStoragePayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.storageP.ShowStorageAndEmit(s.TransactionId, byte(payload.WorldId), byte(payload.ChannelId), payload.CharacterId, payload.NpcId, payload.AccountId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to show storage.")
+		return err
+	}
 
 	return nil
 }

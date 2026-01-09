@@ -1,0 +1,115 @@
+{
+  "npcId": 1052008,
+  "startState": "checkQuest",
+  "states": [
+    {
+      "id": "checkQuest",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "=",
+                "value": "2",
+                "referenceId": "2055"
+              }
+            ],
+            "nextState": "awardQuestItem"
+          },
+          {
+            "conditions": [],
+            "nextState": "selectRandomOre"
+          }
+        ]
+      }
+    },
+    {
+      "id": "awardQuestItem",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4031039",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "warpToSubway"
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectRandomOre",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:select_random_weighted",
+            "params": {
+              "items": "4020000,4020001,4020002,4020003,4020004",
+              "weights": "1,1,1,1,1",
+              "outputContextKey": "selectedOre"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "awardRandomOre"
+          }
+        ]
+      }
+    },
+    {
+      "id": "awardRandomOre",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "{context.selectedOre}",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "warpToSubway"
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToSubway",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "103000100",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -13,6 +13,9 @@ const (
 	CommandCreateCharacter     = "CREATE_CHARACTER"
 	CommandChangeMap           = "CHANGE_MAP"
 	CommandChangeJob           = "CHANGE_JOB"
+	CommandChangeHair          = "CHANGE_HAIR"
+	CommandChangeFace          = "CHANGE_FACE"
+	CommandChangeSkin          = "CHANGE_SKIN"
 	CommandAwardExperience     = "AWARD_EXPERIENCE"
 	CommandAwardLevel          = "AWARD_LEVEL"
 	CommandRequestChangeMeso   = "REQUEST_CHANGE_MESO"
@@ -58,6 +61,21 @@ type ChangeMapBody struct {
 type ChangeJobCommandBody struct {
 	ChannelId channel.Id `json:"channelId"`
 	JobId     job.Id     `json:"jobId"`
+}
+
+type ChangeHairCommandBody struct {
+	ChannelId channel.Id `json:"channelId"`
+	StyleId   uint32     `json:"styleId"`
+}
+
+type ChangeFaceCommandBody struct {
+	ChannelId channel.Id `json:"channelId"`
+	StyleId   uint32     `json:"styleId"`
+}
+
+type ChangeSkinCommandBody struct {
+	ChannelId channel.Id `json:"channelId"`
+	StyleId   byte       `json:"styleId"`
 }
 
 type AwardExperienceCommandBody struct {

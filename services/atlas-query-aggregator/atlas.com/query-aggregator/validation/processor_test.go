@@ -2,6 +2,7 @@ package validation
 
 import (
 	"atlas-query-aggregator/asset"
+	"atlas-query-aggregator/buddy"
 	"atlas-query-aggregator/character"
 	"atlas-query-aggregator/character/mock"
 	"atlas-query-aggregator/compartment"
@@ -707,6 +708,20 @@ func TestValidateWithContextMockingExternalServices(t *testing.T) {
 							Build(), nil
 					}
 				},
+				func(characterId uint32) model.Provider[buddy.Model] {
+					return func() (buddy.Model, error) {
+						// Return empty buddy model for tests
+						return buddy.Model{}, nil
+					}
+				},
+				func(characterId uint32) model.Provider[int] {
+					return func() (int, error) {
+						// Return 0 pet count for tests
+						return 0, nil
+					}
+				},
+			logger,
+			context.Background(),
 			)
 
 			// Get validation context

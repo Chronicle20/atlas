@@ -1,0 +1,187 @@
+{
+  "npcId": 1063001,
+  "startState": "checkQuestAndItem",
+  "states": [
+    {
+      "id": "checkQuestAndItem",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "=",
+                "value": "2",
+                "referenceId": "2053"
+              },
+              {
+                "type": "item",
+                "operator": "<",
+                "value": "20",
+                "referenceId": "4031026"
+              }
+            ],
+            "nextState": "checkInventorySpaceQuest"
+          },
+          {
+            "conditions": [],
+            "nextState": "checkInventorySpaceRepeatable"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkInventorySpaceQuest",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "20",
+                "referenceId": "4031026"
+              }
+            ],
+            "nextState": "awardQuestItem"
+          },
+          {
+            "conditions": [],
+            "nextState": "noInventorySpace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkInventorySpaceRepeatable",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "4",
+                "referenceId": "4020000"
+              }
+            ],
+            "nextState": "selectRandomItem"
+          },
+          {
+            "conditions": [],
+            "nextState": "noInventorySpace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "noInventorySpace",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Check for a available slot on your ETC inventory.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "awardQuestItem",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4031026",
+              "quantity": "20"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "warpToSleepywood"
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectRandomItem",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:select_random_weighted",
+            "params": {
+              "items": "4020000,4020002,4020006",
+              "weights": "1,1,1",
+              "outputContextKey": "selectedItemId"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "awardRandomItem"
+          }
+        ]
+      }
+    },
+    {
+      "id": "awardRandomItem",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "{context.selectedItemId}",
+              "quantity": "4"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "warpToSleepywood"
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToSleepywood",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "105040300",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

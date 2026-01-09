@@ -2,143 +2,31 @@ package conversation
 
 import (
 	"errors"
+	"strconv"
+
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/google/uuid"
-	"time"
 )
 
-// Model represents a conversation tree for an NPC
-type Model struct {
-	id         uuid.UUID
-	npcId      uint32
-	startState string
-	states     []StateModel
-	createdAt  time.Time
-	updatedAt  time.Time
+// StateContainer is an interface for state machine containers
+// Both NPC conversations (npc.Model) and quest state machines (quest.StateMachine) implement this
+type StateContainer interface {
+	StartState() string
+	FindState(stateId string) (StateModel, error)
 }
 
-// GetId returns the conversation ID
-func (m Model) Id() uuid.UUID {
-	return m.id
+// NpcConversation extends StateContainer with NPC-specific fields
+// This is implemented by npc.Model
+type NpcConversation interface {
+	StateContainer
+	NpcId() uint32
+	States() []StateModel
 }
 
-// GetNpcId returns the NPC ID
-func (m Model) NpcId() uint32 {
-	return m.npcId
-}
-
-// GetStartState returns the starting state ID
-func (m Model) StartState() string {
-	return m.startState
-}
-
-// GetStates returns the conversation states
-func (m Model) States() []StateModel {
-	return m.states
-}
-
-// GetCreatedAt returns the creation timestamp
-func (m Model) CreatedAt() time.Time {
-	return m.createdAt
-}
-
-// GetUpdatedAt returns the last update timestamp
-func (m Model) UpdatedAt() time.Time {
-	return m.updatedAt
-}
-
-// FindState finds a state by ID
-func (m Model) FindState(stateId string) (StateModel, error) {
-	for _, state := range m.states {
-		if state.Id() == stateId {
-			return state, nil
-		}
-	}
-	return StateModel{}, errors.New("state not found")
-}
-
-// Builder is a builder for Model
-type Builder struct {
-	id         uuid.UUID
-	npcId      uint32
-	startState string
-	states     []StateModel
-	createdAt  time.Time
-	updatedAt  time.Time
-}
-
-// NewBuilder creates a new Builder
-func NewBuilder() *Builder {
-	return &Builder{
-		id:        uuid.Nil,
-		states:    make([]StateModel, 0),
-		createdAt: time.Now(),
-		updatedAt: time.Now(),
-	}
-}
-
-// SetId sets the conversation ID
-func (b *Builder) SetId(id uuid.UUID) *Builder {
-	b.id = id
-	return b
-}
-
-// SetNpcId sets the NPC ID
-func (b *Builder) SetNpcId(npcId uint32) *Builder {
-	b.npcId = npcId
-	return b
-}
-
-// SetStartState sets the starting state ID
-func (b *Builder) SetStartState(startState string) *Builder {
-	b.startState = startState
-	return b
-}
-
-// SetStates sets the conversation states
-func (b *Builder) SetStates(states []StateModel) *Builder {
-	b.states = states
-	return b
-}
-
-// AddState adds a conversation state
-func (b *Builder) AddState(state StateModel) *Builder {
-	b.states = append(b.states, state)
-	return b
-}
-
-// SetCreatedAt sets the creation timestamp
-func (b *Builder) SetCreatedAt(createdAt time.Time) *Builder {
-	b.createdAt = createdAt
-	return b
-}
-
-// SetUpdatedAt sets the last update timestamp
-func (b *Builder) SetUpdatedAt(updatedAt time.Time) *Builder {
-	b.updatedAt = updatedAt
-	return b
-}
-
-// Build builds the Model
-func (b *Builder) Build() (Model, error) {
-	if b.npcId == 0 {
-		return Model{}, errors.New("npcId is required")
-	}
-	if b.startState == "" {
-		return Model{}, errors.New("startState is required")
-	}
-	if len(b.states) == 0 {
-		return Model{}, errors.New("at least one state is required")
-	}
-
-	return Model{
-		id:         b.id,
-		npcId:      b.npcId,
-		startState: b.startState,
-		states:     b.states,
-		createdAt:  b.createdAt,
-		updatedAt:  b.updatedAt,
-	}, nil
+// NpcConversationProvider is an interface for NPC conversation data access
+// This is implemented by npc.Processor to break the import cycle
+type NpcConversationProvider interface {
+	ByNpcIdProvider(npcId uint32) func() (NpcConversation, error)
 }
 
 // StateType represents the type of a conversation state
@@ -149,6 +37,8 @@ const (
 	GenericActionType StateType = "genericAction"
 	CraftActionType   StateType = "craftAction"
 	ListSelectionType StateType = "listSelection"
+	AskNumberType     StateType = "askNumber"
+	AskStyleType      StateType = "askStyle"
 )
 
 // StateModel represents a state in a conversation
@@ -159,6 +49,8 @@ type StateModel struct {
 	genericAction *GenericActionModel
 	craftAction   *CraftActionModel
 	listSelection *ListSelectionModel
+	askNumber     *AskNumberModel
+	askStyle      *AskStyleModel
 }
 
 // Id returns the state ID
@@ -191,6 +83,16 @@ func (s StateModel) ListSelection() *ListSelectionModel {
 	return s.listSelection
 }
 
+// AskNumber returns the ask number model (if type is askNumber)
+func (s StateModel) AskNumber() *AskNumberModel {
+	return s.askNumber
+}
+
+// AskStyle returns the ask style model (if type is askStyle)
+func (s StateModel) AskStyle() *AskStyleModel {
+	return s.askStyle
+}
+
 // StateBuilder is a builder for StateModel
 type StateBuilder struct {
 	id            string
@@ -199,6 +101,8 @@ type StateBuilder struct {
 	genericAction *GenericActionModel
 	craftAction   *CraftActionModel
 	listSelection *ListSelectionModel
+	askNumber     *AskNumberModel
+	askStyle      *AskStyleModel
 }
 
 // NewStateBuilder creates a new StateBuilder
@@ -219,6 +123,8 @@ func (b *StateBuilder) SetDialogue(dialogue *DialogueModel) *StateBuilder {
 	b.genericAction = nil
 	b.craftAction = nil
 	b.listSelection = nil
+	b.askNumber = nil
+	b.askStyle = nil
 	return b
 }
 
@@ -229,6 +135,8 @@ func (b *StateBuilder) SetGenericAction(genericAction *GenericActionModel) *Stat
 	b.genericAction = genericAction
 	b.craftAction = nil
 	b.listSelection = nil
+	b.askNumber = nil
+	b.askStyle = nil
 	return b
 }
 
@@ -239,6 +147,8 @@ func (b *StateBuilder) SetCraftAction(craftAction *CraftActionModel) *StateBuild
 	b.genericAction = nil
 	b.craftAction = craftAction
 	b.listSelection = nil
+	b.askNumber = nil
+	b.askStyle = nil
 	return b
 }
 
@@ -249,6 +159,32 @@ func (b *StateBuilder) SetListSelection(listSelection *ListSelectionModel) *Stat
 	b.genericAction = nil
 	b.craftAction = nil
 	b.listSelection = listSelection
+	b.askNumber = nil
+	b.askStyle = nil
+	return b
+}
+
+// SetAskNumber sets the ask number model
+func (b *StateBuilder) SetAskNumber(askNumber *AskNumberModel) *StateBuilder {
+	b.stateType = AskNumberType
+	b.dialogue = nil
+	b.genericAction = nil
+	b.craftAction = nil
+	b.listSelection = nil
+	b.askNumber = askNumber
+	b.askStyle = nil
+	return b
+}
+
+// SetAskStyle sets the ask style model
+func (b *StateBuilder) SetAskStyle(askStyle *AskStyleModel) *StateBuilder {
+	b.stateType = AskStyleType
+	b.dialogue = nil
+	b.genericAction = nil
+	b.craftAction = nil
+	b.listSelection = nil
+	b.askNumber = nil
+	b.askStyle = askStyle
 	return b
 }
 
@@ -275,6 +211,14 @@ func (b *StateBuilder) Build() (StateModel, error) {
 		if b.listSelection == nil {
 			return StateModel{}, errors.New("listSelection is required for listSelection state")
 		}
+	case AskNumberType:
+		if b.askNumber == nil {
+			return StateModel{}, errors.New("askNumber is required for askNumber state")
+		}
+	case AskStyleType:
+		if b.askStyle == nil {
+			return StateModel{}, errors.New("askStyle is required for askStyle state")
+		}
 	default:
 		return StateModel{}, errors.New("invalid state type")
 	}
@@ -286,6 +230,8 @@ func (b *StateBuilder) Build() (StateModel, error) {
 		genericAction: b.genericAction,
 		craftAction:   b.craftAction,
 		listSelection: b.listSelection,
+		askNumber:     b.askNumber,
+		askStyle:      b.askStyle,
 	}, nil
 }
 
@@ -293,10 +239,12 @@ func (b *StateBuilder) Build() (StateModel, error) {
 type DialogueType string
 
 const (
-	SendOk     DialogueType = "sendOk"
-	SendYesNo  DialogueType = "sendYesNo"
-	SendSimple DialogueType = "sendSimple"
-	SendNext   DialogueType = "sendNext"
+	SendOk            DialogueType = "sendOk"
+	SendYesNo         DialogueType = "sendYesNo"
+	SendAcceptDecline DialogueType = "sendAcceptDecline"
+	SendNext          DialogueType = "sendNext"
+	SendNextPrev      DialogueType = "sendNextPrev"
+	SendPrev          DialogueType = "sendPrev"
 )
 
 // DialogueModel represents a dialogue state
@@ -329,6 +277,20 @@ func (d DialogueModel) ChoiceFromAction(action byte) (ChoiceModel, bool) {
 		} else {
 			choiceText = "Next"
 		}
+	} else if d.dialogueType == SendNextPrev {
+		if action == 255 {
+			choiceText = "Exit"
+		} else if action == 0 {
+			choiceText = "Previous"
+		} else {
+			choiceText = "Next"
+		}
+	} else if d.dialogueType == SendPrev {
+		if action == 255 {
+			choiceText = "Exit"
+		} else {
+			choiceText = "Previous"
+		}
 	} else if d.dialogueType == SendOk {
 		if action == 255 {
 			choiceText = "Exit"
@@ -342,6 +304,14 @@ func (d DialogueModel) ChoiceFromAction(action byte) (ChoiceModel, bool) {
 			choiceText = "No"
 		} else {
 			choiceText = "Yes"
+		}
+	} else if d.dialogueType == SendAcceptDecline {
+		if action == 255 {
+			choiceText = "Exit"
+		} else if action == 0 {
+			choiceText = "Decline"
+		} else {
+			choiceText = "Accept"
 		}
 	}
 
@@ -410,13 +380,21 @@ func (b *DialogueBuilder) Build() (*DialogueModel, error) {
 		if len(b.choices) != 2 {
 			return nil, errors.New("sendNext requires exactly 2 choices")
 		}
+	case SendNextPrev:
+		if len(b.choices) != 3 {
+			return nil, errors.New("sendNextPrev requires exactly 3 choices")
+		}
+	case SendPrev:
+		if len(b.choices) != 2 {
+			return nil, errors.New("sendPrev requires exactly 2 choices")
+		}
 	case SendYesNo:
 		if len(b.choices) != 3 {
 			return nil, errors.New("sendYesNo requires exactly 3 choices")
 		}
-	case SendSimple:
-		if len(b.choices) == 0 {
-			return nil, errors.New("sendSimple requires at least 1 choice")
+	case SendAcceptDecline:
+		if len(b.choices) != 3 {
+			return nil, errors.New("sendAcceptDecline requires exactly 3 choices")
 		}
 	}
 
@@ -627,10 +605,14 @@ func (b *OperationBuilder) Build() (OperationModel, error) {
 
 // ConditionModel represents a condition in the conversation domain
 type ConditionModel struct {
-	conditionType string
-	operator      string
-	value         string
-	itemId        string
+	conditionType   string
+	operator        string
+	value           string
+	referenceId     string // String from JSON, will be converted to uint32 when needed
+	step            string
+	worldId         string // String from JSON, will be resolved from context for mapCapacity
+	channelId       string // String from JSON, will be resolved from context for mapCapacity
+	includeEquipped bool   // For item conditions: also check equipped items
 }
 
 // Type returns the condition type
@@ -648,16 +630,55 @@ func (c ConditionModel) Value() string {
 	return c.value
 }
 
-func (c ConditionModel) ItemId() string {
-	return c.itemId
+// ReferenceId returns the reference ID as uint32
+// Note: This method does NOT support context references. Use ReferenceIdRaw() for that.
+func (c ConditionModel) ReferenceId() uint32 {
+	if c.referenceId == "" {
+		return 0
+	}
+	// Convert string to uint32
+	id, err := strconv.ParseUint(c.referenceId, 10, 32)
+	if err != nil {
+		return 0
+	}
+	return uint32(id)
+}
+
+// ReferenceIdRaw returns the raw reference ID string (may contain context reference like {context.itemId})
+func (c ConditionModel) ReferenceIdRaw() string {
+	return c.referenceId
+}
+
+// Step returns the step for quest progress
+func (c ConditionModel) Step() string {
+	return c.step
+}
+
+// WorldId returns the worldId (as string, may contain context reference)
+func (c ConditionModel) WorldId() string {
+	return c.worldId
+}
+
+// ChannelId returns the channelId (as string, may contain context reference)
+func (c ConditionModel) ChannelId() string {
+	return c.channelId
+}
+
+// IncludeEquipped returns whether to include equipped items in item condition checks
+func (c ConditionModel) IncludeEquipped() bool {
+	return c.includeEquipped
 }
 
 // ConditionBuilder is a builder for ConditionModel
 type ConditionBuilder struct {
-	conditionType string
-	operator      string
-	value         string
-	itemId        string
+	conditionType   string
+	operator        string
+	value           string
+	referenceId     string
+	step            string
+	worldId         string
+	channelId       string
+	includeEquipped bool
 }
 
 // NewConditionBuilder creates a new ConditionBuilder
@@ -683,8 +704,33 @@ func (b *ConditionBuilder) SetValue(value string) *ConditionBuilder {
 	return b
 }
 
-func (b *ConditionBuilder) SetItemId(itemId string) *ConditionBuilder {
-	b.itemId = itemId
+// SetReferenceId sets the reference ID
+func (b *ConditionBuilder) SetReferenceId(referenceId string) *ConditionBuilder {
+	b.referenceId = referenceId
+	return b
+}
+
+// SetStep sets the step
+func (b *ConditionBuilder) SetStep(step string) *ConditionBuilder {
+	b.step = step
+	return b
+}
+
+// SetWorldId sets the worldId
+func (b *ConditionBuilder) SetWorldId(worldId string) *ConditionBuilder {
+	b.worldId = worldId
+	return b
+}
+
+// SetChannelId sets the channelId
+func (b *ConditionBuilder) SetChannelId(channelId string) *ConditionBuilder {
+	b.channelId = channelId
+	return b
+}
+
+// SetIncludeEquipped sets whether to include equipped items in item condition checks
+func (b *ConditionBuilder) SetIncludeEquipped(includeEquipped bool) *ConditionBuilder {
+	b.includeEquipped = includeEquipped
 	return b
 }
 
@@ -701,10 +747,14 @@ func (b *ConditionBuilder) Build() (ConditionModel, error) {
 	}
 
 	return ConditionModel{
-		conditionType: b.conditionType,
-		operator:      b.operator,
-		value:         b.value,
-		itemId:        b.itemId,
+		conditionType:   b.conditionType,
+		operator:        b.operator,
+		value:           b.value,
+		referenceId:     b.referenceId,
+		step:            b.step,
+		worldId:         b.worldId,
+		channelId:       b.channelId,
+		includeEquipped: b.includeEquipped,
 	}, nil
 }
 
@@ -723,7 +773,6 @@ func (o OutcomeModel) Conditions() []ConditionModel {
 func (o OutcomeModel) NextState() string {
 	return o.nextState
 }
-
 
 // OutcomeBuilder is a builder for OutcomeModel
 type OutcomeBuilder struct {
@@ -765,13 +814,9 @@ func (b *OutcomeBuilder) SetNextState(nextState string) *OutcomeBuilder {
 	return b
 }
 
-
 // Build builds the OutcomeModel
+// An empty nextState indicates a terminal state (end of conversation)
 func (b *OutcomeBuilder) Build() (OutcomeModel, error) {
-	if b.nextState == "" {
-		return OutcomeModel{}, errors.New("nextState is required")
-	}
-
 	return OutcomeModel{
 		conditions: b.conditions,
 		nextState:  b.nextState,
@@ -786,6 +831,8 @@ type CraftActionModel struct {
 	mesoCost              uint32
 	stimulatorId          uint32
 	stimulatorFailChance  float64
+	successState          string
+	failureState          string
 	missingMaterialsState string
 }
 
@@ -819,6 +866,15 @@ func (c CraftActionModel) StimulatorFailChance() float64 {
 	return c.stimulatorFailChance
 }
 
+// SuccessState returns the success state ID
+func (c CraftActionModel) SuccessState() string {
+	return c.successState
+}
+
+// FailureState returns the failure state ID
+func (c CraftActionModel) FailureState() string {
+	return c.failureState
+}
 
 // MissingMaterialsState returns the missing materials state ID
 func (c CraftActionModel) MissingMaterialsState() string {
@@ -833,6 +889,8 @@ type CraftActionBuilder struct {
 	mesoCost              uint32
 	stimulatorId          uint32
 	stimulatorFailChance  float64
+	successState          string
+	failureState          string
 	missingMaterialsState string
 }
 
@@ -892,6 +950,17 @@ func (b *CraftActionBuilder) SetStimulatorFailChance(stimulatorFailChance float6
 	return b
 }
 
+// SetSuccessState sets the success state ID
+func (b *CraftActionBuilder) SetSuccessState(successState string) *CraftActionBuilder {
+	b.successState = successState
+	return b
+}
+
+// SetFailureState sets the failure state ID
+func (b *CraftActionBuilder) SetFailureState(failureState string) *CraftActionBuilder {
+	b.failureState = failureState
+	return b
+}
 
 // SetMissingMaterialsState sets the missing materials state ID
 func (b *CraftActionBuilder) SetMissingMaterialsState(missingMaterialsState string) *CraftActionBuilder {
@@ -910,6 +979,12 @@ func (b *CraftActionBuilder) Build() (*CraftActionModel, error) {
 	if len(b.quantities) != len(b.materials) {
 		return nil, errors.New("quantities must match materials")
 	}
+	if b.successState == "" {
+		return nil, errors.New("successState is required")
+	}
+	if b.failureState == "" {
+		return nil, errors.New("failureState is required")
+	}
 	if b.missingMaterialsState == "" {
 		return nil, errors.New("missingMaterialsState is required")
 	}
@@ -921,6 +996,8 @@ func (b *CraftActionBuilder) Build() (*CraftActionModel, error) {
 		mesoCost:              b.mesoCost,
 		stimulatorId:          b.stimulatorId,
 		stimulatorFailChance:  b.stimulatorFailChance,
+		successState:          b.successState,
+		failureState:          b.failureState,
 		missingMaterialsState: b.missingMaterialsState,
 	}, nil
 }
@@ -987,6 +1064,244 @@ func (b *ListSelectionBuilder) Build() (*ListSelectionModel, error) {
 	return &ListSelectionModel{
 		title:   b.title,
 		choices: b.choices,
+	}, nil
+}
+
+// AskNumberModel represents an ask number state
+type AskNumberModel struct {
+	text         string
+	defaultValue uint32
+	minValue     uint32
+	maxValue     uint32
+	contextKey   string
+	nextState    string
+}
+
+// Text returns the ask number text
+func (a AskNumberModel) Text() string {
+	return a.text
+}
+
+// DefaultValue returns the default value
+func (a AskNumberModel) DefaultValue() uint32 {
+	return a.defaultValue
+}
+
+// MinValue returns the minimum value
+func (a AskNumberModel) MinValue() uint32 {
+	return a.minValue
+}
+
+// MaxValue returns the maximum value
+func (a AskNumberModel) MaxValue() uint32 {
+	return a.maxValue
+}
+
+// ContextKey returns the context key
+func (a AskNumberModel) ContextKey() string {
+	return a.contextKey
+}
+
+// NextState returns the next state ID
+func (a AskNumberModel) NextState() string {
+	return a.nextState
+}
+
+// AskNumberBuilder is a builder for AskNumberModel
+type AskNumberBuilder struct {
+	text         string
+	defaultValue uint32
+	minValue     uint32
+	maxValue     uint32
+	contextKey   string
+	nextState    string
+}
+
+// NewAskNumberBuilder creates a new AskNumberBuilder
+func NewAskNumberBuilder() *AskNumberBuilder {
+	return &AskNumberBuilder{
+		contextKey: "quantity", // Default context key
+	}
+}
+
+// SetText sets the ask number text
+func (b *AskNumberBuilder) SetText(text string) *AskNumberBuilder {
+	b.text = text
+	return b
+}
+
+// SetDefaultValue sets the default value
+func (b *AskNumberBuilder) SetDefaultValue(defaultValue uint32) *AskNumberBuilder {
+	b.defaultValue = defaultValue
+	return b
+}
+
+// SetMinValue sets the minimum value
+func (b *AskNumberBuilder) SetMinValue(minValue uint32) *AskNumberBuilder {
+	b.minValue = minValue
+	return b
+}
+
+// SetMaxValue sets the maximum value
+func (b *AskNumberBuilder) SetMaxValue(maxValue uint32) *AskNumberBuilder {
+	b.maxValue = maxValue
+	return b
+}
+
+// SetContextKey sets the context key
+func (b *AskNumberBuilder) SetContextKey(contextKey string) *AskNumberBuilder {
+	b.contextKey = contextKey
+	return b
+}
+
+// SetNextState sets the next state ID
+func (b *AskNumberBuilder) SetNextState(nextState string) *AskNumberBuilder {
+	b.nextState = nextState
+	return b
+}
+
+// Build builds the AskNumberModel
+func (b *AskNumberBuilder) Build() (*AskNumberModel, error) {
+	if b.text == "" {
+		return nil, errors.New("text is required")
+	}
+	if b.minValue > b.defaultValue {
+		return nil, errors.New("minValue must be less than or equal to defaultValue")
+	}
+	if b.defaultValue > b.maxValue {
+		return nil, errors.New("defaultValue must be less than or equal to maxValue")
+	}
+	if b.maxValue == 0 {
+		return nil, errors.New("maxValue must be greater than 0")
+	}
+	if b.contextKey == "" {
+		b.contextKey = "quantity" // Ensure default
+	}
+
+	return &AskNumberModel{
+		text:         b.text,
+		defaultValue: b.defaultValue,
+		minValue:     b.minValue,
+		maxValue:     b.maxValue,
+		contextKey:   b.contextKey,
+		nextState:    b.nextState,
+	}, nil
+}
+
+// AskStyleModel represents an ask style state
+type AskStyleModel struct {
+	text             string
+	styles           []uint32
+	stylesContextKey string
+	contextKey       string
+	nextState        string
+}
+
+// Text returns the ask style text
+func (a AskStyleModel) Text() string {
+	return a.text
+}
+
+// Styles returns the available style IDs
+func (a AskStyleModel) Styles() []uint32 {
+	return a.styles
+}
+
+// StylesContextKey returns the context key containing dynamically generated styles
+func (a AskStyleModel) StylesContextKey() string {
+	return a.stylesContextKey
+}
+
+// ContextKey returns the context key
+func (a AskStyleModel) ContextKey() string {
+	return a.contextKey
+}
+
+// NextState returns the next state ID
+func (a AskStyleModel) NextState() string {
+	return a.nextState
+}
+
+// AskStyleBuilder is a builder for AskStyleModel
+type AskStyleBuilder struct {
+	text             string
+	styles           []uint32
+	stylesContextKey string
+	contextKey       string
+	nextState        string
+}
+
+// NewAskStyleBuilder creates a new AskStyleBuilder
+func NewAskStyleBuilder() *AskStyleBuilder {
+	return &AskStyleBuilder{
+		styles:     make([]uint32, 0),
+		contextKey: "selectedStyle", // Default context key
+	}
+}
+
+// SetText sets the ask style text
+func (b *AskStyleBuilder) SetText(text string) *AskStyleBuilder {
+	b.text = text
+	return b
+}
+
+// SetStyles sets the available style IDs
+func (b *AskStyleBuilder) SetStyles(styles []uint32) *AskStyleBuilder {
+	b.styles = styles
+	return b
+}
+
+// AddStyle adds a style ID
+func (b *AskStyleBuilder) AddStyle(styleId uint32) *AskStyleBuilder {
+	b.styles = append(b.styles, styleId)
+	return b
+}
+
+// SetStylesContextKey sets the context key containing dynamically generated styles
+func (b *AskStyleBuilder) SetStylesContextKey(key string) *AskStyleBuilder {
+	b.stylesContextKey = key
+	return b
+}
+
+// SetContextKey sets the context key
+func (b *AskStyleBuilder) SetContextKey(contextKey string) *AskStyleBuilder {
+	b.contextKey = contextKey
+	return b
+}
+
+// SetNextState sets the next state ID
+func (b *AskStyleBuilder) SetNextState(nextState string) *AskStyleBuilder {
+	b.nextState = nextState
+	return b
+}
+
+// Build builds the AskStyleModel
+func (b *AskStyleBuilder) Build() (*AskStyleModel, error) {
+	if b.text == "" {
+		return nil, errors.New("text is required")
+	}
+
+	// Require either styles OR stylesContextKey (not both, not neither)
+	hasStyles := len(b.styles) > 0
+	hasStylesContextKey := b.stylesContextKey != ""
+
+	if !hasStyles && !hasStylesContextKey {
+		return nil, errors.New("either styles or stylesContextKey is required")
+	}
+
+	if b.nextState == "" {
+		return nil, errors.New("nextState is required")
+	}
+	if b.contextKey == "" {
+		b.contextKey = "selectedStyle" // Ensure default
+	}
+
+	return &AskStyleModel{
+		text:             b.text,
+		styles:           b.styles,
+		stylesContextKey: b.stylesContextKey,
+		contextKey:       b.contextKey,
+		nextState:        b.nextState,
 	}, nil
 }
 
@@ -1166,14 +1481,25 @@ func (b *OptionBuilder) Build() (OptionModel, error) {
 	}, nil
 }
 
+// ConversationType represents the type of conversation (NPC or Quest)
+type ConversationType string
+
+const (
+	NpcConversationType   ConversationType = "npc"
+	QuestConversationType ConversationType = "quest"
+)
+
 // ConversationContext represents the current state of a conversation
 type ConversationContext struct {
-	field        field.Model
-	characterId  uint32
-	npcId        uint32
-	currentState string
-	conversation Model
-	context      map[string]string
+	field            field.Model
+	characterId      uint32
+	npcId            uint32
+	currentState     string
+	conversation     StateContainer
+	context          map[string]string
+	pendingSagaId    *uuid.UUID
+	conversationType ConversationType
+	sourceId         uint32
 }
 
 // Field returns the field
@@ -1196,8 +1522,8 @@ func (c ConversationContext) CurrentState() string {
 	return c.currentState
 }
 
-// Conversation returns the conversation model
-func (c ConversationContext) Conversation() Model {
+// Conversation returns the conversation state container (Model for NPC, StateMachine for Quest)
+func (c ConversationContext) Conversation() StateContainer {
 	return c.conversation
 }
 
@@ -1206,14 +1532,50 @@ func (c ConversationContext) Context() map[string]string {
 	return c.context
 }
 
+// PendingSagaId returns the pending saga ID if one exists
+func (c ConversationContext) PendingSagaId() *uuid.UUID {
+	return c.pendingSagaId
+}
+
+// SetPendingSagaId sets the pending saga ID
+func (c ConversationContext) SetPendingSagaId(sagaId uuid.UUID) ConversationContext {
+	c.pendingSagaId = &sagaId
+	return c
+}
+
+// ClearPendingSaga clears the pending saga ID
+func (c ConversationContext) ClearPendingSaga() ConversationContext {
+	c.pendingSagaId = nil
+	return c
+}
+
+// SetCurrentState sets the current state
+func (c ConversationContext) SetCurrentState(state string) ConversationContext {
+	c.currentState = state
+	return c
+}
+
+// ConversationType returns the conversation type (NPC or Quest)
+func (c ConversationContext) ConversationType() ConversationType {
+	return c.conversationType
+}
+
+// SourceId returns the source ID (NpcId or QuestId depending on Type)
+func (c ConversationContext) SourceId() uint32 {
+	return c.sourceId
+}
+
 // ConversationContextBuilder is a builder for ConversationContext
 type ConversationContextBuilder struct {
-	field        field.Model
-	characterId  uint32
-	npcId        uint32
-	currentState string
-	conversation Model
-	context      map[string]string
+	field            field.Model
+	characterId      uint32
+	npcId            uint32
+	currentState     string
+	conversation     StateContainer
+	context          map[string]string
+	pendingSagaId    *uuid.UUID
+	conversationType ConversationType
+	sourceId         uint32
 }
 
 // NewConversationContextBuilder creates a new ConversationContextBuilder
@@ -1247,8 +1609,8 @@ func (b *ConversationContextBuilder) SetCurrentState(currentState string) *Conve
 	return b
 }
 
-// SetConversation sets the conversation model
-func (b *ConversationContextBuilder) SetConversation(conversation Model) *ConversationContextBuilder {
+// SetConversation sets the conversation state container (Model for NPC, StateMachine for Quest)
+func (b *ConversationContextBuilder) SetConversation(conversation StateContainer) *ConversationContextBuilder {
 	b.conversation = conversation
 	return b
 }
@@ -1265,24 +1627,41 @@ func (b *ConversationContextBuilder) AddContextValue(key, value string) *Convers
 	return b
 }
 
+// SetConversationType sets the conversation type
+func (b *ConversationContextBuilder) SetConversationType(conversationType ConversationType) *ConversationContextBuilder {
+	b.conversationType = conversationType
+	return b
+}
+
+// SetSourceId sets the source ID (NpcId or QuestId)
+func (b *ConversationContextBuilder) SetSourceId(sourceId uint32) *ConversationContextBuilder {
+	b.sourceId = sourceId
+	return b
+}
+
 // Build builds the ConversationContext
-func (b *ConversationContextBuilder) Build() (ConversationContext, error) {
-	if b.characterId == 0 {
-		return ConversationContext{}, errors.New("characterId is required")
+func (b *ConversationContextBuilder) Build() ConversationContext {
+	// Default to NPC conversation type if not set
+	conversationType := b.conversationType
+	if conversationType == "" {
+		conversationType = NpcConversationType
 	}
-	if b.npcId == 0 {
-		return ConversationContext{}, errors.New("npcId is required")
-	}
-	if b.currentState == "" {
-		return ConversationContext{}, errors.New("currentState is required")
+
+	// Default sourceId to npcId for backwards compatibility
+	sourceId := b.sourceId
+	if sourceId == 0 && b.npcId != 0 {
+		sourceId = b.npcId
 	}
 
 	return ConversationContext{
-		characterId:  b.characterId,
-		npcId:        b.npcId,
-		field:        b.field,
-		currentState: b.currentState,
-		conversation: b.conversation,
-		context:      b.context,
-	}, nil
+		characterId:      b.characterId,
+		npcId:            b.npcId,
+		field:            b.field,
+		currentState:     b.currentState,
+		conversation:     b.conversation,
+		context:          b.context,
+		pendingSagaId:    b.pendingSagaId,
+		conversationType: conversationType,
+		sourceId:         sourceId,
+	}
 }

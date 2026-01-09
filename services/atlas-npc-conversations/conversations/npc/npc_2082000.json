@@ -1,0 +1,87 @@
+{
+  "npcId": 2082000,
+  "startState": "askPurchase",
+  "states": [
+    {
+      "id": "askPurchase",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Hello, I'm in charge of selling tickets for the ship ride to Orbis Station of Ossyria. The ride to Orbis takes off every 10 minutes, beginning on the hour, and it'll cost you #b30000 mesos#k. Are you sure you want to purchase #b#t4031045##k?",
+        "choices": [
+          {"text": "Yes", "nextState": "checkRequirements"},
+          {"text": "No", "nextState": "decline"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "decline",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "You must have some business to take care of here, right?",
+        "choices": [
+          {"text": "Next", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "checkRequirements",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {"type": "meso", "operator": ">=", "value": "30000"},
+              {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": 4031045}
+            ],
+            "nextState": "giveTicket"
+          },
+          {
+            "conditions": [],
+            "nextState": "notEnough"
+          }
+        ]
+      }
+    },
+    {
+      "id": "giveTicket",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4031045",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-30000"
+            }
+          }
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "notEnough",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Are you sure you have #b30000 mesos#k? If so, then I urge you to check your etc. inventory, and see if it's full or not.",
+        "choices": [
+          {"text": "Ok", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    }
+  ]
+}

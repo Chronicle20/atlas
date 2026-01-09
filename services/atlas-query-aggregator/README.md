@@ -351,7 +351,10 @@ Validates a set of conditions against a character's state.
 | Strength        | strength>=100             | Character Service (character.Strength)                        |
 | Dexterity       | dexterity>=100            | Character Service (character.Dexterity)                       |
 | Intelligence    | intelligence>=100         | Character Service (character.Intelligence)                    |
-| Luck            | luck>=100                 | Character Service (character.Luck)   
+| Luck            | luck>=100                 | Character Service (character.Luck)                            |
+| Buddy Capacity  | buddyCapacity>=20         | Buddy Service (character.BuddyCapacity)                       |
+| Pet Count       | petCount>=1               | Pet Service (character.PetCount)                              |
+| Map Capacity    | mapCapacity>=5            | Map Service (map.PlayerCount) - requires referenceId with map ID, worldId, and channelId |
 | Inventory Item  | item[2000001]>=10         | Inventory Service (quantity of item with template ID 2000001) |
 
 **Supported Operators:**

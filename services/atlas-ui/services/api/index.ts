@@ -103,3 +103,9 @@ export { templatesService } from './templates.service';
 export { MapleStoryService, mapleStoryService, mapSkinColor, getEquipmentSlotName, isTwoHandedWeapon } from './maplestory.service';
 export { onboardingService, TemplateNotFoundError, TenantCreationError, ConfigurationCreationError } from './onboarding.service';
 export type { OnboardResult } from './onboarding.service';
+
+// Quest services
+export { questsService } from './quests.service';
+export type { QuestQueryOptions, QuestDefinition, QuestAttributes } from './quests.service';
+export { questStatusService } from './quest-status.service';
+export type { QuestStatusQueryOptions, CharacterQuestStatus, QuestState } from './quest-status.service';

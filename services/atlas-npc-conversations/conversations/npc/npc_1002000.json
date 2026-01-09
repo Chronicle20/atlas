@@ -1,0 +1,800 @@
+{
+  "npcId": 1002000,
+  "startState": "intro",
+  "states": [
+    {
+      "id": "intro",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Do you wanna head over to some other town? With a little money involved, I can make it happen. It's a tad expensive, but I run a special 90% discount for beginners.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "mainMenu"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "mainMenu",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "It's understandable that you may be confused about this place if this is your first time around. If you got any questions about this place, fire away.",
+        "choices": [
+          {
+            "text": "What kind of towns are here in Victoria Island?",
+            "nextState": "selectTownInfo"
+          },
+          {
+            "text": "Please take me somewhere else.",
+            "nextState": "checkJobForTravel"
+          },
+          {
+            "text": "Exit",
+            "nextState": "declineMain"
+          }
+        ]
+      }
+    },
+    {
+      "id": "declineMain",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "There's a lot to see in this town, too. Let me know if you want to go somewhere else.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectTownInfo",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "There are 7 big towns here in Victoria Island. Which of those do you want to know more of?",
+        "choices": [
+          {
+            "text": "Victoria Road - Lith Harbor",
+            "nextState": "townInfo_0_page_0",
+            "context": {
+              "townIndex": "0"
+            }
+          },
+          {
+            "text": "Victoria Road - Perion",
+            "nextState": "townInfo_1_page_0",
+            "context": {
+              "townIndex": "1"
+            }
+          },
+          {
+            "text": "Victoria Road - Henesys",
+            "nextState": "townInfo_2_page_0",
+            "context": {
+              "townIndex": "2"
+            }
+          },
+          {
+            "text": "Victoria Road - Ellinia",
+            "nextState": "townInfo_3_page_0",
+            "context": {
+              "townIndex": "3"
+            }
+          },
+          {
+            "text": "Victoria Road - Kerning City",
+            "nextState": "townInfo_4_page_0",
+            "context": {
+              "townIndex": "4"
+            }
+          },
+          {
+            "text": "Victoria Road - Nautilus Harbor",
+            "nextState": "townInfo_5_page_0",
+            "context": {
+              "townIndex": "5"
+            }
+          },
+          {
+            "text": "Dungeon - Sleepywood",
+            "nextState": "townInfo_6_page_0",
+            "context": {
+              "townIndex": "6"
+            }
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "townInfo_0_page_0",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "The town you are at is Lith Harbor! Alright I'll explain to you more about #bLith Harbor#k. It's the place you landed on Victoria Island by riding The Victoria. That's Lith Harbor. A lot of beginners who just got here from Maple Island start their journey here.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "townInfo_0_page_1"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "townInfo_0_page_1",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "It's a quiet town with the wide body of water on the back of it, thanks to the fact that the harbor is located at the west end of the island. Most of the people here are, or used to be fisherman, so they may look intimidating, but if you strike up a conversation with them, they'll be friendly to you.",
+        "choices": [
+          {
+            "text": "Previous",
+            "nextState": "townInfo_0_page_0"
+          },
+          {
+            "text": "Next",
+            "nextState": "townInfo_0_page_2"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "townInfo_0_page_2",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "Around town lies a beautiful prairie. Most of the monsters there are small and gentle, perfect for beginners. If you haven't chosen your job yet, this is a good place to boost up your level.",
+        "choices": [
+          {
+            "text": "Previous",
+            "nextState": "townInfo_0_page_1"
+          },
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "townInfo_1_page_0",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Alright I'll explain to you more about #bPerion#k. It's a warrior-town located at the northern-most part of Victoria Island, surrounded by rocky mountains. With an unfriendly atmosphere, only the strong survives there.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "townInfo_1_page_1"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "townInfo_1_page_1",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "Around the highland you'll find a really skinny tree, a wild hog running around the place, and monkeys that live all over the island. There's also a deep valley, and when you go deep into it, you'll find a humongous dragon with the power to match his size. Better go in there very carefully, or don't go at all.",
+        "choices": [
+          {
+            "text": "Previous",
+            "nextState": "townInfo_1_page_0"
+          },
+          {
+            "text": "Next",
+            "nextState": "townInfo_1_page_2"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "townInfo_1_page_2",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "If you want to be a #bWarrior#k then find #rDances with Balrog#k, the chief of Perion. If you're level 10 or higher, along with a good STR level, he may make you a warrior after all. If not, better keep training yourself until you reach that level.",
+        "choices": [
+          {
+            "text": "Previous",
+            "nextState": "townInfo_1_page_1"
+          },
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "townInfo_2_page_0",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Alright I'll explain to you more about #bHenesys#k. It's a bowman-town located at the southernmost part of the island, made on a flatland in the midst of a deep forest and prairies. The weather's just right, and everything is plentiful around that town, perfect for living. Go check it out.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "townInfo_2_page_1"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "townInfo_2_page_1",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "Around the prairie you'll find weak monsters such as snails, mushrooms, and pigs. According to what I hear, though, in the deepest part of the Pig Park, which is connected to the town somewhere, you'll find a humongous, powerful mushroom called Mushmom every now and then.",
+        "choices": [
+          {
+            "text": "Previous",
+            "nextState": "townInfo_2_page_0"
+          },
+          {
+            "text": "Next",
+            "nextState": "townInfo_2_page_2"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "townInfo_2_page_2",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "If you want to be a #bBowman#k, you need to go see #rAthena Pierce#k at Henesys. With a level at or above 10 and a decent amount of DEX, she may make you be one afterall. If not, go train yourself, make yourself stronger, then try again.",
+        "choices": [
+          {
+            "text": "Previous",
+            "nextState": "townInfo_2_page_1"
+          },
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "townInfo_3_page_0",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Alright I'll explain to you more about #bEllinia#k. It's a magician-town located at the far east of Victoria Island, and covered in tall, mystic trees. You'll find some fairies there, too. They don't like humans in general so it'll be best for you to be on their good side and stay quiet.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "townInfo_3_page_1"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "townInfo_3_page_1",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "Near the forest you'll find green slimes, walking mushrooms, monkeys and zombie monkeys all residing there. Walk deeper into the forest and you'll find witches with the flying broomstick navigating the skies. A word of warning: Unless you are really strong, I recommend you don't go near them.",
+        "choices": [
+          {
+            "text": "Previous",
+            "nextState": "townInfo_3_page_0"
+          },
+          {
+            "text": "Next",
+            "nextState": "townInfo_3_page_2"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "townInfo_3_page_2",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "If you want to be a #bMagician#k, search for #rGrendel the Really Old#k, the head wizard of Ellinia. He may make you a wizard if you're at or above level 8 with a decent amount of INT. If that's not the case, you may have to hunt more and train yourself to get there.",
+        "choices": [
+          {
+            "text": "Previous",
+            "nextState": "townInfo_3_page_1"
+          },
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "townInfo_4_page_0",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Alright I'll explain to you more about #bKerning City#k. It's a thief-town located at the northwest part of Victoria Island, and there are buildings up there that have just this strange feeling around them. It's mostly covered in black clouds, but if you can go up to a really high place, you'll be able to see a very beautiful sunset there.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "townInfo_4_page_1"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "townInfo_4_page_1",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "From Kerning City, you can go into several dungeons. You can go to a swamp where alligators and snakes are abound, or hit the subway full of ghosts and bats. At the deepest part of the underground, you'll find Lace, who is just as big and dangerous as a dragon.",
+        "choices": [
+          {
+            "text": "Previous",
+            "nextState": "townInfo_4_page_0"
+          },
+          {
+            "text": "Next",
+            "nextState": "townInfo_4_page_2"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "townInfo_4_page_2",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "If you want to be a #bThief#k, seek #rDark Lord#k, the heart of darkness of Kerning City. He may well make you a thief if you're at or above level 10 with a good amount of DEX. If not, go hunt and train yourself to reach there.",
+        "choices": [
+          {
+            "text": "Previous",
+            "nextState": "townInfo_4_page_1"
+          },
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "townInfo_5_page_0",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Here's a little information on #b#m120000000##k. It's a submarine that's currently parked in between Ellinia and Henesys in Victoria Island. That submarine serves as home to numerous pirates. You can have just as beautiful a view of the ocean there as you do here in Lith Harbor.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "townInfo_5_page_1"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "townInfo_5_page_1",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "#m120000000# is parked in between Henesys and Ellinia, so if you step out just a bit, you'll be able to enjoy the view of both towns. All the pirates you'll meet in town are very gregarious and friendly as well.",
+        "choices": [
+          {
+            "text": "Previous",
+            "nextState": "townInfo_5_page_0"
+          },
+          {
+            "text": "Next",
+            "nextState": "townInfo_5_page_2"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "townInfo_5_page_2",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "If you are serious about becoming a #bPirate#k, then you better meet the captain of #m120000000#, #r#p1090000##k. If you are over Level 10 with 20 DEX, then she may let you become one. If you aren't up to that level, then you'll need to train harder to get there!",
+        "choices": [
+          {
+            "text": "Previous",
+            "nextState": "townInfo_5_page_1"
+          },
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "townInfo_6_page_0",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Alright I'll explain to you more about #bSleepywood#k. It's a forest town located at the southeast side of Victoria Island. It's pretty much in between Henesys and the ant-tunnel dungeon. There's a hotel there, so you can rest up after a long day at the dungeon ... it's a quiet town in general.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "townInfo_6_page_1"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "townInfo_6_page_1",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "In front of the hotel there's an old buddhist monk by the name of #rChrishrama#k. Nobody knows a thing about that monk. Apparently he collects materials from the travelers and create something, but I am not too sure about the details. If you have any business going around that area, please check that out for me.",
+        "choices": [
+          {
+            "text": "Previous",
+            "nextState": "townInfo_6_page_0"
+          },
+          {
+            "text": "Next",
+            "nextState": "townInfo_6_page_2"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "townInfo_6_page_2",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "From Sleepywood, head east and you'll find the ant tunnel connected to the deepest part of the Victoria Island. Lots of nasty, powerful monsters abound so if you walk in thinking it's a walk in the park, you'll be coming out as a corpse. You need to fully prepare yourself for a rough ride before going in.",
+        "choices": [
+          {
+            "text": "Previous",
+            "nextState": "townInfo_6_page_1"
+          },
+          {
+            "text": "Next",
+            "nextState": "townInfo_6_page_3"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "townInfo_6_page_3",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "And this is what I hear ... apparently, at Sleepywood there's a secret entrance leading you to an unknown place. Apparently, once you move in deep, you'll find a stack of black rocks that actually move around. I want to see that for myself in the near future ...",
+        "choices": [
+          {
+            "text": "Previous",
+            "nextState": "townInfo_6_page_2"
+          },
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkJobForTravel",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "jobId",
+                "operator": "=",
+                "value": "0"
+              }
+            ],
+            "nextState": "selectDestinationBeginner"
+          },
+          {
+            "conditions": [],
+            "nextState": "selectDestinationRegular"
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectDestinationBeginner",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "There's a special 90% discount for all beginners. Alright, where would you want to go?",
+        "choices": [
+          {
+            "text": "Victoria Road - Perion (100 mesos)",
+            "nextState": "confirmTravel",
+            "context": {
+              "destination": "102000000",
+              "cost": "100"
+            }
+          },
+          {
+            "text": "Victoria Road - Henesys (100 mesos)",
+            "nextState": "confirmTravel",
+            "context": {
+              "destination": "100000000",
+              "cost": "100"
+            }
+          },
+          {
+            "text": "Victoria Road - Ellinia (80 mesos)",
+            "nextState": "confirmTravel",
+            "context": {
+              "destination": "101000000",
+              "cost": "80"
+            }
+          },
+          {
+            "text": "Victoria Road - Kerning City (100 mesos)",
+            "nextState": "confirmTravel",
+            "context": {
+              "destination": "103000000",
+              "cost": "100"
+            }
+          },
+          {
+            "text": "Victoria Road - Nautilus Harbor (80 mesos)",
+            "nextState": "confirmTravel",
+            "context": {
+              "destination": "120000000",
+              "cost": "80"
+            }
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectDestinationRegular",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Oh you aren't a beginner, huh? Then I'm afraid I may have to charge you full price. Where would you like to go?",
+        "choices": [
+          {
+            "text": "Victoria Road - Perion (1000 mesos)",
+            "nextState": "confirmTravel",
+            "context": {
+              "destination": "102000000",
+              "cost": "1000"
+            }
+          },
+          {
+            "text": "Victoria Road - Henesys (1000 mesos)",
+            "nextState": "confirmTravel",
+            "context": {
+              "destination": "100000000",
+              "cost": "1000"
+            }
+          },
+          {
+            "text": "Victoria Road - Ellinia (800 mesos)",
+            "nextState": "confirmTravel",
+            "context": {
+              "destination": "101000000",
+              "cost": "800"
+            }
+          },
+          {
+            "text": "Victoria Road - Kerning City (1000 mesos)",
+            "nextState": "confirmTravel",
+            "context": {
+              "destination": "103000000",
+              "cost": "1000"
+            }
+          },
+          {
+            "text": "Victoria Road - Nautilus Harbor (800 mesos)",
+            "nextState": "confirmTravel",
+            "context": {
+              "destination": "120000000",
+              "cost": "800"
+            }
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmTravel",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "I guess you don't need to be here. Do you really want to move to #b#m{context.destination}##k? Well it'll cost you #b{context.cost} mesos#k. What do you think?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkMesosAndWarp"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMesosAndWarp",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": "<",
+                "value": "{context.cost}"
+              }
+            ],
+            "nextState": "insufficientMesos"
+          },
+          {
+            "conditions": [],
+            "nextState": "performWarp"
+          }
+        ]
+      }
+    },
+    {
+      "id": "insufficientMesos",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "You don't have enough mesos. With your abilities, you should have more than that!",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "performWarp",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-{context.cost}"
+            }
+          },
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "{context.destination}",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

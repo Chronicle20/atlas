@@ -1,0 +1,219 @@
+{
+  "npcId": 2100,
+  "startState": "checkMap",
+  "states": [
+    {
+      "id": "checkMap",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "mapId",
+                "operator": "=",
+                "value": "0"
+              }
+            ],
+            "nextState": "askEnterTraining"
+          },
+          {
+            "conditions": [
+              {
+                "type": "mapId",
+                "operator": "=",
+                "value": "3"
+              }
+            ],
+            "nextState": "askEnterTraining"
+          },
+          {
+            "conditions": [],
+            "nextState": "imageRoomIntro"
+          }
+        ]
+      }
+    },
+    {
+      "id": "askEnterTraining",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Welcome to the world of MapleStory. The purpose of this training camp is to help beginners. Would you like to enter this training camp? Some people start their journey without taking the training program. But I strongly recommend you take the training program first.",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "confirmEntry"
+          },
+          {
+            "text": "No",
+            "nextState": "askSkipTraining"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmEntry",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Ok then, I will let you enter the training camp. Please follow your instructor's lead.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "warpToTraining"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToTraining",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "1",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "askSkipTraining",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Do you really want to start your journey right away?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "confirmSkip"
+          },
+          {
+            "text": "No",
+            "nextState": "askEnterTraining"
+          },
+          {
+            "text": "Exit",
+            "nextState": "declineMessage"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmSkip",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "It seems like you want to start your journey without taking the training program. Then, I will let you move on to the training ground. Be careful~",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "warpToForest"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToForest",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "40000",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "declineMessage",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Please talk to me again when you finally made your decision.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "imageRoomIntro",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "This is the image room where your first training program begins. In this room, you will have an advance look into the job of your choice.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "jobInfo"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "jobInfo",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "Once you train hard enough, you will be entitled to occupy a job. You can become a Bowman in Henesys, a Magician in Ellinia, a Warrior in Perion, and a Thief in Kerning City...",
+        "choices": [
+          {
+            "text": "Previous",
+            "nextState": "imageRoomIntro"
+          },
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

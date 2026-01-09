@@ -1,0 +1,67 @@
+{
+  "npcId": 1013001,
+  "startState": "greeting",
+  "states": [
+    {
+      "id": "greeting",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "You, who are destined to be a Dragon Master... You have finally arrived.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "continue"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "continue",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "Go and fulfill your duties as the Dragon Master...",
+        "choices": [
+          {
+            "text": "Previous",
+            "nextState": "greeting"
+          },
+          {
+            "text": "Next",
+            "nextState": "warpToDragonNest"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "warpToDragonNest",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "900090101",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

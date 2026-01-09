@@ -1,0 +1,297 @@
+{
+  "npcId": 1002100,
+  "startState": "checkQuest",
+  "states": [
+    {
+      "id": "checkQuest",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "=",
+                "value": "3",
+                "referenceId": "2013"
+              }
+            ],
+            "nextState": "questCompletedIntro"
+          },
+          {
+            "conditions": [
+              {
+                "type": "questStatus",
+                "operator": "=",
+                "value": "3",
+                "referenceId": "2010"
+              }
+            ],
+            "nextState": "quest2010Message"
+          },
+          {
+            "conditions": [],
+            "nextState": "defaultQuestMessage"
+          }
+        ]
+      }
+    },
+    {
+      "id": "questCompletedIntro",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "It's you ... thanks to you I was able to get a lot done. Nowadays I've been making a bunch of items. If you need anything let me know.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "selectItem"
+          },
+          {
+            "text": "Exit",
+            "nextState": "exitMessage"
+          }
+        ]
+      }
+    },
+    {
+      "id": "exitMessage",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "I still have quite a few of the materials you got me before. The items are all there so take your time choosing.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "quest2010Message",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "You don't seem strong enough to be able to purchase my potion ...",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "defaultQuestMessage",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "My dream is to travel everywhere, much like you. My father, however, does not allow me to do it, because he thinks it's very dangerous. He may say yes, though, if I show him some sort of a proof that I'm not the weak girl that he thinks I am ...",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectItem",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Which item would you like to buy?",
+        "choices": [
+          {
+            "text": "#i2000002# (Price : 310 mesos)",
+            "nextState": "askQuantity",
+            "context": {
+              "itemId": "2000002",
+              "price": "310",
+              "description": "300 HP."
+            }
+          },
+          {
+            "text": "#i2022003# (Price : 1060 mesos)",
+            "nextState": "askQuantity",
+            "context": {
+              "itemId": "2022003",
+              "price": "1060",
+              "description": "1000 HP."
+            }
+          },
+          {
+            "text": "#i2022000# (Price : 1600 mesos)",
+            "nextState": "askQuantity",
+            "context": {
+              "itemId": "2022000",
+              "price": "1600",
+              "description": "800 MP"
+            }
+          },
+          {
+            "text": "#i2001000# (Price : 3120 mesos)",
+            "nextState": "askQuantity",
+            "context": {
+              "itemId": "2001000",
+              "price": "3120",
+              "description": "1000 HP and MP."
+            }
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "askQuantity",
+      "type": "askNumber",
+      "askNumber": {
+        "text": "You want #b#t{context.itemId}##k? #t{context.itemId}# allows you to recover {context.description} How many would you like to buy?",
+        "default": 1,
+        "min": 1,
+        "max": 100,
+        "contextKey": "quantity",
+        "nextState": "confirmPurchase"
+      }
+    },
+    {
+      "id": "confirmPurchase",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Will you purchase #r{context.quantity}#k #b#t{context.itemId}##(s)#k? #t{context.itemId}# costs {context.price} mesos for one, so the total comes out to be #r{context.totalCost}#k mesos.",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "processPurchase"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "processPurchase",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-{context.totalCost}"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "{context.itemId}",
+              "quantity": "{context.quantity}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "meso",
+                "operator": "<",
+                "value": "{context.totalCost}"
+              }
+            ],
+            "nextState": "insufficientMesos"
+          },
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": "=",
+                "value": "false"
+              }
+            ],
+            "nextState": "inventoryFull"
+          },
+          {
+            "conditions": [],
+            "nextState": "purchaseSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "insufficientMesos",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Are you lacking mesos by any chance? Please check and see if you have an empty slot available at your etc. inventory, and if you have at least #r{context.totalCost}#k mesos with you.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "inventoryFull",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Please check and see if you have an empty slot available at your etc. inventory.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "purchaseSuccess",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Thank you for coming. Stuff here can always be made so if you need something, please come again.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

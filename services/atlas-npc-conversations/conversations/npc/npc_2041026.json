@@ -1,0 +1,87 @@
+{
+  "npcId": 2041026,
+  "startState": "checkItem",
+  "states": [
+    {
+      "id": "checkItem",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": 4220046
+              }
+            ],
+            "nextState": "takeItemAndConfirm"
+          },
+          {
+            "conditions": [],
+            "nextState": "noItemGreeting"
+          }
+        ]
+      }
+    },
+    {
+      "id": "takeItemAndConfirm",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4220046",
+              "quantity": "1"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "hasItemDialogue"
+          }
+        ]
+      }
+    },
+    {
+      "id": "hasItemDialogue",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "You want to hand the #r#t4220046##k to me, right? Alright, I'll take it for you.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "noItemGreeting",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Hello there! I'm #b#p2041026##k, in charge of watching and reporting any paranormal activities in this area.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

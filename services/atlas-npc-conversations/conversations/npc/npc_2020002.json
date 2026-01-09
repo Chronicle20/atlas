@@ -1,0 +1,1188 @@
+{
+  "npcId": 2020002,
+  "startState": "selectJobType",
+  "states": [
+    {
+      "id": "selectJobType",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Hello there. El Nath winters are incredibly cold, you're going to need a warm pair of shoes to survive.",
+        "choices": [
+          { "text": "Create Warrior shoes", "nextState": "selectWarriorShoe" },
+          { "text": "Create Bowman shoes", "nextState": "selectBowmanShoe" },
+          { "text": "Create Magician shoes", "nextState": "selectMagicianShoe" },
+          { "text": "Create Thief shoes", "nextState": "selectThiefShoe" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "selectWarriorShoe",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Warrior shoes? Okay, then which set?",
+        "choices": [
+          { "text": "Sapphire Camel Boots - Warrior Lv. 60", "nextState": "confirmWarrior0", "context": { "itemId": "1072147", "mat0": "4021008", "mat1": "4011007", "mat2": "4021005", "mat3": "4000030", "mat4": "4003000", "qty0": "1", "qty1": "1", "qty2": "8", "qty3": "80", "qty4": "55", "cost": "60000" } },
+          { "text": "Orihalcon Camel Boots - Warrior Lv. 60", "nextState": "confirmWarrior1", "context": { "itemId": "1072148", "mat0": "4021008", "mat1": "4011007", "mat2": "4011005", "mat3": "4000030", "mat4": "4003000", "qty0": "1", "qty1": "1", "qty2": "8", "qty3": "80", "qty4": "55", "cost": "60000" } },
+          { "text": "Blood Camel Boots - Warrior Lv. 60", "nextState": "confirmWarrior2", "context": { "itemId": "1072149", "mat0": "4021008", "mat1": "4011007", "mat2": "4021000", "mat3": "4000030", "mat4": "4003000", "qty0": "1", "qty1": "1", "qty2": "8", "qty3": "80", "qty4": "55", "cost": "60000" } },
+          { "text": "Blue Carzen Boots - Warrior Lv. 70", "nextState": "confirmWarrior3", "context": { "itemId": "1072154", "mat0": "4005000", "mat1": "4005002", "mat2": "4011002", "mat3": "4000048", "mat4": "4003000", "qty0": "1", "qty1": "3", "qty2": "5", "qty3": "100", "qty4": "55", "cost": "70000" } },
+          { "text": "Purple Carzen Boots - Warrior Lv. 70", "nextState": "confirmWarrior4", "context": { "itemId": "1072155", "mat0": "4005000", "mat1": "4005002", "mat2": "4011005", "mat3": "4000048", "mat4": "4003000", "qty0": "2", "qty1": "2", "qty2": "5", "qty3": "100", "qty4": "55", "cost": "70000" } },
+          { "text": "Dark Carzen Boots - Warrior Lv. 70", "nextState": "confirmWarrior5", "context": { "itemId": "1072156", "mat0": "4005000", "mat1": "4005002", "mat2": "4021008", "mat3": "4000048", "mat4": "4003000", "qty0": "3", "qty1": "1", "qty2": "1", "qty3": "100", "qty4": "55", "cost": "70000" } },
+          { "text": "Red Rivers Boots - Warrior Lv. 80", "nextState": "confirmWarrior6", "context": { "itemId": "1072210", "mat0": "4005000", "mat1": "4005002", "mat2": "4021000", "mat3": "4000030", "mat4": "4003000", "qty0": "2", "qty1": "3", "qty2": "7", "qty3": "90", "qty4": "65", "cost": "80000" } },
+          { "text": "Blue Rivers Boots - Warrior Lv. 80", "nextState": "confirmWarrior7", "context": { "itemId": "1072211", "mat0": "4005000", "mat1": "4005002", "mat2": "4021002", "mat3": "4000030", "mat4": "4003000", "qty0": "3", "qty1": "2", "qty2": "7", "qty3": "90", "qty4": "65", "cost": "80000" } },
+          { "text": "Dark Rivers Boots - Warrior Lv. 80", "nextState": "confirmWarrior8", "context": { "itemId": "1072212", "mat0": "4005000", "mat1": "4005002", "mat2": "4021008", "mat3": "4000030", "mat4": "4003000", "qty0": "4", "qty1": "1", "qty2": "2", "qty3": "90", "qty4": "65", "cost": "80000" } },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "selectBowmanShoe",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Bowman shoes? Okay, then which set?",
+        "choices": [
+          { "text": "Red Gore Boots - Bowman Lv. 60", "nextState": "confirmBowman0", "context": { "itemId": "1072144", "mat0": "4011006", "mat1": "4021000", "mat2": "4021007", "mat3": "4000030", "mat4": "4003000", "qty0": "5", "qty1": "8", "qty2": "1", "qty3": "75", "qty4": "50", "cost": "60000" } },
+          { "text": "Blue Gore Boots - Bowman Lv. 60", "nextState": "confirmBowman1", "context": { "itemId": "1072145", "mat0": "4011006", "mat1": "4021005", "mat2": "4021007", "mat3": "4000030", "mat4": "4003000", "qty0": "5", "qty1": "8", "qty2": "1", "qty3": "75", "qty4": "50", "cost": "60000" } },
+          { "text": "Green Gore Boots - Bowman Lv. 60", "nextState": "confirmBowman2", "context": { "itemId": "1072146", "mat0": "4011006", "mat1": "4021003", "mat2": "4021007", "mat3": "4000030", "mat4": "4003000", "qty0": "5", "qty1": "8", "qty2": "1", "qty3": "75", "qty4": "50", "cost": "60000" } },
+          { "text": "Blue Elf Boots - Bowman Lv. 70", "nextState": "confirmBowman3", "context": { "itemId": "1072164", "mat0": "4005002", "mat1": "4005000", "mat2": "4021005", "mat3": "4000055", "mat4": "4003000", "qty0": "1", "qty1": "3", "qty2": "5", "qty3": "100", "qty4": "55", "cost": "70000" } },
+          { "text": "Beige Elf Boots - Bowman Lv. 70", "nextState": "confirmBowman4", "context": { "itemId": "1072165", "mat0": "4005002", "mat1": "4005000", "mat2": "4021004", "mat3": "4000055", "mat4": "4003000", "qty0": "2", "qty1": "2", "qty2": "5", "qty3": "100", "qty4": "55", "cost": "70000" } },
+          { "text": "Green Elf Boots - Bowman Lv. 70", "nextState": "confirmBowman5", "context": { "itemId": "1072166", "mat0": "4005002", "mat1": "4005000", "mat2": "4021003", "mat3": "4000055", "mat4": "4003000", "qty0": "2", "qty1": "2", "qty2": "5", "qty3": "100", "qty4": "55", "cost": "70000" } },
+          { "text": "Dark Elf Boots - Bowman Lv. 70", "nextState": "confirmBowman6", "context": { "itemId": "1072167", "mat0": "4005002", "mat1": "4005000", "mat2": "4021008", "mat3": "4000055", "mat4": "4003000", "qty0": "3", "qty1": "1", "qty2": "1", "qty3": "100", "qty4": "55", "cost": "70000" } },
+          { "text": "Blue Wing Boots - Bowman Lv. 80", "nextState": "confirmBowman7", "context": { "itemId": "1072182", "mat0": "4005002", "mat1": "4005000", "mat2": "4021002", "mat3": "4000030", "mat4": "4003000", "qty0": "2", "qty1": "3", "qty2": "7", "qty3": "90", "qty4": "60", "cost": "80000" } },
+          { "text": "Red Wing Boots - Bowman Lv. 80", "nextState": "confirmBowman8", "context": { "itemId": "1072183", "mat0": "4005002", "mat1": "4005000", "mat2": "4021000", "mat3": "4000030", "mat4": "4003000", "qty0": "3", "qty1": "2", "qty2": "7", "qty3": "90", "qty4": "60", "cost": "80000" } },
+          { "text": "Green Wing Boots - Bowman Lv. 80", "nextState": "confirmBowman9", "context": { "itemId": "1072184", "mat0": "4005002", "mat1": "4005000", "mat2": "4021003", "mat3": "4000030", "mat4": "4003000", "qty0": "4", "qty1": "1", "qty2": "7", "qty3": "90", "qty4": "60", "cost": "80000" } },
+          { "text": "Dark Wing Boots - Bowman Lv. 80", "nextState": "confirmBowman10", "context": { "itemId": "1072185", "mat0": "4005002", "mat1": "4021008", "mat2": "4000030", "mat3": "4003000", "qty0": "5", "qty1": "2", "qty2": "90", "qty3": "60", "cost": "80000" } },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "selectMagicianShoe",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Magician shoes? Okay, then which set?",
+        "choices": [
+          { "text": "Pink Goldrunners - Magician Lv. 60", "nextState": "confirmMagician0", "context": { "itemId": "1072136", "mat0": "4021009", "mat1": "4011006", "mat2": "4011005", "mat3": "4000030", "mat4": "4003000", "qty0": "1", "qty1": "4", "qty2": "5", "qty3": "70", "qty4": "50", "cost": "60000" } },
+          { "text": "Green Goldrunners - Magician Lv. 60", "nextState": "confirmMagician1", "context": { "itemId": "1072137", "mat0": "4021009", "mat1": "4011006", "mat2": "4021003", "mat3": "4000030", "mat4": "4003000", "qty0": "1", "qty1": "4", "qty2": "5", "qty3": "70", "qty4": "50", "cost": "60000" } },
+          { "text": "Orange Goldrunners - Magician Lv. 60", "nextState": "confirmMagician2", "context": { "itemId": "1072138", "mat0": "4021009", "mat1": "4011006", "mat2": "4011003", "mat3": "4000030", "mat4": "4003000", "qty0": "1", "qty1": "4", "qty2": "5", "qty3": "70", "qty4": "50", "cost": "60000" } },
+          { "text": "Blue Goldrunners - Magician Lv. 60", "nextState": "confirmMagician3", "context": { "itemId": "1072139", "mat0": "4021009", "mat1": "4011006", "mat2": "4021002", "mat3": "4000030", "mat4": "4003000", "qty0": "1", "qty1": "4", "qty2": "5", "qty3": "70", "qty4": "50", "cost": "60000" } },
+          { "text": "Blue Lapiz Sandals - Magician Lv. 70", "nextState": "confirmMagician4", "context": { "itemId": "1072157", "mat0": "4005001", "mat1": "4005003", "mat2": "4021002", "mat3": "4000051", "mat4": "4003000", "qty0": "1", "qty1": "3", "qty2": "5", "qty3": "100", "qty4": "55", "cost": "70000" } },
+          { "text": "Red Lapiz Sandals - Magician Lv. 70", "nextState": "confirmMagician5", "context": { "itemId": "1072158", "mat0": "4005001", "mat1": "4005003", "mat2": "4021000", "mat3": "4000051", "mat4": "4003000", "qty0": "2", "qty1": "2", "qty2": "5", "qty3": "100", "qty4": "55", "cost": "70000" } },
+          { "text": "Brown Lapiz Sandals - Magician Lv. 70", "nextState": "confirmMagician6", "context": { "itemId": "1072159", "mat0": "4005001", "mat1": "4005003", "mat2": "4011003", "mat3": "4000051", "mat4": "4003000", "qty0": "2", "qty1": "2", "qty2": "5", "qty3": "100", "qty4": "55", "cost": "70000" } },
+          { "text": "Gold Lapiz Sandals - Magician Lv. 70", "nextState": "confirmMagician7", "context": { "itemId": "1072160", "mat0": "4005001", "mat1": "4005003", "mat2": "4011006", "mat3": "4000051", "mat4": "4003000", "qty0": "3", "qty1": "1", "qty2": "3", "qty3": "100", "qty4": "55", "cost": "70000" } },
+          { "text": "Green Enigma Shoes - Magician Lv. 80", "nextState": "confirmMagician8", "context": { "itemId": "1072177", "mat0": "4005001", "mat1": "4005003", "mat2": "4021003", "mat3": "4000030", "mat4": "4003000", "qty0": "2", "qty1": "3", "qty2": "7", "qty3": "85", "qty4": "60", "cost": "80000" } },
+          { "text": "Purple Enigma Shoes - Magician Lv. 80", "nextState": "confirmMagician9", "context": { "itemId": "1072178", "mat0": "4005001", "mat1": "4005003", "mat2": "4021001", "mat3": "4000030", "mat4": "4003000", "qty0": "3", "qty1": "2", "qty2": "7", "qty3": "85", "qty4": "60", "cost": "80000" } },
+          { "text": "Dark Enigma Shoes - Magician Lv. 80", "nextState": "confirmMagician10", "context": { "itemId": "1072179", "mat0": "4005001", "mat1": "4005003", "mat2": "4021008", "mat3": "4000030", "mat4": "4003000", "qty0": "4", "qty1": "1", "qty2": "2", "qty3": "85", "qty4": "60", "cost": "80000" } },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "selectThiefShoe",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Thief shoes? Okay, then which set?",
+        "choices": [
+          { "text": "Blood Moss Boots - Thief Lv. 60", "nextState": "confirmThief0", "context": { "itemId": "1072150", "mat0": "4021007", "mat1": "4011007", "mat2": "4021000", "mat3": "4000030", "mat4": "4003000", "qty0": "1", "qty1": "1", "qty2": "8", "qty3": "75", "qty4": "50", "cost": "60000" } },
+          { "text": "Gold Moss Boots - Thief Lv. 60", "nextState": "confirmThief1", "context": { "itemId": "1072151", "mat0": "4021007", "mat1": "4011007", "mat2": "4011006", "mat3": "4000030", "mat4": "4003000", "qty0": "1", "qty1": "1", "qty2": "5", "qty3": "75", "qty4": "50", "cost": "60000" } },
+          { "text": "Dark Moss Boots - Thief Lv. 60", "nextState": "confirmThief2", "context": { "itemId": "1072152", "mat0": "4021007", "mat1": "4011007", "mat2": "4021008", "mat3": "4000030", "mat4": "4003000", "qty0": "1", "qty1": "1", "qty2": "1", "qty3": "75", "qty4": "50", "cost": "60000" } },
+          { "text": "Purple Mystique Shoes - Thief Lv. 70", "nextState": "confirmThief3", "context": { "itemId": "1072161", "mat0": "4005003", "mat1": "4005000", "mat2": "4021001", "mat3": "4000051", "mat4": "4003000", "qty0": "1", "qty1": "3", "qty2": "5", "qty3": "100", "qty4": "55", "cost": "70000" } },
+          { "text": "Blue Mystique Shoes - Thief Lv. 70", "nextState": "confirmThief4", "context": { "itemId": "1072162", "mat0": "4005003", "mat1": "4005002", "mat2": "4021005", "mat3": "4000051", "mat4": "4003000", "qty0": "1", "qty1": "3", "qty2": "5", "qty3": "100", "qty4": "55", "cost": "70000" } },
+          { "text": "Red Mystique Shoes - Thief Lv. 70", "nextState": "confirmThief5", "context": { "itemId": "1072163", "mat0": "4005002", "mat1": "4005003", "mat2": "4021000", "mat3": "4000051", "mat4": "4003000", "qty0": "1", "qty1": "3", "qty2": "5", "qty3": "100", "qty4": "55", "cost": "70000" } },
+          { "text": "Green Pirate Boots - Thief Lv. 80", "nextState": "confirmThief6", "context": { "itemId": "1072172", "mat0": "4005000", "mat1": "4005003", "mat2": "4021003", "mat3": "4000030", "mat4": "4003000", "qty0": "3", "qty1": "2", "qty2": "7", "qty3": "90", "qty4": "60", "cost": "80000" } },
+          { "text": "Red Pirate Boots - Thief Lv. 80", "nextState": "confirmThief7", "context": { "itemId": "1072173", "mat0": "4005002", "mat1": "4005003", "mat2": "4021000", "mat3": "4000030", "mat4": "4003000", "qty0": "3", "qty1": "2", "qty2": "7", "qty3": "90", "qty4": "60", "cost": "80000" } },
+          { "text": "Dark Pirate Boots - Thief Lv. 80", "nextState": "confirmThief8", "context": { "itemId": "1072174", "mat0": "4005003", "mat1": "4005002", "mat2": "4021008", "mat3": "4000030", "mat4": "4003000", "qty0": "3", "qty1": "2", "qty2": "7", "qty3": "90", "qty4": "60", "cost": "80000" } },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "confirmWarrior0",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072147#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4021008# 1 #t4021008#\r\n#i4011007# 1 #t4011007#\r\n#i4021005# 8 #t4021005#\r\n#i4000030# 80 #t4000030#\r\n#i4003000# 55 #t4003000#\r\n#i4031138# 60000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftWarrior0" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftWarrior0",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072147",
+        "materials": [4021008, 4011007, 4021005, 4000030, 4003000],
+        "quantities": [1, 1, 8, 80, 55],
+        "mesoCost": 60000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmWarrior1",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072148#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4021008# 1 #t4021008#\r\n#i4011007# 1 #t4011007#\r\n#i4011005# 8 #t4011005#\r\n#i4000030# 80 #t4000030#\r\n#i4003000# 55 #t4003000#\r\n#i4031138# 60000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftWarrior1" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftWarrior1",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072148",
+        "materials": [4021008, 4011007, 4011005, 4000030, 4003000],
+        "quantities": [1, 1, 8, 80, 55],
+        "mesoCost": 60000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmWarrior2",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072149#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4021008# 1 #t4021008#\r\n#i4011007# 1 #t4011007#\r\n#i4021000# 8 #t4021000#\r\n#i4000030# 80 #t4000030#\r\n#i4003000# 55 #t4003000#\r\n#i4031138# 60000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftWarrior2" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftWarrior2",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072149",
+        "materials": [4021008, 4011007, 4021000, 4000030, 4003000],
+        "quantities": [1, 1, 8, 80, 55],
+        "mesoCost": 60000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmWarrior3",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072154#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4005000# 1 #t4005000#\r\n#i4005002# 3 #t4005002#\r\n#i4011002# 5 #t4011002#\r\n#i4000048# 100 #t4000048#\r\n#i4003000# 55 #t4003000#\r\n#i4031138# 70000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftWarrior3" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftWarrior3",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072154",
+        "materials": [4005000, 4005002, 4011002, 4000048, 4003000],
+        "quantities": [1, 3, 5, 100, 55],
+        "mesoCost": 70000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmWarrior4",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072155#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4005000# 2 #t4005000#\r\n#i4005002# 2 #t4005002#\r\n#i4011005# 5 #t4011005#\r\n#i4000048# 100 #t4000048#\r\n#i4003000# 55 #t4003000#\r\n#i4031138# 70000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftWarrior4" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftWarrior4",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072155",
+        "materials": [4005000, 4005002, 4011005, 4000048, 4003000],
+        "quantities": [2, 2, 5, 100, 55],
+        "mesoCost": 70000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmWarrior5",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072156#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4005000# 3 #t4005000#\r\n#i4005002# 1 #t4005002#\r\n#i4021008# 1 #t4021008#\r\n#i4000048# 100 #t4000048#\r\n#i4003000# 55 #t4003000#\r\n#i4031138# 70000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftWarrior5" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftWarrior5",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072156",
+        "materials": [4005000, 4005002, 4021008, 4000048, 4003000],
+        "quantities": [3, 1, 1, 100, 55],
+        "mesoCost": 70000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmWarrior6",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072210#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4005000# 2 #t4005000#\r\n#i4005002# 3 #t4005002#\r\n#i4021000# 7 #t4021000#\r\n#i4000030# 90 #t4000030#\r\n#i4003000# 65 #t4003000#\r\n#i4031138# 80000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftWarrior6" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftWarrior6",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072210",
+        "materials": [4005000, 4005002, 4021000, 4000030, 4003000],
+        "quantities": [2, 3, 7, 90, 65],
+        "mesoCost": 80000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmWarrior7",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072211#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4005000# 3 #t4005000#\r\n#i4005002# 2 #t4005002#\r\n#i4021002# 7 #t4021002#\r\n#i4000030# 90 #t4000030#\r\n#i4003000# 65 #t4003000#\r\n#i4031138# 80000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftWarrior7" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftWarrior7",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072211",
+        "materials": [4005000, 4005002, 4021002, 4000030, 4003000],
+        "quantities": [3, 2, 7, 90, 65],
+        "mesoCost": 80000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmWarrior8",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072212#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4005000# 4 #t4005000#\r\n#i4005002# 1 #t4005002#\r\n#i4021008# 2 #t4021008#\r\n#i4000030# 90 #t4000030#\r\n#i4003000# 65 #t4003000#\r\n#i4031138# 80000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftWarrior8" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftWarrior8",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072212",
+        "materials": [4005000, 4005002, 4021008, 4000030, 4003000],
+        "quantities": [4, 1, 2, 90, 65],
+        "mesoCost": 80000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmBowman0",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072144#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4011006# 5 #t4011006#\r\n#i4021000# 8 #t4021000#\r\n#i4021007# 1 #t4021007#\r\n#i4000030# 75 #t4000030#\r\n#i4003000# 50 #t4003000#\r\n#i4031138# 60000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftBowman0" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftBowman0",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072144",
+        "materials": [4011006, 4021000, 4021007, 4000030, 4003000],
+        "quantities": [5, 8, 1, 75, 50],
+        "mesoCost": 60000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmBowman1",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072145#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4011006# 5 #t4011006#\r\n#i4021005# 8 #t4021005#\r\n#i4021007# 1 #t4021007#\r\n#i4000030# 75 #t4000030#\r\n#i4003000# 50 #t4003000#\r\n#i4031138# 60000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftBowman1" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftBowman1",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072145",
+        "materials": [4011006, 4021005, 4021007, 4000030, 4003000],
+        "quantities": [5, 8, 1, 75, 50],
+        "mesoCost": 60000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmBowman2",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072146#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4011006# 5 #t4011006#\r\n#i4021003# 8 #t4021003#\r\n#i4021007# 1 #t4021007#\r\n#i4000030# 75 #t4000030#\r\n#i4003000# 50 #t4003000#\r\n#i4031138# 60000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftBowman2" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftBowman2",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072146",
+        "materials": [4011006, 4021003, 4021007, 4000030, 4003000],
+        "quantities": [5, 8, 1, 75, 50],
+        "mesoCost": 60000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmBowman3",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072164#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4005002# 1 #t4005002#\r\n#i4005000# 3 #t4005000#\r\n#i4021005# 5 #t4021005#\r\n#i4000055# 100 #t4000055#\r\n#i4003000# 55 #t4003000#\r\n#i4031138# 70000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftBowman3" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftBowman3",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072164",
+        "materials": [4005002, 4005000, 4021005, 4000055, 4003000],
+        "quantities": [1, 3, 5, 100, 55],
+        "mesoCost": 70000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmBowman4",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072165#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4005002# 2 #t4005002#\r\n#i4005000# 2 #t4005000#\r\n#i4021004# 5 #t4021004#\r\n#i4000055# 100 #t4000055#\r\n#i4003000# 55 #t4003000#\r\n#i4031138# 70000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftBowman4" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftBowman4",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072165",
+        "materials": [4005002, 4005000, 4021004, 4000055, 4003000],
+        "quantities": [2, 2, 5, 100, 55],
+        "mesoCost": 70000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmBowman5",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072166#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4005002# 2 #t4005002#\r\n#i4005000# 2 #t4005000#\r\n#i4021003# 5 #t4021003#\r\n#i4000055# 100 #t4000055#\r\n#i4003000# 55 #t4003000#\r\n#i4031138# 70000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftBowman5" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftBowman5",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072166",
+        "materials": [4005002, 4005000, 4021003, 4000055, 4003000],
+        "quantities": [2, 2, 5, 100, 55],
+        "mesoCost": 70000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmBowman6",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072167#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4005002# 3 #t4005002#\r\n#i4005000# 1 #t4005000#\r\n#i4021008# 1 #t4021008#\r\n#i4000055# 100 #t4000055#\r\n#i4003000# 55 #t4003000#\r\n#i4031138# 70000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftBowman6" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftBowman6",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072167",
+        "materials": [4005002, 4005000, 4021008, 4000055, 4003000],
+        "quantities": [3, 1, 1, 100, 55],
+        "mesoCost": 70000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmBowman7",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072182#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4005002# 2 #t4005002#\r\n#i4005000# 3 #t4005000#\r\n#i4021002# 7 #t4021002#\r\n#i4000030# 90 #t4000030#\r\n#i4003000# 60 #t4003000#\r\n#i4031138# 80000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftBowman7" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftBowman7",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072182",
+        "materials": [4005002, 4005000, 4021002, 4000030, 4003000],
+        "quantities": [2, 3, 7, 90, 60],
+        "mesoCost": 80000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmBowman8",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072183#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4005002# 3 #t4005002#\r\n#i4005000# 2 #t4005000#\r\n#i4021000# 7 #t4021000#\r\n#i4000030# 90 #t4000030#\r\n#i4003000# 60 #t4003000#\r\n#i4031138# 80000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftBowman8" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftBowman8",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072183",
+        "materials": [4005002, 4005000, 4021000, 4000030, 4003000],
+        "quantities": [3, 2, 7, 90, 60],
+        "mesoCost": 80000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmBowman9",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072184#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4005002# 4 #t4005002#\r\n#i4005000# 1 #t4005000#\r\n#i4021003# 7 #t4021003#\r\n#i4000030# 90 #t4000030#\r\n#i4003000# 60 #t4003000#\r\n#i4031138# 80000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftBowman9" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftBowman9",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072184",
+        "materials": [4005002, 4005000, 4021003, 4000030, 4003000],
+        "quantities": [4, 1, 7, 90, 60],
+        "mesoCost": 80000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmBowman10",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072185#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4005002# 5 #t4005002#\r\n#i4021008# 2 #t4021008#\r\n#i4000030# 90 #t4000030#\r\n#i4003000# 60 #t4003000#\r\n#i4031138# 80000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftBowman10" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftBowman10",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072185",
+        "materials": [4005002, 4021008, 4000030, 4003000],
+        "quantities": [5, 2, 90, 60],
+        "mesoCost": 80000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmMagician0",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072136#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4021009# 1 #t4021009#\r\n#i4011006# 4 #t4011006#\r\n#i4011005# 5 #t4011005#\r\n#i4000030# 70 #t4000030#\r\n#i4003000# 50 #t4003000#\r\n#i4031138# 60000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftMagician0" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftMagician0",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072136",
+        "materials": [4021009, 4011006, 4011005, 4000030, 4003000],
+        "quantities": [1, 4, 5, 70, 50],
+        "mesoCost": 60000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmMagician1",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072137#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4021009# 1 #t4021009#\r\n#i4011006# 4 #t4011006#\r\n#i4021003# 5 #t4021003#\r\n#i4000030# 70 #t4000030#\r\n#i4003000# 50 #t4003000#\r\n#i4031138# 60000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftMagician1" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftMagician1",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072137",
+        "materials": [4021009, 4011006, 4021003, 4000030, 4003000],
+        "quantities": [1, 4, 5, 70, 50],
+        "mesoCost": 60000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmMagician2",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072138#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4021009# 1 #t4021009#\r\n#i4011006# 4 #t4011006#\r\n#i4011003# 5 #t4011003#\r\n#i4000030# 70 #t4000030#\r\n#i4003000# 50 #t4003000#\r\n#i4031138# 60000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftMagician2" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftMagician2",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072138",
+        "materials": [4021009, 4011006, 4011003, 4000030, 4003000],
+        "quantities": [1, 4, 5, 70, 50],
+        "mesoCost": 60000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmMagician3",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072139#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4021009# 1 #t4021009#\r\n#i4011006# 4 #t4011006#\r\n#i4021002# 5 #t4021002#\r\n#i4000030# 70 #t4000030#\r\n#i4003000# 50 #t4003000#\r\n#i4031138# 60000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftMagician3" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftMagician3",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072139",
+        "materials": [4021009, 4011006, 4021002, 4000030, 4003000],
+        "quantities": [1, 4, 5, 70, 50],
+        "mesoCost": 60000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmMagician4",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072157#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4005001# 1 #t4005001#\r\n#i4005003# 3 #t4005003#\r\n#i4021002# 5 #t4021002#\r\n#i4000051# 100 #t4000051#\r\n#i4003000# 55 #t4003000#\r\n#i4031138# 70000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftMagician4" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftMagician4",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072157",
+        "materials": [4005001, 4005003, 4021002, 4000051, 4003000],
+        "quantities": [1, 3, 5, 100, 55],
+        "mesoCost": 70000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmMagician5",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072158#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4005001# 2 #t4005001#\r\n#i4005003# 2 #t4005003#\r\n#i4021000# 5 #t4021000#\r\n#i4000051# 100 #t4000051#\r\n#i4003000# 55 #t4003000#\r\n#i4031138# 70000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftMagician5" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftMagician5",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072158",
+        "materials": [4005001, 4005003, 4021000, 4000051, 4003000],
+        "quantities": [2, 2, 5, 100, 55],
+        "mesoCost": 70000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmMagician6",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072159#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4005001# 2 #t4005001#\r\n#i4005003# 2 #t4005003#\r\n#i4011003# 5 #t4011003#\r\n#i4000051# 100 #t4000051#\r\n#i4003000# 55 #t4003000#\r\n#i4031138# 70000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftMagician6" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftMagician6",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072159",
+        "materials": [4005001, 4005003, 4011003, 4000051, 4003000],
+        "quantities": [2, 2, 5, 100, 55],
+        "mesoCost": 70000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmMagician7",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072160#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4005001# 3 #t4005001#\r\n#i4005003# 1 #t4005003#\r\n#i4011006# 3 #t4011006#\r\n#i4000051# 100 #t4000051#\r\n#i4003000# 55 #t4003000#\r\n#i4031138# 70000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftMagician7" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftMagician7",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072160",
+        "materials": [4005001, 4005003, 4011006, 4000051, 4003000],
+        "quantities": [3, 1, 3, 100, 55],
+        "mesoCost": 70000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmMagician8",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072177#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4005001# 2 #t4005001#\r\n#i4005003# 3 #t4005003#\r\n#i4021003# 7 #t4021003#\r\n#i4000030# 85 #t4000030#\r\n#i4003000# 60 #t4003000#\r\n#i4031138# 80000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftMagician8" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftMagician8",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072177",
+        "materials": [4005001, 4005003, 4021003, 4000030, 4003000],
+        "quantities": [2, 3, 7, 85, 60],
+        "mesoCost": 80000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmMagician9",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072178#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4005001# 3 #t4005001#\r\n#i4005003# 2 #t4005003#\r\n#i4021001# 7 #t4021001#\r\n#i4000030# 85 #t4000030#\r\n#i4003000# 60 #t4003000#\r\n#i4031138# 80000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftMagician9" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftMagician9",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072178",
+        "materials": [4005001, 4005003, 4021001, 4000030, 4003000],
+        "quantities": [3, 2, 7, 85, 60],
+        "mesoCost": 80000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmMagician10",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072179#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4005001# 4 #t4005001#\r\n#i4005003# 1 #t4005003#\r\n#i4021008# 2 #t4021008#\r\n#i4000030# 85 #t4000030#\r\n#i4003000# 60 #t4003000#\r\n#i4031138# 80000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftMagician10" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftMagician10",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072179",
+        "materials": [4005001, 4005003, 4021008, 4000030, 4003000],
+        "quantities": [4, 1, 2, 85, 60],
+        "mesoCost": 80000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmThief0",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072150#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4021007# 1 #t4021007#\r\n#i4011007# 1 #t4011007#\r\n#i4021000# 8 #t4021000#\r\n#i4000030# 75 #t4000030#\r\n#i4003000# 50 #t4003000#\r\n#i4031138# 60000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftThief0" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftThief0",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072150",
+        "materials": [4021007, 4011007, 4021000, 4000030, 4003000],
+        "quantities": [1, 1, 8, 75, 50],
+        "mesoCost": 60000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmThief1",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072151#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4021007# 1 #t4021007#\r\n#i4011007# 1 #t4011007#\r\n#i4011006# 5 #t4011006#\r\n#i4000030# 75 #t4000030#\r\n#i4003000# 50 #t4003000#\r\n#i4031138# 60000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftThief1" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftThief1",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072151",
+        "materials": [4021007, 4011007, 4011006, 4000030, 4003000],
+        "quantities": [1, 1, 5, 75, 50],
+        "mesoCost": 60000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmThief2",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072152#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4021007# 1 #t4021007#\r\n#i4011007# 1 #t4011007#\r\n#i4021008# 1 #t4021008#\r\n#i4000030# 75 #t4000030#\r\n#i4003000# 50 #t4003000#\r\n#i4031138# 60000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftThief2" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftThief2",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072152",
+        "materials": [4021007, 4011007, 4021008, 4000030, 4003000],
+        "quantities": [1, 1, 1, 75, 50],
+        "mesoCost": 60000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmThief3",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072161#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4005003# 1 #t4005003#\r\n#i4005000# 3 #t4005000#\r\n#i4021001# 5 #t4021001#\r\n#i4000051# 100 #t4000051#\r\n#i4003000# 55 #t4003000#\r\n#i4031138# 70000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftThief3" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftThief3",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072161",
+        "materials": [4005003, 4005000, 4021001, 4000051, 4003000],
+        "quantities": [1, 3, 5, 100, 55],
+        "mesoCost": 70000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmThief4",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072162#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4005003# 1 #t4005003#\r\n#i4005002# 3 #t4005002#\r\n#i4021005# 5 #t4021005#\r\n#i4000051# 100 #t4000051#\r\n#i4003000# 55 #t4003000#\r\n#i4031138# 70000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftThief4" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftThief4",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072162",
+        "materials": [4005003, 4005002, 4021005, 4000051, 4003000],
+        "quantities": [1, 3, 5, 100, 55],
+        "mesoCost": 70000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmThief5",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072163#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4005002# 1 #t4005002#\r\n#i4005003# 3 #t4005003#\r\n#i4021000# 5 #t4021000#\r\n#i4000051# 100 #t4000051#\r\n#i4003000# 55 #t4003000#\r\n#i4031138# 70000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftThief5" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftThief5",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072163",
+        "materials": [4005002, 4005003, 4021000, 4000051, 4003000],
+        "quantities": [1, 3, 5, 100, 55],
+        "mesoCost": 70000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmThief6",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072172#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4005000# 3 #t4005000#\r\n#i4005003# 2 #t4005003#\r\n#i4021003# 7 #t4021003#\r\n#i4000030# 90 #t4000030#\r\n#i4003000# 60 #t4003000#\r\n#i4031138# 80000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftThief6" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftThief6",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072172",
+        "materials": [4005000, 4005003, 4021003, 4000030, 4003000],
+        "quantities": [3, 2, 7, 90, 60],
+        "mesoCost": 80000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmThief7",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072173#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4005002# 3 #t4005002#\r\n#i4005003# 2 #t4005003#\r\n#i4021000# 7 #t4021000#\r\n#i4000030# 90 #t4000030#\r\n#i4003000# 60 #t4003000#\r\n#i4031138# 80000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftThief7" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftThief7",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072173",
+        "materials": [4005002, 4005003, 4021000, 4000030, 4003000],
+        "quantities": [3, 2, 7, 90, 60],
+        "mesoCost": 80000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "confirmThief8",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You want me to make a #t1072174#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4005003# 3 #t4005003#\r\n#i4005002# 2 #t4005002#\r\n#i4021008# 7 #t4021008#\r\n#i4000030# 90 #t4000030#\r\n#i4003000# 60 #t4003000#\r\n#i4031138# 80000 meso",
+        "choices": [
+          { "text": "Yes", "nextState": "craftThief8" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "craftThief8",
+      "type": "craftAction",
+      "craftAction": {
+        "itemId": "1072174",
+        "materials": [4005003, 4005002, 4021008, 4000030, 4003000],
+        "quantities": [3, 2, 7, 90, 60],
+        "mesoCost": 80000,
+        "successState": "craftSuccess",
+        "failureState": "missingMeso",
+        "missingMaterialsState": "missingMaterials"
+      }
+    },
+    {
+      "id": "craftSuccess",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "All done. Stay warm!",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "missingMeso",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "I'm afraid you cannot afford my services.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "missingMaterials",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "I only make quality goods, which I cannot do without the proper materials.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "noInventorySpace",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Check your inventory for a free slot first.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    }
+  ]
+}

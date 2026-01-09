@@ -4,6 +4,7 @@ import (
 	"atlas-pets/kafka/message/pet"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -89,15 +90,20 @@ func commandResponseEventProvider(m Model, commandId byte, success bool) model.P
 }
 
 func closenessChangedEventProvider(m Model, amount int16) model.Provider[[]kafka.Message] {
+	return closenessChangedEventWithTransactionProvider(m, amount, uuid.Nil)
+}
+
+func closenessChangedEventWithTransactionProvider(m Model, amount int16, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(m.OwnerId()))
 	value := &pet.StatusEvent[pet.ClosenessChangedStatusEventBody]{
 		PetId:   m.Id(),
 		OwnerId: m.OwnerId(),
 		Type:    pet.StatusEventTypeClosenessChanged,
 		Body: pet.ClosenessChangedStatusEventBody{
-			Slot:      m.Slot(),
-			Closeness: m.Closeness(),
-			Amount:    amount,
+			Slot:          m.Slot(),
+			Closeness:     m.Closeness(),
+			Amount:        amount,
+			TransactionId: transactionId,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

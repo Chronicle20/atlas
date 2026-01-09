@@ -1,0 +1,19 @@
+{
+  "npcId": 9250045,
+  "startState": "dispose",
+  "states": [
+    {
+      "id": "dispose",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

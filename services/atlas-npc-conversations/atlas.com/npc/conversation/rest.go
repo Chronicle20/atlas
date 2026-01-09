@@ -2,73 +2,12 @@ package conversation
 
 import (
 	"fmt"
-	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
+	"strconv"
 )
-
-const (
-	Resource = "conversations"
-)
-
-// RestModel represents the REST model for NPC conversations
-type RestModel struct {
-	Id         uuid.UUID        `json:"-"`          // Conversation ID
-	NpcId      uint32           `json:"npcId"`      // NPC ID
-	StartState string           `json:"startState"` // Start state ID
-	States     []RestStateModel `json:"states"`     // Conversation states
-}
-
-// GetName returns the resource name
-func (r RestModel) GetName() string {
-	return Resource
-}
-
-// GetID returns the resource ID
-func (r RestModel) GetID() string {
-	return r.Id.String()
-}
-
-// SetID sets the resource ID
-func (r *RestModel) SetID(idStr string) error {
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		return fmt.Errorf("invalid conversation ID: %w", err)
-	}
-	r.Id = id
-	return nil
-}
-
-// GetReferences returns the resource references
-func (r RestModel) GetReferences() []jsonapi.Reference {
-	return []jsonapi.Reference{}
-}
-
-// GetReferencedIDs returns the referenced IDs
-func (r RestModel) GetReferencedIDs() []jsonapi.ReferenceID {
-	return []jsonapi.ReferenceID{}
-}
-
-// GetReferencedStructs returns the referenced structs
-func (r RestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
-	return []jsonapi.MarshalIdentifier{}
-}
-
-// SetToOneReferenceID sets a to-one reference ID
-func (r *RestModel) SetToOneReferenceID(name, ID string) error {
-	return nil
-}
-
-// SetToManyReferenceIDs sets to-many reference IDs
-func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
-	return nil
-}
-
-// SetReferencedStructs sets referenced structs
-func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonapi.Data) error {
-	return nil
-}
 
 // RestStateModel represents the REST model for conversation states
+// This is shared between NPC conversations and quest state machines
 type RestStateModel struct {
 	Id            string                  `json:"id"`                      // State ID
 	StateType     string                  `json:"type"`                    // State type
@@ -76,6 +15,8 @@ type RestStateModel struct {
 	GenericAction *RestGenericActionModel `json:"genericAction,omitempty"` // Generic action model (if type is genericAction)
 	CraftAction   *RestCraftActionModel   `json:"craftAction,omitempty"`   // Craft action model (if type is craftAction)
 	ListSelection *RestListSelectionModel `json:"listSelection,omitempty"` // List selection model (if type is listSelection)
+	AskNumber     *RestAskNumberModel     `json:"askNumber,omitempty"`     // Ask number model (if type is askNumber)
+	AskStyle      *RestAskStyleModel      `json:"askStyle,omitempty"`      // Ask style model (if type is askStyle)
 }
 
 // GetID returns the resource ID
@@ -152,10 +93,12 @@ type RestOperationModel struct {
 
 // RestConditionModel represents the REST model for conditions
 type RestConditionModel struct {
-	Type     string `json:"type"`     // Condition type
-	Operator string `json:"operator"` // Operator
-	Value    string `json:"value"`    // Value
-	ItemId   string `json:"itemId,omitempty"`
+	Type            string `json:"type"`                      // Condition type
+	Operator        string `json:"operator"`                  // Operator
+	Value           string `json:"value"`                     // Value
+	ReferenceId     string `json:"referenceId,omitempty"`     // Reference ID (for items, quests, etc.)
+	Step            string `json:"step,omitempty"`            // Step (for quest progress)
+	IncludeEquipped bool   `json:"includeEquipped,omitempty"` // For item conditions: also check equipped items
 }
 
 // RestOutcomeModel represents the REST model for outcomes
@@ -172,6 +115,8 @@ type RestCraftActionModel struct {
 	MesoCost              uint32   `json:"mesoCost"`                       // Meso cost
 	StimulatorId          uint32   `json:"stimulatorId,omitempty"`         // Stimulator item ID
 	StimulatorFailChance  float64  `json:"stimulatorFailChance,omitempty"` // Stimulator failure chance
+	SuccessState          string   `json:"successState"`                   // Success state ID
+	FailureState          string   `json:"failureState"`                   // Failure state ID
 	MissingMaterialsState string   `json:"missingMaterialsState"`          // Missing materials state ID
 }
 
@@ -179,6 +124,25 @@ type RestCraftActionModel struct {
 type RestListSelectionModel struct {
 	Title   string            `json:"title"`             // List selection title
 	Choices []RestChoiceModel `json:"choices,omitempty"` // Dialogue choices
+}
+
+// RestAskNumberModel represents the REST model for ask number states
+type RestAskNumberModel struct {
+	Text         string `json:"text"`                 // Ask number text
+	DefaultValue uint32 `json:"default"`              // Default value
+	MinValue     uint32 `json:"min"`                  // Minimum value
+	MaxValue     uint32 `json:"max"`                  // Maximum value
+	ContextKey   string `json:"contextKey,omitempty"` // Context key (defaults to "quantity")
+	NextState    string `json:"nextState,omitempty"`  // Next state ID
+}
+
+// RestAskStyleModel represents the REST model for ask style states
+type RestAskStyleModel struct {
+	Text             string   `json:"text"`                       // Ask style text
+	Styles           []uint32 `json:"styles,omitempty"`           // Available style IDs (optional if stylesContextKey provided)
+	StylesContextKey string   `json:"stylesContextKey,omitempty"` // Context key containing dynamic styles (optional if styles provided)
+	ContextKey       string   `json:"contextKey,omitempty"`       // Context key (defaults to "selectedStyle")
+	NextState        string   `json:"nextState,omitempty"`        // Next state ID
 }
 
 // RestOptionSetModel represents the REST model for option sets
@@ -242,26 +206,6 @@ type RestOptionModel struct {
 	Meso       uint32   `json:"meso"`                 // Meso cost
 }
 
-// Transform converts a domain model to a REST model
-func Transform(m Model) (RestModel, error) {
-	// Transform states
-	restStates := make([]RestStateModel, 0, len(m.States()))
-	for _, state := range m.States() {
-		restState, err := TransformState(state)
-		if err != nil {
-			return RestModel{}, err
-		}
-		restStates = append(restStates, restState)
-	}
-
-	return RestModel{
-		Id:         m.Id(),
-		NpcId:      m.NpcId(),
-		StartState: m.StartState(),
-		States:     restStates,
-	}, nil
-}
-
 // TransformState converts a StateModel to a RestStateModel
 func TransformState(m StateModel) (RestStateModel, error) {
 	restState := RestStateModel{
@@ -306,6 +250,18 @@ func TransformState(m StateModel) (RestStateModel, error) {
 			}
 			restState.ListSelection = &restListSelection
 		}
+	case AskNumberType:
+		askNumber := m.AskNumber()
+		if askNumber != nil {
+			restAskNumber := TransformAskNumber(*askNumber)
+			restState.AskNumber = &restAskNumber
+		}
+	case AskStyleType:
+		askStyle := m.AskStyle()
+		if askStyle != nil {
+			restAskStyle := TransformAskStyle(*askStyle)
+			restState.AskStyle = &restAskStyle
+		}
 	}
 
 	return restState, nil
@@ -344,11 +300,18 @@ func TransformGenericAction(m GenericActionModel) (RestGenericActionModel, error
 		// Convert ConditionModel to RestConditionModel
 		restConditions := make([]RestConditionModel, 0, len(outcome.Conditions()))
 		for _, condition := range outcome.Conditions() {
+			var referenceIdStr string
+			if condition.ReferenceId() != 0 {
+				referenceIdStr = strconv.FormatUint(uint64(condition.ReferenceId()), 10)
+			}
+
 			restConditions = append(restConditions, RestConditionModel{
-				Type:     condition.Type(),
-				Operator: condition.Operator(),
-				Value:    condition.Value(),
-				ItemId:   condition.ItemId(),
+				Type:            condition.Type(),
+				Operator:        condition.Operator(),
+				Value:           condition.Value(),
+				ReferenceId:     referenceIdStr,
+				Step:            condition.Step(),
+				IncludeEquipped: condition.IncludeEquipped(),
 			})
 		}
 
@@ -373,6 +336,8 @@ func TransformCraftAction(m CraftActionModel) (RestCraftActionModel, error) {
 		MesoCost:              m.MesoCost(),
 		StimulatorId:          m.StimulatorId(),
 		StimulatorFailChance:  m.StimulatorFailChance(),
+		SuccessState:          m.SuccessState(),
+		FailureState:          m.FailureState(),
 		MissingMaterialsState: m.MissingMaterialsState(),
 	}, nil
 }
@@ -394,6 +359,29 @@ func TransformListSelection(m ListSelectionModel) (RestListSelectionModel, error
 	}, nil
 }
 
+// TransformAskNumber converts an AskNumberModel to a RestAskNumberModel
+func TransformAskNumber(m AskNumberModel) RestAskNumberModel {
+	return RestAskNumberModel{
+		Text:         m.Text(),
+		DefaultValue: m.DefaultValue(),
+		MinValue:     m.MinValue(),
+		MaxValue:     m.MaxValue(),
+		ContextKey:   m.ContextKey(),
+		NextState:    m.NextState(),
+	}
+}
+
+// TransformAskStyle converts an AskStyleModel to a RestAskStyleModel
+func TransformAskStyle(m AskStyleModel) RestAskStyleModel {
+	return RestAskStyleModel{
+		Text:             m.Text(),
+		Styles:           m.Styles(),
+		StylesContextKey: m.StylesContextKey(),
+		ContextKey:       m.ContextKey(),
+		NextState:        m.NextState(),
+	}
+}
+
 // TransformOptionSet converts an OptionSetModel to a RestOptionSetModel
 func TransformOptionSet(m OptionSetModel) (RestOptionSetModel, error) {
 	restOptions := make([]RestOptionModel, 0, len(m.Options()))
@@ -411,42 +399,6 @@ func TransformOptionSet(m OptionSetModel) (RestOptionSetModel, error) {
 		Id:      m.Id(),
 		Options: restOptions,
 	}, nil
-}
-
-// Extract converts a REST model to a domain model
-func Extract(r RestModel) (Model, error) {
-	// Validate required fields
-	if r.NpcId == 0 {
-		return Model{}, fmt.Errorf("npcId is required")
-	}
-	if r.StartState == "" {
-		return Model{}, fmt.Errorf("startState is required")
-	}
-	if len(r.States) == 0 {
-		return Model{}, fmt.Errorf("states are required")
-	}
-
-	// Create a new model using the builder
-	builder := NewBuilder()
-
-	// Set ID if provided, otherwise it will be auto-generated
-	if r.Id != uuid.Nil {
-		builder.SetId(r.Id)
-	}
-
-	builder.SetNpcId(r.NpcId).
-		SetStartState(r.StartState)
-
-	// Extract states
-	for _, restState := range r.States {
-		state, err := ExtractState(restState)
-		if err != nil {
-			return Model{}, err
-		}
-		builder.AddState(state)
-	}
-
-	return builder.Build()
 }
 
 // ExtractState converts a RestStateModel to a StateModel
@@ -490,6 +442,24 @@ func ExtractState(r RestStateModel) (StateModel, error) {
 			return StateModel{}, err
 		}
 		stateBuilder.SetListSelection(listSelection)
+	case AskNumberType:
+		if r.AskNumber == nil {
+			return StateModel{}, fmt.Errorf("askNumber is required for askNumber state")
+		}
+		askNumber, err := ExtractAskNumber(*r.AskNumber)
+		if err != nil {
+			return StateModel{}, err
+		}
+		stateBuilder.SetAskNumber(askNumber)
+	case AskStyleType:
+		if r.AskStyle == nil {
+			return StateModel{}, fmt.Errorf("askStyle is required for askStyle state")
+		}
+		askStyle, err := ExtractAskStyle(*r.AskStyle)
+		if err != nil {
+			return StateModel{}, err
+		}
+		stateBuilder.SetAskStyle(askStyle)
 	default:
 		return StateModel{}, fmt.Errorf("invalid state type: %s", r.StateType)
 	}
@@ -567,7 +537,9 @@ func ExtractOutcome(r RestOutcomeModel) (OutcomeModel, error) {
 			SetType(c.Type).
 			SetOperator(c.Operator).
 			SetValue(c.Value).
-			SetItemId(c.ItemId).
+			SetReferenceId(c.ReferenceId).
+			SetStep(c.Step).
+			SetIncludeEquipped(c.IncludeEquipped).
 			Build()
 
 		if err != nil {
@@ -593,6 +565,8 @@ func ExtractCraftAction(r RestCraftActionModel) (*CraftActionModel, error) {
 		SetMesoCost(r.MesoCost).
 		SetStimulatorId(r.StimulatorId).
 		SetStimulatorFailChance(r.StimulatorFailChance).
+		SetSuccessState(r.SuccessState).
+		SetFailureState(r.FailureState).
 		SetMissingMaterialsState(r.MissingMaterialsState)
 
 	return craftActionBuilder.Build()
@@ -609,6 +583,45 @@ func ExtractListSelection(r RestListSelectionModel) (*ListSelectionModel, error)
 			return nil, err
 		}
 		b.AddChoice(choice)
+	}
+
+	return b.Build()
+}
+
+// ExtractAskNumber converts a RestAskNumberModel to an AskNumberModel
+func ExtractAskNumber(r RestAskNumberModel) (*AskNumberModel, error) {
+	b := NewAskNumberBuilder().
+		SetText(r.Text).
+		SetDefaultValue(r.DefaultValue).
+		SetMinValue(r.MinValue).
+		SetMaxValue(r.MaxValue).
+		SetNextState(r.NextState)
+
+	if r.ContextKey != "" {
+		b.SetContextKey(r.ContextKey)
+	}
+
+	return b.Build()
+}
+
+// ExtractAskStyle converts a RestAskStyleModel to an AskStyleModel
+func ExtractAskStyle(r RestAskStyleModel) (*AskStyleModel, error) {
+	b := NewAskStyleBuilder().
+		SetText(r.Text).
+		SetNextState(r.NextState)
+
+	// Set styles if provided
+	if len(r.Styles) > 0 {
+		b.SetStyles(r.Styles)
+	}
+
+	// Set stylesContextKey if provided
+	if r.StylesContextKey != "" {
+		b.SetStylesContextKey(r.StylesContextKey)
+	}
+
+	if r.ContextKey != "" {
+		b.SetContextKey(r.ContextKey)
 	}
 
 	return b.Build()

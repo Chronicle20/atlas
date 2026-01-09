@@ -237,6 +237,50 @@ export interface ItemDataResult {
 }
 
 /**
+ * Mob/Monster API response data from MapleStory.io
+ */
+export interface MobApiData {
+  id: number;
+  name: string;
+  level?: number;
+  maxHP?: number;
+  maxMP?: number;
+  exp?: number;
+}
+
+/**
+ * Mob/Monster icon and name result
+ */
+export interface MobDataResult {
+  id: number;
+  name?: string;
+  iconUrl?: string;
+  cached: boolean;
+  error?: string;
+}
+
+/**
+ * Skill API response data from MapleStory.io
+ */
+export interface SkillApiData {
+  id: number;
+  name: string;
+  description?: string;
+  maxLevel?: number;
+}
+
+/**
+ * Skill icon and name result
+ */
+export interface SkillDataResult {
+  id: number;
+  name?: string;
+  iconUrl?: string;
+  cached: boolean;
+  error?: string;
+}
+
+/**
  * Character rendering service configuration
  */
 export interface CharacterRenderingConfig {

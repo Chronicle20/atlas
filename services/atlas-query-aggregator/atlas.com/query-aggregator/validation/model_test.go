@@ -988,7 +988,7 @@ func TestCondition_EvaluateWithContext(t *testing.T) {
 			},
 			context:      contextWithData,
 			wantPassed:   true,
-			wantContains: "Quest 1001 Status = 2",
+			wantContains: "Quest 1001 Status = 1",
 		},
 		{
 			name: "Quest Status STARTED - fail",
@@ -1000,7 +1000,7 @@ func TestCondition_EvaluateWithContext(t *testing.T) {
 			},
 			context:      contextWithData,
 			wantPassed:   false,
-			wantContains: "Quest 1001 Status = 3",
+			wantContains: "Quest 1001 Status = 2",
 		},
 		{
 			name: "Quest Status COMPLETED - pass",
@@ -1012,7 +1012,7 @@ func TestCondition_EvaluateWithContext(t *testing.T) {
 			},
 			context:      contextWithData,
 			wantPassed:   true,
-			wantContains: "Quest 1002 Status = 3",
+			wantContains: "Quest 1002 Status = 2",
 		},
 		{
 			name: "Quest Status - quest not found",

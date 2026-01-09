@@ -35,8 +35,20 @@ export default function Page() {
     }, [activeTenant])
 
     useEffect(() => {
-        fetchDataAgain()
-    }, [activeTenant, fetchDataAgain])
+        if (!activeTenant) return
+
+        setLoading(true)
+
+        accountsService.getAllAccounts(activeTenant)
+            .then((data) => {
+                setAccounts(data)
+            })
+            .catch((err: unknown) => {
+                const errorInfo = createErrorFromUnknown(err, "Failed to fetch accounts");
+                setError(errorInfo.message);
+            })
+            .finally(() => setLoading(false))
+    }, [activeTenant])
 
     const columns = getColumns({tenant: activeTenant});
 

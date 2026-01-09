@@ -11,6 +11,7 @@ import (
 	"atlas-saga-orchestrator/kafka/consumer/pet"
 	saga2 "atlas-saga-orchestrator/kafka/consumer/saga"
 	"atlas-saga-orchestrator/kafka/consumer/skill"
+	"atlas-saga-orchestrator/kafka/consumer/storage"
 	"atlas-saga-orchestrator/logger"
 	"atlas-saga-orchestrator/saga"
 	"atlas-saga-orchestrator/service"
@@ -65,6 +66,7 @@ func main() {
 	pet.InitConsumers(l)(cmf)(consumerGroupId)
 	saga2.InitConsumers(l)(cmf)(consumerGroupId)
 	skill.InitConsumers(l)(cmf)(consumerGroupId)
+	storage.InitConsumers(l)(cmf)(consumerGroupId)
 	asset.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	buddylist.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	cashshop.InitHandlers(l)(consumer.GetManager().RegisterHandler)
@@ -75,6 +77,7 @@ func main() {
 	pet.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	saga2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	skill.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	storage.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
 	// Create the service with the router
 	server.New(l).

@@ -10,6 +10,7 @@ import (
 	"atlas-storage/kafka/producer"
 	"atlas-storage/stackable"
 	"context"
+	"errors"
 	"sort"
 	"time"
 
@@ -194,6 +195,13 @@ func (p *Processor) UpdateMesosAndEmit(transactionId uuid.UUID, worldId byte, ac
 	s, err := GetByWorldAndAccountId(p.l, p.db, t.Id())(worldId, accountId)
 	if err != nil {
 		return err
+	}
+
+	// Validate SUBTRACT operation has enough mesos
+	if body.Operation == "SUBTRACT" && s.Mesos() < body.Mesos {
+		p.l.Warnf("Insufficient mesos in storage for account [%d]. Available: [%d], Requested: [%d]", accountId, s.Mesos(), body.Mesos)
+		_ = p.emitErrorEvent(transactionId, worldId, accountId, message.ErrorCodeNotEnoughMesos, "Insufficient mesos in storage")
+		return errors.New("insufficient mesos in storage")
 	}
 
 	oldMesos := s.Mesos()

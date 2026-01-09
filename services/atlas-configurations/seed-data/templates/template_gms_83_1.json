@@ -315,6 +315,20 @@
         }
       },
       {
+        "opCode": "0x3E",
+        "validator": "LoggedInValidator",
+        "handler": "StorageOperationHandle",
+        "options": {
+          "operations": {
+            "RETRIEVE_ASSET": 4,
+            "STORE_ASSET": 5,
+            "ARRANGE_ASSET": 6,
+            "MESO": 7,
+            "CLOSE": 8
+          }
+        }
+      },
+      {
         "opCode": "0x45",
         "validator": "LoggedInValidator",
         "handler": "CompartmentMergeHandle"

@@ -11,8 +11,8 @@ import { shouldUnoptimizeImageSrc, getImageLoadingStrategy } from "@/lib/utils/i
 
 interface NpcImageProps {
   npcId: number;
-  name?: string;
-  iconUrl?: string;
+  name?: string | undefined;
+  iconUrl?: string | undefined;
   className?: string;
   size?: number;
   showRetryButton?: boolean;

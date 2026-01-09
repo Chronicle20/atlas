@@ -1,0 +1,105 @@
+{
+  "questId": 22501,
+  "questName": "A Hungry Baby Dragon",
+  "startStateMachine": {
+    "startState": "dragonIntro",
+    "states": [
+      {
+        "id": "dragonIntro",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Yo, master. Now that I've shown you what I can do, it's your turn. Prove to me...that you can find food! I'm starving. You can use my power now, so you have to take care of me.",
+          "choices": [
+            { "text": "Next", "nextState": "playerResponse" },
+            { "text": "Exit", "nextState": null }
+          ]
+        }
+      },
+      {
+        "id": "playerResponse",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "speaker": "CHARACTER_LEFT",
+          "text": "Eh, I still don't get what's going on, but I can't let a poor little critter like you starve, right? Food, you say? What do you want to eat?",
+          "choices": [
+            { "text": "Previous", "nextState": "dragonIntro" },
+            { "text": "Next", "nextState": "dragonExplains" },
+            { "text": "Exit", "nextState": null }
+          ]
+        }
+      },
+      {
+        "id": "dragonExplains",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "Hi, I was just born a few minutes ago. How would I know what I eat? All I know is that I'm a Dragon... I'm YOUR Dragon. And you're my master. You have to treat me well!",
+          "choices": [
+            { "text": "Previous", "nextState": "playerResponse" },
+            { "text": "Next", "nextState": "askAccept" },
+            { "text": "Exit", "nextState": null }
+          ]
+        }
+      },
+      {
+        "id": "askAccept",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendAcceptDecline",
+          "text": "I guess we're supposed to learn together. But I'm hungry. Master, I want food. Remember, I'm a baby! I'll start crying soon!",
+          "choices": [
+            { "text": "Accept", "nextState": "acceptQuest" },
+            { "text": "Decline", "nextState": "declineQuest" },
+            { "text": "Exit", "nextState": null }
+          ]
+        }
+      },
+      {
+        "id": "declineQuest",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "*gasp* How can you refuse to feed your Dragon? This is child abuse! ",
+          "choices": [
+            { "text": "Next", "nextState": null },
+            { "text": "Exit", "nextState": null }
+          ]
+        }
+      },
+      {
+        "id": "acceptQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {
+              "type": "start_quest",
+              "params": {
+                "force": "true"
+              }
+            }
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": "questAccepted"
+            }
+          ]
+        }
+      },
+      {
+        "id": "questAccepted",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "#b#b(#p1013000# the baby Dragon appears to be extremely hungry. You must feed him. Maybe your Dad can give you advice on what dragons eat.)",
+          "choices": [
+            { "text": "Ok", "nextState": null },
+            { "text": "Exit", "nextState": null }
+          ]
+        }
+      }
+    ]
+  }
+}

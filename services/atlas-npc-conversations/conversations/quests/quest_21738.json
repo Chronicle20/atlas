@@ -1,0 +1,126 @@
+{
+  "questId": 21738,
+  "questName": "Aran Fortune Teller Quest",
+  "startStateMachine": {
+    "startState": "intro",
+    "states": [
+      {
+        "id": "intro",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "What is it? I usually don't welcome uninvited guests, but you have a mysterious aura that makes me curious about what you have to say.",
+          "choices": [
+            {"text": "Next", "nextState": "playerExplains"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "playerExplains",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "speaker": "CHARACTER_RIGHT",
+          "text": "(You tell her about Giant Nependeath.)",
+          "choices": [
+            {"text": "Previous", "nextState": "intro"},
+            {"text": "Next", "nextState": "npcResponse1"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "npcResponse1",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "Giant Nependeath? It's definitely a big problem, but I don't think it's enough to really affect Orbis. Wait, where did you say the Giant Nependeath was, again?",
+          "choices": [
+            {"text": "Previous", "nextState": "playerExplains"},
+            {"text": "Next", "nextState": "playerLocation"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "playerLocation",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "speaker": "CHARACTER_RIGHT",
+          "text": "Neglected Strolling Path.",
+          "choices": [
+            {"text": "Previous", "nextState": "npcResponse1"},
+            {"text": "Next", "nextState": "npcResponse2"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "npcResponse2",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "...Neglected Strolling Path? If Giant Nependeath is there, someone is trying to enter Sealed Garden! But why? And more importantly, who?",
+          "choices": [
+            {"text": "Previous", "nextState": "playerLocation"},
+            {"text": "Next", "nextState": "playerQuestion"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "playerQuestion",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "speaker": "CHARACTER_RIGHT",
+          "text": "Sealed Garden?",
+          "choices": [
+            {"text": "Previous", "nextState": "npcResponse2"},
+            {"text": "Next", "nextState": "askFate"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "askFate",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendAcceptDecline",
+          "text": "I can't tell you about Sealed Garden. If you want to find out, I must first see whether you are worthy of the information. Do you mind if I look into your fate?",
+          "choices": [
+            {"text": "Accept", "nextState": "lookIntoFate"},
+            {"text": "Decline", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "lookIntoFate",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Well, now let's look into your fate. Give me a second.",
+          "choices": [
+            {"text": "Ok", "nextState": "startQuest"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "startQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

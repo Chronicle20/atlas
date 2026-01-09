@@ -1,0 +1,128 @@
+{
+  "questId": 21302,
+  "questName": "Aran Third Job Advancement",
+  "endStateMachine": {
+    "startState": "end_intro",
+    "states": [
+      {
+        "id": "end_intro",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Wait.. Isn't that.. Did you remember how to make Red Jade?\r\nWow... you may be stupid and prone to amnesia, but this is why I can't abandon you. Now give me the jade!",
+          "choices": [
+            {"text": "Next", "nextState": "end_reawakening"},
+            {"text": "Exit", "nextState": "end_declinedAtStart"}
+          ]
+        }
+      },
+      {
+        "id": "end_declinedAtStart",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Hey! At least say you tried!",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "end_reawakening",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "Okay, now that I have the Red Jade back on, let me work on reawakening more of your abilities. I mean, your level's gone much higher since the last time we met, so I am sure I can work my magic a bit more this time!",
+          "choices": [
+            {"text": "Previous", "nextState": "end_intro"},
+            {"text": "Next", "nextState": "end_checkQuestCompleted"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "end_checkQuestCompleted",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "questStatus", "operator": "=", "value": "2", "referenceId": "21302"}
+              ],
+              "nextState": "end_keepTraining"
+            },
+            {"conditions": [], "nextState": "end_checkInventorySpace"}
+          ]
+        }
+      },
+      {
+        "id": "end_checkInventorySpace",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1142131"}
+              ],
+              "nextState": "end_removeRedJade"
+            },
+            {"conditions": [], "nextState": "end_inventoryFull"}
+          ]
+        }
+      },
+      {
+        "id": "end_inventoryFull",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Wow, your #bequip#k inventory is full. I need you to make at least 1 empty slot to complete this quest.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "end_removeRedJade",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "destroy_item", "params": {"itemId": "4032312", "quantity": "1"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "end_grantRewards"}
+          ]
+        }
+      },
+      {
+        "id": "end_grantRewards",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "award_item", "params": {"itemId": "1142131", "quantity": "1"}},
+            {"type": "change_job", "params": {"jobId": "2111"}},
+            {"type": "complete_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "end_keepTraining"}
+          ]
+        }
+      },
+      {
+        "id": "end_keepTraining",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Come on, keep training so you can get all your abilities back, and that way we can explore together once more!",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

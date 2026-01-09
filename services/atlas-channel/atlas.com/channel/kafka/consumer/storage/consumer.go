@@ -26,6 +26,7 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 		return func(consumerGroupId string) {
 			rf(consumer2.NewConfig(l)("storage_show_command")(storage2.EnvShowStorageCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 			rf(consumer2.NewConfig(l)("storage_status_event")(storage2.EnvEventTopicStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
+			rf(consumer2.NewConfig(l)("storage_compartment_status_event")(storage2.EnvEventTopicStorageCompartmentStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 		}
 	}
 }
@@ -42,6 +43,10 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMesosUpdatedEvent(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleArrangedEvent(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStorageErrorEvent(sc, wp))))
+
+				t, _ = topic.EnvProvider(l)(storage2.EnvEventTopicStorageCompartmentStatus)()
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStorageCompartmentAcceptedEvent(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStorageCompartmentReleasedEvent(sc, wp))))
 			}
 		}
 	}
@@ -182,6 +187,88 @@ func handleStorageErrorEvent(sc server.Model, wp writer.Producer) message.Handle
 			session.Announce(l)(ctx)(wp)(writer.StorageOperation)(writerBody))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to send error to account [%d].", e.AccountId)
+		}
+	}
+}
+
+func handleStorageCompartmentAcceptedEvent(sc server.Model, wp writer.Producer) message.Handler[storage2.StorageCompartmentEvent[storage2.CompartmentAcceptedEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e storage2.StorageCompartmentEvent[storage2.CompartmentAcceptedEventBody]) {
+		if e.Type != storage2.StatusEventTypeCompartmentAccepted {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		if e.WorldId != byte(sc.WorldId()) {
+			return
+		}
+
+		if e.CharacterId == 0 {
+			l.Warnf("Received storage compartment ACCEPTED event for account [%d] but no character ID specified", e.AccountId)
+			return
+		}
+
+		l.Debugf("Storage compartment ACCEPTED: character [%d] account [%d] asset [%d] slot [%d]",
+			e.CharacterId, e.AccountId, e.Body.AssetId, e.Body.Slot)
+
+		// Fetch updated storage data to send to client
+		storageProc := storage.NewProcessor(l, ctx)
+		storageData, err := storageProc.GetStorageData(e.AccountId, e.WorldId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to fetch storage data for account [%d] after ACCEPTED event.", e.AccountId)
+			return
+		}
+
+		// Send updated storage assets to the client
+		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId,
+			session.Announce(l)(ctx)(wp)(writer.StorageOperation)(
+				writer.StorageOperationStoreAssetsBody(l, sc.Tenant())(byte(storageData.Capacity), storageData.Assets)))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to send storage update to character [%d].", e.CharacterId)
+		}
+	}
+}
+
+func handleStorageCompartmentReleasedEvent(sc server.Model, wp writer.Producer) message.Handler[storage2.StorageCompartmentEvent[storage2.CompartmentReleasedEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e storage2.StorageCompartmentEvent[storage2.CompartmentReleasedEventBody]) {
+		if e.Type != storage2.StatusEventTypeCompartmentReleased {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		if e.WorldId != byte(sc.WorldId()) {
+			return
+		}
+
+		if e.CharacterId == 0 {
+			l.Warnf("Received storage compartment RELEASED event for account [%d] but no character ID specified", e.AccountId)
+			return
+		}
+
+		l.Debugf("Storage compartment RELEASED: character [%d] account [%d] asset [%d]",
+			e.CharacterId, e.AccountId, e.Body.AssetId)
+
+		// Fetch updated storage data to send to client
+		storageProc := storage.NewProcessor(l, ctx)
+		storageData, err := storageProc.GetStorageData(e.AccountId, e.WorldId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to fetch storage data for account [%d] after RELEASED event.", e.AccountId)
+			return
+		}
+
+		// Send updated storage assets to the client
+		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId,
+			session.Announce(l)(ctx)(wp)(writer.StorageOperation)(
+				writer.StorageOperationStoreAssetsBody(l, sc.Tenant())(byte(storageData.Capacity), storageData.Assets)))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to send storage update to character [%d].", e.CharacterId)
 		}
 	}
 }

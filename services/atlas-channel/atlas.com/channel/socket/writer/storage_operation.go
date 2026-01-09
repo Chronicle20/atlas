@@ -75,7 +75,31 @@ func StorageOperationStoreAssetsBody(l logrus.FieldLogger, t tenant.Model) func(
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(getStorageOperationMode(l)(options, StorageOperationModeStoreAssets))
 			w.WriteByte(slots)
-			w.WriteLong(uint64(StorageFlagEquipment | StorageFlagConsumables | StorageFlagSetUp | StorageFlagEtc | StorageFlagCash))
+
+			// Determine flags dynamically based on assets present
+			var flags StorageFlag = 0
+			inventoryTypesPresent := make(map[asset.InventoryType]bool)
+			for _, a := range assets {
+				inventoryTypesPresent[a.InventoryType()] = true
+			}
+
+			if inventoryTypesPresent[asset.InventoryTypeEquip] {
+				flags |= StorageFlagEquipment
+			}
+			if inventoryTypesPresent[asset.InventoryTypeUse] {
+				flags |= StorageFlagConsumables
+			}
+			if inventoryTypesPresent[asset.InventoryTypeSetup] {
+				flags |= StorageFlagSetUp
+			}
+			if inventoryTypesPresent[asset.InventoryTypeEtc] {
+				flags |= StorageFlagEtc
+			}
+			if inventoryTypesPresent[asset.InventoryTypeCash] {
+				flags |= StorageFlagCash
+			}
+
+			w.WriteLong(uint64(flags))
 			w.WriteByte(byte(len(assets)))
 			_ = model.ForEachSlice(model.FixedProvider(assets), WriteAssetInfo(t)(true)(w))
 			return w.Bytes()

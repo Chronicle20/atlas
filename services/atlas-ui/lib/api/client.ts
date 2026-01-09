@@ -1021,9 +1021,31 @@ class ApiClient {
       return undefined as T;
     }
 
+    // Check if response has content before trying to parse JSON
+    const contentLength = response.headers.get('content-length');
+    const contentType = response.headers.get('content-type');
+
+    // If Content-Length is explicitly 0, or there's no content-type suggesting JSON, return undefined
+    if (contentLength === '0') {
+      return undefined as T;
+    }
+
+    // Try to read the response text first to check if it's empty
+    const text = await response.text();
+
+    // If response body is empty, return undefined
+    if (!text || text.trim() === '') {
+      return undefined as T;
+    }
+
+    // Parse the JSON from the text we already read
     try {
-      return await response.json();
+      return JSON.parse(text) as T;
     } catch {
+      // If content-type doesn't indicate JSON, this might be expected
+      if (contentType && !contentType.includes('application/json')) {
+        return undefined as T;
+      }
       throw createApiErrorFromResponse(500, 'Invalid JSON response from server');
     }
   }

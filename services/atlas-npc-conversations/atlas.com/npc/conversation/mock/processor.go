@@ -8,7 +8,7 @@ import (
 // ProcessorMock is a mock implementation of the conversation.Processor interface
 type ProcessorMock struct {
 	// StartFunc is a function field for the Start method
-	StartFunc func(field field.Model, npcId uint32, characterId uint32) error
+	StartFunc func(field field.Model, npcId uint32, characterId uint32, accountId uint32) error
 
 	// StartQuestFunc is a function field for the StartQuest method
 	StartQuestFunc func(field field.Model, questId uint32, npcId uint32, characterId uint32, stateMachine conversation.StateContainer) error
@@ -21,9 +21,9 @@ type ProcessorMock struct {
 }
 
 // Start is a mock implementation of the conversation.Processor.Start method
-func (m *ProcessorMock) Start(field field.Model, npcId uint32, characterId uint32) error {
+func (m *ProcessorMock) Start(field field.Model, npcId uint32, characterId uint32, accountId uint32) error {
 	if m.StartFunc != nil {
-		return m.StartFunc(field, npcId, characterId)
+		return m.StartFunc(field, npcId, characterId, accountId)
 	}
 	// Default implementation returns nil (success)
 	return nil

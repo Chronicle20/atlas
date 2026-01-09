@@ -1,0 +1,21 @@
+{
+  "questId": 2238,
+  "questName": "Quest 2238",
+  "startStateMachine": {
+    "startState": "startQuest",
+    "states": [
+      {
+        "id": "startQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

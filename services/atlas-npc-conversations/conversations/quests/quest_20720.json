@@ -1,0 +1,50 @@
+{
+  "questId": 20720,
+  "npcId": 1101002,
+  "questName": "Before the Mission in Perion Begins",
+  "startStateMachine": {
+    "startState": "askAccept",
+    "states": [
+      {
+        "id": "askAccept",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendAcceptDecline",
+          "text": "How's the leveling up so far? By this time, you might be able to participate in the Party Quest at #m103000000#. Leveling up is important, yes, but we need you now to take on a mission as a Cygnus Knight. We just received a new information that may help us.",
+          "choices": [
+            {
+              "text": "Accept",
+              "nextState": "startQuest"
+            },
+            {
+              "text": "Decline",
+              "nextState": null
+            },
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "startQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {
+              "type": "start_quest",
+              "params": {}
+            }
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

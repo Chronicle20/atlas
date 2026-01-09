@@ -1,0 +1,100 @@
+{
+  "questId": 2315,
+  "questName": "Exploring Mushroom Forest(2)",
+  "startStateMachine": {
+    "startState": "askAccept",
+    "states": [
+      {
+        "id": "askAccept",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendAcceptDecline",
+          "text": "A powerful barrier of magic, huh? Then what should we do...? If we can't find a way to break that barrier, then we can't save the princess. If it's impossible to physically break through, as you mentioned, then how about requesting help from our #bMinister of Magic#k?",
+          "choices": [
+            { "text": "Accept", "nextState": "startQuest" },
+            { "text": "Decline", "nextState": "declined" },
+            { "text": "Exit", "nextState": null }
+          ]
+        }
+      },
+      {
+        "id": "declined",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Please do not forget our plea for help.",
+          "choices": [
+            { "text": "Ok", "nextState": null },
+            { "text": "Exit", "nextState": null }
+          ]
+        }
+      },
+      {
+        "id": "startQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            { "type": "start_quest", "params": {} }
+          ],
+          "outcomes": [
+            { "conditions": [], "nextState": "confirmStart" }
+          ]
+        }
+      },
+      {
+        "id": "confirmStart",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Please go see him immediately. The #bMinister of Magic#k may seem a bit on the edge, but he's very knowledgeable, and I'm sure he'll know what to do.",
+          "choices": [
+            { "text": "Ok", "nextState": null },
+            { "text": "Exit", "nextState": null }
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "investigateMessage",
+    "states": [
+      {
+        "id": "investigateMessage",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "What? You investigated the barrier at the Mushroom Forest?",
+          "choices": [
+            { "text": "Ok", "nextState": "completeQuest" },
+            { "text": "Exit", "nextState": null }
+          ]
+        }
+      },
+      {
+        "id": "completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            { "type": "complete_quest", "params": {} },
+            { "type": "award_exp", "params": { "amount": "4000" } }
+          ],
+          "outcomes": [
+            { "conditions": [], "nextState": "confirmComplete" }
+          ]
+        }
+      },
+      {
+        "id": "confirmComplete",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Hmmm...this is interesting. It's a barrier set up by someone with a powerful force of magic, which means there's no way we can manually break through it.",
+          "choices": [
+            { "text": "Ok", "nextState": null },
+            { "text": "Exit", "nextState": null }
+          ]
+        }
+      }
+    ]
+  }
+}

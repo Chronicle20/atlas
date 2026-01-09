@@ -1,0 +1,72 @@
+{
+  "questId": 2560,
+  "questName": "Quest 2560",
+  "startStateMachine": {
+    "startState": "monkeyGreeting",
+    "states": [
+      {
+        "id": "monkeyGreeting",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Ooook! Ook! Ook!",
+          "choices": [
+            {"text": "Next", "nextState": "playerQuestion"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "playerQuestion",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "Well, that hit the spot, but... I still don't understand what happened. Where's the ship? Hey, do you know what happened to me?",
+          "speaker": "CHARACTER_LEFT",
+          "choices": [
+            {"text": "Previous", "nextState": "monkeyGreeting"},
+            {"text": "Next", "nextState": "askAccept"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "askAccept",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendAcceptDecline",
+          "text": "Oook! (The monkey nods. Does he really know what's going on? Couldn't hurt to ask.)",
+          "choices": [
+            {"text": "Accept", "nextState": "startQuest"},
+            {"text": "Decline", "nextState": "declineResponse"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "startQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "declineResponse",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Ook! Ook! (The monkey looks very dissatisfied.)",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

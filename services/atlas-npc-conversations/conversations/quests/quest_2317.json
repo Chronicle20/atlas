@@ -1,0 +1,102 @@
+{
+  "questId": 2317,
+  "npcId": 1300007,
+  "questName": "Killer Mushroom Spores(1)",
+  "startStateMachine": {
+    "startState": "askAccept",
+    "states": [
+      {
+        "id": "askAccept",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendAcceptDecline",
+          "text": "Ah! If I am not mistaken, I saw the #bKiller Mushroom Spores#k way back when I was a kid in a book. Now I remember... it's made out of extracts of powerful poisons from Poison Mushrooms, which means you'll need some Poison Mushroom Caps. If you can get me those, I think I'll be able to make it.",
+          "choices": [
+            {"text": "Accept", "nextState": "startQuest"},
+            {"text": "Decline", "nextState": "declineMessage"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "declineMessage",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Breaking through the barrier will require the Poison Mushroom Cap. Talk to me when you change your mind.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "startQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "acceptedMessage"}
+          ]
+        }
+      },
+      {
+        "id": "acceptedMessage",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Please defeat #bPoison Mushrooms#k and bring back #b100 Poison Mushroom Caps#k in return.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "askItems",
+    "states": [
+      {
+        "id": "askItems",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Have you gathered up the 100 Poison Mushroom Caps like I asked you to get?",
+          "choices": [
+            {"text": "Ok", "nextState": "confirmItems"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "confirmItems",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "I am amazed that you were able to gather up these 100 Poison Mushroom Caps, which is considered a difficult feat. I think I'll be able to make #bKiller Mushroom Spores#k our of these.",
+          "choices": [
+            {"text": "Ok", "nextState": "completeQuest"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {}},
+            {"type": "award_exp", "params": {"amount": "13500"}},
+            {"type": "destroy_item", "params": {"itemId": "4000500", "quantity": "100"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

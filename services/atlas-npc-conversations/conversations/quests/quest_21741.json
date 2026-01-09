@@ -1,0 +1,85 @@
+{
+  "questId": 21741,
+  "questName": "Unknown Quest 21741",
+  "startStateMachine": {
+    "startState": "intro",
+    "states": [
+      {
+        "id": "intro",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Have you been advancing your levels? I found an interesting piece of information about the Black Wings. This time, you'll have to travel quite a bit. Do you know a town called #bMu Lung#k? You'll have to head there.",
+          "choices": [
+            {
+              "text": "Next",
+              "nextState": "askAccept"
+            },
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "askAccept",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendAcceptDecline",
+          "text": "Apparently, #bMr. Do#k in Mu Lung somehow met with the Black Wings. I don't know the details. Please go and find out why the Black Wings contacted Mr. Do and what exactly happened between them.",
+          "choices": [
+            {
+              "text": "Accept",
+              "nextState": "instructions"
+            },
+            {
+              "text": "Decline",
+              "nextState": null
+            },
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "instructions",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Mr. Do is known to be curt, so you are going to have to remain patient while talking to him. Talk to him with the #bI heard you met the Shadow Knight of the Black Wings#k keyword.",
+          "choices": [
+            {
+              "text": "Next",
+              "nextState": "startQuest"
+            },
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "startQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {
+              "type": "start_quest",
+              "params": {}
+            }
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

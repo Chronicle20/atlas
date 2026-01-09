@@ -1,0 +1,252 @@
+{
+  "questId": 21703,
+  "questName": "Third Job: Aran Training - Final Stage",
+  "startStateMachine": {
+    "startState": "dialogue1",
+    "states": [
+      {
+        "id": "dialogue1",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Your abilities are really beginning to take shape. I am surprised that an old man like me was able to help you. I'm tearing up just thinking about how happy it makes me to have been of assistance to you. *Sniff sniff*",
+          "choices": [
+            {"text": "Next", "nextState": "dialogue2"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "dialogue2",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "#b(You didn't even train that long with him... Why is he crying?)#k",
+          "speaker": "CHARACTER_LEFT",
+          "choices": [
+            {"text": "Previous", "nextState": "dialogue1"},
+            {"text": "Next", "nextState": "dialogue3"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "dialogue3",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "Alright, here's the third and the final stage of training. Your last opponent is... #r#o9300343#s#k! Do you know anything about #o1210100#s?",
+          "choices": [
+            {"text": "Previous", "nextState": "dialogue2"},
+            {"text": "Next", "nextState": "dialogue4"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "dialogue4",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "Well, a little bit...",
+          "speaker": "CHARACTER_LEFT",
+          "choices": [
+            {"text": "Previous", "nextState": "dialogue3"},
+            {"text": "Next", "nextState": "dialogue5"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "dialogue5",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "They are natural warriors! They're born with a voracious appetite for food. They devour any food that's visible the moment they sweep by. Terrifying, isn't it?",
+          "choices": [
+            {"text": "Previous", "nextState": "dialogue4"},
+            {"text": "Next", "nextState": "dialogue6"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "dialogue6",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "#b(Is that really true?)#k",
+          "speaker": "CHARACTER_LEFT",
+          "choices": [
+            {"text": "Previous", "nextState": "dialogue5"},
+            {"text": "Next", "nextState": "askAccept"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "askAccept",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendAcceptDecline",
+          "text": "Okay, now... #bEnter the Training Center again#k, defeat #r30#k #o9300343#s, and show me what you're made of! You'll have to exert all your energy to defeat them! Go, go, go! Rise above me!",
+          "choices": [
+            {"text": "Accept", "nextState": "startQuest"},
+            {"text": "Decline", "nextState": "declineMessage"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "declineMessage",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "I know it takes an incredible amount of strength and will to outdo your instructor, but you weren't meant to let yourself wither away. You must move on to bigger and better things! You must do everything you can to embrace your heroic nature!",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "startQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "confirmStart"}
+          ]
+        }
+      },
+      {
+        "id": "confirmStart",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Now go and take on those monstrous #o9300343#s!",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "endDialogue1",
+    "states": [
+      {
+        "id": "endDialogue1",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Ah, you've come back after defeating all 30 #o9300343#s. I knew you had it in you... Even though you have no memories and few abilities, I could see that you were different! How? Because you're carrying around a Polearm, obviously!",
+          "choices": [
+            {"text": "Next", "nextState": "endDialogue2"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "endDialogue2",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "#b(Is he pulling your leg?)#k'",
+          "speaker": "CHARACTER_LEFT",
+          "choices": [
+            {"text": "Previous", "nextState": "endDialogue1"},
+            {"text": "Next", "nextState": "askComplete"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "askComplete",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendYesNo",
+          "text": "I have nothing more to teach you, as you've surpassed my level of skill. Go now! Don't look back! This old man is happy to have served as your instructor.",
+          "choices": [
+            {"text": "Yes", "nextState": "checkQuestAndComplete"},
+            {"text": "No", "nextState": "declineComplete"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "declineComplete",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Are you reluctant to leave your instructor? *Sniff sniff* I'm so moved, but you can't stop here. You are destined for bigger and better things!",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "checkQuestAndComplete",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "questStatus", "operator": "=", "value": "2", "referenceId": "21703"}
+              ],
+              "nextState": "completeQuest"
+            },
+            {
+              "conditions": [],
+              "nextState": "rewardDialogue"
+            }
+          ]
+        }
+      },
+      {
+        "id": "completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {}},
+            {"type": "update_skill", "params": {"skillId": "21000000", "level": "10", "masterLevel": "10"}},
+            {"type": "award_exp", "params": {"amount": "2800"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "rewardDialogue"}
+          ]
+        }
+      },
+      {
+        "id": "rewardDialogue",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "(You remembered the #bCombo Ability#k skill! You were skeptical of the training at first, since the old man suffers from Alzheimer's and all, but boy, was it effective!)",
+          "speaker": "CHARACTER_LEFT",
+          "choices": [
+            {"text": "Next", "nextState": "finalDialogue"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "finalDialogue",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendPrev",
+          "text": "Now report back to #p1201000#. I know she'll be ecstatic when she sees the progress you've made!",
+          "choices": [
+            {"text": "Previous", "nextState": "rewardDialogue"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

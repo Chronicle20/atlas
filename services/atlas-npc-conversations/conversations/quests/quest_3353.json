@@ -1,0 +1,47 @@
+{
+  "questId": 3353,
+  "questName": "Huroids Investigation",
+  "startStateMachine": {
+    "startState": "intro",
+    "states": [
+      {
+        "id": "intro",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "I see. De Lang wants to stop the Huroids from causing more destruction, but the societies would like to get him on jail at once. So that's why he hid himself there.",
+          "choices": [
+            {"text": "Next", "nextState": "askReturn"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "askReturn",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendAcceptDecline",
+          "text": "In that case, go there again and hear more details from De Lang, will you?",
+          "choices": [
+            {"text": "Accept", "nextState": "startAndWarp"},
+            {"text": "Decline", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "startAndWarp",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "warp_to_map", "params": {"mapId": "926120200", "portalId": "1"}},
+            {"type": "start_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

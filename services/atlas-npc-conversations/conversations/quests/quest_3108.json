@@ -1,0 +1,33 @@
+{
+  "questId": 3108,
+  "questName": "Statue Clue",
+  "startStateMachine": {
+    "startState": "intro",
+    "states": [
+      {
+        "id": "intro",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "(As you peek into the shattered statue, you might have found a clue about what happened. Better talk to #rScadur#k about this.)",
+          "choices": [
+            {"text": "Next", "nextState": "completeQuest"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {"force": "true"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

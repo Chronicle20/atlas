@@ -1,0 +1,143 @@
+{
+  "questId": 29908,
+  "questName": "Cygnus Knight Medal Quest",
+  "startStateMachine": {
+    "startState": "checkCygnusKnight",
+    "states": [
+      {
+        "id": "checkCygnusKnight",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "jobId", "operator": ">", "value": "1000"},
+                {"type": "jobId", "operator": "<", "value": "2000"}
+              ],
+              "nextState": "checkJobAdvanced"
+            },
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "checkJobAdvanced",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "jobId", "operator": ">", "value": "1000"}
+              ],
+              "nextState": "startQuest"
+            },
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "startQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}}
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "checkCygnusKnightEnd",
+    "states": [
+      {
+        "id": "checkCygnusKnightEnd",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "jobId", "operator": ">", "value": "1000"},
+                {"type": "jobId", "operator": "<", "value": "2000"}
+              ],
+              "nextState": "checkNotHaveItem"
+            },
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "checkNotHaveItem",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "item", "operator": "=", "value": "0", "referenceId": "1142068"}
+              ],
+              "nextState": "checkCanHold"
+            },
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "checkCanHold",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1142068"}
+              ],
+              "nextState": "grantReward"
+            },
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "grantReward",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "award_item", "params": {"itemId": "1142068", "quantity": "1"}},
+            {"type": "start_quest", "params": {}},
+            {"type": "complete_quest", "params": {"force": "true"}}
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

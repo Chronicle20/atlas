@@ -77,6 +77,15 @@ type TalkConfigurator func(config *TalkConfig)
 
 type TalkFunc func(message string, configurations ...TalkConfigurator)
 
+// WithSpeaker returns a TalkConfigurator that sets the speaker
+func WithSpeaker(speaker string) TalkConfigurator {
+	return func(config *TalkConfig) {
+		if speaker != "" {
+			config.speaker = speaker
+		}
+	}
+}
+
 func (p *ProcessorImpl) SendSimple(worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32) TalkFunc {
 	return p.SendNPCTalk(worldId, channelId, characterId, npcId, &TalkConfig{messageType: MessageTypeSimple, speaker: SpeakerNPCLeft})
 }

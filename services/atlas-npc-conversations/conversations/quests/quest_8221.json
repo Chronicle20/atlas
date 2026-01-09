@@ -1,0 +1,59 @@
+{
+  "questId": 8221,
+  "npcId": 9201096,
+  "questName": "Mark of Heroism",
+  "startStateMachine": {
+    "startState": "askAccept",
+    "states": [
+      {
+        "id": "askAccept",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendAcceptDecline",
+          "text": "It's about time! We need to make you a way to travel safely to the summit of the Crimsonwood Valley, or else all we've been doing was for naught. You have to lay hands on the #b#t3992039##k. Are you ready to go?",
+          "choices": [
+            {"text": "Accept", "nextState": "startQuest"},
+            {"text": "Decline", "nextState": "declined"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "declined",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Okay, then. See you around.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "startQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "confirmStart"}
+          ]
+        }
+      },
+      {
+        "id": "confirmStart",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Okay, I need you to have these items on hand first: #b10 #t4010006##k, #b4 #t4032005##k and #b1 #t4004000##k. Go!",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

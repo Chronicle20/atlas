@@ -1,0 +1,50 @@
+{
+  "questId": 21739,
+  "startStateMachine": {
+    "startState": "noStartDialogue",
+    "states": [
+      {
+        "id": "noStartDialogue",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "This quest has no start dialogue.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "completeMessage",
+    "states": [
+      {
+        "id": "completeMessage",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "So, have you defeated the giant? Oh, a Black Wing agent undercover? And he GOT THE SEAL STONE OF ORBIS?! Oh, no. That's horrible! We need to develop countermeasures as soon as possible! Tell the informant on Lith about the situation.",
+          "choices": [
+            {"text": "Next", "nextState": "completeQuest"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {}},
+            {"type": "award_exp", "params": {"amount": "29500"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,102 @@
+{
+  "questId": 2335,
+  "npcId": 1300002,
+  "questName": "Eliminating the Rest",
+  "startStateMachine": {
+    "startState": "intro",
+    "states": [
+      {
+        "id": "intro",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "This is not the end, #b#h ##k. Minions of the #bPrime Minister#k can still be found scattered throughout the castle.",
+          "choices": [
+            {"text": "Next", "nextState": "askAccept"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "askAccept",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendAcceptDecline",
+          "text": "From what I've heard, there is a place near #bSkyscraper 3#k where a group of Prime Minister's minions can be found. I've picked up a key that the Prime Minister dropped the other day. Here, use this key.",
+          "choices": [
+            {"text": "Accept", "nextState": "checkInventory"},
+            {"text": "Decline", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "checkInventory",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "4032405"}
+              ],
+              "nextState": "giveKeyAndGoodLuck"
+            },
+            {
+              "conditions": [],
+              "nextState": "noInventorySpace"
+            }
+          ]
+        }
+      },
+      {
+        "id": "noInventorySpace",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Please have a free space in your ETC inventory.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "giveKeyAndGoodLuck",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "award_item", "params": {"itemId": "4032405", "quantity": "1"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "goodLuck"}
+          ]
+        }
+      },
+      {
+        "id": "goodLuck",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "For one last time, good luck.",
+          "choices": [
+            {"text": "Next", "nextState": "startQuest"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "startQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

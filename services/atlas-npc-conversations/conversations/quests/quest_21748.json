@@ -1,0 +1,66 @@
+{
+  "questId": 21748,
+  "npcId": 1201000,
+  "questName": "Unknown Quest 21748",
+  "endStateMachine": {
+    "startState": "dialogue1",
+    "states": [
+      {
+        "id": "dialogue1",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Aran, you came back home safe! So, how fared the mission in Mu Lung? #rGentleman#k ambushed and stole the seal rock again? That's unfortunate. At least you are unharmed, I'm glad.",
+          "choices": [
+            {"text": "Next", "nextState": "dialogue2"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "dialogue2",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "I've researched some skill books, trying to trace any lost skills of yours. Good news I found one of them: it's the #rFinal Charge#k! With it you will be able to draw closer opposing monsters at each swipe. It's a fine improvement for your arsenal, isn't it?",
+          "choices": [
+            {"text": "Next", "nextState": "completeQuest"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {
+              "type": "award_exp",
+              "params": {
+                "amount": "20000"
+              }
+            },
+            {
+              "type": "create_skill",
+              "params": {
+                "skillId": "21100002",
+                "level": "0",
+                "masterLevel": "30"
+              }
+            },
+            {
+              "type": "complete_quest",
+              "params": {}
+            }
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

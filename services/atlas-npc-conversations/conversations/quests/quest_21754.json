@@ -1,0 +1,94 @@
+{
+  "questId": 21754,
+  "questName": "Unknown Quest Name",
+  "startStateMachine": {
+    "startState": "checkInventorySpace",
+    "states": [
+      {
+        "id": "checkInventorySpace",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {
+                  "type": "inventorySpace",
+                  "operator": ">=",
+                  "value": "1",
+                  "referenceId": "4032328"
+                }
+              ],
+              "nextState": "requestDelivery"
+            },
+            {
+              "conditions": [],
+              "nextState": "noSpace"
+            }
+          ]
+        }
+      },
+      {
+        "id": "noSpace",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Hm, I will need you to prepare a ETC slot for a letter I need to give you.",
+          "choices": [
+            {
+              "text": "Next",
+              "nextState": null
+            },
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "requestDelivery",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Here, take this. Send it to #r#p1002104##k, it contains a relevant matter for protecting this world. Please comply to this request.",
+          "choices": [
+            {
+              "text": "Next",
+              "nextState": "startQuestAndGiveItem"
+            },
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "startQuestAndGiveItem",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {
+              "type": "start_quest",
+              "params": {}
+            },
+            {
+              "type": "award_item",
+              "params": {
+                "itemId": "4032328",
+                "quantity": "1"
+              }
+            }
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

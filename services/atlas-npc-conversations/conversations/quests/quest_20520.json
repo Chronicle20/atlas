@@ -1,0 +1,88 @@
+{
+  "questId": 20520,
+  "startStateMachine": {
+    "startState": "intro",
+    "states": [
+      {
+        "id": "intro",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Wow, you have already reach Level 50, yet why are you still walking around like that? I mean, you've reached Level 50, but you are still walking around with your own feet. That's unusual behavior for a Knight like you.",
+          "choices": [
+            {
+              "text": "Next",
+              "nextState": "askAccept"
+            },
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "askAccept",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendAcceptDecline",
+          "text": "Well, I suppose it's up to you, but by doing that, you also risk marring the pride and honor of the Empress. This is why I am here to give you a helpful pointer. It's called #bMonster Riding#k. Of course you're interested in this, right?",
+          "choices": [
+            {
+              "text": "Accept",
+              "nextState": "completeQuest"
+            },
+            {
+              "text": "Decline",
+              "nextState": null
+            },
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {
+              "type": "start_quest",
+              "params": {}
+            },
+            {
+              "type": "complete_quest",
+              "params": {}
+            }
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": "farewell"
+            }
+          ]
+        }
+      },
+      {
+        "id": "farewell",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "There's a special mount that only the Cygnus Knights can enjoy. If you are interested, visit #bEreve#k. I will give you more information on it.",
+          "choices": [
+            {
+              "text": "Ok",
+              "nextState": null
+            },
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

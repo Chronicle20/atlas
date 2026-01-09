@@ -1,0 +1,94 @@
+{
+  "questId": 2126,
+  "questName": "Moppie's Supply Box",
+  "endStateMachine": {
+    "startState": "checkItem",
+    "states": [
+      {
+        "id": "checkItem",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {
+                  "type": "item",
+                  "operator": "<",
+                  "value": "1",
+                  "referenceId": "4031619"
+                }
+              ],
+              "nextState": "missingItem"
+            },
+            {
+              "conditions": [],
+              "nextState": "completeQuest"
+            }
+          ]
+        }
+      },
+      {
+        "id": "missingItem",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Please bring me the box with the supplies that lies with #b#p2012019##k...",
+          "choices": [
+            {
+              "text": "Ok",
+              "nextState": null
+            },
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {
+              "type": "destroy_item",
+              "params": {
+                "itemId": "4031619",
+                "quantity": "1"
+              }
+            },
+            {
+              "type": "complete_quest",
+              "params": {}
+            }
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": "questComplete"
+            }
+          ]
+        }
+      },
+      {
+        "id": "questComplete",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Oh, you brought #p2012019#'s box! Thank you.",
+          "choices": [
+            {
+              "text": "Ok",
+              "nextState": null
+            },
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

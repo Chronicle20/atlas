@@ -1,0 +1,133 @@
+{
+  "questId": 8219,
+  "npcId": 9201098,
+  "questName": "Storming the Castle",
+  "startStateMachine": {
+    "startState": "askAccept",
+    "states": [
+      {
+        "id": "askAccept",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendAcceptDecline",
+          "text": "The time is now, kid. We have all the preparations complete to further research for why all these oddities have been happening lately. I also must introduce you to my brother, Jack. ",
+          "choices": [
+            {"text": "Accept", "nextState": "startQuest"},
+            {"text": "Decline", "nextState": "declined"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "declined",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Okay, then. See you around.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "startQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "confirmStart"}
+          ]
+        }
+      },
+      {
+        "id": "confirmStart",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "He is currently wandering around the Crimsonwood Mountain, past the sinister Phantom Forest, in the track to the Crimsonwood Keep. Your next destination is there, may your journey be a safe one.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "jackIntro",
+    "states": [
+      {
+        "id": "jackIntro",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Who are you? Oh, you came here by my brother John's stead? Great.",
+          "choices": [
+            {"text": "Next", "nextState": "explainReward"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "explainReward",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "It seems you helped the folks at the city at some errands, don't you? I shall appraise you nicely. Take a look on this: this is a map of the Phantom Forest, which I made myself after enough exploration. Take possession of that, and you #bwill be granted passage#k by paths other times undiscoverable. Remember well to #rnever lose it#k, you won't be having that again!\r\n\r\n#fUI/UIWindow.img/QuestIcon/4/0# \r\n#i3992040# #t3992040#\r\n\r\n#fUI/UIWindow.img/QuestIcon/8/0# 175000 EXP",
+          "choices": [
+            {"text": "Ok", "nextState": "checkInventory"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "checkInventory",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "3992040"}
+              ],
+              "nextState": "completeQuest"
+            },
+            {
+              "conditions": [],
+              "nextState": "inventoryFull"
+            }
+          ]
+        }
+      },
+      {
+        "id": "inventoryFull",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Hey, you don't have a slot in your SETUP inventory for what I have to give to you. Solve that minor issue of yours then talk to me.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {}},
+            {"type": "award_item", "params": {"itemId": "3992040", "quantity": "1"}},
+            {"type": "award_exp", "params": {"amount": "175000"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

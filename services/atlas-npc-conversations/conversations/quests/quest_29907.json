@@ -1,0 +1,81 @@
+{
+  "questId": 29907,
+  "questName": "Aran Quest (Auto-completion)",
+  "startStateMachine": {
+    "startState": "checkJobAndStart",
+    "states": [
+      {
+        "id": "checkJobAndStart",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "jobId", "operator": ">", "value": "1000"},
+                {"type": "jobId", "operator": "<", "value": "2000"}
+              ],
+              "nextState": "startQuest"
+            },
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "startQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "checkConditions",
+    "states": [
+      {
+        "id": "checkConditions",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "item", "operator": "=", "value": "0", "referenceId": "1142067"},
+                {"type": "jobId", "operator": ">", "value": "1000"},
+                {"type": "jobId", "operator": "<", "value": "2000"}
+              ],
+              "nextState": "completeQuest"
+            },
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "award_item", "params": {"itemId": "1142067", "quantity": "1"}},
+            {"type": "start_quest", "params": {}},
+            {"type": "complete_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

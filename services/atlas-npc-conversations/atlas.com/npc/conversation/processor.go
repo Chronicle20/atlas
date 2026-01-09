@@ -479,19 +479,26 @@ func (p *ProcessorImpl) processDialogueState(ctx ConversationContext, state Stat
 		processedText = dialogue.Text()
 	}
 
+	// Build configurators - include speaker override if specified
+	var configs []npcSender.TalkConfigurator
+	if dialogue.Speaker() != "" {
+		configs = append(configs, npcSender.WithSpeaker(dialogue.Speaker()))
+	}
+
 	// Send the dialogue to the client
+	npcProcessor := npcSender.NewProcessor(p.l, p.ctx)
 	if dialogue.dialogueType == SendNext {
-		npcSender.NewProcessor(p.l, p.ctx).SendNext(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText)
+		npcProcessor.SendNext(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText, configs...)
 	} else if dialogue.dialogueType == SendNextPrev {
-		npcSender.NewProcessor(p.l, p.ctx).SendNextPrevious(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText)
+		npcProcessor.SendNextPrevious(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText, configs...)
 	} else if dialogue.dialogueType == SendPrev {
-		npcSender.NewProcessor(p.l, p.ctx).SendPrevious(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText)
+		npcProcessor.SendPrevious(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText, configs...)
 	} else if dialogue.dialogueType == SendOk {
-		npcSender.NewProcessor(p.l, p.ctx).SendOk(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText)
+		npcProcessor.SendOk(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText, configs...)
 	} else if dialogue.dialogueType == SendYesNo {
-		npcSender.NewProcessor(p.l, p.ctx).SendYesNo(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText)
+		npcProcessor.SendYesNo(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText, configs...)
 	} else if dialogue.dialogueType == SendAcceptDecline {
-		npcSender.NewProcessor(p.l, p.ctx).SendAcceptDecline(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText)
+		npcProcessor.SendAcceptDecline(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText, configs...)
 	} else {
 		p.l.Warnf("Unhandled dialog type [%s].", dialogue.dialogueType)
 	}

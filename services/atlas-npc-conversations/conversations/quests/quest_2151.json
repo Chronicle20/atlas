@@ -1,0 +1,33 @@
+{
+  "questId": 2151,
+  "questName": "The Scary Tree",
+  "startStateMachine": {
+    "startState": "showMessage",
+    "states": [
+      {
+        "id": "showMessage",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "The tree has a strange carving that resembles a scary face.",
+          "choices": [
+            {"text": "Next", "nextState": "completeQuest"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {"force": "true"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

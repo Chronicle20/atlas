@@ -1,0 +1,84 @@
+{
+  "questId": 3452,
+  "questName": "Quest 3452",
+  "startStateMachine": {
+    "startState": "noStartDialogue",
+    "states": [
+      {
+        "id": "noStartDialogue",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "This quest has no start dialogue.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "gratitude",
+    "states": [
+      {
+        "id": "gratitude",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Take these #bMana Elixir Pills#k as a token of my gratitude.",
+          "choices": [
+            {"text": "Next", "nextState": "checkInventory"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "checkInventory",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "inventorySpace", "operator": "<", "value": "1", "referenceId": "2000011"}
+              ],
+              "nextState": "inventoryFull"
+            },
+            {
+              "conditions": [],
+              "nextState": "completeQuest"
+            }
+          ]
+        }
+      },
+      {
+        "id": "inventoryFull",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Hm? It looks like your inventory is full.",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "destroy_item", "params": {"itemId": "4000099", "quantity": "1"}},
+            {"type": "award_item", "params": {"itemId": "2000011", "quantity": "50"}},
+            {"type": "award_exp", "params": {"amount": "8000"}},
+            {"type": "complete_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

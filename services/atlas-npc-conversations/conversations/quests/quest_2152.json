@@ -1,0 +1,33 @@
+{
+  "questId": 2152,
+  "questName": "Stumpy Research",
+  "startStateMachine": {
+    "startState": "showMessage",
+    "states": [
+      {
+        "id": "showMessage",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "That tree... I've heard of it before, I even studied its behavior! If I recall correctly, the #bStumpy#k comes alive when the soil deems infertile by some sort of magic, and those stumps who evolves under these conditions starts to drain these suspicious magical sources instead of water and minerals for living, which makes them very threathening to people and villages nearby.",
+          "choices": [
+            {"text": "Next", "nextState": "completeQuest"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {"force": "true"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

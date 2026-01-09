@@ -1,0 +1,47 @@
+{
+  "questId": 2327,
+  "npcId": 1300008,
+  "questName": "James's Whereabouts (3)",
+  "startStateMachine": {
+    "startState": "thankYou",
+    "states": [
+      {
+        "id": "thankYou",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Hey! Thank you for bringing me a #b#t4001317##k.",
+          "choices": [
+            {"text": "Next", "nextState": "planEscape"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "planEscape",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "I plan to escape from here wearing the #b#t4001317##k. Give me a minute to put it on. Talk to you soon...",
+          "choices": [
+            {"text": "Previous", "nextState": "thankYou"},
+            {"text": "Next", "nextState": "startQuest"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "startQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

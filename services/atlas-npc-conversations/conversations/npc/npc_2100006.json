@@ -76,7 +76,7 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 5150027
+                "referenceId": "5150027"
               }
             ],
             "nextState": "performHaircut"
@@ -196,7 +196,7 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 5151022
+                "referenceId": "5151022"
               }
             ],
             "nextState": "performDye"

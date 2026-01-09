@@ -1,0 +1,166 @@
+{
+  "questId": 29925,
+  "questName": "Aran Medal Quest",
+  "startStateMachine": {
+    "startState": "checkRequirements",
+    "states": [
+      {
+        "id": "checkRequirements",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {
+                  "type": "inventorySpace",
+                  "operator": ">=",
+                  "value": "1",
+                  "referenceId": "1142130"
+                },
+                {
+                  "type": "item",
+                  "operator": "<",
+                  "value": "1",
+                  "referenceId": "1142130"
+                },
+                {
+                  "type": "level",
+                  "operator": ">=",
+                  "value": "30"
+                },
+                {
+                  "type": "jobId",
+                  "operator": ">=",
+                  "value": "2100"
+                },
+                {
+                  "type": "jobId",
+                  "operator": "<",
+                  "value": "2200"
+                }
+              ],
+              "nextState": "awardMedal"
+            },
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "awardMedal",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {
+              "type": "award_item",
+              "params": {
+                "itemId": "1142130",
+                "quantity": "1"
+              }
+            },
+            {
+              "type": "start_quest",
+              "params": {}
+            },
+            {
+              "type": "complete_quest",
+              "params": {
+                "force": "true"
+              }
+            }
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "checkRequirements",
+    "states": [
+      {
+        "id": "checkRequirements",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {
+                  "type": "inventorySpace",
+                  "operator": ">=",
+                  "value": "1",
+                  "referenceId": "1142130"
+                },
+                {
+                  "type": "item",
+                  "operator": "<",
+                  "value": "1",
+                  "referenceId": "1142130"
+                },
+                {
+                  "type": "level",
+                  "operator": ">=",
+                  "value": "30"
+                },
+                {
+                  "type": "jobId",
+                  "operator": ">=",
+                  "value": "2100"
+                },
+                {
+                  "type": "jobId",
+                  "operator": "<",
+                  "value": "2200"
+                }
+              ],
+              "nextState": "awardMedal"
+            },
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "awardMedal",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {
+              "type": "award_item",
+              "params": {
+                "itemId": "1142130",
+                "quantity": "1"
+              }
+            },
+            {
+              "type": "start_quest",
+              "params": {}
+            },
+            {
+              "type": "complete_quest",
+              "params": {
+                "force": "true"
+              }
+            }
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,132 @@
+{
+  "questId": 3714,
+  "questName": "Dragon Nest - Dragon Egg Return",
+  "startStateMachine": {
+    "startState": "checkDragonEgg",
+    "states": [
+      {
+        "id": "checkDragonEgg",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "item", "operator": "<", "value": "1", "referenceId": "4001094"}
+              ],
+              "nextState": "missingEgg"
+            },
+            {
+              "conditions": [],
+              "nextState": "checkHasScroll"
+            }
+          ]
+        }
+      },
+      {
+        "id": "missingEgg",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "You don't have a #b#t4001094##k...",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "checkHasScroll",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "item", "operator": ">=", "value": "1", "referenceId": "2041200"}
+              ],
+              "nextState": "alreadyHasScroll"
+            },
+            {
+              "conditions": [],
+              "nextState": "thankYou"
+            }
+          ]
+        }
+      },
+      {
+        "id": "alreadyHasScroll",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "(The #b#t2041200##k in my bag has grown brighter since reaching this place... Noticing again, the young dragon over there seems to be glaring bitterly towards it.)",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "thankYou",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "You have brought a #b#t4001094##k, thank you for retrieving one more of my kin to the nest! Please have this...\r\n\r\n....... (bleuuhnuhgh) (blahrgngnhhng) ...\r\n\r\nehh, #b#t2041200##k as a token of my kin's gratitude. And do a favor for us, please, get that thing out of here...",
+          "choices": [
+            {"text": "Next", "nextState": "checkInventory"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "checkInventory",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "2041200"}
+              ],
+              "nextState": "giveRewards"
+            },
+            {
+              "conditions": [],
+              "nextState": "noSpace"
+            }
+          ]
+        }
+      },
+      {
+        "id": "noSpace",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Please make a room on your USE inventory to receive the reward.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "giveRewards",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {}},
+            {"type": "destroy_item", "params": {"itemId": "4001094", "quantity": "1"}},
+            {"type": "award_item", "params": {"itemId": "2041200", "quantity": "1"}},
+            {"type": "award_exp", "params": {"amount": "42000"}}
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "questId": 20405,
+  "questName": "Knight's Note",
+  "startStateMachine": {
+    "startState": "readNote1",
+    "states": [
+      {
+        "id": "readNote1",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "There's a note on the wall: 'The source of the curse still goes missing, but a strange device, that I suppose has been used by #rthem#k was found here.'",
+          "speaker": "CHARACTER_RIGHT",
+          "choices": [
+            {"text": "Next", "nextState": "readNote2"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "readNote2",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "'The machine was sent to #rEreve#k for avaliation, I'll now set out to continue my mission. Let the Empress bless me on my journey.'",
+          "speaker": "CHARACTER_RIGHT",
+          "choices": [
+            {"text": "Previous", "nextState": "readNote1"},
+            {"text": "Next", "nextState": "completeQuest"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {"force": "true"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

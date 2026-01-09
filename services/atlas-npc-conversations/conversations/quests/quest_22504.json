@@ -1,0 +1,88 @@
+{
+  "questId": 22504,
+  "questName": "Evan Dragon Food Quest",
+  "startStateMachine": {
+    "startState": "dialogue_0",
+    "states": [
+      {
+        "id": "dialogue_0",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "speaker": "NPC_LEFT",
+          "text": "Ugh. This isn't going to work. I need something else. No plants. No meat. What, you have no idea? But you're the master, and you're older than me, too. You must know what'd be good for me!",
+          "choices": [
+            {"text": "Next", "nextState": "dialogue_1"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "dialogue_1",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "speaker": "CHARACTER_LEFT",
+          "text": "#bBut I don't. It's not like age has anything to do with this...",
+          "choices": [
+            {"text": "Previous", "nextState": "dialogue_0"},
+            {"text": "Next", "nextState": "dialogue_2"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "dialogue_2",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendAcceptDecline",
+          "speaker": "NPC_LEFT",
+          "text": "Since you're older, you must be more experienced in the world, too. Makes sense that you'd know more than me. Oh, fine. I'll ask someone who's even older than you, master!",
+          "choices": [
+            {"text": "Accept", "nextState": "startQuest"},
+            {"text": "Decline", "nextState": "dialogue_decline"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "dialogue_decline",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "speaker": "NPC_LEFT",
+          "text": "No use trying to find an answer to this on my own. I'd better look for #bsomeone older and wiser than master#k!",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "startQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "dialogue_accepted"}
+          ]
+        }
+      },
+      {
+        "id": "dialogue_accepted",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "speaker": "CHARACTER_LEFT",
+          "text": "#b#b(You already asked Dad once, but you don't have any better ideas. Time to ask him again!)",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

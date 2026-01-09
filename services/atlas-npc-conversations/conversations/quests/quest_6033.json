@@ -1,0 +1,156 @@
+{
+  "questId": 6033,
+  "questName": "Maker Skill - Moren's Second round of teaching",
+  "endStateMachine": {
+    "startState": "examineItem",
+    "states": [
+      {
+        "id": "examineItem",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Hm, so you claim to have brought the #b#t4260003##k? Ok, let's take a look into it.",
+          "choices": [
+            {"text": "Next", "nextState": "checkRequirements"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "checkRequirements",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "questProgress", "operator": "=", "value": "1", "referenceId": "6033", "step": "0"},
+                {"type": "item", "operator": ">=", "value": "1", "referenceId": "4260003"}
+              ],
+              "nextState": "passed"
+            },
+            {
+              "conditions": [],
+              "nextState": "failed"
+            }
+          ]
+        }
+      },
+      {
+        "id": "passed",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "You indeed have crafted a fine piece of Monster Crystal, I see. You passed! Now, I shall teach you the next steps of the Maker skill. Keep the monster crystal with you as well, it's your work.",
+          "choices": [
+            {"text": "Previous", "nextState": "examineItem"},
+            {"text": "Next", "nextState": "determineJobCategory"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "failed",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Hey, what's wrong? I did tell you to make a monster crystal to pass my test, didn't I? Buying one or crafting before the start of the test is NOT part of the deal. Go craft me an #b#t4260003##k.",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "determineJobCategory",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "jobId", "operator": ">=", "value": "3000"},
+                {"type": "jobId", "operator": "<", "value": "4000"}
+              ],
+              "nextState": "completeQuestResistance"
+            },
+            {
+              "conditions": [
+                {"type": "jobId", "operator": ">=", "value": "2000"},
+                {"type": "jobId", "operator": "<", "value": "3000"}
+              ],
+              "nextState": "completeQuestAranEvan"
+            },
+            {
+              "conditions": [
+                {"type": "jobId", "operator": ">=", "value": "1000"},
+                {"type": "jobId", "operator": "<", "value": "2000"}
+              ],
+              "nextState": "completeQuestCygnus"
+            },
+            {
+              "conditions": [],
+              "nextState": "completeQuestExplorer"
+            }
+          ]
+        }
+      },
+      {
+        "id": "completeQuestExplorer",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {}},
+            {"type": "update_skill", "params": {"skillId": "1007", "level": "2", "masterLevel": "3"}},
+            {"type": "award_exp", "params": {"amount": "230000"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "completeQuestCygnus",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {}},
+            {"type": "update_skill", "params": {"skillId": "10001007", "level": "2", "masterLevel": "3"}},
+            {"type": "award_exp", "params": {"amount": "230000"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "completeQuestAranEvan",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {}},
+            {"type": "update_skill", "params": {"skillId": "20001007", "level": "2", "masterLevel": "3"}},
+            {"type": "award_exp", "params": {"amount": "230000"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "completeQuestResistance",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {}},
+            {"type": "update_skill", "params": {"skillId": "30001007", "level": "2", "masterLevel": "3"}},
+            {"type": "award_exp", "params": {"amount": "230000"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

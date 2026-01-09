@@ -227,7 +227,7 @@
       {
         "opCode": "0x29",
         "validator": "LoggedInValidator",
-        "handler": "CharacterGeneralChatHandle"
+        "handler": "CharacterChatGeneralHandle"
       },
       {
         "opCode": "0x3F",
@@ -708,7 +708,7 @@
       },
       {
         "opCode": "0xA0",
-        "writer": "CharacterGeneralChat"
+        "writer": "CharacterChatGeneral"
       },
       {
         "opCode": "0xBF",

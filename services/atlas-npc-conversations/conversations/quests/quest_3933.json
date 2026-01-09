@@ -1,0 +1,91 @@
+{
+  "questId": 3933,
+  "npcId": 2101003,
+  "questName": "Sand Bandits team challenge",
+  "startStateMachine": {
+    "startState": "intro",
+    "states": [
+      {
+        "id": "intro",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "I didn't think you would be this strong. I feel like you have what it takes to become a member of the Sand Bandits. The most important aspect of being a member is power, and I think you have that. I also... want to test you one more time, just to make sure you're the right one. What do you think? Can you handle it?",
+          "choices": [
+            {"text": "Next", "nextState": "askReady"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "askReady",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendAcceptDecline",
+          "text": "To truly see your strength, I'll have to face you myself. Don't worry, I'll summon my other self to face off against you. Are you ready?",
+          "choices": [
+            {"text": "Accept", "nextState": "confirmReady"},
+            {"text": "Decline", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "confirmReady",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Good, I like your confidence.",
+          "choices": [
+            {"text": "Next", "nextState": "checkMapCapacity"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "checkMapCapacity",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "mapCapacity", "operator": ">", "value": "0", "referenceId": "926000000"}
+              ],
+              "nextState": "mapOccupied"
+            },
+            {
+              "conditions": [],
+              "nextState": "warpAndStart"
+            }
+          ]
+        }
+      },
+      {
+        "id": "mapOccupied",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "There is someone currently in this map, come back later.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "warpAndStart",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "warp_to_map", "params": {"mapId": "926000000", "portalName": "st00"}},
+            {"type": "start_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -284,6 +284,7 @@ const (
 	DepositToStorage             Action = "deposit_to_storage"
 	WithdrawFromStorage          Action = "withdraw_from_storage"
 	UpdateStorageMesos           Action = "update_storage_mesos"
+	AwardFame                    Action = "award_fame"
 	ShowStorage                  Action = "show_storage"
 )
 
@@ -305,8 +306,9 @@ type AwardItemActionPayload struct {
 
 // ItemPayload represents an individual item in a transaction, such as in inventory manipulation.
 type ItemPayload struct {
-	TemplateId uint32 `json:"templateId"` // TemplateId of the item
-	Quantity   uint32 `json:"quantity"`   // Quantity of the item
+	TemplateId uint32    `json:"templateId"`           // TemplateId of the item
+	Quantity   uint32    `json:"quantity"`             // Quantity of the item
+	Expiration time.Time `json:"expiration,omitempty"` // Expiration time for the item (zero value = no expiration)
 }
 
 // WarpToRandomPortalPayload represents the payload required to warp to a random portal within a specific field.
@@ -611,6 +613,15 @@ type UpdateStorageMesosPayload struct {
 	Mesos       uint32 `json:"mesos"`       // Mesos amount
 }
 
+// AwardFamePayload represents the payload required to award fame to a character.
+// This is used for NPC/quest-initiated fame rewards (e.g., qm.gainFame() in scripts).
+type AwardFamePayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to award fame to
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	Amount      int16      `json:"amount"`      // Amount of fame to award (can be negative)
+}
+
 // ShowStoragePayload represents the payload required to show the storage UI to a character.
 // This is triggered by NPC interactions and sends a command to the channel service to display storage.
 type ShowStoragePayload struct {
@@ -802,6 +813,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case UpdateStorageMesos:
 		var payload UpdateStorageMesosPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case AwardFame:
+		var payload AwardFamePayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

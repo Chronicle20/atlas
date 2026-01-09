@@ -1,0 +1,58 @@
+{
+  "questId": 2217,
+  "questName": "Kerning City Sewer Investigation",
+  "startStateMachine": {
+    "startState": "showStench",
+    "states": [
+      {
+        "id": "showStench",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Hey, did you notice already, it looks like some awful stench is emanating from the sewers... Ewww",
+          "choices": [
+            {"text": "Next", "nextState": "completeQuest"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {}},
+            {"type": "award_exp", "params": {"amount": "7000"}}
+          ],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "questStatus", "operator": "=", "value": "3", "referenceId": "2216"},
+                {"type": "questStatus", "operator": "=", "value": "3", "referenceId": "2218"},
+                {"type": "questStatus", "operator": "=", "value": "3", "referenceId": "2219"},
+                {"type": "item", "operator": ">=", "value": "1", "referenceId": "4031894"}
+              ],
+              "nextState": "removeItem"
+            },
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "removeItem",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "destroy_item", "params": {"itemId": "4031894", "quantity": "1"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

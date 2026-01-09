@@ -1,6 +1,7 @@
 package compartment
 
 import (
+	"encoding/json"
 	"github.com/google/uuid"
 )
 
@@ -18,9 +19,12 @@ type Command[E any] struct {
 }
 
 type AcceptCommandBody struct {
-	TransactionId uuid.UUID `json:"transactionId"`
-	CompartmentId uuid.UUID `json:"compartmentId"`
-	ReferenceId   uint32    `json:"referenceId"`
+	TransactionId uuid.UUID       `json:"transactionId"`
+	CompartmentId uuid.UUID       `json:"compartmentId"`
+	TemplateId    uint32          `json:"templateId"`
+	ReferenceId   uint32          `json:"referenceId"`
+	ReferenceType string          `json:"referenceType"`
+	ReferenceData json.RawMessage `json:"referenceData,omitempty"`
 }
 
 type ReleaseCommandBody struct {

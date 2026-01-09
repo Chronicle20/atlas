@@ -10,6 +10,7 @@ import (
 	"atlas-storage/kafka/producer"
 	"atlas-storage/stackable"
 	"context"
+	"encoding/json"
 	"errors"
 	"sort"
 	"time"
@@ -41,7 +42,7 @@ func (p *Processor) GetOrCreateStorage(worldId byte, accountId uint32) (Model, e
 	t := tenant.MustFromContext(p.ctx)
 
 	// Try to get existing storage
-	s, err := GetByWorldAndAccountId(p.l, p.db, t.Id())(worldId, accountId)
+	s, err := GetByWorldAndAccountId(p.l, p.db, t.Id(), p.ctx)(worldId, accountId)
 	if err == nil {
 		return s, nil
 	}
@@ -164,7 +165,7 @@ func (p *Processor) WithdrawAndEmit(transactionId uuid.UUID, worldId byte, accou
 func (p *Processor) UpdateMesos(worldId byte, accountId uint32, body message.UpdateMesosBody) error {
 	t := tenant.MustFromContext(p.ctx)
 
-	s, err := GetByWorldAndAccountId(p.l, p.db, t.Id())(worldId, accountId)
+	s, err := GetByWorldAndAccountId(p.l, p.db, t.Id(), p.ctx)(worldId, accountId)
 	if err != nil {
 		return err
 	}
@@ -192,7 +193,7 @@ func (p *Processor) UpdateMesos(worldId byte, accountId uint32, body message.Upd
 func (p *Processor) UpdateMesosAndEmit(transactionId uuid.UUID, worldId byte, accountId uint32, body message.UpdateMesosBody) error {
 	t := tenant.MustFromContext(p.ctx)
 
-	s, err := GetByWorldAndAccountId(p.l, p.db, t.Id())(worldId, accountId)
+	s, err := GetByWorldAndAccountId(p.l, p.db, t.Id(), p.ctx)(worldId, accountId)
 	if err != nil {
 		return err
 	}
@@ -212,7 +213,7 @@ func (p *Processor) UpdateMesosAndEmit(transactionId uuid.UUID, worldId byte, ac
 	}
 
 	// Get updated storage for new mesos
-	s, _ = GetByWorldAndAccountId(p.l, p.db, t.Id())(worldId, accountId)
+	s, _ = GetByWorldAndAccountId(p.l, p.db, t.Id(), p.ctx)(worldId, accountId)
 
 	// Emit mesos updated event
 	_ = p.emitMesosUpdatedEvent(transactionId, worldId, accountId, oldMesos, s.Mesos())
@@ -252,15 +253,15 @@ func (p *Processor) Accept(worldId byte, accountId uint32, body compartment.Acce
 
 	// Determine the slot to use
 	var slot int16
-	if body.Slot > 0 {
+	if body.Slot >= 0 {
 		slot = body.Slot
 	} else {
-		// Find next available slot
+		// Find next available slot (0-indexed)
 		assets, err := asset.GetByStorageId(p.l, p.db, t.Id())(s.Id())
 		if err != nil {
 			return 0, 0, err
 		}
-		slot = int16(len(assets) + 1)
+		slot = int16(len(assets))
 	}
 
 	// Create asset with the reference data
@@ -277,16 +278,37 @@ func (p *Processor) Accept(worldId byte, accountId uint32, body compartment.Acce
 		return 0, 0, err
 	}
 
-	// For stackable items, we need to create a placeholder stackable record
-	// The actual quantity will be handled by the character inventory service
+	// For stackable items, parse the ReferenceData and create the stackable record
 	if refType == asset.ReferenceTypeConsumable ||
 		refType == asset.ReferenceTypeSetup ||
 		refType == asset.ReferenceTypeEtc {
+		// Default values
+		quantity := uint32(1)
+		ownerId := uint32(0)
+		flag := uint16(0)
+
+		// Parse ReferenceData if present
+		if len(body.ReferenceData) > 0 {
+			var stackableData struct {
+				Quantity uint32 `json:"quantity"`
+				OwnerId  uint32 `json:"ownerId"`
+				Flag     uint16 `json:"flag"`
+			}
+			if err := json.Unmarshal(body.ReferenceData, &stackableData); err == nil {
+				quantity = stackableData.Quantity
+				ownerId = stackableData.OwnerId
+				flag = stackableData.Flag
+				p.l.Debugf("Parsed stackable data from ReferenceData: quantity=%d, ownerId=%d, flag=%d", quantity, ownerId, flag)
+			} else {
+				p.l.WithError(err).Warnf("Failed to parse ReferenceData for stackable item, using defaults")
+			}
+		}
+
 		_, err = stackable.Create(p.l, p.db)(
 			a.Id(),
-			1, // Default quantity - will be updated with actual data
-			0, // OwnerId
-			0, // Flag
+			quantity,
+			ownerId,
+			flag,
 		)
 		if err != nil {
 			// Rollback asset creation
@@ -472,7 +494,7 @@ func (p *Processor) MergeAndSort(worldId byte, accountId uint32) error {
 	t := tenant.MustFromContext(p.ctx)
 
 	// Get storage
-	s, err := GetByWorldAndAccountId(p.l, p.db, t.Id())(worldId, accountId)
+	s, err := GetByWorldAndAccountId(p.l, p.db, t.Id(), p.ctx)(worldId, accountId)
 	if err != nil {
 		return err
 	}
@@ -626,10 +648,10 @@ func (p *Processor) sortAssets(tenantId uuid.UUID, assets []asset.Model[any]) er
 		byInventoryType[it] = group
 	}
 
-	// Assign slots within each inventory type (1-indexed per type)
+	// Assign slots within each inventory type (0-indexed per type)
 	for _, group := range byInventoryType {
 		for i, a := range group {
-			newSlot := int16(i + 1) // Slots are 1-indexed within each inventory type
+			newSlot := int16(i) // Slots are 0-indexed within each inventory type
 			if a.Slot() != newSlot {
 				err := asset.UpdateSlot(p.l, p.db, tenantId)(a.Id(), newSlot)
 				if err != nil {

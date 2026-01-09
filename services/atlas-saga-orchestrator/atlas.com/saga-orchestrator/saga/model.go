@@ -4,13 +4,14 @@ import (
 	"atlas-saga-orchestrator/validation"
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
-	"time"
 )
 
 // Type the type of saga
@@ -282,10 +283,16 @@ const (
 	ApplyConsumableEffect        Action = "apply_consumable_effect"
 	SendMessage                  Action = "send_message"
 	DepositToStorage             Action = "deposit_to_storage"
-	WithdrawFromStorage          Action = "withdraw_from_storage"
 	UpdateStorageMesos           Action = "update_storage_mesos"
 	AwardFame                    Action = "award_fame"
 	ShowStorage                  Action = "show_storage"
+	TransferAsset                Action = "transfer_asset"
+	TransferToStorage            Action = "transfer_to_storage"    // High-level action expanded to accept_to_storage + release_from_character
+	WithdrawFromStorage          Action = "withdraw_from_storage"  // High-level action expanded to accept_to_character + release_from_storage
+	AcceptToStorage              Action = "accept_to_storage"      // Internal step (created by expansion)
+	ReleaseFromCharacter         Action = "release_from_character" // Internal step (created by expansion)
+	AcceptToCharacter            Action = "accept_to_character"    // Internal step (created by expansion)
+	ReleaseFromStorage           Action = "release_from_storage"   // Internal step (created by expansion)
 )
 
 // Step represents a single step within a saga.
@@ -319,9 +326,9 @@ type WarpToRandomPortalPayload struct {
 
 // WarpToPortalPayload represents the payload required to warp a character to a specific portal in a field.
 type WarpToPortalPayload struct {
-	CharacterId uint32   `json:"characterId"`         // CharacterId associated with the action
-	FieldId     field.Id `json:"fieldId"`             // FieldId references the unique identifier of the field associated with the warp action.
-	PortalId    uint32   `json:"portalId"`            // PortalId specifies the unique identifier of the portal for the warp action.
+	CharacterId uint32   `json:"characterId"`          // CharacterId associated with the action
+	FieldId     field.Id `json:"fieldId"`              // FieldId references the unique identifier of the field associated with the warp action.
+	PortalId    uint32   `json:"portalId"`             // PortalId specifies the unique identifier of the portal for the warp action.
 	PortalName  string   `json:"portalName,omitempty"` // PortalName specifies the name of the portal (resolved to ID if provided).
 }
 
@@ -595,15 +602,6 @@ type DepositToStoragePayload struct {
 	Flag          uint16    `json:"flag"`          // Item flag (for stackables)
 }
 
-// WithdrawFromStoragePayload represents the payload required to withdraw an item from account storage.
-type WithdrawFromStoragePayload struct {
-	CharacterId uint32 `json:"characterId"` // CharacterId initiating the withdrawal
-	AccountId   uint32 `json:"accountId"`   // AccountId that owns the storage
-	WorldId     byte   `json:"worldId"`     // WorldId for the storage
-	AssetId     uint32 `json:"assetId"`     // Asset ID to withdraw
-	Quantity    uint32 `json:"quantity"`    // Quantity to withdraw (0 = full withdrawal)
-}
-
 // UpdateStorageMesosPayload represents the payload required to update mesos in account storage.
 type UpdateStorageMesosPayload struct {
 	CharacterId uint32 `json:"characterId"` // CharacterId initiating the update
@@ -630,6 +628,90 @@ type ShowStoragePayload struct {
 	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
 	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
 	AccountId   uint32     `json:"accountId"`   // AccountId that owns the storage
+}
+
+// TransferAssetPayload represents the payload required to transfer an asset between compartments
+// This uses the compartment-transfer service's 2-phase commit (ACCEPT → RELEASE)
+type TransferAssetPayload struct {
+	TransactionId       uuid.UUID `json:"transactionId"`       // Saga transaction ID
+	WorldId             byte      `json:"worldId"`             // WorldId for the transfer
+	AccountId           uint32    `json:"accountId"`           // AccountId associated with the transfer
+	CharacterId         uint32    `json:"characterId"`         // CharacterId initiating the transfer
+	AssetId             uint32    `json:"assetId"`             // AssetId to transfer (source asset ID)
+	FromCompartmentId   uuid.UUID `json:"fromCompartmentId"`   // Source compartment UUID
+	FromCompartmentType byte      `json:"fromCompartmentType"` // Source compartment type (inventory type ID)
+	FromInventoryType   string    `json:"fromInventoryType"`   // Source inventory type: "CHARACTER", "CASH_SHOP", "STORAGE"
+	ToCompartmentId     uuid.UUID `json:"toCompartmentId"`     // Target compartment UUID (can be uuid.Nil for storage)
+	ToCompartmentType   byte      `json:"toCompartmentType"`   // Target compartment type (inventory type ID)
+	ToInventoryType     string    `json:"toInventoryType"`     // Target inventory type: "CHARACTER", "CASH_SHOP", "STORAGE"
+	ReferenceId         uint32    `json:"referenceId"`         // ReferenceId for the asset data (external service ID)
+	TemplateId          uint32    `json:"templateId"`          // Item template ID (required for storage transfers)
+	ReferenceType       string    `json:"referenceType"`       // Reference type: "EQUIPABLE", "CONSUMABLE", "SETUP", "ETC", "CASH"
+	Slot                int16     `json:"slot"`                // Target slot (required for storage deposits)
+}
+
+// TransferToStoragePayload represents a high-level transfer from character inventory to storage
+// This step is expanded by saga-orchestrator into accept_to_storage + release_from_character
+type TransferToStoragePayload struct {
+	TransactionId       uuid.UUID `json:"transactionId"`       // Saga transaction ID
+	CharacterId         uint32    `json:"characterId"`         // Character initiating the transfer
+	WorldId             byte      `json:"worldId"`             // World ID
+	AccountId           uint32    `json:"accountId"`           // Account ID (storage owner)
+	SourceSlot          int16     `json:"sourceSlot"`          // Slot in character inventory
+	SourceInventoryType byte      `json:"sourceInventoryType"` // Character inventory type (equip, use, etc.)
+}
+
+// WithdrawFromStoragePayload represents a high-level withdrawal from storage to character inventory
+// This step is expanded by saga-orchestrator into accept_to_character + release_from_storage
+type WithdrawFromStoragePayload struct {
+	TransactionId uuid.UUID `json:"transactionId"` // Saga transaction ID
+	CharacterId   uint32    `json:"characterId"`   // Character receiving the item
+	WorldId       byte      `json:"worldId"`       // World ID
+	AccountId     uint32    `json:"accountId"`     // Account ID (storage owner)
+	SourceSlot    int16     `json:"sourceSlot"`    // Slot in storage
+	InventoryType byte      `json:"inventoryType"` // Target character inventory type
+}
+
+// AcceptToStoragePayload represents the payload for the accept_to_storage action (internal step)
+// This is created by saga-orchestrator expansion with all asset data pre-populated
+type AcceptToStoragePayload struct {
+	TransactionId uuid.UUID       `json:"transactionId"` // Saga transaction ID
+	WorldId       byte            `json:"worldId"`       // World ID
+	AccountId     uint32          `json:"accountId"`     // Account ID
+	TemplateId    uint32          `json:"templateId"`    // Item template ID
+	ReferenceId   uint32          `json:"referenceId"`   // Reference ID
+	ReferenceType string          `json:"referenceType"` // Reference type
+	ReferenceData json.RawMessage `json:"referenceData"` // Asset-specific data
+}
+
+// ReleaseFromCharacterPayload represents the payload for the release_from_character action (internal step)
+// This is created by saga-orchestrator expansion with asset ID pre-populated
+type ReleaseFromCharacterPayload struct {
+	TransactionId uuid.UUID `json:"transactionId"` // Saga transaction ID
+	CharacterId   uint32    `json:"characterId"`   // Character ID
+	InventoryType byte      `json:"inventoryType"` // Inventory type (equip, use, etc.)
+	AssetId       uint32    `json:"assetId"`       // Asset ID to release (populated during expansion)
+}
+
+// AcceptToCharacterPayload represents the payload for the accept_to_character action (internal step)
+// This is created by saga-orchestrator expansion with all asset data pre-populated
+type AcceptToCharacterPayload struct {
+	TransactionId uuid.UUID       `json:"transactionId"` // Saga transaction ID
+	CharacterId   uint32          `json:"characterId"`   // Character ID
+	InventoryType byte            `json:"inventoryType"` // Inventory type (equip, use, etc.)
+	TemplateId    uint32          `json:"templateId"`    // Item template ID
+	ReferenceId   uint32          `json:"referenceId"`   // Reference ID
+	ReferenceType string          `json:"referenceType"` // Reference type
+	ReferenceData json.RawMessage `json:"referenceData"` // Asset-specific data
+}
+
+// ReleaseFromStoragePayload represents the payload for the release_from_storage action (internal step)
+// This is created by saga-orchestrator expansion with asset ID pre-populated
+type ReleaseFromStoragePayload struct {
+	TransactionId uuid.UUID `json:"transactionId"` // Saga transaction ID
+	WorldId       byte      `json:"worldId"`       // World ID
+	AccountId     uint32    `json:"accountId"`     // Account ID
+	AssetId       uint32    `json:"assetId"`       // Asset ID to release (populated during expansion)
 }
 
 // Custom UnmarshalJSON for Step[T] to handle the generics
@@ -805,6 +887,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}
 		s.Payload = any(payload).(T)
+	case TransferToStorage:
+		var payload TransferToStoragePayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
 	case WithdrawFromStorage:
 		var payload WithdrawFromStoragePayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
@@ -825,6 +913,36 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case ShowStorage:
 		var payload ShowStoragePayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case TransferAsset:
+		var payload TransferAssetPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case AcceptToStorage:
+		var payload AcceptToStoragePayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case ReleaseFromCharacter:
+		var payload ReleaseFromCharacterPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case AcceptToCharacter:
+		var payload AcceptToCharacterPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case ReleaseFromStorage:
+		var payload ReleaseFromStoragePayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

@@ -8,6 +8,7 @@ import (
 	"atlas-saga-orchestrator/kafka/message/saga"
 	"atlas-saga-orchestrator/kafka/producer"
 	"atlas-saga-orchestrator/skill"
+	"atlas-saga-orchestrator/storage"
 	"atlas-saga-orchestrator/validation"
 	"context"
 	"errors"
@@ -642,6 +643,32 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 		"tenant_id":      p.t.Id().String(),
 	}).Debugf("Progressing saga step [%s].", st.StepId)
 
+	// Check if this is a high-level action that needs expansion
+	if st.Action == TransferToStorage || st.Action == WithdrawFromStorage {
+		p.l.Debugf("Expanding high-level action [%s] into concrete steps", st.Action)
+		err := p.expandAndProcessStep(s, st)
+		if err != nil {
+			p.l.WithError(err).WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId.String(),
+				"saga_type":      s.SagaType,
+				"step_id":        st.StepId,
+				"action":         st.Action,
+				"tenant_id":      p.t.Id().String(),
+			}).Error("Failed to expand saga step, marking as failed")
+
+			// Mark the step as failed and trigger compensation
+			markErr := p.MarkEarliestPendingStep(s.TransactionId, Failed)
+			if markErr != nil {
+				p.l.WithError(markErr).Error("Failed to mark expansion error step as failed")
+				return markErr
+			}
+
+			// Trigger the next step (which will start compensation)
+			return p.Step(s.TransactionId)
+		}
+		return nil
+	}
+
 	// Get the handler for this action type
 	handler, exists := p.handle.GetHandler(st.Action)
 	if !exists {
@@ -650,4 +677,201 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 
 	// Execute the handler
 	return handler(s, st)
+}
+
+// expandAndProcessStep expands high-level actions into concrete steps and processes them
+func (p *ProcessorImpl) expandAndProcessStep(s Saga, st Step[any]) error {
+	// Find the index of the current step
+	currentStepIndex := -1
+	for i, step := range s.Steps {
+		if step.StepId == st.StepId {
+			currentStepIndex = i
+			break
+		}
+	}
+
+	if currentStepIndex == -1 {
+		return fmt.Errorf("could not find current step [%s] in saga", st.StepId)
+	}
+
+	var newSteps []Step[any]
+	var err error
+
+	if st.Action == TransferToStorage {
+		newSteps, err = p.expandTransferToStorage(st)
+	} else if st.Action == WithdrawFromStorage {
+		newSteps, err = p.expandWithdrawFromStorage(st)
+	} else {
+		return fmt.Errorf("unknown high-level action for expansion: %s", st.Action)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	// Replace the high-level step with expanded concrete steps
+	err = p.AtomicUpdateSaga(s.TransactionId, func(saga *Saga) error {
+		// Remove the high-level step and insert the expanded steps
+		saga.Steps = append(saga.Steps[:currentStepIndex], append(newSteps, saga.Steps[currentStepIndex+1:]...)...)
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	p.l.Debugf("Expanded step [%s] into %d concrete steps", st.StepId, len(newSteps))
+
+	// Recursively process the first expanded step
+	return p.Step(s.TransactionId)
+}
+
+// expandTransferToStorage expands TransferToStorage into AcceptToStorage + ReleaseFromCharacter
+func (p *ProcessorImpl) expandTransferToStorage(st Step[any]) ([]Step[any], error) {
+	payload, ok := st.Payload.(TransferToStoragePayload)
+	if !ok {
+		return nil, fmt.Errorf("invalid payload type for TransferToStorage")
+	}
+
+	// Lookup the source asset from character inventory
+	p.l.Debugf("Looking up source asset for character [%d] inventory [%d] slot [%d]",
+		payload.CharacterId, payload.SourceInventoryType, payload.SourceSlot)
+
+	comp, err := compartment.RequestCompartment(p.l, p.ctx)(payload.CharacterId, payload.SourceInventoryType)
+	if err != nil {
+		return nil, fmt.Errorf("unable to lookup character [%d] inventory compartment: %w", payload.CharacterId, err)
+	}
+
+	// Find the asset at the source slot
+	var foundAsset *compartment.AssetRestModel
+	for i := range comp.Assets {
+		if comp.Assets[i].Slot == payload.SourceSlot {
+			foundAsset = &comp.Assets[i]
+			break
+		}
+	}
+
+	if foundAsset == nil {
+		return nil, fmt.Errorf("no asset found at slot [%d] in character [%d] inventory [%d]",
+			payload.SourceSlot, payload.CharacterId, payload.SourceInventoryType)
+	}
+
+	p.l.Debugf("Found source asset template [%d] with referenceId [%d] type [%s] and %d bytes of referenceData",
+		foundAsset.TemplateId, foundAsset.ReferenceId, foundAsset.ReferenceType, len(foundAsset.ReferenceData))
+
+	// Convert string ID to uint32 for assetId
+	var assetId uint32
+	fmt.Sscanf(foundAsset.Id, "%d", &assetId)
+
+	now := time.Now()
+
+	// Create expanded steps
+	steps := []Step[any]{
+		{
+			StepId:  "accept_to_storage",
+			Status:  Pending,
+			Action:  AcceptToStorage,
+			Payload: AcceptToStoragePayload{
+				TransactionId: payload.TransactionId,
+				WorldId:       payload.WorldId,
+				AccountId:     payload.AccountId,
+				TemplateId:    foundAsset.TemplateId,
+				ReferenceId:   foundAsset.ReferenceId,
+				ReferenceType: foundAsset.ReferenceType,
+				ReferenceData: foundAsset.ReferenceData,
+			},
+			CreatedAt: now,
+			UpdatedAt: now,
+		},
+		{
+			StepId:  "release_from_character",
+			Status:  Pending,
+			Action:  ReleaseFromCharacter,
+			Payload: ReleaseFromCharacterPayload{
+				TransactionId: payload.TransactionId,
+				CharacterId:   payload.CharacterId,
+				InventoryType: payload.SourceInventoryType,
+				AssetId:       assetId,
+			},
+			CreatedAt: now,
+			UpdatedAt: now,
+		},
+	}
+
+	return steps, nil
+}
+
+// expandWithdrawFromStorage expands WithdrawFromStorage into AcceptToCharacter + ReleaseFromStorage
+func (p *ProcessorImpl) expandWithdrawFromStorage(st Step[any]) ([]Step[any], error) {
+	payload, ok := st.Payload.(WithdrawFromStoragePayload)
+	if !ok {
+		return nil, fmt.Errorf("invalid payload type for WithdrawFromStorage")
+	}
+
+	// Lookup the source asset from storage
+	p.l.Debugf("Looking up source asset from storage for account [%d] world [%d] slot [%d]",
+		payload.AccountId, payload.WorldId, payload.SourceSlot)
+
+	assets, err := storage.RequestAssets(p.l, p.ctx)(payload.AccountId, payload.WorldId)
+	if err != nil {
+		return nil, fmt.Errorf("unable to lookup storage assets for account [%d]: %w", payload.AccountId, err)
+	}
+
+	// Find the asset at the source slot
+	var foundAsset *storage.AssetRestModel
+	for i := range assets {
+		if assets[i].Slot == payload.SourceSlot {
+			foundAsset = &assets[i]
+			break
+		}
+	}
+
+	if foundAsset == nil {
+		return nil, fmt.Errorf("no asset found at slot [%d] in storage for account [%d]",
+			payload.SourceSlot, payload.AccountId)
+	}
+
+	p.l.Debugf("Found source storage asset template [%d] with referenceId [%d] type [%s] and %d bytes of referenceData",
+		foundAsset.TemplateId, foundAsset.ReferenceId, foundAsset.ReferenceType, len(foundAsset.ReferenceData))
+
+	// Convert string ID to uint32 for assetId
+	var assetId uint32
+	fmt.Sscanf(foundAsset.Id, "%d", &assetId)
+
+	now := time.Now()
+
+	// Create expanded steps
+	steps := []Step[any]{
+		{
+			StepId:  "accept_to_character",
+			Status:  Pending,
+			Action:  AcceptToCharacter,
+			Payload: AcceptToCharacterPayload{
+				TransactionId: payload.TransactionId,
+				CharacterId:   payload.CharacterId,
+				InventoryType: payload.InventoryType,
+				TemplateId:    foundAsset.TemplateId,
+				ReferenceId:   foundAsset.ReferenceId,
+				ReferenceType: foundAsset.ReferenceType,
+				ReferenceData: foundAsset.ReferenceData,
+			},
+			CreatedAt: now,
+			UpdatedAt: now,
+		},
+		{
+			StepId:  "release_from_storage",
+			Status:  Pending,
+			Action:  ReleaseFromStorage,
+			Payload: ReleaseFromStoragePayload{
+				TransactionId: payload.TransactionId,
+				WorldId:       payload.WorldId,
+				AccountId:     payload.AccountId,
+				AssetId:       assetId,
+			},
+			CreatedAt: now,
+			UpdatedAt: now,
+		},
+	}
+
+	return steps, nil
 }

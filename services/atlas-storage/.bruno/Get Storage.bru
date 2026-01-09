@@ -1,0 +1,15 @@
+meta {
+  name: Get Storage
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/storage/accounts/1?worldId=0
+  body: none
+  auth: inherit
+}
+
+params:query {
+  worldId: 0
+}

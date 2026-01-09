@@ -1193,15 +1193,15 @@ func (p *Processor) MergeAndCompact(mb *message.Buffer) func(transactionId uuid.
 	}
 }
 
-func (p *Processor) AcceptAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, referenceId uint32) error {
+func (p *Processor) AcceptAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) error {
 	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		return p.Accept(mb)(transactionId, characterId, inventoryType, referenceId)
+		return p.Accept(mb)(transactionId, characterId, inventoryType, templateId, referenceId, referenceType, referenceData)
 	})
 }
 
-func (p *Processor) Accept(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, referenceId uint32) error {
-	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, referenceId uint32) error {
-		p.l.Debugf("Character [%d] attempting to accept asset referred to by [%d] in inventory [%d].", characterId, referenceId, inventoryType)
+func (p *Processor) Accept(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) error {
+	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) error {
+		p.l.Debugf("Character [%d] attempting to accept asset template [%d] (type: %s) with referenceId [%d] in inventory [%d].", characterId, templateId, referenceType, referenceId, inventoryType)
 
 		// Lock the inventory to prevent concurrent modifications
 		invLock := LockRegistry().Get(characterId, inventoryType)
@@ -1226,10 +1226,10 @@ func (p *Processor) Accept(mb *message.Buffer) func(transactionId uuid.UUID, cha
 				return err
 			}
 
-			// Create the asset for the cash item
-			a, err = p.assetProcessor.WithTransaction(tx).Accept(mb)(characterId, c.Id(), c.Type(), targetSlot, referenceId)
+			// Create the asset with full reference data
+			a, err = p.assetProcessor.WithTransaction(tx).Accept(mb)(characterId, c.Id(), c.Type(), targetSlot, templateId, referenceId, referenceType, referenceData)
 			if err != nil {
-				p.l.WithError(err).Errorf("Unable to acquire cash item [%d] for character [%d].", referenceId, characterId)
+				p.l.WithError(err).Errorf("Unable to accept asset template [%d] for character [%d].", templateId, characterId)
 				return err
 			}
 
@@ -1282,10 +1282,10 @@ func (p *Processor) Release(mb *message.Buffer) func(transactionId uuid.UUID, ch
 				return err
 			}
 
-			// Find the asset in the specified slot
+			// Find the asset by its ID
 			foundAsset = false
 			for _, a := range assets {
-				if a.ReferenceId() == assetId {
+				if a.Id() == assetId {
 					assetToRemove = a
 					foundAsset = true
 					break

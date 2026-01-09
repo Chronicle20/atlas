@@ -2,6 +2,7 @@ package storage
 
 import (
 	storage2 "atlas-saga-orchestrator/kafka/message/storage"
+	storageCompartment "atlas-saga-orchestrator/kafka/message/storage/compartment"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
@@ -82,6 +83,40 @@ func ShowStorageCommandProvider(transactionId uuid.UUID, worldId byte, channelId
 		NpcId:         npcId,
 		AccountId:     accountId,
 		Type:          storage2.CommandTypeShowStorage,
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// AcceptCommandProvider creates an ACCEPT command for the storage compartment
+func AcceptCommandProvider(transactionId uuid.UUID, worldId byte, accountId uint32, slot int16, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(accountId))
+	value := &storageCompartment.Command[storageCompartment.AcceptCommandBody]{
+		WorldId:   worldId,
+		AccountId: accountId,
+		Type:      storageCompartment.CommandAccept,
+		Body: storageCompartment.AcceptCommandBody{
+			TransactionId: transactionId,
+			Slot:          slot,
+			TemplateId:    templateId,
+			ReferenceId:   referenceId,
+			ReferenceType: referenceType,
+			ReferenceData: referenceData,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// ReleaseCommandProvider creates a RELEASE command for the storage compartment
+func ReleaseCommandProvider(transactionId uuid.UUID, worldId byte, accountId uint32, assetId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(accountId))
+	value := &storageCompartment.Command[storageCompartment.ReleaseCommandBody]{
+		WorldId:   worldId,
+		AccountId: accountId,
+		Type:      storageCompartment.CommandRelease,
+		Body: storageCompartment.ReleaseCommandBody{
+			TransactionId: transactionId,
+			AssetId:       assetId,
+		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }

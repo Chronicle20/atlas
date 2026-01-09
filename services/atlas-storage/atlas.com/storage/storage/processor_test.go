@@ -478,8 +478,8 @@ func TestProcessor_MultipleDeposits(t *testing.T) {
 	worldId := byte(0)
 	accountId := uint32(12345)
 
-	// Deposit multiple items
-	for i := 1; i <= 3; i++ {
+	// Deposit multiple items (0-indexed slots)
+	for i := 0; i < 3; i++ {
 		body := message.DepositBody{
 			Slot:          int16(i),
 			TemplateId:    uint32(1300000 + i),

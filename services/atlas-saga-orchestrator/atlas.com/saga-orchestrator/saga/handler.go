@@ -22,6 +22,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
@@ -82,26 +83,30 @@ type Handler interface {
 	handleApplyConsumableEffect(s Saga, st Step[any]) error
 	handleSendMessage(s Saga, st Step[any]) error
 	handleDepositToStorage(s Saga, st Step[any]) error
-	handleWithdrawFromStorage(s Saga, st Step[any]) error
 	handleUpdateStorageMesos(s Saga, st Step[any]) error
 	handleAwardFame(s Saga, st Step[any]) error
 	handleShowStorage(s Saga, st Step[any]) error
+	handleTransferAsset(s Saga, st Step[any]) error
+	handleAcceptToStorage(s Saga, st Step[any]) error
+	handleReleaseFromCharacter(s Saga, st Step[any]) error
+	handleAcceptToCharacter(s Saga, st Step[any]) error
+	handleReleaseFromStorage(s Saga, st Step[any]) error
 }
 
 type HandlerImpl struct {
-	l           logrus.FieldLogger
-	ctx         context.Context
-	t           tenant.Model
-	charP       character.Processor
-	compP       compartment.Processor
-	skillP      skill.Processor
-	validP      validation.Processor
-	guildP      guild.Processor
-	inviteP     invite.Processor
-	buddyListP  buddylist.Processor
-	petP        pet.Processor
-	footholdP   foothold.Processor
-	monsterP    monster.Processor
+	l              logrus.FieldLogger
+	ctx            context.Context
+	t              tenant.Model
+	charP          character.Processor
+	compP          compartment.Processor
+	skillP         skill.Processor
+	validP         validation.Processor
+	guildP         guild.Processor
+	inviteP        invite.Processor
+	buddyListP     buddylist.Processor
+	petP           pet.Processor
+	footholdP      foothold.Processor
+	monsterP       monster.Processor
 	consumableP    consumable.Processor
 	portalP        portal.Processor
 	cashshopP      cashshop.Processor
@@ -112,19 +117,19 @@ type HandlerImpl struct {
 
 func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
 	return &HandlerImpl{
-		l:           l,
-		ctx:         ctx,
-		t:           tenant.MustFromContext(ctx),
-		charP:       character.NewProcessor(l, ctx),
-		compP:       compartment.NewProcessor(l, ctx),
-		skillP:      skill.NewProcessor(l, ctx),
-		validP:      validation.NewProcessor(l, ctx),
-		guildP:      guild.NewProcessor(l, ctx),
-		inviteP:     invite.NewProcessor(l, ctx),
-		buddyListP:  buddylist.NewProcessor(l, ctx),
-		petP:        pet.NewProcessor(l, ctx),
-		footholdP:   foothold.NewProcessor(l, ctx),
-		monsterP:    monster.NewProcessor(l, ctx),
+		l:              l,
+		ctx:            ctx,
+		t:              tenant.MustFromContext(ctx),
+		charP:          character.NewProcessor(l, ctx),
+		compP:          compartment.NewProcessor(l, ctx),
+		skillP:         skill.NewProcessor(l, ctx),
+		validP:         validation.NewProcessor(l, ctx),
+		guildP:         guild.NewProcessor(l, ctx),
+		inviteP:        invite.NewProcessor(l, ctx),
+		buddyListP:     buddylist.NewProcessor(l, ctx),
+		petP:           pet.NewProcessor(l, ctx),
+		footholdP:      foothold.NewProcessor(l, ctx),
+		monsterP:       monster.NewProcessor(l, ctx),
 		consumableP:    consumable.NewProcessor(l, ctx),
 		cashshopP:      cashshop.NewProcessor(l, ctx),
 		systemMessageP: system_message.NewProcessor(l, ctx),
@@ -494,14 +499,22 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleSendMessage, true
 	case DepositToStorage:
 		return h.handleDepositToStorage, true
-	case WithdrawFromStorage:
-		return h.handleWithdrawFromStorage, true
 	case UpdateStorageMesos:
 		return h.handleUpdateStorageMesos, true
 	case AwardFame:
 		return h.handleAwardFame, true
 	case ShowStorage:
 		return h.handleShowStorage, true
+	case TransferAsset:
+		return h.handleTransferAsset, true
+	case AcceptToStorage:
+		return h.handleAcceptToStorage, true
+	case ReleaseFromCharacter:
+		return h.handleReleaseFromCharacter, true
+	case AcceptToCharacter:
+		return h.handleAcceptToCharacter, true
+	case ReleaseFromStorage:
+		return h.handleReleaseFromStorage, true
 	}
 	return nil, false
 }
@@ -1150,23 +1163,6 @@ func (h *HandlerImpl) handleDepositToStorage(s Saga, st Step[any]) error {
 	return nil
 }
 
-// handleWithdrawFromStorage handles the WithdrawFromStorage action
-// This withdraws an item from account storage
-func (h *HandlerImpl) handleWithdrawFromStorage(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(WithdrawFromStoragePayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	err := h.storageP.WithdrawAndEmit(s.TransactionId, payload.WorldId, payload.AccountId, payload.AssetId, payload.Quantity)
-	if err != nil {
-		h.logActionError(s, st, err, "Unable to withdraw from storage.")
-		return err
-	}
-
-	return nil
-}
-
 // handleUpdateStorageMesos handles the UpdateStorageMesos action
 // This updates the mesos in account storage
 func (h *HandlerImpl) handleUpdateStorageMesos(s Saga, st Step[any]) error {
@@ -1218,6 +1214,146 @@ func (h *HandlerImpl) handleShowStorage(s Saga, st Step[any]) error {
 	// ShowStorage is a synchronous command with no async response event
 	// Mark the step as completed immediately after successfully sending the command
 	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId, true)
+
+	return nil
+}
+
+// handleTransferAsset handles the TransferAsset action
+// This uses the compartment-transfer service's 2-phase commit pattern (ACCEPT → RELEASE → COMPLETED)
+// to atomically transfer an asset between compartments (character inventory ↔ storage)
+func (h *HandlerImpl) handleTransferAsset(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(TransferAssetPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.compP.RequestTransferAsset(
+		s.TransactionId,
+		payload.WorldId,
+		payload.AccountId,
+		payload.CharacterId,
+		payload.AssetId,
+		payload.FromCompartmentId,
+		payload.FromCompartmentType,
+		payload.FromInventoryType,
+		payload.ToCompartmentId,
+		payload.ToCompartmentType,
+		payload.ToInventoryType,
+		payload.ReferenceId,
+		payload.TemplateId,
+		payload.ReferenceType,
+		payload.Slot,
+	)
+
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to transfer asset.")
+		return err
+	}
+
+	return nil
+}
+
+// handleAcceptToStorage handles the AcceptToStorage action
+// This sends an ACCEPT command to storage compartment with pre-populated asset data
+func (h *HandlerImpl) handleAcceptToStorage(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(AcceptToStoragePayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.Debugf("Accepting asset template [%d] to storage for account [%d]", payload.TemplateId, payload.AccountId)
+
+	// Send ACCEPT command to storage with pre-populated asset data
+	err := h.storageP.AcceptAndEmit(
+		payload.TransactionId,
+		payload.WorldId,
+		payload.AccountId,
+		-1, // Storage auto-assigns slot
+		payload.TemplateId,
+		payload.ReferenceId,
+		payload.ReferenceType,
+		payload.ReferenceData,
+	)
+
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to accept asset to storage.")
+		return err
+	}
+
+	return nil
+}
+
+// handleReleaseFromCharacter handles the ReleaseFromCharacter action
+// This sends a RELEASE command to character inventory compartment
+func (h *HandlerImpl) handleReleaseFromCharacter(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(ReleaseFromCharacterPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.compP.RequestReleaseAsset(
+		payload.TransactionId,
+		payload.CharacterId,
+		payload.InventoryType,
+		payload.AssetId,
+	)
+
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to release asset from character.")
+		return err
+	}
+
+	return nil
+}
+
+// handleAcceptToCharacter handles the AcceptToCharacter action
+// This sends an ACCEPT command to character inventory compartment with pre-populated asset data
+func (h *HandlerImpl) handleAcceptToCharacter(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(AcceptToCharacterPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.Debugf("Accepting asset template [%d] to character [%d] inventory", payload.TemplateId, payload.CharacterId)
+
+	// Send ACCEPT command to character inventory with pre-populated asset data
+	err := h.compP.RequestAcceptAsset(
+		payload.TransactionId,
+		payload.CharacterId,
+		payload.InventoryType,
+		payload.TemplateId,
+		payload.ReferenceId,
+		payload.ReferenceType,
+		payload.ReferenceData,
+	)
+
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to accept asset to character.")
+		return err
+	}
+
+	return nil
+}
+
+// handleReleaseFromStorage handles the ReleaseFromStorage action
+// This sends a RELEASE command to storage compartment
+func (h *HandlerImpl) handleReleaseFromStorage(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(ReleaseFromStoragePayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.storageP.ReleaseAndEmit(
+		payload.TransactionId,
+		payload.WorldId,
+		payload.AccountId,
+		payload.AssetId,
+	)
+
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to release asset from storage.")
+		return err
+	}
 
 	return nil
 }

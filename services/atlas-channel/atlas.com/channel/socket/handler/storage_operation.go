@@ -77,44 +77,13 @@ func handleRetrieveAsset(l logrus.FieldLogger, ctx context.Context, s session.Mo
 	// Get storage NPC fees
 	_, withdrawFee := getStorageNpcFees(l, ctx, s.StorageNpcId())
 
-	// Get the asset from storage by slot
-	storageData, err := storage.NewProcessor(l, ctx).GetStorageData(s.AccountId(), byte(s.WorldId()))
-	if err != nil {
-		l.WithError(err).Errorf("Unable to get storage data for account [%d].", s.AccountId())
-		return
-	}
-
-	// Find the asset at the given slot
-	var assetId uint32
-	var templateId uint32
-	var quantity uint32
-	found := false
-	for _, a := range storageData.Assets {
-		if a.Slot() == int16(slot) {
-			assetId = a.Id()
-			templateId = a.TemplateId()
-			if a.HasQuantity() {
-				quantity = a.Quantity()
-			} else {
-				quantity = 1
-			}
-			found = true
-			break
-		}
-	}
-
-	if !found {
-		l.Warnf("No asset found at storage slot [%d] for account [%d].", slot, s.AccountId())
-		return
-	}
-
 	// Create saga transaction
 	sagaP := saga.NewProcessor(l, ctx)
 	transactionId := uuid.New()
 	now := time.Now()
 
 	// Build saga steps
-	steps := make([]saga.Step[any], 0, 3)
+	steps := make([]saga.Step[any], 0, 2)
 
 	// Step 1: Charge withdrawal fee (if applicable)
 	if withdrawFee > 0 {
@@ -136,34 +105,18 @@ func handleRetrieveAsset(l logrus.FieldLogger, ctx context.Context, s session.Mo
 		})
 	}
 
-	// Step 2: Remove item from storage
+	// Step 2: High-level withdrawal step (will be expanded by saga-orchestrator)
 	steps = append(steps, saga.Step[any]{
-		StepId:  "remove_from_storage",
+		StepId:  "withdraw_from_storage",
 		Status:  saga.Pending,
 		Action:  saga.WithdrawFromStorage,
 		Payload: saga.WithdrawFromStoragePayload{
-			CharacterId: s.CharacterId(),
-			AccountId:   s.AccountId(),
-			WorldId:     byte(s.WorldId()),
-			AssetId:     assetId,
-			Quantity:    0, // 0 = full withdrawal
-		},
-		CreatedAt: now,
-		UpdatedAt: now,
-	})
-
-	// Step 3: Add item to character inventory
-	steps = append(steps, saga.Step[any]{
-		StepId:  "add_to_inventory",
-		Status:  saga.Pending,
-		Action:  saga.AwardAsset,
-		Payload: saga.AwardAssetPayload{
-			CharacterId: s.CharacterId(),
-			Item: saga.ItemPayload{
-				TemplateId: templateId,
-				Quantity:   quantity,
-				Expiration: time.Time{}, // No expiration
-			},
+			TransactionId: transactionId,
+			CharacterId:   s.CharacterId(),
+			WorldId:       byte(s.WorldId()),
+			AccountId:     s.AccountId(),
+			SourceSlot:    int16(slot),
+			InventoryType: byte(it),
 		},
 		CreatedAt: now,
 		UpdatedAt: now,
@@ -177,11 +130,11 @@ func handleRetrieveAsset(l logrus.FieldLogger, ctx context.Context, s session.Mo
 		Steps:         steps,
 	}
 
-	err = sagaP.Create(sagaTx)
+	err := sagaP.Create(sagaTx)
 	if err != nil {
-		l.WithError(err).Errorf("Unable to create saga for withdrawing asset [%d] from storage for character [%d].", assetId, s.CharacterId())
+		l.WithError(err).Errorf("Unable to create saga for withdrawing from storage slot [%d] for character [%d].", slot, s.CharacterId())
 	} else {
-		l.Debugf("Created withdrawal saga [%s] for character [%d] withdrawing asset [%d].", transactionId.String(), s.CharacterId(), assetId)
+		l.Debugf("Created withdrawal saga [%s] for character [%d] withdrawing from storage slot [%d].", transactionId.String(), s.CharacterId(), slot)
 	}
 }
 
@@ -202,30 +155,13 @@ func handleStoreAsset(l logrus.FieldLogger, ctx context.Context, s session.Model
 		return
 	}
 
-	// Get reference type from inventory type
-	var refType string
-	switch it {
-	case inventory.TypeValueEquip:
-		refType = "EQUIPABLE"
-	case inventory.TypeValueUse:
-		refType = "CONSUMABLE"
-	case inventory.TypeValueSetup:
-		refType = "SETUP"
-	case inventory.TypeValueETC:
-		refType = "ETC"
-	case inventory.TypeValueCash:
-		refType = "CASH"
-	default:
-		refType = "ETC"
-	}
-
 	// Create saga transaction
 	sagaP := saga.NewProcessor(l, ctx)
 	transactionId := uuid.New()
 	now := time.Now()
 
 	// Build saga steps
-	steps := make([]saga.Step[any], 0, 3)
+	steps := make([]saga.Step[any], 0, 2)
 
 	// Step 1: Charge deposit fee (if applicable)
 	if depositFee > 0 {
@@ -247,38 +183,18 @@ func handleStoreAsset(l logrus.FieldLogger, ctx context.Context, s session.Model
 		})
 	}
 
-	// Step 2: Remove item from character inventory
+	// Step 2: High-level transfer step (will be expanded by saga-orchestrator)
 	steps = append(steps, saga.Step[any]{
-		StepId:  "remove_from_inventory",
+		StepId:  "transfer_to_storage",
 		Status:  saga.Pending,
-		Action:  saga.DestroyAsset,
-		Payload: saga.DestroyAssetPayload{
-			CharacterId: s.CharacterId(),
-			TemplateId:  itemId,
-			Quantity:    uint32(quantity),
-			RemoveAll:   false,
-		},
-		CreatedAt: now,
-		UpdatedAt: now,
-	})
-
-	// Step 3: Add item to storage
-	steps = append(steps, saga.Step[any]{
-		StepId:  "add_to_storage",
-		Status:  saga.Pending,
-		Action:  saga.DepositToStorage,
-		Payload: saga.DepositToStoragePayload{
-			CharacterId:   s.CharacterId(),
-			AccountId:     s.AccountId(),
-			WorldId:       byte(s.WorldId()),
-			Slot:          slot,
-			TemplateId:    itemId,
-			ReferenceId:   0, // Will be set by storage service
-			ReferenceType: refType,
-			Expiration:    time.Time{}, // No expiration
-			Quantity:      uint32(quantity),
-			OwnerId:       s.CharacterId(),
-			Flag:          0,
+		Action:  saga.TransferToStorage,
+		Payload: saga.TransferToStoragePayload{
+			TransactionId:       transactionId,
+			CharacterId:         s.CharacterId(),
+			WorldId:             byte(s.WorldId()),
+			AccountId:           s.AccountId(),
+			SourceSlot:          slot,
+			SourceInventoryType: byte(it),
 		},
 		CreatedAt: now,
 		UpdatedAt: now,
@@ -423,8 +339,11 @@ func handleMeso(l logrus.FieldLogger, ctx context.Context, s session.Model, r *r
 // handleClose handles closing the storage UI
 func handleClose(l logrus.FieldLogger, ctx context.Context, s session.Model) {
 	l.Debugf("Character [%d] exited storage.", s.CharacterId())
-	// Clear the storage NPC ID from the session
-	session.NewProcessor(l, ctx).ClearStorageNpcId(s.SessionId())
+	// Emit close storage command to clear NPC context cache in storage service
+	err := storage.NewProcessor(l, ctx).CloseStorage(s.CharacterId())
+	if err != nil {
+		l.WithError(err).Errorf("Unable to emit close storage command for character [%d].", s.CharacterId())
+	}
 }
 
 func isStorageOperation(l logrus.FieldLogger) func(options map[string]interface{}, op byte, key StorageOperationMode) bool {

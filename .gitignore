@@ -8,3 +8,4 @@ services/atlas-npc-conversations/tmp
 services/atlas-npc-conversations/atlas.com/npc/atlas-npc-conversations
 services/atlas-npc-conversations/tmp2
 services/atlas-data/tmp/Npc.wz
+services/atlas-storage/atlas.com/storage/atlas-storage

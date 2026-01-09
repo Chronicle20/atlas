@@ -18,7 +18,7 @@ const (
 
 	StorageOperationModeRetrieveAssets       StorageOperationMode = "RETRIEVE_ASSETS"    // 9
 	StorageOperationModeErrorInventoryFull   StorageOperationMode = "INVENTORY_FULL"     // 10
-	StorageOperationModeErrorNotEnoughMesos  StorageOperationMode = "NOT_ENOUGH_MESOS"   // 11 / 16
+	StorageOperationModeErrorNotEnoughMesos  StorageOperationMode = "NOT_ENOUGH_MESOS"   // 11
 	StorageOperationModeErrorOneOfAKind      StorageOperationMode = "ONE_OF_A_KIND"      // 12
 	StorageOperationModeStoreAssets          StorageOperationMode = "STORE_ASSETS"       // 13 (another 'store' op at 15)
 	StorageOperationModeErrorNotEnoughMesos2 StorageOperationMode = "NOT_ENOUGH_MESOS_2" // 16

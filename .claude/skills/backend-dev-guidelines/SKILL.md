@@ -30,6 +30,8 @@ Activate when working on:
 - [ ] Lazy **Provider** for data access
 - [ ] Kafka **Producer** initialized with context decorators
 - [ ] **Resource** file for route registration and handlers
+- [ ] **Ingress configuration** updated if REST endpoints added/modified
+- [ ] **Service README** updated if API contracts changed
 - [ ] **Requests** + **rest.go** for cross-service REST calls (if needed)
 - [ ] Context-based multi-tenancy (`tenant.MustFromContext`)
 - [ ] Table-driven **tests** for all logic layers
@@ -46,29 +48,49 @@ Activate when working on:
 When modifying any service code:
 
 1. **Implement changes** to primary files (model.go, processor.go, etc.)
-2. **Update mocks immediately** if any interfaces changed
+2. **Update ingress configuration** if REST endpoints were added/modified
+   - Open `atlas-ingress.yml` at the root of the atlas directory
+   - Check if a location block exists for your service's `/api/<service-name>` path
+   - If missing, add a new nginx location block following the existing pattern:
+     ```nginx
+     location ~ ^/api/<service-name>(/.*)?$ {
+       proxy_pass http://atlas-<service-name>.atlas.svc.cluster.local:8080;
+     }
+     ```
+   - Place it alphabetically among other service routes for maintainability
+3. **Update service README** if API contracts changed
+   - Navigate to the service's README.md (e.g., `services/atlas-<service>/atlas.com/<service>/README.md`)
+   - Update the REST Endpoints table with correct paths, methods, and query parameters
+   - Ensure endpoint paths match actual implementation (check path vs query parameters)
+   - Update Kafka Commands/Events tables if message types were added/modified
+   - Verify all documented endpoints are accurate and complete
+4. **Update mocks immediately** if any interfaces changed
    - Add corresponding function fields to mock struct
    - Implement new methods with nil-check and default behavior
    - See [Testing Conventions](resources/testing-guide.md#interface-change-workflow) for details
-3. **Run tests BEFORE claiming completion**:
+5. **Run tests BEFORE claiming completion**:
    ```bash
    go test ./... -count=1
    ```
-4. **Fix any failures** - Do NOT skip or ignore test failures
-5. **Verify build**:
+6. **Fix any failures** - Do NOT skip or ignore test failures
+7. **Verify build**:
    ```bash
    go build
    ```
-6. **Report test results** with actual command output, not assumptions
+8. **Report test results** with actual command output, not assumptions
 
 ### Critical Rules
 
 - ❌ **Never skip test execution** - Running tests is mandatory, not optional
 - ❌ **Never assume tests will pass** - Always verify with actual execution
 - ❌ **Never update interface without updating mocks** - Causes immediate test failures
+- ❌ **Never add/modify REST endpoints without updating ingress** - Endpoints won't be accessible
+- ❌ **Never change API contracts without updating README** - Documentation becomes stale and misleading
 - ✅ **Always run full test suite** (`go test ./...`) not just modified packages
 - ✅ **Always use `-count=1` flag** to disable test caching
 - ✅ **Always verify test output** before marking work complete
+- ✅ **Always check ingress configuration** when working with REST endpoints
+- ✅ **Always update service documentation** when changing APIs
 
 ### When Tests Fail
 
@@ -125,6 +147,7 @@ See [Testing Conventions](resources/testing-guide.md) for comprehensive testing 
 | **Cache Patterns** | **[resources/patterns-cache.md](resources/patterns-cache.md)** |
 | Kafka Integration | [resources/patterns-kafka.md](resources/patterns-kafka.md) |
 | REST JSON:API | [resources/patterns-rest-jsonapi.md](resources/patterns-rest-jsonapi.md) |
+| **Ingress & Documentation** | **[resources/patterns-ingress-documentation.md](resources/patterns-ingress-documentation.md)** |
 | Multi-Tenancy Context | [resources/patterns-multitenancy-context.md](resources/patterns-multitenancy-context.md) |
 | Testing Conventions | [resources/testing-guide.md](resources/testing-guide.md) |
 | **Cross-Service Implementation** | **[resources/cross-service-implementation.md](resources/cross-service-implementation.md)** |

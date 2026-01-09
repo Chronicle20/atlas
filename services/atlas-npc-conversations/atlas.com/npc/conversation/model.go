@@ -251,6 +251,7 @@ const (
 type DialogueModel struct {
 	dialogueType DialogueType
 	text         string
+	speaker      string // Optional speaker override (e.g., "NPC_LEFT", "CHARACTER_LEFT", etc.)
 	choices      []ChoiceModel
 }
 
@@ -262,6 +263,11 @@ func (d DialogueModel) DialogueType() DialogueType {
 // Text returns the dialogue text
 func (d DialogueModel) Text() string {
 	return d.text
+}
+
+// Speaker returns the speaker override (empty string means use default)
+func (d DialogueModel) Speaker() string {
+	return d.speaker
 }
 
 // Choices returns the dialogue choices
@@ -327,6 +333,7 @@ func (d DialogueModel) ChoiceFromAction(action byte) (ChoiceModel, bool) {
 type DialogueBuilder struct {
 	dialogueType DialogueType
 	text         string
+	speaker      string
 	choices      []ChoiceModel
 }
 
@@ -346,6 +353,12 @@ func (b *DialogueBuilder) SetDialogueType(dialogueType DialogueType) *DialogueBu
 // SetText sets the dialogue text
 func (b *DialogueBuilder) SetText(text string) *DialogueBuilder {
 	b.text = text
+	return b
+}
+
+// SetSpeaker sets the speaker override
+func (b *DialogueBuilder) SetSpeaker(speaker string) *DialogueBuilder {
+	b.speaker = speaker
 	return b
 }
 
@@ -401,6 +414,7 @@ func (b *DialogueBuilder) Build() (*DialogueModel, error) {
 	return &DialogueModel{
 		dialogueType: b.dialogueType,
 		text:         b.text,
+		speaker:      b.speaker,
 		choices:      b.choices,
 	}, nil
 }

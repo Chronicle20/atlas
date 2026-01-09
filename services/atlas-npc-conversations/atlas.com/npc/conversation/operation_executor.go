@@ -790,7 +790,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 	switch operation.Type() {
 	case "award_item":
 		// Format: award_item
-		// Context: itemId (uint32), quantity (uint32)
+		// Context: itemId (uint32), quantity (uint32), expiration (int64 milliseconds, optional)
 		itemIdValue, exists := operation.Params()["itemId"]
 		if !exists {
 			return "", "", "", nil, errors.New("missing itemId parameter for award_item operation")
@@ -813,11 +813,24 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 			return "", "", "", nil, err
 		}
 
+		// Evaluate the optional expiration value (in milliseconds from now)
+		var expiration time.Time
+		if expirationValue, hasExpiration := operation.Params()["expiration"]; hasExpiration {
+			expirationMs, err := e.evaluateContextValueAsInt(characterId, "expiration", expirationValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
+			if expirationMs > 0 {
+				expiration = time.Now().Add(time.Duration(expirationMs) * time.Millisecond)
+			}
+		}
+
 		payload := saga.AwardItemActionPayload{
 			CharacterId: characterId,
 			Item: saga.ItemPayload{
 				TemplateId: uint32(itemIdInt),
 				Quantity:   uint32(quantityInt),
+				Expiration: expiration,
 			},
 		}
 
@@ -1543,6 +1556,30 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		}
 
 		return stepId, saga.Pending, saga.SendMessage, payload, nil
+
+	case "award_fame":
+		// Format: award_fame
+		// Params: amount (int16)
+		// Awards fame to a character (can be negative to remove fame)
+		// Used for quest rewards (e.g., qm.gainFame() in scripts)
+		amountValue, exists := operation.Params()["amount"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing amount parameter for award_fame operation")
+		}
+
+		amountInt, err := e.evaluateContextValueAsInt(characterId, "amount", amountValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		payload := saga.AwardFamePayload{
+			CharacterId: characterId,
+			WorldId:     f.WorldId(),
+			ChannelId:   f.ChannelId(),
+			Amount:      int16(amountInt),
+		}
+
+		return stepId, saga.Pending, saga.AwardFame, payload, nil
 
 	case "open_storage":
 		// Format: open_storage

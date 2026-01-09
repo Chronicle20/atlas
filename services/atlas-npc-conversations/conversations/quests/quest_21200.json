@@ -1,0 +1,261 @@
+{
+  "questId": 21200,
+  "questName": "Aran Polearm Quest",
+  "startStateMachine": {
+    "startState": "start_intro",
+    "states": [
+      {
+        "id": "start_intro",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendAcceptDecline",
+          "text": "How is the training going? Wow, you've reached such a high level! That's amazing. I knew you would do just fine on Victoria Island... Oh, look at me. I'm wasting your time. I know you're busy, but you'll have to return to the island for a bit.",
+          "choices": [
+            {"text": "Accept", "nextState": "start_polearmInfo"},
+            {"text": "Decline", "nextState": "start_declined"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "start_declined",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Come back again when you have took your desition wisely.",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "start_polearmInfo",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Your #b#p1201001##k in #b#m140000000##k is acting strange all of a sudden. According to the records, the Polearm acts this way when it is calling for its master. #bPerhaps it's calling for you#k. Please return to the island and check things out.",
+          "choices": [
+            {"text": "Ok", "nextState": "start_startQuest"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "start_startQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "end_intro",
+    "states": [
+      {
+        "id": "end_intro",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Voom voom voom voom voom....",
+          "choices": [
+            {"text": "Next", "nextState": "end_polearmEcho"},
+            {"text": "Exit", "nextState": "end_declinedAtStart"}
+          ]
+        }
+      },
+      {
+        "id": "end_declinedAtStart",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Hey! At least say you tried!",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "end_polearmEcho",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "#b(The #p1201001# is producing an undulating echo. But who is that boy standing over there?)",
+          "speaker": "CHARACTER_LEFT",
+          "choices": [
+            {"text": "Previous", "nextState": "end_intro"},
+            {"text": "Next", "nextState": "end_neverSeen"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "end_neverSeen",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "#b(You've never seen him before. He doesn't look human.)",
+          "speaker": "CHARACTER_LEFT",
+          "choices": [
+            {"text": "Previous", "nextState": "end_polearmEcho"},
+            {"text": "Next", "nextState": "end_yoAran"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "end_yoAran",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "Yo, Aran! Do you not hear me? I said, do you not hear me! Ugh, how frustating!",
+          "choices": [
+            {"text": "Previous", "nextState": "end_neverSeen"},
+            {"text": "Next", "nextState": "end_whoseVoice"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "end_whoseVoice",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "#b(Hm? Who's voice was that? It sounds like an angry boy...)",
+          "speaker": "CHARACTER_LEFT",
+          "choices": [
+            {"text": "Previous", "nextState": "end_yoAran"},
+            {"text": "Next", "nextState": "end_onlyMaster"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "end_onlyMaster",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "Ugh, my only master had to end up trapped in ice for hundreds of years, abandoning me completely, and is now completely ignoring me.",
+          "choices": [
+            {"text": "Previous", "nextState": "end_whoseVoice"},
+            {"text": "Next", "nextState": "end_whoAreYou"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "end_whoAreYou",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "Who...are you?",
+          "speaker": "CHARACTER_LEFT",
+          "choices": [
+            {"text": "Previous", "nextState": "end_onlyMaster"},
+            {"text": "Next", "nextState": "end_hearMeNow"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "end_hearMeNow",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "Aran? Do you hear me now? It's me! Don't you recognize me? I'm your weapon, #b#p1201002# the Polearm#k!",
+          "choices": [
+            {"text": "Previous", "nextState": "end_whoAreYou"},
+            {"text": "Next", "nextState": "end_mahaTalk"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "end_mahaTalk",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "#b(...#p1201002#? A #p1201001# can talk?)",
+          "speaker": "CHARACTER_LEFT",
+          "choices": [
+            {"text": "Previous", "nextState": "end_hearMeNow"},
+            {"text": "Next", "nextState": "end_suspicious"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "end_suspicious",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "What's with that suspicious look on your face? I know you've lost your memory, but did you forgot about me, too? How could you?!",
+          "choices": [
+            {"text": "Previous", "nextState": "end_mahaTalk"},
+            {"text": "Next", "nextState": "end_cantRemember"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "end_cantRemember",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "I'm so sorry, but I can't remember a thing.",
+          "speaker": "CHARACTER_LEFT",
+          "choices": [
+            {"text": "Previous", "nextState": "end_suspicious"},
+            {"text": "Next", "nextState": "end_rememberMe"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "end_rememberMe",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendYesNo",
+          "text": "Sorry doesn't cut it! Do you know how lonely and bored I was for hundreds of years? I don't care what it takes! Remember me! Remember me now!",
+          "choices": [
+            {"text": "Yes", "nextState": "end_completeQuest"},
+            {"text": "No", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "end_completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "end_conclusion"}
+          ]
+        }
+      },
+      {
+        "id": "end_conclusion",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "#b(The voice that claims to be #p1201002# the #p1201001# is yelling in frustration. You don't think this conversation is going anywhere. You better go talk to #p1201000# first.)",
+          "speaker": "CHARACTER_LEFT",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

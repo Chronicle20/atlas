@@ -1,0 +1,176 @@
+{
+  "questId": 21101,
+  "questName": "Aran Job Advancement",
+  "startStateMachine": {
+    "startState": "confirmChoice",
+    "states": [
+      {
+        "id": "confirmChoice",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendYesNo",
+          "text": "#b(Are you certain that you were the hero that wielded the #p1201001#? Yes, you're sure. You better grab the #p1201001# really tightly. Surely it will react to you.)#k",
+          "choices": [
+            {
+              "text": "Yes",
+              "nextState": "checkJobAndInventory"
+            },
+            {
+              "text": "No",
+              "nextState": "thinkAboutIt"
+            },
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "thinkAboutIt",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "#b(You need to think about this for a second...)#k",
+          "choices": [
+            {
+              "text": "Next",
+              "nextState": null
+            },
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "checkJobAndInventory",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {
+                  "type": "jobId",
+                  "operator": "=",
+                  "value": "2000"
+                },
+                {
+                  "type": "inventorySpace",
+                  "operator": ">=",
+                  "value": "1",
+                  "referenceId": "1142129"
+                }
+              ],
+              "nextState": "performJobAdvancement"
+            },
+            {
+              "conditions": [
+                {
+                  "type": "jobId",
+                  "operator": "=",
+                  "value": "2000"
+                }
+              ],
+              "nextState": "inventoryFull"
+            },
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "inventoryFull",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Wow, your #bequip#k inventory is full. You need to make at least 1 empty slot to complete this quest.",
+          "choices": [
+            {
+              "text": "Ok",
+              "nextState": null
+            },
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "performJobAdvancement",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {
+              "type": "award_item",
+              "params": {
+                "itemId": "1142129",
+                "quantity": "1"
+              }
+            },
+            {
+              "type": "change_job",
+              "params": {
+                "jobId": "2100"
+              }
+            },
+            {
+              "type": "create_skill",
+              "params": {
+                "skillId": "21000000",
+                "level": "10",
+                "masterLevel": "10"
+              }
+            },
+            {
+              "type": "create_skill",
+              "params": {
+                "skillId": "21001003",
+                "level": "20",
+                "masterLevel": "20"
+              }
+            },
+            {
+              "type": "complete_quest",
+              "params": {}
+            }
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": "remembering"
+            }
+          ]
+        }
+      },
+      {
+        "id": "remembering",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "#b(You might be starting to remember something...)#k",
+          "speaker": "CHARACTER_RIGHT",
+          "choices": [
+            {
+              "text": "Previous",
+              "nextState": "remembering"
+            },
+            {
+              "text": "Next",
+              "nextState": null
+            },
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

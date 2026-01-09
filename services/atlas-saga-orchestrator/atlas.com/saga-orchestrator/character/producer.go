@@ -75,6 +75,22 @@ func AwardMesosProvider(transactionId uuid.UUID, worldId world.Id, characterId u
 	return producer.SingleMessageProvider(key, value)
 }
 
+func AwardFameProvider(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount int16) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character2.Command[character2.RequestChangeFameBody]{
+		TransactionId: transactionId,
+		WorldId:       worldId,
+		CharacterId:   characterId,
+		Type:          character2.CommandRequestChangeFame,
+		Body: character2.RequestChangeFameBody{
+			ActorId:   0,        // System/NPC-initiated fame change (no player actor)
+			ActorType: "SYSTEM", // Fame awarded by NPC/quest system
+			Amount:    int8(amount),
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func ChangeJobProvider(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, jobId job.Id) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &character2.Command[character2.ChangeJobCommandBody]{

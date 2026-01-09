@@ -1,0 +1,120 @@
+{
+  "questId": 4647,
+  "questName": "Pet Snack Quest",
+  "startStateMachine": {
+    "startState": "end",
+    "states": [
+      {
+        "id": "end",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "checkItem",
+    "states": [
+      {
+        "id": "checkItem",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {
+                  "type": "item",
+                  "operator": ">=",
+                  "value": "1",
+                  "referenceId": "5460000"
+                }
+              ],
+              "nextState": "completeQuest"
+            },
+            {
+              "conditions": [],
+              "nextState": "missingItem"
+            }
+          ]
+        }
+      },
+      {
+        "id": "completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {
+              "type": "complete_quest",
+              "params": {}
+            },
+            {
+              "type": "create_skill",
+              "params": {
+                "skillId": "8",
+                "level": "1",
+                "masterLevel": "1"
+              }
+            },
+            {
+              "type": "destroy_item",
+              "params": {
+                "itemId": "5460000",
+                "quantity": "1"
+              }
+            }
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": "hasItemDialogue"
+            }
+          ]
+        }
+      },
+      {
+        "id": "hasItemDialogue",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "You got the Pet Snack! Thanks! You can use these to feed multiple pets at once!",
+          "choices": [
+            {
+              "text": "Ok",
+              "nextState": null
+            },
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "missingItem",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Get me the Pet Snack! It can be found in a very big shop....",
+          "choices": [
+            {
+              "text": "Ok",
+              "nextState": null
+            },
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

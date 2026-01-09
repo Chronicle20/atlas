@@ -1,0 +1,90 @@
+{
+  "questId": 21767,
+  "questName": "Aran Medicine Box Quest",
+  "startStateMachine": {
+    "startState": "checkExistingItem",
+    "states": [
+      {
+        "id": "checkExistingItem",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "item", "operator": ">=", "value": "1", "referenceId": "4032423"}
+              ],
+              "nextState": "startQuestOnly"
+            },
+            {"conditions": [], "nextState": "checkInventorySpace"}
+          ]
+        }
+      },
+      {
+        "id": "startQuestOnly",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "checkInventorySpace",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "4032423"}
+              ],
+              "nextState": "medicineDialogue"
+            },
+            {"conditions": [], "nextState": "noInventorySpace"}
+          ]
+        }
+      },
+      {
+        "id": "noInventorySpace",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Please open a slot in your ETC inventory first.",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "medicineDialogue",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "#bHm, there's a medicinal substance in the box. What could this be? You better take this to John and ask him what it is.#k",
+          "choices": [
+            {"text": "Next", "nextState": "giveItemAndStartQuest"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "giveItemAndStartQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "award_item", "params": {"itemId": "4032423", "quantity": "1"}},
+            {"type": "start_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

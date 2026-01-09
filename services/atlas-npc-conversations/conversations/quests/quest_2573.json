@@ -1,0 +1,71 @@
+{
+  "questId": 2573,
+  "questName": "Explorer Tutorial Ship",
+  "startStateMachine": {
+    "startState": "greeting",
+    "states": [
+      {
+        "id": "greeting",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Greetings! Isn't this just the perfect weather for a journey? I'm Skipper, the captain of this fine ship. You must be a new Explorer, eh? Nice to meet you.",
+          "choices": [
+            {"text": "Next", "nextState": "askLookAround"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "askLookAround",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendAcceptDecline",
+          "text": "We're not quite ready to leave, so feel free to look around the ship while we're waiting.",
+          "choices": [
+            {"text": "Accept", "nextState": "acceptAndWarp"},
+            {"text": "Decline", "nextState": "declineMsg"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "declineMsg",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Hey, take it easy! Sometimes you just gotta wait.",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "acceptAndWarp",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "warp_to_map", "params": {"mapId": "3000000", "portalId": "0"}},
+            {"type": "complete_quest", "params": {"force": "true"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "setOff"}
+          ]
+        }
+      },
+      {
+        "id": "setOff",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Looks like we're all set! I think this is going to be a great voyage. Let's get underway.",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "questId": 2251,
+  "npcId": 1061011,
+  "questName": "Zombie Mushroom Signal 3",
+  "startStateMachine": {
+    "startState": "noStartDialogue",
+    "states": [
+      {
+        "id": "noStartDialogue",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "This quest has no start dialogue.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "checkItems",
+    "states": [
+      {
+        "id": "checkItems",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "item", "operator": "<", "value": "20", "referenceId": "4032399"}
+              ],
+              "nextState": "missingItems"
+            },
+            {
+              "conditions": [],
+              "nextState": "completeQuest"
+            }
+          ]
+        }
+      },
+      {
+        "id": "missingItems",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Please bring me 20 #b#t4032399##k...  #i4032399#",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "destroy_item", "params": {"itemId": "4032399", "quantity": "20"}},
+            {"type": "award_exp", "params": {"amount": "8000"}},
+            {"type": "complete_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "thankYou"}
+          ]
+        }
+      },
+      {
+        "id": "thankYou",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Oh, you brought 20 #b#t4032399##k! Thank you.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

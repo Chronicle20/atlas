@@ -1,0 +1,99 @@
+{
+  "questId": 21719,
+  "startStateMachine": {
+    "startState": "npcIntro",
+    "states": [
+      {
+        "id": "npcIntro",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Aren't you the one that used to be in #m101000000# until not too long ago? I finally found you! Do you know how long it took for me to finally find you?",
+          "speaker": "UNKNOWN2",
+          "choices": [
+            {
+              "text": "Next",
+              "nextState": "playerResponse"
+            },
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "playerResponse",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "Who are you?",
+          "speaker": "CHARACTER_LEFT",
+          "choices": [
+            {
+              "text": "Previous",
+              "nextState": "npcIntro"
+            },
+            {
+              "text": "Next",
+              "nextState": "askAccept"
+            },
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "askAccept",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendAcceptDecline",
+          "text": "Me? If you want to know, stop by my cave. I'll even send you an invitation. You'll be directly sent to my cave as soon as you accept. Look forward to seeing you there.",
+          "choices": [
+            {
+              "text": "Accept",
+              "nextState": "completeAndWarp"
+            },
+            {
+              "text": "Decline",
+              "nextState": null
+            },
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "completeAndWarp",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {
+              "type": "complete_quest",
+              "params": {
+                "force": "true"
+              }
+            },
+            {
+              "type": "warp_to_map",
+              "params": {
+                "mapId": "910510200",
+                "portalId": "0"
+              }
+            }
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

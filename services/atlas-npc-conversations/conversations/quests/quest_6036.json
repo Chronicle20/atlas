@@ -1,0 +1,158 @@
+{
+  "questId": 6036,
+  "questName": "Maker Skill - A Surprise Outcome",
+  "endStateMachine": {
+    "startState": "greet",
+    "states": [
+      {
+        "id": "greet",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Bothering me again? What's it?",
+          "choices": [
+            {"text": "Next", "nextState": "checkItem"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "checkItem",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "item", "operator": ">=", "value": "1", "referenceId": "4031980"}
+              ],
+              "nextState": "hasItem"
+            },
+            {
+              "conditions": [],
+              "nextState": "noItem"
+            }
+          ]
+        }
+      },
+      {
+        "id": "hasItem",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "You crafted a #b#t4031980##k?! How comes, how did you do it?? ... Well, that can't be helped, I guess. The student surpassed the teacher! Youth sure do wonders to one's perception capabilities.\r\n\r\nYou are now ready to take the last step on mastering the Maker skill, contemplate it at it's finest form!",
+          "choices": [
+            {"text": "Next", "nextState": "determineJobCategory"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "noItem",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "... Please step aside, I can't finish this work if I'm being distracted at every moment.",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "determineJobCategory",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "jobId", "operator": ">=", "value": "3000"},
+                {"type": "jobId", "operator": "<", "value": "4000"}
+              ],
+              "nextState": "completeQuestResistance"
+            },
+            {
+              "conditions": [
+                {"type": "jobId", "operator": ">=", "value": "2000"},
+                {"type": "jobId", "operator": "<", "value": "3000"}
+              ],
+              "nextState": "completeQuestAranEvan"
+            },
+            {
+              "conditions": [
+                {"type": "jobId", "operator": ">=", "value": "1000"},
+                {"type": "jobId", "operator": "<", "value": "2000"}
+              ],
+              "nextState": "completeQuestCygnus"
+            },
+            {
+              "conditions": [],
+              "nextState": "completeQuestExplorer"
+            }
+          ]
+        }
+      },
+      {
+        "id": "completeQuestExplorer",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {}},
+            {"type": "destroy_item", "params": {"itemId": "4031980", "quantity": "1"}},
+            {"type": "update_skill", "params": {"skillId": "1007", "level": "3", "masterLevel": "3"}},
+            {"type": "award_exp", "params": {"amount": "300000"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "completeQuestCygnus",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {}},
+            {"type": "destroy_item", "params": {"itemId": "4031980", "quantity": "1"}},
+            {"type": "update_skill", "params": {"skillId": "10001007", "level": "3", "masterLevel": "3"}},
+            {"type": "award_exp", "params": {"amount": "300000"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "completeQuestAranEvan",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {}},
+            {"type": "destroy_item", "params": {"itemId": "4031980", "quantity": "1"}},
+            {"type": "update_skill", "params": {"skillId": "20001007", "level": "3", "masterLevel": "3"}},
+            {"type": "award_exp", "params": {"amount": "300000"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "completeQuestResistance",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {}},
+            {"type": "destroy_item", "params": {"itemId": "4031980", "quantity": "1"}},
+            {"type": "update_skill", "params": {"skillId": "30001007", "level": "3", "masterLevel": "3"}},
+            {"type": "award_exp", "params": {"amount": "300000"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

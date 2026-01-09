@@ -1,0 +1,241 @@
+{
+  "questId": 8229,
+  "questName": "Lost in Translation",
+  "startStateMachine": {
+    "startState": "askAccept",
+    "states": [
+      {
+        "id": "askAccept",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendAcceptDecline",
+          "text": "I knew we could rely on the outsider on this matter! Now that we have the letter translated by him, head it to Jack, he knows what to do.",
+          "choices": [
+            {
+              "text": "Accept",
+              "nextState": "checkItemOrGive"
+            },
+            {
+              "text": "Decline",
+              "nextState": "decline"
+            },
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "decline",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Come on, the city really needs you cooperating on this one!",
+          "choices": [
+            {
+              "text": "Ok",
+              "nextState": null
+            },
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "checkItemOrGive",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {
+                  "type": "item",
+                  "operator": ">=",
+                  "value": "1",
+                  "referenceId": "4032018"
+                }
+              ],
+              "nextState": "alreadyHaveItem"
+            },
+            {
+              "conditions": [
+                {
+                  "type": "inventorySpace",
+                  "operator": ">=",
+                  "value": "1",
+                  "referenceId": "4032018"
+                }
+              ],
+              "nextState": "giveItemAndStart"
+            },
+            {
+              "conditions": [],
+              "nextState": "noSpace"
+            }
+          ]
+        }
+      },
+      {
+        "id": "alreadyHaveItem",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {
+              "type": "start_quest",
+              "params": {}
+            }
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "giveItemAndStart",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {
+              "type": "award_item",
+              "params": {
+                "itemId": "4032018",
+                "quantity": "1"
+              }
+            },
+            {
+              "type": "start_quest",
+              "params": {}
+            }
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "noSpace",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Oy, you need a slot in your ETC to get the communique.",
+          "choices": [
+            {
+              "text": "Ok",
+              "nextState": null
+            },
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "checkHasItem",
+    "states": [
+      {
+        "id": "checkHasItem",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {
+                  "type": "item",
+                  "operator": ">=",
+                  "value": "1",
+                  "referenceId": "4032018"
+                }
+              ],
+              "nextState": "hasItem"
+            },
+            {
+              "conditions": [],
+              "nextState": "missingItem"
+            }
+          ]
+        }
+      },
+      {
+        "id": "hasItem",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Oh, you brought it. Nicely done, the countermeasure process will be much easier now.\r\n\r\n#fUI/UIWindow.img/QuestIcon/4/0# \r\n\r\n#fUI/UIWindow.img/QuestIcon/8/0# 50000 EXP",
+          "choices": [
+            {
+              "text": "Ok",
+              "nextState": "completeQuest"
+            },
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "missingItem",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "What's wrong? Why you didn't retrieved the translated message yet? Please bring me the letter's content for me to strategize a countermeasure ASAP.",
+          "choices": [
+            {
+              "text": "Ok",
+              "nextState": null
+            },
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {
+              "type": "destroy_item",
+              "params": {
+                "itemId": "4032018",
+                "quantity": "1"
+              }
+            },
+            {
+              "type": "award_exp",
+              "params": {
+                "amount": "50000"
+              }
+            },
+            {
+              "type": "complete_quest",
+              "params": {}
+            }
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

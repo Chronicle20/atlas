@@ -37,6 +37,10 @@ type Action string
 const (
 	AwardMesos          Action = "award_mesos"
 	UpdateStorageMesos  Action = "update_storage_mesos"
+	AwardAsset          Action = "award_asset"
+	DestroyAsset        Action = "destroy_asset"
+	DepositToStorage    Action = "deposit_to_storage"
+	WithdrawFromStorage Action = "withdraw_from_storage"
 )
 
 // Step represents a single step within a saga
@@ -66,4 +70,49 @@ type UpdateStorageMesosPayload struct {
 	WorldId     byte   `json:"worldId"`     // WorldId for the storage
 	Operation   string `json:"operation"`   // Operation: "SET", "ADD", "SUBTRACT"
 	Mesos       uint32 `json:"mesos"`       // Mesos amount
+}
+
+// AwardAssetPayload is the payload for the award_asset action
+type AwardAssetPayload struct {
+	CharacterId uint32      `json:"characterId"` // CharacterId associated with the action
+	Item        ItemPayload `json:"item"`        // Item to award
+}
+
+// ItemPayload represents an individual item in a transaction
+type ItemPayload struct {
+	TemplateId uint32    `json:"templateId"`           // TemplateId of the item
+	Quantity   uint32    `json:"quantity"`             // Quantity of the item
+	Expiration time.Time `json:"expiration,omitempty"` // Expiration time for the item (zero value = no expiration)
+}
+
+// DestroyAssetPayload is the payload for the destroy_asset action
+type DestroyAssetPayload struct {
+	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
+	TemplateId  uint32 `json:"templateId"`  // TemplateId of the item to destroy
+	Quantity    uint32 `json:"quantity"`    // Quantity of the item to destroy (ignored if RemoveAll is true)
+	RemoveAll   bool   `json:"removeAll"`   // If true, remove all instances of the item regardless of Quantity
+}
+
+// DepositToStoragePayload is the payload for the deposit_to_storage action
+type DepositToStoragePayload struct {
+	CharacterId   uint32    `json:"characterId"`   // CharacterId initiating the deposit
+	AccountId     uint32    `json:"accountId"`     // AccountId that owns the storage
+	WorldId       byte      `json:"worldId"`       // WorldId for the storage (storage is world-scoped)
+	Slot          int16     `json:"slot"`          // Target slot in storage
+	TemplateId    uint32    `json:"templateId"`    // Item template ID
+	ReferenceId   uint32    `json:"referenceId"`   // Reference ID for the item data (external service ID)
+	ReferenceType string    `json:"referenceType"` // Type of reference: "EQUIPABLE", "CONSUMABLE", "SETUP", "ETC", "CASH"
+	Expiration    time.Time `json:"expiration"`    // Item expiration time
+	Quantity      uint32    `json:"quantity"`      // Quantity (for stackables)
+	OwnerId       uint32    `json:"ownerId"`       // Owner ID (for stackables)
+	Flag          uint16    `json:"flag"`          // Item flag (for stackables)
+}
+
+// WithdrawFromStoragePayload is the payload for the withdraw_from_storage action
+type WithdrawFromStoragePayload struct {
+	CharacterId uint32 `json:"characterId"` // CharacterId initiating the withdrawal
+	AccountId   uint32 `json:"accountId"`   // AccountId that owns the storage
+	WorldId     byte   `json:"worldId"`     // WorldId for the storage
+	AssetId     uint32 `json:"assetId"`     // Asset ID to withdraw
+	Quantity    uint32 `json:"quantity"`    // Quantity to withdraw (0 = full withdrawal)
 }

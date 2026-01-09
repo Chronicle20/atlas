@@ -1,0 +1,45 @@
+{
+  "questId": 2127,
+  "questName": "Quest 2127",
+  "endStateMachine": {
+    "startState": "completeQuest",
+    "states": [
+      {
+        "id": "completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {
+              "type": "complete_quest",
+              "params": {}
+            }
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": "confirmComplete"
+            }
+          ]
+        }
+      },
+      {
+        "id": "confirmComplete",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "I see you're ready for the task. Now, pay heed to the details of your mission...",
+          "choices": [
+            {
+              "text": "Ok",
+              "nextState": null
+            },
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

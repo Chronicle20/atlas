@@ -1,0 +1,61 @@
+{
+  "questId": 21704,
+  "questName": "Combo Ability Training Complete",
+  "startStateMachine": {
+    "startState": "askTraining",
+    "states": [
+      {
+        "id": "askTraining",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "How did the training go? The Penguin Teacher #p1202006# likes to exaggerate and it worried me knowing that he has bouts of Alzheimer's, but I'm sure he helped you. He's been studying the skills of heroes for a very long time.",
+          "choices": [
+            {"text": "Next", "nextState": "playerResponse"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "playerResponse",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "#b(You tell her that you were able to remember the Combo Ability skill.)#k",
+          "speaker": "CHARACTER_LEFT",
+          "choices": [
+            {"text": "Previous", "nextState": "askTraining"},
+            {"text": "Next", "nextState": "congratulations"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "congratulations",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "That's great! Honestly, though, I think it has less to do with the method of #p1202006#'s training and more to do with your body remembering its old abilities. #bI'm sure your body will remember more skills as you continue to train#k!  \r\n\r\n#fUI/UIWindow.img/QuestIcon/8/0# 500 exp",
+          "choices": [
+            {"text": "Previous", "nextState": "playerResponse"},
+            {"text": "Next", "nextState": "completeQuest"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {"force": "true"}},
+            {"type": "award_exp", "params": {"amount": "500"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

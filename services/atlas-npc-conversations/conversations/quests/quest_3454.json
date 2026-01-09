@@ -1,0 +1,111 @@
+{
+  "questId": 3454,
+  "npcId": 2050001,
+  "questName": "Wave Translator",
+  "endStateMachine": {
+    "startState": "checkInventorySpace",
+    "states": [
+      {
+        "id": "checkInventorySpace",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {
+                  "type": "inventorySpace",
+                  "operator": "<",
+                  "value": "1",
+                  "referenceId": "4031928"
+                }
+              ],
+              "nextState": "noInventorySpace"
+            },
+            {
+              "conditions": [],
+              "nextState": "processReward"
+            }
+          ]
+        }
+      },
+      {
+        "id": "noInventorySpace",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Make room on your ETC inventory first.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "processReward",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {
+              "type": "destroy_item",
+              "params": {
+                "itemId": "4000125",
+                "quantity": "1"
+              }
+            },
+            {
+              "type": "destroy_item",
+              "params": {
+                "itemId": "4031926",
+                "quantity": "10"
+              }
+            },
+            {
+              "type": "destroy_item",
+              "params": {
+                "itemId": "4000119",
+                "quantity": "30"
+              }
+            },
+            {
+              "type": "destroy_item",
+              "params": {
+                "itemId": "4000118",
+                "quantity": "30"
+              }
+            },
+            {
+              "type": "award_item",
+              "params": {
+                "itemId": "4031928",
+                "quantity": "1"
+              }
+            },
+            {
+              "type": "complete_quest",
+              "params": {}
+            }
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": "completeMessage"
+            }
+          ]
+        }
+      },
+      {
+        "id": "completeMessage",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Now, go meet Alien Gray and use this undercover to read through their plans. If this fails, we will need to gather some materials once again.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

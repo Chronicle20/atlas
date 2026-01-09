@@ -1,0 +1,76 @@
+{
+  "questId": 29906,
+  "questName": "Cygnus Knight Medal Quest",
+  "startStateMachine": {
+    "startState": "startCheckJob",
+    "states": [
+      {
+        "id": "startCheckJob",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "jobId", "operator": ">", "value": "1000"},
+                {"type": "jobId", "operator": "<", "value": "2000"}
+              ],
+              "nextState": "startQuest"
+            },
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "startQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "endCheckRequirements",
+    "states": [
+      {
+        "id": "endCheckRequirements",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1142066"},
+                {"type": "item", "operator": "<", "value": "1", "referenceId": "1142066"},
+                {"type": "jobId", "operator": ">", "value": "1000"},
+                {"type": "jobId", "operator": "<", "value": "2000"}
+              ],
+              "nextState": "awardItemAndComplete"
+            },
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "awardItemAndComplete",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "award_item", "params": {"itemId": "1142066", "quantity": "1"}},
+            {"type": "start_quest", "params": {}},
+            {"type": "complete_quest", "params": {"force": "true"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

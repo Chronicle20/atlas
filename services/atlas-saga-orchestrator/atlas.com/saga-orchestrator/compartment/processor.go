@@ -5,6 +5,8 @@ import (
 	"atlas-saga-orchestrator/kafka/producer"
 	"context"
 	"errors"
+	"time"
+
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/google/uuid"
@@ -13,8 +15,9 @@ import (
 
 // ItemPayload represents an individual item in a transaction
 type ItemPayload struct {
-	TemplateId uint32 `json:"templateId"` // TemplateId of the item
-	Quantity   uint32 `json:"quantity"`   // Quantity of the item
+	TemplateId uint32    `json:"templateId"`           // TemplateId of the item
+	Quantity   uint32    `json:"quantity"`             // Quantity of the item
+	Expiration time.Time `json:"expiration,omitempty"` // Expiration time for the item (zero value = no expiration)
 }
 
 // CreateAndEquipAssetPayload represents the payload required to create and equip an asset
@@ -24,7 +27,7 @@ type CreateAndEquipAssetPayload struct {
 }
 
 type Processor interface {
-	RequestCreateItem(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32) error
+	RequestCreateItem(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time) error
 	RequestDestroyItem(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, removeAll bool) error
 	RequestEquipAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
 	RequestUnequipAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
@@ -44,12 +47,12 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return p
 }
 
-func (p *ProcessorImpl) RequestCreateItem(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32) error {
+func (p *ProcessorImpl) RequestCreateItem(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time) error {
 	inventoryType, ok := inventory.TypeFromItemId(item.Id(templateId))
 	if !ok {
 		return errors.New("invalid templateId")
 	}
-	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestCreateAssetCommandProvider(transactionId, characterId, inventoryType, templateId, quantity))
+	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestCreateAssetCommandProvider(transactionId, characterId, inventoryType, templateId, quantity, expiration))
 }
 
 func (p *ProcessorImpl) RequestDestroyItem(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, removeAll bool) error {
@@ -80,5 +83,5 @@ func (p *ProcessorImpl) RequestCreateAndEquipAsset(transactionId uuid.UUID, payl
 	// This method internally uses the same award_asset semantics as RequestCreateItem
 	// The subsequent equip_asset step will be dynamically created by the compartment consumer
 	// when it receives the StatusEventTypeCreated event
-	return p.RequestCreateItem(transactionId, payload.CharacterId, payload.Item.TemplateId, payload.Item.Quantity)
+	return p.RequestCreateItem(transactionId, payload.CharacterId, payload.Item.TemplateId, payload.Item.Quantity, payload.Item.Expiration)
 }

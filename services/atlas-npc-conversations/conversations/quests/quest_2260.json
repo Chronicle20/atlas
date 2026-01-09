@@ -1,0 +1,123 @@
+{
+  "questId": 2260,
+  "questName": "Mushroom Castle Intro",
+  "startStateMachine": {
+    "startState": "intro",
+    "states": [
+      {
+        "id": "intro",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Once you've got #b2nd job advancement#k, I'll tell you about the #bMushroom Castle#k.",
+          "choices": [
+            {"text": "Next", "nextState": "startQuest"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "startQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "checkJob",
+    "states": [
+      {
+        "id": "checkJob",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "jobId", "operator": "=", "value": "0"}
+              ],
+              "nextState": "notReady"
+            },
+            {
+              "conditions": [
+                {"type": "jobId", "operator": "=", "value": "100"}
+              ],
+              "nextState": "notReady"
+            },
+            {
+              "conditions": [
+                {"type": "jobId", "operator": "=", "value": "200"}
+              ],
+              "nextState": "notReady"
+            },
+            {
+              "conditions": [
+                {"type": "jobId", "operator": "=", "value": "300"}
+              ],
+              "nextState": "notReady"
+            },
+            {
+              "conditions": [
+                {"type": "jobId", "operator": "=", "value": "400"}
+              ],
+              "nextState": "notReady"
+            },
+            {
+              "conditions": [
+                {"type": "jobId", "operator": "=", "value": "500"}
+              ],
+              "nextState": "notReady"
+            },
+            {
+              "conditions": [],
+              "nextState": "ready"
+            }
+          ]
+        }
+      },
+      {
+        "id": "notReady",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Eh, didn't you get the #r2nd job advancement#k yet?",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "ready",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Okay you seem ready to go to the #bMushroom Castle#k. In #rHenesys#k, climb at the tree fort at #bwest#k then enter a portal over there. On the other area, #rgo west#k. From there, a portal will be readily available to access the #bMushroom Castle#k area.",
+          "choices": [
+            {"text": "Next", "nextState": "completeQuest"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

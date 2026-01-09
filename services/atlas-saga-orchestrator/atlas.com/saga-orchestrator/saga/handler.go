@@ -84,6 +84,7 @@ type Handler interface {
 	handleDepositToStorage(s Saga, st Step[any]) error
 	handleWithdrawFromStorage(s Saga, st Step[any]) error
 	handleUpdateStorageMesos(s Saga, st Step[any]) error
+	handleAwardFame(s Saga, st Step[any]) error
 	handleShowStorage(s Saga, st Step[any]) error
 }
 
@@ -497,6 +498,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleWithdrawFromStorage, true
 	case UpdateStorageMesos:
 		return h.handleUpdateStorageMesos, true
+	case AwardFame:
+		return h.handleAwardFame, true
 	case ShowStorage:
 		return h.handleShowStorage, true
 	}
@@ -520,7 +523,7 @@ func (h *HandlerImpl) handleAwardAsset(s Saga, st Step[any]) error {
 		return errors.New("invalid payload")
 	}
 
-	err := h.compP.RequestCreateItem(s.TransactionId, payload.CharacterId, payload.Item.TemplateId, payload.Item.Quantity)
+	err := h.compP.RequestCreateItem(s.TransactionId, payload.CharacterId, payload.Item.TemplateId, payload.Item.Quantity, payload.Item.Expiration)
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to award asset.")
@@ -1175,6 +1178,23 @@ func (h *HandlerImpl) handleUpdateStorageMesos(s Saga, st Step[any]) error {
 	err := h.storageP.UpdateMesosAndEmit(s.TransactionId, payload.WorldId, payload.AccountId, payload.Mesos, payload.Operation)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to update storage mesos.")
+		return err
+	}
+
+	return nil
+}
+
+// handleAwardFame handles the AwardFame action
+// This awards fame to a character (e.g., qm.gainFame() in quest scripts)
+func (h *HandlerImpl) handleAwardFame(s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(AwardFamePayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.charP.AwardFameAndEmit(s.TransactionId, payload.WorldId, payload.CharacterId, payload.ChannelId, payload.Amount)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to award fame.")
 		return err
 	}
 

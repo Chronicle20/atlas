@@ -1,0 +1,80 @@
+{
+  "questId": 2124,
+  "questName": "Moppie's Supply Box",
+  "startStateMachine": {
+    "startState": "noDialogue",
+    "states": [
+      {
+        "id": "noDialogue",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "checkItems",
+    "states": [
+      {
+        "id": "checkItems",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "item", "operator": "<", "value": "1", "referenceId": "4031619"}
+              ],
+              "nextState": "missingItems"
+            },
+            {
+              "conditions": [],
+              "nextState": "completeQuest"
+            }
+          ]
+        }
+      },
+      {
+        "id": "missingItems",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Please bring me the box with the supplies that lies with #b#p2012019##k...",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "destroy_item", "params": {"itemId": "4031619", "quantity": "1"}},
+            {"type": "complete_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "success"}
+          ]
+        }
+      },
+      {
+        "id": "success",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Oh, you brought #p2012019#'s box! Thank you.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

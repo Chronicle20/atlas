@@ -69,6 +69,7 @@ func (r *RestStateModel) SetReferencedStructs(references map[string]map[string]j
 type RestDialogueModel struct {
 	DialogueType string            `json:"dialogueType"`      // Dialogue type
 	Text         string            `json:"text"`              // Dialogue text
+	Speaker      string            `json:"speaker,omitempty"` // Optional speaker override (e.g., "NPC_LEFT", "CHARACTER_LEFT", etc.)
 	Choices      []RestChoiceModel `json:"choices,omitempty"` // Dialogue choices
 }
 
@@ -281,6 +282,7 @@ func TransformDialogue(m DialogueModel) (RestDialogueModel, error) {
 	return RestDialogueModel{
 		DialogueType: string(m.DialogueType()),
 		Text:         m.Text(),
+		Speaker:      m.Speaker(),
 		Choices:      restChoices,
 	}, nil
 }
@@ -471,7 +473,8 @@ func ExtractState(r RestStateModel) (StateModel, error) {
 func ExtractDialogue(r RestDialogueModel) (*DialogueModel, error) {
 	dialogueBuilder := NewDialogueBuilder().
 		SetDialogueType(DialogueType(r.DialogueType)).
-		SetText(r.Text)
+		SetText(r.Text).
+		SetSpeaker(r.Speaker)
 
 	for _, restChoice := range r.Choices {
 		choice, err := ExtractChoice(restChoice)

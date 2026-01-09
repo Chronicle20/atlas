@@ -2,22 +2,24 @@ package mock
 
 import (
 	"atlas-saga-orchestrator/compartment"
+	"time"
+
 	"github.com/google/uuid"
 )
 
 // ProcessorMock is a mock implementation of the compartment.Processor interface
 type ProcessorMock struct {
-	RequestCreateItemFunc        func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32) error
-	RequestDestroyItemFunc       func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, removeAll bool) error
-	RequestEquipAssetFunc        func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
-	RequestUnequipAssetFunc      func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
+	RequestCreateItemFunc          func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time) error
+	RequestDestroyItemFunc         func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, removeAll bool) error
+	RequestEquipAssetFunc          func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
+	RequestUnequipAssetFunc        func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
 	RequestCreateAndEquipAssetFunc func(transactionId uuid.UUID, payload compartment.CreateAndEquipAssetPayload) error
 }
 
 // RequestCreateItem is a mock implementation of the compartment.Processor.RequestCreateItem method
-func (m *ProcessorMock) RequestCreateItem(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32) error {
+func (m *ProcessorMock) RequestCreateItem(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time) error {
 	if m.RequestCreateItemFunc != nil {
-		return m.RequestCreateItemFunc(transactionId, characterId, templateId, quantity)
+		return m.RequestCreateItemFunc(transactionId, characterId, templateId, quantity, expiration)
 	}
 	return nil
 }

@@ -1,0 +1,123 @@
+{
+  "questId": 3239,
+  "questName": "Quest 3239",
+  "endStateMachine": {
+    "startState": "checkItems",
+    "states": [
+      {
+        "id": "checkItems",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "item", "operator": "<", "value": "10", "referenceId": "4031092"}
+              ],
+              "nextState": "missingItems"
+            },
+            {
+              "conditions": [],
+              "nextState": "checkInventorySpace"
+            }
+          ]
+        }
+      },
+      {
+        "id": "missingItems",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Please return me 10 #t4031092# that went missing on this room.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "checkInventorySpace",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "inventorySpace", "operator": "<", "value": "1", "referenceId": "2040704"}
+              ],
+              "nextState": "noInventorySpace"
+            },
+            {
+              "conditions": [],
+              "nextState": "successDialogue"
+            }
+          ]
+        }
+      },
+      {
+        "id": "noInventorySpace",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Free a space on your USE inventory before receiving your prize.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "successDialogue",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Well done! You brought back all the #t4031092# that were missing. Here, take this scroll as a token of my gratitude...",
+          "choices": [
+            {"text": "Ok", "nextState": "selectReward"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "selectReward",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {
+              "type": "local:select_random_weighted",
+              "params": {
+                "items": "2040704,2040705,2040707,2040708",
+                "weights": "1,1,1,1",
+                "outputContextKey": "rewardItemId"
+              }
+            }
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": "giveRewards"
+            }
+          ]
+        }
+      },
+      {
+        "id": "giveRewards",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "destroy_item", "params": {"itemId": "4031092", "quantity": "10"}},
+            {"type": "award_item", "params": {"itemId": "{context.rewardItemId}", "quantity": "1"}},
+            {"type": "award_exp", "params": {"amount": "2700"}},
+            {"type": "complete_quest", "params": {}}
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

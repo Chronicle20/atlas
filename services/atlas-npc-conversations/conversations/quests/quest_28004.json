@@ -1,0 +1,188 @@
+{
+  "questId": 28004,
+  "questName": "Quest 28004",
+  "startStateMachine": {
+    "startState": "checkLevel",
+    "states": [
+      {
+        "id": "checkLevel",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {
+                  "type": "level",
+                  "operator": ">",
+                  "value": "50"
+                }
+              ],
+              "nextState": "autoComplete"
+            },
+            {
+              "conditions": [],
+              "nextState": "explainPlan"
+            }
+          ]
+        }
+      },
+      {
+        "id": "autoComplete",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {
+              "type": "complete_quest",
+              "params": {
+                "force": "true"
+              }
+            }
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "explainPlan",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Okay... so here's our plan to defeat Scrooge and his dastardly plans. The Force of the Spirit I gave you is an item packed with mana. It's an item you'll definitely use at the map I am about to send you. In order to do that, you'll have to bring your party members with you as well. You should bring your party members here or form one right now!",
+          "choices": [
+            {
+              "text": "Next",
+              "nextState": "askProceed"
+            },
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "askProceed",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendAcceptDecline",
+          "text": "Would you like to move forward?",
+          "choices": [
+            {
+              "text": "Accept",
+              "nextState": "warpByLevel"
+            },
+            {
+              "text": "Decline",
+              "nextState": null
+            },
+            {
+              "text": "Exit",
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "warpByLevel",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {
+                  "type": "level",
+                  "operator": "<=",
+                  "value": "30"
+                }
+              ],
+              "nextState": "warpLevel30"
+            },
+            {
+              "conditions": [
+                {
+                  "type": "level",
+                  "operator": "<=",
+                  "value": "40"
+                }
+              ],
+              "nextState": "warpLevel40"
+            },
+            {
+              "conditions": [],
+              "nextState": "warpLevel50"
+            }
+          ]
+        }
+      },
+      {
+        "id": "warpLevel30",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {
+              "type": "warp_to_map",
+              "params": {
+                "mapId": "889100000",
+                "portalId": "0"
+              }
+            }
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "warpLevel40",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {
+              "type": "warp_to_map",
+              "params": {
+                "mapId": "889100010",
+                "portalId": "0"
+              }
+            }
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "warpLevel50",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {
+              "type": "warp_to_map",
+              "params": {
+                "mapId": "889100020",
+                "portalId": "0"
+              }
+            }
+          ],
+          "outcomes": [
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

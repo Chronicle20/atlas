@@ -14,13 +14,13 @@
                 "type": "questStatus",
                 "operator": "=",
                 "value": "1",
-                "referenceId": 6280
+                "referenceId": "6280"
               },
               {
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "referenceId": 4031454
+                "referenceId": "4031454"
               }
             ],
             "nextState": "fillCup"

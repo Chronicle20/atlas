@@ -24,6 +24,7 @@ type CommandConversationStartBody struct {
 	WorldId   byte   `json:"worldId"`
 	ChannelId byte   `json:"channelId"`
 	MapId     uint32 `json:"mapId"`
+	AccountId uint32 `json:"accountId"`
 }
 
 type CommandConversationContinueBody struct {

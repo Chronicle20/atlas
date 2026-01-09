@@ -1,20 +1,20 @@
 {
   "npcId": 9270038,
-  "startState": "askService",
+  "startState": "start",
   "states": [
     {
-      "id": "askService",
+      "id": "start",
       "type": "listSelection",
       "listSelection": {
         "title": "Hello, I am Shalon from Singapore Airport. I can assist you in getting you to Kerning City in no time. Do you want to go to Kerning City?",
         "choices": [
           {
             "text": "I would like to buy a plane ticket to Kerning City",
-            "nextState": "confirmPurchase"
+            "nextState": "confirmBuyTicket"
           },
           {
             "text": "Let me go in to the departure point.",
-            "nextState": "confirmBoarding"
+            "nextState": "confirmEnterDeparture"
           },
           {
             "text": "Exit",
@@ -24,7 +24,7 @@
       }
     },
     {
-      "id": "confirmPurchase",
+      "id": "confirmBuyTicket",
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendYesNo",
@@ -32,7 +32,7 @@
         "choices": [
           {
             "text": "Yes",
-            "nextState": "checkPurchaseConditions"
+            "nextState": "checkCanBuyTicket"
           },
           {
             "text": "No",
@@ -46,7 +46,7 @@
       }
     },
     {
-      "id": "checkPurchaseConditions",
+      "id": "checkCanBuyTicket",
       "type": "genericAction",
       "genericAction": {
         "operations": [],
@@ -63,31 +63,9 @@
                 "operator": "=",
                 "value": "0",
                 "referenceId": "4031732"
-              },
-              {
-                "type": "inventorySpace",
-                "operator": ">=",
-                "value": "1",
-                "referenceId": "4031732"
               }
             ],
-            "nextState": "performPurchase"
-          },
-          {
-            "conditions": [
-              {
-                "type": "meso",
-                "operator": ">=",
-                "value": "5000"
-              },
-              {
-                "type": "item",
-                "operator": "=",
-                "value": "0",
-                "referenceId": "4031732"
-              }
-            ],
-            "nextState": "noInventorySpace"
+            "nextState": "checkInventorySpace"
           },
           {
             "conditions": [],
@@ -97,7 +75,31 @@
       }
     },
     {
-      "id": "performPurchase",
+      "id": "checkInventorySpace",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4031732"
+              }
+            ],
+            "nextState": "performBuyTicket"
+          },
+          {
+            "conditions": [],
+            "nextState": "noInventorySpace"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performBuyTicket",
       "type": "genericAction",
       "genericAction": {
         "operations": [
@@ -118,13 +120,13 @@
         "outcomes": [
           {
             "conditions": [],
-            "nextState": "purchaseSuccess"
+            "nextState": "buyTicketSuccess"
           }
         ]
       }
     },
     {
-      "id": "purchaseSuccess",
+      "id": "buyTicketSuccess",
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendOk",
@@ -178,7 +180,7 @@
       }
     },
     {
-      "id": "confirmBoarding",
+      "id": "confirmEnterDeparture",
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendYesNo",
@@ -186,7 +188,7 @@
         "choices": [
           {
             "text": "Yes",
-            "nextState": "checkBoardingConditions"
+            "nextState": "checkHasTicket"
           },
           {
             "text": "No",
@@ -200,7 +202,7 @@
       }
     },
     {
-      "id": "checkBoardingConditions",
+      "id": "checkHasTicket",
       "type": "genericAction",
       "genericAction": {
         "operations": [],
@@ -212,26 +214,9 @@
                 "operator": ">=",
                 "value": "1",
                 "referenceId": "4031732"
-              },
-              {
-                "type": "transportAvailable",
-                "operator": "=",
-                "value": "1",
-                "referenceId": "540010001"
               }
             ],
-            "nextState": "performBoarding"
-          },
-          {
-            "conditions": [
-              {
-                "type": "item",
-                "operator": ">=",
-                "value": "1",
-                "referenceId": "4031732"
-              }
-            ],
-            "nextState": "planeTakenOff"
+            "nextState": "checkPlaneAvailable"
           },
           {
             "conditions": [],
@@ -241,22 +226,46 @@
       }
     },
     {
-      "id": "performBoarding",
+      "id": "checkPlaneAvailable",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "transportAvailable",
+                "operator": "=",
+                "value": "1",
+                "referenceId": "540010001"
+              }
+            ],
+            "nextState": "boardPlane"
+          },
+          {
+            "conditions": [],
+            "nextState": "planeTakenOff"
+          }
+        ]
+      }
+    },
+    {
+      "id": "boardPlane",
       "type": "genericAction",
       "genericAction": {
         "operations": [
-          {
-            "type": "warp_to_map",
-            "params": {
-              "mapId": "540010001",
-              "portalId": "0"
-            }
-          },
           {
             "type": "destroy_item",
             "params": {
               "itemId": "4031732",
               "quantity": "1"
+            }
+          },
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "540010001",
+              "portalId": "0"
             }
           }
         ],

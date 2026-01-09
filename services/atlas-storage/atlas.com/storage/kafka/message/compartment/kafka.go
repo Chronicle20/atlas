@@ -13,10 +13,11 @@ const (
 
 // Command represents a storage compartment command (ACCEPT/RELEASE)
 type Command[E any] struct {
-	WorldId   byte   `json:"worldId"`
-	AccountId uint32 `json:"accountId"`
-	Type      string `json:"type"`
-	Body      E      `json:"body"`
+	WorldId     byte   `json:"worldId"`
+	AccountId   uint32 `json:"accountId"`
+	CharacterId uint32 `json:"characterId,omitempty"` // Optional: for client notification
+	Type        string `json:"type"`
+	Body        E      `json:"body"`
 }
 
 // AcceptCommandBody contains the data for an ACCEPT command
@@ -44,10 +45,11 @@ const (
 
 // StatusEvent represents a storage compartment status event
 type StatusEvent[E any] struct {
-	WorldId   byte   `json:"worldId"`
-	AccountId uint32 `json:"accountId"`
-	Type      string `json:"type"`
-	Body      E      `json:"body"`
+	WorldId     byte   `json:"worldId"`
+	AccountId   uint32 `json:"accountId"`
+	CharacterId uint32 `json:"characterId,omitempty"` // Optional: for client notification
+	Type        string `json:"type"`
+	Body        E      `json:"body"`
 }
 
 // StatusEventAcceptedBody contains the data for an ACCEPTED event

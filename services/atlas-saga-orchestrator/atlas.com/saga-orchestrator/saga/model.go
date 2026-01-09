@@ -678,6 +678,7 @@ type AcceptToStoragePayload struct {
 	TransactionId uuid.UUID       `json:"transactionId"` // Saga transaction ID
 	WorldId       byte            `json:"worldId"`       // World ID
 	AccountId     uint32          `json:"accountId"`     // Account ID
+	CharacterId   uint32          `json:"characterId"`   // Character initiating the transfer
 	TemplateId    uint32          `json:"templateId"`    // Item template ID
 	ReferenceId   uint32          `json:"referenceId"`   // Reference ID
 	ReferenceType string          `json:"referenceType"` // Reference type
@@ -711,6 +712,7 @@ type ReleaseFromStoragePayload struct {
 	TransactionId uuid.UUID `json:"transactionId"` // Saga transaction ID
 	WorldId       byte      `json:"worldId"`       // World ID
 	AccountId     uint32    `json:"accountId"`     // Account ID
+	CharacterId   uint32    `json:"characterId"`   // Character receiving the item
 	AssetId       uint32    `json:"assetId"`       // Asset ID to release (populated during expansion)
 }
 

@@ -321,16 +321,16 @@ func (p *Processor) Accept(worldId byte, accountId uint32, body compartment.Acce
 }
 
 // AcceptAndEmit accepts an item and emits an ACCEPTED status event
-func (p *Processor) AcceptAndEmit(worldId byte, accountId uint32, body compartment.AcceptCommandBody) error {
+func (p *Processor) AcceptAndEmit(worldId byte, accountId uint32, characterId uint32, body compartment.AcceptCommandBody) error {
 	assetId, slot, err := p.Accept(worldId, accountId, body)
 	if err != nil {
 		// Emit error event
-		_ = p.emitCompartmentErrorEvent(worldId, accountId, body.TransactionId, "ACCEPT_FAILED", err.Error())
+		_ = p.emitCompartmentErrorEvent(worldId, accountId, characterId, body.TransactionId, "ACCEPT_FAILED", err.Error())
 		return err
 	}
 
 	// Emit accepted event
-	return p.emitCompartmentAcceptedEvent(worldId, accountId, body.TransactionId, assetId, slot)
+	return p.emitCompartmentAcceptedEvent(worldId, accountId, characterId, body.TransactionId, assetId, slot)
 }
 
 // Release releases an item from storage as part of a transfer saga
@@ -353,23 +353,24 @@ func (p *Processor) Release(worldId byte, accountId uint32, body compartment.Rel
 }
 
 // ReleaseAndEmit releases an item and emits a RELEASED status event
-func (p *Processor) ReleaseAndEmit(worldId byte, accountId uint32, body compartment.ReleaseCommandBody) error {
+func (p *Processor) ReleaseAndEmit(worldId byte, accountId uint32, characterId uint32, body compartment.ReleaseCommandBody) error {
 	err := p.Release(worldId, accountId, body)
 	if err != nil {
 		// Emit error event
-		_ = p.emitCompartmentErrorEvent(worldId, accountId, body.TransactionId, "RELEASE_FAILED", err.Error())
+		_ = p.emitCompartmentErrorEvent(worldId, accountId, characterId, body.TransactionId, "RELEASE_FAILED", err.Error())
 		return err
 	}
 
 	// Emit released event
-	return p.emitCompartmentReleasedEvent(worldId, accountId, body.TransactionId, body.AssetId)
+	return p.emitCompartmentReleasedEvent(worldId, accountId, characterId, body.TransactionId, body.AssetId)
 }
 
-func (p *Processor) emitCompartmentAcceptedEvent(worldId byte, accountId uint32, transactionId uuid.UUID, assetId uint32, slot int16) error {
+func (p *Processor) emitCompartmentAcceptedEvent(worldId byte, accountId uint32, characterId uint32, transactionId uuid.UUID, assetId uint32, slot int16) error {
 	event := &compartment.StatusEvent[compartment.StatusEventAcceptedBody]{
-		WorldId:   worldId,
-		AccountId: accountId,
-		Type:      compartment.StatusEventTypeAccepted,
+		WorldId:     worldId,
+		AccountId:   accountId,
+		CharacterId: characterId,
+		Type:        compartment.StatusEventTypeAccepted,
 		Body: compartment.StatusEventAcceptedBody{
 			TransactionId: transactionId,
 			AssetId:       assetId,
@@ -380,11 +381,12 @@ func (p *Processor) emitCompartmentAcceptedEvent(worldId byte, accountId uint32,
 	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvEventTopicStatus)(createCompartmentMessageProvider(accountId, event))
 }
 
-func (p *Processor) emitCompartmentReleasedEvent(worldId byte, accountId uint32, transactionId uuid.UUID, assetId uint32) error {
+func (p *Processor) emitCompartmentReleasedEvent(worldId byte, accountId uint32, characterId uint32, transactionId uuid.UUID, assetId uint32) error {
 	event := &compartment.StatusEvent[compartment.StatusEventReleasedBody]{
-		WorldId:   worldId,
-		AccountId: accountId,
-		Type:      compartment.StatusEventTypeReleased,
+		WorldId:     worldId,
+		AccountId:   accountId,
+		CharacterId: characterId,
+		Type:        compartment.StatusEventTypeReleased,
 		Body: compartment.StatusEventReleasedBody{
 			TransactionId: transactionId,
 			AssetId:       assetId,
@@ -394,11 +396,12 @@ func (p *Processor) emitCompartmentReleasedEvent(worldId byte, accountId uint32,
 	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvEventTopicStatus)(createCompartmentMessageProvider(accountId, event))
 }
 
-func (p *Processor) emitCompartmentErrorEvent(worldId byte, accountId uint32, transactionId uuid.UUID, errorCode string, errorMessage string) error {
+func (p *Processor) emitCompartmentErrorEvent(worldId byte, accountId uint32, characterId uint32, transactionId uuid.UUID, errorCode string, errorMessage string) error {
 	event := &compartment.StatusEvent[compartment.StatusEventErrorBody]{
-		WorldId:   worldId,
-		AccountId: accountId,
-		Type:      compartment.StatusEventTypeError,
+		WorldId:     worldId,
+		AccountId:   accountId,
+		CharacterId: characterId,
+		Type:        compartment.StatusEventTypeError,
 		Body: compartment.StatusEventErrorBody{
 			TransactionId: transactionId,
 			ErrorCode:     errorCode,

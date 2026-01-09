@@ -40,7 +40,7 @@ func handleAcceptCommand(db *gorm.DB) kafkaMessage.Handler[compartment.Command[c
 			return
 		}
 
-		err := storage.NewProcessor(l, ctx, db).AcceptAndEmit(c.WorldId, c.AccountId, c.Body)
+		err := storage.NewProcessor(l, ctx, db).AcceptAndEmit(c.WorldId, c.AccountId, c.CharacterId, c.Body)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to accept item for account [%d] world [%d] transaction [%s].", c.AccountId, c.WorldId, c.Body.TransactionId)
 		}
@@ -53,7 +53,7 @@ func handleReleaseCommand(db *gorm.DB) kafkaMessage.Handler[compartment.Command[
 			return
 		}
 
-		err := storage.NewProcessor(l, ctx, db).ReleaseAndEmit(c.WorldId, c.AccountId, c.Body)
+		err := storage.NewProcessor(l, ctx, db).ReleaseAndEmit(c.WorldId, c.AccountId, c.CharacterId, c.Body)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to release asset [%d] for account [%d] world [%d] transaction [%s].", c.Body.AssetId, c.AccountId, c.WorldId, c.Body.TransactionId)
 		}

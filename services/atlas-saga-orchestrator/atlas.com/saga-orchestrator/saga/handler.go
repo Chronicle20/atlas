@@ -1268,6 +1268,7 @@ func (h *HandlerImpl) handleAcceptToStorage(s Saga, st Step[any]) error {
 		payload.TransactionId,
 		payload.WorldId,
 		payload.AccountId,
+		payload.CharacterId,
 		-1, // Storage auto-assigns slot
 		payload.TemplateId,
 		payload.ReferenceId,
@@ -1347,6 +1348,7 @@ func (h *HandlerImpl) handleReleaseFromStorage(s Saga, st Step[any]) error {
 		payload.TransactionId,
 		payload.WorldId,
 		payload.AccountId,
+		payload.CharacterId,
 		payload.AssetId,
 	)
 

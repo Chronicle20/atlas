@@ -102,7 +102,7 @@
       "id": "selectDestination1",
       "type": "listSelection",
       "listSelection": {
-        "title": "",
+        "title": "Select destination",
         "choices": [
           {
             "text": "Year 2021 - Average Town Entrance",
@@ -141,7 +141,7 @@
       "id": "selectDestination2",
       "type": "listSelection",
       "listSelection": {
-        "title": "",
+        "title": "Select destination",
         "choices": [
           {
             "text": "Year 2021 - Average Town Entrance",
@@ -185,7 +185,7 @@
       "id": "selectDestination3",
       "type": "listSelection",
       "listSelection": {
-        "title": "",
+        "title": "Select destination",
         "choices": [
           {
             "text": "Year 2021 - Average Town Entrance",
@@ -234,7 +234,7 @@
       "id": "selectDestination4",
       "type": "listSelection",
       "listSelection": {
-        "title": "",
+        "title": "Select destination",
         "choices": [
           {
             "text": "Year 2021 - Average Town Entrance",
@@ -288,7 +288,7 @@
       "id": "selectDestination5",
       "type": "listSelection",
       "listSelection": {
-        "title": "",
+        "title": "Select destination",
         "choices": [
           {
             "text": "Year 2021 - Average Town Entrance",
@@ -323,7 +323,7 @@
       "id": "selectDestination6",
       "type": "listSelection",
       "listSelection": {
-        "title": "",
+        "title": "Select destination",
         "choices": [
           {
             "text": "Year 2021 - Average Town Entrance",

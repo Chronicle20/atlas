@@ -9,38 +9,59 @@
         "dialogueType": "sendYesNo",
         "text": "The plane will be taking off soon, will you leave now? You will have to buy the plane ticket again to come in here.",
         "choices": [
-          { "text": "Yes", "nextState": "confirmLeave" },
-          { "text": "No", "nextState": "stayMessage" },
-          { "text": "Exit", "nextState": null }
+          {
+            "text": "Yes",
+            "nextState": "farewell"
+          },
+          {
+            "text": "No",
+            "nextState": "patience"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
         ]
       }
     },
     {
-      "id": "stayMessage",
+      "id": "patience",
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendOk",
         "text": "Please hold on for a sec, and plane will be taking off. Thanks for your patience.",
         "choices": [
-          { "text": "Ok", "nextState": null },
-          { "text": "Exit", "nextState": null }
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
         ]
       }
     },
     {
-      "id": "confirmLeave",
+      "id": "farewell",
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendNext",
         "text": "The ticket is not refundable, hope to see you again!",
         "choices": [
-          { "text": "Next", "nextState": "warpToKerning" },
-          { "text": "Exit", "nextState": null }
+          {
+            "text": "Next",
+            "nextState": "performWarp"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
         ]
       }
     },
     {
-      "id": "warpToKerning",
+      "id": "performWarp",
       "type": "genericAction",
       "genericAction": {
         "operations": [
@@ -53,7 +74,10 @@
           }
         ],
         "outcomes": [
-          { "conditions": [], "nextState": null }
+          {
+            "conditions": [],
+            "nextState": null
+          }
         ]
       }
     }

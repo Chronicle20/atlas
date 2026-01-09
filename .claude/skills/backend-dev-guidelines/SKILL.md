@@ -18,6 +18,7 @@ Activate when working on:
 - REST JSON:API endpoints
 - Cross-service REST client calls
 - Multi-tenancy context logic
+- **Saga actions and distributed transactions**
 - Testing domain logic, providers, or emission paths
 
 ---
@@ -35,6 +36,13 @@ Activate when working on:
 - [ ] **Requests** + **rest.go** for cross-service REST calls (if needed)
 - [ ] Context-based multi-tenancy (`tenant.MustFromContext`)
 - [ ] Table-driven **tests** for all logic layers
+
+**For Saga Actions (if implementing distributed transactions):**
+- [ ] **Saga handler** registered in orchestrator `handler.go`
+- [ ] **Step completion mechanism** verified (async consumer OR sync immediate)
+- [ ] **Orchestrator consumer** exists and registered for async actions
+- [ ] **Error event handling** implemented for failure scenarios
+- [ ] **Saga tests** cover success and rollback paths
 
 
 ---
@@ -86,11 +94,13 @@ When modifying any service code:
 - ❌ **Never update interface without updating mocks** - Causes immediate test failures
 - ❌ **Never add/modify REST endpoints without updating ingress** - Endpoints won't be accessible
 - ❌ **Never change API contracts without updating README** - Documentation becomes stale and misleading
+- ❌ **Never add saga action without step completion** - Saga will remain stuck forever
 - ✅ **Always run full test suite** (`go test ./...`) not just modified packages
 - ✅ **Always use `-count=1` flag** to disable test caching
 - ✅ **Always verify test output** before marking work complete
 - ✅ **Always check ingress configuration** when working with REST endpoints
 - ✅ **Always update service documentation** when changing APIs
+- ✅ **Always verify orchestrator consumer exists** for saga async actions
 
 ### When Tests Fail
 
@@ -146,6 +156,7 @@ See [Testing Conventions](resources/testing-guide.md) for comprehensive testing 
 | Provider Pattern | [resources/patterns-provider.md](resources/patterns-provider.md) |
 | **Cache Patterns** | **[resources/patterns-cache.md](resources/patterns-cache.md)** |
 | Kafka Integration | [resources/patterns-kafka.md](resources/patterns-kafka.md) |
+| **Saga Patterns & Step Completion** | **[resources/patterns-saga.md](resources/patterns-saga.md)** |
 | REST JSON:API | [resources/patterns-rest-jsonapi.md](resources/patterns-rest-jsonapi.md) |
 | **Ingress & Documentation** | **[resources/patterns-ingress-documentation.md](resources/patterns-ingress-documentation.md)** |
 | Multi-Tenancy Context | [resources/patterns-multitenancy-context.md](resources/patterns-multitenancy-context.md) |

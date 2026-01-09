@@ -1,0 +1,179 @@
+{
+  "questId": 20408,
+  "questName": "Cygnus Knight Chief Knight Promotion",
+  "startStateMachine": {
+    "startState": "dialogue1",
+    "states": [
+      {
+        "id": "dialogue1",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "#h0#... First of all, thank you for your great work. If it weren't you, I... I wouldn't be safe from the curse of Black Witch. Thank you so much.",
+          "choices": [
+            {"text": "Next", "nextState": "dialogue2"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "dialogue2",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "If nothing else, this chain of events makes one thing crystal clear, you have put in countless hours of hard work to better yourself and contribute to the Cygnus Knights.",
+          "choices": [
+            {"text": "Previous", "nextState": "dialogue1"},
+            {"text": "Next", "nextState": "dialogue3"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "dialogue3",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendAcceptDecline",
+          "text": "To celebrate your hard work and accomplishments... I would like to award you a new title and renew my blessings onto you. Will you... accept this?",
+          "choices": [
+            {"text": "Accept", "nextState": "checkInventory"},
+            {"text": "Decline", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "checkInventory",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1142069"}
+              ],
+              "nextState": "checkJobAdvancement"
+            },
+            {"conditions": [], "nextState": "noInventorySpace"}
+          ]
+        }
+      },
+      {
+        "id": "noInventorySpace",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Please, make a room available on your EQUIP inventory for the medal.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "checkJobAdvancement",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {"conditions": [{"type": "jobId", "operator": "=", "value": "1101"}], "nextState": "performRewardWithJobAdvancement1101"},
+            {"conditions": [{"type": "jobId", "operator": "=", "value": "1201"}], "nextState": "performRewardWithJobAdvancement1201"},
+            {"conditions": [{"type": "jobId", "operator": "=", "value": "1301"}], "nextState": "performRewardWithJobAdvancement1301"},
+            {"conditions": [{"type": "jobId", "operator": "=", "value": "1401"}], "nextState": "performRewardWithJobAdvancement1401"},
+            {"conditions": [{"type": "jobId", "operator": "=", "value": "1501"}], "nextState": "performRewardWithJobAdvancement1501"},
+            {"conditions": [], "nextState": "performRewardNoJobAdvancement"}
+          ]
+        }
+      },
+      {
+        "id": "performRewardWithJobAdvancement1101",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "award_item", "params": {"itemId": "1142069", "quantity": "1"}},
+            {"type": "change_job", "params": {"jobId": "1102"}},
+            {"type": "start_quest", "params": {}},
+            {"type": "complete_quest", "params": {"force": "true"}}
+          ],
+          "outcomes": [{"conditions": [], "nextState": "finalDialogue"}]
+        }
+      },
+      {
+        "id": "performRewardWithJobAdvancement1201",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "award_item", "params": {"itemId": "1142069", "quantity": "1"}},
+            {"type": "change_job", "params": {"jobId": "1202"}},
+            {"type": "start_quest", "params": {}},
+            {"type": "complete_quest", "params": {"force": "true"}}
+          ],
+          "outcomes": [{"conditions": [], "nextState": "finalDialogue"}]
+        }
+      },
+      {
+        "id": "performRewardWithJobAdvancement1301",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "award_item", "params": {"itemId": "1142069", "quantity": "1"}},
+            {"type": "change_job", "params": {"jobId": "1302"}},
+            {"type": "start_quest", "params": {}},
+            {"type": "complete_quest", "params": {"force": "true"}}
+          ],
+          "outcomes": [{"conditions": [], "nextState": "finalDialogue"}]
+        }
+      },
+      {
+        "id": "performRewardWithJobAdvancement1401",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "award_item", "params": {"itemId": "1142069", "quantity": "1"}},
+            {"type": "change_job", "params": {"jobId": "1402"}},
+            {"type": "start_quest", "params": {}},
+            {"type": "complete_quest", "params": {"force": "true"}}
+          ],
+          "outcomes": [{"conditions": [], "nextState": "finalDialogue"}]
+        }
+      },
+      {
+        "id": "performRewardWithJobAdvancement1501",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "award_item", "params": {"itemId": "1142069", "quantity": "1"}},
+            {"type": "change_job", "params": {"jobId": "1502"}},
+            {"type": "start_quest", "params": {}},
+            {"type": "complete_quest", "params": {"force": "true"}}
+          ],
+          "outcomes": [{"conditions": [], "nextState": "finalDialogue"}]
+        }
+      },
+      {
+        "id": "performRewardNoJobAdvancement",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "award_item", "params": {"itemId": "1142069", "quantity": "1"}},
+            {"type": "start_quest", "params": {}},
+            {"type": "complete_quest", "params": {"force": "true"}}
+          ],
+          "outcomes": [{"conditions": [], "nextState": "finalDialogue"}]
+        }
+      },
+      {
+        "id": "finalDialogue",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "#h0#. For courageously battling the Black Mage, I will appoint you as the new Chief Knight of Cygnus Knights from this moment onwards. Please use your power and authority wisely to help protect the citizens of Maple World.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

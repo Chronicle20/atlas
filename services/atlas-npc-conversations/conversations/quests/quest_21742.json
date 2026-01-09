@@ -1,0 +1,224 @@
+{
+  "questId": 21742,
+  "questName": "Aran Hanging Scroll Quest",
+  "startStateMachine": {
+    "startState": "start_0",
+    "states": [
+      {
+        "id": "start_0",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "speaker": "NPC_LEFT",
+          "text": "Well, I'm not really busy of anything, bit I don't feel like concocting medicine. Can you come back later? If you don't mind, move.",
+          "choices": [
+            {"text": "Next", "nextState": "start_1"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "start_1",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "speaker": "CHARACTER_LEFT",
+          "text": "I heard you met the Shadow Knight of the Black Wings.",
+          "choices": [
+            {"text": "Previous", "nextState": "start_0"},
+            {"text": "Next", "nextState": "start_2"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "start_2",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "speaker": "NPC_LEFT",
+          "text": "Ah, you mean that guy dressed in black with a menacing wrinkle in his forehead? Why, yes I did. I did meet him. I event got an item for him. He asked me to deliver it to that old man, Mu Gong.",
+          "choices": [
+            {"text": "Previous", "nextState": "start_1"},
+            {"text": "Next", "nextState": "start_3"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "start_3",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "speaker": "CHARACTER_LEFT",
+          "text": "An item?",
+          "choices": [
+            {"text": "Previous", "nextState": "start_2"},
+            {"text": "Next", "nextState": "start_4"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "start_4",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "speaker": "NPC_LEFT",
+          "text": "Yes, a big #bHanging Scroll#k. He gave it to me without saying much. He just asked me to deliver it. He looked scary, as if he would chase me down if I didn't do as he said. Wheeeeeew, that was an experience.",
+          "choices": [
+            {"text": "Previous", "nextState": "start_3"},
+            {"text": "Next", "nextState": "start_5"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "start_5",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "speaker": "CHARACTER_LEFT",
+          "text": "So did you deliver the Hanging Scroll to him?",
+          "choices": [
+            {"text": "Previous", "nextState": "start_4"},
+            {"text": "Next", "nextState": "start_6"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "start_6",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendAcceptDecline",
+          "text": "Well, the thing is... There is a slight problem, care to listen?",
+          "choices": [
+            {"text": "Accept", "nextState": "start_7"},
+            {"text": "Decline", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "start_7",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "speaker": "NPC_LEFT",
+          "text": "So what happened was... I was making a new type of medicine, so I filled a pot with water and started boiling some herbs. That's when I made the mistake of... dropping the Hanging Scroll, right into the pot. Oh gosh, I pulled it out as fast as I could, but the Hanging Scroll, was already soaked and the writing on it had already disappeared.",
+          "choices": [
+            {"text": "Next", "nextState": "start_8"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "start_8",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "speaker": "NPC_LEFT",
+          "text": "So then I thought, well what's the point of delivering it to Mu Gong? I must first restore the writing on Hanging Scroll. That's why I need you to do something for me. The guy down there writing on Hanging Scroll... is #bJin Jin#k, the greatest artist on all of Mu Lung. I'm sure he'd be able to restore the writing on Hanging Scroll.",
+          "choices": [
+            {"text": "Previous", "nextState": "start_7"},
+            {"text": "Next", "nextState": "start_checkInventory"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "start_checkInventory",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "item", "operator": ">=", "value": "1", "referenceId": "4220151"}
+              ],
+              "nextState": "start_forceStartQuest"
+            },
+            {
+              "conditions": [
+                {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "4220151"}
+              ],
+              "nextState": "start_giveItemAndStart"
+            },
+            {"conditions": [], "nextState": "start_noInventorySpace"}
+          ]
+        }
+      },
+      {
+        "id": "start_noInventorySpace",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "speaker": "NPC_LEFT",
+          "text": "Please free a room on your ETC inventory.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "start_giveItemAndStart",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "award_item", "params": {"itemId": "4220151", "quantity": "1"}},
+            {"type": "start_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "start_forceStartQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "end",
+    "states": [
+      {
+        "id": "end",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Oh, you brought the ink. Now let me pour it, cautiously.... Almost there, almost. ... ..... Kyaaa! Th-the letter. It says: 'I'll be there to take your Seal Rock of Mu Lung.'",
+          "choices": [
+            {"text": "Next", "nextState": "end_completeQuest"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "end_completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "destroy_item", "params": {"itemId": "4032342", "quantity": "8"}},
+            {"type": "destroy_item", "params": {"itemId": "4220151", "quantity": "1"}},
+            {"type": "award_exp", "params": {"amount": "10000"}},
+            {"type": "complete_quest", "params": {"force": "true"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

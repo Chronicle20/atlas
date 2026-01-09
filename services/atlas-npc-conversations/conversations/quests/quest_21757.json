@@ -1,0 +1,35 @@
+{
+  "questId": 21757,
+  "questName": "Aran Letter to Empress Quest",
+  "endStateMachine": {
+    "startState": "start",
+    "states": [
+      {
+        "id": "start",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Oh, a letter for the #rempress#k? From the #bheroes#k?!",
+          "choices": [
+            {"text": "Next", "nextState": "completeQuest"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {"force": "true"}},
+            {"type": "award_exp", "params": {"amount": "1000"}},
+            {"type": "destroy_item", "params": {"itemId": "4032330", "quantity": "1"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

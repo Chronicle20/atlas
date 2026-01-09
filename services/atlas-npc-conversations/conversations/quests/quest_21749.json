@@ -1,0 +1,46 @@
+{
+  "questId": 21749,
+  "questName": "Aran Ellin Forest Quest",
+  "startStateMachine": {
+    "startState": "intro",
+    "states": [
+      {
+        "id": "intro",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "So we have lost #btwo seal stones#k so far, from the neighboring areas of #rOrbis#k and #rMu Lung#k... Things are starting to get out of control, it seems.",
+          "choices": [
+            {"text": "Next", "nextState": "mission"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "mission",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Aran, your next objective will be to use the #btime gate to Ellin#k again. This time you will be retrieving the long lost #rSeal Stone of Ellin Forest#k. According to informations our network have gathered, #b#p2131002##k of that time have a clue about that gem, #rfind her#k. Please be successful on this task, our world is relying on you more than ever!",
+          "choices": [
+            {"text": "Next", "nextState": "complete"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "complete",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {"force": "true"}},
+            {"type": "award_exp", "params": {"amount": "500"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -4,6 +4,7 @@ import (
 	"atlas-channel/kafka/message/compartment"
 	"atlas-channel/kafka/producer"
 	"context"
+
 	"github.com/Chronicle20/atlas-constants/inventory"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
@@ -12,17 +13,30 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type Processor interface {
+	ByCharacterIdAndTypeProvider(characterId uint32, inventoryType inventory.Type) model.Provider[Model]
+	GetByType(characterId uint32, inventoryType inventory.Type) (Model, error)
+	Unequip(characterId uint32, inventoryType inventory.Type, source int16, destination int16) error
+	Equip(characterId uint32, inventoryType inventory.Type, source int16, destination int16) error
+	Move(characterId uint32, inventoryType inventory.Type, source int16, destination int16) error
+	Drop(m _map.Model, characterId uint32, inventoryType inventory.Type, source int16, quantity int16, x int16, y int16) error
+	Merge(characterId uint32, inventoryType inventory.Type, updateTime uint32) error
+	Sort(characterId uint32, inventoryType inventory.Type, updateTime uint32) error
+	Transfer(accountId uint32, characterId uint32, assetId uint32, fromId uuid.UUID, fromType byte, fromInventoryType string, toId uuid.UUID, toType byte, toInventoryType string, referenceId uint32) error
+	TransferToStorage(worldId byte, accountId uint32, characterId uint32, assetId uint32, fromId uuid.UUID, fromType byte, referenceId uint32, templateId uint32, referenceType string, slot int16) error
+	TransferFromStorage(worldId byte, accountId uint32, characterId uint32, assetId uint32, toId uuid.UUID, toType byte, referenceId uint32) error
+}
+
 type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *ProcessorImpl {
-	p := &ProcessorImpl{
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	return &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 	}
-	return p
 }
 
 func (p *ProcessorImpl) ByCharacterIdAndTypeProvider(characterId uint32, inventoryType inventory.Type) model.Provider[Model] {

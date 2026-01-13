@@ -31,11 +31,11 @@ func (r *RestModel) SetID(strId string) error {
 
 func Transform(m Model) (RestModel, error) {
 	return RestModel{
-		Id:        m.id,
-		AccountId: m.accountId,
-		Credit:    m.credit,
-		Points:    m.points,
-		Prepaid:   m.prepaid,
+		Id:        m.Id(),
+		AccountId: m.AccountId(),
+		Credit:    m.Credit(),
+		Points:    m.Points(),
+		Prepaid:   m.Prepaid(),
 	}, nil
 }
 

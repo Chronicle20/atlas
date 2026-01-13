@@ -22,7 +22,7 @@ func generateUniqueCashId(tenantId uuid.UUID, db *gorm.DB) (int64, error) {
 	}
 }
 
-func createEntityProvider(tenantId uuid.UUID, templateId uint32, quantity uint32, purchasedBy uint32) database.EntityProvider[Entity] {
+func create(tenantId uuid.UUID, templateId uint32, quantity uint32, purchasedBy uint32) database.EntityProvider[Entity] {
 	return func(db *gorm.DB) model.Provider[Entity] {
 		cashId, err := generateUniqueCashId(tenantId, db)
 		if err != nil {

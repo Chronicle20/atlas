@@ -1,11 +1,13 @@
+// Package tenants administrator provides transaction functions for write operations.
 package tenants
 
 import (
 	"context"
 	"encoding/json"
+	"time"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-	"time"
 )
 
 func delete(ctx context.Context, tenantId uuid.UUID) func(db *gorm.DB) error {
@@ -26,22 +28,6 @@ func delete(ctx context.Context, tenantId uuid.UUID) func(db *gorm.DB) error {
 		}
 
 		err = db.Delete(&e).Error
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-}
-
-func create(ctx context.Context, region string, majorVersion uint16, minorVersion uint16, data json.RawMessage) func(db *gorm.DB) error {
-	return func(db *gorm.DB) error {
-		e := &Entity{
-			Region:       region,
-			MajorVersion: majorVersion,
-			MinorVersion: minorVersion,
-			Data:         data,
-		}
-		err := db.Create(e).Error
 		if err != nil {
 			return err
 		}

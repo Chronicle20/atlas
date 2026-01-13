@@ -14,6 +14,11 @@ func (m RestModel) GetName() string {
 	return "characters"
 }
 
+func (m *RestModel) SetID(idStr string) error {
+	m.Id = idStr
+	return nil
+}
+
 func Transform(id uint32) (RestModel, error) {
 	return RestModel{Id: strconv.Itoa(int(id))}, nil
 }

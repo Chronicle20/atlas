@@ -26,6 +26,31 @@ import (
 	"time"
 )
 
+type Provider interface {
+	WithTransaction(tx *gorm.DB) *Processor
+	WithConsumableProcessor(conp consumable.Processor) *Processor
+	ByCompartmentIdProvider(compartmentId uuid.UUID) model.Provider[[]Model[any]]
+	GetByCompartmentId(compartmentId uuid.UUID) ([]Model[any], error)
+	GetBySlot(compartmentId uuid.UUID, slot int16) (Model[any], error)
+	BySlotProvider(compartmentId uuid.UUID) func(slot int16) model.Provider[Model[any]]
+	GetByReferenceId(referenceId uint32, referenceType ReferenceType) (Model[any], error)
+	ByReferenceIdProvider(referenceId uint32, referenceType ReferenceType) model.Provider[Model[any]]
+	ByIdProvider(id uint32) model.Provider[Model[any]]
+	GetById(id uint32) (Model[any], error)
+	GetSlotMax(templateId uint32) (uint32, error)
+	Delete(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID) func(a Model[any]) error
+	Drop(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID) func(a Model[any]) error
+	UpdateSlot(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, ap model.Provider[Model[any]], sp model.Provider[int16]) error
+	UpdateQuantity(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, a Model[any], quantity uint32) error
+	RelayUpdateAndEmit(transactionId uuid.UUID, characterId uint32, referenceId uint32, referenceType ReferenceType, referenceData interface{}) error
+	DeleteAndEmit(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, assetId uint32) error
+	RelayUpdate(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, referenceId uint32, referenceType ReferenceType, referenceData interface{}) error
+	Create(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, templateId uint32, slot int16, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64) (Model[any], error)
+	Acquire(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, templateId uint32, slot int16, quantity uint32, referenceId uint32) (Model[any], error)
+	Accept(mb *message.Buffer) func(characterId uint32, compartmentId uuid.UUID, type_ inventory.Type, slot int16, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) (Model[any], error)
+	Release(mb *message.Buffer) func(characterId uint32, compartmentId uuid.UUID) func(a Model[any]) error
+}
+
 type Processor struct {
 	l                   logrus.FieldLogger
 	ctx                 context.Context

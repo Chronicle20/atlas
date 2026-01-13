@@ -7,6 +7,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type Provider interface {
+	ByEquipmentIdModelProvider(equipmentId uint32) model.Provider[Model]
+	GetById(equipmentId uint32) (Model, error)
+	Delete(equipmentId uint32) error
+	Create(itemId uint32) model.Provider[Model]
+}
+
 type Processor struct {
 	l   logrus.FieldLogger
 	ctx context.Context

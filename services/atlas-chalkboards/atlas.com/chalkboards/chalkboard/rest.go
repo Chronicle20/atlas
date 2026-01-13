@@ -26,7 +26,7 @@ func (r *RestModel) SetID(strId string) error {
 
 func Transform(m Model) (RestModel, error) {
 	return RestModel{
-		Id:      m.id,
-		Message: m.message,
+		Id:      m.Id(),
+		Message: m.Message(),
 	}, nil
 }

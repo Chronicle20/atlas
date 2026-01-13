@@ -12,6 +12,10 @@ type Model struct {
 	pending       bool
 }
 
+func (m Model) ListId() uuid.UUID {
+	return m.listId
+}
+
 func (m Model) CharacterId() uint32 {
 	return m.characterId
 }
@@ -26,4 +30,12 @@ func (m Model) Group() string {
 
 func (m Model) ChannelId() int8 {
 	return m.channelId
+}
+
+func (m Model) InShop() bool {
+	return m.inShop
+}
+
+func (m Model) Pending() bool {
+	return m.pending
 }

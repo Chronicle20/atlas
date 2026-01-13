@@ -5,11 +5,15 @@ import (
 	consumer2 "atlas-fame/kafka/consumer"
 	messageFame "atlas-fame/kafka/message/fame"
 	"context"
+
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -37,6 +41,7 @@ func handleRequestChangeCommand(db *gorm.DB) message.Handler[messageFame.Command
 		if c.Type != messageFame.CommandTypeRequestChange {
 			return
 		}
-		_ = fame.RequestChange(l)(ctx)(db)(c.WorldId, c.Body.ChannelId, c.CharacterId, c.Body.MapId, c.Body.TargetId, c.Body.Amount)
+		processor := fame.NewProcessor(l, ctx, db)
+		_ = processor.RequestChangeAndEmit(uuid.New(), world.Id(c.WorldId), channel.Id(c.Body.ChannelId), c.CharacterId, c.Body.MapId, c.Body.TargetId, c.Body.Amount)
 	}
 }

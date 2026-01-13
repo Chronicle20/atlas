@@ -14,18 +14,13 @@ func errorEventStatusProvider(transactionId uuid.UUID, worldId world.Id, channel
 	key := producer.CreateKey(int(characterId))
 	value := &messageFame.StatusEvent[messageFame.StatusEventErrorBody]{
 		TransactionId: transactionId,
-		WorldId:     worldId,
-		CharacterId: characterId,
-		Type:        messageFame.StatusEventTypeError,
+		WorldId:       worldId,
+		CharacterId:   characterId,
+		Type:          messageFame.StatusEventTypeError,
 		Body: messageFame.StatusEventErrorBody{
 			ChannelId: channelId,
 			Error:     error,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
-}
-
-// Legacy function for backward compatibility
-func errorEventStatusProviderLegacy(worldId byte, channelId byte, characterId uint32, error string) model.Provider[[]kafka.Message] {
-	return errorEventStatusProvider(uuid.New(), world.Id(worldId), channel.Id(channelId), characterId, error)
 }

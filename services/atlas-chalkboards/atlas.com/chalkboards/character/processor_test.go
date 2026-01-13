@@ -2,7 +2,6 @@ package character
 
 import (
 	"context"
-	"sync"
 	"testing"
 
 	"github.com/Chronicle20/atlas-constants/channel"
@@ -27,7 +26,6 @@ func resetProcessorRegistry() {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 	r.characterRegister = make(map[MapKey][]uint32)
-	r.mapLocks = make(map[MapKey]*sync.RWMutex)
 }
 
 func TestProcessorInMapProvider(t *testing.T) {

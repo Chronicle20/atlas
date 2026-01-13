@@ -30,7 +30,6 @@ func resetRegistry() {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 	r.characterRegister = make(map[MapKey][]uint32)
-	r.mapLocks = make(map[MapKey]*sync.RWMutex)
 }
 
 func TestRegistryGetInMapEmpty(t *testing.T) {

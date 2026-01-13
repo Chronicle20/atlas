@@ -44,6 +44,7 @@ func handleGetMapsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 			s := NewStorage(d.Logger(), db)
 			res, err := s.GetAll(d.Context())
 			if err != nil {
+				d.Logger().WithError(err).Errorf("Unable to retrieve maps.")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
@@ -270,31 +271,6 @@ func handleGetMapDropPositionRequest(db *gorm.DB) func(d *rest.HandlerDependency
 	}
 }
 
-type DropPositionRestModel struct {
-	Id        uint32 `json:"-"`
-	InitialX  int16  `json:"initialX"`
-	InitialY  int16  `json:"initialY"`
-	FallbackX int16  `json:"fallbackX"`
-	FallbackY int16  `json:"fallbackY"`
-}
-
-func (r DropPositionRestModel) GetName() string {
-	return "positions"
-}
-
-func (r DropPositionRestModel) GetID() string {
-	return strconv.Itoa(int(r.Id))
-}
-
-func (r *DropPositionRestModel) SetID(strId string) error {
-	id, err := strconv.Atoi(strId)
-	if err != nil {
-		return err
-	}
-	r.Id = uint32(id)
-	return nil
-}
-
 func handleGetMapFootholdBelowRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext, i PositionRestModel) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext, i PositionRestModel) http.HandlerFunc {
 		return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
@@ -302,12 +278,14 @@ func handleGetMapFootholdBelowRequest(db *gorm.DB) func(d *rest.HandlerDependenc
 				s := NewStorage(d.Logger(), db)
 				m, err := s.GetById(d.Context())(strconv.Itoa(int(mapId)))
 				if err != nil {
+					d.Logger().WithError(err).Errorf("Unable to retrieve map %d for foothold lookup.", mapId)
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
 				p := point.RestModel{X: i.X, Y: i.Y}
 				fh := m.FootholdTree.findBelow(p)
 				if fh == nil {
+					d.Logger().Errorf("Unable to find foothold below position (%d, %d) in map %d.", i.X, i.Y, mapId)
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
@@ -324,50 +302,4 @@ func handleGetMapFootholdBelowRequest(db *gorm.DB) func(d *rest.HandlerDependenc
 			}
 		})
 	}
-}
-
-type PositionRestModel struct {
-	Id uint32 `json:"-"`
-	X  int16  `json:"x"`
-	Y  int16  `json:"y"`
-}
-
-func (r PositionRestModel) GetName() string {
-	return "positions"
-}
-
-func (r PositionRestModel) GetID() string {
-	return strconv.Itoa(int(r.Id))
-}
-
-func (r *PositionRestModel) SetID(strId string) error {
-	id, err := strconv.Atoi(strId)
-	if err != nil {
-		return err
-	}
-	r.Id = uint32(id)
-	return nil
-}
-
-type FootholdRestModel struct {
-	Id     uint32           `json:"id"`
-	First  *point.RestModel `json:"first,omitempty"`
-	Second *point.RestModel `json:"second,omitempty"`
-}
-
-func (r FootholdRestModel) GetName() string {
-	return "footholds"
-}
-
-func (r FootholdRestModel) GetID() string {
-	return strconv.Itoa(int(r.Id))
-}
-
-func (r *FootholdRestModel) SetID(strId string) error {
-	id, err := strconv.Atoi(strId)
-	if err != nil {
-		return err
-	}
-	r.Id = uint32(id)
-	return nil
 }

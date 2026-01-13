@@ -85,17 +85,14 @@ func updateGender(gender byte) EntityUpdateFunction {
 }
 
 func Make(a Entity) (Model, error) {
-	r := Model{
-		tenantId:  a.TenantId,
-		id:        a.ID,
-		name:      a.Name,
-		password:  a.Password,
-		pin:       a.PIN,
-		pic:       a.PIC,
-		gender:    a.Gender,
-		banned:    false,
-		tos:       a.TOS,
-		updatedAt: a.UpdatedAt,
-	}
-	return r, nil
+	return NewBuilder(a.TenantId, a.Name).
+		SetId(a.ID).
+		SetPassword(a.Password).
+		SetPin(a.PIN).
+		SetPic(a.PIC).
+		SetGender(a.Gender).
+		SetBanned(false).
+		SetTOS(a.TOS).
+		SetUpdatedAt(a.UpdatedAt).
+		Build()
 }

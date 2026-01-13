@@ -1,16 +1,9 @@
 package account
 
 import (
-	"github.com/google/uuid"
 	"time"
-)
 
-type State uint8
-
-const (
-	StateNotLoggedIn = 0
-	StateLoggedIn    = 1
-	StateTransition  = 2
+	"github.com/google/uuid"
 )
 
 type Model struct {
@@ -65,6 +58,10 @@ func (a Model) Pin() string {
 
 func (a Model) Pic() string {
 	return a.pic
+}
+
+func (a Model) Gender() byte {
+	return a.gender
 }
 
 func LoggedIn(m Model) bool {

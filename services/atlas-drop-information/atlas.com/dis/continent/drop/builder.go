@@ -1,6 +1,10 @@
 package drop
 
-import "github.com/google/uuid"
+import (
+	"errors"
+
+	"github.com/google/uuid"
+)
 
 type Builder struct {
 	tenantId        uuid.UUID
@@ -47,7 +51,10 @@ func (b *Builder) SetQuestId(questId uint32) *Builder {
 	return b
 }
 
-func (b *Builder) Build() Model {
+func (b *Builder) Build() (Model, error) {
+	if b.tenantId == uuid.Nil {
+		return Model{}, errors.New("tenantId cannot be nil")
+	}
 	return Model{
 		tenantId:        b.tenantId,
 		id:              b.id,
@@ -57,5 +64,5 @@ func (b *Builder) Build() Model {
 		maximumQuantity: b.maximumQuantity,
 		questId:         b.questId,
 		chance:          b.chance,
-	}
+	}, nil
 }

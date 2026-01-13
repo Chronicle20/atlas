@@ -63,3 +63,39 @@ func EmitWithResult[M any, B any](p producer.Provider) func(func(*Buffer) func(B
 		}
 	}
 }
+
+// EmitAlways emits all buffered events regardless of whether the function succeeded or failed.
+// This is useful when error events need to be emitted on failure paths.
+func EmitAlways[M any, B any](p producer.Provider) func(func(*Buffer) func(B) (M, error)) func(B) (M, error) {
+	return func(f func(*Buffer) func(B) (M, error)) func(B) (M, error) {
+		return func(input B) (M, error) {
+			var buf = NewBuffer()
+			result, fnErr := f(buf)(input)
+			// Always emit buffered events, even on error
+			for t, ms := range buf.GetAll() {
+				if emitErr := p(t)(model.FixedProvider(ms)); emitErr != nil {
+					// If emission fails, return that error (original error is lost)
+					return result, emitErr
+				}
+			}
+			return result, fnErr
+		}
+	}
+}
+
+// EmitAlwaysNoResult emits all buffered events regardless of success/failure for functions that return only error.
+func EmitAlwaysNoResult[B any](p producer.Provider) func(func(*Buffer) func(B) error) func(B) error {
+	return func(f func(*Buffer) func(B) error) func(B) error {
+		return func(input B) error {
+			var buf = NewBuffer()
+			fnErr := f(buf)(input)
+			// Always emit buffered events, even on error
+			for t, ms := range buf.GetAll() {
+				if emitErr := p(t)(model.FixedProvider(ms)); emitErr != nil {
+					return emitErr
+				}
+			}
+			return fnErr
+		}
+	}
+}

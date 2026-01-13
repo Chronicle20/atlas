@@ -1,6 +1,7 @@
 package reactor
 
 import (
+	"errors"
 	"time"
 )
 
@@ -117,7 +118,14 @@ func NewFromModel(m Model) *ModelBuilder {
 	}
 }
 
-func (b *ModelBuilder) Build() Model {
+func (b *ModelBuilder) Build() (Model, error) {
+	if b.name == "" {
+		return Model{}, errors.New("reactor name cannot be empty")
+	}
+	if b.classification == 0 {
+		return Model{}, errors.New("reactor classification must be positive")
+	}
+
 	return Model{
 		id:             b.id,
 		worldId:        b.worldId,
@@ -132,7 +140,7 @@ func (b *ModelBuilder) Build() Model {
 		x:              b.x,
 		y:              b.y,
 		updateTime:     b.updateTime,
-	}
+	}, nil
 }
 
 func (b *ModelBuilder) SetState(state int8) *ModelBuilder {

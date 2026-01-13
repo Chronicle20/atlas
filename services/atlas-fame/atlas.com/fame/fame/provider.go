@@ -12,7 +12,7 @@ func byCharacterIdLastMonthEntityProvider(tenantId uuid.UUID, characterId uint32
 	return func(db *gorm.DB) model.Provider[[]Entity] {
 		lastMonth := time.Now().AddDate(0, -1, 0)
 		var result []Entity
-		err := db.Where("tenant_id = ? AND character_id = ? AND created_at >= ?", tenantId, characterId, lastMonth).Find(&result).Find(&result).Error
+		err := db.Where("tenant_id = ? AND character_id = ? AND created_at >= ?", tenantId, characterId, lastMonth).Find(&result).Error
 		if err != nil {
 			return model.ErrorProvider[[]Entity](err)
 		}

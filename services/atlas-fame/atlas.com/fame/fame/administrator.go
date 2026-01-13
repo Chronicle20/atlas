@@ -7,6 +7,11 @@ import (
 )
 
 func create(db *gorm.DB, t tenant.Model, characterId uint32, targetId uint32, amount int8) (Model, error) {
+	_, err := NewBuilder(t.Id(), characterId, targetId, amount).Build()
+	if err != nil {
+		return Model{}, err
+	}
+
 	e := &Entity{
 		TenantId:    t.Id(),
 		CharacterId: characterId,
@@ -15,7 +20,7 @@ func create(db *gorm.DB, t tenant.Model, characterId uint32, targetId uint32, am
 		CreatedAt:   time.Now(),
 	}
 
-	err := db.Create(e).Error
+	err = db.Create(e).Error
 	if err != nil {
 		return Model{}, err
 	}

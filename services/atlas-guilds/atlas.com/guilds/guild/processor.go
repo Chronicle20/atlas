@@ -400,7 +400,7 @@ func (p *ProcessorImpl) UpdateMemberOnline(mb *message.Buffer) func(characterId 
 						return nil
 					}
 					p.l.Debugf("Updating guild [%d] member [%d] status to online [%t]", g.Id(), characterId, online)
-					err = updateMemberStatus(tx, p.t.Id(), g.Id(), characterId, online)
+					err = member.NewProcessor(p.l, p.ctx, tx).UpdateStatus(characterId, online)
 					if err != nil {
 						return err
 					}
@@ -574,7 +574,7 @@ func (p *ProcessorImpl) ChangeMemberTitle(mb *message.Buffer) func(guildId uint3
 								return nil
 							}
 							p.l.Debugf("Updating guild [%d] member [%d] title to [%d]", g.Id(), targetId, title)
-							err = updateMemberTitle(tx, p.t.Id(), g.Id(), targetId, title)
+							err = member.NewProcessor(p.l, p.ctx, tx).UpdateTitle(targetId, title)
 							if err != nil {
 								return err
 							}

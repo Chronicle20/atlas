@@ -28,27 +28,41 @@ func GetRegistry() *Registry {
 	return registry
 }
 
-func (r *Registry) Apply(t tenant.Model, worldId byte, characterId uint32, sourceId int32, duration int32, changes []stat.Model) buff.Model {
+// getOrCreateTenantMaps returns the character map and lock for a tenant,
+// creating them if they don't exist. This method is thread-safe.
+func (r *Registry) getOrCreateTenantMaps(t tenant.Model) (map[uint32]Model, *sync.RWMutex) {
 	r.lock.Lock()
+	defer r.lock.Unlock()
 
-	var cm map[uint32]Model
-	var cml *sync.RWMutex
-	var ok bool
-	if cm, ok = r.characterReg[t]; ok {
-		cml = r.tenantLock[t]
-	} else {
+	cm, ok := r.characterReg[t]
+	if !ok {
 		cm = make(map[uint32]Model)
-		cml = &sync.RWMutex{}
+		r.characterReg[t] = cm
 	}
-	r.characterReg[t] = cm
-	r.tenantLock[t] = cml
-	r.lock.Unlock()
+
+	cml, ok := r.tenantLock[t]
+	if !ok {
+		cml = &sync.RWMutex{}
+		r.tenantLock[t] = cml
+	}
+
+	return cm, cml
+}
+
+func (r *Registry) Apply(t tenant.Model, worldId byte, characterId uint32, sourceId int32, duration int32, changes []stat.Model) (buff.Model, error) {
+	b, err := buff.NewBuff(sourceId, duration, changes)
+	if err != nil {
+		return buff.Model{}, err
+	}
+
+	cm, cml := r.getOrCreateTenantMaps(t)
 
 	cml.Lock()
+	defer cml.Unlock()
 
 	var m Model
-	if m, ok = r.characterReg[t][characterId]; ok {
-	} else {
+	var ok bool
+	if m, ok = cm[characterId]; !ok {
 		m = Model{
 			tenant:      t,
 			worldId:     worldId,
@@ -56,28 +70,19 @@ func (r *Registry) Apply(t tenant.Model, worldId byte, characterId uint32, sourc
 			buffs:       make(map[int32]buff.Model),
 		}
 	}
-	b := buff.NewBuff(sourceId, duration, changes)
 	m.buffs[sourceId] = b
 
 	cm[characterId] = m
-	cml.Unlock()
-	return b
+	return b, nil
 }
 
 func (r *Registry) Get(t tenant.Model, id uint32) (Model, error) {
-	var tl *sync.RWMutex
-	var ok bool
-	if tl, ok = r.tenantLock[t]; !ok {
-		r.lock.Lock()
-		tl = &sync.RWMutex{}
-		r.characterReg[t] = make(map[uint32]Model)
-		r.tenantLock[t] = tl
-		r.lock.Unlock()
-	}
+	cm, cml := r.getOrCreateTenantMaps(t)
 
-	tl.RLock()
-	defer tl.RUnlock()
-	if m, ok := r.characterReg[t][id]; ok {
+	cml.RLock()
+	defer cml.RUnlock()
+
+	if m, ok := cm[id]; ok {
 		return m, nil
 	}
 	return Model{}, ErrNotFound
@@ -94,79 +99,62 @@ func (r *Registry) GetTenants() ([]tenant.Model, error) {
 }
 
 func (r *Registry) GetCharacters(t tenant.Model) []Model {
-	var tl *sync.RWMutex
-	var ok bool
-	if tl, ok = r.tenantLock[t]; !ok {
-		r.lock.Lock()
-		tl = &sync.RWMutex{}
-		r.characterReg[t] = make(map[uint32]Model)
-		r.tenantLock[t] = tl
-		r.lock.Unlock()
-	}
+	cm, cml := r.getOrCreateTenantMaps(t)
 
-	tl.Lock()
-	defer tl.Unlock()
-	var res = make([]Model, 0)
-	for _, m := range r.characterReg[t] {
+	cml.RLock()
+	defer cml.RUnlock()
+
+	res := make([]Model, 0, len(cm))
+	for _, m := range cm {
 		res = append(res, m)
 	}
 	return res
 }
 
 func (r *Registry) Cancel(t tenant.Model, characterId uint32, sourceId int32) (buff.Model, error) {
-	var tl *sync.RWMutex
-	var ok bool
-	if tl, ok = r.tenantLock[t]; !ok {
-		r.lock.Lock()
-		tl = &sync.RWMutex{}
-		r.characterReg[t] = make(map[uint32]Model)
-		r.tenantLock[t] = tl
-		r.lock.Unlock()
-	}
+	cm, cml := r.getOrCreateTenantMaps(t)
 
-	tl.Lock()
-	defer tl.Unlock()
-	var c Model
-	if c, ok = r.characterReg[t][characterId]; !ok {
+	cml.Lock()
+	defer cml.Unlock()
+
+	c, ok := cm[characterId]
+	if !ok {
 		return buff.Model{}, ErrNotFound
 	}
+
 	var b buff.Model
-	var not = make(map[int32]buff.Model)
+	var found bool
+	not := make(map[int32]buff.Model)
 	for id, m := range c.buffs {
 		if m.SourceId() != sourceId {
 			not[id] = m
 		} else {
 			b = m
+			found = true
 		}
 	}
 	c.buffs = not
-	r.characterReg[t][characterId] = c
+	cm[characterId] = c
 
-	if b.SourceId() != sourceId {
+	if !found {
 		return buff.Model{}, ErrNotFound
 	}
 	return b, nil
 }
 
 func (r *Registry) GetExpired(t tenant.Model, characterId uint32) []buff.Model {
-	var tl *sync.RWMutex
-	var ok bool
-	if tl, ok = r.tenantLock[t]; !ok {
-		r.lock.Lock()
-		tl = &sync.RWMutex{}
-		r.characterReg[t] = make(map[uint32]Model)
-		r.tenantLock[t] = tl
-		r.lock.Unlock()
-	}
+	cm, cml := r.getOrCreateTenantMaps(t)
 
-	tl.Lock()
-	defer tl.Unlock()
-	var c Model
-	if c, ok = r.characterReg[t][characterId]; !ok {
+	cml.Lock()
+	defer cml.Unlock()
+
+	c, ok := cm[characterId]
+	if !ok {
 		return make([]buff.Model, 0)
 	}
-	var not = make(map[int32]buff.Model)
-	var res = make([]buff.Model, 0)
+
+	not := make(map[int32]buff.Model)
+	res := make([]buff.Model, 0)
 	for id, m := range c.buffs {
 		if m.Expired() {
 			res = append(res, m)
@@ -175,6 +163,14 @@ func (r *Registry) GetExpired(t tenant.Model, characterId uint32) []buff.Model {
 		}
 	}
 	c.buffs = not
-	r.characterReg[t][characterId] = c
+	cm[characterId] = c
 	return res
+}
+
+// ResetForTesting clears all registry state. Only for use in tests.
+func (r *Registry) ResetForTesting() {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	r.characterReg = make(map[tenant.Model]map[uint32]Model)
+	r.tenantLock = make(map[tenant.Model]*sync.RWMutex)
 }

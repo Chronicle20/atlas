@@ -1,56 +1,51 @@
 package tracing
 
 import (
-	"fmt"
-	"github.com/opentracing/opentracing-go"
+	"context"
 	"github.com/sirupsen/logrus"
-	"github.com/uber/jaeger-client-go/config"
-	"io"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	"go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	"os"
+	"time"
 )
 
-func InitTracer(l logrus.FieldLogger) func(serviceName string) (io.Closer, error) {
-	return func(serviceName string) (io.Closer, error) {
-		jaegerHostPort := os.Getenv("JAEGER_HOST_PORT")
-		cfg := &config.Configuration{
-			ServiceName: serviceName,
-			Sampler:     &config.SamplerConfig{Type: "const", Param: 1},
-			Reporter:    &config.ReporterConfig{LogSpans: true, LocalAgentHostPort: jaegerHostPort},
-		}
-		tracer, closer, err := cfg.NewTracer(config.Logger(LogrusAdapter{logger: l}))
-		if err != nil {
-			return nil, err
-		}
-		opentracing.SetGlobalTracer(tracer)
-		return closer, nil
+func InitTracer(serviceName string) (*trace.TracerProvider, error) {
+	exporter, err := otlptrace.New(
+		context.Background(),
+		otlptracegrpc.NewClient(
+			otlptracegrpc.WithInsecure(),
+			otlptracegrpc.WithEndpoint(os.Getenv("JAEGER_HOST_PORT")),
+		),
+	)
+	if err != nil {
+		return nil, err
 	}
+
+	tp := trace.NewTracerProvider(
+		trace.WithBatcher(exporter),
+		trace.WithResource(resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceNameKey.String(serviceName),
+		)),
+	)
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.TraceContext{})
+	return tp, nil
 }
 
-func Teardown(l logrus.FieldLogger) func(tc io.Closer) func() {
-	return func(tc io.Closer) func() {
+func Teardown(l logrus.FieldLogger) func(tp *trace.TracerProvider) func() {
+	return func(tp *trace.TracerProvider) func() {
 		return func() {
-			err := tc.Close()
-			if err != nil {
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+			defer cancel()
+			if err := tp.Shutdown(ctx); err != nil {
 				l.WithError(err).Errorf("Unable to close tracer.")
 			}
 		}
 	}
-}
-
-type LogrusAdapter struct {
-	logger logrus.FieldLogger
-}
-
-func (l LogrusAdapter) Error(msg string) {
-	l.logger.Error(msg)
-}
-
-func (l LogrusAdapter) Infof(msg string, args ...interface{}) {
-	l.logger.Infof(msg, args)
-}
-
-func StartSpan(l logrus.FieldLogger, name string, opts ...opentracing.StartSpanOption) (logrus.FieldLogger, opentracing.Span) {
-	span := opentracing.StartSpan(name, opts...)
-	sl := l.WithField("span.id", fmt.Sprintf("%v", span))
-	return sl, span
 }

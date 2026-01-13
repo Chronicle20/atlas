@@ -44,7 +44,9 @@ func handleGetBuffs(d *rest.HandlerDependency, c *rest.HandlerContext) http.Hand
 				res = append(res, tb)
 			}
 
-			server.Marshal[[]buff.RestModel](d.Logger())(w)(c.ServerInformation())(res)
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[[]buff.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 		}
 	})
 }

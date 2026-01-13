@@ -13,7 +13,12 @@ type Model struct {
 }
 
 func (m Model) Buffs() map[int32]buff.Model {
-	return m.buffs
+	// Return defensive copy to prevent external mutation
+	result := make(map[int32]buff.Model, len(m.buffs))
+	for k, v := range m.buffs {
+		result[k] = v
+	}
+	return result
 }
 
 func (m Model) Id() uint32 {

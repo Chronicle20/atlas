@@ -85,7 +85,8 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 
 func handleCreateCharacter(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		transactionId, err := Create(d.Logger())(d.Context())(input)
+		processor := NewProcessor(d.Logger())
+		transactionId, err := processor.Create(d.Context(), input)
 		if err != nil {
 			d.Logger().WithError(err).Error("Error creating character from seed.")
 			

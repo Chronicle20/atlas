@@ -41,7 +41,9 @@ func handleApply(l logrus.FieldLogger, ctx context.Context, c character2.Command
 		statChanges = append(statChanges, stat.NewStat(cs.Type, cs.Amount))
 	}
 
-	_ = character.NewProcessor(l, ctx).Apply(c.WorldId, c.CharacterId, c.Body.FromId, c.Body.SourceId, c.Body.Duration, statChanges)
+	if err := character.NewProcessor(l, ctx).Apply(c.WorldId, c.CharacterId, c.Body.FromId, c.Body.SourceId, c.Body.Duration, statChanges); err != nil {
+		l.WithError(err).Errorf("Unable to apply buff [%d] to character [%d].", c.Body.SourceId, c.CharacterId)
+	}
 }
 
 func handleCancel(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.CancelCommandBody]) {
@@ -49,5 +51,7 @@ func handleCancel(l logrus.FieldLogger, ctx context.Context, c character2.Comman
 		return
 	}
 
-	_ = character.NewProcessor(l, ctx).Cancel(c.WorldId, c.CharacterId, c.Body.SourceId)
+	if err := character.NewProcessor(l, ctx).Cancel(c.WorldId, c.CharacterId, c.Body.SourceId); err != nil {
+		l.WithError(err).Errorf("Unable to cancel buff [%d] for character [%d].", c.Body.SourceId, c.CharacterId)
+	}
 }

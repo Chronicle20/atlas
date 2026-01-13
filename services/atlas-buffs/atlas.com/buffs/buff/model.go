@@ -2,8 +2,10 @@ package buff
 
 import (
 	"atlas-buffs/buff/stat"
-	"github.com/google/uuid"
+	"errors"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Model struct {
@@ -39,7 +41,18 @@ func (m Model) ExpiresAt() time.Time {
 	return m.expiresAt
 }
 
-func NewBuff(sourceId int32, duration int32, changes []stat.Model) Model {
+var (
+	ErrInvalidDuration = errors.New("duration must be positive")
+	ErrEmptyChanges    = errors.New("changes cannot be empty")
+)
+
+func NewBuff(sourceId int32, duration int32, changes []stat.Model) (Model, error) {
+	if duration <= 0 {
+		return Model{}, ErrInvalidDuration
+	}
+	if len(changes) == 0 {
+		return Model{}, ErrEmptyChanges
+	}
 	return Model{
 		id:        uuid.New(),
 		sourceId:  sourceId,
@@ -47,5 +60,5 @@ func NewBuff(sourceId int32, duration int32, changes []stat.Model) Model {
 		changes:   changes,
 		createdAt: time.Now(),
 		expiresAt: time.Now().Add(time.Duration(duration) * time.Second),
-	}
+	}, nil
 }

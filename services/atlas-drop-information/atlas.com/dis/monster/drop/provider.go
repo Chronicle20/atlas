@@ -25,8 +25,8 @@ func getByMonsterId(tenantId uuid.UUID, monsterId uint32) database.EntityProvide
 	}
 }
 
-func makeDrop(m entity) (Model, error) {
-	r := NewMonsterDropBuilder(m.TenantId, m.ID).
+func modelFromEntity(m entity) (Model, error) {
+	return NewMonsterDropBuilder(m.TenantId, m.ID).
 		SetMonsterId(m.MonsterId).
 		SetItemId(m.ItemId).
 		SetMinimumQuantity(m.MinimumQuantity).
@@ -34,5 +34,4 @@ func makeDrop(m entity) (Model, error) {
 		SetQuestId(m.QuestId).
 		SetChance(m.Chance).
 		Build()
-	return r, nil
 }

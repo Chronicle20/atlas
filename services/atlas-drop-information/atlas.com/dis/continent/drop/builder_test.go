@@ -16,7 +16,10 @@ func TestNewContinentDropBuilder(t *testing.T) {
 		t.Fatal("Expected builder to be non-nil")
 	}
 
-	model := builder.Build()
+	model, err := builder.Build()
+	if err != nil {
+		t.Fatalf("Build() returned unexpected error: %v", err)
+	}
 
 	if model.TenantId() != tenantId {
 		t.Errorf("Expected TenantId %s, got %s", tenantId, model.TenantId())
@@ -30,7 +33,7 @@ func TestNewContinentDropBuilder(t *testing.T) {
 func TestContinentDropBuilderFluentAPI(t *testing.T) {
 	tenantId := uuid.New()
 
-	model := NewContinentDropBuilder(tenantId, 0).
+	model, err := NewContinentDropBuilder(tenantId, 0).
 		SetContinentId(-1).
 		SetItemId(4001126).
 		SetMinimumQuantity(1).
@@ -38,6 +41,10 @@ func TestContinentDropBuilderFluentAPI(t *testing.T) {
 		SetQuestId(0).
 		SetChance(8000).
 		Build()
+
+	if err != nil {
+		t.Fatalf("Build() returned unexpected error: %v", err)
+	}
 
 	if model.ContinentId() != -1 {
 		t.Errorf("Expected ContinentId -1, got %d", model.ContinentId())
@@ -67,7 +74,10 @@ func TestContinentDropBuilderFluentAPI(t *testing.T) {
 func TestContinentDropBuilderDefaults(t *testing.T) {
 	tenantId := uuid.New()
 
-	model := NewContinentDropBuilder(tenantId, 0).Build()
+	model, err := NewContinentDropBuilder(tenantId, 0).Build()
+	if err != nil {
+		t.Fatalf("Build() returned unexpected error: %v", err)
+	}
 
 	// ContinentId defaults to 0 (not -1)
 	if model.ContinentId() != 0 {
@@ -95,13 +105,24 @@ func TestContinentDropBuilderDefaults(t *testing.T) {
 	}
 }
 
+func TestContinentDropBuilderValidation_NilTenantId(t *testing.T) {
+	_, err := NewContinentDropBuilder(uuid.Nil, 0).Build()
+	if err == nil {
+		t.Error("Expected error for nil tenantId, got nil")
+	}
+}
+
 func TestContinentDropBuilderNegativeContinentId(t *testing.T) {
 	tenantId := uuid.New()
 
 	// Test that negative continent IDs work (they are valid, e.g., -1 for global)
-	model := NewContinentDropBuilder(tenantId, 0).
+	model, err := NewContinentDropBuilder(tenantId, 0).
 		SetContinentId(-1).
 		Build()
+
+	if err != nil {
+		t.Fatalf("Build() returned unexpected error: %v", err)
+	}
 
 	if model.ContinentId() != -1 {
 		t.Errorf("Expected ContinentId -1, got %d", model.ContinentId())

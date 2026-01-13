@@ -1,6 +1,10 @@
 package account
 
-import "strconv"
+import (
+	"strconv"
+
+	"github.com/google/uuid"
+)
 
 type CreateRestModel struct {
 	Name     string `json:"name"`
@@ -51,16 +55,16 @@ func (r *RestModel) SetID(idStr string) error {
 
 func Transform(m Model) (RestModel, error) {
 	rm := RestModel{
-		Id:             m.id,
-		Name:           m.name,
-		Password:       m.password,
-		Pin:            m.pin,
-		Pic:            m.pic,
-		LoggedIn:       byte(m.state),
+		Id:             m.Id(),
+		Name:           m.Name(),
+		Password:       m.Password(),
+		Pin:            m.Pin(),
+		Pic:            m.Pic(),
+		LoggedIn:       byte(m.State()),
 		LastLogin:      0,
-		Gender:         m.gender,
-		Banned:         false,
-		TOS:            m.tos,
+		Gender:         m.Gender(),
+		Banned:         m.Banned(),
+		TOS:            m.TOS(),
 		Language:       "en",
 		Country:        "us",
 		CharacterSlots: 4,
@@ -69,16 +73,14 @@ func Transform(m Model) (RestModel, error) {
 }
 
 func Extract(rm RestModel) (Model, error) {
-	m := Model{
-		id:       rm.Id,
-		name:     rm.Name,
-		password: rm.Password,
-		pin:      rm.Pin,
-		pic:      rm.Pic,
-		state:    State(rm.LoggedIn),
-		gender:   rm.Gender,
-		banned:   rm.Banned,
-		tos:      rm.TOS,
-	}
-	return m, nil
+	return NewBuilder(uuid.Nil, rm.Name).
+		SetId(rm.Id).
+		SetPassword(rm.Password).
+		SetPin(rm.Pin).
+		SetPic(rm.Pic).
+		SetState(State(rm.LoggedIn)).
+		SetGender(rm.Gender).
+		SetBanned(rm.Banned).
+		SetTOS(rm.TOS).
+		Build()
 }

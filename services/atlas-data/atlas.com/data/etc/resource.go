@@ -29,6 +29,7 @@ func handleGetEtcsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 			s := NewStorage(d.Logger(), db)
 			res, err := s.GetAll(d.Context())
 			if err != nil {
+				d.Logger().WithError(err).Errorf("Unable to retrieve etc items.")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}

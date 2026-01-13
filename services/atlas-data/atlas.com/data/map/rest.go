@@ -275,3 +275,74 @@ type BackgroundTypeRestModel struct {
 	LayerNumber    uint32 `json:"layerNumber"`
 	BackgroundType uint32 `json:"backgroundType"`
 }
+
+type DropPositionRestModel struct {
+	Id        uint32 `json:"-"`
+	InitialX  int16  `json:"initialX"`
+	InitialY  int16  `json:"initialY"`
+	FallbackX int16  `json:"fallbackX"`
+	FallbackY int16  `json:"fallbackY"`
+}
+
+func (r DropPositionRestModel) GetName() string {
+	return "positions"
+}
+
+func (r DropPositionRestModel) GetID() string {
+	return strconv.Itoa(int(r.Id))
+}
+
+func (r *DropPositionRestModel) SetID(strId string) error {
+	id, err := strconv.Atoi(strId)
+	if err != nil {
+		return err
+	}
+	r.Id = uint32(id)
+	return nil
+}
+
+type PositionRestModel struct {
+	Id uint32 `json:"-"`
+	X  int16  `json:"x"`
+	Y  int16  `json:"y"`
+}
+
+func (r PositionRestModel) GetName() string {
+	return "positions"
+}
+
+func (r PositionRestModel) GetID() string {
+	return strconv.Itoa(int(r.Id))
+}
+
+func (r *PositionRestModel) SetID(strId string) error {
+	id, err := strconv.Atoi(strId)
+	if err != nil {
+		return err
+	}
+	r.Id = uint32(id)
+	return nil
+}
+
+type FootholdRestModel struct {
+	Id     uint32           `json:"id"`
+	First  *point.RestModel `json:"first,omitempty"`
+	Second *point.RestModel `json:"second,omitempty"`
+}
+
+func (r FootholdRestModel) GetName() string {
+	return "footholds"
+}
+
+func (r FootholdRestModel) GetID() string {
+	return strconv.Itoa(int(r.Id))
+}
+
+func (r *FootholdRestModel) SetID(strId string) error {
+	id, err := strconv.Atoi(strId)
+	if err != nil {
+		return err
+	}
+	r.Id = uint32(id)
+	return nil
+}

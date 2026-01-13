@@ -33,11 +33,11 @@ func (r *RestModel) SetID(strId string) error {
 
 func Transform(m Model) (RestModel, error) {
 	return RestModel{
-		Id:           m.id,
-		Type:         m.inviteType,
-		ReferenceId:  m.referenceId,
-		OriginatorId: m.originatorId,
-		TargetId:     m.targetId,
-		Age:          m.age,
+		Id:           m.Id(),
+		Type:         m.Type(),
+		ReferenceId:  m.ReferenceId(),
+		OriginatorId: m.OriginatorId(),
+		TargetId:     m.TargetId(),
+		Age:          m.Age(),
 	}, nil
 }

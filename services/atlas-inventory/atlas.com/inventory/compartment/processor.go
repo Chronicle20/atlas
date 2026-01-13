@@ -25,6 +25,55 @@ import (
 	"gorm.io/gorm"
 )
 
+type Provider interface {
+	WithTransaction(db *gorm.DB) *Processor
+	WithAssetProcessor(ap *asset.Processor) *Processor
+	ByIdProvider(id uuid.UUID) model.Provider[Model]
+	GetById(id uuid.UUID) (Model, error)
+	ByCharacterIdProvider(characterId uint32) model.Provider[[]Model]
+	GetByCharacterId(characterId uint32) ([]Model, error)
+	ByCharacterAndTypeProvider(characterId uint32) func(inventoryType inventory.Type) model.Provider[Model]
+	GetByCharacterAndType(characterId uint32) func(inventoryType inventory.Type) (Model, error)
+	Create(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, capacity uint32) (Model, error)
+	DeleteByModel(mb *message.Buffer) func(transactionId uuid.UUID, c Model) error
+	EquipItemAndEmit(transactionId uuid.UUID, characterId uint32, source int16, destination int16) error
+	EquipItem(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, source int16, destination int16) error
+	RemoveEquipAndEmit(transactionId uuid.UUID, characterId uint32, source int16, destination int16) error
+	RemoveEquip(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, source int16, destination int16) error
+	MoveAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, source int16, destination int16) error
+	MoveAndLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, source int16, destination int16) error
+	Move(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, source int16, destination int16) error
+	IncreaseCapacityAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, amount uint32) error
+	IncreaseCapacity(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, amount uint32) error
+	DropAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, m _map.Model, x int16, y int16, source int16, quantity int16) error
+	Drop(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, m _map.Model, x int16, y int16, source int16, quantity int16) error
+	RequestReserveAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, reservationRequests []ReservationRequest) error
+	RequestReserve(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, reservationRequests []ReservationRequest) error
+	CancelReservationAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) error
+	CancelReservation(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) error
+	ConsumeAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) error
+	ConsumeAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) error
+	DestroyAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, quantity uint32) error
+	DestroyAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, quantity uint32) error
+	CreateAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64) error
+	CreateAssetAndLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64) error
+	CreateAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64) error
+	AttemptEquipmentPickUpAndEmit(transactionId uuid.UUID, m _map.Model, characterId uint32, dropId uint32, templateId uint32, referenceId uint32) error
+	AttemptEquipmentPickUp(mb *message.Buffer) func(transactionId uuid.UUID, m _map.Model, characterId uint32, dropId uint32, templateId uint32, referenceId uint32) error
+	AttemptItemPickUpAndEmit(transactionId uuid.UUID, m _map.Model, characterId uint32, dropId uint32, templateId uint32, quantity uint32) error
+	AttemptItemPickUp(mb *message.Buffer) func(transactionId uuid.UUID, m _map.Model, characterId uint32, dropId uint32, templateId uint32, quantity uint32) error
+	RechargeAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, quantity uint32) error
+	RechargeAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, quantity uint32) error
+	MergeAndCompactAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type) error
+	CompactAndSortAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type) error
+	MergeAndCompact(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type) error
+	AcceptAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) error
+	Accept(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) error
+	ReleaseAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, assetId uint32) error
+	Release(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, assetId uint32) error
+	CompactAndSort(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type) error
+}
+
 type Processor struct {
 	l                  logrus.FieldLogger
 	ctx                context.Context

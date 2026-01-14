@@ -46,22 +46,23 @@ func (r RestModel) GetName() string {
 
 // Transform converts a domain model to a REST model
 func Transform(s Saga) (RestModel, error) {
-	steps := make([]StepRestModel, len(s.Steps))
-	for i, step := range s.Steps {
+	domainSteps := s.Steps()
+	steps := make([]StepRestModel, len(domainSteps))
+	for i, step := range domainSteps {
 		steps[i] = StepRestModel{
-			StepID:    step.StepId,
-			Status:    step.Status,
-			Action:    step.Action,
-			Payload:   step.Payload,
-			CreatedAt: step.CreatedAt.Format(time.RFC3339),
-			UpdatedAt: step.UpdatedAt.Format(time.RFC3339),
+			StepID:    step.StepId(),
+			Status:    step.Status(),
+			Action:    step.Action(),
+			Payload:   step.Payload(),
+			CreatedAt: step.CreatedAt().Format(time.RFC3339),
+			UpdatedAt: step.UpdatedAt().Format(time.RFC3339),
 		}
 	}
 
 	return RestModel{
-		TransactionID: s.TransactionId,
-		SagaType:      s.SagaType,
-		InitiatedBy:   s.InitiatedBy,
+		TransactionID: s.TransactionId(),
+		SagaType:      s.SagaType(),
+		InitiatedBy:   s.InitiatedBy(),
 		Steps:         steps,
 	}, nil
 }
@@ -162,20 +163,13 @@ func Extract(r RestModel) (Saga, error) {
 			return Saga{}, err
 		}
 
-		steps[i] = Step[any]{
-			StepId:    step.StepID,
-			Status:    step.Status,
-			Action:    step.Action,
-			CreatedAt: createdAt,
-			UpdatedAt: updatedAt,
-			Payload:   payload,
-		}
+		steps[i] = NewStepWithTimestamps(step.StepID, step.Status, step.Action, payload, createdAt, updatedAt)
 	}
 
-	return Saga{
-		TransactionId: r.TransactionID,
-		SagaType:      r.SagaType,
-		InitiatedBy:   r.InitiatedBy,
-		Steps:         steps,
-	}, nil
+	return NewBuilder().
+		SetTransactionId(r.TransactionID).
+		SetSagaType(r.SagaType).
+		SetInitiatedBy(r.InitiatedBy).
+		SetSteps(steps).
+		Build()
 }

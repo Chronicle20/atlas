@@ -2,7 +2,6 @@ package saga
 
 import (
 	"github.com/google/uuid"
-	"time"
 )
 
 // Builder is a builder for constructing Saga models
@@ -18,6 +17,18 @@ func NewBuilder() *Builder {
 	return &Builder{
 		transactionId: uuid.New(),
 		steps:         make([]Step[any], 0),
+	}
+}
+
+// Clone creates a new Builder pre-populated with values from an existing Saga
+func Clone(s Saga) *Builder {
+	steps := make([]Step[any], len(s.steps))
+	copy(steps, s.steps)
+	return &Builder{
+		transactionId: s.transactionId,
+		sagaType:      s.sagaType,
+		initiatedBy:   s.initiatedBy,
+		steps:         steps,
 	}
 }
 
@@ -39,27 +50,33 @@ func (b *Builder) SetInitiatedBy(initiatedBy string) *Builder {
 	return b
 }
 
+// SetSteps replaces all steps in the saga
+func (b *Builder) SetSteps(steps []Step[any]) *Builder {
+	b.steps = make([]Step[any], len(steps))
+	copy(b.steps, steps)
+	return b
+}
+
 // AddStep adds a step to the saga
 func (b *Builder) AddStep(stepId string, status Status, action Action, payload any) *Builder {
-	now := time.Now()
-	step := Step[any]{
-		StepId:    stepId,
-		Status:    status,
-		Action:    action,
-		Payload:   payload,
-		CreatedAt: now,
-		UpdatedAt: now,
-	}
+	step := NewStep(stepId, status, action, payload)
 	b.steps = append(b.steps, step)
 	return b
 }
 
-// Build constructs and returns a new Saga instance
-func (b *Builder) Build() Saga {
-	return Saga{
-		TransactionId: b.transactionId,
-		SagaType:      b.sagaType,
-		InitiatedBy:   b.initiatedBy,
-		Steps:         b.steps,
+// Build constructs and returns a new Saga instance with validation
+func (b *Builder) Build() (Saga, error) {
+	if b.transactionId == uuid.Nil {
+		return Saga{}, ErrEmptyTransactionId
 	}
+	if b.sagaType == "" {
+		return Saga{}, ErrEmptySagaType
+	}
+
+	return Saga{
+		transactionId: b.transactionId,
+		sagaType:      b.sagaType,
+		initiatedBy:   b.initiatedBy,
+		steps:         b.steps,
+	}, nil
 }

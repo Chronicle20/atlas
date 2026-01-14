@@ -13,7 +13,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
@@ -203,16 +202,16 @@ func (p *ProcessorImpl) ByIdProvider(transactionId uuid.UUID) model.Provider[Sag
 // Put adds or updates a saga in the cache for the current tenant
 func (p *ProcessorImpl) Put(saga Saga) error {
 	p.l.WithFields(logrus.Fields{
-		"transaction_id": saga.TransactionId.String(),
-		"saga_type":      saga.SagaType,
+		"transaction_id": saga.TransactionId().String(),
+		"saga_type":      saga.SagaType(),
 		"tenant_id":      p.t.Id().String(),
 	}).Debug("Inserting saga into cache")
 
 	// Validate state consistency before inserting
 	if err := saga.ValidateStateConsistency(); err != nil {
 		p.l.WithFields(logrus.Fields{
-			"transaction_id": saga.TransactionId.String(),
-			"saga_type":      saga.SagaType,
+			"transaction_id": saga.TransactionId().String(),
+			"saga_type":      saga.SagaType(),
 			"tenant_id":      p.t.Id().String(),
 		}).WithError(err).Error("State consistency validation failed before inserting saga")
 		return err
@@ -221,12 +220,12 @@ func (p *ProcessorImpl) Put(saga Saga) error {
 	GetCache().Put(p.t.Id(), saga)
 
 	p.l.WithFields(logrus.Fields{
-		"transaction_id": saga.TransactionId.String(),
-		"saga_type":      saga.SagaType,
+		"transaction_id": saga.TransactionId().String(),
+		"saga_type":      saga.SagaType(),
 		"tenant_id":      p.t.Id().String(),
 	}).Debug("Saga inserted into cache")
 
-	return p.Step(saga.TransactionId)
+	return p.Step(saga.TransactionId())
 }
 
 // AtomicUpdateSaga performs an atomic update of saga state with consistency validation
@@ -261,10 +260,11 @@ func (p *ProcessorImpl) AtomicUpdateSaga(transactionId uuid.UUID, updateFunc fun
 
 // SafeSetStepStatus safely updates step status with validation and logging
 func (p *ProcessorImpl) SafeSetStepStatus(s *Saga, stepIndex int, status Status, operation string) error {
-	if err := s.SetStepStatus(stepIndex, status); err != nil {
+	updated, err := s.WithStepStatus(stepIndex, status)
+	if err != nil {
 		p.l.WithFields(logrus.Fields{
-			"transaction_id": s.TransactionId.String(),
-			"saga_type":      s.SagaType,
+			"transaction_id": s.TransactionId().String(),
+			"saga_type":      s.SagaType(),
 			"step_index":     stepIndex,
 			"status":         status,
 			"operation":      operation,
@@ -272,12 +272,13 @@ func (p *ProcessorImpl) SafeSetStepStatus(s *Saga, stepIndex int, status Status,
 		}).WithError(err).Error("Failed to set step status safely")
 		return err
 	}
+	*s = updated
 
 	// Validate state consistency after status change
 	if err := s.ValidateStateConsistency(); err != nil {
 		p.l.WithFields(logrus.Fields{
-			"transaction_id": s.TransactionId.String(),
-			"saga_type":      s.SagaType,
+			"transaction_id": s.TransactionId().String(),
+			"saga_type":      s.SagaType(),
 			"operation":      operation,
 			"tenant_id":      p.t.Id().String(),
 		}).WithError(err).Error("State consistency validation failed after safe status update")
@@ -332,10 +333,11 @@ func (p *ProcessorImpl) MarkFurthestCompletedStepFailed(transactionId uuid.UUID)
 	}
 
 	// Mark the step as failed with validation
-	if err := s.SetStepStatus(furthestCompletedIndex, Failed); err != nil {
+	s, err = s.WithStepStatus(furthestCompletedIndex, Failed)
+	if err != nil {
 		p.l.WithFields(logrus.Fields{
-			"transaction_id": s.TransactionId.String(),
-			"saga_type":      s.SagaType,
+			"transaction_id": s.TransactionId().String(),
+			"saga_type":      s.SagaType(),
 			"step_index":     furthestCompletedIndex,
 			"tenant_id":      p.t.Id().String(),
 		}).WithError(err).Error("Failed to set step status to failed")
@@ -345,8 +347,8 @@ func (p *ProcessorImpl) MarkFurthestCompletedStepFailed(transactionId uuid.UUID)
 	// Validate state consistency before updating cache
 	if err := s.ValidateStateConsistency(); err != nil {
 		p.l.WithFields(logrus.Fields{
-			"transaction_id": s.TransactionId.String(),
-			"saga_type":      s.SagaType,
+			"transaction_id": s.TransactionId().String(),
+			"saga_type":      s.SagaType(),
 			"tenant_id":      p.t.Id().String(),
 		}).WithError(err).Error("State consistency validation failed after marking step as failed")
 		return err
@@ -355,10 +357,11 @@ func (p *ProcessorImpl) MarkFurthestCompletedStepFailed(transactionId uuid.UUID)
 	// Update the saga in the cache
 	GetCache().Put(p.t.Id(), s)
 
+	step, _ := s.StepAt(furthestCompletedIndex)
 	p.l.WithFields(logrus.Fields{
-		"transaction_id": s.TransactionId.String(),
-		"saga_type":      s.SagaType,
-		"step_id":        s.Steps[furthestCompletedIndex].StepId,
+		"transaction_id": s.TransactionId().String(),
+		"saga_type":      s.SagaType(),
+		"step_id":        step.StepId(),
 		"tenant_id":      p.t.Id().String(),
 	}).Debug("Marked furthest completed step as failed.")
 
@@ -387,18 +390,19 @@ func (p *ProcessorImpl) MarkEarliestPendingStep(transactionId uuid.UUID, status 
 	// If no pending step was found, return an error
 	if earliestPendingIndex == -1 {
 		p.l.WithFields(logrus.Fields{
-			"transaction_id": s.TransactionId.String(),
-			"saga_type":      s.SagaType,
+			"transaction_id": s.TransactionId().String(),
+			"saga_type":      s.SagaType(),
 			"tenant_id":      p.t.Id().String(),
 		}).Debugf("No pending steps found to mark as [%s].", status)
 		return errors.New("no pending steps found")
 	}
 
 	// Mark the step with validation
-	if err := s.SetStepStatus(earliestPendingIndex, status); err != nil {
+	s, err = s.WithStepStatus(earliestPendingIndex, status)
+	if err != nil {
 		p.l.WithFields(logrus.Fields{
-			"transaction_id": s.TransactionId.String(),
-			"saga_type":      s.SagaType,
+			"transaction_id": s.TransactionId().String(),
+			"saga_type":      s.SagaType(),
 			"step_index":     earliestPendingIndex,
 			"status":         status,
 			"tenant_id":      p.t.Id().String(),
@@ -409,8 +413,8 @@ func (p *ProcessorImpl) MarkEarliestPendingStep(transactionId uuid.UUID, status 
 	// Validate state consistency before updating cache
 	if err := s.ValidateStateConsistency(); err != nil {
 		p.l.WithFields(logrus.Fields{
-			"transaction_id": s.TransactionId.String(),
-			"saga_type":      s.SagaType,
+			"transaction_id": s.TransactionId().String(),
+			"saga_type":      s.SagaType(),
 			"tenant_id":      p.t.Id().String(),
 		}).WithError(err).Error("State consistency validation failed after marking step")
 		return err
@@ -419,10 +423,11 @@ func (p *ProcessorImpl) MarkEarliestPendingStep(transactionId uuid.UUID, status 
 	// Update the saga in the cache
 	GetCache().Put(p.t.Id(), s)
 
+	step, _ := s.StepAt(earliestPendingIndex)
 	p.l.WithFields(logrus.Fields{
-		"transaction_id": s.TransactionId.String(),
-		"saga_type":      s.SagaType,
-		"step_id":        s.Steps[earliestPendingIndex].StepId,
+		"transaction_id": s.TransactionId().String(),
+		"saga_type":      s.SagaType(),
+		"step_id":        step.StepId(),
 		"tenant_id":      p.t.Id().String(),
 	}).Debugf("Marked earliest pending step as [%s].", status)
 
@@ -443,8 +448,8 @@ func (p *ProcessorImpl) AddStep(transactionId uuid.UUID, step Step[any]) error {
 	// Validate that the saga is in a valid state for adding steps
 	if s.Failing() {
 		p.l.WithFields(logrus.Fields{
-			"transaction_id": s.TransactionId.String(),
-			"saga_type":      s.SagaType,
+			"transaction_id": s.TransactionId().String(),
+			"saga_type":      s.SagaType(),
 			"tenant_id":      p.t.Id().String(),
 		}).Debug("Cannot add step to a failing saga.")
 		return errors.New("cannot add step to a failing saga")
@@ -454,46 +459,47 @@ func (p *ProcessorImpl) AddStep(transactionId uuid.UUID, step Step[any]) error {
 	currentStepIndex := s.FindEarliestPendingStepIndex()
 	if currentStepIndex == -1 {
 		p.l.WithFields(logrus.Fields{
-			"transaction_id": s.TransactionId.String(),
-			"saga_type":      s.SagaType,
+			"transaction_id": s.TransactionId().String(),
+			"saga_type":      s.SagaType(),
 			"tenant_id":      p.t.Id().String(),
 		}).Debug("No pending steps found to add step after.")
 		return errors.New("no pending steps found")
 	}
 
 	// Validate step ID uniqueness within the saga
-	for _, existingStep := range s.Steps {
-		if existingStep.StepId == step.StepId {
+	for _, existingStep := range s.Steps() {
+		if existingStep.StepId() == step.StepId() {
 			p.l.WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
-				"step_id":        step.StepId,
+				"transaction_id": s.TransactionId().String(),
+				"saga_type":      s.SagaType(),
+				"step_id":        step.StepId(),
 				"tenant_id":      p.t.Id().String(),
 			}).Debug("Step ID already exists in saga.")
-			return fmt.Errorf("step ID '%s' already exists in saga", step.StepId)
+			return fmt.Errorf("step ID '%s' already exists in saga", step.StepId())
 		}
 	}
 
 	// Insert the new step right after the current step to maintain proper ordering
 	insertIndex := currentStepIndex + 1
 
-	// Ensure the step has proper timestamps
-	if step.CreatedAt.IsZero() {
-		step.CreatedAt = time.Now()
+	// Use WithStepAfterIndex to add the step at the right position
+	s, err = s.WithStepAfterIndex(currentStepIndex, step)
+	if err != nil {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"saga_type":      s.SagaType(),
+			"step_id":        step.StepId(),
+			"tenant_id":      p.t.Id().String(),
+		}).WithError(err).Error("Failed to add step to saga")
+		return err
 	}
-	if step.UpdatedAt.IsZero() {
-		step.UpdatedAt = time.Now()
-	}
-
-	// Expand the slice and insert the new step
-	s.Steps = append(s.Steps[:insertIndex], append([]Step[any]{step}, s.Steps[insertIndex:]...)...)
 
 	// Validate comprehensive state consistency after insertion
 	if err := s.ValidateStateConsistency(); err != nil {
 		p.l.WithFields(logrus.Fields{
-			"transaction_id": s.TransactionId.String(),
-			"saga_type":      s.SagaType,
-			"step_id":        step.StepId,
+			"transaction_id": s.TransactionId().String(),
+			"saga_type":      s.SagaType(),
+			"step_id":        step.StepId(),
 			"tenant_id":      p.t.Id().String(),
 		}).WithError(err).Error("State consistency validation failed after step insertion")
 		return err
@@ -503,12 +509,12 @@ func (p *ProcessorImpl) AddStep(transactionId uuid.UUID, step Step[any]) error {
 	GetCache().Put(p.t.Id(), s)
 
 	p.l.WithFields(logrus.Fields{
-		"transaction_id":  s.TransactionId.String(),
-		"saga_type":       s.SagaType,
-		"step_id":         step.StepId,
-		"action":          step.Action,
+		"transaction_id":  s.TransactionId().String(),
+		"saga_type":       s.SagaType(),
+		"step_id":         step.StepId(),
+		"action":          step.Action(),
 		"insert_index":    insertIndex,
-		"total_steps":     len(s.Steps),
+		"total_steps":     s.StepCount(),
 		"completed_steps": s.GetCompletedStepCount(),
 		"pending_steps":   s.GetPendingStepCount(),
 		"tenant_id":       p.t.Id().String(),
@@ -531,38 +537,39 @@ func (p *ProcessorImpl) AddStepAfterCurrent(transactionId uuid.UUID, step Step[a
 	// Validate that the saga is in a valid state for adding steps
 	if s.Failing() {
 		p.l.WithFields(logrus.Fields{
-			"transaction_id": s.TransactionId.String(),
-			"saga_type":      s.SagaType,
+			"transaction_id": s.TransactionId().String(),
+			"saga_type":      s.SagaType(),
 			"tenant_id":      p.t.Id().String(),
 		}).Debug("Cannot prepend step to a failing saga.")
 		return errors.New("cannot prepend step to a failing saga")
 	}
 
 	// Validate step ID uniqueness within the saga
-	for _, existingStep := range s.Steps {
-		if existingStep.StepId == step.StepId {
+	for _, existingStep := range s.Steps() {
+		if existingStep.StepId() == step.StepId() {
 			p.l.WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
-				"step_id":        step.StepId,
+				"transaction_id": s.TransactionId().String(),
+				"saga_type":      s.SagaType(),
+				"step_id":        step.StepId(),
 				"tenant_id":      p.t.Id().String(),
 			}).Debug("Step ID already exists in saga.")
-			return fmt.Errorf("step ID '%s' already exists in saga", step.StepId)
+			return fmt.Errorf("step ID '%s' already exists in saga", step.StepId())
 		}
 	}
 
-	// Ensure the step has proper timestamps
-	if step.CreatedAt.IsZero() {
-		step.CreatedAt = time.Now()
-	}
-	if step.UpdatedAt.IsZero() {
-		step.UpdatedAt = time.Now()
-	}
-
-	// Prepend the new step to the beginning of the steps slice
-	for i, st := range s.Steps {
-		if st.Status == Pending {
-			s.Steps = append(s.Steps[:i+1], append([]Step[any]{step}, s.Steps[i+1:]...)...)
+	// Find the first pending step and add after it
+	for i, st := range s.Steps() {
+		if st.Status() == Pending {
+			s, err = s.WithStepAfterIndex(i, step)
+			if err != nil {
+				p.l.WithFields(logrus.Fields{
+					"transaction_id": s.TransactionId().String(),
+					"saga_type":      s.SagaType(),
+					"step_id":        step.StepId(),
+					"tenant_id":      p.t.Id().String(),
+				}).WithError(err).Error("Failed to add step after current")
+				return err
+			}
 			break
 		}
 	}
@@ -570,9 +577,9 @@ func (p *ProcessorImpl) AddStepAfterCurrent(transactionId uuid.UUID, step Step[a
 	// Validate comprehensive state consistency after insertion
 	if err := s.ValidateStateConsistency(); err != nil {
 		p.l.WithFields(logrus.Fields{
-			"transaction_id": s.TransactionId.String(),
-			"saga_type":      s.SagaType,
-			"step_id":        step.StepId,
+			"transaction_id": s.TransactionId().String(),
+			"saga_type":      s.SagaType(),
+			"step_id":        step.StepId(),
 			"tenant_id":      p.t.Id().String(),
 		}).WithError(err).Error("State consistency validation failed after step prepend")
 		return err
@@ -582,12 +589,12 @@ func (p *ProcessorImpl) AddStepAfterCurrent(transactionId uuid.UUID, step Step[a
 	GetCache().Put(p.t.Id(), s)
 
 	p.l.WithFields(logrus.Fields{
-		"transaction_id":  s.TransactionId.String(),
-		"saga_type":       s.SagaType,
-		"step_id":         step.StepId,
-		"action":          step.Action,
+		"transaction_id":  s.TransactionId().String(),
+		"saga_type":       s.SagaType(),
+		"step_id":         step.StepId(),
+		"action":          step.Action(),
 		"insert_index":    0,
-		"total_steps":     len(s.Steps),
+		"total_steps":     s.StepCount(),
 		"completed_steps": s.GetCompletedStepCount(),
 		"pending_steps":   s.GetPendingStepCount(),
 		"tenant_id":       p.t.Id().String(),
@@ -608,8 +615,8 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 
 	if s.Failing() {
 		p.l.WithFields(logrus.Fields{
-			"transaction_id": s.TransactionId.String(),
-			"saga_type":      s.SagaType,
+			"transaction_id": s.TransactionId().String(),
+			"saga_type":      s.SagaType(),
 			"tenant_id":      p.t.Id().String(),
 		}).Debug("Reverting saga step.")
 		return p.comp.CompensateFailedStep(s)
@@ -618,18 +625,18 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 	st, ok := s.GetCurrentStep()
 	if !ok {
 		p.l.WithFields(logrus.Fields{
-			"transaction_id": s.TransactionId.String(),
-			"saga_type":      s.SagaType,
+			"transaction_id": s.TransactionId().String(),
+			"saga_type":      s.SagaType(),
 			"tenant_id":      p.t.Id().String(),
 		}).Debug("No steps remaining to progress.")
-		GetCache().Remove(p.t.Id(), s.TransactionId)
+		GetCache().Remove(p.t.Id(), s.TransactionId())
 
 		// Emit saga completion event
-		err := producer.ProviderImpl(p.l)(p.ctx)(saga.EnvStatusEventTopic)(CompletedStatusEventProvider(s.TransactionId))
+		err := producer.ProviderImpl(p.l)(p.ctx)(saga.EnvStatusEventTopic)(CompletedStatusEventProvider(s.TransactionId()))
 		if err != nil {
 			p.l.WithError(err).WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
+				"transaction_id": s.TransactionId().String(),
+				"saga_type":      s.SagaType(),
 				"tenant_id":      p.t.Id().String(),
 			}).Error("Failed to emit saga completion event.")
 		}
@@ -638,41 +645,41 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 	}
 
 	p.l.WithFields(logrus.Fields{
-		"transaction_id": s.TransactionId.String(),
-		"saga_type":      s.SagaType,
+		"transaction_id": s.TransactionId().String(),
+		"saga_type":      s.SagaType(),
 		"tenant_id":      p.t.Id().String(),
-	}).Debugf("Progressing saga step [%s].", st.StepId)
+	}).Debugf("Progressing saga step [%s].", st.StepId())
 
 	// Check if this is a high-level action that needs expansion
-	if st.Action == TransferToStorage || st.Action == WithdrawFromStorage {
-		p.l.Debugf("Expanding high-level action [%s] into concrete steps", st.Action)
+	if st.Action() == TransferToStorage || st.Action() == WithdrawFromStorage {
+		p.l.Debugf("Expanding high-level action [%s] into concrete steps", st.Action())
 		err := p.expandAndProcessStep(s, st)
 		if err != nil {
 			p.l.WithError(err).WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
-				"step_id":        st.StepId,
-				"action":         st.Action,
+				"transaction_id": s.TransactionId().String(),
+				"saga_type":      s.SagaType(),
+				"step_id":        st.StepId(),
+				"action":         st.Action(),
 				"tenant_id":      p.t.Id().String(),
 			}).Error("Failed to expand saga step, marking as failed")
 
 			// Mark the step as failed and trigger compensation
-			markErr := p.MarkEarliestPendingStep(s.TransactionId, Failed)
+			markErr := p.MarkEarliestPendingStep(s.TransactionId(), Failed)
 			if markErr != nil {
 				p.l.WithError(markErr).Error("Failed to mark expansion error step as failed")
 				return markErr
 			}
 
 			// Trigger the next step (which will start compensation)
-			return p.Step(s.TransactionId)
+			return p.Step(s.TransactionId())
 		}
 		return nil
 	}
 
 	// Get the handler for this action type
-	handler, exists := p.handle.GetHandler(st.Action)
+	handler, exists := p.handle.GetHandler(st.Action())
 	if !exists {
-		return fmt.Errorf("unknown action type: %s", st.Action)
+		return fmt.Errorf("unknown action type: %s", st.Action())
 	}
 
 	// Execute the handler
@@ -683,26 +690,26 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 func (p *ProcessorImpl) expandAndProcessStep(s Saga, st Step[any]) error {
 	// Find the index of the current step
 	currentStepIndex := -1
-	for i, step := range s.Steps {
-		if step.StepId == st.StepId {
+	for i, step := range s.Steps() {
+		if step.StepId() == st.StepId() {
 			currentStepIndex = i
 			break
 		}
 	}
 
 	if currentStepIndex == -1 {
-		return fmt.Errorf("could not find current step [%s] in saga", st.StepId)
+		return fmt.Errorf("could not find current step [%s] in saga", st.StepId())
 	}
 
 	var newSteps []Step[any]
 	var err error
 
-	if st.Action == TransferToStorage {
+	if st.Action() == TransferToStorage {
 		newSteps, err = p.expandTransferToStorage(st)
-	} else if st.Action == WithdrawFromStorage {
+	} else if st.Action() == WithdrawFromStorage {
 		newSteps, err = p.expandWithdrawFromStorage(st)
 	} else {
-		return fmt.Errorf("unknown high-level action for expansion: %s", st.Action)
+		return fmt.Errorf("unknown high-level action for expansion: %s", st.Action())
 	}
 
 	if err != nil {
@@ -710,9 +717,32 @@ func (p *ProcessorImpl) expandAndProcessStep(s Saga, st Step[any]) error {
 	}
 
 	// Replace the high-level step with expanded concrete steps
-	err = p.AtomicUpdateSaga(s.TransactionId, func(saga *Saga) error {
+	err = p.AtomicUpdateSaga(s.TransactionId(), func(saga *Saga) error {
 		// Remove the high-level step and insert the expanded steps
-		saga.Steps = append(saga.Steps[:currentStepIndex], append(newSteps, saga.Steps[currentStepIndex+1:]...)...)
+		// Build a new steps slice: steps before current + new steps + steps after current
+		existingSteps := saga.Steps()
+		updatedSteps := make([]Step[any], 0, len(existingSteps)-1+len(newSteps))
+		updatedSteps = append(updatedSteps, existingSteps[:currentStepIndex]...)
+		updatedSteps = append(updatedSteps, newSteps...)
+		updatedSteps = append(updatedSteps, existingSteps[currentStepIndex+1:]...)
+
+		// Rebuild the saga with all the new steps
+		var updated Saga
+		var stepErr error
+		updated = *saga
+		// Clear steps and add each one
+		builder := NewBuilder().
+			SetTransactionId(saga.TransactionId()).
+			SetSagaType(saga.SagaType()).
+			SetInitiatedBy(saga.InitiatedBy())
+		for _, step := range updatedSteps {
+			builder = builder.AddStep(step.StepId(), step.Status(), step.Action(), step.Payload())
+		}
+		updated, stepErr = builder.Build()
+		if stepErr != nil {
+			return stepErr
+		}
+		*saga = updated
 		return nil
 	})
 
@@ -720,15 +750,15 @@ func (p *ProcessorImpl) expandAndProcessStep(s Saga, st Step[any]) error {
 		return err
 	}
 
-	p.l.Debugf("Expanded step [%s] into %d concrete steps", st.StepId, len(newSteps))
+	p.l.Debugf("Expanded step [%s] into %d concrete steps", st.StepId(), len(newSteps))
 
 	// Recursively process the first expanded step
-	return p.Step(s.TransactionId)
+	return p.Step(s.TransactionId())
 }
 
 // expandTransferToStorage expands TransferToStorage into AcceptToStorage + ReleaseFromCharacter
 func (p *ProcessorImpl) expandTransferToStorage(st Step[any]) ([]Step[any], error) {
-	payload, ok := st.Payload.(TransferToStoragePayload)
+	payload, ok := st.Payload().(TransferToStoragePayload)
 	if !ok {
 		return nil, fmt.Errorf("invalid payload type for TransferToStorage")
 	}
@@ -763,15 +793,13 @@ func (p *ProcessorImpl) expandTransferToStorage(st Step[any]) ([]Step[any], erro
 	var assetId uint32
 	fmt.Sscanf(foundAsset.Id, "%d", &assetId)
 
-	now := time.Now()
-
 	// Create expanded steps
 	steps := []Step[any]{
-		{
-			StepId:  "accept_to_storage",
-			Status:  Pending,
-			Action:  AcceptToStorage,
-			Payload: AcceptToStoragePayload{
+		NewStep[any](
+			"accept_to_storage",
+			Pending,
+			AcceptToStorage,
+			AcceptToStoragePayload{
 				TransactionId: payload.TransactionId,
 				WorldId:       payload.WorldId,
 				AccountId:     payload.AccountId,
@@ -781,22 +809,18 @@ func (p *ProcessorImpl) expandTransferToStorage(st Step[any]) ([]Step[any], erro
 				ReferenceType: foundAsset.ReferenceType,
 				ReferenceData: foundAsset.ReferenceData,
 			},
-			CreatedAt: now,
-			UpdatedAt: now,
-		},
-		{
-			StepId:  "release_from_character",
-			Status:  Pending,
-			Action:  ReleaseFromCharacter,
-			Payload: ReleaseFromCharacterPayload{
+		),
+		NewStep[any](
+			"release_from_character",
+			Pending,
+			ReleaseFromCharacter,
+			ReleaseFromCharacterPayload{
 				TransactionId: payload.TransactionId,
 				CharacterId:   payload.CharacterId,
 				InventoryType: payload.SourceInventoryType,
 				AssetId:       assetId,
 			},
-			CreatedAt: now,
-			UpdatedAt: now,
-		},
+		),
 	}
 
 	return steps, nil
@@ -804,7 +828,7 @@ func (p *ProcessorImpl) expandTransferToStorage(st Step[any]) ([]Step[any], erro
 
 // expandWithdrawFromStorage expands WithdrawFromStorage into AcceptToCharacter + ReleaseFromStorage
 func (p *ProcessorImpl) expandWithdrawFromStorage(st Step[any]) ([]Step[any], error) {
-	payload, ok := st.Payload.(WithdrawFromStoragePayload)
+	payload, ok := st.Payload().(WithdrawFromStoragePayload)
 	if !ok {
 		return nil, fmt.Errorf("invalid payload type for WithdrawFromStorage")
 	}
@@ -839,15 +863,13 @@ func (p *ProcessorImpl) expandWithdrawFromStorage(st Step[any]) ([]Step[any], er
 	var assetId uint32
 	fmt.Sscanf(foundAsset.Id, "%d", &assetId)
 
-	now := time.Now()
-
 	// Create expanded steps
 	steps := []Step[any]{
-		{
-			StepId:  "accept_to_character",
-			Status:  Pending,
-			Action:  AcceptToCharacter,
-			Payload: AcceptToCharacterPayload{
+		NewStep[any](
+			"accept_to_character",
+			Pending,
+			AcceptToCharacter,
+			AcceptToCharacterPayload{
 				TransactionId: payload.TransactionId,
 				CharacterId:   payload.CharacterId,
 				InventoryType: payload.InventoryType,
@@ -856,23 +878,19 @@ func (p *ProcessorImpl) expandWithdrawFromStorage(st Step[any]) ([]Step[any], er
 				ReferenceType: foundAsset.ReferenceType,
 				ReferenceData: foundAsset.ReferenceData,
 			},
-			CreatedAt: now,
-			UpdatedAt: now,
-		},
-		{
-			StepId:  "release_from_storage",
-			Status:  Pending,
-			Action:  ReleaseFromStorage,
-			Payload: ReleaseFromStoragePayload{
+		),
+		NewStep[any](
+			"release_from_storage",
+			Pending,
+			ReleaseFromStorage,
+			ReleaseFromStoragePayload{
 				TransactionId: payload.TransactionId,
 				WorldId:       payload.WorldId,
 				AccountId:     payload.AccountId,
 				CharacterId:   payload.CharacterId,
 				AssetId:       assetId,
 			},
-			CreatedAt: now,
-			UpdatedAt: now,
-		},
+		),
 	}
 
 	return steps, nil

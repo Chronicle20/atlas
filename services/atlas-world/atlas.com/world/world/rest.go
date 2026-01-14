@@ -112,7 +112,7 @@ func Extract(r RestModel) (Model, error) {
 		return Model{}, err
 	}
 
-	return NewBuilder().
+	return NewModelBuilder().
 		SetId(byte(id)).
 		SetName(r.Name).
 		SetState(State(r.State)).
@@ -121,5 +121,5 @@ func Extract(r RestModel) (Model, error) {
 		SetRecommendedMessage(r.RecommendedMessage).
 		SetCapacityStatus(Status(r.CapacityStatus)).
 		SetChannels(cms).
-		Build(), nil
+		Build()
 }

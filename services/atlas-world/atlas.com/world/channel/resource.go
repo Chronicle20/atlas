@@ -1,14 +1,10 @@
 package channel
 
 import (
-	channel2 "atlas-world/kafka/message/channel"
-	"atlas-world/kafka/producer"
-	channel3 "atlas-world/kafka/producer/channel"
 	"atlas-world/rest"
 	"errors"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -52,8 +48,12 @@ func handleGetChannelServers(d *rest.HandlerDependency, c *rest.HandlerContext) 
 func handleRegisterChannelServer(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
 	return rest.ParseWorldId(d.Logger(), func(worldId byte) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			t := tenant.MustFromContext(d.Context())
-			_ = producer.ProviderImpl(d.Logger())(d.Context())(channel2.EnvEventTopicStatus)(channel3.StartedEventProvider(t, worldId, input.ChannelId, input.IpAddress, input.Port, input.CurrentCapacity, input.MaxCapacity))
+			err := NewProcessor(d.Logger(), d.Context()).EmitStartedAndEmit(worldId, input.ChannelId, input.IpAddress, input.Port, input.CurrentCapacity, input.MaxCapacity)
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Unable to emit channel started event.")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
 			w.WriteHeader(http.StatusAccepted)
 		}
 	})

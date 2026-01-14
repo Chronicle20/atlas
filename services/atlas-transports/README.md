@@ -13,14 +13,15 @@ A Golang service to manage transportation routes within a MapleStory private ser
 - Precomputes and exposes a schedule per route that works irrespective of the day
 - Uses local server time for all scheduling logic
 - All routes share a default schedule alignment, starting at midnight (00:00)
+- Emits Kafka events for state transitions
 
 ## Environment
 
 - JAEGER_HOST - Jaeger [host]:[port]
 - LOG_LEVEL - Logging level - Panic / Fatal / Error / Warn / Info / Debug / Trace
 - REST_PORT - The port for the REST API server (default: 8080)
-- BOOTSTRAP_SERVERS - Comma-separated list of Kafka bootstrap servers (for future Kafka integration)
-- ROUTE_STATE_TOPIC - Kafka topic for route state transitions (default: "route.state.transitions")
+- BOOTSTRAP_SERVERS - Comma-separated list of Kafka bootstrap servers
+- ROUTE_STATE_TOPIC - Kafka topic for route state transitions
 
 ## API
 
@@ -39,7 +40,41 @@ MINOR_VERSION:1
 
 All endpoints follow [jsonapi.org](https://jsonapi.org) conventions, except error responses which use only HTTP status codes.
 
-#### `GET /routes/:id`
+#### `GET /transports/routes`
+
+Returns all routes for the tenant.
+
+**Query Parameters:**
+- `filter[startMapId]` (optional): Filter routes by starting map ID
+
+Example request:
+```
+GET /transports/routes
+GET /transports/routes?filter[startMapId]=101000300
+```
+
+Example response:
+```json
+{
+  "data": [
+    {
+      "type": "routes",
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "attributes": {
+        "name": "Ellinia Ferry",
+        "startMapId": 101000300,
+        "stagingMapId": 200090000,
+        "enRouteMapIds": [200090100],
+        "destinationMapId": 200000100,
+        "observationMapId": 200090010,
+        "state": "open_entry"
+      }
+    }
+  ]
+}
+```
+
+#### `GET /transports/routes/{routeId}`
 
 Returns metadata about a single route.
 
@@ -47,58 +82,18 @@ Example response:
 ```json
 {
   "data": {
-    "type": "route",
-    "id": "ellinia_to_orbis",
+    "type": "routes",
+    "id": "550e8400-e29b-41d4-a716-446655440000",
     "attributes": {
       "name": "Ellinia Ferry",
       "startMapId": 101000300,
       "stagingMapId": 200090000,
-      "enRouteMapId": 200090100,
+      "enRouteMapIds": [200090100],
       "destinationMapId": 200000100,
-      "cycleInterval": "10m"
+      "observationMapId": 200090010,
+      "state": "awaiting_return"
     }
   }
-}
-```
-
-#### `GET /routes/:id/state`
-
-Returns current state of a route.
-
-Example response:
-```json
-{
-  "data": {
-    "type": "route-state",
-    "id": "ellinia_to_orbis",
-    "attributes": {
-      "status": "locked_entry",
-      "nextDeparture": "2025-06-20T12:15:00Z",
-      "boardingEnds": "2025-06-20T12:14:00Z"
-    }
-  }
-}
-```
-
-#### `GET /routes/:id/schedule`
-
-Returns the full schedule of precomputed trips that works irrespective of the day.
-
-Example response:
-```json
-{
-  "data": [
-    {
-      "type": "trip-schedule",
-      "id": "ellinia_to_orbis_20250620T100000",
-      "attributes": {
-        "boardingOpen": "2025-06-20T10:00:00Z",
-        "boardingClosed": "2025-06-20T10:01:00Z",
-        "departure": "2025-06-20T10:01:10Z",
-        "arrival": "2025-06-20T10:02:40Z"
-      }
-    }
-  ]
 }
 ```
 
@@ -106,37 +101,35 @@ Example response:
 
 Each route transitions through the following states (from the perspective of the starting map):
 
-- `awaiting_return` – vessel is not yet available
-- `open_entry` – players can board
-- `locked_entry` – boarding closed, pre-departure phase
-- `in_transit` – characters are in the en-route map
+- `out_of_service` - no scheduled trips available
+- `awaiting_return` - vessel is not yet available
+- `open_entry` - players can board
+- `locked_entry` - boarding closed, pre-departure phase
+- `in_transit` - characters are in the en-route map
+
+## Kafka Events
+
+The service emits events on state transitions:
+
+- **Arrived Event**: Emitted when a route transitions to `open_entry` state
+- **Departed Event**: Emitted when a route transitions to `in_transit` state
 
 ## Sample Routes
 
-The service includes the following sample routes:
+The service supports routes such as:
 
 1. Ellinia to Orbis Ferry
 2. Orbis to Ellinia Ferry
 3. Ludibrium to Orbis Train
 4. Orbis to Ludibrium Train
 
-And the following shared vessels:
+And shared vessels:
 
 1. Ellinia-Orbis Ferry (shared vessel)
 2. Ludibrium-Orbis Train (shared vessel)
 
-## Future Integrations
-
-The following integrations are planned for future development:
-
-- Kafka integration for state transitions
-- Game server integration for warping characters and broadcasting messages
-
 ## TODOs
 
-- Implement Kafka integration for state transitions
-- Implement game server integration for warping characters
-- Implement game server integration for broadcasting messages
 - Add dynamic route reloading
 - Add activation windows
 - Add rate limiting and concurrency protection

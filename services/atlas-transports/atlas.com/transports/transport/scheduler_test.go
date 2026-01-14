@@ -7,6 +7,7 @@ import (
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func schedulesPerRoute(trips []TripScheduleModel) map[uuid.UUID][]TripScheduleModel {
@@ -27,7 +28,7 @@ func TestScheduler_ComputeSchedule_SharedVesselOverridesRouteSchedule(t *testing
 	timeNow = func() time.Time { return fixedTime }
 	defer func() { timeNow = originalTimeNow }()
 
-	routeA := NewBuilder("Route A").
+	routeA, err := NewBuilder("Route A").
 		SetStartMapId(100).
 		SetStagingMapId(101).
 		SetEnRouteMapIds([]_map.Id{102}).
@@ -39,8 +40,9 @@ func TestScheduler_ComputeSchedule_SharedVesselOverridesRouteSchedule(t *testing
 		SetTravelDuration(10 * time.Minute).
 		SetCycleInterval(30 * time.Minute).
 		Build()
+	require.NoError(t, err)
 
-	routeB := NewBuilder("Route B").
+	routeB, err := NewBuilder("Route B").
 		SetStartMapId(200).
 		SetStagingMapId(201).
 		SetEnRouteMapIds([]_map.Id{202}).
@@ -52,8 +54,9 @@ func TestScheduler_ComputeSchedule_SharedVesselOverridesRouteSchedule(t *testing
 		SetTravelDuration(15 * time.Minute).
 		SetCycleInterval(45 * time.Minute).
 		Build()
+	require.NoError(t, err)
 
-	independentRoute := NewBuilder("Independent Route").
+	independentRoute, err := NewBuilder("Independent Route").
 		SetStartMapId(300).
 		SetStagingMapId(301).
 		SetEnRouteMapIds([]_map.Id{302}).
@@ -65,16 +68,19 @@ func TestScheduler_ComputeSchedule_SharedVesselOverridesRouteSchedule(t *testing
 		SetTravelDuration(10 * time.Minute).
 		SetCycleInterval(20 * time.Minute).
 		Build()
+	require.NoError(t, err)
 
-	sharedVessel := NewSharedVesselBuilder().
+	sharedVessel, err := NewSharedVesselBuilder().
 		SetName("shared1").
 		SetRouteAID(routeA.Id()).
 		SetRouteBID(routeB.Id()).
 		SetTurnaroundDelay(5 * time.Minute).
 		Build()
+	require.NoError(t, err)
 
 	scheduler := NewScheduler([]Model{routeA, routeB, independentRoute}, []SharedVesselModel{sharedVessel})
-	schedules := scheduler.ComputeSchedule()
+	schedules, err := scheduler.ComputeSchedule()
+	require.NoError(t, err)
 
 	routeCounts := schedulesPerRoute(schedules)
 

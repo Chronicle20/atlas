@@ -3,6 +3,8 @@ package test
 import (
 	dataquest "atlas-quest/data/quest"
 	"atlas-quest/data/validation"
+	"atlas-quest/kafka/message/saga"
+	"atlas-quest/quest"
 	"errors"
 )
 
@@ -160,3 +162,67 @@ func CreateQuestWithItemRequirement(questId uint32, itemId uint32, count int32) 
 	}
 	return def
 }
+
+// MockEventEmitter implements quest.EventEmitter for testing (no-op implementation)
+type MockEventEmitter struct {
+	StartedEvents   []QuestEvent
+	CompletedEvents []QuestEvent
+	ForfeitedEvents []QuestEvent
+	ProgressEvents  []ProgressEvent
+	SagaEvents      []saga.Saga
+}
+
+// QuestEvent represents a quest event for testing
+type QuestEvent struct {
+	CharacterId uint32
+	WorldId     byte
+	QuestId     uint32
+}
+
+// ProgressEvent represents a progress update event for testing
+type ProgressEvent struct {
+	CharacterId uint32
+	WorldId     byte
+	QuestId     uint32
+	InfoNumber  uint32
+	Progress    string
+}
+
+// NewMockEventEmitter creates a new mock event emitter
+func NewMockEventEmitter() *MockEventEmitter {
+	return &MockEventEmitter{
+		StartedEvents:   make([]QuestEvent, 0),
+		CompletedEvents: make([]QuestEvent, 0),
+		ForfeitedEvents: make([]QuestEvent, 0),
+		ProgressEvents:  make([]ProgressEvent, 0),
+		SagaEvents:      make([]saga.Saga, 0),
+	}
+}
+
+func (m *MockEventEmitter) EmitQuestStarted(characterId uint32, worldId byte, questId uint32) error {
+	m.StartedEvents = append(m.StartedEvents, QuestEvent{CharacterId: characterId, WorldId: worldId, QuestId: questId})
+	return nil
+}
+
+func (m *MockEventEmitter) EmitQuestCompleted(characterId uint32, worldId byte, questId uint32) error {
+	m.CompletedEvents = append(m.CompletedEvents, QuestEvent{CharacterId: characterId, WorldId: worldId, QuestId: questId})
+	return nil
+}
+
+func (m *MockEventEmitter) EmitQuestForfeited(characterId uint32, worldId byte, questId uint32) error {
+	m.ForfeitedEvents = append(m.ForfeitedEvents, QuestEvent{CharacterId: characterId, WorldId: worldId, QuestId: questId})
+	return nil
+}
+
+func (m *MockEventEmitter) EmitProgressUpdated(characterId uint32, worldId byte, questId uint32, infoNumber uint32, progress string) error {
+	m.ProgressEvents = append(m.ProgressEvents, ProgressEvent{CharacterId: characterId, WorldId: worldId, QuestId: questId, InfoNumber: infoNumber, Progress: progress})
+	return nil
+}
+
+func (m *MockEventEmitter) EmitSaga(s saga.Saga) error {
+	m.SagaEvents = append(m.SagaEvents, s)
+	return nil
+}
+
+// Ensure MockEventEmitter implements quest.EventEmitter
+var _ quest.EventEmitter = (*MockEventEmitter)(nil)

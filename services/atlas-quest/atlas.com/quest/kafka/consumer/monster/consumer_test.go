@@ -90,7 +90,7 @@ func TestHandleMonsterKilledEvent_IncrementsMobProgress(t *testing.T) {
 	// Create quest with mob requirement
 	mockData.AddQuestDefinition(questId, test.CreateQuestWithMobRequirement(questId, mobId, 10))
 
-	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation)
+	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the quest
 	_, _, _ = processor.Start(characterId, questId, test.CreateTestField(), true)
@@ -164,7 +164,7 @@ func TestHandleMonsterKilledEvent_MultipleCharacters(t *testing.T) {
 
 	mockData.AddQuestDefinition(questId, test.CreateQuestWithMobRequirement(questId, mobId, 10))
 
-	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation)
+	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start quest for all characters
 	for _, charId := range characterIds {
@@ -231,7 +231,7 @@ func TestHandleMonsterKilledEvent_AutoComplete(t *testing.T) {
 	def.AutoComplete = true
 	mockData.AddQuestDefinition(questId, def)
 
-	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation)
+	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the quest
 	_, _, _ = processor.Start(characterId, questId, test.CreateTestField(), true)

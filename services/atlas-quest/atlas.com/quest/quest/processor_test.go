@@ -22,8 +22,9 @@ func setupProcessor(t *testing.T) (quest.Processor, *test.MockDataProcessor, *te
 
 	mockData := test.NewMockDataProcessor()
 	mockValidation := test.NewMockValidationProcessor()
+	mockEventEmitter := test.NewMockEventEmitter()
 
-	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation)
+	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, mockEventEmitter)
 
 	cleanup := func() {
 		test.CleanupTestDB(db)
@@ -534,6 +535,7 @@ func TestTenantIsolation(t *testing.T) {
 	logger, _ := logtest.NewNullLogger()
 	mockData := test.NewMockDataProcessor()
 	mockValidation := test.NewMockValidationProcessor()
+	mockEventEmitter := test.NewMockEventEmitter()
 
 	questId := uint32(7000)
 	characterId := uint32(12345)
@@ -542,13 +544,13 @@ func TestTenantIsolation(t *testing.T) {
 	// Create quest with tenant 1
 	tenant1Id := uuid.New()
 	ctx1 := test.CreateTestContextWithTenant(tenant1Id)
-	processor1 := quest.NewProcessorWithDependencies(logger, ctx1, db, mockData, mockValidation)
+	processor1 := quest.NewProcessorWithDependencies(logger, ctx1, db, mockData, mockValidation, mockEventEmitter)
 	_, _, _ = processor1.Start(characterId, questId, createTestField(), false)
 
 	// Try to access from tenant 2
 	tenant2Id := uuid.New()
 	ctx2 := test.CreateTestContextWithTenant(tenant2Id)
-	processor2 := quest.NewProcessorWithDependencies(logger, ctx2, db, mockData, mockValidation)
+	processor2 := quest.NewProcessorWithDependencies(logger, ctx2, db, mockData, mockValidation, mockEventEmitter)
 
 	// Tenant 2 should not see tenant 1's quest
 	_, err := processor2.GetByCharacterIdAndQuestId(characterId, questId)
@@ -734,8 +736,9 @@ func TestWithTransaction(t *testing.T) {
 	logger, _ := logtest.NewNullLogger()
 	mockData := test.NewMockDataProcessor()
 	mockValidation := test.NewMockValidationProcessor()
+	mockEventEmitter := test.NewMockEventEmitter()
 
-	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation)
+	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, mockEventEmitter)
 
 	questId := uint32(11000)
 	characterId := uint32(12345)
@@ -770,8 +773,9 @@ func BenchmarkStart(b *testing.B) {
 	logger.SetLevel(logrus.PanicLevel)
 	mockData := test.NewMockDataProcessor()
 	mockValidation := test.NewMockValidationProcessor()
+	mockEventEmitter := test.NewMockEventEmitter()
 
-	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation)
+	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, mockEventEmitter)
 
 	f := createTestField()
 

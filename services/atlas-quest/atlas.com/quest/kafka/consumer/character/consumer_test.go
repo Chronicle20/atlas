@@ -78,7 +78,7 @@ func TestHandleMapChangedEvent_UpdatesMapProgress(t *testing.T) {
 	// Create quest with map requirement
 	mockData.AddQuestDefinition(questId, test.CreateQuestWithMapRequirement(questId, []uint32{mapId}))
 
-	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation)
+	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the quest
 	_, _, _ = processor.Start(characterId, questId, test.CreateTestField(), true)
@@ -145,7 +145,7 @@ func TestHandleMapChangedEvent_MultipleMapRequirements(t *testing.T) {
 
 	mockData.AddQuestDefinition(questId, test.CreateQuestWithMapRequirement(questId, mapIds))
 
-	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation)
+	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the quest
 	_, _, _ = processor.Start(characterId, questId, test.CreateTestField(), true)
@@ -198,7 +198,7 @@ func TestHandleMapChangedEvent_AutoComplete(t *testing.T) {
 	def.AutoComplete = true
 	mockData.AddQuestDefinition(questId, def)
 
-	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation)
+	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the quest
 	_, _, _ = processor.Start(characterId, questId, test.CreateTestField(), true)
@@ -247,7 +247,7 @@ func TestHandleMapChangedEvent_ChainedQuest(t *testing.T) {
 	mockData.AddQuestDefinition(questId, def)
 	mockData.AddQuestDefinition(nextQuestId, test.CreateSimpleQuestDefinition(nextQuestId))
 
-	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation)
+	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the first quest
 	_, _, _ = processor.Start(characterId, questId, test.CreateTestField(), true)

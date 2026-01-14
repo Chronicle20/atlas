@@ -29,7 +29,7 @@ func DeleteCharacterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 			dob = r.ReadUint32()
 		}
 		characterId := r.ReadUint32()
-		l.Debugf("Handling delete character [%d] for account [%d]. verifyPic [%t] pic [%s]. verifyDob [%t] dob [%d]", characterId, s.AccountId(), verifyPic, pic, dob != 0, dob)
+		l.Debugf("Handling delete character [%d] for account [%d]. verifyPic [%t]. verifyDob [%t]", characterId, s.AccountId(), verifyPic, dob != 0)
 
 		if verifyPic {
 			a, err := account.NewProcessor(l, ctx).GetById(s.AccountId())

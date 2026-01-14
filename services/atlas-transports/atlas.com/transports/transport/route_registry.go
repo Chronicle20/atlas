@@ -88,3 +88,15 @@ func (r *RouteRegistry) UpdateRoute(t tenant.Model, route Model) error {
 	r.routeRegister[t.Id()][route.Id()] = route
 	return nil
 }
+
+// ClearTenant removes all routes for a tenant and returns the count of deleted routes
+func (r *RouteRegistry) ClearTenant(t tenant.Model) int {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+	count := 0
+	if tenantRoutes, ok := r.routeRegister[t.Id()]; ok {
+		count = len(tenantRoutes)
+		delete(r.routeRegister, t.Id())
+	}
+	return count
+}

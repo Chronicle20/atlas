@@ -1,0 +1,24 @@
+{
+  "npcId": 9110005,
+  "recharger": false,
+  "commodities": [
+    {
+      "templateId": 2022025,
+      "mesoPrice": 4200,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 2022024,
+      "mesoPrice": 2000,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    }
+  ]
+}

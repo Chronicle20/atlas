@@ -1,0 +1,285 @@
+{
+  "npcId": 1012004,
+  "recharger": false,
+  "commodities": [
+    {
+      "templateId": 4160019,
+      "mesoPrice": 1000,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 4160039,
+      "mesoPrice": 1000,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 4160037,
+      "mesoPrice": 1000,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 4031993,
+      "mesoPrice": 100000,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 4160036,
+      "mesoPrice": 1000,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 4160035,
+      "mesoPrice": 1000,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 4160034,
+      "mesoPrice": 1000,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 4160032,
+      "mesoPrice": 1000,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 4160024,
+      "mesoPrice": 1000,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 4160023,
+      "mesoPrice": 1000,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 4160022,
+      "mesoPrice": 1000,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 4160015,
+      "mesoPrice": 1000,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 4160012,
+      "mesoPrice": 1000,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 4160013,
+      "mesoPrice": 1000,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 4160017,
+      "mesoPrice": 1000,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 4160014,
+      "mesoPrice": 1000,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 4160020,
+      "mesoPrice": 1000,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 4160010,
+      "mesoPrice": 1000,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 4160009,
+      "mesoPrice": 1000,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 4160008,
+      "mesoPrice": 1000,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 4160007,
+      "mesoPrice": 1000,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 4160006,
+      "mesoPrice": 1000,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 4160005,
+      "mesoPrice": 1000,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 4160004,
+      "mesoPrice": 1000,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 4160003,
+      "mesoPrice": 1000,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 4160002,
+      "mesoPrice": 1000,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 4160001,
+      "mesoPrice": 1000,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 4160000,
+      "mesoPrice": 1000,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 4160026,
+      "mesoPrice": 1000,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 2260000,
+      "mesoPrice": 1000,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 2120000,
+      "mesoPrice": 30,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    }
+  ]
+}

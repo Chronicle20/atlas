@@ -1,0 +1,114 @@
+{
+  "npcId": 9120002,
+  "recharger": false,
+  "commodities": [
+    {
+      "templateId": 2061003,
+      "mesoPrice": 40,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 2060003,
+      "mesoPrice": 40,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 2070000,
+      "mesoPrice": 500,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 2020014,
+      "mesoPrice": 8100,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 2022002,
+      "mesoPrice": 1000,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 2001002,
+      "mesoPrice": 4000,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 2000006,
+      "mesoPrice": 620,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 2000003,
+      "mesoPrice": 200,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 2020012,
+      "mesoPrice": 4500,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 2001001,
+      "mesoPrice": 2300,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 2000002,
+      "mesoPrice": 320,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 2000001,
+      "mesoPrice": 160,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    }
+  ]
+}

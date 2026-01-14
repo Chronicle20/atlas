@@ -6,6 +6,7 @@ import (
 	character2 "atlas-npc/kafka/consumer/character"
 	shops2 "atlas-npc/kafka/consumer/shops"
 	"atlas-npc/logger"
+	"atlas-npc/seed"
 	"atlas-npc/service"
 	"atlas-npc/shops"
 	"atlas-npc/tracing"
@@ -62,6 +63,7 @@ func main() {
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(shops.InitResource(GetServer())(db)).
+		AddRouteInitializer(seed.InitResource(GetServer())(db)).
 		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

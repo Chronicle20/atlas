@@ -11,26 +11,27 @@ import {Account} from "@/types/models/account";
 import type {Tenant} from "@/types/models/tenant";
 import {toast} from "sonner";
 
-const onLogout = async (tenant: Tenant | null, id: string, name: string) => {
-    if (tenant === null) {
-        return
-    }
-
-    try {
-        await accountsService.terminateAccountSession(tenant, id);
-        toast.success("Successfully logged out " + name);
-    } catch (error) {
-        toast.error("Failed to logout " + name + ": " + (error instanceof Error ? error.message : 'Unknown error'));
-    }
-};
-
 interface ColumnProps {
     tenant: Tenant | null;
+    onRefresh?: () => void;
 }
 
 export const hiddenColumns = ["id", "attributes.gm"];
 
-export const getColumns = ({tenant}: ColumnProps): ColumnDef<Account>[] => {
+export const getColumns = ({tenant, onRefresh}: ColumnProps): ColumnDef<Account>[] => {
+    const handleLogout = async (id: string, name: string) => {
+        if (tenant === null) {
+            return
+        }
+
+        try {
+            await accountsService.terminateAccountSession(tenant, id);
+            toast.success("Successfully logged out " + name);
+            onRefresh?.();
+        } catch (error) {
+            toast.error("Failed to logout " + name + ": " + (error instanceof Error ? error.message : 'Unknown error'));
+        }
+    };
     return [ {
             accessorKey: "id",
             header: "Id",
@@ -118,7 +119,7 @@ export const getColumns = ({tenant}: ColumnProps): ColumnDef<Account>[] => {
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuItem disabled={row.original.attributes.loggedIn === 0} onClick={() => {onLogout(tenant, row.original.id, row.original.attributes.name)}}>
+                            <DropdownMenuItem disabled={row.original.attributes.loggedIn === 0} onClick={() => {handleLogout(row.original.id, row.original.attributes.name)}}>
                                 Logout
                             </DropdownMenuItem>
                         </DropdownMenuContent>

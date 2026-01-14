@@ -29,7 +29,7 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import {Button} from "@/components/ui/button";
-import {RefreshCw, ZoomIn, ZoomOut, Info, Edit, Trash, MessageSquare, Cog, Hammer, List, X, Hash, Palette} from "lucide-react";
+import {RefreshCw, ZoomIn, ZoomOut, Info, Edit, Trash, MessageSquare, Cog, Hammer, List, X, Hash, Palette, Variable, CheckCircle, Loader2} from "lucide-react";
 import {
   Card,
   CardContent,
@@ -48,11 +48,16 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { OperationsEditor, type Operation } from "@/components/operations-editor";
 import { ConditionsBuilder, type Outcome, type Condition } from "@/components/conditions-builder";
 import { ContextVariableManager } from "@/components/context-variable-manager";
 import { CraftActionEditor, type CraftActionData } from "@/components/craft-action-editor";
-import { ValidationFeedback } from "@/components/validation-feedback";
 
 // Node types and colors
 const NODE_TYPES = {
@@ -738,6 +743,8 @@ export default function ConversationPage() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [showLegend, setShowLegend] = useState(false);
+  const [isVariablesSheetOpen, setIsVariablesSheetOpen] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
 
   // Custom edge change handler to update conversation state when edges are removed
   const handleEdgesChange = useCallback((changes: EdgeChange[]) => {
@@ -1829,6 +1836,50 @@ export default function ConversationPage() {
     fetchConversationData();
   }, [fetchConversationData]);
 
+  const handleValidate = useCallback(async () => {
+    if (!conversation) {
+      toast.error('No conversation to validate');
+      return;
+    }
+
+    setIsValidating(true);
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ROOT_API_URL}/npcs/conversations/validate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/vnd.api+json',
+        },
+        body: JSON.stringify({
+          data: conversation
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Validation request failed: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+
+      if (result.valid) {
+        toast.success('Validation passed - the conversation has no errors');
+      } else {
+        const errorCount = result.errors?.length || 0;
+        const errorMessages = result.errors?.slice(0, 3).map((e: { message: string }) => e.message).join('\n') || 'Unknown errors';
+        toast.error(`Validation failed with ${errorCount} error${errorCount !== 1 ? 's' : ''}`, {
+          description: errorMessages + (errorCount > 3 ? `\n...and ${errorCount - 3} more` : ''),
+          duration: 10000,
+        });
+      }
+    } catch (err) {
+      toast.error('Validation error', {
+        description: err instanceof Error ? err.message : 'An error occurred during validation'
+      });
+    } finally {
+      setIsValidating(false);
+    }
+  }, [conversation]);
+
   const handleReorganize = useCallback(() => {
     if (!reactFlowInstance) return;
 
@@ -2477,9 +2528,21 @@ export default function ConversationPage() {
             <Info className="h-4 w-4 mr-2" />
             {showLegend ? 'Hide Legend' : 'Show Legend'}
           </Button>
+          <Button variant="outline" size="sm" onClick={() => setIsVariablesSheetOpen(true)} disabled={!conversation}>
+            <Variable className="h-4 w-4 mr-2" />
+            Variables
+          </Button>
           <Button variant="outline" size="sm" onClick={fetchConversationData}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleValidate} disabled={!conversation || isValidating}>
+            {isValidating ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <CheckCircle className="h-4 w-4 mr-2" />
+            )}
+            {isValidating ? 'Validating...' : 'Validate'}
           </Button>
           <Button variant="default" size="sm" onClick={() => setIsSaveDialogOpen(true)}>
             Save
@@ -2530,32 +2593,6 @@ export default function ConversationPage() {
         </Card>
       )}
 
-      {/* Context Variable Manager & Validation */}
-      {conversation && (
-        <div className="grid grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Context Variables</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ContextVariableManager conversation={conversation} />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Validation</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ValidationFeedback
-                conversation={conversation}
-                apiBaseUrl={process.env.NEXT_PUBLIC_ROOT_API_URL || ''}
-              />
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
       <div className="flex-1 border rounded-md bg-background">
         <ReactFlow
           nodes={nodes}
@@ -2592,6 +2629,18 @@ export default function ConversationPage() {
           </Panel>
         </ReactFlow>
       </div>
+
+      {/* Context Variables Sheet */}
+      <Sheet open={isVariablesSheetOpen} onOpenChange={setIsVariablesSheetOpen}>
+        <SheetContent side="right" className="w-[400px] sm:w-[540px] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Context Variables</SheetTitle>
+          </SheetHeader>
+          <div className="mt-6">
+            {conversation && <ContextVariableManager conversation={conversation} />}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

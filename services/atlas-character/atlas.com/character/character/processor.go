@@ -1363,11 +1363,8 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(transactionId uuid.UUID,
 				})
 			}
 
-			// MapId validation and update
+			// MapId update
 			if input.MapId != 0 && input.MapId != c.MapId() {
-				if !p.isValidMapIdForCharacter(input.MapId) {
-					return errors.New("invalid map ID or character cannot access this map")
-				}
 				changes = append(changes, fieldChange{
 					updateFunc:  SetMapId(input.MapId),
 					shouldApply: true,
@@ -1440,17 +1437,3 @@ func (p *ProcessorImpl) isValidGm(gm int) bool {
 	return gm >= 0
 }
 
-func (p *ProcessorImpl) isValidMapId(mapId _map.Id) bool {
-	// Basic map ID validation - typical range for map IDs
-	// Map IDs are typically 9 digits starting with 100000000
-	return mapId >= 100000000 && mapId <= 999999999
-}
-
-func (p *ProcessorImpl) isValidMapIdForCharacter(mapId _map.Id) bool {
-	// First check basic map ID validation
-	if !p.isValidMapId(mapId) {
-		return false
-	}
-
-	return true
-}

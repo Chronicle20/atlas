@@ -16,6 +16,7 @@ var _ transport.Processor = (*ProcessorMock)(nil)
 // ProcessorMock is a mock implementation of the transport.Processor interface
 type ProcessorMock struct {
 	AddTenantFunc                          func(routes []transport.Model, sharedVessels []transport.SharedVesselModel) error
+	ClearTenantFunc                        func() int
 	ByIdProviderFunc                       func(id uuid.UUID) model.Provider[transport.Model]
 	ByStartMapProviderFunc                 func(mapId map2.Id) model.Provider[transport.Model]
 	GetByStartMapFunc                      func(mapId map2.Id) (transport.Model, error)
@@ -32,6 +33,14 @@ func (m *ProcessorMock) AddTenant(routes []transport.Model, sharedVessels []tran
 		return m.AddTenantFunc(routes, sharedVessels)
 	}
 	return nil
+}
+
+// ClearTenant is a mock implementation
+func (m *ProcessorMock) ClearTenant() int {
+	if m.ClearTenantFunc != nil {
+		return m.ClearTenantFunc()
+	}
+	return 0
 }
 
 // ByIdProvider is a mock implementation

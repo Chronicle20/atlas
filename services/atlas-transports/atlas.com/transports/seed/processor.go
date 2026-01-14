@@ -55,7 +55,12 @@ func (p *ProcessorImpl) Seed() (SeedResult, error) {
 	// Convert JSON models to domain models
 	routes := make([]transport.Model, 0, len(jsonModels))
 	for _, jm := range jsonModels {
-		route := ConvertToModel(jm)
+		route, err := ConvertToModel(jm)
+		if err != nil {
+			result.Errors = append(result.Errors, err.Error())
+			result.FailedCount++
+			continue
+		}
 		routes = append(routes, route)
 	}
 
@@ -77,7 +82,7 @@ func (p *ProcessorImpl) Seed() (SeedResult, error) {
 }
 
 // ConvertToModel converts a JSONModel to a transport.Model
-func ConvertToModel(jm JSONModel) transport.Model {
+func ConvertToModel(jm JSONModel) (transport.Model, error) {
 	// Convert en-route map IDs
 	enRouteMapIds := make([]_map.Id, len(jm.EnRouteMapIds))
 	for i, id := range jm.EnRouteMapIds {

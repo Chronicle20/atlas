@@ -16,15 +16,15 @@ type Processor interface {
 	GetSkillsMap(characterId uint32) model.Provider[map[uint32]Model]
 }
 
-// processor implements the Processor interface
-type processor struct {
+// ProcessorImpl implements the Processor interface
+type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 }
 
 // NewProcessor creates a new skill processor
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
-	return &processor{
+	return &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 	}
@@ -32,7 +32,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 
 // GetSkillLevel returns the level of a skill for a character
 // Returns 0 if the skill is not found (character doesn't have the skill)
-func (p *processor) GetSkillLevel(characterId uint32, skillId uint32) model.Provider[byte] {
+func (p *ProcessorImpl) GetSkillLevel(characterId uint32, skillId uint32) model.Provider[byte] {
 	return func() (byte, error) {
 		skillProvider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(characterId, skillId), Extract)
 		skill, err := skillProvider()
@@ -46,7 +46,7 @@ func (p *processor) GetSkillLevel(characterId uint32, skillId uint32) model.Prov
 }
 
 // GetSkill returns the complete skill model for a character
-func (p *processor) GetSkill(characterId uint32, skillId uint32) model.Provider[Model] {
+func (p *ProcessorImpl) GetSkill(characterId uint32, skillId uint32) model.Provider[Model] {
 	return func() (Model, error) {
 		skillProvider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(characterId, skillId), Extract)
 		skill, err := skillProvider()
@@ -59,7 +59,7 @@ func (p *processor) GetSkill(characterId uint32, skillId uint32) model.Provider[
 }
 
 // GetSkillsByCharacter returns all skills for a character
-func (p *processor) GetSkillsByCharacter(characterId uint32) model.Provider[[]Model] {
+func (p *ProcessorImpl) GetSkillsByCharacter(characterId uint32) model.Provider[[]Model] {
 	return func() ([]Model, error) {
 		skillsProvider := requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByCharacter(characterId), Extract, model.Filters[Model]())
 		skills, err := skillsProvider()
@@ -72,7 +72,7 @@ func (p *processor) GetSkillsByCharacter(characterId uint32) model.Provider[[]Mo
 }
 
 // GetSkillsMap returns all skills for a character as a map keyed by skill ID
-func (p *processor) GetSkillsMap(characterId uint32) model.Provider[map[uint32]Model] {
+func (p *ProcessorImpl) GetSkillsMap(characterId uint32) model.Provider[map[uint32]Model] {
 	return func() (map[uint32]Model, error) {
 		skills, err := p.GetSkillsByCharacter(characterId)()
 		if err != nil {

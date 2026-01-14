@@ -64,12 +64,20 @@ func testDatabase(t *testing.T) *gorm.DB {
 	return db
 }
 
+func mustBuild(t *testing.T, b *pet.ModelBuilder) pet.Model {
+	m, err := b.Build()
+	if err != nil {
+		t.Fatalf("Failed to build pet model: %v", err)
+	}
+	return m
+}
+
 func TestProcessor_Create(t *testing.T) {
 	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t))
 
 	// test execution
 	mb := message.NewBuffer()
-	i := pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto", 1).Build()
+	i := mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto", 1))
 	o, err := p.Create(mb)(i)
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
@@ -113,7 +121,7 @@ func TestProcessor_Delete(t *testing.T) {
 	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t))
 
 	// test setup
-	i, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto", 1).Build())
+	i, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto", 1)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
@@ -196,15 +204,15 @@ func TestProcessor_DeleteOnRemove(t *testing.T) {
 func TestProcessor_DeleteForCharacter(t *testing.T) {
 	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t))
 	// test setup
-	_, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).Build())
+	_, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
-	_, err = p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000001, 5000017, "Mr. Roboto 2", 1).Build())
+	_, err = p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000001, 5000017, "Mr. Roboto 2", 1)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
-	_, err = p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000002, 5000017, "Mr. Roboto 3", 1).Build())
+	_, err = p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000002, 5000017, "Mr. Roboto 3", 1)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
@@ -231,15 +239,15 @@ func TestProcessor_GetById(t *testing.T) {
 	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t))
 
 	// test setup
-	_, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).Build())
+	_, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
-	i, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000001, 5000017, "Mr. Roboto 2", 1).Build())
+	i, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000001, 5000017, "Mr. Roboto 2", 1)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
-	_, err = p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000002, 5000017, "Mr. Roboto 3", 1).Build())
+	_, err = p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000002, 5000017, "Mr. Roboto 3", 1)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
@@ -261,15 +269,15 @@ func TestProcessor_GetByOwner(t *testing.T) {
 	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t))
 
 	// test setup
-	_, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).Build())
+	_, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
-	i, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000001, 5000017, "Mr. Roboto 2", 2).Build())
+	i, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000001, 5000017, "Mr. Roboto 2", 2)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
-	_, err = p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000002, 5000017, "Mr. Roboto 3", 3).Build())
+	_, err = p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000002, 5000017, "Mr. Roboto 3", 3)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
@@ -301,7 +309,7 @@ func TestProcessor_Move(t *testing.T) {
 	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t)).With(pet.WithPositionProcessor(pp))
 
 	// test setup
-	i, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).Build())
+	i, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
@@ -350,7 +358,7 @@ func TestProcessor_SpawnSingleLead(t *testing.T) {
 	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t)).With(pet.WithCharacterProcessor(cp), pet.WithPositionProcessor(pp))
 
 	// test setup
-	i, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetSlot(-1).Build())
+	i, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetSlot(-1)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
@@ -402,14 +410,14 @@ func TestProcessor_SpawnMigrateLead(t *testing.T) {
 	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t)).With(pet.WithCharacterProcessor(cp), pet.WithPositionProcessor(pp), pet.WithSkillProcessor(sp))
 
 	// test setup
-	p1, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetSlot(0).Build())
+	p1, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetSlot(0)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
 	if p1.Slot() != 0 {
 		t.Fatalf("Failed to spawn pet. Slot mismatch")
 	}
-	i, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000001, 5000017, "Mr. Roboto 2", 1).SetSlot(-1).Build())
+	i, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000001, 5000017, "Mr. Roboto 2", 1).SetSlot(-1)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
@@ -457,14 +465,14 @@ func TestProcessor_SpawnMissingMulti(t *testing.T) {
 	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t)).With(pet.WithCharacterProcessor(cp), pet.WithPositionProcessor(pp), pet.WithSkillProcessor(sp))
 
 	// test setup
-	p1, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetSlot(0).Build())
+	p1, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetSlot(0)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
 	if p1.Slot() != 0 {
 		t.Fatalf("Failed to spawn pet. Slot mismatch")
 	}
-	i, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000001, 5000017, "Mr. Roboto 2", 1).SetSlot(-1).Build())
+	i, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000001, 5000017, "Mr. Roboto 2", 1).SetSlot(-1)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
@@ -491,11 +499,11 @@ func TestProcessor_SpawnNonLead(t *testing.T) {
 	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t)).With(pet.WithCharacterProcessor(cp), pet.WithPositionProcessor(pp))
 
 	// test setup
-	_, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetSlot(0).Build())
+	_, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetSlot(0)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
-	i, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000001, 5000017, "Mr. Roboto 2", 1).SetSlot(-1).Build())
+	i, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000001, 5000017, "Mr. Roboto 2", 1).SetSlot(-1)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
@@ -528,7 +536,7 @@ func TestProcessor_DespawnSingleLead(t *testing.T) {
 	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t))
 
 	// test setup
-	i, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetSlot(0).Build())
+	i, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetSlot(0)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
@@ -561,11 +569,11 @@ func TestProcessor_DespawnMigrateLead(t *testing.T) {
 	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t))
 
 	// test setup
-	p1, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetSlot(0).Build())
+	p1, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetSlot(0)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
-	p2, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000001, 5000017, "Mr. Roboto 2", 1).SetSlot(1).Build())
+	p2, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000001, 5000017, "Mr. Roboto 2", 1).SetSlot(1)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
@@ -606,14 +614,14 @@ func TestProcessor_DespawnNonLead(t *testing.T) {
 	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t))
 
 	// test setup
-	p1, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetSlot(0).Build())
+	p1, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetSlot(0)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
 	if p1.Slot() != 0 {
 		t.Fatalf("Failed to spawn pet. Slot mismatch")
 	}
-	p2, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000001, 5000017, "Mr. Roboto 2", 1).SetSlot(1).Build())
+	p2, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000001, 5000017, "Mr. Roboto 2", 1).SetSlot(1)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
@@ -657,7 +665,7 @@ func TestProcessor_AttemptCommand(t *testing.T) {
 	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t)).With(pet.WithDataProcessor(dp))
 
 	// test setup
-	i, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, templateId, "Mr. Roboto 1", 1).SetSlot(0).Build())
+	i, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, templateId, "Mr. Roboto 1", 1).SetSlot(0)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
@@ -686,15 +694,15 @@ func TestProcessor_EvaluateHungerSpawned(t *testing.T) {
 	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t)).With(pet.WithDataProcessor(dp))
 
 	// test setup
-	p1, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetSlot(0).SetFullness(100).Build())
+	p1, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetSlot(0).SetFullness(100)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
-	p2, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000001, 5000017, "Mr. Roboto 2", 1).SetSlot(1).SetFullness(50).Build())
+	p2, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000001, 5000017, "Mr. Roboto 2", 1).SetSlot(1).SetFullness(50)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
-	p3, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000002, 5000017, "Mr. Roboto 3", 1).SetSlot(-1).SetFullness(32).Build())
+	p3, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000002, 5000017, "Mr. Roboto 3", 1).SetSlot(-1).SetFullness(32)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
@@ -748,15 +756,15 @@ func TestProcessor_EvaluateHungerSunny(t *testing.T) {
 	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t)).With(pet.WithDataProcessor(dp))
 
 	// test setup
-	p1, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetSlot(0).SetFullness(100).Build())
+	p1, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetSlot(0).SetFullness(100)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
-	p2, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000001, 5000017, "Mr. Roboto 2", 1).SetSlot(1).SetFullness(50).Build())
+	p2, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000001, 5000017, "Mr. Roboto 2", 1).SetSlot(1).SetFullness(50)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
-	p3, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000002, 5000017, "Mr. Roboto 3", 1).SetSlot(2).SetFullness(32).Build())
+	p3, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000002, 5000017, "Mr. Roboto 3", 1).SetSlot(2).SetFullness(32)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
@@ -810,15 +818,15 @@ func TestProcessor_EvaluateHungerDespawn(t *testing.T) {
 	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t)).With(pet.WithDataProcessor(dp))
 
 	// test setup
-	p1, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetSlot(0).SetFullness(100).Build())
+	p1, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetSlot(0).SetFullness(100)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
-	p2, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000001, 5000017, "Mr. Roboto 2", 1).SetSlot(1).SetFullness(50).Build())
+	p2, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000001, 5000017, "Mr. Roboto 2", 1).SetSlot(1).SetFullness(50)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
-	p3, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000002, 5000017, "Mr. Roboto 3", 1).SetSlot(2).SetFullness(7).Build())
+	p3, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000002, 5000017, "Mr. Roboto 3", 1).SetSlot(2).SetFullness(7)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
@@ -885,7 +893,7 @@ func TestProcessor_AwardClosenessNonLevel(t *testing.T) {
 	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t))
 
 	// test setup
-	p1, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetLevel(10).SetSlot(0).SetFullness(100).Build())
+	p1, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetLevel(10).SetSlot(0).SetFullness(100)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
@@ -918,7 +926,7 @@ func TestProcessor_AwardClosenessLevelSingle(t *testing.T) {
 	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t))
 
 	// test setup
-	p1, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetLevel(1).SetSlot(0).SetFullness(100).Build())
+	p1, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetLevel(1).SetSlot(0).SetFullness(100)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
@@ -954,7 +962,7 @@ func TestProcessor_AwardClosenessLevelMultiple(t *testing.T) {
 	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t))
 
 	// test setup
-	p1, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetLevel(1).SetSlot(0).SetFullness(100).Build())
+	p1, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetLevel(1).SetSlot(0).SetFullness(100)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
@@ -990,7 +998,7 @@ func TestProcessor_AwardClosenessCapacity(t *testing.T) {
 	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t))
 
 	// test setup
-	p1, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetLevel(30).SetCloseness(30000).SetSlot(0).SetFullness(100).Build())
+	p1, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetLevel(30).SetCloseness(30000).SetSlot(0).SetFullness(100)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
@@ -1026,7 +1034,7 @@ func TestProcessor_AwardFullness(t *testing.T) {
 	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t))
 
 	// test setup
-	p1, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetFullness(50).Build())
+	p1, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetFullness(50)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
@@ -1059,7 +1067,7 @@ func TestProcessor_AwardFullnessMax(t *testing.T) {
 	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t))
 
 	// test setup
-	p1, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetFullness(50).Build())
+	p1, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetFullness(50)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
@@ -1092,7 +1100,7 @@ func TestProcessor_AwardLevel(t *testing.T) {
 	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t))
 
 	// test setup
-	p1, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetLevel(1).Build())
+	p1, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetLevel(1)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
@@ -1125,7 +1133,7 @@ func TestProcessor_AwardLevelMax(t *testing.T) {
 	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t))
 
 	// test setup
-	p1, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetLevel(28).Build())
+	p1, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetLevel(28)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
@@ -1158,13 +1166,13 @@ func TestProcessor_SetExclude(t *testing.T) {
 	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t))
 
 	// test setup
-	p1, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).Build())
+	p1, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
 
 	mb := message.NewBuffer()
-	err = p.SetExclude(mb)(p1.Id())([]uint32{0, 2060000, 2061000})
+	err = p.SetExclude(mb)(p1.Id())([]uint32{2059000, 2060000, 2061000})
 	if err != nil {
 		t.Fatalf("Failed to set exclude: %v", err)
 	}

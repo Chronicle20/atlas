@@ -13,22 +13,22 @@ type Processor interface {
 	GetBuddyCapacity(characterId uint32) model.Provider[byte]
 }
 
-// processor implements the Processor interface
-type processor struct {
+// ProcessorImpl implements the Processor interface
+type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 }
 
 // NewProcessor creates a new buddy processor
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
-	return &processor{
+	return &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 	}
 }
 
 // GetBuddyList returns the buddy list data for a character
-func (p *processor) GetBuddyList(characterId uint32) model.Provider[Model] {
+func (p *ProcessorImpl) GetBuddyList(characterId uint32) model.Provider[Model] {
 	return func() (Model, error) {
 		buddyProvider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(characterId), Extract)
 		buddyList, err := buddyProvider()
@@ -41,7 +41,7 @@ func (p *processor) GetBuddyList(characterId uint32) model.Provider[Model] {
 }
 
 // GetBuddyCapacity returns the buddy list capacity for a character
-func (p *processor) GetBuddyCapacity(characterId uint32) model.Provider[byte] {
+func (p *ProcessorImpl) GetBuddyCapacity(characterId uint32) model.Provider[byte] {
 	return func() (byte, error) {
 		buddyProvider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(characterId), Extract)
 		buddyList, err := buddyProvider()

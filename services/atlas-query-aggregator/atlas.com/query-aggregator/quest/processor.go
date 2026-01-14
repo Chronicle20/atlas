@@ -18,22 +18,22 @@ type Processor interface {
 	GetCompletedQuestsByCharacter(characterId uint32) model.Provider[[]Model]
 }
 
-// processor implements the Processor interface
-type processor struct {
+// ProcessorImpl implements the Processor interface
+type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 }
 
 // NewProcessor creates a new quest processor
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
-	return &processor{
+	return &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 	}
 }
 
 // GetQuestState returns the state of a quest for a character
-func (p *processor) GetQuestState(characterId uint32, questId uint32) model.Provider[State] {
+func (p *ProcessorImpl) GetQuestState(characterId uint32, questId uint32) model.Provider[State] {
 	return func() (State, error) {
 		questProvider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(characterId, questId), Extract)
 		quest, err := questProvider()
@@ -46,7 +46,7 @@ func (p *processor) GetQuestState(characterId uint32, questId uint32) model.Prov
 }
 
 // GetQuestProgress returns the progress of a quest for a specific info number
-func (p *processor) GetQuestProgress(characterId uint32, questId uint32, infoNumber uint32) model.Provider[int] {
+func (p *ProcessorImpl) GetQuestProgress(characterId uint32, questId uint32, infoNumber uint32) model.Provider[int] {
 	return func() (int, error) {
 		questProvider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(characterId, questId), Extract)
 		quest, err := questProvider()
@@ -62,7 +62,7 @@ func (p *processor) GetQuestProgress(characterId uint32, questId uint32, infoNum
 }
 
 // GetQuest returns the complete quest model for a character
-func (p *processor) GetQuest(characterId uint32, questId uint32) model.Provider[Model] {
+func (p *ProcessorImpl) GetQuest(characterId uint32, questId uint32) model.Provider[Model] {
 	return func() (Model, error) {
 		questProvider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(characterId, questId), Extract)
 		quest, err := questProvider()
@@ -75,7 +75,7 @@ func (p *processor) GetQuest(characterId uint32, questId uint32) model.Provider[
 }
 
 // GetQuestsByCharacter returns all quests for a character
-func (p *processor) GetQuestsByCharacter(characterId uint32) model.Provider[[]Model] {
+func (p *ProcessorImpl) GetQuestsByCharacter(characterId uint32) model.Provider[[]Model] {
 	return func() ([]Model, error) {
 		questsProvider := requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByCharacter(characterId), Extract, model.Filters[Model]())
 		quests, err := questsProvider()
@@ -88,7 +88,7 @@ func (p *processor) GetQuestsByCharacter(characterId uint32) model.Provider[[]Mo
 }
 
 // GetStartedQuestsByCharacter returns all started quests for a character
-func (p *processor) GetStartedQuestsByCharacter(characterId uint32) model.Provider[[]Model] {
+func (p *ProcessorImpl) GetStartedQuestsByCharacter(characterId uint32) model.Provider[[]Model] {
 	return func() ([]Model, error) {
 		questsProvider := requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestStartedByCharacter(characterId), Extract, model.Filters[Model]())
 		quests, err := questsProvider()
@@ -101,7 +101,7 @@ func (p *processor) GetStartedQuestsByCharacter(characterId uint32) model.Provid
 }
 
 // GetCompletedQuestsByCharacter returns all completed quests for a character
-func (p *processor) GetCompletedQuestsByCharacter(characterId uint32) model.Provider[[]Model] {
+func (p *ProcessorImpl) GetCompletedQuestsByCharacter(characterId uint32) model.Provider[[]Model] {
 	return func() ([]Model, error) {
 		questsProvider := requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestCompletedByCharacter(characterId), Extract, model.Filters[Model]())
 		quests, err := questsProvider()

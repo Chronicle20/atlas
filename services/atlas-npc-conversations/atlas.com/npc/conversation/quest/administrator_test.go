@@ -2,34 +2,13 @@ package quest
 
 import (
 	"atlas-npc-conversations/conversation"
+	"atlas-npc-conversations/test"
 	"testing"
 
-	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
-
-func setupMockDB(t *testing.T) (*gorm.DB, sqlmock.Sqlmock, func()) {
-	mockDB, mock, err := sqlmock.New()
-	require.NoError(t, err)
-
-	gormDB, err := gorm.Open(postgres.New(postgres.Config{
-		Conn: mockDB,
-	}), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent),
-	})
-	require.NoError(t, err)
-
-	cleanup := func() {
-		mockDB.Close()
-	}
-
-	return gormDB, mock, cleanup
-}
 
 func createTestModel(t *testing.T, questId uint32) Model {
 	// Build choices for SendOk dialogue (requires exactly 2 choices)
@@ -76,14 +55,14 @@ func createTestModel(t *testing.T, questId uint32) Model {
 }
 
 func TestAdministratorFunctionCurrying(t *testing.T) {
-	gormDB, _, cleanup := setupMockDB(t)
-	defer cleanup()
+	db := test.SetupTestDB(t, MigrateTable)
+	defer test.CleanupTestDB(t, db)
 
 	tenantId := uuid.New()
 	id := uuid.New()
 
 	t.Run("createQuestConversation currying", func(t *testing.T) {
-		createFunc := createQuestConversation(gormDB)
+		createFunc := createQuestConversation(db)
 		assert.NotNil(t, createFunc)
 
 		createForTenant := createFunc(tenantId)
@@ -91,7 +70,7 @@ func TestAdministratorFunctionCurrying(t *testing.T) {
 	})
 
 	t.Run("updateQuestConversation currying", func(t *testing.T) {
-		updateFunc := updateQuestConversation(gormDB)
+		updateFunc := updateQuestConversation(db)
 		assert.NotNil(t, updateFunc)
 
 		updateForTenant := updateFunc(tenantId)
@@ -102,7 +81,7 @@ func TestAdministratorFunctionCurrying(t *testing.T) {
 	})
 
 	t.Run("deleteQuestConversation currying", func(t *testing.T) {
-		deleteFunc := deleteQuestConversation(gormDB)
+		deleteFunc := deleteQuestConversation(db)
 		assert.NotNil(t, deleteFunc)
 
 		deleteForTenant := deleteFunc(tenantId)
@@ -110,53 +89,64 @@ func TestAdministratorFunctionCurrying(t *testing.T) {
 	})
 
 	t.Run("deleteAllQuestConversations currying", func(t *testing.T) {
-		deleteAllFunc := deleteAllQuestConversations(gormDB)
+		deleteAllFunc := deleteAllQuestConversations(db)
 		assert.NotNil(t, deleteAllFunc)
 	})
 }
 
 func TestAdministratorFunctionSignatures(t *testing.T) {
-	gormDB, _, cleanup := setupMockDB(t)
-	defer cleanup()
+	db := test.SetupTestDB(t, MigrateTable)
+	defer test.CleanupTestDB(t, db)
 
 	tenantId := uuid.New()
-	id := uuid.New()
 	model := createTestModel(t, 1001)
 
 	t.Run("createQuestConversation returns correct types", func(t *testing.T) {
-		// Verify the function signature by checking we can call it
-		createFunc := createQuestConversation(gormDB)
+		createFunc := createQuestConversation(db)
 		createForTenant := createFunc(tenantId)
 
-		// The function should be callable with a Model
-		// We expect an error due to no mock expectations, but that's OK
-		_, err := createForTenant(model)
-		assert.Error(t, err) // Expected - no mock expectations set up
+		// The function should be callable with a Model and succeed with SQLite
+		createdModel, err := createForTenant(model)
+		assert.NoError(t, err)
+		assert.NotEqual(t, uuid.Nil, createdModel.Id())
+		assert.Equal(t, model.QuestId(), createdModel.QuestId())
 	})
 
 	t.Run("updateQuestConversation returns correct types", func(t *testing.T) {
-		updateFunc := updateQuestConversation(gormDB)
-		updateForTenant := updateFunc(tenantId)
-		updateForId := updateForTenant(id)
+		// First create a conversation to update
+		createFunc := createQuestConversation(db)
+		createdModel, err := createFunc(tenantId)(model)
+		require.NoError(t, err)
 
-		_, err := updateForId(model)
-		assert.Error(t, err) // Expected - no mock expectations set up
+		updateFunc := updateQuestConversation(db)
+		updateForTenant := updateFunc(tenantId)
+		updateForId := updateForTenant(createdModel.Id())
+
+		// Update with the same model data
+		updatedModel, err := updateForId(model)
+		assert.NoError(t, err)
+		assert.Equal(t, createdModel.Id(), updatedModel.Id())
 	})
 
 	t.Run("deleteQuestConversation returns correct types", func(t *testing.T) {
-		deleteFunc := deleteQuestConversation(gormDB)
+		// First create a conversation to delete
+		createFunc := createQuestConversation(db)
+		createdModel, err := createFunc(tenantId)(model)
+		require.NoError(t, err)
+
+		deleteFunc := deleteQuestConversation(db)
 		deleteForTenant := deleteFunc(tenantId)
 
-		err := deleteForTenant(id)
-		assert.Error(t, err) // Expected - no mock expectations set up
+		err = deleteForTenant(createdModel.Id())
+		assert.NoError(t, err)
 	})
 
 	t.Run("deleteAllQuestConversations returns correct types", func(t *testing.T) {
-		deleteAllFunc := deleteAllQuestConversations(gormDB)
+		deleteAllFunc := deleteAllQuestConversations(db)
 
 		count, err := deleteAllFunc(tenantId)
-		assert.Error(t, err) // Expected - no mock expectations set up
-		assert.Equal(t, int64(0), count)
+		assert.NoError(t, err)
+		assert.GreaterOrEqual(t, count, int64(0))
 	})
 }
 

@@ -61,7 +61,7 @@ func TestShopRestModel(t *testing.T) {
 
 	// Create commodity 1
 	commodityId1 := uuid.New()
-	commodity1 := (&commodities.ModelBuilder{}).
+	commodity1, err := commodities.NewBuilder().
 		SetId(commodityId1).
 		SetNpcId(npcId).
 		SetTemplateId(2000).
@@ -74,10 +74,13 @@ func TestShopRestModel(t *testing.T) {
 		SetUnitPrice(1.0).
 		SetSlotMax(100).
 		Build()
+	if err != nil {
+		t.Fatalf("Failed to build commodity1: %v", err)
+	}
 
 	// Create commodity 2
 	commodityId2 := uuid.New()
-	commodity2 := (&commodities.ModelBuilder{}).
+	commodity2, err := commodities.NewBuilder().
 		SetId(commodityId2).
 		SetNpcId(npcId).
 		SetTemplateId(2001).
@@ -90,12 +93,18 @@ func TestShopRestModel(t *testing.T) {
 		SetUnitPrice(1.0).
 		SetSlotMax(100).
 		Build()
+	if err != nil {
+		t.Fatalf("Failed to build commodity2: %v", err)
+	}
 
 	// Create shop model with recharger flag set to true
-	shopModel := shops.NewBuilder(npcId).
+	shopModel, err := shops.NewBuilder(npcId).
 		SetCommodities([]commodities.Model{commodity1, commodity2}).
 		SetRecharger(true).
 		Build()
+	if err != nil {
+		t.Fatalf("Failed to build shop model: %v", err)
+	}
 
 	// Transform the model to a RestModel
 	restModel, err := shops.Transform(shopModel)

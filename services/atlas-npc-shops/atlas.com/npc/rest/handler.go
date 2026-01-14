@@ -1,13 +1,25 @@
+// Package rest provides HTTP handler registration utilities for the NPC shops service.
+//
+// This service uses a DB-parameterized variant of RegisterHandler and RegisterInputHandler
+// because handlers require database access through processors. This pattern follows the
+// atlas-rest convention for services with database dependencies, using curried function
+// composition to inject the database connection.
+//
+// The handler registration wraps server.RetrieveSpan and server.ParseTenant from atlas-rest
+// to provide consistent tracing and multi-tenancy support.
+//
+// For services without database requirements, see atlas-parties/rest/handler.go as a reference
+// for the simpler variant without the db parameter.
 package rest
 
 import (
 	"context"
-	"github.com/google/uuid"
 	"io"
 	"net/http"
 	"strconv"
 
 	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"

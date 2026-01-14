@@ -16,6 +16,23 @@ A RESTful resource which provides skills services, including skill management, c
 - `DB_PORT` - Database port
 - `DB_NAME` - Database name
 
+## Kafka Topics
+
+### Consumed Topics
+
+| Environment Variable | Description |
+|---------------------|-------------|
+| `COMMAND_TOPIC_SKILL` | Skill create/update/cooldown commands |
+| `COMMAND_TOPIC_SKILL_MACRO` | Macro update commands |
+| `EVENT_TOPIC_CHARACTER_STATUS` | Character logout/delete events |
+
+### Produced Topics
+
+| Environment Variable | Description |
+|---------------------|-------------|
+| `EVENT_TOPIC_SKILL_STATUS` | Skill created/updated/cooldown events |
+| `STATUS_EVENT_TOPIC_SKILL_MACRO` | Macro updated events |
+
 ## API
 
 ### Header

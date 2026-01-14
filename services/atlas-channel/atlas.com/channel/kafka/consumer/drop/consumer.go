@@ -63,7 +63,7 @@ func handleStatusEventCreated(sc server.Model, wp writer.Producer) message.Handl
 			SetOwner(e.Body.OwnerId, e.Body.OwnerPartyId).
 			SetDropper(e.Body.DropperUniqueId, e.Body.DropperX, e.Body.DropperY).
 			SetPlayerDrop(e.Body.PlayerDrop).
-			Build()
+			MustBuild()
 
 		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Map(_map2.Id(e.MapId)), session.Announce(l)(ctx)(wp)(writer.DropSpawn)(writer.DropSpawnBody(l, tenant.MustFromContext(ctx))(d, writer.DropEnterTypeFresh, 0)))
 		if err != nil {

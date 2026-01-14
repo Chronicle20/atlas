@@ -128,9 +128,10 @@ func Extract(rm RestModel) (Model, error) {
 		commodityModels = append(commodityModels, cm)
 	}
 
-	return NewBuilder(rm.NpcId).
+	return NewModelBuilder().
+		SetNpcId(rm.NpcId).
 		SetCommodities(commodityModels).
-		Build(), nil
+		Build()
 }
 
 // CharacterListRestModel is a JSON API representation of characters in a shop

@@ -80,7 +80,7 @@ func (p *Processor) ForPet(m _map.Model, characterId uint32, petId uint32, movem
 		pe := pet.NewModelBuilder(petId, 0, 0, "").
 			SetOwnerID(characterId).
 			SetSlot(0).
-			Build()
+			MustBuild()
 
 		op := session.Announce(p.l)(p.ctx)(p.wp)(writer.PetMovement)(writer.PetMovementBody(p.l, p.t)(pe, movement))
 		err := _map2.NewProcessor(p.l, p.ctx).ForOtherSessionsInMap(m, characterId, op)

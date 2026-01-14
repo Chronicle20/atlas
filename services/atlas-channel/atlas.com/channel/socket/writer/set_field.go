@@ -470,7 +470,7 @@ func WriteAssetInfo(t tenant.Model) func(zeroPosition bool) func(w *response.Wri
 						SetSlot(a.Slot()).
 						SetExpiration(a.Expiration()).
 						SetReferenceData(ad).
-						Build()
+						MustBuild()
 					return WriteEquipableInfo(t)(zeroPosition)(w)(ea)
 				}
 				if ad, ok := a.ReferenceData().(asset.CashEquipableReferenceData); ok {
@@ -478,7 +478,7 @@ func WriteAssetInfo(t tenant.Model) func(zeroPosition bool) func(w *response.Wri
 						SetSlot(a.Slot()).
 						SetExpiration(a.Expiration()).
 						SetReferenceData(ad).
-						Build()
+						MustBuild()
 					return WriteCashEquipableInfo(t)(w, zeroPosition)(ea)
 				}
 				if ad, ok := a.ReferenceData().(asset.ConsumableReferenceData); ok {
@@ -486,7 +486,7 @@ func WriteAssetInfo(t tenant.Model) func(zeroPosition bool) func(w *response.Wri
 						SetSlot(a.Slot()).
 						SetExpiration(a.Expiration()).
 						SetReferenceData(ad).
-						Build()
+						MustBuild()
 					if !zeroPosition {
 						w.WriteInt8(int8(ea.Slot()))
 					}
@@ -507,7 +507,7 @@ func WriteAssetInfo(t tenant.Model) func(zeroPosition bool) func(w *response.Wri
 						SetSlot(a.Slot()).
 						SetExpiration(a.Expiration()).
 						SetReferenceData(ad).
-						Build()
+						MustBuild()
 					if !zeroPosition {
 						w.WriteInt8(int8(ea.Slot()))
 					}
@@ -525,7 +525,7 @@ func WriteAssetInfo(t tenant.Model) func(zeroPosition bool) func(w *response.Wri
 						SetSlot(a.Slot()).
 						SetExpiration(a.Expiration()).
 						SetReferenceData(ad).
-						Build()
+						MustBuild()
 					if !zeroPosition {
 						w.WriteInt8(int8(ea.Slot()))
 					}
@@ -543,7 +543,7 @@ func WriteAssetInfo(t tenant.Model) func(zeroPosition bool) func(w *response.Wri
 						SetSlot(a.Slot()).
 						SetExpiration(a.Expiration()).
 						SetReferenceData(ad).
-						Build()
+						MustBuild()
 					return WriteCashItemInfo(zeroPosition)(w)(ea)
 				}
 				if ad, ok := a.ReferenceData().(asset.PetReferenceData); ok {
@@ -551,7 +551,7 @@ func WriteAssetInfo(t tenant.Model) func(zeroPosition bool) func(w *response.Wri
 						SetSlot(a.Slot()).
 						SetExpiration(a.Expiration()).
 						SetReferenceData(ad).
-						Build()
+						MustBuild()
 					return WritePetCashItemInfo(zeroPosition)(w)(ea)
 				}
 				return errors.New("unknown item type")

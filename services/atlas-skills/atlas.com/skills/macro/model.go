@@ -34,14 +34,3 @@ func (m Model) SkillId2() skill.Id {
 func (m Model) SkillId3() skill.Id {
 	return m.skillId3
 }
-
-func NewModel(id uint32, name string, shout bool, skillId1 skill.Id, skillId2 skill.Id, skillId3 skill.Id) Model {
-	return Model{
-		id:       id,
-		name:     name,
-		shout:    shout,
-		skillId1: skillId1,
-		skillId2: skillId2,
-		skillId3: skillId3,
-	}
-}

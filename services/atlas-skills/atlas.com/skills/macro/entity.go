@@ -26,12 +26,12 @@ func (e Entity) TableName() string {
 }
 
 func Make(e Entity) (Model, error) {
-	return Model{
-		id:       e.Id,
-		name:     e.Name,
-		shout:    e.Shout,
-		skillId1: skill.Id(e.SkillId1),
-		skillId2: skill.Id(e.SkillId2),
-		skillId3: skill.Id(e.SkillId3),
-	}, nil
+	return NewModelBuilder().
+		SetId(e.Id).
+		SetName(e.Name).
+		SetShout(e.Shout).
+		SetSkillId1(skill.Id(e.SkillId1)).
+		SetSkillId2(skill.Id(e.SkillId2)).
+		SetSkillId3(skill.Id(e.SkillId3)).
+		Build()
 }

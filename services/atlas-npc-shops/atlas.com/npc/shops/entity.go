@@ -22,7 +22,7 @@ func (e *Entity) TableName() string {
 func Make(entity Entity) (Model, error) {
 	return NewBuilder(entity.NpcId).
 		SetRecharger(entity.Recharger).
-		Build(), nil
+		Build()
 }
 
 func Migration(db *gorm.DB) error {

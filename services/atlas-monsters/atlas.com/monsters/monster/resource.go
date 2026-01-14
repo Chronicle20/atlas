@@ -24,7 +24,8 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 func handleGetMonsterById(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseMonsterId(d.Logger(), func(monsterId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			m, err := GetById(d.Context())(monsterId)
+			p := NewProcessor(d.Logger(), d.Context())
+			m, err := p.GetById(monsterId)
 			if err != nil {
 				w.WriteHeader(http.StatusNotFound)
 				return

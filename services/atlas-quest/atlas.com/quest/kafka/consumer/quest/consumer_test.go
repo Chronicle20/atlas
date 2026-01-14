@@ -23,7 +23,7 @@ func TestHandleStartQuestCommand_IgnoresWrongType(t *testing.T) {
 	mockValidation := test.NewMockValidationProcessor()
 	mockData.AddQuestDefinition(1000, test.CreateSimpleQuestDefinition(1000))
 
-	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation)
+	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Create a command with COMPLETE type instead of START
 	cmd := questmsg.Command[questmsg.StartCommandBody]{
@@ -64,7 +64,7 @@ func TestHandleStartQuestCommand_StartsQuest(t *testing.T) {
 	characterId := uint32(12345)
 	mockData.AddQuestDefinition(questId, test.CreateSimpleQuestDefinition(questId))
 
-	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation)
+	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Simulate what the handler does - call processor.Start
 	cmd := questmsg.Command[questmsg.StartCommandBody]{
@@ -110,7 +110,7 @@ func TestHandleCompleteQuestCommand_CompletesQuest(t *testing.T) {
 	characterId := uint32(12345)
 	mockData.AddQuestDefinition(questId, test.CreateSimpleQuestDefinition(questId))
 
-	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation)
+	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// First start the quest
 	_, _, _ = processor.Start(characterId, questId, test.CreateTestField(), true)
@@ -159,7 +159,7 @@ func TestHandleCompleteQuestCommand_StartsChainedQuest(t *testing.T) {
 	mockData.AddQuestDefinition(questId, test.CreateQuestWithChain(questId, nextQuestId))
 	mockData.AddQuestDefinition(nextQuestId, test.CreateSimpleQuestDefinition(nextQuestId))
 
-	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation)
+	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the first quest
 	_, _, _ = processor.Start(characterId, questId, test.CreateTestField(), true)
@@ -207,7 +207,7 @@ func TestHandleForfeitQuestCommand_ForfeitsQuest(t *testing.T) {
 	characterId := uint32(12345)
 	mockData.AddQuestDefinition(questId, test.CreateSimpleQuestDefinition(questId))
 
-	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation)
+	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// First start the quest
 	_, _, _ = processor.Start(characterId, questId, test.CreateTestField(), true)
@@ -254,7 +254,7 @@ func TestHandleUpdateProgressCommand_UpdatesProgress(t *testing.T) {
 
 	mockData.AddQuestDefinition(questId, test.CreateQuestWithMobRequirement(questId, mobId, 10))
 
-	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation)
+	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the quest
 	_, _, _ = processor.Start(characterId, questId, test.CreateTestField(), true)

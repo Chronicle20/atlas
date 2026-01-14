@@ -81,7 +81,7 @@ func TestHandleAssetCreatedEvent_IncrementsItemProgress(t *testing.T) {
 	// Create quest with item requirement
 	mockData.AddQuestDefinition(questId, test.CreateQuestWithItemRequirement(questId, itemId, 10))
 
-	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation)
+	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the quest
 	_, _, _ = processor.Start(characterId, questId, test.CreateTestField(), true)
@@ -156,7 +156,7 @@ func TestHandleAssetCreatedEvent_QuantityGreaterThanOne(t *testing.T) {
 
 	mockData.AddQuestDefinition(questId, test.CreateQuestWithItemRequirement(questId, itemId, 10))
 
-	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation)
+	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the quest
 	_, _, _ = processor.Start(characterId, questId, test.CreateTestField(), true)
@@ -217,7 +217,7 @@ func TestHandleAssetCreatedEvent_ZeroQuantityDefaultsToOne(t *testing.T) {
 
 	mockData.AddQuestDefinition(questId, test.CreateQuestWithItemRequirement(questId, itemId, 10))
 
-	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation)
+	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the quest
 	_, _, _ = processor.Start(characterId, questId, test.CreateTestField(), true)
@@ -279,7 +279,7 @@ func TestHandleAssetCreatedEvent_NoMatchingProgressEntry(t *testing.T) {
 
 	mockData.AddQuestDefinition(questId, test.CreateQuestWithItemRequirement(questId, trackedItemId, 10))
 
-	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation)
+	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the quest
 	_, _, _ = processor.Start(characterId, questId, test.CreateTestField(), true)
@@ -349,7 +349,7 @@ func TestHandleAssetCreatedEvent_AutoComplete(t *testing.T) {
 	def.AutoComplete = true
 	mockData.AddQuestDefinition(questId, def)
 
-	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation)
+	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the quest
 	_, _, _ = processor.Start(characterId, questId, test.CreateTestField(), true)
@@ -414,7 +414,7 @@ func TestHandleAssetCreatedEvent_MultipleQuestsTrackingSameItem(t *testing.T) {
 	mockData.AddQuestDefinition(questId1, test.CreateQuestWithItemRequirement(questId1, itemId, 10))
 	mockData.AddQuestDefinition(questId2, test.CreateQuestWithItemRequirement(questId2, itemId, 5))
 
-	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation)
+	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start both quests
 	_, _, _ = processor.Start(characterId, questId1, test.CreateTestField(), true)

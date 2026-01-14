@@ -14,22 +14,22 @@ type Processor interface {
 	GetUnclaimedGiftCount(characterId uint32) model.Provider[int]
 }
 
-// processor implements the Processor interface
-type processor struct {
+// ProcessorImpl implements the Processor interface
+type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 }
 
 // NewProcessor creates a new marriage processor
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
-	return &processor{
+	return &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 	}
 }
 
 // GetMarriageGifts returns the marriage gift data for a character
-func (p *processor) GetMarriageGifts(characterId uint32) model.Provider[Model] {
+func (p *ProcessorImpl) GetMarriageGifts(characterId uint32) model.Provider[Model] {
 	return func() (Model, error) {
 		marriageProvider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(characterId), Extract)
 		marriage, err := marriageProvider()
@@ -42,7 +42,7 @@ func (p *processor) GetMarriageGifts(characterId uint32) model.Provider[Model] {
 }
 
 // HasUnclaimedGifts returns whether the character has unclaimed marriage gifts
-func (p *processor) HasUnclaimedGifts(characterId uint32) model.Provider[bool] {
+func (p *ProcessorImpl) HasUnclaimedGifts(characterId uint32) model.Provider[bool] {
 	return func() (bool, error) {
 		marriageProvider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(characterId), Extract)
 		marriage, err := marriageProvider()
@@ -55,7 +55,7 @@ func (p *processor) HasUnclaimedGifts(characterId uint32) model.Provider[bool] {
 }
 
 // GetUnclaimedGiftCount returns the number of unclaimed gifts for a character
-func (p *processor) GetUnclaimedGiftCount(characterId uint32) model.Provider[int] {
+func (p *ProcessorImpl) GetUnclaimedGiftCount(characterId uint32) model.Provider[int] {
 	return func() (int, error) {
 		marriageProvider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(characterId), Extract)
 		marriage, err := marriageProvider()

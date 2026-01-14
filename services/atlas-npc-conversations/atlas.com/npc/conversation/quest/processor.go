@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
@@ -65,99 +64,52 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 
 // ByIdProvider returns a provider for retrieving a quest conversation by ID
 func (p *ProcessorImpl) ByIdProvider(id uuid.UUID) model.Provider[Model] {
-	return model.Map[Entity, Model](Make)(GetByIdProvider(p.t.Id())(id)(p.db))
+	return model.Map[Entity, Model](Make)(getByIdProvider(p.t.Id())(id)(p.db))
 }
 
 // ByQuestIdProvider returns a provider for retrieving a quest conversation by quest ID
 func (p *ProcessorImpl) ByQuestIdProvider(questId uint32) model.Provider[Model] {
-	return model.Map[Entity, Model](Make)(GetByQuestIdProvider(p.t.Id())(questId)(p.db))
+	return model.Map[Entity, Model](Make)(getByQuestIdProvider(p.t.Id())(questId)(p.db))
 }
 
 // AllProvider returns a provider for retrieving all quest conversations
 func (p *ProcessorImpl) AllProvider() model.Provider[[]Model] {
-	return model.SliceMap[Entity, Model](Make)(GetAllProvider(p.t.Id())(p.db))(model.ParallelMap())
+	return model.SliceMap[Entity, Model](Make)(getAllProvider(p.t.Id())(p.db))(model.ParallelMap())
 }
 
 // Create creates a new quest conversation
 func (p *ProcessorImpl) Create(m Model) (Model, error) {
 	p.l.Debugf("Creating quest conversation for quest [%d]", m.QuestId())
 
-	// Convert model to entity
-	entity, err := ToEntity(m, p.t.Id())
+	result, err := createQuestConversation(p.db)(p.t.Id())(m)
 	if err != nil {
-		p.l.WithError(err).Errorf("Failed to convert model to entity")
+		p.l.WithError(err).Errorf("Failed to create quest conversation for quest [%d]", m.QuestId())
 		return Model{}, err
 	}
-
-	entity.ID = uuid.New()
-
-	// Save to database
-	result := p.db.Create(&entity)
-	if result.Error != nil {
-		p.l.WithError(result.Error).Errorf("Failed to create quest conversation")
-		return Model{}, result.Error
-	}
-
-	// Convert back to model
-	return Make(entity)
+	return result, nil
 }
 
 // Update updates an existing quest conversation
 func (p *ProcessorImpl) Update(id uuid.UUID, m Model) (Model, error) {
 	p.l.Debugf("Updating quest conversation [%s]", id)
 
-	// Check if conversation exists
-	var existingEntity Entity
-	result := p.db.Where("tenant_id = ? AND id = ?", p.t.Id(), id).First(&existingEntity)
-	if result.Error != nil {
-		p.l.WithError(result.Error).Errorf("Failed to find quest conversation [%s]", id)
-		return Model{}, result.Error
-	}
-
-	// Convert model to entity
-	entity, err := ToEntity(m, p.t.Id())
+	result, err := updateQuestConversation(p.db)(p.t.Id())(id)(m)
 	if err != nil {
-		p.l.WithError(err).Errorf("Failed to convert model to entity")
+		p.l.WithError(err).Errorf("Failed to update quest conversation [%s]", id)
 		return Model{}, err
 	}
-
-	// Ensure ID is preserved
-	entity.ID = id
-
-	// Update in database
-	result = p.db.Model(&Entity{}).Where("tenant_id = ? AND id = ?", p.t.Id(), id).Updates(map[string]interface{}{
-		"quest_id":   entity.QuestID,
-		"npc_id":     entity.NpcID,
-		"data":       entity.Data,
-		"updated_at": time.Now(),
-	})
-	if result.Error != nil {
-		p.l.WithError(result.Error).Errorf("Failed to update quest conversation [%s]", id)
-		return Model{}, result.Error
-	}
-
-	// Retrieve updated entity
-	result = p.db.Where("tenant_id = ? AND id = ?", p.t.Id(), id).First(&entity)
-	if result.Error != nil {
-		p.l.WithError(result.Error).Errorf("Failed to retrieve updated quest conversation [%s]", id)
-		return Model{}, result.Error
-	}
-
-	// Convert back to model
-	return Make(entity)
+	return result, nil
 }
 
 // Delete deletes a quest conversation
 func (p *ProcessorImpl) Delete(id uuid.UUID) error {
 	p.l.Debugf("Deleting quest conversation [%s]", id)
 
-	// Delete from database
-	result := p.db.Where("tenant_id = ? AND id = ?", p.t.Id(), id).Delete(&Entity{})
-	if result.Error != nil {
-		p.l.WithError(result.Error).Errorf("Failed to delete quest conversation [%s]", id)
-		return result.Error
+	err := deleteQuestConversation(p.db)(p.t.Id())(id)
+	if err != nil {
+		p.l.WithError(err).Errorf("Failed to delete quest conversation [%s]", id)
+		return err
 	}
-
 	return nil
 }
 
@@ -165,14 +117,12 @@ func (p *ProcessorImpl) Delete(id uuid.UUID) error {
 func (p *ProcessorImpl) DeleteAllForTenant() (int64, error) {
 	p.l.Debugf("Deleting all quest conversations for tenant [%s]", p.t.Id())
 
-	// Delete from database (using Unscoped to hard delete)
-	result := p.db.Unscoped().Where("tenant_id = ?", p.t.Id()).Delete(&Entity{})
-	if result.Error != nil {
-		p.l.WithError(result.Error).Errorf("Failed to delete all quest conversations for tenant [%s]", p.t.Id())
-		return 0, result.Error
+	count, err := deleteAllQuestConversations(p.db)(p.t.Id())
+	if err != nil {
+		p.l.WithError(err).Errorf("Failed to delete all quest conversations for tenant [%s]", p.t.Id())
+		return 0, err
 	}
-
-	return result.RowsAffected, nil
+	return count, nil
 }
 
 // Seed clears existing quest conversations and loads them from the quest-conversations directory

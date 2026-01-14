@@ -22,6 +22,7 @@ func create(db *gorm.DB) func(t tenant.Model, ownerId uint32, m Model) (Model, e
 			Expiration: m.Expiration(),
 			Slot:       &s,
 			Flag:       m.Flag(),
+			PurchaseBy: m.PurchaseBy(),
 		}
 
 		err := db.Create(e).Error

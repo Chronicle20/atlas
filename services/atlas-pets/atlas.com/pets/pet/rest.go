@@ -57,7 +57,7 @@ func Transform(m Model) (RestModel, error) {
 	}
 
 	return RestModel{
-		Id:         m.id,
+		Id:         m.Id(),
 		CashId:     m.CashId(),
 		TemplateId: m.TemplateId(),
 		Name:       m.Name(),
@@ -80,22 +80,17 @@ func Transform(m Model) (RestModel, error) {
 func Extract(rm RestModel) (Model, error) {
 	es, err := model.SliceMap(exclude.Extract)(model.FixedProvider(rm.Excludes))(model.ParallelMap())()
 	if err != nil {
-		return Model{}, nil
+		return Model{}, err
 	}
 
-	return Model{
-		id:         rm.Id,
-		cashId:     rm.CashId,
-		templateId: rm.TemplateId,
-		name:       rm.Name,
-		level:      rm.Level,
-		closeness:  rm.Closeness,
-		fullness:   rm.Fullness,
-		expiration: rm.Expiration,
-		ownerId:    rm.OwnerId,
-		slot:       rm.Slot,
-		excludes:   es,
-		flag:       rm.Flag,
-		purchaseBy: rm.PurchaseBy,
-	}, nil
+	return NewModelBuilder(rm.Id, rm.CashId, rm.TemplateId, rm.Name, rm.OwnerId).
+		SetLevel(rm.Level).
+		SetCloseness(rm.Closeness).
+		SetFullness(rm.Fullness).
+		SetExpiration(rm.Expiration).
+		SetSlot(rm.Slot).
+		SetExcludes(es).
+		SetFlag(rm.Flag).
+		SetPurchaseBy(rm.PurchaseBy).
+		Build()
 }

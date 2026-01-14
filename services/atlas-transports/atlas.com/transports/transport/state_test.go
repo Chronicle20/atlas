@@ -7,6 +7,7 @@ import (
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestStateMachine_UpdateState(t *testing.T) {
@@ -15,7 +16,7 @@ func TestStateMachine_UpdateState(t *testing.T) {
 
 	// Create a test route
 	routeID := uuid.New()
-	route := NewBuilder("Test Route").
+	route, err := NewBuilder("Test Route").
 		SetStartMapId(100).
 		SetStagingMapId(101).
 		SetEnRouteMapIds([]_map.Id{102}).
@@ -27,6 +28,7 @@ func TestStateMachine_UpdateState(t *testing.T) {
 		SetTravelDuration(10 * time.Minute).
 		SetCycleInterval(30 * time.Minute).
 		Build()
+	require.NoError(t, err)
 	trip1 := uuid.New()
 	trip2 := uuid.New()
 
@@ -50,16 +52,17 @@ func TestStateMachine_UpdateState(t *testing.T) {
 		{
 			name:        "Before boarding opens",
 			currentTime: now,
-			trips: []TripScheduleModel{
-				NewTripScheduleBuilder().
+			trips: func() []TripScheduleModel {
+				trip, _ := NewTripScheduleBuilder().
 					SetTripId(trip1).
 					SetRouteId(routeID).
 					SetBoardingOpen(now.Add(5 * time.Minute)).
 					SetBoardingClosed(now.Add(10 * time.Minute)).
 					SetDeparture(now.Add(12 * time.Minute)).
 					SetArrival(now.Add(22 * time.Minute)).
-					Build(),
-			},
+					Build()
+				return []TripScheduleModel{trip}
+			}(),
 			expectedState:         AwaitingReturn,
 			expectedNextDeparture: true,
 			expectedBoardingEnds:  true,
@@ -67,16 +70,17 @@ func TestStateMachine_UpdateState(t *testing.T) {
 		{
 			name:        "During boarding window",
 			currentTime: now.Add(7 * time.Minute),
-			trips: []TripScheduleModel{
-				NewTripScheduleBuilder().
+			trips: func() []TripScheduleModel {
+				trip, _ := NewTripScheduleBuilder().
 					SetTripId(trip1).
 					SetRouteId(routeID).
 					SetBoardingOpen(now.Add(5 * time.Minute)).
 					SetBoardingClosed(now.Add(10 * time.Minute)).
 					SetDeparture(now.Add(12 * time.Minute)).
 					SetArrival(now.Add(22 * time.Minute)).
-					Build(),
-			},
+					Build()
+				return []TripScheduleModel{trip}
+			}(),
 			expectedState:         OpenEntry,
 			expectedNextDeparture: true,
 			expectedBoardingEnds:  true,
@@ -84,16 +88,17 @@ func TestStateMachine_UpdateState(t *testing.T) {
 		{
 			name:        "After boarding closes but before departure",
 			currentTime: now.Add(11 * time.Minute),
-			trips: []TripScheduleModel{
-				NewTripScheduleBuilder().
+			trips: func() []TripScheduleModel {
+				trip, _ := NewTripScheduleBuilder().
 					SetTripId(trip1).
 					SetRouteId(routeID).
 					SetBoardingOpen(now.Add(5 * time.Minute)).
 					SetBoardingClosed(now.Add(10 * time.Minute)).
 					SetDeparture(now.Add(12 * time.Minute)).
 					SetArrival(now.Add(22 * time.Minute)).
-					Build(),
-			},
+					Build()
+				return []TripScheduleModel{trip}
+			}(),
 			expectedState:         LockedEntry,
 			expectedNextDeparture: true,
 			expectedBoardingEnds:  true,
@@ -101,16 +106,17 @@ func TestStateMachine_UpdateState(t *testing.T) {
 		{
 			name:        "After departure but before arrival",
 			currentTime: now.Add(15 * time.Minute),
-			trips: []TripScheduleModel{
-				NewTripScheduleBuilder().
+			trips: func() []TripScheduleModel {
+				trip, _ := NewTripScheduleBuilder().
 					SetTripId(trip1).
 					SetRouteId(routeID).
 					SetBoardingOpen(now.Add(5 * time.Minute)).
 					SetBoardingClosed(now.Add(10 * time.Minute)).
 					SetDeparture(now.Add(12 * time.Minute)).
 					SetArrival(now.Add(22 * time.Minute)).
-					Build(),
-			},
+					Build()
+				return []TripScheduleModel{trip}
+			}(),
 			expectedState:         InTransit,
 			expectedNextDeparture: true,
 			expectedBoardingEnds:  true,
@@ -118,16 +124,17 @@ func TestStateMachine_UpdateState(t *testing.T) {
 		{
 			name:        "After arrival",
 			currentTime: now.Add(25 * time.Minute),
-			trips: []TripScheduleModel{
-				NewTripScheduleBuilder().
+			trips: func() []TripScheduleModel {
+				trip, _ := NewTripScheduleBuilder().
 					SetTripId(trip1).
 					SetRouteId(routeID).
 					SetBoardingOpen(now.Add(5 * time.Minute)).
 					SetBoardingClosed(now.Add(10 * time.Minute)).
 					SetDeparture(now.Add(12 * time.Minute)).
 					SetArrival(now.Add(22 * time.Minute)).
-					Build(),
-			},
+					Build()
+				return []TripScheduleModel{trip}
+			}(),
 			expectedState:         OutOfService,
 			expectedNextDeparture: false,
 			expectedBoardingEnds:  false,
@@ -135,24 +142,25 @@ func TestStateMachine_UpdateState(t *testing.T) {
 		{
 			name:        "Multiple trips - selects next trip",
 			currentTime: now,
-			trips: []TripScheduleModel{
-				NewTripScheduleBuilder().
+			trips: func() []TripScheduleModel {
+				trip1Model, _ := NewTripScheduleBuilder().
 					SetTripId(trip1).
 					SetRouteId(routeID).
 					SetBoardingOpen(now.Add(30 * time.Minute)).
 					SetBoardingClosed(now.Add(35 * time.Minute)).
 					SetDeparture(now.Add(37 * time.Minute)).
 					SetArrival(now.Add(47 * time.Minute)).
-					Build(),
-				NewTripScheduleBuilder().
+					Build()
+				trip2Model, _ := NewTripScheduleBuilder().
 					SetTripId(trip2).
 					SetRouteId(routeID).
 					SetBoardingOpen(now.Add(5 * time.Minute)).
 					SetBoardingClosed(now.Add(10 * time.Minute)).
 					SetDeparture(now.Add(12 * time.Minute)).
 					SetArrival(now.Add(22 * time.Minute)).
-					Build(),
-			},
+					Build()
+				return []TripScheduleModel{trip1Model, trip2Model}
+			}(),
 			expectedState:         AwaitingReturn,
 			expectedNextDeparture: true,
 			expectedBoardingEnds:  true,
@@ -160,16 +168,17 @@ func TestStateMachine_UpdateState(t *testing.T) {
 		{
 			name:        "Trip for different route is ignored",
 			currentTime: now,
-			trips: []TripScheduleModel{
-				NewTripScheduleBuilder().
+			trips: func() []TripScheduleModel {
+				trip, _ := NewTripScheduleBuilder().
 					SetTripId(trip1).
 					SetRouteId(uuid.New()). // Different route ID
 					SetBoardingOpen(now.Add(5 * time.Minute)).
 					SetBoardingClosed(now.Add(10 * time.Minute)).
 					SetDeparture(now.Add(12 * time.Minute)).
 					SetArrival(now.Add(22 * time.Minute)).
-					Build(),
-			},
+					Build()
+				return []TripScheduleModel{trip}
+			}(),
 			expectedState:         OutOfService,
 			expectedNextDeparture: false,
 			expectedBoardingEnds:  false,
@@ -178,10 +187,12 @@ func TestStateMachine_UpdateState(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			testRoute := route.Builder().SetSchedule(tt.trips).Build()
+			testRoute, err := route.Builder().SetSchedule(tt.trips).Build()
+			require.NoError(t, err)
 
 			// Update state based on test case
-			testRoute, changed := testRoute.UpdateState(tt.currentTime)
+			testRoute, changed, err := testRoute.UpdateState(tt.currentTime)
+			require.NoError(t, err)
 
 			// Assert state
 			assert.Equal(t, tt.expectedState, testRoute.State(), "State should match expected")
@@ -197,14 +208,19 @@ func TestStateMachine_UpdateState(t *testing.T) {
 func TestStateMachine_GetState(t *testing.T) {
 	// Create a test route
 	routeID := uuid.New()
-	route := NewBuilder("Test Route").
+	route, err := NewBuilder("Test Route").
 		SetStartMapId(0).
 		SetStagingMapId(0).
 		SetEnRouteMapIds([]_map.Id{0}).
 		SetDestinationMapId(0).
 		SetObservationMapId(0).
 		SetId(routeID).
+		SetBoardingWindowDuration(5 * time.Minute).
+		SetPreDepartureDuration(2 * time.Minute).
+		SetTravelDuration(10 * time.Minute).
+		SetCycleInterval(30 * time.Minute).
 		Build()
+	require.NoError(t, err)
 
 	// Initially, state should be out of service
 	initialState := route.State()
@@ -214,19 +230,21 @@ func TestStateMachine_GetState(t *testing.T) {
 
 	// Update state
 	now := time.Now()
-	trips := []TripScheduleModel{
-		NewTripScheduleBuilder().
-			SetTripId(trip1).
-			SetRouteId(routeID).
-			SetBoardingOpen(now.Add(5 * time.Minute)).
-			SetBoardingClosed(now.Add(10 * time.Minute)).
-			SetDeparture(now.Add(12 * time.Minute)).
-			SetArrival(now.Add(22 * time.Minute)).
-			Build(),
-	}
-	route = route.Builder().SetSchedule(trips).Build()
+	trip, err := NewTripScheduleBuilder().
+		SetTripId(trip1).
+		SetRouteId(routeID).
+		SetBoardingOpen(now.Add(5 * time.Minute)).
+		SetBoardingClosed(now.Add(10 * time.Minute)).
+		SetDeparture(now.Add(12 * time.Minute)).
+		SetArrival(now.Add(22 * time.Minute)).
+		Build()
+	require.NoError(t, err)
+	trips := []TripScheduleModel{trip}
+	route, err = route.Builder().SetSchedule(trips).Build()
+	require.NoError(t, err)
 
-	route, changed := route.UpdateState(now.Add(5 * time.Minute))
+	route, changed, err := route.UpdateState(now.Add(5 * time.Minute))
+	require.NoError(t, err)
 
 	// GetState should return the updated state
 	assert.Equal(t, OpenEntry, route.State(), "GetState should return the updated state")
@@ -241,49 +259,59 @@ func TestStateMachine_MultipleTrips(t *testing.T) {
 
 	// Create a test route
 	routeID := uuid.New()
-	route := NewBuilder("Test Route").
+	route, err := NewBuilder("Test Route").
 		SetStartMapId(0).
 		SetStagingMapId(0).
 		SetEnRouteMapIds([]_map.Id{0}).
 		SetDestinationMapId(0).
 		SetObservationMapId(0).
 		SetId(routeID).
+		SetBoardingWindowDuration(5 * time.Minute).
+		SetPreDepartureDuration(2 * time.Minute).
+		SetTravelDuration(10 * time.Minute).
+		SetCycleInterval(30 * time.Minute).
 		Build()
+	require.NoError(t, err)
 	trip1 := uuid.New()
 	trip2 := uuid.New()
 	trip3 := uuid.New()
 
 	// Create multiple trips with different departure times
-	trips := []TripScheduleModel{
-		NewTripScheduleBuilder().
-			SetTripId(trip3).
-			SetRouteId(routeID).
-			SetBoardingOpen(now.Add(60 * time.Minute)).
-			SetBoardingClosed(now.Add(65 * time.Minute)).
-			SetDeparture(now.Add(67 * time.Minute)).
-			SetArrival(now.Add(77 * time.Minute)).
-			Build(),
-		NewTripScheduleBuilder().
-			SetTripId(trip1).
-			SetRouteId(routeID).
-			SetBoardingOpen(now.Add(5 * time.Minute)).
-			SetBoardingClosed(now.Add(10 * time.Minute)).
-			SetDeparture(now.Add(12 * time.Minute)).
-			SetArrival(now.Add(22 * time.Minute)).
-			Build(),
-		NewTripScheduleBuilder().
-			SetTripId(trip2).
-			SetRouteId(routeID).
-			SetBoardingOpen(now.Add(30 * time.Minute)).
-			SetBoardingClosed(now.Add(35 * time.Minute)).
-			SetDeparture(now.Add(37 * time.Minute)).
-			SetArrival(now.Add(47 * time.Minute)).
-			Build(),
-	}
-	route = route.Builder().SetSchedule(trips).Build()
+	tripModel1, err := NewTripScheduleBuilder().
+		SetTripId(trip3).
+		SetRouteId(routeID).
+		SetBoardingOpen(now.Add(60 * time.Minute)).
+		SetBoardingClosed(now.Add(65 * time.Minute)).
+		SetDeparture(now.Add(67 * time.Minute)).
+		SetArrival(now.Add(77 * time.Minute)).
+		Build()
+	require.NoError(t, err)
+	tripModel2, err := NewTripScheduleBuilder().
+		SetTripId(trip1).
+		SetRouteId(routeID).
+		SetBoardingOpen(now.Add(5 * time.Minute)).
+		SetBoardingClosed(now.Add(10 * time.Minute)).
+		SetDeparture(now.Add(12 * time.Minute)).
+		SetArrival(now.Add(22 * time.Minute)).
+		Build()
+	require.NoError(t, err)
+	tripModel3, err := NewTripScheduleBuilder().
+		SetTripId(trip2).
+		SetRouteId(routeID).
+		SetBoardingOpen(now.Add(30 * time.Minute)).
+		SetBoardingClosed(now.Add(35 * time.Minute)).
+		SetDeparture(now.Add(37 * time.Minute)).
+		SetArrival(now.Add(47 * time.Minute)).
+		Build()
+	require.NoError(t, err)
+
+	trips := []TripScheduleModel{tripModel1, tripModel2, tripModel3}
+	route, err = route.Builder().SetSchedule(trips).Build()
+	require.NoError(t, err)
 
 	// Update state
-	route, changed := route.UpdateState(now)
+	route, changed, err := route.UpdateState(now)
+	require.NoError(t, err)
 
 	// Should select trip1 as it's the next one
 	assert.Equal(t, AwaitingReturn, route.State())
@@ -292,7 +320,8 @@ func TestStateMachine_MultipleTrips(t *testing.T) {
 	assert.True(t, changed, "StateChanged should be true for first update")
 
 	// Move time forward to after trip1 but before trip2
-	route, changed = route.UpdateState(now.Add(25 * time.Minute))
+	route, changed, err = route.UpdateState(now.Add(25 * time.Minute))
+	require.NoError(t, err)
 
 	// Should select trip2 as it's the next one
 	assert.Equal(t, AwaitingReturn, route.State())
@@ -307,7 +336,7 @@ func TestStateMachine_StateChanged(t *testing.T) {
 
 	// Create a test route
 	routeID := uuid.New()
-	route := NewBuilder("Test Route").
+	route, err := NewBuilder("Test Route").
 		SetStartMapId(100).
 		SetStagingMapId(101).
 		SetEnRouteMapIds([]_map.Id{102}).
@@ -319,11 +348,12 @@ func TestStateMachine_StateChanged(t *testing.T) {
 		SetTravelDuration(10 * time.Minute).
 		SetCycleInterval(30 * time.Minute).
 		Build()
+	require.NoError(t, err)
 
 	trip1 := uuid.New()
 
 	// Create a trip
-	trip := NewTripScheduleBuilder().
+	trip, err := NewTripScheduleBuilder().
 		SetTripId(trip1).
 		SetRouteId(routeID).
 		SetBoardingOpen(now.Add(5 * time.Minute)).
@@ -331,9 +361,11 @@ func TestStateMachine_StateChanged(t *testing.T) {
 		SetDeparture(now.Add(12 * time.Minute)).
 		SetArrival(now.Add(22 * time.Minute)).
 		Build()
+	require.NoError(t, err)
 
 	trips := []TripScheduleModel{trip}
-	route = route.Builder().SetSchedule(trips).Build()
+	route, err = route.Builder().SetSchedule(trips).Build()
+	require.NoError(t, err)
 
 	// Test cases for state changes
 	testCases := []struct {
@@ -389,7 +421,9 @@ func TestStateMachine_StateChanged(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			var changed bool
-			route, changed = route.UpdateState(tc.currentTime)
+			var updateErr error
+			route, changed, updateErr = route.UpdateState(tc.currentTime)
+			require.NoError(t, updateErr)
 
 			assert.Equal(t, tc.expectedStatus, route.State(), "Status should match expected")
 			assert.Equal(t, tc.stateChanged, changed, "StateChanged should match expected")

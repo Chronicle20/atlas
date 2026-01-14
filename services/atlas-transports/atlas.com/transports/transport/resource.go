@@ -62,7 +62,7 @@ func GetAllRoutesHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http
 
 			// Get route by start map ID
 			processor := NewProcessor(d.Logger(), d.Context())
-			route, err := processor.ByStartMapProvider(map2.Id(mapId))()
+			route, err := processor.GetByStartMap(map2.Id(mapId))
 			if err != nil {
 				// Route not found - return empty array (RESTful collection behavior)
 				d.Logger().WithError(err).Debugf("No route found for start map %d", mapId)

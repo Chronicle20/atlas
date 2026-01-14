@@ -103,10 +103,14 @@ func (r *registry) getMapLock(t tenant.Model, key MapKey) *sync.Mutex {
 	return res
 }
 
-func (r *registry) Create(t tenant.Model, b *ModelBuilder) Model {
+func (r *registry) Create(t tenant.Model, b *ModelBuilder) (Model, error) {
 	r.lock.Lock()
 	id := r.getNextId()
-	m := b.SetId(id).UpdateTime().Build()
+	m, err := b.SetId(id).UpdateTime().Build()
+	if err != nil {
+		r.lock.Unlock()
+		return Model{}, err
+	}
 	r.reactors[id] = &m
 	r.lock.Unlock()
 
@@ -115,7 +119,7 @@ func (r *registry) Create(t tenant.Model, b *ModelBuilder) Model {
 	defer r.getMapLock(t, mk).Unlock()
 
 	r.mapReactors[t][mk] = append(r.mapReactors[t][mk], m.Id())
-	return m
+	return m, nil
 }
 
 //func (r *registry) Update(id uint32, modifiers ...Modifier) (Model, error) {

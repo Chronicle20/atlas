@@ -1,28 +1,17 @@
 package quest
 
 import (
+	"atlas-npc-conversations/test"
 	"testing"
 
-	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 func TestProviderFunctionCurrying(t *testing.T) {
-	mockDB, _, err := sqlmock.New()
-	require.NoError(t, err)
-	defer mockDB.Close()
-
-	gormDB, err := gorm.Open(postgres.New(postgres.Config{
-		Conn: mockDB,
-	}), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent),
-	})
-	require.NoError(t, err)
+	db := test.SetupTestDB(t, MigrateTable)
+	defer test.CleanupTestDB(t, db)
 
 	tenantId := uuid.New()
 	id := uuid.New()
@@ -35,7 +24,7 @@ func TestProviderFunctionCurrying(t *testing.T) {
 		providerById := providerByTenant(id)
 		assert.NotNil(t, providerById)
 
-		provider := providerById(gormDB)
+		provider := providerById(db)
 		assert.NotNil(t, provider)
 	})
 
@@ -46,7 +35,7 @@ func TestProviderFunctionCurrying(t *testing.T) {
 		providerByQuestId := providerByTenant(questId)
 		assert.NotNil(t, providerByQuestId)
 
-		provider := providerByQuestId(gormDB)
+		provider := providerByQuestId(db)
 		assert.NotNil(t, provider)
 	})
 
@@ -54,50 +43,42 @@ func TestProviderFunctionCurrying(t *testing.T) {
 		providerByTenant := getAllProvider(tenantId)
 		assert.NotNil(t, providerByTenant)
 
-		provider := providerByTenant(gormDB)
+		provider := providerByTenant(db)
 		assert.NotNil(t, provider)
 	})
 }
 
 func TestProviderFunctionSignatures(t *testing.T) {
-	mockDB, _, err := sqlmock.New()
-	require.NoError(t, err)
-	defer mockDB.Close()
-
-	gormDB, err := gorm.Open(postgres.New(postgres.Config{
-		Conn: mockDB,
-	}), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent),
-	})
-	require.NoError(t, err)
+	db := test.SetupTestDB(t, MigrateTable)
+	defer test.CleanupTestDB(t, db)
 
 	tenantId := uuid.New()
 	id := uuid.New()
 	questId := uint32(1001)
 
 	t.Run("getByIdProvider returns entity provider", func(t *testing.T) {
-		provider := getByIdProvider(tenantId)(id)(gormDB)
+		provider := getByIdProvider(tenantId)(id)(db)
 
 		// Provider should be callable and return Entity and error
 		entity, err := provider()
-		assert.Error(t, err) // Expected - no mock expectations
+		assert.Error(t, err) // Expected - record not found
 		assert.Equal(t, Entity{}, entity)
 	})
 
 	t.Run("getByQuestIdProvider returns entity provider", func(t *testing.T) {
-		provider := getByQuestIdProvider(tenantId)(questId)(gormDB)
+		provider := getByQuestIdProvider(tenantId)(questId)(db)
 
 		entity, err := provider()
-		assert.Error(t, err) // Expected - no mock expectations
+		assert.Error(t, err) // Expected - record not found
 		assert.Equal(t, Entity{}, entity)
 	})
 
 	t.Run("getAllProvider returns slice provider", func(t *testing.T) {
-		provider := getAllProvider(tenantId)(gormDB)
+		provider := getAllProvider(tenantId)(db)
 
 		entities, err := provider()
-		assert.Error(t, err) // Expected - no mock expectations
-		assert.Nil(t, entities)
+		assert.NoError(t, err) // Empty result is not an error
+		assert.Empty(t, entities)
 	})
 }
 

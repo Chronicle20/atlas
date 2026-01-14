@@ -24,6 +24,8 @@ type Processor interface {
 	Unregister(worldId byte, channelId byte) error
 	RequestStatus(mb *message.Buffer) error
 	RequestStatusAndEmit() error
+	EmitStarted(mb *message.Buffer) func(worldId byte, channelId byte, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) error
+	EmitStartedAndEmit(worldId byte, channelId byte, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) error
 }
 
 // ProcessorImpl implements the Processor interface
@@ -72,7 +74,7 @@ func (p *ProcessorImpl) ByIdProvider(worldId byte, channelId byte) model.Provide
 // Register registers a new channel server
 func (p *ProcessorImpl) Register(worldId byte, channelId byte, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) (Model, error) {
 	p.l.Debugf("Registering world [%d] channel [%d] for tenant [%s].", worldId, channelId, p.t.String())
-	m := NewBuilder().
+	m, err := NewModelBuilder().
 		SetId(uuid.New()).
 		SetWorldId(worldId).
 		SetChannelId(channelId).
@@ -81,6 +83,9 @@ func (p *ProcessorImpl) Register(worldId byte, channelId byte, ipAddress string,
 		SetCurrentCapacity(currentCapacity).
 		SetMaxCapacity(maxCapacity).
 		Build()
+	if err != nil {
+		return Model{}, err
+	}
 	return GetChannelRegistry().Register(p.t, m), nil
 }
 
@@ -108,6 +113,20 @@ func (p *ProcessorImpl) RequestStatusAndEmit() error {
 			return err
 		}
 		return nil
+	})
+}
+
+// EmitStarted returns a function that emits a channel started event to the message buffer
+func (p *ProcessorImpl) EmitStarted(mb *message.Buffer) func(worldId byte, channelId byte, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) error {
+	return func(worldId byte, channelId byte, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) error {
+		return mb.Put(channel2.EnvEventTopicStatus, channel3.StartedEventProvider(p.t, worldId, channelId, ipAddress, port, currentCapacity, maxCapacity))
+	}
+}
+
+// EmitStartedAndEmit emits a channel started event
+func (p *ProcessorImpl) EmitStartedAndEmit(worldId byte, channelId byte, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) error {
+	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+		return p.EmitStarted(buf)(worldId, channelId, ipAddress, port, currentCapacity, maxCapacity)
 	})
 }
 

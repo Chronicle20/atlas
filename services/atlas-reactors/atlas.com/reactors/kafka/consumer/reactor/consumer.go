@@ -16,7 +16,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("reactor_command")(EnvCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+			rf(consumer2.NewConfig(l)("reactor_command")(reactor.EnvCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 		}
 	}
 }
@@ -24,13 +24,13 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) {
 	return func(rf func(topic string, handler handler.Handler) (string, error)) {
 		var t string
-		t, _ = topic.EnvProvider(l)(EnvCommandTopic)()
+		t, _ = topic.EnvProvider(l)(reactor.EnvCommandTopic)()
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCreate)))
 	}
 }
 
-func handleCreate(l logrus.FieldLogger, ctx context.Context, c command[createCommandBody]) {
-	if c.Type != CommandTypeCreate {
+func handleCreate(l logrus.FieldLogger, ctx context.Context, c reactor.Command[reactor.CreateCommandBody]) {
+	if c.Type != reactor.CommandTypeCreate {
 		return
 	}
 
@@ -41,5 +41,8 @@ func handleCreate(l logrus.FieldLogger, ctx context.Context, c command[createCom
 		SetDelay(c.Body.Delay).
 		SetDirection(c.Body.Direction)
 
-	_ = reactor.Create(l)(ctx)(b)
+	err := reactor.Create(l)(ctx)(b)
+	if err != nil {
+		l.WithError(err).Errorf("Failed to create reactor for classification [%d].", c.Body.Classification)
+	}
 }

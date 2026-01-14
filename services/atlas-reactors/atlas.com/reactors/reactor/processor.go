@@ -37,7 +37,11 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(b *ModelBuilder
 				return err
 			}
 			b.SetData(d)
-			r := GetRegistry().Create(t, b)
+			r, err := GetRegistry().Create(t, b)
+			if err != nil {
+				l.WithError(err).Errorf("Failed to create reactor.")
+				return err
+			}
 			l.Debugf("Created reactor [%d] of [%d].", r.Id(), r.Classification())
 			return producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(createdStatusEventProvider(r))
 		}

@@ -51,14 +51,17 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(characterId uint32) func
 		return func(senderId uint32) func(msg string) func(flag byte) (Model, error) {
 			return func(msg string) func(flag byte) (Model, error) {
 				return func(flag byte) (Model, error) {
-					m := NewBuilder().
+					m, err := NewBuilder().
 						SetCharacterId(characterId).
 						SetSenderId(senderId).
 						SetMessage(msg).
 						SetFlag(flag).
 						Build()
+					if err != nil {
+						return Model{}, err
+					}
 
-					m, err := createNote(p.db)(p.t.Id())(m)
+					m, err = createNote(p.db)(p.t.Id())(m)
 					if err != nil {
 						return Model{}, err
 					}
@@ -85,15 +88,18 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(id uint32) func(characte
 			return func(senderId uint32) func(msg string) func(flag byte) (Model, error) {
 				return func(msg string) func(flag byte) (Model, error) {
 					return func(flag byte) (Model, error) {
-						m := NewBuilder().
+						m, err := NewBuilder().
 							SetId(id).
 							SetCharacterId(characterId).
 							SetSenderId(senderId).
 							SetMessage(msg).
 							SetFlag(flag).
 							Build()
+						if err != nil {
+							return Model{}, err
+						}
 
-						m, err := updateNote(p.db)(p.t.Id())(m)
+						m, err = updateNote(p.db)(p.t.Id())(m)
 						if err != nil {
 							return Model{}, err
 						}

@@ -6,6 +6,7 @@ require (
 	github.com/Chronicle20/atlas-kafka v1.1.12
 	github.com/Chronicle20/atlas-model v1.2.5
 	github.com/Chronicle20/atlas-rest v1.2.16
+	github.com/Chronicle20/atlas-tenant v1.0.7
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
 	github.com/jtumidanski/api2go v1.0.4
@@ -15,11 +16,11 @@ require (
 	github.com/uber/jaeger-client-go v2.30.0+incompatible
 	go.elastic.co/ecslogrus v1.0.0
 	gorm.io/driver/postgres v1.6.0
+	gorm.io/driver/sqlite v1.6.0
 	gorm.io/gorm v1.31.1
 )
 
 require (
-	github.com/Chronicle20/atlas-tenant v1.0.7 // indirect
 	github.com/HdrHistogram/hdrhistogram-go v1.1.2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/gedex/inflector v0.0.0-20170307190818-16278e9db813 // indirect
@@ -33,6 +34,7 @@ require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/magefile/mage v1.15.0 // indirect
+	github.com/mattn/go-sqlite3 v1.14.22 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect

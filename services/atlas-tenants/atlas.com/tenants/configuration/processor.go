@@ -2,6 +2,7 @@ package configuration
 
 import (
 	"atlas-tenants/kafka/message"
+	"atlas-tenants/kafka/producer"
 	"context"
 	"encoding/json"
 	"errors"
@@ -63,6 +64,7 @@ type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 	db  *gorm.DB
+	p   producer.Provider
 }
 
 // NewProcessor creates a new Processor
@@ -71,6 +73,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		l:   l,
 		ctx: ctx,
 		db:  db,
+		p:   producer.ProviderImpl(l)(ctx),
 	}
 }
 
@@ -113,7 +116,21 @@ func (p *ProcessorImpl) CreateRoute(mb *message.Buffer) func(tenantID uuid.UUID)
 					return Model{}, err
 				}
 
-				return Make(existing)
+				m, err := Make(existing)
+				if err != nil {
+					return Model{}, err
+				}
+
+				// Add event to message buffer
+				routeID := ""
+				if id, ok := route["id"].(string); ok {
+					routeID = id
+				}
+				if err := mb.Put(EventTopicConfigurationStatus, CreateRouteStatusEventProvider(tenantID, EventTypeRouteCreated, routeID)); err != nil {
+					return Model{}, err
+				}
+
+				return m, nil
 			} else if errors.Is(err, gorm.ErrRecordNotFound) {
 				// Configuration doesn't exist, create it
 				resourceData, err = CreateSingleRouteJsonData(route)
@@ -132,7 +149,21 @@ func (p *ProcessorImpl) CreateRoute(mb *message.Buffer) func(tenantID uuid.UUID)
 					return Model{}, err
 				}
 
-				return Make(entity)
+				m, err := Make(entity)
+				if err != nil {
+					return Model{}, err
+				}
+
+				// Add event to message buffer
+				routeID := ""
+				if id, ok := route["id"].(string); ok {
+					routeID = id
+				}
+				if err := mb.Put(EventTopicConfigurationStatus, CreateRouteStatusEventProvider(tenantID, EventTypeRouteCreated, routeID)); err != nil {
+					return Model{}, err
+				}
+
+				return m, nil
 			} else {
 				// Other error
 				return Model{}, err
@@ -141,17 +172,13 @@ func (p *ProcessorImpl) CreateRoute(mb *message.Buffer) func(tenantID uuid.UUID)
 	}
 }
 
-// CreateAndEmit creates a new route configuration and emits events
+// CreateRouteAndEmit creates a new route configuration and emits events
 func (p *ProcessorImpl) CreateRouteAndEmit(tenantID uuid.UUID, route map[string]interface{}) (Model, error) {
-	mb := message.NewBuffer()
-	result, err := p.CreateRoute(mb)(tenantID)(route)
-	if err != nil {
-		return Model{}, err
-	}
-
-	// No events to emit for now
-
-	return result, nil
+	return message.EmitWithResult[Model, uuid.UUID](p.p)(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+		return func(tenantID uuid.UUID) (Model, error) {
+			return p.CreateRoute(mb)(tenantID)(route)
+		}
+	})(tenantID)
 }
 
 // Update updates an existing route configuration
@@ -212,45 +239,54 @@ func (p *ProcessorImpl) UpdateRoute(mb *message.Buffer) func(tenantID uuid.UUID)
 					return Model{}, err
 				}
 
-				return Make(existing)
+				m, err := Make(existing)
+				if err != nil {
+					return Model{}, err
+				}
+
+				// Add event to message buffer
+				if err := mb.Put(EventTopicConfigurationStatus, CreateRouteStatusEventProvider(tenantID, EventTypeRouteUpdated, routeID)); err != nil {
+					return Model{}, err
+				}
+
+				return m, nil
 			}
 		}
 	}
 }
 
-// UpdateAndEmit updates an existing route configuration and emits events
+// UpdateRouteAndEmit updates an existing route configuration and emits events
 func (p *ProcessorImpl) UpdateRouteAndEmit(tenantID uuid.UUID, routeID string, route map[string]interface{}) (Model, error) {
-	mb := message.NewBuffer()
-	result, err := p.UpdateRoute(mb)(tenantID)(routeID)(route)
-	if err != nil {
-		return Model{}, err
-	}
-
-	// No events to emit for now
-
-	return result, nil
+	return message.EmitWithResult[Model, uuid.UUID](p.p)(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+		return func(tenantID uuid.UUID) (Model, error) {
+			return p.UpdateRoute(mb)(tenantID)(routeID)(route)
+		}
+	})(tenantID)
 }
 
 // Delete deletes a route configuration
 func (p *ProcessorImpl) DeleteRoute(mb *message.Buffer) func(tenantID uuid.UUID) func(routeID string) error {
 	return func(tenantID uuid.UUID) func(routeID string) error {
 		return func(routeID string) error {
-			return DeleteConfiguration(p.db, tenantID, "routes", routeID)
+			if err := DeleteConfiguration(p.db, tenantID, "routes", routeID); err != nil {
+				return err
+			}
+
+			// Add event to message buffer
+			if err := mb.Put(EventTopicConfigurationStatus, CreateRouteStatusEventProvider(tenantID, EventTypeRouteDeleted, routeID)); err != nil {
+				return err
+			}
+
+			return nil
 		}
 	}
 }
 
-// DeleteAndEmit deletes a route configuration and emits events
+// DeleteRouteAndEmit deletes a route configuration and emits events
 func (p *ProcessorImpl) DeleteRouteAndEmit(tenantID uuid.UUID, routeID string) error {
-	mb := message.NewBuffer()
-	err := p.DeleteRoute(mb)(tenantID)(routeID)
-	if err != nil {
-		return err
-	}
-
-	// No events to emit for now
-
-	return nil
+	return message.Emit(p.p)(func(mb *message.Buffer) error {
+		return p.DeleteRoute(mb)(tenantID)(routeID)
+	})
 }
 
 // GetRouteById gets a route by ID
@@ -312,7 +348,21 @@ func (p *ProcessorImpl) CreateVessel(mb *message.Buffer) func(tenantID uuid.UUID
 					return Model{}, err
 				}
 
-				return Make(existing)
+				m, err := Make(existing)
+				if err != nil {
+					return Model{}, err
+				}
+
+				// Add event to message buffer
+				vesselID := ""
+				if id, ok := vessel["id"].(string); ok {
+					vesselID = id
+				}
+				if err := mb.Put(EventTopicConfigurationStatus, CreateVesselStatusEventProvider(tenantID, EventTypeVesselCreated, vesselID)); err != nil {
+					return Model{}, err
+				}
+
+				return m, nil
 			} else if errors.Is(err, gorm.ErrRecordNotFound) {
 				// Configuration doesn't exist, create it
 				resourceData, err = CreateSingleVesselJsonData(vessel)
@@ -331,7 +381,21 @@ func (p *ProcessorImpl) CreateVessel(mb *message.Buffer) func(tenantID uuid.UUID
 					return Model{}, err
 				}
 
-				return Make(entity)
+				m, err := Make(entity)
+				if err != nil {
+					return Model{}, err
+				}
+
+				// Add event to message buffer
+				vesselID := ""
+				if id, ok := vessel["id"].(string); ok {
+					vesselID = id
+				}
+				if err := mb.Put(EventTopicConfigurationStatus, CreateVesselStatusEventProvider(tenantID, EventTypeVesselCreated, vesselID)); err != nil {
+					return Model{}, err
+				}
+
+				return m, nil
 			} else {
 				// Other error
 				return Model{}, err
@@ -342,15 +406,11 @@ func (p *ProcessorImpl) CreateVessel(mb *message.Buffer) func(tenantID uuid.UUID
 
 // CreateVesselAndEmit creates a new vessel configuration and emits events
 func (p *ProcessorImpl) CreateVesselAndEmit(tenantID uuid.UUID, vessel map[string]interface{}) (Model, error) {
-	mb := message.NewBuffer()
-	result, err := p.CreateVessel(mb)(tenantID)(vessel)
-	if err != nil {
-		return Model{}, err
-	}
-
-	// No events to emit for now
-
-	return result, nil
+	return message.EmitWithResult[Model, uuid.UUID](p.p)(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+		return func(tenantID uuid.UUID) (Model, error) {
+			return p.CreateVessel(mb)(tenantID)(vessel)
+		}
+	})(tenantID)
 }
 
 // UpdateVessel updates an existing vessel configuration
@@ -411,7 +471,17 @@ func (p *ProcessorImpl) UpdateVessel(mb *message.Buffer) func(tenantID uuid.UUID
 					return Model{}, err
 				}
 
-				return Make(existing)
+				m, err := Make(existing)
+				if err != nil {
+					return Model{}, err
+				}
+
+				// Add event to message buffer
+				if err := mb.Put(EventTopicConfigurationStatus, CreateVesselStatusEventProvider(tenantID, EventTypeVesselUpdated, vesselID)); err != nil {
+					return Model{}, err
+				}
+
+				return m, nil
 			}
 		}
 	}
@@ -419,37 +489,36 @@ func (p *ProcessorImpl) UpdateVessel(mb *message.Buffer) func(tenantID uuid.UUID
 
 // UpdateVesselAndEmit updates an existing vessel configuration and emits events
 func (p *ProcessorImpl) UpdateVesselAndEmit(tenantID uuid.UUID, vesselID string, vessel map[string]interface{}) (Model, error) {
-	mb := message.NewBuffer()
-	result, err := p.UpdateVessel(mb)(tenantID)(vesselID)(vessel)
-	if err != nil {
-		return Model{}, err
-	}
-
-	// No events to emit for now
-
-	return result, nil
+	return message.EmitWithResult[Model, uuid.UUID](p.p)(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+		return func(tenantID uuid.UUID) (Model, error) {
+			return p.UpdateVessel(mb)(tenantID)(vesselID)(vessel)
+		}
+	})(tenantID)
 }
 
 // DeleteVessel deletes a vessel configuration
 func (p *ProcessorImpl) DeleteVessel(mb *message.Buffer) func(tenantID uuid.UUID) func(vesselID string) error {
 	return func(tenantID uuid.UUID) func(vesselID string) error {
 		return func(vesselID string) error {
-			return DeleteConfiguration(p.db, tenantID, "vessels", vesselID)
+			if err := DeleteConfiguration(p.db, tenantID, "vessels", vesselID); err != nil {
+				return err
+			}
+
+			// Add event to message buffer
+			if err := mb.Put(EventTopicConfigurationStatus, CreateVesselStatusEventProvider(tenantID, EventTypeVesselDeleted, vesselID)); err != nil {
+				return err
+			}
+
+			return nil
 		}
 	}
 }
 
 // DeleteVesselAndEmit deletes a vessel configuration and emits events
 func (p *ProcessorImpl) DeleteVesselAndEmit(tenantID uuid.UUID, vesselID string) error {
-	mb := message.NewBuffer()
-	err := p.DeleteVessel(mb)(tenantID)(vesselID)
-	if err != nil {
-		return err
-	}
-
-	// No events to emit for now
-
-	return nil
+	return message.Emit(p.p)(func(mb *message.Buffer) error {
+		return p.DeleteVessel(mb)(tenantID)(vesselID)
+	})
 }
 
 // GetVesselById gets a vessel by ID

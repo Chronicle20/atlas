@@ -50,7 +50,7 @@ export default function Page() {
             .finally(() => setLoading(false))
     }, [activeTenant])
 
-    const columns = getColumns({tenant: activeTenant});
+    const columns = getColumns({tenant: activeTenant, onRefresh: fetchDataAgain});
 
     if (loading) {
         return <AccountPageSkeleton />;

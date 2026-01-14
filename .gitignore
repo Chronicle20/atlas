@@ -9,7 +9,6 @@ services/atlas-npc-conversations/atlas.com/npc/atlas-npc-conversations
 services/atlas-npc-conversations/tmp2
 services/atlas-data/tmp/Npc.wz
 services/atlas-storage/atlas.com/storage/atlas-storage
-services/atlas-storage/atlas.com/storage/atlas-storage
 services/atlas-cashshop/atlas.com/cashshop/atlas-cashshop
 services/atlas-inventory/atlas.com/inventory/atlas-inventory
 services/atlas-fame/atlas.com/fame/atlas-fame
@@ -18,3 +17,6 @@ services/atlas-keys/atlas.com/keys/atlas-keys
 services/atlas-messengers/atlas.com/messengers/atlas-messengers
 services/atlas-notes/atlas.com/notes/atlas-notes
 services/atlas-reactors/atlas.com/reactors/atlas-reactors
+services/atlas-npc-shops/tmp
+services/atlas-transports/tmp
+services/atlas-transports/atlas.com/transports/atlas-transports

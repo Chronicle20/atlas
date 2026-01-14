@@ -19,8 +19,8 @@ interface VirtualizedNpcGridProps {
 
 // Default configuration for virtualization
 const VIRTUALIZATION_CONFIG = {
-  defaultItemHeight: 200, // Approximate height of NPC card + padding
-  defaultOverscan: 3, // Render 3 extra rows above and below
+  defaultItemHeight: 90, // Approximate height of compact NPC card + gap
+  defaultOverscan: 4, // Render 4 extra rows above and below
   minItemsForVirtualization: 50, // Only virtualize if more than 50 items
   throttleMs: 16, // Throttle scroll events to ~60fps
 };
@@ -38,18 +38,32 @@ export function VirtualizedNpcGrid({
   const containerRef = useRef<HTMLDivElement>(null);
   const [scrollTop, setScrollTop] = useState(0);
   const [, setContainerWidth] = useState(0);
-  const [actualItemsPerRow, setActualItemsPerRow] = useState(1);
+
+  // Initialize with a sensible default based on window width to avoid single-column flash on large screens
+  const getInitialItemsPerRow = (): number => {
+    if (itemsPerRow) return itemsPerRow;
+    if (typeof window === 'undefined') return 6; // SSR default
+    const width = window.innerWidth;
+    if (width >= 1536) return 8;
+    if (width >= 1280) return 6;
+    if (width >= 1024) return 5;
+    if (width >= 768) return 4;
+    if (width >= 640) return 3;
+    return 2;
+  };
+  const [actualItemsPerRow, setActualItemsPerRow] = useState(getInitialItemsPerRow);
   
   // Calculate items per row based on container width and responsive breakpoints
   const calculateItemsPerRow = useCallback((width: number): number => {
     if (itemsPerRow) return itemsPerRow;
-    
-    // Mimic Tailwind CSS responsive grid classes
-    if (width >= 1536) return 5; // 2xl:grid-cols-5
-    if (width >= 1280) return 4; // xl:grid-cols-4
-    if (width >= 1024) return 3; // lg:grid-cols-3
-    if (width >= 768) return 2;  // md:grid-cols-2
-    return 1; // grid-cols-1
+
+    // More columns for compact cards
+    if (width >= 1536) return 8; // 2xl
+    if (width >= 1280) return 6; // xl
+    if (width >= 1024) return 5; // lg
+    if (width >= 768) return 4;  // md
+    if (width >= 640) return 3;  // sm
+    return 2;
   }, [itemsPerRow]);
 
   // Update container dimensions and items per row
@@ -139,7 +153,7 @@ export function VirtualizedNpcGrid({
         12;
       
       return Array.from({ length: skeletonCount }).map((_, index) => (
-        <div key={`skeleton-${index}`} className="p-2">
+        <div key={`skeleton-${index}`}>
           <NpcCardSkeleton />
         </div>
       ));
@@ -149,8 +163,8 @@ export function VirtualizedNpcGrid({
       // Render only visible items for large lists
       const visibleNpcs = npcs.slice(virtualItems.startIndex, virtualItems.endIndex);
       return visibleNpcs.map((npc, index) => (
-        <div key={`npc-${npc.id}-${virtualItems.startIndex + index}`} className="p-2">
-          <NpcCard 
+        <div key={`npc-${npc.id}-${virtualItems.startIndex + index}`}>
+          <NpcCard
             npc={npc}
             {...(npc.hasShop && { onBulkUpdateShop: handleBulkUpdate })}
           />
@@ -159,8 +173,8 @@ export function VirtualizedNpcGrid({
     } else {
       // Render all items for small lists
       return npcs.map((npc, index) => (
-        <div key={`npc-${npc.id}-${index}`} className="p-2">
-          <NpcCard 
+        <div key={`npc-${npc.id}-${index}`}>
+          <NpcCard
             npc={npc}
             {...(npc.hasShop && { onBulkUpdateShop: handleBulkUpdate })}
           />
@@ -200,9 +214,9 @@ export function VirtualizedNpcGrid({
         style={{ height: containerHeight }}
       >
         <div style={{ height: virtualItems.totalHeight, position: 'relative' }}>
-          <div 
-            className="grid gap-4"
-            style={{ 
+          <div
+            className="grid gap-2"
+            style={{
               transform: `translateY(${virtualItems.offsetY}px)`,
               gridTemplateColumns: `repeat(${actualItemsPerRow}, minmax(0, 1fr))`,
             }}
@@ -215,9 +229,9 @@ export function VirtualizedNpcGrid({
   } else {
     // Regular grid for small lists or when virtualization is disabled
     return (
-      <div 
+      <div
         ref={containerRef}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 overflow-auto"
+        className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-2 overflow-auto"
         style={{ maxHeight: containerHeight }}
       >
         {renderedItems}

@@ -65,22 +65,19 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 // Create creates a new tenant
 func (p *ProcessorImpl) Create(mb *message.Buffer) func(name string, region string, majorVersion uint16, minorVersion uint16) (Model, error) {
 	return func(name string, region string, majorVersion uint16, minorVersion uint16) (Model, error) {
-		m := NewBuilder().
+		m, err := NewModelBuilder().
 			SetName(name).
 			SetRegion(region).
 			SetMajorVersion(majorVersion).
 			SetMinorVersion(minorVersion).
 			Build()
-
-		e := Entity{
-			ID:           m.Id(),
-			Name:         m.Name(),
-			Region:       m.Region(),
-			MajorVersion: m.MajorVersion(),
-			MinorVersion: m.MinorVersion(),
+		if err != nil {
+			return Model{}, err
 		}
 
-		err := CreateTenant(p.db, e)
+		e := FromModel(m)
+
+		err = CreateTenant(p.db, e)
 		if err != nil {
 			return Model{}, err
 		}
@@ -131,10 +128,13 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(id uuid.UUID, name strin
 			return Model{}, err
 		}
 
-		e.Name = name
-		e.Region = region
-		e.MajorVersion = majorVersion
-		e.MinorVersion = minorVersion
+		e = NewEntityBuilder().
+			SetId(e.ID).
+			SetName(name).
+			SetRegion(region).
+			SetMajorVersion(majorVersion).
+			SetMinorVersion(minorVersion).
+			Build()
 
 		err = UpdateTenant(p.db, e)
 		if err != nil {

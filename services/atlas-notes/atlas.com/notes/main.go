@@ -61,7 +61,7 @@ func main() {
 		WithWaitGroup(tdm.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
-		AddRouteInitializer(note.InitResource(GetServer())(db)).
+		AddRouteInitializer(note.InitializeRoutes(GetServer())(db)).
 		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

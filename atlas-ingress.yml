@@ -129,7 +129,15 @@ data:
           proxy_pass http://atlas-chalkboards.atlas.svc.cluster.local:8080;
         }
 
+        location ~ ^/api/chalkboards(/.*)?$ {
+          proxy_pass http://atlas-chalkboards.atlas.svc.cluster.local:8080;
+        }
+
         location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/chairs(/.*)?$ {
+          proxy_pass http://atlas-chairs.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/chairs(/.*)?$ {
           proxy_pass http://atlas-chairs.atlas.svc.cluster.local:8080;
         }
 

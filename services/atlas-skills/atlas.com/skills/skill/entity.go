@@ -24,10 +24,10 @@ func (e Entity) TableName() string {
 }
 
 func Make(e Entity) (Model, error) {
-	return Model{
-		id:          e.Id,
-		level:       e.Level,
-		masterLevel: e.MasterLevel,
-		expiration:  e.Expiration,
-	}, nil
+	return NewModelBuilder().
+		SetId(e.Id).
+		SetLevel(e.Level).
+		SetMasterLevel(e.MasterLevel).
+		SetExpiration(e.Expiration).
+		Build()
 }

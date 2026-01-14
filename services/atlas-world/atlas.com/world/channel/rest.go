@@ -44,7 +44,7 @@ func Transform(m Model) (RestModel, error) {
 
 // Extract converts a RestModel to a Model using the Builder pattern
 func Extract(r RestModel) (Model, error) {
-	return NewBuilder().
+	return NewModelBuilder().
 		SetId(r.Id).
 		SetWorldId(r.WorldId).
 		SetChannelId(r.ChannelId).
@@ -53,5 +53,5 @@ func Extract(r RestModel) (Model, error) {
 		SetCurrentCapacity(r.CurrentCapacity).
 		SetMaxCapacity(r.MaxCapacity).
 		SetCreatedAt(r.CreatedAt).
-		Build(), nil
+		Build()
 }

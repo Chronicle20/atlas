@@ -1,13 +1,17 @@
 package storage
 
-import "strconv"
+import (
+	"atlas-storage/asset"
+	"strconv"
+)
 
 type RestModel struct {
-	Id        string `json:"-"`
-	WorldId   byte   `json:"world_id"`
-	AccountId uint32 `json:"account_id"`
-	Capacity  uint32 `json:"capacity"`
-	Mesos     uint32 `json:"mesos"`
+	Id        string                 `json:"-"`
+	WorldId   byte                   `json:"world_id"`
+	AccountId uint32                 `json:"account_id"`
+	Capacity  uint32                 `json:"capacity"`
+	Mesos     uint32                 `json:"mesos"`
+	Assets    []asset.BaseRestModel  `json:"assets"`
 }
 
 func (r RestModel) GetName() string {
@@ -24,14 +28,21 @@ func (r *RestModel) SetID(id string) error {
 }
 
 // Transform converts a Model to a RestModel
-func Transform(m Model) RestModel {
+// Assets must already be decorated with reference data before calling this
+func Transform(m Model) (RestModel, error) {
+	baseRestAssets, err := asset.TransformAllToBaseRestModel(m.Assets())
+	if err != nil {
+		return RestModel{}, err
+	}
+
 	return RestModel{
 		Id:        m.Id().String(),
 		WorldId:   m.WorldId(),
 		AccountId: m.AccountId(),
 		Capacity:  m.Capacity(),
 		Mesos:     m.Mesos(),
-	}
+		Assets:    baseRestAssets,
+	}, nil
 }
 
 // InputRestModel for creating/updating storage

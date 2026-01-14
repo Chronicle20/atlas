@@ -10,6 +10,7 @@ import (
 	"atlas-storage/kafka/producer"
 	"atlas-storage/stackable"
 	"context"
+	"encoding/json"
 	"errors"
 	"sort"
 	"time"
@@ -41,9 +42,29 @@ func (p *Processor) GetOrCreateStorage(worldId byte, accountId uint32) (Model, e
 	t := tenant.MustFromContext(p.ctx)
 
 	// Try to get existing storage
-	s, err := GetByWorldAndAccountId(p.l, p.db, t.Id())(worldId, accountId)
+	s, err := GetByWorldAndAccountId(p.l, p.db, t.Id(), p.ctx)(worldId, accountId)
 	if err == nil {
 		return s, nil
+	}
+
+	// Create new storage
+	return Create(p.l, p.db, t.Id())(worldId, accountId)
+}
+
+// GetStorageByWorldAndAccountId retrieves storage by world and account
+func (p *Processor) GetStorageByWorldAndAccountId(worldId byte, accountId uint32) (Model, error) {
+	t := tenant.MustFromContext(p.ctx)
+	return GetByWorldAndAccountId(p.l, p.db, t.Id(), p.ctx)(worldId, accountId)
+}
+
+// CreateStorage creates a new storage, returns error if already exists
+func (p *Processor) CreateStorage(worldId byte, accountId uint32) (Model, error) {
+	t := tenant.MustFromContext(p.ctx)
+
+	// Check if storage already exists
+	_, err := GetByWorldAndAccountId(p.l, p.db, t.Id(), p.ctx)(worldId, accountId)
+	if err == nil {
+		return Model{}, errors.New("storage already exists")
 	}
 
 	// Create new storage
@@ -164,7 +185,7 @@ func (p *Processor) WithdrawAndEmit(transactionId uuid.UUID, worldId byte, accou
 func (p *Processor) UpdateMesos(worldId byte, accountId uint32, body message.UpdateMesosBody) error {
 	t := tenant.MustFromContext(p.ctx)
 
-	s, err := GetByWorldAndAccountId(p.l, p.db, t.Id())(worldId, accountId)
+	s, err := GetByWorldAndAccountId(p.l, p.db, t.Id(), p.ctx)(worldId, accountId)
 	if err != nil {
 		return err
 	}
@@ -192,7 +213,7 @@ func (p *Processor) UpdateMesos(worldId byte, accountId uint32, body message.Upd
 func (p *Processor) UpdateMesosAndEmit(transactionId uuid.UUID, worldId byte, accountId uint32, body message.UpdateMesosBody) error {
 	t := tenant.MustFromContext(p.ctx)
 
-	s, err := GetByWorldAndAccountId(p.l, p.db, t.Id())(worldId, accountId)
+	s, err := GetByWorldAndAccountId(p.l, p.db, t.Id(), p.ctx)(worldId, accountId)
 	if err != nil {
 		return err
 	}
@@ -212,7 +233,7 @@ func (p *Processor) UpdateMesosAndEmit(transactionId uuid.UUID, worldId byte, ac
 	}
 
 	// Get updated storage for new mesos
-	s, _ = GetByWorldAndAccountId(p.l, p.db, t.Id())(worldId, accountId)
+	s, _ = GetByWorldAndAccountId(p.l, p.db, t.Id(), p.ctx)(worldId, accountId)
 
 	// Emit mesos updated event
 	_ = p.emitMesosUpdatedEvent(transactionId, worldId, accountId, oldMesos, s.Mesos())
@@ -252,15 +273,15 @@ func (p *Processor) Accept(worldId byte, accountId uint32, body compartment.Acce
 
 	// Determine the slot to use
 	var slot int16
-	if body.Slot > 0 {
+	if body.Slot >= 0 {
 		slot = body.Slot
 	} else {
-		// Find next available slot
+		// Find next available slot (0-indexed)
 		assets, err := asset.GetByStorageId(p.l, p.db, t.Id())(s.Id())
 		if err != nil {
 			return 0, 0, err
 		}
-		slot = int16(len(assets) + 1)
+		slot = int16(len(assets))
 	}
 
 	// Create asset with the reference data
@@ -277,16 +298,37 @@ func (p *Processor) Accept(worldId byte, accountId uint32, body compartment.Acce
 		return 0, 0, err
 	}
 
-	// For stackable items, we need to create a placeholder stackable record
-	// The actual quantity will be handled by the character inventory service
+	// For stackable items, parse the ReferenceData and create the stackable record
 	if refType == asset.ReferenceTypeConsumable ||
 		refType == asset.ReferenceTypeSetup ||
 		refType == asset.ReferenceTypeEtc {
+		// Default values
+		quantity := uint32(1)
+		ownerId := uint32(0)
+		flag := uint16(0)
+
+		// Parse ReferenceData if present
+		if len(body.ReferenceData) > 0 {
+			var stackableData struct {
+				Quantity uint32 `json:"quantity"`
+				OwnerId  uint32 `json:"ownerId"`
+				Flag     uint16 `json:"flag"`
+			}
+			if err := json.Unmarshal(body.ReferenceData, &stackableData); err == nil {
+				quantity = stackableData.Quantity
+				ownerId = stackableData.OwnerId
+				flag = stackableData.Flag
+				p.l.Debugf("Parsed stackable data from ReferenceData: quantity=%d, ownerId=%d, flag=%d", quantity, ownerId, flag)
+			} else {
+				p.l.WithError(err).Warnf("Failed to parse ReferenceData for stackable item, using defaults")
+			}
+		}
+
 		_, err = stackable.Create(p.l, p.db)(
 			a.Id(),
-			1, // Default quantity - will be updated with actual data
-			0, // OwnerId
-			0, // Flag
+			quantity,
+			ownerId,
+			flag,
 		)
 		if err != nil {
 			// Rollback asset creation
@@ -299,16 +341,16 @@ func (p *Processor) Accept(worldId byte, accountId uint32, body compartment.Acce
 }
 
 // AcceptAndEmit accepts an item and emits an ACCEPTED status event
-func (p *Processor) AcceptAndEmit(worldId byte, accountId uint32, body compartment.AcceptCommandBody) error {
+func (p *Processor) AcceptAndEmit(worldId byte, accountId uint32, characterId uint32, body compartment.AcceptCommandBody) error {
 	assetId, slot, err := p.Accept(worldId, accountId, body)
 	if err != nil {
 		// Emit error event
-		_ = p.emitCompartmentErrorEvent(worldId, accountId, body.TransactionId, "ACCEPT_FAILED", err.Error())
+		_ = p.emitCompartmentErrorEvent(worldId, accountId, characterId, body.TransactionId, "ACCEPT_FAILED", err.Error())
 		return err
 	}
 
 	// Emit accepted event
-	return p.emitCompartmentAcceptedEvent(worldId, accountId, body.TransactionId, assetId, slot)
+	return p.emitCompartmentAcceptedEvent(worldId, accountId, characterId, body.TransactionId, assetId, slot)
 }
 
 // Release releases an item from storage as part of a transfer saga
@@ -331,23 +373,24 @@ func (p *Processor) Release(worldId byte, accountId uint32, body compartment.Rel
 }
 
 // ReleaseAndEmit releases an item and emits a RELEASED status event
-func (p *Processor) ReleaseAndEmit(worldId byte, accountId uint32, body compartment.ReleaseCommandBody) error {
+func (p *Processor) ReleaseAndEmit(worldId byte, accountId uint32, characterId uint32, body compartment.ReleaseCommandBody) error {
 	err := p.Release(worldId, accountId, body)
 	if err != nil {
 		// Emit error event
-		_ = p.emitCompartmentErrorEvent(worldId, accountId, body.TransactionId, "RELEASE_FAILED", err.Error())
+		_ = p.emitCompartmentErrorEvent(worldId, accountId, characterId, body.TransactionId, "RELEASE_FAILED", err.Error())
 		return err
 	}
 
 	// Emit released event
-	return p.emitCompartmentReleasedEvent(worldId, accountId, body.TransactionId, body.AssetId)
+	return p.emitCompartmentReleasedEvent(worldId, accountId, characterId, body.TransactionId, body.AssetId)
 }
 
-func (p *Processor) emitCompartmentAcceptedEvent(worldId byte, accountId uint32, transactionId uuid.UUID, assetId uint32, slot int16) error {
+func (p *Processor) emitCompartmentAcceptedEvent(worldId byte, accountId uint32, characterId uint32, transactionId uuid.UUID, assetId uint32, slot int16) error {
 	event := &compartment.StatusEvent[compartment.StatusEventAcceptedBody]{
-		WorldId:   worldId,
-		AccountId: accountId,
-		Type:      compartment.StatusEventTypeAccepted,
+		WorldId:     worldId,
+		AccountId:   accountId,
+		CharacterId: characterId,
+		Type:        compartment.StatusEventTypeAccepted,
 		Body: compartment.StatusEventAcceptedBody{
 			TransactionId: transactionId,
 			AssetId:       assetId,
@@ -358,11 +401,12 @@ func (p *Processor) emitCompartmentAcceptedEvent(worldId byte, accountId uint32,
 	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvEventTopicStatus)(createCompartmentMessageProvider(accountId, event))
 }
 
-func (p *Processor) emitCompartmentReleasedEvent(worldId byte, accountId uint32, transactionId uuid.UUID, assetId uint32) error {
+func (p *Processor) emitCompartmentReleasedEvent(worldId byte, accountId uint32, characterId uint32, transactionId uuid.UUID, assetId uint32) error {
 	event := &compartment.StatusEvent[compartment.StatusEventReleasedBody]{
-		WorldId:   worldId,
-		AccountId: accountId,
-		Type:      compartment.StatusEventTypeReleased,
+		WorldId:     worldId,
+		AccountId:   accountId,
+		CharacterId: characterId,
+		Type:        compartment.StatusEventTypeReleased,
 		Body: compartment.StatusEventReleasedBody{
 			TransactionId: transactionId,
 			AssetId:       assetId,
@@ -372,11 +416,12 @@ func (p *Processor) emitCompartmentReleasedEvent(worldId byte, accountId uint32,
 	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvEventTopicStatus)(createCompartmentMessageProvider(accountId, event))
 }
 
-func (p *Processor) emitCompartmentErrorEvent(worldId byte, accountId uint32, transactionId uuid.UUID, errorCode string, errorMessage string) error {
+func (p *Processor) emitCompartmentErrorEvent(worldId byte, accountId uint32, characterId uint32, transactionId uuid.UUID, errorCode string, errorMessage string) error {
 	event := &compartment.StatusEvent[compartment.StatusEventErrorBody]{
-		WorldId:   worldId,
-		AccountId: accountId,
-		Type:      compartment.StatusEventTypeError,
+		WorldId:     worldId,
+		AccountId:   accountId,
+		CharacterId: characterId,
+		Type:        compartment.StatusEventTypeError,
 		Body: compartment.StatusEventErrorBody{
 			TransactionId: transactionId,
 			ErrorCode:     errorCode,
@@ -472,7 +517,7 @@ func (p *Processor) MergeAndSort(worldId byte, accountId uint32) error {
 	t := tenant.MustFromContext(p.ctx)
 
 	// Get storage
-	s, err := GetByWorldAndAccountId(p.l, p.db, t.Id())(worldId, accountId)
+	s, err := GetByWorldAndAccountId(p.l, p.db, t.Id(), p.ctx)(worldId, accountId)
 	if err != nil {
 		return err
 	}
@@ -626,10 +671,10 @@ func (p *Processor) sortAssets(tenantId uuid.UUID, assets []asset.Model[any]) er
 		byInventoryType[it] = group
 	}
 
-	// Assign slots within each inventory type (1-indexed per type)
+	// Assign slots within each inventory type (0-indexed per type)
 	for _, group := range byInventoryType {
 		for i, a := range group {
-			newSlot := int16(i + 1) // Slots are 1-indexed within each inventory type
+			newSlot := int16(i) // Slots are 0-indexed within each inventory type
 			if a.Slot() != newSlot {
 				err := asset.UpdateSlot(p.l, p.db, tenantId)(a.Id(), newSlot)
 				if err != nil {

@@ -129,7 +129,7 @@ func Extract(rm RestModel) (Model, error) {
 		return Model{}, err
 	}
 
-	return NewBuilder(rm.Id, rm.AccountId, rm.Type, rm.Capacity).
+	return NewModelBuilder(rm.Id, rm.AccountId, rm.Type, rm.Capacity).
 		SetAssets(assets).
-		Build(), nil
+		Build()
 }

@@ -19,7 +19,7 @@ func NewScheduler(routes []Model, sharedVessels []SharedVesselModel) *Scheduler 
 	}
 }
 
-func (s *Scheduler) ComputeSchedule() []TripScheduleModel {
+func (s *Scheduler) ComputeSchedule() ([]TripScheduleModel, error) {
 	now := timeNow().UTC()
 	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
 	endOfDay := startOfDay.Add(24 * time.Hour)
@@ -36,19 +36,25 @@ func (s *Scheduler) ComputeSchedule() []TripScheduleModel {
 		if _, isShared := sharedRouteIds[route.Id()]; isShared {
 			continue
 		}
-		routeSchedules := s.computeRouteSchedule(route, startOfDay, endOfDay)
+		routeSchedules, err := s.computeRouteSchedule(route, startOfDay, endOfDay)
+		if err != nil {
+			return nil, err
+		}
 		schedules = append(schedules, routeSchedules...)
 	}
 
 	for _, vessel := range s.sharedVessels {
-		vesselSchedules := s.computeSharedVesselSchedule(vessel, startOfDay, endOfDay)
+		vesselSchedules, err := s.computeSharedVesselSchedule(vessel, startOfDay, endOfDay)
+		if err != nil {
+			return nil, err
+		}
 		schedules = append(schedules, vesselSchedules...)
 	}
 
-	return schedules
+	return schedules, nil
 }
 
-func (s *Scheduler) computeRouteSchedule(route Model, startOfDay, endOfDay time.Time) []TripScheduleModel {
+func (s *Scheduler) computeRouteSchedule(route Model, startOfDay, endOfDay time.Time) ([]TripScheduleModel, error) {
 	var schedules []TripScheduleModel
 	currentTime := startOfDay
 
@@ -59,22 +65,25 @@ func (s *Scheduler) computeRouteSchedule(route Model, startOfDay, endOfDay time.
 		arrival := departure.Add(route.TravelDuration())
 
 		if arrival.Before(endOfDay) {
-			schedule := NewTripScheduleBuilder().
+			schedule, err := NewTripScheduleBuilder().
 				SetRouteId(route.Id()).
 				SetBoardingOpen(boardingOpen).
 				SetBoardingClosed(boardingClosed).
 				SetDeparture(departure).
 				SetArrival(arrival).
 				Build()
+			if err != nil {
+				return nil, err
+			}
 			schedules = append(schedules, schedule)
 		}
 		currentTime = currentTime.Add(route.CycleInterval())
 	}
 
-	return schedules
+	return schedules, nil
 }
 
-func (s *Scheduler) computeSharedVesselSchedule(vessel SharedVesselModel, startOfDay, endOfDay time.Time) []TripScheduleModel {
+func (s *Scheduler) computeSharedVesselSchedule(vessel SharedVesselModel, startOfDay, endOfDay time.Time) ([]TripScheduleModel, error) {
 	var schedules []TripScheduleModel
 
 	var routeA, routeB Model
@@ -87,7 +96,7 @@ func (s *Scheduler) computeSharedVesselSchedule(vessel SharedVesselModel, startO
 	}
 
 	if routeA.Id() == uuid.Nil || routeB.Id() == uuid.Nil {
-		return schedules
+		return schedules, nil
 	}
 
 	currentTime := startOfDay
@@ -107,13 +116,16 @@ func (s *Scheduler) computeSharedVesselSchedule(vessel SharedVesselModel, startO
 		arrival := departure.Add(route.TravelDuration())
 
 		if arrival.Before(endOfDay) {
-			schedule := NewTripScheduleBuilder().
+			schedule, err := NewTripScheduleBuilder().
 				SetRouteId(route.Id()).
 				SetBoardingOpen(boardingOpen).
 				SetBoardingClosed(boardingClosed).
 				SetDeparture(departure).
 				SetArrival(arrival).
 				Build()
+			if err != nil {
+				return nil, err
+			}
 			schedules = append(schedules, schedule)
 		}
 
@@ -121,5 +133,5 @@ func (s *Scheduler) computeSharedVesselSchedule(vessel SharedVesselModel, startO
 		isRouteA = !isRouteA
 	}
 
-	return schedules
+	return schedules, nil
 }

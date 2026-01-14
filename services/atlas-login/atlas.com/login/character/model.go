@@ -279,11 +279,12 @@ func (m Model) SetInventory(i inventory.Model) Model {
 		SetEtc(i.ETC()).
 		SetCash(i.Cash())
 
-	return Clone(m).SetInventory(ib.Build()).SetEquipment(eq).Build()
+	return m.ToBuilder().SetInventory(ib.Build()).SetEquipment(eq).Build()
 }
 
-func Clone(m Model) *ModelBuilder {
-	return &ModelBuilder{
+// ToBuilder creates a Builder initialized with the Model's values
+func (m Model) ToBuilder() *Builder {
+	return &Builder{
 		id:                 m.id,
 		accountId:          m.accountId,
 		worldId:            m.worldId,
@@ -318,7 +319,8 @@ func Clone(m Model) *ModelBuilder {
 	}
 }
 
-type ModelBuilder struct {
+// Builder is used to construct a Model instance
+type Builder struct {
 	id                 uint32
 	accountId          uint32
 	worldId            byte
@@ -352,46 +354,47 @@ type ModelBuilder struct {
 	inventory          inventory.Model
 }
 
-func NewModelBuilder() *ModelBuilder {
-	return &ModelBuilder{}
+// NewBuilder creates a new Builder instance
+func NewBuilder() *Builder {
+	return &Builder{}
 }
 
-func (b *ModelBuilder) SetId(v uint32) *ModelBuilder           { b.id = v; return b }
-func (b *ModelBuilder) SetAccountId(v uint32) *ModelBuilder    { b.accountId = v; return b }
-func (b *ModelBuilder) SetWorldId(v byte) *ModelBuilder        { b.worldId = v; return b }
-func (b *ModelBuilder) SetName(v string) *ModelBuilder         { b.name = v; return b }
-func (b *ModelBuilder) SetGender(v byte) *ModelBuilder         { b.gender = v; return b }
-func (b *ModelBuilder) SetSkinColor(v byte) *ModelBuilder      { b.skinColor = v; return b }
-func (b *ModelBuilder) SetFace(v uint32) *ModelBuilder         { b.face = v; return b }
-func (b *ModelBuilder) SetHair(v uint32) *ModelBuilder         { b.hair = v; return b }
-func (b *ModelBuilder) SetLevel(v byte) *ModelBuilder          { b.level = v; return b }
-func (b *ModelBuilder) SetJobId(v uint16) *ModelBuilder        { b.jobId = v; return b }
-func (b *ModelBuilder) SetStrength(v uint16) *ModelBuilder     { b.strength = v; return b }
-func (b *ModelBuilder) SetDexterity(v uint16) *ModelBuilder    { b.dexterity = v; return b }
-func (b *ModelBuilder) SetIntelligence(v uint16) *ModelBuilder { b.intelligence = v; return b }
-func (b *ModelBuilder) SetLuck(v uint16) *ModelBuilder         { b.luck = v; return b }
-func (b *ModelBuilder) SetHp(v uint16) *ModelBuilder           { b.hp = v; return b }
-func (b *ModelBuilder) SetMaxHp(v uint16) *ModelBuilder        { b.maxHp = v; return b }
-func (b *ModelBuilder) SetMp(v uint16) *ModelBuilder           { b.mp = v; return b }
-func (b *ModelBuilder) SetMaxMp(v uint16) *ModelBuilder        { b.maxMp = v; return b }
-func (b *ModelBuilder) SetHpMpUsed(v int) *ModelBuilder        { b.hpMpUsed = v; return b }
-func (b *ModelBuilder) SetAp(v uint16) *ModelBuilder           { b.ap = v; return b }
-func (b *ModelBuilder) SetSp(v string) *ModelBuilder           { b.sp = v; return b }
-func (b *ModelBuilder) SetExperience(v uint32) *ModelBuilder   { b.experience = v; return b }
-func (b *ModelBuilder) SetFame(v int16) *ModelBuilder          { b.fame = v; return b }
-func (b *ModelBuilder) SetGachaponExperience(v uint32) *ModelBuilder {
+func (b *Builder) SetId(v uint32) *Builder           { b.id = v; return b }
+func (b *Builder) SetAccountId(v uint32) *Builder    { b.accountId = v; return b }
+func (b *Builder) SetWorldId(v byte) *Builder        { b.worldId = v; return b }
+func (b *Builder) SetName(v string) *Builder         { b.name = v; return b }
+func (b *Builder) SetGender(v byte) *Builder         { b.gender = v; return b }
+func (b *Builder) SetSkinColor(v byte) *Builder      { b.skinColor = v; return b }
+func (b *Builder) SetFace(v uint32) *Builder         { b.face = v; return b }
+func (b *Builder) SetHair(v uint32) *Builder         { b.hair = v; return b }
+func (b *Builder) SetLevel(v byte) *Builder          { b.level = v; return b }
+func (b *Builder) SetJobId(v uint16) *Builder        { b.jobId = v; return b }
+func (b *Builder) SetStrength(v uint16) *Builder     { b.strength = v; return b }
+func (b *Builder) SetDexterity(v uint16) *Builder    { b.dexterity = v; return b }
+func (b *Builder) SetIntelligence(v uint16) *Builder { b.intelligence = v; return b }
+func (b *Builder) SetLuck(v uint16) *Builder         { b.luck = v; return b }
+func (b *Builder) SetHp(v uint16) *Builder           { b.hp = v; return b }
+func (b *Builder) SetMaxHp(v uint16) *Builder        { b.maxHp = v; return b }
+func (b *Builder) SetMp(v uint16) *Builder           { b.mp = v; return b }
+func (b *Builder) SetMaxMp(v uint16) *Builder        { b.maxMp = v; return b }
+func (b *Builder) SetHpMpUsed(v int) *Builder        { b.hpMpUsed = v; return b }
+func (b *Builder) SetAp(v uint16) *Builder           { b.ap = v; return b }
+func (b *Builder) SetSp(v string) *Builder           { b.sp = v; return b }
+func (b *Builder) SetExperience(v uint32) *Builder   { b.experience = v; return b }
+func (b *Builder) SetFame(v int16) *Builder          { b.fame = v; return b }
+func (b *Builder) SetGachaponExperience(v uint32) *Builder {
 	b.gachaponExperience = v
 	return b
 }
-func (b *ModelBuilder) SetMapId(v uint32) *ModelBuilder              { b.mapId = v; return b }
-func (b *ModelBuilder) SetSpawnPoint(v uint32) *ModelBuilder         { b.spawnPoint = v; return b }
-func (b *ModelBuilder) SetGm(v int) *ModelBuilder                    { b.gm = v; return b }
-func (b *ModelBuilder) SetMeso(v uint32) *ModelBuilder               { b.meso = v; return b }
-func (b *ModelBuilder) SetPets(v []pet.Model) *ModelBuilder          { b.pets = v; return b }
-func (b *ModelBuilder) SetEquipment(v equipment.Model) *ModelBuilder { b.equipment = v; return b }
-func (b *ModelBuilder) SetInventory(v inventory.Model) *ModelBuilder { b.inventory = v; return b }
+func (b *Builder) SetMapId(v uint32) *Builder              { b.mapId = v; return b }
+func (b *Builder) SetSpawnPoint(v uint32) *Builder         { b.spawnPoint = v; return b }
+func (b *Builder) SetGm(v int) *Builder                    { b.gm = v; return b }
+func (b *Builder) SetMeso(v uint32) *Builder               { b.meso = v; return b }
+func (b *Builder) SetPets(v []pet.Model) *Builder          { b.pets = v; return b }
+func (b *Builder) SetEquipment(v equipment.Model) *Builder { b.equipment = v; return b }
+func (b *Builder) SetInventory(v inventory.Model) *Builder { b.inventory = v; return b }
 
-func (b *ModelBuilder) Build() Model {
+func (b *Builder) Build() Model {
 	return Model{
 		id:                 b.id,
 		accountId:          b.accountId,

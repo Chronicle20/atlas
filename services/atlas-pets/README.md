@@ -218,3 +218,101 @@ Response:
   }
 }
 ```
+
+## Kafka Integration
+
+### Consumed Topics
+
+| Environment Variable | Description |
+|---------------------|-------------|
+| EVENT_TOPIC_CHARACTER_STATUS | Character status events (login, logout, delete, map/channel changes) |
+| COMMAND_TOPIC_PET | Pet commands (spawn, despawn, attribute updates) |
+| COMMAND_TOPIC_PET_MOVEMENT | Pet movement commands |
+
+### Commands
+
+#### Pet Command Topic (COMMAND_TOPIC_PET)
+
+| Command Type | Description |
+|-------------|-------------|
+| SPAWN | Spawn a pet for a character |
+| DESPAWN | Despawn a pet |
+| ATTEMPT_COMMAND | Execute a pet command (tricks) |
+| AWARD_CLOSENESS | Award closeness points to a pet |
+| AWARD_FULLNESS | Award fullness points to a pet |
+| AWARD_LEVEL | Award level to a pet |
+| EXCLUDE | Set excluded items for pet auto-loot |
+
+##### Sample Command Payload
+
+```json
+{
+  "transactionId": "550e8400-e29b-41d4-a716-446655440000",
+  "actorId": 54321,
+  "petId": 12345,
+  "type": "SPAWN",
+  "body": {
+    "lead": true
+  }
+}
+```
+
+#### Pet Movement Command Topic (COMMAND_TOPIC_PET_MOVEMENT)
+
+```json
+{
+  "worldId": 0,
+  "channelId": 1,
+  "mapId": 100000000,
+  "objectId": 12345,
+  "observerId": 54321,
+  "x": 100,
+  "y": 200,
+  "stance": 2
+}
+```
+
+### Produced Topics
+
+| Environment Variable | Description |
+|---------------------|-------------|
+| EVENT_TOPIC_PET_STATUS | Pet status change events |
+
+### Events
+
+#### Pet Status Event Topic (EVENT_TOPIC_PET_STATUS)
+
+| Event Type | Description |
+|-----------|-------------|
+| CREATED | Pet was created |
+| DELETED | Pet was deleted |
+| SPAWNED | Pet was spawned (made active) |
+| DESPAWNED | Pet was despawned (made inactive) |
+| COMMAND_RESPONSE | Response to a pet command attempt |
+| CLOSENESS_CHANGED | Pet closeness attribute changed |
+| FULLNESS_CHANGED | Pet fullness attribute changed |
+| LEVEL_CHANGED | Pet level changed |
+| SLOT_CHANGED | Pet slot position changed |
+| EXCLUDE_CHANGED | Pet excluded items changed |
+
+##### Sample Event Payload
+
+```json
+{
+  "petId": 12345,
+  "ownerId": 54321,
+  "type": "SPAWNED",
+  "body": {
+    "templateId": 5000,
+    "name": "Fluffy",
+    "slot": 0,
+    "level": 10,
+    "closeness": 100,
+    "fullness": 100,
+    "x": 100,
+    "y": 200,
+    "stance": 2,
+    "fh": 5
+  }
+}
+```

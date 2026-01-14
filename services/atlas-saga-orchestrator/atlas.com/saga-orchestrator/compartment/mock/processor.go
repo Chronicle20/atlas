@@ -14,6 +14,9 @@ type ProcessorMock struct {
 	RequestEquipAssetFunc          func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
 	RequestUnequipAssetFunc        func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
 	RequestCreateAndEquipAssetFunc func(transactionId uuid.UUID, payload compartment.CreateAndEquipAssetPayload) error
+	RequestTransferAssetFunc       func(transactionId uuid.UUID, worldId byte, accountId uint32, characterId uint32, assetId uint32, fromCompartmentId uuid.UUID, fromCompartmentType byte, fromInventoryType string, toCompartmentId uuid.UUID, toCompartmentType byte, toInventoryType string, referenceId uint32, templateId uint32, referenceType string, slot int16) error
+	RequestAcceptAssetFunc         func(transactionId uuid.UUID, characterId uint32, inventoryType byte, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) error
+	RequestReleaseAssetFunc        func(transactionId uuid.UUID, characterId uint32, inventoryType byte, assetId uint32) error
 }
 
 // RequestCreateItem is a mock implementation of the compartment.Processor.RequestCreateItem method
@@ -52,6 +55,30 @@ func (m *ProcessorMock) RequestUnequipAsset(transactionId uuid.UUID, characterId
 func (m *ProcessorMock) RequestCreateAndEquipAsset(transactionId uuid.UUID, payload compartment.CreateAndEquipAssetPayload) error {
 	if m.RequestCreateAndEquipAssetFunc != nil {
 		return m.RequestCreateAndEquipAssetFunc(transactionId, payload)
+	}
+	return nil
+}
+
+// RequestTransferAsset is a mock implementation of the compartment.Processor.RequestTransferAsset method
+func (m *ProcessorMock) RequestTransferAsset(transactionId uuid.UUID, worldId byte, accountId uint32, characterId uint32, assetId uint32, fromCompartmentId uuid.UUID, fromCompartmentType byte, fromInventoryType string, toCompartmentId uuid.UUID, toCompartmentType byte, toInventoryType string, referenceId uint32, templateId uint32, referenceType string, slot int16) error {
+	if m.RequestTransferAssetFunc != nil {
+		return m.RequestTransferAssetFunc(transactionId, worldId, accountId, characterId, assetId, fromCompartmentId, fromCompartmentType, fromInventoryType, toCompartmentId, toCompartmentType, toInventoryType, referenceId, templateId, referenceType, slot)
+	}
+	return nil
+}
+
+// RequestAcceptAsset is a mock implementation of the compartment.Processor.RequestAcceptAsset method
+func (m *ProcessorMock) RequestAcceptAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) error {
+	if m.RequestAcceptAssetFunc != nil {
+		return m.RequestAcceptAssetFunc(transactionId, characterId, inventoryType, templateId, referenceId, referenceType, referenceData)
+	}
+	return nil
+}
+
+// RequestReleaseAsset is a mock implementation of the compartment.Processor.RequestReleaseAsset method
+func (m *ProcessorMock) RequestReleaseAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, assetId uint32) error {
+	if m.RequestReleaseAssetFunc != nil {
+		return m.RequestReleaseAssetFunc(transactionId, characterId, inventoryType, assetId)
 	}
 	return nil
 }

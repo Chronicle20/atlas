@@ -83,7 +83,11 @@ func MaxSkillCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fun
 						)
 					}
 
-					return sagaProcessor.Create(sagaBuilder.Build())
+					s, err := sagaBuilder.Build()
+					if err != nil {
+						return err
+					}
+					return sagaProcessor.Create(s)
 				}
 			}, true
 		}
@@ -159,7 +163,11 @@ func ResetSkillCommandProducer(l logrus.FieldLogger) func(ctx context.Context) f
 						)
 					}
 
-					return sagaProcessor.Create(sagaBuilder.Build())
+					s, err := sagaBuilder.Build()
+					if err != nil {
+						return err
+					}
+					return sagaProcessor.Create(s)
 				}
 			}, true
 		}

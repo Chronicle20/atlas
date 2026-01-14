@@ -2,6 +2,7 @@ package member
 
 import (
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -21,4 +22,16 @@ func create(db *gorm.DB, tenant tenant.Model, guildId uint32, characterId uint32
 		return Model{}, err
 	}
 	return Make(*e)
+}
+
+func updateStatus(db *gorm.DB, tenantId uuid.UUID, characterId uint32, online bool) error {
+	return db.Model(&Entity{}).
+		Where("tenant_id = ? AND character_id = ?", tenantId, characterId).
+		Update("online", online).Error
+}
+
+func updateTitle(db *gorm.DB, tenantId uuid.UUID, characterId uint32, title byte) error {
+	return db.Model(&Entity{}).
+		Where("tenant_id = ? AND character_id = ?", tenantId, characterId).
+		Update("title", title).Error
 }

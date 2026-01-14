@@ -40,3 +40,8 @@ func handleEventStatus(l logrus.FieldLogger, ctx context.Context, e channel2.Sta
 		l.Errorf("Unhandled event status [%s].", e.Type)
 	}
 }
+
+// HandleEventStatusForTest exposes handleEventStatus for testing purposes
+func HandleEventStatusForTest(l logrus.FieldLogger, ctx context.Context, e channel2.StatusEvent) {
+	handleEventStatus(l, ctx, e)
+}

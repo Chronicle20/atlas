@@ -68,12 +68,19 @@ func warpCommandProducer(worldId world.Id, channelId channel.Id, actorId uint32,
 				return err
 			}
 			for _, id := range ids {
-				err = sp.Create(saga.NewBuilder().
+				s, buildErr := saga.NewBuilder().
+					SetSagaType(saga.QuestReward).
+					SetInitiatedBy("COMMAND").
 					AddStep("warp_character", saga.Pending, saga.WarpToRandomPortal, saga.WarpToRandomPortalPayload{
 						CharacterId: id,
 						FieldId:     field.NewBuilder(worldId, channelId, _map2.Id(requestedMapId)).Build().Id(),
 					}).
-					Build())
+					Build()
+				if buildErr != nil {
+					l.WithError(buildErr).Errorf("Unable to build saga for warp to [%d] for character [%d].", requestedMapId, id)
+					continue
+				}
+				err = sp.Create(s)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to warp character [%d] via warp map command.", id)
 				}

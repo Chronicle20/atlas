@@ -214,7 +214,7 @@ func handleAcceptCommand(db *gorm.DB) message.Handler[compartment2.Command[compa
 		if transactionId == uuid.Nil {
 			transactionId = c.Body.TransactionId
 		}
-		_ = compartment.NewProcessor(l, ctx, db).AcceptAndEmit(transactionId, c.CharacterId, inventory.Type(c.InventoryType), c.Body.ReferenceId)
+		_ = compartment.NewProcessor(l, ctx, db).AcceptAndEmit(transactionId, c.CharacterId, inventory.Type(c.InventoryType), c.Body.TemplateId, c.Body.ReferenceId, c.Body.ReferenceType, c.Body.ReferenceData)
 	}
 }
 

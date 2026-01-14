@@ -34,7 +34,7 @@ func Make(e Entity) (Model, error) {
 		SetMessage(e.Message).
 		SetTimestamp(e.Timestamp).
 		SetFlag(e.Flag).
-		Build(), nil
+		Build()
 }
 
 // MakeEntity converts a Model domain model to an Entity

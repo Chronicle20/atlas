@@ -92,33 +92,33 @@ func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonap
 }
 
 func Extract(m RestModel) (Model, error) {
-	return Model{
-		id:                 m.Id,
-		accountId:          m.AccountId,
-		worldId:            m.WorldId,
-		name:               m.Name,
-		level:              m.Level,
-		experience:         m.Experience,
-		gachaponExperience: m.GachaponExperience,
-		strength:           m.Strength,
-		dexterity:          m.Dexterity,
-		intelligence:       m.Intelligence,
-		luck:               m.Luck,
-		hp:                 m.Hp,
-		mp:                 m.Mp,
-		maxHp:              m.MaxHp,
-		maxMp:              m.MaxMp,
-		meso:               m.Meso,
-		hpMpUsed:           m.HpMpUsed,
-		jobId:              m.JobId,
-		skinColor:          m.SkinColor,
-		gender:             m.Gender,
-		fame:               m.Fame,
-		hair:               m.Hair,
-		face:               m.Face,
-		ap:                 m.Ap,
-		sp:                 m.Sp,
-		mapId:              m.MapId,
-		gm:                 m.Gm,
-	}, nil
+	return NewBuilder().
+		SetId(m.Id).
+		SetAccountId(m.AccountId).
+		SetWorldId(m.WorldId).
+		SetName(m.Name).
+		SetLevel(m.Level).
+		SetExperience(m.Experience).
+		SetGachaponExperience(m.GachaponExperience).
+		SetStrength(m.Strength).
+		SetDexterity(m.Dexterity).
+		SetIntelligence(m.Intelligence).
+		SetLuck(m.Luck).
+		SetHp(m.Hp).
+		SetMp(m.Mp).
+		SetMaxHp(m.MaxHp).
+		SetMaxMp(m.MaxMp).
+		SetMeso(m.Meso).
+		SetHpMpUsed(m.HpMpUsed).
+		SetJobId(m.JobId).
+		SetSkinColor(m.SkinColor).
+		SetGender(m.Gender).
+		SetFame(m.Fame).
+		SetHair(m.Hair).
+		SetFace(m.Face).
+		SetAp(m.Ap).
+		SetSp(m.Sp).
+		SetMapId(m.MapId).
+		SetGm(m.Gm).
+		Build(), nil
 }

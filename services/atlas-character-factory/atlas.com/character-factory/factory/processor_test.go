@@ -1047,7 +1047,8 @@ func TestCharacterCreationIntegrationWithOrchestrator(t *testing.T) {
 			logger.SetLevel(logrus.DebugLevel)
 
 			// Call the character creation function
-			transactionId, err := Create(logger)(ctx)(tt.input)
+			processor := NewProcessor(logger)
+			transactionId, err := processor.Create(ctx, tt.input)
 
 			// Verify error expectations
 			if tt.expectError {

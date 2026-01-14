@@ -41,7 +41,10 @@ func handleEnterCommand(db *gorm.DB) message.Handler[shop2.Command[shop2.Command
 		if e.Type != shop2.CommandShopEnter {
 			return
 		}
-		_ = shops.NewProcessor(l, ctx, db).EnterAndEmit(e.CharacterId, e.Body.NpcTemplateId)
+		err := shops.NewProcessor(l, ctx, db).EnterAndEmit(e.CharacterId, e.Body.NpcTemplateId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to process shop enter for character [%d] at NPC [%d].", e.CharacterId, e.Body.NpcTemplateId)
+		}
 	}
 }
 
@@ -50,7 +53,10 @@ func handleExitCommand(db *gorm.DB) message.Handler[shop2.Command[shop2.CommandS
 		if e.Type != shop2.CommandShopExit {
 			return
 		}
-		_ = shops.NewProcessor(l, ctx, db).ExitAndEmit(e.CharacterId)
+		err := shops.NewProcessor(l, ctx, db).ExitAndEmit(e.CharacterId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to process shop exit for character [%d].", e.CharacterId)
+		}
 	}
 }
 
@@ -59,7 +65,10 @@ func handleBuyCommand(db *gorm.DB) message.Handler[shop2.Command[shop2.CommandSh
 		if e.Type != shop2.CommandShopBuy {
 			return
 		}
-		_ = shops.NewProcessor(l, ctx, db).BuyAndEmit(e.CharacterId, e.Body.Slot, e.Body.ItemTemplateId, e.Body.Quantity, e.Body.DiscountPrice)
+		err := shops.NewProcessor(l, ctx, db).BuyAndEmit(e.CharacterId, e.Body.Slot, e.Body.ItemTemplateId, e.Body.Quantity, e.Body.DiscountPrice)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to process buy for character [%d], item [%d], quantity [%d].", e.CharacterId, e.Body.ItemTemplateId, e.Body.Quantity)
+		}
 	}
 }
 
@@ -68,7 +77,10 @@ func handleSellCommand(db *gorm.DB) message.Handler[shop2.Command[shop2.CommandS
 		if e.Type != shop2.CommandShopSell {
 			return
 		}
-		_ = shops.NewProcessor(l, ctx, db).SellAndEmit(e.CharacterId, e.Body.Slot, e.Body.ItemTemplateId, e.Body.Quantity)
+		err := shops.NewProcessor(l, ctx, db).SellAndEmit(e.CharacterId, e.Body.Slot, e.Body.ItemTemplateId, e.Body.Quantity)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to process sell for character [%d], item [%d], quantity [%d].", e.CharacterId, e.Body.ItemTemplateId, e.Body.Quantity)
+		}
 	}
 }
 
@@ -77,6 +89,9 @@ func handleRechargeCommand(db *gorm.DB) message.Handler[shop2.Command[shop2.Comm
 		if e.Type != shop2.CommandShopRecharge {
 			return
 		}
-		_ = shops.NewProcessor(l, ctx, db).RechargeAndEmit(e.CharacterId, e.Body.Slot)
+		err := shops.NewProcessor(l, ctx, db).RechargeAndEmit(e.CharacterId, e.Body.Slot)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to process recharge for character [%d], slot [%d].", e.CharacterId, e.Body.Slot)
+		}
 	}
 }

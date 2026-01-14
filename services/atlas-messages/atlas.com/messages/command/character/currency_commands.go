@@ -76,14 +76,21 @@ func AwardCurrencyCommandProducer(l logrus.FieldLogger) func(ctx context.Context
 						return err
 					}
 
-					err = sp.Create(saga.NewBuilder().
+					s, buildErr := saga.NewBuilder().
+						SetSagaType(saga.QuestReward).
+						SetInitiatedBy("COMMAND").
 						AddStep("award_currency", saga.Pending, saga.AwardCurrency, saga.AwardCurrencyPayload{
 							CharacterId:  target.Id(),
 							AccountId:    target.AccountId(),
 							CurrencyType: currencyType,
 							Amount:       amount,
 						}).
-						Build())
+						Build()
+					if buildErr != nil {
+						l.WithError(buildErr).Errorf("Unable to build saga for currency award to [%d].", target.Id())
+						return buildErr
+					}
+					err = sp.Create(s)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to award [%d] currency type [%d] amount [%d] to character [%d].", amount, currencyType, amount, target.Id())
 					}

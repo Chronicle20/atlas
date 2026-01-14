@@ -8,12 +8,12 @@ import (
 
 func createCommandProvider(worldId byte, channelId byte, mapId uint32, classification uint32, name string, state int8, x int16, y int16, delay uint32, direction byte) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(mapId))
-	value := &command[createCommandBody]{
+	value := &Command[CreateCommandBody]{
 		WorldId:   worldId,
 		ChannelId: channelId,
 		MapId:     mapId,
 		Type:      CommandTypeCreate,
-		Body: createCommandBody{
+		Body: CreateCommandBody{
 			Classification: classification,
 			Name:           name,
 			State:          state,

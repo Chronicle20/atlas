@@ -73,19 +73,20 @@ func (p *Processor) Create(input RestModel) (uuid.UUID, error) {
 		return uuid.Nil, err
 	}
 
-	var templateId uuid.UUID
+	// Generate UUID in Go for database portability
+	templateId := uuid.New()
 	err = database.ExecuteTransaction(p.db, func(db *gorm.DB) error {
 		e := &Entity{
+			Id:           templateId,
 			Region:       input.Region,
 			MajorVersion: input.MajorVersion,
 			MinorVersion: input.MinorVersion,
 			Data:         *rm,
 		}
-		err := db.Save(e).Error
+		err := db.Create(e).Error
 		if err != nil {
 			return err
 		}
-		templateId = e.Id
 		return nil
 	})
 	if err != nil {

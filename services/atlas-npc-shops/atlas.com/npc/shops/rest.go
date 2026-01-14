@@ -133,7 +133,7 @@ func Extract(rm RestModel) (Model, error) {
 	return NewBuilder(rm.NpcId).
 		SetCommodities(commodityModels).
 		SetRecharger(rm.Recharger).
-		Build(), nil
+		Build()
 }
 
 // CharacterListRestModel is a JSON API representation of characters in a shop

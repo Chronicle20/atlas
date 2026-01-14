@@ -55,8 +55,7 @@ func Extract(rm RestModel) (Model, error) {
 		return Model{}, err
 	}
 
-	builder := &ModelBuilder{}
-	return builder.
+	return NewModelBuilder().
 		SetId(id).
 		SetTemplateId(rm.TemplateId).
 		SetMesoPrice(rm.MesoPrice).
@@ -67,5 +66,5 @@ func Extract(rm RestModel) (Model, error) {
 		SetLevelLimit(rm.LevelLimit).
 		SetUnitPrice(rm.UnitPrice).
 		SetSlotMax(rm.SlotMax).
-		Build(), nil
+		Build()
 }

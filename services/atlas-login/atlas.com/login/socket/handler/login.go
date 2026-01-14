@@ -59,7 +59,7 @@ func LoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Produc
 	t := tenant.MustFromContext(ctx)
 	return func(s session.Model, r *request.Reader) {
 		p := ReadLoginRequest(r)
-		l.Debugf("Reading [%s] message. body={name=%s, password=%s, gameRoomClient=%d, gameStartMode=%d}", LoginHandle, p.Name(), p.Password(), p.GameRoomClient(), p.GameStartMode())
+		l.Debugf("Reading [%s] message. body={name=%s, gameRoomClient=%d, gameStartMode=%d}", LoginHandle, p.Name(), p.GameRoomClient(), p.GameStartMode())
 
 		err := as.NewProcessor(l, ctx).Create(s.SessionId(), s.AccountId(), p.Name(), p.Password(), "")
 		if err != nil {

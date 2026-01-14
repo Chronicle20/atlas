@@ -23,10 +23,10 @@ func CharacterViewAllSelectedPicRegisterHandleFunc(l logrus.FieldLogger, ctx con
 		opt := r.ReadByte()
 		characterId := r.ReadUint32()
 		worldId := r.ReadUint32()
-		macAddress := r.ReadAsciiString()
-		macAddressWithHDDSerial := r.ReadAsciiString()
+		_ = r.ReadAsciiString() // macAddress - not logged for security
+		_ = r.ReadAsciiString() // macAddressWithHDDSerial - not logged for security
 		pic := r.ReadAsciiString()
-		l.Debugf("Character [%d] attempting to login via view all. opt [%d], worldId [%d], macAddress [%s], macAddressWithHDDSerial [%s], pic [%s].", characterId, opt, worldId, macAddress, macAddressWithHDDSerial, pic)
+		l.Debugf("Character [%d] attempting to login via view all. opt [%d], worldId [%d].", characterId, opt, worldId)
 
 		c, err := cp.GetById(cp.InventoryDecorator())(characterId)
 		if err != nil {

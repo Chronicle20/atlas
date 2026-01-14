@@ -65,34 +65,34 @@ func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
 func Transform(m Model) (RestModel, error) {
 	td := GetTemporalRegistry().GetById(m.Id())
 	rm := RestModel{
-		Id:                 m.id,
-		AccountId:          m.accountId,
-		WorldId:            m.worldId,
-		Name:               m.name,
-		Level:              m.level,
-		Experience:         m.experience,
-		GachaponExperience: m.gachaponExperience,
-		Strength:           m.strength,
-		Dexterity:          m.dexterity,
-		Intelligence:       m.intelligence,
-		Luck:               m.luck,
-		Hp:                 m.hp,
-		MaxHp:              m.maxHp,
-		Mp:                 m.mp,
-		MaxMp:              m.maxMp,
-		Meso:               m.meso,
-		HpMpUsed:           m.hpMpUsed,
-		JobId:              m.jobId,
-		SkinColor:          m.skinColor,
-		Gender:             m.gender,
-		Fame:               m.fame,
-		Hair:               m.hair,
-		Face:               m.face,
-		Ap:                 m.ap,
-		Sp:                 m.sp,
-		MapId:              m.mapId,
-		SpawnPoint:         m.spawnPoint,
-		Gm:                 m.gm,
+		Id:                 m.Id(),
+		AccountId:          m.AccountId(),
+		WorldId:            m.WorldId(),
+		Name:               m.Name(),
+		Level:              m.Level(),
+		Experience:         m.Experience(),
+		GachaponExperience: m.GachaponExperience(),
+		Strength:           m.Strength(),
+		Dexterity:          m.Dexterity(),
+		Intelligence:       m.Intelligence(),
+		Luck:               m.Luck(),
+		Hp:                 m.HP(),
+		MaxHp:              m.MaxHP(),
+		Mp:                 m.MP(),
+		MaxMp:              m.MaxMP(),
+		Meso:               m.Meso(),
+		HpMpUsed:           m.HPMPUsed(),
+		JobId:              m.JobId(),
+		SkinColor:          m.SkinColor(),
+		Gender:             m.Gender(),
+		Fame:               m.Fame(),
+		Hair:               m.Hair(),
+		Face:               m.Face(),
+		Ap:                 m.AP(),
+		Sp:                 m.SPString(),
+		MapId:              m.MapId(),
+		SpawnPoint:         m.SpawnPoint(),
+		Gm:                 m.GM(),
 		X:                  td.X(),
 		Y:                  td.Y(),
 		Stance:             td.Stance(),
@@ -101,34 +101,34 @@ func Transform(m Model) (RestModel, error) {
 }
 
 func Extract(m RestModel) (Model, error) {
-	return Model{
-		id:                 m.Id,
-		accountId:          m.AccountId,
-		worldId:            m.WorldId,
-		name:               m.Name,
-		level:              m.Level,
-		experience:         m.Experience,
-		gachaponExperience: m.GachaponExperience,
-		strength:           m.Strength,
-		dexterity:          m.Dexterity,
-		intelligence:       m.Intelligence,
-		luck:               m.Luck,
-		hp:                 m.Hp,
-		mp:                 m.Mp,
-		maxHp:              m.MaxHp,
-		maxMp:              m.MaxMp,
-		meso:               m.Meso,
-		hpMpUsed:           m.HpMpUsed,
-		jobId:              m.JobId,
-		skinColor:          m.SkinColor,
-		gender:             m.Gender,
-		fame:               m.Fame,
-		hair:               m.Hair,
-		face:               m.Face,
-		ap:                 m.Ap,
-		sp:                 m.Sp,
-		mapId:              m.MapId,
-		spawnPoint:         m.SpawnPoint,
-		gm:                 m.Gm,
-	}, nil
+	return NewModelBuilder().
+		SetId(m.Id).
+		SetAccountId(m.AccountId).
+		SetWorldId(m.WorldId).
+		SetName(m.Name).
+		SetLevel(m.Level).
+		SetExperience(m.Experience).
+		SetGachaponExperience(m.GachaponExperience).
+		SetStrength(m.Strength).
+		SetDexterity(m.Dexterity).
+		SetIntelligence(m.Intelligence).
+		SetLuck(m.Luck).
+		SetHp(m.Hp).
+		SetMp(m.Mp).
+		SetMaxHp(m.MaxHp).
+		SetMaxMp(m.MaxMp).
+		SetMeso(m.Meso).
+		SetHpMpUsed(m.HpMpUsed).
+		SetJobId(m.JobId).
+		SetSkinColor(m.SkinColor).
+		SetGender(m.Gender).
+		SetFame(m.Fame).
+		SetHair(m.Hair).
+		SetFace(m.Face).
+		SetAp(m.Ap).
+		SetSp(m.Sp).
+		SetMapId(m.MapId).
+		SetSpawnPoint(m.SpawnPoint).
+		SetGm(m.Gm).
+		Build(), nil
 }

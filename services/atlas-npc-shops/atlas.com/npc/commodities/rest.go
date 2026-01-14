@@ -37,16 +37,16 @@ func (r RestModel) GetName() string {
 // Transform converts a Model to a RestModel
 func Transform(m Model) (RestModel, error) {
 	return RestModel{
-		Id:           m.id.String(),
-		TemplateId:   m.templateId,
-		MesoPrice:    m.mesoPrice,
-		DiscountRate: m.discountRate,
-		TokenTemplateId:  m.tokenTemplateId,
-		TokenPrice:   m.tokenPrice,
-		Period:       m.period,
-		LevelLimit:   m.levelLimit,
-		UnitPrice:    m.unitPrice,
-		SlotMax:      m.slotMax,
+		Id:              m.Id().String(),
+		TemplateId:      m.TemplateId(),
+		MesoPrice:       m.MesoPrice(),
+		DiscountRate:    m.DiscountRate(),
+		TokenTemplateId: m.TokenTemplateId(),
+		TokenPrice:      m.TokenPrice(),
+		Period:          m.Period(),
+		LevelLimit:      m.LevelLimit(),
+		UnitPrice:       m.UnitPrice(),
+		SlotMax:         m.SlotMax(),
 	}, nil
 }
 
@@ -57,8 +57,7 @@ func Extract(rm RestModel) (Model, error) {
 		return Model{}, err
 	}
 
-	builder := &ModelBuilder{}
-	return builder.
+	return NewBuilder().
 		SetId(id).
 		SetTemplateId(rm.TemplateId).
 		SetMesoPrice(rm.MesoPrice).
@@ -69,5 +68,5 @@ func Extract(rm RestModel) (Model, error) {
 		SetLevelLimit(rm.LevelLimit).
 		SetUnitPrice(rm.UnitPrice).
 		SetSlotMax(rm.SlotMax).
-		Build(), nil
+		Build()
 }

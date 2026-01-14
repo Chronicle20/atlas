@@ -15,6 +15,8 @@ type ProcessorMock struct {
 	DeleteAndEmitFunc       func(id uint32) error
 	DeleteAllFunc           func(mb *message.Buffer) func(characterId uint32) error
 	DeleteAllAndEmitFunc    func(characterId uint32) error
+	DiscardFunc             func(mb *message.Buffer) func(characterId uint32) func(noteIds []uint32) error
+	DiscardAndEmitFunc      func(characterId uint32, noteIds []uint32) error
 	ByIdProviderFunc        func(id uint32) model.Provider[note.Model]
 	ByCharacterProviderFunc func(characterId uint32) model.Provider[[]note.Model]
 	InTenantProviderFunc    func() model.Provider[[]note.Model]
@@ -94,6 +96,24 @@ func (m *ProcessorMock) DeleteAll(mb *message.Buffer) func(characterId uint32) e
 func (m *ProcessorMock) DeleteAllAndEmit(characterId uint32) error {
 	if m.DeleteAllAndEmitFunc != nil {
 		return m.DeleteAllAndEmitFunc(characterId)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) Discard(mb *message.Buffer) func(characterId uint32) func(noteIds []uint32) error {
+	if m.DiscardFunc != nil {
+		return m.DiscardFunc(mb)
+	}
+	return func(characterId uint32) func(noteIds []uint32) error {
+		return func(noteIds []uint32) error {
+			return nil
+		}
+	}
+}
+
+func (m *ProcessorMock) DiscardAndEmit(characterId uint32, noteIds []uint32) error {
+	if m.DiscardAndEmitFunc != nil {
+		return m.DiscardAndEmitFunc(characterId, noteIds)
 	}
 	return nil
 }

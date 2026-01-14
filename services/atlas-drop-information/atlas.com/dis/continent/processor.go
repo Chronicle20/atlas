@@ -54,14 +54,3 @@ func (p *ProcessorImpl) GetAll() model.Provider[[]Model] {
 		return results, nil
 	}
 }
-
-// Legacy function wrapper for backward compatibility during migration
-func GetAll(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func() ([]Model, error) {
-	return func(ctx context.Context) func(db *gorm.DB) func() ([]Model, error) {
-		return func(db *gorm.DB) func() ([]Model, error) {
-			return func() ([]Model, error) {
-				return NewProcessor(l, ctx, db).GetAll()()
-			}
-		}
-	}
-}

@@ -26,17 +26,17 @@ func (e *Entity) TableName() string {
 
 // Make converts an Entity to a Model
 func Make(entity Entity) (Model, error) {
-	return Model{
-		id:           entity.Id,
-		npcId:        entity.NpcId,
-		templateId:   entity.TemplateId,
-		mesoPrice:    entity.MesoPrice,
-		discountRate: entity.DiscountRate,
-		tokenTemplateId:  entity.TokenTemplateId,
-		tokenPrice:   entity.TokenPrice,
-		period:       entity.Period,
-		levelLimit:   entity.LevelLimit,
-	}, nil
+	return NewBuilder().
+		SetId(entity.Id).
+		SetNpcId(entity.NpcId).
+		SetTemplateId(entity.TemplateId).
+		SetMesoPrice(entity.MesoPrice).
+		SetDiscountRate(entity.DiscountRate).
+		SetTokenTemplateId(entity.TokenTemplateId).
+		SetTokenPrice(entity.TokenPrice).
+		SetPeriod(entity.Period).
+		SetLevelLimit(entity.LevelLimit).
+		Build()
 }
 
 func Migration(db *gorm.DB) error {

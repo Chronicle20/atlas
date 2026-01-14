@@ -19,8 +19,7 @@ func (e Entity) TableName() string {
 }
 
 func Make(e Entity) (Model, error) {
-	return Model{
-		id:     e.Id,
-		itemId: e.ItemId,
-	}, nil
+	return NewModelBuilder(e.ItemId).
+		SetId(e.Id).
+		Build()
 }

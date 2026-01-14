@@ -257,7 +257,8 @@ func (p *ProcessorImpl) CooldownDecorator(characterId uint32) model.Decorator[Mo
 		if err != nil {
 			return m
 		}
-		return m.SetCooldown(ct)
+		updated, _ := CloneModel(m).SetCooldownExpiresAt(ct).Build()
+		return updated
 	}
 }
 

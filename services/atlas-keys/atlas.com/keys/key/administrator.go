@@ -18,7 +18,7 @@ func create(db *gorm.DB, t tenant.Model, characterId uint32, key int32, theType 
 	if err != nil {
 		return Model{}, err
 	}
-	return makeKey(*e)
+	return Make(*e)
 }
 
 func update(db *gorm.DB, t tenant.Model, characterId uint32, key int32, theType int8, action int32) error {

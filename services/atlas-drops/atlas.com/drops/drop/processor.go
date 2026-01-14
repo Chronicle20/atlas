@@ -89,7 +89,11 @@ func (p *ProcessorImpl) Spawn(msgBuf *message.Buffer) func(mb *ModelBuilder) (Mo
 
 			mb.SetEquipmentId(e.Id())
 		}
-		m := GetRegistry().CreateDrop(mb)
+		m, err := GetRegistry().CreateDrop(mb)
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to create drop.")
+			return Model{}, err
+		}
 		_ = msgBuf.Put(drop.EnvEventTopicDropStatus, createdEventStatusProvider(m))
 		return m, nil
 	}
@@ -110,7 +114,11 @@ func (p *ProcessorImpl) SpawnAndEmit(mb *ModelBuilder) (Model, error) {
 // SpawnForCharacter creates a new drop for a character
 func (p *ProcessorImpl) SpawnForCharacter(msgBuf *message.Buffer) func(mb *ModelBuilder) (Model, error) {
 	return func(mb *ModelBuilder) (Model, error) {
-		m := GetRegistry().CreateDrop(mb)
+		m, err := GetRegistry().CreateDrop(mb)
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to create drop for character.")
+			return Model{}, err
+		}
 		_ = msgBuf.Put(drop.EnvEventTopicDropStatus, createdEventStatusProvider(m))
 		return m, nil
 	}

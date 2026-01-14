@@ -34,16 +34,20 @@ MINOR_VERSION:1
 
 #### [POST] Create Equipable
 
-```/api/ess/equipment```
+```/api/equipables```
 
 #### [POST] Create Random Stat Equipable
 
-```/api/ess/equipment?random=true```
+```/api/equipables?random=true```
 
 #### [GET] Get Equipable By Id
 
-```/api/ess/equipment/{equipmentId}```
+```/api/equipables/{equipmentId}```
+
+#### [PATCH] Update Equipable By Id
+
+```/api/equipables/{equipmentId}```
 
 #### [DELETE] Delete Equipable By Id
 
-```/api/ess/equipment/{equipmentId}```
+```/api/equipables/{equipmentId}```

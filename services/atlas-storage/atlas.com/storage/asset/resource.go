@@ -4,8 +4,6 @@ import (
 	"atlas-storage/rest"
 	"atlas-storage/stackable"
 	"github.com/Chronicle20/atlas-rest/server"
-	"github.com/Chronicle20/atlas-tenant"
-	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -31,57 +29,43 @@ func handleGetAssetsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest
 		return rest.ParseAccountId(d.Logger(), func(accountId uint32) http.HandlerFunc {
 			return rest.ParseWorldId(d.Logger(), func(worldId byte) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
-					t := tenant.MustFromContext(d.Context())
+					processor := NewProcessor(d.Logger(), d.Context(), db)
 
-					// Get or create storage using provider
-					storageId, err := getOrCreateStorageId(d.Logger(), db, t.Id(), worldId, accountId)
+					// Get or create storage using processor
+					storageId, err := processor.GetOrCreateStorageId(worldId, accountId)
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Unable to get or create storage for world %d account %d.", worldId, accountId)
 						w.WriteHeader(http.StatusInternalServerError)
 						return
 					}
 
-					// Get all assets for this storage using provider
-					assets, err := GetByStorageId(d.Logger(), db, t.Id())(storageId)
+					// Get all assets for this storage using processor
+					assets, err := processor.GetAssetsByStorageId(storageId)
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Unable to get assets for storage %s.", storageId)
 						w.WriteHeader(http.StatusInternalServerError)
 						return
 					}
 
-					// Get stackable data for stackable items
-					var stackableAssetIds []uint32
-					for _, a := range assets {
-						if a.IsStackable() {
-							stackableAssetIds = append(stackableAssetIds, a.Id())
-						}
+					// Decorate assets with full reference data
+					decoratedAssets, err := processor.DecorateAll(assets)
+					if err != nil {
+						d.Logger().WithError(err).Errorf("Unable to decorate assets for storage %s.", storageId)
+						w.WriteHeader(http.StatusInternalServerError)
+						return
 					}
 
-					stackableMap := make(map[uint32]stackable.Model)
-					if len(stackableAssetIds) > 0 {
-						stackables, err := stackable.GetByAssetIds(d.Logger(), db)(stackableAssetIds)
-						if err != nil {
-							d.Logger().WithError(err).Warnf("Unable to get stackable data for assets.")
-						} else {
-							for _, s := range stackables {
-								stackableMap[s.AssetId()] = s
-							}
-						}
-					}
-
-					// Transform assets with stackable data
-					restModels := make([]RestModel, 0, len(assets))
-					for _, a := range assets {
-						if s, ok := stackableMap[a.Id()]; ok {
-							restModels = append(restModels, TransformWithStackable(a, s.Quantity(), s.OwnerId(), s.Flag()))
-						} else {
-							restModels = append(restModels, Transform(a))
-						}
+					// Transform to BaseRestModel with full reference data
+					restModels, err := TransformAllToBaseRestModel(decoratedAssets)
+					if err != nil {
+						d.Logger().WithError(err).Errorf("Unable to transform assets to base rest model for storage %s.", storageId)
+						w.WriteHeader(http.StatusInternalServerError)
+						return
 					}
 
 					query := r.URL.Query()
 					queryParams := jsonapi.ParseQueryFields(&query)
-					server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(restModels)
+					server.MarshalResponse[[]BaseRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(restModels)
 				}
 			})
 		})
@@ -94,10 +78,10 @@ func handleGetAssetRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.
 			return rest.ParseWorldId(d.Logger(), func(worldId byte) http.HandlerFunc {
 				return rest.ParseAssetId(d.Logger(), func(assetId uint32) http.HandlerFunc {
 					return func(w http.ResponseWriter, r *http.Request) {
-						t := tenant.MustFromContext(d.Context())
+						processor := NewProcessor(d.Logger(), d.Context(), db)
 
-						// Get asset using provider
-						assetModel, err := GetById(d.Logger(), db, t.Id())(assetId)
+						// Get asset using processor
+						assetModel, err := processor.GetAssetById(assetId)
 						if err != nil {
 							d.Logger().WithError(err).Debugf("Unable to locate asset %d.", assetId)
 							w.WriteHeader(http.StatusNotFound)
@@ -126,38 +110,4 @@ func handleGetAssetRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.
 			})
 		})
 	}
-}
-
-// getOrCreateStorageId retrieves or creates storage ID
-// NOTE: This uses raw DB queries to avoid circular package dependency with storage package
-func getOrCreateStorageId(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID, worldId byte, accountId uint32) (uuid.UUID, error) {
-	// Try to get existing storage
-	var storageId uuid.UUID
-	err := db.Table("storages").
-		Select("id").
-		Where("tenant_id = ? AND world_id = ? AND account_id = ?", tenantId, worldId, accountId).
-		Scan(&storageId).Error
-
-	if err == nil && storageId != uuid.Nil {
-		return storageId, nil
-	}
-
-	// Storage not found, create it
-	if err == gorm.ErrRecordNotFound || storageId == uuid.Nil {
-		newId := uuid.New()
-		createErr := db.Table("storages").Create(map[string]interface{}{
-			"tenant_id":  tenantId,
-			"id":         newId,
-			"world_id":   worldId,
-			"account_id": accountId,
-			"capacity":   4,
-			"mesos":      0,
-		}).Error
-		if createErr != nil {
-			return uuid.Nil, createErr
-		}
-		return newId, nil
-	}
-
-	return uuid.Nil, err
 }

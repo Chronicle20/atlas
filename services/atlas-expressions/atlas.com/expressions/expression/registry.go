@@ -27,30 +27,43 @@ func GetRegistry() *Registry {
 	return registry
 }
 
-func (r *Registry) add(t tenant.Model, characterId uint32, worldId world.Id, channelId channel.Id, mapId _map.Id, expression uint32) Model {
+// getOrCreateTenantMaps returns the expression map and lock for a tenant,
+// creating them if they don't exist. This method is thread-safe.
+func (r *Registry) getOrCreateTenantMaps(t tenant.Model) (map[uint32]Model, *sync.RWMutex) {
 	r.lock.Lock()
-	if _, ok := r.expressionReg[t]; !ok {
-		r.expressionReg[t] = make(map[uint32]Model)
-		r.tenantLock[t] = &sync.RWMutex{}
-	}
-	r.lock.Unlock()
+	defer r.lock.Unlock()
 
-	r.tenantLock[t].Lock()
-	defer r.tenantLock[t].Unlock()
+	em, ok := r.expressionReg[t]
+	if !ok {
+		em = make(map[uint32]Model)
+		r.expressionReg[t] = em
+	}
+
+	tl, ok := r.tenantLock[t]
+	if !ok {
+		tl = &sync.RWMutex{}
+		r.tenantLock[t] = tl
+	}
+
+	return em, tl
+}
+
+func (r *Registry) add(t tenant.Model, characterId uint32, worldId world.Id, channelId channel.Id, mapId _map.Id, expression uint32) Model {
+	em, tl := r.getOrCreateTenantMaps(t)
+
+	tl.Lock()
+	defer tl.Unlock()
 
 	expiration := time.Now().Add(time.Second * time.Duration(5))
 
-	e := Model{
-		tenant:      t,
-		characterId: characterId,
-		worldId:     worldId,
-		channelId:   channelId,
-		mapId:       mapId,
-		expression:  expression,
-		expiration:  expiration,
-	}
+	e := NewModelBuilder(t).
+		SetCharacterId(characterId).
+		SetLocation(worldId, channelId, mapId).
+		SetExpression(expression).
+		SetExpiration(expiration).
+		MustBuild()
 
-	r.expressionReg[t][characterId] = e
+	em[characterId] = e
 	return e
 }
 
@@ -73,13 +86,29 @@ func (r *Registry) popExpired() []Model {
 }
 
 func (r *Registry) clear(t tenant.Model, characterId uint32) {
-	if _, ok := r.tenantLock[t]; !ok {
-		r.lock.Lock()
-		r.expressionReg[t] = make(map[uint32]Model)
-		r.tenantLock[t] = &sync.RWMutex{}
-		r.lock.Unlock()
+	em, tl := r.getOrCreateTenantMaps(t)
+
+	tl.Lock()
+	defer tl.Unlock()
+	delete(em, characterId)
+}
+
+// get retrieves an expression for a character. Returns the model and true if found.
+func (r *Registry) get(t tenant.Model, characterId uint32) (Model, bool) {
+	em, tl := r.getOrCreateTenantMaps(t)
+
+	tl.RLock()
+	defer tl.RUnlock()
+	if m, ok := em[characterId]; ok {
+		return m, true
 	}
-	r.tenantLock[t].Lock()
-	defer r.tenantLock[t].Unlock()
-	delete(r.expressionReg[t], characterId)
+	return Model{}, false
+}
+
+// ResetForTesting clears all registry state. Only for use in tests.
+func (r *Registry) ResetForTesting() {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	r.expressionReg = make(map[tenant.Model]map[uint32]Model)
+	r.tenantLock = make(map[tenant.Model]*sync.RWMutex)
 }

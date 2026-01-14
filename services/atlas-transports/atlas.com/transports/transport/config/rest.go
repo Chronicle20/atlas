@@ -59,7 +59,7 @@ func ExtractRoute(r RouteRestModel) (transport.Model, error) {
 		builder.AddEnRouteMapId(mapId)
 	}
 
-	return builder.Build(), nil
+	return builder.Build()
 }
 
 // VesselRestModel is the JSON:API resource for vessels
@@ -99,5 +99,5 @@ func ExtractVessel(v VesselRestModel) (transport.SharedVesselModel, error) {
 		SetRouteAID(v.RouteAID).
 		SetRouteBID(v.RouteBID).
 		SetTurnaroundDelay(v.TurnaroundDelay * time.Second).
-		Build(), nil
+		Build()
 }

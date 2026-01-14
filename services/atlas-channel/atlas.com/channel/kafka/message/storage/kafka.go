@@ -5,6 +5,7 @@ import "github.com/google/uuid"
 const (
 	EnvShowStorageCommandTopic = "COMMAND_TOPIC_STORAGE_SHOW"
 	CommandTypeShowStorage     = "SHOW_STORAGE"
+	CommandTypeCloseStorage    = "CLOSE_STORAGE"
 
 	// Storage command topic for operations
 	EnvCommandTopic        = "COMMAND_TOPIC_STORAGE"
@@ -28,6 +29,12 @@ type ShowStorageCommand struct {
 	Type          string    `json:"type"`
 }
 
+// CloseStorageCommand is sent when a character closes storage
+type CloseStorageCommand struct {
+	CharacterId uint32 `json:"characterId"`
+	Type        string `json:"type"`
+}
+
 // Command represents a storage command sent to the storage service
 type Command[E any] struct {
 	TransactionId uuid.UUID `json:"transactionId"`
@@ -49,12 +56,17 @@ type UpdateMesosCommandBody struct {
 
 const (
 	// Storage status event topic
-	EnvEventTopicStatus         = "EVENT_TOPIC_STORAGE_STATUS"
-	StatusEventTypeDeposited    = "DEPOSITED"
-	StatusEventTypeWithdrawn    = "WITHDRAWN"
-	StatusEventTypeMesosUpdated = "MESOS_UPDATED"
-	StatusEventTypeArranged     = "ARRANGED"
-	StatusEventTypeError        = "ERROR"
+	EnvEventTopicStatus                  = "EVENT_TOPIC_STORAGE_STATUS"
+	EnvEventTopicStorageCompartmentStatus = "EVENT_TOPIC_STORAGE_COMPARTMENT_STATUS"
+	StatusEventTypeDeposited             = "DEPOSITED"
+	StatusEventTypeWithdrawn             = "WITHDRAWN"
+	StatusEventTypeMesosUpdated          = "MESOS_UPDATED"
+	StatusEventTypeArranged              = "ARRANGED"
+	StatusEventTypeError                 = "ERROR"
+
+	// Storage compartment event types
+	StatusEventTypeCompartmentAccepted = "ACCEPTED"
+	StatusEventTypeCompartmentReleased = "RELEASED"
 
 	// Error codes
 	ErrorCodeStorageFull    = "STORAGE_FULL"
@@ -86,4 +98,26 @@ type ArrangedEventBody struct {
 type ErrorEventBody struct {
 	ErrorCode string `json:"errorCode"`
 	Message   string `json:"message,omitempty"`
+}
+
+// StorageCompartmentEvent represents a storage compartment status event
+type StorageCompartmentEvent[E any] struct {
+	WorldId     byte   `json:"worldId"`
+	AccountId   uint32 `json:"accountId"`
+	CharacterId uint32 `json:"characterId,omitempty"`
+	Type        string `json:"type"`
+	Body        E      `json:"body"`
+}
+
+// CompartmentAcceptedEventBody contains the data for an ACCEPTED event
+type CompartmentAcceptedEventBody struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	AssetId       uint32    `json:"assetId"`
+	Slot          int16     `json:"slot"`
+}
+
+// CompartmentReleasedEventBody contains the data for a RELEASED event
+type CompartmentReleasedEventBody struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	AssetId       uint32    `json:"assetId"`
 }

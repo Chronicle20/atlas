@@ -91,7 +91,11 @@ func (p *ProcessorImpl) CommodityDecorator(m Model) Model {
 	if err != nil {
 		return m
 	}
-	return Clone(m).SetCommodities(cms).Build()
+	result, err := Clone(m).SetCommodities(cms).Build()
+	if err != nil {
+		return m
+	}
+	return result
 }
 
 func (p *ProcessorImpl) GetByNpcId(decorators ...model.Decorator[Model]) func(npcId uint32) (Model, error) {
@@ -172,7 +176,7 @@ func (p *ProcessorImpl) CreateShop(npcId uint32, recharger bool, commodities []c
 	if err != nil {
 		return Model{}, err
 	}
-	return Clone(shop).SetCommodities(commodities).Build(), nil
+	return Clone(shop).SetCommodities(commodities).Build()
 }
 
 func (p *ProcessorImpl) UpdateShop(npcId uint32, recharger bool, commodities []commodities.Model) (Model, error) {
@@ -235,7 +239,11 @@ func (p *ProcessorImpl) UpdateShop(npcId uint32, recharger bool, commodities []c
 			p.l.WithError(err).Errorf("Failed to convert shop entity to model for NPC [%d].", npcId)
 			return err
 		}
-		shop = Clone(shopModel).SetCommodities(commodities).Build()
+		shop, err = Clone(shopModel).SetCommodities(commodities).Build()
+		if err != nil {
+			p.l.WithError(err).Errorf("Failed to build shop model for NPC [%d].", npcId)
+			return err
+		}
 		p.l.Debugf("Created shop model for NPC [%d].", npcId)
 
 		return nil
@@ -619,10 +627,13 @@ func (p *ProcessorImpl) RechargeableConsumablesDecorator(m Model) Model {
 	// Update existing commodities if they match a rechargeable one
 	for _, ec := range existing {
 		if rc := findRechargeable(ec.TemplateId(), GetConsumableCache().GetConsumables(p.l, p.ctx, p.t.Id())); rc != nil {
-			ec = commodities.Clone(ec).
+			updated, err := commodities.Clone(ec).
 				SetSlotMax(rc.SlotMax()).
 				SetUnitPrice(rc.UnitPrice()).
 				Build()
+			if err == nil {
+				ec = updated
+			}
 		}
 		finalCommodities = append(finalCommodities, ec)
 	}
@@ -630,17 +641,24 @@ func (p *ProcessorImpl) RechargeableConsumablesDecorator(m Model) Model {
 	// Add new rechargeable consumables that do not exist
 	for _, rc := range GetConsumableCache().GetConsumables(p.l, p.ctx, p.t.Id()) {
 		if _, found := existingByTemplateId[rc.Id()]; !found {
-			cm := (&commodities.ModelBuilder{}).
+			cm, err := commodities.NewBuilder().
 				SetId(uuid.New()).
+				SetNpcId(m.NpcId()).
 				SetTemplateId(rc.Id()).
 				SetSlotMax(rc.SlotMax()).
 				SetUnitPrice(rc.UnitPrice()).
 				Build()
-			finalCommodities = append(finalCommodities, cm)
+			if err == nil {
+				finalCommodities = append(finalCommodities, cm)
+			}
 		}
 	}
 
-	return Clone(m).SetCommodities(finalCommodities).Build()
+	result, err := Clone(m).SetCommodities(finalCommodities).Build()
+	if err != nil {
+		return m
+	}
+	return result
 }
 
 func findRechargeable(templateId uint32, rechargeables []consumable.Model) *consumable.Model {

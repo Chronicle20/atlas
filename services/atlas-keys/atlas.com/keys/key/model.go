@@ -18,3 +18,7 @@ func (m Model) Type() int8 {
 func (m Model) Action() int32 {
 	return m.action
 }
+
+func (m Model) CharacterId() uint32 {
+	return m.characterId
+}

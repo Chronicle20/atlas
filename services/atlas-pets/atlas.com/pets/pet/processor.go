@@ -212,8 +212,11 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(i Model) (Model, error) 
 			if i.Slot() < -1 || i.Slot() > 2 {
 				b.SetSlot(-1)
 			}
-			i = b.Build()
 			var err error
+			i, err = b.Build()
+			if err != nil {
+				return err
+			}
 			om, err = create(tx)(p.t, i.OwnerId(), i)
 			if err != nil {
 				return err
@@ -695,7 +698,10 @@ func (p *ProcessorImpl) AwardClosenessWithTransaction(mb *message.Buffer) func(t
 					return err
 				}
 			}
-			pe = Clone(pe).SetCloseness(newCloseness).SetLevel(pe.Level() + levels).Build()
+			pe, err = Clone(pe).SetCloseness(newCloseness).SetLevel(pe.Level() + levels).Build()
+			if err != nil {
+				return err
+			}
 			err = mb.Put(pet.EnvStatusEventTopic, closenessChangedEventWithTransactionProvider(pe, int16(amount), transactionId))
 			if err != nil {
 				return err
@@ -732,7 +738,10 @@ func (p *ProcessorImpl) AwardFullness(mb *message.Buffer) func(petId uint32) fun
 				if err != nil {
 					return err
 				}
-				pe = Clone(pe).SetFullness(newFullness).Build()
+				pe, err = Clone(pe).SetFullness(newFullness).Build()
+				if err != nil {
+					return err
+				}
 				return mb.Put(pet.EnvStatusEventTopic, fullnessChangedEventProvider(pe, int8(int16(amount))))
 			})
 			if txErr != nil {
@@ -766,7 +775,10 @@ func (p *ProcessorImpl) AwardLevel(mb *message.Buffer) func(petId uint32) func(a
 				if err != nil {
 					return err
 				}
-				pe = Clone(pe).SetLevel(newLevel).Build()
+				pe, err = Clone(pe).SetLevel(newLevel).Build()
+				if err != nil {
+					return err
+				}
 				return mb.Put(pet.EnvStatusEventTopic, levelChangedEventProvider(pe, int8(int16(amount))))
 			})
 			if txErr != nil {

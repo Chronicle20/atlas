@@ -32,11 +32,11 @@ func (r *RestModel) SetID(strId string) error {
 
 func Transform(m Model) (RestModel, error) {
 	return RestModel{
-		CharacterId:   m.characterId,
-		Group:         m.group,
-		CharacterName: m.characterName,
-		ChannelId:     m.channelId,
-		InShop:        m.inShop,
-		Pending:       m.pending,
+		CharacterId:   m.CharacterId(),
+		Group:         m.Group(),
+		CharacterName: m.Name(),
+		ChannelId:     m.ChannelId(),
+		InShop:        m.InShop(),
+		Pending:       m.Pending(),
 	}, nil
 }

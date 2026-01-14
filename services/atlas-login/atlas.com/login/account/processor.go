@@ -89,8 +89,8 @@ func (p *ProcessorImpl) UpdatePin(id uint32, pin string) error {
 	if err != nil {
 		return err
 	}
-	a.pin = pin
-	_, err = requestUpdate(a)(p.l, p.ctx)
+	updated := a.ToBuilder().SetPin(pin).Build()
+	_, err = requestUpdate(updated)(p.l, p.ctx)
 	if err != nil {
 		return err
 	}
@@ -102,8 +102,8 @@ func (p *ProcessorImpl) UpdatePic(id uint32, pic string) error {
 	if err != nil {
 		return err
 	}
-	a.pic = pic
-	_, err = requestUpdate(a)(p.l, p.ctx)
+	updated := a.ToBuilder().SetPic(pic).Build()
+	_, err = requestUpdate(updated)(p.l, p.ctx)
 	if err != nil {
 		return err
 	}
@@ -115,8 +115,8 @@ func (p *ProcessorImpl) UpdateTos(id uint32, tos bool) error {
 	if err != nil {
 		return err
 	}
-	a.tos = tos
-	_, err = requestUpdate(a)(p.l, p.ctx)
+	updated := a.ToBuilder().SetTos(tos).Build()
+	_, err = requestUpdate(updated)(p.l, p.ctx)
 	if err != nil {
 		return err
 	}
@@ -128,8 +128,8 @@ func (p *ProcessorImpl) UpdateGender(id uint32, gender byte) error {
 	if err != nil {
 		return err
 	}
-	a.gender = gender
-	_, err = requestUpdate(a)(p.l, p.ctx)
+	updated := a.ToBuilder().SetGender(gender).Build()
+	_, err = requestUpdate(updated)(p.l, p.ctx)
 	if err != nil {
 		return err
 	}

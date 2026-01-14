@@ -20,3 +20,24 @@ type entity struct {
 func (e entity) TableName() string {
 	return "keys"
 }
+
+// Make transforms an entity into a Model.
+func Make(e entity) (Model, error) {
+	return Model{
+		characterId: e.CharacterId,
+		key:         e.Key,
+		theType:     e.Type,
+		action:      e.Action,
+	}, nil
+}
+
+// ToEntity transforms a Model into an entity for persistence.
+func (m Model) ToEntity(tenantId uuid.UUID) entity {
+	return entity{
+		TenantId:    tenantId,
+		CharacterId: m.characterId,
+		Key:         m.key,
+		Type:        m.theType,
+		Action:      m.action,
+	}
+}

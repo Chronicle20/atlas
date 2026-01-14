@@ -30,16 +30,5 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 }
 
 func (p *ProcessorImpl) GetAll() model.Provider[[]Model] {
-	return model.SliceMap(makeDrop)(getAll(p.t.Id())(p.db))()
-}
-
-// Legacy function wrapper for backward compatibility during migration
-func GetAll(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func() ([]Model, error) {
-	return func(ctx context.Context) func(db *gorm.DB) func() ([]Model, error) {
-		return func(db *gorm.DB) func() ([]Model, error) {
-			return func() ([]Model, error) {
-				return NewProcessor(l, ctx, db).GetAll()()
-			}
-		}
-	}
+	return model.SliceMap(modelFromEntity)(getAll(p.t.Id())(p.db))()
 }

@@ -123,37 +123,3 @@ func (p *ProcessorImpl) RequestChangeAndEmit(transactionId uuid.UUID, worldId wo
 		return p.RequestChange(mb)(transactionId)(worldId)(channelId)(characterId)(mapId)(targetId)(amount)
 	})
 }
-
-// Legacy functions for backward compatibility
-
-func byCharacterIdLastMonthProvider(_ logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32) model.Provider[[]Model] {
-	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32) model.Provider[[]Model] {
-		t := tenant.MustFromContext(ctx)
-		return func(db *gorm.DB) func(characterId uint32) model.Provider[[]Model] {
-			return func(characterId uint32) model.Provider[[]Model] {
-				return model.SliceMap(Make)(byCharacterIdLastMonthEntityProvider(t.Id(), characterId)(db))(model.ParallelMap())
-			}
-		}
-	}
-}
-
-func GetByCharacterIdLastMonth(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32) ([]Model, error) {
-	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32) ([]Model, error) {
-		return func(db *gorm.DB) func(characterId uint32) ([]Model, error) {
-			return func(characterId uint32) ([]Model, error) {
-				return byCharacterIdLastMonthProvider(l)(ctx)(db)(characterId)()
-			}
-		}
-	}
-}
-
-func RequestChange(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(worldId byte, channelId byte, characterId uint32, mapId uint32, targetId uint32, amount int8) error {
-	return func(ctx context.Context) func(db *gorm.DB) func(worldId byte, channelId byte, characterId uint32, mapId uint32, targetId uint32, amount int8) error {
-		return func(db *gorm.DB) func(worldId byte, channelId byte, characterId uint32, mapId uint32, targetId uint32, amount int8) error {
-			return func(worldId byte, channelId byte, characterId uint32, mapId uint32, targetId uint32, amount int8) error {
-				processor := NewProcessor(l, ctx, db)
-				return processor.RequestChangeAndEmit(uuid.New(), world.Id(worldId), channel.Id(channelId), characterId, mapId, targetId, amount)
-			}
-		}
-	}
-}

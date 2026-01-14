@@ -80,7 +80,7 @@ func (p *ProcessorImpl) seedMonsterDrops() (SeedResult, error) {
 	// Convert JSON models to domain models and bulk create
 	var models []monsterdrop.Model
 	for _, jm := range jsonModels {
-		m := monsterdrop.NewMonsterDropBuilder(p.t.Id(), 0).
+		m, err := monsterdrop.NewMonsterDropBuilder(p.t.Id(), 0).
 			SetMonsterId(jm.MonsterId).
 			SetItemId(jm.ItemId).
 			SetMinimumQuantity(jm.MinimumQuantity).
@@ -88,6 +88,11 @@ func (p *ProcessorImpl) seedMonsterDrops() (SeedResult, error) {
 			SetQuestId(jm.QuestId).
 			SetChance(jm.Chance).
 			Build()
+		if err != nil {
+			result.Errors = append(result.Errors, fmt.Sprintf("failed to build monster drop model: %v", err))
+			result.FailedCount++
+			continue
+		}
 		models = append(models, m)
 	}
 
@@ -128,13 +133,18 @@ func (p *ProcessorImpl) seedContinentDrops() (SeedResult, error) {
 	// Convert JSON models to domain models and bulk create
 	var models []continentdrop.Model
 	for _, jm := range jsonModels {
-		m := continentdrop.NewContinentDropBuilder(p.t.Id(), 0).
+		m, err := continentdrop.NewContinentDropBuilder(p.t.Id(), 0).
 			SetContinentId(jm.ContinentId).
 			SetItemId(jm.ItemId).
 			SetMinimumQuantity(jm.MinimumQuantity).
 			SetMaximumQuantity(jm.MaximumQuantity).
 			SetChance(jm.Chance).
 			Build()
+		if err != nil {
+			result.Errors = append(result.Errors, fmt.Sprintf("failed to build continent drop model: %v", err))
+			result.FailedCount++
+			continue
+		}
 		models = append(models, m)
 	}
 

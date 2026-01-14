@@ -37,7 +37,7 @@ func (r *RestModel) SetID(strId string) error {
 
 func Transform(m Model) (RestModel, error) {
 	buddies := make([]buddy.RestModel, 0)
-	for _, bm := range m.buddies {
+	for _, bm := range m.Buddies() {
 		rb, err := buddy.Transform(bm)
 		if err != nil {
 			return RestModel{}, err
@@ -46,10 +46,10 @@ func Transform(m Model) (RestModel, error) {
 	}
 
 	return RestModel{
-		Id:          m.id,
-		TenantId:    m.tenantId,
-		CharacterId: m.characterId,
-		Capacity:    m.capacity,
+		Id:          m.Id(),
+		TenantId:    m.TenantId(),
+		CharacterId: m.CharacterId(),
+		Capacity:    m.Capacity(),
 		Buddies:     buddies,
 	}, nil
 }

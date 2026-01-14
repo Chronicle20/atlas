@@ -87,7 +87,11 @@ func (p *ProcessorImpl) DataDecorator(m Model) Model {
 	// Determine the inventory type from the templateId
 	it, ok := inventory.TypeFromItemId(item.Id(m.TemplateId()))
 	if !ok {
-		return b.Build()
+		result, err := b.Build()
+		if err != nil {
+			return m
+		}
+		return result
 	}
 
 	if it == inventory.TypeValueEquip {
@@ -113,7 +117,11 @@ func (p *ProcessorImpl) DataDecorator(m Model) Model {
 			b.SetSlotMax(em.SlotMax())
 		}
 	}
-	return b.Build()
+	result, err := b.Build()
+	if err != nil {
+		return m
+	}
+	return result
 }
 
 func (p *ProcessorImpl) CreateCommodity(npcId uint32, templateId uint32, mesoPrice uint32, discountRate byte, tokenTemplateId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error) {

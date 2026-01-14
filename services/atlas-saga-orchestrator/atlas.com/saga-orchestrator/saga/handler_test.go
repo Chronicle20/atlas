@@ -127,23 +127,17 @@ func TestHandleValidateCharacterState(t *testing.T) {
 
 			// Create test saga and step
 			transactionId := uuid.New()
-			saga := Saga{
-				TransactionId: transactionId,
-				SagaType:      QuestReward,
-				InitiatedBy:   "test",
-			}
+			saga, err := NewBuilder().
+				SetTransactionId(transactionId).
+				SetSagaType(QuestReward).
+				SetInitiatedBy("test").
+				Build()
+			assert.NoError(t, err)
 
-			step := Step[any]{
-				StepId:    "test-step",
-				Status:    Pending,
-				Action:    ValidateCharacterState,
-				Payload:   tt.payload,
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
-			}
+			step := NewStep[any]("test-step", Pending, ValidateCharacterState, tt.payload)
 
 			// Execute
-			err := NewHandler(logger, ctx).WithValidationProcessor(validP).handleValidateCharacterState(saga, step)
+			err = NewHandler(logger, ctx).WithValidationProcessor(validP).handleValidateCharacterState(saga, step)
 
 			// Verify
 			if tt.expectError {
@@ -231,20 +225,14 @@ func TestHandleWarpToPortal(t *testing.T) {
 
 			// Create test saga and step
 			transactionId := uuid.New()
-			saga := Saga{
-				TransactionId: transactionId,
-				SagaType:      QuestReward,
-				InitiatedBy:   "test",
-			}
+			saga, err := NewBuilder().
+				SetTransactionId(transactionId).
+				SetSagaType(QuestReward).
+				SetInitiatedBy("test").
+				Build()
+			assert.NoError(t, err)
 
-			step := Step[any]{
-				StepId:    "test-step",
-				Status:    Pending,
-				Action:    WarpToPortal,
-				Payload:   tt.payload,
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
-			}
+			step := NewStep[any]("test-step", Pending, WarpToPortal, tt.payload)
 
 			// Mock field.FromId
 			if !tt.fieldExists {
@@ -253,7 +241,7 @@ func TestHandleWarpToPortal(t *testing.T) {
 			}
 
 			// Execute
-			err := NewHandler(logger, ctx).WithCharacterProcessor(charP).handleWarpToPortal(saga, step)
+			err = NewHandler(logger, ctx).WithCharacterProcessor(charP).handleWarpToPortal(saga, step)
 
 			// Verify
 			if tt.expectError {
@@ -331,20 +319,14 @@ func TestHandleWarpToRandomPortal(t *testing.T) {
 
 			// Create test saga and step
 			transactionId := uuid.New()
-			saga := Saga{
-				TransactionId: transactionId,
-				SagaType:      QuestReward,
-				InitiatedBy:   "test",
-			}
+			saga, err := NewBuilder().
+				SetTransactionId(transactionId).
+				SetSagaType(QuestReward).
+				SetInitiatedBy("test").
+				Build()
+			assert.NoError(t, err)
 
-			step := Step[any]{
-				StepId:    "test-step",
-				Status:    Pending,
-				Action:    WarpToRandomPortal,
-				Payload:   tt.payload,
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
-			}
+			step := NewStep[any]("test-step", Pending, WarpToRandomPortal, tt.payload)
 
 			// Mock field.FromId
 			if !tt.fieldExists {
@@ -353,7 +335,7 @@ func TestHandleWarpToRandomPortal(t *testing.T) {
 			}
 
 			// Execute
-			err := NewHandler(logger, ctx).WithCharacterProcessor(charP).handleWarpToRandomPortal(saga, step)
+			err = NewHandler(logger, ctx).WithCharacterProcessor(charP).handleWarpToRandomPortal(saga, step)
 
 			// Verify
 			if tt.expectError {
@@ -453,23 +435,17 @@ func TestHandleAwardAsset(t *testing.T) {
 
 			// Create test saga and step
 			transactionId := uuid.New()
-			saga := Saga{
-				TransactionId: transactionId,
-				SagaType:      QuestReward,
-				InitiatedBy:   "test",
-			}
+			saga, err := NewBuilder().
+				SetTransactionId(transactionId).
+				SetSagaType(QuestReward).
+				SetInitiatedBy("test").
+				Build()
+			assert.NoError(t, err)
 
-			step := Step[any]{
-				StepId:    "test-step",
-				Status:    Pending,
-				Action:    tt.action,
-				Payload:   tt.payload,
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
-			}
+			step := NewStep[any]("test-step", Pending, tt.action, tt.payload)
 
 			// Execute
-			err := NewHandler(logger, ctx).WithCompartmentProcessor(compP).handleAwardAsset(saga, step)
+			err = NewHandler(logger, ctx).WithCompartmentProcessor(compP).handleAwardAsset(saga, step)
 
 			// Verify
 			if tt.expectError {
@@ -541,23 +517,17 @@ func TestHandleAwardInventory(t *testing.T) {
 
 			// Create test saga and step
 			transactionId := uuid.New()
-			saga := Saga{
-				TransactionId: transactionId,
-				SagaType:      QuestReward,
-				InitiatedBy:   "test",
-			}
+			saga, err := NewBuilder().
+				SetTransactionId(transactionId).
+				SetSagaType(QuestReward).
+				SetInitiatedBy("test").
+				Build()
+			assert.NoError(t, err)
 
-			step := Step[any]{
-				StepId:    "test-step",
-				Status:    Pending,
-				Action:    AwardInventory,
-				Payload:   tt.payload,
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
-			}
+			step := NewStep[any]("test-step", Pending, AwardInventory, tt.payload)
 
 			// Execute
-			err := NewHandler(logger, ctx).WithCompartmentProcessor(compP).handleAwardInventory(saga, step)
+			err = NewHandler(logger, ctx).WithCompartmentProcessor(compP).handleAwardInventory(saga, step)
 
 			// Verify
 			if tt.expectError {
@@ -626,23 +596,17 @@ func TestHandleAwardLevel(t *testing.T) {
 
 			// Create test saga and step
 			transactionId := uuid.New()
-			saga := Saga{
-				TransactionId: transactionId,
-				SagaType:      QuestReward,
-				InitiatedBy:   "test",
-			}
+			saga, err := NewBuilder().
+				SetTransactionId(transactionId).
+				SetSagaType(QuestReward).
+				SetInitiatedBy("test").
+				Build()
+			assert.NoError(t, err)
 
-			step := Step[any]{
-				StepId:    "test-step",
-				Status:    Pending,
-				Action:    AwardLevel,
-				Payload:   tt.payload,
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
-			}
+			step := NewStep[any]("test-step", Pending, AwardLevel, tt.payload)
 
 			// Execute
-			err := NewHandler(logger, ctx).WithCharacterProcessor(charP).handleAwardLevel(saga, step)
+			err = NewHandler(logger, ctx).WithCharacterProcessor(charP).handleAwardLevel(saga, step)
 
 			// Verify
 			if tt.expectError {
@@ -726,23 +690,17 @@ func TestHandleAwardExperience(t *testing.T) {
 
 			// Create test saga and step
 			transactionId := uuid.New()
-			saga := Saga{
-				TransactionId: transactionId,
-				SagaType:      QuestReward,
-				InitiatedBy:   "test",
-			}
+			saga, err := NewBuilder().
+				SetTransactionId(transactionId).
+				SetSagaType(QuestReward).
+				SetInitiatedBy("test").
+				Build()
+			assert.NoError(t, err)
 
-			step := Step[any]{
-				StepId:    "test-step",
-				Status:    Pending,
-				Action:    AwardExperience,
-				Payload:   tt.payload,
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
-			}
+			step := NewStep[any]("test-step", Pending, AwardExperience, tt.payload)
 
 			// Execute
-			err := NewHandler(logger, ctx).WithCharacterProcessor(charP).handleAwardExperience(saga, step)
+			err = NewHandler(logger, ctx).WithCharacterProcessor(charP).handleAwardExperience(saga, step)
 
 			// Verify
 			if tt.expectError {
@@ -817,23 +775,17 @@ func TestHandleAwardMesos(t *testing.T) {
 
 			// Create test saga and step
 			transactionId := uuid.New()
-			saga := Saga{
-				TransactionId: transactionId,
-				SagaType:      QuestReward,
-				InitiatedBy:   "test",
-			}
+			saga, err := NewBuilder().
+				SetTransactionId(transactionId).
+				SetSagaType(QuestReward).
+				SetInitiatedBy("test").
+				Build()
+			assert.NoError(t, err)
 
-			step := Step[any]{
-				StepId:    "test-step",
-				Status:    Pending,
-				Action:    AwardMesos,
-				Payload:   tt.payload,
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
-			}
+			step := NewStep[any]("test-step", Pending, AwardMesos, tt.payload)
 
 			// Execute
-			err := NewHandler(logger, ctx).WithCharacterProcessor(charP).handleAwardMesos(saga, step)
+			err = NewHandler(logger, ctx).WithCharacterProcessor(charP).handleAwardMesos(saga, step)
 
 			// Verify
 			if tt.expectError {
@@ -900,23 +852,17 @@ func TestHandleDestroyAsset(t *testing.T) {
 
 			// Create test saga and step
 			transactionId := uuid.New()
-			saga := Saga{
-				TransactionId: transactionId,
-				SagaType:      QuestReward,
-				InitiatedBy:   "test",
-			}
+			saga, err := NewBuilder().
+				SetTransactionId(transactionId).
+				SetSagaType(QuestReward).
+				SetInitiatedBy("test").
+				Build()
+			assert.NoError(t, err)
 
-			step := Step[any]{
-				StepId:    "test-step",
-				Status:    Pending,
-				Action:    DestroyAsset,
-				Payload:   tt.payload,
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
-			}
+			step := NewStep[any]("test-step", Pending, DestroyAsset, tt.payload)
 
 			// Execute
-			err := NewHandler(logger, ctx).WithCompartmentProcessor(compP).handleDestroyAsset(saga, step)
+			err = NewHandler(logger, ctx).WithCompartmentProcessor(compP).handleDestroyAsset(saga, step)
 
 			// Verify
 			if tt.expectError {
@@ -1053,23 +999,17 @@ func TestHandleCreateCharacter(t *testing.T) {
 
 			// Create test saga and step
 			transactionId := uuid.New()
-			saga := Saga{
-				TransactionId: transactionId,
-				SagaType:      CharacterCreation,
-				InitiatedBy:   "test",
-			}
+			saga, err := NewBuilder().
+				SetTransactionId(transactionId).
+				SetSagaType(CharacterCreation).
+				SetInitiatedBy("test").
+				Build()
+			assert.NoError(t, err)
 
-			step := Step[any]{
-				StepId:    "create-character-step",
-				Status:    Pending,
-				Action:    CreateCharacter,
-				Payload:   tt.payload,
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
-			}
+			step := NewStep[any]("create-character-step", Pending, CreateCharacter, tt.payload)
 
 			// Execute
-			err := NewHandler(logger, ctx).WithCharacterProcessor(charP).handleCreateCharacter(saga, step)
+			err = NewHandler(logger, ctx).WithCharacterProcessor(charP).handleCreateCharacter(saga, step)
 
 			// Verify
 			if tt.expectError {
@@ -1135,24 +1075,17 @@ func TestHandleEquipAsset(t *testing.T) {
 
 			_, ctx := setupContext()
 
-			saga := Saga{
-				TransactionId: uuid.New(),
-				SagaType:      InventoryTransaction,
-				InitiatedBy:   "test",
-				Steps:         []Step[any]{},
-			}
+			saga, err := NewBuilder().
+				SetTransactionId(uuid.New()).
+				SetSagaType(InventoryTransaction).
+				SetInitiatedBy("test").
+				Build()
+			assert.NoError(t, err)
 
-			step := Step[any]{
-				StepId:    "test-step",
-				Status:    Pending,
-				Action:    EquipAsset,
-				Payload:   tt.payload,
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
-			}
+			step := NewStep[any]("test-step", Pending, EquipAsset, tt.payload)
 
 			// Execute
-			err := NewHandler(logger, ctx).WithCompartmentProcessor(compP).handleEquipAsset(saga, step)
+			err = NewHandler(logger, ctx).WithCompartmentProcessor(compP).handleEquipAsset(saga, step)
 
 			// Verify
 			if tt.expectError {
@@ -1215,24 +1148,17 @@ func TestHandleUnequipAsset(t *testing.T) {
 
 			_, ctx := setupContext()
 
-			saga := Saga{
-				TransactionId: uuid.New(),
-				SagaType:      InventoryTransaction,
-				InitiatedBy:   "test",
-				Steps:         []Step[any]{},
-			}
+			saga, err := NewBuilder().
+				SetTransactionId(uuid.New()).
+				SetSagaType(InventoryTransaction).
+				SetInitiatedBy("test").
+				Build()
+			assert.NoError(t, err)
 
-			step := Step[any]{
-				StepId:    "test-step",
-				Status:    Pending,
-				Action:    UnequipAsset,
-				Payload:   tt.payload,
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
-			}
+			step := NewStep[any]("test-step", Pending, UnequipAsset, tt.payload)
 
 			// Execute
-			err := NewHandler(logger, ctx).WithCompartmentProcessor(compP).handleUnequipAsset(saga, step)
+			err = NewHandler(logger, ctx).WithCompartmentProcessor(compP).handleUnequipAsset(saga, step)
 
 			// Verify
 			if tt.expectError {
@@ -1342,23 +1268,17 @@ func TestHandleCreateAndEquipAsset(t *testing.T) {
 
 			// Create test saga and step
 			transactionId := uuid.New()
-			saga := Saga{
-				TransactionId: transactionId,
-				SagaType:      InventoryTransaction,
-				InitiatedBy:   "test",
-			}
+			saga, err := NewBuilder().
+				SetTransactionId(transactionId).
+				SetSagaType(InventoryTransaction).
+				SetInitiatedBy("test").
+				Build()
+			assert.NoError(t, err)
 
-			step := Step[any]{
-				StepId:    "create-and-equip-step",
-				Status:    Pending,
-				Action:    CreateAndEquipAsset,
-				Payload:   tt.payload,
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
-			}
+			step := NewStep[any]("create-and-equip-step", Pending, CreateAndEquipAsset, tt.payload)
 
 			// Execute
-			err := NewHandler(logger, ctx).WithCompartmentProcessor(compP).handleCreateAndEquipAsset(saga, step)
+			err = NewHandler(logger, ctx).WithCompartmentProcessor(compP).handleCreateAndEquipAsset(saga, step)
 
 			// Verify
 			if tt.expectError {
@@ -1373,7 +1293,7 @@ func TestHandleCreateAndEquipAsset(t *testing.T) {
 			// Verify that RequestCreateAndEquipAsset was called with correct transaction ID
 			if compP.RequestCreateAndEquipAssetFunc != nil {
 				// The function should have been called with the saga's transaction ID
-				assert.Equal(t, transactionId, saga.TransactionId)
+				assert.Equal(t, transactionId, saga.TransactionId())
 			}
 		})
 	}
@@ -1391,23 +1311,17 @@ func TestHandleCreateAndEquipAsset_InvalidPayload(t *testing.T) {
 
 	// Create test saga and step with invalid payload
 	transactionId := uuid.New()
-	saga := Saga{
-		TransactionId: transactionId,
-		SagaType:      InventoryTransaction,
-		InitiatedBy:   "test",
-	}
+	saga, err := NewBuilder().
+		SetTransactionId(transactionId).
+		SetSagaType(InventoryTransaction).
+		SetInitiatedBy("test").
+		Build()
+	assert.NoError(t, err)
 
-	step := Step[any]{
-		StepId:    "create-and-equip-step",
-		Status:    Pending,
-		Action:    CreateAndEquipAsset,
-		Payload:   "invalid-payload-type", // Wrong type
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	}
+	step := NewStep[any]("create-and-equip-step", Pending, CreateAndEquipAsset, "invalid-payload-type") // Wrong type
 
 	// Execute
-	err := NewHandler(logger, ctx).WithCompartmentProcessor(compP).handleCreateAndEquipAsset(saga, step)
+	err = NewHandler(logger, ctx).WithCompartmentProcessor(compP).handleCreateAndEquipAsset(saga, step)
 
 	// Verify
 	assert.Error(t, err)
@@ -1445,23 +1359,17 @@ func TestHandleCreateAndEquipAsset_PayloadConversion(t *testing.T) {
 
 	// Create test saga and step
 	transactionId := uuid.New()
-	saga := Saga{
-		TransactionId: transactionId,
-		SagaType:      InventoryTransaction,
-		InitiatedBy:   "test",
-	}
+	saga, err := NewBuilder().
+		SetTransactionId(transactionId).
+		SetSagaType(InventoryTransaction).
+		SetInitiatedBy("test").
+		Build()
+	assert.NoError(t, err)
 
-	step := Step[any]{
-		StepId:    "create-and-equip-step",
-		Status:    Pending,
-		Action:    CreateAndEquipAsset,
-		Payload:   sagaPayload,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	}
+	step := NewStep[any]("create-and-equip-step", Pending, CreateAndEquipAsset, sagaPayload)
 
 	// Execute
-	err := NewHandler(logger, ctx).WithCompartmentProcessor(compP).handleCreateAndEquipAsset(saga, step)
+	err = NewHandler(logger, ctx).WithCompartmentProcessor(compP).handleCreateAndEquipAsset(saga, step)
 
 	// Verify
 	assert.NoError(t, err)

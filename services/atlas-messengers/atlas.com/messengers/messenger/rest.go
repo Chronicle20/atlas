@@ -113,11 +113,11 @@ func Transform(l logrus.FieldLogger) func(ctx context.Context) func(m Model) (Re
 	return func(ctx context.Context) func(m Model) (RestModel, error) {
 		return func(m Model) (RestModel, error) {
 			rm := RestModel{
-				Id: m.id,
+				Id: m.Id(),
 			}
 
 			ms := make([]MemberRestModel, 0)
-			for _, mem := range m.members {
+			for _, mem := range m.Members() {
 				mrm, err := TransformMember(l)(ctx)(mem)
 				if err != nil {
 					return RestModel{}, err

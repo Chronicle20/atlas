@@ -1,0 +1,15 @@
+meta {
+  name: Get Saga
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/sagas/{{sagaId}}
+  body: none
+  auth: inherit
+}
+
+vars:pre-request {
+  sagaId: 
+}

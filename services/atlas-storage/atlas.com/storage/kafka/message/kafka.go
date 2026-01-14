@@ -17,6 +17,13 @@ const (
 	CommandTypeUpdateMesos     = "UPDATE_MESOS"
 	CommandTypeDepositRollback = "DEPOSIT_ROLLBACK"
 	CommandTypeArrange         = "ARRANGE"
+	CommandTypeShowStorage     = "SHOW_STORAGE"
+	CommandTypeCloseStorage    = "CLOSE_STORAGE"
+)
+
+// Additional command topic for show/close storage operations
+const (
+	EnvShowStorageCommandTopic = "COMMAND_TOPIC_STORAGE_SHOW"
 )
 
 // Event types
@@ -126,4 +133,21 @@ type ArrangedEventBody struct {
 type ErrorEventBody struct {
 	ErrorCode string `json:"errorCode"`
 	Message   string `json:"message,omitempty"`
+}
+
+// ShowStorageCommand is received from the saga-orchestrator to track NPC context for storage
+type ShowStorageCommand struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	WorldId       byte      `json:"worldId"`
+	ChannelId     byte      `json:"channelId"`
+	CharacterId   uint32    `json:"characterId"`
+	NpcId         uint32    `json:"npcId"`
+	AccountId     uint32    `json:"accountId"`
+	Type          string    `json:"type"`
+}
+
+// CloseStorageCommand is received when a character closes storage
+type CloseStorageCommand struct {
+	CharacterId uint32 `json:"characterId"`
+	Type        string `json:"type"`
 }

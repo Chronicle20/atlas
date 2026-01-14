@@ -13,22 +13,22 @@ type Processor interface {
 	GetSpawnedPetCount(characterId uint32) model.Provider[int]
 }
 
-// processor implements the Processor interface
-type processor struct {
+// ProcessorImpl implements the Processor interface
+type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 }
 
 // NewProcessor creates a new pet processor
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
-	return &processor{
+	return &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 	}
 }
 
 // GetPets returns all pets for a character
-func (p *processor) GetPets(characterId uint32) model.Provider[[]Model] {
+func (p *ProcessorImpl) GetPets(characterId uint32) model.Provider[[]Model] {
 	return func() ([]Model, error) {
 		petsProvider := requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(characterId), Extract, []model.Filter[Model]{})
 		pets, err := petsProvider()
@@ -41,7 +41,7 @@ func (p *processor) GetPets(characterId uint32) model.Provider[[]Model] {
 }
 
 // GetSpawnedPetCount returns the count of spawned pets (slot >= 0) for a character
-func (p *processor) GetSpawnedPetCount(characterId uint32) model.Provider[int] {
+func (p *ProcessorImpl) GetSpawnedPetCount(characterId uint32) model.Provider[int] {
 	return func() (int, error) {
 		pets, err := p.GetPets(characterId)()
 		if err != nil {

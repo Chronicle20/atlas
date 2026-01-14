@@ -93,7 +93,7 @@ func createSagaHandler(d *rest.HandlerDependency, c *rest.HandlerContext, im Res
 		}
 
 		// Get the created saga
-		s, err := NewProcessor(d.Logger(), d.Context()).GetById(saga.TransactionId)
+		s, err := NewProcessor(d.Logger(), d.Context()).GetById(saga.TransactionId())
 		if err != nil {
 			d.Logger().WithError(err).Error("Failed to retrieve created saga")
 			w.WriteHeader(http.StatusInternalServerError)

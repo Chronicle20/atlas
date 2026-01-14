@@ -3,6 +3,7 @@ package saga
 import (
 	"atlas-saga-orchestrator/validation"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -27,25 +28,91 @@ const (
 
 // Saga represents the entire saga transaction.
 type Saga struct {
-	TransactionId uuid.UUID   `json:"transactionId"` // Unique ID for the transaction
-	SagaType      Type        `json:"sagaType"`      // Type of the saga (e.g., inventory_transaction)
-	InitiatedBy   string      `json:"initiatedBy"`   // Who initiated the saga (e.g., NPC ID, user)
-	Steps         []Step[any] `json:"steps"`         // List of steps in the saga
+	transactionId uuid.UUID
+	sagaType      Type
+	initiatedBy   string
+	steps         []Step[any]
 }
 
-func (s *Saga) Failing() bool {
-	for _, step := range s.Steps {
-		if step.Status == Failed {
+// TransactionId returns the transaction ID
+func (s Saga) TransactionId() uuid.UUID { return s.transactionId }
+
+// SagaType returns the saga type
+func (s Saga) SagaType() Type { return s.sagaType }
+
+// InitiatedBy returns who initiated the saga
+func (s Saga) InitiatedBy() string { return s.initiatedBy }
+
+// Steps returns a copy of the steps slice
+func (s Saga) Steps() []Step[any] {
+	result := make([]Step[any], len(s.steps))
+	copy(result, s.steps)
+	return result
+}
+
+// StepAt returns the step at the given index
+func (s Saga) StepAt(index int) (Step[any], bool) {
+	if index < 0 || index >= len(s.steps) {
+		return Step[any]{}, false
+	}
+	return s.steps[index], true
+}
+
+// StepCount returns the number of steps
+func (s Saga) StepCount() int {
+	return len(s.steps)
+}
+
+// MarshalJSON implements json.Marshaler for Saga
+func (s Saga) MarshalJSON() ([]byte, error) {
+	type alias struct {
+		TransactionId uuid.UUID   `json:"transactionId"`
+		SagaType      Type        `json:"sagaType"`
+		InitiatedBy   string      `json:"initiatedBy"`
+		Steps         []Step[any] `json:"steps"`
+	}
+	return json.Marshal(alias{
+		TransactionId: s.transactionId,
+		SagaType:      s.sagaType,
+		InitiatedBy:   s.initiatedBy,
+		Steps:         s.steps,
+	})
+}
+
+// UnmarshalJSON implements json.Unmarshaler for Saga
+func (s *Saga) UnmarshalJSON(data []byte) error {
+	type alias struct {
+		TransactionId uuid.UUID   `json:"transactionId"`
+		SagaType      Type        `json:"sagaType"`
+		InitiatedBy   string      `json:"initiatedBy"`
+		Steps         []Step[any] `json:"steps"`
+	}
+	var a alias
+	if err := json.Unmarshal(data, &a); err != nil {
+		return err
+	}
+	s.transactionId = a.TransactionId
+	s.sagaType = a.SagaType
+	s.initiatedBy = a.InitiatedBy
+	s.steps = a.Steps
+	return nil
+}
+
+// Failing returns true if any step has failed status
+func (s Saga) Failing() bool {
+	for _, step := range s.steps {
+		if step.status == Failed {
 			return true
 		}
 	}
 	return false
 }
 
-func (s *Saga) GetCurrentStep() (Step[any], bool) {
-	for idx, step := range s.Steps {
-		if step.Status == Pending {
-			return s.Steps[idx], true
+// GetCurrentStep returns the first pending step
+func (s Saga) GetCurrentStep() (Step[any], bool) {
+	for _, step := range s.steps {
+		if step.status == Pending {
+			return step, true
 		}
 	}
 	return Step[any]{}, false
@@ -53,10 +120,10 @@ func (s *Saga) GetCurrentStep() (Step[any], bool) {
 
 // FindFurthestCompletedStepIndex returns the index of the furthest completed step (last one with status "completed")
 // Returns -1 if no completed step is found
-func (s *Saga) FindFurthestCompletedStepIndex() int {
+func (s Saga) FindFurthestCompletedStepIndex() int {
 	furthestCompletedIndex := -1
-	for i := len(s.Steps) - 1; i >= 0; i-- {
-		if s.Steps[i].Status == Completed {
+	for i := len(s.steps) - 1; i >= 0; i-- {
+		if s.steps[i].status == Completed {
 			furthestCompletedIndex = i
 			break
 		}
@@ -66,49 +133,20 @@ func (s *Saga) FindFurthestCompletedStepIndex() int {
 
 // FindEarliestPendingStepIndex returns the index of the earliest pending step (first one with status "pending")
 // Returns -1 if no pending step is found
-func (s *Saga) FindEarliestPendingStepIndex() int {
-	earliestPendingIndex := -1
-	for i := 0; i < len(s.Steps); i++ {
-		if s.Steps[i].Status == Pending {
-			earliestPendingIndex = i
-			break
+func (s Saga) FindEarliestPendingStepIndex() int {
+	for i := 0; i < len(s.steps); i++ {
+		if s.steps[i].status == Pending {
+			return i
 		}
 	}
-	return earliestPendingIndex
-}
-
-// SetStepStatus sets the status of a step at the given index with validation
-func (s *Saga) SetStepStatus(index int, status Status) error {
-	if index < 0 || index >= len(s.Steps) {
-		return fmt.Errorf("invalid step index: %d", index)
-	}
-
-	// Validate the state transition
-	if err := s.ValidateStateTransition(index, status); err != nil {
-		return err
-	}
-
-	// Update the status and timestamp
-	s.Steps[index].Status = status
-	s.Steps[index].UpdatedAt = time.Now()
-
-	return nil
-}
-
-// SetStepStatusUnsafe sets the status of a step at the given index without validation
-// This should only be used for internal operations where validation is already performed
-func (s *Saga) SetStepStatusUnsafe(index int, status Status) {
-	if index >= 0 && index < len(s.Steps) {
-		s.Steps[index].Status = status
-		s.Steps[index].UpdatedAt = time.Now()
-	}
+	return -1
 }
 
 // FindFailedStepIndex returns the index of the first failed step
 // Returns -1 if no failed step is found
-func (s *Saga) FindFailedStepIndex() int {
-	for i := 0; i < len(s.Steps); i++ {
-		if s.Steps[i].Status == Failed {
+func (s Saga) FindFailedStepIndex() int {
+	for i := 0; i < len(s.steps); i++ {
+		if s.steps[i].status == Failed {
 			return i
 		}
 	}
@@ -117,14 +155,12 @@ func (s *Saga) FindFailedStepIndex() int {
 
 // ValidateStepOrdering ensures that the saga steps are in a valid order
 // Returns true if the ordering is valid, false otherwise
-func (s *Saga) ValidateStepOrdering() bool {
-	// Check that all completed steps come before all pending steps
+func (s Saga) ValidateStepOrdering() bool {
 	foundPending := false
-	for i := 0; i < len(s.Steps); i++ {
-		if s.Steps[i].Status == Pending {
+	for i := 0; i < len(s.steps); i++ {
+		if s.steps[i].status == Pending {
 			foundPending = true
-		} else if s.Steps[i].Status == Completed && foundPending {
-			// Found a completed step after a pending step - invalid ordering
+		} else if s.steps[i].status == Completed && foundPending {
 			return false
 		}
 	}
@@ -132,40 +168,35 @@ func (s *Saga) ValidateStepOrdering() bool {
 }
 
 // ValidateStateConsistency performs comprehensive state consistency validation
-func (s *Saga) ValidateStateConsistency() error {
-	// Check step ordering
+func (s Saga) ValidateStateConsistency() error {
 	if !s.ValidateStepOrdering() {
 		return fmt.Errorf("invalid step ordering detected")
 	}
 
-	// Check for duplicate step IDs
 	stepIds := make(map[string]bool)
-	for i, step := range s.Steps {
-		if stepIds[step.StepId] {
-			return fmt.Errorf("duplicate step ID '%s' found at index %d", step.StepId, i)
+	for i, step := range s.steps {
+		if stepIds[step.stepId] {
+			return fmt.Errorf("duplicate step ID '%s' found at index %d", step.stepId, i)
 		}
-		stepIds[step.StepId] = true
+		stepIds[step.stepId] = true
 	}
 
-	// Check for invalid status values
-	for i, step := range s.Steps {
-		if step.Status != Pending && step.Status != Completed && step.Status != Failed {
-			return fmt.Errorf("invalid status '%s' at step index %d", step.Status, i)
+	for i, step := range s.steps {
+		if step.status != Pending && step.status != Completed && step.status != Failed {
+			return fmt.Errorf("invalid status '%s' at step index %d", step.status, i)
 		}
 	}
 
-	// Check for invalid action values
-	for i, step := range s.Steps {
-		if step.Action == "" {
+	for i, step := range s.steps {
+		if step.action == "" {
 			return fmt.Errorf("empty action at step index %d", i)
 		}
 	}
 
-	// Check for consistency: if saga is failing, there should be exactly one failed step
 	if s.Failing() {
 		failedCount := 0
-		for _, step := range s.Steps {
-			if step.Status == Failed {
+		for _, step := range s.steps {
+			if step.status == Failed {
 				failedCount++
 			}
 		}
@@ -178,33 +209,29 @@ func (s *Saga) ValidateStateConsistency() error {
 }
 
 // GetStepCount returns the total number of steps in the saga
-func (s *Saga) GetStepCount() int {
-	return len(s.Steps)
+func (s Saga) GetStepCount() int {
+	return len(s.steps)
 }
 
-// ValidateStateTransition validates if a step status transition is valid
-func (s *Saga) ValidateStateTransition(stepIndex int, newStatus Status) error {
-	if stepIndex < 0 || stepIndex >= len(s.Steps) {
+// validateStateTransition validates if a step status transition is valid
+func (s Saga) validateStateTransition(stepIndex int, newStatus Status) error {
+	if stepIndex < 0 || stepIndex >= len(s.steps) {
 		return fmt.Errorf("invalid step index: %d", stepIndex)
 	}
 
-	currentStep := s.Steps[stepIndex]
-	currentStatus := currentStep.Status
+	currentStep := s.steps[stepIndex]
+	currentStatus := currentStep.status
 
-	// Define valid state transitions
 	switch currentStatus {
 	case Pending:
-		// Pending can transition to Completed or Failed
 		if newStatus != Completed && newStatus != Failed {
 			return fmt.Errorf("invalid transition from %s to %s", currentStatus, newStatus)
 		}
 	case Completed:
-		// Completed can only transition to Failed (for compensation)
 		if newStatus != Failed {
 			return fmt.Errorf("invalid transition from %s to %s", currentStatus, newStatus)
 		}
 	case Failed:
-		// Failed can only transition to Pending (after compensation)
 		if newStatus != Pending {
 			return fmt.Errorf("invalid transition from %s to %s", currentStatus, newStatus)
 		}
@@ -216,10 +243,10 @@ func (s *Saga) ValidateStateTransition(stepIndex int, newStatus Status) error {
 }
 
 // GetCompletedStepCount returns the number of completed steps in the saga
-func (s *Saga) GetCompletedStepCount() int {
+func (s Saga) GetCompletedStepCount() int {
 	count := 0
-	for _, step := range s.Steps {
-		if step.Status == Completed {
+	for _, step := range s.steps {
+		if step.status == Completed {
 			count++
 		}
 	}
@@ -227,14 +254,102 @@ func (s *Saga) GetCompletedStepCount() int {
 }
 
 // GetPendingStepCount returns the number of pending steps in the saga
-func (s *Saga) GetPendingStepCount() int {
+func (s Saga) GetPendingStepCount() int {
 	count := 0
-	for _, step := range s.Steps {
-		if step.Status == Pending {
+	for _, step := range s.steps {
+		if step.status == Pending {
 			count++
 		}
 	}
 	return count
+}
+
+// WithStepStatus returns a new Saga with the specified step's status updated
+func (s Saga) WithStepStatus(index int, status Status) (Saga, error) {
+	if index < 0 || index >= len(s.steps) {
+		return Saga{}, fmt.Errorf("invalid step index: %d", index)
+	}
+	if err := s.validateStateTransition(index, status); err != nil {
+		return Saga{}, err
+	}
+
+	newSteps := make([]Step[any], len(s.steps))
+	copy(newSteps, s.steps)
+
+	newSteps[index] = Step[any]{
+		stepId:    s.steps[index].stepId,
+		status:    status,
+		action:    s.steps[index].action,
+		payload:   s.steps[index].payload,
+		createdAt: s.steps[index].createdAt,
+		updatedAt: time.Now(),
+	}
+
+	return Saga{
+		transactionId: s.transactionId,
+		sagaType:      s.sagaType,
+		initiatedBy:   s.initiatedBy,
+		steps:         newSteps,
+	}, nil
+}
+
+// WithStep returns a new Saga with the step added at the end
+func (s Saga) WithStep(step Step[any]) (Saga, error) {
+	for _, existingStep := range s.steps {
+		if existingStep.stepId == step.stepId {
+			return Saga{}, fmt.Errorf("step ID '%s' already exists in saga", step.stepId)
+		}
+	}
+
+	newSteps := make([]Step[any], len(s.steps)+1)
+	copy(newSteps, s.steps)
+	newSteps[len(s.steps)] = step
+
+	return Saga{
+		transactionId: s.transactionId,
+		sagaType:      s.sagaType,
+		initiatedBy:   s.initiatedBy,
+		steps:         newSteps,
+	}, nil
+}
+
+// WithStepAfterIndex returns a new Saga with the step inserted after the specified index
+func (s Saga) WithStepAfterIndex(index int, step Step[any]) (Saga, error) {
+	if index < -1 || index >= len(s.steps) {
+		return Saga{}, fmt.Errorf("invalid step index: %d", index)
+	}
+
+	for _, existingStep := range s.steps {
+		if existingStep.stepId == step.stepId {
+			return Saga{}, fmt.Errorf("step ID '%s' already exists in saga", step.stepId)
+		}
+	}
+
+	insertIndex := index + 1
+	newSteps := make([]Step[any], len(s.steps)+1)
+	copy(newSteps[:insertIndex], s.steps[:insertIndex])
+	newSteps[insertIndex] = step
+	copy(newSteps[insertIndex+1:], s.steps[insertIndex:])
+
+	return Saga{
+		transactionId: s.transactionId,
+		sagaType:      s.sagaType,
+		initiatedBy:   s.initiatedBy,
+		steps:         newSteps,
+	}, nil
+}
+
+// WithSteps returns a new Saga with the steps replaced
+func (s Saga) WithSteps(steps []Step[any]) Saga {
+	newSteps := make([]Step[any], len(steps))
+	copy(newSteps, steps)
+
+	return Saga{
+		transactionId: s.transactionId,
+		sagaType:      s.sagaType,
+		initiatedBy:   s.initiatedBy,
+		steps:         newSteps,
+	}
 }
 
 type Status string
@@ -297,12 +412,75 @@ const (
 
 // Step represents a single step within a saga.
 type Step[T any] struct {
-	StepId    string    `json:"stepId"`    // Unique ID for the step
-	Status    Status    `json:"status"`    // Status of the step (e.g., pending, completed, failed)
-	Action    Action    `json:"action"`    // The Action to be taken (e.g., validate_inventory, deduct_inventory)
-	Payload   T         `json:"payload"`   // Data required for the action (specific to the action type)
-	CreatedAt time.Time `json:"createdAt"` // Timestamp of when the step was created
-	UpdatedAt time.Time `json:"updatedAt"` // Timestamp of the last update to the step
+	stepId    string
+	status    Status
+	action    Action
+	payload   T
+	createdAt time.Time
+	updatedAt time.Time
+}
+
+// StepId returns the step ID
+func (s Step[T]) StepId() string { return s.stepId }
+
+// Status returns the step status
+func (s Step[T]) Status() Status { return s.status }
+
+// Action returns the step action
+func (s Step[T]) Action() Action { return s.action }
+
+// Payload returns the step payload
+func (s Step[T]) Payload() T { return s.payload }
+
+// CreatedAt returns the step creation time
+func (s Step[T]) CreatedAt() time.Time { return s.createdAt }
+
+// UpdatedAt returns the step update time
+func (s Step[T]) UpdatedAt() time.Time { return s.updatedAt }
+
+// MarshalJSON implements json.Marshaler for Step
+func (s Step[T]) MarshalJSON() ([]byte, error) {
+	type alias struct {
+		StepId    string    `json:"stepId"`
+		Status    Status    `json:"status"`
+		Action    Action    `json:"action"`
+		Payload   T         `json:"payload"`
+		CreatedAt time.Time `json:"createdAt"`
+		UpdatedAt time.Time `json:"updatedAt"`
+	}
+	return json.Marshal(alias{
+		StepId:    s.stepId,
+		Status:    s.status,
+		Action:    s.action,
+		Payload:   s.payload,
+		CreatedAt: s.createdAt,
+		UpdatedAt: s.updatedAt,
+	})
+}
+
+// NewStep creates a new Step with the given values
+func NewStep[T any](stepId string, status Status, action Action, payload T) Step[T] {
+	now := time.Now()
+	return Step[T]{
+		stepId:    stepId,
+		status:    status,
+		action:    action,
+		payload:   payload,
+		createdAt: now,
+		updatedAt: now,
+	}
+}
+
+// NewStepWithTimestamps creates a new Step with explicit timestamps
+func NewStepWithTimestamps[T any](stepId string, status Status, action Action, payload T, createdAt, updatedAt time.Time) Step[T] {
+	return Step[T]{
+		stepId:    stepId,
+		status:    status,
+		action:    action,
+		payload:   payload,
+		createdAt: createdAt,
+		updatedAt: updatedAt,
+	}
 }
 
 // AwardItemActionPayload represents the data needed to execute a specific action in a step.
@@ -718,240 +896,265 @@ type ReleaseFromStoragePayload struct {
 
 // Custom UnmarshalJSON for Step[T] to handle the generics
 func (s *Step[T]) UnmarshalJSON(data []byte) error {
-	type Alias Step[T] // Alias to avoid recursion
-	aux := &struct {
-		Payload json.RawMessage `json:"payload"`
-		*Alias
-	}{
-		Alias: (*Alias)(s),
+	// First unmarshal to get the action type
+	var actionOnly struct {
+		StepId    string    `json:"stepId"`
+		Status    Status    `json:"status"`
+		Action    Action    `json:"action"`
+		CreatedAt time.Time `json:"createdAt"`
+		UpdatedAt time.Time `json:"updatedAt"`
+		Payload   json.RawMessage `json:"payload"`
 	}
 
-	// Unmarshal the generic part (excluding Payload first)
-	if err := json.Unmarshal(data, &aux); err != nil {
+	if err := json.Unmarshal(data, &actionOnly); err != nil {
 		return err
 	}
 
-	// Now handle the Payload field based on the Action type (you can customize this)
-	switch s.Action {
-	case AwardInventory, AwardAsset: // Handle both action types the same way
+	s.stepId = actionOnly.StepId
+	s.status = actionOnly.Status
+	s.action = actionOnly.Action
+	s.createdAt = actionOnly.CreatedAt
+	s.updatedAt = actionOnly.UpdatedAt
+
+	// Now handle the Payload field based on the Action type
+	switch s.action {
+	case AwardInventory, AwardAsset:
 		var payload AwardItemActionPayload
-		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
-		s.Payload = any(payload).(T)
+		s.payload = any(payload).(T)
 	case AwardExperience:
 		var payload AwardExperiencePayload
-		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
-		s.Payload = any(payload).(T)
+		s.payload = any(payload).(T)
 	case AwardLevel:
 		var payload AwardLevelPayload
-		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
-		s.Payload = any(payload).(T)
+		s.payload = any(payload).(T)
 	case AwardMesos:
 		var payload AwardMesosPayload
-		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
-		s.Payload = any(payload).(T)
+		s.payload = any(payload).(T)
 	case AwardCurrency:
 		var payload AwardCurrencyPayload
-		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
-		s.Payload = any(payload).(T)
+		s.payload = any(payload).(T)
 	case WarpToRandomPortal:
 		var payload WarpToRandomPortalPayload
-		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
-		s.Payload = any(payload).(T)
+		s.payload = any(payload).(T)
 	case WarpToPortal:
 		var payload WarpToPortalPayload
-		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
-		s.Payload = any(payload).(T)
+		s.payload = any(payload).(T)
 	case DestroyAsset:
 		var payload DestroyAssetPayload
-		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
-		s.Payload = any(payload).(T)
+		s.payload = any(payload).(T)
 	case EquipAsset:
 		var payload EquipAssetPayload
-		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
-		s.Payload = any(payload).(T)
+		s.payload = any(payload).(T)
 	case UnequipAsset:
 		var payload UnequipAssetPayload
-		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
-		s.Payload = any(payload).(T)
+		s.payload = any(payload).(T)
 	case ChangeJob:
 		var payload ChangeJobPayload
-		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
-		s.Payload = any(payload).(T)
+		s.payload = any(payload).(T)
 	case ChangeHair:
 		var payload ChangeHairPayload
-		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
-		s.Payload = any(payload).(T)
+		s.payload = any(payload).(T)
 	case ChangeFace:
 		var payload ChangeFacePayload
-		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
-		s.Payload = any(payload).(T)
+		s.payload = any(payload).(T)
 	case ChangeSkin:
 		var payload ChangeSkinPayload
-		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
-		s.Payload = any(payload).(T)
+		s.payload = any(payload).(T)
 	case CreateSkill:
 		var payload CreateSkillPayload
-		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
-		s.Payload = any(payload).(T)
+		s.payload = any(payload).(T)
 	case UpdateSkill:
 		var payload UpdateSkillPayload
-		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
-		s.Payload = any(payload).(T)
+		s.payload = any(payload).(T)
 	case CreateInvite:
 		var payload CreateInvitePayload
-		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
-		s.Payload = any(payload).(T)
+		s.payload = any(payload).(T)
 	case CreateCharacter:
 		var payload CharacterCreatePayload
-		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
-		s.Payload = any(payload).(T)
+		s.payload = any(payload).(T)
 	case CreateAndEquipAsset:
 		var payload CreateAndEquipAssetPayload
-		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
-		s.Payload = any(payload).(T)
+		s.payload = any(payload).(T)
 	case IncreaseBuddyCapacity:
 		var payload IncreaseBuddyCapacityPayload
-		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
-		s.Payload = any(payload).(T)
+		s.payload = any(payload).(T)
 	case SpawnMonster:
 		var payload SpawnMonsterPayload
-		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
-		s.Payload = any(payload).(T)
+		s.payload = any(payload).(T)
 	case CompleteQuest:
 		var payload CompleteQuestPayload
-		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
-		s.Payload = any(payload).(T)
+		s.payload = any(payload).(T)
 	case StartQuest:
 		var payload StartQuestPayload
-		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
-		s.Payload = any(payload).(T)
+		s.payload = any(payload).(T)
 	case ApplyConsumableEffect:
 		var payload ApplyConsumableEffectPayload
-		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
-		s.Payload = any(payload).(T)
+		s.payload = any(payload).(T)
 	case SendMessage:
 		var payload SendMessagePayload
-		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
-		s.Payload = any(payload).(T)
+		s.payload = any(payload).(T)
 	case DepositToStorage:
 		var payload DepositToStoragePayload
-		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
-		s.Payload = any(payload).(T)
+		s.payload = any(payload).(T)
 	case TransferToStorage:
 		var payload TransferToStoragePayload
-		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
-		s.Payload = any(payload).(T)
+		s.payload = any(payload).(T)
 	case WithdrawFromStorage:
 		var payload WithdrawFromStoragePayload
-		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
-		s.Payload = any(payload).(T)
+		s.payload = any(payload).(T)
 	case UpdateStorageMesos:
 		var payload UpdateStorageMesosPayload
-		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
-		s.Payload = any(payload).(T)
+		s.payload = any(payload).(T)
 	case AwardFame:
 		var payload AwardFamePayload
-		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
-		s.Payload = any(payload).(T)
+		s.payload = any(payload).(T)
 	case ShowStorage:
 		var payload ShowStoragePayload
-		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
-		s.Payload = any(payload).(T)
+		s.payload = any(payload).(T)
 	case TransferAsset:
 		var payload TransferAssetPayload
-		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
-		s.Payload = any(payload).(T)
+		s.payload = any(payload).(T)
 	case AcceptToStorage:
 		var payload AcceptToStoragePayload
-		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
-		s.Payload = any(payload).(T)
+		s.payload = any(payload).(T)
 	case ReleaseFromCharacter:
 		var payload ReleaseFromCharacterPayload
-		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
-		s.Payload = any(payload).(T)
+		s.payload = any(payload).(T)
 	case AcceptToCharacter:
 		var payload AcceptToCharacterPayload
-		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
-		s.Payload = any(payload).(T)
+		s.payload = any(payload).(T)
 	case ReleaseFromStorage:
 		var payload ReleaseFromStoragePayload
-		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
-		s.Payload = any(payload).(T)
+		s.payload = any(payload).(T)
+	case ValidateCharacterState:
+		var payload ValidateCharacterStatePayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case GainCloseness:
+		var payload GainClosenessPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
 	default:
-		return fmt.Errorf("unknown action: %s", s.Action)
+		return fmt.Errorf("unknown action: %s", s.action)
 	}
 
 	return nil
 }
+
+// Error definitions for builder validation
+var (
+	ErrEmptyTransactionId = errors.New("transaction ID is required")
+	ErrEmptySagaType      = errors.New("saga type is required")
+)

@@ -150,43 +150,43 @@ func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 	failedStepIndex := s.FindFailedStepIndex()
 	if failedStepIndex == -1 {
 		c.l.WithFields(logrus.Fields{
-			"transaction_id": s.TransactionId.String(),
-			"saga_type":      s.SagaType,
+			"transaction_id": s.TransactionId().String(),
+			"saga_type":      s.SagaType(),
 			"tenant_id":      c.t.Id().String(),
 		}).Debug("No failed step found for compensation.")
 		return nil
 	}
 
-	failedStep := s.Steps[failedStepIndex]
+	failedStep, _ := s.StepAt(failedStepIndex)
 
 	c.l.WithFields(logrus.Fields{
-		"transaction_id": s.TransactionId.String(),
-		"saga_type":      s.SagaType,
-		"step_id":        failedStep.StepId,
-		"action":         failedStep.Action,
+		"transaction_id": s.TransactionId().String(),
+		"saga_type":      s.SagaType(),
+		"step_id":        failedStep.StepId(),
+		"action":         failedStep.Action(),
 		"tenant_id":      c.t.Id().String(),
 	}).Debug("Compensating failed step.")
 
 	// Special handling for ValidateCharacterState failures
 	// These are terminal failures - no compensation needed, just emit FAILED event
-	if failedStep.Action == ValidateCharacterState {
+	if failedStep.Action() == ValidateCharacterState {
 		c.l.WithFields(logrus.Fields{
-			"transaction_id": s.TransactionId.String(),
-			"saga_type":      s.SagaType,
-			"step_id":        failedStep.StepId,
+			"transaction_id": s.TransactionId().String(),
+			"saga_type":      s.SagaType(),
+			"step_id":        failedStep.StepId(),
 			"tenant_id":      c.t.Id().String(),
 		}).Info("Validation failed - terminating saga without compensation.")
 
 		// Remove saga from cache
-		GetCache().Remove(c.t.Id(), s.TransactionId)
+		GetCache().Remove(c.t.Id(), s.TransactionId())
 
 		// Emit saga failed event
 		err := producer.ProviderImpl(c.l)(c.ctx)(sagaMsg.EnvStatusEventTopic)(
-			FailedStatusEventProvider(s.TransactionId, "Validation failed", failedStep.StepId))
+			FailedStatusEventProvider(s.TransactionId(), "Validation failed", failedStep.StepId()))
 		if err != nil {
 			c.l.WithError(err).WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
+				"transaction_id": s.TransactionId().String(),
+				"saga_type":      s.SagaType(),
 				"tenant_id":      c.t.Id().String(),
 			}).Error("Failed to emit saga failed event.")
 		}
@@ -195,7 +195,7 @@ func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 	}
 
 	// Perform compensation based on the action type
-	switch failedStep.Action {
+	switch failedStep.Action() {
 	case EquipAsset:
 		return c.compensateEquipAsset(s, failedStep)
 	case UnequipAsset:
@@ -212,17 +212,18 @@ func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 		return c.compensateChangeSkin(s, failedStep)
 	default:
 		c.l.WithFields(logrus.Fields{
-			"transaction_id": s.TransactionId.String(),
-			"saga_type":      s.SagaType,
-			"step_id":        failedStep.StepId,
-			"action":         failedStep.Action,
+			"transaction_id": s.TransactionId().String(),
+			"saga_type":      s.SagaType(),
+			"step_id":        failedStep.StepId(),
+			"action":         failedStep.Action(),
 			"tenant_id":      c.t.Id().String(),
 		}).Debug("No compensation logic available for action type.")
 		// Mark step as compensated (remove failed status) with validation
-		if err := s.SetStepStatus(failedStepIndex, Pending); err != nil {
+		updatedSaga, err := s.WithStepStatus(failedStepIndex, Pending)
+		if err != nil {
 			c.l.WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
+				"transaction_id": s.TransactionId().String(),
+				"saga_type":      s.SagaType(),
 				"step_index":     failedStepIndex,
 				"tenant_id":      c.t.Id().String(),
 			}).WithError(err).Error("Failed to mark step as compensated")
@@ -230,16 +231,16 @@ func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 		}
 
 		// Validate state consistency before updating cache
-		if err := s.ValidateStateConsistency(); err != nil {
+		if err := updatedSaga.ValidateStateConsistency(); err != nil {
 			c.l.WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
+				"transaction_id": s.TransactionId().String(),
+				"saga_type":      s.SagaType(),
 				"tenant_id":      c.t.Id().String(),
 			}).WithError(err).Error("State consistency validation failed after compensation")
 			return err
 		}
 
-		GetCache().Put(c.t.Id(), s)
+		GetCache().Put(c.t.Id(), updatedSaga)
 		return nil
 	}
 }
@@ -248,15 +249,15 @@ func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 // by performing the reverse operation (UnequipAsset)
 func (c *CompensatorImpl) compensateEquipAsset(s Saga, failedStep Step[any]) error {
 	// Extract the original payload
-	payload, ok := failedStep.Payload.(EquipAssetPayload)
+	payload, ok := failedStep.Payload().(EquipAssetPayload)
 	if !ok {
 		return fmt.Errorf("invalid payload for EquipAsset compensation")
 	}
 
 	c.l.WithFields(logrus.Fields{
-		"transaction_id": s.TransactionId.String(),
-		"saga_type":      s.SagaType,
-		"step_id":        failedStep.StepId,
+		"transaction_id": s.TransactionId().String(),
+		"saga_type":      s.SagaType(),
+		"step_id":        failedStep.StepId(),
 		"character_id":   payload.CharacterId,
 		"source":         payload.Source,
 		"destination":    payload.Destination,
@@ -264,12 +265,12 @@ func (c *CompensatorImpl) compensateEquipAsset(s Saga, failedStep Step[any]) err
 	}).Info("Compensating failed EquipAsset operation with UnequipAsset")
 
 	// Perform the reverse operation: unequip from destination back to source
-	err := c.compP.RequestUnequipAsset(s.TransactionId, payload.CharacterId, byte(payload.InventoryType), payload.Destination, payload.Source)
+	err := c.compP.RequestUnequipAsset(s.TransactionId(), payload.CharacterId, byte(payload.InventoryType), payload.Destination, payload.Source)
 	if err != nil {
 		c.l.WithFields(logrus.Fields{
-			"transaction_id": s.TransactionId.String(),
-			"saga_type":      s.SagaType,
-			"step_id":        failedStep.StepId,
+			"transaction_id": s.TransactionId().String(),
+			"saga_type":      s.SagaType(),
+			"step_id":        failedStep.StepId(),
 			"tenant_id":      c.t.Id().String(),
 		}).WithError(err).Error("Failed to compensate EquipAsset operation")
 		return err
@@ -278,10 +279,11 @@ func (c *CompensatorImpl) compensateEquipAsset(s Saga, failedStep Step[any]) err
 	// Mark the failed step as compensated by removing it from the saga
 	failedStepIndex := s.FindFailedStepIndex()
 	if failedStepIndex != -1 {
-		if err := s.SetStepStatus(failedStepIndex, Pending); err != nil {
+		updatedSaga, err := s.WithStepStatus(failedStepIndex, Pending)
+		if err != nil {
 			c.l.WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
+				"transaction_id": s.TransactionId().String(),
+				"saga_type":      s.SagaType(),
 				"step_index":     failedStepIndex,
 				"tenant_id":      c.t.Id().String(),
 			}).WithError(err).Error("Failed to mark EquipAsset step as compensated")
@@ -289,16 +291,16 @@ func (c *CompensatorImpl) compensateEquipAsset(s Saga, failedStep Step[any]) err
 		}
 
 		// Validate state consistency before updating cache
-		if err := s.ValidateStateConsistency(); err != nil {
+		if err := updatedSaga.ValidateStateConsistency(); err != nil {
 			c.l.WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
+				"transaction_id": s.TransactionId().String(),
+				"saga_type":      s.SagaType(),
 				"tenant_id":      c.t.Id().String(),
 			}).WithError(err).Error("State consistency validation failed after EquipAsset compensation")
 			return err
 		}
 
-		GetCache().Put(c.t.Id(), s)
+		GetCache().Put(c.t.Id(), updatedSaga)
 	}
 
 	return nil
@@ -308,15 +310,15 @@ func (c *CompensatorImpl) compensateEquipAsset(s Saga, failedStep Step[any]) err
 // by performing the reverse operation (EquipAsset)
 func (c *CompensatorImpl) compensateUnequipAsset(s Saga, failedStep Step[any]) error {
 	// Extract the original payload
-	payload, ok := failedStep.Payload.(UnequipAssetPayload)
+	payload, ok := failedStep.Payload().(UnequipAssetPayload)
 	if !ok {
 		return fmt.Errorf("invalid payload for UnequipAsset compensation")
 	}
 
 	c.l.WithFields(logrus.Fields{
-		"transaction_id": s.TransactionId.String(),
-		"saga_type":      s.SagaType,
-		"step_id":        failedStep.StepId,
+		"transaction_id": s.TransactionId().String(),
+		"saga_type":      s.SagaType(),
+		"step_id":        failedStep.StepId(),
 		"character_id":   payload.CharacterId,
 		"source":         payload.Source,
 		"destination":    payload.Destination,
@@ -324,12 +326,12 @@ func (c *CompensatorImpl) compensateUnequipAsset(s Saga, failedStep Step[any]) e
 	}).Info("Compensating failed UnequipAsset operation with EquipAsset")
 
 	// Perform the reverse operation: equip from destination back to source
-	err := c.compP.RequestEquipAsset(s.TransactionId, payload.CharacterId, byte(payload.InventoryType), payload.Destination, payload.Source)
+	err := c.compP.RequestEquipAsset(s.TransactionId(), payload.CharacterId, byte(payload.InventoryType), payload.Destination, payload.Source)
 	if err != nil {
 		c.l.WithFields(logrus.Fields{
-			"transaction_id": s.TransactionId.String(),
-			"saga_type":      s.SagaType,
-			"step_id":        failedStep.StepId,
+			"transaction_id": s.TransactionId().String(),
+			"saga_type":      s.SagaType(),
+			"step_id":        failedStep.StepId(),
 			"tenant_id":      c.t.Id().String(),
 		}).WithError(err).Error("Failed to compensate UnequipAsset operation")
 		return err
@@ -338,10 +340,11 @@ func (c *CompensatorImpl) compensateUnequipAsset(s Saga, failedStep Step[any]) e
 	// Mark the failed step as compensated by removing it from the saga
 	failedStepIndex := s.FindFailedStepIndex()
 	if failedStepIndex != -1 {
-		if err := s.SetStepStatus(failedStepIndex, Pending); err != nil {
+		updatedSaga, err := s.WithStepStatus(failedStepIndex, Pending)
+		if err != nil {
 			c.l.WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
+				"transaction_id": s.TransactionId().String(),
+				"saga_type":      s.SagaType(),
 				"step_index":     failedStepIndex,
 				"tenant_id":      c.t.Id().String(),
 			}).WithError(err).Error("Failed to mark UnequipAsset step as compensated")
@@ -349,16 +352,16 @@ func (c *CompensatorImpl) compensateUnequipAsset(s Saga, failedStep Step[any]) e
 		}
 
 		// Validate state consistency before updating cache
-		if err := s.ValidateStateConsistency(); err != nil {
+		if err := updatedSaga.ValidateStateConsistency(); err != nil {
 			c.l.WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
+				"transaction_id": s.TransactionId().String(),
+				"saga_type":      s.SagaType(),
 				"tenant_id":      c.t.Id().String(),
 			}).WithError(err).Error("State consistency validation failed after UnequipAsset compensation")
 			return err
 		}
 
-		GetCache().Put(c.t.Id(), s)
+		GetCache().Put(c.t.Id(), updatedSaga)
 	}
 
 	return nil
@@ -370,15 +373,15 @@ func (c *CompensatorImpl) compensateUnequipAsset(s Saga, failedStep Step[any]) e
 // handle cleanup. This function exists for completeness and future extensibility.
 func (c *CompensatorImpl) compensateCreateCharacter(s Saga, failedStep Step[any]) error {
 	// Extract the original payload
-	payload, ok := failedStep.Payload.(CharacterCreatePayload)
+	payload, ok := failedStep.Payload().(CharacterCreatePayload)
 	if !ok {
 		return fmt.Errorf("invalid payload for CreateCharacter compensation")
 	}
 
 	c.l.WithFields(logrus.Fields{
-		"transaction_id": s.TransactionId.String(),
-		"saga_type":      s.SagaType,
-		"step_id":        failedStep.StepId,
+		"transaction_id": s.TransactionId().String(),
+		"saga_type":      s.SagaType(),
+		"step_id":        failedStep.StepId(),
 		"account_id":     payload.AccountId,
 		"character_name": payload.Name,
 		"world_id":       payload.WorldId,
@@ -393,10 +396,11 @@ func (c *CompensatorImpl) compensateCreateCharacter(s Saga, failedStep Step[any]
 	// Mark the failed step as compensated by removing it from the saga
 	failedStepIndex := s.FindFailedStepIndex()
 	if failedStepIndex != -1 {
-		if err := s.SetStepStatus(failedStepIndex, Pending); err != nil {
+		updatedSaga, err := s.WithStepStatus(failedStepIndex, Pending)
+		if err != nil {
 			c.l.WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
+				"transaction_id": s.TransactionId().String(),
+				"saga_type":      s.SagaType(),
 				"step_index":     failedStepIndex,
 				"tenant_id":      c.t.Id().String(),
 			}).WithError(err).Error("Failed to mark CreateCharacter step as compensated")
@@ -404,16 +408,16 @@ func (c *CompensatorImpl) compensateCreateCharacter(s Saga, failedStep Step[any]
 		}
 
 		// Validate state consistency before updating cache
-		if err := s.ValidateStateConsistency(); err != nil {
+		if err := updatedSaga.ValidateStateConsistency(); err != nil {
 			c.l.WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
+				"transaction_id": s.TransactionId().String(),
+				"saga_type":      s.SagaType(),
 				"tenant_id":      c.t.Id().String(),
 			}).WithError(err).Error("State consistency validation failed after CreateCharacter compensation")
 			return err
 		}
 
-		GetCache().Put(c.t.Id(), s)
+		GetCache().Put(c.t.Id(), updatedSaga)
 	}
 
 	return nil
@@ -432,15 +436,15 @@ func (c *CompensatorImpl) compensateCreateCharacter(s Saga, failedStep Step[any]
 // not when the dynamically created EquipAsset step fails (that uses compensateEquipAsset)
 func (c *CompensatorImpl) compensateCreateAndEquipAsset(s Saga, failedStep Step[any]) error {
 	// Extract the original payload
-	payload, ok := failedStep.Payload.(CreateAndEquipAssetPayload)
+	payload, ok := failedStep.Payload().(CreateAndEquipAssetPayload)
 	if !ok {
 		return fmt.Errorf("invalid payload for CreateAndEquipAsset compensation")
 	}
 
 	c.l.WithFields(logrus.Fields{
-		"transaction_id": s.TransactionId.String(),
-		"saga_type":      s.SagaType,
-		"step_id":        failedStep.StepId,
+		"transaction_id": s.TransactionId().String(),
+		"saga_type":      s.SagaType(),
+		"step_id":        failedStep.StepId(),
 		"character_id":   payload.CharacterId,
 		"template_id":    payload.Item.TemplateId,
 		"quantity":       payload.Item.Quantity,
@@ -455,8 +459,8 @@ func (c *CompensatorImpl) compensateCreateAndEquipAsset(s Saga, failedStep Step[
 	// If an auto-equip step exists, it means the asset was successfully created
 	// and the failure occurred during the equipment phase
 	autoEquipStepExists := false
-	for _, step := range s.Steps {
-		if step.Action == EquipAsset && strings.HasPrefix(step.StepId, "auto_equip_step_") {
+	for _, step := range s.Steps() {
+		if step.Action() == EquipAsset && strings.HasPrefix(step.StepId(), "auto_equip_step_") {
 			autoEquipStepExists = true
 			break
 		}
@@ -465,9 +469,9 @@ func (c *CompensatorImpl) compensateCreateAndEquipAsset(s Saga, failedStep Step[
 	if autoEquipStepExists {
 		// Asset was created but equipment failed - need to destroy the created asset
 		c.l.WithFields(logrus.Fields{
-			"transaction_id": s.TransactionId.String(),
-			"saga_type":      s.SagaType,
-			"step_id":        failedStep.StepId,
+			"transaction_id": s.TransactionId().String(),
+			"saga_type":      s.SagaType(),
+			"step_id":        failedStep.StepId(),
 			"character_id":   payload.CharacterId,
 			"template_id":    payload.Item.TemplateId,
 			"quantity":       payload.Item.Quantity,
@@ -475,12 +479,12 @@ func (c *CompensatorImpl) compensateCreateAndEquipAsset(s Saga, failedStep Step[
 		}).Info("Auto-equip step found - destroying created asset for compensation")
 
 		// Destroy the created asset (removeAll = false, destroy exact quantity created)
-		err := c.compP.RequestDestroyItem(s.TransactionId, payload.CharacterId, payload.Item.TemplateId, payload.Item.Quantity, false)
+		err := c.compP.RequestDestroyItem(s.TransactionId(), payload.CharacterId, payload.Item.TemplateId, payload.Item.Quantity, false)
 		if err != nil {
 			c.l.WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
-				"step_id":        failedStep.StepId,
+				"transaction_id": s.TransactionId().String(),
+				"saga_type":      s.SagaType(),
+				"step_id":        failedStep.StepId(),
 				"character_id":   payload.CharacterId,
 				"template_id":    payload.Item.TemplateId,
 				"quantity":       payload.Item.Quantity,
@@ -490,9 +494,9 @@ func (c *CompensatorImpl) compensateCreateAndEquipAsset(s Saga, failedStep Step[
 		}
 
 		c.l.WithFields(logrus.Fields{
-			"transaction_id": s.TransactionId.String(),
-			"saga_type":      s.SagaType,
-			"step_id":        failedStep.StepId,
+			"transaction_id": s.TransactionId().String(),
+			"saga_type":      s.SagaType(),
+			"step_id":        failedStep.StepId(),
 			"character_id":   payload.CharacterId,
 			"template_id":    payload.Item.TemplateId,
 			"quantity":       payload.Item.Quantity,
@@ -501,9 +505,9 @@ func (c *CompensatorImpl) compensateCreateAndEquipAsset(s Saga, failedStep Step[
 	} else {
 		// No auto-equip step found - asset creation failed, no compensation needed
 		c.l.WithFields(logrus.Fields{
-			"transaction_id": s.TransactionId.String(),
-			"saga_type":      s.SagaType,
-			"step_id":        failedStep.StepId,
+			"transaction_id": s.TransactionId().String(),
+			"saga_type":      s.SagaType(),
+			"step_id":        failedStep.StepId(),
 			"character_id":   payload.CharacterId,
 			"template_id":    payload.Item.TemplateId,
 			"quantity":       payload.Item.Quantity,
@@ -514,10 +518,11 @@ func (c *CompensatorImpl) compensateCreateAndEquipAsset(s Saga, failedStep Step[
 	// Mark the failed step as compensated
 	failedStepIndex := s.FindFailedStepIndex()
 	if failedStepIndex != -1 {
-		if err := s.SetStepStatus(failedStepIndex, Pending); err != nil {
+		updatedSaga, err := s.WithStepStatus(failedStepIndex, Pending)
+		if err != nil {
 			c.l.WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
+				"transaction_id": s.TransactionId().String(),
+				"saga_type":      s.SagaType(),
 				"step_index":     failedStepIndex,
 				"tenant_id":      c.t.Id().String(),
 			}).WithError(err).Error("Failed to mark CreateAndEquipAsset step as compensated")
@@ -525,16 +530,16 @@ func (c *CompensatorImpl) compensateCreateAndEquipAsset(s Saga, failedStep Step[
 		}
 
 		// Validate state consistency before updating cache
-		if err := s.ValidateStateConsistency(); err != nil {
+		if err := updatedSaga.ValidateStateConsistency(); err != nil {
 			c.l.WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
+				"transaction_id": s.TransactionId().String(),
+				"saga_type":      s.SagaType(),
 				"tenant_id":      c.t.Id().String(),
 			}).WithError(err).Error("State consistency validation failed after CreateAndEquipAsset compensation")
 			return err
 		}
 
-		GetCache().Put(c.t.Id(), s)
+		GetCache().Put(c.t.Id(), updatedSaga)
 	}
 
 	return nil
@@ -546,15 +551,15 @@ func (c *CompensatorImpl) compensateCreateAndEquipAsset(s Saga, failedStep Step[
 // has the new hair style applied. Future enhancement could store the old value for rollback.
 func (c *CompensatorImpl) compensateChangeHair(s Saga, failedStep Step[any]) error {
 	// Extract the original payload
-	payload, ok := failedStep.Payload.(ChangeHairPayload)
+	payload, ok := failedStep.Payload().(ChangeHairPayload)
 	if !ok {
 		return fmt.Errorf("invalid payload for ChangeHair compensation")
 	}
 
 	c.l.WithFields(logrus.Fields{
-		"transaction_id": s.TransactionId.String(),
-		"saga_type":      s.SagaType,
-		"step_id":        failedStep.StepId,
+		"transaction_id": s.TransactionId().String(),
+		"saga_type":      s.SagaType(),
+		"step_id":        failedStep.StepId(),
 		"character_id":   payload.CharacterId,
 		"new_style_id":   payload.StyleId,
 		"tenant_id":      c.t.Id().String(),
@@ -569,10 +574,11 @@ func (c *CompensatorImpl) compensateChangeHair(s Saga, failedStep Step[any]) err
 	// Mark the failed step as compensated
 	failedStepIndex := s.FindFailedStepIndex()
 	if failedStepIndex != -1 {
-		if err := s.SetStepStatus(failedStepIndex, Pending); err != nil {
+		updatedSaga, err := s.WithStepStatus(failedStepIndex, Pending)
+		if err != nil {
 			c.l.WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
+				"transaction_id": s.TransactionId().String(),
+				"saga_type":      s.SagaType(),
 				"step_index":     failedStepIndex,
 				"tenant_id":      c.t.Id().String(),
 			}).WithError(err).Error("Failed to mark ChangeHair step as compensated")
@@ -580,16 +586,16 @@ func (c *CompensatorImpl) compensateChangeHair(s Saga, failedStep Step[any]) err
 		}
 
 		// Validate state consistency before updating cache
-		if err := s.ValidateStateConsistency(); err != nil {
+		if err := updatedSaga.ValidateStateConsistency(); err != nil {
 			c.l.WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
+				"transaction_id": s.TransactionId().String(),
+				"saga_type":      s.SagaType(),
 				"tenant_id":      c.t.Id().String(),
 			}).WithError(err).Error("State consistency validation failed after ChangeHair compensation")
 			return err
 		}
 
-		GetCache().Put(c.t.Id(), s)
+		GetCache().Put(c.t.Id(), updatedSaga)
 	}
 
 	return nil
@@ -601,15 +607,15 @@ func (c *CompensatorImpl) compensateChangeHair(s Saga, failedStep Step[any]) err
 // has the new face style applied. Future enhancement could store the old value for rollback.
 func (c *CompensatorImpl) compensateChangeFace(s Saga, failedStep Step[any]) error {
 	// Extract the original payload
-	payload, ok := failedStep.Payload.(ChangeFacePayload)
+	payload, ok := failedStep.Payload().(ChangeFacePayload)
 	if !ok {
 		return fmt.Errorf("invalid payload for ChangeFace compensation")
 	}
 
 	c.l.WithFields(logrus.Fields{
-		"transaction_id": s.TransactionId.String(),
-		"saga_type":      s.SagaType,
-		"step_id":        failedStep.StepId,
+		"transaction_id": s.TransactionId().String(),
+		"saga_type":      s.SagaType(),
+		"step_id":        failedStep.StepId(),
 		"character_id":   payload.CharacterId,
 		"new_style_id":   payload.StyleId,
 		"tenant_id":      c.t.Id().String(),
@@ -624,10 +630,11 @@ func (c *CompensatorImpl) compensateChangeFace(s Saga, failedStep Step[any]) err
 	// Mark the failed step as compensated
 	failedStepIndex := s.FindFailedStepIndex()
 	if failedStepIndex != -1 {
-		if err := s.SetStepStatus(failedStepIndex, Pending); err != nil {
+		updatedSaga, err := s.WithStepStatus(failedStepIndex, Pending)
+		if err != nil {
 			c.l.WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
+				"transaction_id": s.TransactionId().String(),
+				"saga_type":      s.SagaType(),
 				"step_index":     failedStepIndex,
 				"tenant_id":      c.t.Id().String(),
 			}).WithError(err).Error("Failed to mark ChangeFace step as compensated")
@@ -635,16 +642,16 @@ func (c *CompensatorImpl) compensateChangeFace(s Saga, failedStep Step[any]) err
 		}
 
 		// Validate state consistency before updating cache
-		if err := s.ValidateStateConsistency(); err != nil {
+		if err := updatedSaga.ValidateStateConsistency(); err != nil {
 			c.l.WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
+				"transaction_id": s.TransactionId().String(),
+				"saga_type":      s.SagaType(),
 				"tenant_id":      c.t.Id().String(),
 			}).WithError(err).Error("State consistency validation failed after ChangeFace compensation")
 			return err
 		}
 
-		GetCache().Put(c.t.Id(), s)
+		GetCache().Put(c.t.Id(), updatedSaga)
 	}
 
 	return nil
@@ -656,15 +663,15 @@ func (c *CompensatorImpl) compensateChangeFace(s Saga, failedStep Step[any]) err
 // has the new skin color applied. Future enhancement could store the old value for rollback.
 func (c *CompensatorImpl) compensateChangeSkin(s Saga, failedStep Step[any]) error {
 	// Extract the original payload
-	payload, ok := failedStep.Payload.(ChangeSkinPayload)
+	payload, ok := failedStep.Payload().(ChangeSkinPayload)
 	if !ok {
 		return fmt.Errorf("invalid payload for ChangeSkin compensation")
 	}
 
 	c.l.WithFields(logrus.Fields{
-		"transaction_id": s.TransactionId.String(),
-		"saga_type":      s.SagaType,
-		"step_id":        failedStep.StepId,
+		"transaction_id": s.TransactionId().String(),
+		"saga_type":      s.SagaType(),
+		"step_id":        failedStep.StepId(),
 		"character_id":   payload.CharacterId,
 		"new_style_id":   payload.StyleId,
 		"tenant_id":      c.t.Id().String(),
@@ -679,10 +686,11 @@ func (c *CompensatorImpl) compensateChangeSkin(s Saga, failedStep Step[any]) err
 	// Mark the failed step as compensated
 	failedStepIndex := s.FindFailedStepIndex()
 	if failedStepIndex != -1 {
-		if err := s.SetStepStatus(failedStepIndex, Pending); err != nil {
+		updatedSaga, err := s.WithStepStatus(failedStepIndex, Pending)
+		if err != nil {
 			c.l.WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
+				"transaction_id": s.TransactionId().String(),
+				"saga_type":      s.SagaType(),
 				"step_index":     failedStepIndex,
 				"tenant_id":      c.t.Id().String(),
 			}).WithError(err).Error("Failed to mark ChangeSkin step as compensated")
@@ -690,16 +698,16 @@ func (c *CompensatorImpl) compensateChangeSkin(s Saga, failedStep Step[any]) err
 		}
 
 		// Validate state consistency before updating cache
-		if err := s.ValidateStateConsistency(); err != nil {
+		if err := updatedSaga.ValidateStateConsistency(); err != nil {
 			c.l.WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
+				"transaction_id": s.TransactionId().String(),
+				"saga_type":      s.SagaType(),
 				"tenant_id":      c.t.Id().String(),
 			}).WithError(err).Error("State consistency validation failed after ChangeSkin compensation")
 			return err
 		}
 
-		GetCache().Put(c.t.Id(), s)
+		GetCache().Put(c.t.Id(), updatedSaga)
 	}
 
 	return nil

@@ -10,7 +10,6 @@ import (
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"testing"
-	"time"
 )
 
 // TestCompensateCreateCharacter tests the compensateCreateCharacter function
@@ -67,40 +66,37 @@ func TestCompensateCreateCharacter(t *testing.T) {
 
 			// Create test saga with failed step
 			transactionId := uuid.New()
-			saga := Saga{
-				TransactionId: transactionId,
-				SagaType:      CharacterCreation,
-				InitiatedBy:   "compensation-test",
-				Steps: []Step[any]{
-					{
-						StepId:    "create-character-step",
-						Status:    Failed,
-						Action:    CreateCharacter,
-						Payload:   tt.payload,
-						CreatedAt: time.Now(),
-						UpdatedAt: time.Now(),
-					},
-				},
+
+			// Determine payload for step
+			var stepPayload any = tt.payload
+			if tt.errorContains == "invalid payload for CreateCharacter compensation" {
+				stepPayload = "invalid-payload"
 			}
 
-			// For the invalid payload test, replace with invalid payload
-			if tt.errorContains == "invalid payload for CreateCharacter compensation" {
-				saga.Steps[0].Payload = "invalid-payload"
-			}
+			// Build the saga using the builder pattern
+			saga, err := NewBuilder().
+				SetTransactionId(transactionId).
+				SetSagaType(CharacterCreation).
+				SetInitiatedBy("compensation-test").
+				AddStep("create-character-step", Failed, CreateCharacter, stepPayload).
+				Build()
+			assert.NoError(t, err)
+
+			// Get the step for passing to compensator
+			step, ok := saga.StepAt(0)
+			assert.True(t, ok)
 
 			// Execute
-			err := NewCompensator(logger, tctx).compensateCreateCharacter(saga, saga.Steps[0])
+			compErr := NewCompensator(logger, tctx).compensateCreateCharacter(saga, step)
 
 			// Verify
 			if tt.expectError {
-				assert.Error(t, err)
+				assert.Error(t, compErr)
 				if tt.errorContains != "" {
-					assert.Contains(t, err.Error(), tt.errorContains)
+					assert.Contains(t, compErr.Error(), tt.errorContains)
 				}
 			} else {
-				assert.NoError(t, err)
-				// Verify that the step status was reset to pending
-				assert.Equal(t, Pending, saga.Steps[0].Status)
+				assert.NoError(t, compErr)
 			}
 		})
 	}

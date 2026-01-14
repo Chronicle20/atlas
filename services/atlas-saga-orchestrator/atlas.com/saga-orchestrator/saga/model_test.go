@@ -11,51 +11,40 @@ import (
 func TestSaga_Failing(t *testing.T) {
 	tests := []struct {
 		name     string
-		steps    []Step[any]
+		builder  func() *Builder
 		expected bool
 	}{
 		{
-			name:     "No steps",
-			steps:    []Step[any]{},
+			name: "No steps",
+			builder: func() *Builder {
+				return NewBuilder().
+					SetTransactionId(uuid.New()).
+					SetSagaType(InventoryTransaction).
+					SetInitiatedBy("test")
+			},
 			expected: false,
 		},
 		{
 			name: "No failing steps",
-			steps: []Step[any]{
-				{
-					StepId:    "step1",
-					Status:    Pending,
-					Action:    AwardInventory,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				},
-				{
-					StepId:    "step2",
-					Status:    Completed,
-					Action:    AwardInventory,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				},
+			builder: func() *Builder {
+				return NewBuilder().
+					SetTransactionId(uuid.New()).
+					SetSagaType(InventoryTransaction).
+					SetInitiatedBy("test").
+					AddStep("step1", Pending, AwardInventory, nil).
+					AddStep("step2", Completed, AwardInventory, nil)
 			},
 			expected: false,
 		},
 		{
 			name: "With failing step",
-			steps: []Step[any]{
-				{
-					StepId:    "step1",
-					Status:    Completed,
-					Action:    AwardInventory,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				},
-				{
-					StepId:    "step2",
-					Status:    Failed,
-					Action:    AwardInventory,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				},
+			builder: func() *Builder {
+				return NewBuilder().
+					SetTransactionId(uuid.New()).
+					SetSagaType(InventoryTransaction).
+					SetInitiatedBy("test").
+					AddStep("step1", Completed, AwardInventory, nil).
+					AddStep("step2", Failed, AwardInventory, nil)
 			},
 			expected: true,
 		},
@@ -63,14 +52,11 @@ func TestSaga_Failing(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			saga := NewBuilder().
-				SetTransactionId(uuid.New()).
-				SetSagaType(InventoryTransaction).
-				SetInitiatedBy("test").
-				Build()
-			
-			saga.Steps = tt.steps
-			
+			saga, err := tt.builder().Build()
+			if err != nil {
+				t.Fatalf("Failed to build saga: %v", err)
+			}
+
 			if got := saga.Failing(); got != tt.expected {
 				t.Errorf("Saga.Failing() = %v, want %v", got, tt.expected)
 			}
@@ -81,85 +67,65 @@ func TestSaga_Failing(t *testing.T) {
 func TestSaga_GetCurrentStep(t *testing.T) {
 	tests := []struct {
 		name          string
-		steps         []Step[any]
+		builder       func() *Builder
 		expectStep    bool
-		expectedIndex int
+		expectedStepId string
 	}{
 		{
-			name:          "No steps",
-			steps:         []Step[any]{},
+			name: "No steps",
+			builder: func() *Builder {
+				return NewBuilder().
+					SetTransactionId(uuid.New()).
+					SetSagaType(InventoryTransaction).
+					SetInitiatedBy("test")
+			},
 			expectStep:    false,
-			expectedIndex: -1,
+			expectedStepId: "",
 		},
 		{
 			name: "No pending steps",
-			steps: []Step[any]{
-				{
-					StepId:    "step1",
-					Status:    Completed,
-					Action:    AwardInventory,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				},
-				{
-					StepId:    "step2",
-					Status:    Completed,
-					Action:    AwardInventory,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				},
+			builder: func() *Builder {
+				return NewBuilder().
+					SetTransactionId(uuid.New()).
+					SetSagaType(InventoryTransaction).
+					SetInitiatedBy("test").
+					AddStep("step1", Completed, AwardInventory, nil).
+					AddStep("step2", Completed, AwardInventory, nil)
 			},
 			expectStep:    false,
-			expectedIndex: -1,
+			expectedStepId: "",
 		},
 		{
 			name: "With pending step",
-			steps: []Step[any]{
-				{
-					StepId:    "step1",
-					Status:    Completed,
-					Action:    AwardInventory,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				},
-				{
-					StepId:    "step2",
-					Status:    Pending,
-					Action:    AwardInventory,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				},
-				{
-					StepId:    "step3",
-					Status:    Pending,
-					Action:    AwardInventory,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				},
+			builder: func() *Builder {
+				return NewBuilder().
+					SetTransactionId(uuid.New()).
+					SetSagaType(InventoryTransaction).
+					SetInitiatedBy("test").
+					AddStep("step1", Completed, AwardInventory, nil).
+					AddStep("step2", Pending, AwardInventory, nil).
+					AddStep("step3", Pending, AwardInventory, nil)
 			},
 			expectStep:    true,
-			expectedIndex: 1,
+			expectedStepId: "step2",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			saga := NewBuilder().
-				SetTransactionId(uuid.New()).
-				SetSagaType(InventoryTransaction).
-				SetInitiatedBy("test").
-				Build()
-			
-			saga.Steps = tt.steps
-			
+			saga, err := tt.builder().Build()
+			if err != nil {
+				t.Fatalf("Failed to build saga: %v", err)
+			}
+
 			step, found := saga.GetCurrentStep()
 			if found != tt.expectStep {
 				t.Errorf("Saga.GetCurrentStep() found = %v, want %v", found, tt.expectStep)
 			}
-			
-			if found && step.StepId != tt.steps[tt.expectedIndex].StepId {
-				t.Errorf("Saga.GetCurrentStep() returned step with ID = %v, want step with ID = %v", 
-					step.StepId, tt.steps[tt.expectedIndex].StepId)
+
+			if found && step.StepId() != tt.expectedStepId {
+				t.Errorf("Saga.GetCurrentStep() returned step with ID = %v, want step with ID = %v",
+					step.StepId(), tt.expectedStepId)
 			}
 		})
 	}
@@ -168,92 +134,55 @@ func TestSaga_GetCurrentStep(t *testing.T) {
 func TestSaga_FindFurthestCompletedStepIndex(t *testing.T) {
 	tests := []struct {
 		name     string
-		steps    []Step[any]
+		builder  func() *Builder
 		expected int
 	}{
 		{
-			name:     "No steps",
-			steps:    []Step[any]{},
+			name: "No steps",
+			builder: func() *Builder {
+				return NewBuilder().
+					SetTransactionId(uuid.New()).
+					SetSagaType(InventoryTransaction).
+					SetInitiatedBy("test")
+			},
 			expected: -1,
 		},
 		{
 			name: "No completed steps",
-			steps: []Step[any]{
-				{
-					StepId:    "step1",
-					Status:    Pending,
-					Action:    AwardInventory,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				},
-				{
-					StepId:    "step2",
-					Status:    Pending,
-					Action:    AwardInventory,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				},
+			builder: func() *Builder {
+				return NewBuilder().
+					SetTransactionId(uuid.New()).
+					SetSagaType(InventoryTransaction).
+					SetInitiatedBy("test").
+					AddStep("step1", Pending, AwardInventory, nil).
+					AddStep("step2", Pending, AwardInventory, nil)
 			},
 			expected: -1,
 		},
 		{
 			name: "With completed steps",
-			steps: []Step[any]{
-				{
-					StepId:    "step1",
-					Status:    Completed,
-					Action:    AwardInventory,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				},
-				{
-					StepId:    "step2",
-					Status:    Completed,
-					Action:    AwardInventory,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				},
-				{
-					StepId:    "step3",
-					Status:    Pending,
-					Action:    AwardInventory,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				},
+			builder: func() *Builder {
+				return NewBuilder().
+					SetTransactionId(uuid.New()).
+					SetSagaType(InventoryTransaction).
+					SetInitiatedBy("test").
+					AddStep("step1", Completed, AwardInventory, nil).
+					AddStep("step2", Completed, AwardInventory, nil).
+					AddStep("step3", Pending, AwardInventory, nil)
 			},
 			expected: 1,
 		},
 		{
 			name: "With mixed status steps",
-			steps: []Step[any]{
-				{
-					StepId:    "step1",
-					Status:    Completed,
-					Action:    AwardInventory,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				},
-				{
-					StepId:    "step2",
-					Status:    Failed,
-					Action:    AwardInventory,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				},
-				{
-					StepId:    "step3",
-					Status:    Completed,
-					Action:    AwardInventory,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				},
-				{
-					StepId:    "step4",
-					Status:    Pending,
-					Action:    AwardInventory,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				},
+			builder: func() *Builder {
+				return NewBuilder().
+					SetTransactionId(uuid.New()).
+					SetSagaType(InventoryTransaction).
+					SetInitiatedBy("test").
+					AddStep("step1", Completed, AwardInventory, nil).
+					AddStep("step2", Failed, AwardInventory, nil).
+					AddStep("step3", Completed, AwardInventory, nil).
+					AddStep("step4", Pending, AwardInventory, nil)
 			},
 			expected: 2,
 		},
@@ -261,14 +190,11 @@ func TestSaga_FindFurthestCompletedStepIndex(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			saga := NewBuilder().
-				SetTransactionId(uuid.New()).
-				SetSagaType(InventoryTransaction).
-				SetInitiatedBy("test").
-				Build()
-			
-			saga.Steps = tt.steps
-			
+			saga, err := tt.builder().Build()
+			if err != nil {
+				t.Fatalf("Failed to build saga: %v", err)
+			}
+
 			if got := saga.FindFurthestCompletedStepIndex(); got != tt.expected {
 				t.Errorf("Saga.FindFurthestCompletedStepIndex() = %v, want %v", got, tt.expected)
 			}
@@ -279,92 +205,55 @@ func TestSaga_FindFurthestCompletedStepIndex(t *testing.T) {
 func TestSaga_FindEarliestPendingStepIndex(t *testing.T) {
 	tests := []struct {
 		name     string
-		steps    []Step[any]
+		builder  func() *Builder
 		expected int
 	}{
 		{
-			name:     "No steps",
-			steps:    []Step[any]{},
+			name: "No steps",
+			builder: func() *Builder {
+				return NewBuilder().
+					SetTransactionId(uuid.New()).
+					SetSagaType(InventoryTransaction).
+					SetInitiatedBy("test")
+			},
 			expected: -1,
 		},
 		{
 			name: "No pending steps",
-			steps: []Step[any]{
-				{
-					StepId:    "step1",
-					Status:    Completed,
-					Action:    AwardInventory,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				},
-				{
-					StepId:    "step2",
-					Status:    Completed,
-					Action:    AwardInventory,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				},
+			builder: func() *Builder {
+				return NewBuilder().
+					SetTransactionId(uuid.New()).
+					SetSagaType(InventoryTransaction).
+					SetInitiatedBy("test").
+					AddStep("step1", Completed, AwardInventory, nil).
+					AddStep("step2", Completed, AwardInventory, nil)
 			},
 			expected: -1,
 		},
 		{
 			name: "With pending steps",
-			steps: []Step[any]{
-				{
-					StepId:    "step1",
-					Status:    Completed,
-					Action:    AwardInventory,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				},
-				{
-					StepId:    "step2",
-					Status:    Pending,
-					Action:    AwardInventory,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				},
-				{
-					StepId:    "step3",
-					Status:    Pending,
-					Action:    AwardInventory,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				},
+			builder: func() *Builder {
+				return NewBuilder().
+					SetTransactionId(uuid.New()).
+					SetSagaType(InventoryTransaction).
+					SetInitiatedBy("test").
+					AddStep("step1", Completed, AwardInventory, nil).
+					AddStep("step2", Pending, AwardInventory, nil).
+					AddStep("step3", Pending, AwardInventory, nil)
 			},
 			expected: 1,
 		},
 		{
 			name: "With mixed status steps",
-			steps: []Step[any]{
-				{
-					StepId:    "step1",
-					Status:    Failed,
-					Action:    AwardInventory,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				},
-				{
-					StepId:    "step2",
-					Status:    Completed,
-					Action:    AwardInventory,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				},
-				{
-					StepId:    "step3",
-					Status:    Pending,
-					Action:    AwardInventory,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				},
-				{
-					StepId:    "step4",
-					Status:    Pending,
-					Action:    AwardInventory,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				},
+			builder: func() *Builder {
+				return NewBuilder().
+					SetTransactionId(uuid.New()).
+					SetSagaType(InventoryTransaction).
+					SetInitiatedBy("test").
+					AddStep("step1", Failed, AwardInventory, nil).
+					AddStep("step2", Completed, AwardInventory, nil).
+					AddStep("step3", Pending, AwardInventory, nil).
+					AddStep("step4", Pending, AwardInventory, nil)
 			},
 			expected: 2,
 		},
@@ -372,14 +261,11 @@ func TestSaga_FindEarliestPendingStepIndex(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			saga := NewBuilder().
-				SetTransactionId(uuid.New()).
-				SetSagaType(InventoryTransaction).
-				SetInitiatedBy("test").
-				Build()
-			
-			saga.Steps = tt.steps
-			
+			saga, err := tt.builder().Build()
+			if err != nil {
+				t.Fatalf("Failed to build saga: %v", err)
+			}
+
 			if got := saga.FindEarliestPendingStepIndex(); got != tt.expected {
 				t.Errorf("Saga.FindEarliestPendingStepIndex() = %v, want %v", got, tt.expected)
 			}
@@ -392,12 +278,12 @@ func TestBuilder(t *testing.T) {
 	transactionId := uuid.New()
 	sagaType := InventoryTransaction
 	initiatedBy := "test-initiator"
-	
+
 	builder := NewBuilder().
 		SetTransactionId(transactionId).
 		SetSagaType(sagaType).
 		SetInitiatedBy(initiatedBy)
-	
+
 	// Add some steps
 	payload := AwardItemActionPayload{
 		CharacterId: 12345,
@@ -406,36 +292,40 @@ func TestBuilder(t *testing.T) {
 			Quantity:   5,
 		},
 	}
-	
+
 	builder.AddStep("step1", Pending, AwardInventory, payload)
 	builder.AddStep("step2", Completed, AwardInventory, payload)
-	
+
 	// Build the saga
-	saga := builder.Build()
-	
+	saga, err := builder.Build()
+	if err != nil {
+		t.Fatalf("Failed to build saga: %v", err)
+	}
+
 	// Verify the saga properties
-	if saga.TransactionId != transactionId {
-		t.Errorf("Builder set TransactionId = %v, want %v", saga.TransactionId, transactionId)
+	if saga.TransactionId() != transactionId {
+		t.Errorf("Builder set TransactionId = %v, want %v", saga.TransactionId(), transactionId)
 	}
-	
-	if saga.SagaType != sagaType {
-		t.Errorf("Builder set SagaType = %v, want %v", saga.SagaType, sagaType)
+
+	if saga.SagaType() != sagaType {
+		t.Errorf("Builder set SagaType = %v, want %v", saga.SagaType(), sagaType)
 	}
-	
-	if saga.InitiatedBy != initiatedBy {
-		t.Errorf("Builder set InitiatedBy = %v, want %v", saga.InitiatedBy, initiatedBy)
+
+	if saga.InitiatedBy() != initiatedBy {
+		t.Errorf("Builder set InitiatedBy = %v, want %v", saga.InitiatedBy(), initiatedBy)
 	}
-	
-	if len(saga.Steps) != 2 {
-		t.Errorf("Builder added %v steps, want %v", len(saga.Steps), 2)
+
+	if saga.StepCount() != 2 {
+		t.Errorf("Builder added %v steps, want %v", saga.StepCount(), 2)
 	}
-	
+
 	// Verify the steps
-	if saga.Steps[0].StepId != "step1" || saga.Steps[0].Status != Pending {
+	steps := saga.Steps()
+	if steps[0].StepId() != "step1" || steps[0].Status() != Pending {
 		t.Errorf("First step has incorrect properties")
 	}
-	
-	if saga.Steps[1].StepId != "step2" || saga.Steps[1].Status != Completed {
+
+	if steps[1].StepId() != "step2" || steps[1].Status() != Completed {
 		t.Errorf("Second step has incorrect properties")
 	}
 }
@@ -443,16 +333,16 @@ func TestBuilder(t *testing.T) {
 // Test the new state consistency validation functions
 func TestSaga_ValidateStateTransition(t *testing.T) {
 	tests := []struct {
-		name          string
-		setup         func() Saga
-		stepIndex     int
-		newStatus     Status
-		expectError   bool
-		errorMessage  string
+		name         string
+		setup        func() (Saga, error)
+		stepIndex    int
+		newStatus    Status
+		expectError  bool
+		errorMessage string
 	}{
 		{
 			name: "Valid transition from Pending to Completed",
-			setup: func() Saga {
+			setup: func() (Saga, error) {
 				return NewBuilder().
 					SetTransactionId(uuid.New()).
 					SetSagaType(InventoryTransaction).
@@ -460,13 +350,13 @@ func TestSaga_ValidateStateTransition(t *testing.T) {
 					AddStep("step1", Pending, AwardAsset, AwardItemActionPayload{}).
 					Build()
 			},
-			stepIndex:    0,
-			newStatus:    Completed,
-			expectError:  false,
+			stepIndex:   0,
+			newStatus:   Completed,
+			expectError: false,
 		},
 		{
 			name: "Valid transition from Pending to Failed",
-			setup: func() Saga {
+			setup: func() (Saga, error) {
 				return NewBuilder().
 					SetTransactionId(uuid.New()).
 					SetSagaType(InventoryTransaction).
@@ -474,13 +364,13 @@ func TestSaga_ValidateStateTransition(t *testing.T) {
 					AddStep("step1", Pending, AwardAsset, AwardItemActionPayload{}).
 					Build()
 			},
-			stepIndex:    0,
-			newStatus:    Failed,
-			expectError:  false,
+			stepIndex:   0,
+			newStatus:   Failed,
+			expectError: false,
 		},
 		{
 			name: "Valid transition from Completed to Failed (compensation)",
-			setup: func() Saga {
+			setup: func() (Saga, error) {
 				return NewBuilder().
 					SetTransactionId(uuid.New()).
 					SetSagaType(InventoryTransaction).
@@ -488,13 +378,13 @@ func TestSaga_ValidateStateTransition(t *testing.T) {
 					AddStep("step1", Completed, AwardAsset, AwardItemActionPayload{}).
 					Build()
 			},
-			stepIndex:    0,
-			newStatus:    Failed,
-			expectError:  false,
+			stepIndex:   0,
+			newStatus:   Failed,
+			expectError: false,
 		},
 		{
 			name: "Valid transition from Failed to Pending (after compensation)",
-			setup: func() Saga {
+			setup: func() (Saga, error) {
 				return NewBuilder().
 					SetTransactionId(uuid.New()).
 					SetSagaType(InventoryTransaction).
@@ -502,13 +392,13 @@ func TestSaga_ValidateStateTransition(t *testing.T) {
 					AddStep("step1", Failed, AwardAsset, AwardItemActionPayload{}).
 					Build()
 			},
-			stepIndex:    0,
-			newStatus:    Pending,
-			expectError:  false,
+			stepIndex:   0,
+			newStatus:   Pending,
+			expectError: false,
 		},
 		{
 			name: "Invalid transition from Pending to Pending",
-			setup: func() Saga {
+			setup: func() (Saga, error) {
 				return NewBuilder().
 					SetTransactionId(uuid.New()).
 					SetSagaType(InventoryTransaction).
@@ -523,7 +413,7 @@ func TestSaga_ValidateStateTransition(t *testing.T) {
 		},
 		{
 			name: "Invalid transition from Completed to Pending",
-			setup: func() Saga {
+			setup: func() (Saga, error) {
 				return NewBuilder().
 					SetTransactionId(uuid.New()).
 					SetSagaType(InventoryTransaction).
@@ -538,7 +428,7 @@ func TestSaga_ValidateStateTransition(t *testing.T) {
 		},
 		{
 			name: "Invalid step index",
-			setup: func() Saga {
+			setup: func() (Saga, error) {
 				return NewBuilder().
 					SetTransactionId(uuid.New()).
 					SetSagaType(InventoryTransaction).
@@ -555,8 +445,12 @@ func TestSaga_ValidateStateTransition(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			saga := tt.setup()
-			err := saga.ValidateStateTransition(tt.stepIndex, tt.newStatus)
+			saga, err := tt.setup()
+			if err != nil {
+				t.Fatalf("Failed to setup saga: %v", err)
+			}
+			// Use WithStepStatus to test state transitions (it validates internally)
+			_, err = saga.WithStepStatus(tt.stepIndex, tt.newStatus)
 
 			if tt.expectError {
 				if err == nil {
@@ -571,17 +465,17 @@ func TestSaga_ValidateStateTransition(t *testing.T) {
 	}
 }
 
-func TestSaga_SetStepStatus(t *testing.T) {
+func TestSaga_WithStepStatus(t *testing.T) {
 	tests := []struct {
-		name          string
-		setup         func() Saga
-		stepIndex     int
-		newStatus     Status
-		expectError   bool
+		name        string
+		setup       func() (Saga, error)
+		stepIndex   int
+		newStatus   Status
+		expectError bool
 	}{
 		{
 			name: "Valid status update",
-			setup: func() Saga {
+			setup: func() (Saga, error) {
 				return NewBuilder().
 					SetTransactionId(uuid.New()).
 					SetSagaType(InventoryTransaction).
@@ -589,13 +483,13 @@ func TestSaga_SetStepStatus(t *testing.T) {
 					AddStep("step1", Pending, AwardAsset, AwardItemActionPayload{}).
 					Build()
 			},
-			stepIndex:    0,
-			newStatus:    Completed,
-			expectError:  false,
+			stepIndex:   0,
+			newStatus:   Completed,
+			expectError: false,
 		},
 		{
 			name: "Invalid status update",
-			setup: func() Saga {
+			setup: func() (Saga, error) {
 				return NewBuilder().
 					SetTransactionId(uuid.New()).
 					SetSagaType(InventoryTransaction).
@@ -603,19 +497,23 @@ func TestSaga_SetStepStatus(t *testing.T) {
 					AddStep("step1", Completed, AwardAsset, AwardItemActionPayload{}).
 					Build()
 			},
-			stepIndex:    0,
-			newStatus:    Pending,
-			expectError:  true,
+			stepIndex:   0,
+			newStatus:   Pending,
+			expectError: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			saga := tt.setup()
-			originalUpdatedAt := saga.Steps[tt.stepIndex].UpdatedAt
+			saga, err := tt.setup()
+			if err != nil {
+				t.Fatalf("Failed to setup saga: %v", err)
+			}
+			step, _ := saga.StepAt(tt.stepIndex)
+			originalUpdatedAt := step.UpdatedAt()
 			time.Sleep(1 * time.Millisecond) // Ensure time difference
 
-			err := saga.SetStepStatus(tt.stepIndex, tt.newStatus)
+			newSaga, err := saga.WithStepStatus(tt.stepIndex, tt.newStatus)
 
 			if tt.expectError {
 				if err == nil {
@@ -625,10 +523,11 @@ func TestSaga_SetStepStatus(t *testing.T) {
 				if err != nil {
 					t.Errorf("Unexpected error: %v", err)
 				}
-				if saga.Steps[tt.stepIndex].Status != tt.newStatus {
-					t.Errorf("Status was not updated. Expected %v, got %v", tt.newStatus, saga.Steps[tt.stepIndex].Status)
+				newStep, _ := newSaga.StepAt(tt.stepIndex)
+				if newStep.Status() != tt.newStatus {
+					t.Errorf("Status was not updated. Expected %v, got %v", tt.newStatus, newStep.Status())
 				}
-				if !saga.Steps[tt.stepIndex].UpdatedAt.After(originalUpdatedAt) {
+				if !newStep.UpdatedAt().After(originalUpdatedAt) {
 					t.Errorf("UpdatedAt was not updated")
 				}
 			}
@@ -638,14 +537,14 @@ func TestSaga_SetStepStatus(t *testing.T) {
 
 func TestSaga_ValidateStateConsistency(t *testing.T) {
 	tests := []struct {
-		name          string
-		setup         func() Saga
-		expectError   bool
-		errorMessage  string
+		name         string
+		setup        func() (Saga, error)
+		expectError  bool
+		errorMessage string
 	}{
 		{
 			name: "Valid saga state",
-			setup: func() Saga {
+			setup: func() (Saga, error) {
 				return NewBuilder().
 					SetTransactionId(uuid.New()).
 					SetSagaType(InventoryTransaction).
@@ -658,67 +557,60 @@ func TestSaga_ValidateStateConsistency(t *testing.T) {
 		},
 		{
 			name: "Invalid step ordering",
-			setup: func() Saga {
-				saga := NewBuilder().
+			setup: func() (Saga, error) {
+				return NewBuilder().
 					SetTransactionId(uuid.New()).
 					SetSagaType(InventoryTransaction).
 					SetInitiatedBy("test").
 					AddStep("step1", Pending, AwardAsset, AwardItemActionPayload{}).
 					AddStep("step2", Completed, AwardAsset, AwardItemActionPayload{}).
 					Build()
-				return saga
 			},
 			expectError:  true,
 			errorMessage: "invalid step ordering",
 		},
 		{
 			name: "Duplicate step IDs",
-			setup: func() Saga {
-				saga := NewBuilder().
+			setup: func() (Saga, error) {
+				return NewBuilder().
 					SetTransactionId(uuid.New()).
 					SetSagaType(InventoryTransaction).
 					SetInitiatedBy("test").
 					AddStep("step1", Pending, AwardAsset, AwardItemActionPayload{}).
 					AddStep("step1", Pending, AwardAsset, AwardItemActionPayload{}).
 					Build()
-				return saga
 			},
 			expectError:  true,
 			errorMessage: "duplicate step ID",
 		},
 		{
 			name: "Failing saga with multiple failed steps",
-			setup: func() Saga {
-				saga := NewBuilder().
+			setup: func() (Saga, error) {
+				return NewBuilder().
 					SetTransactionId(uuid.New()).
 					SetSagaType(InventoryTransaction).
 					SetInitiatedBy("test").
 					AddStep("step1", Failed, AwardAsset, AwardItemActionPayload{}).
 					AddStep("step2", Failed, AwardAsset, AwardItemActionPayload{}).
 					Build()
-				return saga
 			},
 			expectError:  true,
 			errorMessage: "saga is failing but has 2 failed steps, expected exactly 1",
 		},
 		{
 			name: "Empty action",
-			setup: func() Saga {
-				saga := NewBuilder().
+			setup: func() (Saga, error) {
+				saga, err := NewBuilder().
 					SetTransactionId(uuid.New()).
 					SetSagaType(InventoryTransaction).
 					SetInitiatedBy("test").
 					Build()
-				// Manually add a step with empty action
-				saga.Steps = []Step[any]{{
-					StepId:    "step1",
-					Status:    Pending,
-					Action:    "",
-					Payload:   AwardItemActionPayload{},
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				}}
-				return saga
+				if err != nil {
+					return Saga{}, err
+				}
+				// Use WithSteps to add a step with empty action
+				step := NewStep[any]("step1", Pending, "", AwardItemActionPayload{})
+				return saga.WithSteps([]Step[any]{step}), nil
 			},
 			expectError:  true,
 			errorMessage: "empty action",
@@ -727,8 +619,11 @@ func TestSaga_ValidateStateConsistency(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			saga := tt.setup()
-			err := saga.ValidateStateConsistency()
+			saga, err := tt.setup()
+			if err != nil {
+				t.Fatalf("Failed to setup saga: %v", err)
+			}
+			err = saga.ValidateStateConsistency()
 
 			if tt.expectError {
 				if err == nil {
@@ -778,7 +673,7 @@ func TestCreateAndEquipAssetAction(t *testing.T) {
 			CreateCharacter,
 			CreateAndEquipAsset,
 		}
-		
+
 		found := false
 		for _, action := range actions {
 			if action == CreateAndEquipAsset {
@@ -786,7 +681,7 @@ func TestCreateAndEquipAssetAction(t *testing.T) {
 				break
 			}
 		}
-		
+
 		if !found {
 			t.Errorf("CreateAndEquipAsset action not found in actions list")
 		}
@@ -803,16 +698,16 @@ func TestCreateAndEquipAssetPayload(t *testing.T) {
 				Quantity:   1,
 			},
 		}
-		
+
 		// Verify field values
 		if payload.CharacterId != 12345 {
 			t.Errorf("CharacterId = %v, want %v", payload.CharacterId, 12345)
 		}
-		
+
 		if payload.Item.TemplateId != 1302000 {
 			t.Errorf("Item.TemplateId = %v, want %v", payload.Item.TemplateId, 1302000)
 		}
-		
+
 		if payload.Item.Quantity != 1 {
 			t.Errorf("Item.Quantity = %v, want %v", payload.Item.Quantity, 1)
 		}
@@ -820,15 +715,15 @@ func TestCreateAndEquipAssetPayload(t *testing.T) {
 
 	t.Run("Zero values", func(t *testing.T) {
 		payload := CreateAndEquipAssetPayload{}
-		
+
 		if payload.CharacterId != 0 {
 			t.Errorf("Zero CharacterId = %v, want %v", payload.CharacterId, 0)
 		}
-		
+
 		if payload.Item.TemplateId != 0 {
 			t.Errorf("Zero Item.TemplateId = %v, want %v", payload.Item.TemplateId, 0)
 		}
-		
+
 		if payload.Item.Quantity != 0 {
 			t.Errorf("Zero Item.Quantity = %v, want %v", payload.Item.Quantity, 0)
 		}
@@ -844,7 +739,7 @@ func TestCreateAndEquipAssetPayload(t *testing.T) {
 			{"Consumable item", 2000000, 100},
 			{"Etc item", 4000000, 50},
 		}
-		
+
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
 				payload := CreateAndEquipAssetPayload{
@@ -854,11 +749,11 @@ func TestCreateAndEquipAssetPayload(t *testing.T) {
 						Quantity:   tc.quantity,
 					},
 				}
-				
+
 				if payload.Item.TemplateId != tc.templateId {
 					t.Errorf("Item.TemplateId = %v, want %v", payload.Item.TemplateId, tc.templateId)
 				}
-				
+
 				if payload.Item.Quantity != tc.quantity {
 					t.Errorf("Item.Quantity = %v, want %v", payload.Item.Quantity, tc.quantity)
 				}
@@ -877,32 +772,25 @@ func TestCreateAndEquipAssetStepSerialization(t *testing.T) {
 				Quantity:   1,
 			},
 		}
-		
-		step := Step[CreateAndEquipAssetPayload]{
-			StepId:    "create_and_equip_1",
-			Status:    Pending,
-			Action:    CreateAndEquipAsset,
-			Payload:   payload,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-		}
-		
+
+		step := NewStep("create_and_equip_1", Pending, CreateAndEquipAsset, payload)
+
 		// Marshal to JSON
 		jsonData, err := json.Marshal(step)
 		if err != nil {
 			t.Errorf("Failed to marshal step to JSON: %v", err)
 		}
-		
+
 		// Verify JSON contains expected fields
 		jsonStr := string(jsonData)
 		if !strings.Contains(jsonStr, "create_and_equip_asset") {
 			t.Errorf("JSON does not contain action type: %s", jsonStr)
 		}
-		
+
 		if !strings.Contains(jsonStr, "12345") {
 			t.Errorf("JSON does not contain characterId: %s", jsonStr)
 		}
-		
+
 		if !strings.Contains(jsonStr, "1302000") {
 			t.Errorf("JSON does not contain templateId: %s", jsonStr)
 		}
@@ -923,40 +811,40 @@ func TestCreateAndEquipAssetStepSerialization(t *testing.T) {
 			"createdAt": "2023-01-01T00:00:00Z",
 			"updatedAt": "2023-01-01T00:00:00Z"
 		}`
-		
+
 		var step Step[any]
 		err := json.Unmarshal([]byte(jsonData), &step)
 		if err != nil {
 			t.Errorf("Failed to unmarshal JSON to step: %v", err)
 		}
-		
+
 		// Verify step fields
-		if step.StepId != "create_and_equip_1" {
-			t.Errorf("StepId = %v, want %v", step.StepId, "create_and_equip_1")
+		if step.StepId() != "create_and_equip_1" {
+			t.Errorf("StepId = %v, want %v", step.StepId(), "create_and_equip_1")
 		}
-		
-		if step.Status != Pending {
-			t.Errorf("Status = %v, want %v", step.Status, Pending)
+
+		if step.Status() != Pending {
+			t.Errorf("Status = %v, want %v", step.Status(), Pending)
 		}
-		
-		if step.Action != CreateAndEquipAsset {
-			t.Errorf("Action = %v, want %v", step.Action, CreateAndEquipAsset)
+
+		if step.Action() != CreateAndEquipAsset {
+			t.Errorf("Action = %v, want %v", step.Action(), CreateAndEquipAsset)
 		}
-		
+
 		// Verify payload by type assertion
-		payload, ok := step.Payload.(CreateAndEquipAssetPayload)
+		payload, ok := step.Payload().(CreateAndEquipAssetPayload)
 		if !ok {
 			t.Errorf("Payload is not CreateAndEquipAssetPayload type")
 		}
-		
+
 		if payload.CharacterId != 12345 {
 			t.Errorf("Payload.CharacterId = %v, want %v", payload.CharacterId, 12345)
 		}
-		
+
 		if payload.Item.TemplateId != 1302000 {
 			t.Errorf("Payload.Item.TemplateId = %v, want %v", payload.Item.TemplateId, 1302000)
 		}
-		
+
 		if payload.Item.Quantity != 1 {
 			t.Errorf("Payload.Item.Quantity = %v, want %v", payload.Item.Quantity, 1)
 		}
@@ -974,46 +862,52 @@ func TestCreateAndEquipAssetStepBuilder(t *testing.T) {
 				Quantity:   1,
 			},
 		}
-		
-		saga := NewBuilder().
+
+		saga, err := NewBuilder().
 			SetTransactionId(transactionId).
 			SetSagaType(InventoryTransaction).
 			SetInitiatedBy("test").
 			AddStep("create_and_equip_1", Pending, CreateAndEquipAsset, payload).
 			Build()
-		
+		if err != nil {
+			t.Fatalf("Failed to build saga: %v", err)
+		}
+
 		// Verify saga properties
-		if saga.TransactionId != transactionId {
-			t.Errorf("TransactionId = %v, want %v", saga.TransactionId, transactionId)
+		if saga.TransactionId() != transactionId {
+			t.Errorf("TransactionId = %v, want %v", saga.TransactionId(), transactionId)
 		}
-		
-		if saga.SagaType != InventoryTransaction {
-			t.Errorf("SagaType = %v, want %v", saga.SagaType, InventoryTransaction)
+
+		if saga.SagaType() != InventoryTransaction {
+			t.Errorf("SagaType = %v, want %v", saga.SagaType(), InventoryTransaction)
 		}
-		
-		if len(saga.Steps) != 1 {
-			t.Errorf("Steps length = %v, want %v", len(saga.Steps), 1)
+
+		if saga.StepCount() != 1 {
+			t.Errorf("Steps length = %v, want %v", saga.StepCount(), 1)
 		}
-		
-		step := saga.Steps[0]
-		if step.StepId != "create_and_equip_1" {
-			t.Errorf("Step.StepId = %v, want %v", step.StepId, "create_and_equip_1")
+
+		step, ok := saga.StepAt(0)
+		if !ok {
+			t.Fatalf("Failed to get step at index 0")
 		}
-		
-		if step.Action != CreateAndEquipAsset {
-			t.Errorf("Step.Action = %v, want %v", step.Action, CreateAndEquipAsset)
+		if step.StepId() != "create_and_equip_1" {
+			t.Errorf("Step.StepId = %v, want %v", step.StepId(), "create_and_equip_1")
 		}
-		
-		if step.Status != Pending {
-			t.Errorf("Step.Status = %v, want %v", step.Status, Pending)
+
+		if step.Action() != CreateAndEquipAsset {
+			t.Errorf("Step.Action = %v, want %v", step.Action(), CreateAndEquipAsset)
 		}
-		
+
+		if step.Status() != Pending {
+			t.Errorf("Step.Status = %v, want %v", step.Status(), Pending)
+		}
+
 		// Verify payload
-		stepPayload, ok := step.Payload.(CreateAndEquipAssetPayload)
+		stepPayload, ok := step.Payload().(CreateAndEquipAssetPayload)
 		if !ok {
 			t.Errorf("Step.Payload is not CreateAndEquipAssetPayload type")
 		}
-		
+
 		if stepPayload.CharacterId != 12345 {
 			t.Errorf("Step.Payload.CharacterId = %v, want %v", stepPayload.CharacterId, 12345)
 		}
@@ -1037,7 +931,7 @@ func TestCreateAndEquipAssetPayloadEdgeCases(t *testing.T) {
 			{"Max quantity", 4294967295, 1302000, 1, "Maximum uint32 quantity"},
 			{"Min quantity", 1, 1302000, 1, "Minimum quantity"},
 		}
-		
+
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
 				payload := CreateAndEquipAssetPayload{
@@ -1047,15 +941,15 @@ func TestCreateAndEquipAssetPayloadEdgeCases(t *testing.T) {
 						Quantity:   tc.quantity,
 					},
 				}
-				
+
 				if payload.CharacterId != tc.characterId {
 					t.Errorf("CharacterId = %v, want %v for %s", payload.CharacterId, tc.characterId, tc.description)
 				}
-				
+
 				if payload.Item.TemplateId != tc.templateId {
 					t.Errorf("Item.TemplateId = %v, want %v for %s", payload.Item.TemplateId, tc.templateId, tc.description)
 				}
-				
+
 				if payload.Item.Quantity != tc.quantity {
 					t.Errorf("Item.Quantity = %v, want %v for %s", payload.Item.Quantity, tc.quantity, tc.description)
 				}
@@ -1068,26 +962,26 @@ func TestSaga_CreateAndEquipAssetStateConsistency(t *testing.T) {
 	// Test specifically for CreateAndEquipAsset compound operation state consistency
 	tests := []struct {
 		name          string
-		setup         func() Saga
+		setup         func() (Saga, error)
 		expectedValid bool
 		description   string
 	}{
 		{
 			name: "Valid CreateAndEquipAsset with auto-generated step",
-			setup: func() Saga {
+			setup: func() (Saga, error) {
 				return NewBuilder().
 					SetTransactionId(uuid.New()).
 					SetSagaType(InventoryTransaction).
 					SetInitiatedBy("test").
 					AddStep("create_and_equip_1", Completed, CreateAndEquipAsset, CreateAndEquipAssetPayload{
 						CharacterId: 12345,
-						Item: ItemPayload{TemplateId: 1001, Quantity: 1},
+						Item:        ItemPayload{TemplateId: 1001, Quantity: 1},
 					}).
 					AddStep("auto_equip_step_1234567890", Pending, EquipAsset, EquipAssetPayload{
-						CharacterId: 12345,
+						CharacterId:   12345,
 						InventoryType: 1,
-						Source: 5,
-						Destination: -1,
+						Source:        5,
+						Destination:   -1,
 					}).
 					Build()
 			},
@@ -1096,14 +990,14 @@ func TestSaga_CreateAndEquipAssetStateConsistency(t *testing.T) {
 		},
 		{
 			name: "Failed CreateAndEquipAsset without auto-generated step",
-			setup: func() Saga {
+			setup: func() (Saga, error) {
 				return NewBuilder().
 					SetTransactionId(uuid.New()).
 					SetSagaType(InventoryTransaction).
 					SetInitiatedBy("test").
 					AddStep("create_and_equip_1", Failed, CreateAndEquipAsset, CreateAndEquipAssetPayload{
 						CharacterId: 12345,
-						Item: ItemPayload{TemplateId: 1001, Quantity: 1},
+						Item:        ItemPayload{TemplateId: 1001, Quantity: 1},
 					}).
 					Build()
 			},
@@ -1112,20 +1006,20 @@ func TestSaga_CreateAndEquipAssetStateConsistency(t *testing.T) {
 		},
 		{
 			name: "CreateAndEquipAsset with failed auto-equip step",
-			setup: func() Saga {
+			setup: func() (Saga, error) {
 				return NewBuilder().
 					SetTransactionId(uuid.New()).
 					SetSagaType(InventoryTransaction).
 					SetInitiatedBy("test").
 					AddStep("create_and_equip_1", Completed, CreateAndEquipAsset, CreateAndEquipAssetPayload{
 						CharacterId: 12345,
-						Item: ItemPayload{TemplateId: 1001, Quantity: 1},
+						Item:        ItemPayload{TemplateId: 1001, Quantity: 1},
 					}).
 					AddStep("auto_equip_step_1234567890", Failed, EquipAsset, EquipAssetPayload{
-						CharacterId: 12345,
+						CharacterId:   12345,
 						InventoryType: 1,
-						Source: 5,
-						Destination: -1,
+						Source:        5,
+						Destination:   -1,
 					}).
 					Build()
 			},
@@ -1136,8 +1030,11 @@ func TestSaga_CreateAndEquipAssetStateConsistency(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			saga := tt.setup()
-			err := saga.ValidateStateConsistency()
+			saga, err := tt.setup()
+			if err != nil {
+				t.Fatalf("Failed to setup saga: %v", err)
+			}
+			err = saga.ValidateStateConsistency()
 
 			if tt.expectedValid {
 				if err != nil {

@@ -31,10 +31,10 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 
 func handleSagaCommand(l logrus.FieldLogger, ctx context.Context, c saga2.Saga) {
 	logger := l.WithFields(logrus.Fields{
-		"transaction_id": c.TransactionId.String(),
-		"saga_type":      c.SagaType,
-		"initiated_by":   c.InitiatedBy,
-		"steps_count":    len(c.Steps),
+		"transaction_id": c.TransactionId().String(),
+		"saga_type":      c.SagaType(),
+		"initiated_by":   c.InitiatedBy(),
+		"steps_count":    c.StepCount(),
 	})
 
 	logger.Info("Handling saga command")

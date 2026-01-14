@@ -522,21 +522,21 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 // logActionError logs an error that occurred during action processing
 func (h *HandlerImpl) logActionError(s Saga, st Step[any], err error, errorMsg string) {
 	h.l.WithFields(logrus.Fields{
-		"transaction_id": s.TransactionId.String(),
-		"saga_type":      s.SagaType,
-		"step_id":        st.StepId,
+		"transaction_id": s.TransactionId().String(),
+		"saga_type":      s.SagaType(),
+		"step_id":        st.StepId(),
 		"tenant_id":      h.t.Id().String(),
 	}).WithError(err).Error(errorMsg)
 }
 
 // handleAwardAsset handles the AwardAsset and AwardInventory actions
 func (h *HandlerImpl) handleAwardAsset(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(AwardItemActionPayload)
+	payload, ok := st.Payload().(AwardItemActionPayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
 
-	err := h.compP.RequestCreateItem(s.TransactionId, payload.CharacterId, payload.Item.TemplateId, payload.Item.Quantity, payload.Item.Expiration)
+	err := h.compP.RequestCreateItem(s.TransactionId(), payload.CharacterId, payload.Item.TemplateId, payload.Item.Quantity, payload.Item.Expiration)
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to award asset.")
@@ -554,7 +554,7 @@ func (h *HandlerImpl) handleAwardInventory(s Saga, st Step[any]) error {
 
 // handleWarpToRandomPortal handles the WarpToRandomPortal action
 func (h *HandlerImpl) handleWarpToRandomPortal(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(WarpToRandomPortalPayload)
+	payload, ok := st.Payload().(WarpToRandomPortalPayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
@@ -564,7 +564,7 @@ func (h *HandlerImpl) handleWarpToRandomPortal(s Saga, st Step[any]) error {
 		return errors.New("invalid field id")
 	}
 
-	err := h.charP.WarpRandomAndEmit(s.TransactionId, payload.CharacterId, f)
+	err := h.charP.WarpRandomAndEmit(s.TransactionId(), payload.CharacterId, f)
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to warp to random portal.")
@@ -576,7 +576,7 @@ func (h *HandlerImpl) handleWarpToRandomPortal(s Saga, st Step[any]) error {
 
 // handleWarpToPortal handles the WarpToPortal action
 func (h *HandlerImpl) handleWarpToPortal(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(WarpToPortalPayload)
+	payload, ok := st.Payload().(WarpToPortalPayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
@@ -594,7 +594,7 @@ func (h *HandlerImpl) handleWarpToPortal(s Saga, st Step[any]) error {
 		portalProvider = model.FixedProvider(payload.PortalId)
 	}
 
-	err := h.charP.WarpToPortalAndEmit(s.TransactionId, payload.CharacterId, f, portalProvider)
+	err := h.charP.WarpToPortalAndEmit(s.TransactionId(), payload.CharacterId, f, portalProvider)
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to warp to specific portal.")
@@ -606,13 +606,13 @@ func (h *HandlerImpl) handleWarpToPortal(s Saga, st Step[any]) error {
 
 // handleAwardExperience handles the AwardExperience action
 func (h *HandlerImpl) handleAwardExperience(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(AwardExperiencePayload)
+	payload, ok := st.Payload().(AwardExperiencePayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
 
 	eds := TransformExperienceDistributions(payload.Distributions)
-	err := h.charP.AwardExperienceAndEmit(s.TransactionId, payload.WorldId, payload.CharacterId, payload.ChannelId, eds)
+	err := h.charP.AwardExperienceAndEmit(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.ChannelId, eds)
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to award experience.")
@@ -624,12 +624,12 @@ func (h *HandlerImpl) handleAwardExperience(s Saga, st Step[any]) error {
 
 // handleAwardLevel handles the AwardLevel action
 func (h *HandlerImpl) handleAwardLevel(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(AwardLevelPayload)
+	payload, ok := st.Payload().(AwardLevelPayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
 
-	err := h.charP.AwardLevelAndEmit(s.TransactionId, payload.WorldId, payload.CharacterId, payload.ChannelId, payload.Amount)
+	err := h.charP.AwardLevelAndEmit(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.ChannelId, payload.Amount)
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to award level.")
@@ -641,12 +641,12 @@ func (h *HandlerImpl) handleAwardLevel(s Saga, st Step[any]) error {
 
 // handleAwardMesos handles the AwardMesos action
 func (h *HandlerImpl) handleAwardMesos(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(AwardMesosPayload)
+	payload, ok := st.Payload().(AwardMesosPayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
 
-	err := h.charP.AwardMesosAndEmit(s.TransactionId, payload.WorldId, payload.CharacterId, payload.ChannelId, payload.ActorId, payload.ActorType, payload.Amount)
+	err := h.charP.AwardMesosAndEmit(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.ChannelId, payload.ActorId, payload.ActorType, payload.Amount)
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to award mesos.")
@@ -658,12 +658,12 @@ func (h *HandlerImpl) handleAwardMesos(s Saga, st Step[any]) error {
 
 // handleAwardCurrency handles the AwardCurrency action for cash shop currency
 func (h *HandlerImpl) handleAwardCurrency(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(AwardCurrencyPayload)
+	payload, ok := st.Payload().(AwardCurrencyPayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
 
-	err := h.cashshopP.AwardCurrencyAndEmit(s.TransactionId, payload.AccountId, payload.CurrencyType, payload.Amount)
+	err := h.cashshopP.AwardCurrencyAndEmit(s.TransactionId(), payload.AccountId, payload.CurrencyType, payload.Amount)
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to award currency.")
@@ -675,12 +675,12 @@ func (h *HandlerImpl) handleAwardCurrency(s Saga, st Step[any]) error {
 
 // handleDestroyAsset handles the DestroyAsset action
 func (h *HandlerImpl) handleDestroyAsset(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(DestroyAssetPayload)
+	payload, ok := st.Payload().(DestroyAssetPayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
 
-	err := h.compP.RequestDestroyItem(s.TransactionId, payload.CharacterId, payload.TemplateId, payload.Quantity, payload.RemoveAll)
+	err := h.compP.RequestDestroyItem(s.TransactionId(), payload.CharacterId, payload.TemplateId, payload.Quantity, payload.RemoveAll)
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to destroy asset.")
@@ -692,12 +692,12 @@ func (h *HandlerImpl) handleDestroyAsset(s Saga, st Step[any]) error {
 
 // handleEquipAsset handles the EquipAsset action
 func (h *HandlerImpl) handleEquipAsset(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(EquipAssetPayload)
+	payload, ok := st.Payload().(EquipAssetPayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
 
-	err := h.compP.RequestEquipAsset(s.TransactionId, payload.CharacterId, byte(payload.InventoryType), payload.Source, payload.Destination)
+	err := h.compP.RequestEquipAsset(s.TransactionId(), payload.CharacterId, byte(payload.InventoryType), payload.Source, payload.Destination)
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to equip asset.")
@@ -709,12 +709,12 @@ func (h *HandlerImpl) handleEquipAsset(s Saga, st Step[any]) error {
 
 // handleUnequipAsset handles the UnequipAsset action
 func (h *HandlerImpl) handleUnequipAsset(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(UnequipAssetPayload)
+	payload, ok := st.Payload().(UnequipAssetPayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
 
-	err := h.compP.RequestUnequipAsset(s.TransactionId, payload.CharacterId, byte(payload.InventoryType), payload.Source, payload.Destination)
+	err := h.compP.RequestUnequipAsset(s.TransactionId(), payload.CharacterId, byte(payload.InventoryType), payload.Source, payload.Destination)
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to unequip asset.")
@@ -726,12 +726,12 @@ func (h *HandlerImpl) handleUnequipAsset(s Saga, st Step[any]) error {
 
 // handleChangeJob handles the ChangeJob action
 func (h *HandlerImpl) handleChangeJob(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(ChangeJobPayload)
+	payload, ok := st.Payload().(ChangeJobPayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
 
-	err := h.charP.ChangeJobAndEmit(s.TransactionId, payload.WorldId, payload.CharacterId, payload.ChannelId, payload.JobId)
+	err := h.charP.ChangeJobAndEmit(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.ChannelId, payload.JobId)
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to change job.")
@@ -743,12 +743,12 @@ func (h *HandlerImpl) handleChangeJob(s Saga, st Step[any]) error {
 
 // handleChangeHair handles the ChangeHair action
 func (h *HandlerImpl) handleChangeHair(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(ChangeHairPayload)
+	payload, ok := st.Payload().(ChangeHairPayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
 
-	err := h.charP.ChangeHairAndEmit(s.TransactionId, payload.WorldId, payload.CharacterId, payload.ChannelId, payload.StyleId)
+	err := h.charP.ChangeHairAndEmit(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.ChannelId, payload.StyleId)
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to change hair.")
@@ -760,12 +760,12 @@ func (h *HandlerImpl) handleChangeHair(s Saga, st Step[any]) error {
 
 // handleChangeFace handles the ChangeFace action
 func (h *HandlerImpl) handleChangeFace(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(ChangeFacePayload)
+	payload, ok := st.Payload().(ChangeFacePayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
 
-	err := h.charP.ChangeFaceAndEmit(s.TransactionId, payload.WorldId, payload.CharacterId, payload.ChannelId, payload.StyleId)
+	err := h.charP.ChangeFaceAndEmit(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.ChannelId, payload.StyleId)
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to change face.")
@@ -777,12 +777,12 @@ func (h *HandlerImpl) handleChangeFace(s Saga, st Step[any]) error {
 
 // handleChangeSkin handles the ChangeSkin action
 func (h *HandlerImpl) handleChangeSkin(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(ChangeSkinPayload)
+	payload, ok := st.Payload().(ChangeSkinPayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
 
-	err := h.charP.ChangeSkinAndEmit(s.TransactionId, payload.WorldId, payload.CharacterId, payload.ChannelId, payload.StyleId)
+	err := h.charP.ChangeSkinAndEmit(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.ChannelId, payload.StyleId)
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to change skin.")
@@ -794,12 +794,12 @@ func (h *HandlerImpl) handleChangeSkin(s Saga, st Step[any]) error {
 
 // handleCreateSkill handles the CreateSkill action
 func (h *HandlerImpl) handleCreateSkill(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(CreateSkillPayload)
+	payload, ok := st.Payload().(CreateSkillPayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
 
-	err := h.skillP.RequestCreateAndEmit(s.TransactionId, payload.CharacterId, payload.SkillId, payload.Level, payload.MasterLevel, payload.Expiration)
+	err := h.skillP.RequestCreateAndEmit(s.TransactionId(), payload.CharacterId, payload.SkillId, payload.Level, payload.MasterLevel, payload.Expiration)
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to create skill.")
@@ -811,12 +811,12 @@ func (h *HandlerImpl) handleCreateSkill(s Saga, st Step[any]) error {
 
 // handleUpdateSkill handles the UpdateSkill action
 func (h *HandlerImpl) handleUpdateSkill(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(UpdateSkillPayload)
+	payload, ok := st.Payload().(UpdateSkillPayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
 
-	err := h.skillP.RequestUpdateAndEmit(s.TransactionId, payload.CharacterId, payload.SkillId, payload.Level, payload.MasterLevel, payload.Expiration)
+	err := h.skillP.RequestUpdateAndEmit(s.TransactionId(), payload.CharacterId, payload.SkillId, payload.Level, payload.MasterLevel, payload.Expiration)
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to update skill.")
@@ -827,12 +827,12 @@ func (h *HandlerImpl) handleUpdateSkill(s Saga, st Step[any]) error {
 }
 
 func (h *HandlerImpl) handleIncreaseBuddyCapacity(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(IncreaseBuddyCapacityPayload)
+	payload, ok := st.Payload().(IncreaseBuddyCapacityPayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
 
-	err := h.buddyListP.IncreaseCapacityAndEmit(s.TransactionId, payload.CharacterId, payload.WorldId, payload.Amount)
+	err := h.buddyListP.IncreaseCapacityAndEmit(s.TransactionId(), payload.CharacterId, payload.WorldId, payload.Amount)
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to increase buddy capacity.")
@@ -843,12 +843,12 @@ func (h *HandlerImpl) handleIncreaseBuddyCapacity(s Saga, st Step[any]) error {
 }
 
 func (h *HandlerImpl) handleGainCloseness(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(GainClosenessPayload)
+	payload, ok := st.Payload().(GainClosenessPayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
 
-	err := h.petP.GainClosenessAndEmit(s.TransactionId, payload.PetId, payload.Amount)
+	err := h.petP.GainClosenessAndEmit(s.TransactionId(), payload.PetId, payload.Amount)
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to gain pet closeness.")
@@ -875,7 +875,7 @@ func TransformExperienceDistributions(source []ExperienceDistributions) []charac
 // handleValidateCharacterState handles the ValidateCharacterState action
 func (h *HandlerImpl) handleValidateCharacterState(s Saga, st Step[any]) error {
 	// Extract the payload
-	payload, ok := st.Payload.(ValidateCharacterStatePayload)
+	payload, ok := st.Payload().(ValidateCharacterStatePayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
@@ -901,13 +901,13 @@ func (h *HandlerImpl) handleValidateCharacterState(s Saga, st Step[any]) error {
 // handleRequestGuildName handles the RequestGuildName action
 func (h *HandlerImpl) handleRequestGuildName(s Saga, st Step[any]) error {
 	// Extract the payload
-	payload, ok := st.Payload.(RequestGuildNamePayload)
+	payload, ok := st.Payload().(RequestGuildNamePayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
 
 	// Call the guild processor
-	err := h.guildP.RequestName(s.TransactionId, payload.WorldId, payload.ChannelId, payload.CharacterId)
+	err := h.guildP.RequestName(s.TransactionId(), payload.WorldId, payload.ChannelId, payload.CharacterId)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to request guild name.")
 		return err
@@ -919,13 +919,13 @@ func (h *HandlerImpl) handleRequestGuildName(s Saga, st Step[any]) error {
 // handleRequestGuildEmblem handles the RequestGuildEmblem action
 func (h *HandlerImpl) handleRequestGuildEmblem(s Saga, st Step[any]) error {
 	// Extract the payload
-	payload, ok := st.Payload.(RequestGuildEmblemPayload)
+	payload, ok := st.Payload().(RequestGuildEmblemPayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
 
 	// Call the guild processor
-	err := h.guildP.RequestEmblem(s.TransactionId, payload.WorldId, payload.ChannelId, payload.CharacterId)
+	err := h.guildP.RequestEmblem(s.TransactionId(), payload.WorldId, payload.ChannelId, payload.CharacterId)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to request guild emblem.")
 		return err
@@ -937,13 +937,13 @@ func (h *HandlerImpl) handleRequestGuildEmblem(s Saga, st Step[any]) error {
 // handleRequestGuildDisband handles the RequestGuildDisband action
 func (h *HandlerImpl) handleRequestGuildDisband(s Saga, st Step[any]) error {
 	// Extract the payload
-	payload, ok := st.Payload.(RequestGuildDisbandPayload)
+	payload, ok := st.Payload().(RequestGuildDisbandPayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
 
 	// Call the guild processor
-	err := h.guildP.RequestDisband(s.TransactionId, payload.WorldId, payload.ChannelId, payload.CharacterId)
+	err := h.guildP.RequestDisband(s.TransactionId(), payload.WorldId, payload.ChannelId, payload.CharacterId)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to request guild disband.")
 		return err
@@ -955,13 +955,13 @@ func (h *HandlerImpl) handleRequestGuildDisband(s Saga, st Step[any]) error {
 // handleRequestGuildCapacityIncrease handles the RequestGuildCapacityIncrease action
 func (h *HandlerImpl) handleRequestGuildCapacityIncrease(s Saga, st Step[any]) error {
 	// Extract the payload
-	payload, ok := st.Payload.(RequestGuildCapacityIncreasePayload)
+	payload, ok := st.Payload().(RequestGuildCapacityIncreasePayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
 
 	// Call the guild processor
-	err := h.guildP.RequestCapacityIncrease(s.TransactionId, payload.WorldId, payload.ChannelId, payload.CharacterId)
+	err := h.guildP.RequestCapacityIncrease(s.TransactionId(), payload.WorldId, payload.ChannelId, payload.CharacterId)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to request guild capacity increase.")
 		return err
@@ -973,13 +973,13 @@ func (h *HandlerImpl) handleRequestGuildCapacityIncrease(s Saga, st Step[any]) e
 // handleCreateInvite handles the CreateInvite action
 func (h *HandlerImpl) handleCreateInvite(s Saga, st Step[any]) error {
 	// Extract the payload
-	payload, ok := st.Payload.(CreateInvitePayload)
+	payload, ok := st.Payload().(CreateInvitePayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
 
 	// Call the invite processor
-	err := h.inviteP.Create(s.TransactionId, payload.InviteType, payload.OriginatorId, payload.WorldId, payload.ReferenceId, payload.TargetId)
+	err := h.inviteP.Create(s.TransactionId(), payload.InviteType, payload.OriginatorId, payload.WorldId, payload.ReferenceId, payload.TargetId)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to create invitation.")
 		return err
@@ -991,13 +991,13 @@ func (h *HandlerImpl) handleCreateInvite(s Saga, st Step[any]) error {
 // handleCreateCharacter handles the CreateCharacter action
 func (h *HandlerImpl) handleCreateCharacter(s Saga, st Step[any]) error {
 	// Extract the payload
-	payload, ok := st.Payload.(CharacterCreatePayload)
+	payload, ok := st.Payload().(CharacterCreatePayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
 
 	// Call the character processor
-	err := h.charP.RequestCreateCharacter(s.TransactionId, payload.AccountId, payload.WorldId, payload.Name, payload.Level, payload.Strength, payload.Dexterity, payload.Intelligence, payload.Luck, payload.Hp, payload.Mp, payload.JobId, payload.Gender, payload.Face, payload.Hair, payload.Skin, payload.MapId)
+	err := h.charP.RequestCreateCharacter(s.TransactionId(), payload.AccountId, payload.WorldId, payload.Name, payload.Level, payload.Strength, payload.Dexterity, payload.Intelligence, payload.Luck, payload.Hp, payload.Mp, payload.JobId, payload.Gender, payload.Face, payload.Hair, payload.Skin, payload.MapId)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to create character.")
 		return err
@@ -1011,7 +1011,7 @@ func (h *HandlerImpl) handleCreateCharacter(s Saga, st Step[any]) error {
 // and then dynamically creates an equip_asset step when the creation succeeds
 func (h *HandlerImpl) handleCreateAndEquipAsset(s Saga, st Step[any]) error {
 	// Extract the payload
-	payload, ok := st.Payload.(CreateAndEquipAssetPayload)
+	payload, ok := st.Payload().(CreateAndEquipAssetPayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
@@ -1026,7 +1026,7 @@ func (h *HandlerImpl) handleCreateAndEquipAsset(s Saga, st Step[any]) error {
 		},
 	}
 
-	err := h.compP.RequestCreateAndEquipAsset(s.TransactionId, compartmentPayload)
+	err := h.compP.RequestCreateAndEquipAsset(s.TransactionId(), compartmentPayload)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to create asset for create_and_equip_asset.")
 		return err
@@ -1041,7 +1041,7 @@ func (h *HandlerImpl) handleCreateAndEquipAsset(s Saga, st Step[any]) error {
 
 // handleSpawnMonster handles the SpawnMonster action
 func (h *HandlerImpl) handleSpawnMonster(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(SpawnMonsterPayload)
+	payload, ok := st.Payload().(SpawnMonsterPayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
@@ -1076,7 +1076,7 @@ func (h *HandlerImpl) handleSpawnMonster(s Saga, st Step[any]) error {
 
 // handleCompleteQuest handles the CompleteQuest action
 func (h *HandlerImpl) handleCompleteQuest(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(CompleteQuestPayload)
+	payload, ok := st.Payload().(CompleteQuestPayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
@@ -1094,7 +1094,7 @@ func (h *HandlerImpl) handleCompleteQuest(s Saga, st Step[any]) error {
 // handleStartQuest handles the StartQuest action
 // Note: This is currently a stub as no quest service exists yet
 func (h *HandlerImpl) handleStartQuest(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(StartQuestPayload)
+	payload, ok := st.Payload().(StartQuestPayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
@@ -1109,12 +1109,12 @@ func (h *HandlerImpl) handleStartQuest(s Saga, st Step[any]) error {
 // handleApplyConsumableEffect handles the ApplyConsumableEffect action
 // This applies consumable item effects to a character without consuming from inventory
 func (h *HandlerImpl) handleApplyConsumableEffect(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(ApplyConsumableEffectPayload)
+	payload, ok := st.Payload().(ApplyConsumableEffectPayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
 
-	err := h.consumableP.ApplyConsumableEffect(s.TransactionId, byte(payload.WorldId), byte(payload.ChannelId), payload.CharacterId, payload.ItemId)
+	err := h.consumableP.ApplyConsumableEffect(s.TransactionId(), byte(payload.WorldId), byte(payload.ChannelId), payload.CharacterId, payload.ItemId)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to apply consumable effect.")
 		return err
@@ -1126,12 +1126,12 @@ func (h *HandlerImpl) handleApplyConsumableEffect(s Saga, st Step[any]) error {
 // handleSendMessage handles the SendMessage action
 // This sends a system message to a character (e.g., "You have acquired a Dragon Egg.")
 func (h *HandlerImpl) handleSendMessage(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(SendMessagePayload)
+	payload, ok := st.Payload().(SendMessagePayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
 
-	err := h.systemMessageP.SendMessage(s.TransactionId, byte(payload.WorldId), byte(payload.ChannelId), payload.CharacterId, payload.MessageType, payload.Message)
+	err := h.systemMessageP.SendMessage(s.TransactionId(), byte(payload.WorldId), byte(payload.ChannelId), payload.CharacterId, payload.MessageType, payload.Message)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to send message.")
 		return err
@@ -1143,7 +1143,7 @@ func (h *HandlerImpl) handleSendMessage(s Saga, st Step[any]) error {
 // handleDepositToStorage handles the DepositToStorage action
 // This deposits an item into account storage
 func (h *HandlerImpl) handleDepositToStorage(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(DepositToStoragePayload)
+	payload, ok := st.Payload().(DepositToStoragePayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
@@ -1154,7 +1154,7 @@ func (h *HandlerImpl) handleDepositToStorage(s Saga, st Step[any]) error {
 		Flag:     payload.Flag,
 	}
 
-	err := h.storageP.DepositAndEmit(s.TransactionId, payload.WorldId, payload.AccountId, payload.Slot, payload.TemplateId, payload.Expiration, payload.ReferenceId, payload.ReferenceType, refData)
+	err := h.storageP.DepositAndEmit(s.TransactionId(), payload.WorldId, payload.AccountId, payload.Slot, payload.TemplateId, payload.Expiration, payload.ReferenceId, payload.ReferenceType, refData)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to deposit to storage.")
 		return err
@@ -1166,12 +1166,12 @@ func (h *HandlerImpl) handleDepositToStorage(s Saga, st Step[any]) error {
 // handleUpdateStorageMesos handles the UpdateStorageMesos action
 // This updates the mesos in account storage
 func (h *HandlerImpl) handleUpdateStorageMesos(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(UpdateStorageMesosPayload)
+	payload, ok := st.Payload().(UpdateStorageMesosPayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
 
-	err := h.storageP.UpdateMesosAndEmit(s.TransactionId, payload.WorldId, payload.AccountId, payload.Mesos, payload.Operation)
+	err := h.storageP.UpdateMesosAndEmit(s.TransactionId(), payload.WorldId, payload.AccountId, payload.Mesos, payload.Operation)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to update storage mesos.")
 		return err
@@ -1183,12 +1183,12 @@ func (h *HandlerImpl) handleUpdateStorageMesos(s Saga, st Step[any]) error {
 // handleAwardFame handles the AwardFame action
 // This awards fame to a character (e.g., qm.gainFame() in quest scripts)
 func (h *HandlerImpl) handleAwardFame(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(AwardFamePayload)
+	payload, ok := st.Payload().(AwardFamePayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
 
-	err := h.charP.AwardFameAndEmit(s.TransactionId, payload.WorldId, payload.CharacterId, payload.ChannelId, payload.Amount)
+	err := h.charP.AwardFameAndEmit(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.ChannelId, payload.Amount)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to award fame.")
 		return err
@@ -1200,12 +1200,12 @@ func (h *HandlerImpl) handleAwardFame(s Saga, st Step[any]) error {
 // handleShowStorage handles the ShowStorage action
 // This sends a command to the channel service to display the storage UI to the character
 func (h *HandlerImpl) handleShowStorage(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(ShowStoragePayload)
+	payload, ok := st.Payload().(ShowStoragePayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
 
-	err := h.storageP.ShowStorageAndEmit(s.TransactionId, byte(payload.WorldId), byte(payload.ChannelId), payload.CharacterId, payload.NpcId, payload.AccountId)
+	err := h.storageP.ShowStorageAndEmit(s.TransactionId(), byte(payload.WorldId), byte(payload.ChannelId), payload.CharacterId, payload.NpcId, payload.AccountId)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to show storage.")
 		return err
@@ -1213,7 +1213,7 @@ func (h *HandlerImpl) handleShowStorage(s Saga, st Step[any]) error {
 
 	// ShowStorage is a synchronous command with no async response event
 	// Mark the step as completed immediately after successfully sending the command
-	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId, true)
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
 
 	return nil
 }
@@ -1222,13 +1222,13 @@ func (h *HandlerImpl) handleShowStorage(s Saga, st Step[any]) error {
 // This uses the compartment-transfer service's 2-phase commit pattern (ACCEPT → RELEASE → COMPLETED)
 // to atomically transfer an asset between compartments (character inventory ↔ storage)
 func (h *HandlerImpl) handleTransferAsset(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(TransferAssetPayload)
+	payload, ok := st.Payload().(TransferAssetPayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
 
 	err := h.compP.RequestTransferAsset(
-		s.TransactionId,
+		s.TransactionId(),
 		payload.WorldId,
 		payload.AccountId,
 		payload.CharacterId,
@@ -1256,7 +1256,7 @@ func (h *HandlerImpl) handleTransferAsset(s Saga, st Step[any]) error {
 // handleAcceptToStorage handles the AcceptToStorage action
 // This sends an ACCEPT command to storage compartment with pre-populated asset data
 func (h *HandlerImpl) handleAcceptToStorage(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(AcceptToStoragePayload)
+	payload, ok := st.Payload().(AcceptToStoragePayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
@@ -1287,7 +1287,7 @@ func (h *HandlerImpl) handleAcceptToStorage(s Saga, st Step[any]) error {
 // handleReleaseFromCharacter handles the ReleaseFromCharacter action
 // This sends a RELEASE command to character inventory compartment
 func (h *HandlerImpl) handleReleaseFromCharacter(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(ReleaseFromCharacterPayload)
+	payload, ok := st.Payload().(ReleaseFromCharacterPayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
@@ -1310,7 +1310,7 @@ func (h *HandlerImpl) handleReleaseFromCharacter(s Saga, st Step[any]) error {
 // handleAcceptToCharacter handles the AcceptToCharacter action
 // This sends an ACCEPT command to character inventory compartment with pre-populated asset data
 func (h *HandlerImpl) handleAcceptToCharacter(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(AcceptToCharacterPayload)
+	payload, ok := st.Payload().(AcceptToCharacterPayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
@@ -1339,7 +1339,7 @@ func (h *HandlerImpl) handleAcceptToCharacter(s Saga, st Step[any]) error {
 // handleReleaseFromStorage handles the ReleaseFromStorage action
 // This sends a RELEASE command to storage compartment
 func (h *HandlerImpl) handleReleaseFromStorage(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(ReleaseFromStoragePayload)
+	payload, ok := st.Payload().(ReleaseFromStoragePayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}

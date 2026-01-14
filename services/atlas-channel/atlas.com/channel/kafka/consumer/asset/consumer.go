@@ -72,7 +72,7 @@ func handleAssetCreatedEvent(sc server.Model, wp writer.Producer) message.Handle
 				SetSlot(e.Slot).
 				SetExpiration(e.Body.Expiration).
 				SetReferenceData(getReferenceData(e.Body.ReferenceData)).
-				Build()
+				MustBuild()
 			itemWriter := model.FlipOperator(writer.WriteAssetInfo(t)(true))(a)
 			bp := writer.CharacterInventoryChangeBody(false, writer.InventoryAddBodyWriter(inventoryType, e.Slot, itemWriter))
 			err := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(bp)(s)
@@ -106,7 +106,7 @@ func handleAssetUpdatedEvent(sc server.Model, wp writer.Producer) message.Handle
 				SetSlot(e.Slot).
 				SetExpiration(e.Body.Expiration).
 				SetReferenceData(getReferenceData(e.Body.ReferenceData)).
-				Build()
+				MustBuild()
 			so := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryRefreshAsset(sc.Tenant())(inventoryType, a))
 			err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, so)
 			if err != nil {

@@ -87,7 +87,7 @@ func transformAsset(a AssetRestModel) asset.Model[any] {
 		SetSlot(a.Slot).
 		SetExpiration(a.Expiration).
 		SetReferenceData(refData).
-		Build()
+		MustBuild()
 }
 
 // inventoryTypeFromTemplateId determines the inventory type from a template ID

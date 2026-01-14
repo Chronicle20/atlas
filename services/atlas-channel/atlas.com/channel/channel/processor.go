@@ -38,7 +38,7 @@ func (p *ProcessorImpl) Register(worldId world.Id, channelId channel.Id, ipAddre
 		SetPort(port).
 		SetCurrentCapacity(0).
 		SetMaxCapacity(0).
-		Build())
+		MustBuild())
 }
 
 func (p *ProcessorImpl) ByIdModelProvider(worldId world.Id, channelId channel.Id) model.Provider[Model] {

@@ -182,7 +182,7 @@ func handleStatusEventStartControl(sc server.Model, wp writer.Producer) message.
 			SetStance(e.Body.Stance).
 			SetFH(e.Body.FH).
 			SetTeam(e.Body.Team).
-			Build()
+			MustBuild()
 		sf := session.Announce(l)(ctx)(wp)(writer.ControlMonster)(writer.StartControlMonsterBody(l, tenant.MustFromContext(ctx))(m, false))
 		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.ActorId, sf)
 		if err != nil {
@@ -202,7 +202,7 @@ func handleStatusEventStopControl(sc server.Model, wp writer.Producer) message.H
 		}
 
 		m := monster.NewModelBuilder(e.UniqueId, world.Id(e.WorldId), channel.Id(e.ChannelId), _map2.Id(e.MapId), e.MonsterId).
-			Build()
+			MustBuild()
 		sf := session.Announce(l)(ctx)(wp)(writer.ControlMonster)(writer.StopControlMonsterBody(l, tenant.MustFromContext(ctx))(m))
 		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.ActorId, sf)
 		if err != nil {

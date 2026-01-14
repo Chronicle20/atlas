@@ -76,7 +76,7 @@ func handleSpawned(sc server.Model, wp writer.Producer) message.Handler[pet2.Sta
 			SetY(e.Body.Y).
 			SetStance(e.Body.Stance).
 			SetFoothold(e.Body.FH).
-			Build()
+			MustBuild()
 		_ = announceSpawn(l)(ctx)(wp)(p)(s)
 	}
 }
@@ -177,7 +177,7 @@ func handleCommandResponse(sc server.Model, wp writer.Producer) message.Handler[
 				SetSlot(e.Body.Slot).
 				SetCloseness(e.Body.Closeness).
 				SetFullness(e.Body.Fullness).
-				Build()
+				MustBuild()
 			_ = _map.NewProcessor(l, ctx).ForSessionsInMap(s.Map(), session.Announce(l)(ctx)(wp)(writer.PetCommandResponse)(writer.PetCommandResponseBody(p, e.Body.CommandId, e.Body.Success, false)))
 		}()
 	}

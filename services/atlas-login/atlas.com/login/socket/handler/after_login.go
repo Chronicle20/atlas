@@ -21,7 +21,7 @@ func AfterLoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.P
 			opt2 = r.ReadByte()
 			pin = r.ReadAsciiString()
 		}
-		l.Debugf("AfterLogin handling opt1 [%d] opt2 [%d] pin [%s].", opt1, opt2, pin)
+		l.Debugf("AfterLogin handling opt1 [%d] opt2 [%d].", opt1, opt2)
 		if opt1 == 0 && opt2 == 0 {
 			l.Debugf("Account [%d] has chosen not to input PIN. Terminating session.", s.AccountId())
 			_ = session.NewProcessor(l, ctx).Destroy(s)

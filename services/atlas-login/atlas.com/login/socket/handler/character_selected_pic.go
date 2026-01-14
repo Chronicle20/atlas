@@ -18,16 +18,14 @@ func CharacterSelectedPicHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 	t := tenant.MustFromContext(ctx)
 	serverIpFunc := session.Announce(l)(wp)(writer.ServerIP)
 	return func(s session.Model, r *request.Reader) {
-		pic := r.ReadAsciiString()
+		_ = r.ReadAsciiString() // pic - not logged for security
 		characterId := r.ReadUint32()
-		var sMacAddressWithHDDSerial = ""
-		var sMacAddressWithHDDSerial2 = ""
 
 		if t.Region() == "GMS" {
-			sMacAddressWithHDDSerial = r.ReadAsciiString()
-			sMacAddressWithHDDSerial2 = r.ReadAsciiString()
+			_ = r.ReadAsciiString() // sMacAddressWithHDDSerial
+			_ = r.ReadAsciiString() // sMacAddressWithHDDSerial2
 		}
-		l.Debugf("Character [%d] selected for login to channel [%d:%d]. pic [%s] hwid [%s] hwid [%s].", characterId, s.WorldId(), s.ChannelId(), pic, sMacAddressWithHDDSerial, sMacAddressWithHDDSerial2)
+		l.Debugf("Character [%d] selected for login to channel [%d:%d].", characterId, s.WorldId(), s.ChannelId())
 		c, err := channel.NewProcessor(l, ctx).GetById(s.WorldId(), s.ChannelId())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve channel information being logged in to.")

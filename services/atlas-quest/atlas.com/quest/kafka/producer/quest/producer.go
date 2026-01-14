@@ -2,10 +2,13 @@ package quest
 
 import (
 	quest2 "atlas-quest/kafka/message/quest"
+	"context"
 
 	"github.com/Chronicle20/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
 )
 
 func QuestStartedEventProvider(characterId uint32, worldId byte, questId uint32) model.Provider[[]kafka.Message] {
@@ -74,4 +77,31 @@ func ErrorStatusEventProvider(characterId uint32, worldId byte, questId uint32, 
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
+}
+
+// emitEvent is a helper to emit quest status events
+func emitEvent(l logrus.FieldLogger, ctx context.Context, provider model.Provider[[]kafka.Message]) error {
+	sd := producer.SpanHeaderDecorator(ctx)
+	td := producer.TenantHeaderDecorator(ctx)
+	return producer.Produce(l)(producer.WriterProvider(topic.EnvProvider(l)(quest2.EnvStatusEventTopic)))(sd, td)(provider)
+}
+
+// EmitQuestStarted emits a quest started event
+func EmitQuestStarted(l logrus.FieldLogger, ctx context.Context, characterId uint32, worldId byte, questId uint32) error {
+	return emitEvent(l, ctx, QuestStartedEventProvider(characterId, worldId, questId))
+}
+
+// EmitQuestCompleted emits a quest completed event
+func EmitQuestCompleted(l logrus.FieldLogger, ctx context.Context, characterId uint32, worldId byte, questId uint32) error {
+	return emitEvent(l, ctx, QuestCompletedEventProvider(characterId, worldId, questId))
+}
+
+// EmitQuestForfeited emits a quest forfeited event
+func EmitQuestForfeited(l logrus.FieldLogger, ctx context.Context, characterId uint32, worldId byte, questId uint32) error {
+	return emitEvent(l, ctx, QuestForfeitedEventProvider(characterId, worldId, questId))
+}
+
+// EmitProgressUpdated emits a quest progress updated event
+func EmitProgressUpdated(l logrus.FieldLogger, ctx context.Context, characterId uint32, worldId byte, questId uint32, infoNumber uint32, progress string) error {
+	return emitEvent(l, ctx, QuestProgressUpdatedEventProvider(characterId, worldId, questId, infoNumber, progress))
 }

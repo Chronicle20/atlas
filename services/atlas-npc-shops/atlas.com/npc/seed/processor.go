@@ -65,14 +65,19 @@ func (p *ProcessorImpl) Seed() (SeedResult, error) {
 
 	for _, jm := range jsonModels {
 		// Build shop model
-		shopModel := shops.NewBuilder(jm.NpcId).
+		shopModel, err := shops.NewBuilder(jm.NpcId).
 			SetRecharger(jm.Recharger).
 			Build()
+		if err != nil {
+			result.Errors = append(result.Errors, fmt.Sprintf("failed to build shop for NPC %d: %v", jm.NpcId, err))
+			result.FailedCount++
+			continue
+		}
 		shopModels = append(shopModels, shopModel)
 
 		// Build commodity models for this shop
 		for _, cjm := range jm.Commodities {
-			commodityModel := (&commodities.ModelBuilder{}).
+			commodityModel, err := (&commodities.ModelBuilder{}).
 				SetNpcId(jm.NpcId).
 				SetTemplateId(cjm.TemplateId).
 				SetMesoPrice(cjm.MesoPrice).
@@ -82,6 +87,11 @@ func (p *ProcessorImpl) Seed() (SeedResult, error) {
 				SetPeriod(cjm.Period).
 				SetLevelLimit(cjm.LevelLimit).
 				Build()
+			if err != nil {
+				result.Errors = append(result.Errors, fmt.Sprintf("failed to build commodity for NPC %d, template %d: %v", jm.NpcId, cjm.TemplateId, err))
+				result.FailedCount++
+				continue
+			}
 			commodityModels = append(commodityModels, commodityModel)
 		}
 	}

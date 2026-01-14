@@ -5,6 +5,7 @@ import (
 	dataquest "atlas-quest/data/quest"
 	"atlas-quest/data/validation"
 	"atlas-quest/kafka/message/saga"
+	questproducer "atlas-quest/kafka/producer/quest"
 	sagaproducer "atlas-quest/kafka/producer/saga"
 	"context"
 	"errors"
@@ -84,6 +85,18 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
+// NewProcessorWithDependencies creates a processor with custom dependencies (for testing)
+func NewProcessorWithDependencies(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, dataProc dataquest.Processor, validationProc validation.Processor) Processor {
+	return &ProcessorImpl{
+		l:                   l,
+		ctx:                 ctx,
+		db:                  db,
+		t:                   tenant.MustFromContext(ctx),
+		dataProcessor:       dataProc,
+		validationProcessor: validationProc,
+	}
+}
+
 func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 	return &ProcessorImpl{
 		l:                   p.l,
@@ -160,6 +173,11 @@ func (p *ProcessorImpl) Start(characterId uint32, questId uint32, f field.Model,
 		// Don't fail the quest start, just log the error
 	}
 
+	// Emit quest started event
+	if err := questproducer.EmitQuestStarted(p.l, p.ctx, characterId, byte(f.WorldId()), questId); err != nil {
+		p.l.WithError(err).Warnf("Unable to emit quest started event for quest [%d] character [%d].", questId, characterId)
+	}
+
 	return m, nil, nil
 }
 
@@ -233,7 +251,7 @@ func (p *ProcessorImpl) startCore(characterId uint32, questId uint32, questDef d
 
 		// Initialize progress for mob kills and map visits
 		if len(mobIds) > 0 || len(mapIds) > 0 {
-			if err = initializeProgress(tx, m.Id(), mobIds, mapIds); err != nil {
+			if err = initializeProgress(tx, p.t.Id(), m.Id(), mobIds, mapIds); err != nil {
 				p.l.WithError(err).Errorf("Unable to initialize progress for quest [%d] for character [%d].", questId, characterId)
 				return err
 			}
@@ -283,6 +301,11 @@ func (p *ProcessorImpl) StartChained(characterId uint32, questId uint32, f field
 		p.l.WithError(err).Warnf("Unable to process start actions for chained quest [%d].", questId)
 	}
 
+	// Emit quest started event
+	if err := questproducer.EmitQuestStarted(p.l, p.ctx, characterId, byte(f.WorldId()), questId); err != nil {
+		p.l.WithError(err).Warnf("Unable to emit quest started event for chained quest [%d] character [%d].", questId, characterId)
+	}
+
 	p.l.Debugf("Started chained quest [%d] for character [%d].", questId, characterId)
 	return m, nil
 }
@@ -323,7 +346,7 @@ func (p *ProcessorImpl) startChainedCore(characterId uint32, questId uint32, que
 
 		// Initialize progress for mob kills and map visits
 		if len(mobIds) > 0 || len(mapIds) > 0 {
-			if err = initializeProgress(tx, m.Id(), mobIds, mapIds); err != nil {
+			if err = initializeProgress(tx, p.t.Id(), m.Id(), mobIds, mapIds); err != nil {
 				return err
 			}
 		}
@@ -366,6 +389,11 @@ func (p *ProcessorImpl) Complete(characterId uint32, questId uint32, f field.Mod
 	if err := p.processEndActions(characterId, questId, questDef, f); err != nil {
 		p.l.WithError(err).Warnf("Unable to process end actions for quest [%d] character [%d].", questId, characterId)
 		// Don't fail the completion, just log the error
+	}
+
+	// Emit quest completed event
+	if err := questproducer.EmitQuestCompleted(p.l, p.ctx, characterId, byte(f.WorldId()), questId); err != nil {
+		p.l.WithError(err).Warnf("Unable to emit quest completed event for quest [%d] character [%d].", questId, characterId)
 	}
 
 	return nextQuestId, nil
@@ -434,6 +462,11 @@ func (p *ProcessorImpl) Forfeit(characterId uint32, questId uint32) error {
 		return txErr
 	}
 
+	// Emit quest forfeited event (worldId is 0 as it's not available in forfeit context)
+	if err := questproducer.EmitQuestForfeited(p.l, p.ctx, characterId, 0, questId); err != nil {
+		p.l.WithError(err).Warnf("Unable to emit quest forfeited event for quest [%d] character [%d].", questId, characterId)
+	}
+
 	p.l.Debugf("Forfeited quest [%d] for character [%d].", questId, characterId)
 	return nil
 }
@@ -456,6 +489,11 @@ func (p *ProcessorImpl) SetProgress(characterId uint32, questId uint32, infoNumb
 	if txErr != nil {
 		p.l.WithError(txErr).Errorf("Unable to set progress for quest [%d] for character [%d].", questId, characterId)
 		return txErr
+	}
+
+	// Emit quest progress updated event (worldId is 0 as it's not available in this context)
+	if err := questproducer.EmitProgressUpdated(p.l, p.ctx, characterId, 0, questId, infoNumber, progressValue); err != nil {
+		p.l.WithError(err).Warnf("Unable to emit quest progress updated event for quest [%d] character [%d].", questId, characterId)
 	}
 
 	p.l.Debugf("Set progress for quest [%d], infoNumber [%d] for character [%d].", questId, infoNumber, characterId)

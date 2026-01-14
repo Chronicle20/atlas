@@ -3,12 +3,12 @@ package storage
 import (
 	"atlas-storage/rest"
 	"github.com/Chronicle20/atlas-rest/server"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"net/http"
+	"strings"
 )
 
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
@@ -59,20 +59,14 @@ func handleCreateStorageRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *
 		return rest.ParseAccountId(d.Logger(), func(accountId uint32) http.HandlerFunc {
 			return rest.ParseWorldId(d.Logger(), func(worldId byte) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
-					t := tenant.MustFromContext(d.Context())
-
-					// Check if storage already exists
-					_, err := GetByWorldAndAccountId(d.Logger(), db, t.Id(), d.Context())(worldId, accountId)
-					if err == nil {
-						// Storage already exists
-						d.Logger().Debugf("Storage already exists for world %d account %d.", worldId, accountId)
-						w.WriteHeader(http.StatusConflict)
-						return
-					}
-
-					// Create new storage
-					s, err := Create(d.Logger(), db, t.Id())(worldId, accountId)
+					// Use processor to create storage
+					s, err := NewProcessor(d.Logger(), d.Context(), db).CreateStorage(worldId, accountId)
 					if err != nil {
+						if strings.Contains(err.Error(), "already exists") {
+							d.Logger().Debugf("Storage already exists for world %d account %d.", worldId, accountId)
+							w.WriteHeader(http.StatusConflict)
+							return
+						}
 						d.Logger().WithError(err).Errorf("Unable to create storage for world %d account %d.", worldId, accountId)
 						w.WriteHeader(http.StatusInternalServerError)
 						return

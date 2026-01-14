@@ -26,7 +26,8 @@ func Migration(db *gorm.DB) error {
 	return db.AutoMigrate(&Entity{})
 }
 
-// Make converts an Entity to a Model with empty reference data
+// Make converts an Entity to a Model with empty reference data.
+// Uses MustBuild since entities from database are trusted.
 func Make(e Entity) Model[any] {
 	return NewModelBuilder[any]().
 		SetId(e.Id).
@@ -37,5 +38,5 @@ func Make(e Entity) Model[any] {
 		SetExpiration(e.Expiration).
 		SetReferenceId(e.ReferenceId).
 		SetReferenceType(e.ReferenceType).
-		Build()
+		MustBuild()
 }

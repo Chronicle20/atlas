@@ -44,7 +44,7 @@ func (d *Decorator) DecorateEquipable(m Model[any]) (Model[equipable.Model], err
 		SetReferenceId(m.referenceId).
 		SetReferenceType(m.referenceType).
 		SetReferenceData(eq).
-		Build(), nil
+		MustBuild(), nil
 }
 
 // DecoratePet enriches an asset with pet reference data
@@ -63,7 +63,7 @@ func (d *Decorator) DecoratePet(m Model[any]) (Model[pet.Model], error) {
 		SetReferenceId(m.referenceId).
 		SetReferenceType(m.referenceType).
 		SetReferenceData(p).
-		Build(), nil
+		MustBuild(), nil
 }
 
 // DecorateStackable enriches an asset with stackable reference data from local storage
@@ -82,7 +82,7 @@ func (d *Decorator) DecorateStackable(m Model[any]) (Model[stackable.Model], err
 		SetReferenceId(m.referenceId).
 		SetReferenceType(m.referenceType).
 		SetReferenceData(s).
-		Build(), nil
+		MustBuild(), nil
 }
 
 // DecorateAssets decorates a slice of assets based on their reference types
@@ -132,7 +132,7 @@ func (d *Decorator) DecorateAssets(assets []Model[any]) ([]Model[any], error) {
 				SetReferenceId(a.referenceId).
 				SetReferenceType(a.referenceType).
 				SetReferenceData(eq).
-				Build()
+				MustBuild()
 			result = append(result, decorated)
 
 		case ReferenceTypePet:
@@ -151,7 +151,7 @@ func (d *Decorator) DecorateAssets(assets []Model[any]) ([]Model[any], error) {
 				SetReferenceId(a.referenceId).
 				SetReferenceType(a.referenceType).
 				SetReferenceData(p).
-				Build()
+				MustBuild()
 			result = append(result, decorated)
 
 		case ReferenceTypeConsumable, ReferenceTypeSetup, ReferenceTypeEtc:
@@ -165,7 +165,7 @@ func (d *Decorator) DecorateAssets(assets []Model[any]) ([]Model[any], error) {
 					SetReferenceId(a.referenceId).
 					SetReferenceType(a.referenceType).
 					SetReferenceData(s).
-					Build()
+					MustBuild()
 				result = append(result, decorated)
 			} else {
 				d.l.Warnf("No stackable data found for asset %d", a.id)

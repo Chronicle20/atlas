@@ -6,6 +6,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -32,6 +33,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 
 func (p *ProcessorImpl) Register(worldId world.Id, channelId channel.Id, ipAddress string, port int) error {
 	return registerChannel(p.l)(p.ctx)(NewBuilder().
+		SetId(uuid.New()).
 		SetWorldId(worldId).
 		SetChannelId(channelId).
 		SetIpAddress(ipAddress).

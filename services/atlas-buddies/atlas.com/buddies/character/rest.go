@@ -11,7 +11,7 @@ type RestModel struct {
 	Gm   int    `json:"gm"`
 }
 
-func (r *RestModel) GetName() string {
+func (r RestModel) GetName() string {
 	return "characters"
 }
 

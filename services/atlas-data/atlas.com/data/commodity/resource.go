@@ -29,6 +29,7 @@ func handleGetCommodityItemsRequest(db *gorm.DB) func(d *rest.HandlerDependency,
 			s := NewStorage(d.Logger(), db)
 			res, err := s.GetAll(d.Context())
 			if err != nil {
+				d.Logger().WithError(err).Errorf("Unable to retrieve commodity items.")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}

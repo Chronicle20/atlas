@@ -11,7 +11,7 @@ import (
 	"net/http"
 )
 
-func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
+func InitializeRoutes(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
 	return func(db *gorm.DB) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
 			registerHandler := rest.RegisterHandler(l)(db)(si)
@@ -122,6 +122,11 @@ func CreateNoteHandler(d *rest.HandlerDependency, c *rest.HandlerContext, i Rest
 		}
 
 		m, err := NewProcessor(d.Logger(), d.Context(), d.DB()).CreateAndEmit(im.CharacterId(), im.SenderId(), im.Message(), im.Flag())
+		if err != nil {
+			d.Logger().WithError(err).Errorln("Error creating note")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 		rm, err := model.Map(Transform)(model.FixedProvider(m))()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
@@ -153,6 +158,11 @@ func UpdateNoteHandler(d *rest.HandlerDependency, c *rest.HandlerContext, i Rest
 			}
 
 			m, err := NewProcessor(d.Logger(), d.Context(), d.DB()).UpdateAndEmit(im.Id(), im.CharacterId(), im.SenderId(), im.Message(), im.Flag())
+			if err != nil {
+				d.Logger().WithError(err).Errorln("Error updating note")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
 			rm, err := model.Map(Transform)(model.FixedProvider(m))()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")

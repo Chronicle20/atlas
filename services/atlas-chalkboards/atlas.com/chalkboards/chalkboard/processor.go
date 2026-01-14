@@ -5,7 +5,9 @@ import (
 	"atlas-chalkboards/kafka/producer"
 	"context"
 	"errors"
+
 	"github.com/Chronicle20/atlas-constants/field"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
@@ -19,28 +21,27 @@ type Processor interface {
 type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
+	t   tenant.Model
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
+		t:   tenant.MustFromContext(ctx),
 	}
 }
 
 func (p *ProcessorImpl) GetById(characterId uint32) (Model, error) {
-	m, ok := getRegistry().Get(characterId)
+	m, ok := getRegistry().Get(p.t, characterId)
 	if !ok {
 		return Model{}, errors.New("not found")
 	}
-	return Model{
-		id:      characterId,
-		message: m,
-	}, nil
+	return NewBuilder(characterId).SetMessage(m).Build(), nil
 }
 
 func (p *ProcessorImpl) Clear(transactionId uuid.UUID, field field.Model, characterId uint32) error {
-	existed := getRegistry().Clear(characterId)
+	existed := getRegistry().Clear(p.t, characterId)
 	if existed {
 		p.l.Debugf("Clearing chalkboard for [%d].", characterId)
 		return producer.ProviderImpl(p.l)(p.ctx)(chalkboard2.EnvEventTopicStatus)(clearStatusEventProvider(transactionId, field, characterId))
@@ -52,6 +53,6 @@ func (p *ProcessorImpl) Set(transactionId uuid.UUID, field field.Model, characte
 	// TODO ensure they are in a place that this can be set.
 	// TODO ensure they are alive.
 	p.l.Debugf("Setting chalkboard to [%s] for [%d].", message, characterId)
-	getRegistry().Set(characterId, message)
+	getRegistry().Set(p.t, characterId, message)
 	return producer.ProviderImpl(p.l)(p.ctx)(chalkboard2.EnvEventTopicStatus)(setStatusEventProvider(transactionId, field, characterId, message))
 }

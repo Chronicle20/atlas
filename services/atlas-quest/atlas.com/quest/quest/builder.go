@@ -2,6 +2,7 @@ package quest
 
 import (
 	"atlas-quest/quest/progress"
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -89,3 +90,25 @@ func (b *modelBuilder) Build() Model {
 		progress:    b.progress,
 	}
 }
+
+// BuildWithValidation returns the built Model with validation, returning an error if required fields are missing.
+// This is the recommended method for new code.
+func (b *modelBuilder) BuildWithValidation() (Model, error) {
+	if b.tenantId == uuid.Nil {
+		return Model{}, ErrMissingTenantId
+	}
+	if b.characterId == 0 {
+		return Model{}, ErrMissingCharacterId
+	}
+	if b.questId == 0 {
+		return Model{}, ErrMissingQuestId
+	}
+	return b.Build(), nil
+}
+
+// Validation errors for builder
+var (
+	ErrMissingTenantId    = errors.New("tenant ID is required")
+	ErrMissingCharacterId = errors.New("character ID is required")
+	ErrMissingQuestId     = errors.New("quest ID is required")
+)

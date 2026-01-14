@@ -5,9 +5,8 @@ import (
 )
 
 type Registry struct {
-	mutex             sync.Mutex
+	mutex             sync.RWMutex
 	characterRegister map[MapKey][]uint32
-	mapLocks          map[MapKey]*sync.RWMutex
 }
 
 var registry *Registry
@@ -16,9 +15,7 @@ var once sync.Once
 func getRegistry() *Registry {
 	once.Do(func() {
 		registry = &Registry{}
-
 		registry.characterRegister = make(map[MapKey][]uint32)
-		registry.mapLocks = make(map[MapKey]*sync.RWMutex)
 	})
 	return registry
 }
@@ -42,33 +39,18 @@ func removeIfExists(slice []uint32, value uint32) []uint32 {
 }
 
 func (r *Registry) AddCharacter(key MapKey, characterId uint32) {
-	var ml = r.getMapLock(key)
-	ml.Lock()
-	defer ml.Unlock()
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
 
-	if _, ok := r.characterRegister[key]; ok {
-		r.characterRegister[key] = appendIfMissing(r.characterRegister[key], characterId)
-		return
+	if _, ok := r.characterRegister[key]; !ok {
+		r.characterRegister[key] = make([]uint32, 0)
 	}
-	r.characterRegister[key] = []uint32{characterId}
-}
-
-func (r *Registry) getMapLock(key MapKey) *sync.RWMutex {
-	var ml *sync.RWMutex
-	var ok bool
-	if ml, ok = r.mapLocks[key]; !ok {
-		r.mutex.Lock()
-		r.mapLocks[key] = &sync.RWMutex{}
-		ml = r.mapLocks[key]
-		r.mutex.Unlock()
-	}
-	return ml
+	r.characterRegister[key] = appendIfMissing(r.characterRegister[key], characterId)
 }
 
 func (r *Registry) RemoveCharacter(key MapKey, characterId uint32) {
-	var ml = r.getMapLock(key)
-	ml.Lock()
-	defer ml.Unlock()
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
 
 	if _, ok := r.characterRegister[key]; ok {
 		r.characterRegister[key] = removeIfExists(r.characterRegister[key], characterId)
@@ -76,22 +58,20 @@ func (r *Registry) RemoveCharacter(key MapKey, characterId uint32) {
 }
 
 func (r *Registry) GetInMap(key MapKey) []uint32 {
-	ml := r.getMapLock(key)
-	ml.RLock()
-	defer ml.RUnlock()
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
 	return r.characterRegister[key]
 }
 
 func (r *Registry) GetMapsWithCharacters() []MapKey {
-	var result = make([]MapKey, 0)
-	for mk, ml := range r.mapLocks {
-		ml.RLock()
-		if mc, ok := r.characterRegister[mk]; ok {
-			if len(mc) > 0 {
-				result = append(result, mk)
-			}
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
+
+	result := make([]MapKey, 0)
+	for mk, mc := range r.characterRegister {
+		if len(mc) > 0 {
+			result = append(result, mk)
 		}
-		ml.RUnlock()
 	}
 	return result
 }

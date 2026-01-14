@@ -7,7 +7,7 @@ const (
 	CommandTypeCreate = "CREATE"
 )
 
-type command[E any] struct {
+type Command[E any] struct {
 	WorldId   byte   `json:"worldId"`
 	ChannelId byte   `json:"channelId"`
 	MapId     uint32 `json:"mapId"`
@@ -15,7 +15,7 @@ type command[E any] struct {
 	Body      E      `json:"body"`
 }
 
-type createCommandBody struct {
+type CreateCommandBody struct {
 	Classification uint32 `json:"classification"`
 	Name           string `json:"name"`
 	State          int8   `json:"state"`

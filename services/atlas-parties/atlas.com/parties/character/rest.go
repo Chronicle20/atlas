@@ -41,7 +41,7 @@ type ForeignRestModel struct {
 	Stance             byte   `json:"stance"`
 }
 
-func (r *ForeignRestModel) GetName() string {
+func (r ForeignRestModel) GetName() string {
 	return "characters"
 }
 

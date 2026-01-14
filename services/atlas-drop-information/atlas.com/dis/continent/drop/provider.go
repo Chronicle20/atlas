@@ -18,15 +18,13 @@ func getAll(tenantId uuid.UUID) database.EntityProvider[[]entity] {
 	}
 }
 
-func makeDrop(m entity) (Model, error) {
-	r := Model{
-		id:              m.ID,
-		continentId:     m.ContinentId,
-		itemId:          m.ItemId,
-		minimumQuantity: m.MinimumQuantity,
-		maximumQuantity: m.MaximumQuantity,
-		questId:         m.QuestId,
-		chance:          m.Chance,
-	}
-	return r, nil
+func modelFromEntity(m entity) (Model, error) {
+	return NewContinentDropBuilder(m.TenantId, m.ID).
+		SetContinentId(m.ContinentId).
+		SetItemId(m.ItemId).
+		SetMinimumQuantity(m.MinimumQuantity).
+		SetMaximumQuantity(m.MaximumQuantity).
+		SetQuestId(m.QuestId).
+		SetChance(m.Chance).
+		Build()
 }

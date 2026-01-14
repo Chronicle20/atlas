@@ -37,3 +37,13 @@ func UpdateMesosCommandProvider(worldId byte, accountId uint32, transactionId uu
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+// CloseStorageCommandProvider creates a CLOSE_STORAGE command for the storage service
+func CloseStorageCommandProvider(characterId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &storage.CloseStorageCommand{
+		CharacterId: characterId,
+		Type:        storage.CommandTypeCloseStorage,
+	}
+	return producer.SingleMessageProvider(key, value)
+}

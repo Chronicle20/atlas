@@ -63,3 +63,26 @@ Cancels an existing buff for a character based on the source ID.
 ## Tasks
 
 The service includes a task system that handles buff expirations automatically.
+
+## Architecture Notes
+
+This service intentionally uses **in-memory storage** rather than database persistence. This architectural decision is appropriate because buff state is:
+
+- **Ephemeral**: Buffs have short lifespans (seconds to minutes)
+- **Derived**: The source of truth is the commanding service (e.g., atlas-channel)
+- **Recoverable**: If data is lost on service restart, the game state will re-apply active buffs
+
+### Implications
+
+- **No database dependency**: The service does not require MySQL/PostgreSQL
+- **Fast access**: All buff lookups are O(1) from memory
+- **Data loss on restart**: This is acceptable and expected behavior
+- **Multi-tenancy**: State is partitioned by tenant in memory
+
+### Thread Safety
+
+The in-memory registry uses a two-level locking strategy:
+- Global mutex for tenant map modifications
+- Per-tenant RWMutex for character data operations
+
+This allows concurrent operations on different tenants while maintaining data consistency.

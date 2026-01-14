@@ -97,7 +97,7 @@ func (c *InMemoryCache) Put(tenantId uuid.UUID, saga Saga) {
 	}
 
 	// Add or update the saga
-	c.tenantSagas[tenantId][saga.TransactionId] = saga
+	c.tenantSagas[tenantId][saga.TransactionId()] = saga
 }
 
 // Remove removes a saga from the cache for a tenant

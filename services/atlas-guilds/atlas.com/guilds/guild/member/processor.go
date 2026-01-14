@@ -12,6 +12,8 @@ import (
 type Processor interface {
 	AddMember(guildId uint32, characterId uint32, name string, jobId uint16, level byte, title byte) (Model, error)
 	RemoveMember(guildId uint32, characterId uint32) error
+	UpdateStatus(characterId uint32, online bool) error
+	UpdateTitle(characterId uint32, title byte) error
 }
 
 type ProcessorImpl struct {
@@ -63,4 +65,12 @@ func (p *ProcessorImpl) RemoveMember(guildId uint32, characterId uint32) error {
 		}
 		return nil
 	})
+}
+
+func (p *ProcessorImpl) UpdateStatus(characterId uint32, online bool) error {
+	return updateStatus(p.db, p.t.Id(), characterId, online)
+}
+
+func (p *ProcessorImpl) UpdateTitle(characterId uint32, title byte) error {
+	return updateTitle(p.db, p.t.Id(), characterId, title)
 }

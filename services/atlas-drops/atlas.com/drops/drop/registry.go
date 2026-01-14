@@ -58,7 +58,7 @@ func getNextUniqueId() uint32 {
 	return id
 }
 
-func (d *dropRegistry) CreateDrop(mb *ModelBuilder) Model {
+func (d *dropRegistry) CreateDrop(mb *ModelBuilder) (Model, error) {
 	t := mb.Tenant()
 	mk := mapKey{
 		tenantId:  t.Id(),
@@ -70,7 +70,11 @@ func (d *dropRegistry) CreateDrop(mb *ModelBuilder) Model {
 	d.lock.Lock()
 	currentUniqueId := getNextUniqueId()
 
-	drop := mb.SetId(currentUniqueId).SetStatus(StatusAvailable).Build()
+	drop, err := mb.SetId(currentUniqueId).SetStatus(StatusAvailable).Build()
+	if err != nil {
+		d.lock.Unlock()
+		return Model{}, err
+	}
 
 	d.dropMap[drop.Id()] = drop
 	d.lock.Unlock()
@@ -80,7 +84,7 @@ func (d *dropRegistry) CreateDrop(mb *ModelBuilder) Model {
 	d.dropsInMap[mk] = append(d.dropsInMap[mk], drop.Id())
 	d.unlockMap(mk)
 	d.unlockDrop(currentUniqueId)
-	return drop
+	return drop, nil
 }
 
 func (d *dropRegistry) lockMap(mk mapKey) {
@@ -94,7 +98,10 @@ func (d *dropRegistry) lockMap(mk mapKey) {
 }
 
 func (d *dropRegistry) unlockMap(mk mapKey) {
-	if lock, ok := d.mapLocks[mk]; ok {
+	d.lock.RLock()
+	lock, ok := d.mapLocks[mk]
+	d.lock.RUnlock()
+	if ok {
 		lock.Unlock()
 	}
 }
@@ -110,7 +117,10 @@ func (d *dropRegistry) lockDrop(dropId uint32) {
 }
 
 func (d *dropRegistry) unlockDrop(dropId uint32) {
-	if lock, ok := d.dropLocks[dropId]; ok {
+	d.lock.RLock()
+	lock, ok := d.dropLocks[dropId]
+	d.lock.RUnlock()
+	if ok {
 		lock.Unlock()
 	}
 }

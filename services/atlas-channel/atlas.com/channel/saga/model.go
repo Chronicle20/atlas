@@ -37,10 +37,16 @@ type Action string
 const (
 	AwardMesos          Action = "award_mesos"
 	UpdateStorageMesos  Action = "update_storage_mesos"
-	AwardAsset          Action = "award_asset"
-	DestroyAsset        Action = "destroy_asset"
-	DepositToStorage    Action = "deposit_to_storage"
-	WithdrawFromStorage Action = "withdraw_from_storage"
+	AwardAsset           Action = "award_asset"
+	DestroyAsset         Action = "destroy_asset"
+	DepositToStorage     Action = "deposit_to_storage"
+	TransferAsset        Action = "transfer_asset"
+	TransferToStorage    Action = "transfer_to_storage"    // High-level action for inventory -> storage
+	WithdrawFromStorage  Action = "withdraw_from_storage"  // High-level action for storage -> inventory
+	AcceptToStorage      Action = "accept_to_storage"      // Internal (created by saga-orchestrator)
+	ReleaseFromCharacter Action = "release_from_character" // Internal (created by saga-orchestrator)
+	AcceptToCharacter    Action = "accept_to_character"    // Internal (created by saga-orchestrator)
+	ReleaseFromStorage   Action = "release_from_storage"   // Internal (created by saga-orchestrator)
 )
 
 // Step represents a single step within a saga
@@ -108,11 +114,44 @@ type DepositToStoragePayload struct {
 	Flag          uint16    `json:"flag"`          // Item flag (for stackables)
 }
 
-// WithdrawFromStoragePayload is the payload for the withdraw_from_storage action
+// TransferAssetPayload is the payload for the transfer_asset action
+// This uses the compartment-transfer service's 2-phase commit pattern
+type TransferAssetPayload struct {
+	TransactionId       uuid.UUID `json:"transactionId"`
+	WorldId             byte      `json:"worldId"`
+	AccountId           uint32    `json:"accountId"`
+	CharacterId         uint32    `json:"characterId"`
+	AssetId             uint32    `json:"assetId"`
+	FromCompartmentId   uuid.UUID `json:"fromCompartmentId"`
+	FromCompartmentType byte      `json:"fromCompartmentType"`
+	FromInventoryType   string    `json:"fromInventoryType"`   // "CHARACTER", "CASH_SHOP", "STORAGE"
+	ToCompartmentId     uuid.UUID `json:"toCompartmentId"`
+	ToCompartmentType   byte      `json:"toCompartmentType"`
+	ToInventoryType     string    `json:"toInventoryType"`     // "CHARACTER", "CASH_SHOP", "STORAGE"
+	ReferenceId         uint32    `json:"referenceId"`
+	TemplateId          uint32    `json:"templateId"`
+	ReferenceType       string    `json:"referenceType"`       // "EQUIPABLE", "CONSUMABLE", etc.
+	Slot                int16     `json:"slot"`
+}
+
+// TransferToStoragePayload is the high-level payload for transferring an asset from character to storage
+// This step is expanded by saga-orchestrator
+type TransferToStoragePayload struct {
+	TransactionId       uuid.UUID `json:"transactionId"`       // Saga transaction ID
+	CharacterId         uint32    `json:"characterId"`         // Character initiating the transfer
+	WorldId             byte      `json:"worldId"`             // World ID
+	AccountId           uint32    `json:"accountId"`           // Account ID (storage owner)
+	SourceSlot          int16     `json:"sourceSlot"`          // Slot in character inventory
+	SourceInventoryType byte      `json:"sourceInventoryType"` // Character inventory type
+}
+
+// WithdrawFromStoragePayload is the high-level payload for withdrawing an asset from storage to character
+// This step is expanded by saga-orchestrator
 type WithdrawFromStoragePayload struct {
-	CharacterId uint32 `json:"characterId"` // CharacterId initiating the withdrawal
-	AccountId   uint32 `json:"accountId"`   // AccountId that owns the storage
-	WorldId     byte   `json:"worldId"`     // WorldId for the storage
-	AssetId     uint32 `json:"assetId"`     // Asset ID to withdraw
-	Quantity    uint32 `json:"quantity"`    // Quantity to withdraw (0 = full withdrawal)
+	TransactionId uuid.UUID `json:"transactionId"` // Saga transaction ID
+	CharacterId   uint32    `json:"characterId"`   // Character receiving the item
+	WorldId       byte      `json:"worldId"`       // World ID
+	AccountId     uint32    `json:"accountId"`     // Account ID (storage owner)
+	SourceSlot    int16     `json:"sourceSlot"`    // Slot in storage
+	InventoryType byte      `json:"inventoryType"` // Target character inventory type
 }

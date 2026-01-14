@@ -29,7 +29,8 @@ func Migration(db *gorm.DB) error {
 	return db.AutoMigrate(&Entity{})
 }
 
-// Make converts an Entity to a Model
+// Make converts an Entity to a Model.
+// Uses MustBuild since entities from database are trusted.
 func Make(e Entity) Model {
 	return NewModelBuilder().
 		SetId(e.Id).
@@ -37,5 +38,5 @@ func Make(e Entity) Model {
 		SetAccountId(e.AccountId).
 		SetCapacity(e.Capacity).
 		SetMesos(e.Mesos).
-		Build()
+		MustBuild()
 }

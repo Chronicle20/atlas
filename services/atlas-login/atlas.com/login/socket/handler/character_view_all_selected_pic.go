@@ -22,9 +22,9 @@ func CharacterViewAllSelectedPicHandleFunc(l logrus.FieldLogger, ctx context.Con
 		pic := r.ReadAsciiString()
 		characterId := r.ReadUint32()
 		worldId := r.ReadUint32()
-		macAddress := r.ReadAsciiString()
-		macAddressWithHDDSerial := r.ReadAsciiString()
-		l.Debugf("Character [%d] attempting to login via view all. worldId [%d], macAddress [%s], macAddressWithHDDSerial [%s], pic [%s].", characterId, worldId, macAddress, macAddressWithHDDSerial, pic)
+		_ = r.ReadAsciiString() // macAddress - not logged for security
+		_ = r.ReadAsciiString() // macAddressWithHDDSerial - not logged for security
+		l.Debugf("Character [%d] attempting to login via view all. worldId [%d].", characterId, worldId)
 
 		cp := character.NewProcessor(l, ctx)
 		c, err := cp.GetById(cp.InventoryDecorator())(characterId)
@@ -54,7 +54,7 @@ func CharacterViewAllSelectedPicHandleFunc(l logrus.FieldLogger, ctx context.Con
 		}
 
 		if a.PIC() != pic {
-			l.Errorf("Mismatch PIC between [%s] and [%s].", pic, a.PIC())
+			l.Errorf("Mismatch PIC for account [%d].", s.AccountId())
 			// TODO issue error
 			return
 		}

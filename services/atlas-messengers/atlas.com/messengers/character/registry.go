@@ -46,15 +46,14 @@ func (r *Registry) Create(t tenant.Model, worldId world.Id, channelId channel.Id
 
 	cml.Lock()
 
-	m := Model{
-		tenantId:    t.Id(),
-		id:          id,
-		name:        name,
-		worldId:     worldId,
-		channelId:   channelId,
-		messengerId: 0,
-		online:      false,
-	}
+	m, _ := NewBuilder().
+		SetTenantId(t.Id()).
+		SetId(id).
+		SetName(name).
+		SetWorldId(worldId).
+		SetChannelId(channelId).
+		Build()
+
 	cm[id] = m
 	cml.Unlock()
 	return m

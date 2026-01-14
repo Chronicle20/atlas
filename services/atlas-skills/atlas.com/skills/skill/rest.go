@@ -32,10 +32,10 @@ func (r *RestModel) SetID(strId string) error {
 
 func Transform(m Model) (RestModel, error) {
 	return RestModel{
-		Id:                m.id,
-		Level:             m.level,
-		MasterLevel:       m.masterLevel,
-		Expiration:        m.expiration,
-		CooldownExpiresAt: m.cooldownExpiresAt,
+		Id:                m.Id(),
+		Level:             m.Level(),
+		MasterLevel:       m.MasterLevel(),
+		Expiration:        m.Expiration(),
+		CooldownExpiresAt: m.CooldownExpiresAt(),
 	}, nil
 }

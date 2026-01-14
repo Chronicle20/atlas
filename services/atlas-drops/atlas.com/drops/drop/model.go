@@ -1,6 +1,8 @@
 package drop
 
 import (
+	"errors"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
@@ -100,11 +102,11 @@ func (m Model) Status() string {
 }
 
 func (m Model) CancelReservation() Model {
-	return CloneModelBuilder(m).SetStatus(StatusAvailable).SetPetSlot(-1).Build()
+	return CloneModelBuilder(m).SetStatus(StatusAvailable).SetPetSlot(-1).MustBuild()
 }
 
 func (m Model) Reserve(petSlot int8) Model {
-	return CloneModelBuilder(m).SetStatus(StatusReserved).SetPetSlot(petSlot).Build()
+	return CloneModelBuilder(m).SetStatus(StatusReserved).SetPetSlot(petSlot).MustBuild()
 }
 
 func (m Model) MapId() _map.Id {
@@ -272,7 +274,13 @@ func (b *ModelBuilder) Clone(m Model) *ModelBuilder {
 	return b
 }
 
-func (b *ModelBuilder) Build() Model {
+func (b *ModelBuilder) Build() (Model, error) {
+	if b.tenant.Id() == uuid.Nil {
+		return Model{}, errors.New("tenant is required")
+	}
+	if b.transactionId == uuid.Nil {
+		return Model{}, errors.New("transactionId is required")
+	}
 	return Model{
 		tenant:        b.tenant,
 		id:            b.id,
@@ -296,7 +304,17 @@ func (b *ModelBuilder) Build() Model {
 		playerDrop:    b.playerDrop,
 		status:        b.status,
 		petSlot:       b.petSlot,
+	}, nil
+}
+
+// MustBuild builds the model and panics if validation fails.
+// Use this only when building from a known-valid source (e.g., cloning an existing model).
+func (b *ModelBuilder) MustBuild() Model {
+	m, err := b.Build()
+	if err != nil {
+		panic("MustBuild failed: " + err.Error())
 	}
+	return m
 }
 
 func (b *ModelBuilder) ItemId() uint32 {

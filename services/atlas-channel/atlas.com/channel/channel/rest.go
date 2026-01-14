@@ -55,5 +55,5 @@ func Extract(r RestModel) (Model, error) {
 		SetCurrentCapacity(r.CurrentCapacity).
 		SetMaxCapacity(r.MaxCapacity).
 		SetCreatedAt(r.CreatedAt).
-		Build(), nil
+		Build()
 }

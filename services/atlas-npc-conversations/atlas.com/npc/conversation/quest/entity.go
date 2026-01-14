@@ -71,66 +71,6 @@ func ToEntity(m Model, tenantId uuid.UUID) (Entity, error) {
 	}, nil
 }
 
-// GetByIdProvider returns a provider for retrieving a quest conversation by ID
-func GetByIdProvider(tenantId uuid.UUID) func(id uuid.UUID) func(db *gorm.DB) func() (Entity, error) {
-	return func(id uuid.UUID) func(db *gorm.DB) func() (Entity, error) {
-		return func(db *gorm.DB) func() (Entity, error) {
-			return func() (Entity, error) {
-				var entity Entity
-				result := db.Where("tenant_id = ? AND id = ?", tenantId, id).First(&entity)
-				return entity, result.Error
-			}
-		}
-	}
-}
-
-// GetByQuestIdProvider returns a provider for retrieving a quest conversation by quest ID
-func GetByQuestIdProvider(tenantId uuid.UUID) func(questId uint32) func(db *gorm.DB) func() (Entity, error) {
-	return func(questId uint32) func(db *gorm.DB) func() (Entity, error) {
-		return func(db *gorm.DB) func() (Entity, error) {
-			return func() (Entity, error) {
-				var entity Entity
-				result := db.Where("tenant_id = ? AND quest_id = ?", tenantId, questId).First(&entity)
-				return entity, result.Error
-			}
-		}
-	}
-}
-
-// GetAllProvider returns a provider for retrieving all quest conversations
-func GetAllProvider(tenantId uuid.UUID) func(db *gorm.DB) func() ([]Entity, error) {
-	return func(db *gorm.DB) func() ([]Entity, error) {
-		return func() ([]Entity, error) {
-			var entities []Entity
-			result := db.Where("tenant_id = ?", tenantId).Find(&entities)
-			return entities, result.Error
-		}
-	}
-}
-
-// Create saves a new quest conversation entity to the database
-func Create(db *gorm.DB) func(entity Entity) error {
-	return func(entity Entity) error {
-		return db.Create(&entity).Error
-	}
-}
-
-// Update updates an existing quest conversation entity in the database
-func Update(db *gorm.DB) func(entity Entity) error {
-	return func(entity Entity) error {
-		return db.Save(&entity).Error
-	}
-}
-
-// Delete soft-deletes a quest conversation entity from the database
-func Delete(tenantId uuid.UUID) func(questId uint32) func(db *gorm.DB) error {
-	return func(questId uint32) func(db *gorm.DB) error {
-		return func(db *gorm.DB) error {
-			return db.Where("tenant_id = ? AND quest_id = ?", tenantId, questId).Delete(&Entity{}).Error
-		}
-	}
-}
-
 // MigrateTable creates or updates the quest_conversations table
 func MigrateTable(db *gorm.DB) error {
 	return db.AutoMigrate(&Entity{})

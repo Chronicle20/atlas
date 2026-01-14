@@ -51,7 +51,7 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(templateId uint32) func(
 	return func(templateId uint32) func(quantity uint32) func(purchasedBy uint32) (Model, error) {
 		return func(quantity uint32) func(purchasedBy uint32) (Model, error) {
 			return func(purchasedBy uint32) (Model, error) {
-				entity, err := createEntityProvider(p.t.Id(), templateId, quantity, purchasedBy)(p.db)()
+				entity, err := create(p.t.Id(), templateId, quantity, purchasedBy)(p.db)()
 				if err != nil {
 					return Model{}, err
 				}

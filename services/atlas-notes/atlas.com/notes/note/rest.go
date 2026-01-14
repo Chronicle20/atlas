@@ -61,5 +61,5 @@ func Extract(r RestModel) (Model, error) {
 		SetMessage(r.Message).
 		SetFlag(r.Flag).
 		SetTimestamp(r.Timestamp).
-		Build(), nil
+		Build()
 }

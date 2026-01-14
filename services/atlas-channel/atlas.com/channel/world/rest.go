@@ -122,5 +122,5 @@ func Extract(r RestModel) (Model, error) {
 		SetRecommendedMessage(r.RecommendedMessage).
 		SetCapacityStatus(Status(r.CapacityStatus)).
 		SetChannels(cms).
-		Build(), nil
+		Build()
 }

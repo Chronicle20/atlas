@@ -16,7 +16,10 @@ func TestNewMonsterDropBuilder(t *testing.T) {
 		t.Fatal("Expected builder to be non-nil")
 	}
 
-	model := builder.Build()
+	model, err := builder.Build()
+	if err != nil {
+		t.Fatalf("Build() returned unexpected error: %v", err)
+	}
 
 	if model.TenantId() != tenantId {
 		t.Errorf("Expected TenantId %s, got %s", tenantId, model.TenantId())
@@ -30,7 +33,7 @@ func TestNewMonsterDropBuilder(t *testing.T) {
 func TestMonsterDropBuilderFluentAPI(t *testing.T) {
 	tenantId := uuid.New()
 
-	model := NewMonsterDropBuilder(tenantId, 0).
+	model, err := NewMonsterDropBuilder(tenantId, 0).
 		SetMonsterId(100100).
 		SetItemId(2000000).
 		SetMinimumQuantity(1).
@@ -38,6 +41,10 @@ func TestMonsterDropBuilderFluentAPI(t *testing.T) {
 		SetQuestId(1001).
 		SetChance(50000).
 		Build()
+
+	if err != nil {
+		t.Fatalf("Build() returned unexpected error: %v", err)
+	}
 
 	if model.MonsterId() != 100100 {
 		t.Errorf("Expected MonsterId 100100, got %d", model.MonsterId())
@@ -67,7 +74,10 @@ func TestMonsterDropBuilderFluentAPI(t *testing.T) {
 func TestMonsterDropBuilderDefaults(t *testing.T) {
 	tenantId := uuid.New()
 
-	model := NewMonsterDropBuilder(tenantId, 0).Build()
+	model, err := NewMonsterDropBuilder(tenantId, 0).Build()
+	if err != nil {
+		t.Fatalf("Build() returned unexpected error: %v", err)
+	}
 
 	// All numeric fields should default to 0
 	if model.MonsterId() != 0 {
@@ -92,6 +102,13 @@ func TestMonsterDropBuilderDefaults(t *testing.T) {
 
 	if model.Chance() != 0 {
 		t.Errorf("Expected default Chance 0, got %d", model.Chance())
+	}
+}
+
+func TestMonsterDropBuilderValidation_NilTenantId(t *testing.T) {
+	_, err := NewMonsterDropBuilder(uuid.Nil, 0).Build()
+	if err == nil {
+		t.Error("Expected error for nil tenantId, got nil")
 	}
 }
 

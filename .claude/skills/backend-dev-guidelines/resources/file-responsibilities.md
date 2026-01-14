@@ -22,10 +22,54 @@ Fluent API for constructing validated domain models. `Build()` enforces invarian
 Pure curried business functions plus `AndEmit` variants for Kafka emission. Dependency order: `NewProcessor(log, ctx, db)`.
 
 ## `administrator.go`
-High-level curried functions coordinating transactional DB operations; return `model.Provider[Entity]`.
+
+**Write operations** (Create, Update, Delete) that mutate database state. This file handles all state-changing database interactions.
+
+**Key Responsibilities:**
+- Define `create(db, ...)` functions that insert new entities and return the created model
+- Define `delete(db, ...)` functions that remove entities
+- Define `update(db, ...)` and `dynamicUpdate(db)` functions for modifying existing entities
+- Define `EntityUpdateFunction` type and `Set*` modifier functions for composable updates
+- All functions receive `*gorm.DB` and perform direct database mutations
+
+**Typical Signatures:**
+```go
+func create(db *gorm.DB, tenantId uuid.UUID, ...) (Model, error)
+func delete(db *gorm.DB, tenantId uuid.UUID, id uint32) error
+func dynamicUpdate(db *gorm.DB) func(modifiers ...EntityUpdateFunction) func(tenantId uuid.UUID) model.Operator[Model]
+
+type EntityUpdateFunction func() ([]string, func(e *entity))
+func SetLevel(level byte) EntityUpdateFunction
+func SetMeso(amount uint32) EntityUpdateFunction
+```
+
+**Pattern:** The `EntityUpdateFunction` pattern allows composable, selective field updates. Each `Set*` function returns the column names to update and a mutator function, enabling `dynamicUpdate` to batch multiple field changes into a single database operation.
 
 ## `provider.go`
-Lazy data access layer returning `model.Provider[T]`. Compose with `model.Map`, `model.SliceMap`, `model.ParallelMap`.
+
+**Read operations** (queries) that fetch data without side effects. This file handles all read-only database access.
+
+**Key Responsibilities:**
+- Define query functions returning `database.EntityProvider[T]` or `database.EntityProvider[[]T]`
+- Provide `modelFromEntity(e entity) (Model, error)` transformation function
+- Use `database.Query[T]` for single-entity lookups
+- Use `database.SliceQuery[T]` for multi-entity queries
+- Never modify database state
+
+**Typical Signatures:**
+```go
+func getById(tenantId uuid.UUID, id uint32) database.EntityProvider[entity]
+func getForAccountInWorld(tenantId uuid.UUID, accountId uint32, worldId world.Id) database.EntityProvider[[]entity]
+func getAll(tenantId uuid.UUID) database.EntityProvider[[]entity]
+func modelFromEntity(e entity) (Model, error)
+```
+
+**Pattern:** Provider functions are curried - they accept query parameters and return a function that takes `*gorm.DB` and returns `model.Provider[T]`. This enables lazy evaluation and composition with `model.Map`, `model.SliceMap`, and `model.ParallelMap`.
+
+**Why This Separation:**
+- **Testability** - Read and write operations can be mocked independently
+- **Pure composition** - Read path remains side-effect free, enabling functional composition
+- **Clear intent** - Code review can quickly identify state-changing operations
 
 ## `producer.go`
 Kafka message creation using context-aware header decorators via `producer.ProviderImpl(log)(ctx)`.

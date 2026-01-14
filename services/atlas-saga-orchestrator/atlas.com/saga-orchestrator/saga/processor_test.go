@@ -20,7 +20,6 @@ import (
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"testing"
-	"time"
 )
 
 func setupContext() (tenant.Model, context.Context) {
@@ -84,48 +83,40 @@ func TestCharacterCreationSagaIntegration(t *testing.T) {
 
 			// Create test saga with character creation step
 			transactionId := uuid.New()
-			saga := Saga{
-				TransactionId: transactionId,
-				SagaType:      CharacterCreation,
-				InitiatedBy:   "integration-test",
-				Steps: []Step[any]{
-					{
-						StepId: "create-character-step",
-						Status: Pending,
-						Action: CreateCharacter,
-						Payload: CharacterCreatePayload{
-							AccountId:    12345,
-							Name:         "IntegrationTestChar",
-							WorldId:      0,
-							Level:        1,
-							Strength:     13,
-							Dexterity:    4,
-							Intelligence: 4,
-							Luck:         4,
-							Hp:           50,
-							Mp:           5,
-							JobId:        job.Id(0),
-							Gender:       0,
-							Face:         20000,
-							Hair:         30000,
-							Skin:         0,
-							Top:          1040002,
-							Bottom:       1060002,
-							Shoes:        1072001,
-							Weapon:       1302000,
-							MapId:        _map.Id(100000000),
-						},
-						CreatedAt: time.Now(),
-						UpdatedAt: time.Now(),
-					},
-				},
-			}
+			saga, err := NewBuilder().
+				SetTransactionId(transactionId).
+				SetSagaType(CharacterCreation).
+				SetInitiatedBy("integration-test").
+				AddStep("create-character-step", Pending, CreateCharacter, CharacterCreatePayload{
+					AccountId:    12345,
+					Name:         "IntegrationTestChar",
+					WorldId:      0,
+					Level:        1,
+					Strength:     13,
+					Dexterity:    4,
+					Intelligence: 4,
+					Luck:         4,
+					Hp:           50,
+					Mp:           5,
+					JobId:        job.Id(0),
+					Gender:       0,
+					Face:         20000,
+					Hair:         30000,
+					Skin:         0,
+					Top:          1040002,
+					Bottom:       1060002,
+					Shoes:        1072001,
+					Weapon:       1302000,
+					MapId:        _map.Id(100000000),
+				}).
+				Build()
+			assert.NoError(t, err)
 
 			// Store saga in cache for processing
 			GetCache().Put(te.Id(), saga)
 
 			// Execute saga processing
-			err := processor.Step(saga.TransactionId)
+			err = processor.Step(saga.TransactionId())
 
 			// Verify results based on expected outcome
 			if tt.characterCreationResult != nil {
@@ -305,7 +296,10 @@ func TestCharacterCreationSagaCompensation(t *testing.T) {
 
 			// Create test saga with multiple steps
 			transactionId := uuid.New()
-			steps := make([]Step[any], 0)
+			builder := NewBuilder().
+				SetTransactionId(transactionId).
+				SetSagaType(CharacterCreation).
+				SetInitiatedBy("compensation-test")
 
 			for i, action := range tt.sagaSteps {
 				var payload any
@@ -351,28 +345,17 @@ func TestCharacterCreationSagaCompensation(t *testing.T) {
 					}
 				}
 
-				steps = append(steps, Step[any]{
-					StepId:    fmt.Sprintf("step-%d", i),
-					Status:    Pending,
-					Action:    action,
-					Payload:   payload,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				})
+				builder = builder.AddStep(fmt.Sprintf("step-%d", i), Pending, action, payload)
 			}
 
-			saga := Saga{
-				TransactionId: transactionId,
-				SagaType:      CharacterCreation,
-				InitiatedBy:   "compensation-test",
-				Steps:         steps,
-			}
+			saga, err := builder.Build()
+			assert.NoError(t, err)
 
 			// Store saga in cache for processing
 			GetCache().Put(te.Id(), saga)
 
 			// Execute saga processing
-			err := processor.Step(saga.TransactionId)
+			err = processor.Step(saga.TransactionId())
 
 			// Verify expected behavior
 			// Note: The Step method only processes one step at a time

@@ -41,7 +41,7 @@ func RegisterPinHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.
 				return
 			}
 
-			l.Debugf("Registering PIN [%s] for account [%d].", pin, s.AccountId())
+			l.Debugf("Registering PIN for account [%d].", s.AccountId())
 			err := account.NewProcessor(l, ctx).UpdatePin(s.AccountId(), pin)
 			if err != nil {
 				l.WithError(err).Errorf("Error updating PIN for account [%d].", s.AccountId())

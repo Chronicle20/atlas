@@ -25,6 +25,7 @@ type Processor interface {
 	TransitionMapAndEmit(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, characterId uint32, oldMapId _map.Id) error
 	TransitionChannel(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, oldChannelId channel.Id, characterId uint32, mapId _map.Id)
 	TransitionChannelAndEmit(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, oldChannelId channel.Id, characterId uint32, mapId _map.Id) error
+	GetCharactersInMap(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id) ([]uint32, error)
 }
 
 type ProcessorImpl struct {
@@ -101,4 +102,8 @@ func (p *ProcessorImpl) TransitionChannelAndEmit(transactionId uuid.UUID, worldI
 		p.TransitionChannel(buf)(transactionId, worldId, channelId, oldChannelId, characterId, mapId)
 		return nil
 	})
+}
+
+func (p *ProcessorImpl) GetCharactersInMap(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id) ([]uint32, error) {
+	return p.cp.GetCharactersInMap(transactionId, worldId, channelId, mapId)
 }

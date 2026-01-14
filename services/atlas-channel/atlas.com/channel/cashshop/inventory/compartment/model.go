@@ -2,6 +2,7 @@ package compartment
 
 import (
 	"atlas-channel/cashshop/inventory/asset"
+
 	"github.com/google/uuid"
 )
 
@@ -66,64 +67,4 @@ func (m Model) FindByTemplateId(templateId uint32) (*asset.Model, bool) {
 		}
 	}
 	return nil, false
-}
-
-// Clone creates a builder from this model
-func Clone(m Model) *ModelBuilder {
-	return &ModelBuilder{
-		id:        m.id,
-		accountId: m.accountId,
-		type_:     m.type_,
-		capacity:  m.capacity,
-		assets:    m.assets,
-	}
-}
-
-// ModelBuilder is a builder for the Model
-type ModelBuilder struct {
-	id        uuid.UUID
-	accountId uint32
-	type_     CompartmentType
-	capacity  uint32
-	assets    []asset.Model
-}
-
-// NewBuilder creates a new ModelBuilder
-func NewBuilder(id uuid.UUID, accountId uint32, type_ CompartmentType, capacity uint32) *ModelBuilder {
-	return &ModelBuilder{
-		id:        id,
-		accountId: accountId,
-		type_:     type_,
-		capacity:  capacity,
-		assets:    make([]asset.Model, 0),
-	}
-}
-
-// SetCapacity sets the capacity of this compartment
-func (b *ModelBuilder) SetCapacity(capacity uint32) *ModelBuilder {
-	b.capacity = capacity
-	return b
-}
-
-// AddAsset adds an asset to this compartment
-func (b *ModelBuilder) AddAsset(a asset.Model) *ModelBuilder {
-	b.assets = append(b.assets, a)
-	return b
-}
-
-// SetAssets sets all assets in this compartment
-func (b *ModelBuilder) SetAssets(as []asset.Model) *ModelBuilder {
-	b.assets = as
-	return b
-}
-
-// Build creates a Model from this builder
-func (b *ModelBuilder) Build() Model {
-	return Model{
-		id:        b.id,
-		accountId: b.accountId,
-		type_:     b.type_,
-		capacity:  b.capacity,
-		assets:    b.assets,
-	}
 }

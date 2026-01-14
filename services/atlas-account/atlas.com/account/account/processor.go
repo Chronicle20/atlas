@@ -132,7 +132,7 @@ func (p *ProcessorImpl) CreateAndEmit(name string, password string) (Model, erro
 func (p *ProcessorImpl) Create(mb *message.Buffer) func(name string) func(password string) (Model, error) {
 	return func(name string) func(password string) (Model, error) {
 		return func(password string) (Model, error) {
-			p.l.Debugf("Attempting to create account [%s] with password [%s].", name, password)
+			p.l.Debugf("Attempting to create account [%s].", name)
 			hashPass, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 			if err != nil {
 				p.l.WithError(err).Errorf("Error generating hash when creating account [%s].", name)
@@ -167,11 +167,11 @@ func (p *ProcessorImpl) Update(accountId uint32, input Model) (Model, error) {
 	var modifiers = make([]EntityUpdateFunction, 0)
 
 	if a.pin != input.pin && input.pin != "" {
-		p.l.Debugf("Updating PIN [%s] of account [%d].", input.pin, accountId)
+		p.l.Debugf("Updating PIN of account [%d].", accountId)
 		modifiers = append(modifiers, updatePin(input.pin))
 	}
 	if a.pic != input.pic && input.pic != "" {
-		p.l.Debugf("Updating PIC [%s] of account [%d].", input.pic, accountId)
+		p.l.Debugf("Updating PIC of account [%d].", accountId)
 		modifiers = append(modifiers, updatePic(input.pic))
 	}
 	if a.tos != input.tos && input.tos != false {
@@ -362,7 +362,7 @@ func (p *ProcessorImpl) ProgressState(mb *message.Buffer) func(sessionId uuid.UU
 				p.l.WithError(err).Errorf("Unable to logout account.")
 				return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), SystemError))
 			}
-			return mb.Put(account2.EnvEventSessionStatusTopic, stateChangedStatusProvider(sessionId, a.Id(), StateNotLoggedIn, params))
+			return mb.Put(account2.EnvEventSessionStatusTopic, stateChangedStatusProvider(sessionId, a.Id(), uint8(StateNotLoggedIn), params))
 		}
 		if state == StateLoggedIn {
 			err = p.Login(mb)(sessionId)(accountId)(issuer)
@@ -370,14 +370,14 @@ func (p *ProcessorImpl) ProgressState(mb *message.Buffer) func(sessionId uuid.UU
 				p.l.WithError(err).Errorf("Unable to login account.")
 				return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), SystemError))
 			}
-			return mb.Put(account2.EnvEventSessionStatusTopic, stateChangedStatusProvider(sessionId, a.Id(), StateLoggedIn, params))
+			return mb.Put(account2.EnvEventSessionStatusTopic, stateChangedStatusProvider(sessionId, a.Id(), uint8(StateLoggedIn), params))
 		}
 		if state == StateTransition {
 			err = Get().Transition(AccountKey{Tenant: p.t, AccountId: accountId}, ServiceKey{SessionId: sessionId, Service: Service(issuer)})
 			if err == nil {
 				p.l.Debugf("State transition triggered a transition.")
 			}
-			return mb.Put(account2.EnvEventSessionStatusTopic, stateChangedStatusProvider(sessionId, a.Id(), StateTransition, params))
+			return mb.Put(account2.EnvEventSessionStatusTopic, stateChangedStatusProvider(sessionId, a.Id(), uint8(StateTransition), params))
 		}
 		return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, 0, SystemError))
 	}

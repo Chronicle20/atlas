@@ -44,7 +44,8 @@ func (a Model) PIN() string {
 	return a.pin
 }
 
-type builder struct {
+// Builder is used to construct a Model instance
+type Builder struct {
 	id             uint32
 	name           string
 	password       string
@@ -60,89 +61,122 @@ type builder struct {
 	characterSlots int16
 }
 
-func NewBuilder() *builder {
-	return &builder{}
+// NewBuilder creates a new Builder instance
+func NewBuilder() *Builder {
+	return &Builder{}
 }
 
-func (a *builder) SetId(id uint32) *builder {
-	a.id = id
-	return a
+// SetId sets the id field
+func (b *Builder) SetId(id uint32) *Builder {
+	b.id = id
+	return b
 }
 
-func (a *builder) SetName(name string) *builder {
-	a.name = name
-	return a
+// SetName sets the name field
+func (b *Builder) SetName(name string) *Builder {
+	b.name = name
+	return b
 }
 
-func (a *builder) SetPassword(password string) *builder {
-	a.password = password
-	return a
+// SetPassword sets the password field
+func (b *Builder) SetPassword(password string) *Builder {
+	b.password = password
+	return b
 }
 
-func (a *builder) SetPin(pin string) *builder {
-	a.pin = pin
-	return a
+// SetPin sets the pin field
+func (b *Builder) SetPin(pin string) *Builder {
+	b.pin = pin
+	return b
 }
 
-func (a *builder) SetPic(pic string) *builder {
-	a.pic = pic
-	return a
+// SetPic sets the pic field
+func (b *Builder) SetPic(pic string) *Builder {
+	b.pic = pic
+	return b
 }
 
-func (a *builder) SetLoggedIn(loggedIn int) *builder {
-	a.loggedIn = loggedIn
-	return a
+// SetLoggedIn sets the loggedIn field
+func (b *Builder) SetLoggedIn(loggedIn int) *Builder {
+	b.loggedIn = loggedIn
+	return b
 }
 
-func (a *builder) SetLastLogin(lastLogin uint64) *builder {
-	a.lastLogin = lastLogin
-	return a
+// SetLastLogin sets the lastLogin field
+func (b *Builder) SetLastLogin(lastLogin uint64) *Builder {
+	b.lastLogin = lastLogin
+	return b
 }
 
-func (a *builder) SetGender(gender byte) *builder {
-	a.gender = gender
-	return a
+// SetGender sets the gender field
+func (b *Builder) SetGender(gender byte) *Builder {
+	b.gender = gender
+	return b
 }
 
-func (a *builder) SetBanned(banned bool) *builder {
-	a.banned = banned
-	return a
+// SetBanned sets the banned field
+func (b *Builder) SetBanned(banned bool) *Builder {
+	b.banned = banned
+	return b
 }
 
-func (a *builder) SetTos(tos bool) *builder {
-	a.tos = tos
-	return a
+// SetTos sets the tos field
+func (b *Builder) SetTos(tos bool) *Builder {
+	b.tos = tos
+	return b
 }
 
-func (a *builder) SetLanguage(language string) *builder {
-	a.language = language
-	return a
+// SetLanguage sets the language field
+func (b *Builder) SetLanguage(language string) *Builder {
+	b.language = language
+	return b
 }
 
-func (a *builder) SetCountry(country string) *builder {
-	a.country = country
-	return a
+// SetCountry sets the country field
+func (b *Builder) SetCountry(country string) *Builder {
+	b.country = country
+	return b
 }
 
-func (a *builder) SetCharacterSlots(characterSlots int16) *builder {
-	a.characterSlots = characterSlots
-	return a
+// SetCharacterSlots sets the characterSlots field
+func (b *Builder) SetCharacterSlots(characterSlots int16) *Builder {
+	b.characterSlots = characterSlots
+	return b
 }
 
-func (a *builder) Build() Model {
+// Build creates a new Model instance with the Builder's values
+func (b *Builder) Build() Model {
 	return Model{
-		id:             a.id,
-		name:           a.name,
-		password:       a.password,
-		pin:            a.pin,
-		pic:            a.pic,
-		loggedIn:       a.loggedIn,
-		lastLogin:      a.lastLogin,
-		gender:         a.gender,
-		banned:         a.banned,
-		tos:            a.tos,
-		language:       a.language,
-		country:        a.country,
-		characterSlots: a.characterSlots,
+		id:             b.id,
+		name:           b.name,
+		password:       b.password,
+		pin:            b.pin,
+		pic:            b.pic,
+		loggedIn:       b.loggedIn,
+		lastLogin:      b.lastLogin,
+		gender:         b.gender,
+		banned:         b.banned,
+		tos:            b.tos,
+		language:       b.language,
+		country:        b.country,
+		characterSlots: b.characterSlots,
 	}
+}
+
+// ToBuilder creates a Builder initialized with the Model's values
+func (m Model) ToBuilder() *Builder {
+	return NewBuilder().
+		SetId(m.id).
+		SetName(m.name).
+		SetPassword(m.password).
+		SetPin(m.pin).
+		SetPic(m.pic).
+		SetLoggedIn(m.loggedIn).
+		SetLastLogin(m.lastLogin).
+		SetGender(m.gender).
+		SetBanned(m.banned).
+		SetTos(m.tos).
+		SetLanguage(m.language).
+		SetCountry(m.country).
+		SetCharacterSlots(m.characterSlots)
 }

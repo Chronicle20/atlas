@@ -129,8 +129,11 @@ func Extract(r RestModel) (Model, error) {
 		if err != nil {
 			return Model{}, err
 		}
-		sm = sm.Builder().SetRouteId(r.ID).Build()
-		schedule = append(schedule, sm)
+		smWithRoute, err := sm.Builder().SetRouteId(r.ID).Build()
+		if err != nil {
+			return Model{}, err
+		}
+		schedule = append(schedule, smWithRoute)
 	}
 
 	return NewBuilder(r.Name).
@@ -142,7 +145,7 @@ func Extract(r RestModel) (Model, error) {
 		SetState(RouteState(r.State)).
 		SetSchedule(schedule).
 		SetCycleInterval(r.CycleInterval).
-		Build(), nil
+		Build()
 }
 
 // TripScheduleRestModel is the JSON:API resource for a trip schedule
@@ -192,5 +195,5 @@ func ExtractSchedule(r TripScheduleRestModel) (TripScheduleModel, error) {
 		SetBoardingClosed(r.BoardingClosed).
 		SetDeparture(r.Departure).
 		SetArrival(r.Arrival).
-		Build(), nil
+		Build()
 }

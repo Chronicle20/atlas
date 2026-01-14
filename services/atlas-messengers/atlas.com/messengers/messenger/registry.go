@@ -47,12 +47,11 @@ func (r *Registry) Create(t tenant.Model, characterId uint32) Model {
 	r.tenantLock[t] = tenantLock
 	r.lock.Unlock()
 
-	m := Model{
-		tenantId: t.Id(),
-		id:       messengerId,
-		members:  make([]MemberModel, 0),
-	}
-	m = m.AddMember(characterId)
+	m, _ := NewBuilder().
+		SetTenantId(t.Id()).
+		SetId(messengerId).
+		AddMember(characterId, 0).
+		Build()
 
 	tenantLock.Lock()
 	messengerReg[messengerId] = m
@@ -107,7 +106,7 @@ func (r *Registry) Update(t tenant.Model, id uint32, updaters ...func(m Model) M
 		m = updater(m)
 	}
 
-	if len(m.members) > 6 {
+	if len(m.members) > MaxMembers {
 		return Model{}, ErrAtCapacity
 	}
 

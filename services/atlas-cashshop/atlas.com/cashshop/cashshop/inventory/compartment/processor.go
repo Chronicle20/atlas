@@ -2,11 +2,13 @@ package compartment
 
 import (
 	"atlas-cashshop/cashshop/inventory/asset"
+	"atlas-cashshop/cashshop/item"
 	"atlas-cashshop/kafka/message"
 	"atlas-cashshop/kafka/message/cashshop/compartment"
 	"atlas-cashshop/kafka/producer"
 	compartmentProducer "atlas-cashshop/kafka/producer/cashshop/inventory/compartment"
 	"context"
+	"encoding/json"
 	"errors"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
@@ -34,31 +36,33 @@ type Processor interface {
 	DeleteAndEmit(id uuid.UUID) error
 	DeleteAllByAccountId(mb *message.Buffer) func(accountId uint32) error
 	DeleteAllByAccountIdAndEmit(accountId uint32) error
-	AcceptAndEmit(accountId uint32, id uuid.UUID, type_ CompartmentType, assetId uint32, transactionId uuid.UUID) error
-	Accept(mb *message.Buffer) func(accountId uint32, id uuid.UUID, type_ CompartmentType, assetId uint32, transactionId uuid.UUID) error
+	AcceptAndEmit(accountId uint32, id uuid.UUID, type_ CompartmentType, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, transactionId uuid.UUID) error
+	Accept(mb *message.Buffer) func(accountId uint32, id uuid.UUID, type_ CompartmentType, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, transactionId uuid.UUID) error
 	ReleaseAndEmit(accountId uint32, id uuid.UUID, type_ CompartmentType, assetId uint32, transactionId uuid.UUID) error
 	Release(mb *message.Buffer) func(accountId uint32, id uuid.UUID, type_ CompartmentType, assetId uint32, transactionId uuid.UUID) error
 }
 
 // ProcessorImpl implements the Processor interface
 type ProcessorImpl struct {
-	l   logrus.FieldLogger
-	ctx context.Context
-	db  *gorm.DB
-	t   tenant.Model
-	p   producer.Provider
-	cap asset.Processor
+	l    logrus.FieldLogger
+	ctx  context.Context
+	db   *gorm.DB
+	t    tenant.Model
+	p    producer.Provider
+	cap  asset.Processor
+	itmP item.Processor
 }
 
 // NewProcessor creates a new Processor instance
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
 	p := &ProcessorImpl{
-		l:   l,
-		ctx: ctx,
-		db:  db,
-		t:   tenant.MustFromContext(ctx),
-		p:   producer.ProviderImpl(l)(ctx),
-		cap: asset.NewProcessor(l, ctx, db),
+		l:    l,
+		ctx:  ctx,
+		db:   db,
+		t:    tenant.MustFromContext(ctx),
+		p:    producer.ProviderImpl(l)(ctx),
+		cap:  asset.NewProcessor(l, ctx, db),
+		itmP: item.NewProcessor(l, ctx, db),
 	}
 	return p
 }
@@ -66,12 +70,13 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 // WithTransaction returns a new Processor with the given transaction
 func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 	return &ProcessorImpl{
-		l:   p.l,
-		ctx: p.ctx,
-		db:  tx,
-		t:   p.t,
-		p:   p.p,
-		cap: p.cap,
+		l:    p.l,
+		ctx:  p.ctx,
+		db:   tx,
+		t:    p.t,
+		p:    p.p,
+		cap:  p.cap,
+		itmP: p.itmP,
 	}
 }
 
@@ -279,15 +284,15 @@ func (p *ProcessorImpl) DeleteAllByAccountIdAndEmit(accountId uint32) error {
 	return nil
 }
 
-func (p *ProcessorImpl) AcceptAndEmit(accountId uint32, id uuid.UUID, type_ CompartmentType, assetId uint32, transactionId uuid.UUID) error {
+func (p *ProcessorImpl) AcceptAndEmit(accountId uint32, id uuid.UUID, type_ CompartmentType, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, transactionId uuid.UUID) error {
 	return message.Emit(p.p)(func(buf *message.Buffer) error {
-		return p.Accept(buf)(accountId, id, type_, assetId, transactionId)
+		return p.Accept(buf)(accountId, id, type_, templateId, referenceId, referenceType, referenceData, transactionId)
 	})
 }
 
-func (p *ProcessorImpl) Accept(mb *message.Buffer) func(accountId uint32, id uuid.UUID, type_ CompartmentType, assetId uint32, transactionId uuid.UUID) error {
-	return func(accountId uint32, id uuid.UUID, type_ CompartmentType, assetId uint32, transactionId uuid.UUID) error {
-		p.l.Debugf("Handling accepting asset for account [%d], compartment [%s], type [%d].", accountId, id, type_)
+func (p *ProcessorImpl) Accept(mb *message.Buffer) func(accountId uint32, id uuid.UUID, type_ CompartmentType, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, transactionId uuid.UUID) error {
+	return func(accountId uint32, id uuid.UUID, type_ CompartmentType, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, transactionId uuid.UUID) error {
+		p.l.Debugf("Handling accepting asset for account [%d], compartment [%s], type [%d], template [%d].", accountId, id, type_, templateId)
 
 		// Get the compartment
 		ccm, err := p.GetById(id)
@@ -297,10 +302,43 @@ func (p *ProcessorImpl) Accept(mb *message.Buffer) func(accountId uint32, id uui
 			return err
 		}
 
-		// Create the asset entity in the database
-		_, err = p.cap.Create(mb)(id)(assetId)
+		// Parse quantity and purchasedBy from ReferenceData
+		quantity := uint32(1)
+		purchasedBy := accountId // Default to the account accepting the item
+
+		if len(referenceData) > 0 {
+			var cashData struct {
+				Quantity    uint32 `json:"quantity"`
+				OwnerId     uint32 `json:"ownerId"`
+				PurchasedBy uint32 `json:"purchasedBy"`
+			}
+			if err := json.Unmarshal(referenceData, &cashData); err == nil {
+				if cashData.Quantity > 0 {
+					quantity = cashData.Quantity
+				}
+				if cashData.PurchasedBy > 0 {
+					purchasedBy = cashData.PurchasedBy
+				} else if cashData.OwnerId > 0 {
+					purchasedBy = cashData.OwnerId
+				}
+				p.l.Debugf("Parsed cash item data from ReferenceData: quantity=%d, purchasedBy=%d", quantity, purchasedBy)
+			} else {
+				p.l.WithError(err).Warnf("Failed to parse ReferenceData for cash item, using defaults")
+			}
+		}
+
+		// Create the cash item with the template ID and quantity
+		im, err := p.itmP.Create(mb)(templateId)(quantity)(purchasedBy)
 		if err != nil {
-			p.l.WithError(err).Errorf("Unable to create asset for compartment [%s] with item ID [%d].", id, assetId)
+			p.l.WithError(err).Errorf("Unable to create cash item for compartment [%s] with template ID [%d].", id, templateId)
+			_ = mb.Put(compartment.EnvEventTopicStatus, compartmentProducer.ErrorStatusEventProvider(id, byte(type_), "ITEM_CREATION_FAILED", transactionId))
+			return err
+		}
+
+		// Create the asset entity linking the item to the compartment
+		_, err = p.cap.Create(mb)(id)(im.Id())
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to create asset for compartment [%s] with item ID [%d].", id, im.Id())
 			_ = mb.Put(compartment.EnvEventTopicStatus, compartmentProducer.ErrorStatusEventProvider(id, byte(type_), "ASSET_CREATION_FAILED", transactionId))
 			return err
 		}

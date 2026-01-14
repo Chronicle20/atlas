@@ -4,27 +4,9 @@ import (
 	"atlas-monster-death/kafka/producer"
 	"atlas-monster-death/monster/drop/position"
 	"context"
-	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
 	"math/rand"
 )
-
-func byMonsterIdProvider(l logrus.FieldLogger) func(ctx context.Context) func(monsterId uint32) model.Provider[[]Model] {
-	return func(ctx context.Context) func(monsterId uint32) model.Provider[[]Model] {
-		return func(monsterId uint32) model.Provider[[]Model] {
-			return requests.SliceProvider[RestModel, Model](l, ctx)(requestForMonster(monsterId), Extract, model.Filters[Model]())
-		}
-	}
-}
-
-func GetByMonsterId(l logrus.FieldLogger) func(ctx context.Context) func(monsterId uint32) ([]Model, error) {
-	return func(ctx context.Context) func(monsterId uint32) ([]Model, error) {
-		return func(monsterId uint32) ([]Model, error) {
-			return byMonsterIdProvider(l)(ctx)(monsterId)()
-		}
-	}
-}
 
 func Create(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, index int, monsterId uint32, x int16, y int16, killerId uint32, dropType byte, m Model) error {
 	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, index int, monsterId uint32, x int16, y int16, killerId uint32, dropType byte, m Model) error {

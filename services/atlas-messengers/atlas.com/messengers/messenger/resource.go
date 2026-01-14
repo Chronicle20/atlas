@@ -41,7 +41,8 @@ func handleGetMessengers(d *rest.HandlerDependency, c *rest.HandlerContext) http
 			filters = append(filters, MemberFilter(uint32(memberId)))
 		}
 
-		ps, err := GetSlice(d.Context())(filters...)
+		proc := NewProcessor(d.Logger(), d.Context())
+		ps, err := proc.GetSlice(filters...)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -61,7 +62,8 @@ func handleGetMessengers(d *rest.HandlerDependency, c *rest.HandlerContext) http
 func handleGetMessenger(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseMessengerId(d.Logger(), func(messengerId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			p, err := GetById(d.Context())(messengerId)
+			proc := NewProcessor(d.Logger(), d.Context())
+			p, err := proc.GetById(messengerId)
 			if err != nil {
 				w.WriteHeader(http.StatusNotFound)
 				return
@@ -82,7 +84,8 @@ func handleGetMessenger(d *rest.HandlerDependency, c *rest.HandlerContext) http.
 func handleGetMessengerMembers(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseMessengerId(d.Logger(), func(messengerId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			p, err := GetById(d.Context())(messengerId)
+			proc := NewProcessor(d.Logger(), d.Context())
+			p, err := proc.GetById(messengerId)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
@@ -119,13 +122,14 @@ func handleGetMessengerMember(d *rest.HandlerDependency, c *rest.HandlerContext)
 	return rest.ParseMessengerId(d.Logger(), func(messengerId uint32) http.HandlerFunc {
 		return rest.ParseMemberId(d.Logger(), func(memberId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				p, err := GetById(d.Context())(messengerId)
+				proc := NewProcessor(d.Logger(), d.Context())
+				p, err := proc.GetById(messengerId)
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
 
-				m, err := model.FirstProvider(model.FixedProvider(p.members), model.Filters[MemberModel](func(m MemberModel) bool {
+				m, err := model.FirstProvider(model.FixedProvider(p.Members()), model.Filters[MemberModel](func(m MemberModel) bool {
 					return m.Id() == memberId
 				}))()
 				if err != nil {

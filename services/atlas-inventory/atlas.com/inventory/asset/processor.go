@@ -13,6 +13,7 @@ import (
 	"atlas-inventory/pet"
 	"atlas-inventory/stackable"
 	"context"
+	"encoding/json"
 	"errors"
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/item"
@@ -24,6 +25,31 @@ import (
 	"math"
 	"time"
 )
+
+type Provider interface {
+	WithTransaction(tx *gorm.DB) *Processor
+	WithConsumableProcessor(conp consumable.Processor) *Processor
+	ByCompartmentIdProvider(compartmentId uuid.UUID) model.Provider[[]Model[any]]
+	GetByCompartmentId(compartmentId uuid.UUID) ([]Model[any], error)
+	GetBySlot(compartmentId uuid.UUID, slot int16) (Model[any], error)
+	BySlotProvider(compartmentId uuid.UUID) func(slot int16) model.Provider[Model[any]]
+	GetByReferenceId(referenceId uint32, referenceType ReferenceType) (Model[any], error)
+	ByReferenceIdProvider(referenceId uint32, referenceType ReferenceType) model.Provider[Model[any]]
+	ByIdProvider(id uint32) model.Provider[Model[any]]
+	GetById(id uint32) (Model[any], error)
+	GetSlotMax(templateId uint32) (uint32, error)
+	Delete(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID) func(a Model[any]) error
+	Drop(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID) func(a Model[any]) error
+	UpdateSlot(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, ap model.Provider[Model[any]], sp model.Provider[int16]) error
+	UpdateQuantity(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, a Model[any], quantity uint32) error
+	RelayUpdateAndEmit(transactionId uuid.UUID, characterId uint32, referenceId uint32, referenceType ReferenceType, referenceData interface{}) error
+	DeleteAndEmit(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, assetId uint32) error
+	RelayUpdate(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, referenceId uint32, referenceType ReferenceType, referenceData interface{}) error
+	Create(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, templateId uint32, slot int16, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64) (Model[any], error)
+	Acquire(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, templateId uint32, slot int16, quantity uint32, referenceId uint32) (Model[any], error)
+	Accept(mb *message.Buffer) func(characterId uint32, compartmentId uuid.UUID, type_ inventory.Type, slot int16, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) (Model[any], error)
+	Release(mb *message.Buffer) func(characterId uint32, compartmentId uuid.UUID) func(a Model[any]) error
+}
 
 type Processor struct {
 	l                   logrus.FieldLogger
@@ -633,32 +659,78 @@ func (p *Processor) Acquire(mb *message.Buffer) func(transactionId uuid.UUID, ch
 	}
 }
 
-func (p *Processor) Accept(mb *message.Buffer) func(characterId uint32, compartmentId uuid.UUID, type_ inventory.Type, slot int16, cashItemId uint32) (Model[any], error) {
-	return func(characterId uint32, compartmentId uuid.UUID, type_ inventory.Type, slot int16, cashItemId uint32) (Model[any], error) {
-		// TODO this eventually needs to not be cash item specific
-		p.l.Debugf("Character [%d] attempting to acquire cash item [%d] in slot [%d] of compartment [%s].", characterId, cashItemId, slot, compartmentId.String())
+func (p *Processor) Accept(mb *message.Buffer) func(characterId uint32, compartmentId uuid.UUID, type_ inventory.Type, slot int16, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) (Model[any], error) {
+	return func(characterId uint32, compartmentId uuid.UUID, type_ inventory.Type, slot int16, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) (Model[any], error) {
+		p.l.Debugf("Character [%d] attempting to accept asset template [%d] (type: %s, referenceId: %d) in slot [%d] of compartment [%s].", characterId, templateId, referenceType, referenceId, slot, compartmentId.String())
 		var a Model[any]
 		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
-			// For cash items, we use ReferenceTypeCash
-			var referenceType ReferenceType
-			if type_ == inventory.TypeValueEquip {
-				referenceType = ReferenceTypeCashEquipable
-			} else {
-				referenceType = ReferenceTypeCash
+			// Create the asset with the provided reference data
+			expiration := time.Time{} // Default to no expiration
+
+			// Convert referenceType string to ReferenceType
+			var refType ReferenceType
+			switch referenceType {
+			case "EQUIPABLE", "equipable":
+				refType = ReferenceTypeEquipable
+			case "CASH_EQUIPABLE", "cash_equipable":
+				refType = ReferenceTypeCashEquipable
+			case "CONSUMABLE", "consumable":
+				refType = ReferenceTypeConsumable
+			case "SETUP", "setup":
+				refType = ReferenceTypeSetup
+			case "ETC", "etc":
+				refType = ReferenceTypeEtc
+			case "CASH", "cash":
+				refType = ReferenceTypeCash
+			case "PET", "pet":
+				refType = ReferenceTypePet
+			default:
+				p.l.Warnf("Unknown reference type [%s], defaulting to etc", referenceType)
+				refType = ReferenceTypeEtc
 			}
 
-			// Verify the cash item exists
-			ci, err := p.cashProcessor.GetById(cashItemId)
+			// Create the asset with the full reference data
+			var err error
+			a, err = create(p.db, p.t.Id(), compartmentId, templateId, slot, expiration, referenceId, refType)
 			if err != nil {
 				return err
 			}
 
-			// Create the asset with the cash item reference
-			expiration := time.Time{} // Cash items typically don't expire
-			a, err = create(p.db, p.t.Id(), compartmentId, ci.TemplateId(), slot, expiration, cashItemId, referenceType)
-			if err != nil {
-				return err
+			// For stackable items, parse the ReferenceData and create the stackable record
+			if refType == ReferenceTypeConsumable || refType == ReferenceTypeSetup || refType == ReferenceTypeEtc || refType == ReferenceTypeCash {
+				// Default values
+				quantity := uint32(1)
+				ownerId := uint32(0)
+				flag := uint16(0)
+				rechargeable := uint64(0)
+
+				// Parse ReferenceData if present
+				if len(referenceData) > 0 {
+					var stackableData struct {
+						Quantity     uint32 `json:"quantity"`
+						OwnerId      uint32 `json:"ownerId"`
+						Flag         uint16 `json:"flag"`
+						Rechargeable uint64 `json:"rechargeable"`
+					}
+					if unmarshalErr := json.Unmarshal(referenceData, &stackableData); unmarshalErr == nil {
+						quantity = stackableData.Quantity
+						ownerId = stackableData.OwnerId
+						flag = stackableData.Flag
+						rechargeable = stackableData.Rechargeable
+						p.l.Debugf("Parsed stackable data from ReferenceData: quantity=%d, ownerId=%d, flag=%d, rechargeable=%d", quantity, ownerId, flag, rechargeable)
+					} else {
+						p.l.WithError(unmarshalErr).Warnf("Failed to parse ReferenceData for stackable item, using defaults")
+					}
+				}
+
+				// Create the stackable record with the compartmentId
+				_, err = p.stackableProcessor.WithTransaction(tx).Create(compartmentId, quantity, ownerId, flag, rechargeable)
+				if err != nil {
+					p.l.WithError(err).Errorf("Unable to create stackable data for compartment [%s].", compartmentId.String())
+					return err
+				}
 			}
+
 			return nil
 		})
 		if txErr != nil {

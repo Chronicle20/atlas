@@ -83,7 +83,7 @@ func AwardItemCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fu
 						return err
 					}
 					for _, id := range cids {
-						err = sp.Create(saga.NewBuilder().
+						s, buildErr := saga.NewBuilder().
 							SetSagaType(saga.InventoryTransaction).
 							SetInitiatedBy("atlas-messages").
 							AddStep("give_item", saga.Pending, saga.AwardInventory, saga.AwardItemActionPayload{
@@ -93,7 +93,12 @@ func AwardItemCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fu
 									Quantity:   quantity,
 								},
 							}).
-							Build())
+							Build()
+						if buildErr != nil {
+							l.WithError(buildErr).Errorf("Unable to build saga for item award to [%d].", id)
+							continue
+						}
+						err = sp.Create(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to award [%d] with (%d) item [%d].", id, quantity, templateId)
 						}

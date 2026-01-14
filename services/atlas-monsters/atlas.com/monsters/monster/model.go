@@ -57,59 +57,59 @@ func NewMonster(worldId byte, channelId byte, mapId uint32, uniqueId uint32, mon
 	}
 }
 
-func (m *Model) UniqueId() uint32 {
+func (m Model) UniqueId() uint32 {
 	return m.uniqueId
 }
 
-func (m *Model) WorldId() byte {
+func (m Model) WorldId() byte {
 	return m.worldId
 }
 
-func (m *Model) ChannelId() byte {
+func (m Model) ChannelId() byte {
 	return m.channelId
 }
 
-func (m *Model) MapId() uint32 {
+func (m Model) MapId() uint32 {
 	return m.mapId
 }
 
-func (m *Model) Hp() uint32 {
+func (m Model) Hp() uint32 {
 	return m.hp
 }
 
-func (m *Model) MonsterId() uint32 {
+func (m Model) MonsterId() uint32 {
 	return m.monsterId
 }
 
-func (m *Model) ControlCharacterId() uint32 {
+func (m Model) ControlCharacterId() uint32 {
 	return m.controlCharacterId
 }
 
-func (m *Model) Fh() int16 {
+func (m Model) Fh() int16 {
 	return m.fh
 }
 
-func (m *Model) Team() int8 {
+func (m Model) Team() int8 {
 	return m.team
 }
 
-func (m *Model) X() int16 {
+func (m Model) X() int16 {
 	return m.x
 }
 
-func (m *Model) Y() int16 {
+func (m Model) Y() int16 {
 	return m.y
 }
 
-func (m *Model) Stance() byte {
+func (m Model) Stance() byte {
 	return m.stance
 }
 
-func (m *Model) DamageEntries() []entry {
+func (m Model) DamageEntries() []entry {
 	return m.damageEntries
 }
 
-func (m *Model) DamageSummary() []entry {
+func (m Model) DamageSummary() []entry {
 	var damageSummary = make(map[uint32]uint32)
 	for _, x := range m.damageEntries {
 		if _, ok := damageSummary[x.CharacterId]; ok {
@@ -129,100 +129,40 @@ func (m *Model) DamageSummary() []entry {
 	return results
 }
 
-func (m *Model) Move(x int16, y int16, stance byte) Model {
-	return Model{
-		uniqueId:           m.UniqueId(),
-		worldId:            m.WorldId(),
-		channelId:          m.ChannelId(),
-		mapId:              m.MapId(),
-		maxHp:              m.MaxHp(),
-		hp:                 m.Hp(),
-		maxMp:              m.MaxMp(),
-		mp:                 m.Mp(),
-		monsterId:          m.MonsterId(),
-		controlCharacterId: m.ControlCharacterId(),
-		x:                  x,
-		y:                  y,
-		fh:                 m.Fh(),
-		stance:             stance,
-		team:               m.Team(),
-		damageEntries:      m.DamageEntries(),
-	}
+func (m Model) Move(x int16, y int16, stance byte) Model {
+	return Clone(m).
+		SetX(x).
+		SetY(y).
+		SetStance(stance).
+		Build()
 }
 
-func (m *Model) Control(characterId uint32) Model {
-	return Model{
-		uniqueId:           m.UniqueId(),
-		worldId:            m.WorldId(),
-		channelId:          m.ChannelId(),
-		mapId:              m.MapId(),
-		maxHp:              m.MaxHp(),
-		hp:                 m.Hp(),
-		maxMp:              m.MaxMp(),
-		mp:                 m.Mp(),
-		monsterId:          m.MonsterId(),
-		controlCharacterId: characterId,
-		x:                  m.X(),
-		y:                  m.Y(),
-		fh:                 m.Fh(),
-		stance:             m.Stance(),
-		team:               m.Team(),
-		damageEntries:      m.DamageEntries(),
-	}
+func (m Model) Control(characterId uint32) Model {
+	return Clone(m).
+		SetControlCharacterId(characterId).
+		Build()
 }
 
-func (m *Model) ClearControl() Model {
-	return Model{
-		uniqueId:           m.UniqueId(),
-		worldId:            m.WorldId(),
-		channelId:          m.ChannelId(),
-		mapId:              m.MapId(),
-		maxHp:              m.MaxHp(),
-		hp:                 m.Hp(),
-		maxMp:              m.MaxMp(),
-		mp:                 m.Mp(),
-		monsterId:          m.MonsterId(),
-		controlCharacterId: 0,
-		x:                  m.X(),
-		y:                  m.Y(),
-		fh:                 m.Fh(),
-		stance:             m.Stance(),
-		team:               m.Team(),
-		damageEntries:      m.DamageEntries(),
-	}
+func (m Model) ClearControl() Model {
+	return Clone(m).
+		SetControlCharacterId(0).
+		Build()
 }
 
-func (m *Model) Damage(characterId uint32, damage uint32) Model {
+func (m Model) Damage(characterId uint32, damage uint32) Model {
 	actualDamage := m.Hp() - uint32(math.Max(float64(m.Hp())-float64(damage), 0))
 
-	return Model{
-		uniqueId:           m.UniqueId(),
-		worldId:            m.WorldId(),
-		channelId:          m.ChannelId(),
-		mapId:              m.MapId(),
-		maxHp:              m.MaxHp(),
-		hp:                 m.Hp() - actualDamage,
-		maxMp:              m.MaxMp(),
-		mp:                 m.Mp(),
-		monsterId:          m.MonsterId(),
-		controlCharacterId: m.ControlCharacterId(),
-		x:                  m.X(),
-		y:                  m.Y(),
-		fh:                 m.Fh(),
-		stance:             m.Stance(),
-		team:               m.Team(),
-		damageEntries: append(m.DamageEntries(), entry{
-			CharacterId: characterId,
-			Damage:      actualDamage,
-		}),
-	}
+	return Clone(m).
+		SetHp(m.Hp() - actualDamage).
+		AddDamageEntry(characterId, actualDamage).
+		Build()
 }
 
-func (m *Model) Alive() bool {
+func (m Model) Alive() bool {
 	return m.Hp() > 0
 }
 
-func (m *Model) DamageLeader() uint32 {
+func (m Model) DamageLeader() uint32 {
 	index := -1
 	for i, x := range m.damageEntries {
 		if index == -1 {
@@ -234,14 +174,14 @@ func (m *Model) DamageLeader() uint32 {
 	return m.damageEntries[index].CharacterId
 }
 
-func (m *Model) MaxHp() uint32 {
+func (m Model) MaxHp() uint32 {
 	return m.maxHp
 }
 
-func (m *Model) MaxMp() uint32 {
+func (m Model) MaxMp() uint32 {
 	return m.maxMp
 }
 
-func (m *Model) Mp() uint32 {
+func (m Model) Mp() uint32 {
 	return m.mp
 }

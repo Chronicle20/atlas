@@ -27,6 +27,7 @@ type Entity struct {
 	Slot       *int8            `gorm:"not null;default:-1"`
 	Excludes   []exclude.Entity `gorm:"foreignkey:PetId"`
 	Flag       uint16           `gorm:"not null;default:0"`
+	PurchaseBy uint32           `gorm:"not null;default:0"`
 }
 
 func (e Entity) TableName() string {
@@ -46,5 +47,6 @@ func Make(e Entity) (Model, error) {
 		SetSlot(*e.Slot).
 		SetExcludes(es).
 		SetFlag(e.Flag).
-		Build(), nil
+		SetPurchaseBy(e.PurchaseBy).
+		Build()
 }

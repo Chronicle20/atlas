@@ -1,6 +1,9 @@
 package compartment
 
-import "github.com/google/uuid"
+import (
+	"encoding/json"
+	"github.com/google/uuid"
+)
 
 const (
 	EnvCommandTopic = "COMMAND_TOPIC_STORAGE_COMPARTMENT"
@@ -10,19 +13,21 @@ const (
 
 // Command represents a storage compartment command (ACCEPT/RELEASE)
 type Command[E any] struct {
-	WorldId   byte   `json:"worldId"`
-	AccountId uint32 `json:"accountId"`
-	Type      string `json:"type"`
-	Body      E      `json:"body"`
+	WorldId     byte   `json:"worldId"`
+	AccountId   uint32 `json:"accountId"`
+	CharacterId uint32 `json:"characterId,omitempty"` // Optional: for client notification
+	Type        string `json:"type"`
+	Body        E      `json:"body"`
 }
 
 // AcceptCommandBody contains the data for an ACCEPT command
 type AcceptCommandBody struct {
-	TransactionId uuid.UUID `json:"transactionId"`
-	Slot          int16     `json:"slot"`
-	TemplateId    uint32    `json:"templateId"`
-	ReferenceId   uint32    `json:"referenceId"`
-	ReferenceType string    `json:"referenceType"`
+	TransactionId uuid.UUID       `json:"transactionId"`
+	Slot          int16           `json:"slot"`
+	TemplateId    uint32          `json:"templateId"`
+	ReferenceId   uint32          `json:"referenceId"`
+	ReferenceType string          `json:"referenceType"`
+	ReferenceData json.RawMessage `json:"referenceData,omitempty"` // Type-specific data based on ReferenceType
 }
 
 // ReleaseCommandBody contains the data for a RELEASE command
@@ -40,10 +45,11 @@ const (
 
 // StatusEvent represents a storage compartment status event
 type StatusEvent[E any] struct {
-	WorldId   byte   `json:"worldId"`
-	AccountId uint32 `json:"accountId"`
-	Type      string `json:"type"`
-	Body      E      `json:"body"`
+	WorldId     byte   `json:"worldId"`
+	AccountId   uint32 `json:"accountId"`
+	CharacterId uint32 `json:"characterId,omitempty"` // Optional: for client notification
+	Type        string `json:"type"`
+	Body        E      `json:"body"`
 }
 
 // StatusEventAcceptedBody contains the data for an ACCEPTED event

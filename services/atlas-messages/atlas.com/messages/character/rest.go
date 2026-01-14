@@ -40,7 +40,7 @@ type RestModel struct {
 	Stance             byte   `json:"stance"`
 }
 
-func (r *RestModel) GetName() string {
+func (r RestModel) GetName() string {
 	return "characters"
 }
 

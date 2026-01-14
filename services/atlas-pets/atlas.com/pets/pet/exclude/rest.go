@@ -26,14 +26,13 @@ func (r *RestModel) SetID(strId string) error {
 
 func Transform(m Model) (RestModel, error) {
 	return RestModel{
-		Id:     m.id,
-		ItemId: m.itemId,
+		Id:     m.Id(),
+		ItemId: m.ItemId(),
 	}, nil
 }
 
 func Extract(rm RestModel) (Model, error) {
-	return Model{
-		id:     rm.Id,
-		itemId: rm.ItemId,
-	}, nil
+	return NewModelBuilder(rm.ItemId).
+		SetId(rm.Id).
+		Build()
 }

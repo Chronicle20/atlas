@@ -10,7 +10,7 @@ type RestModel struct {
 	Level byte   `json:"level"`
 }
 
-func (r *RestModel) GetName() string {
+func (r RestModel) GetName() string {
 	return "characters"
 }
 

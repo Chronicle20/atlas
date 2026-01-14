@@ -128,8 +128,8 @@ func TestAsset_GetByStorageId(t *testing.T) {
 
 	s := createTestStorage(t, db, te.Id(), 0, 12345)
 
-	// Create multiple assets
-	for i := 1; i <= 3; i++ {
+	// Create multiple assets (0-indexed slots)
+	for i := 0; i < 3; i++ {
 		_, err := asset.Create(testLogger(), db, te.Id())(
 			s.Id(),
 			int16(i),
@@ -152,9 +152,9 @@ func TestAsset_GetByStorageId(t *testing.T) {
 		t.Fatalf("Expected 3 assets, got %d", len(assets))
 	}
 
-	// Verify assets are ordered by slot
+	// Verify assets are ordered by slot (0-indexed)
 	for i, a := range assets {
-		expectedSlot := int16(i + 1)
+		expectedSlot := int16(i)
 		if a.Slot() != expectedSlot {
 			t.Fatalf("Asset %d slot mismatch. Expected %d, got %d", i, expectedSlot, a.Slot())
 		}
@@ -277,11 +277,14 @@ func TestAsset_IsStackable(t *testing.T) {
 		{asset.ReferenceTypePet, false},
 	}
 
+	testStorageId := uuid.New()
 	for _, tc := range tests {
 		t.Run(string(tc.refType), func(t *testing.T) {
 			a := asset.NewModelBuilder[any]().
+				SetStorageId(testStorageId).
+				SetTemplateId(1000000).
 				SetReferenceType(tc.refType).
-				Build()
+				MustBuild()
 
 			if a.IsStackable() != tc.isStackable {
 				t.Fatalf("IsStackable() for %s should be %v", tc.refType, tc.isStackable)
@@ -305,11 +308,14 @@ func TestAsset_TypeChecks(t *testing.T) {
 		{asset.ReferenceTypePet, "IsPet", true},
 	}
 
+	testStorageId := uuid.New()
 	for _, tc := range tests {
 		t.Run(tc.checkMethod, func(t *testing.T) {
 			a := asset.NewModelBuilder[any]().
+				SetStorageId(testStorageId).
+				SetTemplateId(1000000).
 				SetReferenceType(tc.refType).
-				Build()
+				MustBuild()
 
 			var result bool
 			switch tc.checkMethod {

@@ -60,7 +60,7 @@ func handleCreated(sc server.Model, wp writer.Producer) message.Handler[reactor2
 			SetPosition(e.Body.X, e.Body.Y).
 			SetDelay(e.Body.Delay).
 			SetDirection(e.Body.Direction).
-			Build()
+			MustBuild()
 
 		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Map(_map2.Id(e.MapId)), session.Announce(l)(ctx)(wp)(writer.ReactorSpawn)(writer.ReactorSpawnBody(l, tenant.MustFromContext(ctx))(r)))
 		if err != nil {

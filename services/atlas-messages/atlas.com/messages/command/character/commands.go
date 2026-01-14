@@ -63,7 +63,9 @@ func AwardExperienceCommandProducer(l logrus.FieldLogger) func(ctx context.Conte
 						return err
 					}
 					for _, id := range cids {
-						err = sp.Create(saga.NewBuilder().
+						s, buildErr := saga.NewBuilder().
+							SetSagaType(saga.QuestReward).
+							SetInitiatedBy("COMMAND").
 							AddStep("give_experience", saga.Pending, saga.AwardExperience, saga.AwardExperiencePayload{
 								CharacterId: id,
 								WorldId:     world.Id(worldId),
@@ -73,7 +75,12 @@ func AwardExperienceCommandProducer(l logrus.FieldLogger) func(ctx context.Conte
 									Amount:         amount,
 								}},
 							}).
-							Build())
+							Build()
+						if buildErr != nil {
+							l.WithError(buildErr).Errorf("Unable to build saga for experience award to [%d].", id)
+							continue
+						}
+						err = sp.Create(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to award [%d] with [%d] experience.", id, amount)
 						}
@@ -132,14 +139,21 @@ func AwardLevelCommandProducer(l logrus.FieldLogger) func(ctx context.Context) f
 						return err
 					}
 					for _, id := range cids {
-						err = sp.Create(saga.NewBuilder().
+						s, buildErr := saga.NewBuilder().
+							SetSagaType(saga.QuestReward).
+							SetInitiatedBy("COMMAND").
 							AddStep("give_level", saga.Pending, saga.AwardLevel, saga.AwardLevelPayload{
 								CharacterId: id,
 								WorldId:     world.Id(worldId),
 								ChannelId:   channel.Id(channelId),
 								Amount:      amount,
 							}).
-							Build())
+							Build()
+						if buildErr != nil {
+							l.WithError(buildErr).Errorf("Unable to build saga for level award to [%d].", id)
+							continue
+						}
+						err = sp.Create(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to award [%d] with [%d] level(s).", id, amount)
 						}
@@ -195,14 +209,21 @@ func ChangeJobCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fu
 						return err
 					}
 					for _, id := range cids {
-						err = sp.Create(saga.NewBuilder().
+						s, buildErr := saga.NewBuilder().
+							SetSagaType(saga.QuestReward).
+							SetInitiatedBy("COMMAND").
 							AddStep("change_job", saga.Pending, saga.ChangeJob, saga.ChangeJobPayload{
 								CharacterId: id,
 								WorldId:     world.Id(worldId),
 								ChannelId:   channel.Id(channelId),
 								JobId:       job.Id(jobId),
 							}).
-							Build())
+							Build()
+						if buildErr != nil {
+							l.WithError(buildErr).Errorf("Unable to build saga for job change for [%d].", id)
+							continue
+						}
+						err = sp.Create(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to change job for character [%d] to job [%d].", id, jobId)
 						}
@@ -261,7 +282,9 @@ func AwardMesoCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fu
 						return err
 					}
 					for _, id := range cids {
-						err = sp.Create(saga.NewBuilder().
+						s, buildErr := saga.NewBuilder().
+							SetSagaType(saga.QuestReward).
+							SetInitiatedBy("COMMAND").
 							AddStep("give_mesos", saga.Pending, saga.AwardMesos, saga.AwardMesosPayload{
 								CharacterId: id,
 								WorldId:     world.Id(worldId),
@@ -270,7 +293,12 @@ func AwardMesoCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fu
 								ActorType:   "CHARACTER",
 								Amount:      amount,
 							}).
-							Build())
+							Build()
+						if buildErr != nil {
+							l.WithError(buildErr).Errorf("Unable to build saga for meso award to [%d].", id)
+							continue
+						}
+						err = sp.Create(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to award [%d] with [%d] meso.", id, amount)
 						}

@@ -41,7 +41,11 @@ func (p *ProcessorImpl) ChannelDecorator(m Model) Model {
 	if err != nil {
 		return m
 	}
-	return m.ToBuilder().SetChannels(cs).Build()
+	decorated, err := CloneModel(m).SetChannels(cs).Build()
+	if err != nil {
+		return m
+	}
+	return decorated
 }
 
 func (p *ProcessorImpl) AllWorldProvider(decorators ...model.Decorator[Model]) model.Provider[[]Model] {
@@ -78,7 +82,7 @@ func (p *ProcessorImpl) ByWorldIdProvider(decorators ...model.Decorator[Model]) 
 		}
 		wc := c.Worlds[worldId]
 
-		m := NewBuilder().
+		m, err := NewModelBuilder().
 			SetId(worldId).
 			SetName(wc.Name).
 			SetState(getFlag(wc.Flag)).
@@ -87,6 +91,9 @@ func (p *ProcessorImpl) ByWorldIdProvider(decorators ...model.Decorator[Model]) 
 			SetRecommendedMessage(wc.WhyAmIRecommended).
 			SetCapacityStatus(0).
 			Build()
+		if err != nil {
+			return model.ErrorProvider[Model](err)
+		}
 		return model.Map(model.Decorate(model.Decorators(decorators...)))(model.FixedProvider(m))
 	}
 }

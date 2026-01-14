@@ -6,6 +6,8 @@ import (
 	"atlas-saga-orchestrator/saga"
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -15,7 +17,6 @@ import (
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
-	"time"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -66,14 +67,14 @@ func handleAssetCreatedEvent(l logrus.FieldLogger, ctx context.Context, e asset2
 	}
 
 	// Check if this is a CreateAndEquipAsset step
-	if currentStep.Action == saga.CreateAndEquipAsset {
+	if currentStep.Action() == saga.CreateAndEquipAsset {
 		// Extract the payload to get the character ID and inventory type
-		createPayload, ok := currentStep.Payload.(saga.CreateAndEquipAssetPayload)
+		createPayload, ok := currentStep.Payload().(saga.CreateAndEquipAssetPayload)
 		if !ok {
 			l.WithFields(logrus.Fields{
 				"transaction_id": e.TransactionId.String(),
 				"character_id":   e.CharacterId,
-				"step_id":        currentStep.StepId,
+				"step_id":        currentStep.StepId(),
 			}).Error("Invalid payload for CreateAndEquipAsset step - expected CreateAndEquipAssetPayload.")
 			_ = sagaProcessor.StepCompleted(e.TransactionId, false)
 			return
@@ -85,7 +86,7 @@ func handleAssetCreatedEvent(l logrus.FieldLogger, ctx context.Context, e asset2
 				"transaction_id":        e.TransactionId.String(),
 				"expected_character_id": createPayload.CharacterId,
 				"actual_character_id":   e.CharacterId,
-				"step_id":               currentStep.StepId,
+				"step_id":               currentStep.StepId(),
 			}).Error("Character ID mismatch in CreateAndEquipAsset creation event.")
 			_ = sagaProcessor.StepCompleted(e.TransactionId, false)
 			return
@@ -107,14 +108,7 @@ func handleAssetCreatedEvent(l logrus.FieldLogger, ctx context.Context, e asset2
 			Destination:   -1, // Assumption: equip to slot -1
 		}
 
-		equipStep := saga.Step[any]{
-			StepId:    autoEquipStepId,
-			Status:    saga.Pending,
-			Action:    saga.EquipAsset,
-			Payload:   equipPayload,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-		}
+		equipStep := saga.NewStep[any](autoEquipStepId, saga.Pending, saga.EquipAsset, equipPayload)
 
 		// Add the equip step to the saga after the current step (should be executed next)
 		err = sagaProcessor.AddStepAfterCurrent(e.TransactionId, equipStep)
@@ -123,7 +117,7 @@ func handleAssetCreatedEvent(l logrus.FieldLogger, ctx context.Context, e asset2
 				"transaction_id":     e.TransactionId.String(),
 				"character_id":       e.CharacterId,
 				"auto_equip_step_id": autoEquipStepId,
-				"step_id":            currentStep.StepId,
+				"step_id":            currentStep.StepId(),
 				"error":              err.Error(),
 			}).Error("Failed to add the equip step to saga for CreateAndEquipAsset - marking saga step as failed.")
 			_ = sagaProcessor.StepCompleted(e.TransactionId, false)
@@ -137,7 +131,7 @@ func handleAssetCreatedEvent(l logrus.FieldLogger, ctx context.Context, e asset2
 			"inventory_type":     equipPayload.InventoryType,
 			"source_slot":        equipPayload.Source,
 			"destination_slot":   equipPayload.Destination,
-			"original_step_id":   currentStep.StepId,
+			"original_step_id":   currentStep.StepId(),
 		}).Info("Successfully added auto-equip step for CreateAndEquipAsset action to be executed next.")
 	}
 

@@ -24,6 +24,7 @@ type Processor interface {
 	ClearTenant() int
 	ByIdProvider(id uuid.UUID) model.Provider[Model]
 	ByStartMapProvider(mapId map2.Id) model.Provider[Model]
+	GetByStartMap(mapId map2.Id) (Model, error)
 	AllRoutesProvider() model.Provider[[]Model]
 	UpdateRoutes() error
 	UpdateRouteAndEmit(route Model) error
@@ -61,10 +62,17 @@ func (p *ProcessorImpl) AddTenant(distinctRoutes []Model, sharedVessels []Shared
 	for _, route := range distinctRoutes {
 		routeMap[route.Id()] = route
 	}
-	schedules := NewScheduler(distinctRoutes, sharedVessels).ComputeSchedule()
+	schedules, err := NewScheduler(distinctRoutes, sharedVessels).ComputeSchedule()
+	if err != nil {
+		return err
+	}
 	for _, schedule := range schedules {
 		if route, ok := routeMap[schedule.RouteId()]; ok {
-			routeMap[route.Id()] = route.Builder().AddToSchedule(schedule).Build()
+			updated, err := route.Builder().AddToSchedule(schedule).Build()
+			if err != nil {
+				return err
+			}
+			routeMap[route.Id()] = updated
 		}
 	}
 	scheduledRoutes := make([]Model, 0)
@@ -100,6 +108,11 @@ func (p *ProcessorImpl) ByStartMapProvider(mapId map2.Id) model.Provider[Model] 
 	}
 }
 
+// GetByStartMap returns a route by its start map id
+func (p *ProcessorImpl) GetByStartMap(mapId map2.Id) (Model, error) {
+	return p.ByStartMapProvider(mapId)()
+}
+
 // AllRoutesProvider returns a provider for all routes
 func (p *ProcessorImpl) AllRoutesProvider() model.Provider[[]Model] {
 	return func() ([]Model, error) {
@@ -118,7 +131,11 @@ func (p *ProcessorImpl) UpdateRouteAndEmit(route Model) error {
 func (p *ProcessorImpl) UpdateRoute(mb *message.Buffer) func(route Model) error {
 	return func(route Model) error {
 		now := time.Now()
-		r, changed := route.UpdateState(now)
+		r, changed, err := route.UpdateState(now)
+		if err != nil {
+			p.l.WithError(err).Errorf("Error updating state for route [%s].", route.Id())
+			return err
+		}
 		if changed {
 			err := getRouteRegistry().UpdateRoute(p.t, r)
 			if err != nil {

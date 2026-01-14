@@ -2,14 +2,19 @@ package channel
 
 import (
 	"errors"
-	"github.com/Chronicle20/atlas-tenant"
 	"sync"
+
+	"github.com/Chronicle20/atlas-tenant"
 )
 
+type tenantData struct {
+	lock     sync.RWMutex
+	channels map[byte]map[byte]Model
+}
+
 type Registry struct {
-	lock       sync.Mutex
-	registry   map[tenant.Model]map[byte]map[byte]Model
-	tenantLock map[tenant.Model]*sync.RWMutex
+	lock    sync.RWMutex
+	tenants map[tenant.Model]*tenantData
 }
 
 var channelRegistry *Registry
@@ -20,42 +25,56 @@ var ErrChannelNotFound = errors.New("channel not found")
 func GetChannelRegistry() *Registry {
 	once.Do(func() {
 		channelRegistry = &Registry{
-			registry:   make(map[tenant.Model]map[byte]map[byte]Model),
-			tenantLock: make(map[tenant.Model]*sync.RWMutex),
+			tenants: make(map[tenant.Model]*tenantData),
 		}
 	})
 	return channelRegistry
 }
 
-func (r *Registry) ensureTenantLock(t tenant.Model) {
+func (r *Registry) getTenantData(t tenant.Model) *tenantData {
+	// Try read lock first for existing tenant
+	r.lock.RLock()
+	if td, ok := r.tenants[t]; ok {
+		r.lock.RUnlock()
+		return td
+	}
+	r.lock.RUnlock()
+
+	// Need write lock to create new tenant
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
-	if _, ok := r.tenantLock[t]; !ok {
-		r.tenantLock[t] = &sync.RWMutex{}
-		r.registry[t] = make(map[byte]map[byte]Model)
+	// Double-check after acquiring write lock
+	if td, ok := r.tenants[t]; ok {
+		return td
 	}
+
+	td := &tenantData{
+		channels: make(map[byte]map[byte]Model),
+	}
+	r.tenants[t] = td
+	return td
 }
 
 func (r *Registry) Register(t tenant.Model, m Model) Model {
-	r.ensureTenantLock(t)
-	r.tenantLock[t].Lock()
-	defer r.tenantLock[t].Unlock()
+	td := r.getTenantData(t)
+	td.lock.Lock()
+	defer td.lock.Unlock()
 
-	if _, ok := r.registry[t][m.WorldId()]; !ok {
-		r.registry[t][m.WorldId()] = make(map[byte]Model)
+	if _, ok := td.channels[m.WorldId()]; !ok {
+		td.channels[m.WorldId()] = make(map[byte]Model)
 	}
-	r.registry[t][m.WorldId()][m.channelId] = m
+	td.channels[m.WorldId()][m.channelId] = m
 	return m
 }
 
 func (r *Registry) ChannelServers(t tenant.Model) []Model {
-	r.ensureTenantLock(t)
-	r.tenantLock[t].RLock()
-	defer r.tenantLock[t].RUnlock()
+	td := r.getTenantData(t)
+	td.lock.RLock()
+	defer td.lock.RUnlock()
 
 	results := make([]Model, 0)
-	for _, w := range r.registry[t] {
+	for _, w := range td.channels {
 		for _, c := range w {
 			results = append(results, c)
 		}
@@ -64,41 +83,41 @@ func (r *Registry) ChannelServers(t tenant.Model) []Model {
 }
 
 func (r *Registry) ChannelServer(t tenant.Model, worldId byte, channelId byte) (Model, error) {
-	r.ensureTenantLock(t)
-	r.tenantLock[t].RLock()
-	defer r.tenantLock[t].RUnlock()
+	td := r.getTenantData(t)
+	td.lock.RLock()
+	defer td.lock.RUnlock()
 
 	var ok bool
 	var result Model
-	if _, ok = r.registry[t][worldId]; !ok {
+	if _, ok = td.channels[worldId]; !ok {
 		return result, ErrChannelNotFound
 	}
-	if result, ok = r.registry[t][worldId][channelId]; !ok {
+	if result, ok = td.channels[worldId][channelId]; !ok {
 		return result, ErrChannelNotFound
 	}
 	return result, nil
 }
 
 func (r *Registry) RemoveByWorldAndChannel(t tenant.Model, worldId byte, channelId byte) error {
-	r.ensureTenantLock(t)
-	r.tenantLock[t].Lock()
-	defer r.tenantLock[t].Unlock()
+	td := r.getTenantData(t)
+	td.lock.Lock()
+	defer td.lock.Unlock()
 
-	if _, ok := r.registry[t][worldId]; !ok {
+	if _, ok := td.channels[worldId]; !ok {
 		return ErrChannelNotFound
 	}
-	if _, ok := r.registry[t][worldId][channelId]; !ok {
+	if _, ok := td.channels[worldId][channelId]; !ok {
 		return ErrChannelNotFound
 	}
-	delete(r.registry[t][worldId], channelId)
+	delete(td.channels[worldId], channelId)
 	return nil
 }
 
 func (r *Registry) Tenants() []tenant.Model {
-	r.lock.Lock()
-	defer r.lock.Unlock()
+	r.lock.RLock()
+	defer r.lock.RUnlock()
 	results := make([]tenant.Model, 0)
-	for t := range r.registry {
+	for t := range r.tenants {
 		results = append(results, t)
 	}
 	return results

@@ -2,6 +2,7 @@ package equipable
 
 import (
 	"atlas-equipables/rest"
+	"errors"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
@@ -81,7 +82,11 @@ func handleGetEquipment(d *rest.HandlerDependency, c *rest.HandlerContext) http.
 			e, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetById(equipmentId)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to retrieve equipable %d.", equipmentId)
-				w.WriteHeader(http.StatusNotFound)
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					w.WriteHeader(http.StatusNotFound)
+				} else {
+					w.WriteHeader(http.StatusInternalServerError)
+				}
 				return
 			}
 			rm, err := model.Map(Transform)(model.FixedProvider(e))()
@@ -108,7 +113,11 @@ func handleUpdateEquipment(d *rest.HandlerDependency, c *rest.HandlerContext, in
 		e, err := NewProcessor(d.Logger(), d.Context(), d.DB()).UpdateAndEmit(i)
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Unable to update equipable %d.", i.Id())
-			w.WriteHeader(http.StatusNotFound)
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				w.WriteHeader(http.StatusNotFound)
+			} else {
+				w.WriteHeader(http.StatusInternalServerError)
+			}
 			return
 		}
 		rm, err := model.Map(Transform)(model.FixedProvider(e))()

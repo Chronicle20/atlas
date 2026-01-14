@@ -29,13 +29,3 @@ func (m Model) Expiration() time.Time {
 func (m Model) CooldownExpiresAt() time.Time {
 	return m.cooldownExpiresAt
 }
-
-func (m Model) SetCooldown(time time.Time) Model {
-	return Model{
-		id:                m.Id(),
-		level:             m.Level(),
-		masterLevel:       m.MasterLevel(),
-		expiration:        m.Expiration(),
-		cooldownExpiresAt: time,
-	}
-}

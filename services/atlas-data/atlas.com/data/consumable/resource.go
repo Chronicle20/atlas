@@ -43,6 +43,7 @@ func handleGetConsumablesRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 
 			res, err := model.FilteredProvider(NewStorage(d.Logger(), db).AllProvider(d.Context()), filters)()
 			if err != nil {
+				d.Logger().WithError(err).Errorf("Unable to retrieve consumables.")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}

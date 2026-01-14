@@ -1,8 +1,9 @@
 package _map
 
 import (
-	"atlas-maps/map/character"
 	"atlas-maps/rest"
+	"net/http"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
@@ -12,7 +13,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
-	"net/http"
 )
 
 const (
@@ -32,8 +32,8 @@ func handleGetCharactersInMap(d *rest.HandlerDependency, c *rest.HandlerContext)
 			return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
 					transactionId := uuid.New()
-					cp := character.NewProcessor(d.Logger(), d.Context())
-					ids, err := cp.GetCharactersInMap(transactionId, world.Id(worldId), channel.Id(channelId), _map.Id(mapId))
+					mp := NewProcessor(d.Logger(), d.Context(), nil)
+					ids, err := mp.GetCharactersInMap(transactionId, world.Id(worldId), channel.Id(channelId), _map.Id(mapId))
 					if err != nil {
 						w.WriteHeader(http.StatusInternalServerError)
 						return

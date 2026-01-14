@@ -22,15 +22,13 @@ func RegisterPicHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.
 	return func(s session.Model, r *request.Reader) {
 		opt := r.ReadByte()
 		characterId := r.ReadUint32()
-		var sMacAddressWithHDDSerial = ""
-		var sMacAddressWithHDDSerial2 = ""
 		if t.Region() == "GMS" {
-			sMacAddressWithHDDSerial = r.ReadAsciiString()
-			sMacAddressWithHDDSerial2 = r.ReadAsciiString()
+			_ = r.ReadAsciiString() // sMacAddressWithHDDSerial - not logged for security
+			_ = r.ReadAsciiString() // sMacAddressWithHDDSerial2 - not logged for security
 		}
 		pic := r.ReadAsciiString()
 
-		l.Debugf("Attempting to register PIC [%s]. opt [%d], character [%d], hwid [%s] hwid [%s].", pic, opt, characterId, sMacAddressWithHDDSerial, sMacAddressWithHDDSerial2)
+		l.Debugf("Attempting to register PIC. opt [%d], character [%d].", opt, characterId)
 
 		a, err := ap.GetById(s.AccountId())
 		if err != nil {
@@ -45,7 +43,7 @@ func RegisterPicHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.
 		}
 		err = ap.UpdatePic(s.AccountId(), pic)
 		if err != nil {
-			l.WithError(err).Errorf("Unable to register PIC [%s] for account [%d].", pic, s.AccountId())
+			l.WithError(err).Errorf("Unable to register PIC for account [%d].", s.AccountId())
 		}
 
 		c, err := channel.NewProcessor(l, ctx).GetById(s.WorldId(), s.ChannelId())

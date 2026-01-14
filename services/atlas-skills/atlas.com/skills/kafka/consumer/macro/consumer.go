@@ -41,7 +41,19 @@ func handleCommandUpdate(db *gorm.DB) message.Handler[macro2.Command[macro2.Upda
 
 		macros := make([]macro.Model, 0)
 		for _, m := range c.Body.Macros {
-			macros = append(macros, macro.NewModel(m.Id, m.Name, m.Shout, skill2.Id(m.SkillId1), skill2.Id(m.SkillId2), skill2.Id(m.SkillId3)))
+			model, err := macro.NewModelBuilder().
+				SetId(m.Id).
+				SetName(m.Name).
+				SetShout(m.Shout).
+				SetSkillId1(skill2.Id(m.SkillId1)).
+				SetSkillId2(skill2.Id(m.SkillId2)).
+				SetSkillId3(skill2.Id(m.SkillId3)).
+				Build()
+			if err != nil {
+				l.WithError(err).Errorf("Unable to build macro model for character [%d].", c.CharacterId)
+				return
+			}
+			macros = append(macros, model)
 		}
 
 		processor := macro.NewProcessor(l, ctx, db)

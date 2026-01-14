@@ -36,9 +36,11 @@ func handleDamageCommand(l logrus.FieldLogger, ctx context.Context, c command[da
 		return
 	}
 
-	monster.Damage(l)(ctx)(c.MonsterId, c.Body.CharacterId, c.Body.Damage)
+	p := monster.NewProcessor(l, ctx)
+	p.Damage(c.MonsterId, c.Body.CharacterId, c.Body.Damage)
 }
 
-func handleMovementCommand(_ logrus.FieldLogger, ctx context.Context, c movementCommand) {
-	_ = monster.Move(ctx)(uint32(c.ObjectId), c.X, c.Y, c.Stance)
+func handleMovementCommand(l logrus.FieldLogger, ctx context.Context, c movementCommand) {
+	p := monster.NewProcessor(l, ctx)
+	_ = p.Move(uint32(c.ObjectId), c.X, c.Y, c.Stance)
 }

@@ -8,7 +8,6 @@ import (
 	"context"
 	"errors"
 	"testing"
-	"time"
 
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -139,27 +138,19 @@ func TestCreateAndEquipAssetIntegration(t *testing.T) {
 
 			// Create test saga
 			transactionId := uuid.New()
-			saga := Saga{
-				TransactionId: transactionId,
-				SagaType:      InventoryTransaction,
-				InitiatedBy:   "integration-test",
-				Steps: []Step[any]{
-					{
-						StepId:    "create-and-equip-step",
-						Status:    Pending,
-						Action:    CreateAndEquipAsset,
-						Payload:   tt.sagaPayload,
-						CreatedAt: time.Now(),
-						UpdatedAt: time.Now(),
-					},
-				},
-			}
+			saga, err := NewBuilder().
+				SetTransactionId(transactionId).
+				SetSagaType(InventoryTransaction).
+				SetInitiatedBy("integration-test").
+				AddStep("create-and-equip-step", Pending, CreateAndEquipAsset, tt.sagaPayload).
+				Build()
+			assert.NoError(t, err, "Failed to build saga")
 
 			// Store saga in cache
 			GetCache().Put(te.Id(), saga)
 
 			// Execute saga step
-			err := processor.Step(saga.TransactionId)
+			err = processor.Step(saga.TransactionId())
 
 			// Verify results
 			if tt.expectedErrorContains != "" {
@@ -297,27 +288,19 @@ func TestCreateAndEquipAssetKafkaEventFlow_Disabled(t *testing.T) {
 
 			// Create test saga
 			transactionId := uuid.New()
-			saga := Saga{
-				TransactionId: transactionId,
-				SagaType:      InventoryTransaction,
-				InitiatedBy:   "kafka-flow-test",
-				Steps: []Step[any]{
-					{
-						StepId:    "create-and-equip-step",
-						Status:    Pending,
-						Action:    CreateAndEquipAsset,
-						Payload:   tt.initialSagaPayload,
-						CreatedAt: time.Now(),
-						UpdatedAt: time.Now(),
-					},
-				},
-			}
+			saga, err := NewBuilder().
+				SetTransactionId(transactionId).
+				SetSagaType(InventoryTransaction).
+				SetInitiatedBy("kafka-flow-test").
+				AddStep("create-and-equip-step", Pending, CreateAndEquipAsset, tt.initialSagaPayload).
+				Build()
+			assert.NoError(t, err, "Failed to build saga")
 
 			// Store saga in cache
 			GetCache().Put(te.Id(), saga)
 
 			// Phase 1: Execute the initial CreateAndEquipAsset step
-			err := processor.Step(transactionId)
+			err = processor.Step(transactionId)
 			if tt.simulateCreatedEvent {
 				assert.NoError(t, err, "Initial step should succeed")
 			} else {
@@ -326,19 +309,12 @@ func TestCreateAndEquipAssetKafkaEventFlow_Disabled(t *testing.T) {
 
 			// Phase 2: Add auto-equip step if needed (before the first step is completed)
 			if tt.simulateCreatedEvent && tt.expectedAutoEquipStep {
-				equipStep := Step[any]{
-					StepId: "auto_equip_step_test",
-					Status: Pending,
-					Action: EquipAsset,
-					Payload: EquipAssetPayload{
-						CharacterId:   tt.initialSagaPayload.CharacterId,
-						InventoryType: 1,
-						Source:        5,
-						Destination:   -1,
-					},
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				}
+				equipStep := NewStep[any]("auto_equip_step_test", Pending, EquipAsset, EquipAssetPayload{
+					CharacterId:   tt.initialSagaPayload.CharacterId,
+					InventoryType: 1,
+					Source:        5,
+					Destination:   -1,
+				})
 
 				err = processor.AddStep(transactionId, equipStep)
 				assert.NoError(t, err, "Adding auto-equip step should succeed")
@@ -372,17 +348,17 @@ func TestCreateAndEquipAssetKafkaEventFlow_Disabled(t *testing.T) {
 			finalSaga, err := processor.GetById(transactionId)
 			assert.NoError(t, err, "Should be able to retrieve final saga")
 
-			assert.Equal(t, tt.expectedFinalStepCount, len(finalSaga.Steps),
+			assert.Equal(t, tt.expectedFinalStepCount, len(finalSaga.Steps()),
 				"Final saga should have expected number of steps")
 
 			// Verify auto-equip step was added if expected
 			if tt.expectedAutoEquipStep {
 				found := false
-				for _, step := range finalSaga.Steps {
-					if step.Action == EquipAsset {
+				for _, step := range finalSaga.Steps() {
+					if step.Action() == EquipAsset {
 						found = true
 						// Verify the auto-equip step has correct payload
-						equipPayload, ok := step.Payload.(EquipAssetPayload)
+						equipPayload, ok := step.Payload().(EquipAssetPayload)
 						assert.True(t, ok, "Auto-equip step should have EquipAssetPayload")
 						assert.Equal(t, tt.initialSagaPayload.CharacterId, equipPayload.CharacterId)
 						break
@@ -393,8 +369,8 @@ func TestCreateAndEquipAssetKafkaEventFlow_Disabled(t *testing.T) {
 
 			// Check completion status
 			allCompleted := true
-			for _, step := range finalSaga.Steps {
-				if step.Status != Completed {
+			for _, step := range finalSaga.Steps() {
+				if step.Status() != Completed {
 					allCompleted = false
 					break
 				}
@@ -472,24 +448,18 @@ func TestCreateAndEquipAssetCompensation(t *testing.T) {
 
 			// Create test saga with failed step
 			transactionId := uuid.New()
-			failedStep := Step[any]{
-				StepId:    "create-and-equip-step",
-				Status:    Failed,
-				Action:    CreateAndEquipAsset,
-				Payload:   tt.initialPayload,
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
-			}
+			failedStep := NewStep[any]("create-and-equip-step", Failed, CreateAndEquipAsset, tt.initialPayload)
 
-			saga := Saga{
-				TransactionId: transactionId,
-				SagaType:      InventoryTransaction,
-				InitiatedBy:   "compensation-test",
-				Steps:         []Step[any]{failedStep},
-			}
+			saga, err := NewBuilder().
+				SetTransactionId(transactionId).
+				SetSagaType(InventoryTransaction).
+				SetInitiatedBy("compensation-test").
+				AddStep("create-and-equip-step", Failed, CreateAndEquipAsset, tt.initialPayload).
+				Build()
+			assert.NoError(t, err, "Failed to build saga")
 
 			// Test compensation
-			err := NewCompensator(logger, tctx).WithCompartmentProcessor(compP).compensateCreateAndEquipAsset(saga, failedStep)
+			err = NewCompensator(logger, tctx).WithCompartmentProcessor(compP).compensateCreateAndEquipAsset(saga, failedStep)
 
 			if tt.expectedCompensation == "none" {
 				assert.NoError(t, err, "Compensation should succeed for no-op scenarios")
@@ -583,24 +553,18 @@ func TestCreateAndEquipAssetPayloadValidation(t *testing.T) {
 
 			// Create test saga with step
 			transactionId := uuid.New()
-			step := Step[any]{
-				StepId:    "create-and-equip-step",
-				Status:    Pending,
-				Action:    CreateAndEquipAsset,
-				Payload:   tt.payload,
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
-			}
+			step := NewStep[any]("create-and-equip-step", Pending, CreateAndEquipAsset, tt.payload)
 
-			saga := Saga{
-				TransactionId: transactionId,
-				SagaType:      InventoryTransaction,
-				InitiatedBy:   "payload-validation-test",
-				Steps:         []Step[any]{step},
-			}
+			saga, err := NewBuilder().
+				SetTransactionId(transactionId).
+				SetSagaType(InventoryTransaction).
+				SetInitiatedBy("payload-validation-test").
+				AddStep("create-and-equip-step", Pending, CreateAndEquipAsset, tt.payload).
+				Build()
+			assert.NoError(t, err, "Failed to build saga")
 
 			// Test payload validation
-			err := NewHandler(logger, tctx).WithCompartmentProcessor(compP).handleCreateAndEquipAsset(saga, step)
+			err = NewHandler(logger, tctx).WithCompartmentProcessor(compP).handleCreateAndEquipAsset(saga, step)
 
 			// Verify results
 			if tt.expectedError {

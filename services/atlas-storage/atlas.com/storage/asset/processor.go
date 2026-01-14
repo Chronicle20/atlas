@@ -5,6 +5,7 @@ import (
 	"atlas-storage/pet"
 	"atlas-storage/stackable"
 	"context"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -26,6 +27,65 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Proce
 		equipableProcessor: equipable.NewProcessor(l, ctx),
 		petProcessor:       pet.NewProcessor(l, ctx),
 	}
+}
+
+// GetAssetById retrieves an asset by ID
+func (p *Processor) GetAssetById(assetId uint32) (Model[any], error) {
+	t := tenant.MustFromContext(p.ctx)
+	return GetById(p.l, p.db, t.Id())(assetId)
+}
+
+// GetAssetsByStorageId retrieves all assets for a storage
+func (p *Processor) GetAssetsByStorageId(storageId uuid.UUID) ([]Model[any], error) {
+	t := tenant.MustFromContext(p.ctx)
+	return GetByStorageId(p.l, p.db, t.Id())(storageId)
+}
+
+// StorageEntity is a minimal storage entity for cross-package queries
+type StorageEntity struct {
+	TenantId  uuid.UUID `gorm:"not null;uniqueIndex:idx_tenant_world_account"`
+	Id        uuid.UUID `gorm:"primaryKey;type:uuid"`
+	WorldId   byte      `gorm:"not null;uniqueIndex:idx_tenant_world_account"`
+	AccountId uint32    `gorm:"not null;uniqueIndex:idx_tenant_world_account"`
+	Capacity  uint32    `gorm:"not null;default:4"`
+	Mesos     uint32    `gorm:"not null;default:0"`
+}
+
+func (StorageEntity) TableName() string {
+	return "storages"
+}
+
+// GetOrCreateStorageId retrieves or creates a storage and returns its ID
+func (p *Processor) GetOrCreateStorageId(worldId byte, accountId uint32) (uuid.UUID, error) {
+	t := tenant.MustFromContext(p.ctx)
+
+	// Try to get existing storage
+	var storage StorageEntity
+	err := p.db.Where("tenant_id = ? AND world_id = ? AND account_id = ?", t.Id(), worldId, accountId).
+		First(&storage).Error
+
+	if err == nil {
+		return storage.Id, nil
+	}
+
+	// Storage not found, create it
+	if err == gorm.ErrRecordNotFound {
+		storage = StorageEntity{
+			TenantId:  t.Id(),
+			Id:        uuid.New(),
+			WorldId:   worldId,
+			AccountId: accountId,
+			Capacity:  4,
+			Mesos:     0,
+		}
+		createErr := p.db.Create(&storage).Error
+		if createErr != nil {
+			return uuid.Nil, createErr
+		}
+		return storage.Id, nil
+	}
+
+	return uuid.Nil, err
 }
 
 // DecorateAsset adds reference data to an asset based on its type
@@ -51,7 +111,7 @@ func (p *Processor) DecorateEquipable(m Model[any]) (Model[any], error) {
 		p.l.WithError(err).Warnf("Failed to load equipable data for reference id %d", m.ReferenceId())
 		return m, err
 	}
-	return Clone(m).SetReferenceData(e).Build(), nil
+	return Clone(m).SetReferenceData(e).MustBuild(), nil
 }
 
 // DecorateCashEquipable loads cash equipable data
@@ -68,7 +128,7 @@ func (p *Processor) DecorateStackable(m Model[any]) (Model[any], error) {
 		p.l.WithError(err).Warnf("Failed to load stackable data for asset id %d", m.Id())
 		return m, err
 	}
-	return Clone(m).SetReferenceData(s).Build(), nil
+	return Clone(m).SetReferenceData(s).MustBuild(), nil
 }
 
 // DecoratePet loads pet data from atlas-pets service
@@ -78,7 +138,7 @@ func (p *Processor) DecoratePet(m Model[any]) (Model[any], error) {
 		p.l.WithError(err).Warnf("Failed to load pet data for reference id %d", m.ReferenceId())
 		return m, err
 	}
-	return Clone(m).SetReferenceData(pe).Build(), nil
+	return Clone(m).SetReferenceData(pe).MustBuild(), nil
 }
 
 // TransformToBaseRestModel converts a decorated Model to BaseRestModel with full reference data

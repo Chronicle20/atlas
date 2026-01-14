@@ -4,8 +4,6 @@ import (
 	"atlas-storage/rest"
 	"atlas-storage/stackable"
 	"github.com/Chronicle20/atlas-rest/server"
-	"github.com/Chronicle20/atlas-tenant"
-	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -31,18 +29,18 @@ func handleGetAssetsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest
 		return rest.ParseAccountId(d.Logger(), func(accountId uint32) http.HandlerFunc {
 			return rest.ParseWorldId(d.Logger(), func(worldId byte) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
-					t := tenant.MustFromContext(d.Context())
+					processor := NewProcessor(d.Logger(), d.Context(), db)
 
-					// Get or create storage using provider
-					storageId, err := getOrCreateStorageId(d.Logger(), db, t.Id(), worldId, accountId)
+					// Get or create storage using processor
+					storageId, err := processor.GetOrCreateStorageId(worldId, accountId)
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Unable to get or create storage for world %d account %d.", worldId, accountId)
 						w.WriteHeader(http.StatusInternalServerError)
 						return
 					}
 
-					// Get all assets for this storage using provider
-					assets, err := GetByStorageId(d.Logger(), db, t.Id())(storageId)
+					// Get all assets for this storage using processor
+					assets, err := processor.GetAssetsByStorageId(storageId)
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Unable to get assets for storage %s.", storageId)
 						w.WriteHeader(http.StatusInternalServerError)
@@ -50,7 +48,6 @@ func handleGetAssetsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest
 					}
 
 					// Decorate assets with full reference data
-					processor := NewProcessor(d.Logger(), d.Context(), db)
 					decoratedAssets, err := processor.DecorateAll(assets)
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Unable to decorate assets for storage %s.", storageId)
@@ -81,10 +78,10 @@ func handleGetAssetRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.
 			return rest.ParseWorldId(d.Logger(), func(worldId byte) http.HandlerFunc {
 				return rest.ParseAssetId(d.Logger(), func(assetId uint32) http.HandlerFunc {
 					return func(w http.ResponseWriter, r *http.Request) {
-						t := tenant.MustFromContext(d.Context())
+						processor := NewProcessor(d.Logger(), d.Context(), db)
 
-						// Get asset using provider
-						assetModel, err := GetById(d.Logger(), db, t.Id())(assetId)
+						// Get asset using processor
+						assetModel, err := processor.GetAssetById(assetId)
 						if err != nil {
 							d.Logger().WithError(err).Debugf("Unable to locate asset %d.", assetId)
 							w.WriteHeader(http.StatusNotFound)
@@ -113,49 +110,4 @@ func handleGetAssetRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.
 			})
 		})
 	}
-}
-
-// StorageEntity is a minimal storage entity to avoid circular dependency with storage package
-type StorageEntity struct {
-	TenantId  uuid.UUID `gorm:"not null;uniqueIndex:idx_tenant_world_account"`
-	Id        uuid.UUID `gorm:"primaryKey;type:uuid"`
-	WorldId   byte      `gorm:"not null;uniqueIndex:idx_tenant_world_account"`
-	AccountId uint32    `gorm:"not null;uniqueIndex:idx_tenant_world_account"`
-	Capacity  uint32    `gorm:"not null;default:4"`
-	Mesos     uint32    `gorm:"not null;default:0"`
-}
-
-func (StorageEntity) TableName() string {
-	return "storages"
-}
-
-// getOrCreateStorageId retrieves or creates storage ID
-func getOrCreateStorageId(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID, worldId byte, accountId uint32) (uuid.UUID, error) {
-	// Try to get existing storage
-	var storage StorageEntity
-	err := db.Where("tenant_id = ? AND world_id = ? AND account_id = ?", tenantId, worldId, accountId).
-		First(&storage).Error
-
-	if err == nil {
-		return storage.Id, nil
-	}
-
-	// Storage not found, create it
-	if err == gorm.ErrRecordNotFound {
-		storage = StorageEntity{
-			TenantId:  tenantId,
-			Id:        uuid.New(),
-			WorldId:   worldId,
-			AccountId: accountId,
-			Capacity:  4,
-			Mesos:     0,
-		}
-		createErr := db.Create(&storage).Error
-		if createErr != nil {
-			return uuid.Nil, createErr
-		}
-		return storage.Id, nil
-	}
-
-	return uuid.Nil, err
 }

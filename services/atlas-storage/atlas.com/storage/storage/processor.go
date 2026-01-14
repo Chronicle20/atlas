@@ -51,6 +51,26 @@ func (p *Processor) GetOrCreateStorage(worldId byte, accountId uint32) (Model, e
 	return Create(p.l, p.db, t.Id())(worldId, accountId)
 }
 
+// GetStorageByWorldAndAccountId retrieves storage by world and account
+func (p *Processor) GetStorageByWorldAndAccountId(worldId byte, accountId uint32) (Model, error) {
+	t := tenant.MustFromContext(p.ctx)
+	return GetByWorldAndAccountId(p.l, p.db, t.Id(), p.ctx)(worldId, accountId)
+}
+
+// CreateStorage creates a new storage, returns error if already exists
+func (p *Processor) CreateStorage(worldId byte, accountId uint32) (Model, error) {
+	t := tenant.MustFromContext(p.ctx)
+
+	// Check if storage already exists
+	_, err := GetByWorldAndAccountId(p.l, p.db, t.Id(), p.ctx)(worldId, accountId)
+	if err == nil {
+		return Model{}, errors.New("storage already exists")
+	}
+
+	// Create new storage
+	return Create(p.l, p.db, t.Id())(worldId, accountId)
+}
+
 // Deposit deposits an item into storage
 func (p *Processor) Deposit(worldId byte, accountId uint32, body message.DepositBody) (uint32, error) {
 	t := tenant.MustFromContext(p.ctx)

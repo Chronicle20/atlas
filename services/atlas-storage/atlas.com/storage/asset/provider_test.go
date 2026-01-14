@@ -277,11 +277,14 @@ func TestAsset_IsStackable(t *testing.T) {
 		{asset.ReferenceTypePet, false},
 	}
 
+	testStorageId := uuid.New()
 	for _, tc := range tests {
 		t.Run(string(tc.refType), func(t *testing.T) {
 			a := asset.NewModelBuilder[any]().
+				SetStorageId(testStorageId).
+				SetTemplateId(1000000).
 				SetReferenceType(tc.refType).
-				Build()
+				MustBuild()
 
 			if a.IsStackable() != tc.isStackable {
 				t.Fatalf("IsStackable() for %s should be %v", tc.refType, tc.isStackable)
@@ -305,11 +308,14 @@ func TestAsset_TypeChecks(t *testing.T) {
 		{asset.ReferenceTypePet, "IsPet", true},
 	}
 
+	testStorageId := uuid.New()
 	for _, tc := range tests {
 		t.Run(tc.checkMethod, func(t *testing.T) {
 			a := asset.NewModelBuilder[any]().
+				SetStorageId(testStorageId).
+				SetTemplateId(1000000).
 				SetReferenceType(tc.refType).
-				Build()
+				MustBuild()
 
 			var result bool
 			switch tc.checkMethod {

@@ -808,6 +808,7 @@ func (p *ProcessorImpl) expandTransferToStorage(st Step[any]) ([]Step[any], erro
 				ReferenceId:   foundAsset.ReferenceId,
 				ReferenceType: foundAsset.ReferenceType,
 				ReferenceData: foundAsset.ReferenceData,
+				Quantity:      payload.Quantity,
 			},
 		),
 		NewStep[any](
@@ -819,6 +820,7 @@ func (p *ProcessorImpl) expandTransferToStorage(st Step[any]) ([]Step[any], erro
 				CharacterId:   payload.CharacterId,
 				InventoryType: payload.SourceInventoryType,
 				AssetId:       assetId,
+				Quantity:      payload.Quantity,
 			},
 		),
 	}
@@ -877,6 +879,7 @@ func (p *ProcessorImpl) expandWithdrawFromStorage(st Step[any]) ([]Step[any], er
 				ReferenceId:   foundAsset.ReferenceId,
 				ReferenceType: foundAsset.ReferenceType,
 				ReferenceData: foundAsset.ReferenceData,
+				Quantity:      payload.Quantity,
 			},
 		),
 		NewStep[any](
@@ -889,6 +892,7 @@ func (p *ProcessorImpl) expandWithdrawFromStorage(st Step[any]) ([]Step[any], er
 				AccountId:     payload.AccountId,
 				CharacterId:   payload.CharacterId,
 				AssetId:       assetId,
+				Quantity:      payload.Quantity,
 			},
 		),
 	}

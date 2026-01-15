@@ -81,11 +81,11 @@ func (p *Processor) Deposit(worldId byte, accountId uint32, body message.Deposit
 		return 0, err
 	}
 
-	// Create asset
+	// Create asset - slot is computed dynamically when retrieving, so we store 0
 	refType := asset.ReferenceType(body.ReferenceType)
 	a, err := asset.Create(p.l, p.db, t.Id())(
 		s.Id(),
-		body.Slot,
+		0, // Slot is computed dynamically
 		body.TemplateId,
 		body.Expiration,
 		body.ReferenceId,
@@ -261,7 +261,7 @@ func (p *Processor) DepositRollback(worldId byte, accountId uint32, body message
 }
 
 // Accept accepts an item into storage as part of a transfer saga
-// This creates a placeholder asset that will be fully populated when the transfer completes
+// For stackable items, attempts to merge with existing stacks before creating new assets
 func (p *Processor) Accept(worldId byte, accountId uint32, body compartment.AcceptCommandBody) (uint32, int16, error) {
 	t := tenant.MustFromContext(p.ctx)
 
@@ -271,24 +271,114 @@ func (p *Processor) Accept(worldId byte, accountId uint32, body compartment.Acce
 		return 0, 0, err
 	}
 
-	// Determine the slot to use
-	var slot int16
-	if body.Slot >= 0 {
-		slot = body.Slot
-	} else {
-		// Find next available slot (0-indexed)
-		assets, err := asset.GetByStorageId(p.l, p.db, t.Id())(s.Id())
+	refType := asset.ReferenceType(body.ReferenceType)
+
+	// For stackable items, try to merge with existing stacks first
+	if refType == asset.ReferenceTypeConsumable ||
+		refType == asset.ReferenceTypeSetup ||
+		refType == asset.ReferenceTypeEtc {
+
+		// Parse incoming stackable data
+		actualQuantity := body.Quantity
+		if actualQuantity == 0 {
+			actualQuantity = uint32(1)
+		}
+		ownerId := uint32(0)
+		flag := uint16(0)
+
+		if len(body.ReferenceData) > 0 {
+			var stackableData struct {
+				Quantity uint32 `json:"quantity"`
+				OwnerId  uint32 `json:"ownerId"`
+				Flag     uint16 `json:"flag"`
+			}
+			if err := json.Unmarshal(body.ReferenceData, &stackableData); err == nil {
+				if body.Quantity == 0 && stackableData.Quantity > 0 {
+					actualQuantity = stackableData.Quantity
+				}
+				ownerId = stackableData.OwnerId
+				flag = stackableData.Flag
+				p.l.Debugf("Parsed stackable data from ReferenceData: quantity=%d, ownerId=%d, flag=%d", actualQuantity, ownerId, flag)
+			} else {
+				p.l.WithError(err).Warnf("Failed to parse ReferenceData for stackable item, using defaults")
+			}
+		}
+
+		// Try to find existing stack to merge with
+		existingAssets, err := asset.GetByStorageIdAndTemplateId(p.l, p.db, t.Id())(s.Id(), body.TemplateId)
+		if err == nil && len(existingAssets) > 0 {
+			// Get slotMax for this template
+			slotMax, err := p.getSlotMax(body.TemplateId, refType)
+			if err != nil {
+				p.l.WithError(err).Warnf("Failed to get slotMax for template %d, using default of 100", body.TemplateId)
+				slotMax = 100
+			}
+			if slotMax == 0 {
+				slotMax = 100
+			}
+
+			// Check each existing asset for merge compatibility
+			for _, existingAsset := range existingAssets {
+				existingStackable, err := stackable.GetByAssetId(p.l, p.db)(existingAsset.Id())
+				if err != nil {
+					continue
+				}
+
+				// Only merge if ownerId and flag match
+				if existingStackable.OwnerId() != ownerId || existingStackable.Flag() != flag {
+					continue
+				}
+
+				// Check if there's room to merge
+				if existingStackable.Quantity()+actualQuantity <= slotMax {
+					// Merge by updating quantity
+					newQuantity := existingStackable.Quantity() + actualQuantity
+					err = stackable.UpdateQuantity(p.l, p.db)(existingAsset.Id(), newQuantity)
+					if err != nil {
+						p.l.WithError(err).Warnf("Failed to merge stackable, will create new asset")
+						continue
+					}
+					p.l.Debugf("Merged stackable: assetId=%d, oldQuantity=%d, addedQuantity=%d, newQuantity=%d",
+						existingAsset.Id(), existingStackable.Quantity(), actualQuantity, newQuantity)
+					// Slot is computed dynamically, return 0 as placeholder
+					return existingAsset.Id(), 0, nil
+				}
+			}
+		}
+
+		// No merge possible, create new asset
+		// Slot is computed dynamically when retrieving, so we store 0
+		a, err := asset.Create(p.l, p.db, t.Id())(
+			s.Id(),
+			0, // Slot is computed dynamically
+			body.TemplateId,
+			time.Time{}, // No expiration for storage items
+			body.ReferenceId,
+			refType,
+		)
 		if err != nil {
 			return 0, 0, err
 		}
-		slot = int16(len(assets))
+
+		_, err = stackable.Create(p.l, p.db)(
+			a.Id(),
+			actualQuantity,
+			ownerId,
+			flag,
+		)
+		if err != nil {
+			_ = asset.Delete(p.l, p.db, t.Id())(a.Id())
+			return 0, 0, err
+		}
+
+		return a.Id(), 0, nil
 	}
 
-	// Create asset with the reference data
-	refType := asset.ReferenceType(body.ReferenceType)
+	// Non-stackable item - create new asset
+	// Slot is computed dynamically when retrieving, so we store 0
 	a, err := asset.Create(p.l, p.db, t.Id())(
 		s.Id(),
-		slot,
+		0, // Slot is computed dynamically
 		body.TemplateId,
 		time.Time{}, // No expiration for storage items
 		body.ReferenceId,
@@ -298,46 +388,7 @@ func (p *Processor) Accept(worldId byte, accountId uint32, body compartment.Acce
 		return 0, 0, err
 	}
 
-	// For stackable items, parse the ReferenceData and create the stackable record
-	if refType == asset.ReferenceTypeConsumable ||
-		refType == asset.ReferenceTypeSetup ||
-		refType == asset.ReferenceTypeEtc {
-		// Default values
-		quantity := uint32(1)
-		ownerId := uint32(0)
-		flag := uint16(0)
-
-		// Parse ReferenceData if present
-		if len(body.ReferenceData) > 0 {
-			var stackableData struct {
-				Quantity uint32 `json:"quantity"`
-				OwnerId  uint32 `json:"ownerId"`
-				Flag     uint16 `json:"flag"`
-			}
-			if err := json.Unmarshal(body.ReferenceData, &stackableData); err == nil {
-				quantity = stackableData.Quantity
-				ownerId = stackableData.OwnerId
-				flag = stackableData.Flag
-				p.l.Debugf("Parsed stackable data from ReferenceData: quantity=%d, ownerId=%d, flag=%d", quantity, ownerId, flag)
-			} else {
-				p.l.WithError(err).Warnf("Failed to parse ReferenceData for stackable item, using defaults")
-			}
-		}
-
-		_, err = stackable.Create(p.l, p.db)(
-			a.Id(),
-			quantity,
-			ownerId,
-			flag,
-		)
-		if err != nil {
-			// Rollback asset creation
-			_ = asset.Delete(p.l, p.db, t.Id())(a.Id())
-			return 0, 0, err
-		}
-	}
-
-	return a.Id(), slot, nil
+	return a.Id(), 0, nil
 }
 
 // AcceptAndEmit accepts an item and emits an ACCEPTED status event
@@ -366,13 +417,32 @@ func (p *Processor) Release(worldId byte, accountId uint32, body compartment.Rel
 		return err
 	}
 
-	// Delete stackable data if exists
-	if a.IsStackable() {
-		_ = stackable.Delete(p.l, p.db)(body.AssetId)
+	// Determine if this is a full or partial release
+	// quantity == 0 means release all, or if asset is not stackable, always full release
+	if body.Quantity == 0 || !a.IsStackable() {
+		// Full release - delete everything
+		if a.IsStackable() {
+			_ = stackable.Delete(p.l, p.db)(body.AssetId)
+		}
+		return asset.Delete(p.l, p.db, t.Id())(body.AssetId)
 	}
 
-	// Delete asset
-	return asset.Delete(p.l, p.db, t.Id())(body.AssetId)
+	// Get current stackable quantity
+	s, err := stackable.GetByAssetId(p.l, p.db)(body.AssetId)
+	if err != nil {
+		// Stackable data not found, do full release
+		return asset.Delete(p.l, p.db, t.Id())(body.AssetId)
+	}
+
+	// If releasing all or more, do full release
+	if body.Quantity >= s.Quantity() {
+		_ = stackable.Delete(p.l, p.db)(body.AssetId)
+		return asset.Delete(p.l, p.db, t.Id())(body.AssetId)
+	}
+
+	// Partial release - reduce quantity
+	newQuantity := s.Quantity() - body.Quantity
+	return stackable.UpdateQuantity(p.l, p.db)(body.AssetId, newQuantity)
 }
 
 // ReleaseAndEmit releases an item and emits a RELEASED status event
@@ -520,7 +590,6 @@ type mergeKey struct {
 type stackableInfo struct {
 	assetId  uint32
 	quantity uint32
-	slot     int16
 }
 
 // MergeAndSort merges stackable items with same templateId/ownerId/flag and sorts by templateId
@@ -600,7 +669,6 @@ func (p *Processor) MergeAndSort(worldId byte, accountId uint32) error {
 		stackableGroups[key] = append(stackableGroups[key], stackableInfo{
 			assetId:  assetId,
 			quantity: s.Quantity(),
-			slot:     a.Slot(),
 		})
 	}
 
@@ -633,9 +701,9 @@ func (p *Processor) MergeAndSort(worldId byte, accountId uint32) error {
 		// Keep first N assets, delete the rest
 		assetsToKeep := min(uint32(len(group)), numStacks)
 
-		// Sort group by slot to keep consistent order
+		// Sort group by asset ID to keep consistent order
 		sort.Slice(group, func(i, j int) bool {
-			return group[i].slot < group[j].slot
+			return group[i].assetId < group[j].assetId
 		})
 
 		// Update quantities for kept assets
@@ -670,36 +738,10 @@ func (p *Processor) MergeAndSort(worldId byte, accountId uint32) error {
 	return p.sortAssets(t.Id(), allAssets)
 }
 
-// sortAssets sorts assets by inventory type, then by templateId within each type, and updates their slots
+// sortAssets is a no-op since slots are now computed dynamically at retrieval time.
+// The ordering is determined by GetByStorageId which sorts by inventory_type and template_id.
 func (p *Processor) sortAssets(tenantId uuid.UUID, assets []asset.Model[any]) error {
-	// Group assets by inventory type
-	byInventoryType := make(map[asset.InventoryType][]asset.Model[any])
-	for _, a := range assets {
-		byInventoryType[a.InventoryType()] = append(byInventoryType[a.InventoryType()], a)
-	}
-
-	// Sort each inventory type group by templateId
-	for it := range byInventoryType {
-		group := byInventoryType[it]
-		sort.Slice(group, func(i, j int) bool {
-			return group[i].TemplateId() < group[j].TemplateId()
-		})
-		byInventoryType[it] = group
-	}
-
-	// Assign slots within each inventory type (0-indexed per type)
-	for _, group := range byInventoryType {
-		for i, a := range group {
-			newSlot := int16(i) // Slots are 0-indexed within each inventory type
-			if a.Slot() != newSlot {
-				err := asset.UpdateSlot(p.l, p.db, tenantId)(a.Id(), newSlot)
-				if err != nil {
-					return err
-				}
-			}
-		}
-	}
-
+	// Slots are computed dynamically when retrieving assets, so no database updates needed
 	return nil
 }
 

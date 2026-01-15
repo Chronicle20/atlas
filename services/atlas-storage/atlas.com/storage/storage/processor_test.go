@@ -131,9 +131,7 @@ func TestProcessor_Deposit_Equipable(t *testing.T) {
 		t.Fatalf("Failed to get asset: %v", err)
 	}
 
-	if a.Slot() != body.Slot {
-		t.Fatalf("Slot mismatch. Expected %d, got %d", body.Slot, a.Slot())
-	}
+	// Note: Slot is computed dynamically via GetByStorageId, not stored
 	if a.TemplateId() != body.TemplateId {
 		t.Fatalf("TemplateId mismatch. Expected %d, got %d", body.TemplateId, a.TemplateId())
 	}

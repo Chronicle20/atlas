@@ -195,6 +195,7 @@ func handleStoreAsset(l logrus.FieldLogger, ctx context.Context, s session.Model
 			AccountId:           s.AccountId(),
 			SourceSlot:          slot,
 			SourceInventoryType: byte(it),
+			Quantity:            uint32(quantity),
 		},
 		CreatedAt: now,
 		UpdatedAt: now,

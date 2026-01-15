@@ -250,6 +250,13 @@ type NotEnoughMesoErrorStatusBodyBody struct {
 	Amount int32 `json:"amount"`
 }
 
+// StatusEventMesoErrorBody is a non-generic error body for meso-related errors
+// This avoids nested generic type issues with Kafka message deserialization
+type StatusEventMesoErrorBody struct {
+	Error  string `json:"error"`
+	Amount int32  `json:"amount"`
+}
+
 type FameChangedStatusEventBody struct {
 	ActorId   uint32 `json:"actorId"`
 	ActorType string `json:"actorType"`

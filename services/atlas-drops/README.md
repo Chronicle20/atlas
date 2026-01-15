@@ -1,27 +1,29 @@
 # atlas-drops
-Mushroom game drops Service
 
-## Overview
+A microservice that manages item and meso drops within game maps. Drops are ephemeral entities that exist in-memory and are tracked per world, channel, and map.
 
-A RESTful resource which provides drops services.
+## External Dependencies
 
-## Environment
+- Kafka: Message broker for command consumption and event emission
+- Jaeger: Distributed tracing
+- atlas-equipables: External service for equipment creation and deletion (REST)
+- atlas-configurations: External service for runtime configuration (REST)
 
-- JAEGER_HOST - Jaeger [host]:[port]
-- LOG_LEVEL - Logging level - Panic / Fatal / Error / Warn / Info / Debug / Trace
-- BASE_SERVICE_URL - [scheme]://[host]:[port]/api/
+## Runtime Configuration
 
-## API
+| Variable | Description |
+|----------|-------------|
+| JAEGER_HOST | Jaeger tracing endpoint `[host]:[port]` |
+| LOG_LEVEL | Logging level (Panic/Fatal/Error/Warn/Info/Debug/Trace) |
+| REST_PORT | HTTP server port |
+| SERVICE_ID | UUID identifying this service instance |
+| EQUIPABLES | Base URL for atlas-equipables service |
+| COMMAND_TOPIC_DROP | Kafka topic for drop commands |
+| EVENT_TOPIC_DROP_STATUS | Kafka topic for drop status events |
 
-### Header
+## Documentation
 
-All RESTful requests require the supplied header information to identify the server instance.
-
-```
-TENANT_ID:083839c6-c47c-42a6-9585-76492795d123
-REGION:GMS
-MAJOR_VERSION:83
-MINOR_VERSION:1
-```
-
-### Requests
+- [Domain](docs/domain.md)
+- [Kafka](docs/kafka.md)
+- [REST](docs/rest.md)
+- [Storage](docs/storage.md)

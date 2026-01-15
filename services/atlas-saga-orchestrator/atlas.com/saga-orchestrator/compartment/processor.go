@@ -34,8 +34,8 @@ type Processor interface {
 	RequestUnequipAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
 	RequestCreateAndEquipAsset(transactionId uuid.UUID, payload CreateAndEquipAssetPayload) error
 	RequestTransferAsset(transactionId uuid.UUID, worldId byte, accountId uint32, characterId uint32, assetId uint32, fromCompartmentId uuid.UUID, fromCompartmentType byte, fromInventoryType string, toCompartmentId uuid.UUID, toCompartmentType byte, toInventoryType string, referenceId uint32, templateId uint32, referenceType string, slot int16) error
-	RequestAcceptAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) error
-	RequestReleaseAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, assetId uint32) error
+	RequestAcceptAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, quantity uint32) error
+	RequestReleaseAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, assetId uint32, quantity uint32) error
 }
 
 type ProcessorImpl struct {
@@ -94,10 +94,10 @@ func (p *ProcessorImpl) RequestTransferAsset(transactionId uuid.UUID, worldId by
 	return producer.ProviderImpl(p.l)(p.ctx)(transfer.EnvCommandTopicTransfer)(RequestTransferAssetCommandProvider(transactionId, worldId, accountId, characterId, assetId, fromCompartmentId, fromCompartmentType, fromInventoryType, toCompartmentId, toCompartmentType, toInventoryType, referenceId, templateId, referenceType, slot))
 }
 
-func (p *ProcessorImpl) RequestAcceptAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestAcceptAssetCommandProvider(transactionId, characterId, inventoryType, templateId, referenceId, referenceType, referenceData))
+func (p *ProcessorImpl) RequestAcceptAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, quantity uint32) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestAcceptAssetCommandProvider(transactionId, characterId, inventoryType, templateId, referenceId, referenceType, referenceData, quantity))
 }
 
-func (p *ProcessorImpl) RequestReleaseAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, assetId uint32) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestReleaseAssetCommandProvider(transactionId, characterId, inventoryType, assetId))
+func (p *ProcessorImpl) RequestReleaseAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, assetId uint32, quantity uint32) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestReleaseAssetCommandProvider(transactionId, characterId, inventoryType, assetId, quantity))
 }

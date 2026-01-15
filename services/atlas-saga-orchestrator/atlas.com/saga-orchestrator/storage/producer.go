@@ -88,7 +88,7 @@ func ShowStorageCommandProvider(transactionId uuid.UUID, worldId byte, channelId
 }
 
 // AcceptCommandProvider creates an ACCEPT command for the storage compartment
-func AcceptCommandProvider(transactionId uuid.UUID, worldId byte, accountId uint32, characterId uint32, slot int16, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) model.Provider[[]kafka.Message] {
+func AcceptCommandProvider(transactionId uuid.UUID, worldId byte, accountId uint32, characterId uint32, slot int16, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, quantity uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(accountId))
 	value := &storageCompartment.Command[storageCompartment.AcceptCommandBody]{
 		WorldId:     worldId,
@@ -102,13 +102,14 @@ func AcceptCommandProvider(transactionId uuid.UUID, worldId byte, accountId uint
 			ReferenceId:   referenceId,
 			ReferenceType: referenceType,
 			ReferenceData: referenceData,
+			Quantity:      quantity,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
 // ReleaseCommandProvider creates a RELEASE command for the storage compartment
-func ReleaseCommandProvider(transactionId uuid.UUID, worldId byte, accountId uint32, characterId uint32, assetId uint32) model.Provider[[]kafka.Message] {
+func ReleaseCommandProvider(transactionId uuid.UUID, worldId byte, accountId uint32, characterId uint32, assetId uint32, quantity uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(accountId))
 	value := &storageCompartment.Command[storageCompartment.ReleaseCommandBody]{
 		WorldId:     worldId,
@@ -118,6 +119,7 @@ func ReleaseCommandProvider(transactionId uuid.UUID, worldId byte, accountId uin
 		Body: storageCompartment.ReleaseCommandBody{
 			TransactionId: transactionId,
 			AssetId:       assetId,
+			Quantity:      quantity,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

@@ -837,6 +837,7 @@ type TransferToStoragePayload struct {
 	AccountId           uint32    `json:"accountId"`           // Account ID (storage owner)
 	SourceSlot          int16     `json:"sourceSlot"`          // Slot in character inventory
 	SourceInventoryType byte      `json:"sourceInventoryType"` // Character inventory type (equip, use, etc.)
+	Quantity            uint32    `json:"quantity"`            // Quantity to transfer (0 = all)
 }
 
 // WithdrawFromStoragePayload represents a high-level withdrawal from storage to character inventory
@@ -848,6 +849,7 @@ type WithdrawFromStoragePayload struct {
 	AccountId     uint32    `json:"accountId"`     // Account ID (storage owner)
 	SourceSlot    int16     `json:"sourceSlot"`    // Slot in storage
 	InventoryType byte      `json:"inventoryType"` // Target character inventory type
+	Quantity      uint32    `json:"quantity"`      // Quantity to withdraw (0 = all)
 }
 
 // AcceptToStoragePayload represents the payload for the accept_to_storage action (internal step)
@@ -861,6 +863,7 @@ type AcceptToStoragePayload struct {
 	ReferenceId   uint32          `json:"referenceId"`   // Reference ID
 	ReferenceType string          `json:"referenceType"` // Reference type
 	ReferenceData json.RawMessage `json:"referenceData"` // Asset-specific data
+	Quantity      uint32          `json:"quantity"`      // Quantity to accept (0 = all from source)
 }
 
 // ReleaseFromCharacterPayload represents the payload for the release_from_character action (internal step)
@@ -870,6 +873,7 @@ type ReleaseFromCharacterPayload struct {
 	CharacterId   uint32    `json:"characterId"`   // Character ID
 	InventoryType byte      `json:"inventoryType"` // Inventory type (equip, use, etc.)
 	AssetId       uint32    `json:"assetId"`       // Asset ID to release (populated during expansion)
+	Quantity      uint32    `json:"quantity"`      // Quantity to release (0 = all)
 }
 
 // AcceptToCharacterPayload represents the payload for the accept_to_character action (internal step)
@@ -882,6 +886,7 @@ type AcceptToCharacterPayload struct {
 	ReferenceId   uint32          `json:"referenceId"`   // Reference ID
 	ReferenceType string          `json:"referenceType"` // Reference type
 	ReferenceData json.RawMessage `json:"referenceData"` // Asset-specific data
+	Quantity      uint32          `json:"quantity"`      // Quantity to accept (0 = all from source)
 }
 
 // ReleaseFromStoragePayload represents the payload for the release_from_storage action (internal step)
@@ -892,6 +897,7 @@ type ReleaseFromStoragePayload struct {
 	AccountId     uint32    `json:"accountId"`     // Account ID
 	CharacterId   uint32    `json:"characterId"`   // Character receiving the item
 	AssetId       uint32    `json:"assetId"`       // Asset ID to release (populated during expansion)
+	Quantity      uint32    `json:"quantity"`      // Quantity to release (0 = all)
 }
 
 // Custom UnmarshalJSON for Step[T] to handle the generics

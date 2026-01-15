@@ -1274,6 +1274,7 @@ func (h *HandlerImpl) handleAcceptToStorage(s Saga, st Step[any]) error {
 		payload.ReferenceId,
 		payload.ReferenceType,
 		payload.ReferenceData,
+		payload.Quantity,
 	)
 
 	if err != nil {
@@ -1297,6 +1298,7 @@ func (h *HandlerImpl) handleReleaseFromCharacter(s Saga, st Step[any]) error {
 		payload.CharacterId,
 		payload.InventoryType,
 		payload.AssetId,
+		payload.Quantity,
 	)
 
 	if err != nil {
@@ -1326,6 +1328,7 @@ func (h *HandlerImpl) handleAcceptToCharacter(s Saga, st Step[any]) error {
 		payload.ReferenceId,
 		payload.ReferenceType,
 		payload.ReferenceData,
+		payload.Quantity,
 	)
 
 	if err != nil {
@@ -1350,6 +1353,7 @@ func (h *HandlerImpl) handleReleaseFromStorage(s Saga, st Step[any]) error {
 		payload.AccountId,
 		payload.CharacterId,
 		payload.AssetId,
+		payload.Quantity,
 	)
 
 	if err != nil {

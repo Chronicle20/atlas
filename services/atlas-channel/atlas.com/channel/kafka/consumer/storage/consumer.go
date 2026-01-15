@@ -9,6 +9,7 @@ import (
 	"atlas-channel/socket/writer"
 	"atlas-channel/storage"
 	"context"
+	"sort"
 
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
@@ -37,13 +38,16 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
 			return func(rf func(topic string, handler handler.Handler) (string, error)) {
 				var t string
-				t, _ = topic.EnvProvider(l)(storage2.EnvShowStorageCommandTopic)()
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleShowStorageCommand(sc, wp))))
+				// Legacy ShowStorage command handler - kept for backwards compatibility
+				//t, _ = topic.EnvProvider(l)(storage2.EnvShowStorageCommandTopic)()
+				//_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleShowStorageCommand(sc, wp))))
 
 				t, _ = topic.EnvProvider(l)(storage2.EnvEventTopicStatus)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMesosUpdatedEvent(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleArrangedEvent(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStorageErrorEvent(sc, wp))))
+				// New projection created event handler
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleProjectionCreatedEvent(sc, wp))))
 
 				t, _ = topic.EnvProvider(l)(storage2.EnvEventTopicStorageCompartmentStatus)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStorageCompartmentAcceptedEvent(sc, wp))))
@@ -84,8 +88,13 @@ func handleShowStorageCommand(sc server.Model, wp writer.Producer) message.Handl
 			// Store the NPC ID for fee lookup during storage operations
 			sessionProc.SetStorageNpcId(s.SessionId(), cmd.NpcId)
 
+			assets := storageData.Assets
+			sort.Slice(assets, func(i, j int) bool {
+				return assets[i].InventoryType() < assets[j].InventoryType()
+			})
+
 			return session.Announce(l)(ctx)(wp)(writer.StorageOperation)(
-				writer.StorageOperationShowBody(l, sc.Tenant())(cmd.NpcId, storageData.Capacity, storageData.Mesos, storageData.Assets))(s)
+				writer.StorageOperationShowBody(l, sc.Tenant())(cmd.NpcId, storageData.Capacity, storageData.Mesos, assets))(s)
 		})
 		if err != nil {
 			l.WithError(err).Errorf("Unable to show storage to character [%d].", cmd.CharacterId)
@@ -216,18 +225,35 @@ func handleStorageCompartmentAcceptedEvent(sc server.Model, wp writer.Producer) 
 		l.Debugf("Storage compartment ACCEPTED: character [%d] account [%d] asset [%d] slot [%d] inventoryType [%d]",
 			e.CharacterId, e.AccountId, e.Body.AssetId, e.Body.Slot, inventoryType)
 
-		// Fetch updated storage data to send to client
+		// Try to fetch projection data first, fall back to storage data
 		storageProc := storage.NewProcessor(l, ctx)
-		storageData, err := storageProc.GetStorageData(e.AccountId, e.WorldId)
+		projData, err := storageProc.GetProjectionData(e.CharacterId)
 		if err != nil {
-			l.WithError(err).Errorf("Unable to fetch storage data for account [%d] after ACCEPTED event.", e.AccountId)
+			l.WithError(err).Debugf("Projection not found for character [%d], falling back to storage data", e.CharacterId)
+			// Fallback to storage data
+			storageData, err := storageProc.GetStorageData(e.AccountId, e.WorldId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to fetch storage data for account [%d] after ACCEPTED event.", e.AccountId)
+				return
+			}
+
+			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId,
+				session.Announce(l)(ctx)(wp)(writer.StorageOperation)(
+					writer.StorageOperationUpdateAssetsForCompartmentBody(l, sc.Tenant())(writer.StorageOperationModeStoreAssets, byte(storageData.Capacity), inventoryType, storageData.Assets)))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to send storage update to character [%d].", e.CharacterId)
+			}
 			return
 		}
+
+		// Get assets from the specific compartment in the projection
+		compartmentName := inventoryTypeName(inventoryType)
+		assets := projData.Compartments[compartmentName]
 
 		// Send updated storage assets for the affected compartment only
 		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId,
 			session.Announce(l)(ctx)(wp)(writer.StorageOperation)(
-				writer.StorageOperationUpdateAssetsForCompartmentBody(l, sc.Tenant())(writer.StorageOperationModeStoreAssets, byte(storageData.Capacity), inventoryType, storageData.Assets)))
+				writer.StorageOperationUpdateAssetsForCompartmentBody(l, sc.Tenant())(writer.StorageOperationModeStoreAssets, projData.Capacity, inventoryType, assets)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to send storage update to character [%d].", e.CharacterId)
 		}
@@ -258,20 +284,105 @@ func handleStorageCompartmentReleasedEvent(sc server.Model, wp writer.Producer) 
 		l.Debugf("Storage compartment RELEASED: character [%d] account [%d] asset [%d] inventoryType [%d]",
 			e.CharacterId, e.AccountId, e.Body.AssetId, inventoryType)
 
-		// Fetch updated storage data to send to client
+		// Try to fetch projection data first, fall back to storage data
 		storageProc := storage.NewProcessor(l, ctx)
-		storageData, err := storageProc.GetStorageData(e.AccountId, e.WorldId)
+		projData, err := storageProc.GetProjectionData(e.CharacterId)
 		if err != nil {
-			l.WithError(err).Errorf("Unable to fetch storage data for account [%d] after RELEASED event.", e.AccountId)
+			l.WithError(err).Debugf("Projection not found for character [%d], falling back to storage data", e.CharacterId)
+			// Fallback to storage data
+			storageData, err := storageProc.GetStorageData(e.AccountId, e.WorldId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to fetch storage data for account [%d] after RELEASED event.", e.AccountId)
+				return
+			}
+
+			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId,
+				session.Announce(l)(ctx)(wp)(writer.StorageOperation)(
+					writer.StorageOperationUpdateAssetsForCompartmentBody(l, sc.Tenant())(writer.StorageOperationModeRetrieveAssets, byte(storageData.Capacity), inventoryType, storageData.Assets)))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to send storage update to character [%d].", e.CharacterId)
+			}
 			return
 		}
+
+		// Get assets from the specific compartment in the projection
+		compartmentName := inventoryTypeName(inventoryType)
+		assets := projData.Compartments[compartmentName]
 
 		// Send updated storage assets for the affected compartment only
 		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId,
 			session.Announce(l)(ctx)(wp)(writer.StorageOperation)(
-				writer.StorageOperationUpdateAssetsForCompartmentBody(l, sc.Tenant())(writer.StorageOperationModeRetrieveAssets, byte(storageData.Capacity), inventoryType, storageData.Assets)))
+				writer.StorageOperationUpdateAssetsForCompartmentBody(l, sc.Tenant())(writer.StorageOperationModeRetrieveAssets, projData.Capacity, inventoryType, assets)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to send storage update to character [%d].", e.CharacterId)
 		}
+	}
+}
+
+func handleProjectionCreatedEvent(sc server.Model, wp writer.Producer) message.Handler[storage2.StatusEvent[storage2.ProjectionCreatedEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e storage2.StatusEvent[storage2.ProjectionCreatedEventBody]) {
+		if e.Type != storage2.StatusEventTypeProjectionCreated {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		if e.Body.WorldId != byte(sc.WorldId()) {
+			return
+		}
+
+		if !sc.Is(t, world.Id(e.Body.WorldId), channel.Id(e.Body.ChannelId)) {
+			return
+		}
+
+		l.Debugf("Received PROJECTION_CREATED event for character [%d], account [%d], NPC [%d]",
+			e.Body.CharacterId, e.Body.AccountId, e.Body.NpcId)
+
+		// Fetch projection data from storage service
+		storageProc := storage.NewProcessor(l, ctx)
+		projData, err := storageProc.GetProjectionData(e.Body.CharacterId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to fetch projection data for character [%d]", e.Body.CharacterId)
+			return
+		}
+
+		// Send storage UI to the character and set the storage NPC ID on the session
+		sessionProc := session.NewProcessor(l, ctx)
+		err = sessionProc.IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, func(s session.Model) error {
+			// Store the NPC ID for fee lookup during storage operations
+			sessionProc.SetStorageNpcId(s.SessionId(), e.Body.NpcId)
+
+			// Get all assets from the projection (use equip compartment which has all initially)
+			assets := projData.GetAllAssetsFromProjection()
+			sort.Slice(assets, func(i, j int) bool {
+				return assets[i].InventoryType() < assets[j].InventoryType()
+			})
+
+			return session.Announce(l)(ctx)(wp)(writer.StorageOperation)(
+				writer.StorageOperationShowBody(l, sc.Tenant())(e.Body.NpcId, projData.Capacity, projData.Mesos, assets))(s)
+		})
+		if err != nil {
+			l.WithError(err).Errorf("Unable to show storage to character [%d].", e.Body.CharacterId)
+		}
+	}
+}
+
+func inventoryTypeName(t asset.InventoryType) string {
+	switch t {
+	case asset.InventoryTypeEquip:
+		return "equip"
+	case asset.InventoryTypeUse:
+		return "use"
+	case asset.InventoryTypeSetup:
+		return "setup"
+	case asset.InventoryTypeEtc:
+		return "etc"
+	case asset.InventoryTypeCash:
+		return "cash"
+	default:
+		return "unknown"
 	}
 }

@@ -33,3 +33,31 @@ func (r *AssetRestModel) SetID(strId string) error {
 	r.Id = strconv.Itoa(id)
 	return nil
 }
+
+// ProjectionAssetRestModel represents an asset from a storage projection
+type ProjectionAssetRestModel struct {
+	Id            uint32          `json:"id"`
+	Slot          int16           `json:"slot"`
+	TemplateId    uint32          `json:"templateId"`
+	Expiration    time.Time       `json:"expiration"`
+	ReferenceId   uint32          `json:"referenceId"`
+	ReferenceType string          `json:"referenceType"`
+	ReferenceData json.RawMessage `json:"referenceData"`
+}
+
+func (r ProjectionAssetRestModel) GetName() string {
+	return "storage_assets"
+}
+
+func (r ProjectionAssetRestModel) GetID() string {
+	return strconv.Itoa(int(r.Id))
+}
+
+func (r *ProjectionAssetRestModel) SetID(strId string) error {
+	id, err := strconv.Atoi(strId)
+	if err != nil {
+		return err
+	}
+	r.Id = uint32(id)
+	return nil
+}

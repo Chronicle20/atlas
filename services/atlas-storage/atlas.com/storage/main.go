@@ -3,9 +3,11 @@ package main
 import (
 	"atlas-storage/asset"
 	"atlas-storage/database"
+	"atlas-storage/kafka/consumer/character"
 	"atlas-storage/kafka/consumer/compartment"
 	storage2 "atlas-storage/kafka/consumer/storage"
 	"atlas-storage/logger"
+	"atlas-storage/projection"
 	"atlas-storage/service"
 	"atlas-storage/stackable"
 	"atlas-storage/storage"
@@ -67,8 +69,10 @@ func main() {
 		cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 		storage2.InitConsumers(l)(cmf)(consumerGroupId)
 		compartment.InitConsumers(l)(cmf)(consumerGroupId)
+		character.InitConsumers(l)(cmf)(consumerGroupId)
 		storage2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 		compartment.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+		character.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	}
 
 	server.New(l).
@@ -78,6 +82,7 @@ func main() {
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(storage.InitResource(GetServer())(db)).
 		AddRouteInitializer(asset.InitResource(GetServer())(db)).
+		AddRouteInitializer(projection.InitResource(GetServer())).
 		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

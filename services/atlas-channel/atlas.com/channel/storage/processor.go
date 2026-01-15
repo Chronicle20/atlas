@@ -15,10 +15,22 @@ const DefaultStorageCapacity byte = 4
 
 type Processor interface {
 	GetStorageData(accountId uint32, worldId byte) (StorageData, error)
+	GetProjectionData(characterId uint32) (ProjectionData, error)
 	Arrange(worldId byte, accountId uint32) error
 	DepositMesos(worldId byte, accountId uint32, mesos uint32) error
 	WithdrawMesos(worldId byte, accountId uint32, mesos uint32) error
 	CloseStorage(characterId uint32) error
+}
+
+// ProjectionData holds projection data retrieved from storage service
+type ProjectionData struct {
+	CharacterId  uint32
+	AccountId    uint32
+	WorldId      byte
+	Capacity     byte
+	Mesos        uint32
+	NpcId        uint32
+	Compartments map[string][]asset.Model[any]
 }
 
 type ProcessorImpl struct {
@@ -62,6 +74,52 @@ func (p *ProcessorImpl) GetStorageData(accountId uint32, worldId byte) (StorageD
 		Mesos:    storageModel.Mesos,
 		Assets:   assets,
 	}, nil
+}
+
+// GetProjectionData fetches projection data for a character from storage service
+func (p *ProcessorImpl) GetProjectionData(characterId uint32) (ProjectionData, error) {
+	// Fetch projection from storage service
+	projModel, err := requestProjectionByCharacterId(characterId)(p.l, p.ctx)
+	if err != nil {
+		return ProjectionData{}, err
+	}
+
+	// Parse compartment assets from raw JSON
+	parsedCompartments, err := projModel.ParseCompartmentAssets()
+	if err != nil {
+		return ProjectionData{}, err
+	}
+
+	// Transform compartments
+	compartments := make(map[string][]asset.Model[any])
+	for name, restAssets := range parsedCompartments {
+		assets := make([]asset.Model[any], 0, len(restAssets))
+		for _, a := range restAssets {
+			assets = append(assets, transformAsset(a))
+		}
+		compartments[name] = assets
+	}
+
+	return ProjectionData{
+		CharacterId:  projModel.CharacterId,
+		AccountId:    projModel.AccountId,
+		WorldId:      projModel.WorldId,
+		Capacity:     byte(projModel.Capacity),
+		Mesos:        projModel.Mesos,
+		NpcId:        projModel.NpcId,
+		Compartments: compartments,
+	}, nil
+}
+
+// GetAllAssetsFromProjection returns all assets from a projection, sorted by inventory type
+func (p ProjectionData) GetAllAssetsFromProjection() []asset.Model[any] {
+	var result []asset.Model[any]
+	// Add assets from each compartment - they may overlap initially until filtered
+	// Use equip compartment as primary since it starts with all assets
+	if assets, ok := p.Compartments["equip"]; ok {
+		result = append(result, assets...)
+	}
+	return result
 }
 
 // transformAsset converts an AssetRestModel to asset.Model

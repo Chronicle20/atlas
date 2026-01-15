@@ -836,37 +836,18 @@ func (p *ProcessorImpl) expandWithdrawFromStorage(st Step[any]) ([]Step[any], er
 		return nil, fmt.Errorf("invalid payload type for WithdrawFromStorage")
 	}
 
-	// Lookup the source asset from storage
-	p.l.Debugf("Looking up source asset from storage for account [%d] world [%d] compartment type [%d] slot [%d]",
-		payload.AccountId, payload.WorldId, payload.InventoryType, payload.SourceSlot)
+	// Lookup the source asset from storage projection
+	p.l.Debugf("Looking up source asset from projection for character [%d] compartment type [%d] slot [%d]",
+		payload.CharacterId, payload.InventoryType, payload.SourceSlot)
 
-	assets, err := storage.RequestAssets(p.l, p.ctx)(payload.AccountId, payload.WorldId)
+	foundAsset, err := storage.RequestProjectionAsset(p.l, p.ctx)(payload.CharacterId, payload.InventoryType, payload.SourceSlot)
 	if err != nil {
-		return nil, fmt.Errorf("unable to lookup storage assets for account [%d]: %w", payload.AccountId, err)
-	}
-
-	// Find the asset at the source slot with matching inventory type
-	// Inventory type is derived from template ID: templateId / 1000000
-	var foundAsset *storage.AssetRestModel
-	for i := range assets {
-		assetInventoryType := byte(assets[i].TemplateId / 1000000)
-		if assets[i].Slot == payload.SourceSlot && assetInventoryType == payload.InventoryType {
-			foundAsset = &assets[i]
-			break
-		}
-	}
-
-	if foundAsset == nil {
-		return nil, fmt.Errorf("no asset found at slot [%d] in storage compartment [%d] for account [%d]",
-			payload.SourceSlot, payload.InventoryType, payload.AccountId)
+		return nil, fmt.Errorf("unable to lookup projection asset for character [%d] compartment [%d] slot [%d]: %w",
+			payload.CharacterId, payload.InventoryType, payload.SourceSlot, err)
 	}
 
 	p.l.Debugf("Found source storage asset template [%d] with referenceId [%d] type [%s] and %d bytes of referenceData",
 		foundAsset.TemplateId, foundAsset.ReferenceId, foundAsset.ReferenceType, len(foundAsset.ReferenceData))
-
-	// Convert string ID to uint32 for assetId
-	var assetId uint32
-	fmt.Sscanf(foundAsset.Id, "%d", &assetId)
 
 	// Resolve quantity: if payload.Quantity is 0 (meaning "take all"), extract actual quantity from ReferenceData
 	actualQuantity := payload.Quantity
@@ -906,7 +887,7 @@ func (p *ProcessorImpl) expandWithdrawFromStorage(st Step[any]) ([]Step[any], er
 				WorldId:       payload.WorldId,
 				AccountId:     payload.AccountId,
 				CharacterId:   payload.CharacterId,
-				AssetId:       assetId,
+				AssetId:       foundAsset.Id,
 				Quantity:      payload.Quantity,
 			},
 		),

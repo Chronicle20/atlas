@@ -6,34 +6,20 @@ import (
 	"gorm.io/gorm"
 )
 
-// GetByStorageId retrieves all assets for a storage with computed slots.
-// Slots are computed dynamically based on inventory_type and template_id ordering.
-// This is necessary because the client reorders slots dynamically.
+// GetByStorageId retrieves all assets for a storage
 func GetByStorageId(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID) func(storageId uuid.UUID) ([]Model[any], error) {
 	return func(storageId uuid.UUID) ([]Model[any], error) {
 		var entities []Entity
 		err := db.Where("tenant_id = ? AND storage_id = ?", tenantId, storageId).
-			Order("inventory_type ASC, template_id ASC").
+			Order("slot ASC").
 			Find(&entities).Error
 		if err != nil {
 			return nil, err
 		}
 
-		// Compute slots dynamically based on position in sorted order
 		models := make([]Model[any], 0, len(entities))
-		for i, e := range entities {
-			// Create model with computed slot
-			m := NewModelBuilder[any]().
-				SetId(e.Id).
-				SetStorageId(e.StorageId).
-				SetInventoryType(e.InventoryType).
-				SetSlot(int16(i)).
-				SetTemplateId(e.TemplateId).
-				SetExpiration(e.Expiration).
-				SetReferenceId(e.ReferenceId).
-				SetReferenceType(e.ReferenceType).
-				MustBuild()
-			models = append(models, m)
+		for _, e := range entities {
+			models = append(models, Make(e))
 		}
 		return models, nil
 	}
@@ -56,6 +42,24 @@ func GetByStorageIdAndTemplateId(l logrus.FieldLogger, db *gorm.DB, tenantId uui
 	return func(storageId uuid.UUID, templateId uint32) ([]Model[any], error) {
 		var entities []Entity
 		err := db.Where("tenant_id = ? AND storage_id = ? AND template_id = ?", tenantId, storageId, templateId).
+			Find(&entities).Error
+		if err != nil {
+			return nil, err
+		}
+		models := make([]Model[any], 0, len(entities))
+		for _, e := range entities {
+			models = append(models, Make(e))
+		}
+		return models, nil
+	}
+}
+
+// GetByStorageIdAndInventoryType retrieves assets with a specific inventory type in a storage
+func GetByStorageIdAndInventoryType(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID) func(storageId uuid.UUID, inventoryType InventoryType) ([]Model[any], error) {
+	return func(storageId uuid.UUID, inventoryType InventoryType) ([]Model[any], error) {
+		var entities []Entity
+		err := db.Where("tenant_id = ? AND storage_id = ? AND inventory_type = ?", tenantId, storageId, inventoryType).
+			Order("slot ASC").
 			Find(&entities).Error
 		if err != nil {
 			return nil, err

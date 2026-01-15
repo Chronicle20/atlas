@@ -2,6 +2,7 @@ package channel
 
 import (
 	"context"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
@@ -39,7 +40,7 @@ func (p *ProcessorImpl) Register(worldId world.Id, channelId channel.Id, ipAddre
 		SetIpAddress(ipAddress).
 		SetPort(port).
 		SetCurrentCapacity(0).
-		SetMaxCapacity(0).
+		SetMaxCapacity(1000).
 		MustBuild())
 }
 

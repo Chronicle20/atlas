@@ -872,3 +872,35 @@ func min(a, b uint32) uint32 {
 	}
 	return b
 }
+
+// EmitProjectionCreatedEvent emits a PROJECTION_CREATED event to notify channel service
+func (p *Processor) EmitProjectionCreatedEvent(characterId uint32, accountId uint32, worldId byte, channelId byte, npcId uint32) error {
+	event := &message.StatusEvent[message.ProjectionCreatedEventBody]{
+		WorldId:   worldId,
+		AccountId: accountId,
+		Type:      message.StatusEventTypeProjectionCreated,
+		Body: message.ProjectionCreatedEventBody{
+			CharacterId: characterId,
+			AccountId:   accountId,
+			WorldId:     worldId,
+			ChannelId:   channelId,
+			NpcId:       npcId,
+		},
+	}
+
+	return producer.ProviderImpl(p.l)(p.ctx)(message.EnvEventTopic)(createMessageProvider(accountId, event))
+}
+
+// EmitProjectionDestroyedEvent emits a PROJECTION_DESTROYED event
+func (p *Processor) EmitProjectionDestroyedEvent(characterId uint32, accountId uint32, worldId byte) error {
+	event := &message.StatusEvent[message.ProjectionDestroyedEventBody]{
+		WorldId:   worldId,
+		AccountId: accountId,
+		Type:      message.StatusEventTypeProjectionDestroyed,
+		Body: message.ProjectionDestroyedEventBody{
+			CharacterId: characterId,
+		},
+	}
+
+	return producer.ProviderImpl(p.l)(p.ctx)(message.EnvEventTopic)(createMessageProvider(accountId, event))
+}

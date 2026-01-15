@@ -40,3 +40,18 @@ func Make(e Entity) Model[any] {
 		SetReferenceType(e.ReferenceType).
 		MustBuild()
 }
+
+// MakeWithDynamicSlot converts an Entity to a Model with a dynamically computed slot.
+// Used when slots are not stored in the database but computed at retrieval time.
+func MakeWithDynamicSlot(e Entity, slot int16) Model[any] {
+	return NewModelBuilder[any]().
+		SetId(e.Id).
+		SetStorageId(e.StorageId).
+		SetInventoryType(e.InventoryType).
+		SetSlot(slot).
+		SetTemplateId(e.TemplateId).
+		SetExpiration(e.Expiration).
+		SetReferenceId(e.ReferenceId).
+		SetReferenceType(e.ReferenceType).
+		MustBuild()
+}

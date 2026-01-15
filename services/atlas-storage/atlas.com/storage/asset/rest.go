@@ -8,7 +8,7 @@ import (
 )
 
 type BaseRestModel struct {
-	Id            uint32      `json:"-"`
+	Id            uint32      `json:"id"`
 	Slot          int16       `json:"slot"`
 	TemplateId    uint32      `json:"templateId"`
 	Expiration    time.Time   `json:"expiration"`

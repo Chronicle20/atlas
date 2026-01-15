@@ -86,6 +86,7 @@ func StorageOperationUpdateAssetsForCompartmentBody(l logrus.FieldLogger, t tena
 			// Set flag based on the affected compartment
 			flags := inventoryTypeToFlag(inventoryType)
 			w.WriteLong(uint64(flags))
+			//w.WriteLong(uint64(StorageFlagCurrency | StorageFlagEquipment | StorageFlagConsumables | StorageFlagSetUp | StorageFlagEtc | StorageFlagCash))
 
 			// Filter assets to only include those from the affected compartment
 			var filteredAssets []asset.Model[any]

@@ -97,6 +97,43 @@ func UpdatedEventStatusProvider(transactionId uuid.UUID, characterId uint32, a M
 	return producer.SingleMessageProvider(key, value)
 }
 
+// AcceptedEventStatusProvider emits an ACCEPTED event when an asset is accepted into inventory (e.g., from storage)
+func AcceptedEventStatusProvider(transactionId uuid.UUID, characterId uint32, a Model[any]) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(a.Id()))
+	value := &asset.StatusEvent[asset.AcceptedStatusEventBody[any]]{
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		CompartmentId: a.CompartmentId(),
+		AssetId:       a.Id(),
+		TemplateId:    a.TemplateId(),
+		Slot:          a.Slot(),
+		Type:          asset.StatusEventTypeAccepted,
+		Body: asset.AcceptedStatusEventBody[any]{
+			ReferenceId:   a.ReferenceId(),
+			ReferenceType: string(a.ReferenceType()),
+			ReferenceData: getReferenceData(a.ReferenceData()),
+			Expiration:    a.Expiration(),
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// ReleasedEventStatusProvider emits a RELEASED event when an asset is released from inventory (e.g., to storage)
+func ReleasedEventStatusProvider(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, assetId uint32, templateId uint32, slot int16) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(assetId))
+	value := &asset.StatusEvent[asset.ReleasedStatusEventBody]{
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		CompartmentId: compartmentId,
+		AssetId:       assetId,
+		TemplateId:    templateId,
+		Slot:          slot,
+		Type:          asset.StatusEventTypeReleased,
+		Body:          asset.ReleasedStatusEventBody{},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func getReferenceData(data any) interface{} {
 	if erd, ok := data.(EquipableReferenceData); ok {
 		return asset.EquipableReferenceData{

@@ -57,12 +57,14 @@ type StatusEventAcceptedBody struct {
 	TransactionId uuid.UUID `json:"transactionId"`
 	AssetId       uint32    `json:"assetId"`
 	Slot          int16     `json:"slot"`
+	InventoryType byte      `json:"inventoryType"`
 }
 
 // StatusEventReleasedBody contains the data for a RELEASED event
 type StatusEventReleasedBody struct {
 	TransactionId uuid.UUID `json:"transactionId"`
 	AssetId       uint32    `json:"assetId"`
+	InventoryType byte      `json:"inventoryType"`
 }
 
 // StatusEventErrorBody contains the data for an ERROR event

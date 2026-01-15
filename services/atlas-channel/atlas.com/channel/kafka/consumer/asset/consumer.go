@@ -45,6 +45,8 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetQuantityUpdatedEvent(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetMoveEvent(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetDeletedEvent(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetAcceptedEvent(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetReleasedEvent(sc, wp))))
 			}
 		}
 	}
@@ -731,6 +733,67 @@ func handleAssetDeletedEvent(sc server.Model, wp writer.Producer) message.Handle
 		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, af)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to remove [%d] in slot [%d] for character [%d].", e.TemplateId, e.Slot, e.CharacterId)
+		}
+	}
+}
+
+// handleAssetAcceptedEvent handles ACCEPTED events when an asset is accepted into inventory (e.g., from storage)
+func handleAssetAcceptedEvent(sc server.Model, wp writer.Producer) message.Handler[asset2.StatusEvent[asset2.AcceptedStatusEventBody[any]]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e asset2.StatusEvent[asset2.AcceptedStatusEventBody[any]]) {
+		if e.Type != asset2.StatusEventTypeAccepted {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
+			inventoryType, ok := inventory.TypeFromItemId(item.Id(e.TemplateId))
+			if !ok {
+				l.Errorf("Unable to identify inventory type by item [%d].", e.TemplateId)
+				return errors.New("unable to identify inventory type")
+			}
+
+			a := asset.NewBuilder[any](e.AssetId, e.CompartmentId, e.TemplateId, e.Body.ReferenceId, asset.ReferenceType(e.Body.ReferenceType)).
+				SetSlot(e.Slot).
+				SetExpiration(e.Body.Expiration).
+				SetReferenceData(getReferenceData(e.Body.ReferenceData)).
+				MustBuild()
+			itemWriter := model.FlipOperator(writer.WriteAssetInfo(t)(true))(a)
+			bp := writer.CharacterInventoryChangeBody(false, writer.InventoryAddBodyWriter(inventoryType, e.Slot, itemWriter))
+			err := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(bp)(s)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to add accepted asset [%d] to slot [%d] for character [%d].", e.TemplateId, e.Slot, s.CharacterId())
+			}
+			return err
+		})
+	}
+}
+
+// handleAssetReleasedEvent handles RELEASED events when an asset is released from inventory (e.g., to storage)
+func handleAssetReleasedEvent(sc server.Model, wp writer.Producer) message.Handler[asset2.StatusEvent[asset2.ReleasedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e asset2.StatusEvent[asset2.ReleasedStatusEventBody]) {
+		if e.Type != asset2.StatusEventTypeReleased {
+			return
+		}
+
+		t := sc.Tenant()
+		if !t.Is(tenant.MustFromContext(ctx)) {
+			return
+		}
+
+		inventoryType, ok := inventory.TypeFromItemId(item.Id(e.TemplateId))
+		if !ok {
+			l.Errorf("Unable to identify inventory type by item [%d].", e.TemplateId)
+			return
+		}
+
+		af := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryChangeBody(false, writer.InventoryRemoveBodyWriter(inventoryType, e.Slot)))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, af)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to remove released asset [%d] in slot [%d] for character [%d].", e.TemplateId, e.Slot, e.CharacterId)
 		}
 	}
 }

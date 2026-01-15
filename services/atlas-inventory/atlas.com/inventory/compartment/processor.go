@@ -1276,7 +1276,7 @@ func (p *Processor) Accept(mb *message.Buffer) func(transactionId uuid.UUID, cha
 			}
 
 			// Create the asset with full reference data
-			a, err = p.assetProcessor.WithTransaction(tx).Accept(mb)(characterId, c.Id(), c.Type(), targetSlot, templateId, referenceId, referenceType, referenceData)
+			a, err = p.assetProcessor.WithTransaction(tx).Accept(mb)(transactionId, characterId, c.Id(), c.Type(), targetSlot, templateId, referenceId, referenceType, referenceData)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to accept asset template [%d] for character [%d].", templateId, characterId)
 				return err
@@ -1346,16 +1346,14 @@ func (p *Processor) Release(mb *message.Buffer) func(transactionId uuid.UUID, ch
 				return errors.New("unable to find asset in compartment")
 			}
 
-			// Delete the asset silently (without emitting delete messages)
-			// We're using a new message buffer that we don't emit
-			silentBuffer := message.NewBuffer()
-			err = p.assetProcessor.WithTransaction(tx).Release(silentBuffer)(characterId, c.Id())(assetToRemove)
+			// Delete the asset and emit RELEASED event for channel service
+			err = p.assetProcessor.WithTransaction(tx).Release(mb)(transactionId, characterId, c.Id())(assetToRemove)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to delete asset [%d] for character [%d].", assetToRemove.Id(), characterId)
 				return err
 			}
 
-			// Emit a status event for the successful move
+			// Emit a compartment status event for saga orchestrator
 			return mb.Put(compartment.EnvEventTopicStatus, ReleasedEventStatusProvider(transactionId, c.Id(), characterId))
 		})
 

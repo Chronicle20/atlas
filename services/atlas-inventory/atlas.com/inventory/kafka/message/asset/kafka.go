@@ -12,6 +12,8 @@ const (
 	StatusEventTypeDeleted         = "DELETED"
 	StatusEventTypeMoved           = "MOVED"
 	StatusEventTypeQuantityChanged = "QUANTITY_CHANGED"
+	StatusEventTypeAccepted        = "ACCEPTED"
+	StatusEventTypeReleased        = "RELEASED"
 )
 
 type StatusEvent[E any] struct {
@@ -148,4 +150,16 @@ type MovedStatusEventBody struct {
 
 type QuantityChangedEventBody struct {
 	Quantity uint32 `json:"quantity"`
+}
+
+// AcceptedStatusEventBody contains full asset info for assets accepted into inventory (e.g., from storage)
+type AcceptedStatusEventBody[E any] struct {
+	ReferenceId   uint32    `json:"referenceId"`
+	ReferenceType string    `json:"referenceType"`
+	ReferenceData E         `json:"referenceData"`
+	Expiration    time.Time `json:"expiration"`
+}
+
+// ReleasedStatusEventBody is for assets released from inventory (e.g., to storage)
+type ReleasedStatusEventBody struct {
 }

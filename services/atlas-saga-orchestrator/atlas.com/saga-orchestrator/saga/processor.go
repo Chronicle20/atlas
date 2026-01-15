@@ -11,6 +11,7 @@ import (
 	"atlas-saga-orchestrator/storage"
 	"atlas-saga-orchestrator/validation"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -865,6 +866,18 @@ func (p *ProcessorImpl) expandWithdrawFromStorage(st Step[any]) ([]Step[any], er
 	var assetId uint32
 	fmt.Sscanf(foundAsset.Id, "%d", &assetId)
 
+	// Resolve quantity: if payload.Quantity is 0 (meaning "take all"), extract actual quantity from ReferenceData
+	actualQuantity := payload.Quantity
+	if actualQuantity == 0 && len(foundAsset.ReferenceData) > 0 {
+		var refData struct {
+			Quantity uint32 `json:"quantity"`
+		}
+		if unmarshalErr := json.Unmarshal(foundAsset.ReferenceData, &refData); unmarshalErr == nil && refData.Quantity > 0 {
+			actualQuantity = refData.Quantity
+			p.l.Debugf("Resolved quantity from ReferenceData: %d", actualQuantity)
+		}
+	}
+
 	// Create expanded steps
 	steps := []Step[any]{
 		NewStep[any](
@@ -879,7 +892,7 @@ func (p *ProcessorImpl) expandWithdrawFromStorage(st Step[any]) ([]Step[any], er
 				ReferenceId:   foundAsset.ReferenceId,
 				ReferenceType: foundAsset.ReferenceType,
 				ReferenceData: foundAsset.ReferenceData,
-				Quantity:      payload.Quantity,
+				Quantity:      actualQuantity,
 			},
 		),
 		NewStep[any](

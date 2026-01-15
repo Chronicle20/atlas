@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"atlas-channel/asset"
 	consumer2 "atlas-channel/kafka/consumer"
 	storage2 "atlas-channel/kafka/message/storage"
 	"atlas-channel/server"
@@ -211,8 +212,9 @@ func handleStorageCompartmentAcceptedEvent(sc server.Model, wp writer.Producer) 
 			return
 		}
 
-		l.Debugf("Storage compartment ACCEPTED: character [%d] account [%d] asset [%d] slot [%d]",
-			e.CharacterId, e.AccountId, e.Body.AssetId, e.Body.Slot)
+		inventoryType := asset.InventoryType(e.Body.InventoryType)
+		l.Debugf("Storage compartment ACCEPTED: character [%d] account [%d] asset [%d] slot [%d] inventoryType [%d]",
+			e.CharacterId, e.AccountId, e.Body.AssetId, e.Body.Slot, inventoryType)
 
 		// Fetch updated storage data to send to client
 		storageProc := storage.NewProcessor(l, ctx)
@@ -222,10 +224,10 @@ func handleStorageCompartmentAcceptedEvent(sc server.Model, wp writer.Producer) 
 			return
 		}
 
-		// Send updated storage assets to the client
+		// Send updated storage assets for the affected compartment only
 		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId,
 			session.Announce(l)(ctx)(wp)(writer.StorageOperation)(
-				writer.StorageOperationStoreAssetsBody(l, sc.Tenant())(byte(storageData.Capacity), storageData.Assets)))
+				writer.StorageOperationStoreAssetsForCompartmentBody(l, sc.Tenant())(byte(storageData.Capacity), inventoryType, storageData.Assets)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to send storage update to character [%d].", e.CharacterId)
 		}
@@ -252,8 +254,9 @@ func handleStorageCompartmentReleasedEvent(sc server.Model, wp writer.Producer) 
 			return
 		}
 
-		l.Debugf("Storage compartment RELEASED: character [%d] account [%d] asset [%d]",
-			e.CharacterId, e.AccountId, e.Body.AssetId)
+		inventoryType := asset.InventoryType(e.Body.InventoryType)
+		l.Debugf("Storage compartment RELEASED: character [%d] account [%d] asset [%d] inventoryType [%d]",
+			e.CharacterId, e.AccountId, e.Body.AssetId, inventoryType)
 
 		// Fetch updated storage data to send to client
 		storageProc := storage.NewProcessor(l, ctx)
@@ -263,10 +266,10 @@ func handleStorageCompartmentReleasedEvent(sc server.Model, wp writer.Producer) 
 			return
 		}
 
-		// Send updated storage assets to the client
+		// Send updated storage assets for the affected compartment only
 		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId,
 			session.Announce(l)(ctx)(wp)(writer.StorageOperation)(
-				writer.StorageOperationStoreAssetsBody(l, sc.Tenant())(byte(storageData.Capacity), storageData.Assets)))
+				writer.StorageOperationStoreAssetsForCompartmentBody(l, sc.Tenant())(byte(storageData.Capacity), inventoryType, storageData.Assets)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to send storage update to character [%d].", e.CharacterId)
 		}

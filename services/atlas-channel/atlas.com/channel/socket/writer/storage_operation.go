@@ -107,6 +107,51 @@ func StorageOperationStoreAssetsBody(l logrus.FieldLogger, t tenant.Model) func(
 	}
 }
 
+// inventoryTypeToFlag converts an inventory type to the corresponding storage flag
+func inventoryTypeToFlag(inventoryType asset.InventoryType) StorageFlag {
+	switch inventoryType {
+	case asset.InventoryTypeEquip:
+		return StorageFlagEquipment
+	case asset.InventoryTypeUse:
+		return StorageFlagConsumables
+	case asset.InventoryTypeSetup:
+		return StorageFlagSetUp
+	case asset.InventoryTypeEtc:
+		return StorageFlagEtc
+	case asset.InventoryTypeCash:
+		return StorageFlagCash
+	default:
+		return 0
+	}
+}
+
+// StorageOperationStoreAssetsForCompartmentBody sends storage assets filtered by compartment type
+// The flag is derived from the inventory type, and only assets of that type are sent
+func StorageOperationStoreAssetsForCompartmentBody(l logrus.FieldLogger, t tenant.Model) func(slots byte, inventoryType asset.InventoryType, assets []asset.Model[any]) BodyProducer {
+	return func(slots byte, inventoryType asset.InventoryType, assets []asset.Model[any]) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getStorageOperationMode(l)(options, StorageOperationModeStoreAssets))
+			w.WriteByte(slots)
+
+			// Set flag based on the affected compartment
+			flags := inventoryTypeToFlag(inventoryType)
+			w.WriteLong(uint64(flags))
+
+			// Filter assets to only include those from the affected compartment
+			var filteredAssets []asset.Model[any]
+			for _, a := range assets {
+				if a.InventoryType() == inventoryType {
+					filteredAssets = append(filteredAssets, a)
+				}
+			}
+
+			w.WriteByte(byte(len(filteredAssets)))
+			_ = model.ForEachSlice(model.FixedProvider(filteredAssets), WriteAssetInfo(t)(true)(w))
+			return w.Bytes()
+		}
+	}
+}
+
 func StorageOperationUpdateMesoBody(l logrus.FieldLogger) func(slots byte, meso uint32) BodyProducer {
 	return func(slots byte, meso uint32) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {

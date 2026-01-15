@@ -114,10 +114,12 @@ type CompartmentAcceptedEventBody struct {
 	TransactionId uuid.UUID `json:"transactionId"`
 	AssetId       uint32    `json:"assetId"`
 	Slot          int16     `json:"slot"`
+	InventoryType byte      `json:"inventoryType"`
 }
 
 // CompartmentReleasedEventBody contains the data for a RELEASED event
 type CompartmentReleasedEventBody struct {
 	TransactionId uuid.UUID `json:"transactionId"`
 	AssetId       uint32    `json:"assetId"`
+	InventoryType byte      `json:"inventoryType"`
 }

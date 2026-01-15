@@ -349,8 +349,11 @@ func (p *Processor) AcceptAndEmit(worldId byte, accountId uint32, characterId ui
 		return err
 	}
 
+	// Get inventory type from template ID
+	inventoryType := asset.InventoryTypeFromTemplateId(body.TemplateId)
+
 	// Emit accepted event
-	return p.emitCompartmentAcceptedEvent(worldId, accountId, characterId, body.TransactionId, assetId, slot)
+	return p.emitCompartmentAcceptedEvent(worldId, accountId, characterId, body.TransactionId, assetId, slot, inventoryType)
 }
 
 // Release releases an item from storage as part of a transfer saga
@@ -374,18 +377,29 @@ func (p *Processor) Release(worldId byte, accountId uint32, body compartment.Rel
 
 // ReleaseAndEmit releases an item and emits a RELEASED status event
 func (p *Processor) ReleaseAndEmit(worldId byte, accountId uint32, characterId uint32, body compartment.ReleaseCommandBody) error {
-	err := p.Release(worldId, accountId, body)
+	t := tenant.MustFromContext(p.ctx)
+
+	// Get asset info before releasing to capture inventory type
+	a, err := asset.GetById(p.l, p.db, t.Id())(body.AssetId)
+	if err != nil {
+		_ = p.emitCompartmentErrorEvent(worldId, accountId, characterId, body.TransactionId, "RELEASE_FAILED", err.Error())
+		return err
+	}
+
+	inventoryType := a.InventoryType()
+
+	err = p.Release(worldId, accountId, body)
 	if err != nil {
 		// Emit error event
 		_ = p.emitCompartmentErrorEvent(worldId, accountId, characterId, body.TransactionId, "RELEASE_FAILED", err.Error())
 		return err
 	}
 
-	// Emit released event
-	return p.emitCompartmentReleasedEvent(worldId, accountId, characterId, body.TransactionId, body.AssetId)
+	// Emit released event with inventory type
+	return p.emitCompartmentReleasedEvent(worldId, accountId, characterId, body.TransactionId, body.AssetId, inventoryType)
 }
 
-func (p *Processor) emitCompartmentAcceptedEvent(worldId byte, accountId uint32, characterId uint32, transactionId uuid.UUID, assetId uint32, slot int16) error {
+func (p *Processor) emitCompartmentAcceptedEvent(worldId byte, accountId uint32, characterId uint32, transactionId uuid.UUID, assetId uint32, slot int16, inventoryType asset.InventoryType) error {
 	event := &compartment.StatusEvent[compartment.StatusEventAcceptedBody]{
 		WorldId:     worldId,
 		AccountId:   accountId,
@@ -395,13 +409,14 @@ func (p *Processor) emitCompartmentAcceptedEvent(worldId byte, accountId uint32,
 			TransactionId: transactionId,
 			AssetId:       assetId,
 			Slot:          slot,
+			InventoryType: byte(inventoryType),
 		},
 	}
 
 	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvEventTopicStatus)(createCompartmentMessageProvider(accountId, event))
 }
 
-func (p *Processor) emitCompartmentReleasedEvent(worldId byte, accountId uint32, characterId uint32, transactionId uuid.UUID, assetId uint32) error {
+func (p *Processor) emitCompartmentReleasedEvent(worldId byte, accountId uint32, characterId uint32, transactionId uuid.UUID, assetId uint32, inventoryType asset.InventoryType) error {
 	event := &compartment.StatusEvent[compartment.StatusEventReleasedBody]{
 		WorldId:     worldId,
 		AccountId:   accountId,
@@ -410,6 +425,7 @@ func (p *Processor) emitCompartmentReleasedEvent(worldId byte, accountId uint32,
 		Body: compartment.StatusEventReleasedBody{
 			TransactionId: transactionId,
 			AssetId:       assetId,
+			InventoryType: byte(inventoryType),
 		},
 	}
 

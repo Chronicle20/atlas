@@ -81,11 +81,11 @@ func (p *Processor) Deposit(worldId byte, accountId uint32, body message.Deposit
 		return 0, err
 	}
 
-	// Create asset - slot is computed dynamically when retrieving, so we store 0
+	// Create asset
 	refType := asset.ReferenceType(body.ReferenceType)
 	a, err := asset.Create(p.l, p.db, t.Id())(
 		s.Id(),
-		0, // Slot is computed dynamically
+		body.Slot,
 		body.TemplateId,
 		body.Expiration,
 		body.ReferenceId,
@@ -272,6 +272,20 @@ func (p *Processor) Accept(worldId byte, accountId uint32, body compartment.Acce
 	}
 
 	refType := asset.ReferenceType(body.ReferenceType)
+	inventoryType := asset.InventoryTypeFromTemplateId(body.TemplateId)
+
+	// Determine the slot to use (slots are per inventory type / compartment)
+	var slot int16
+	if body.Slot >= 0 {
+		slot = body.Slot
+	} else {
+		// Find next available slot within this inventory type (0-indexed per compartment)
+		compartmentAssets, err := asset.GetByStorageIdAndInventoryType(p.l, p.db, t.Id())(s.Id(), inventoryType)
+		if err != nil {
+			return 0, 0, err
+		}
+		slot = int16(len(compartmentAssets))
+	}
 
 	// For stackable items, try to merge with existing stacks first
 	if refType == asset.ReferenceTypeConsumable ||
@@ -340,17 +354,15 @@ func (p *Processor) Accept(worldId byte, accountId uint32, body compartment.Acce
 					}
 					p.l.Debugf("Merged stackable: assetId=%d, oldQuantity=%d, addedQuantity=%d, newQuantity=%d",
 						existingAsset.Id(), existingStackable.Quantity(), actualQuantity, newQuantity)
-					// Slot is computed dynamically, return 0 as placeholder
-					return existingAsset.Id(), 0, nil
+					return existingAsset.Id(), existingAsset.Slot(), nil
 				}
 			}
 		}
 
 		// No merge possible, create new asset
-		// Slot is computed dynamically when retrieving, so we store 0
 		a, err := asset.Create(p.l, p.db, t.Id())(
 			s.Id(),
-			0, // Slot is computed dynamically
+			slot,
 			body.TemplateId,
 			time.Time{}, // No expiration for storage items
 			body.ReferenceId,
@@ -371,14 +383,13 @@ func (p *Processor) Accept(worldId byte, accountId uint32, body compartment.Acce
 			return 0, 0, err
 		}
 
-		return a.Id(), 0, nil
+		return a.Id(), slot, nil
 	}
 
 	// Non-stackable item - create new asset
-	// Slot is computed dynamically when retrieving, so we store 0
 	a, err := asset.Create(p.l, p.db, t.Id())(
 		s.Id(),
-		0, // Slot is computed dynamically
+		slot,
 		body.TemplateId,
 		time.Time{}, // No expiration for storage items
 		body.ReferenceId,
@@ -388,7 +399,7 @@ func (p *Processor) Accept(worldId byte, accountId uint32, body compartment.Acce
 		return 0, 0, err
 	}
 
-	return a.Id(), 0, nil
+	return a.Id(), slot, nil
 }
 
 // AcceptAndEmit accepts an item and emits an ACCEPTED status event
@@ -590,6 +601,7 @@ type mergeKey struct {
 type stackableInfo struct {
 	assetId  uint32
 	quantity uint32
+	slot     int16
 }
 
 // MergeAndSort merges stackable items with same templateId/ownerId/flag and sorts by templateId
@@ -669,6 +681,7 @@ func (p *Processor) MergeAndSort(worldId byte, accountId uint32) error {
 		stackableGroups[key] = append(stackableGroups[key], stackableInfo{
 			assetId:  assetId,
 			quantity: s.Quantity(),
+			slot:     a.Slot(),
 		})
 	}
 
@@ -701,9 +714,9 @@ func (p *Processor) MergeAndSort(worldId byte, accountId uint32) error {
 		// Keep first N assets, delete the rest
 		assetsToKeep := min(uint32(len(group)), numStacks)
 
-		// Sort group by asset ID to keep consistent order
+		// Sort group by slot to keep consistent order
 		sort.Slice(group, func(i, j int) bool {
-			return group[i].assetId < group[j].assetId
+			return group[i].slot < group[j].slot
 		})
 
 		// Update quantities for kept assets
@@ -738,10 +751,36 @@ func (p *Processor) MergeAndSort(worldId byte, accountId uint32) error {
 	return p.sortAssets(t.Id(), allAssets)
 }
 
-// sortAssets is a no-op since slots are now computed dynamically at retrieval time.
-// The ordering is determined by GetByStorageId which sorts by inventory_type and template_id.
+// sortAssets sorts assets by inventory type, then by templateId within each type, and updates their slots
 func (p *Processor) sortAssets(tenantId uuid.UUID, assets []asset.Model[any]) error {
-	// Slots are computed dynamically when retrieving assets, so no database updates needed
+	// Group assets by inventory type
+	byInventoryType := make(map[asset.InventoryType][]asset.Model[any])
+	for _, a := range assets {
+		byInventoryType[a.InventoryType()] = append(byInventoryType[a.InventoryType()], a)
+	}
+
+	// Sort each inventory type group by templateId
+	for it := range byInventoryType {
+		group := byInventoryType[it]
+		sort.Slice(group, func(i, j int) bool {
+			return group[i].TemplateId() < group[j].TemplateId()
+		})
+		byInventoryType[it] = group
+	}
+
+	// Assign slots within each inventory type (0-indexed per type)
+	for _, group := range byInventoryType {
+		for i, a := range group {
+			newSlot := int16(i) // Slots are 0-indexed within each inventory type
+			if a.Slot() != newSlot {
+				err := asset.UpdateSlot(p.l, p.db, tenantId)(a.Id(), newSlot)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
 	return nil
 }
 

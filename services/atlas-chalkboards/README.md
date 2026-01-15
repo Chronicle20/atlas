@@ -1,94 +1,28 @@
 # atlas-chalkboards
-Mushroom game chalkboards Service
 
-## Overview
+Chalkboard management service for the Atlas platform.
 
-A RESTful microservice that provides chalkboard functionality for the Mushroom game. This service manages chalkboard messages associated with characters and maps in the game world. Chalkboards allow players to leave messages that can be viewed by other players.
+The service manages chalkboard messages for game characters. It tracks which characters have active chalkboard messages, handles setting and clearing messages via Kafka commands, and automatically clears chalkboards on character logout, map change, or channel change. The service maintains in-memory registries for both chalkboard messages and character locations.
 
-## Features
+## External Dependencies
 
-- Retrieve chalkboard messages by character ID
-- List all chalkboards in a specific map
-- Kafka integration for event-driven communication with other services
-- Jaeger tracing for distributed system monitoring
+- Kafka: Message-based command and event processing
+- Jaeger: Distributed tracing
 
-## Environment Variables
+## Runtime Configuration
 
-### Required
-- `REST_PORT` - Port for the REST API server
-- `BOOTSTRAP_SERVERS` - Comma-separated list of Kafka broker addresses
-- `JAEGER_HOST_PORT` - Jaeger host:port for distributed tracing (e.g., "jaeger:6831")
+| Variable | Description |
+|----------|-------------|
+| JAEGER_HOST_PORT | Jaeger host:port for distributed tracing |
+| LOG_LEVEL | Logging level (Panic/Fatal/Error/Warn/Info/Debug/Trace) |
+| REST_PORT | Port for REST server |
+| BOOTSTRAP_SERVERS | Kafka bootstrap servers |
+| COMMAND_TOPIC_CHALKBOARD | Topic for chalkboard commands |
+| EVENT_TOPIC_CHALKBOARD_STATUS | Topic for chalkboard status events |
+| EVENT_TOPIC_CHARACTER_STATUS | Topic for character status events (consumed) |
 
-### Kafka Topics
-- `COMMAND_TOPIC_CHALKBOARD` - Topic for chalkboard commands
-- `EVENT_TOPIC_CHALKBOARD_STATUS` - Topic for chalkboard status events
-- `EVENT_TOPIC_CHARACTER_STATUS` - Topic for character status events
+## Documentation
 
-### Optional
-- `LOG_LEVEL` - Logging level - Panic / Fatal / Error / Warn / Info / Debug / Trace (default: Info)
-
-## REST API
-
-### Header Requirements
-
-All RESTful requests require the following header information to identify the server instance:
-
-```
-TENANT_ID:083839c6-c47c-42a6-9585-76492795d123
-REGION:GMS
-MAJOR_VERSION:83
-MINOR_VERSION:1
-```
-
-### Endpoints
-
-#### Get Chalkboard by Character ID
-
-```
-GET /api/chalkboards/{characterId}
-```
-
-Retrieves the chalkboard message associated with a specific character.
-
-**Response:**
-```json
-{
-  "data": {
-    "type": "chalkboard",
-    "id": "123",
-    "attributes": {
-      "message": "Hello world!"
-    }
-  }
-}
-```
-
-#### Get Chalkboards in Map
-
-```
-GET /api/worlds/{worldId}/channels/{channelId}/maps/{mapId}/chalkboards
-```
-
-Retrieves all chalkboard messages in a specific map.
-
-**Response:**
-```json
-{
-  "data": [
-    {
-      "type": "chalkboard",
-      "id": "123",
-      "attributes": {
-        "message": "Hello world!"
-      }
-    },
-    {
-      "type": "chalkboard",
-      "id": "456",
-      "attributes": {
-        "message": "Another message"
-      }
-    }
-  ]
-}
-```
+- [Domain](docs/domain.md)
+- [Kafka](docs/kafka.md)
+- [REST](docs/rest.md)

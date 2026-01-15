@@ -227,7 +227,7 @@ func handleStorageCompartmentAcceptedEvent(sc server.Model, wp writer.Producer) 
 		// Send updated storage assets for the affected compartment only
 		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId,
 			session.Announce(l)(ctx)(wp)(writer.StorageOperation)(
-				writer.StorageOperationStoreAssetsForCompartmentBody(l, sc.Tenant())(byte(storageData.Capacity), inventoryType, storageData.Assets)))
+				writer.StorageOperationUpdateAssetsForCompartmentBody(l, sc.Tenant())(writer.StorageOperationModeStoreAssets, byte(storageData.Capacity), inventoryType, storageData.Assets)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to send storage update to character [%d].", e.CharacterId)
 		}
@@ -269,7 +269,7 @@ func handleStorageCompartmentReleasedEvent(sc server.Model, wp writer.Producer) 
 		// Send updated storage assets for the affected compartment only
 		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId,
 			session.Announce(l)(ctx)(wp)(writer.StorageOperation)(
-				writer.StorageOperationStoreAssetsForCompartmentBody(l, sc.Tenant())(byte(storageData.Capacity), inventoryType, storageData.Assets)))
+				writer.StorageOperationUpdateAssetsForCompartmentBody(l, sc.Tenant())(writer.StorageOperationModeRetrieveAssets, byte(storageData.Capacity), inventoryType, storageData.Assets)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to send storage update to character [%d].", e.CharacterId)
 		}

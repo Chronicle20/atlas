@@ -837,26 +837,28 @@ func (p *ProcessorImpl) expandWithdrawFromStorage(st Step[any]) ([]Step[any], er
 	}
 
 	// Lookup the source asset from storage
-	p.l.Debugf("Looking up source asset from storage for account [%d] world [%d] slot [%d]",
-		payload.AccountId, payload.WorldId, payload.SourceSlot)
+	p.l.Debugf("Looking up source asset from storage for account [%d] world [%d] compartment type [%d] slot [%d]",
+		payload.AccountId, payload.WorldId, payload.InventoryType, payload.SourceSlot)
 
 	assets, err := storage.RequestAssets(p.l, p.ctx)(payload.AccountId, payload.WorldId)
 	if err != nil {
 		return nil, fmt.Errorf("unable to lookup storage assets for account [%d]: %w", payload.AccountId, err)
 	}
 
-	// Find the asset at the source slot
+	// Find the asset at the source slot with matching inventory type
+	// Inventory type is derived from template ID: templateId / 1000000
 	var foundAsset *storage.AssetRestModel
 	for i := range assets {
-		if assets[i].Slot == payload.SourceSlot {
+		assetInventoryType := byte(assets[i].TemplateId / 1000000)
+		if assets[i].Slot == payload.SourceSlot && assetInventoryType == payload.InventoryType {
 			foundAsset = &assets[i]
 			break
 		}
 	}
 
 	if foundAsset == nil {
-		return nil, fmt.Errorf("no asset found at slot [%d] in storage for account [%d]",
-			payload.SourceSlot, payload.AccountId)
+		return nil, fmt.Errorf("no asset found at slot [%d] in storage compartment [%d] for account [%d]",
+			payload.SourceSlot, payload.InventoryType, payload.AccountId)
 	}
 
 	p.l.Debugf("Found source storage asset template [%d] with referenceId [%d] type [%s] and %d bytes of referenceData",

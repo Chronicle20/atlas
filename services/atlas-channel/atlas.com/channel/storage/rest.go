@@ -5,16 +5,18 @@ import (
 	"fmt"
 	"strconv"
 	"time"
+
+	"github.com/jtumidanski/api2go/jsonapi"
 )
 
 // StorageRestModel represents the storage REST response from atlas-storage
 type StorageRestModel struct {
-	Id        string             `json:"-"`
-	WorldId   byte               `json:"world_id"`
-	AccountId uint32             `json:"account_id"`
-	Capacity  uint32             `json:"capacity"`
-	Mesos     uint32             `json:"mesos"`
-	Assets    []AssetRestModel   `json:"assets"`
+	Id        string           `json:"-"`
+	WorldId   byte             `json:"world_id"`
+	AccountId uint32           `json:"account_id"`
+	Capacity  uint32           `json:"capacity"`
+	Mesos     uint32           `json:"mesos"`
+	Assets    []AssetRestModel `json:"-"`
 }
 
 func (r StorageRestModel) GetName() string {
@@ -27,6 +29,62 @@ func (r StorageRestModel) GetID() string {
 
 func (r *StorageRestModel) SetID(id string) error {
 	r.Id = id
+	return nil
+}
+
+func (r StorageRestModel) GetReferences() []jsonapi.Reference {
+	return []jsonapi.Reference{
+		{
+			Type: "storage_assets",
+			Name: "assets",
+		},
+	}
+}
+
+func (r StorageRestModel) GetReferencedIDs() []jsonapi.ReferenceID {
+	var result []jsonapi.ReferenceID
+	for _, v := range r.Assets {
+		result = append(result, jsonapi.ReferenceID{
+			ID:   v.GetID(),
+			Type: v.GetName(),
+			Name: "assets",
+		})
+	}
+	return result
+}
+
+func (r *StorageRestModel) SetToOneReferenceID(name, ID string) error {
+	return nil
+}
+
+func (r *StorageRestModel) SetToManyReferenceIDs(name string, IDs []string) error {
+	if name == "assets" {
+		for _, idStr := range IDs {
+			id, err := strconv.Atoi(idStr)
+			if err != nil {
+				return err
+			}
+			r.Assets = append(r.Assets, AssetRestModel{Id: uint32(id)})
+		}
+	}
+	return nil
+}
+
+func (r *StorageRestModel) SetReferencedStructs(references map[string]map[string]jsonapi.Data) error {
+	if refMap, ok := references["storage_assets"]; ok {
+		assets := make([]AssetRestModel, 0)
+		for _, ri := range r.Assets {
+			if ref, ok := refMap[ri.GetID()]; ok {
+				wip := ri
+				err := jsonapi.ProcessIncludeData(&wip, ref, references)
+				if err != nil {
+					return err
+				}
+				assets = append(assets, wip)
+			}
+		}
+		r.Assets = assets
+	}
 	return nil
 }
 

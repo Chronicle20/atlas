@@ -1024,6 +1024,7 @@ func (p *Processor) Release(mb *message.Buffer) func(transactionId uuid.UUID, ch
 			assetId := a.Id()
 			templateId := a.TemplateId()
 			slot := a.Slot()
+			referenceType := string(a.ReferenceType())
 
 			txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
 				err := deleteById(tx, p.t.Id(), assetId)
@@ -1031,7 +1032,7 @@ func (p *Processor) Release(mb *message.Buffer) func(transactionId uuid.UUID, ch
 					return err
 				}
 				// Emit RELEASED event for channel service to update client inventory
-				return mb.Put(asset.EnvEventTopicStatus, ReleasedEventStatusProvider(transactionId, characterId, compartmentId, assetId, templateId, slot))
+				return mb.Put(asset.EnvEventTopicStatus, ReleasedEventStatusProvider(transactionId, characterId, compartmentId, assetId, templateId, slot, referenceType))
 			})
 			if txErr != nil {
 				p.l.WithError(txErr).Errorf("Unable to delete asset [%d].", assetId)

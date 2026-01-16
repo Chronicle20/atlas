@@ -6,6 +6,7 @@ type Model struct {
 	id          uint32
 	cashId      int64
 	templateId  uint32
+	commodityId uint32
 	quantity    uint32
 	flag        uint16
 	purchasedBy uint32
@@ -22,6 +23,10 @@ func (m Model) CashId() int64 {
 
 func (m Model) TemplateId() uint32 {
 	return m.templateId
+}
+
+func (m Model) CommodityId() uint32 {
+	return m.commodityId
 }
 
 func (m Model) Quantity() uint32 {

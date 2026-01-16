@@ -13,6 +13,7 @@ const (
 
 type Command[E any] struct {
 	AccountId       uint32 `json:"accountId"`
+	CharacterId     uint32 `json:"characterId"`
 	CompartmentType byte   `json:"compartmentType"`
 	Type            string `json:"type"`
 	Body            E      `json:"body"`
@@ -32,6 +33,8 @@ type ReleaseCommandBody struct {
 	TransactionId uuid.UUID `json:"transactionId"`
 	CompartmentId uuid.UUID `json:"compartmentId"`
 	AssetId       uint32    `json:"assetId"`
+	CashId        int64     `json:"cashId"`     // CashId for client notification correlation
+	TemplateId    uint32    `json:"templateId"` // Item template ID for client notification
 }
 
 const (
@@ -45,8 +48,10 @@ const (
 )
 
 // StatusEvent represents a cash compartment status event
-// According to the requirements, it should always contain the compartmentId and type
+// Contains accountId and characterId to allow channel service to find the session and notify the client
 type StatusEvent[E any] struct {
+	AccountId       uint32    `json:"accountId"`
+	CharacterId     uint32    `json:"characterId"`
 	CompartmentId   uuid.UUID `json:"compartmentId"`
 	CompartmentType byte      `json:"compartmentType"`
 	Type            string    `json:"type"`
@@ -71,10 +76,14 @@ type StatusEventDeletedBody struct {
 
 type StatusEventAcceptedBody struct {
 	TransactionId uuid.UUID `json:"transactionId"`
+	AssetId       uuid.UUID `json:"assetId"`
 }
 
 type StatusEventReleasedBody struct {
 	TransactionId uuid.UUID `json:"transactionId"`
+	AssetId       uint32    `json:"assetId"`
+	CashId        int64     `json:"cashId"`     // CashId for client notification correlation
+	TemplateId    uint32    `json:"templateId"` // Item template ID for client notification
 }
 
 type StatusEventErrorBody struct {

@@ -22,7 +22,7 @@ func generateUniqueCashId(tenantId uuid.UUID, db *gorm.DB) (int64, error) {
 	}
 }
 
-func create(tenantId uuid.UUID, templateId uint32, quantity uint32, purchasedBy uint32) database.EntityProvider[Entity] {
+func create(tenantId uuid.UUID, templateId uint32, commodityId uint32, quantity uint32, purchasedBy uint32) database.EntityProvider[Entity] {
 	return func(db *gorm.DB) model.Provider[Entity] {
 		cashId, err := generateUniqueCashId(tenantId, db)
 		if err != nil {
@@ -35,6 +35,7 @@ func create(tenantId uuid.UUID, templateId uint32, quantity uint32, purchasedBy 
 			TenantId:    tenantId,
 			CashId:      cashId,
 			TemplateId:  templateId,
+			CommodityId: commodityId,
 			Quantity:    quantity,
 			Flag:        0, // Default flag value
 			PurchasedBy: purchasedBy,
@@ -52,7 +53,7 @@ func create(tenantId uuid.UUID, templateId uint32, quantity uint32, purchasedBy 
 
 // findOrCreateByCashId finds an existing item by cashId, or creates a new one if not found
 // This is used for preserving cashId during transfers between inventory and cash shop
-func findOrCreateByCashId(tenantId uuid.UUID, cashId int64, templateId uint32, quantity uint32, purchasedBy uint32) database.EntityProvider[Entity] {
+func findOrCreateByCashId(tenantId uuid.UUID, cashId int64, templateId uint32, commodityId uint32, quantity uint32, purchasedBy uint32) database.EntityProvider[Entity] {
 	return func(db *gorm.DB) model.Provider[Entity] {
 		// First try to find an existing item with this cashId
 		entities, err := byCashIdEntityProvider(tenantId, cashId)(db)()
@@ -72,6 +73,7 @@ func findOrCreateByCashId(tenantId uuid.UUID, cashId int64, templateId uint32, q
 			TenantId:    tenantId,
 			CashId:      cashId,
 			TemplateId:  templateId,
+			CommodityId: commodityId,
 			Quantity:    quantity,
 			Flag:        0, // Default flag value
 			PurchasedBy: purchasedBy,

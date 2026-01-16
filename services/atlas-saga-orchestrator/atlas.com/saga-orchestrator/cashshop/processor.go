@@ -14,10 +14,10 @@ import (
 type Processor interface {
 	AwardCurrencyAndEmit(transactionId uuid.UUID, accountId uint32, currencyType uint32, amount int32) error
 	AwardCurrency(mb *message.Buffer) func(transactionId uuid.UUID, accountId uint32, currencyType uint32, amount int32) error
-	AcceptAndEmit(transactionId uuid.UUID, accountId uint32, compartmentId uuid.UUID, compartmentType byte, cashId int64, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) error
-	Accept(mb *message.Buffer) func(transactionId uuid.UUID, accountId uint32, compartmentId uuid.UUID, compartmentType byte, cashId int64, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) error
-	ReleaseAndEmit(transactionId uuid.UUID, accountId uint32, compartmentId uuid.UUID, compartmentType byte, assetId uint32) error
-	Release(mb *message.Buffer) func(transactionId uuid.UUID, accountId uint32, compartmentId uuid.UUID, compartmentType byte, assetId uint32) error
+	AcceptAndEmit(transactionId uuid.UUID, characterId uint32, accountId uint32, compartmentId uuid.UUID, compartmentType byte, cashId int64, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) error
+	Accept(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, accountId uint32, compartmentId uuid.UUID, compartmentType byte, cashId int64, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) error
+	ReleaseAndEmit(transactionId uuid.UUID, characterId uint32, accountId uint32, compartmentId uuid.UUID, compartmentType byte, assetId uint32, cashId int64, templateId uint32) error
+	Release(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, accountId uint32, compartmentId uuid.UUID, compartmentType byte, assetId uint32, cashId int64, templateId uint32) error
 }
 
 type ProcessorImpl struct {
@@ -48,26 +48,26 @@ func (p *ProcessorImpl) AwardCurrency(mb *message.Buffer) func(transactionId uui
 	}
 }
 
-func (p *ProcessorImpl) AcceptAndEmit(transactionId uuid.UUID, accountId uint32, compartmentId uuid.UUID, compartmentType byte, cashId int64, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) error {
+func (p *ProcessorImpl) AcceptAndEmit(transactionId uuid.UUID, characterId uint32, accountId uint32, compartmentId uuid.UUID, compartmentType byte, cashId int64, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
-		return p.Accept(mb)(transactionId, accountId, compartmentId, compartmentType, cashId, templateId, referenceId, referenceType, referenceData)
+		return p.Accept(mb)(transactionId, characterId, accountId, compartmentId, compartmentType, cashId, templateId, referenceId, referenceType, referenceData)
 	})
 }
 
-func (p *ProcessorImpl) Accept(mb *message.Buffer) func(transactionId uuid.UUID, accountId uint32, compartmentId uuid.UUID, compartmentType byte, cashId int64, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) error {
-	return func(transactionId uuid.UUID, accountId uint32, compartmentId uuid.UUID, compartmentType byte, cashId int64, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) error {
-		return mb.Put(cashshopCompartment.EnvCommandTopic, AcceptCommandProvider(accountId, compartmentId, compartmentType, transactionId, cashId, templateId, referenceId, referenceType, referenceData))
+func (p *ProcessorImpl) Accept(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, accountId uint32, compartmentId uuid.UUID, compartmentType byte, cashId int64, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) error {
+	return func(transactionId uuid.UUID, characterId uint32, accountId uint32, compartmentId uuid.UUID, compartmentType byte, cashId int64, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) error {
+		return mb.Put(cashshopCompartment.EnvCommandTopic, AcceptCommandProvider(characterId, accountId, compartmentId, compartmentType, transactionId, cashId, templateId, referenceId, referenceType, referenceData))
 	}
 }
 
-func (p *ProcessorImpl) ReleaseAndEmit(transactionId uuid.UUID, accountId uint32, compartmentId uuid.UUID, compartmentType byte, assetId uint32) error {
+func (p *ProcessorImpl) ReleaseAndEmit(transactionId uuid.UUID, characterId uint32, accountId uint32, compartmentId uuid.UUID, compartmentType byte, assetId uint32, cashId int64, templateId uint32) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
-		return p.Release(mb)(transactionId, accountId, compartmentId, compartmentType, assetId)
+		return p.Release(mb)(transactionId, characterId, accountId, compartmentId, compartmentType, assetId, cashId, templateId)
 	})
 }
 
-func (p *ProcessorImpl) Release(mb *message.Buffer) func(transactionId uuid.UUID, accountId uint32, compartmentId uuid.UUID, compartmentType byte, assetId uint32) error {
-	return func(transactionId uuid.UUID, accountId uint32, compartmentId uuid.UUID, compartmentType byte, assetId uint32) error {
-		return mb.Put(cashshopCompartment.EnvCommandTopic, ReleaseCommandProvider(accountId, compartmentId, compartmentType, transactionId, assetId))
+func (p *ProcessorImpl) Release(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, accountId uint32, compartmentId uuid.UUID, compartmentType byte, assetId uint32, cashId int64, templateId uint32) error {
+	return func(transactionId uuid.UUID, characterId uint32, accountId uint32, compartmentId uuid.UUID, compartmentType byte, assetId uint32, cashId int64, templateId uint32) error {
+		return mb.Put(cashshopCompartment.EnvCommandTopic, ReleaseCommandProvider(characterId, accountId, compartmentId, compartmentType, transactionId, assetId, cashId, templateId))
 	}
 }

@@ -1340,12 +1340,13 @@ func (h *HandlerImpl) handleAcceptToCashShop(s Saga, st Step[any]) error {
 		return errors.New("invalid payload")
 	}
 
-	h.l.Debugf("Accepting asset template [%d] with cashId [%d] to cash shop compartment [%s] for account [%d]",
-		payload.TemplateId, payload.CashId, payload.CompartmentId, payload.AccountId)
+	h.l.Debugf("Accepting asset template [%d] with cashId [%d] to cash shop compartment [%s] for account [%d] character [%d]",
+		payload.TemplateId, payload.CashId, payload.CompartmentId, payload.AccountId, payload.CharacterId)
 
 	// Send ACCEPT command to cash shop compartment with pre-populated asset data (including preserved cashId)
 	err := h.cashshopP.AcceptAndEmit(
 		payload.TransactionId,
+		payload.CharacterId,
 		payload.AccountId,
 		payload.CompartmentId,
 		payload.CompartmentType,
@@ -1372,15 +1373,18 @@ func (h *HandlerImpl) handleReleaseFromCashShop(s Saga, st Step[any]) error {
 		return errors.New("invalid payload")
 	}
 
-	h.l.Debugf("Releasing asset [%d] from cash shop compartment [%s] for account [%d]",
-		payload.AssetId, payload.CompartmentId, payload.AccountId)
+	h.l.Debugf("Releasing asset [%d] from cash shop compartment [%s] for account [%d] character [%d]",
+		payload.AssetId, payload.CompartmentId, payload.AccountId, payload.CharacterId)
 
 	err := h.cashshopP.ReleaseAndEmit(
 		payload.TransactionId,
+		payload.CharacterId,
 		payload.AccountId,
 		payload.CompartmentId,
 		payload.CompartmentType,
 		payload.AssetId,
+		payload.CashId,
+		payload.TemplateId,
 	)
 
 	if err != nil {

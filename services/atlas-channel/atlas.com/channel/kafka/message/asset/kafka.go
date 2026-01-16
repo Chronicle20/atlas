@@ -1,8 +1,9 @@
 package asset
 
 import (
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 const (
@@ -161,4 +162,5 @@ type AcceptedStatusEventBody[E any] struct {
 
 // ReleasedStatusEventBody is for assets released from inventory (e.g., to storage)
 type ReleasedStatusEventBody struct {
+	ReferenceType string `json:"referenceType"`
 }

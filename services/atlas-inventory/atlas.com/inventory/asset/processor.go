@@ -15,6 +15,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"math"
+	"time"
+
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-model/model"
@@ -22,8 +25,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"math"
-	"time"
 )
 
 type Provider interface {
@@ -672,7 +673,7 @@ func (p *Processor) Accept(mb *message.Buffer) func(transactionId uuid.UUID, cha
 			switch referenceType {
 			case "EQUIPABLE", "equipable":
 				refType = ReferenceTypeEquipable
-			case "CASH_EQUIPABLE", "cash_equipable":
+			case "CASH-EQUIPABLE", "cash-equipable":
 				refType = ReferenceTypeCashEquipable
 			case "CONSUMABLE", "consumable":
 				refType = ReferenceTypeConsumable
@@ -1023,6 +1024,7 @@ func (p *Processor) Release(mb *message.Buffer) func(transactionId uuid.UUID, ch
 			assetId := a.Id()
 			templateId := a.TemplateId()
 			slot := a.Slot()
+			referenceType := string(a.ReferenceType())
 
 			txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
 				err := deleteById(tx, p.t.Id(), assetId)
@@ -1030,7 +1032,7 @@ func (p *Processor) Release(mb *message.Buffer) func(transactionId uuid.UUID, ch
 					return err
 				}
 				// Emit RELEASED event for channel service to update client inventory
-				return mb.Put(asset.EnvEventTopicStatus, ReleasedEventStatusProvider(transactionId, characterId, compartmentId, assetId, templateId, slot))
+				return mb.Put(asset.EnvEventTopicStatus, ReleasedEventStatusProvider(transactionId, characterId, compartmentId, assetId, templateId, slot, referenceType))
 			})
 			if txErr != nil {
 				p.l.WithError(txErr).Errorf("Unable to delete asset [%d].", assetId)

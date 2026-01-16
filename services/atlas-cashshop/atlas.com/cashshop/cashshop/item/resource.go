@@ -65,7 +65,7 @@ func handleCreateItem(db *gorm.DB) rest.InputHandler[RestModel] {
 				return
 			}
 
-			m, err := NewProcessor(d.Logger(), d.Context(), db).CreateAndEmit(im.TemplateId(), im.Quantity(), im.PurchasedBy())
+			m, err := NewProcessor(d.Logger(), d.Context(), db).CreateAndEmit(im.TemplateId(), im.CommodityId(), im.Quantity(), im.PurchasedBy())
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating item.")
 				w.WriteHeader(http.StatusInternalServerError)

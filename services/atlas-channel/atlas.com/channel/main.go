@@ -11,6 +11,7 @@ import (
 	"atlas-channel/kafka/consumer/buddylist"
 	"atlas-channel/kafka/consumer/buff"
 	"atlas-channel/kafka/consumer/cashshop"
+	cashshopCompartment "atlas-channel/kafka/consumer/cashshop/compartment"
 	"atlas-channel/kafka/consumer/chair"
 	"atlas-channel/kafka/consumer/chalkboard"
 	"atlas-channel/kafka/consumer/channel"
@@ -122,6 +123,7 @@ func main() {
 	consumable.InitConsumers(l)(cmf)(consumerGroupId)
 	system_message.InitConsumers(l)(cmf)(consumerGroupId)
 	cashshop.InitConsumers(l)(cmf)(consumerGroupId)
+	cashshopCompartment.InitConsumers(l)(cmf)(consumerGroupId)
 	note3.InitConsumers(l)(cmf)(consumerGroupId)
 	quest.InitConsumers(l)(cmf)(consumerGroupId)
 	route.InitConsumers(l)(cmf)(consumerGroupId)
@@ -196,6 +198,7 @@ func main() {
 				consumable.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				system_message.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				cashshop.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				cashshopCompartment.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				note3.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				quest.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				route.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)

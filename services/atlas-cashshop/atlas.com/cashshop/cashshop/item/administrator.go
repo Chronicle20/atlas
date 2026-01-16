@@ -22,7 +22,7 @@ func generateUniqueCashId(tenantId uuid.UUID, db *gorm.DB) (int64, error) {
 	}
 }
 
-func create(tenantId uuid.UUID, templateId uint32, quantity uint32, purchasedBy uint32) database.EntityProvider[Entity] {
+func create(tenantId uuid.UUID, templateId uint32, commodityId uint32, quantity uint32, purchasedBy uint32) database.EntityProvider[Entity] {
 	return func(db *gorm.DB) model.Provider[Entity] {
 		cashId, err := generateUniqueCashId(tenantId, db)
 		if err != nil {
@@ -35,6 +35,45 @@ func create(tenantId uuid.UUID, templateId uint32, quantity uint32, purchasedBy 
 			TenantId:    tenantId,
 			CashId:      cashId,
 			TemplateId:  templateId,
+			CommodityId: commodityId,
+			Quantity:    quantity,
+			Flag:        0, // Default flag value
+			PurchasedBy: purchasedBy,
+			Expiration:  expiration,
+		}
+
+		err = db.Create(&entity).Error
+		if err != nil {
+			return model.ErrorProvider[Entity](err)
+		}
+
+		return model.FixedProvider[Entity](entity)
+	}
+}
+
+// findOrCreateByCashId finds an existing item by cashId, or creates a new one if not found
+// This is used for preserving cashId during transfers between inventory and cash shop
+func findOrCreateByCashId(tenantId uuid.UUID, cashId int64, templateId uint32, commodityId uint32, quantity uint32, purchasedBy uint32) database.EntityProvider[Entity] {
+	return func(db *gorm.DB) model.Provider[Entity] {
+		// First try to find an existing item with this cashId
+		entities, err := byCashIdEntityProvider(tenantId, cashId)(db)()
+		if err != nil {
+			return model.ErrorProvider[Entity](err)
+		}
+
+		// If we found an existing item, return it
+		if len(entities) > 0 {
+			return model.FixedProvider[Entity](entities[0])
+		}
+
+		// No existing item found, create a new one
+		expiration := time.Now().AddDate(0, 0, 30) // 30 days from now
+
+		entity := Entity{
+			TenantId:    tenantId,
+			CashId:      cashId,
+			TemplateId:  templateId,
+			CommodityId: commodityId,
 			Quantity:    quantity,
 			Flag:        0, // Default flag value
 			PurchasedBy: purchasedBy,

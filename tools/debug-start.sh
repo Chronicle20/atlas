@@ -213,24 +213,10 @@ EOF
 }
 
 reload_nginx() {
-  log "Reloading nginx configuration..."
+  log "Restarting nginx ingress pod..."
 
-  # Get the nginx pod name
-  local pod
-  pod=$(kubectl get pods -n "$NAMESPACE" -l app="$INGRESS_DEPLOYMENT" \
-    -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
-
-  if [[ -z "$pod" ]]; then
-    fail "Could not find nginx ingress pod"
-  fi
-
-  # Test config first
-  if ! kubectl exec -n "$NAMESPACE" "$pod" -- nginx -t >/dev/null 2>&1; then
-    fail "Nginx configuration test failed"
-  fi
-
-  # Reload nginx
-  kubectl exec -n "$NAMESPACE" "$pod" -- nginx -s reload >/dev/null 2>&1
+  kubectl rollout restart deployment "$INGRESS_DEPLOYMENT" -n "$NAMESPACE" >/dev/null
+  kubectl rollout status deployment "$INGRESS_DEPLOYMENT" -n "$NAMESPACE" --timeout=60s >/dev/null
 }
 
 # -------------------------------

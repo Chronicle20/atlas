@@ -6,6 +6,7 @@ type Model struct {
 	id          uint32
 	cashId      int64
 	templateId  uint32
+	commodityId uint32
 	quantity    uint32
 	flag        uint16
 	purchasedBy uint32
@@ -22,6 +23,10 @@ func (m Model) CashId() int64 {
 
 func (m Model) TemplateId() uint32 {
 	return m.templateId
+}
+
+func (m Model) CommodityId() uint32 {
+	return m.commodityId
 }
 
 func (m Model) Quantity() uint32 {
@@ -44,6 +49,7 @@ type Builder struct {
 	id          uint32
 	cashId      int64
 	templateId  uint32
+	commodityId uint32
 	quantity    uint32
 	flag        uint16
 	purchasedBy uint32
@@ -66,6 +72,11 @@ func (b *Builder) SetCashId(cashId int64) *Builder {
 
 func (b *Builder) SetTemplateId(templateId uint32) *Builder {
 	b.templateId = templateId
+	return b
+}
+
+func (b *Builder) SetCommodityId(commodityId uint32) *Builder {
+	b.commodityId = commodityId
 	return b
 }
 
@@ -94,6 +105,7 @@ func (b *Builder) Build() Model {
 		id:          b.id,
 		cashId:      b.cashId,
 		templateId:  b.templateId,
+		commodityId: b.commodityId,
 		quantity:    b.quantity,
 		flag:        b.flag,
 		purchasedBy: b.purchasedBy,

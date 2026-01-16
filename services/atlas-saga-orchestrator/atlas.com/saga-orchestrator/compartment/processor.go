@@ -2,7 +2,6 @@ package compartment
 
 import (
 	"atlas-saga-orchestrator/kafka/message/compartment"
-	"atlas-saga-orchestrator/kafka/message/transfer"
 	"atlas-saga-orchestrator/kafka/producer"
 	"context"
 	"errors"
@@ -33,7 +32,6 @@ type Processor interface {
 	RequestEquipAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
 	RequestUnequipAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
 	RequestCreateAndEquipAsset(transactionId uuid.UUID, payload CreateAndEquipAssetPayload) error
-	RequestTransferAsset(transactionId uuid.UUID, worldId byte, accountId uint32, characterId uint32, assetId uint32, fromCompartmentId uuid.UUID, fromCompartmentType byte, fromInventoryType string, toCompartmentId uuid.UUID, toCompartmentType byte, toInventoryType string, referenceId uint32, templateId uint32, referenceType string, slot int16) error
 	RequestAcceptAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, quantity uint32) error
 	RequestReleaseAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, assetId uint32, quantity uint32) error
 }
@@ -88,10 +86,6 @@ func (p *ProcessorImpl) RequestCreateAndEquipAsset(transactionId uuid.UUID, payl
 	// The subsequent equip_asset step will be dynamically created by the compartment consumer
 	// when it receives the StatusEventTypeCreated event
 	return p.RequestCreateItem(transactionId, payload.CharacterId, payload.Item.TemplateId, payload.Item.Quantity, payload.Item.Expiration)
-}
-
-func (p *ProcessorImpl) RequestTransferAsset(transactionId uuid.UUID, worldId byte, accountId uint32, characterId uint32, assetId uint32, fromCompartmentId uuid.UUID, fromCompartmentType byte, fromInventoryType string, toCompartmentId uuid.UUID, toCompartmentType byte, toInventoryType string, referenceId uint32, templateId uint32, referenceType string, slot int16) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(transfer.EnvCommandTopicTransfer)(RequestTransferAssetCommandProvider(transactionId, worldId, accountId, characterId, assetId, fromCompartmentId, fromCompartmentType, fromInventoryType, toCompartmentId, toCompartmentType, toInventoryType, referenceId, templateId, referenceType, slot))
 }
 
 func (p *ProcessorImpl) RequestAcceptAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, quantity uint32) error {

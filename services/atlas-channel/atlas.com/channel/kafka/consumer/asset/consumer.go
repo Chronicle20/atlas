@@ -766,8 +766,9 @@ func handleAssetAcceptedEvent(sc server.Model, wp writer.Producer) message.Handl
 			err := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(bp)(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to add accepted asset [%d] to slot [%d] for character [%d].", e.TemplateId, e.Slot, s.CharacterId())
+				return err
 			}
-			return err
+			return nil
 		})
 	}
 }
@@ -781,6 +782,12 @@ func handleAssetReleasedEvent(sc server.Model, wp writer.Producer) message.Handl
 
 		t := sc.Tenant()
 		if !t.Is(tenant.MustFromContext(ctx)) {
+			return
+		}
+
+		// Skip processing for cash-equipable and cash reference types
+		// These are handled separately by the cash shop inventory system
+		if e.Body.ReferenceType == "cash-equipable" || e.Body.ReferenceType == "cash" {
 			return
 		}
 

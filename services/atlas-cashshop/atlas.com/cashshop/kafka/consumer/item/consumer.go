@@ -42,6 +42,7 @@ func handleCommandCreate(db *gorm.DB) message.Handler[itemMessage.Command[itemMe
 
 		_, err := itemModel.NewProcessor(l, ctx, db).CreateAndEmit(
 			command.Body.TemplateId,
+			command.Body.CommodityId,
 			command.Body.Quantity,
 			command.Body.PurchasedBy,
 		)

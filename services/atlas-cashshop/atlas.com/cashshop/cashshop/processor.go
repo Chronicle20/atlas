@@ -16,6 +16,7 @@ import (
 	"atlas-cashshop/wallet"
 	"context"
 	"errors"
+
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/job"
 	tenant "github.com/Chronicle20/atlas-tenant"
@@ -129,7 +130,7 @@ func (p *ProcessorImpl) Purchase(mb *message.Buffer) func(characterId uint32, cu
 			}
 
 			// Create the cash item
-			im, err := p.itmP.Create(mb)(ci.ItemId())(ci.Count())(characterId)
+			im, err := p.itmP.Create(mb)(ci.ItemId())(serialNumber)(ci.Count())(characterId)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to create cash item for character [%d].", characterId)
 				_ = mb.Put(cashshop.EnvEventTopicStatus, cashshop2.ErrorStatusEventProvider(characterId, "UNKNOWN_ERROR"))

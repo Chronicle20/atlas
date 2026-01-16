@@ -69,13 +69,6 @@
       "docker_image": "ghcr.io/chronicle20/atlas-character-factory/atlas-character-factory"
     },
     {
-      "name": "atlas-compartment-transfer",
-      "type": "go-service",
-      "path": "services/atlas-compartment-transfer",
-      "module_path": "services/atlas-compartment-transfer/atlas.com/atlas-compartment-transfer",
-      "docker_image": "ghcr.io/chronicle20/atlas-compartment-transfer/atlas-compartment-transfer"
-    },
-    {
       "name": "atlas-configurations",
       "type": "go-service",
       "path": "services/atlas-configurations",

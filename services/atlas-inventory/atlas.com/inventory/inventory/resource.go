@@ -3,8 +3,9 @@ package inventory
 import (
 	"atlas-inventory/rest"
 	"errors"
-	"github.com/google/uuid"
 	"net/http"
+
+	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
@@ -37,6 +38,7 @@ func handleGetInventory(db *gorm.DB) rest.GetHandler {
 				}
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
+					d.Logger().WithError(err).Errorf("Unable to retrieve characters inventory.")
 					return
 				}
 

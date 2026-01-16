@@ -52,18 +52,20 @@ const (
 	LessThan     Operator = "<"
 	GreaterEqual Operator = ">="
 	LessEqual    Operator = "<="
+	In           Operator = "in"
 )
 
 // ConditionInput represents the structured input for creating a condition
 type ConditionInput struct {
-	Type            string `json:"type"`                    // e.g., "jobId", "meso", "item"
-	Operator        string `json:"operator"`                // e.g., "=", ">=", "<"
-	Value           int    `json:"value"`                   // Value or quantity
-	ReferenceId     uint32 `json:"referenceId,omitempty"`   // For quest validation, item checks, etc.
-	Step            string `json:"step,omitempty"`          // For quest progress validation
-	ItemId          uint32 `json:"itemId,omitempty"`        // Deprecated: use ReferenceId instead
-	WorldId         byte   `json:"worldId,omitempty"`       // For mapCapacity conditions
-	ChannelId       byte   `json:"channelId,omitempty"`     // For mapCapacity conditions
+	Type            string `json:"type"`                      // e.g., "jobId", "meso", "item"
+	Operator        string `json:"operator"`                  // e.g., "=", ">=", "<", "in"
+	Value           int    `json:"value"`                     // Value or quantity (for single value operators)
+	Values          []int  `json:"values,omitempty"`          // Values for "in" operator
+	ReferenceId     uint32 `json:"referenceId,omitempty"`     // For quest validation, item checks, etc.
+	Step            string `json:"step,omitempty"`            // For quest progress validation
+	ItemId          uint32 `json:"itemId,omitempty"`          // Deprecated: use ReferenceId instead
+	WorldId         byte   `json:"worldId,omitempty"`         // For mapCapacity conditions
+	ChannelId       byte   `json:"channelId,omitempty"`       // For mapCapacity conditions
 	IncludeEquipped bool   `json:"includeEquipped,omitempty"` // For item conditions: also check equipped items
 }
 
@@ -83,6 +85,7 @@ type Condition struct {
 	conditionType   ConditionType
 	operator        Operator
 	value           int
+	values          []int  // Used for "in" operator
 	referenceId     uint32 // Used for quest validation, item conditions, etc.
 	step            string // Used for quest progress validation
 	worldId         byte   // Used for mapCapacity conditions
@@ -95,6 +98,7 @@ type ConditionBuilder struct {
 	conditionType   ConditionType
 	operator        Operator
 	value           int
+	values          []int
 	referenceId     *uint32
 	step            string
 	worldId         byte
@@ -130,7 +134,7 @@ func (b *ConditionBuilder) SetOperator(op string) *ConditionBuilder {
 	}
 
 	switch Operator(op) {
-	case Equals, GreaterThan, LessThan, GreaterEqual, LessEqual:
+	case Equals, GreaterThan, LessThan, GreaterEqual, LessEqual, In:
 		b.operator = Operator(op)
 	default:
 		b.err = fmt.Errorf("unsupported operator: %s", op)
@@ -145,6 +149,16 @@ func (b *ConditionBuilder) SetValue(value int) *ConditionBuilder {
 	}
 
 	b.value = value
+	return b
+}
+
+// SetValues sets the values for "in" operator
+func (b *ConditionBuilder) SetValues(values []int) *ConditionBuilder {
+	if b.err != nil {
+		return b
+	}
+
+	b.values = values
 	return b
 }
 
@@ -193,6 +207,11 @@ func (b *ConditionBuilder) FromInput(input ConditionInput) *ConditionBuilder {
 	b.SetType(input.Type)
 	b.SetOperator(input.Operator)
 	b.SetValue(input.Value)
+
+	// Set values for "in" operator
+	if len(input.Values) > 0 {
+		b.SetValues(input.Values)
+	}
 
 	// Handle ReferenceId (preferred) or ItemId (deprecated)
 	if input.ReferenceId != 0 {
@@ -327,6 +346,7 @@ func (b *ConditionBuilder) Build() (Condition, error) {
 		conditionType:   b.conditionType,
 		operator:        b.operator,
 		value:           b.value,
+		values:          b.values,
 		step:            b.step,
 		worldId:         b.worldId,
 		channelId:       b.channelId,
@@ -538,6 +558,15 @@ func (c Condition) Evaluate(character character.Model) ConditionResult {
 		passed = actualValue >= c.value
 	case LessEqual:
 		passed = actualValue <= c.value
+	case In:
+		// Check if actualValue is in the values list
+		for _, v := range c.values {
+			if actualValue == v {
+				passed = true
+				break
+			}
+		}
+		description = fmt.Sprintf("%s in %v", c.conditionType, c.values)
 	}
 
 	return ConditionResult{
@@ -727,6 +756,15 @@ func (c Condition) EvaluateWithContext(ctx ValidationContext) ConditionResult {
 		passed = actualValue >= c.value
 	case LessEqual:
 		passed = actualValue <= c.value
+	case In:
+		// Check if actualValue is in the values list
+		for _, v := range c.values {
+			if actualValue == v {
+				passed = true
+				break
+			}
+		}
+		description = fmt.Sprintf("%s in %v", c.conditionType, c.values)
 	}
 
 	return ConditionResult{

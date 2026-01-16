@@ -48,12 +48,11 @@ func (p *ProcessorImpl) GetAutoStartQuests(mapId uint32) ([]RestModel, error) {
 	}
 
 	// Filter by map - quests that should auto-start on this map
-	// This is typically based on the quest's area field or startRequirements
 	var filtered []RestModel
 	for _, q := range allAutoStart {
-		// Check if this quest's area matches the map or if it has normalAutoStart
-		// For now, include quests with normalAutoStart or quests in the same area
-		if q.StartRequirements.NormalAutoStart || q.Area == mapId {
+		// NormalAutoStart means the quest can auto-start on any map
+		// Area > 0 means the quest should only auto-start on that specific map
+		if q.StartRequirements.NormalAutoStart || (q.Area > 0 && q.Area == mapId) {
 			filtered = append(filtered, q)
 		}
 	}

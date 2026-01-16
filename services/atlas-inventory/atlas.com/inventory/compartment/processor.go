@@ -10,14 +10,15 @@ import (
 	"atlas-inventory/kafka/producer"
 	"context"
 	"errors"
+	"math"
+	"sort"
+	"time"
+
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/google/uuid"
-	"math"
-	"sort"
-	"time"
 
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
@@ -1269,7 +1270,7 @@ func (p *Processor) Accept(mb *message.Buffer) func(transactionId uuid.UUID, cha
 			}
 
 			// Try to merge with existing stack if quantity > 0 and not an equipable item
-			if quantity > 0 && referenceType != "EQUIPABLE" && referenceType != "PET" {
+			if quantity > 0 && referenceType != "EQUIPABLE" && referenceType != "CASH-EQUIPABLE" && referenceType != "PET" {
 				// Get the slot max for this item
 				slotMax, err := p.assetProcessor.GetSlotMax(templateId)
 				if err != nil {

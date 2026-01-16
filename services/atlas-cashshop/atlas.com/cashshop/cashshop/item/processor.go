@@ -18,6 +18,8 @@ type Processor interface {
 	GetById(itemId uint32) (Model, error)
 	Create(mb *message.Buffer) func(templateId uint32) func(quantity uint32) func(purchasedBy uint32) (Model, error)
 	CreateAndEmit(templateId uint32, quantity uint32, purchasedBy uint32) (Model, error)
+	CreateWithCashId(mb *message.Buffer) func(cashId int64) func(templateId uint32) func(quantity uint32) func(purchasedBy uint32) (Model, error)
+	CreateWithCashIdAndEmit(cashId int64, templateId uint32, quantity uint32, purchasedBy uint32) (Model, error)
 }
 
 type ProcessorImpl struct {
@@ -81,4 +83,42 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(templateId uint32) func(
 
 func (p *ProcessorImpl) CreateAndEmit(templateId uint32, quantity uint32, purchasedBy uint32) (Model, error) {
 	return message.EmitWithResult[Model, uint32](p.p)(model.Flip(model.Flip(p.Create)(templateId))(quantity))(purchasedBy)
+}
+
+func (p *ProcessorImpl) CreateWithCashId(mb *message.Buffer) func(cashId int64) func(templateId uint32) func(quantity uint32) func(purchasedBy uint32) (Model, error) {
+	return func(cashId int64) func(templateId uint32) func(quantity uint32) func(purchasedBy uint32) (Model, error) {
+		return func(templateId uint32) func(quantity uint32) func(purchasedBy uint32) (Model, error) {
+			return func(quantity uint32) func(purchasedBy uint32) (Model, error) {
+				return func(purchasedBy uint32) (Model, error) {
+					entity, err := findOrCreateByCashId(p.t.Id(), cashId, templateId, quantity, purchasedBy)(p.db)()
+					if err != nil {
+						return Model{}, err
+					}
+
+					m, err := Make(entity)
+					if err != nil {
+						return Model{}, err
+					}
+
+					err = mb.Put(item.EnvStatusTopic, itemProducer.CreateStatusEventProvider(
+						m.Id(),
+						m.CashId(),
+						m.TemplateId(),
+						m.Quantity(),
+						m.PurchasedBy(),
+						m.Flag(),
+					))
+					if err != nil {
+						return Model{}, err
+					}
+
+					return m, nil
+				}
+			}
+		}
+	}
+}
+
+func (p *ProcessorImpl) CreateWithCashIdAndEmit(cashId int64, templateId uint32, quantity uint32, purchasedBy uint32) (Model, error) {
+	return message.EmitWithResult[Model, uint32](p.p)(model.Flip(model.Flip(model.Flip(p.CreateWithCashId)(cashId))(templateId))(quantity))(purchasedBy)
 }

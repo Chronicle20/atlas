@@ -15,6 +15,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"math"
+	"time"
+
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-model/model"
@@ -22,8 +25,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"math"
-	"time"
 )
 
 type Provider interface {
@@ -672,7 +673,7 @@ func (p *Processor) Accept(mb *message.Buffer) func(transactionId uuid.UUID, cha
 			switch referenceType {
 			case "EQUIPABLE", "equipable":
 				refType = ReferenceTypeEquipable
-			case "CASH_EQUIPABLE", "cash_equipable":
+			case "CASH-EQUIPABLE", "cash-equipable":
 				refType = ReferenceTypeCashEquipable
 			case "CONSUMABLE", "consumable":
 				refType = ReferenceTypeConsumable

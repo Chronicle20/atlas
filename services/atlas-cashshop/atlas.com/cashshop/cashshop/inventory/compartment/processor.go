@@ -37,8 +37,8 @@ type Processor interface {
 	DeleteAndEmit(id uuid.UUID) error
 	DeleteAllByAccountId(mb *message.Buffer) func(accountId uint32) error
 	DeleteAllByAccountIdAndEmit(accountId uint32) error
-	AcceptAndEmit(accountId uint32, id uuid.UUID, type_ CompartmentType, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, transactionId uuid.UUID) error
-	Accept(mb *message.Buffer) func(accountId uint32, id uuid.UUID, type_ CompartmentType, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, transactionId uuid.UUID) error
+	AcceptAndEmit(accountId uint32, id uuid.UUID, type_ CompartmentType, cashId int64, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, transactionId uuid.UUID) error
+	Accept(mb *message.Buffer) func(accountId uint32, id uuid.UUID, type_ CompartmentType, cashId int64, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, transactionId uuid.UUID) error
 	ReleaseAndEmit(accountId uint32, id uuid.UUID, type_ CompartmentType, assetId uint32, transactionId uuid.UUID) error
 	Release(mb *message.Buffer) func(accountId uint32, id uuid.UUID, type_ CompartmentType, assetId uint32, transactionId uuid.UUID) error
 }
@@ -285,15 +285,15 @@ func (p *ProcessorImpl) DeleteAllByAccountIdAndEmit(accountId uint32) error {
 	return nil
 }
 
-func (p *ProcessorImpl) AcceptAndEmit(accountId uint32, id uuid.UUID, type_ CompartmentType, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, transactionId uuid.UUID) error {
+func (p *ProcessorImpl) AcceptAndEmit(accountId uint32, id uuid.UUID, type_ CompartmentType, cashId int64, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, transactionId uuid.UUID) error {
 	return message.Emit(p.p)(func(buf *message.Buffer) error {
-		return p.Accept(buf)(accountId, id, type_, templateId, referenceId, referenceType, referenceData, transactionId)
+		return p.Accept(buf)(accountId, id, type_, cashId, templateId, referenceId, referenceType, referenceData, transactionId)
 	})
 }
 
-func (p *ProcessorImpl) Accept(mb *message.Buffer) func(accountId uint32, id uuid.UUID, type_ CompartmentType, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, transactionId uuid.UUID) error {
-	return func(accountId uint32, id uuid.UUID, type_ CompartmentType, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, transactionId uuid.UUID) error {
-		p.l.Debugf("Handling accepting asset for account [%d], compartment [%s], type [%d], template [%d].", accountId, id, type_, templateId)
+func (p *ProcessorImpl) Accept(mb *message.Buffer) func(accountId uint32, id uuid.UUID, type_ CompartmentType, cashId int64, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, transactionId uuid.UUID) error {
+	return func(accountId uint32, id uuid.UUID, type_ CompartmentType, cashId int64, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, transactionId uuid.UUID) error {
+		p.l.Debugf("Handling accepting asset for account [%d], compartment [%s], type [%d], template [%d], cashId [%d].", accountId, id, type_, templateId, cashId)
 
 		// Get the compartment
 		ccm, err := p.GetById(id)
@@ -328,10 +328,10 @@ func (p *ProcessorImpl) Accept(mb *message.Buffer) func(accountId uint32, id uui
 			}
 		}
 
-		// Create the cash item with the template ID and quantity
-		im, err := p.itmP.Create(mb)(templateId)(quantity)(purchasedBy)
+		// Create the cash item with the preserved cashId, template ID and quantity
+		im, err := p.itmP.CreateWithCashId(mb)(cashId)(templateId)(quantity)(purchasedBy)
 		if err != nil {
-			p.l.WithError(err).Errorf("Unable to create cash item for compartment [%s] with template ID [%d].", id, templateId)
+			p.l.WithError(err).Errorf("Unable to create cash item for compartment [%s] with cashId [%d] template ID [%d].", id, cashId, templateId)
 			_ = mb.Put(compartment.EnvEventTopicStatus, compartmentProducer.ErrorStatusEventProvider(id, byte(type_), "ITEM_CREATION_FAILED", transactionId))
 			return err
 		}

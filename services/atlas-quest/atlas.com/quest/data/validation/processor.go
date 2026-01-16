@@ -51,15 +51,16 @@ func (p *ProcessorImpl) ValidateStartRequirements(characterId uint32, questDef d
 
 	// Job requirements - check if character's job is in the allowed list
 	if len(req.Jobs) > 0 {
-		// For job validation, we need to check if character's job matches any in the list
-		// Query aggregator should support this via "in" operator or we check each
-		for _, job := range req.Jobs {
-			conditions = append(conditions, ConditionInput{
-				Type:     JobCondition,
-				Operator: "=",
-				Value:    int(job),
-			})
+		// Convert jobs to int slice for "in" operator
+		jobValues := make([]int, len(req.Jobs))
+		for i, job := range req.Jobs {
+			jobValues[i] = int(job)
 		}
+		conditions = append(conditions, ConditionInput{
+			Type:     JobCondition,
+			Operator: "in",
+			Values:   jobValues,
+		})
 	}
 
 	// Fame requirement

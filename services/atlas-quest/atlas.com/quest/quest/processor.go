@@ -27,6 +27,7 @@ var (
 	ErrQuestExpired             = errors.New("quest has expired")
 	ErrStartRequirementsNotMet  = errors.New("start requirements not met")
 	ErrEndRequirementsNotMet    = errors.New("end requirements not met")
+	ErrValidationFailed         = errors.New("validation request failed")
 )
 
 type Processor interface {
@@ -156,9 +157,10 @@ func (p *ProcessorImpl) Start(characterId uint32, questId uint32, f field.Model,
 	if !skipValidation {
 		passed, failedConditions, err := p.validationProcessor.ValidateStartRequirements(characterId, questDef)
 		if err != nil {
-			p.l.WithError(err).Warnf("Unable to validate start requirements for quest [%d] character [%d], proceeding anyway.", questId, characterId)
-			// Continue without validation on error
-		} else if !passed {
+			p.l.WithError(err).Errorf("Unable to validate start requirements for quest [%d] character [%d], failing closed.", questId, characterId)
+			return Model{}, nil, ErrValidationFailed
+		}
+		if !passed {
 			p.l.Debugf("Start requirements not met for quest [%d] character [%d]. Failed: %v", questId, characterId, failedConditions)
 			return Model{}, failedConditions, ErrStartRequirementsNotMet
 		}
@@ -599,6 +601,28 @@ func parseProgressValue(progress string) uint32 {
 	return uint32(val)
 }
 
+// arePrerequisiteQuestsMet checks if all prerequisite quests are in the required state
+func (p *ProcessorImpl) arePrerequisiteQuestsMet(characterId uint32, questDef dataquest.RestModel) bool {
+	for _, prereq := range questDef.StartRequirements.Quests {
+		existingQuest, err := p.GetByCharacterIdAndQuestId(characterId, prereq.Id)
+		if err != nil {
+			// Quest not found - only valid if required state is NotStarted (0)
+			if prereq.State != uint8(StateNotStarted) {
+				p.l.Debugf("Prerequisite quest [%d] not found for character [%d], required state [%d].", prereq.Id, characterId, prereq.State)
+				return false
+			}
+			continue
+		}
+
+		// Check if quest is in the required state
+		if uint8(existingQuest.State()) != prereq.State {
+			p.l.Debugf("Prerequisite quest [%d] is in state [%d], required state [%d] for character [%d].", prereq.Id, existingQuest.State(), prereq.State, characterId)
+			return false
+		}
+	}
+	return true
+}
+
 func (p *ProcessorImpl) CheckAutoStart(characterId uint32, f field.Model) ([]uint32, error) {
 	// Fetch all auto-start quests from atlas-data
 	autoStartQuests, err := p.dataProcessor.GetAutoStartQuests(uint32(f.MapId()))
@@ -629,10 +653,15 @@ func (p *ProcessorImpl) CheckAutoStart(characterId uint32, f field.Model) ([]uin
 			}
 		}
 
+		// Check prerequisite quests before attempting to start
+		if !p.arePrerequisiteQuestsMet(characterId, questDef) {
+			continue // Prerequisites not met
+		}
+
 		// Start the quest (auto-start quests still validate requirements)
 		_, _, err = p.Start(characterId, questDef.Id, f, false)
 		if err != nil {
-			if !errors.Is(err, ErrQuestAlreadyStarted) && !errors.Is(err, ErrQuestAlreadyCompleted) && !errors.Is(err, ErrStartRequirementsNotMet) {
+			if !errors.Is(err, ErrQuestAlreadyStarted) && !errors.Is(err, ErrQuestAlreadyCompleted) && !errors.Is(err, ErrStartRequirementsNotMet) && !errors.Is(err, ErrValidationFailed) {
 				p.l.WithError(err).Warnf("Unable to auto-start quest [%d] for character [%d].", questDef.Id, characterId)
 			}
 			continue

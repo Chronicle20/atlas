@@ -1,10 +1,10 @@
 meta {
-  name: Get Character Quests
+  name: Clear Character Quests
   type: http
-  seq: 2
+  seq: 1
 }
 
-get {
+delete {
   url: {{scheme}}://{{host}}:{{port}}/api/characters/{{characterId}}/quests
   body: none
   auth: inherit

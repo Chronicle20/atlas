@@ -1,0 +1,15 @@
+meta {
+  name: Get Character Quests
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/characters/{{characterId}}/inventory
+  body: none
+  auth: inherit
+}
+
+vars:pre-request {
+  characterId: 2
+}

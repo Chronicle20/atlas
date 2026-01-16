@@ -9,7 +9,8 @@ import (
 )
 
 const (
-	storageAssetsResource = "storage/accounts/%d/assets?worldId=%d"
+	storageAssetsResource       = "storage/accounts/%d/assets?worldId=%d"
+	projectionAssetResource     = "storage/projections/%d/compartments/%d/assets/%d"
 )
 
 func getBaseRequest() string {
@@ -21,5 +22,13 @@ func RequestAssets(l logrus.FieldLogger, ctx context.Context) func(accountId uin
 	return func(accountId uint32, worldId byte) ([]AssetRestModel, error) {
 		url := fmt.Sprintf(getBaseRequest()+storageAssetsResource, accountId, worldId)
 		return rest.MakeGetRequest[[]AssetRestModel](url)(l, ctx)
+	}
+}
+
+// RequestProjectionAsset retrieves a specific asset from a storage projection
+func RequestProjectionAsset(l logrus.FieldLogger, ctx context.Context) func(characterId uint32, compartmentType byte, slot int16) (ProjectionAssetRestModel, error) {
+	return func(characterId uint32, compartmentType byte, slot int16) (ProjectionAssetRestModel, error) {
+		url := fmt.Sprintf(getBaseRequest()+projectionAssetResource, characterId, compartmentType, slot)
+		return rest.MakeGetRequest[ProjectionAssetRestModel](url)(l, ctx)
 	}
 }

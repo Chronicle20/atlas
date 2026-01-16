@@ -310,3 +310,10 @@ func (p *Processor) ClearStorageNpcId(id uuid.UUID) Model {
 	}
 	return s
 }
+
+// GetSessionByCharacterId returns a session for the given characterId within the current tenant.
+// This is a simpler lookup that doesn't require worldId/channelId.
+// Returns the session and true if found, or an empty Model and false if not found.
+func (p *Processor) GetSessionByCharacterId(characterId uint32) (Model, bool) {
+	return getRegistry().GetByCharacterId(p.t.Id(), characterId)
+}

@@ -22,10 +22,10 @@ type Processor interface {
 	DepositRollback(mb *message.Buffer) func(transactionId uuid.UUID, worldId byte, accountId uint32, assetId uint32) error
 	ShowStorageAndEmit(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32, npcId uint32, accountId uint32) error
 	ShowStorage(mb *message.Buffer) func(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32, npcId uint32, accountId uint32) error
-	AcceptAndEmit(transactionId uuid.UUID, worldId byte, accountId uint32, characterId uint32, slot int16, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) error
-	Accept(mb *message.Buffer) func(transactionId uuid.UUID, worldId byte, accountId uint32, characterId uint32, slot int16, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) error
-	ReleaseAndEmit(transactionId uuid.UUID, worldId byte, accountId uint32, characterId uint32, assetId uint32) error
-	Release(mb *message.Buffer) func(transactionId uuid.UUID, worldId byte, accountId uint32, characterId uint32, assetId uint32) error
+	AcceptAndEmit(transactionId uuid.UUID, worldId byte, accountId uint32, characterId uint32, slot int16, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, quantity uint32) error
+	Accept(mb *message.Buffer) func(transactionId uuid.UUID, worldId byte, accountId uint32, characterId uint32, slot int16, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, quantity uint32) error
+	ReleaseAndEmit(transactionId uuid.UUID, worldId byte, accountId uint32, characterId uint32, assetId uint32, quantity uint32) error
+	Release(mb *message.Buffer) func(transactionId uuid.UUID, worldId byte, accountId uint32, characterId uint32, assetId uint32, quantity uint32) error
 }
 
 type ProcessorImpl struct {
@@ -102,26 +102,26 @@ func (p *ProcessorImpl) ShowStorage(mb *message.Buffer) func(transactionId uuid.
 	}
 }
 
-func (p *ProcessorImpl) AcceptAndEmit(transactionId uuid.UUID, worldId byte, accountId uint32, characterId uint32, slot int16, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) error {
+func (p *ProcessorImpl) AcceptAndEmit(transactionId uuid.UUID, worldId byte, accountId uint32, characterId uint32, slot int16, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, quantity uint32) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
-		return p.Accept(mb)(transactionId, worldId, accountId, characterId, slot, templateId, referenceId, referenceType, referenceData)
+		return p.Accept(mb)(transactionId, worldId, accountId, characterId, slot, templateId, referenceId, referenceType, referenceData, quantity)
 	})
 }
 
-func (p *ProcessorImpl) Accept(mb *message.Buffer) func(transactionId uuid.UUID, worldId byte, accountId uint32, characterId uint32, slot int16, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) error {
-	return func(transactionId uuid.UUID, worldId byte, accountId uint32, characterId uint32, slot int16, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) error {
-		return mb.Put(storageCompartment.EnvCommandTopic, AcceptCommandProvider(transactionId, worldId, accountId, characterId, slot, templateId, referenceId, referenceType, referenceData))
+func (p *ProcessorImpl) Accept(mb *message.Buffer) func(transactionId uuid.UUID, worldId byte, accountId uint32, characterId uint32, slot int16, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, quantity uint32) error {
+	return func(transactionId uuid.UUID, worldId byte, accountId uint32, characterId uint32, slot int16, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, quantity uint32) error {
+		return mb.Put(storageCompartment.EnvCommandTopic, AcceptCommandProvider(transactionId, worldId, accountId, characterId, slot, templateId, referenceId, referenceType, referenceData, quantity))
 	}
 }
 
-func (p *ProcessorImpl) ReleaseAndEmit(transactionId uuid.UUID, worldId byte, accountId uint32, characterId uint32, assetId uint32) error {
+func (p *ProcessorImpl) ReleaseAndEmit(transactionId uuid.UUID, worldId byte, accountId uint32, characterId uint32, assetId uint32, quantity uint32) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
-		return p.Release(mb)(transactionId, worldId, accountId, characterId, assetId)
+		return p.Release(mb)(transactionId, worldId, accountId, characterId, assetId, quantity)
 	})
 }
 
-func (p *ProcessorImpl) Release(mb *message.Buffer) func(transactionId uuid.UUID, worldId byte, accountId uint32, characterId uint32, assetId uint32) error {
-	return func(transactionId uuid.UUID, worldId byte, accountId uint32, characterId uint32, assetId uint32) error {
-		return mb.Put(storageCompartment.EnvCommandTopic, ReleaseCommandProvider(transactionId, worldId, accountId, characterId, assetId))
+func (p *ProcessorImpl) Release(mb *message.Buffer) func(transactionId uuid.UUID, worldId byte, accountId uint32, characterId uint32, assetId uint32, quantity uint32) error {
+	return func(transactionId uuid.UUID, worldId byte, accountId uint32, characterId uint32, assetId uint32, quantity uint32) error {
+		return mb.Put(storageCompartment.EnvCommandTopic, ReleaseCommandProvider(transactionId, worldId, accountId, characterId, assetId, quantity))
 	}
 }

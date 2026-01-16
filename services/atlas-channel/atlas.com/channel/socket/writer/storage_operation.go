@@ -36,19 +36,6 @@ const (
 	StorageFlagCash        StorageFlag = 64
 )
 
-func StorageOperationRetrieveAssetsBody(l logrus.FieldLogger, t tenant.Model) func(slots byte, assets []asset.Model[any]) BodyProducer {
-	return func(slots byte, assets []asset.Model[any]) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteByte(getStorageOperationMode(l)(options, StorageOperationModeRetrieveAssets))
-			w.WriteByte(slots)
-			w.WriteLong(uint64(StorageFlagEquipment | StorageFlagConsumables | StorageFlagSetUp | StorageFlagEtc | StorageFlagCash))
-			w.WriteByte(byte(len(assets)))
-			_ = model.ForEachSlice(model.FixedProvider(assets), WriteAssetInfo(t)(true)(w))
-			return w.Bytes()
-		}
-	}
-}
-
 func StorageOperationErrorInventoryFullBody(l logrus.FieldLogger) BodyProducer {
 	return func(w *response.Writer, options map[string]interface{}) []byte {
 		w.WriteByte(getStorageOperationMode(l)(options, StorageOperationModeErrorInventoryFull))
@@ -70,38 +57,47 @@ func StorageOperationErrorOneOfAKindBody(l logrus.FieldLogger) BodyProducer {
 	}
 }
 
-func StorageOperationStoreAssetsBody(l logrus.FieldLogger, t tenant.Model) func(slots byte, assets []asset.Model[any]) BodyProducer {
-	return func(slots byte, assets []asset.Model[any]) BodyProducer {
+// inventoryTypeToFlag converts an inventory type to the corresponding storage flag
+func inventoryTypeToFlag(inventoryType asset.InventoryType) StorageFlag {
+	switch inventoryType {
+	case asset.InventoryTypeEquip:
+		return StorageFlagEquipment
+	case asset.InventoryTypeUse:
+		return StorageFlagConsumables
+	case asset.InventoryTypeSetup:
+		return StorageFlagSetUp
+	case asset.InventoryTypeEtc:
+		return StorageFlagEtc
+	case asset.InventoryTypeCash:
+		return StorageFlagCash
+	default:
+		return 0
+	}
+}
+
+// StorageOperationUpdateAssetsForCompartmentBody sends storage assets filtered by compartment type
+// The flag is derived from the inventory type, and only assets of that type are sent
+func StorageOperationUpdateAssetsForCompartmentBody(l logrus.FieldLogger, t tenant.Model) func(op StorageOperationMode, slots byte, inventoryType asset.InventoryType, assets []asset.Model[any]) BodyProducer {
+	return func(op StorageOperationMode, slots byte, inventoryType asset.InventoryType, assets []asset.Model[any]) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteByte(getStorageOperationMode(l)(options, StorageOperationModeStoreAssets))
+			w.WriteByte(getStorageOperationMode(l)(options, op))
 			w.WriteByte(slots)
 
-			// Determine flags dynamically based on assets present
-			var flags StorageFlag = 0
-			inventoryTypesPresent := make(map[asset.InventoryType]bool)
-			for _, a := range assets {
-				inventoryTypesPresent[a.InventoryType()] = true
-			}
-
-			if inventoryTypesPresent[asset.InventoryTypeEquip] {
-				flags |= StorageFlagEquipment
-			}
-			if inventoryTypesPresent[asset.InventoryTypeUse] {
-				flags |= StorageFlagConsumables
-			}
-			if inventoryTypesPresent[asset.InventoryTypeSetup] {
-				flags |= StorageFlagSetUp
-			}
-			if inventoryTypesPresent[asset.InventoryTypeEtc] {
-				flags |= StorageFlagEtc
-			}
-			if inventoryTypesPresent[asset.InventoryTypeCash] {
-				flags |= StorageFlagCash
-			}
-
+			// Set flag based on the affected compartment
+			flags := inventoryTypeToFlag(inventoryType)
 			w.WriteLong(uint64(flags))
-			w.WriteByte(byte(len(assets)))
-			_ = model.ForEachSlice(model.FixedProvider(assets), WriteAssetInfo(t)(true)(w))
+			//w.WriteLong(uint64(StorageFlagCurrency | StorageFlagEquipment | StorageFlagConsumables | StorageFlagSetUp | StorageFlagEtc | StorageFlagCash))
+
+			// Filter assets to only include those from the affected compartment
+			var filteredAssets []asset.Model[any]
+			for _, a := range assets {
+				if a.InventoryType() == inventoryType {
+					filteredAssets = append(filteredAssets, a)
+				}
+			}
+
+			w.WriteByte(byte(len(filteredAssets)))
+			_ = model.ForEachSlice(model.FixedProvider(filteredAssets), WriteAssetInfo(t)(true)(w))
 			return w.Bytes()
 		}
 	}

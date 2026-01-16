@@ -98,7 +98,7 @@ func RequestTransferAssetCommandProvider(transactionId uuid.UUID, worldId byte, 
 	return producer.SingleMessageProvider(key, value)
 }
 
-func RequestAcceptAssetCommandProvider(transactionId uuid.UUID, characterId uint32, inventoryType byte, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) model.Provider[[]kafka.Message] {
+func RequestAcceptAssetCommandProvider(transactionId uuid.UUID, characterId uint32, inventoryType byte, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, quantity uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &compartment.Command[compartment.AcceptCommandBody]{
 		TransactionId: transactionId,
@@ -111,12 +111,13 @@ func RequestAcceptAssetCommandProvider(transactionId uuid.UUID, characterId uint
 			ReferenceId:   referenceId,
 			ReferenceType: referenceType,
 			ReferenceData: referenceData,
+			Quantity:      quantity,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func RequestReleaseAssetCommandProvider(transactionId uuid.UUID, characterId uint32, inventoryType byte, assetId uint32) model.Provider[[]kafka.Message] {
+func RequestReleaseAssetCommandProvider(transactionId uuid.UUID, characterId uint32, inventoryType byte, assetId uint32, quantity uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &compartment.Command[compartment.ReleaseCommandBody]{
 		TransactionId: transactionId,
@@ -126,6 +127,7 @@ func RequestReleaseAssetCommandProvider(transactionId uuid.UUID, characterId uin
 		Body: compartment.ReleaseCommandBody{
 			TransactionId: transactionId,
 			AssetId:       assetId,
+			Quantity:      quantity,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

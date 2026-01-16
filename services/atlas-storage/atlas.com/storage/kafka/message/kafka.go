@@ -28,11 +28,13 @@ const (
 
 // Event types
 const (
-	StatusEventTypeDeposited    = "DEPOSITED"
-	StatusEventTypeWithdrawn    = "WITHDRAWN"
-	StatusEventTypeMesosUpdated = "MESOS_UPDATED"
-	StatusEventTypeArranged     = "ARRANGED"
-	StatusEventTypeError        = "ERROR"
+	StatusEventTypeDeposited          = "DEPOSITED"
+	StatusEventTypeWithdrawn          = "WITHDRAWN"
+	StatusEventTypeMesosUpdated       = "MESOS_UPDATED"
+	StatusEventTypeArranged           = "ARRANGED"
+	StatusEventTypeError              = "ERROR"
+	StatusEventTypeProjectionCreated  = "PROJECTION_CREATED"
+	StatusEventTypeProjectionDestroyed = "PROJECTION_DESTROYED"
 )
 
 // Error codes
@@ -150,4 +152,18 @@ type ShowStorageCommand struct {
 type CloseStorageCommand struct {
 	CharacterId uint32 `json:"characterId"`
 	Type        string `json:"type"`
+}
+
+// ProjectionCreatedEventBody contains the data for a projection created event
+type ProjectionCreatedEventBody struct {
+	CharacterId uint32 `json:"characterId"`
+	AccountId   uint32 `json:"accountId"`
+	WorldId     byte   `json:"worldId"`
+	ChannelId   byte   `json:"channelId"`
+	NpcId       uint32 `json:"npcId"`
+}
+
+// ProjectionDestroyedEventBody contains the data for a projection destroyed event
+type ProjectionDestroyedEventBody struct {
+	CharacterId uint32 `json:"characterId"`
 }

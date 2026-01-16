@@ -7,8 +7,10 @@ import (
 )
 
 const (
-	storageResource       = "storage/accounts/%d?worldId=%d"
-	storageAssetsResource = "storage/accounts/%d/assets?worldId=%d"
+	storageResource           = "storage/accounts/%d?worldId=%d"
+	storageAssetsResource     = "storage/accounts/%d/assets?worldId=%d"
+	projectionResource        = "storage/projections/%d"
+	projectionAssetResource   = "storage/projections/%d/compartments/%d/assets/%d"
 )
 
 func getBaseRequest() string {
@@ -21,4 +23,12 @@ func requestStorageByAccountAndWorld(accountId uint32, worldId byte) requests.Re
 
 func requestAssetsByAccountAndWorld(accountId uint32, worldId byte) requests.Request[[]AssetRestModel] {
 	return rest.MakeGetRequest[[]AssetRestModel](fmt.Sprintf(getBaseRequest()+storageAssetsResource, accountId, worldId))
+}
+
+func requestProjectionByCharacterId(characterId uint32) requests.Request[ProjectionRestModel] {
+	return rest.MakeGetRequest[ProjectionRestModel](fmt.Sprintf(getBaseRequest()+projectionResource, characterId))
+}
+
+func requestProjectionAsset(characterId uint32, compartmentType byte, slot int16) requests.Request[AssetRestModel] {
+	return rest.MakeGetRequest[AssetRestModel](fmt.Sprintf(getBaseRequest()+projectionAssetResource, characterId, compartmentType, slot))
 }

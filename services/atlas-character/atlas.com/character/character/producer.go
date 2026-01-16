@@ -191,16 +191,14 @@ func mesoChangedStatusEventProvider(transactionId uuid.UUID, characterId uint32,
 
 func notEnoughMesoErrorStatusEventProvider(transactionId uuid.UUID, characterId uint32, worldId world.Id, amount int32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &character2.StatusEvent[character2.StatusEventErrorBody[character2.NotEnoughMesoErrorStatusBodyBody]]{
+	value := &character2.StatusEvent[character2.StatusEventMesoErrorBody]{
 		TransactionId: transactionId,
 		CharacterId:   characterId,
 		WorldId:       worldId,
 		Type:          character2.StatusEventTypeError,
-		Body: character2.StatusEventErrorBody[character2.NotEnoughMesoErrorStatusBodyBody]{
-			Error: character2.StatusEventErrorTypeNotEnoughMeso,
-			Body: character2.NotEnoughMesoErrorStatusBodyBody{
-				Amount: amount,
-			},
+		Body: character2.StatusEventMesoErrorBody{
+			Error:  character2.StatusEventErrorTypeNotEnoughMeso,
+			Amount: amount,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

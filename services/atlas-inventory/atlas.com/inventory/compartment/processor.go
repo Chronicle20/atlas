@@ -67,10 +67,10 @@ type Provider interface {
 	MergeAndCompactAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type) error
 	CompactAndSortAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type) error
 	MergeAndCompact(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type) error
-	AcceptAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) error
-	Accept(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) error
-	ReleaseAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, assetId uint32) error
-	Release(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, assetId uint32) error
+	AcceptAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, quantity uint32) error
+	Accept(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, quantity uint32) error
+	ReleaseAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, assetId uint32, quantity uint32) error
+	Release(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, assetId uint32, quantity uint32) error
 	CompactAndSort(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type) error
 }
 
@@ -1242,15 +1242,15 @@ func (p *Processor) MergeAndCompact(mb *message.Buffer) func(transactionId uuid.
 	}
 }
 
-func (p *Processor) AcceptAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) error {
+func (p *Processor) AcceptAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, quantity uint32) error {
 	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		return p.Accept(mb)(transactionId, characterId, inventoryType, templateId, referenceId, referenceType, referenceData)
+		return p.Accept(mb)(transactionId, characterId, inventoryType, templateId, referenceId, referenceType, referenceData, quantity)
 	})
 }
 
-func (p *Processor) Accept(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) error {
-	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) error {
-		p.l.Debugf("Character [%d] attempting to accept asset template [%d] (type: %s) with referenceId [%d] in inventory [%d].", characterId, templateId, referenceType, referenceId, inventoryType)
+func (p *Processor) Accept(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, quantity uint32) error {
+	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, quantity uint32) error {
+		p.l.Debugf("Character [%d] attempting to accept asset template [%d] (type: %s) with referenceId [%d] quantity [%d] in inventory [%d].", characterId, templateId, referenceType, referenceId, quantity, inventoryType)
 
 		// Lock the inventory to prevent concurrent modifications
 		invLock := LockRegistry().Get(characterId, inventoryType)
@@ -1268,7 +1268,72 @@ func (p *Processor) Accept(mb *message.Buffer) func(transactionId uuid.UUID, cha
 				return err
 			}
 
-			// Find the next free slot
+			// Try to merge with existing stack if quantity > 0 and not an equipable item
+			if quantity > 0 && referenceType != "EQUIPABLE" && referenceType != "PET" {
+				// Get the slot max for this item
+				slotMax, err := p.assetProcessor.GetSlotMax(templateId)
+				if err != nil {
+					p.l.WithError(err).Errorf("Unable to get slot max for item [%d].", templateId)
+					return err
+				}
+
+				// Get all assets in the compartment to find a stackable match
+				assets, err := p.assetProcessor.WithTransaction(tx).GetByCompartmentId(c.Id())
+				if err != nil {
+					p.l.WithError(err).Errorf("Unable to get assets in compartment [%s].", c.Id())
+					return err
+				}
+
+				// Try to find an existing asset to stack with
+				var assetToUpdate asset.Model[any]
+				for _, existingAsset := range assets {
+					if existingAsset.TemplateId() == templateId && existingAsset.HasQuantity() && existingAsset.Quantity() < slotMax {
+						assetToUpdate = existingAsset
+						break
+					}
+				}
+
+				if assetToUpdate.Id() != 0 {
+					// Calculate new quantity
+					newQuantity := assetToUpdate.Quantity() + quantity
+					if newQuantity > slotMax {
+						// Fill existing to max
+						err = p.assetProcessor.WithTransaction(tx).UpdateQuantity(mb)(transactionId, characterId, c.Id(), assetToUpdate, slotMax)
+						if err != nil {
+							p.l.WithError(err).Errorf("Unable to update quantity of asset [%d] to [%d].", assetToUpdate.Id(), slotMax)
+							return err
+						}
+						p.l.Debugf("Character [%d] increased quantity of asset [%d] to max [%d].", characterId, assetToUpdate.Id(), slotMax)
+
+						// Create new asset with remaining
+						remainingQuantity := newQuantity - slotMax
+						targetSlot, err := c.NextFreeSlot()
+						if err != nil {
+							p.l.WithError(err).Errorf("Unable to find next free slot for remaining quantity.")
+							return err
+						}
+						a, err = p.assetProcessor.WithTransaction(tx).Accept(mb)(transactionId, characterId, c.Id(), c.Type(), targetSlot, templateId, referenceId, referenceType, referenceData, remainingQuantity)
+						if err != nil {
+							p.l.WithError(err).Errorf("Unable to create asset with remaining quantity [%d].", remainingQuantity)
+							return err
+						}
+					} else {
+						// Stack fits entirely
+						err = p.assetProcessor.WithTransaction(tx).UpdateQuantity(mb)(transactionId, characterId, c.Id(), assetToUpdate, newQuantity)
+						if err != nil {
+							p.l.WithError(err).Errorf("Unable to update quantity of asset [%d] to [%d].", assetToUpdate.Id(), newQuantity)
+							return err
+						}
+						a = assetToUpdate
+						p.l.Debugf("Character [%d] merged into asset [%d], new quantity [%d].", characterId, assetToUpdate.Id(), newQuantity)
+					}
+
+					// Emit a status event for the successful accept
+					return mb.Put(compartment.EnvEventTopicStatus, AcceptedEventStatusProvider(transactionId, c.Id(), characterId))
+				}
+			}
+
+			// No existing stack to merge with, create new asset
 			targetSlot, err := c.NextFreeSlot()
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to find next free slot in compartment [%s] for character [%d].", c.Id(), characterId)
@@ -1276,36 +1341,36 @@ func (p *Processor) Accept(mb *message.Buffer) func(transactionId uuid.UUID, cha
 			}
 
 			// Create the asset with full reference data
-			a, err = p.assetProcessor.WithTransaction(tx).Accept(mb)(characterId, c.Id(), c.Type(), targetSlot, templateId, referenceId, referenceType, referenceData)
+			a, err = p.assetProcessor.WithTransaction(tx).Accept(mb)(transactionId, characterId, c.Id(), c.Type(), targetSlot, templateId, referenceId, referenceType, referenceData, quantity)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to accept asset template [%d] for character [%d].", templateId, characterId)
 				return err
 			}
 
-			// Emit a status event for the successful move
+			// Emit a status event for the successful accept
 			return mb.Put(compartment.EnvEventTopicStatus, AcceptedEventStatusProvider(transactionId, c.Id(), characterId))
 		})
 
 		if txErr != nil {
-			p.l.WithError(txErr).Errorf("Character [%d] unable to move cash item [%d] to inventory [%d].", characterId, referenceId, inventoryType)
+			p.l.WithError(txErr).Errorf("Character [%d] unable to accept item [%d] to inventory [%d].", characterId, templateId, inventoryType)
 			_ = mb.Put(compartment.EnvEventTopicStatus, ErrorEventStatusProvider(transactionId, c.Id(), characterId, compartment.AcceptCommandFailed))
 			return nil
 		}
 
-		p.l.Debugf("Character [%d] successfully moved cash item [%d] to slot [%d] in inventory [%d].", characterId, referenceId, a.Slot(), inventoryType)
+		p.l.Debugf("Character [%d] successfully accepted item [%d] to slot [%d] in inventory [%d].", characterId, templateId, a.Slot(), inventoryType)
 		return nil
 	}
 }
 
-func (p *Processor) ReleaseAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, assetId uint32) error {
+func (p *Processor) ReleaseAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, assetId uint32, quantity uint32) error {
 	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		return p.Release(mb)(transactionId, characterId, inventoryType, assetId)
+		return p.Release(mb)(transactionId, characterId, inventoryType, assetId, quantity)
 	})
 }
 
-func (p *Processor) Release(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, assetId uint32) error {
-	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, assetId uint32) error {
-		p.l.Debugf("Character [%d] attempting to release asset [%d] from inventory [%d].", characterId, assetId, inventoryType)
+func (p *Processor) Release(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, assetId uint32, quantity uint32) error {
+	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, assetId uint32, quantity uint32) error {
+		p.l.Debugf("Character [%d] attempting to release [%d] of asset [%d] from inventory [%d].", characterId, quantity, assetId, inventoryType)
 
 		// Lock the inventory to prevent concurrent modifications
 		invLock := LockRegistry().Get(characterId, inventoryType)
@@ -1314,7 +1379,7 @@ func (p *Processor) Release(mb *message.Buffer) func(transactionId uuid.UUID, ch
 
 		var c Model
 		var foundAsset bool
-		var assetToRemove asset.Model[any]
+		var assetToRelease asset.Model[any]
 		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
 			// Get the compartment for the character and inventory type
 			var err error
@@ -1335,7 +1400,7 @@ func (p *Processor) Release(mb *message.Buffer) func(transactionId uuid.UUID, ch
 			foundAsset = false
 			for _, a := range assets {
 				if a.Id() == assetId {
-					assetToRemove = a
+					assetToRelease = a
 					foundAsset = true
 					break
 				}
@@ -1346,16 +1411,30 @@ func (p *Processor) Release(mb *message.Buffer) func(transactionId uuid.UUID, ch
 				return errors.New("unable to find asset in compartment")
 			}
 
-			// Delete the asset silently (without emitting delete messages)
-			// We're using a new message buffer that we don't emit
-			silentBuffer := message.NewBuffer()
-			err = p.assetProcessor.WithTransaction(tx).Release(silentBuffer)(characterId, c.Id())(assetToRemove)
-			if err != nil {
-				p.l.WithError(err).Errorf("Unable to delete asset [%d] for character [%d].", assetToRemove.Id(), characterId)
-				return err
+			// Determine if this is a full or partial release
+			// quantity == 0 means release all, or if quantity >= current quantity, release all
+			if quantity == 0 || !assetToRelease.HasQuantity() || quantity >= assetToRelease.Quantity() {
+				// Full release - delete the asset
+				err = p.assetProcessor.WithTransaction(tx).Release(mb)(transactionId, characterId, c.Id())(assetToRelease)
+				if err != nil {
+					p.l.WithError(err).Errorf("Unable to delete asset [%d] for character [%d].", assetToRelease.Id(), characterId)
+					return err
+				}
+
+				// Emit a compartment status event for saga orchestrator
+				return mb.Put(compartment.EnvEventTopicStatus, ReleasedEventStatusProvider(transactionId, c.Id(), characterId))
 			}
 
-			// Emit a status event for the successful move
+			// Partial release - reduce the quantity
+			newQuantity := assetToRelease.Quantity() - quantity
+			err = p.assetProcessor.WithTransaction(tx).UpdateQuantity(mb)(transactionId, characterId, c.Id(), assetToRelease, newQuantity)
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to update quantity of asset [%d] to [%d].", assetToRelease.Id(), newQuantity)
+				return err
+			}
+			p.l.Debugf("Character [%d] partially released asset [%d], new quantity [%d].", characterId, assetToRelease.Id(), newQuantity)
+
+			// Emit a compartment status event for saga orchestrator
 			return mb.Put(compartment.EnvEventTopicStatus, ReleasedEventStatusProvider(transactionId, c.Id(), characterId))
 		})
 

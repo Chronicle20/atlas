@@ -12,6 +12,7 @@ type Type string
 
 const (
 	InventoryTransaction Type = "inventory_transaction"
+	StorageOperation     Type = "storage_operation"
 )
 
 // Saga represents the entire saga transaction
@@ -143,6 +144,7 @@ type TransferToStoragePayload struct {
 	AccountId           uint32    `json:"accountId"`           // Account ID (storage owner)
 	SourceSlot          int16     `json:"sourceSlot"`          // Slot in character inventory
 	SourceInventoryType byte      `json:"sourceInventoryType"` // Character inventory type
+	Quantity            uint32    `json:"quantity"`            // Quantity to transfer (0 = all)
 }
 
 // WithdrawFromStoragePayload is the high-level payload for withdrawing an asset from storage to character
@@ -154,4 +156,5 @@ type WithdrawFromStoragePayload struct {
 	AccountId     uint32    `json:"accountId"`     // Account ID (storage owner)
 	SourceSlot    int16     `json:"sourceSlot"`    // Slot in storage
 	InventoryType byte      `json:"inventoryType"` // Target character inventory type
+	Quantity      uint32    `json:"quantity"`      // Quantity to withdraw (0 = all)
 }

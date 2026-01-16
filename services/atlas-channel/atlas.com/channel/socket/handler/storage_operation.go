@@ -125,7 +125,7 @@ func handleRetrieveAsset(l logrus.FieldLogger, ctx context.Context, s session.Mo
 	// Create saga transaction
 	sagaTx := saga.Saga{
 		TransactionId: transactionId,
-		SagaType:      saga.InventoryTransaction,
+		SagaType:      saga.StorageOperation,
 		InitiatedBy:   "STORAGE",
 		Steps:         steps,
 	}
@@ -204,7 +204,7 @@ func handleStoreAsset(l logrus.FieldLogger, ctx context.Context, s session.Model
 	// Create saga transaction
 	sagaTx := saga.Saga{
 		TransactionId: transactionId,
-		SagaType:      saga.InventoryTransaction,
+		SagaType:      saga.StorageOperation,
 		InitiatedBy:   "STORAGE",
 		Steps:         steps,
 	}
@@ -275,7 +275,7 @@ func handleMeso(l logrus.FieldLogger, ctx context.Context, s session.Model, r *r
 
 		sagaTx := saga.Saga{
 			TransactionId: transactionId,
-			SagaType:      saga.InventoryTransaction,
+			SagaType:      saga.StorageOperation,
 			InitiatedBy:   "STORAGE",
 			Steps:         []saga.Step[any]{step1, step2},
 		}
@@ -325,7 +325,7 @@ func handleMeso(l logrus.FieldLogger, ctx context.Context, s session.Model, r *r
 
 		sagaTx := saga.Saga{
 			TransactionId: transactionId,
-			SagaType:      saga.InventoryTransaction,
+			SagaType:      saga.StorageOperation,
 			InitiatedBy:   "STORAGE",
 			Steps:         []saga.Step[any]{step1, step2},
 		}

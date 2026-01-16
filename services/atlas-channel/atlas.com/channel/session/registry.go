@@ -86,3 +86,21 @@ func (r *Registry) GetInTenant(id uuid.UUID) []Model {
 	}
 	return s
 }
+
+// GetByCharacterId returns the session for a given character ID within a tenant.
+// Returns the session and true if found, or an empty Model and false if not found.
+func (r *Registry) GetByCharacterId(tenantId uuid.UUID, characterId uint32) (Model, bool) {
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
+
+	if _, ok := r.sessionRegistry[tenantId]; !ok {
+		return Model{}, false
+	}
+
+	for _, session := range r.sessionRegistry[tenantId] {
+		if session.CharacterId() == characterId {
+			return session, true
+		}
+	}
+	return Model{}, false
+}

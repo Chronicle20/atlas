@@ -24,6 +24,7 @@ const (
 	QuestReward          Type = "quest_reward"
 	TradeTransaction     Type = "trade_transaction"
 	CharacterCreation    Type = "character_creation"
+	StorageOperation     Type = "storage_operation"
 )
 
 // Saga represents the entire saga transaction.

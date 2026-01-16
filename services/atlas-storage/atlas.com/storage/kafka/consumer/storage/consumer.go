@@ -3,15 +3,16 @@ package storage
 import (
 	consumer2 "atlas-storage/kafka/consumer"
 	"atlas-storage/kafka/message"
+	"atlas-storage/projection"
 	"atlas-storage/storage"
 	"context"
-	"time"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	kafkaMessage "github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -38,7 +39,7 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 
 			// Register show storage command handlers
 			t, _ = topic.EnvProvider(l)(message.EnvShowStorageCommandTopic)()
-			_, _ = rf(t, kafkaMessage.AdaptHandler(kafkaMessage.PersistentConfig(handleShowStorageCommand())))
+			_, _ = rf(t, kafkaMessage.AdaptHandler(kafkaMessage.PersistentConfig(handleShowStorageCommand(db))))
 			_, _ = rf(t, kafkaMessage.AdaptHandler(kafkaMessage.PersistentConfig(handleCloseStorageCommand())))
 		}
 	}
@@ -109,19 +110,37 @@ func handleArrangeCommand(db *gorm.DB) kafkaMessage.Handler[message.Command[mess
 	}
 }
 
-func handleShowStorageCommand() kafkaMessage.Handler[message.ShowStorageCommand] {
+func handleShowStorageCommand(db *gorm.DB) kafkaMessage.Handler[message.ShowStorageCommand] {
 	return func(l logrus.FieldLogger, ctx context.Context, c message.ShowStorageCommand) {
 		if c.Type != message.CommandTypeShowStorage {
 			return
 		}
 
-		l.Debugf("Received ShowStorage command for character [%d], NPC [%d]", c.CharacterId, c.NpcId)
+		l.Debugf("Received ShowStorage command for character [%d], NPC [%d], account [%d], world [%d]",
+			c.CharacterId, c.NpcId, c.AccountId, c.WorldId)
 
-		// Store NPC context in cache with 30 minute TTL
-		cache := storage.GetNpcContextCache()
-		cache.Put(c.CharacterId, c.NpcId, 30*time.Minute)
+		t := tenant.MustFromContext(ctx)
 
-		l.Debugf("Stored NPC context for character [%d]: NPC [%d]", c.CharacterId, c.NpcId)
+		// Build the projection from storage data
+		proj, err := projection.BuildProjection(l, db, t.Id(), ctx)(c.CharacterId, c.AccountId, c.WorldId, c.NpcId)
+		if err != nil {
+			l.WithError(err).Errorf("Failed to build projection for character [%d], account [%d], world [%d]",
+				c.CharacterId, c.AccountId, c.WorldId)
+			return
+		}
+
+		// Store projection in manager
+		projection.GetManager().Create(c.CharacterId, proj)
+
+		l.Debugf("Created projection for character [%d] with storage [%s], capacity [%d], mesos [%d]",
+			c.CharacterId, proj.StorageId(), proj.Capacity(), proj.Mesos())
+
+		// Emit PROJECTION_CREATED event
+		err = storage.NewProcessor(l, ctx, db).EmitProjectionCreatedEvent(
+			c.CharacterId, c.AccountId, c.WorldId, c.ChannelId, c.NpcId)
+		if err != nil {
+			l.WithError(err).Errorf("Failed to emit PROJECTION_CREATED event for character [%d]", c.CharacterId)
+		}
 	}
 }
 
@@ -133,10 +152,13 @@ func handleCloseStorageCommand() kafkaMessage.Handler[message.CloseStorageComman
 
 		l.Debugf("Received CloseStorage command for character [%d]", c.CharacterId)
 
-		// Remove NPC context from cache
+		// Remove NPC context from cache (legacy)
 		cache := storage.GetNpcContextCache()
 		cache.Remove(c.CharacterId)
 
-		l.Debugf("Removed NPC context for character [%d]", c.CharacterId)
+		// Delete the projection
+		projection.GetManager().Delete(c.CharacterId)
+
+		l.Debugf("Removed projection and NPC context for character [%d]", c.CharacterId)
 	}
 }

@@ -261,7 +261,7 @@ func (p *Processor) DepositRollback(worldId byte, accountId uint32, body message
 }
 
 // Accept accepts an item into storage as part of a transfer saga
-// This creates a placeholder asset that will be fully populated when the transfer completes
+// For stackable items, attempts to merge with existing stacks before creating new assets
 func (p *Processor) Accept(worldId byte, accountId uint32, body compartment.AcceptCommandBody) (uint32, int16, error) {
 	t := tenant.MustFromContext(p.ctx)
 
@@ -271,21 +271,122 @@ func (p *Processor) Accept(worldId byte, accountId uint32, body compartment.Acce
 		return 0, 0, err
 	}
 
-	// Determine the slot to use
+	refType := asset.ReferenceType(body.ReferenceType)
+	inventoryType := asset.InventoryTypeFromTemplateId(body.TemplateId)
+
+	// Determine the slot to use (slots are per inventory type / compartment)
 	var slot int16
 	if body.Slot >= 0 {
 		slot = body.Slot
 	} else {
-		// Find next available slot (0-indexed)
-		assets, err := asset.GetByStorageId(p.l, p.db, t.Id())(s.Id())
+		// Find next available slot within this inventory type (0-indexed per compartment)
+		compartmentAssets, err := asset.GetByStorageIdAndInventoryType(p.l, p.db, t.Id())(s.Id(), inventoryType)
 		if err != nil {
 			return 0, 0, err
 		}
-		slot = int16(len(assets))
+		slot = int16(len(compartmentAssets))
 	}
 
-	// Create asset with the reference data
-	refType := asset.ReferenceType(body.ReferenceType)
+	// For stackable items, try to merge with existing stacks first
+	if refType == asset.ReferenceTypeConsumable ||
+		refType == asset.ReferenceTypeSetup ||
+		refType == asset.ReferenceTypeEtc {
+
+		// Parse incoming stackable data
+		actualQuantity := body.Quantity
+		if actualQuantity == 0 {
+			actualQuantity = uint32(1)
+		}
+		ownerId := uint32(0)
+		flag := uint16(0)
+
+		if len(body.ReferenceData) > 0 {
+			var stackableData struct {
+				Quantity uint32 `json:"quantity"`
+				OwnerId  uint32 `json:"ownerId"`
+				Flag     uint16 `json:"flag"`
+			}
+			if err := json.Unmarshal(body.ReferenceData, &stackableData); err == nil {
+				if body.Quantity == 0 && stackableData.Quantity > 0 {
+					actualQuantity = stackableData.Quantity
+				}
+				ownerId = stackableData.OwnerId
+				flag = stackableData.Flag
+				p.l.Debugf("Parsed stackable data from ReferenceData: quantity=%d, ownerId=%d, flag=%d", actualQuantity, ownerId, flag)
+			} else {
+				p.l.WithError(err).Warnf("Failed to parse ReferenceData for stackable item, using defaults")
+			}
+		}
+
+		// Try to find existing stack to merge with
+		existingAssets, err := asset.GetByStorageIdAndTemplateId(p.l, p.db, t.Id())(s.Id(), body.TemplateId)
+		if err == nil && len(existingAssets) > 0 {
+			// Get slotMax for this template
+			slotMax, err := p.getSlotMax(body.TemplateId, refType)
+			if err != nil {
+				p.l.WithError(err).Warnf("Failed to get slotMax for template %d, using default of 100", body.TemplateId)
+				slotMax = 100
+			}
+			if slotMax == 0 {
+				slotMax = 100
+			}
+
+			// Check each existing asset for merge compatibility
+			for _, existingAsset := range existingAssets {
+				existingStackable, err := stackable.GetByAssetId(p.l, p.db)(existingAsset.Id())
+				if err != nil {
+					continue
+				}
+
+				// Only merge if ownerId and flag match
+				if existingStackable.OwnerId() != ownerId || existingStackable.Flag() != flag {
+					continue
+				}
+
+				// Check if there's room to merge
+				if existingStackable.Quantity()+actualQuantity <= slotMax {
+					// Merge by updating quantity
+					newQuantity := existingStackable.Quantity() + actualQuantity
+					err = stackable.UpdateQuantity(p.l, p.db)(existingAsset.Id(), newQuantity)
+					if err != nil {
+						p.l.WithError(err).Warnf("Failed to merge stackable, will create new asset")
+						continue
+					}
+					p.l.Debugf("Merged stackable: assetId=%d, oldQuantity=%d, addedQuantity=%d, newQuantity=%d",
+						existingAsset.Id(), existingStackable.Quantity(), actualQuantity, newQuantity)
+					return existingAsset.Id(), existingAsset.Slot(), nil
+				}
+			}
+		}
+
+		// No merge possible, create new asset
+		a, err := asset.Create(p.l, p.db, t.Id())(
+			s.Id(),
+			slot,
+			body.TemplateId,
+			time.Time{}, // No expiration for storage items
+			body.ReferenceId,
+			refType,
+		)
+		if err != nil {
+			return 0, 0, err
+		}
+
+		_, err = stackable.Create(p.l, p.db)(
+			a.Id(),
+			actualQuantity,
+			ownerId,
+			flag,
+		)
+		if err != nil {
+			_ = asset.Delete(p.l, p.db, t.Id())(a.Id())
+			return 0, 0, err
+		}
+
+		return a.Id(), slot, nil
+	}
+
+	// Non-stackable item - create new asset
 	a, err := asset.Create(p.l, p.db, t.Id())(
 		s.Id(),
 		slot,
@@ -296,45 +397,6 @@ func (p *Processor) Accept(worldId byte, accountId uint32, body compartment.Acce
 	)
 	if err != nil {
 		return 0, 0, err
-	}
-
-	// For stackable items, parse the ReferenceData and create the stackable record
-	if refType == asset.ReferenceTypeConsumable ||
-		refType == asset.ReferenceTypeSetup ||
-		refType == asset.ReferenceTypeEtc {
-		// Default values
-		quantity := uint32(1)
-		ownerId := uint32(0)
-		flag := uint16(0)
-
-		// Parse ReferenceData if present
-		if len(body.ReferenceData) > 0 {
-			var stackableData struct {
-				Quantity uint32 `json:"quantity"`
-				OwnerId  uint32 `json:"ownerId"`
-				Flag     uint16 `json:"flag"`
-			}
-			if err := json.Unmarshal(body.ReferenceData, &stackableData); err == nil {
-				quantity = stackableData.Quantity
-				ownerId = stackableData.OwnerId
-				flag = stackableData.Flag
-				p.l.Debugf("Parsed stackable data from ReferenceData: quantity=%d, ownerId=%d, flag=%d", quantity, ownerId, flag)
-			} else {
-				p.l.WithError(err).Warnf("Failed to parse ReferenceData for stackable item, using defaults")
-			}
-		}
-
-		_, err = stackable.Create(p.l, p.db)(
-			a.Id(),
-			quantity,
-			ownerId,
-			flag,
-		)
-		if err != nil {
-			// Rollback asset creation
-			_ = asset.Delete(p.l, p.db, t.Id())(a.Id())
-			return 0, 0, err
-		}
 	}
 
 	return a.Id(), slot, nil
@@ -349,8 +411,11 @@ func (p *Processor) AcceptAndEmit(worldId byte, accountId uint32, characterId ui
 		return err
 	}
 
+	// Get inventory type from template ID
+	inventoryType := asset.InventoryTypeFromTemplateId(body.TemplateId)
+
 	// Emit accepted event
-	return p.emitCompartmentAcceptedEvent(worldId, accountId, characterId, body.TransactionId, assetId, slot)
+	return p.emitCompartmentAcceptedEvent(worldId, accountId, characterId, body.TransactionId, assetId, slot, inventoryType)
 }
 
 // Release releases an item from storage as part of a transfer saga
@@ -363,29 +428,59 @@ func (p *Processor) Release(worldId byte, accountId uint32, body compartment.Rel
 		return err
 	}
 
-	// Delete stackable data if exists
-	if a.IsStackable() {
-		_ = stackable.Delete(p.l, p.db)(body.AssetId)
+	// Determine if this is a full or partial release
+	// quantity == 0 means release all, or if asset is not stackable, always full release
+	if body.Quantity == 0 || !a.IsStackable() {
+		// Full release - delete everything
+		if a.IsStackable() {
+			_ = stackable.Delete(p.l, p.db)(body.AssetId)
+		}
+		return asset.Delete(p.l, p.db, t.Id())(body.AssetId)
 	}
 
-	// Delete asset
-	return asset.Delete(p.l, p.db, t.Id())(body.AssetId)
+	// Get current stackable quantity
+	s, err := stackable.GetByAssetId(p.l, p.db)(body.AssetId)
+	if err != nil {
+		// Stackable data not found, do full release
+		return asset.Delete(p.l, p.db, t.Id())(body.AssetId)
+	}
+
+	// If releasing all or more, do full release
+	if body.Quantity >= s.Quantity() {
+		_ = stackable.Delete(p.l, p.db)(body.AssetId)
+		return asset.Delete(p.l, p.db, t.Id())(body.AssetId)
+	}
+
+	// Partial release - reduce quantity
+	newQuantity := s.Quantity() - body.Quantity
+	return stackable.UpdateQuantity(p.l, p.db)(body.AssetId, newQuantity)
 }
 
 // ReleaseAndEmit releases an item and emits a RELEASED status event
 func (p *Processor) ReleaseAndEmit(worldId byte, accountId uint32, characterId uint32, body compartment.ReleaseCommandBody) error {
-	err := p.Release(worldId, accountId, body)
+	t := tenant.MustFromContext(p.ctx)
+
+	// Get asset info before releasing to capture inventory type
+	a, err := asset.GetById(p.l, p.db, t.Id())(body.AssetId)
+	if err != nil {
+		_ = p.emitCompartmentErrorEvent(worldId, accountId, characterId, body.TransactionId, "RELEASE_FAILED", err.Error())
+		return err
+	}
+
+	inventoryType := a.InventoryType()
+
+	err = p.Release(worldId, accountId, body)
 	if err != nil {
 		// Emit error event
 		_ = p.emitCompartmentErrorEvent(worldId, accountId, characterId, body.TransactionId, "RELEASE_FAILED", err.Error())
 		return err
 	}
 
-	// Emit released event
-	return p.emitCompartmentReleasedEvent(worldId, accountId, characterId, body.TransactionId, body.AssetId)
+	// Emit released event with inventory type
+	return p.emitCompartmentReleasedEvent(worldId, accountId, characterId, body.TransactionId, body.AssetId, inventoryType)
 }
 
-func (p *Processor) emitCompartmentAcceptedEvent(worldId byte, accountId uint32, characterId uint32, transactionId uuid.UUID, assetId uint32, slot int16) error {
+func (p *Processor) emitCompartmentAcceptedEvent(worldId byte, accountId uint32, characterId uint32, transactionId uuid.UUID, assetId uint32, slot int16, inventoryType asset.InventoryType) error {
 	event := &compartment.StatusEvent[compartment.StatusEventAcceptedBody]{
 		WorldId:     worldId,
 		AccountId:   accountId,
@@ -395,13 +490,14 @@ func (p *Processor) emitCompartmentAcceptedEvent(worldId byte, accountId uint32,
 			TransactionId: transactionId,
 			AssetId:       assetId,
 			Slot:          slot,
+			InventoryType: byte(inventoryType),
 		},
 	}
 
 	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvEventTopicStatus)(createCompartmentMessageProvider(accountId, event))
 }
 
-func (p *Processor) emitCompartmentReleasedEvent(worldId byte, accountId uint32, characterId uint32, transactionId uuid.UUID, assetId uint32) error {
+func (p *Processor) emitCompartmentReleasedEvent(worldId byte, accountId uint32, characterId uint32, transactionId uuid.UUID, assetId uint32, inventoryType asset.InventoryType) error {
 	event := &compartment.StatusEvent[compartment.StatusEventReleasedBody]{
 		WorldId:     worldId,
 		AccountId:   accountId,
@@ -410,6 +506,7 @@ func (p *Processor) emitCompartmentReleasedEvent(worldId byte, accountId uint32,
 		Body: compartment.StatusEventReleasedBody{
 			TransactionId: transactionId,
 			AssetId:       assetId,
+			InventoryType: byte(inventoryType),
 		},
 	}
 
@@ -774,4 +871,36 @@ func min(a, b uint32) uint32 {
 		return a
 	}
 	return b
+}
+
+// EmitProjectionCreatedEvent emits a PROJECTION_CREATED event to notify channel service
+func (p *Processor) EmitProjectionCreatedEvent(characterId uint32, accountId uint32, worldId byte, channelId byte, npcId uint32) error {
+	event := &message.StatusEvent[message.ProjectionCreatedEventBody]{
+		WorldId:   worldId,
+		AccountId: accountId,
+		Type:      message.StatusEventTypeProjectionCreated,
+		Body: message.ProjectionCreatedEventBody{
+			CharacterId: characterId,
+			AccountId:   accountId,
+			WorldId:     worldId,
+			ChannelId:   channelId,
+			NpcId:       npcId,
+		},
+	}
+
+	return producer.ProviderImpl(p.l)(p.ctx)(message.EnvEventTopic)(createMessageProvider(accountId, event))
+}
+
+// EmitProjectionDestroyedEvent emits a PROJECTION_DESTROYED event
+func (p *Processor) EmitProjectionDestroyedEvent(characterId uint32, accountId uint32, worldId byte) error {
+	event := &message.StatusEvent[message.ProjectionDestroyedEventBody]{
+		WorldId:   worldId,
+		AccountId: accountId,
+		Type:      message.StatusEventTypeProjectionDestroyed,
+		Body: message.ProjectionDestroyedEventBody{
+			CharacterId: characterId,
+		},
+	}
+
+	return producer.ProviderImpl(p.l)(p.ctx)(message.EnvEventTopic)(createMessageProvider(accountId, event))
 }

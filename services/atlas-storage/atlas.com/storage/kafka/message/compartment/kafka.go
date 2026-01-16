@@ -28,12 +28,14 @@ type AcceptCommandBody struct {
 	ReferenceId   uint32          `json:"referenceId"`
 	ReferenceType string          `json:"referenceType"`
 	ReferenceData json.RawMessage `json:"referenceData,omitempty"` // Type-specific data based on ReferenceType
+	Quantity      uint32          `json:"quantity"`                // Quantity to accept (0 = all from source)
 }
 
 // ReleaseCommandBody contains the data for a RELEASE command
 type ReleaseCommandBody struct {
 	TransactionId uuid.UUID `json:"transactionId"`
 	AssetId       uint32    `json:"assetId"`
+	Quantity      uint32    `json:"quantity"` // Quantity to release (0 = all)
 }
 
 const (
@@ -57,12 +59,14 @@ type StatusEventAcceptedBody struct {
 	TransactionId uuid.UUID `json:"transactionId"`
 	AssetId       uint32    `json:"assetId"`
 	Slot          int16     `json:"slot"`
+	InventoryType byte      `json:"inventoryType"`
 }
 
 // StatusEventReleasedBody contains the data for a RELEASED event
 type StatusEventReleasedBody struct {
 	TransactionId uuid.UUID `json:"transactionId"`
 	AssetId       uint32    `json:"assetId"`
+	InventoryType byte      `json:"inventoryType"`
 }
 
 // StatusEventErrorBody contains the data for an ERROR event

@@ -56,13 +56,15 @@ type UpdateMesosCommandBody struct {
 
 const (
 	// Storage status event topic
-	EnvEventTopicStatus                  = "EVENT_TOPIC_STORAGE_STATUS"
+	EnvEventTopicStatus                   = "EVENT_TOPIC_STORAGE_STATUS"
 	EnvEventTopicStorageCompartmentStatus = "EVENT_TOPIC_STORAGE_COMPARTMENT_STATUS"
-	StatusEventTypeDeposited             = "DEPOSITED"
-	StatusEventTypeWithdrawn             = "WITHDRAWN"
-	StatusEventTypeMesosUpdated          = "MESOS_UPDATED"
-	StatusEventTypeArranged              = "ARRANGED"
-	StatusEventTypeError                 = "ERROR"
+	StatusEventTypeDeposited              = "DEPOSITED"
+	StatusEventTypeWithdrawn              = "WITHDRAWN"
+	StatusEventTypeMesosUpdated           = "MESOS_UPDATED"
+	StatusEventTypeArranged               = "ARRANGED"
+	StatusEventTypeError                  = "ERROR"
+	StatusEventTypeProjectionCreated      = "PROJECTION_CREATED"
+	StatusEventTypeProjectionDestroyed    = "PROJECTION_DESTROYED"
 
 	// Storage compartment event types
 	StatusEventTypeCompartmentAccepted = "ACCEPTED"
@@ -114,10 +116,26 @@ type CompartmentAcceptedEventBody struct {
 	TransactionId uuid.UUID `json:"transactionId"`
 	AssetId       uint32    `json:"assetId"`
 	Slot          int16     `json:"slot"`
+	InventoryType byte      `json:"inventoryType"`
 }
 
 // CompartmentReleasedEventBody contains the data for a RELEASED event
 type CompartmentReleasedEventBody struct {
 	TransactionId uuid.UUID `json:"transactionId"`
 	AssetId       uint32    `json:"assetId"`
+	InventoryType byte      `json:"inventoryType"`
+}
+
+// ProjectionCreatedEventBody contains the data for a projection created event
+type ProjectionCreatedEventBody struct {
+	CharacterId uint32 `json:"characterId"`
+	AccountId   uint32 `json:"accountId"`
+	WorldId     byte   `json:"worldId"`
+	ChannelId   byte   `json:"channelId"`
+	NpcId       uint32 `json:"npcId"`
+}
+
+// ProjectionDestroyedEventBody contains the data for a projection destroyed event
+type ProjectionDestroyedEventBody struct {
+	CharacterId uint32 `json:"characterId"`
 }

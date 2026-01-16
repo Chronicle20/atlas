@@ -133,15 +133,17 @@ type SortCommandBody struct {
 
 type AcceptCommandBody struct {
 	TransactionId uuid.UUID       `json:"transactionId"`
-	ReferenceId   uint32          `json:"referenceId"`    // For equipables/pets - points to external service data
-	TemplateId    uint32          `json:"templateId"`     // Item template ID
-	ReferenceType string          `json:"referenceType"`  // "EQUIPABLE", "CONSUMABLE", "SETUP", "ETC", "CASH", "PET"
+	ReferenceId   uint32          `json:"referenceId"`             // For equipables/pets - points to external service data
+	TemplateId    uint32          `json:"templateId"`              // Item template ID
+	ReferenceType string          `json:"referenceType"`           // "EQUIPABLE", "CONSUMABLE", "SETUP", "ETC", "CASH", "PET"
 	ReferenceData json.RawMessage `json:"referenceData,omitempty"` // Type-specific data based on ReferenceType
+	Quantity      uint32          `json:"quantity"`                // Quantity to accept (0 = all from source)
 }
 
 type ReleaseCommandBody struct {
 	TransactionId uuid.UUID `json:"transactionId"`
 	AssetId       uint32    `json:"assetId"`
+	Quantity      uint32    `json:"quantity"` // Quantity to release (0 = all)
 }
 
 const (

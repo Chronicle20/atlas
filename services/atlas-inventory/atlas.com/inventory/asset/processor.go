@@ -47,8 +47,8 @@ type Provider interface {
 	RelayUpdate(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, referenceId uint32, referenceType ReferenceType, referenceData interface{}) error
 	Create(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, templateId uint32, slot int16, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64) (Model[any], error)
 	Acquire(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, templateId uint32, slot int16, quantity uint32, referenceId uint32) (Model[any], error)
-	Accept(mb *message.Buffer) func(characterId uint32, compartmentId uuid.UUID, type_ inventory.Type, slot int16, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) (Model[any], error)
-	Release(mb *message.Buffer) func(characterId uint32, compartmentId uuid.UUID) func(a Model[any]) error
+	Accept(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, type_ inventory.Type, slot int16, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, quantity uint32) (Model[any], error)
+	Release(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID) func(a Model[any]) error
 }
 
 type Processor struct {
@@ -659,9 +659,9 @@ func (p *Processor) Acquire(mb *message.Buffer) func(transactionId uuid.UUID, ch
 	}
 }
 
-func (p *Processor) Accept(mb *message.Buffer) func(characterId uint32, compartmentId uuid.UUID, type_ inventory.Type, slot int16, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) (Model[any], error) {
-	return func(characterId uint32, compartmentId uuid.UUID, type_ inventory.Type, slot int16, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) (Model[any], error) {
-		p.l.Debugf("Character [%d] attempting to accept asset template [%d] (type: %s, referenceId: %d) in slot [%d] of compartment [%s].", characterId, templateId, referenceType, referenceId, slot, compartmentId.String())
+func (p *Processor) Accept(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, type_ inventory.Type, slot int16, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, quantity uint32) (Model[any], error) {
+	return func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, type_ inventory.Type, slot int16, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, quantity uint32) (Model[any], error) {
+		p.l.Debugf("Character [%d] attempting to accept asset template [%d] (type: %s, referenceId: %d, quantity: %d) in slot [%d] of compartment [%s].", characterId, templateId, referenceType, referenceId, quantity, slot, compartmentId.String())
 		var a Model[any]
 		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
 			// Create the asset with the provided reference data
@@ -696,15 +696,149 @@ func (p *Processor) Accept(mb *message.Buffer) func(characterId uint32, compartm
 				return err
 			}
 
-			// For stackable items, parse the ReferenceData and create the stackable record
-			if refType == ReferenceTypeConsumable || refType == ReferenceTypeSetup || refType == ReferenceTypeEtc || refType == ReferenceTypeCash {
-				// Default values
-				quantity := uint32(1)
+			// Parse and build reference data based on type
+			var rd any
+			switch refType {
+			case ReferenceTypeEquipable:
+				if len(referenceData) > 0 {
+					var equipData struct {
+						OwnerId        uint32 `json:"ownerId"`
+						Strength       uint16 `json:"strength"`
+						Dexterity      uint16 `json:"dexterity"`
+						Intelligence   uint16 `json:"intelligence"`
+						Luck           uint16 `json:"luck"`
+						Hp             uint16 `json:"hp"`
+						Mp             uint16 `json:"mp"`
+						WeaponAttack   uint16 `json:"weaponAttack"`
+						MagicAttack    uint16 `json:"magicAttack"`
+						WeaponDefense  uint16 `json:"weaponDefense"`
+						MagicDefense   uint16 `json:"magicDefense"`
+						Accuracy       uint16 `json:"accuracy"`
+						Avoidability   uint16 `json:"avoidability"`
+						Hands          uint16 `json:"hands"`
+						Speed          uint16 `json:"speed"`
+						Jump           uint16 `json:"jump"`
+						Slots          uint16 `json:"slots"`
+						Locked         bool   `json:"locked"`
+						Spikes         bool   `json:"spikes"`
+						KarmaUsed      bool   `json:"karmaUsed"`
+						Cold           bool   `json:"cold"`
+						CanBeTraded    bool   `json:"canBeTraded"`
+						LevelType      byte   `json:"levelType"`
+						Level          byte   `json:"level"`
+						Experience     uint32 `json:"experience"`
+						HammersApplied uint32 `json:"hammersApplied"`
+					}
+					if unmarshalErr := json.Unmarshal(referenceData, &equipData); unmarshalErr == nil {
+						rd = NewEquipableReferenceDataBuilder().
+							SetOwnerId(equipData.OwnerId).
+							SetStrength(equipData.Strength).
+							SetDexterity(equipData.Dexterity).
+							SetIntelligence(equipData.Intelligence).
+							SetLuck(equipData.Luck).
+							SetHp(equipData.Hp).
+							SetMp(equipData.Mp).
+							SetWeaponAttack(equipData.WeaponAttack).
+							SetMagicAttack(equipData.MagicAttack).
+							SetWeaponDefense(equipData.WeaponDefense).
+							SetMagicDefense(equipData.MagicDefense).
+							SetAccuracy(equipData.Accuracy).
+							SetAvoidability(equipData.Avoidability).
+							SetHands(equipData.Hands).
+							SetSpeed(equipData.Speed).
+							SetJump(equipData.Jump).
+							SetSlots(equipData.Slots).
+							SetLocked(equipData.Locked).
+							SetSpikes(equipData.Spikes).
+							SetKarmaUsed(equipData.KarmaUsed).
+							SetCold(equipData.Cold).
+							SetCanBeTraded(equipData.CanBeTraded).
+							SetLevelType(equipData.LevelType).
+							SetLevel(equipData.Level).
+							SetExperience(equipData.Experience).
+							SetHammersApplied(equipData.HammersApplied).
+							Build()
+						p.l.Debugf("Parsed equipable data from ReferenceData for template [%d]", templateId)
+					} else {
+						p.l.WithError(unmarshalErr).Warnf("Failed to parse ReferenceData for equipable item")
+					}
+				}
+
+			case ReferenceTypeCashEquipable:
+				if len(referenceData) > 0 {
+					var cashEquipData struct {
+						CashId         int64  `json:"cashId,string"`
+						OwnerId        uint32 `json:"ownerId"`
+						Strength       uint16 `json:"strength"`
+						Dexterity      uint16 `json:"dexterity"`
+						Intelligence   uint16 `json:"intelligence"`
+						Luck           uint16 `json:"luck"`
+						Hp             uint16 `json:"hp"`
+						Mp             uint16 `json:"mp"`
+						WeaponAttack   uint16 `json:"weaponAttack"`
+						MagicAttack    uint16 `json:"magicAttack"`
+						WeaponDefense  uint16 `json:"weaponDefense"`
+						MagicDefense   uint16 `json:"magicDefense"`
+						Accuracy       uint16 `json:"accuracy"`
+						Avoidability   uint16 `json:"avoidability"`
+						Hands          uint16 `json:"hands"`
+						Speed          uint16 `json:"speed"`
+						Jump           uint16 `json:"jump"`
+						Slots          uint16 `json:"slots"`
+						Locked         bool   `json:"locked"`
+						Spikes         bool   `json:"spikes"`
+						KarmaUsed      bool   `json:"karmaUsed"`
+						Cold           bool   `json:"cold"`
+						CanBeTraded    bool   `json:"canBeTraded"`
+						LevelType      byte   `json:"levelType"`
+						Level          byte   `json:"level"`
+						Experience     uint32 `json:"experience"`
+						HammersApplied uint32 `json:"hammersApplied"`
+					}
+					if unmarshalErr := json.Unmarshal(referenceData, &cashEquipData); unmarshalErr == nil {
+						rd = NewCashEquipableReferenceDataBuilder().
+							SetCashId(cashEquipData.CashId).
+							SetOwnerId(cashEquipData.OwnerId).
+							SetStrength(cashEquipData.Strength).
+							SetDexterity(cashEquipData.Dexterity).
+							SetIntelligence(cashEquipData.Intelligence).
+							SetLuck(cashEquipData.Luck).
+							SetHp(cashEquipData.Hp).
+							SetMp(cashEquipData.Mp).
+							SetWeaponAttack(cashEquipData.WeaponAttack).
+							SetMagicAttack(cashEquipData.MagicAttack).
+							SetWeaponDefense(cashEquipData.WeaponDefense).
+							SetMagicDefense(cashEquipData.MagicDefense).
+							SetAccuracy(cashEquipData.Accuracy).
+							SetAvoidability(cashEquipData.Avoidability).
+							SetHands(cashEquipData.Hands).
+							SetSpeed(cashEquipData.Speed).
+							SetJump(cashEquipData.Jump).
+							SetSlots(cashEquipData.Slots).
+							SetLocked(cashEquipData.Locked).
+							SetSpikes(cashEquipData.Spikes).
+							SetKarmaUsed(cashEquipData.KarmaUsed).
+							SetCold(cashEquipData.Cold).
+							SetCanBeTraded(cashEquipData.CanBeTraded).
+							SetLevelType(cashEquipData.LevelType).
+							SetLevel(cashEquipData.Level).
+							SetExperience(cashEquipData.Experience).
+							SetHammersApplied(cashEquipData.HammersApplied).
+							Build()
+						p.l.Debugf("Parsed cash equipable data from ReferenceData for template [%d]", templateId)
+					} else {
+						p.l.WithError(unmarshalErr).Warnf("Failed to parse ReferenceData for cash equipable item")
+					}
+				}
+
+			case ReferenceTypeConsumable:
+				actualQuantity := quantity
+				if actualQuantity == 0 {
+					actualQuantity = uint32(1)
+				}
 				ownerId := uint32(0)
 				flag := uint16(0)
 				rechargeable := uint64(0)
-
-				// Parse ReferenceData if present
 				if len(referenceData) > 0 {
 					var stackableData struct {
 						Quantity     uint32 `json:"quantity"`
@@ -713,25 +847,165 @@ func (p *Processor) Accept(mb *message.Buffer) func(characterId uint32, compartm
 						Rechargeable uint64 `json:"rechargeable"`
 					}
 					if unmarshalErr := json.Unmarshal(referenceData, &stackableData); unmarshalErr == nil {
-						quantity = stackableData.Quantity
+						// Only use referenceData quantity if no quantity parameter was passed
+						if quantity == 0 && stackableData.Quantity > 0 {
+							actualQuantity = stackableData.Quantity
+						}
 						ownerId = stackableData.OwnerId
 						flag = stackableData.Flag
 						rechargeable = stackableData.Rechargeable
-						p.l.Debugf("Parsed stackable data from ReferenceData: quantity=%d, ownerId=%d, flag=%d, rechargeable=%d", quantity, ownerId, flag, rechargeable)
+						p.l.Debugf("Parsed consumable data: quantity=%d, ownerId=%d, flag=%d, rechargeable=%d", actualQuantity, ownerId, flag, rechargeable)
 					} else {
-						p.l.WithError(unmarshalErr).Warnf("Failed to parse ReferenceData for stackable item, using defaults")
+						p.l.WithError(unmarshalErr).Warnf("Failed to parse ReferenceData for consumable item, using defaults")
 					}
 				}
-
-				// Create the stackable record with the compartmentId
-				_, err = p.stackableProcessor.WithTransaction(tx).Create(compartmentId, quantity, ownerId, flag, rechargeable)
+				_, err = p.stackableProcessor.WithTransaction(tx).Create(compartmentId, actualQuantity, ownerId, flag, rechargeable)
 				if err != nil {
 					p.l.WithError(err).Errorf("Unable to create stackable data for compartment [%s].", compartmentId.String())
 					return err
 				}
+				rd = NewConsumableReferenceDataBuilder().SetQuantity(actualQuantity).SetOwnerId(ownerId).SetFlag(flag).SetRechargeable(rechargeable).Build()
+
+			case ReferenceTypeSetup:
+				actualQuantity := quantity
+				if actualQuantity == 0 {
+					actualQuantity = uint32(1)
+				}
+				ownerId := uint32(0)
+				flag := uint16(0)
+				if len(referenceData) > 0 {
+					var stackableData struct {
+						Quantity uint32 `json:"quantity"`
+						OwnerId  uint32 `json:"ownerId"`
+						Flag     uint16 `json:"flag"`
+					}
+					if unmarshalErr := json.Unmarshal(referenceData, &stackableData); unmarshalErr == nil {
+						// Only use referenceData quantity if no quantity parameter was passed
+						if quantity == 0 && stackableData.Quantity > 0 {
+							actualQuantity = stackableData.Quantity
+						}
+						ownerId = stackableData.OwnerId
+						flag = stackableData.Flag
+						p.l.Debugf("Parsed setup data: quantity=%d, ownerId=%d, flag=%d", actualQuantity, ownerId, flag)
+					} else {
+						p.l.WithError(unmarshalErr).Warnf("Failed to parse ReferenceData for setup item, using defaults")
+					}
+				}
+				_, err = p.stackableProcessor.WithTransaction(tx).Create(compartmentId, actualQuantity, ownerId, flag, 0)
+				if err != nil {
+					p.l.WithError(err).Errorf("Unable to create stackable data for compartment [%s].", compartmentId.String())
+					return err
+				}
+				rd = NewSetupReferenceDataBuilder().SetQuantity(actualQuantity).SetOwnerId(ownerId).SetFlag(flag).Build()
+
+			case ReferenceTypeEtc:
+				actualQuantity := quantity
+				if actualQuantity == 0 {
+					actualQuantity = uint32(1)
+				}
+				ownerId := uint32(0)
+				flag := uint16(0)
+				if len(referenceData) > 0 {
+					var stackableData struct {
+						Quantity uint32 `json:"quantity"`
+						OwnerId  uint32 `json:"ownerId"`
+						Flag     uint16 `json:"flag"`
+					}
+					if unmarshalErr := json.Unmarshal(referenceData, &stackableData); unmarshalErr == nil {
+						// Only use referenceData quantity if no quantity parameter was passed
+						if quantity == 0 && stackableData.Quantity > 0 {
+							actualQuantity = stackableData.Quantity
+						}
+						ownerId = stackableData.OwnerId
+						flag = stackableData.Flag
+						p.l.Debugf("Parsed etc data: quantity=%d, ownerId=%d, flag=%d", actualQuantity, ownerId, flag)
+					} else {
+						p.l.WithError(unmarshalErr).Warnf("Failed to parse ReferenceData for etc item, using defaults")
+					}
+				}
+				_, err = p.stackableProcessor.WithTransaction(tx).Create(compartmentId, actualQuantity, ownerId, flag, 0)
+				if err != nil {
+					p.l.WithError(err).Errorf("Unable to create stackable data for compartment [%s].", compartmentId.String())
+					return err
+				}
+				rd = NewEtcReferenceDataBuilder().SetQuantity(actualQuantity).SetOwnerId(ownerId).SetFlag(flag).Build()
+
+			case ReferenceTypeCash:
+				actualQuantity := quantity
+				if actualQuantity == 0 {
+					actualQuantity = uint32(1)
+				}
+				ownerId := uint32(0)
+				flag := uint16(0)
+				cashId := int64(0)
+				purchasedBy := uint32(0)
+				if len(referenceData) > 0 {
+					var cashData struct {
+						Quantity    uint32 `json:"quantity"`
+						OwnerId     uint32 `json:"ownerId"`
+						Flag        uint16 `json:"flag"`
+						CashId      int64  `json:"cashId,string"`
+						PurchasedBy uint32 `json:"purchasedBy"`
+					}
+					if unmarshalErr := json.Unmarshal(referenceData, &cashData); unmarshalErr == nil {
+						// Only use referenceData quantity if no quantity parameter was passed
+						if quantity == 0 && cashData.Quantity > 0 {
+							actualQuantity = cashData.Quantity
+						}
+						ownerId = cashData.OwnerId
+						flag = cashData.Flag
+						cashId = cashData.CashId
+						purchasedBy = cashData.PurchasedBy
+						p.l.Debugf("Parsed cash data: quantity=%d, ownerId=%d, flag=%d, cashId=%d", actualQuantity, ownerId, flag, cashId)
+					} else {
+						p.l.WithError(unmarshalErr).Warnf("Failed to parse ReferenceData for cash item, using defaults")
+					}
+				}
+				_, err = p.stackableProcessor.WithTransaction(tx).Create(compartmentId, actualQuantity, ownerId, flag, 0)
+				if err != nil {
+					p.l.WithError(err).Errorf("Unable to create stackable data for compartment [%s].", compartmentId.String())
+					return err
+				}
+				rd = NewCashReferenceDataBuilder().SetQuantity(actualQuantity).SetOwnerId(ownerId).SetFlag(flag).SetCashId(cashId).SetPurchaseBy(purchasedBy).Build()
+
+			case ReferenceTypePet:
+				if len(referenceData) > 0 {
+					var petData struct {
+						CashId      int64  `json:"cashId,string"`
+						OwnerId     uint32 `json:"ownerId"`
+						Flag        uint16 `json:"flag"`
+						PurchasedBy uint32 `json:"purchasedBy"`
+						Name        string `json:"name"`
+						Level       byte   `json:"level"`
+						Closeness   uint16 `json:"closeness"`
+						Fullness    byte   `json:"fullness"`
+						Slot        int8   `json:"slot"`
+					}
+					if unmarshalErr := json.Unmarshal(referenceData, &petData); unmarshalErr == nil {
+						rd = NewPetReferenceDataBuilder().
+							SetCashId(petData.CashId).
+							SetOwnerId(petData.OwnerId).
+							SetFlag(petData.Flag).
+							SetPurchaseBy(petData.PurchasedBy).
+							SetName(petData.Name).
+							SetLevel(petData.Level).
+							SetCloseness(petData.Closeness).
+							SetFullness(petData.Fullness).
+							SetSlot(petData.Slot).
+							Build()
+						p.l.Debugf("Parsed pet data from ReferenceData for template [%d]", templateId)
+					} else {
+						p.l.WithError(unmarshalErr).Warnf("Failed to parse ReferenceData for pet item")
+					}
+				}
 			}
 
-			return nil
+			if rd != nil {
+				a = Clone(a).SetReferenceData(rd).Build()
+			}
+
+			// Emit ACCEPTED event for channel service to update client inventory
+			return mb.Put(asset.EnvEventTopicStatus, AcceptedEventStatusProvider(transactionId, characterId, a))
 		})
 		if txErr != nil {
 			return Model[any]{}, txErr
@@ -740,22 +1014,29 @@ func (p *Processor) Accept(mb *message.Buffer) func(characterId uint32, compartm
 	}
 }
 
-func (p *Processor) Release(mb *message.Buffer) func(characterId uint32, compartmentId uuid.UUID) func(a Model[any]) error {
-	return func(characterId uint32, compartmentId uuid.UUID) func(a Model[any]) error {
+func (p *Processor) Release(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID) func(a Model[any]) error {
+	return func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID) func(a Model[any]) error {
 		return func(a Model[any]) error {
 			p.l.Debugf("Attempting to release asset [%d].", a.Id())
+
+			// Capture asset info before deletion for the event
+			assetId := a.Id()
+			templateId := a.TemplateId()
+			slot := a.Slot()
+
 			txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
-				err := deleteById(tx, p.t.Id(), a.Id())
+				err := deleteById(tx, p.t.Id(), assetId)
 				if err != nil {
 					return err
 				}
-				return nil
+				// Emit RELEASED event for channel service to update client inventory
+				return mb.Put(asset.EnvEventTopicStatus, ReleasedEventStatusProvider(transactionId, characterId, compartmentId, assetId, templateId, slot))
 			})
 			if txErr != nil {
-				p.l.WithError(txErr).Errorf("Unable to delete asset [%d].", a.Id())
+				p.l.WithError(txErr).Errorf("Unable to delete asset [%d].", assetId)
 				return txErr
 			}
-			p.l.Debugf("Deleted asset [%d].", a.Id())
+			p.l.Debugf("Deleted asset [%d].", assetId)
 			return nil
 		}
 	}

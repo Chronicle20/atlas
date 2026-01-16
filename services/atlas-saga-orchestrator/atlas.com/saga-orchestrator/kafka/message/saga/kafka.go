@@ -14,6 +14,14 @@ const (
 	StatusEventTypeFailed    = "FAILED"
 )
 
+// Error codes for saga failure events
+const (
+	ErrorCodeNotEnoughMesos = "NOT_ENOUGH_MESOS"
+	ErrorCodeInventoryFull  = "INVENTORY_FULL"
+	ErrorCodeStorageFull    = "STORAGE_FULL"
+	ErrorCodeUnknown        = "UNKNOWN"
+)
+
 type StatusEvent[E any] struct {
 	TransactionId uuid.UUID `json:"transactionId"`
 	Type          string    `json:"type"`
@@ -24,6 +32,9 @@ type StatusEventCompletedBody struct {
 }
 
 type StatusEventFailedBody struct {
-	Reason     string `json:"reason"`
-	FailedStep string `json:"failedStep"`
+	Reason      string `json:"reason"`
+	FailedStep  string `json:"failedStep"`
+	CharacterId uint32 `json:"characterId"`
+	SagaType    string `json:"sagaType"`
+	ErrorCode   string `json:"errorCode"`
 }

@@ -10,6 +10,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -357,7 +358,7 @@ func (p *ProcessorImpl) ReleaseAndEmit(accountId uint32, id uuid.UUID, type_ Com
 
 func (p *ProcessorImpl) Release(mb *message.Buffer) func(accountId uint32, id uuid.UUID, type_ CompartmentType, assetId uint32, transactionId uuid.UUID) error {
 	return func(accountId uint32, id uuid.UUID, type_ CompartmentType, assetId uint32, transactionId uuid.UUID) error {
-		p.l.Debugf("Handling releasing asset for account [%d], compartment [%d], type [%d].", accountId, id, type_)
+		p.l.Debugf("Handling releasing asset for account [%d], compartment [%s], type [%d].", accountId, id.String(), type_)
 
 		// Get the compartment
 		ccm, err := p.GetById(id)

@@ -2,9 +2,11 @@ package cash
 
 import (
 	"atlas-inventory/rest"
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -18,4 +20,11 @@ func getBaseRequest() string {
 
 func requestById(id uint32) requests.Request[RestModel] {
 	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+itemResource, id))
+}
+
+func requestDelete(l logrus.FieldLogger, ctx context.Context) func(id uint32) error {
+	return func(id uint32) error {
+		url := fmt.Sprintf(getBaseRequest()+itemResource, id)
+		return rest.MakeDeleteRequest(url)(l, ctx)
+	}
 }

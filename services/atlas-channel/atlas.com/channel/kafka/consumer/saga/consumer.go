@@ -4,6 +4,7 @@ import (
 	consumer2 "atlas-channel/kafka/consumer"
 	"atlas-channel/kafka/message/saga"
 	"atlas-channel/server"
+	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
 
@@ -71,10 +72,57 @@ func handleFailedEvent(sc server.Model, wp writer.Producer) message.Handler[saga
 			return
 		}
 
-		l.Warnf("Saga transaction [%s] failed. Reason: [%s], Failed Step: [%s]", e.TransactionId.String(), e.Body.Reason, e.Body.FailedStep)
+		l.WithFields(logrus.Fields{
+			"transaction_id": e.TransactionId.String(),
+			"saga_type":      e.Body.SagaType,
+			"error_code":     e.Body.ErrorCode,
+			"character_id":   e.Body.CharacterId,
+			"failed_step":    e.Body.FailedStep,
+		}).Debugf("Saga transaction failed. Reason: [%s]", e.Body.Reason)
 
-		// TODO: Notify the client about the failure
-		// This might involve looking up the session associated with this transaction
-		// and sending an error message to the client
+		// Look up the session for the character
+		s, ok := session.NewProcessor(l, ctx).GetSessionByCharacterId(e.Body.CharacterId)
+		if !ok {
+			l.WithField("character_id", e.Body.CharacterId).Debug("Character not connected, skipping error notification.")
+			return
+		}
+
+		if s.ChannelId() != sc.ChannelId() {
+			return
+		}
+
+		// Handle storage operation failures by sending appropriate error packets
+		if e.Body.SagaType == saga.SagaTypeStorageOperation {
+			// Get the appropriate error body producer based on the error code
+			errorBody := getStorageErrorBodyProducer(l, e.Body.ErrorCode)
+			if errorBody == nil {
+				l.WithField("error_code", e.Body.ErrorCode).Warn("No error body producer for error code, skipping notification.")
+				return
+			}
+
+			// Send the error packet to the client
+			err := session.Announce(l)(ctx)(wp)(writer.StorageOperation)(errorBody)(s)
+			if err != nil {
+				l.WithError(err).WithField("character_id", e.Body.CharacterId).Error("Failed to send storage error packet to client.")
+				return
+			}
+
+			l.WithFields(logrus.Fields{
+				"character_id": e.Body.CharacterId,
+				"error_code":   e.Body.ErrorCode,
+			}).Debug("Sent storage operation error packet to client.")
+		}
+	}
+}
+
+// getStorageErrorBodyProducer returns the appropriate BodyProducer for the given error code
+func getStorageErrorBodyProducer(l logrus.FieldLogger, errorCode string) writer.BodyProducer {
+	switch errorCode {
+	case saga.ErrorCodeNotEnoughMesos:
+		return writer.StorageOperationErrorNotEnoughMesoBody(l)
+	case saga.ErrorCodeInventoryFull, saga.ErrorCodeStorageFull:
+		return writer.StorageOperationErrorInventoryFullBody(l)
+	default:
+		return nil
 	}
 }

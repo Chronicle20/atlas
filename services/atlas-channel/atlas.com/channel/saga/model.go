@@ -12,6 +12,7 @@ type Type string
 
 const (
 	InventoryTransaction Type = "inventory_transaction"
+	StorageOperation     Type = "storage_operation"
 )
 
 // Saga represents the entire saga transaction

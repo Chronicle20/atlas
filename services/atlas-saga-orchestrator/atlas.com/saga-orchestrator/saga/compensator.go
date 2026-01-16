@@ -32,6 +32,7 @@ type Compensator interface {
 	compensateChangeHair(s Saga, failedStep Step[any]) error
 	compensateChangeFace(s Saga, failedStep Step[any]) error
 	compensateChangeSkin(s Saga, failedStep Step[any]) error
+	compensateStorageOperation(s Saga, failedStep Step[any]) error
 }
 
 type CompensatorImpl struct {
@@ -180,9 +181,12 @@ func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 		// Remove saga from cache
 		GetCache().Remove(c.t.Id(), s.TransactionId())
 
+		// Extract character ID from the validation payload
+		characterId := ExtractCharacterId(failedStep)
+
 		// Emit saga failed event
 		err := producer.ProviderImpl(c.l)(c.ctx)(sagaMsg.EnvStatusEventTopic)(
-			FailedStatusEventProvider(s.TransactionId(), "Validation failed", failedStep.StepId()))
+			FailedStatusEventProvider(s.TransactionId(), characterId, string(s.SagaType()), sagaMsg.ErrorCodeUnknown, "Validation failed", failedStep.StepId()))
 		if err != nil {
 			c.l.WithError(err).WithFields(logrus.Fields{
 				"transaction_id": s.TransactionId().String(),
@@ -210,6 +214,9 @@ func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 		return c.compensateChangeFace(s, failedStep)
 	case ChangeSkin:
 		return c.compensateChangeSkin(s, failedStep)
+	case AwardMesos, AcceptToStorage, AcceptToCharacter, ReleaseFromStorage, ReleaseFromCharacter:
+		// Storage-related actions are terminal failures - emit error event and stop
+		return c.compensateStorageOperation(s, failedStep)
 	default:
 		c.l.WithFields(logrus.Fields{
 			"transaction_id": s.TransactionId().String(),
@@ -708,6 +715,53 @@ func (c *CompensatorImpl) compensateChangeSkin(s Saga, failedStep Step[any]) err
 		}
 
 		GetCache().Put(c.t.Id(), updatedSaga)
+	}
+
+	return nil
+}
+
+// compensateStorageOperation handles compensation for storage-related operation failures.
+// These are terminal failures that emit an error event to notify the client.
+// No rollback is performed - the saga simply terminates with an appropriate error code.
+func (c *CompensatorImpl) compensateStorageOperation(s Saga, failedStep Step[any]) error {
+	// Extract character ID from the failed step's payload
+	characterId := ExtractCharacterId(failedStep)
+
+	// Determine the appropriate error code based on the saga and failed step
+	errorCode := DetermineErrorCode(s, failedStep)
+
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"saga_type":      s.SagaType(),
+		"step_id":        failedStep.StepId(),
+		"action":         failedStep.Action(),
+		"character_id":   characterId,
+		"error_code":     errorCode,
+		"tenant_id":      c.t.Id().String(),
+	}).Info("Storage operation failed - terminating saga with error event.")
+
+	// Remove saga from cache
+	GetCache().Remove(c.t.Id(), s.TransactionId())
+
+	// Emit saga failed event with context-appropriate error information
+	err := producer.ProviderImpl(c.l)(c.ctx)(sagaMsg.EnvStatusEventTopic)(
+		FailedStatusEventProvider(
+			s.TransactionId(),
+			characterId,
+			string(s.SagaType()),
+			errorCode,
+			fmt.Sprintf("Storage operation failed at step [%s] action [%s]", failedStep.StepId(), failedStep.Action()),
+			failedStep.StepId(),
+		))
+	if err != nil {
+		c.l.WithError(err).WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"saga_type":      s.SagaType(),
+			"character_id":   characterId,
+			"error_code":     errorCode,
+			"tenant_id":      c.t.Id().String(),
+		}).Error("Failed to emit saga failed event for storage operation.")
+		return err
 	}
 
 	return nil

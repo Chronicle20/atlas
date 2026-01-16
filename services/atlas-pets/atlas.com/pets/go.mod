@@ -13,7 +13,7 @@ require (
 	github.com/jtumidanski/api2go v1.0.4
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/segmentio/kafka-go v0.4.49
-	github.com/sirupsen/logrus v1.9.3
+	github.com/sirupsen/logrus v1.9.4
 	github.com/uber/jaeger-client-go v2.30.0+incompatible
 	go.elastic.co/ecslogrus v1.0.0
 	go.opentelemetry.io/otel v1.39.0

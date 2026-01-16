@@ -5,6 +5,7 @@ import (
 	"atlas-messages/command/character"
 	"atlas-messages/command/character/inventory"
 	"atlas-messages/command/character/skill"
+	"atlas-messages/command/help"
 	"atlas-messages/command/map"
 	message2 "atlas-messages/kafka/consumer/message"
 	"atlas-messages/logger"
@@ -27,6 +28,7 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
+	command.Registry().Add(help.HelpCommandProducer)
 	command.Registry().Add(_map.WarpCommandProducer)
 	command.Registry().Add(_map.WhereAmICommandProducer)
 	command.Registry().Add(inventory.AwardItemCommandProducer)

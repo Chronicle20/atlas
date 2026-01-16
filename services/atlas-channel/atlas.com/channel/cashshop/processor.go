@@ -1,16 +1,15 @@
 package cashshop
 
 import (
-	"atlas-channel/asset"
-	asset2 "atlas-channel/cashshop/inventory/asset"
 	"atlas-channel/cashshop/inventory/compartment"
-	compartment2 "atlas-channel/compartment"
 	"atlas-channel/kafka/message/cashshop"
 	"atlas-channel/kafka/producer"
+	"atlas-channel/saga"
 	"context"
-	"errors"
-	"github.com/Chronicle20/atlas-constants/inventory"
+	"time"
+
 	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -96,91 +95,91 @@ func (p *ProcessorImpl) RequestPurchase(characterId uint32, serialNumber uint32,
 }
 
 func (p *ProcessorImpl) MoveFromCashInventory(accountId uint32, characterId uint32, serialNumber uint64, inventoryType byte, slot int16) error {
-	p.l.Infof("Character [%d] moving [%d] to inventory [%d] to slot [%d].", characterId, serialNumber, inventoryType, slot)
-	cp := compartment2.NewProcessor(p.l, p.ctx)
+	p.l.Infof("Character [%d] moving cash item [%d] to inventory [%d].", characterId, serialNumber, inventoryType)
 
-	// Get the character's destination compartment
-	// TODO identify correct compartment type
-	cscm, err := compartment.NewProcessor(p.l, p.ctx).GetByAccountIdAndType(accountId, compartment.TypeExplorer)
+	// Create saga transaction for withdrawing from cash shop
+	sagaP := saga.NewProcessor(p.l, p.ctx)
+	transactionId := uuid.New()
+	now := time.Now()
+
+	// TODO: identify correct compartment type based on character job
+	compartmentType := byte(compartment.TypeExplorer)
+
+	// Create the high-level withdrawal step (will be expanded by saga-orchestrator)
+	step := saga.Step[any]{
+		StepId:  "withdraw_from_cash_shop",
+		Status:  saga.Pending,
+		Action:  saga.WithdrawFromCashShop,
+		Payload: saga.WithdrawFromCashShopPayload{
+			TransactionId:   transactionId,
+			CharacterId:     characterId,
+			AccountId:       accountId,
+			CashId:          serialNumber,
+			CompartmentType: compartmentType,
+			InventoryType:   inventoryType,
+		},
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+
+	sagaTx := saga.Saga{
+		TransactionId: transactionId,
+		SagaType:      saga.CashShopOperation,
+		InitiatedBy:   "CASH_SHOP",
+		Steps:         []saga.Step[any]{step},
+	}
+
+	err := sagaP.Create(sagaTx)
 	if err != nil {
+		p.l.WithError(err).Errorf("Unable to create saga for withdrawing cash item [%d] for character [%d].", serialNumber, characterId)
 		return err
 	}
 
-	// Get the character's source compartment
-	ccm, err := cp.GetByType(characterId, inventory.Type(inventoryType))
-	if err != nil {
-		return err
-	}
-
-	// Check if the compartment has the asset with CashId matching the serialNumber
-	var foundAsset *asset2.Model
-	for _, a := range cscm.Assets() {
-		// Check if the asset is cash-equipable, cash, or pet
-		if uint64(a.Item().CashId()) == serialNumber {
-			assetCopy := a
-			foundAsset = &assetCopy
-			break
-		}
-	}
-
-	if foundAsset == nil {
-		p.l.Errorf("Character [%d] does not have asset with CashId [%d] in inventory [%d].", characterId, serialNumber, inventoryType)
-		return errors.New("asset not found")
-	}
-	return cp.Transfer(accountId, characterId, foundAsset.Item().Id(), cscm.Id(), byte(cscm.Type()), "CASH_SHOP", ccm.Id(), byte(ccm.Type()), "CHARACTER", foundAsset.Item().Id())
+	p.l.Debugf("Created withdrawal saga [%s] for character [%d] withdrawing cash item [%d].", transactionId.String(), characterId, serialNumber)
+	return nil
 }
 
 func (p *ProcessorImpl) MoveToCashInventory(accountId uint32, characterId uint32, serialNumber uint64, inventoryType byte) error {
-	p.l.Infof("Character [%d] moving [%d] from inventory [%d] to cash inventory.", characterId, serialNumber, inventoryType)
-	cp := compartment2.NewProcessor(p.l, p.ctx)
+	p.l.Infof("Character [%d] moving cash item [%d] from inventory [%d] to cash inventory.", characterId, serialNumber, inventoryType)
 
-	// Get the character's destination compartment
-	// TODO identify correct compartment type
-	cscm, err := compartment.NewProcessor(p.l, p.ctx).GetByAccountIdAndType(accountId, compartment.TypeExplorer)
+	// Create saga transaction for transferring to cash shop
+	sagaP := saga.NewProcessor(p.l, p.ctx)
+	transactionId := uuid.New()
+	now := time.Now()
+
+	// TODO: identify correct compartment type based on character job
+	compartmentType := byte(compartment.TypeExplorer)
+
+	// Create the high-level transfer step (will be expanded by saga-orchestrator)
+	step := saga.Step[any]{
+		StepId:  "transfer_to_cash_shop",
+		Status:  saga.Pending,
+		Action:  saga.TransferToCashShop,
+		Payload: saga.TransferToCashShopPayload{
+			TransactionId:       transactionId,
+			CharacterId:         characterId,
+			AccountId:           accountId,
+			CashId:              serialNumber,
+			SourceInventoryType: inventoryType,
+			CompartmentType:     compartmentType,
+		},
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+
+	sagaTx := saga.Saga{
+		TransactionId: transactionId,
+		SagaType:      saga.CashShopOperation,
+		InitiatedBy:   "CASH_SHOP",
+		Steps:         []saga.Step[any]{step},
+	}
+
+	err := sagaP.Create(sagaTx)
 	if err != nil {
+		p.l.WithError(err).Errorf("Unable to create saga for transferring cash item [%d] to cash shop for character [%d].", serialNumber, characterId)
 		return err
 	}
 
-	// Get the character's source compartment
-	ccm, err := cp.GetByType(characterId, inventory.Type(inventoryType))
-	if err != nil {
-		return err
-	}
-
-	// Check if the compartment has the asset with CashId matching the serialNumber
-	var foundAsset *asset.Model[any]
-	for _, a := range ccm.Assets() {
-		// Check if the asset is cash-equipable, cash, or pet
-		if a.IsCashEquipable() {
-			if cashEquipable, ok := a.ReferenceData().(asset.CashEquipableReferenceData); ok {
-				if uint64(cashEquipable.CashId()) == serialNumber {
-					assetCopy := a
-					foundAsset = &assetCopy
-					break
-				}
-			}
-		} else if a.IsCash() {
-			if cash, ok := a.ReferenceData().(asset.CashReferenceData); ok {
-				if uint64(cash.CashId()) == serialNumber {
-					assetCopy := a
-					foundAsset = &assetCopy
-					break
-				}
-			}
-		} else if a.IsPet() {
-			if pet, ok := a.ReferenceData().(asset.PetReferenceData); ok {
-				if uint64(pet.CashId()) == serialNumber {
-					assetCopy := a
-					foundAsset = &assetCopy
-					break
-				}
-			}
-		}
-	}
-
-	if foundAsset == nil {
-		p.l.Errorf("Character [%d] does not have asset with CashId [%d] in inventory [%d].", characterId, serialNumber, inventoryType)
-		return errors.New("asset not found")
-	}
-	return cp.Transfer(accountId, characterId, foundAsset.Id(), ccm.Id(), byte(ccm.Type()), "CHARACTER", cscm.Id(), byte(cscm.Type()), "CASH_SHOP", foundAsset.ReferenceId())
+	p.l.Debugf("Created transfer saga [%s] for character [%d] transferring cash item [%d] to cash shop.", transactionId.String(), characterId, serialNumber)
+	return nil
 }

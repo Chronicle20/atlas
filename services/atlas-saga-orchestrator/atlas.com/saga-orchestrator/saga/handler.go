@@ -86,11 +86,12 @@ type Handler interface {
 	handleUpdateStorageMesos(s Saga, st Step[any]) error
 	handleAwardFame(s Saga, st Step[any]) error
 	handleShowStorage(s Saga, st Step[any]) error
-	handleTransferAsset(s Saga, st Step[any]) error
 	handleAcceptToStorage(s Saga, st Step[any]) error
 	handleReleaseFromCharacter(s Saga, st Step[any]) error
 	handleAcceptToCharacter(s Saga, st Step[any]) error
 	handleReleaseFromStorage(s Saga, st Step[any]) error
+	handleAcceptToCashShop(s Saga, st Step[any]) error
+	handleReleaseFromCashShop(s Saga, st Step[any]) error
 }
 
 type HandlerImpl struct {
@@ -505,8 +506,6 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleAwardFame, true
 	case ShowStorage:
 		return h.handleShowStorage, true
-	case TransferAsset:
-		return h.handleTransferAsset, true
 	case AcceptToStorage:
 		return h.handleAcceptToStorage, true
 	case ReleaseFromCharacter:
@@ -515,6 +514,10 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleAcceptToCharacter, true
 	case ReleaseFromStorage:
 		return h.handleReleaseFromStorage, true
+	case AcceptToCashShop:
+		return h.handleAcceptToCashShop, true
+	case ReleaseFromCashShop:
+		return h.handleReleaseFromCashShop, true
 	}
 	return nil, false
 }
@@ -1218,41 +1221,6 @@ func (h *HandlerImpl) handleShowStorage(s Saga, st Step[any]) error {
 	return nil
 }
 
-// handleTransferAsset handles the TransferAsset action
-// This uses the compartment-transfer service's 2-phase commit pattern (ACCEPT → RELEASE → COMPLETED)
-// to atomically transfer an asset between compartments (character inventory ↔ storage)
-func (h *HandlerImpl) handleTransferAsset(s Saga, st Step[any]) error {
-	payload, ok := st.Payload().(TransferAssetPayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	err := h.compP.RequestTransferAsset(
-		s.TransactionId(),
-		payload.WorldId,
-		payload.AccountId,
-		payload.CharacterId,
-		payload.AssetId,
-		payload.FromCompartmentId,
-		payload.FromCompartmentType,
-		payload.FromInventoryType,
-		payload.ToCompartmentId,
-		payload.ToCompartmentType,
-		payload.ToInventoryType,
-		payload.ReferenceId,
-		payload.TemplateId,
-		payload.ReferenceType,
-		payload.Slot,
-	)
-
-	if err != nil {
-		h.logActionError(s, st, err, "Unable to transfer asset.")
-		return err
-	}
-
-	return nil
-}
-
 // handleAcceptToStorage handles the AcceptToStorage action
 // This sends an ACCEPT command to storage compartment with pre-populated asset data
 func (h *HandlerImpl) handleAcceptToStorage(s Saga, st Step[any]) error {
@@ -1358,6 +1326,65 @@ func (h *HandlerImpl) handleReleaseFromStorage(s Saga, st Step[any]) error {
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to release asset from storage.")
+		return err
+	}
+
+	return nil
+}
+
+// handleAcceptToCashShop handles the AcceptToCashShop action
+// This sends an ACCEPT command to cash shop compartment with pre-populated asset data
+func (h *HandlerImpl) handleAcceptToCashShop(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(AcceptToCashShopPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.Debugf("Accepting asset template [%d] with cashId [%d] to cash shop compartment [%s] for account [%d]",
+		payload.TemplateId, payload.CashId, payload.CompartmentId, payload.AccountId)
+
+	// Send ACCEPT command to cash shop compartment with pre-populated asset data (including preserved cashId)
+	err := h.cashshopP.AcceptAndEmit(
+		payload.TransactionId,
+		payload.AccountId,
+		payload.CompartmentId,
+		payload.CompartmentType,
+		payload.CashId,
+		payload.TemplateId,
+		payload.ReferenceId,
+		payload.ReferenceType,
+		payload.ReferenceData,
+	)
+
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to accept asset to cash shop.")
+		return err
+	}
+
+	return nil
+}
+
+// handleReleaseFromCashShop handles the ReleaseFromCashShop action
+// This sends a RELEASE command to cash shop compartment
+func (h *HandlerImpl) handleReleaseFromCashShop(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ReleaseFromCashShopPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.Debugf("Releasing asset [%d] from cash shop compartment [%s] for account [%d]",
+		payload.AssetId, payload.CompartmentId, payload.AccountId)
+
+	err := h.cashshopP.ReleaseAndEmit(
+		payload.TransactionId,
+		payload.AccountId,
+		payload.CompartmentId,
+		payload.CompartmentType,
+		payload.AssetId,
+	)
+
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to release asset from cash shop.")
 		return err
 	}
 

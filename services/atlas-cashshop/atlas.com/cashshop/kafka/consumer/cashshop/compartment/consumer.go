@@ -38,7 +38,7 @@ func handleAcceptCommand(db *gorm.DB) message.Handler[compartment.Command[compar
 		if c.Type != compartment.CommandAccept {
 			return
 		}
-		_ = compartment2.NewProcessor(l, ctx, db).AcceptAndEmit(c.AccountId, c.Body.CompartmentId, compartment2.CompartmentType(c.CompartmentType), c.Body.TemplateId, c.Body.ReferenceId, c.Body.ReferenceType, c.Body.ReferenceData, c.Body.TransactionId)
+		_ = compartment2.NewProcessor(l, ctx, db).AcceptAndEmit(c.AccountId, c.Body.CompartmentId, compartment2.CompartmentType(c.CompartmentType), c.Body.CashId, c.Body.TemplateId, c.Body.ReferenceId, c.Body.ReferenceType, c.Body.ReferenceData, c.Body.TransactionId)
 	}
 }
 

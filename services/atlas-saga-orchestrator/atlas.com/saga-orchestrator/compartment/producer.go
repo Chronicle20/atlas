@@ -2,7 +2,6 @@ package compartment
 
 import (
 	"atlas-saga-orchestrator/kafka/message/compartment"
-	"atlas-saga-orchestrator/kafka/message/transfer"
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
@@ -72,28 +71,6 @@ func RequestUnequipAssetCommandProvider(transactionId uuid.UUID, characterId uin
 			Source:      source,
 			Destination: destination,
 		},
-	}
-	return producer.SingleMessageProvider(key, value)
-}
-
-func RequestTransferAssetCommandProvider(transactionId uuid.UUID, worldId byte, accountId uint32, characterId uint32, assetId uint32, fromCompartmentId uuid.UUID, fromCompartmentType byte, fromInventoryType string, toCompartmentId uuid.UUID, toCompartmentType byte, toInventoryType string, referenceId uint32, templateId uint32, referenceType string, slot int16) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(characterId))
-	value := &transfer.TransferCommand{
-		TransactionId:       transactionId,
-		WorldId:             worldId,
-		AccountId:           accountId,
-		CharacterId:         characterId,
-		AssetId:             assetId,
-		FromCompartmentId:   fromCompartmentId,
-		FromCompartmentType: fromCompartmentType,
-		FromInventoryType:   fromInventoryType,
-		ToCompartmentId:     toCompartmentId,
-		ToCompartmentType:   toCompartmentType,
-		ToInventoryType:     toInventoryType,
-		ReferenceId:         referenceId,
-		TemplateId:          templateId,
-		ReferenceType:       referenceType,
-		Slot:                slot,
 	}
 	return producer.SingleMessageProvider(key, value)
 }

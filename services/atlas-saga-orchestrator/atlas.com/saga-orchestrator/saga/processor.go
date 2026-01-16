@@ -1,6 +1,7 @@
 package saga
 
 import (
+	"atlas-saga-orchestrator/cashshop"
 	"atlas-saga-orchestrator/character"
 	"atlas-saga-orchestrator/compartment"
 	"atlas-saga-orchestrator/guild"
@@ -14,7 +15,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 
+	"github.com/Chronicle20/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -652,7 +656,8 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 	}).Debugf("Progressing saga step [%s].", st.StepId())
 
 	// Check if this is a high-level action that needs expansion
-	if st.Action() == TransferToStorage || st.Action() == WithdrawFromStorage {
+	if st.Action() == TransferToStorage || st.Action() == WithdrawFromStorage ||
+		st.Action() == TransferToCashShop || st.Action() == WithdrawFromCashShop {
 		p.l.Debugf("Expanding high-level action [%s] into concrete steps", st.Action())
 		err := p.expandAndProcessStep(s, st)
 		if err != nil {
@@ -705,11 +710,16 @@ func (p *ProcessorImpl) expandAndProcessStep(s Saga, st Step[any]) error {
 	var newSteps []Step[any]
 	var err error
 
-	if st.Action() == TransferToStorage {
+	switch st.Action() {
+	case TransferToStorage:
 		newSteps, err = p.expandTransferToStorage(st)
-	} else if st.Action() == WithdrawFromStorage {
+	case WithdrawFromStorage:
 		newSteps, err = p.expandWithdrawFromStorage(st)
-	} else {
+	case TransferToCashShop:
+		newSteps, err = p.expandTransferToCashShop(st)
+	case WithdrawFromCashShop:
+		newSteps, err = p.expandWithdrawFromCashShop(st)
+	default:
 		return fmt.Errorf("unknown high-level action for expansion: %s", st.Action())
 	}
 
@@ -889,6 +899,178 @@ func (p *ProcessorImpl) expandWithdrawFromStorage(st Step[any]) ([]Step[any], er
 				CharacterId:   payload.CharacterId,
 				AssetId:       foundAsset.Id,
 				Quantity:      payload.Quantity,
+			},
+		),
+	}
+
+	return steps, nil
+}
+
+// expandTransferToCashShop expands TransferToCashShop into AcceptToCashShop + ReleaseFromCharacter
+func (p *ProcessorImpl) expandTransferToCashShop(st Step[any]) ([]Step[any], error) {
+	payload, ok := st.Payload().(TransferToCashShopPayload)
+	if !ok {
+		return nil, fmt.Errorf("invalid payload type for TransferToCashShop")
+	}
+
+	// Lookup the source asset from character inventory
+	p.l.Debugf("Looking up source asset for character [%d] inventory [%d] cashId [%d]",
+		payload.CharacterId, payload.SourceInventoryType, payload.CashId)
+
+	comp, err := compartment.RequestCompartment(p.l, p.ctx)(payload.CharacterId, payload.SourceInventoryType)
+	if err != nil {
+		return nil, fmt.Errorf("unable to lookup character [%d] inventory compartment: %w", payload.CharacterId, err)
+	}
+
+	// Find the asset with matching CashId in ReferenceData
+	var foundAsset *compartment.AssetRestModel
+	for i := range comp.Assets {
+		// Parse ReferenceData to extract cashId
+		var refData struct {
+			CashId int64 `json:"cashId,string"`
+		}
+		if err := json.Unmarshal(comp.Assets[i].ReferenceData, &refData); err == nil {
+			if refData.CashId == payload.CashId {
+				foundAsset = &comp.Assets[i]
+				break
+			}
+		} else {
+			p.l.WithError(err).Errorf("Did not match asset.")
+		}
+	}
+
+	if foundAsset == nil {
+		return nil, fmt.Errorf("no asset found with cashId [%d] in character [%d] inventory [%d]",
+			payload.CashId, payload.CharacterId, payload.SourceInventoryType)
+	}
+
+	p.l.Debugf("Found source asset template [%d] with referenceId [%d] type [%s] and %d bytes of referenceData",
+		foundAsset.TemplateId, foundAsset.ReferenceId, foundAsset.ReferenceType, len(foundAsset.ReferenceData))
+
+	// Convert string ID to uint32 for assetId
+	var assetId uint32
+	fmt.Sscanf(foundAsset.Id, "%d", &assetId)
+
+	// Get cash shop compartment to get the compartment ID
+	cashComp, err := cashshop.RequestCompartment(p.l, p.ctx)(payload.AccountId, payload.CompartmentType)
+	if err != nil {
+		return nil, fmt.Errorf("unable to lookup cash shop compartment for account [%d] type [%d]: %w",
+			payload.AccountId, payload.CompartmentType, err)
+	}
+
+	// Create expanded steps
+	steps := []Step[any]{
+		NewStep[any](
+			"accept_to_cash_shop",
+			Pending,
+			AcceptToCashShop,
+			AcceptToCashShopPayload{
+				TransactionId:   payload.TransactionId,
+				AccountId:       payload.AccountId,
+				CompartmentId:   cashComp.Id,
+				CompartmentType: payload.CompartmentType,
+				CashId:          int64(payload.CashId), // Preserve the CashId from the source item
+				TemplateId:      foundAsset.TemplateId,
+				ReferenceId:     foundAsset.ReferenceId,
+				ReferenceType:   foundAsset.ReferenceType,
+				ReferenceData:   foundAsset.ReferenceData,
+			},
+		),
+		NewStep[any](
+			"release_from_character",
+			Pending,
+			ReleaseFromCharacter,
+			ReleaseFromCharacterPayload{
+				TransactionId: payload.TransactionId,
+				CharacterId:   payload.CharacterId,
+				InventoryType: payload.SourceInventoryType,
+				AssetId:       assetId,
+				Quantity:      0, // Release all (cash items don't have partial quantity)
+			},
+		),
+	}
+
+	return steps, nil
+}
+
+// expandWithdrawFromCashShop expands WithdrawFromCashShop into AcceptToCharacter + ReleaseFromCashShop
+func (p *ProcessorImpl) expandWithdrawFromCashShop(st Step[any]) ([]Step[any], error) {
+	payload, ok := st.Payload().(WithdrawFromCashShopPayload)
+	if !ok {
+		return nil, fmt.Errorf("invalid payload type for WithdrawFromCashShop")
+	}
+
+	// Lookup the source item from cash shop compartment
+	p.l.Debugf("Looking up source item from cash shop for account [%d] compartment type [%d] cashId [%d]",
+		payload.AccountId, payload.CompartmentType, payload.CashId)
+
+	cashComp, err := cashshop.RequestCompartment(p.l, p.ctx)(payload.AccountId, payload.CompartmentType)
+	if err != nil {
+		return nil, fmt.Errorf("unable to lookup cash shop compartment for account [%d] type [%d]: %w",
+			payload.AccountId, payload.CompartmentType, err)
+	}
+
+	// Find the asset with the matching CashId
+	var foundAsset *cashshop.AssetRestModel
+	for i := range cashComp.Assets {
+		if uint64(cashComp.Assets[i].Item.CashId) == payload.CashId {
+			foundAsset = &cashComp.Assets[i]
+			break
+		}
+	}
+
+	if foundAsset == nil {
+		return nil, fmt.Errorf("no item found with cashId [%d] in cash shop compartment for account [%d]",
+			payload.CashId, payload.AccountId)
+	}
+
+	p.l.Debugf("Found source cash shop item template [%d] with quantity [%d] purchased by [%d]",
+		foundAsset.Item.TemplateId, foundAsset.Item.Quantity, foundAsset.Item.PurchasedBy)
+
+	// Determine the reference type based on item type
+	// Inventory type 1 is equip, so cash equipable items use "cash-equipable"
+	referenceType := "cash"
+	if invType, ok := inventory.TypeFromItemId(item.Id(foundAsset.Item.TemplateId)); ok && invType == inventory.Type(1) {
+		referenceType = "cash-equipable"
+	}
+	p.l.Debugf("Using reference type [%s] for cash shop item template [%d]", referenceType, foundAsset.Item.TemplateId)
+
+	// Build reference data for the character inventory accept
+	// Note: cashId must be marshaled as a string to match the inventory service's expected format
+	referenceData, _ := json.Marshal(map[string]interface{}{
+		"quantity":    foundAsset.Item.Quantity,
+		"purchasedBy": foundAsset.Item.PurchasedBy,
+		"flag":        foundAsset.Item.Flag,
+		"cashId":      strconv.FormatInt(foundAsset.Item.CashId, 10),
+	})
+
+	// Create expanded steps
+	steps := []Step[any]{
+		NewStep[any](
+			"accept_to_character",
+			Pending,
+			AcceptToCharacter,
+			AcceptToCharacterPayload{
+				TransactionId: payload.TransactionId,
+				CharacterId:   payload.CharacterId,
+				InventoryType: payload.InventoryType,
+				TemplateId:    foundAsset.Item.TemplateId,
+				ReferenceId:   foundAsset.Item.Id,
+				ReferenceType: referenceType,
+				ReferenceData: referenceData,
+				Quantity:      foundAsset.Item.Quantity,
+			},
+		),
+		NewStep[any](
+			"release_from_cash_shop",
+			Pending,
+			ReleaseFromCashShop,
+			ReleaseFromCashShopPayload{
+				TransactionId:   payload.TransactionId,
+				AccountId:       payload.AccountId,
+				CompartmentId:   cashComp.Id,
+				CompartmentType: payload.CompartmentType,
+				AssetId:         foundAsset.Item.Id,
 			},
 		),
 	}

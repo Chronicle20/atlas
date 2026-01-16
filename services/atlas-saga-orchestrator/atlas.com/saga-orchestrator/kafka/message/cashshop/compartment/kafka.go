@@ -18,6 +18,7 @@ const (
 // Command represents a cash shop compartment command (ACCEPT/RELEASE)
 type Command[E any] struct {
 	AccountId       uint32 `json:"accountId"`
+	CharacterId     uint32 `json:"characterId"`
 	CompartmentType byte   `json:"compartmentType"`
 	Type            string `json:"type"`
 	Body            E      `json:"body"`
@@ -39,6 +40,8 @@ type ReleaseCommandBody struct {
 	TransactionId uuid.UUID `json:"transactionId"`
 	CompartmentId uuid.UUID `json:"compartmentId"`
 	AssetId       uint32    `json:"assetId"`
+	CashId        int64     `json:"cashId"`     // CashId for client notification correlation
+	TemplateId    uint32    `json:"templateId"` // Item template ID for client notification
 }
 
 // StatusEvent represents a cash compartment status event

@@ -22,10 +22,11 @@ func AdjustCurrencyProvider(transactionId uuid.UUID, accountId uint32, currencyT
 }
 
 // AcceptCommandProvider creates an ACCEPT command for the cash shop compartment
-func AcceptCommandProvider(accountId uint32, compartmentId uuid.UUID, compartmentType byte, transactionId uuid.UUID, cashId int64, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(accountId))
+func AcceptCommandProvider(characterId uint32, accountId uint32, compartmentId uuid.UUID, compartmentType byte, transactionId uuid.UUID, cashId int64, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
 	value := &cashshopCompartment.Command[cashshopCompartment.AcceptCommandBody]{
 		AccountId:       accountId,
+		CharacterId:     characterId,
 		CompartmentType: compartmentType,
 		Type:            cashshopCompartment.CommandAccept,
 		Body: cashshopCompartment.AcceptCommandBody{
@@ -42,16 +43,19 @@ func AcceptCommandProvider(accountId uint32, compartmentId uuid.UUID, compartmen
 }
 
 // ReleaseCommandProvider creates a RELEASE command for the cash shop compartment
-func ReleaseCommandProvider(accountId uint32, compartmentId uuid.UUID, compartmentType byte, transactionId uuid.UUID, assetId uint32) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(accountId))
+func ReleaseCommandProvider(characterId uint32, accountId uint32, compartmentId uuid.UUID, compartmentType byte, transactionId uuid.UUID, assetId uint32, cashId int64, templateId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
 	value := &cashshopCompartment.Command[cashshopCompartment.ReleaseCommandBody]{
 		AccountId:       accountId,
+		CharacterId:     characterId,
 		CompartmentType: compartmentType,
 		Type:            cashshopCompartment.CommandRelease,
 		Body: cashshopCompartment.ReleaseCommandBody{
 			TransactionId: transactionId,
 			CompartmentId: compartmentId,
 			AssetId:       assetId,
+			CashId:        cashId,
+			TemplateId:    templateId,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

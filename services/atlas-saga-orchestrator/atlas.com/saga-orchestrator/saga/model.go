@@ -910,6 +910,7 @@ type WithdrawFromCashShopPayload struct {
 // This is created by saga-orchestrator expansion with all asset data pre-populated
 type AcceptToCashShopPayload struct {
 	TransactionId   uuid.UUID       `json:"transactionId"`   // Saga transaction ID
+	CharacterId     uint32          `json:"characterId"`     // Character ID for session lookup
 	AccountId       uint32          `json:"accountId"`       // Account ID
 	CompartmentId   uuid.UUID       `json:"compartmentId"`   // Cash shop compartment ID
 	CompartmentType byte            `json:"compartmentType"` // Compartment type (1=Explorer, 2=Cygnus, 3=Legend)
@@ -924,10 +925,13 @@ type AcceptToCashShopPayload struct {
 // This is created by saga-orchestrator expansion with asset ID pre-populated
 type ReleaseFromCashShopPayload struct {
 	TransactionId   uuid.UUID `json:"transactionId"`   // Saga transaction ID
+	CharacterId     uint32    `json:"characterId"`     // Character ID for session lookup
 	AccountId       uint32    `json:"accountId"`       // Account ID
 	CompartmentId   uuid.UUID `json:"compartmentId"`   // Cash shop compartment ID
 	CompartmentType byte      `json:"compartmentType"` // Compartment type (1=Explorer, 2=Cygnus, 3=Legend)
 	AssetId         uint32    `json:"assetId"`         // Cash item ID to release (populated during expansion)
+	CashId          int64     `json:"cashId"`          // CashId for client notification correlation
+	TemplateId      uint32    `json:"templateId"`      // Item template ID for client notification
 }
 
 // Custom UnmarshalJSON for Step[T] to handle the generics

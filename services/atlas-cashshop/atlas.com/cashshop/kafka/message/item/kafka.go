@@ -17,6 +17,7 @@ type Command[E any] struct {
 
 type CreateCommandBody struct {
 	TemplateId  uint32 `json:"templateId"`
+	CommodityId uint32 `json:"commodityId"`
 	Quantity    uint32 `json:"quantity"`
 	PurchasedBy uint32 `json:"purchasedBy"`
 }

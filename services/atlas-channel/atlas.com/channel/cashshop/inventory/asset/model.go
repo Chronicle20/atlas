@@ -34,6 +34,11 @@ func (m Model) TemplateId() uint32 {
 	return m.item.TemplateId()
 }
 
+// CommodityId returns the commodity ID (serial number) of the item
+func (m Model) CommodityId() uint32 {
+	return m.item.CommodityId()
+}
+
 // Quantity returns the quantity of the item
 func (m Model) Quantity() uint32 {
 	return m.item.Quantity()

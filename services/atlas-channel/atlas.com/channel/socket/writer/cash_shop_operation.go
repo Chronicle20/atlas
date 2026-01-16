@@ -5,6 +5,7 @@ import (
 	asset2 "atlas-channel/asset"
 	"atlas-channel/cashshop/inventory/asset"
 	"atlas-channel/cashshop/wishlist"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas-tenant"
@@ -111,7 +112,7 @@ func WriteCashInventoryItem(accountId uint32, characterId uint32, a asset.Model)
 		w.WriteInt(accountId)
 		w.WriteInt(characterId)
 		w.WriteInt(a.Item().TemplateId())
-		w.WriteInt(a.Item().Id())
+		w.WriteInt(a.CommodityId())
 		w.WriteInt16(int16(a.Item().Quantity()))
 		WritePaddedString(w, "", 13) // TODO
 		w.WriteInt64(msTime(a.Expiration()))

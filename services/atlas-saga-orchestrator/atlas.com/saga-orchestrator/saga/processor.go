@@ -966,6 +966,7 @@ func (p *ProcessorImpl) expandTransferToCashShop(st Step[any]) ([]Step[any], err
 			AcceptToCashShop,
 			AcceptToCashShopPayload{
 				TransactionId:   payload.TransactionId,
+				CharacterId:     payload.CharacterId,
 				AccountId:       payload.AccountId,
 				CompartmentId:   cashComp.Id,
 				CompartmentType: payload.CompartmentType,
@@ -1067,10 +1068,13 @@ func (p *ProcessorImpl) expandWithdrawFromCashShop(st Step[any]) ([]Step[any], e
 			ReleaseFromCashShop,
 			ReleaseFromCashShopPayload{
 				TransactionId:   payload.TransactionId,
+				CharacterId:     payload.CharacterId,
 				AccountId:       payload.AccountId,
 				CompartmentId:   cashComp.Id,
 				CompartmentType: payload.CompartmentType,
 				AssetId:         foundAsset.Item.Id,
+				CashId:          foundAsset.Item.CashId,
+				TemplateId:      foundAsset.Item.TemplateId,
 			},
 		),
 	}

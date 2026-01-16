@@ -6,11 +6,16 @@ import (
 )
 
 const (
-	EnvCommandTopic = "COMMAND_TOPIC_CASH_COMPARTMENT"
-	CommandAccept   = "ACCEPT"
-	CommandRelease  = "RELEASE"
+	EnvCommandTopic         = "COMMAND_TOPIC_CASH_COMPARTMENT"
+	EnvEventTopicStatus     = "EVENT_TOPIC_CASH_COMPARTMENT_STATUS"
+	CommandAccept           = "ACCEPT"
+	CommandRelease          = "RELEASE"
+	StatusEventTypeAccepted = "ACCEPTED"
+	StatusEventTypeReleased = "RELEASED"
+	StatusEventTypeError    = "ERROR"
 )
 
+// Command represents a cash shop compartment command (ACCEPT/RELEASE)
 type Command[E any] struct {
 	AccountId       uint32 `json:"accountId"`
 	CharacterId     uint32 `json:"characterId"`
@@ -19,6 +24,7 @@ type Command[E any] struct {
 	Body            E      `json:"body"`
 }
 
+// AcceptCommandBody contains the data for an ACCEPT command
 type AcceptCommandBody struct {
 	TransactionId uuid.UUID       `json:"transactionId"`
 	CompartmentId uuid.UUID       `json:"compartmentId"`
@@ -29,6 +35,7 @@ type AcceptCommandBody struct {
 	ReferenceData json.RawMessage `json:"referenceData,omitempty"`
 }
 
+// ReleaseCommandBody contains the data for a RELEASE command
 type ReleaseCommandBody struct {
 	TransactionId uuid.UUID `json:"transactionId"`
 	CompartmentId uuid.UUID `json:"compartmentId"`
@@ -37,55 +44,25 @@ type ReleaseCommandBody struct {
 	TemplateId    uint32    `json:"templateId"` // Item template ID for client notification
 }
 
-const (
-	EnvEventTopicStatus     = "EVENT_TOPIC_CASH_COMPARTMENT_STATUS"
-	StatusEventTypeCreated  = "CREATED"
-	StatusEventTypeUpdated  = "UPDATED"
-	StatusEventTypeDeleted  = "DELETED"
-	StatusEventTypeAccepted = "ACCEPTED"
-	StatusEventTypeReleased = "RELEASED"
-	StatusEventTypeError    = "ERROR"
-)
-
 // StatusEvent represents a cash compartment status event
-// Contains accountId and characterId to allow channel service to find the session and notify the client
 type StatusEvent[E any] struct {
-	AccountId       uint32    `json:"accountId"`
-	CharacterId     uint32    `json:"characterId"`
 	CompartmentId   uuid.UUID `json:"compartmentId"`
 	CompartmentType byte      `json:"compartmentType"`
 	Type            string    `json:"type"`
 	Body            E         `json:"body"`
 }
 
-// StatusEventCreatedBody contains information for compartment creation events
-// According to the requirements, it should include the capacity
-type StatusEventCreatedBody struct {
-	Capacity uint32 `json:"capacity"`
-}
-
-// StatusEventUpdatedBody contains information for compartment update events
-type StatusEventUpdatedBody struct {
-	Capacity uint32 `json:"capacity"`
-}
-
-// StatusEventDeletedBody is an empty body for compartment deletion events
-type StatusEventDeletedBody struct {
-	// Empty body as no additional information is needed for deletion
-}
-
+// StatusEventAcceptedBody contains the data for an ACCEPTED event
 type StatusEventAcceptedBody struct {
 	TransactionId uuid.UUID `json:"transactionId"`
-	AssetId       uuid.UUID `json:"assetId"`
 }
 
+// StatusEventReleasedBody contains the data for a RELEASED event
 type StatusEventReleasedBody struct {
 	TransactionId uuid.UUID `json:"transactionId"`
-	AssetId       uint32    `json:"assetId"`
-	CashId        int64     `json:"cashId"`     // CashId for client notification correlation
-	TemplateId    uint32    `json:"templateId"` // Item template ID for client notification
 }
 
+// StatusEventErrorBody contains the data for an ERROR event
 type StatusEventErrorBody struct {
 	ErrorCode     string    `json:"errorCode"`
 	TransactionId uuid.UUID `json:"transactionId"`

@@ -16,7 +16,6 @@ use (
 	./services/atlas-channel/atlas.com/channel
 	./services/atlas-character-factory/atlas.com/character-factory
 	./services/atlas-character/atlas.com/character
-	./services/atlas-compartment-transfer/atlas.com/atlas-compartment-transfer
 	./services/atlas-configurations/atlas.com/configurations
 	./services/atlas-consumables/atlas.com/consumables
 	./services/atlas-data/atlas.com/data

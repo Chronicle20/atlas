@@ -10,6 +10,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -36,10 +37,10 @@ type Processor interface {
 	DeleteAndEmit(id uuid.UUID) error
 	DeleteAllByAccountId(mb *message.Buffer) func(accountId uint32) error
 	DeleteAllByAccountIdAndEmit(accountId uint32) error
-	AcceptAndEmit(accountId uint32, id uuid.UUID, type_ CompartmentType, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, transactionId uuid.UUID) error
-	Accept(mb *message.Buffer) func(accountId uint32, id uuid.UUID, type_ CompartmentType, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, transactionId uuid.UUID) error
-	ReleaseAndEmit(accountId uint32, id uuid.UUID, type_ CompartmentType, assetId uint32, transactionId uuid.UUID) error
-	Release(mb *message.Buffer) func(accountId uint32, id uuid.UUID, type_ CompartmentType, assetId uint32, transactionId uuid.UUID) error
+	AcceptAndEmit(accountId uint32, characterId uint32, id uuid.UUID, type_ CompartmentType, cashId int64, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, transactionId uuid.UUID) error
+	Accept(mb *message.Buffer) func(accountId uint32, characterId uint32, id uuid.UUID, type_ CompartmentType, cashId int64, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, transactionId uuid.UUID) error
+	ReleaseAndEmit(accountId uint32, characterId uint32, id uuid.UUID, type_ CompartmentType, assetId uint32, transactionId uuid.UUID, cashId int64, templateId uint32) error
+	Release(mb *message.Buffer) func(accountId uint32, characterId uint32, id uuid.UUID, type_ CompartmentType, assetId uint32, transactionId uuid.UUID, cashId int64, templateId uint32) error
 }
 
 // ProcessorImpl implements the Processor interface
@@ -284,15 +285,15 @@ func (p *ProcessorImpl) DeleteAllByAccountIdAndEmit(accountId uint32) error {
 	return nil
 }
 
-func (p *ProcessorImpl) AcceptAndEmit(accountId uint32, id uuid.UUID, type_ CompartmentType, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, transactionId uuid.UUID) error {
+func (p *ProcessorImpl) AcceptAndEmit(accountId uint32, characterId uint32, id uuid.UUID, type_ CompartmentType, cashId int64, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, transactionId uuid.UUID) error {
 	return message.Emit(p.p)(func(buf *message.Buffer) error {
-		return p.Accept(buf)(accountId, id, type_, templateId, referenceId, referenceType, referenceData, transactionId)
+		return p.Accept(buf)(accountId, characterId, id, type_, cashId, templateId, referenceId, referenceType, referenceData, transactionId)
 	})
 }
 
-func (p *ProcessorImpl) Accept(mb *message.Buffer) func(accountId uint32, id uuid.UUID, type_ CompartmentType, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, transactionId uuid.UUID) error {
-	return func(accountId uint32, id uuid.UUID, type_ CompartmentType, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, transactionId uuid.UUID) error {
-		p.l.Debugf("Handling accepting asset for account [%d], compartment [%s], type [%d], template [%d].", accountId, id, type_, templateId)
+func (p *ProcessorImpl) Accept(mb *message.Buffer) func(accountId uint32, characterId uint32, id uuid.UUID, type_ CompartmentType, cashId int64, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, transactionId uuid.UUID) error {
+	return func(accountId uint32, characterId uint32, id uuid.UUID, type_ CompartmentType, cashId int64, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, transactionId uuid.UUID) error {
+		p.l.Debugf("Handling accepting asset for account [%d], compartment [%s], type [%d], template [%d], cashId [%d].", accountId, id, type_, templateId, cashId)
 
 		// Get the compartment
 		ccm, err := p.GetById(id)
@@ -302,13 +303,15 @@ func (p *ProcessorImpl) Accept(mb *message.Buffer) func(accountId uint32, id uui
 			return err
 		}
 
-		// Parse quantity and purchasedBy from ReferenceData
+		// Parse quantity, commodityId and purchasedBy from ReferenceData
 		quantity := uint32(1)
+		commodityId := uint32(0)
 		purchasedBy := accountId // Default to the account accepting the item
 
 		if len(referenceData) > 0 {
 			var cashData struct {
 				Quantity    uint32 `json:"quantity"`
+				CommodityId uint32 `json:"commodityId"`
 				OwnerId     uint32 `json:"ownerId"`
 				PurchasedBy uint32 `json:"purchasedBy"`
 			}
@@ -316,27 +319,28 @@ func (p *ProcessorImpl) Accept(mb *message.Buffer) func(accountId uint32, id uui
 				if cashData.Quantity > 0 {
 					quantity = cashData.Quantity
 				}
+				commodityId = cashData.CommodityId
 				if cashData.PurchasedBy > 0 {
 					purchasedBy = cashData.PurchasedBy
 				} else if cashData.OwnerId > 0 {
 					purchasedBy = cashData.OwnerId
 				}
-				p.l.Debugf("Parsed cash item data from ReferenceData: quantity=%d, purchasedBy=%d", quantity, purchasedBy)
+				p.l.Debugf("Parsed cash item data from ReferenceData: quantity=%d, commodityId=%d, purchasedBy=%d", quantity, commodityId, purchasedBy)
 			} else {
 				p.l.WithError(err).Warnf("Failed to parse ReferenceData for cash item, using defaults")
 			}
 		}
 
-		// Create the cash item with the template ID and quantity
-		im, err := p.itmP.Create(mb)(templateId)(quantity)(purchasedBy)
+		// Create the cash item with the preserved cashId, template ID, commodityId and quantity
+		im, err := p.itmP.CreateWithCashId(mb)(cashId)(templateId)(commodityId)(quantity)(purchasedBy)
 		if err != nil {
-			p.l.WithError(err).Errorf("Unable to create cash item for compartment [%s] with template ID [%d].", id, templateId)
+			p.l.WithError(err).Errorf("Unable to create cash item for compartment [%s] with cashId [%d] template ID [%d].", id, cashId, templateId)
 			_ = mb.Put(compartment.EnvEventTopicStatus, compartmentProducer.ErrorStatusEventProvider(id, byte(type_), "ITEM_CREATION_FAILED", transactionId))
 			return err
 		}
 
 		// Create the asset entity linking the item to the compartment
-		_, err = p.cap.Create(mb)(id)(im.Id())
+		createdAsset, err := p.cap.Create(mb)(id)(im.Id())
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to create asset for compartment [%s] with item ID [%d].", id, im.Id())
 			_ = mb.Put(compartment.EnvEventTopicStatus, compartmentProducer.ErrorStatusEventProvider(id, byte(type_), "ASSET_CREATION_FAILED", transactionId))
@@ -344,20 +348,20 @@ func (p *ProcessorImpl) Accept(mb *message.Buffer) func(accountId uint32, id uui
 		}
 
 		// Add an AcceptedStatusEventProvider result to the buffer
-		_ = mb.Put(compartment.EnvEventTopicStatus, compartmentProducer.AcceptedStatusEventProvider(id, byte(ccm.Type()), transactionId))
+		_ = mb.Put(compartment.EnvEventTopicStatus, compartmentProducer.AcceptedStatusEventProvider(accountId, characterId, id, byte(ccm.Type()), transactionId, createdAsset.Id()))
 		return nil
 	}
 }
 
-func (p *ProcessorImpl) ReleaseAndEmit(accountId uint32, id uuid.UUID, type_ CompartmentType, assetId uint32, transactionId uuid.UUID) error {
+func (p *ProcessorImpl) ReleaseAndEmit(accountId uint32, characterId uint32, id uuid.UUID, type_ CompartmentType, assetId uint32, transactionId uuid.UUID, cashId int64, templateId uint32) error {
 	return message.Emit(p.p)(func(buf *message.Buffer) error {
-		return p.Release(buf)(accountId, id, type_, assetId, transactionId)
+		return p.Release(buf)(accountId, characterId, id, type_, assetId, transactionId, cashId, templateId)
 	})
 }
 
-func (p *ProcessorImpl) Release(mb *message.Buffer) func(accountId uint32, id uuid.UUID, type_ CompartmentType, assetId uint32, transactionId uuid.UUID) error {
-	return func(accountId uint32, id uuid.UUID, type_ CompartmentType, assetId uint32, transactionId uuid.UUID) error {
-		p.l.Debugf("Handling releasing asset for account [%d], compartment [%d], type [%d].", accountId, id, type_)
+func (p *ProcessorImpl) Release(mb *message.Buffer) func(accountId uint32, characterId uint32, id uuid.UUID, type_ CompartmentType, assetId uint32, transactionId uuid.UUID, cashId int64, templateId uint32) error {
+	return func(accountId uint32, characterId uint32, id uuid.UUID, type_ CompartmentType, assetId uint32, transactionId uuid.UUID, cashId int64, templateId uint32) error {
+		p.l.Debugf("Handling releasing asset for account [%d], compartment [%s], type [%d].", accountId, id.String(), type_)
 
 		// Get the compartment
 		ccm, err := p.GetById(id)
@@ -392,7 +396,7 @@ func (p *ProcessorImpl) Release(mb *message.Buffer) func(accountId uint32, id uu
 		}
 
 		// Emit a cash shop status event for "cash shop item moved to inventory"
-		_ = mb.Put(compartment.EnvEventTopicStatus, compartmentProducer.ReleasedStatusEventProvider(id, byte(type_), transactionId))
+		_ = mb.Put(compartment.EnvEventTopicStatus, compartmentProducer.ReleasedStatusEventProvider(accountId, characterId, id, byte(type_), transactionId, assetId, cashId, templateId))
 		return nil
 	}
 }

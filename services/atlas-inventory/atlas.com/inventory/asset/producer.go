@@ -119,7 +119,7 @@ func AcceptedEventStatusProvider(transactionId uuid.UUID, characterId uint32, a 
 }
 
 // ReleasedEventStatusProvider emits a RELEASED event when an asset is released from inventory (e.g., to storage)
-func ReleasedEventStatusProvider(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, assetId uint32, templateId uint32, slot int16) model.Provider[[]kafka.Message] {
+func ReleasedEventStatusProvider(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, assetId uint32, templateId uint32, slot int16, referenceType string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(assetId))
 	value := &asset.StatusEvent[asset.ReleasedStatusEventBody]{
 		TransactionId: transactionId,
@@ -129,7 +129,9 @@ func ReleasedEventStatusProvider(transactionId uuid.UUID, characterId uint32, co
 		TemplateId:    templateId,
 		Slot:          slot,
 		Type:          asset.StatusEventTypeReleased,
-		Body:          asset.ReleasedStatusEventBody{},
+		Body: asset.ReleasedStatusEventBody{
+			ReferenceType: referenceType,
+		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }

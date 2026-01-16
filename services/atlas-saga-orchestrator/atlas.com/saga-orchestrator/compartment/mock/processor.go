@@ -14,7 +14,6 @@ type ProcessorMock struct {
 	RequestEquipAssetFunc          func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
 	RequestUnequipAssetFunc        func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
 	RequestCreateAndEquipAssetFunc func(transactionId uuid.UUID, payload compartment.CreateAndEquipAssetPayload) error
-	RequestTransferAssetFunc       func(transactionId uuid.UUID, worldId byte, accountId uint32, characterId uint32, assetId uint32, fromCompartmentId uuid.UUID, fromCompartmentType byte, fromInventoryType string, toCompartmentId uuid.UUID, toCompartmentType byte, toInventoryType string, referenceId uint32, templateId uint32, referenceType string, slot int16) error
 	RequestAcceptAssetFunc         func(transactionId uuid.UUID, characterId uint32, inventoryType byte, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, quantity uint32) error
 	RequestReleaseAssetFunc        func(transactionId uuid.UUID, characterId uint32, inventoryType byte, assetId uint32, quantity uint32) error
 }
@@ -55,14 +54,6 @@ func (m *ProcessorMock) RequestUnequipAsset(transactionId uuid.UUID, characterId
 func (m *ProcessorMock) RequestCreateAndEquipAsset(transactionId uuid.UUID, payload compartment.CreateAndEquipAssetPayload) error {
 	if m.RequestCreateAndEquipAssetFunc != nil {
 		return m.RequestCreateAndEquipAssetFunc(transactionId, payload)
-	}
-	return nil
-}
-
-// RequestTransferAsset is a mock implementation of the compartment.Processor.RequestTransferAsset method
-func (m *ProcessorMock) RequestTransferAsset(transactionId uuid.UUID, worldId byte, accountId uint32, characterId uint32, assetId uint32, fromCompartmentId uuid.UUID, fromCompartmentType byte, fromInventoryType string, toCompartmentId uuid.UUID, toCompartmentType byte, toInventoryType string, referenceId uint32, templateId uint32, referenceType string, slot int16) error {
-	if m.RequestTransferAssetFunc != nil {
-		return m.RequestTransferAssetFunc(transactionId, worldId, accountId, characterId, assetId, fromCompartmentId, fromCompartmentType, fromInventoryType, toCompartmentId, toCompartmentType, toInventoryType, referenceId, templateId, referenceType, slot)
 	}
 	return nil
 }

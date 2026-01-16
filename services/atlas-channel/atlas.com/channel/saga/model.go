@@ -13,6 +13,7 @@ type Type string
 const (
 	InventoryTransaction Type = "inventory_transaction"
 	StorageOperation     Type = "storage_operation"
+	CashShopOperation    Type = "cash_shop_operation"
 )
 
 // Saga represents the entire saga transaction
@@ -36,14 +37,15 @@ const (
 type Action string
 
 const (
-	AwardMesos          Action = "award_mesos"
-	UpdateStorageMesos  Action = "update_storage_mesos"
+	AwardMesos           Action = "award_mesos"
+	UpdateStorageMesos   Action = "update_storage_mesos"
 	AwardAsset           Action = "award_asset"
 	DestroyAsset         Action = "destroy_asset"
 	DepositToStorage     Action = "deposit_to_storage"
-	TransferAsset        Action = "transfer_asset"
 	TransferToStorage    Action = "transfer_to_storage"    // High-level action for inventory -> storage
 	WithdrawFromStorage  Action = "withdraw_from_storage"  // High-level action for storage -> inventory
+	TransferToCashShop   Action = "transfer_to_cash_shop"  // High-level action for inventory -> cash shop
+	WithdrawFromCashShop Action = "withdraw_from_cash_shop" // High-level action for cash shop -> inventory
 	AcceptToStorage      Action = "accept_to_storage"      // Internal (created by saga-orchestrator)
 	ReleaseFromCharacter Action = "release_from_character" // Internal (created by saga-orchestrator)
 	AcceptToCharacter    Action = "accept_to_character"    // Internal (created by saga-orchestrator)
@@ -115,26 +117,6 @@ type DepositToStoragePayload struct {
 	Flag          uint16    `json:"flag"`          // Item flag (for stackables)
 }
 
-// TransferAssetPayload is the payload for the transfer_asset action
-// This uses the compartment-transfer service's 2-phase commit pattern
-type TransferAssetPayload struct {
-	TransactionId       uuid.UUID `json:"transactionId"`
-	WorldId             byte      `json:"worldId"`
-	AccountId           uint32    `json:"accountId"`
-	CharacterId         uint32    `json:"characterId"`
-	AssetId             uint32    `json:"assetId"`
-	FromCompartmentId   uuid.UUID `json:"fromCompartmentId"`
-	FromCompartmentType byte      `json:"fromCompartmentType"`
-	FromInventoryType   string    `json:"fromInventoryType"`   // "CHARACTER", "CASH_SHOP", "STORAGE"
-	ToCompartmentId     uuid.UUID `json:"toCompartmentId"`
-	ToCompartmentType   byte      `json:"toCompartmentType"`
-	ToInventoryType     string    `json:"toInventoryType"`     // "CHARACTER", "CASH_SHOP", "STORAGE"
-	ReferenceId         uint32    `json:"referenceId"`
-	TemplateId          uint32    `json:"templateId"`
-	ReferenceType       string    `json:"referenceType"`       // "EQUIPABLE", "CONSUMABLE", etc.
-	Slot                int16     `json:"slot"`
-}
-
 // TransferToStoragePayload is the high-level payload for transferring an asset from character to storage
 // This step is expanded by saga-orchestrator
 type TransferToStoragePayload struct {
@@ -157,4 +139,26 @@ type WithdrawFromStoragePayload struct {
 	SourceSlot    int16     `json:"sourceSlot"`    // Slot in storage
 	InventoryType byte      `json:"inventoryType"` // Target character inventory type
 	Quantity      uint32    `json:"quantity"`      // Quantity to withdraw (0 = all)
+}
+
+// TransferToCashShopPayload is the high-level payload for transferring an asset from character to cash shop
+// This step is expanded by saga-orchestrator into accept_to_cash_shop + release_from_character
+type TransferToCashShopPayload struct {
+	TransactionId       uuid.UUID `json:"transactionId"`       // Saga transaction ID
+	CharacterId         uint32    `json:"characterId"`         // Character initiating the transfer
+	AccountId           uint32    `json:"accountId"`           // Account ID (cash shop owner)
+	CashId              uint64    `json:"cashId"`              // Cash serial number of the item to transfer
+	SourceInventoryType byte      `json:"sourceInventoryType"` // Character inventory type (equip, use, etc.)
+	CompartmentType     byte      `json:"compartmentType"`     // Cash shop compartment type (1=Explorer, 2=Cygnus, 3=Legend)
+}
+
+// WithdrawFromCashShopPayload is the high-level payload for withdrawing an asset from cash shop to character
+// This step is expanded by saga-orchestrator into accept_to_character + release_from_cash_shop
+type WithdrawFromCashShopPayload struct {
+	TransactionId   uuid.UUID `json:"transactionId"`   // Saga transaction ID
+	CharacterId     uint32    `json:"characterId"`     // Character receiving the item
+	AccountId       uint32    `json:"accountId"`       // Account ID (cash shop owner)
+	CashId          uint64    `json:"cashId"`          // Cash serial number of the item to withdraw
+	CompartmentType byte      `json:"compartmentType"` // Cash shop compartment type (1=Explorer, 2=Cygnus, 3=Legend)
+	InventoryType   byte      `json:"inventoryType"`   // Target character inventory type
 }

@@ -4,6 +4,7 @@ import (
 	"atlas-saga-orchestrator/kafka/consumer/asset"
 	"atlas-saga-orchestrator/kafka/consumer/buddylist"
 	"atlas-saga-orchestrator/kafka/consumer/cashshop"
+	cashshopCompartment "atlas-saga-orchestrator/kafka/consumer/cashshop/compartment"
 	"atlas-saga-orchestrator/kafka/consumer/character"
 	"atlas-saga-orchestrator/kafka/consumer/compartment"
 	"atlas-saga-orchestrator/kafka/consumer/consumable"
@@ -13,7 +14,6 @@ import (
 	"atlas-saga-orchestrator/kafka/consumer/skill"
 	"atlas-saga-orchestrator/kafka/consumer/storage"
 	storageCompartment "atlas-saga-orchestrator/kafka/consumer/storage/compartment"
-	"atlas-saga-orchestrator/kafka/consumer/transfer"
 	"atlas-saga-orchestrator/logger"
 	"atlas-saga-orchestrator/saga"
 	"atlas-saga-orchestrator/service"
@@ -61,6 +61,7 @@ func main() {
 	asset.InitConsumers(l)(cmf)(consumerGroupId)
 	buddylist.InitConsumers(l)(cmf)(consumerGroupId)
 	cashshop.InitConsumers(l)(cmf)(consumerGroupId)
+	cashshopCompartment.InitConsumers(l)(cmf)(consumerGroupId)
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	compartment.InitConsumers(l)(cmf)(consumerGroupId)
 	consumable.InitConsumers(l)(cmf)(consumerGroupId)
@@ -70,10 +71,10 @@ func main() {
 	skill.InitConsumers(l)(cmf)(consumerGroupId)
 	storage.InitConsumers(l)(cmf)(consumerGroupId)
 	storageCompartment.InitConsumers(l)(cmf)(consumerGroupId)
-	transfer.InitConsumers(l)(cmf)(consumerGroupId)
 	asset.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	buddylist.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	cashshop.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	cashshopCompartment.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	character.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	compartment.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	consumable.InitHandlers(l)(consumer.GetManager().RegisterHandler)
@@ -83,7 +84,6 @@ func main() {
 	skill.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	storage.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	storageCompartment.InitHandlers(l)(consumer.GetManager().RegisterHandler)
-	transfer.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
 	// Create the service with the router
 	server.New(l).

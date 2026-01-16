@@ -65,27 +65,35 @@ func ErrorStatusEventProvider(compartmentId uuid.UUID, compartmentType byte, err
 	return producer.SingleMessageProvider(key, value)
 }
 
-func AcceptedStatusEventProvider(compartmentId uuid.UUID, compartmentType byte, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(0) // Using 0 as the key since we don't have a numeric ID to use
+func AcceptedStatusEventProvider(accountId uint32, characterId uint32, compartmentId uuid.UUID, compartmentType byte, transactionId uuid.UUID, assetId uuid.UUID) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
 	value := &compartment.StatusEvent[compartment.StatusEventAcceptedBody]{
+		AccountId:       accountId,
+		CharacterId:     characterId,
 		CompartmentId:   compartmentId,
 		CompartmentType: compartmentType,
 		Type:            compartment.StatusEventTypeAccepted,
 		Body: compartment.StatusEventAcceptedBody{
 			TransactionId: transactionId,
+			AssetId:       assetId,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func ReleasedStatusEventProvider(compartmentId uuid.UUID, compartmentType byte, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(0) // Using 0 as the key since we don't have a numeric ID to use
+func ReleasedStatusEventProvider(accountId uint32, characterId uint32, compartmentId uuid.UUID, compartmentType byte, transactionId uuid.UUID, assetId uint32, cashId int64, templateId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
 	value := &compartment.StatusEvent[compartment.StatusEventReleasedBody]{
+		AccountId:       accountId,
+		CharacterId:     characterId,
 		CompartmentId:   compartmentId,
 		CompartmentType: compartmentType,
 		Type:            compartment.StatusEventTypeReleased,
 		Body: compartment.StatusEventReleasedBody{
 			TransactionId: transactionId,
+			AssetId:       assetId,
+			CashId:        cashId,
+			TemplateId:    templateId,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

@@ -15,6 +15,7 @@ type Entity struct {
 	TenantId    uuid.UUID `gorm:"not null"`
 	CashId      int64     `gorm:"not null"`
 	TemplateId  uint32    `gorm:"not null"`
+	CommodityId uint32    `gorm:"not null;default:0"`
 	Quantity    uint32    `gorm:"not null"`
 	Flag        uint16    `gorm:"not null"`
 	PurchasedBy uint32    `gorm:"not null"`
@@ -30,6 +31,7 @@ func Make(e Entity) (Model, error) {
 		id:          e.Id,
 		cashId:      e.CashId,
 		templateId:  e.TemplateId,
+		commodityId: e.CommodityId,
 		quantity:    e.Quantity,
 		flag:        e.Flag,
 		purchasedBy: e.PurchasedBy,

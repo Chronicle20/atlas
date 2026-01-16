@@ -20,6 +20,8 @@ type Processor interface {
 	CreateAndEmit(templateId uint32, commodityId uint32, quantity uint32, purchasedBy uint32) (Model, error)
 	CreateWithCashId(mb *message.Buffer) func(cashId int64) func(templateId uint32) func(commodityId uint32) func(quantity uint32) func(purchasedBy uint32) (Model, error)
 	CreateWithCashIdAndEmit(cashId int64, templateId uint32, commodityId uint32, quantity uint32, purchasedBy uint32) (Model, error)
+	Delete(mb *message.Buffer) func(itemId uint32) error
+	DeleteAndEmit(itemId uint32) error
 }
 
 type ProcessorImpl struct {
@@ -125,4 +127,16 @@ func (p *ProcessorImpl) CreateWithCashId(mb *message.Buffer) func(cashId int64) 
 
 func (p *ProcessorImpl) CreateWithCashIdAndEmit(cashId int64, templateId uint32, commodityId uint32, quantity uint32, purchasedBy uint32) (Model, error) {
 	return message.EmitWithResult[Model, uint32](p.p)(model.Flip(model.Flip(model.Flip(model.Flip(p.CreateWithCashId)(cashId))(templateId))(commodityId))(quantity))(purchasedBy)
+}
+
+func (p *ProcessorImpl) Delete(mb *message.Buffer) func(itemId uint32) error {
+	return func(itemId uint32) error {
+		return deleteById(p.db, p.t.Id(), itemId)
+	}
+}
+
+func (p *ProcessorImpl) DeleteAndEmit(itemId uint32) error {
+	return message.Emit(p.p)(func(buf *message.Buffer) error {
+		return p.Delete(buf)(itemId)
+	})
 }

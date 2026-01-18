@@ -9,7 +9,7 @@ require (
 	github.com/Chronicle20/atlas-tenant v1.0.7
 	github.com/google/uuid v1.6.0
 	github.com/opentracing/opentracing-go v1.2.0
-	github.com/segmentio/kafka-go v0.4.49
+	github.com/segmentio/kafka-go v0.4.50
 	github.com/sirupsen/logrus v1.9.4
 	github.com/stretchr/testify v1.11.1
 	github.com/uber/jaeger-client-go v2.30.0+incompatible

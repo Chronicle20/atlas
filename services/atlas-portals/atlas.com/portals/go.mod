@@ -8,7 +8,7 @@ require (
 	github.com/Chronicle20/atlas-rest v1.2.16
 	github.com/Chronicle20/atlas-tenant v1.0.7
 	github.com/google/uuid v1.6.0
-	github.com/segmentio/kafka-go v0.4.49
+	github.com/segmentio/kafka-go v0.4.50
 	github.com/sirupsen/logrus v1.9.4
 	go.elastic.co/ecslogrus v1.0.0
 	go.opentelemetry.io/otel v1.39.0

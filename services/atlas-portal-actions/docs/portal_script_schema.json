@@ -1,0 +1,266 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Portal Script",
+  "description": "JSON schema for portal action scripts - defines rules for portal entry behavior",
+  "type": "object",
+  "required": [
+    "portalId",
+    "mapId",
+    "rules"
+  ],
+  "properties": {
+    "portalId": {
+      "type": "string",
+      "description": "The script identifier (matches portal script name, e.g., 'kpq0', 'elevator')"
+    },
+    "mapId": {
+      "type": "integer",
+      "description": "The map ID where this portal exists"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description of the portal's purpose"
+    },
+    "rules": {
+      "type": "array",
+      "description": "Ordered list of rules - first matching rule determines outcome",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/rule"
+      }
+    }
+  },
+  "definitions": {
+    "rule": {
+      "type": "object",
+      "description": "A single rule with conditions and outcome",
+      "required": [
+        "id",
+        "conditions",
+        "onMatch"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the rule within this script"
+        },
+        "conditions": {
+          "type": "array",
+          "description": "Conditions that must ALL be true for this rule to match (AND logic). Empty array = always matches.",
+          "items": {
+            "$ref": "#/definitions/condition"
+          }
+        },
+        "onMatch": {
+          "$ref": "#/definitions/ruleOutcome"
+        }
+      }
+    },
+    "ruleOutcome": {
+      "type": "object",
+      "description": "What happens when the rule matches",
+      "required": [
+        "allow"
+      ],
+      "properties": {
+        "allow": {
+          "type": "boolean",
+          "description": "Whether to allow portal entry (true) or deny (false)"
+        },
+        "operations": {
+          "type": "array",
+          "description": "Operations to execute when this rule matches",
+          "items": {
+            "$ref": "#/definitions/operation"
+          }
+        }
+      }
+    },
+    "condition": {
+      "type": "object",
+      "description": "A condition to evaluate",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Type of condition",
+          "enum": [
+            "level",
+            "job",
+            "item",
+            "meso",
+            "quest_status"
+          ]
+        },
+        "operator": {
+          "type": "string",
+          "description": "Comparison operator",
+          "enum": ["=", ">", "<", ">=", "<=", "!="]
+        },
+        "value": {
+          "type": "string",
+          "description": "Value to compare against"
+        },
+        "referenceId": {
+          "type": "string",
+          "description": "Reference ID (item ID, quest ID depending on condition type)"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "type": { "enum": ["level", "job", "meso"] } }
+          },
+          "then": {
+            "required": ["operator", "value"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "item" } }
+          },
+          "then": {
+            "required": ["operator", "value", "referenceId"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "quest_status" } }
+          },
+          "then": {
+            "required": ["operator", "value", "referenceId"]
+          }
+        }
+      ]
+    },
+    "operation": {
+      "type": "object",
+      "description": "An operation to execute",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Type of operation",
+          "enum": [
+            "play_portal_sound",
+            "warp",
+            "drop_message",
+            "block_portal",
+            "show_info",
+            "show_hint"
+          ]
+        },
+        "params": {
+          "type": "object",
+          "description": "Parameters for the operation",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "type": { "const": "warp" } }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": ["mapId"],
+                "properties": {
+                  "mapId": {
+                    "type": "string",
+                    "description": "Destination map ID"
+                  },
+                  "portalId": {
+                    "type": "string",
+                    "description": "Destination portal ID (default: 0)"
+                  },
+                  "portalName": {
+                    "type": "string",
+                    "description": "Destination portal name (alternative to portalId)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "drop_message" } }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": ["message"],
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "description": "Message to display to player"
+                  },
+                  "messageType": {
+                    "type": "string",
+                    "description": "Message type (default: PINK_TEXT)",
+                    "enum": ["NOTICE", "POP_UP", "PINK_TEXT", "BLUE_TEXT"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "show_info" } }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": ["path"],
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "description": "Path to the UI image to display (e.g., UI/tutorial.img/25)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "show_hint" } }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": ["hint"],
+                "properties": {
+                  "hint": {
+                    "type": "string",
+                    "description": "The hint message text to display"
+                  },
+                  "width": {
+                    "type": "string",
+                    "description": "Width of the hint box (optional, auto-calculated if not specified)"
+                  },
+                  "height": {
+                    "type": "string",
+                    "description": "Height of the hint box (optional, auto-calculated if not specified)"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

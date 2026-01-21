@@ -49,6 +49,14 @@ data:
           proxy_pass http://atlas-parties.atlas.svc.cluster.local:8080;
         }
 
+        location ~ ^/api/portals/blocked(/.*)?$ {
+          proxy_pass http://atlas-portals.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/portals(/.*)?$ {
+          proxy_pass http://atlas-portal-actions.atlas.svc.cluster.local:8080;
+        }
+
         location ~ ^/api/guilds(/.*)?$ {
           proxy_pass http://atlas-guilds.atlas.svc.cluster.local:8080;
         }

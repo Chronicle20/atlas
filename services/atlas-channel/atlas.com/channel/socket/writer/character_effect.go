@@ -2,10 +2,11 @@ package writer
 
 import (
 	"atlas-channel/socket/model"
+	"strconv"
+
 	"github.com/Chronicle20/atlas-constants/skill"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
-	"strconv"
 )
 
 const CharacterEffect = "CharacterEffect"
@@ -24,12 +25,12 @@ const (
 	CharacterEffectQuestComplete                    = "QUEST_COMPLETE"
 	CharacterEffectIncDecHPEffect                   = "INC_DEC_HP_EFFECT"
 	CharacterEffectBuffItemEffect                   = "BUFF_ITEM_EFFECT"
-	CharacterEffectSquibEffect                      = "SQUIB_EFFECT"
+	CharacterEffectShowIntroEffect                  = "SHOW_INTRO"
 	CharacterEffectMonsterBookCardGet               = "MONSTER_BOOK_CARD_GET"
 	CharacterEffectLotteryUse                       = "LOTTERY_USE"
 	CharacterEffectItemLevelUp                      = "ITEM_LEVEL_UP"
 	CharacterEffectItemMaker                        = "ITEM_MAKER"
-	CharacterEffectExpItemConsumed                  = "EXP_ITEM_CONSUMED"
+	CharacterEffectShowInfo                         = "SHOW_INFO"
 	CharacterEffectReservedEffect                   = "RESERVED_EFFECT"
 	CharacterEffectBuff                             = "BUFF"
 	CharacterEffectConsumeEffect                    = "CONSUME_EFFECT"
@@ -300,23 +301,21 @@ func CharacterBuffItemEffectForeignBody(l logrus.FieldLogger) func(characterId u
 	}
 }
 
-// TODO this will crash for some reason
-func CharacterSquibEffectBody(l logrus.FieldLogger) func(message string) BodyProducer {
+func CharacterShowIntroEffectBody(l logrus.FieldLogger) func(message string) BodyProducer {
 	return func(message string) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectSquibEffect))
+			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectShowIntroEffect))
 			w.WriteAsciiString(message)
 			return w.Bytes()
 		}
 	}
 }
 
-// TODO this will crash for some reason
-func CharacterSquibEffectForeignBody(l logrus.FieldLogger) func(characterId uint32, message string) BodyProducer {
+func CharacterShowIntroEffectForeignBody(l logrus.FieldLogger) func(characterId uint32, message string) BodyProducer {
 	return func(characterId uint32, message string) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteInt(characterId)
-			return CharacterSquibEffectBody(l)(message)(w, options)
+			return CharacterShowIntroEffectBody(l)(message)(w, options)
 		}
 	}
 }
@@ -399,22 +398,22 @@ func CharacterItemMakerEffectForeignBody(l logrus.FieldLogger) func(characterId 
 	}
 }
 
-// TODO this will crash for some reason
-func CharacterExpItemConsumedEffectBody(l logrus.FieldLogger) func() BodyProducer {
-	return func() BodyProducer {
+func CharacterShowInfoEffectBody(l logrus.FieldLogger) func(path string) BodyProducer {
+	return func(path string) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectExpItemConsumed))
+			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectShowInfo))
+			w.WriteAsciiString(path)
+			w.WriteInt(1) // not used
 			return w.Bytes()
 		}
 	}
 }
 
-// TODO this will crash for some reason
-func CharacterExpItemConsumedEffectForeignBody(l logrus.FieldLogger) func(characterId uint32) BodyProducer {
-	return func(characterId uint32) BodyProducer {
+func CharacterShowInfoEffectForeignBody(l logrus.FieldLogger) func(characterId uint32, path string) BodyProducer {
+	return func(characterId uint32, path string) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteInt(characterId)
-			return CharacterExpItemConsumedEffectBody(l)()(w, options)
+			return CharacterShowInfoEffectBody(l)(path)(w, options)
 		}
 	}
 }

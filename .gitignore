@@ -20,3 +20,7 @@ services/atlas-reactors/atlas.com/reactors/atlas-reactors
 services/atlas-npc-shops/tmp
 services/atlas-transports/tmp
 services/atlas-transports/atlas.com/transports/atlas-transports
+.env
+services/atlas-portal-actions/tmp
+/services/atlas-portal-actions/atlas.com/portal/atlas-portal-actions
+/services/atlas-portals/atlas.com/portals/atlas-portals

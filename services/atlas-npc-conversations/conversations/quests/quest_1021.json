@@ -1,0 +1,180 @@
+{
+  "questId": 1021,
+  "npcId": 2000,
+  "questName": "Roger's Apple",
+  "startStateMachine": {
+    "startState": "greeting",
+    "states": [
+      {
+        "id": "greeting",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Hey, #b{context.genderGreeting}#k~ What's up? Haha! I am Roger who can teach you adorable new Maplers lots of information.",
+          "choices": [
+            {"text": "Next", "nextState": "explanation"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "explanation",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "You are asking who made me do this? Ahahahaha!\r\nMyself! I wanted to do this and just be kind to you new travellers.",
+          "choices": [
+            {"text": "Previous", "nextState": "greeting"},
+            {"text": "Next", "nextState": "askAccept"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "askAccept",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendAcceptDecline",
+          "text": "So..... Let me just do this for fun! Abaracadabra~!",
+          "choices": [
+            {"text": "Accept", "nextState": "startQuestActions"},
+            {"text": "Decline", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "startQuestActions",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}},
+            {"type": "award_item", "params": {"itemId": "2010007", "quantity": "1"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "surprised"}
+          ]
+        }
+      },
+      {
+        "id": "surprised",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Surprised? If HP becomes 0, then you are in trouble. Now, I will give you #rRoger's Apple#k. Please take it. You will feel stronger. Open the Item window and double click to consume. Hey, it's very simple to open the Item window. Just press #bI#k on your keyboard.",
+          "choices": [
+            {"text": "Next", "nextState": "instructions"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "instructions",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendPrev",
+          "text": "Please take all Roger's Apples that I gave you. You will be able to see the HP bar increasing. Please talk to me again when you recover your HP 100%.",
+          "choices": [
+            {"text": "Previous", "nextState": "surprised"},
+            {"text": "Exit", "nextState": "showTutorial"}
+          ]
+        }
+      },
+      {
+        "id": "showTutorial",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "show_info", "params": {"path": "UI/tutorial.img/28"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "hotkeyExplanation",
+    "states": [
+      {
+        "id": "hotkeyExplanation",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "How easy is it to consume the item? Simple, right? You can set a #bhotkey#k on the right bottom slot. Haha you didn't know that! right? Oh, and if you are a beginner, HP will automatically recover itself as time goes by. Well it takes time but this is one of the strategies for the beginners.",
+          "choices": [
+            {"text": "Next", "nextState": "givePresent"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "givePresent",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "Alright! Now that you have learned alot, I will give you a present. This is a must for your travel in Maple World, so thank me! Please use this under emergency cases!",
+          "choices": [
+            {"text": "Previous", "nextState": "hotkeyExplanation"},
+            {"text": "Next", "nextState": "goodbye"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "goodbye",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendPrev",
+          "text": "Okay, this is all I can teach you. I know it's sad but it is time to say good bye. Well take care if yourself and Good luck my friend!\r\n\r\n#fUI/UIWindow.img/QuestIcon/4/0#\r\n#v2010000# 3 #t2010000#\r\n#v2010009# 3 #t2010009#\r\n\r\n#fUI/UIWindow.img/QuestIcon/8/0# 10 exp",
+          "choices": [
+            {"text": "Previous", "nextState": "givePresent"},
+            {"text": "Exit", "nextState": "checkCanComplete"}
+          ]
+        }
+      },
+      {
+        "id": "checkCanComplete",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "questStatus", "operator": "=", "value": "3", "referenceId": "1021"}
+              ],
+              "nextState": null
+            },
+            {
+              "conditions": [
+                {"type": "inventorySpace", "operator": ">=", "value": "3", "referenceId": "2010000"},
+                {"type": "inventorySpace", "operator": ">=", "value": "3", "referenceId": "2010009"}
+              ],
+              "nextState": "giveRewards"
+            },
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "giveRewards",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "award_exp", "params": {"amount": "10"}},
+            {"type": "award_item", "params": {"itemId": "2010000", "quantity": "3"}},
+            {"type": "award_item", "params": {"itemId": "2010009", "quantity": "3"}},
+            {"type": "complete_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

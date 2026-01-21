@@ -5,6 +5,7 @@ use (
 	./libs/atlas-kafka
 	./libs/atlas-model
 	./libs/atlas-rest
+	./libs/atlas-script-core
 	./libs/atlas-socket
 	./libs/atlas-tenant
 	./services/atlas-account/atlas.com/account
@@ -41,6 +42,7 @@ use (
 	./services/atlas-npc-shops/atlas.com/npc
 	./services/atlas-parties/atlas.com/parties
 	./services/atlas-pets/atlas.com/pets
+	./services/atlas-portal-actions/atlas.com/portal
 	./services/atlas-portals/atlas.com/portals
 	./services/atlas-query-aggregator/atlas.com/query-aggregator
 	./services/atlas-quest/atlas.com/quest

@@ -50,7 +50,7 @@ func (m *MockDataProcessor) GetAutoStartQuests(mapId uint32) ([]dataquest.RestMo
 	}
 	var filtered []dataquest.RestModel
 	for _, q := range m.AutoStartQuests {
-		if q.StartRequirements.NormalAutoStart || q.Area == mapId {
+		if q.StartRequirements.NormalAutoStart || (q.Area > 0 && q.Area == mapId) {
 			filtered = append(filtered, q)
 		}
 	}

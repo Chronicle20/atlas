@@ -1,0 +1,15 @@
+meta {
+  name: Clear Character Quests
+  type: http
+  seq: 1
+}
+
+delete {
+  url: {{scheme}}://{{host}}:{{port}}/api/characters/{{characterId}}/quests
+  body: none
+  auth: inherit
+}
+
+vars:pre-request {
+  characterId: 2
+}

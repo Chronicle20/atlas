@@ -86,7 +86,7 @@
           {
             "type": "change_skin",
             "params": {
-              "skinId": "{context.selectedStyle}"
+              "styleId": "{context.selectedStyle}"
             }
           }
         ],

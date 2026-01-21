@@ -243,6 +243,14 @@ Example Response:
 }
 ```
 
+#### [DELETE] Delete All Quests for Character
+
+```/api/characters/{characterId}/quests```
+
+Deletes all quest progress and statuses for the specified character. This is a destructive operation that removes all quest data including progress entries.
+
+Response: 204 No Content
+
 #### [PATCH] Update Quest Progress
 
 ```/api/characters/{characterId}/quests/{questId}/progress```

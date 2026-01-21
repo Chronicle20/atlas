@@ -363,7 +363,7 @@ func (p *Processor) Delete(mb *message.Buffer) func(transactionId uuid.UUID, cha
 				} else if a.ReferenceType() == ReferenceTypeConsumable || a.ReferenceType() == ReferenceTypeSetup || a.ReferenceType() == ReferenceTypeEtc {
 					deleteRefFunc = p.stackableProcessor.Delete
 				} else if a.ReferenceType() == ReferenceTypeCash {
-					// TODO Cash Shop
+					deleteRefFunc = p.cashProcessor.Delete
 				} else if a.ReferenceType() == ReferenceTypePet {
 					// TODO Cash Shop
 				}

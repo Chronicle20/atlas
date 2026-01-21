@@ -30,3 +30,7 @@ func (p *Processor) UpdateQuantity(itemId uint32, quantity uint32) error {
 	//TODO
 	return nil
 }
+
+func (p *Processor) Delete(itemId uint32) error {
+	return requestDelete(p.l, p.ctx)(itemId)
+}

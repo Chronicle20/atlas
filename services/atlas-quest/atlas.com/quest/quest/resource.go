@@ -29,6 +29,7 @@ const (
 	UpdateQuestProgress           = "update_quest_progress"
 	GetStartedQuestsByCharacter   = "get_started_quests_by_character"
 	GetCompletedQuestsByCharacter = "get_completed_quests_by_character"
+	DeleteQuestsByCharacter       = "delete_quests_by_character"
 )
 
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
@@ -39,6 +40,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			// Character quest routes
 			r := router.PathPrefix("/characters/{characterId}/quests").Subrouter()
 			r.HandleFunc("", registerGet(GetQuestsByCharacter, handleGetQuestsByCharacter(db))).Methods(http.MethodGet)
+			r.HandleFunc("", registerGet(DeleteQuestsByCharacter, handleDeleteQuestsByCharacter(db))).Methods(http.MethodDelete)
 			r.HandleFunc("/started", registerGet(GetStartedQuestsByCharacter, handleGetQuestsByCharacterAndState(db, StateStarted))).Methods(http.MethodGet)
 			r.HandleFunc("/completed", registerGet(GetCompletedQuestsByCharacter, handleGetQuestsByCharacterAndState(db, StateCompleted))).Methods(http.MethodGet)
 			r.HandleFunc("/{questId}", registerGet(GetQuestByCharacterAndId, handleGetQuestByCharacterAndId(db))).Methods(http.MethodGet)
@@ -303,3 +305,19 @@ func handleUpdateQuestProgress(d *rest.HandlerDependency, c *rest.HandlerContext
 	})
 }
 
+func handleDeleteQuestsByCharacter(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				err := NewProcessor(d.Logger(), d.Context(), db).DeleteByCharacterId(characterId)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Unable to delete quests for character [%d].", characterId)
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				w.WriteHeader(http.StatusNoContent)
+			}
+		})
+	}
+}

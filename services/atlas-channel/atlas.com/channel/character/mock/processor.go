@@ -63,6 +63,10 @@ func (m *MockProcessor) SkillModelDecorator(c character.Model) character.Model {
 	return c
 }
 
+func (m *MockProcessor) QuestModelDecorator(c character.Model) character.Model {
+	return c
+}
+
 func (m *MockProcessor) GetEquipableInSlot(characterId uint32, slot int16) model.Provider[asset.Model[any]] {
 	return model.ErrorProvider[asset.Model[any]](errors.New("not implemented in mock"))
 }

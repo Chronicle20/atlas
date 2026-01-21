@@ -220,7 +220,8 @@
       "type": "go-service",
       "path": "services/atlas-npc-conversations",
       "module_path": "services/atlas-npc-conversations/atlas.com/npc",
-      "docker_image": "ghcr.io/chronicle20/atlas-npc-conversations/atlas-npc-conversations"
+      "docker_image": "ghcr.io/chronicle20/atlas-npc-conversations/atlas-npc-conversations",
+      "docker_context": "."
     },
     {
       "name": "atlas-npc-shops",
@@ -248,7 +249,8 @@
       "type": "go-service",
       "path": "services/atlas-portal-actions",
       "module_path": "services/atlas-portal-actions/atlas.com/portal",
-      "docker_image": "ghcr.io/chronicle20/atlas-portal-actions/atlas-portal-actions"
+      "docker_image": "ghcr.io/chronicle20/atlas-portal-actions/atlas-portal-actions",
+      "docker_context": "."
     },
     {
       "name": "atlas-portals",

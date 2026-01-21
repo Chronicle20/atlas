@@ -57,17 +57,18 @@ jobs:
           CONFIG_FILE=".github/config/services.json"
 
           # Handle specific service override
+          # Use docker_context if specified, otherwise fall back to path
           if [ -n "$SPECIFIC_SERVICE" ]; then
             echo "Building specific service: $SPECIFIC_SERVICE"
-            DOCKER_SERVICES=$(jq -c --arg name "$SPECIFIC_SERVICE" '[.services[] | select(.name == $name) | select(.docker_image != null) | {name: .name, path: .path, docker_image: .docker_image}]' "$CONFIG_FILE")
+            DOCKER_SERVICES=$(jq -c --arg name "$SPECIFIC_SERVICE" '[.services[] | select(.name == $name) | select(.docker_image != null) | {name: .name, path: .path, docker_context: (.docker_context // .path), docker_image: .docker_image}]' "$CONFIG_FILE")
           # Handle force all or global changes
           elif [ "$FORCE_ALL" == "true" ] || [ "$HAS_WORKSPACE_CHANGES" == "true" ] || [ "$HAS_WORKFLOW_CHANGES" == "true" ]; then
             echo "Building all services"
-            DOCKER_SERVICES=$(jq -c '[.services[] | select(.docker_image != null) | {name: .name, path: .path, docker_image: .docker_image}]' "$CONFIG_FILE")
+            DOCKER_SERVICES=$(jq -c '[.services[] | select(.docker_image != null) | {name: .name, path: .path, docker_context: (.docker_context // .path), docker_image: .docker_image}]' "$CONFIG_FILE")
           # Normal change detection
           else
             CHANGED='${{ steps.detect.outputs.services }}'
-            DOCKER_SERVICES=$(jq -c --argjson changed "$CHANGED" '[.services[] | select(.docker_image != null) | select(.name as $n | $changed | index($n)) | {name: .name, path: .path, docker_image: .docker_image}]' "$CONFIG_FILE")
+            DOCKER_SERVICES=$(jq -c --argjson changed "$CHANGED" '[.services[] | select(.docker_image != null) | select(.name as $n | $changed | index($n)) | {name: .name, path: .path, docker_context: (.docker_context // .path), docker_image: .docker_image}]' "$CONFIG_FILE")
           fi
 
           echo "docker-services=$DOCKER_SERVICES" >> $GITHUB_OUTPUT
@@ -124,7 +125,8 @@ jobs:
       - name: Build and push AMD64 image
         uses: docker/build-push-action@v6
         with:
-          context: ${{ matrix.service.path }}
+          context: ${{ matrix.service.docker_context }}
+          file: ${{ matrix.service.path }}/Dockerfile
           platforms: linux/amd64
           push: true
           tags: ${{ matrix.service.docker_image }}:latest-amd64
@@ -165,7 +167,8 @@ jobs:
       - name: Build and push ARM64 image
         uses: docker/build-push-action@v6
         with:
-          context: ${{ matrix.service.path }}
+          context: ${{ matrix.service.docker_context }}
+          file: ${{ matrix.service.path }}/Dockerfile
           platforms: linux/arm64
           push: true
           tags: ${{ matrix.service.docker_image }}:latest-arm64

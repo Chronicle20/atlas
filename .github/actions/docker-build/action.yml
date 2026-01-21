@@ -93,12 +93,25 @@ runs:
         echo "tags=$FULL_TAGS" >> $GITHUB_OUTPUT
         echo "Generated tags: $FULL_TAGS"
 
+    - name: Determine Dockerfile path
+      id: dockerfile
+      shell: bash
+      run: |
+        DOCKERFILE="${{ inputs.dockerfile }}"
+        CONTEXT="${{ inputs.context }}"
+        # If dockerfile contains a slash, it's a full path; otherwise, it's relative to context
+        if [[ "$DOCKERFILE" == *"/"* ]]; then
+          echo "path=$DOCKERFILE" >> $GITHUB_OUTPUT
+        else
+          echo "path=$CONTEXT/$DOCKERFILE" >> $GITHUB_OUTPUT
+        fi
+
     - name: Build and push
       id: build
       uses: docker/build-push-action@v6
       with:
         context: ${{ inputs.context }}
-        file: ${{ inputs.context }}/${{ inputs.dockerfile }}
+        file: ${{ steps.dockerfile.outputs.path }}
         platforms: ${{ inputs.platform }}
         push: ${{ inputs.push }}
         tags: ${{ steps.tags.outputs.tags }}

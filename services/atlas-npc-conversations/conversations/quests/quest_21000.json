@@ -1,0 +1,114 @@
+{
+  "questId": 21000,
+  "npcId": 1202000,
+  "questName": "Help Kid",
+  "startStateMachine": {
+    "startState": "askAccept",
+    "states": [
+      {
+        "id": "askAccept",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendAcceptDecline",
+          "text": "Oh, no! I think there's still a child in the forest! Aran, I'm very sorry, but could you rescue the child? I know you're injured, but I don't have anyone else to ask!",
+          "choices": [
+            {"text": "Accept", "nextState": "startQuest"},
+            {"text": "Decline", "nextState": "declineMessage"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "declineMessage",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "No, Aran... We can't leave a kid behind. I know it's a lot to ask, but please reconsider. Please!",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "startQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "childLocation"}
+          ]
+        }
+      },
+      {
+        "id": "childLocation",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "#bThe child is probably lost deep inside the forest!#k We have to escape before the Black Mage finds us. You must rush into the forest and bring the child back with you!",
+          "choices": [
+            {"text": "Next", "nextState": "questTip"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "questTip",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "Don't panic, Aran. If you wish to check the status of the \r\nquest, press #bQ#k and view the Quest window.",
+          "choices": [
+            {"text": "Previous", "nextState": "childLocation"},
+            {"text": "Next", "nextState": "plea"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "plea",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "Please, Aran! I'm begging you. I can't bear to lose another person to the Black Mage!",
+          "choices": [
+            {"text": "Previous", "nextState": "questTip"},
+            {"text": "Next", "nextState": "showTutorialEffect"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "showTutorialEffect",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "show_info", "params": {"path": "Effect/OnUserEff.img/guideEffect/aranTutorial/tutorialArrow1"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "completeQuest",
+    "states": [
+      {
+        "id": "completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {"force": "true"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

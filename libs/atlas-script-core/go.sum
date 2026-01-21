@@ -1,0 +1,4 @@
+github.com/Chronicle20/atlas-constants v1.0.20 h1:9vSoOGgMOPJDgxcQMR1knufQltBk37wSSZO08aXdiOQ=
+github.com/Chronicle20/atlas-constants v1.0.20/go.mod h1:mcEZWtptkgYIE844YCo+cYkLMqmSBdDRtTIeQ/hG91c=
+github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
+github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=

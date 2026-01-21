@@ -17,6 +17,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas-constants/map"
+	scriptctx "github.com/Chronicle20/atlas-script-core/context"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
@@ -144,82 +145,9 @@ func (e *OperationExecutorImpl) setContextValue(characterId uint32, key string, 
 // evaluateArithmeticExpression evaluates simple arithmetic expressions
 // Supports: +, -, *, / operators
 // Example: "10 * 5" -> 50, "100 / 2" -> 50
+// Uses the shared implementation from atlas-script-core/context
 func evaluateArithmeticExpression(expr string) (int, error) {
-	expr = strings.TrimSpace(expr)
-
-	// Check for multiplication
-	if strings.Contains(expr, "*") {
-		parts := strings.Split(expr, "*")
-		if len(parts) != 2 {
-			return 0, fmt.Errorf("invalid multiplication expression: %s", expr)
-		}
-		left, err := strconv.Atoi(strings.TrimSpace(parts[0]))
-		if err != nil {
-			return 0, fmt.Errorf("invalid left operand: %s", parts[0])
-		}
-		right, err := strconv.Atoi(strings.TrimSpace(parts[1]))
-		if err != nil {
-			return 0, fmt.Errorf("invalid right operand: %s", parts[1])
-		}
-		return left * right, nil
-	}
-
-	// Check for division
-	if strings.Contains(expr, "/") {
-		parts := strings.Split(expr, "/")
-		if len(parts) != 2 {
-			return 0, fmt.Errorf("invalid division expression: %s", expr)
-		}
-		left, err := strconv.Atoi(strings.TrimSpace(parts[0]))
-		if err != nil {
-			return 0, fmt.Errorf("invalid left operand: %s", parts[0])
-		}
-		right, err := strconv.Atoi(strings.TrimSpace(parts[1]))
-		if err != nil {
-			return 0, fmt.Errorf("invalid right operand: %s", parts[1])
-		}
-		if right == 0 {
-			return 0, fmt.Errorf("division by zero")
-		}
-		return left / right, nil
-	}
-
-	// Check for addition
-	if strings.Contains(expr, "+") {
-		parts := strings.Split(expr, "+")
-		if len(parts) != 2 {
-			return 0, fmt.Errorf("invalid addition expression: %s", expr)
-		}
-		left, err := strconv.Atoi(strings.TrimSpace(parts[0]))
-		if err != nil {
-			return 0, fmt.Errorf("invalid left operand: %s", parts[0])
-		}
-		right, err := strconv.Atoi(strings.TrimSpace(parts[1]))
-		if err != nil {
-			return 0, fmt.Errorf("invalid right operand: %s", parts[1])
-		}
-		return left + right, nil
-	}
-
-	// Check for subtraction (but not negative numbers)
-	if strings.Contains(expr, "-") && !strings.HasPrefix(expr, "-") {
-		parts := strings.Split(expr, "-")
-		if len(parts) != 2 {
-			return 0, fmt.Errorf("invalid subtraction expression: %s", expr)
-		}
-		left, err := strconv.Atoi(strings.TrimSpace(parts[0]))
-		if err != nil {
-			return 0, fmt.Errorf("invalid left operand: %s", parts[0])
-		}
-		right, err := strconv.Atoi(strings.TrimSpace(parts[1]))
-		if err != nil {
-			return 0, fmt.Errorf("invalid right operand: %s", parts[1])
-		}
-		return left - right, nil
-	}
-
-	// No operator found, try to parse as integer
-	return strconv.Atoi(expr)
+	return scriptctx.EvaluateArithmeticExpression(expr)
 }
 
 // evaluateContextValueAsInt evaluates a context value as an integer
@@ -1612,6 +1540,146 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		}
 
 		return stepId, saga.Pending, saga.ShowStorage, payload, nil
+
+	case "play_portal_sound":
+		// Format: play_portal_sound
+		// Params: none required
+		// Plays the portal sound effect for the character
+		// Used for portal-related scripts (e.g., after teleporting)
+		payload := saga.PlayPortalSoundPayload{
+			CharacterId: characterId,
+			WorldId:     f.WorldId(),
+			ChannelId:   f.ChannelId(),
+		}
+
+		return stepId, saga.Pending, saga.PlayPortalSound, payload, nil
+
+	case "show_info":
+		// Format: show_info
+		// Params: path (string, required) - path to the info effect (e.g., "Effect/OnUserEff.img/RecoveryUp")
+		// Shows an info/tutorial effect to the character
+		// Used for tutorial popups and effect displays (e.g., qm.showInfo() in scripts)
+		pathValue, exists := operation.Params()["path"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing path parameter for show_info operation")
+		}
+
+		path, err := e.evaluateContextValue(characterId, "path", pathValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		payload := saga.ShowInfoPayload{
+			CharacterId: characterId,
+			WorldId:     f.WorldId(),
+			ChannelId:   f.ChannelId(),
+			Path:        path,
+		}
+
+		return stepId, saga.Pending, saga.ShowInfo, payload, nil
+
+	case "show_info_text":
+		// Format: show_info_text
+		// Params: text (string, required) - text message to display
+		// Shows a text message to the character via CharacterStatusMessage
+		// Used for tutorial/info text messages (e.g., qm.showInfoText() in scripts)
+		textValue, exists := operation.Params()["text"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing text parameter for show_info_text operation")
+		}
+
+		text, err := e.evaluateContextValue(characterId, "text", textValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		payload := saga.ShowInfoTextPayload{
+			CharacterId: characterId,
+			WorldId:     f.WorldId(),
+			ChannelId:   f.ChannelId(),
+			Text:        text,
+		}
+
+		return stepId, saga.Pending, saga.ShowInfoText, payload, nil
+
+	case "update_area_info":
+		// Format: update_area_info
+		// Params: area (uint16, required), info (string, required)
+		// Updates area info (quest record ex) for the character
+		// Used for quest-related area tracking (e.g., qm.updateAreaInfo() in scripts)
+		areaValue, exists := operation.Params()["area"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing area parameter for update_area_info operation")
+		}
+
+		areaInt, err := e.evaluateContextValueAsInt(characterId, "area", areaValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		infoValue, exists := operation.Params()["info"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing info parameter for update_area_info operation")
+		}
+
+		info, err := e.evaluateContextValue(characterId, "info", infoValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		payload := saga.UpdateAreaInfoPayload{
+			CharacterId: characterId,
+			WorldId:     f.WorldId(),
+			ChannelId:   f.ChannelId(),
+			Area:        uint16(areaInt),
+			Info:        info,
+		}
+
+		return stepId, saga.Pending, saga.UpdateAreaInfo, payload, nil
+
+	case "show_hint":
+		// Format: show_hint
+		// Params: hint (string, required), width (uint16, optional), height (uint16, optional)
+		// Shows a hint box to the character
+		// Used for hint messages (e.g., qm.showHint() in scripts)
+		hintValue, exists := operation.Params()["hint"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing hint parameter for show_hint operation")
+		}
+
+		hint, err := e.evaluateContextValue(characterId, "hint", hintValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		// Width is optional, defaults to 0 (auto-calculated by channel)
+		var widthInt int = 0
+		if widthValue, exists := operation.Params()["width"]; exists {
+			widthInt, err = e.evaluateContextValueAsInt(characterId, "width", widthValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
+		}
+
+		// Height is optional, defaults to 0 (auto-calculated by channel)
+		var heightInt int = 0
+		if heightValue, exists := operation.Params()["height"]; exists {
+			heightInt, err = e.evaluateContextValueAsInt(characterId, "height", heightValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
+		}
+
+		payload := saga.ShowHintPayload{
+			CharacterId: characterId,
+			WorldId:     f.WorldId(),
+			ChannelId:   f.ChannelId(),
+			Hint:        hint,
+			Width:       uint16(widthInt),
+			Height:      uint16(heightInt),
+		}
+
+		return stepId, saga.Pending, saga.ShowHint, payload, nil
 
 	default:
 		return "", "", "", nil, fmt.Errorf("unknown operation type: %s", operation.Type())

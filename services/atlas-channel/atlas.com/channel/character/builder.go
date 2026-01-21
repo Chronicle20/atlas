@@ -1,10 +1,11 @@
 package character
 
 import (
+	"atlas-channel/character/skill"
 	"atlas-channel/equipment"
 	"atlas-channel/inventory"
 	"atlas-channel/pet"
-	"atlas-channel/character/skill"
+	"atlas-channel/quest"
 	"errors"
 
 	_map "github.com/Chronicle20/atlas-constants/map"
@@ -51,6 +52,7 @@ type modelBuilder struct {
 	equipment          equipment.Model
 	inventory          inventory.Model
 	skills             []skill.Model
+	quests             []quest.Model
 }
 
 // NewModelBuilder creates a new builder instance
@@ -96,6 +98,7 @@ func CloneModel(m Model) *modelBuilder {
 		equipment:          m.equipment,
 		inventory:          m.inventory,
 		skills:             m.skills,
+		quests:             m.quests,
 	}
 }
 
@@ -134,6 +137,7 @@ func (b *modelBuilder) SetPets(v []pet.Model) *modelBuilder           { b.pets =
 func (b *modelBuilder) SetEquipment(v equipment.Model) *modelBuilder  { b.equipment = v; return b }
 func (b *modelBuilder) SetInventory(v inventory.Model) *modelBuilder  { b.inventory = v; return b }
 func (b *modelBuilder) SetSkills(v []skill.Model) *modelBuilder       { b.skills = v; return b }
+func (b *modelBuilder) SetQuests(v []quest.Model) *modelBuilder       { b.quests = v; return b }
 
 // Build creates a new Model instance with validation
 func (b *modelBuilder) Build() (Model, error) {
@@ -176,6 +180,7 @@ func (b *modelBuilder) Build() (Model, error) {
 		equipment:          b.equipment,
 		inventory:          b.inventory,
 		skills:             b.skills,
+		quests:             b.quests,
 	}, nil
 }
 

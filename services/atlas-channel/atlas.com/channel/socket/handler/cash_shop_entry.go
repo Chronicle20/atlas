@@ -11,6 +11,7 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+
 	"github.com/Chronicle20/atlas-socket/request"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -36,7 +37,7 @@ func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 			return
 		}
 		cp := character.NewProcessor(l, ctx)
-		c, err := cp.GetById(cp.InventoryDecorator, cp.SkillModelDecorator, cp.PetModelDecorator)(s.CharacterId())
+		c, err := cp.GetById(cp.InventoryDecorator, cp.SkillModelDecorator, cp.PetModelDecorator, cp.QuestModelDecorator)(s.CharacterId())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to locate character [%d] attempting to enter cash shop.", s.CharacterId())
 			_ = session.NewProcessor(l, ctx).Destroy(s)

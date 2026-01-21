@@ -4,12 +4,17 @@ import (
 	"atlas-channel/kafka/message/quest"
 	"atlas-channel/kafka/producer"
 	"context"
+
 	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {
 	StartQuestConversation(m _map.Model, questId uint32, npcId uint32, characterId uint32) error
+	ByCharacterIdProvider(characterId uint32) model.Provider[[]Model]
+	GetByCharacterId(characterId uint32) ([]Model, error)
 }
 
 type ProcessorImpl struct {
@@ -23,6 +28,14 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		ctx: ctx,
 	}
 	return p
+}
+
+func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(characterId), Extract, model.Filters[Model]())
+}
+
+func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {
+	return p.ByCharacterIdProvider(characterId)()
 }
 
 func (p *ProcessorImpl) StartQuestConversation(m _map.Model, questId uint32, npcId uint32, characterId uint32) error {

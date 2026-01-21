@@ -204,10 +204,15 @@ func validateConditionInput(input ConditionInput) error {
 
 	// Validate supported operators
 	switch input.Operator {
-	case "=", ">", "<", ">=", "<=":
+	case "=", ">", "<", ">=", "<=", "in":
 		// Valid operators
 	default:
 		return fmt.Errorf("unsupported operator: %s", input.Operator)
+	}
+
+	// Validate "in" operator has values
+	if input.Operator == "in" && len(input.Values) == 0 {
+		return fmt.Errorf("'in' operator requires 'values' array")
 	}
 
 	// Validate condition-specific requirements

@@ -1,10 +1,13 @@
 package validation
 
+import "strconv"
+
 // ConditionInput represents a validation condition to check against character state
 type ConditionInput struct {
 	Type        string `json:"type"`
 	Operator    string `json:"operator"`
 	Value       int    `json:"value"`
+	Values      []int  `json:"values,omitempty"`
 	ReferenceId uint32 `json:"referenceId,omitempty"`
 	Step        string `json:"step,omitempty"`
 }
@@ -37,10 +40,15 @@ func (r RequestModel) GetName() string {
 }
 
 func (r RequestModel) GetID() string {
-	return ""
+	return strconv.FormatUint(uint64(r.Id), 10)
 }
 
 func (r *RequestModel) SetID(id string) error {
+	parsed, err := strconv.ParseUint(id, 10, 32)
+	if err != nil {
+		return err
+	}
+	r.Id = uint32(parsed)
 	return nil
 }
 

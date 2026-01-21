@@ -1,0 +1,15 @@
+meta {
+  name: Get Quest
+  type: http
+  seq: 21
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/data/quests/{{questId}}
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  questId: 2139
+}

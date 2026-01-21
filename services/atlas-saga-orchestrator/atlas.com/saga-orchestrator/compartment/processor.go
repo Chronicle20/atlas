@@ -63,12 +63,24 @@ func (p *ProcessorImpl) RequestDestroyItem(transactionId uuid.UUID, characterId 
 		return errors.New("invalid templateId")
 	}
 
-	// TODO: Perform transformation from templateId and quantity to slot and quantity
-	// The compartment kafka command requires slot and quantity, but we're receiving templateId and quantity
-	// This will require looking up the item in the character's inventory to find the slot
+	// Look up the slot by querying the character's inventory for the templateId
+	compartmentModel, err := RequestCompartment(p.l, p.ctx)(characterId, byte(inventoryType))
+	if err != nil {
+		return errors.New("failed to retrieve inventory compartment: " + err.Error())
+	}
 
-	// For now, we'll use a placeholder slot value of -1
+	// Find the first asset with matching templateId
 	slot := int16(-1)
+	for _, asset := range compartmentModel.Assets {
+		if asset.TemplateId == templateId {
+			slot = asset.Slot
+			break
+		}
+	}
+
+	if slot == -1 {
+		return errors.New("item not found in inventory")
+	}
 
 	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestDestroyAssetCommandProvider(transactionId, characterId, inventoryType, slot, quantity, removeAll))
 }

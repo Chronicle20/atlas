@@ -434,6 +434,11 @@
         "handler": "PortalScriptHandle"
       },
       {
+        "opCode": "0x6B",
+        "validator": "LoggedInValidator",
+        "handler": "QuestActionHandle"
+      },
+      {
         "opCode": "0x6E",
         "validator": "LoggedInValidator",
         "handler": "CharacterSkillMacroHandle"

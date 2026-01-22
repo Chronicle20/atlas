@@ -56,8 +56,9 @@ type AwardExperiencePayload struct {
 
 // ExperienceDistribution represents how experience is distributed
 type ExperienceDistribution struct {
-	Type   string `json:"type"`
-	Amount int32  `json:"amount"`
+	ExperienceType string `json:"experienceType"`
+	Amount         uint32 `json:"amount"`
+	Attr1          uint32 `json:"attr1"`
 }
 
 // AwardFamePayload represents payload for awarding fame

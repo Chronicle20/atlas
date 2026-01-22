@@ -2,10 +2,11 @@ package writer
 
 import (
 	"atlas-channel/guild/thread"
-	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 	"math"
 	"time"
+
+	"github.com/Chronicle20/atlas-socket/response"
+	"github.com/sirupsen/logrus"
 )
 
 const (

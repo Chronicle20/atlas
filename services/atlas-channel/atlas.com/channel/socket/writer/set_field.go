@@ -51,7 +51,7 @@ func WarpToMapBody(l logrus.FieldLogger, tenant tenant.Model) func(channelId cha
 					w.WriteInt(0)
 				}
 			}
-			w.WriteLong(uint64(getTime(timeNow())))
+			w.WriteInt64(msTime(time.Now()))
 			return w.Bytes()
 		}
 	}
@@ -90,7 +90,7 @@ func SetFieldBody(l logrus.FieldLogger, tenant tenant.Model) func(channelId chan
 				w.WriteInt(0)
 				w.WriteInt(0)
 			}
-			w.WriteInt64(getTime(timeNow()))
+			w.WriteInt64(msTime(time.Now()))
 			return w.Bytes()
 		}
 	}
@@ -258,6 +258,7 @@ const (
 	Permanent   int64 = 150841440000000000
 )
 
+// TODO usages of this may be invalid
 func getTime(utcTimestamp int64) int64 {
 	if utcTimestamp < 0 && utcTimestamp >= -3 {
 		if utcTimestamp == -1 {

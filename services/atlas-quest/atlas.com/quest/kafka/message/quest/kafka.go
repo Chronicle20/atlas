@@ -9,12 +9,14 @@ const (
 	CommandTypeComplete       = "COMPLETE"
 	CommandTypeForfeit        = "FORFEIT"
 	CommandTypeUpdateProgress = "UPDATE_PROGRESS"
+	CommandTypeRestoreItem    = "RESTORE_ITEM"
 )
 
 // Command represents a quest command message
 type Command[E any] struct {
 	WorldId     byte   `json:"worldId"`
 	ChannelId   byte   `json:"channelId"`
+	MapId       uint32 `json:"mapId"`
 	CharacterId uint32 `json:"characterId"`
 	Type        string `json:"type"`
 	Body        E      `json:"body"`
@@ -24,6 +26,7 @@ type Command[E any] struct {
 type StartCommandBody struct {
 	QuestId uint32 `json:"questId"`
 	NpcId   uint32 `json:"npcId,omitempty"`
+	Force   bool   `json:"force,omitempty"` // If true, skip requirement checks
 }
 
 // CompleteCommandBody is the body for completing a quest
@@ -44,6 +47,12 @@ type UpdateProgressCommandBody struct {
 	QuestId    uint32 `json:"questId"`
 	InfoNumber uint32 `json:"infoNumber"`
 	Progress   string `json:"progress"`
+}
+
+// RestoreItemCommandBody is the body for restoring a lost quest item
+type RestoreItemCommandBody struct {
+	QuestId uint32 `json:"questId"`
+	ItemId  uint32 `json:"itemId"`
 }
 
 const (

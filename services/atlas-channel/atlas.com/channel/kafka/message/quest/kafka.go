@@ -11,6 +11,15 @@ const (
 	CommandTypeStartQuestConversation = "START_QUEST_CONVERSATION"
 )
 
+// Quest service command topic and types (for atlas-quest)
+const (
+	EnvQuestCommandTopic         = "COMMAND_TOPIC_QUEST"
+	QuestCommandTypeStart        = "START"
+	QuestCommandTypeComplete     = "COMPLETE"
+	QuestCommandTypeForfeit      = "FORFEIT"
+	QuestCommandTypeRestoreItem  = "RESTORE_ITEM"
+)
+
 type Command[E any] struct {
 	QuestId     uint32 `json:"questId"`
 	NpcId       uint32 `json:"npcId"`
@@ -23,6 +32,42 @@ type StartQuestConversationCommandBody struct {
 	WorldId   world.Id   `json:"worldId"`
 	ChannelId channel.Id `json:"channelId"`
 	MapId     _map.Id    `json:"mapId"`
+}
+
+// QuestCommand represents a command message for the atlas-quest service
+type QuestCommand[E any] struct {
+	WorldId     byte   `json:"worldId"`
+	ChannelId   byte   `json:"channelId"`
+	MapId       uint32 `json:"mapId"`
+	CharacterId uint32 `json:"characterId"`
+	Type        string `json:"type"`
+	Body        E      `json:"body"`
+}
+
+// StartQuestCommandBody is the body for starting a quest
+type StartQuestCommandBody struct {
+	QuestId uint32 `json:"questId"`
+	NpcId   uint32 `json:"npcId,omitempty"`
+	Force   bool   `json:"force,omitempty"` // If true, skip requirement checks
+}
+
+// CompleteQuestCommandBody is the body for completing a quest
+type CompleteQuestCommandBody struct {
+	QuestId   uint32 `json:"questId"`
+	NpcId     uint32 `json:"npcId,omitempty"`
+	Selection int32  `json:"selection,omitempty"`
+	Force     bool   `json:"force,omitempty"`
+}
+
+// ForfeitQuestCommandBody is the body for forfeiting a quest
+type ForfeitQuestCommandBody struct {
+	QuestId uint32 `json:"questId"`
+}
+
+// RestoreItemCommandBody is the body for restoring a lost quest item
+type RestoreItemCommandBody struct {
+	QuestId uint32 `json:"questId"`
+	ItemId  uint32 `json:"itemId"`
 }
 
 // Status event types for quest status changes from atlas-quest service

@@ -16,6 +16,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -69,7 +70,8 @@ func handleMonsterKilledEvent(db *gorm.DB) message.Handler[monster.StatusEvent[m
 					// Increment the kill count
 					currentCount := parseProgress(p.Progress())
 					newCount := currentCount + 1
-					err = processor.SetProgress(entry.CharacterId, q.QuestId(), e.MonsterId, strconv.Itoa(int(newCount)))
+					// Use uuid.Nil since this is not saga-initiated
+					err = processor.SetProgress(uuid.Nil, entry.CharacterId, q.QuestId(), e.MonsterId, strconv.Itoa(int(newCount)))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to update monster kill progress for quest [%d] character [%d].", q.QuestId(), entry.CharacterId)
 					} else {
@@ -83,7 +85,8 @@ func handleMonsterKilledEvent(db *gorm.DB) message.Handler[monster.StatusEvent[m
 							l.Infof("Auto-completed quest [%d] for character [%d].", q.QuestId(), entry.CharacterId)
 							// Handle quest chain - auto-start next quest if present
 							if nextQuestId > 0 {
-								_, err = processor.StartChained(entry.CharacterId, nextQuestId, f)
+								// Use uuid.Nil since this is not saga-initiated
+								_, err = processor.StartChained(uuid.Nil, entry.CharacterId, nextQuestId, f)
 								if err != nil {
 									l.WithError(err).Errorf("Error starting chained quest [%d] for character [%d].", nextQuestId, entry.CharacterId)
 								}

@@ -13,6 +13,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -136,7 +137,8 @@ func handleStartQuest(d *rest.HandlerDependency, c *rest.HandlerContext, i Start
 		return rest.ParseQuestId(d.Logger(), func(questId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				f := field.NewBuilder(world.Id(i.WorldId), channel.Id(i.ChannelId), _map.Id(i.MapId)).Build()
-				q, failedConditions, err := NewProcessor(d.Logger(), d.Context(), d.DB()).Start(characterId, questId, f, i.SkipValidation)
+				// REST endpoints use uuid.Nil since they're not saga-initiated
+				q, failedConditions, err := NewProcessor(d.Logger(), d.Context(), d.DB()).Start(uuid.Nil, characterId, questId, f, i.SkipValidation)
 				if errors.Is(err, ErrStartRequirementsNotMet) {
 					// Return 422 Unprocessable Entity with failed conditions
 					result := ValidationFailedRestModel{FailedConditions: failedConditions}
@@ -180,7 +182,8 @@ func handleCompleteQuest(d *rest.HandlerDependency, c *rest.HandlerContext, i Co
 		return rest.ParseQuestId(d.Logger(), func(questId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				f := field.NewBuilder(world.Id(i.WorldId), channel.Id(i.ChannelId), _map.Id(i.MapId)).Build()
-				nextQuestId, err := NewProcessor(d.Logger(), d.Context(), d.DB()).Complete(characterId, questId, f, i.SkipValidation)
+				// REST endpoints use uuid.Nil since they're not saga-initiated
+				nextQuestId, err := NewProcessor(d.Logger(), d.Context(), d.DB()).Complete(uuid.Nil, characterId, questId, f, i.SkipValidation)
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					w.WriteHeader(http.StatusNotFound)
 					return
@@ -221,7 +224,8 @@ func handleForfeitQuest(db *gorm.DB) rest.GetHandler {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return rest.ParseQuestId(d.Logger(), func(questId uint32) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
-					err := NewProcessor(d.Logger(), d.Context(), db).Forfeit(characterId, questId)
+					// REST endpoints use uuid.Nil since they're not saga-initiated
+					err := NewProcessor(d.Logger(), d.Context(), db).Forfeit(uuid.Nil, characterId, questId)
 					if errors.Is(err, gorm.ErrRecordNotFound) {
 						w.WriteHeader(http.StatusNotFound)
 						return
@@ -288,7 +292,8 @@ func handleUpdateQuestProgress(d *rest.HandlerDependency, c *rest.HandlerContext
 					infoNumber = i.InfoNumber
 				}
 
-				err := NewProcessor(d.Logger(), d.Context(), d.DB()).SetProgress(characterId, questId, infoNumber, i.Progress)
+				// REST endpoints use uuid.Nil since they're not saga-initiated
+				err := NewProcessor(d.Logger(), d.Context(), d.DB()).SetProgress(uuid.Nil, characterId, questId, infoNumber, i.Progress)
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					w.WriteHeader(http.StatusNotFound)
 					return

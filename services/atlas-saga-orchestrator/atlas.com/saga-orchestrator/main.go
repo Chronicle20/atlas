@@ -10,6 +10,7 @@ import (
 	"atlas-saga-orchestrator/kafka/consumer/consumable"
 	"atlas-saga-orchestrator/kafka/consumer/guild"
 	"atlas-saga-orchestrator/kafka/consumer/pet"
+	"atlas-saga-orchestrator/kafka/consumer/quest"
 	saga2 "atlas-saga-orchestrator/kafka/consumer/saga"
 	"atlas-saga-orchestrator/kafka/consumer/skill"
 	"atlas-saga-orchestrator/kafka/consumer/storage"
@@ -67,6 +68,7 @@ func main() {
 	consumable.InitConsumers(l)(cmf)(consumerGroupId)
 	guild.InitConsumers(l)(cmf)(consumerGroupId)
 	pet.InitConsumers(l)(cmf)(consumerGroupId)
+	quest.InitConsumers(l)(cmf)(consumerGroupId)
 	saga2.InitConsumers(l)(cmf)(consumerGroupId)
 	skill.InitConsumers(l)(cmf)(consumerGroupId)
 	storage.InitConsumers(l)(cmf)(consumerGroupId)
@@ -80,6 +82,7 @@ func main() {
 	consumable.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	guild.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	pet.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	quest.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	saga2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	skill.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	storage.InitHandlers(l)(consumer.GetManager().RegisterHandler)

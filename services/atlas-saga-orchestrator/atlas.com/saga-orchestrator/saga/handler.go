@@ -1135,7 +1135,7 @@ func (h *HandlerImpl) handleCompleteQuest(s Saga, st Step[any]) error {
 	}
 
 	// Selection is not currently used in NPC conversations, default to 0
-	err := h.questP.RequestCompleteQuest(byte(payload.WorldId), payload.CharacterId, payload.QuestId, payload.NpcId, 0, payload.Force)
+	err := h.questP.RequestCompleteQuest(s.TransactionId(), byte(payload.WorldId), payload.CharacterId, payload.QuestId, payload.NpcId, 0, payload.Force)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to complete quest.")
 		return err
@@ -1151,7 +1151,7 @@ func (h *HandlerImpl) handleStartQuest(s Saga, st Step[any]) error {
 		return errors.New("invalid payload")
 	}
 
-	err := h.questP.RequestStartQuest(byte(payload.WorldId), payload.CharacterId, payload.QuestId, payload.NpcId)
+	err := h.questP.RequestStartQuest(s.TransactionId(), byte(payload.WorldId), payload.CharacterId, payload.QuestId, payload.NpcId)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to start quest.")
 		return err

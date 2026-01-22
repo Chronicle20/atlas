@@ -1,0 +1,16 @@
+meta {
+  name: Get Character Quest
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/characters/{{characterId}}/quests/{{questId}}
+  body: none
+  auth: inherit
+}
+
+vars:pre-request {
+  characterId: 2
+  questId: 2101
+}

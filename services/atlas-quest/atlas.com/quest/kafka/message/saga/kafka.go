@@ -30,6 +30,7 @@ const (
 type Type string
 
 const (
-	QuestStart    Type = "quest_start"
-	QuestComplete Type = "quest_complete"
+	QuestStart       Type = "quest_start"
+	QuestComplete    Type = "quest_complete"
+	QuestRestoreItem Type = "quest_restore_item"
 )

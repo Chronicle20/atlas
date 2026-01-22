@@ -76,8 +76,13 @@ func TestCombinedSeedResultJSON(t *testing.T) {
 					CreatedCount: 0,
 					FailedCount:  0,
 				},
+				ReactorDrops: SeedResult{
+					DeletedCount: 0,
+					CreatedCount: 0,
+					FailedCount:  0,
+				},
 			},
-			expected: `{"monsterDrops":{"deletedCount":0,"createdCount":0,"failedCount":0},"continentDrops":{"deletedCount":0,"createdCount":0,"failedCount":0}}`,
+			expected: `{"monsterDrops":{"deletedCount":0,"createdCount":0,"failedCount":0},"continentDrops":{"deletedCount":0,"createdCount":0,"failedCount":0},"reactorDrops":{"deletedCount":0,"createdCount":0,"failedCount":0}}`,
 		},
 		{
 			name: "successful combined seed",
@@ -92,8 +97,13 @@ func TestCombinedSeedResultJSON(t *testing.T) {
 					CreatedCount: 4,
 					FailedCount:  0,
 				},
+				ReactorDrops: SeedResult{
+					DeletedCount: 50,
+					CreatedCount: 146,
+					FailedCount:  0,
+				},
 			},
-			expected: `{"monsterDrops":{"deletedCount":1000,"createdCount":1500,"failedCount":0},"continentDrops":{"deletedCount":4,"createdCount":4,"failedCount":0}}`,
+			expected: `{"monsterDrops":{"deletedCount":1000,"createdCount":1500,"failedCount":0},"continentDrops":{"deletedCount":4,"createdCount":4,"failedCount":0},"reactorDrops":{"deletedCount":50,"createdCount":146,"failedCount":0}}`,
 		},
 		{
 			name: "combined seed with errors",
@@ -110,8 +120,14 @@ func TestCombinedSeedResultJSON(t *testing.T) {
 					FailedCount:  1,
 					Errors:       []string{"error2"},
 				},
+				ReactorDrops: SeedResult{
+					DeletedCount: 10,
+					CreatedCount: 8,
+					FailedCount:  2,
+					Errors:       []string{"error3"},
+				},
 			},
-			expected: `{"monsterDrops":{"deletedCount":100,"createdCount":95,"failedCount":5,"errors":["error1"]},"continentDrops":{"deletedCount":4,"createdCount":3,"failedCount":1,"errors":["error2"]}}`,
+			expected: `{"monsterDrops":{"deletedCount":100,"createdCount":95,"failedCount":5,"errors":["error1"]},"continentDrops":{"deletedCount":4,"createdCount":3,"failedCount":1,"errors":["error2"]},"reactorDrops":{"deletedCount":10,"createdCount":8,"failedCount":2,"errors":["error3"]}}`,
 		},
 	}
 

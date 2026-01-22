@@ -41,6 +41,12 @@ spec:
           value: 00000000-0000-0000-0000-000000000000
         - name: SERVICE_TYPE
           value: drops-information-service
+        - name: MONSTER_DROPS_PATH
+          value: "/drops/monsters"
+        - name: CONTINENT_DROPS_PATH
+          value: "/drops/continents"
+        - name: REACTOR_DROPS_PATH
+          value: "/drops/reactors"
 ---
 apiVersion: v1
 kind: Service

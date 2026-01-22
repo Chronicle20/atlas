@@ -10,7 +10,17 @@ import (
 	"strings"
 )
 
-var MonsterDropsPath = "/drops/monsters"
+const defaultMonsterDropsPath = "/drops/monsters"
+
+// GetMonsterDropsPath returns the path to the monster drops directory,
+// using the MONSTER_DROPS_PATH environment variable if set, otherwise
+// falling back to the default path.
+func GetMonsterDropsPath() string {
+	if path := os.Getenv("MONSTER_DROPS_PATH"); path != "" {
+		return path
+	}
+	return defaultMonsterDropsPath
+}
 
 // LoadMonsterDropFiles reads all JSON files from the monster drops directory
 // and parses them into JSONModel structs. Returns the successfully parsed models
@@ -19,7 +29,8 @@ func LoadMonsterDropFiles() ([]JSONModel, []error) {
 	var models []JSONModel
 	var errors []error
 
-	entries, err := os.ReadDir(MonsterDropsPath)
+	dropsPath := GetMonsterDropsPath()
+	entries, err := os.ReadDir(dropsPath)
 	if err != nil {
 		return nil, []error{fmt.Errorf("failed to read monster drops directory: %w", err)}
 	}
@@ -33,7 +44,7 @@ func LoadMonsterDropFiles() ([]JSONModel, []error) {
 			continue
 		}
 
-		filePath := filepath.Join(MonsterDropsPath, entry.Name())
+		filePath := filepath.Join(dropsPath, entry.Name())
 		data, err := os.ReadFile(filePath)
 		if err != nil {
 			errors = append(errors, fmt.Errorf("%s: failed to read file: %w", entry.Name(), err))

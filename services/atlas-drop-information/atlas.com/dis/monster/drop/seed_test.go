@@ -7,10 +7,6 @@ import (
 )
 
 func TestLoadMonsterDropFiles(t *testing.T) {
-	// Save original path and restore after test
-	originalPath := MonsterDropsPath
-	defer func() { MonsterDropsPath = originalPath }()
-
 	tests := []struct {
 		name           string
 		setupPath      func() string
@@ -37,7 +33,8 @@ func TestLoadMonsterDropFiles(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			MonsterDropsPath = tt.setupPath()
+			os.Setenv("MONSTER_DROPS_PATH", tt.setupPath())
+			defer os.Unsetenv("MONSTER_DROPS_PATH")
 
 			models, errs := LoadMonsterDropFiles()
 
@@ -53,10 +50,6 @@ func TestLoadMonsterDropFiles(t *testing.T) {
 }
 
 func TestLoadMonsterDropFilesValidData(t *testing.T) {
-	// Save original path and restore after test
-	originalPath := MonsterDropsPath
-	defer func() { MonsterDropsPath = originalPath }()
-
 	// Create a temp directory with only valid data
 	tempDir, err := os.MkdirTemp("", "monster_drops_test")
 	if err != nil {
@@ -74,7 +67,8 @@ func TestLoadMonsterDropFilesValidData(t *testing.T) {
 		t.Fatalf("Failed to write test file: %v", err)
 	}
 
-	MonsterDropsPath = tempDir
+	os.Setenv("MONSTER_DROPS_PATH", tempDir)
+	defer os.Unsetenv("MONSTER_DROPS_PATH")
 
 	models, errs := LoadMonsterDropFiles()
 
@@ -120,10 +114,6 @@ func TestLoadMonsterDropFilesValidData(t *testing.T) {
 }
 
 func TestLoadMonsterDropFilesEmptyDirectory(t *testing.T) {
-	// Save original path and restore after test
-	originalPath := MonsterDropsPath
-	defer func() { MonsterDropsPath = originalPath }()
-
 	// Create an empty temp directory
 	tempDir, err := os.MkdirTemp("", "monster_drops_empty_test")
 	if err != nil {
@@ -131,7 +121,8 @@ func TestLoadMonsterDropFilesEmptyDirectory(t *testing.T) {
 	}
 	defer os.RemoveAll(tempDir)
 
-	MonsterDropsPath = tempDir
+	os.Setenv("MONSTER_DROPS_PATH", tempDir)
+	defer os.Unsetenv("MONSTER_DROPS_PATH")
 
 	models, errs := LoadMonsterDropFiles()
 
@@ -145,10 +136,6 @@ func TestLoadMonsterDropFilesEmptyDirectory(t *testing.T) {
 }
 
 func TestLoadMonsterDropFilesIgnoresNonJSON(t *testing.T) {
-	// Save original path and restore after test
-	originalPath := MonsterDropsPath
-	defer func() { MonsterDropsPath = originalPath }()
-
 	// Create a temp directory with non-JSON files
 	tempDir, err := os.MkdirTemp("", "monster_drops_nonjson_test")
 	if err != nil {
@@ -169,7 +156,8 @@ func TestLoadMonsterDropFilesIgnoresNonJSON(t *testing.T) {
 		t.Fatalf("Failed to write test file: %v", err)
 	}
 
-	MonsterDropsPath = tempDir
+	os.Setenv("MONSTER_DROPS_PATH", tempDir)
+	defer os.Unsetenv("MONSTER_DROPS_PATH")
 
 	models, errs := LoadMonsterDropFiles()
 
@@ -184,10 +172,6 @@ func TestLoadMonsterDropFilesIgnoresNonJSON(t *testing.T) {
 }
 
 func TestLoadMonsterDropFilesIgnoresDirectories(t *testing.T) {
-	// Save original path and restore after test
-	originalPath := MonsterDropsPath
-	defer func() { MonsterDropsPath = originalPath }()
-
 	// Create a temp directory with a subdirectory
 	tempDir, err := os.MkdirTemp("", "monster_drops_subdir_test")
 	if err != nil {
@@ -215,7 +199,8 @@ func TestLoadMonsterDropFilesIgnoresDirectories(t *testing.T) {
 		t.Fatalf("Failed to write test file: %v", err)
 	}
 
-	MonsterDropsPath = tempDir
+	os.Setenv("MONSTER_DROPS_PATH", tempDir)
+	defer os.Unsetenv("MONSTER_DROPS_PATH")
 
 	models, errs := LoadMonsterDropFiles()
 
@@ -230,5 +215,26 @@ func TestLoadMonsterDropFilesIgnoresDirectories(t *testing.T) {
 
 	if len(models) > 0 && models[0].MonsterId != 100 {
 		t.Errorf("Expected MonsterId 100 from root file, got %d", models[0].MonsterId)
+	}
+}
+
+func TestGetMonsterDropsPathDefault(t *testing.T) {
+	// Ensure env var is not set
+	os.Unsetenv("MONSTER_DROPS_PATH")
+
+	path := GetMonsterDropsPath()
+	if path != defaultMonsterDropsPath {
+		t.Errorf("Expected default path %s, got %s", defaultMonsterDropsPath, path)
+	}
+}
+
+func TestGetMonsterDropsPathFromEnv(t *testing.T) {
+	customPath := "/custom/path/to/drops"
+	os.Setenv("MONSTER_DROPS_PATH", customPath)
+	defer os.Unsetenv("MONSTER_DROPS_PATH")
+
+	path := GetMonsterDropsPath()
+	if path != customPath {
+		t.Errorf("Expected custom path %s, got %s", customPath, path)
 	}
 }

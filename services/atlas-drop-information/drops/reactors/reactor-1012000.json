@@ -1,0 +1,99 @@
+{
+  "jsonapi": {
+    "version": "1.1"
+  },
+  "data": {
+    "type": "reactors",
+    "id": "1012000",
+    "relationships": {
+      "drops": {
+        "data": [
+          {
+            "type": "drops",
+            "id": "1012000:2000000"
+          },
+          {
+            "type": "drops",
+            "id": "1012000:4000003"
+          },
+          {
+            "type": "drops",
+            "id": "1012000:4031150:2067"
+          },
+          {
+            "type": "drops",
+            "id": "1012000:4032143:20717"
+          }
+        ]
+      }
+    }
+  },
+  "included": [
+    {
+      "type": "drops",
+      "id": "1012000:2000000",
+      "attributes": {
+        "itemId": 2000000,
+        "chance": 6
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "1012000"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "1012000:4000003",
+      "attributes": {
+        "itemId": 4000003,
+        "chance": 6
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "1012000"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "1012000:4031150:2067",
+      "attributes": {
+        "itemId": 4031150,
+        "chance": 3,
+        "questId": 2067
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "1012000"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "1012000:4032143:20717",
+      "attributes": {
+        "itemId": 4032143,
+        "chance": 6,
+        "questId": 20717
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "1012000"
+          }
+        }
+      }
+    }
+  ]
+}

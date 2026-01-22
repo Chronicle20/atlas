@@ -5,8 +5,8 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"strings"
 
+	scriptctx "github.com/Chronicle20/atlas-script-core/context"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
@@ -131,18 +131,7 @@ func (e *EvaluatorImpl) EvaluateCondition(characterId uint32, condition Conditio
 }
 
 // evaluateValueAsInt evaluates a string value as an integer, supporting arithmetic expressions
+// Uses the shared implementation from atlas-script-core/context
 func evaluateValueAsInt(value string) (int, error) {
-	// Check if the value contains arithmetic operators
-	if strings.ContainsAny(value, "+-*/") {
-		// Evaluate arithmetic expression using the shared function
-		return evaluateArithmeticExpression(value)
-	}
-
-	// No arithmetic, convert directly to integer
-	intValue, err := strconv.Atoi(value)
-	if err != nil {
-		return 0, fmt.Errorf("value [%s] is not a valid integer", value)
-	}
-
-	return intValue, nil
+	return scriptctx.EvaluateValueAsInt(value)
 }

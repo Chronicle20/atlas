@@ -7,14 +7,16 @@ import (
 	character2 "atlas-channel/kafka/message/character"
 	"atlas-channel/kafka/producer"
 	"atlas-channel/pet"
+	"atlas-channel/quest"
 	"context"
 	"errors"
+	"sort"
+
 	inventory2 "github.com/Chronicle20/atlas-constants/inventory"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
-	"sort"
 )
 
 // Processor interface defines the operations for character processing
@@ -23,6 +25,7 @@ type Processor interface {
 	PetModelDecorator(m Model) Model
 	InventoryDecorator(m Model) Model
 	SkillModelDecorator(m Model) Model
+	QuestModelDecorator(m Model) Model
 	GetEquipableInSlot(characterId uint32, slot int16) model.Provider[asset.Model[any]]
 	GetItemInSlot(characterId uint32, inventoryType inventory2.Type, slot int16) model.Provider[asset.Model[any]]
 	ByNameProvider(name string) model.Provider[[]Model]
@@ -86,6 +89,14 @@ func (p *ProcessorImpl) SkillModelDecorator(m Model) Model {
 		return m
 	}
 	return m.SetSkills(ms)
+}
+
+func (p *ProcessorImpl) QuestModelDecorator(m Model) Model {
+	ms, err := quest.NewProcessor(p.l, p.ctx).GetByCharacterId(m.Id())
+	if err != nil {
+		return m
+	}
+	return m.SetQuests(ms)
 }
 
 func (p *ProcessorImpl) GetEquipableInSlot(characterId uint32, slot int16) model.Provider[asset.Model[any]] {

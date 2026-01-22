@@ -148,11 +148,16 @@ func (p *ProcessorImpl) Start(characterId uint32, questId uint32, f field.Model,
 	// Fetch quest definition to check interval and time limit
 	questDef, err := p.dataProcessor.GetQuestDefinition(questId)
 	if err != nil {
-		p.l.WithError(err).Warnf("Unable to fetch quest definition for quest [%d], proceeding without interval/time limit checks.", questId)
-		// Continue without quest definition - we can still start the quest
-		questDef = dataquest.RestModel{}
+		p.l.WithError(err).Errorf("Unable to fetch quest definition for quest [%d], cannot start quest.", questId)
+		return Model{}, nil, fmt.Errorf("unable to fetch quest definition: %w", err)
 	}
 
+	return p.startWithDefinition(characterId, questId, questDef, f, skipValidation)
+}
+
+// startWithDefinition starts a quest using the provided quest definition
+// This is used internally when the quest definition is already available (e.g., from CheckAutoStart)
+func (p *ProcessorImpl) startWithDefinition(characterId uint32, questId uint32, questDef dataquest.RestModel, f field.Model, skipValidation bool) (Model, []string, error) {
 	// Validate start requirements (unless skipped)
 	if !skipValidation {
 		passed, failedConditions, err := p.validationProcessor.ValidateStartRequirements(characterId, questDef)
@@ -659,7 +664,8 @@ func (p *ProcessorImpl) CheckAutoStart(characterId uint32, f field.Model) ([]uin
 		}
 
 		// Start the quest (auto-start quests still validate requirements)
-		_, _, err = p.Start(characterId, questDef.Id, f, false)
+		// Use startWithDefinition directly since we already have the quest definition
+		_, _, err = p.startWithDefinition(characterId, questDef.Id, questDef, f, false)
 		if err != nil {
 			if !errors.Is(err, ErrQuestAlreadyStarted) && !errors.Is(err, ErrQuestAlreadyCompleted) && !errors.Is(err, ErrStartRequirementsNotMet) && !errors.Is(err, ErrValidationFailed) {
 				p.l.WithError(err).Warnf("Unable to auto-start quest [%d] for character [%d].", questDef.Id, characterId)

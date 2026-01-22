@@ -1,11 +1,15 @@
 package portal
 
 import (
+	"atlas-portals/blocked"
 	"atlas-portals/character"
 	"atlas-portals/kafka/producer"
+	"atlas-portals/portal_actions"
 	"context"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -45,6 +49,15 @@ func Enter(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, ch
 	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, portalId uint32, characterId uint32) {
 		return func(worldId byte, channelId byte, mapId uint32, portalId uint32, characterId uint32) {
 			l.Debugf("Character [%d] entering portal [%d] in map [%d].", characterId, portalId, mapId)
+
+			// Check if the portal is blocked for this character
+			t := tenant.MustFromContext(ctx)
+			if blocked.GetCache().IsBlocked(t.Id(), characterId, mapId, portalId) {
+				l.Debugf("Portal [%d] in map [%d] is blocked for character [%d]. Enabling actions and returning.", portalId, mapId, characterId)
+				character.EnableActions(l)(ctx)(worldId, channelId, characterId)
+				return
+			}
+
 			p, err := GetInMapById(l)(ctx)(mapId, portalId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to locate portal [%d] in map [%d] character [%d] is trying to enter.", portalId, mapId, characterId)
@@ -53,7 +66,7 @@ func Enter(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, ch
 
 			if p.HasScript() {
 				l.Debugf("Portal [%s] has script. Executing [%s] for character [%d].", p.String(), p.ScriptName(), characterId)
-				character.EnableActions(l)(ctx)(worldId, channelId, characterId)
+				portal_actions.ExecuteScript(l)(ctx)(worldId, channelId, mapId, portalId, characterId, p.ScriptName())
 				return
 			}
 

@@ -7,6 +7,7 @@ import (
 	"atlas-channel/equipment"
 	"atlas-channel/inventory"
 	"atlas-channel/pet"
+	"atlas-channel/quest"
 	"github.com/Chronicle20/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas-constants/map"
@@ -52,6 +53,7 @@ type Model struct {
 	equipment          equipment.Model
 	inventory          inventory.Model
 	skills             []skill.Model
+	quests             []quest.Model
 }
 
 func (m Model) Gm() bool {
@@ -254,6 +256,10 @@ func (m Model) Skills() []skill.Model {
 	return m.skills
 }
 
+func (m Model) Quests() []quest.Model {
+	return m.quests
+}
+
 func (m Model) SetInventory(i inventory.Model) Model {
 	eq := equipment.NewModel()
 	ec := compartment.NewBuilder(i.Equipable().Id(), m.Id(), i.Equipable().Type(), i.Equipable().Capacity())
@@ -320,5 +326,9 @@ func (m Model) SetSkills(ms []skill.Model) Model {
 
 func (m Model) SetPets(ms []pet.Model) Model {
 	return CloneModel(m).SetPets(ms).MustBuild()
+}
+
+func (m Model) SetQuests(ms []quest.Model) Model {
+	return CloneModel(m).SetQuests(ms).MustBuild()
 }
 

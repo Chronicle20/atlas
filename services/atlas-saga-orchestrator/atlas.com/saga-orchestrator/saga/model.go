@@ -412,6 +412,15 @@ const (
 	WithdrawFromCashShop         Action = "withdraw_from_cash_shop" // High-level action expanded to accept_to_character + release_from_cash_shop
 	AcceptToCashShop             Action = "accept_to_cash_shop"     // Internal step (created by expansion)
 	ReleaseFromCashShop          Action = "release_from_cash_shop"  // Internal step (created by expansion)
+
+	// Portal-specific actions
+	PlayPortalSound  Action = "play_portal_sound"  // Play portal sound effect to character
+	ShowInfo         Action = "show_info"          // Show info/tutorial effect to character
+	ShowInfoText     Action = "show_info_text"     // Show info text message to character
+	UpdateAreaInfo   Action = "update_area_info"   // Update area info (quest record ex) for character
+	ShowHint         Action = "show_hint"          // Show hint box to character
+	BlockPortal      Action = "block_portal"       // Block a portal for a character (session-based)
+	UnblockPortal    Action = "unblock_portal"     // Unblock a portal for a character
 )
 
 // Step represents a single step within a saga.
@@ -769,6 +778,70 @@ type SendMessagePayload struct {
 	Message     string     `json:"message"`     // The message text to display
 }
 
+// PlayPortalSoundPayload represents the payload required to play the portal sound effect.
+// This is a synchronous action that immediately completes after sending.
+type PlayPortalSoundPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to play sound for
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+}
+
+// ShowInfoPayload represents the payload required to show an info/tutorial effect.
+// This is a synchronous action that immediately completes after sending.
+type ShowInfoPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to show info for
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	Path        string     `json:"path"`        // Path to the info effect (e.g., "Effect/OnUserEff.img/RecoveryUp")
+}
+
+// ShowInfoTextPayload represents the payload required to show a text message to a character.
+// This is a synchronous action that immediately completes after sending.
+type ShowInfoTextPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to show text for
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	Text        string     `json:"text"`        // Text message to display
+}
+
+// UpdateAreaInfoPayload represents the payload required to update area info (quest record ex).
+// This is a synchronous action that immediately completes after sending.
+type UpdateAreaInfoPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to update area info for
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	Area        uint16     `json:"area"`        // Area/info number (questId in the protocol)
+	Info        string     `json:"info"`        // Info string to display
+}
+
+// ShowHintPayload represents the payload required to show a hint box to a character.
+// This is a synchronous action that immediately completes after sending.
+type ShowHintPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to show hint to
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	Hint        string     `json:"hint"`        // Hint text to display
+	Width       uint16     `json:"width"`       // Width of the hint box (0 for auto-calculation)
+	Height      uint16     `json:"height"`      // Height of the hint box (0 for auto-calculation)
+}
+
+// BlockPortalPayload represents the payload required to block a portal for a character.
+// This is a synchronous action that immediately completes after sending the event.
+// The portal will remain blocked for the character until they logout or it is explicitly unblocked.
+type BlockPortalPayload struct {
+	CharacterId uint32 `json:"characterId"` // CharacterId to block the portal for
+	MapId       uint32 `json:"mapId"`       // MapId where the portal is located
+	PortalId    uint32 `json:"portalId"`    // PortalId to block
+}
+
+// UnblockPortalPayload represents the payload required to unblock a portal for a character.
+// This is a synchronous action that immediately completes after sending the event.
+type UnblockPortalPayload struct {
+	CharacterId uint32 `json:"characterId"` // CharacterId to unblock the portal for
+	MapId       uint32 `json:"mapId"`       // MapId where the portal is located
+	PortalId    uint32 `json:"portalId"`    // PortalId to unblock
+}
+
 // DepositToStoragePayload represents the payload required to deposit an item to account storage.
 type DepositToStoragePayload struct {
 	CharacterId   uint32    `json:"characterId"`   // CharacterId initiating the deposit
@@ -1104,6 +1177,48 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case SendMessage:
 		var payload SendMessagePayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case PlayPortalSound:
+		var payload PlayPortalSoundPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case ShowInfo:
+		var payload ShowInfoPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case ShowInfoText:
+		var payload ShowInfoTextPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case UpdateAreaInfo:
+		var payload UpdateAreaInfoPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case ShowHint:
+		var payload ShowHintPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case BlockPortal:
+		var payload BlockPortalPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case UnblockPortal:
+		var payload UnblockPortalPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

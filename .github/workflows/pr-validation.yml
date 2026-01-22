@@ -86,11 +86,12 @@ jobs:
           echo "go-libraries=$GO_LIBRARIES" >> $GITHUB_OUTPUT
 
           # Build Docker services matrix (all services that have Docker images)
+          # Use docker_context if specified, otherwise fall back to path
           if [ "$BUILD_ALL" == "true" ]; then
-            DOCKER_SERVICES=$(jq -c '[.services[] | select(.docker_image != null) | {name: .name, path: .path, docker_image: .docker_image}]' "$CONFIG_FILE")
+            DOCKER_SERVICES=$(jq -c '[.services[] | select(.docker_image != null) | {name: .name, path: .path, docker_context: (.docker_context // .path), docker_image: .docker_image}]' "$CONFIG_FILE")
           else
             CHANGED='${{ steps.detect.outputs.services }}'
-            DOCKER_SERVICES=$(jq -c --argjson changed "$CHANGED" '[.services[] | select(.docker_image != null) | select(.name as $n | $changed | index($n)) | {name: .name, path: .path, docker_image: .docker_image}]' "$CONFIG_FILE")
+            DOCKER_SERVICES=$(jq -c --argjson changed "$CHANGED" '[.services[] | select(.docker_image != null) | select(.name as $n | $changed | index($n)) | {name: .name, path: .path, docker_context: (.docker_context // .path), docker_image: .docker_image}]' "$CONFIG_FILE")
           fi
           echo "docker-services=$DOCKER_SERVICES" >> $GITHUB_OUTPUT
 
@@ -198,7 +199,8 @@ jobs:
       - name: Build Docker image
         uses: ./.github/actions/docker-build
         with:
-          context: ${{ matrix.service.path }}
+          context: ${{ matrix.service.docker_context }}
+          dockerfile: ${{ matrix.service.path }}/Dockerfile
           image-name: ${{ matrix.service.docker_image }}
           tags: pr-${{ github.event.pull_request.number }}
           push: 'false'

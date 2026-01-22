@@ -14,6 +14,7 @@ import (
 	storage2 "atlas-saga-orchestrator/kafka/message/storage"
 	"atlas-saga-orchestrator/monster"
 	"atlas-saga-orchestrator/pet"
+	portalBlocking "atlas-saga-orchestrator/portal"
 	"atlas-saga-orchestrator/quest"
 	"atlas-saga-orchestrator/skill"
 	"atlas-saga-orchestrator/storage"
@@ -42,6 +43,7 @@ type Handler interface {
 	WithMonsterProcessor(monster.Processor) Handler
 	WithConsumableProcessor(consumable.Processor) Handler
 	WithPortalProcessor(portal.Processor) Handler
+	WithPortalBlockingProcessor(portalBlocking.Processor) Handler
 	WithCashshopProcessor(cashshop.Processor) Handler
 	WithSystemMessageProcessor(system_message.Processor) Handler
 	WithQuestProcessor(quest.Processor) Handler
@@ -92,50 +94,59 @@ type Handler interface {
 	handleReleaseFromStorage(s Saga, st Step[any]) error
 	handleAcceptToCashShop(s Saga, st Step[any]) error
 	handleReleaseFromCashShop(s Saga, st Step[any]) error
+	handlePlayPortalSound(s Saga, st Step[any]) error
+	handleShowInfo(s Saga, st Step[any]) error
+	handleShowInfoText(s Saga, st Step[any]) error
+	handleUpdateAreaInfo(s Saga, st Step[any]) error
+	handleShowHint(s Saga, st Step[any]) error
+	handleBlockPortal(s Saga, st Step[any]) error
+	handleUnblockPortal(s Saga, st Step[any]) error
 }
 
 type HandlerImpl struct {
-	l              logrus.FieldLogger
-	ctx            context.Context
-	t              tenant.Model
-	charP          character.Processor
-	compP          compartment.Processor
-	skillP         skill.Processor
-	validP         validation.Processor
-	guildP         guild.Processor
-	inviteP        invite.Processor
-	buddyListP     buddylist.Processor
-	petP           pet.Processor
-	footholdP      foothold.Processor
-	monsterP       monster.Processor
-	consumableP    consumable.Processor
-	portalP        portal.Processor
-	cashshopP      cashshop.Processor
-	systemMessageP system_message.Processor
-	questP         quest.Processor
-	storageP       storage.Processor
+	l               logrus.FieldLogger
+	ctx             context.Context
+	t               tenant.Model
+	charP           character.Processor
+	compP           compartment.Processor
+	skillP          skill.Processor
+	validP          validation.Processor
+	guildP          guild.Processor
+	inviteP         invite.Processor
+	buddyListP      buddylist.Processor
+	petP            pet.Processor
+	footholdP       foothold.Processor
+	monsterP        monster.Processor
+	consumableP     consumable.Processor
+	portalP         portal.Processor
+	portalBlockingP portalBlocking.Processor
+	cashshopP       cashshop.Processor
+	systemMessageP  system_message.Processor
+	questP          quest.Processor
+	storageP        storage.Processor
 }
 
 func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
 	return &HandlerImpl{
-		l:              l,
-		ctx:            ctx,
-		t:              tenant.MustFromContext(ctx),
-		charP:          character.NewProcessor(l, ctx),
-		compP:          compartment.NewProcessor(l, ctx),
-		skillP:         skill.NewProcessor(l, ctx),
-		validP:         validation.NewProcessor(l, ctx),
-		guildP:         guild.NewProcessor(l, ctx),
-		inviteP:        invite.NewProcessor(l, ctx),
-		buddyListP:     buddylist.NewProcessor(l, ctx),
-		petP:           pet.NewProcessor(l, ctx),
-		footholdP:      foothold.NewProcessor(l, ctx),
-		monsterP:       monster.NewProcessor(l, ctx),
-		consumableP:    consumable.NewProcessor(l, ctx),
-		cashshopP:      cashshop.NewProcessor(l, ctx),
-		systemMessageP: system_message.NewProcessor(l, ctx),
-		questP:         quest.NewProcessor(l, ctx),
-		storageP:       storage.NewProcessor(l, ctx),
+		l:               l,
+		ctx:             ctx,
+		t:               tenant.MustFromContext(ctx),
+		charP:           character.NewProcessor(l, ctx),
+		compP:           compartment.NewProcessor(l, ctx),
+		skillP:          skill.NewProcessor(l, ctx),
+		validP:          validation.NewProcessor(l, ctx),
+		guildP:          guild.NewProcessor(l, ctx),
+		inviteP:         invite.NewProcessor(l, ctx),
+		buddyListP:      buddylist.NewProcessor(l, ctx),
+		petP:            pet.NewProcessor(l, ctx),
+		footholdP:       foothold.NewProcessor(l, ctx),
+		monsterP:        monster.NewProcessor(l, ctx),
+		consumableP:     consumable.NewProcessor(l, ctx),
+		portalBlockingP: portalBlocking.NewProcessor(l, ctx),
+		cashshopP:       cashshop.NewProcessor(l, ctx),
+		systemMessageP:  system_message.NewProcessor(l, ctx),
+		questP:          quest.NewProcessor(l, ctx),
+		storageP:        storage.NewProcessor(l, ctx),
 	}
 }
 
@@ -318,22 +329,45 @@ func (h *HandlerImpl) WithConsumableProcessor(consumableP consumable.Processor) 
 
 func (h *HandlerImpl) WithPortalProcessor(portalP portal.Processor) Handler {
 	return &HandlerImpl{
-		l:           h.l,
-		ctx:         h.ctx,
-		t:           h.t,
-		charP:       h.charP,
-		compP:       h.compP,
-		skillP:      h.skillP,
-		validP:      h.validP,
-		guildP:      h.guildP,
-		inviteP:     h.inviteP,
-		buddyListP:  h.buddyListP,
-		petP:        h.petP,
-		footholdP:   h.footholdP,
-		monsterP:    h.monsterP,
-		consumableP: h.consumableP,
-		portalP:     portalP,
-		cashshopP:   h.cashshopP,
+		l:               h.l,
+		ctx:             h.ctx,
+		t:               h.t,
+		charP:           h.charP,
+		compP:           h.compP,
+		skillP:          h.skillP,
+		validP:          h.validP,
+		guildP:          h.guildP,
+		inviteP:         h.inviteP,
+		buddyListP:      h.buddyListP,
+		petP:            h.petP,
+		footholdP:       h.footholdP,
+		monsterP:        h.monsterP,
+		consumableP:     h.consumableP,
+		portalP:         portalP,
+		portalBlockingP: h.portalBlockingP,
+		cashshopP:       h.cashshopP,
+	}
+}
+
+func (h *HandlerImpl) WithPortalBlockingProcessor(portalBlockingP portalBlocking.Processor) Handler {
+	return &HandlerImpl{
+		l:               h.l,
+		ctx:             h.ctx,
+		t:               h.t,
+		charP:           h.charP,
+		compP:           h.compP,
+		skillP:          h.skillP,
+		validP:          h.validP,
+		guildP:          h.guildP,
+		inviteP:         h.inviteP,
+		buddyListP:      h.buddyListP,
+		petP:            h.petP,
+		footholdP:       h.footholdP,
+		monsterP:        h.monsterP,
+		consumableP:     h.consumableP,
+		portalP:         h.portalP,
+		portalBlockingP: portalBlockingP,
+		cashshopP:       h.cashshopP,
 	}
 }
 
@@ -518,6 +552,20 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleAcceptToCashShop, true
 	case ReleaseFromCashShop:
 		return h.handleReleaseFromCashShop, true
+	case PlayPortalSound:
+		return h.handlePlayPortalSound, true
+	case ShowInfo:
+		return h.handleShowInfo, true
+	case ShowInfoText:
+		return h.handleShowInfoText, true
+	case UpdateAreaInfo:
+		return h.handleUpdateAreaInfo, true
+	case ShowHint:
+		return h.handleShowHint, true
+	case BlockPortal:
+		return h.handleBlockPortal, true
+	case UnblockPortal:
+		return h.handleUnblockPortal, true
 	}
 	return nil, false
 }
@@ -1391,6 +1439,154 @@ func (h *HandlerImpl) handleReleaseFromCashShop(s Saga, st Step[any]) error {
 		h.logActionError(s, st, err, "Unable to release asset from cash shop.")
 		return err
 	}
+
+	return nil
+}
+
+// handlePlayPortalSound handles the PlayPortalSound action
+// This is a synchronous action - we send the command and immediately mark complete
+func (h *HandlerImpl) handlePlayPortalSound(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(PlayPortalSoundPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.systemMessageP.PlayPortalSound(s.TransactionId(), byte(payload.WorldId), byte(payload.ChannelId), payload.CharacterId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to play portal sound.")
+		return err
+	}
+
+	// PlayPortalSound is a synchronous command with no async response event
+	// Mark the step as completed immediately after successfully sending the command
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
+// handleShowInfo handles the ShowInfo action
+// This is a synchronous action - we send the command and immediately mark complete
+func (h *HandlerImpl) handleShowInfo(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ShowInfoPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.systemMessageP.ShowInfo(s.TransactionId(), byte(payload.WorldId), byte(payload.ChannelId), payload.CharacterId, payload.Path)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to show info.")
+		return err
+	}
+
+	// ShowInfo is a synchronous command with no async response event
+	// Mark the step as completed immediately after successfully sending the command
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
+// handleShowInfoText handles the ShowInfoText action
+// This is a synchronous action - we send the command and immediately mark complete
+func (h *HandlerImpl) handleShowInfoText(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ShowInfoTextPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.systemMessageP.ShowInfoText(s.TransactionId(), byte(payload.WorldId), byte(payload.ChannelId), payload.CharacterId, payload.Text)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to show info text.")
+		return err
+	}
+
+	// ShowInfoText is a synchronous command with no async response event
+	// Mark the step as completed immediately after successfully sending the command
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
+// handleUpdateAreaInfo handles the UpdateAreaInfo action
+// This is a synchronous action - we send the command and immediately mark complete
+func (h *HandlerImpl) handleUpdateAreaInfo(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(UpdateAreaInfoPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.systemMessageP.UpdateAreaInfo(s.TransactionId(), byte(payload.WorldId), byte(payload.ChannelId), payload.CharacterId, payload.Area, payload.Info)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to update area info.")
+		return err
+	}
+
+	// UpdateAreaInfo is a synchronous command with no async response event
+	// Mark the step as completed immediately after successfully sending the command
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
+// handleShowHint handles the ShowHint action
+// This is a synchronous action - we send the command and immediately mark complete
+func (h *HandlerImpl) handleShowHint(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ShowHintPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.systemMessageP.ShowHint(s.TransactionId(), byte(payload.WorldId), byte(payload.ChannelId), payload.CharacterId, payload.Hint, payload.Width, payload.Height)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to show hint.")
+		return err
+	}
+
+	// ShowHint is a synchronous command with no async response event
+	// Mark the step as completed immediately after successfully sending the command
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
+// handleBlockPortal handles the BlockPortal action
+// This is a synchronous action - we send the event and immediately mark complete
+// The portal will remain blocked until character logout or explicit unblock
+func (h *HandlerImpl) handleBlockPortal(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(BlockPortalPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.portalBlockingP.BlockAndEmit(payload.CharacterId, payload.MapId, payload.PortalId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to block portal.")
+		return err
+	}
+
+	// BlockPortal is a synchronous command with no async response
+	// Mark the step as completed immediately after successfully sending the command
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
+// handleUnblockPortal handles the UnblockPortal action
+// This is a synchronous action - we send the command and immediately mark complete
+func (h *HandlerImpl) handleUnblockPortal(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(UnblockPortalPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.portalBlockingP.UnblockAndEmit(payload.CharacterId, payload.MapId, payload.PortalId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to unblock portal.")
+		return err
+	}
+
+	// UnblockPortal is a synchronous command with no async response
+	// Mark the step as completed immediately after successfully sending the command
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
 
 	return nil
 }

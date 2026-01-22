@@ -3,6 +3,8 @@ package portal
 const (
 	EnvPortalCommandTopic = "COMMAND_TOPIC_PORTAL"
 	CommandTypeEnter      = "ENTER"
+	CommandTypeBlock      = "BLOCK"
+	CommandTypeUnblock    = "UNBLOCK"
 )
 
 type commandEvent[E any] struct {
@@ -15,5 +17,13 @@ type commandEvent[E any] struct {
 }
 
 type enterBody struct {
+	CharacterId uint32 `json:"characterId"`
+}
+
+type blockBody struct {
+	CharacterId uint32 `json:"characterId"`
+}
+
+type unblockBody struct {
 	CharacterId uint32 `json:"characterId"`
 }

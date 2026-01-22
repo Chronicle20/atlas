@@ -2,6 +2,23 @@
   "questId": 2570,
   "npcId": 1090000,
   "questName": "Kyrin's Recommendation (Cannoneer Job Advancement)",
+  "startStateMachine": {
+    "startState": "startQuest",
+    "states": [
+      {
+        "id": "startQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
   "endStateMachine": {
     "startState": "intro",
     "states": [

@@ -46,6 +46,7 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestDistributeSp(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeHP(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeMP(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSetHP(db))))
 			t, _ = topic.EnvProvider(l)(character2.EnvCommandTopicMovement)()
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementEvent(db))))
 			t, _ = topic.EnvProvider(l)(character2.EnvEventTopicCharacterStatus)()
@@ -225,6 +226,17 @@ func handleChangeMP(db *gorm.DB) message.Handler[character2.Command[character2.C
 
 		cha := channel.NewModel(c.WorldId, c.Body.ChannelId)
 		_ = character.NewProcessor(l, ctx, db).ChangeMPAndEmit(c.TransactionId, cha, c.CharacterId, c.Body.Amount)
+	}
+}
+
+func handleSetHP(db *gorm.DB) message.Handler[character2.Command[character2.SetHPBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.SetHPBody]) {
+		if c.Type != character2.CommandSetHP {
+			return
+		}
+
+		cha := channel.NewModel(c.WorldId, c.Body.ChannelId)
+		_ = character.NewProcessor(l, ctx, db).SetHPAndEmit(c.TransactionId, cha, c.CharacterId, c.Body.Amount)
 	}
 }
 

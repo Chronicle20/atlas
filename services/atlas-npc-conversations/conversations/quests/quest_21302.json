@@ -1,6 +1,23 @@
 {
   "questId": 21302,
   "questName": "Aran Third Job Advancement",
+  "startStateMachine": {
+    "startState": "startQuest",
+    "states": [
+      {
+        "id": "startQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
   "endStateMachine": {
     "startState": "end_intro",
     "states": [

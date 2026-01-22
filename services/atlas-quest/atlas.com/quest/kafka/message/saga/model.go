@@ -16,7 +16,7 @@ type Saga struct {
 
 // Step represents a single step in a saga
 type Step struct {
-	Id      string `json:"id"`
+	Id      string `json:"stepId"`
 	Status  Status `json:"status"`
 	Action  Action `json:"action"`
 	Payload any    `json:"payload"`
@@ -56,8 +56,9 @@ type AwardExperiencePayload struct {
 
 // ExperienceDistribution represents how experience is distributed
 type ExperienceDistribution struct {
-	Type   string `json:"type"`
-	Amount int32  `json:"amount"`
+	ExperienceType string `json:"experienceType"`
+	Amount         uint32 `json:"amount"`
+	Attr1          uint32 `json:"attr1"`
 }
 
 // AwardFamePayload represents payload for awarding fame

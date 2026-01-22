@@ -562,6 +562,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleUpdateAreaInfo, true
 	case ShowHint:
 		return h.handleShowHint, true
+	case SetHP:
+		return h.handleSetHP, true
 	case BlockPortal:
 		return h.handleBlockPortal, true
 	case UnblockPortal:
@@ -1133,7 +1135,7 @@ func (h *HandlerImpl) handleCompleteQuest(s Saga, st Step[any]) error {
 	}
 
 	// Selection is not currently used in NPC conversations, default to 0
-	err := h.questP.RequestCompleteQuest(byte(payload.WorldId), payload.CharacterId, payload.QuestId, payload.NpcId, 0, payload.Force)
+	err := h.questP.RequestCompleteQuest(s.TransactionId(), byte(payload.WorldId), payload.CharacterId, payload.QuestId, payload.NpcId, 0, payload.Force)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to complete quest.")
 		return err
@@ -1143,16 +1145,17 @@ func (h *HandlerImpl) handleCompleteQuest(s Saga, st Step[any]) error {
 }
 
 // handleStartQuest handles the StartQuest action
-// Note: This is currently a stub as no quest service exists yet
 func (h *HandlerImpl) handleStartQuest(s Saga, st Step[any]) error {
 	payload, ok := st.Payload().(StartQuestPayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
 
-	// TODO: Implement actual quest start when quest service is available
-	h.l.Debugf("Quest start stub: quest %d started for character %d via NPC %d",
-		payload.QuestId, payload.CharacterId, payload.NpcId)
+	err := h.questP.RequestStartQuest(s.TransactionId(), byte(payload.WorldId), payload.CharacterId, payload.QuestId, payload.NpcId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to start quest.")
+		return err
+	}
 
 	return nil
 }
@@ -1545,6 +1548,24 @@ func (h *HandlerImpl) handleShowHint(s Saga, st Step[any]) error {
 	// Mark the step as completed immediately after successfully sending the command
 	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
 
+	return nil
+}
+
+// handleSetHP handles the SetHP action
+// This is an asynchronous action - we send the command and wait for the status event
+func (h *HandlerImpl) handleSetHP(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(SetHPPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.charP.SetHPAndEmit(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.ChannelId, payload.Amount)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to set HP.")
+		return err
+	}
+
+	// SetHP is an asynchronous command - the consumer will mark completion when the status event arrives
 	return nil
 }
 

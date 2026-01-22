@@ -1,6 +1,23 @@
 {
   "questId": 2126,
   "questName": "Moppie's Supply Box",
+  "startStateMachine": {
+    "startState": "startQuest",
+    "states": [
+      {
+        "id": "startQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
   "endStateMachine": {
     "startState": "checkItem",
     "states": [

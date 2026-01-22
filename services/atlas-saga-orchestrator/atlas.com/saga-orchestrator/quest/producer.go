@@ -5,15 +5,17 @@ import (
 
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 )
 
-func StartQuestCommandProvider(worldId byte, characterId uint32, questId uint32, npcId uint32) model.Provider[[]kafka.Message] {
+func StartQuestCommandProvider(transactionId uuid.UUID, worldId byte, characterId uint32, questId uint32, npcId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &quest.Command[quest.StartCommandBody]{
-		WorldId:     worldId,
-		CharacterId: characterId,
-		Type:        quest.CommandTypeStart,
+		TransactionId: transactionId,
+		WorldId:       worldId,
+		CharacterId:   characterId,
+		Type:          quest.CommandTypeStart,
 		Body: quest.StartCommandBody{
 			QuestId: questId,
 			NpcId:   npcId,
@@ -22,12 +24,13 @@ func StartQuestCommandProvider(worldId byte, characterId uint32, questId uint32,
 	return producer.SingleMessageProvider(key, value)
 }
 
-func CompleteQuestCommandProvider(worldId byte, characterId uint32, questId uint32, npcId uint32, selection int32, force bool) model.Provider[[]kafka.Message] {
+func CompleteQuestCommandProvider(transactionId uuid.UUID, worldId byte, characterId uint32, questId uint32, npcId uint32, selection int32, force bool) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &quest.Command[quest.CompleteCommandBody]{
-		WorldId:     worldId,
-		CharacterId: characterId,
-		Type:        quest.CommandTypeComplete,
+		TransactionId: transactionId,
+		WorldId:       worldId,
+		CharacterId:   characterId,
+		Type:          quest.CommandTypeComplete,
 		Body: quest.CompleteCommandBody{
 			QuestId:   questId,
 			NpcId:     npcId,
@@ -38,12 +41,13 @@ func CompleteQuestCommandProvider(worldId byte, characterId uint32, questId uint
 	return producer.SingleMessageProvider(key, value)
 }
 
-func ForfeitQuestCommandProvider(worldId byte, characterId uint32, questId uint32) model.Provider[[]kafka.Message] {
+func ForfeitQuestCommandProvider(transactionId uuid.UUID, worldId byte, characterId uint32, questId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &quest.Command[quest.ForfeitCommandBody]{
-		WorldId:     worldId,
-		CharacterId: characterId,
-		Type:        quest.CommandTypeForfeit,
+		TransactionId: transactionId,
+		WorldId:       worldId,
+		CharacterId:   characterId,
+		Type:          quest.CommandTypeForfeit,
 		Body: quest.ForfeitCommandBody{
 			QuestId: questId,
 		},
@@ -51,12 +55,13 @@ func ForfeitQuestCommandProvider(worldId byte, characterId uint32, questId uint3
 	return producer.SingleMessageProvider(key, value)
 }
 
-func UpdateProgressCommandProvider(worldId byte, characterId uint32, questId uint32, infoNumber uint32, progress string) model.Provider[[]kafka.Message] {
+func UpdateProgressCommandProvider(transactionId uuid.UUID, worldId byte, characterId uint32, questId uint32, infoNumber uint32, progress string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &quest.Command[quest.UpdateProgressCommandBody]{
-		WorldId:     worldId,
-		CharacterId: characterId,
-		Type:        quest.CommandTypeUpdateProgress,
+		TransactionId: transactionId,
+		WorldId:       worldId,
+		CharacterId:   characterId,
+		Type:          quest.CommandTypeUpdateProgress,
 		Body: quest.UpdateProgressCommandBody{
 			QuestId:    questId,
 			InfoNumber: infoNumber,

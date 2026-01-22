@@ -5,16 +5,18 @@ import (
 	sagaproducer "atlas-quest/kafka/producer/saga"
 	"atlas-quest/kafka/message/saga"
 	"context"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
 // EventEmitter defines the interface for emitting quest-related events
 type EventEmitter interface {
-	EmitQuestStarted(characterId uint32, worldId byte, questId uint32) error
-	EmitQuestCompleted(characterId uint32, worldId byte, questId uint32) error
-	EmitQuestForfeited(characterId uint32, worldId byte, questId uint32) error
-	EmitProgressUpdated(characterId uint32, worldId byte, questId uint32, infoNumber uint32, progress string) error
+	EmitQuestStarted(transactionId uuid.UUID, characterId uint32, worldId byte, questId uint32, progress string) error
+	EmitQuestCompleted(transactionId uuid.UUID, characterId uint32, worldId byte, questId uint32, completedAt time.Time) error
+	EmitQuestForfeited(transactionId uuid.UUID, characterId uint32, worldId byte, questId uint32) error
+	EmitProgressUpdated(transactionId uuid.UUID, characterId uint32, worldId byte, questId uint32, infoNumber uint32, progress string) error
 	EmitSaga(s saga.Saga) error
 }
 
@@ -29,20 +31,20 @@ func NewKafkaEventEmitter(l logrus.FieldLogger, ctx context.Context) EventEmitte
 	return &KafkaEventEmitter{l: l, ctx: ctx}
 }
 
-func (e *KafkaEventEmitter) EmitQuestStarted(characterId uint32, worldId byte, questId uint32) error {
-	return questproducer.EmitQuestStarted(e.l, e.ctx, characterId, worldId, questId)
+func (e *KafkaEventEmitter) EmitQuestStarted(transactionId uuid.UUID, characterId uint32, worldId byte, questId uint32, progress string) error {
+	return questproducer.EmitQuestStarted(e.l, e.ctx, transactionId, characterId, worldId, questId, progress)
 }
 
-func (e *KafkaEventEmitter) EmitQuestCompleted(characterId uint32, worldId byte, questId uint32) error {
-	return questproducer.EmitQuestCompleted(e.l, e.ctx, characterId, worldId, questId)
+func (e *KafkaEventEmitter) EmitQuestCompleted(transactionId uuid.UUID, characterId uint32, worldId byte, questId uint32, completedAt time.Time) error {
+	return questproducer.EmitQuestCompleted(e.l, e.ctx, transactionId, characterId, worldId, questId, completedAt)
 }
 
-func (e *KafkaEventEmitter) EmitQuestForfeited(characterId uint32, worldId byte, questId uint32) error {
-	return questproducer.EmitQuestForfeited(e.l, e.ctx, characterId, worldId, questId)
+func (e *KafkaEventEmitter) EmitQuestForfeited(transactionId uuid.UUID, characterId uint32, worldId byte, questId uint32) error {
+	return questproducer.EmitQuestForfeited(e.l, e.ctx, transactionId, characterId, worldId, questId)
 }
 
-func (e *KafkaEventEmitter) EmitProgressUpdated(characterId uint32, worldId byte, questId uint32, infoNumber uint32, progress string) error {
-	return questproducer.EmitProgressUpdated(e.l, e.ctx, characterId, worldId, questId, infoNumber, progress)
+func (e *KafkaEventEmitter) EmitProgressUpdated(transactionId uuid.UUID, characterId uint32, worldId byte, questId uint32, infoNumber uint32, progress string) error {
+	return questproducer.EmitProgressUpdated(e.l, e.ctx, transactionId, characterId, worldId, questId, infoNumber, progress)
 }
 
 func (e *KafkaEventEmitter) EmitSaga(s saga.Saga) error {

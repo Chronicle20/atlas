@@ -1,6 +1,23 @@
 {
   "questId": 6036,
   "questName": "Maker Skill - A Surprise Outcome",
+  "startStateMachine": {
+    "startState": "startQuest",
+    "states": [
+      {
+        "id": "startQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
   "endStateMachine": {
     "startState": "greet",
     "states": [

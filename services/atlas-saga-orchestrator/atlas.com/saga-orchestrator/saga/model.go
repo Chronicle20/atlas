@@ -413,6 +413,9 @@ const (
 	AcceptToCashShop             Action = "accept_to_cash_shop"     // Internal step (created by expansion)
 	ReleaseFromCashShop          Action = "release_from_cash_shop"  // Internal step (created by expansion)
 
+	// Character stat actions
+	SetHP Action = "set_hp" // Set character HP to an absolute value
+
 	// Portal-specific actions
 	PlayPortalSound  Action = "play_portal_sound"  // Play portal sound effect to character
 	ShowInfo         Action = "show_info"          // Show info/tutorial effect to character
@@ -750,12 +753,11 @@ type CompleteQuestPayload struct {
 }
 
 // StartQuestPayload represents the payload required to start a quest.
-// Note: This is currently stubbed - actual quest start will be implemented
-// when a quest service is available.
 type StartQuestPayload struct {
-	CharacterId uint32 `json:"characterId"` // CharacterId starting the quest
-	QuestId     uint32 `json:"questId"`     // Quest ID to start
-	NpcId       uint32 `json:"npcId"`       // NPC ID initiating the quest
+	CharacterId uint32   `json:"characterId"` // CharacterId starting the quest
+	WorldId     world.Id `json:"worldId"`     // WorldId associated with the action
+	QuestId     uint32   `json:"questId"`     // Quest ID to start
+	NpcId       uint32   `json:"npcId"`       // NPC ID initiating the quest
 }
 
 // ApplyConsumableEffectPayload represents the payload required to apply consumable item effects to a character.
@@ -823,6 +825,15 @@ type ShowHintPayload struct {
 	Hint        string     `json:"hint"`        // Hint text to display
 	Width       uint16     `json:"width"`       // Width of the hint box (0 for auto-calculation)
 	Height      uint16     `json:"height"`      // Height of the hint box (0 for auto-calculation)
+}
+
+// SetHPPayload represents the payload required to set a character's HP to an absolute value.
+// This is an asynchronous action that completes when the character status event is received.
+type SetHPPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to set HP for
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	Amount      uint16     `json:"amount"`      // Absolute HP value to set (clamped to 0..MaxHP)
 }
 
 // BlockPortalPayload represents the payload required to block a portal for a character.
@@ -1207,6 +1218,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case ShowHint:
 		var payload ShowHintPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case SetHP:
+		var payload SetHPPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

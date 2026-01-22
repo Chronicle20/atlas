@@ -32,6 +32,7 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		var t string
 		t, _ = topic.EnvProvider(l)(asset2.EnvEventTopicStatus)()
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetCreatedEvent)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetDeletedEvent)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetQuantityUpdatedEvent)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetMovedEvent)))
 	}
@@ -137,6 +138,13 @@ func handleAssetCreatedEvent(l logrus.FieldLogger, ctx context.Context, e asset2
 
 	// Complete the current step (either regular creation or CreateAndEquipAsset)
 	_ = sagaProcessor.StepCompleted(e.TransactionId, true)
+}
+
+func handleAssetDeletedEvent(l logrus.FieldLogger, ctx context.Context, e asset2.StatusEvent[asset2.DeletedStatusEventBody]) {
+	if e.Type != asset2.StatusEventTypeDeleted {
+		return
+	}
+	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
 }
 
 func handleAssetQuantityUpdatedEvent(l logrus.FieldLogger, ctx context.Context, e asset2.StatusEvent[asset2.QuantityChangedEventBody]) {

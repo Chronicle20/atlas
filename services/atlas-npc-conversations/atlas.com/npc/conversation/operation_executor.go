@@ -1420,6 +1420,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 		payload := saga.StartQuestPayload{
 			CharacterId: characterId,
+			WorldId:     byte(f.WorldId()),
 			QuestId:     uint32(questIdInt),
 			NpcId:       uint32(npcIdInt),
 		}
@@ -1680,6 +1681,30 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		}
 
 		return stepId, saga.Pending, saga.ShowHint, payload, nil
+
+	case "set_hp":
+		// Format: set_hp
+		// Params: amount (uint16, required) - absolute HP value to set (clamped to 0..MaxHP)
+		// Sets a character's HP to an absolute value
+		// Used for tutorial quests (e.g., qm.getPlayer().updateHp(25) in scripts)
+		amountValue, exists := operation.Params()["amount"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing amount parameter for set_hp operation")
+		}
+
+		amountInt, err := e.evaluateContextValueAsInt(characterId, "amount", amountValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		payload := saga.SetHPPayload{
+			CharacterId: characterId,
+			WorldId:     byte(f.WorldId()),
+			ChannelId:   byte(f.ChannelId()),
+			Amount:      uint16(amountInt),
+		}
+
+		return stepId, saga.Pending, saga.SetHP, payload, nil
 
 	default:
 		return "", "", "", nil, fmt.Errorf("unknown operation type: %s", operation.Type())

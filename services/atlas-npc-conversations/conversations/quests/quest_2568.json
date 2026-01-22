@@ -33,17 +33,17 @@
     ]
   },
   "endStateMachine": {
-    "startState": "emptyDialog",
+    "startState": "completeQuest",
     "states": [
       {
-        "id": "emptyDialog",
-        "type": "dialogue",
-        "dialogue": {
-          "dialogueType": "sendNext",
-          "text": "",
-          "choices": [
-            {"text": "Next", "nextState": null},
-            {"text": "Exit", "nextState": null}
+        "id": "completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
           ]
         }
       }

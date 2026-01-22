@@ -137,10 +137,19 @@ func (p *ProcessorImpl) ValidateEndRequirements(characterId uint32, questDef dat
 	// Item requirements for completion
 	for _, item := range req.Items {
 		if item.Count > 0 {
+			// Player must have at least this many items
 			conditions = append(conditions, ConditionInput{
 				Type:        ItemCondition,
 				Operator:    ">=",
 				Value:       int(item.Count),
+				ReferenceId: item.Id,
+			})
+		} else if item.Count == 0 {
+			// Player must NOT have this item (e.g., consumed it)
+			conditions = append(conditions, ConditionInput{
+				Type:        ItemCondition,
+				Operator:    "=",
+				Value:       0,
 				ReferenceId: item.Id,
 			})
 		}

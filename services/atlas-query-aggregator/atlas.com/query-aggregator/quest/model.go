@@ -174,12 +174,30 @@ type ProgressRestModel struct {
 
 // RestModel represents the REST representation of a quest
 type RestModel struct {
+	Id          uint32              `json:"-"`
 	CharacterId uint32              `json:"characterId"`
 	QuestId     uint32              `json:"questId"`
 	State       State               `json:"state"`
 	StartedAt   time.Time           `json:"startedAt"`
 	CompletedAt time.Time           `json:"completedAt,omitempty"`
 	Progress    []ProgressRestModel `json:"progress"`
+}
+
+func (r RestModel) GetName() string {
+	return "quest-status"
+}
+
+func (r RestModel) GetID() string {
+	return strconv.Itoa(int(r.Id))
+}
+
+func (r *RestModel) SetID(strId string) error {
+	id, err := strconv.Atoi(strId)
+	if err != nil {
+		return err
+	}
+	r.Id = uint32(id)
+	return nil
 }
 
 // Extract transforms a RestModel into a domain Model

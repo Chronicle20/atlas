@@ -14,7 +14,7 @@ const (
 	AwardFame       Action = "award_fame"
 	CreateSkill     Action = "create_skill"
 	UpdateSkill     Action = "update_skill"
-	ConsumeItem     Action = "consume_item"
+	ConsumeItem     Action = "destroy_asset"
 )
 
 // Status represents the status of a saga step
@@ -30,6 +30,7 @@ const (
 type Type string
 
 const (
-	QuestStart    Type = "quest_start"
-	QuestComplete Type = "quest_complete"
+	QuestStart       Type = "quest_start"
+	QuestComplete    Type = "quest_complete"
+	QuestRestoreItem Type = "quest_restore_item"
 )

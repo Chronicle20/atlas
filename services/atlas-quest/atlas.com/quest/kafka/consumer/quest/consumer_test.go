@@ -7,6 +7,7 @@ import (
 	"atlas-quest/test"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 )
@@ -79,7 +80,7 @@ func TestHandleStartQuestCommand_StartsQuest(t *testing.T) {
 
 	if cmd.Type == questmsg.CommandTypeStart {
 		// Kafka commands skip validation
-		_, _, err := processor.Start(cmd.CharacterId, cmd.Body.QuestId, test.CreateTestField(), true)
+		_, _, err := processor.Start(uuid.Nil, cmd.CharacterId, cmd.Body.QuestId, test.CreateTestField(), true)
 		if err != nil {
 			t.Fatalf("processor.Start() unexpected error: %v", err)
 		}
@@ -113,7 +114,7 @@ func TestHandleCompleteQuestCommand_CompletesQuest(t *testing.T) {
 	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// First start the quest
-	_, _, _ = processor.Start(characterId, questId, test.CreateTestField(), true)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true)
 
 	// Simulate COMPLETE command
 	cmd := questmsg.Command[questmsg.CompleteCommandBody]{
@@ -128,7 +129,7 @@ func TestHandleCompleteQuestCommand_CompletesQuest(t *testing.T) {
 	}
 
 	if cmd.Type == questmsg.CommandTypeComplete {
-		_, err := processor.Complete(cmd.CharacterId, cmd.Body.QuestId, test.CreateTestField(), cmd.Body.Force)
+		_, err := processor.Complete(uuid.Nil, cmd.CharacterId, cmd.Body.QuestId, test.CreateTestField(), cmd.Body.Force)
 		if err != nil {
 			t.Fatalf("processor.Complete() unexpected error: %v", err)
 		}
@@ -162,10 +163,10 @@ func TestHandleCompleteQuestCommand_StartsChainedQuest(t *testing.T) {
 	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the first quest
-	_, _, _ = processor.Start(characterId, questId, test.CreateTestField(), true)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true)
 
 	// Complete and check for chain
-	nextId, err := processor.Complete(characterId, questId, test.CreateTestField(), true)
+	nextId, err := processor.Complete(uuid.Nil, characterId, questId, test.CreateTestField(), true)
 	if err != nil {
 		t.Fatalf("processor.Complete() error: %v", err)
 	}
@@ -176,7 +177,7 @@ func TestHandleCompleteQuestCommand_StartsChainedQuest(t *testing.T) {
 
 	// Start the chained quest (as the handler would)
 	if nextId > 0 {
-		_, err = processor.StartChained(characterId, nextId, test.CreateTestField())
+		_, err = processor.StartChained(uuid.Nil, characterId, nextId, test.CreateTestField())
 		if err != nil {
 			t.Fatalf("processor.StartChained() error: %v", err)
 		}
@@ -210,7 +211,7 @@ func TestHandleForfeitQuestCommand_ForfeitsQuest(t *testing.T) {
 	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// First start the quest
-	_, _, _ = processor.Start(characterId, questId, test.CreateTestField(), true)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true)
 
 	// Simulate FORFEIT command
 	cmd := questmsg.Command[questmsg.ForfeitCommandBody]{
@@ -224,7 +225,7 @@ func TestHandleForfeitQuestCommand_ForfeitsQuest(t *testing.T) {
 	}
 
 	if cmd.Type == questmsg.CommandTypeForfeit {
-		err := processor.Forfeit(cmd.CharacterId, cmd.Body.QuestId)
+		err := processor.Forfeit(uuid.Nil, cmd.CharacterId, cmd.Body.QuestId)
 		if err != nil {
 			t.Fatalf("processor.Forfeit() unexpected error: %v", err)
 		}
@@ -257,7 +258,7 @@ func TestHandleUpdateProgressCommand_UpdatesProgress(t *testing.T) {
 	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the quest
-	_, _, _ = processor.Start(characterId, questId, test.CreateTestField(), true)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true)
 
 	// Simulate UPDATE_PROGRESS command
 	cmd := questmsg.Command[questmsg.UpdateProgressCommandBody]{
@@ -273,7 +274,7 @@ func TestHandleUpdateProgressCommand_UpdatesProgress(t *testing.T) {
 	}
 
 	if cmd.Type == questmsg.CommandTypeUpdateProgress {
-		err := processor.SetProgress(cmd.CharacterId, cmd.Body.QuestId, cmd.Body.InfoNumber, cmd.Body.Progress)
+		err := processor.SetProgress(uuid.Nil, cmd.CharacterId, cmd.Body.QuestId, cmd.Body.InfoNumber, cmd.Body.Progress)
 		if err != nil {
 			t.Fatalf("processor.SetProgress() unexpected error: %v", err)
 		}

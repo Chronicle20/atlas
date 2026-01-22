@@ -116,6 +116,7 @@
           "text": "You'll find a Training Center if you exit to the #bleft#k. There, you'll meet #b#p1202006##k. I'm a bit worried because I think he may be struggling with bouts of Alzheimer's, but he spent a long time researching skills to help you. I'm sure you'll learn a thing or two from him.",
           "choices": [
             {"text": "Previous", "nextState": "polearmGiven"},
+            {"text": "Ok", "nextState": null},
             {"text": "Exit", "nextState": null}
           ]
         }

@@ -685,6 +685,13 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 	// Get the handler for this action type
 	handler, exists := p.handle.GetHandler(st.Action())
 	if !exists {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"saga_type":      s.SagaType(),
+			"step_id":        st.StepId(),
+			"action":         st.Action(),
+			"tenant_id":      p.t.Id().String(),
+		}).Error("Unknown action type encountered. Saga cannot be processed.")
 		return fmt.Errorf("unknown action type: %s", st.Action())
 	}
 

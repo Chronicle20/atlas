@@ -22,7 +22,7 @@ type RestModel struct {
 
 // GetName returns the JSON:API type name
 func (r RestModel) GetName() string {
-	return "quests"
+	return "quest-status"
 }
 
 // GetID returns the JSON:API resource ID

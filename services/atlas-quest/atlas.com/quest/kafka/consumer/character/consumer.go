@@ -15,6 +15,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -72,7 +73,8 @@ func handleMapChangedEvent(db *gorm.DB) message.Handler[character.StatusEvent[ch
 			// Check if this quest tracks this map (by having progress with infoNumber = mapId)
 			if _, found := q.GetProgress(targetMapId); found {
 				// Set progress to "1" to indicate the map has been visited
-				err = processor.SetProgress(e.CharacterId, q.QuestId(), targetMapId, "1")
+				// Use uuid.Nil since this is not saga-initiated
+				err = processor.SetProgress(uuid.Nil, e.CharacterId, q.QuestId(), targetMapId, "1")
 				if err != nil {
 					l.WithError(err).Errorf("Unable to update map visit progress for quest [%d] character [%d].", q.QuestId(), e.CharacterId)
 				} else {
@@ -86,7 +88,8 @@ func handleMapChangedEvent(db *gorm.DB) message.Handler[character.StatusEvent[ch
 						l.Infof("Auto-completed quest [%d] for character [%d].", q.QuestId(), e.CharacterId)
 						// Handle quest chain - auto-start next quest if present
 						if nextQuestId > 0 {
-							_, err = processor.StartChained(e.CharacterId, nextQuestId, f)
+							// Use uuid.Nil since this is not saga-initiated
+							_, err = processor.StartChained(uuid.Nil, e.CharacterId, nextQuestId, f)
 							if err != nil {
 								l.WithError(err).Errorf("Error starting chained quest [%d] for character [%d].", nextQuestId, e.CharacterId)
 							}

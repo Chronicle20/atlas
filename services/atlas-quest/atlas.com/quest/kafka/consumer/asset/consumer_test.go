@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 )
@@ -84,11 +85,11 @@ func TestHandleAssetCreatedEvent_IncrementsItemProgress(t *testing.T) {
 	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the quest
-	_, _, _ = processor.Start(characterId, questId, test.CreateTestField(), true)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true)
 
 	// Initialize progress manually (simulating what the handler needs to look for)
 	// Note: Item progress is created on-demand when SetProgress is called
-	_ = processor.SetProgress(characterId, questId, itemId, "0")
+	_ = processor.SetProgress(uuid.Nil, characterId, questId, itemId, "0")
 
 	// Verify initial progress
 	fetched, _ := processor.GetByCharacterIdAndQuestId(characterId, questId)
@@ -122,7 +123,7 @@ func TestHandleAssetCreatedEvent_IncrementsItemProgress(t *testing.T) {
 						quantity = 1
 					}
 					newCount := currentCount + quantity
-					_ = processor.SetProgress(event.CharacterId, q.QuestId(), event.TemplateId, strconv.Itoa(int(newCount)))
+					_ = processor.SetProgress(uuid.Nil, event.CharacterId, q.QuestId(), event.TemplateId, strconv.Itoa(int(newCount)))
 				}
 			}
 		}
@@ -159,10 +160,10 @@ func TestHandleAssetCreatedEvent_QuantityGreaterThanOne(t *testing.T) {
 	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the quest
-	_, _, _ = processor.Start(characterId, questId, test.CreateTestField(), true)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true)
 
 	// Initialize progress
-	_ = processor.SetProgress(characterId, questId, itemId, "0")
+	_ = processor.SetProgress(uuid.Nil, characterId, questId, itemId, "0")
 
 	// Process event with quantity 5
 	event := asset.StatusEvent[asset.CreatedStatusEventBody]{
@@ -184,7 +185,7 @@ func TestHandleAssetCreatedEvent_QuantityGreaterThanOne(t *testing.T) {
 					quantity = 1
 				}
 				newCount := currentCount + quantity
-				_ = processor.SetProgress(event.CharacterId, q.QuestId(), event.TemplateId, strconv.Itoa(int(newCount)))
+				_ = processor.SetProgress(uuid.Nil, event.CharacterId, q.QuestId(), event.TemplateId, strconv.Itoa(int(newCount)))
 			}
 		}
 	}
@@ -220,10 +221,10 @@ func TestHandleAssetCreatedEvent_ZeroQuantityDefaultsToOne(t *testing.T) {
 	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the quest
-	_, _, _ = processor.Start(characterId, questId, test.CreateTestField(), true)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true)
 
 	// Initialize progress
-	_ = processor.SetProgress(characterId, questId, itemId, "0")
+	_ = processor.SetProgress(uuid.Nil, characterId, questId, itemId, "0")
 
 	// Process event with quantity 0 (should default to 1)
 	event := asset.StatusEvent[asset.CreatedStatusEventBody]{
@@ -245,7 +246,7 @@ func TestHandleAssetCreatedEvent_ZeroQuantityDefaultsToOne(t *testing.T) {
 					quantity = 1
 				}
 				newCount := currentCount + quantity
-				_ = processor.SetProgress(event.CharacterId, q.QuestId(), event.TemplateId, strconv.Itoa(int(newCount)))
+				_ = processor.SetProgress(uuid.Nil, event.CharacterId, q.QuestId(), event.TemplateId, strconv.Itoa(int(newCount)))
 			}
 		}
 	}
@@ -282,10 +283,10 @@ func TestHandleAssetCreatedEvent_NoMatchingProgressEntry(t *testing.T) {
 	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the quest
-	_, _, _ = processor.Start(characterId, questId, test.CreateTestField(), true)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true)
 
 	// Initialize progress for tracked item only
-	_ = processor.SetProgress(characterId, questId, trackedItemId, "0")
+	_ = processor.SetProgress(uuid.Nil, characterId, questId, trackedItemId, "0")
 
 	// Process event for untracked item
 	event := asset.StatusEvent[asset.CreatedStatusEventBody]{
@@ -307,7 +308,7 @@ func TestHandleAssetCreatedEvent_NoMatchingProgressEntry(t *testing.T) {
 					quantity = 1
 				}
 				newCount := currentCount + quantity
-				_ = processor.SetProgress(event.CharacterId, q.QuestId(), event.TemplateId, strconv.Itoa(int(newCount)))
+				_ = processor.SetProgress(uuid.Nil, event.CharacterId, q.QuestId(), event.TemplateId, strconv.Itoa(int(newCount)))
 			}
 		}
 	}
@@ -352,10 +353,10 @@ func TestHandleAssetCreatedEvent_AutoComplete(t *testing.T) {
 	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the quest
-	_, _, _ = processor.Start(characterId, questId, test.CreateTestField(), true)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true)
 
 	// Initialize progress for the item
-	_ = processor.SetProgress(characterId, questId, itemId, "0")
+	_ = processor.SetProgress(uuid.Nil, characterId, questId, itemId, "0")
 
 	// Process event (increment progress to meet requirement)
 	event := asset.StatusEvent[asset.CreatedStatusEventBody]{
@@ -377,7 +378,7 @@ func TestHandleAssetCreatedEvent_AutoComplete(t *testing.T) {
 					quantity = 1
 				}
 				newCount := currentCount + quantity
-				_ = processor.SetProgress(event.CharacterId, q.QuestId(), event.TemplateId, strconv.Itoa(int(newCount)))
+				_ = processor.SetProgress(uuid.Nil, event.CharacterId, q.QuestId(), event.TemplateId, strconv.Itoa(int(newCount)))
 
 				// Check auto-complete
 				_, completed, _ := processor.CheckAutoComplete(event.CharacterId, q.QuestId(), test.CreateTestField())
@@ -417,12 +418,12 @@ func TestHandleAssetCreatedEvent_MultipleQuestsTrackingSameItem(t *testing.T) {
 	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start both quests
-	_, _, _ = processor.Start(characterId, questId1, test.CreateTestField(), true)
-	_, _, _ = processor.Start(characterId, questId2, test.CreateTestField(), true)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId1, test.CreateTestField(), true)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId2, test.CreateTestField(), true)
 
 	// Initialize progress for both
-	_ = processor.SetProgress(characterId, questId1, itemId, "0")
-	_ = processor.SetProgress(characterId, questId2, itemId, "0")
+	_ = processor.SetProgress(uuid.Nil, characterId, questId1, itemId, "0")
+	_ = processor.SetProgress(uuid.Nil, characterId, questId2, itemId, "0")
 
 	// Process event
 	event := asset.StatusEvent[asset.CreatedStatusEventBody]{
@@ -444,7 +445,7 @@ func TestHandleAssetCreatedEvent_MultipleQuestsTrackingSameItem(t *testing.T) {
 					quantity = 1
 				}
 				newCount := currentCount + quantity
-				_ = processor.SetProgress(event.CharacterId, q.QuestId(), event.TemplateId, strconv.Itoa(int(newCount)))
+				_ = processor.SetProgress(uuid.Nil, event.CharacterId, q.QuestId(), event.TemplateId, strconv.Itoa(int(newCount)))
 			}
 		}
 	}

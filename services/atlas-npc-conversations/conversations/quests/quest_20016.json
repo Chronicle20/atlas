@@ -219,6 +219,7 @@
           "text": "Take the portal on the left to reach the Training Forest. There, you will find #p1102000#, the Training Instructor, who will teach you how to become stronger. I don't want to find you wandering around aimlessly until you reach Lv. 10, you hear?",
           "choices": [
             {"text": "Previous", "nextState": "dialogue11"},
+            {"text": "Ok", "nextState": null},
             {"text": "Exit", "nextState": null}
           ]
         }

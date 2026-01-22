@@ -7,6 +7,7 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+	"time"
 
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -52,18 +53,18 @@ func handleQuestStarted(sc server.Model, wp writer.Producer) message.Handler[que
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, announceQuestStarted(l)(ctx)(wp)(e.Body.QuestId))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, announceQuestStarted(l)(ctx)(wp)(e.Body.QuestId, e.Body.Progress))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce quest [%d] started for character [%d].", e.Body.QuestId, e.CharacterId)
 		}
 	}
 }
 
-func announceQuestStarted(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(questId uint32) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(questId uint32) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(questId uint32) model.Operator[session.Model] {
-			return func(questId uint32) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.CharacterStatusMessage)(writer.CharacterStatusMessageOperationUpdateQuestRecordBody(l)(uint16(questId), ""))
+func announceQuestStarted(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(questId uint32, progress string) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(questId uint32, progress string) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(questId uint32, progress string) model.Operator[session.Model] {
+			return func(questId uint32, progress string) model.Operator[session.Model] {
+				return session.Announce(l)(ctx)(wp)(writer.CharacterStatusMessage)(writer.CharacterStatusMessageOperationUpdateQuestRecordBody(l)(uint16(questId), progress))
 			}
 		}
 	}
@@ -79,18 +80,18 @@ func handleQuestCompleted(sc server.Model, wp writer.Producer) message.Handler[q
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, announceQuestCompleted(l)(ctx)(wp)(e.Body.QuestId))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, announceQuestCompleted(l)(ctx)(wp)(e.Body.QuestId, e.Body.CompletedAt))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce quest [%d] completed for character [%d].", e.Body.QuestId, e.CharacterId)
 		}
 	}
 }
 
-func announceQuestCompleted(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(questId uint32) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(questId uint32) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(questId uint32) model.Operator[session.Model] {
-			return func(questId uint32) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.CharacterStatusMessage)(writer.CharacterStatusMessageOperationCompleteQuestRecordBody(l)(uint16(questId)))
+func announceQuestCompleted(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(questId uint32, completedAt time.Time) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(questId uint32, completedAt time.Time) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(questId uint32, completedAt time.Time) model.Operator[session.Model] {
+			return func(questId uint32, completedAt time.Time) model.Operator[session.Model] {
+				return session.Announce(l)(ctx)(wp)(writer.CharacterStatusMessage)(writer.CharacterStatusMessageOperationCompleteQuestRecordBody(l)(uint16(questId), completedAt))
 			}
 		}
 	}

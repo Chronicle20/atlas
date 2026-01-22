@@ -8,7 +8,17 @@ import (
 	"strings"
 )
 
-const ConversationsPath = "/conversations/npc"
+const defaultConversationsPath = "/conversations/npc"
+
+// getConversationsPath returns the path to the NPC conversations directory.
+// It reads from the NPC_CONVERSATIONS_PATH environment variable, falling back
+// to the default path if not set.
+func getConversationsPath() string {
+	if path := os.Getenv("NPC_CONVERSATIONS_PATH"); path != "" {
+		return path
+	}
+	return defaultConversationsPath
+}
 
 // SeedResult represents the result of a seed operation
 type SeedResult struct {
@@ -25,7 +35,8 @@ func LoadConversationFiles() ([]RestModel, []error) {
 	var models []RestModel
 	var errors []error
 
-	entries, err := os.ReadDir(ConversationsPath)
+	conversationsPath := getConversationsPath()
+	entries, err := os.ReadDir(conversationsPath)
 	if err != nil {
 		return nil, []error{fmt.Errorf("failed to read conversations directory: %w", err)}
 	}
@@ -39,7 +50,7 @@ func LoadConversationFiles() ([]RestModel, []error) {
 			continue
 		}
 
-		filePath := filepath.Join(ConversationsPath, entry.Name())
+		filePath := filepath.Join(conversationsPath, entry.Name())
 		data, err := os.ReadFile(filePath)
 		if err != nil {
 			errors = append(errors, fmt.Errorf("%s: failed to read file: %w", entry.Name(), err))

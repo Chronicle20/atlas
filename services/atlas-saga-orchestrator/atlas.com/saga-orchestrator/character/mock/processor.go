@@ -35,6 +35,8 @@ type ProcessorMock struct {
 	ChangeSkinAndEmitFunc      func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, styleId byte) error
 	ChangeSkinFunc             func(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, styleId byte) error
 	RequestCreateCharacterFunc func(transactionId uuid.UUID, accountId uint32, worldId byte, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id) error
+	SetHPAndEmitFunc           func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount uint16) error
+	SetHPFunc                  func(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount uint16) error
 }
 
 // WarpRandomAndEmit is a mock implementation of the character.Processor.WarpRandomAndEmit method
@@ -223,4 +225,22 @@ func (m *ProcessorMock) RequestCreateCharacter(transactionId uuid.UUID, accountI
 		return m.RequestCreateCharacterFunc(transactionId, accountId, worldId, name, level, strength, dexterity, intelligence, luck, hp, mp, jobId, gender, face, hair, skin, mapId)
 	}
 	return nil
+}
+
+// SetHPAndEmit is a mock implementation of the character.Processor.SetHPAndEmit method
+func (m *ProcessorMock) SetHPAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount uint16) error {
+	if m.SetHPAndEmitFunc != nil {
+		return m.SetHPAndEmitFunc(transactionId, worldId, characterId, channelId, amount)
+	}
+	return nil
+}
+
+// SetHP is a mock implementation of the character.Processor.SetHP method
+func (m *ProcessorMock) SetHP(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount uint16) error {
+	if m.SetHPFunc != nil {
+		return m.SetHPFunc(mb)
+	}
+	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount uint16) error {
+		return nil
+	}
 }

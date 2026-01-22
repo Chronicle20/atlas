@@ -34,6 +34,7 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCharacterCreatedEvent)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCharacterCreationFailedEvent)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCharacterMesoErrorEvent)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCharacterStatChangedEvent)))
 	}
 }
 
@@ -116,4 +117,11 @@ func handleCharacterMesoErrorEvent(l logrus.FieldLogger, ctx context.Context, e 
 	}).Error("Character meso operation error occurred, marking saga step as failed")
 
 	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, false)
+}
+
+func handleCharacterStatChangedEvent(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventStatChangedBody]) {
+	if e.Type != character2.StatusEventTypeStatChanged {
+		return
+	}
+	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
 }

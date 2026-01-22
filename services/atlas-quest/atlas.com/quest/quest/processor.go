@@ -9,12 +9,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand"
 	"strconv"
 	"time"
 
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -44,16 +46,18 @@ type Processor interface {
 	// Returns the quest model and any failed conditions (empty if validation passed)
 	// field is needed for exp/meso start actions
 	// If skipValidation is true, start requirements are not checked
-	Start(characterId uint32, questId uint32, f field.Model, skipValidation bool) (Model, []string, error)
+	// transactionId is used for saga correlation (use uuid.Nil for non-saga initiated starts)
+	Start(transactionId uuid.UUID, characterId uint32, questId uint32, f field.Model, skipValidation bool) (Model, []string, error)
 	// StartChained starts a quest as part of a chain (skips interval check but still validates)
-	StartChained(characterId uint32, questId uint32, f field.Model) (Model, error)
+	StartChained(transactionId uuid.UUID, characterId uint32, questId uint32, f field.Model) (Model, error)
 	// Complete completes a quest with validation and processes rewards via saga
 	// Returns the next quest ID if this is part of a chain (0 if no chain)
 	// field is needed for meso/exp/fame rewards
 	// If skipValidation is true, end requirements are not checked
-	Complete(characterId uint32, questId uint32, f field.Model, skipValidation bool) (uint32, error)
-	Forfeit(characterId uint32, questId uint32) error
-	SetProgress(characterId uint32, questId uint32, infoNumber uint32, progress string) error
+	// transactionId is used for saga correlation (use uuid.Nil for non-saga initiated completes)
+	Complete(transactionId uuid.UUID, characterId uint32, questId uint32, f field.Model, skipValidation bool) (uint32, error)
+	Forfeit(transactionId uuid.UUID, characterId uint32, questId uint32) error
+	SetProgress(transactionId uuid.UUID, characterId uint32, questId uint32, infoNumber uint32, progress string) error
 	DeleteByCharacterId(characterId uint32) error
 	// GetQuestDefinition fetches the quest definition from atlas-data
 	GetQuestDefinition(questId uint32) (dataquest.RestModel, error)
@@ -144,7 +148,7 @@ func (p *ProcessorImpl) GetByCharacterIdAndState(characterId uint32, state State
 	return p.ByCharacterIdAndStateProvider(characterId, state)()
 }
 
-func (p *ProcessorImpl) Start(characterId uint32, questId uint32, f field.Model, skipValidation bool) (Model, []string, error) {
+func (p *ProcessorImpl) Start(transactionId uuid.UUID, characterId uint32, questId uint32, f field.Model, skipValidation bool) (Model, []string, error) {
 	// Fetch quest definition to check interval and time limit
 	questDef, err := p.dataProcessor.GetQuestDefinition(questId)
 	if err != nil {
@@ -152,12 +156,12 @@ func (p *ProcessorImpl) Start(characterId uint32, questId uint32, f field.Model,
 		return Model{}, nil, fmt.Errorf("unable to fetch quest definition: %w", err)
 	}
 
-	return p.startWithDefinition(characterId, questId, questDef, f, skipValidation)
+	return p.startWithDefinition(transactionId, characterId, questId, questDef, f, skipValidation)
 }
 
 // startWithDefinition starts a quest using the provided quest definition
 // This is used internally when the quest definition is already available (e.g., from CheckAutoStart)
-func (p *ProcessorImpl) startWithDefinition(characterId uint32, questId uint32, questDef dataquest.RestModel, f field.Model, skipValidation bool) (Model, []string, error) {
+func (p *ProcessorImpl) startWithDefinition(transactionId uuid.UUID, characterId uint32, questId uint32, questDef dataquest.RestModel, f field.Model, skipValidation bool) (Model, []string, error) {
 	// Validate start requirements (unless skipped)
 	if !skipValidation {
 		passed, failedConditions, err := p.validationProcessor.ValidateStartRequirements(characterId, questDef)
@@ -183,12 +187,19 @@ func (p *ProcessorImpl) startWithDefinition(characterId uint32, questId uint32, 
 		// Don't fail the quest start, just log the error
 	}
 
+	// Reload the quest to get the full progress after initialization
+	updated, err := p.GetByCharacterIdAndQuestId(characterId, questId)
+	if err != nil {
+		p.l.WithError(err).Warnf("Unable to reload quest [%d] after start for character [%d].", questId, characterId)
+		updated = m
+	}
+
 	// Emit quest started event
-	if err := p.eventEmitter.EmitQuestStarted(characterId, byte(f.WorldId()), questId); err != nil {
+	if err := p.eventEmitter.EmitQuestStarted(transactionId, characterId, byte(f.WorldId()), questId, updated.ProgressString()); err != nil {
 		p.l.WithError(err).Warnf("Unable to emit quest started event for quest [%d] character [%d].", questId, characterId)
 	}
 
-	return m, nil, nil
+	return updated, nil, nil
 }
 
 // startCore handles the core quest start logic without validation or action processing
@@ -234,6 +245,7 @@ func (p *ProcessorImpl) startCore(characterId uint32, questId uint32, questDef d
 	}
 
 	// Collect mob and map requirements for progress initialization
+	// Note: Item tracking is handled client-side, not server-side
 	var mobIds []uint32
 	var mapIds []uint32
 
@@ -248,8 +260,8 @@ func (p *ProcessorImpl) startCore(characterId uint32, questId uint32, questDef d
 	var m Model
 	txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
 		var err error
-		// If quest was previously completed (repeatable), restart it
-		if existing.Id() > 0 && existing.State() == StateCompleted {
+		// If quest record exists (completed or forfeited), restart it; otherwise create new
+		if existing.Id() > 0 {
 			m, err = restart(tx, p.t.Id(), existing.Id(), expirationTime)
 		} else {
 			m, err = create(tx, p.t, characterId, questId, expirationTime)
@@ -277,7 +289,7 @@ func (p *ProcessorImpl) startCore(characterId uint32, questId uint32, questDef d
 	return m, nil
 }
 
-func (p *ProcessorImpl) StartChained(characterId uint32, questId uint32, f field.Model) (Model, error) {
+func (p *ProcessorImpl) StartChained(transactionId uuid.UUID, characterId uint32, questId uint32, f field.Model) (Model, error) {
 	// Chained quests skip interval checking but still validate and process start actions
 	questDef, err := p.dataProcessor.GetQuestDefinition(questId)
 	if err != nil {
@@ -311,13 +323,20 @@ func (p *ProcessorImpl) StartChained(characterId uint32, questId uint32, f field
 		p.l.WithError(err).Warnf("Unable to process start actions for chained quest [%d].", questId)
 	}
 
+	// Reload the quest to get the full progress after initialization
+	updated, err := p.GetByCharacterIdAndQuestId(characterId, questId)
+	if err != nil {
+		p.l.WithError(err).Warnf("Unable to reload chained quest [%d] after start for character [%d].", questId, characterId)
+		updated = m
+	}
+
 	// Emit quest started event
-	if err := p.eventEmitter.EmitQuestStarted(characterId, byte(f.WorldId()), questId); err != nil {
+	if err := p.eventEmitter.EmitQuestStarted(transactionId, characterId, byte(f.WorldId()), questId, updated.ProgressString()); err != nil {
 		p.l.WithError(err).Warnf("Unable to emit quest started event for chained quest [%d] character [%d].", questId, characterId)
 	}
 
 	p.l.Debugf("Started chained quest [%d] for character [%d].", questId, characterId)
-	return m, nil
+	return updated, nil
 }
 
 // startChainedCore handles chained quest start (skips interval check)
@@ -335,6 +354,7 @@ func (p *ProcessorImpl) startChainedCore(characterId uint32, questId uint32, que
 	}
 
 	// Collect mob and map requirements for progress initialization
+	// Note: Item tracking is handled client-side, not server-side
 	var mobIds []uint32
 	var mapIds []uint32
 	for _, mob := range questDef.EndRequirements.Mobs {
@@ -370,7 +390,7 @@ func (p *ProcessorImpl) startChainedCore(characterId uint32, questId uint32, que
 	return m, nil
 }
 
-func (p *ProcessorImpl) Complete(characterId uint32, questId uint32, f field.Model, skipValidation bool) (uint32, error) {
+func (p *ProcessorImpl) Complete(transactionId uuid.UUID, characterId uint32, questId uint32, f field.Model, skipValidation bool) (uint32, error) {
 	// Fetch quest definition for requirements and rewards
 	questDef, err := p.dataProcessor.GetQuestDefinition(questId)
 	if err != nil {
@@ -390,7 +410,7 @@ func (p *ProcessorImpl) Complete(characterId uint32, questId uint32, f field.Mod
 	}
 
 	// Complete the quest (core logic)
-	nextQuestId, err := p.completeCore(characterId, questId, questDef)
+	nextQuestId, completedAt, err := p.completeCore(characterId, questId, questDef)
 	if err != nil {
 		return 0, err
 	}
@@ -402,7 +422,7 @@ func (p *ProcessorImpl) Complete(characterId uint32, questId uint32, f field.Mod
 	}
 
 	// Emit quest completed event
-	if err := p.eventEmitter.EmitQuestCompleted(characterId, byte(f.WorldId()), questId); err != nil {
+	if err := p.eventEmitter.EmitQuestCompleted(transactionId, characterId, byte(f.WorldId()), questId, completedAt); err != nil {
 		p.l.WithError(err).Warnf("Unable to emit quest completed event for quest [%d] character [%d].", questId, characterId)
 	}
 
@@ -410,35 +430,38 @@ func (p *ProcessorImpl) Complete(characterId uint32, questId uint32, f field.Mod
 }
 
 // completeCore handles the core quest completion logic without validation or reward processing
-func (p *ProcessorImpl) completeCore(characterId uint32, questId uint32, questDef dataquest.RestModel) (uint32, error) {
+func (p *ProcessorImpl) completeCore(characterId uint32, questId uint32, questDef dataquest.RestModel) (uint32, time.Time, error) {
 	existing, err := p.GetByCharacterIdAndQuestId(characterId, questId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to find quest [%d] for character [%d] to complete.", questId, characterId)
-		return 0, err
+		return 0, time.Time{}, err
 	}
 
 	if existing.State() == StateCompleted {
 		p.l.Debugf("Quest [%d] already completed for character [%d].", questId, characterId)
-		return 0, nil
+		return 0, existing.CompletedAt(), nil
 	}
 
 	if existing.State() != StateStarted {
 		p.l.Debugf("Quest [%d] not in started state for character [%d].", questId, characterId)
-		return 0, ErrQuestNotStarted
+		return 0, time.Time{}, ErrQuestNotStarted
 	}
 
 	// Check if quest has expired
 	if existing.IsExpired() {
 		p.l.Debugf("Quest [%d] has expired for character [%d].", questId, characterId)
-		return 0, ErrQuestExpired
+		return 0, time.Time{}, ErrQuestExpired
 	}
 
+	var completedAt time.Time
 	txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
-		return completeQuest(tx, p.t.Id(), existing.Id())
+		var err error
+		completedAt, err = completeQuest(tx, p.t.Id(), existing.Id())
+		return err
 	})
 	if txErr != nil {
 		p.l.WithError(txErr).Errorf("Unable to complete quest [%d] for character [%d].", questId, characterId)
-		return 0, txErr
+		return 0, time.Time{}, txErr
 	}
 
 	p.l.Debugf("Completed quest [%d] for character [%d].", questId, characterId)
@@ -449,10 +472,10 @@ func (p *ProcessorImpl) completeCore(characterId uint32, questId uint32, questDe
 		p.l.Debugf("Quest [%d] has next quest [%d] in chain.", questId, nextQuestId)
 	}
 
-	return nextQuestId, nil
+	return nextQuestId, completedAt, nil
 }
 
-func (p *ProcessorImpl) Forfeit(characterId uint32, questId uint32) error {
+func (p *ProcessorImpl) Forfeit(transactionId uuid.UUID, characterId uint32, questId uint32) error {
 	existing, err := p.GetByCharacterIdAndQuestId(characterId, questId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to find quest [%d] for character [%d] to forfeit.", questId, characterId)
@@ -473,7 +496,7 @@ func (p *ProcessorImpl) Forfeit(characterId uint32, questId uint32) error {
 	}
 
 	// Emit quest forfeited event (worldId is 0 as it's not available in forfeit context)
-	if err := p.eventEmitter.EmitQuestForfeited(characterId, 0, questId); err != nil {
+	if err := p.eventEmitter.EmitQuestForfeited(transactionId, characterId, 0, questId); err != nil {
 		p.l.WithError(err).Warnf("Unable to emit quest forfeited event for quest [%d] character [%d].", questId, characterId)
 	}
 
@@ -481,7 +504,7 @@ func (p *ProcessorImpl) Forfeit(characterId uint32, questId uint32) error {
 	return nil
 }
 
-func (p *ProcessorImpl) SetProgress(characterId uint32, questId uint32, infoNumber uint32, progressValue string) error {
+func (p *ProcessorImpl) SetProgress(transactionId uuid.UUID, characterId uint32, questId uint32, infoNumber uint32, progressValue string) error {
 	existing, err := p.GetByCharacterIdAndQuestId(characterId, questId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to find quest [%d] for character [%d] to set progress.", questId, characterId)
@@ -501,9 +524,20 @@ func (p *ProcessorImpl) SetProgress(characterId uint32, questId uint32, infoNumb
 		return txErr
 	}
 
-	// Emit quest progress updated event (worldId is 0 as it's not available in this context)
-	if err := p.eventEmitter.EmitProgressUpdated(characterId, 0, questId, infoNumber, progressValue); err != nil {
-		p.l.WithError(err).Warnf("Unable to emit quest progress updated event for quest [%d] character [%d].", questId, characterId)
+	// Reload the quest to get the updated progress for emission
+	updated, err := p.GetByCharacterIdAndQuestId(characterId, questId)
+	if err != nil {
+		p.l.WithError(err).Warnf("Unable to reload quest [%d] for character [%d] after progress update.", questId, characterId)
+		// Still emit with just the single value as fallback
+		if err := p.eventEmitter.EmitProgressUpdated(transactionId, characterId, 0, questId, infoNumber, progressValue); err != nil {
+			p.l.WithError(err).Warnf("Unable to emit quest progress updated event for quest [%d] character [%d].", questId, characterId)
+		}
+	} else {
+		// Emit quest progress updated event with the full progress string
+		fullProgress := updated.ProgressString()
+		if err := p.eventEmitter.EmitProgressUpdated(transactionId, characterId, 0, questId, infoNumber, fullProgress); err != nil {
+			p.l.WithError(err).Warnf("Unable to emit quest progress updated event for quest [%d] character [%d].", questId, characterId)
+		}
 	}
 
 	p.l.Debugf("Set progress for quest [%d], infoNumber [%d] for character [%d].", questId, infoNumber, characterId)
@@ -555,7 +589,8 @@ func (p *ProcessorImpl) CheckAutoComplete(characterId uint32, questId uint32, f 
 	}
 
 	// All requirements met, complete the quest (skip external validation as we've already checked locally)
-	nextQuestId, err := p.Complete(characterId, questId, f, true)
+	// Use uuid.Nil since auto-complete is not initiated by a saga
+	nextQuestId, err := p.Complete(uuid.Nil, characterId, questId, f, true)
 	if err != nil {
 		return 0, false, err
 	}
@@ -665,7 +700,8 @@ func (p *ProcessorImpl) CheckAutoStart(characterId uint32, f field.Model) ([]uin
 
 		// Start the quest (auto-start quests still validate requirements)
 		// Use startWithDefinition directly since we already have the quest definition
-		_, _, err = p.startWithDefinition(characterId, questDef.Id, questDef, f, false)
+		// Use uuid.Nil since auto-start is not initiated by a saga
+		_, _, err = p.startWithDefinition(uuid.Nil, characterId, questDef.Id, questDef, f, false)
 		if err != nil {
 			if !errors.Is(err, ErrQuestAlreadyStarted) && !errors.Is(err, ErrQuestAlreadyCompleted) && !errors.Is(err, ErrStartRequirementsNotMet) && !errors.Is(err, ErrValidationFailed) {
 				p.l.WithError(err).Warnf("Unable to auto-start quest [%d] for character [%d].", questDef.Id, characterId)
@@ -693,8 +729,30 @@ func (p *ProcessorImpl) processStartActions(characterId uint32, questId uint32, 
 		}
 	}
 
-	// Award items on start
+	// Process item rewards - separate into random selection pool and unconditional items
+	var randomPool []dataquest.ItemReward
+	var unconditionalItems []dataquest.ItemReward
+
 	for _, item := range actions.Items {
+		if item.Prop >= 0 && item.Count > 0 {
+			// Items with prop >= 0 and positive count are candidates for random selection
+			randomPool = append(randomPool, item)
+		} else {
+			// Items with prop == -1 or negative count are unconditional
+			unconditionalItems = append(unconditionalItems, item)
+		}
+	}
+
+	// If there's a random pool, select one item based on weighted probability
+	if len(randomPool) > 0 {
+		selected := selectRandomItem(randomPool)
+		if selected != nil {
+			builder.AddAwardItem(characterId, selected.Id, uint32(selected.Count))
+		}
+	}
+
+	// Process unconditional items
+	for _, item := range unconditionalItems {
 		if item.Count > 0 {
 			builder.AddAwardItem(characterId, item.Id, uint32(item.Count))
 		} else if item.Count < 0 {
@@ -727,15 +785,30 @@ func (p *ProcessorImpl) processEndActions(characterId uint32, questId uint32, qu
 	// Build saga for end actions
 	builder := sagaproducer.NewBuilder(saga.QuestComplete, fmt.Sprintf("quest_%d", questId))
 
-	// Consume required items (items consumed on completion)
-	for _, item := range questDef.EndRequirements.Items {
-		if item.Count < 0 {
-			builder.AddConsumeItem(characterId, item.Id, uint32(-item.Count))
+	// Process item rewards - separate into random selection pool and unconditional items
+	var randomPool []dataquest.ItemReward
+	var unconditionalItems []dataquest.ItemReward
+
+	for _, item := range actions.Items {
+		if item.Prop >= 0 && item.Count > 0 {
+			// Items with prop >= 0 and positive count are candidates for random selection
+			randomPool = append(randomPool, item)
+		} else {
+			// Items with prop == -1 or negative count are unconditional
+			unconditionalItems = append(unconditionalItems, item)
 		}
 	}
 
-	// Award items
-	for _, item := range actions.Items {
+	// If there's a random pool, select one item based on weighted probability
+	if len(randomPool) > 0 {
+		selected := selectRandomItem(randomPool)
+		if selected != nil {
+			builder.AddAwardItem(characterId, selected.Id, uint32(selected.Count))
+		}
+	}
+
+	// Process unconditional items
+	for _, item := range unconditionalItems {
 		if item.Count > 0 {
 			builder.AddAwardItem(characterId, item.Id, uint32(item.Count))
 		} else if item.Count < 0 {
@@ -770,4 +843,46 @@ func (p *ProcessorImpl) processEndActions(characterId uint32, questId uint32, qu
 	}
 
 	return nil
+}
+
+// selectRandomItem selects one item from the pool based on weighted probability (Prop values)
+func selectRandomItem(pool []dataquest.ItemReward) *dataquest.ItemReward {
+	if len(pool) == 0 {
+		return nil
+	}
+	if len(pool) == 1 {
+		return &pool[0]
+	}
+
+	// Calculate total weight
+	var totalWeight int32
+	for _, item := range pool {
+		weight := item.Prop
+		if weight <= 0 {
+			weight = 1 // Treat 0 as 1 for equal probability
+		}
+		totalWeight += weight
+	}
+
+	if totalWeight <= 0 {
+		// Fallback to first item if weights are invalid
+		return &pool[0]
+	}
+
+	// Generate random number and select item
+	roll := rand.Int31n(totalWeight)
+	var cumulative int32
+	for i := range pool {
+		weight := pool[i].Prop
+		if weight <= 0 {
+			weight = 1
+		}
+		cumulative += weight
+		if roll < cumulative {
+			return &pool[i]
+		}
+	}
+
+	// Fallback (shouldn't reach here)
+	return &pool[len(pool)-1]
 }

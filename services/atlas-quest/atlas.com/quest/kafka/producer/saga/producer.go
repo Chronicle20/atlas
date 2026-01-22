@@ -97,8 +97,8 @@ func (b *Builder) AddAwardExperience(characterId uint32, worldId byte, channelId
 			ChannelId:   channelId,
 			Distributions: []saga.ExperienceDistribution{
 				{
-					Type:   "quest",
-					Amount: amount,
+					ExperienceType: "WHITE",
+					Amount:         uint32(amount),
 				},
 			},
 		},

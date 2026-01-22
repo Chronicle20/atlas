@@ -196,6 +196,7 @@
           "text": "To do so, there's only one thing you can do. Train, train, train. Head to Victoria Island and continue training. Let's make sure you become so powerful that the Black Mage doesn't stand a chance!",
           "choices": [
             {"text": "Previous", "nextState": "lilinMotivates"},
+            {"text": "Ok", "nextState": null},
             {"text": "Exit", "nextState": null}
           ]
         }

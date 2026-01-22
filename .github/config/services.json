@@ -257,7 +257,8 @@
       "type": "go-service",
       "path": "services/atlas-portals",
       "module_path": "services/atlas-portals/atlas.com/portals",
-      "docker_image": "ghcr.io/chronicle20/atlas-portals/atlas-portals"
+      "docker_image": "ghcr.io/chronicle20/atlas-portals/atlas-portals",
+      "docker_context": "."
     },
     {
       "name": "atlas-query-aggregator",

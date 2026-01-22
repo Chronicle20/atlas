@@ -87,8 +87,8 @@ type SayConversationDetail struct {
 func (s *SayConversationDetail) Encode(_ logrus.FieldLogger, _ tenant.Model, _ map[string]interface{}) func(w *response.Writer) {
 	return func(w *response.Writer) {
 		w.WriteAsciiString(s.Message)
-		w.WriteBool(s.Next)
 		w.WriteBool(s.Previous)
+		w.WriteBool(s.Next)
 	}
 }
 

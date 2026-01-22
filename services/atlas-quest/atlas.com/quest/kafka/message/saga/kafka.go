@@ -14,7 +14,7 @@ const (
 	AwardFame       Action = "award_fame"
 	CreateSkill     Action = "create_skill"
 	UpdateSkill     Action = "update_skill"
-	ConsumeItem     Action = "consume_item"
+	ConsumeItem     Action = "destroy_asset"
 )
 
 // Status represents the status of a saga step

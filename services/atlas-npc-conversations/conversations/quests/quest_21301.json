@@ -2,6 +2,23 @@
   "questId": 21301,
   "npcId": 1201002,
   "questName": "Maha - Lost Red Jade",
+  "startStateMachine": {
+    "startState": "startQuest",
+    "states": [
+      {
+        "id": "startQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
   "endStateMachine": {
     "startState": "dialogue1",
     "states": [

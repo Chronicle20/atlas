@@ -2,6 +2,23 @@
   "questId": 21201,
   "npcId": 1201001,
   "questName": "Giant Polearm (Aran's Memory Restoration)",
+  "startStateMachine": {
+    "startState": "startQuest",
+    "states": [
+      {
+        "id": "startQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
   "endStateMachine": {
     "startState": "dialogue1",
     "states": [

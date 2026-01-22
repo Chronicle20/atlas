@@ -16,7 +16,7 @@ type Saga struct {
 
 // Step represents a single step in a saga
 type Step struct {
-	Id      string `json:"id"`
+	Id      string `json:"stepId"`
 	Status  Status `json:"status"`
 	Action  Action `json:"action"`
 	Payload any    `json:"payload"`

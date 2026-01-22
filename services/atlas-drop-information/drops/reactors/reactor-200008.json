@@ -1,0 +1,57 @@
+{
+  "jsonapi": {
+    "version": "1.1"
+  },
+  "data": {
+    "type": "reactors",
+    "id": "200008",
+    "relationships": {
+      "drops": {
+        "data": [
+          {
+            "type": "drops",
+            "id": "200008:4004004"
+          },
+          {
+            "type": "drops",
+            "id": "200008:4020008"
+          }
+        ]
+      }
+    }
+  },
+  "included": [
+    {
+      "type": "drops",
+      "id": "200008:4004004",
+      "attributes": {
+        "itemId": 4004004,
+        "chance": 1
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "200008"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "200008:4020008",
+      "attributes": {
+        "itemId": 4020008,
+        "chance": 1
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "200008"
+          }
+        }
+      }
+    }
+  ]
+}

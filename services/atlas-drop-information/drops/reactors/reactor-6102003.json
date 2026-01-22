@@ -1,0 +1,857 @@
+{
+  "jsonapi": {
+    "version": "1.1"
+  },
+  "data": {
+    "type": "reactors",
+    "id": "6102003",
+    "relationships": {
+      "drops": {
+        "data": [
+          {
+            "type": "drops",
+            "id": "6102003:1472051"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:1442056"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:1072228"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:1322062"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:1092061"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:1452019"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:1492012"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:1092050"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:1402005"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:1052131"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:1462016"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:1332051"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:1102043"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:1102206"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:3010010"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:4032015"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:4032016"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:4032017"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:4161018"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:4161021"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:4001107"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:4161015"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:4161016"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:2022121"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:2044803"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:2044903"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:2290071"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:2290027"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:2290111"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:2290118"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:2290103"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:2290047"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:2290091"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:2290053"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:2290061"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:2290011"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:2290089"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:1382060"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:1442068"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:1452060"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:1102205"
+          },
+          {
+            "type": "drops",
+            "id": "6102003:2022277"
+          }
+        ]
+      }
+    }
+  },
+  "included": [
+    {
+      "type": "drops",
+      "id": "6102003:1472051",
+      "attributes": {
+        "itemId": 1472051,
+        "chance": 25
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:1442056",
+      "attributes": {
+        "itemId": 1442056,
+        "chance": 25
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:1072228",
+      "attributes": {
+        "itemId": 1072228,
+        "chance": 25
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:1322062",
+      "attributes": {
+        "itemId": 1322062,
+        "chance": 25
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:1092061",
+      "attributes": {
+        "itemId": 1092061,
+        "chance": 25
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:1452019",
+      "attributes": {
+        "itemId": 1452019,
+        "chance": 25
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:1492012",
+      "attributes": {
+        "itemId": 1492012,
+        "chance": 25
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:1092050",
+      "attributes": {
+        "itemId": 1092050,
+        "chance": 25
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:1402005",
+      "attributes": {
+        "itemId": 1402005,
+        "chance": 25
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:1052131",
+      "attributes": {
+        "itemId": 1052131,
+        "chance": 25
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:1462016",
+      "attributes": {
+        "itemId": 1462016,
+        "chance": 25
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:1332051",
+      "attributes": {
+        "itemId": 1332051,
+        "chance": 25
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:1102043",
+      "attributes": {
+        "itemId": 1102043,
+        "chance": 50
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:1102206",
+      "attributes": {
+        "itemId": 1102206,
+        "chance": 50
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:3010010",
+      "attributes": {
+        "itemId": 3010010,
+        "chance": 25
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:4032015",
+      "attributes": {
+        "itemId": 4032015,
+        "chance": 25
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:4032016",
+      "attributes": {
+        "itemId": 4032016,
+        "chance": 25
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:4032017",
+      "attributes": {
+        "itemId": 4032017,
+        "chance": 25
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:4161018",
+      "attributes": {
+        "itemId": 4161018,
+        "chance": 25
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:4161021",
+      "attributes": {
+        "itemId": 4161021,
+        "chance": 25
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:4001107",
+      "attributes": {
+        "itemId": 4001107,
+        "chance": 25
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:4161015",
+      "attributes": {
+        "itemId": 4161015,
+        "chance": 25
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:4161016",
+      "attributes": {
+        "itemId": 4161016,
+        "chance": 25
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:2022121",
+      "attributes": {
+        "itemId": 2022121,
+        "chance": 25
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:2044803",
+      "attributes": {
+        "itemId": 2044803,
+        "chance": 25
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:2044903",
+      "attributes": {
+        "itemId": 2044903,
+        "chance": 25
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:2290071",
+      "attributes": {
+        "itemId": 2290071,
+        "chance": 50
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:2290027",
+      "attributes": {
+        "itemId": 2290027,
+        "chance": 50
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:2290111",
+      "attributes": {
+        "itemId": 2290111,
+        "chance": 50
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:2290118",
+      "attributes": {
+        "itemId": 2290118,
+        "chance": 50
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:2290103",
+      "attributes": {
+        "itemId": 2290103,
+        "chance": 50
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:2290047",
+      "attributes": {
+        "itemId": 2290047,
+        "chance": 50
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:2290091",
+      "attributes": {
+        "itemId": 2290091,
+        "chance": 50
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:2290053",
+      "attributes": {
+        "itemId": 2290053,
+        "chance": 50
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:2290061",
+      "attributes": {
+        "itemId": 2290061,
+        "chance": 50
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:2290011",
+      "attributes": {
+        "itemId": 2290011,
+        "chance": 50
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:2290089",
+      "attributes": {
+        "itemId": 2290089,
+        "chance": 50
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:1382060",
+      "attributes": {
+        "itemId": 1382060,
+        "chance": 50
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:1442068",
+      "attributes": {
+        "itemId": 1442068,
+        "chance": 50
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:1452060",
+      "attributes": {
+        "itemId": 1452060,
+        "chance": 50
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:1102205",
+      "attributes": {
+        "itemId": 1102205,
+        "chance": 50
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "6102003:2022277",
+      "attributes": {
+        "itemId": 2022277,
+        "chance": 5
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "6102003"
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "jsonapi": {
+    "version": "1.1"
+  },
+  "data": {
+    "type": "reactors",
+    "id": "9102003",
+    "relationships": {
+      "drops": {
+        "data": [
+          {
+            "type": "drops",
+            "id": "9102003:4001096"
+          }
+        ]
+      }
+    }
+  },
+  "included": [
+    {
+      "type": "drops",
+      "id": "9102003:4001096",
+      "attributes": {
+        "itemId": 4001096,
+        "chance": 3
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "9102003"
+          }
+        }
+      }
+    }
+  ]
+}

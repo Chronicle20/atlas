@@ -62,9 +62,6 @@ func (b *ModelBuilder) Build() (Model, error) {
 	if b.classification == 0 {
 		return Model{}, errors.New("classification is required")
 	}
-	if b.name == "" {
-		return Model{}, errors.New("name is required")
-	}
 	return Model{
 		tenant:         b.tenant,
 		id:             b.id,
@@ -112,6 +109,15 @@ func (b *ModelBuilder) Classification() uint32 {
 func (b *ModelBuilder) SetData(data data.Model) *ModelBuilder {
 	b.data = data
 	return b
+}
+
+func (b *ModelBuilder) SetName(name string) *ModelBuilder {
+	b.name = name
+	return b
+}
+
+func (b *ModelBuilder) Name() string {
+	return b.name
 }
 
 func (b *ModelBuilder) UpdateTime() *ModelBuilder {

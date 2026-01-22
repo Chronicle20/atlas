@@ -186,12 +186,19 @@ func (p *ProcessorImpl) startWithDefinition(transactionId uuid.UUID, characterId
 		// Don't fail the quest start, just log the error
 	}
 
+	// Reload the quest to get the full progress after initialization
+	updated, err := p.GetByCharacterIdAndQuestId(characterId, questId)
+	if err != nil {
+		p.l.WithError(err).Warnf("Unable to reload quest [%d] after start for character [%d].", questId, characterId)
+		updated = m
+	}
+
 	// Emit quest started event
-	if err := p.eventEmitter.EmitQuestStarted(transactionId, characterId, byte(f.WorldId()), questId); err != nil {
+	if err := p.eventEmitter.EmitQuestStarted(transactionId, characterId, byte(f.WorldId()), questId, updated.ProgressString()); err != nil {
 		p.l.WithError(err).Warnf("Unable to emit quest started event for quest [%d] character [%d].", questId, characterId)
 	}
 
-	return m, nil, nil
+	return updated, nil, nil
 }
 
 // startCore handles the core quest start logic without validation or action processing
@@ -237,6 +244,7 @@ func (p *ProcessorImpl) startCore(characterId uint32, questId uint32, questDef d
 	}
 
 	// Collect mob and map requirements for progress initialization
+	// Note: Item tracking is handled client-side, not server-side
 	var mobIds []uint32
 	var mapIds []uint32
 
@@ -251,8 +259,8 @@ func (p *ProcessorImpl) startCore(characterId uint32, questId uint32, questDef d
 	var m Model
 	txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
 		var err error
-		// If quest was previously completed (repeatable), restart it
-		if existing.Id() > 0 && existing.State() == StateCompleted {
+		// If quest record exists (completed or forfeited), restart it; otherwise create new
+		if existing.Id() > 0 {
 			m, err = restart(tx, p.t.Id(), existing.Id(), expirationTime)
 		} else {
 			m, err = create(tx, p.t, characterId, questId, expirationTime)
@@ -314,13 +322,20 @@ func (p *ProcessorImpl) StartChained(transactionId uuid.UUID, characterId uint32
 		p.l.WithError(err).Warnf("Unable to process start actions for chained quest [%d].", questId)
 	}
 
+	// Reload the quest to get the full progress after initialization
+	updated, err := p.GetByCharacterIdAndQuestId(characterId, questId)
+	if err != nil {
+		p.l.WithError(err).Warnf("Unable to reload chained quest [%d] after start for character [%d].", questId, characterId)
+		updated = m
+	}
+
 	// Emit quest started event
-	if err := p.eventEmitter.EmitQuestStarted(transactionId, characterId, byte(f.WorldId()), questId); err != nil {
+	if err := p.eventEmitter.EmitQuestStarted(transactionId, characterId, byte(f.WorldId()), questId, updated.ProgressString()); err != nil {
 		p.l.WithError(err).Warnf("Unable to emit quest started event for chained quest [%d] character [%d].", questId, characterId)
 	}
 
 	p.l.Debugf("Started chained quest [%d] for character [%d].", questId, characterId)
-	return m, nil
+	return updated, nil
 }
 
 // startChainedCore handles chained quest start (skips interval check)
@@ -338,6 +353,7 @@ func (p *ProcessorImpl) startChainedCore(characterId uint32, questId uint32, que
 	}
 
 	// Collect mob and map requirements for progress initialization
+	// Note: Item tracking is handled client-side, not server-side
 	var mobIds []uint32
 	var mapIds []uint32
 	for _, mob := range questDef.EndRequirements.Mobs {
@@ -393,7 +409,7 @@ func (p *ProcessorImpl) Complete(transactionId uuid.UUID, characterId uint32, qu
 	}
 
 	// Complete the quest (core logic)
-	nextQuestId, err := p.completeCore(characterId, questId, questDef)
+	nextQuestId, completedAt, err := p.completeCore(characterId, questId, questDef)
 	if err != nil {
 		return 0, err
 	}
@@ -405,7 +421,7 @@ func (p *ProcessorImpl) Complete(transactionId uuid.UUID, characterId uint32, qu
 	}
 
 	// Emit quest completed event
-	if err := p.eventEmitter.EmitQuestCompleted(transactionId, characterId, byte(f.WorldId()), questId); err != nil {
+	if err := p.eventEmitter.EmitQuestCompleted(transactionId, characterId, byte(f.WorldId()), questId, completedAt); err != nil {
 		p.l.WithError(err).Warnf("Unable to emit quest completed event for quest [%d] character [%d].", questId, characterId)
 	}
 
@@ -413,35 +429,38 @@ func (p *ProcessorImpl) Complete(transactionId uuid.UUID, characterId uint32, qu
 }
 
 // completeCore handles the core quest completion logic without validation or reward processing
-func (p *ProcessorImpl) completeCore(characterId uint32, questId uint32, questDef dataquest.RestModel) (uint32, error) {
+func (p *ProcessorImpl) completeCore(characterId uint32, questId uint32, questDef dataquest.RestModel) (uint32, time.Time, error) {
 	existing, err := p.GetByCharacterIdAndQuestId(characterId, questId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to find quest [%d] for character [%d] to complete.", questId, characterId)
-		return 0, err
+		return 0, time.Time{}, err
 	}
 
 	if existing.State() == StateCompleted {
 		p.l.Debugf("Quest [%d] already completed for character [%d].", questId, characterId)
-		return 0, nil
+		return 0, existing.CompletedAt(), nil
 	}
 
 	if existing.State() != StateStarted {
 		p.l.Debugf("Quest [%d] not in started state for character [%d].", questId, characterId)
-		return 0, ErrQuestNotStarted
+		return 0, time.Time{}, ErrQuestNotStarted
 	}
 
 	// Check if quest has expired
 	if existing.IsExpired() {
 		p.l.Debugf("Quest [%d] has expired for character [%d].", questId, characterId)
-		return 0, ErrQuestExpired
+		return 0, time.Time{}, ErrQuestExpired
 	}
 
+	var completedAt time.Time
 	txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
-		return completeQuest(tx, p.t.Id(), existing.Id())
+		var err error
+		completedAt, err = completeQuest(tx, p.t.Id(), existing.Id())
+		return err
 	})
 	if txErr != nil {
 		p.l.WithError(txErr).Errorf("Unable to complete quest [%d] for character [%d].", questId, characterId)
-		return 0, txErr
+		return 0, time.Time{}, txErr
 	}
 
 	p.l.Debugf("Completed quest [%d] for character [%d].", questId, characterId)
@@ -452,7 +471,7 @@ func (p *ProcessorImpl) completeCore(characterId uint32, questId uint32, questDe
 		p.l.Debugf("Quest [%d] has next quest [%d] in chain.", questId, nextQuestId)
 	}
 
-	return nextQuestId, nil
+	return nextQuestId, completedAt, nil
 }
 
 func (p *ProcessorImpl) Forfeit(transactionId uuid.UUID, characterId uint32, questId uint32) error {
@@ -504,9 +523,20 @@ func (p *ProcessorImpl) SetProgress(transactionId uuid.UUID, characterId uint32,
 		return txErr
 	}
 
-	// Emit quest progress updated event (worldId is 0 as it's not available in this context)
-	if err := p.eventEmitter.EmitProgressUpdated(transactionId, characterId, 0, questId, infoNumber, progressValue); err != nil {
-		p.l.WithError(err).Warnf("Unable to emit quest progress updated event for quest [%d] character [%d].", questId, characterId)
+	// Reload the quest to get the updated progress for emission
+	updated, err := p.GetByCharacterIdAndQuestId(characterId, questId)
+	if err != nil {
+		p.l.WithError(err).Warnf("Unable to reload quest [%d] for character [%d] after progress update.", questId, characterId)
+		// Still emit with just the single value as fallback
+		if err := p.eventEmitter.EmitProgressUpdated(transactionId, characterId, 0, questId, infoNumber, progressValue); err != nil {
+			p.l.WithError(err).Warnf("Unable to emit quest progress updated event for quest [%d] character [%d].", questId, characterId)
+		}
+	} else {
+		// Emit quest progress updated event with the full progress string
+		fullProgress := updated.ProgressString()
+		if err := p.eventEmitter.EmitProgressUpdated(transactionId, characterId, 0, questId, infoNumber, fullProgress); err != nil {
+			p.l.WithError(err).Warnf("Unable to emit quest progress updated event for quest [%d] character [%d].", questId, characterId)
+		}
 	}
 
 	p.l.Debugf("Set progress for quest [%d], infoNumber [%d] for character [%d].", questId, infoNumber, characterId)

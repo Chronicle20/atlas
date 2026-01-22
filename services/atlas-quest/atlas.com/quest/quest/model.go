@@ -80,3 +80,13 @@ func (m Model) GetProgress(infoNumber uint32) (progress.Model, bool) {
 	}
 	return progress.Model{}, false
 }
+
+// ProgressString returns the concatenated progress string for all entries
+// Progress entries are concatenated in order (by their position in the slice)
+func (m Model) ProgressString() string {
+	var result string
+	for _, p := range m.progress {
+		result += p.Progress()
+	}
+	return result
+}

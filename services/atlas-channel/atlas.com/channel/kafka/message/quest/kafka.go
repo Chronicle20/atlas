@@ -1,6 +1,8 @@
 package quest
 
 import (
+	"time"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
@@ -87,11 +89,13 @@ type StatusEvent[E any] struct {
 }
 
 type QuestStartedEventBody struct {
-	QuestId uint32 `json:"questId"`
+	QuestId  uint32 `json:"questId"`
+	Progress string `json:"progress"`
 }
 
 type QuestCompletedEventBody struct {
-	QuestId uint32 `json:"questId"`
+	QuestId     uint32    `json:"questId"`
+	CompletedAt time.Time `json:"completedAt"`
 }
 
 type QuestForfeitedEventBody struct {

@@ -2,10 +2,12 @@ package writer
 
 import (
 	"atlas-channel/socket/model"
+	"strconv"
+	"time"
+
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
-	"strconv"
 )
 
 const (
@@ -102,23 +104,28 @@ func CharacterStatusMessageOperationUpdateQuestRecordBody(l logrus.FieldLogger) 
 			w.WriteShort(questId)
 			w.WriteByte(1)
 			w.WriteAsciiString(info)
-			w.WriteByte(0)  // TODO ??
-			w.WriteInt32(0) // TODO ??
 			return w.Bytes()
 		}
 	}
 }
 
-func CharacterStatusMessageOperationCompleteQuestRecordBody(l logrus.FieldLogger) func(questId uint16) BodyProducer {
-	return func(questId uint16) BodyProducer {
+func CharacterStatusMessageOperationCompleteQuestRecordBody(l logrus.FieldLogger) func(questId uint16, completedAt time.Time) BodyProducer {
+	return func(questId uint16, completedAt time.Time) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationQuestRecord))
 			w.WriteShort(questId)
 			w.WriteByte(2)
-			w.WriteLong(0) // TODO completion time
+			w.WriteInt64(characterStatusMsTime(completedAt))
 			return w.Bytes()
 		}
 	}
+}
+
+func characterStatusMsTime(t time.Time) int64 {
+	if t.IsZero() {
+		return -1
+	}
+	return t.Unix()*int64(10000000) + int64(116444736000000000)
 }
 
 func CharacterStatusMessageOperationCashItemExpireBody(l logrus.FieldLogger) func(itemId uint32) BodyProducer {

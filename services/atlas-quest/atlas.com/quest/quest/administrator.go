@@ -53,19 +53,23 @@ func restart(db *gorm.DB, tenantId uuid.UUID, id uint32, expirationTime time.Tim
 	return Make(updated)
 }
 
-func completeQuest(db *gorm.DB, tenantId uuid.UUID, id uint32) error {
+func completeQuest(db *gorm.DB, tenantId uuid.UUID, id uint32) (time.Time, error) {
 	entity, err := byIdEntityProvider(tenantId, id)(db)()
 	if err != nil {
-		return err
+		return time.Time{}, err
 	}
 
+	completedAt := time.Now()
 	updated := CloneEntity(entity).
 		SetState(StateCompleted).
-		SetCompletedAt(time.Now()).
+		SetCompletedAt(completedAt).
 		SetCompletedCount(entity.CompletedCount + 1).
 		Build()
 
-	return db.Save(&updated).Error
+	if err := db.Save(&updated).Error; err != nil {
+		return time.Time{}, err
+	}
+	return completedAt, nil
 }
 
 func forfeitQuest(db *gorm.DB, tenantId uuid.UUID, id uint32) error {
@@ -171,6 +175,7 @@ func deleteByCharacterIdWithProgress(db *gorm.DB, tenantId uuid.UUID, characterI
 // initializeProgress creates initial progress entries for mob kills and map visits
 // mobIds is a list of mob IDs to track (for kill requirements)
 // mapIds is a list of map IDs to track (for medal/fieldEnter requirements)
+// Note: Item tracking is handled client-side, not server-side
 func initializeProgress(db *gorm.DB, tenantId uuid.UUID, questStatusId uint32, mobIds []uint32, mapIds []uint32) error {
 	// Initialize mob progress entries (with "000" for 0 kills)
 	for _, mobId := range mobIds {

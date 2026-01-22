@@ -243,6 +243,7 @@
           "text": "Now report back to #p1201000#. I know she'll be ecstatic when she sees the progress you've made!",
           "choices": [
             {"text": "Previous", "nextState": "rewardDialogue"},
+            {"text": "Ok", "nextState": null},
             {"text": "Exit", "nextState": null}
           ]
         }

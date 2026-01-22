@@ -294,8 +294,10 @@ func (d DialogueModel) ChoiceFromAction(action byte) (ChoiceModel, bool) {
 	} else if d.dialogueType == SendPrev {
 		if action == 255 {
 			choiceText = "Exit"
-		} else {
+		} else if action == 0 {
 			choiceText = "Previous"
+		} else {
+			choiceText = "Ok"
 		}
 	} else if d.dialogueType == SendOk {
 		if action == 255 {
@@ -398,8 +400,8 @@ func (b *DialogueBuilder) Build() (*DialogueModel, error) {
 			return nil, errors.New("sendNextPrev requires exactly 3 choices")
 		}
 	case SendPrev:
-		if len(b.choices) != 2 {
-			return nil, errors.New("sendPrev requires exactly 2 choices")
+		if len(b.choices) != 3 {
+			return nil, errors.New("sendPrev requires exactly 3 choices")
 		}
 	case SendYesNo:
 		if len(b.choices) != 3 {

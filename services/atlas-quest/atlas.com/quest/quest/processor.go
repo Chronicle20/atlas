@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand"
 	"strconv"
 	"time"
 
@@ -728,8 +729,30 @@ func (p *ProcessorImpl) processStartActions(characterId uint32, questId uint32, 
 		}
 	}
 
-	// Award items on start
+	// Process item rewards - separate into random selection pool and unconditional items
+	var randomPool []dataquest.ItemReward
+	var unconditionalItems []dataquest.ItemReward
+
 	for _, item := range actions.Items {
+		if item.Prop >= 0 && item.Count > 0 {
+			// Items with prop >= 0 and positive count are candidates for random selection
+			randomPool = append(randomPool, item)
+		} else {
+			// Items with prop == -1 or negative count are unconditional
+			unconditionalItems = append(unconditionalItems, item)
+		}
+	}
+
+	// If there's a random pool, select one item based on weighted probability
+	if len(randomPool) > 0 {
+		selected := selectRandomItem(randomPool)
+		if selected != nil {
+			builder.AddAwardItem(characterId, selected.Id, uint32(selected.Count))
+		}
+	}
+
+	// Process unconditional items
+	for _, item := range unconditionalItems {
 		if item.Count > 0 {
 			builder.AddAwardItem(characterId, item.Id, uint32(item.Count))
 		} else if item.Count < 0 {
@@ -762,15 +785,30 @@ func (p *ProcessorImpl) processEndActions(characterId uint32, questId uint32, qu
 	// Build saga for end actions
 	builder := sagaproducer.NewBuilder(saga.QuestComplete, fmt.Sprintf("quest_%d", questId))
 
-	// Consume required items (items consumed on completion)
-	for _, item := range questDef.EndRequirements.Items {
-		if item.Count < 0 {
-			builder.AddConsumeItem(characterId, item.Id, uint32(-item.Count))
+	// Process item rewards - separate into random selection pool and unconditional items
+	var randomPool []dataquest.ItemReward
+	var unconditionalItems []dataquest.ItemReward
+
+	for _, item := range actions.Items {
+		if item.Prop >= 0 && item.Count > 0 {
+			// Items with prop >= 0 and positive count are candidates for random selection
+			randomPool = append(randomPool, item)
+		} else {
+			// Items with prop == -1 or negative count are unconditional
+			unconditionalItems = append(unconditionalItems, item)
 		}
 	}
 
-	// Award items
-	for _, item := range actions.Items {
+	// If there's a random pool, select one item based on weighted probability
+	if len(randomPool) > 0 {
+		selected := selectRandomItem(randomPool)
+		if selected != nil {
+			builder.AddAwardItem(characterId, selected.Id, uint32(selected.Count))
+		}
+	}
+
+	// Process unconditional items
+	for _, item := range unconditionalItems {
 		if item.Count > 0 {
 			builder.AddAwardItem(characterId, item.Id, uint32(item.Count))
 		} else if item.Count < 0 {
@@ -805,4 +843,46 @@ func (p *ProcessorImpl) processEndActions(characterId uint32, questId uint32, qu
 	}
 
 	return nil
+}
+
+// selectRandomItem selects one item from the pool based on weighted probability (Prop values)
+func selectRandomItem(pool []dataquest.ItemReward) *dataquest.ItemReward {
+	if len(pool) == 0 {
+		return nil
+	}
+	if len(pool) == 1 {
+		return &pool[0]
+	}
+
+	// Calculate total weight
+	var totalWeight int32
+	for _, item := range pool {
+		weight := item.Prop
+		if weight <= 0 {
+			weight = 1 // Treat 0 as 1 for equal probability
+		}
+		totalWeight += weight
+	}
+
+	if totalWeight <= 0 {
+		// Fallback to first item if weights are invalid
+		return &pool[0]
+	}
+
+	// Generate random number and select item
+	roll := rand.Int31n(totalWeight)
+	var cumulative int32
+	for i := range pool {
+		weight := pool[i].Prop
+		if weight <= 0 {
+			weight = 1
+		}
+		cumulative += weight
+		if roll < cumulative {
+			return &pool[i]
+		}
+	}
+
+	// Fallback (shouldn't reach here)
+	return &pool[len(pool)-1]
 }

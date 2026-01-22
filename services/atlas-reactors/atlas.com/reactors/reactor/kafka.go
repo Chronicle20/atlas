@@ -5,6 +5,7 @@ import "time"
 const (
 	EnvCommandTopic   = "COMMAND_TOPIC_REACTOR"
 	CommandTypeCreate = "CREATE"
+	CommandTypeHit    = "HIT"
 )
 
 type Command[E any] struct {
@@ -25,10 +26,17 @@ type CreateCommandBody struct {
 	Direction      byte   `json:"direction"`
 }
 
+type HitCommandBody struct {
+	ReactorId uint32 `json:"reactorId"`
+	Stance    uint16 `json:"stance"`
+	SkillId   uint32 `json:"skillId"`
+}
+
 const (
 	EnvEventStatusTopic      = "EVENT_TOPIC_REACTOR_STATUS"
 	EventStatusTypeCreated   = "CREATED"
 	EventStatusTypeDestroyed = "DESTROYED"
+	EventStatusTypeHit       = "HIT"
 )
 
 type statusEvent[E any] struct {
@@ -56,4 +64,13 @@ type destroyedStatusEventBody struct {
 	State int8  `json:"state"`
 	X     int16 `json:"x"`
 	Y     int16 `json:"y"`
+}
+
+type hitStatusEventBody struct {
+	Classification uint32 `json:"classification"`
+	State          int8   `json:"state"`
+	X              int16  `json:"x"`
+	Y              int16  `json:"y"`
+	Direction      byte   `json:"direction"`
+	Destroyed      bool   `json:"destroyed"`
 }

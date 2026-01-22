@@ -9,9 +9,29 @@ import (
 )
 
 const (
+	EnvCommandTopic = "COMMAND_TOPIC_REACTOR"
+	CommandTypeHit  = "HIT"
+)
+
+type Command[E any] struct {
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
+	MapId     _map.Id    `json:"mapId"`
+	Type      string     `json:"type"`
+	Body      E          `json:"body"`
+}
+
+type HitCommandBody struct {
+	ReactorId uint32 `json:"reactorId"`
+	Stance    uint16 `json:"stance"`
+	SkillId   uint32 `json:"skillId"`
+}
+
+const (
 	EnvEventStatusTopic      = "EVENT_TOPIC_REACTOR_STATUS"
 	EventStatusTypeCreated   = "CREATED"
 	EventStatusTypeDestroyed = "DESTROYED"
+	EventStatusTypeHit       = "HIT"
 )
 
 type StatusEvent[E any] struct {
@@ -39,4 +59,13 @@ type DestroyedStatusEventBody struct {
 	State int8  `json:"state"`
 	X     int16 `json:"x"`
 	Y     int16 `json:"y"`
+}
+
+type HitStatusEventBody struct {
+	Classification uint32 `json:"classification"`
+	State          int8   `json:"state"`
+	X              int16  `json:"x"`
+	Y              int16  `json:"y"`
+	Direction      byte   `json:"direction"`
+	Destroyed      bool   `json:"destroyed"`
 }

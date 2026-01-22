@@ -122,21 +122,23 @@ func (r *registry) Create(t tenant.Model, b *ModelBuilder) (Model, error) {
 	return m, nil
 }
 
-//func (r *registry) Update(id uint32, modifiers ...Modifier) (Model, error) {
-//	r.lock.Lock()
-//	if val, ok := r.reactors[id]; ok {
-//		r.lock.Unlock()
-//		for _, modifier := range modifiers {
-//			modifier(val)
-//		}
-//		updateTime()(val)
-//		r.reactors[id] = val
-//		return *val, nil
-//	} else {
-//		r.lock.Unlock()
-//		return Model{}, errors.New("unable to locate reactor")
-//	}
-//}
+func (r *registry) Update(id uint32, modifier func(*ModelBuilder)) (Model, error) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
+	if val, ok := r.reactors[id]; ok {
+		b := NewFromModel(*val)
+		modifier(b)
+		b.UpdateTime()
+		m, err := b.Build()
+		if err != nil {
+			return Model{}, err
+		}
+		r.reactors[id] = &m
+		return m, nil
+	}
+	return Model{}, errors.New("unable to locate reactor")
+}
 
 func (r *registry) getNextId() uint32 {
 	ids := existingIds(r.reactors)

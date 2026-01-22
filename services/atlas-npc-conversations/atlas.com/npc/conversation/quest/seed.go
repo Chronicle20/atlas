@@ -8,7 +8,17 @@ import (
 	"strings"
 )
 
-const QuestConversationsPath = "/conversations/quests"
+const defaultQuestConversationsPath = "/conversations/quests"
+
+// getQuestConversationsPath returns the path to the quest conversations directory.
+// It reads from the QUEST_CONVERSATIONS_PATH environment variable, falling back
+// to the default path if not set.
+func getQuestConversationsPath() string {
+	if path := os.Getenv("QUEST_CONVERSATIONS_PATH"); path != "" {
+		return path
+	}
+	return defaultQuestConversationsPath
+}
 
 // SeedResult represents the result of a seed operation
 type SeedResult struct {
@@ -25,7 +35,8 @@ func LoadQuestConversationFiles() ([]RestModel, []error) {
 	var models []RestModel
 	var errors []error
 
-	entries, err := os.ReadDir(QuestConversationsPath)
+	questConversationsPath := getQuestConversationsPath()
+	entries, err := os.ReadDir(questConversationsPath)
 	if err != nil {
 		return nil, []error{fmt.Errorf("failed to read quest-conversations directory: %w", err)}
 	}
@@ -39,7 +50,7 @@ func LoadQuestConversationFiles() ([]RestModel, []error) {
 			continue
 		}
 
-		filePath := filepath.Join(QuestConversationsPath, entry.Name())
+		filePath := filepath.Join(questConversationsPath, entry.Name())
 		data, err := os.ReadFile(filePath)
 		if err != nil {
 			errors = append(errors, fmt.Errorf("%s: failed to read file: %w", entry.Name(), err))

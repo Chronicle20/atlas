@@ -12,6 +12,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -64,7 +65,8 @@ func handleAssetCreatedEvent(db *gorm.DB) message.Handler[asset.StatusEvent[asse
 					quantity = 1
 				}
 				newCount := currentCount + quantity
-				err = quest.NewProcessor(l, ctx, db).SetProgress(e.CharacterId, q.QuestId(), e.TemplateId, strconv.Itoa(int(newCount)))
+				// Use uuid.Nil since this is not saga-initiated
+				err = quest.NewProcessor(l, ctx, db).SetProgress(uuid.Nil, e.CharacterId, q.QuestId(), e.TemplateId, strconv.Itoa(int(newCount)))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to update item progress for quest [%d] character [%d].", q.QuestId(), e.CharacterId)
 				} else {
@@ -101,7 +103,8 @@ func handleAssetDeletedEvent(db *gorm.DB) message.Handler[asset.StatusEvent[asse
 				if currentCount > 0 {
 					newCount = currentCount - 1
 				}
-				err = quest.NewProcessor(l, ctx, db).SetProgress(e.CharacterId, q.QuestId(), e.TemplateId, strconv.Itoa(int(newCount)))
+				// Use uuid.Nil since this is not saga-initiated
+				err = quest.NewProcessor(l, ctx, db).SetProgress(uuid.Nil, e.CharacterId, q.QuestId(), e.TemplateId, strconv.Itoa(int(newCount)))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to update item progress for quest [%d] character [%d].", q.QuestId(), e.CharacterId)
 				} else {

@@ -1,5 +1,7 @@
 package quest
 
+import "github.com/google/uuid"
+
 const (
 	// EnvCommandTopic defines the environment variable for the quest command topic
 	EnvCommandTopic = "COMMAND_TOPIC_QUEST"
@@ -14,12 +16,13 @@ const (
 
 // Command represents a quest command message
 type Command[E any] struct {
-	WorldId     byte   `json:"worldId"`
-	ChannelId   byte   `json:"channelId"`
-	MapId       uint32 `json:"mapId"`
-	CharacterId uint32 `json:"characterId"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	TransactionId uuid.UUID `json:"transactionId"`
+	WorldId       byte      `json:"worldId"`
+	ChannelId     byte      `json:"channelId"`
+	MapId         uint32    `json:"mapId"`
+	CharacterId   uint32    `json:"characterId"`
+	Type          string    `json:"type"`
+	Body          E         `json:"body"`
 }
 
 // StartCommandBody is the body for starting a quest
@@ -77,10 +80,11 @@ const (
 
 // StatusEvent represents a quest status event message
 type StatusEvent[E any] struct {
-	WorldId     byte   `json:"worldId"`
-	CharacterId uint32 `json:"characterId"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	TransactionId uuid.UUID `json:"transactionId"`
+	WorldId       byte      `json:"worldId"`
+	CharacterId   uint32    `json:"characterId"`
+	Type          string    `json:"type"`
+	Body          E         `json:"body"`
 }
 
 // QuestStartedEventBody is the body for quest started events

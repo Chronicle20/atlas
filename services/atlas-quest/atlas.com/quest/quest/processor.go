@@ -15,6 +15,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -44,16 +45,18 @@ type Processor interface {
 	// Returns the quest model and any failed conditions (empty if validation passed)
 	// field is needed for exp/meso start actions
 	// If skipValidation is true, start requirements are not checked
-	Start(characterId uint32, questId uint32, f field.Model, skipValidation bool) (Model, []string, error)
+	// transactionId is used for saga correlation (use uuid.Nil for non-saga initiated starts)
+	Start(transactionId uuid.UUID, characterId uint32, questId uint32, f field.Model, skipValidation bool) (Model, []string, error)
 	// StartChained starts a quest as part of a chain (skips interval check but still validates)
-	StartChained(characterId uint32, questId uint32, f field.Model) (Model, error)
+	StartChained(transactionId uuid.UUID, characterId uint32, questId uint32, f field.Model) (Model, error)
 	// Complete completes a quest with validation and processes rewards via saga
 	// Returns the next quest ID if this is part of a chain (0 if no chain)
 	// field is needed for meso/exp/fame rewards
 	// If skipValidation is true, end requirements are not checked
-	Complete(characterId uint32, questId uint32, f field.Model, skipValidation bool) (uint32, error)
-	Forfeit(characterId uint32, questId uint32) error
-	SetProgress(characterId uint32, questId uint32, infoNumber uint32, progress string) error
+	// transactionId is used for saga correlation (use uuid.Nil for non-saga initiated completes)
+	Complete(transactionId uuid.UUID, characterId uint32, questId uint32, f field.Model, skipValidation bool) (uint32, error)
+	Forfeit(transactionId uuid.UUID, characterId uint32, questId uint32) error
+	SetProgress(transactionId uuid.UUID, characterId uint32, questId uint32, infoNumber uint32, progress string) error
 	DeleteByCharacterId(characterId uint32) error
 	// GetQuestDefinition fetches the quest definition from atlas-data
 	GetQuestDefinition(questId uint32) (dataquest.RestModel, error)
@@ -144,7 +147,7 @@ func (p *ProcessorImpl) GetByCharacterIdAndState(characterId uint32, state State
 	return p.ByCharacterIdAndStateProvider(characterId, state)()
 }
 
-func (p *ProcessorImpl) Start(characterId uint32, questId uint32, f field.Model, skipValidation bool) (Model, []string, error) {
+func (p *ProcessorImpl) Start(transactionId uuid.UUID, characterId uint32, questId uint32, f field.Model, skipValidation bool) (Model, []string, error) {
 	// Fetch quest definition to check interval and time limit
 	questDef, err := p.dataProcessor.GetQuestDefinition(questId)
 	if err != nil {
@@ -152,12 +155,12 @@ func (p *ProcessorImpl) Start(characterId uint32, questId uint32, f field.Model,
 		return Model{}, nil, fmt.Errorf("unable to fetch quest definition: %w", err)
 	}
 
-	return p.startWithDefinition(characterId, questId, questDef, f, skipValidation)
+	return p.startWithDefinition(transactionId, characterId, questId, questDef, f, skipValidation)
 }
 
 // startWithDefinition starts a quest using the provided quest definition
 // This is used internally when the quest definition is already available (e.g., from CheckAutoStart)
-func (p *ProcessorImpl) startWithDefinition(characterId uint32, questId uint32, questDef dataquest.RestModel, f field.Model, skipValidation bool) (Model, []string, error) {
+func (p *ProcessorImpl) startWithDefinition(transactionId uuid.UUID, characterId uint32, questId uint32, questDef dataquest.RestModel, f field.Model, skipValidation bool) (Model, []string, error) {
 	// Validate start requirements (unless skipped)
 	if !skipValidation {
 		passed, failedConditions, err := p.validationProcessor.ValidateStartRequirements(characterId, questDef)
@@ -184,7 +187,7 @@ func (p *ProcessorImpl) startWithDefinition(characterId uint32, questId uint32, 
 	}
 
 	// Emit quest started event
-	if err := p.eventEmitter.EmitQuestStarted(characterId, byte(f.WorldId()), questId); err != nil {
+	if err := p.eventEmitter.EmitQuestStarted(transactionId, characterId, byte(f.WorldId()), questId); err != nil {
 		p.l.WithError(err).Warnf("Unable to emit quest started event for quest [%d] character [%d].", questId, characterId)
 	}
 
@@ -277,7 +280,7 @@ func (p *ProcessorImpl) startCore(characterId uint32, questId uint32, questDef d
 	return m, nil
 }
 
-func (p *ProcessorImpl) StartChained(characterId uint32, questId uint32, f field.Model) (Model, error) {
+func (p *ProcessorImpl) StartChained(transactionId uuid.UUID, characterId uint32, questId uint32, f field.Model) (Model, error) {
 	// Chained quests skip interval checking but still validate and process start actions
 	questDef, err := p.dataProcessor.GetQuestDefinition(questId)
 	if err != nil {
@@ -312,7 +315,7 @@ func (p *ProcessorImpl) StartChained(characterId uint32, questId uint32, f field
 	}
 
 	// Emit quest started event
-	if err := p.eventEmitter.EmitQuestStarted(characterId, byte(f.WorldId()), questId); err != nil {
+	if err := p.eventEmitter.EmitQuestStarted(transactionId, characterId, byte(f.WorldId()), questId); err != nil {
 		p.l.WithError(err).Warnf("Unable to emit quest started event for chained quest [%d] character [%d].", questId, characterId)
 	}
 
@@ -370,7 +373,7 @@ func (p *ProcessorImpl) startChainedCore(characterId uint32, questId uint32, que
 	return m, nil
 }
 
-func (p *ProcessorImpl) Complete(characterId uint32, questId uint32, f field.Model, skipValidation bool) (uint32, error) {
+func (p *ProcessorImpl) Complete(transactionId uuid.UUID, characterId uint32, questId uint32, f field.Model, skipValidation bool) (uint32, error) {
 	// Fetch quest definition for requirements and rewards
 	questDef, err := p.dataProcessor.GetQuestDefinition(questId)
 	if err != nil {
@@ -402,7 +405,7 @@ func (p *ProcessorImpl) Complete(characterId uint32, questId uint32, f field.Mod
 	}
 
 	// Emit quest completed event
-	if err := p.eventEmitter.EmitQuestCompleted(characterId, byte(f.WorldId()), questId); err != nil {
+	if err := p.eventEmitter.EmitQuestCompleted(transactionId, characterId, byte(f.WorldId()), questId); err != nil {
 		p.l.WithError(err).Warnf("Unable to emit quest completed event for quest [%d] character [%d].", questId, characterId)
 	}
 
@@ -452,7 +455,7 @@ func (p *ProcessorImpl) completeCore(characterId uint32, questId uint32, questDe
 	return nextQuestId, nil
 }
 
-func (p *ProcessorImpl) Forfeit(characterId uint32, questId uint32) error {
+func (p *ProcessorImpl) Forfeit(transactionId uuid.UUID, characterId uint32, questId uint32) error {
 	existing, err := p.GetByCharacterIdAndQuestId(characterId, questId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to find quest [%d] for character [%d] to forfeit.", questId, characterId)
@@ -473,7 +476,7 @@ func (p *ProcessorImpl) Forfeit(characterId uint32, questId uint32) error {
 	}
 
 	// Emit quest forfeited event (worldId is 0 as it's not available in forfeit context)
-	if err := p.eventEmitter.EmitQuestForfeited(characterId, 0, questId); err != nil {
+	if err := p.eventEmitter.EmitQuestForfeited(transactionId, characterId, 0, questId); err != nil {
 		p.l.WithError(err).Warnf("Unable to emit quest forfeited event for quest [%d] character [%d].", questId, characterId)
 	}
 
@@ -481,7 +484,7 @@ func (p *ProcessorImpl) Forfeit(characterId uint32, questId uint32) error {
 	return nil
 }
 
-func (p *ProcessorImpl) SetProgress(characterId uint32, questId uint32, infoNumber uint32, progressValue string) error {
+func (p *ProcessorImpl) SetProgress(transactionId uuid.UUID, characterId uint32, questId uint32, infoNumber uint32, progressValue string) error {
 	existing, err := p.GetByCharacterIdAndQuestId(characterId, questId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to find quest [%d] for character [%d] to set progress.", questId, characterId)
@@ -502,7 +505,7 @@ func (p *ProcessorImpl) SetProgress(characterId uint32, questId uint32, infoNumb
 	}
 
 	// Emit quest progress updated event (worldId is 0 as it's not available in this context)
-	if err := p.eventEmitter.EmitProgressUpdated(characterId, 0, questId, infoNumber, progressValue); err != nil {
+	if err := p.eventEmitter.EmitProgressUpdated(transactionId, characterId, 0, questId, infoNumber, progressValue); err != nil {
 		p.l.WithError(err).Warnf("Unable to emit quest progress updated event for quest [%d] character [%d].", questId, characterId)
 	}
 
@@ -555,7 +558,8 @@ func (p *ProcessorImpl) CheckAutoComplete(characterId uint32, questId uint32, f 
 	}
 
 	// All requirements met, complete the quest (skip external validation as we've already checked locally)
-	nextQuestId, err := p.Complete(characterId, questId, f, true)
+	// Use uuid.Nil since auto-complete is not initiated by a saga
+	nextQuestId, err := p.Complete(uuid.Nil, characterId, questId, f, true)
 	if err != nil {
 		return 0, false, err
 	}
@@ -665,7 +669,8 @@ func (p *ProcessorImpl) CheckAutoStart(characterId uint32, f field.Model) ([]uin
 
 		// Start the quest (auto-start quests still validate requirements)
 		// Use startWithDefinition directly since we already have the quest definition
-		_, _, err = p.startWithDefinition(characterId, questDef.Id, questDef, f, false)
+		// Use uuid.Nil since auto-start is not initiated by a saga
+		_, _, err = p.startWithDefinition(uuid.Nil, characterId, questDef.Id, questDef, f, false)
 		if err != nil {
 			if !errors.Is(err, ErrQuestAlreadyStarted) && !errors.Is(err, ErrQuestAlreadyCompleted) && !errors.Is(err, ErrStartRequirementsNotMet) && !errors.Is(err, ErrValidationFailed) {
 				p.l.WithError(err).Warnf("Unable to auto-start quest [%d] for character [%d].", questDef.Id, characterId)

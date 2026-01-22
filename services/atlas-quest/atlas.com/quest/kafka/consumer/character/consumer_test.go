@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 )
@@ -81,7 +82,7 @@ func TestHandleMapChangedEvent_UpdatesMapProgress(t *testing.T) {
 	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the quest
-	_, _, _ = processor.Start(characterId, questId, test.CreateTestField(), true)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true)
 
 	// Verify initial progress (0 = not visited)
 	fetched, _ := processor.GetByCharacterIdAndQuestId(characterId, questId)
@@ -113,7 +114,7 @@ func TestHandleMapChangedEvent_UpdatesMapProgress(t *testing.T) {
 	// Update map progress
 	for _, q := range quests {
 		if _, found := q.GetProgress(targetMapId); found {
-			_ = processor.SetProgress(characterId, q.QuestId(), targetMapId, "1")
+			_ = processor.SetProgress(uuid.Nil, characterId, q.QuestId(), targetMapId, "1")
 		}
 	}
 
@@ -148,14 +149,14 @@ func TestHandleMapChangedEvent_MultipleMapRequirements(t *testing.T) {
 	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the quest
-	_, _, _ = processor.Start(characterId, questId, test.CreateTestField(), true)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true)
 
 	// Visit only the first two maps
 	for _, mapId := range mapIds[:2] {
 		quests, _ := processor.GetByCharacterIdAndState(characterId, quest.StateStarted)
 		for _, q := range quests {
 			if _, found := q.GetProgress(mapId); found {
-				_ = processor.SetProgress(characterId, q.QuestId(), mapId, "1")
+				_ = processor.SetProgress(uuid.Nil, characterId, q.QuestId(), mapId, "1")
 			}
 		}
 	}
@@ -201,13 +202,13 @@ func TestHandleMapChangedEvent_AutoComplete(t *testing.T) {
 	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the quest
-	_, _, _ = processor.Start(characterId, questId, test.CreateTestField(), true)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true)
 
 	// Simulate map change and auto-complete check
 	quests, _ := processor.GetByCharacterIdAndState(characterId, quest.StateStarted)
 	for _, q := range quests {
 		if _, found := q.GetProgress(mapId); found {
-			_ = processor.SetProgress(characterId, q.QuestId(), mapId, "1")
+			_ = processor.SetProgress(uuid.Nil, characterId, q.QuestId(), mapId, "1")
 
 			// Check auto-complete
 			_, completed, _ := processor.CheckAutoComplete(characterId, q.QuestId(), test.CreateTestFieldWithMap(mapId))
@@ -250,18 +251,18 @@ func TestHandleMapChangedEvent_ChainedQuest(t *testing.T) {
 	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the first quest
-	_, _, _ = processor.Start(characterId, questId, test.CreateTestField(), true)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true)
 
 	// Simulate map change with chain handling
 	quests, _ := processor.GetByCharacterIdAndState(characterId, quest.StateStarted)
 	for _, q := range quests {
 		if _, found := q.GetProgress(mapId); found {
-			_ = processor.SetProgress(characterId, q.QuestId(), mapId, "1")
+			_ = processor.SetProgress(uuid.Nil, characterId, q.QuestId(), mapId, "1")
 
 			nextId, completed, _ := processor.CheckAutoComplete(characterId, q.QuestId(), test.CreateTestFieldWithMap(mapId))
 			if completed && nextId > 0 {
 				// Start chained quest
-				_, _ = processor.StartChained(characterId, nextId, test.CreateTestFieldWithMap(mapId))
+				_, _ = processor.StartChained(uuid.Nil, characterId, nextId, test.CreateTestFieldWithMap(mapId))
 			}
 		}
 	}

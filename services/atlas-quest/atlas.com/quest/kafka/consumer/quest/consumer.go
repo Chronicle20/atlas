@@ -54,7 +54,7 @@ func handleStartQuestCommand(db *gorm.DB) message.Handler[quest2.Command[quest2.
 		// When Force=true, skip requirement checks
 		// When Force=false (default), validate start requirements before starting
 		f := field.NewBuilder(world.Id(c.WorldId), channel.Id(c.ChannelId), _map.Id(c.MapId)).Build()
-		_, _, err := quest.NewProcessor(l, ctx, db).Start(c.CharacterId, c.Body.QuestId, f, c.Body.Force)
+		_, _, err := quest.NewProcessor(l, ctx, db).Start(c.TransactionId, c.CharacterId, c.Body.QuestId, f, c.Body.Force)
 		if err != nil {
 			l.WithError(err).Errorf("Error starting quest [%d] for character [%d].", c.Body.QuestId, c.CharacterId)
 		}
@@ -71,7 +71,7 @@ func handleCompleteQuestCommand(db *gorm.DB) message.Handler[quest2.Command[ques
 		// When Force=true, skip requirement checks (forceCompleteQuest behavior)
 		// When Force=false, validate end requirements before completing
 		f := field.NewBuilder(world.Id(c.WorldId), channel.Id(c.ChannelId), _map.Id(c.MapId)).Build()
-		nextQuestId, err := processor.Complete(c.CharacterId, c.Body.QuestId, f, c.Body.Force)
+		nextQuestId, err := processor.Complete(c.TransactionId, c.CharacterId, c.Body.QuestId, f, c.Body.Force)
 		if err != nil {
 			l.WithError(err).Errorf("Error completing quest [%d] for character [%d].", c.Body.QuestId, c.CharacterId)
 			return
@@ -80,7 +80,8 @@ func handleCompleteQuestCommand(db *gorm.DB) message.Handler[quest2.Command[ques
 		// Handle quest chain - auto-start next quest if present
 		if nextQuestId > 0 {
 			l.Infof("Quest chain detected: starting next quest [%d] for character [%d].", nextQuestId, c.CharacterId)
-			_, err = processor.StartChained(c.CharacterId, nextQuestId, f)
+			// Use the same transactionId for chained quests so the saga can track them
+			_, err = processor.StartChained(c.TransactionId, c.CharacterId, nextQuestId, f)
 			if err != nil {
 				l.WithError(err).Errorf("Error starting chained quest [%d] for character [%d].", nextQuestId, c.CharacterId)
 			}
@@ -93,7 +94,7 @@ func handleForfeitQuestCommand(db *gorm.DB) message.Handler[quest2.Command[quest
 		if c.Type != quest2.CommandTypeForfeit {
 			return
 		}
-		err := quest.NewProcessor(l, ctx, db).Forfeit(c.CharacterId, c.Body.QuestId)
+		err := quest.NewProcessor(l, ctx, db).Forfeit(c.TransactionId, c.CharacterId, c.Body.QuestId)
 		if err != nil {
 			l.WithError(err).Errorf("Error forfeiting quest [%d] for character [%d].", c.Body.QuestId, c.CharacterId)
 		}
@@ -105,7 +106,7 @@ func handleUpdateProgressCommand(db *gorm.DB) message.Handler[quest2.Command[que
 		if c.Type != quest2.CommandTypeUpdateProgress {
 			return
 		}
-		err := quest.NewProcessor(l, ctx, db).SetProgress(c.CharacterId, c.Body.QuestId, c.Body.InfoNumber, c.Body.Progress)
+		err := quest.NewProcessor(l, ctx, db).SetProgress(c.TransactionId, c.CharacterId, c.Body.QuestId, c.Body.InfoNumber, c.Body.Progress)
 		if err != nil {
 			l.WithError(err).Errorf("Error updating progress for quest [%d] for character [%d].", c.Body.QuestId, c.CharacterId)
 		}

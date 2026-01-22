@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 )
@@ -93,7 +94,7 @@ func TestHandleMonsterKilledEvent_IncrementsMobProgress(t *testing.T) {
 	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the quest
-	_, _, _ = processor.Start(characterId, questId, test.CreateTestField(), true)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true)
 
 	// Verify initial progress
 	fetched, _ := processor.GetByCharacterIdAndQuestId(characterId, questId)
@@ -131,7 +132,7 @@ func TestHandleMonsterKilledEvent_IncrementsMobProgress(t *testing.T) {
 			if p, found := q.GetProgress(event.MonsterId); found {
 				currentCount := parseProgress(p.Progress())
 				newCount := currentCount + 1
-				_ = processor.SetProgress(entry.CharacterId, q.QuestId(), event.MonsterId, strconv.Itoa(int(newCount)))
+				_ = processor.SetProgress(uuid.Nil, entry.CharacterId, q.QuestId(), event.MonsterId, strconv.Itoa(int(newCount)))
 			}
 		}
 	}
@@ -168,7 +169,7 @@ func TestHandleMonsterKilledEvent_MultipleCharacters(t *testing.T) {
 
 	// Start quest for all characters
 	for _, charId := range characterIds {
-		_, _, _ = processor.Start(charId, questId, test.CreateTestField(), true)
+		_, _, _ = processor.Start(uuid.Nil, charId, questId, test.CreateTestField(), true)
 	}
 
 	// Create damage entries for all characters
@@ -192,7 +193,7 @@ func TestHandleMonsterKilledEvent_MultipleCharacters(t *testing.T) {
 			if p, found := q.GetProgress(event.MonsterId); found {
 				currentCount := parseProgress(p.Progress())
 				newCount := currentCount + 1
-				_ = processor.SetProgress(entry.CharacterId, q.QuestId(), event.MonsterId, strconv.Itoa(int(newCount)))
+				_ = processor.SetProgress(uuid.Nil, entry.CharacterId, q.QuestId(), event.MonsterId, strconv.Itoa(int(newCount)))
 			}
 		}
 	}
@@ -234,7 +235,7 @@ func TestHandleMonsterKilledEvent_AutoComplete(t *testing.T) {
 	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the quest
-	_, _, _ = processor.Start(characterId, questId, test.CreateTestField(), true)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true)
 
 	// Simulate kill (increment progress to meet requirement)
 	event := monster.StatusEvent[monster.StatusEventKilledBody]{
@@ -254,7 +255,7 @@ func TestHandleMonsterKilledEvent_AutoComplete(t *testing.T) {
 			if p, found := q.GetProgress(event.MonsterId); found {
 				currentCount := parseProgress(p.Progress())
 				newCount := currentCount + 1
-				_ = processor.SetProgress(entry.CharacterId, q.QuestId(), event.MonsterId, strconv.Itoa(int(newCount)))
+				_ = processor.SetProgress(uuid.Nil, entry.CharacterId, q.QuestId(), event.MonsterId, strconv.Itoa(int(newCount)))
 
 				// Check auto-complete
 				_, completed, _ := processor.CheckAutoComplete(entry.CharacterId, q.QuestId(), test.CreateTestField())

@@ -6,6 +6,8 @@ import (
 	"atlas-quest/kafka/message/saga"
 	"atlas-quest/quest"
 	"errors"
+
+	"github.com/google/uuid"
 )
 
 // MockDataProcessor implements dataquest.Processor for testing
@@ -199,22 +201,22 @@ func NewMockEventEmitter() *MockEventEmitter {
 	}
 }
 
-func (m *MockEventEmitter) EmitQuestStarted(characterId uint32, worldId byte, questId uint32) error {
+func (m *MockEventEmitter) EmitQuestStarted(transactionId uuid.UUID, characterId uint32, worldId byte, questId uint32) error {
 	m.StartedEvents = append(m.StartedEvents, QuestEvent{CharacterId: characterId, WorldId: worldId, QuestId: questId})
 	return nil
 }
 
-func (m *MockEventEmitter) EmitQuestCompleted(characterId uint32, worldId byte, questId uint32) error {
+func (m *MockEventEmitter) EmitQuestCompleted(transactionId uuid.UUID, characterId uint32, worldId byte, questId uint32) error {
 	m.CompletedEvents = append(m.CompletedEvents, QuestEvent{CharacterId: characterId, WorldId: worldId, QuestId: questId})
 	return nil
 }
 
-func (m *MockEventEmitter) EmitQuestForfeited(characterId uint32, worldId byte, questId uint32) error {
+func (m *MockEventEmitter) EmitQuestForfeited(transactionId uuid.UUID, characterId uint32, worldId byte, questId uint32) error {
 	m.ForfeitedEvents = append(m.ForfeitedEvents, QuestEvent{CharacterId: characterId, WorldId: worldId, QuestId: questId})
 	return nil
 }
 
-func (m *MockEventEmitter) EmitProgressUpdated(characterId uint32, worldId byte, questId uint32, infoNumber uint32, progress string) error {
+func (m *MockEventEmitter) EmitProgressUpdated(transactionId uuid.UUID, characterId uint32, worldId byte, questId uint32, infoNumber uint32, progress string) error {
 	m.ProgressEvents = append(m.ProgressEvents, ProgressEvent{CharacterId: characterId, WorldId: worldId, QuestId: questId, InfoNumber: infoNumber, Progress: progress})
 	return nil
 }

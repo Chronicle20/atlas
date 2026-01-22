@@ -16,3 +16,7 @@ type Model struct {
 func (m Model) Name() string {
 	return m.name
 }
+
+func (m Model) StateInfo() map[int8][]state.Model {
+	return m.stateInfo
+}

@@ -4,6 +4,7 @@ import (
 	"atlas-reactors/kafka/producer"
 	"atlas-reactors/reactor/data"
 	"context"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -94,4 +95,62 @@ func Destroy(l logrus.FieldLogger) func(ctx context.Context) model.Operator[Mode
 			return producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(destroyedStatusEventProvider(m))
 		}
 	}
+}
+
+func Hit(l logrus.FieldLogger) func(ctx context.Context) func(reactorId uint32, skillId uint32) error {
+	return func(ctx context.Context) func(reactorId uint32, skillId uint32) error {
+		return func(reactorId uint32, skillId uint32) error {
+			r, err := GetById(l)(ctx)(reactorId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to get reactor [%d] for hit.", reactorId)
+				return err
+			}
+
+			stateInfo := r.Data().StateInfo()
+			stateEvents, ok := stateInfo[r.State()]
+			if !ok || len(stateEvents) == 0 {
+				l.Debugf("No state events for reactor [%d] state [%d]. Destroying.", reactorId, r.State())
+				return Destroy(l)(ctx)(r)
+			}
+
+			var nextState int8 = -1
+			for _, event := range stateEvents {
+				if len(event.ActiveSkills()) == 0 || containsSkill(event.ActiveSkills(), skillId) {
+					nextState = event.NextState()
+					break
+				}
+			}
+
+			if nextState == -1 {
+				l.Debugf("Reactor [%d] reached terminal state. Destroying.", reactorId)
+				return Destroy(l)(ctx)(r)
+			}
+
+			_, hasNextState := stateInfo[nextState]
+			if !hasNextState {
+				l.Debugf("Reactor [%d] next state [%d] not in state info. Destroying.", reactorId, nextState)
+				return Destroy(l)(ctx)(r)
+			}
+
+			updated, err := GetRegistry().Update(reactorId, func(b *ModelBuilder) {
+				b.SetState(nextState)
+			})
+			if err != nil {
+				l.WithError(err).Errorf("Unable to update reactor [%d] state.", reactorId)
+				return err
+			}
+
+			l.Debugf("Reactor [%d] hit. State changed from [%d] to [%d].", reactorId, r.State(), nextState)
+			return producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(hitStatusEventProvider(updated, false))
+		}
+	}
+}
+
+func containsSkill(skills []uint32, skillId uint32) bool {
+	for _, s := range skills {
+		if s == skillId {
+			return true
+		}
+	}
+	return false
 }

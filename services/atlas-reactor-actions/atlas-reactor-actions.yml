@@ -1,0 +1,53 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-reactor-actions
+  namespace: atlas
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: atlas-reactor-actions
+  template:
+    metadata:
+      labels:
+        app: atlas-reactor-actions
+    spec:
+      containers:
+      - name: reactor-actions
+        image: ghcr.io/chronicle20/atlas-reactor-actions/atlas-reactor-actions:latest
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: atlas-env
+        env:
+        - name: LOG_LEVEL
+          value: "debug"
+        - name: DB_NAME
+          value: "atlas-reactor-actions"
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: DB_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: DB_PASSWORD
+        - name: REACTOR_ACTIONS_DIR
+          value: "/scripts/reactors"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-reactor-actions
+  namespace: atlas
+spec:
+  selector:
+    app: atlas-reactor-actions
+  ports:
+  - protocol: TCP
+    port: 8080

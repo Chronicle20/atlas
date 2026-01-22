@@ -53,7 +53,7 @@ func handleHit(l logrus.FieldLogger, ctx context.Context, c reactor.Command[reac
 		return
 	}
 
-	err := reactor.Hit(l)(ctx)(c.Body.ReactorId, c.Body.SkillId)
+	err := reactor.Hit(l)(ctx)(c.Body.ReactorId, c.Body.CharacterId, c.Body.SkillId)
 	if err != nil {
 		l.WithError(err).Errorf("Failed to process hit for reactor [%d].", c.Body.ReactorId)
 	}

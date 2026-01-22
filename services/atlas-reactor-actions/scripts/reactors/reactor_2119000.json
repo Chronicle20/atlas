@@ -1,0 +1,26 @@
+{
+  "reactorId": "2119000",
+  "description": "Tombstone in Forest of Dead Trees I - weakens Lich boss when hit at state 0",
+  "hitRules": [
+    {
+      "id": "weaken_lich",
+      "conditions": [
+        {
+          "type": "reactor_state",
+          "operator": "=",
+          "value": "0"
+        }
+      ],
+      "operations": [
+        {
+          "type": "weaken_area_boss",
+          "params": {
+            "monsterId": "6090000",
+            "message": "As the tombstone lit up and vanished, Lich lost all his magic abilities."
+          }
+        }
+      ]
+    }
+  ],
+  "actRules": []
+}

@@ -8,7 +8,7 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func HitCommandProvider(m _map.Model, reactorId uint32, stance uint16, skillId uint32) model.Provider[[]kafka.Message] {
+func HitCommandProvider(m _map.Model, reactorId uint32, characterId uint32, stance uint16, skillId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(reactorId))
 	value := &reactor2.Command[reactor2.HitCommandBody]{
 		WorldId:   m.WorldId(),
@@ -16,9 +16,10 @@ func HitCommandProvider(m _map.Model, reactorId uint32, stance uint16, skillId u
 		MapId:     m.MapId(),
 		Type:      reactor2.CommandTypeHit,
 		Body: reactor2.HitCommandBody{
-			ReactorId: reactorId,
-			Stance:    stance,
-			SkillId:   skillId,
+			ReactorId:   reactorId,
+			CharacterId: characterId,
+			Stance:      stance,
+			SkillId:     skillId,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

@@ -31,7 +31,7 @@ func (p *Processor) ForEachInMap(m _map.Model, f model.Operator[Model]) error {
 	return model.ForEachSlice(p.InMapModelProvider(m), f, model.ParallelExecute())
 }
 
-func (p *Processor) Hit(m _map.Model, reactorId uint32, stance uint16, skillId uint32) error {
-	p.l.Debugf("Sending hit command for reactor [%d]. Stance [%d]. SkillId [%d].", reactorId, stance, skillId)
-	return producer.ProviderImpl(p.l)(p.ctx)(reactor2.EnvCommandTopic)(HitCommandProvider(m, reactorId, stance, skillId))
+func (p *Processor) Hit(m _map.Model, reactorId uint32, characterId uint32, stance uint16, skillId uint32) error {
+	p.l.Debugf("Sending hit command for reactor [%d]. CharacterId [%d]. Stance [%d]. SkillId [%d].", reactorId, characterId, stance, skillId)
+	return producer.ProviderImpl(p.l)(p.ctx)(reactor2.EnvCommandTopic)(HitCommandProvider(m, reactorId, characterId, stance, skillId))
 }

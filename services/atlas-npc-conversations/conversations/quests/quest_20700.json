@@ -73,6 +73,7 @@
           "text": "Oh, and are you aware that if you strike a conversation with #p1101001#, she'll give you a blessing? The blessing will definitely help you on your journey.",
           "choices": [
             {"text": "Previous", "nextState": "afterComplete"},
+            {"text": "Ok", "nextState": null},
             {"text": "Exit", "nextState": null}
           ]
         }

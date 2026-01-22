@@ -54,6 +54,10 @@
             "nextState": "page2"
           },
           {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
             "text": "Exit",
             "nextState": null
           }

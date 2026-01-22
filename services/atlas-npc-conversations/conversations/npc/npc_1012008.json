@@ -183,6 +183,10 @@
             "nextState": "explainOmok5"
           },
           {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
             "text": "Exit",
             "nextState": null
           }
@@ -327,6 +331,10 @@
           {
             "text": "Previous",
             "nextState": "explainMatch6"
+          },
+          {
+            "text": "Ok",
+            "nextState": null
           },
           {
             "text": "Exit",

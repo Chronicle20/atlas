@@ -89,6 +89,10 @@
             "nextState": "hasEmptyBottle"
           },
           {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
             "text": "Exit",
             "nextState": null
           }

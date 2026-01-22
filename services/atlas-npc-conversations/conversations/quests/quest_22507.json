@@ -266,6 +266,7 @@
           "speaker": "CHARACTER_LEFT",
           "choices": [
             {"text": "Previous", "nextState": "playerThoughts1"},
+            {"text": "Ok", "nextState": null},
             {"text": "Exit", "nextState": null}
           ]
         }

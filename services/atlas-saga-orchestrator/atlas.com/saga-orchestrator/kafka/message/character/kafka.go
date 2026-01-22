@@ -25,6 +25,7 @@ const (
 	CommandRequestDistributeSp = "REQUEST_DISTRIBUTE_SP"
 	CommandChangeHP            = "CHANGE_HP"
 	CommandChangeMP            = "CHANGE_MP"
+	CommandSetHP               = "SET_HP"
 )
 
 const (
@@ -134,6 +135,11 @@ type ChangeHPBody struct {
 type ChangeMPBody struct {
 	ChannelId channel.Id `json:"channelId"`
 	Amount    int16      `json:"amount"`
+}
+
+type SetHPBody struct {
+	ChannelId channel.Id `json:"channelId"`
+	Amount    uint16     `json:"amount"`
 }
 
 type CreateCharacterCommandBody struct {

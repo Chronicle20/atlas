@@ -83,6 +83,8 @@ type Processor interface {
 	RequestDistributeSp(transactionId uuid.UUID, characterId uint32, skillId uint32, amount int8) error
 	ChangeHPAndEmit(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount int16) error
 	ChangeHP(mb *message.Buffer) func(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount int16) error
+	SetHPAndEmit(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount uint16) error
+	SetHP(mb *message.Buffer) func(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount uint16) error
 	ChangeMPAndEmit(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount int16) error
 	ChangeMP(mb *message.Buffer) func(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount int16) error
 	ProcessLevelChangeAndEmit(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount byte) error
@@ -940,6 +942,35 @@ func (p *ProcessorImpl) ChangeHP(mb *message.Buffer) func(transactionId uuid.UUI
 			return txErr
 		}
 		// TODO need to emit event when character dies.
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []string{"HP"}))
+		return nil
+	}
+}
+
+func (p *ProcessorImpl) SetHPAndEmit(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount uint16) error {
+	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+		return p.SetHP(buf)(transactionId, channel, characterId, amount)
+	})
+}
+
+func (p *ProcessorImpl) SetHP(mb *message.Buffer) func(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount uint16) error {
+	return func(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount uint16) error {
+		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+			c, err := p.WithTransaction(tx).GetById()(characterId)
+			if err != nil {
+				return err
+			}
+			// Clamp amount between 0 and MaxHP
+			clamped := amount
+			if clamped > c.MaxHP() {
+				clamped = c.MaxHP()
+			}
+			p.l.Debugf("Setting character [%d] health to [%d].", characterId, clamped)
+			return dynamicUpdate(tx)(SetHealth(clamped))(p.t.Id())(c)
+		})
+		if txErr != nil {
+			return txErr
+		}
 		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []string{"HP"}))
 		return nil
 	}

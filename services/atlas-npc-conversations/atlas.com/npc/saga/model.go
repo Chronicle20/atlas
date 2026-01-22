@@ -32,7 +32,6 @@ type (
 	ChangeSkinPayload            = scriptsaga.ChangeSkinPayload
 	SpawnMonsterPayload          = scriptsaga.SpawnMonsterPayload
 	CompleteQuestPayload         = scriptsaga.CompleteQuestPayload
-	StartQuestPayload            = scriptsaga.StartQuestPayload
 	ApplyConsumableEffectPayload = scriptsaga.ApplyConsumableEffectPayload
 	SendMessagePayload           = scriptsaga.SendMessagePayload
 	AwardFamePayload             = scriptsaga.AwardFamePayload
@@ -46,6 +45,24 @@ type (
 	ShowInfoTextPayload     = scriptsaga.ShowInfoTextPayload
 	ShowHintPayload         = scriptsaga.ShowHintPayload
 )
+
+// SetHPPayload represents the payload required to set a character's HP to an absolute value.
+// This is local until added to atlas-script-core.
+type SetHPPayload struct {
+	CharacterId uint32 `json:"characterId"`
+	WorldId     byte   `json:"worldId"`
+	ChannelId   byte   `json:"channelId"`
+	Amount      uint16 `json:"amount"`
+}
+
+// StartQuestPayload represents the payload required to start a quest.
+// This is local until added to atlas-script-core (requires WorldId field).
+type StartQuestPayload struct {
+	CharacterId uint32 `json:"characterId"`
+	WorldId     byte   `json:"worldId"`
+	QuestId     uint32 `json:"questId"`
+	NpcId       uint32 `json:"npcId"`
+}
 
 // Re-export constants from atlas-script-core/saga
 const (
@@ -90,6 +107,9 @@ const (
 	ShowInfo        = scriptsaga.ShowInfo
 	ShowInfoText    = scriptsaga.ShowInfoText
 	ShowHint        = scriptsaga.ShowHint
+
+	// Character stat actions (local definition until added to atlas-script-core)
+	SetHP Action = "set_hp"
 )
 
 // ValidateCharacterStatePayload uses the NPC service's validation.ConditionInput

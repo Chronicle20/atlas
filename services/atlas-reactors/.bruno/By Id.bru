@@ -5,7 +5,11 @@ meta {
 }
 
 get {
-  url: {{scheme}}://{{host}}:{{port}}/api/reactors/0002001
+  url: {{scheme}}://{{host}}:{{port}}/api/reactors/{{reactorId}}
   body: none
   auth: none
+}
+
+vars:pre-request {
+  reactorId: 1000000001
 }

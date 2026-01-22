@@ -237,6 +237,14 @@ data:
           proxy_pass http://atlas-reactors.atlas.svc.cluster.local:8080;
         }
 
+        location ~ ^/api/reactors/actions(/.*)?$ {
+          proxy_pass http://atlas-reactor-actions.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/reactors/[^/]+/actions(/.*)?$ {
+          proxy_pass http://atlas-reactor-actions.atlas.svc.cluster.local:8080;
+        }
+
         location ~ ^/api/reactors(/.*)?$ {
           proxy_pass http://atlas-reactors.atlas.svc.cluster.local:8080;
         }

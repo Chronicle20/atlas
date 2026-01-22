@@ -22,9 +22,10 @@ type Command[E any] struct {
 }
 
 type HitCommandBody struct {
-	ReactorId uint32 `json:"reactorId"`
-	Stance    uint16 `json:"stance"`
-	SkillId   uint32 `json:"skillId"`
+	ReactorId   uint32 `json:"reactorId"`
+	CharacterId uint32 `json:"characterId"`
+	Stance      uint16 `json:"stance"`
+	SkillId     uint32 `json:"skillId"`
 }
 
 const (

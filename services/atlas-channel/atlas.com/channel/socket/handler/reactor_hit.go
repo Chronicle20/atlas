@@ -24,7 +24,7 @@ func ReactorHitHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Pr
 		l.Debugf("Character [%d] has hit reactor oid [%d]. isSkill [%t], bMoveAction [%d], direction [%d], delay [%d], skillId [%d].", s.CharacterId(), oid, isSkill, bMoveAction, direction, delay, skillId)
 
 		stance := uint16(bMoveAction) | uint16(direction<<1)
-		err := reactor.NewProcessor(l, ctx).Hit(s.Map(), oid, stance, skillId)
+		err := reactor.NewProcessor(l, ctx).Hit(s.Map(), oid, s.CharacterId(), stance, skillId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to send hit command for reactor [%d].", oid)
 		}

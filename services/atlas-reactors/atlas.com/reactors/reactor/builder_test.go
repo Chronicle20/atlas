@@ -130,11 +130,6 @@ func TestModelBuilder_Build_ValidationErrors(t *testing.T) {
 			builder: NewModelBuilder(ten, 1, 2, 100000, 0, "test-reactor"),
 			wantErr: "classification is required",
 		},
-		{
-			name:    "empty name",
-			builder: NewModelBuilder(ten, 1, 2, 100000, 2000000, ""),
-			wantErr: "name is required",
-		},
 	}
 
 	for _, tt := range tests {

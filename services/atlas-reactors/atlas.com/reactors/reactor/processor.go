@@ -37,6 +37,9 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(b *ModelBuilder
 				return err
 			}
 			b.SetData(d)
+			if b.Name() == "" && d.Name() != "" {
+				b.SetName(d.Name())
+			}
 			r, err := GetRegistry().Create(t, b)
 			if err != nil {
 				l.WithError(err).Errorf("Failed to create reactor.")

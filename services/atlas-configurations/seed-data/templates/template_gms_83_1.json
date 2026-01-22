@@ -2027,9 +2027,9 @@
             "ASK_MEMBER_SHOP_AVATAR": 8,
             "ASK_PET": 9,
             "ASK_PET_ALL": 10,
-            "ASK_YES_NO_QUEST": 11,
-            "ASK_BOX_TEXT": 12,
-            "ASK_SLIDE_MENU": 13
+            "ASK_YES_NO_QUEST": 12,
+            "ASK_BOX_TEXT": 13,
+            "ASK_SLIDE_MENU": 14
           }
         }
       },

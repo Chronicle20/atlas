@@ -1,0 +1,24 @@
+{
+  "portalId": "glTutoMsg0",
+  "mapId": 0,
+  "description": "Tutorial message portal - warns player about leaving an area",
+  "rules": [
+    {
+      "id": "always_allow_with_hint",
+      "conditions": [],
+      "onMatch": {
+        "allow": true,
+        "operations": [
+          {
+            "type": "show_hint",
+            "params": {
+              "hint": "Once you leave this area you won't be able to return.",
+              "width": "150",
+              "height": "5"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

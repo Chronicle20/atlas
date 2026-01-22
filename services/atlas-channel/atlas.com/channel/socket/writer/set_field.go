@@ -5,7 +5,12 @@ import (
 	"atlas-channel/buddylist"
 	"atlas-channel/character"
 	slot2 "atlas-channel/equipment/slot"
+	"atlas-channel/quest"
 	"errors"
+	"math"
+	"math/rand"
+	"time"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas-constants/item"
@@ -15,9 +20,6 @@ import (
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-	"math"
-	"math/rand"
-	"time"
 )
 
 const SetField = "SetField"
@@ -49,7 +51,7 @@ func WarpToMapBody(l logrus.FieldLogger, tenant tenant.Model) func(channelId cha
 					w.WriteInt(0)
 				}
 			}
-			w.WriteLong(uint64(getTime(timeNow())))
+			w.WriteInt64(msTime(time.Now()))
 			return w.Bytes()
 		}
 	}
@@ -88,7 +90,7 @@ func SetFieldBody(l logrus.FieldLogger, tenant tenant.Model) func(channelId chan
 				w.WriteInt(0)
 				w.WriteInt(0)
 			}
-			w.WriteInt64(getTime(timeNow()))
+			w.WriteInt64(msTime(time.Now()))
 			return w.Bytes()
 		}
 	}
@@ -199,13 +201,24 @@ func WriteMiniGameInfo(tenant tenant.Model) func(w *response.Writer, c character
 
 func WriteQuestInfo(tenant tenant.Model) func(w *response.Writer, c character.Model) {
 	return func(w *response.Writer, c character.Model) {
-		w.WriteShort(0) // started size
+		startedQuests := quest.Started(c.Quests())
+		w.WriteShort(uint16(len(startedQuests)))
+		for _, q := range startedQuests {
+			w.WriteShort(uint16(q.QuestId()))
+			w.WriteAsciiString(q.ProgressString())
+		}
+
 		if tenant.Region() == "JMS" {
 			w.WriteShort(0)
 		}
 
 		if (tenant.Region() == "GMS" && tenant.MajorVersion() > 12) || tenant.Region() == "JMS" {
-			w.WriteShort(0) // completed size
+			completedQuests := quest.Completed(c.Quests())
+			w.WriteShort(uint16(len(completedQuests)))
+			for _, q := range completedQuests {
+				w.WriteShort(uint16(q.QuestId()))
+				w.WriteInt64(msTime(q.CompletedAt()))
+			}
 		}
 	}
 }
@@ -245,6 +258,7 @@ const (
 	Permanent   int64 = 150841440000000000
 )
 
+// TODO usages of this may be invalid
 func getTime(utcTimestamp int64) int64 {
 	if utcTimestamp < 0 && utcTimestamp >= -3 {
 		if utcTimestamp == -1 {

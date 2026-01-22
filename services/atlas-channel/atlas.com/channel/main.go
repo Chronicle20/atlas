@@ -313,6 +313,7 @@ func produceWriters() []string {
 		writer.Clock,
 		writer.FieldTransportState,
 		writer.StorageOperation,
+		writer.CharacterHint,
 	}
 }
 

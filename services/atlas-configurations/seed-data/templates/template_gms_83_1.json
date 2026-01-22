@@ -1671,12 +1671,12 @@
             "QUEST_COMPLETE": "0x09",
             "INC_DEC_HP_EFFECT": "0x10",
             "BUFF_ITEM_EFFECT": "0x11",
-            "SQUIB_EFFECT": "0x12",
+            "SHOW_INTRO": "0x12",
             "MONSTER_BOOK_CARD_GET": "0x13",
             "LOTTERY_USE": "0x14",
             "ITEM_LEVEL_UP": "0x15",
             "ITEM_MAKER": "0x16",
-            "EXP_ITEM_CONSUMED": "0x17",
+            "SHOW_INFO": "0x17",
             "RESERVED_EFFECT": "0x18",
             "BUFF": "0x19",
             "CONSUME_EFFECT": "0x20",
@@ -1733,12 +1733,12 @@
             "QUEST_COMPLETE": "0x09",
             "INC_DEC_HP_EFFECT": "0x10",
             "BUFF_ITEM_EFFECT": "0x11",
-            "SQUIB_EFFECT": "0x12",
+            "SHOW_INTRO": "0x12",
             "MONSTER_BOOK_CARD_GET": "0x13",
             "LOTTERY_USE": "0x14",
             "ITEM_LEVEL_UP": "0x15",
             "ITEM_MAKER": "0x16",
-            "EXP_ITEM_CONSUMED": "0x17",
+            "SHOW_INFO": "0x17",
             "RESERVED_EFFECT": "0x18",
             "BUFF": "0x19",
             "CONSUME_EFFECT": "0x20",
@@ -1753,6 +1753,10 @@
             "EVOLUTION_RING": "0x30"
           }
         }
+      },
+      {
+        "opCode": "0xD6",
+        "writer": "CharacterHint"
       },
       {
         "opCode": "0xEA",

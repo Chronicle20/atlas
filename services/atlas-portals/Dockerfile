@@ -2,23 +2,26 @@
 # and a workspace (GOPATH) configured at /go.
 FROM golang:1.25.5-alpine3.21 AS build-env
 
-# Copy the local package files to the container's workspace.
-
-# Build the outyet command inside the container.
-# (You may fetch or manage dependencies here,
-# either manually or with a tool like "godep".)
 RUN apk add --no-cache git
 
-ADD ./atlas.com/portals/go.mod ./atlas.com/portals/go.sum /atlas.com/portals/
-WORKDIR /atlas.com/portals
+WORKDIR /app
+
+# Copy module definitions
+COPY services/atlas-portals/atlas.com/portals/go.mod services/atlas-portals/atlas.com/portals/go.sum services/atlas-portals/atlas.com/portals/
+
+# Download dependencies
+WORKDIR /app/services/atlas-portals/atlas.com/portals
 RUN go mod download
 
-ADD ./atlas.com/portals /atlas.com/portals
-RUN go build -o /server
+# Copy source code
+WORKDIR /app
+COPY services/atlas-portals/atlas.com/portals services/atlas-portals/atlas.com/portals
+
+# Build
+RUN go build -C services/atlas-portals/atlas.com/portals -o /server
 
 FROM alpine:3.23
 
-# Port 8080 belongs to our application
 EXPOSE 8080
 
 RUN apk add --no-cache libc6-compat

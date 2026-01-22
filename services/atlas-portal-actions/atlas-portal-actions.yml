@@ -1,0 +1,55 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-portal-actions
+  namespace: atlas
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: atlas-portal-actions
+  template:
+    metadata:
+      labels:
+        app: atlas-portal-actions
+    spec:
+      containers:
+      - name: portal-actions
+        image: ghcr.io/chronicle20/atlas-portal-actions/atlas-portal-actions:latest
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: atlas-env
+        env:
+        - name: LOG_LEVEL
+          value: "debug"
+        - name: DB_NAME
+          value: "atlas-portal-actions"
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: DB_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: DB_PASSWORD
+        - name: PORTAL_SCRIPTS_DIR
+          value: "/scripts/portals"
+        - name: QUERY_AGGREGATOR_URL
+          value: "http://atlas-query-aggregator:8080"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-portal-actions
+  namespace: atlas
+spec:
+  selector:
+    app: atlas-portal-actions
+  ports:
+  - protocol: TCP
+    port: 8080

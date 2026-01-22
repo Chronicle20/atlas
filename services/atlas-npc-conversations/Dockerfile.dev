@@ -2,23 +2,34 @@
 # and a workspace (GOPATH) configured at /go.
 FROM golang:1.25.5-alpine3.21 AS build-env
 
-# Copy the local package files to the container's workspace.
-
-# Build the outyet command inside the container.
-# (You may fetch or manage dependencies here,
-# either manually or with a tool like "godep".)
 RUN apk add --no-cache git
 
-ADD ./atlas.com/npc/go.mod ./atlas.com/npc/go.sum /atlas.com/npc/
-WORKDIR /atlas.com/npc
-RUN go mod download
+WORKDIR /app
 
-ADD ./atlas.com/npc /atlas.com/npc
-RUN go build -o /server
+# Copy lib and service module definitions
+COPY libs/atlas-script-core/go.mod libs/atlas-script-core/go.sum libs/atlas-script-core/
+COPY services/atlas-npc-conversations/atlas.com/npc/go.mod services/atlas-npc-conversations/atlas.com/npc/go.sum services/atlas-npc-conversations/atlas.com/npc/
+
+# Create a minimal go.work for this build
+RUN echo 'go 1.25.5' > go.work && \
+    echo '' >> go.work && \
+    echo 'use (' >> go.work && \
+    echo '    ./libs/atlas-script-core' >> go.work && \
+    echo '    ./services/atlas-npc-conversations/atlas.com/npc' >> go.work && \
+    echo ')' >> go.work
+
+# Download dependencies
+RUN go mod download -C services/atlas-npc-conversations/atlas.com/npc
+
+# Copy source code
+COPY libs/atlas-script-core libs/atlas-script-core
+COPY services/atlas-npc-conversations/atlas.com/npc services/atlas-npc-conversations/atlas.com/npc
+
+# Build
+RUN go build -C services/atlas-npc-conversations/atlas.com/npc -o /server
 
 FROM alpine:3.23
 
-# Port 8080 belongs to our application
 EXPOSE 8080
 
 RUN apk add --no-cache libc6-compat

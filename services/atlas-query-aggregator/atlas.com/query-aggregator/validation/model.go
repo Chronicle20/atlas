@@ -41,6 +41,8 @@ const (
 	InventorySpaceCondition         ConditionType = "inventorySpace"
 	TransportAvailableCondition     ConditionType = "transportAvailable"
 	SkillLevelCondition             ConditionType = "skillLevel"
+	HpCondition                     ConditionType = "hp"
+	MaxHpCondition                  ConditionType = "maxHp"
 )
 
 // Operator represents the comparison operator in a condition
@@ -119,7 +121,7 @@ func (b *ConditionBuilder) SetType(condType string) *ConditionBuilder {
 	}
 
 	switch ConditionType(condType) {
-	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition, GmLevelCondition, GuildIdCondition, GuildRankCondition, QuestStatusCondition, QuestProgressCondition, UnclaimedMarriageGiftsCondition, StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition, GuildLeaderCondition, BuddyCapacityCondition, PetCountCondition, MapCapacityCondition, InventorySpaceCondition, TransportAvailableCondition, SkillLevelCondition:
+	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition, GmLevelCondition, GuildIdCondition, GuildRankCondition, QuestStatusCondition, QuestProgressCondition, UnclaimedMarriageGiftsCondition, StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition, GuildLeaderCondition, BuddyCapacityCondition, PetCountCondition, MapCapacityCondition, InventorySpaceCondition, TransportAvailableCondition, SkillLevelCondition, HpCondition, MaxHpCondition:
 		b.conditionType = ConditionType(condType)
 	default:
 		b.err = fmt.Errorf("unsupported condition type: %s", condType)
@@ -388,6 +390,12 @@ func (c Condition) Evaluate(character character.Model) ConditionResult {
 	case LevelCondition:
 		actualValue = int(character.Level())
 		description = fmt.Sprintf("Level %s %d", c.operator, c.value)
+	case HpCondition:
+		actualValue = int(character.Hp())
+		description = fmt.Sprintf("HP %s %d", c.operator, c.value)
+	case MaxHpCondition:
+		actualValue = int(character.MaxHp())
+		description = fmt.Sprintf("Max HP %s %d", c.operator, c.value)
 	case RebornsCondition:
 		actualValue = int(character.Reborns())
 		description = fmt.Sprintf("Reborns %s %d", c.operator, c.value)

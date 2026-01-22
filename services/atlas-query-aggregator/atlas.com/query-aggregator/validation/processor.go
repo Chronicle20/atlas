@@ -54,10 +54,11 @@ func (p *ProcessorImpl) ValidateStructured(resultDecorators ...model.Decorator[V
 		// Create a new validation result
 		result := NewValidationResult(characterId)
 
-		// Parse all conditions
+		// Parse all conditions and check which data sources we need
 		conditions := make([]Condition, 0, len(conditionInputs))
 		needsInventory := false
 		needsGuild := false
+		needsContext := false
 
 		for _, input := range conditionInputs {
 			condition, err := NewConditionBuilder().FromInput(input).Build()
@@ -76,6 +77,20 @@ func (p *ProcessorImpl) ValidateStructured(resultDecorators ...model.Decorator[V
 			if condition.conditionType == GuildLeaderCondition {
 				needsGuild = true
 			}
+
+			// Check if this condition requires context-based evaluation
+			if condition.conditionType == QuestStatusCondition || condition.conditionType == QuestProgressCondition {
+				needsContext = true
+			}
+		}
+
+		// If we need context-based evaluation, use the context provider
+		if needsContext {
+			ctx, err := p.GetValidationContextProvider().GetValidationContext(characterId)()
+			if err != nil {
+				return result, fmt.Errorf("failed to get validation context: %w", err)
+			}
+			return p.ValidateWithContext(resultDecorators...)(ctx, conditionInputs)
 		}
 
 		// Get character data with inventory and/or guild if needed
@@ -155,9 +170,15 @@ func (p *ProcessorImpl) GetValidationContextProvider() ValidationContextProvider
 		},
 		func(characterId uint32) model.Provider[map[uint32]quest.Model] {
 			return func() (map[uint32]quest.Model, error) {
-				// For now, return empty map since quest service is not fully implemented
-				// In a real implementation, this would fetch all quests for the character
-				return make(map[uint32]quest.Model), nil
+				quests, err := p.questProcessor.GetQuestsByCharacter(characterId)()
+				if err != nil {
+					return nil, err
+				}
+				questMap := make(map[uint32]quest.Model, len(quests))
+				for _, q := range quests {
+					questMap[q.QuestId()] = q
+				}
+				return questMap, nil
 			}
 		},
 		func(characterId uint32) model.Provider[marriage.Model] {

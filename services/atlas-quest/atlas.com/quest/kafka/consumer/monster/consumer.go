@@ -5,7 +5,7 @@ import (
 	"atlas-quest/kafka/message/monster"
 	"atlas-quest/quest"
 	"context"
-	"strconv"
+	"fmt"
 
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
@@ -71,7 +71,7 @@ func handleMonsterKilledEvent(db *gorm.DB) message.Handler[monster.StatusEvent[m
 					currentCount := parseProgress(p.Progress())
 					newCount := currentCount + 1
 					// Use uuid.Nil since this is not saga-initiated
-					err = processor.SetProgress(uuid.Nil, entry.CharacterId, q.QuestId(), e.MonsterId, strconv.Itoa(int(newCount)))
+					err = processor.SetProgress(uuid.Nil, entry.CharacterId, q.QuestId(), e.MonsterId, formatProgress(newCount))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to update monster kill progress for quest [%d] character [%d].", q.QuestId(), entry.CharacterId)
 					} else {
@@ -103,9 +103,12 @@ func parseProgress(progress string) uint32 {
 	if progress == "" {
 		return 0
 	}
-	val, err := strconv.Atoi(progress)
-	if err != nil {
-		return 0
-	}
+	var val int
+	_, _ = fmt.Sscanf(progress, "%d", &val)
 	return uint32(val)
+}
+
+// formatProgress formats a progress value as a 3-digit zero-padded string
+func formatProgress(count uint32) string {
+	return fmt.Sprintf("%03d", count)
 }

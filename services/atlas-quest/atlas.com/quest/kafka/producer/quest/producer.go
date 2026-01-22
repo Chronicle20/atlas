@@ -3,6 +3,7 @@ package quest
 import (
 	quest2 "atlas-quest/kafka/message/quest"
 	"context"
+	"time"
 
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-kafka/topic"
@@ -12,7 +13,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func QuestStartedEventProvider(transactionId uuid.UUID, characterId uint32, worldId byte, questId uint32) model.Provider[[]kafka.Message] {
+func QuestStartedEventProvider(transactionId uuid.UUID, characterId uint32, worldId byte, questId uint32, progress string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &quest2.StatusEvent[quest2.QuestStartedEventBody]{
 		TransactionId: transactionId,
@@ -20,13 +21,14 @@ func QuestStartedEventProvider(transactionId uuid.UUID, characterId uint32, worl
 		WorldId:       worldId,
 		Type:          quest2.StatusEventTypeStarted,
 		Body: quest2.QuestStartedEventBody{
-			QuestId: questId,
+			QuestId:  questId,
+			Progress: progress,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func QuestCompletedEventProvider(transactionId uuid.UUID, characterId uint32, worldId byte, questId uint32) model.Provider[[]kafka.Message] {
+func QuestCompletedEventProvider(transactionId uuid.UUID, characterId uint32, worldId byte, questId uint32, completedAt time.Time) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &quest2.StatusEvent[quest2.QuestCompletedEventBody]{
 		TransactionId: transactionId,
@@ -34,7 +36,8 @@ func QuestCompletedEventProvider(transactionId uuid.UUID, characterId uint32, wo
 		WorldId:       worldId,
 		Type:          quest2.StatusEventTypeCompleted,
 		Body: quest2.QuestCompletedEventBody{
-			QuestId: questId,
+			QuestId:     questId,
+			CompletedAt: completedAt,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
@@ -92,13 +95,13 @@ func emitEvent(l logrus.FieldLogger, ctx context.Context, provider model.Provide
 }
 
 // EmitQuestStarted emits a quest started event
-func EmitQuestStarted(l logrus.FieldLogger, ctx context.Context, transactionId uuid.UUID, characterId uint32, worldId byte, questId uint32) error {
-	return emitEvent(l, ctx, QuestStartedEventProvider(transactionId, characterId, worldId, questId))
+func EmitQuestStarted(l logrus.FieldLogger, ctx context.Context, transactionId uuid.UUID, characterId uint32, worldId byte, questId uint32, progress string) error {
+	return emitEvent(l, ctx, QuestStartedEventProvider(transactionId, characterId, worldId, questId, progress))
 }
 
 // EmitQuestCompleted emits a quest completed event
-func EmitQuestCompleted(l logrus.FieldLogger, ctx context.Context, transactionId uuid.UUID, characterId uint32, worldId byte, questId uint32) error {
-	return emitEvent(l, ctx, QuestCompletedEventProvider(transactionId, characterId, worldId, questId))
+func EmitQuestCompleted(l logrus.FieldLogger, ctx context.Context, transactionId uuid.UUID, characterId uint32, worldId byte, questId uint32, completedAt time.Time) error {
+	return emitEvent(l, ctx, QuestCompletedEventProvider(transactionId, characterId, worldId, questId, completedAt))
 }
 
 // EmitQuestForfeited emits a quest forfeited event

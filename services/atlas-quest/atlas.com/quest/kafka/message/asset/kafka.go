@@ -5,9 +5,10 @@ import (
 )
 
 const (
-	EnvEventTopicStatus    = "EVENT_TOPIC_ASSET_STATUS"
-	StatusEventTypeCreated = "CREATED"
-	StatusEventTypeDeleted = "DELETED"
+	EnvEventTopicStatus            = "EVENT_TOPIC_ASSET_STATUS"
+	StatusEventTypeCreated         = "CREATED"
+	StatusEventTypeDeleted         = "DELETED"
+	StatusEventTypeQuantityChanged = "QUANTITY_CHANGED"
 )
 
 type StatusEvent[E any] struct {
@@ -28,4 +29,8 @@ type CreatedStatusEventBody struct {
 }
 
 type DeletedStatusEventBody struct {
+}
+
+type QuantityChangedStatusEventBody struct {
+	Quantity uint32 `json:"quantity"`
 }

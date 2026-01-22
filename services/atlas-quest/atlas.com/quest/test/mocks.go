@@ -6,6 +6,7 @@ import (
 	"atlas-quest/kafka/message/saga"
 	"atlas-quest/quest"
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -201,12 +202,12 @@ func NewMockEventEmitter() *MockEventEmitter {
 	}
 }
 
-func (m *MockEventEmitter) EmitQuestStarted(transactionId uuid.UUID, characterId uint32, worldId byte, questId uint32) error {
+func (m *MockEventEmitter) EmitQuestStarted(transactionId uuid.UUID, characterId uint32, worldId byte, questId uint32, progress string) error {
 	m.StartedEvents = append(m.StartedEvents, QuestEvent{CharacterId: characterId, WorldId: worldId, QuestId: questId})
 	return nil
 }
 
-func (m *MockEventEmitter) EmitQuestCompleted(transactionId uuid.UUID, characterId uint32, worldId byte, questId uint32) error {
+func (m *MockEventEmitter) EmitQuestCompleted(transactionId uuid.UUID, characterId uint32, worldId byte, questId uint32, completedAt time.Time) error {
 	m.CompletedEvents = append(m.CompletedEvents, QuestEvent{CharacterId: characterId, WorldId: worldId, QuestId: questId})
 	return nil
 }

@@ -1,6 +1,10 @@
 package quest
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 const (
 	// EnvCommandTopic defines the environment variable for the quest command topic
@@ -89,12 +93,14 @@ type StatusEvent[E any] struct {
 
 // QuestStartedEventBody is the body for quest started events
 type QuestStartedEventBody struct {
-	QuestId uint32 `json:"questId"`
+	QuestId  uint32 `json:"questId"`
+	Progress string `json:"progress"`
 }
 
 // QuestCompletedEventBody is the body for quest completed events
 type QuestCompletedEventBody struct {
-	QuestId uint32 `json:"questId"`
+	QuestId     uint32    `json:"questId"`
+	CompletedAt time.Time `json:"completedAt"`
 }
 
 // QuestForfeitedEventBody is the body for quest forfeited events

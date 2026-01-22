@@ -261,7 +261,7 @@ func validateConditionInput(input ConditionInput) error {
 		if input.Operator != "=" {
 			return fmt.Errorf("marriage gift conditions only support '=' operator")
 		}
-	case "level", "reborns", "dojoPoints", "vanquisherKills", "gmLevel":
+	case "level", "reborns", "dojoPoints", "vanquisherKills", "gmLevel", "hp", "maxHp":
 		// Numeric conditions should have non-negative values
 		if input.Value < 0 {
 			return fmt.Errorf("%s value must be non-negative", input.Type)

@@ -30,6 +30,7 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			var t string
 			t, _ = topic.EnvProvider(l)(asset.EnvEventTopicStatus)()
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetCreatedEvent(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetDeletedEvent(db))))
 		}
 	}
 }
@@ -68,6 +69,43 @@ func handleAssetCreatedEvent(db *gorm.DB) message.Handler[asset.StatusEvent[asse
 					l.WithError(err).Errorf("Unable to update item progress for quest [%d] character [%d].", q.QuestId(), e.CharacterId)
 				} else {
 					l.Debugf("Updated item [%d] progress for quest [%d] character [%d]: %d -> %d.", e.TemplateId, q.QuestId(), e.CharacterId, currentCount, newCount)
+				}
+			}
+		}
+	}
+}
+
+func handleAssetDeletedEvent(db *gorm.DB) message.Handler[asset.StatusEvent[asset.DeletedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e asset.StatusEvent[asset.DeletedStatusEventBody]) {
+		if e.Type != asset.StatusEventTypeDeleted {
+			return
+		}
+
+		if e.CharacterId == 0 {
+			return
+		}
+
+		// Get all started quests for this character
+		quests, err := quest.NewProcessor(l, ctx, db).GetByCharacterIdAndState(e.CharacterId, quest.StateStarted)
+		if err != nil {
+			l.WithError(err).Debugf("Unable to get started quests for character [%d].", e.CharacterId)
+			return
+		}
+
+		// For each quest, check if it tracks this item and update progress
+		for _, q := range quests {
+			if p, found := q.GetProgress(e.TemplateId); found {
+				// Decrement the item count (but not below 0)
+				currentCount := parseProgress(p.Progress())
+				var newCount uint32
+				if currentCount > 0 {
+					newCount = currentCount - 1
+				}
+				err = quest.NewProcessor(l, ctx, db).SetProgress(e.CharacterId, q.QuestId(), e.TemplateId, strconv.Itoa(int(newCount)))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to update item progress for quest [%d] character [%d].", q.QuestId(), e.CharacterId)
+				} else {
+					l.Debugf("Updated item [%d] progress (deleted) for quest [%d] character [%d]: %d -> %d.", e.TemplateId, q.QuestId(), e.CharacterId, currentCount, newCount)
 				}
 			}
 		}

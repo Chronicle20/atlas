@@ -16,6 +16,7 @@ import (
 	"atlas-saga-orchestrator/pet"
 	portalBlocking "atlas-saga-orchestrator/portal"
 	"atlas-saga-orchestrator/quest"
+	reactorDrop "atlas-saga-orchestrator/reactor/drop"
 	"atlas-saga-orchestrator/skill"
 	"atlas-saga-orchestrator/storage"
 	system_message "atlas-saga-orchestrator/system_message"
@@ -80,6 +81,7 @@ type Handler interface {
 	handleIncreaseBuddyCapacity(s Saga, st Step[any]) error
 	handleGainCloseness(s Saga, st Step[any]) error
 	handleSpawnMonster(s Saga, st Step[any]) error
+	handleSpawnReactorDrops(s Saga, st Step[any]) error
 	handleCompleteQuest(s Saga, st Step[any]) error
 	handleStartQuest(s Saga, st Step[any]) error
 	handleApplyConsumableEffect(s Saga, st Step[any]) error
@@ -117,6 +119,7 @@ type HandlerImpl struct {
 	petP            pet.Processor
 	footholdP       foothold.Processor
 	monsterP        monster.Processor
+	reactorDropP    reactorDrop.Processor
 	consumableP     consumable.Processor
 	portalP         portal.Processor
 	portalBlockingP portalBlocking.Processor
@@ -141,6 +144,7 @@ func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
 		petP:            pet.NewProcessor(l, ctx),
 		footholdP:       foothold.NewProcessor(l, ctx),
 		monsterP:        monster.NewProcessor(l, ctx),
+		reactorDropP:    reactorDrop.NewProcessor(l, ctx),
 		consumableP:     consumable.NewProcessor(l, ctx),
 		portalBlockingP: portalBlocking.NewProcessor(l, ctx),
 		cashshopP:       cashshop.NewProcessor(l, ctx),
@@ -524,6 +528,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleGainCloseness, true
 	case SpawnMonster:
 		return h.handleSpawnMonster, true
+	case SpawnReactorDrops:
+		return h.handleSpawnReactorDrops, true
 	case CompleteQuest:
 		return h.handleCompleteQuest, true
 	case StartQuest:
@@ -1123,6 +1129,43 @@ func (h *HandlerImpl) handleSpawnMonster(s Saga, st Step[any]) error {
 
 	h.l.Debugf("Successfully spawned %d monsters (id=%d) at (%d, %d, fh=%d) in world %d, channel %d, map %d",
 		count, payload.MonsterId, payload.X, payload.Y, fh, payload.WorldId, payload.ChannelId, payload.MapId)
+
+	return nil
+}
+
+// handleSpawnReactorDrops handles the SpawnReactorDrops action
+// This is a fire-and-forget action - we fetch drops, roll chances, spawn items, and immediately complete
+func (h *HandlerImpl) handleSpawnReactorDrops(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(SpawnReactorDropsPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.reactorDropP.SpawnReactorDrops(
+		s.TransactionId(),
+		payload.CharacterId,
+		payload.WorldId,
+		payload.ChannelId,
+		payload.MapId,
+		payload.ReactorId,
+		payload.Classification,
+		payload.X,
+		payload.Y,
+		payload.DropType,
+		payload.Meso,
+		payload.MesoChance,
+		payload.MesoMin,
+		payload.MesoMax,
+		payload.MinItems,
+	)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to spawn reactor drops.")
+		return err
+	}
+
+	// SpawnReactorDrops is a fire-and-forget command with no async response
+	// Mark the step as completed immediately after successfully sending the commands
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
 
 	return nil
 }

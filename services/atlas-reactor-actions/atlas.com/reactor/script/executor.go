@@ -84,33 +84,88 @@ func (e *OperationExecutor) ExecuteOperations(rc ReactorContext, characterId uin
 	return nil
 }
 
-// executeDropItems handles reactor item drops
-// TODO: This needs a new saga action for reactor drops that interfaces with atlas-drops
+// executeDropItems handles reactor item drops via saga orchestration
+// Supports both legacy params (minMeso, maxMeso, mesoRange) and new params (mesoChance, mesoMin, mesoMax, minItems)
 func (e *OperationExecutor) executeDropItems(rc ReactorContext, characterId uint32, op operation.Model) error {
 	params := op.Params()
 
-	meso := params["meso"] == "true"
-	item := params["item"] == "1"
-
-	var minMeso, maxMeso, mesoRange float64 = 1, 1, 1
-	if v, ok := params["minMeso"]; ok {
-		minMeso, _ = strconv.ParseFloat(v, 64)
-	}
-	if v, ok := params["maxMeso"]; ok {
-		maxMeso, _ = strconv.ParseFloat(v, 64)
-	}
-	if v, ok := params["mesoRange"]; ok {
-		mesoRange, _ = strconv.ParseFloat(v, 64)
+	// Parse drop type - defaults to "drop" (simultaneous), can be "spray" (200ms intervals)
+	dropType := "drop"
+	if v, ok := params["dropType"]; ok {
+		dropType = v
 	}
 
-	e.l.Infof("DROP_ITEMS: reactor=%s, map=%d, x=%d, y=%d, characterId=%d, meso=%t, item=%t, minMeso=%.0f, maxMeso=%.0f, mesoRange=%.0f",
-		rc.Classification, rc.MapId, rc.X, rc.Y, characterId, meso, item, minMeso, maxMeso, mesoRange)
+	// Parse meso enabled
+	mesoEnabled := params["meso"] == "true"
 
-	// TODO: Create saga command for reactor drops
-	// This will need to interface with atlas-drops service to spawn drops at reactor location
-	// For now, log the operation - actual implementation requires new saga action
+	// Parse meso configuration with backward compatibility
+	var mesoChance, mesoMin, mesoMax, minItems uint32 = 1, 1, 1, 0
 
-	return nil
+	// New format: mesoChance
+	if v, ok := params["mesoChance"]; ok {
+		if parsed, err := strconv.ParseUint(v, 10, 32); err == nil {
+			mesoChance = uint32(parsed)
+		}
+	}
+
+	// New format: mesoMin, fallback to legacy minMeso
+	if v, ok := params["mesoMin"]; ok {
+		if parsed, err := strconv.ParseUint(v, 10, 32); err == nil {
+			mesoMin = uint32(parsed)
+		}
+	} else if v, ok := params["minMeso"]; ok {
+		if parsed, err := strconv.ParseUint(v, 10, 32); err == nil {
+			mesoMin = uint32(parsed)
+		}
+	}
+
+	// New format: mesoMax, fallback to legacy maxMeso
+	if v, ok := params["mesoMax"]; ok {
+		if parsed, err := strconv.ParseUint(v, 10, 32); err == nil {
+			mesoMax = uint32(parsed)
+		}
+	} else if v, ok := params["maxMeso"]; ok {
+		if parsed, err := strconv.ParseUint(v, 10, 32); err == nil {
+			mesoMax = uint32(parsed)
+		}
+	}
+
+	// New format: minItems (minimum guaranteed drops, padded with meso)
+	if v, ok := params["minItems"]; ok {
+		if parsed, err := strconv.ParseUint(v, 10, 32); err == nil {
+			minItems = uint32(parsed)
+		}
+	}
+
+	e.l.Debugf("Spawning reactor drops: reactor=%s (objectId=%d), map=%d, pos=(%d,%d), char=%d, type=%s, meso=%t, mesoChance=%d, mesoMin=%d, mesoMax=%d, minItems=%d",
+		rc.Classification, rc.ReactorId, rc.MapId, rc.X, rc.Y, characterId, dropType, mesoEnabled, mesoChance, mesoMin, mesoMax, minItems)
+
+	s := saga.NewBuilder().
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("reactor-action-drop").
+		AddStep(
+			fmt.Sprintf("drop-%s-%d", rc.Classification, characterId),
+			saga.Pending,
+			saga.SpawnReactorDrops,
+			saga.SpawnReactorDropsPayload{
+				CharacterId:    characterId,
+				WorldId:        rc.WorldId,
+				ChannelId:      rc.ChannelId,
+				MapId:          rc.MapId,
+				ReactorId:      rc.ReactorId,
+				Classification: rc.Classification,
+				X:              rc.X,
+				Y:              rc.Y,
+				DropType:       dropType,
+				Meso:           mesoEnabled,
+				MesoChance:     mesoChance,
+				MesoMin:        mesoMin,
+				MesoMax:        mesoMax,
+				MinItems:       minItems,
+			},
+		).Build()
+
+	return e.sagaP.Create(s)
 }
 
 // executeSpawnMonster spawns monsters at the reactor location
@@ -159,16 +214,16 @@ func (e *OperationExecutor) executeSpawnMonster(rc ReactorContext, characterId u
 	return e.sagaP.Create(s)
 }
 
-// executeSprayItems sprays items around the reactor
-// TODO: This needs implementation - similar to drop_items but with spread pattern
+// executeSprayItems sprays items around the reactor with 200ms delay between drops
+// This delegates to executeDropItems with dropType="spray"
 func (e *OperationExecutor) executeSprayItems(rc ReactorContext, characterId uint32, op operation.Model) error {
-	e.l.Infof("SPRAY_ITEMS: reactor=%s, map=%d, x=%d, y=%d, characterId=%d",
-		rc.Classification, rc.MapId, rc.X, rc.Y, characterId)
+	// Create a modified operation with dropType=spray
+	// We inject the spray type into params before delegating
+	params := op.Params()
+	params["dropType"] = "spray"
 
-	// TODO: Create saga command for spraying items
-	// This will need to interface with atlas-drops service with spread positions
-
-	return nil
+	e.l.Debugf("SPRAY_ITEMS: delegating to drop_items with spray type for reactor=%s", rc.Classification)
+	return e.executeDropItems(rc, characterId, op)
 }
 
 // executeWeakenAreaBoss weakens a boss monster in the area

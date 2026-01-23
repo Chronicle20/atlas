@@ -21,14 +21,14 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			registerHandler := rest.RegisterHandler(l)(db)(si)
 			registerInputHandler := rest.RegisterInputHandler[RestModel](l)(db)(si)
 
-			// Register handlers
+			// Register handlers - specific routes before parameterized routes
+			router.HandleFunc("/reactors/actions/seed", registerHandler("seed_scripts", SeedScriptsHandler)).Methods(http.MethodPost)
 			router.HandleFunc("/reactors/actions", registerHandler("get_all_scripts", GetAllScriptsHandler)).Methods(http.MethodGet)
-			router.HandleFunc("/reactors/actions/{scriptId}", registerHandler("get_script", GetScriptHandler)).Methods(http.MethodGet)
-			router.HandleFunc("/reactors/{reactorId}/actions", registerHandler("get_scripts_by_reactor", GetScriptsByReactorHandler)).Methods(http.MethodGet)
 			router.HandleFunc("/reactors/actions", registerInputHandler("create_script", CreateScriptHandler)).Methods(http.MethodPost)
+			router.HandleFunc("/reactors/actions/{scriptId}", registerHandler("get_script", GetScriptHandler)).Methods(http.MethodGet)
 			router.HandleFunc("/reactors/actions/{scriptId}", registerInputHandler("update_script", UpdateScriptHandler)).Methods(http.MethodPatch)
 			router.HandleFunc("/reactors/actions/{scriptId}", registerHandler("delete_script", DeleteScriptHandler)).Methods(http.MethodDelete)
-			router.HandleFunc("/reactors/actions/seed", registerHandler("seed_scripts", SeedScriptsHandler)).Methods(http.MethodPost)
+			router.HandleFunc("/reactors/{reactorId}/actions", registerHandler("get_scripts_by_reactor", GetScriptsByReactorHandler)).Methods(http.MethodGet)
 		}
 	}
 }

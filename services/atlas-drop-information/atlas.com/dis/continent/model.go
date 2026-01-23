@@ -14,5 +14,7 @@ func (m Model) Id() int32 {
 }
 
 func (m Model) Drops() []drop.Model {
-	return m.drops
+	result := make([]drop.Model, len(m.drops))
+	copy(result, m.drops)
+	return result
 }

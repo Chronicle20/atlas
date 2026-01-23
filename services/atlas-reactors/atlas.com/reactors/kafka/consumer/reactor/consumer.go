@@ -26,6 +26,7 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		var t string
 		t, _ = topic.EnvProvider(l)(reactor.EnvCommandTopic)()
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCreate)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleHit)))
 	}
 }
 
@@ -44,5 +45,16 @@ func handleCreate(l logrus.FieldLogger, ctx context.Context, c reactor.Command[r
 	err := reactor.Create(l)(ctx)(b)
 	if err != nil {
 		l.WithError(err).Errorf("Failed to create reactor for classification [%d].", c.Body.Classification)
+	}
+}
+
+func handleHit(l logrus.FieldLogger, ctx context.Context, c reactor.Command[reactor.HitCommandBody]) {
+	if c.Type != reactor.CommandTypeHit {
+		return
+	}
+
+	err := reactor.Hit(l)(ctx)(c.Body.ReactorId, c.Body.CharacterId, c.Body.SkillId)
+	if err != nil {
+		l.WithError(err).Errorf("Failed to process hit for reactor [%d].", c.Body.ReactorId)
 	}
 }

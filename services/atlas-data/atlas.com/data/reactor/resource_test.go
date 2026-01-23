@@ -104,9 +104,10 @@ func (t testServerInfo) GetBaseURL() string { return "http://localhost:8080" }
 func setupTestReactorData(t *testing.T, db *gorm.DB, tenantId uuid.UUID) {
 	reactors := []RestModel{
 		{
-			Id: 2001000,
-			TL: point.RestModel{X: -10, Y: -50},
-			BR: point.RestModel{X: 10, Y: 0},
+			Id:   2001000,
+			Name: "Test Reactor",
+			TL:   point.RestModel{X: -10, Y: -50},
+			BR:   point.RestModel{X: 10, Y: 0},
 			StateInfo: map[int8][]ReactorStateRestModel{
 				0: {
 					{Type: 0, NextState: 1, ActiveSkills: []uint32{}},
@@ -118,9 +119,10 @@ func setupTestReactorData(t *testing.T, db *gorm.DB, tenantId uuid.UUID) {
 			TimeoutInfo: map[int8]int32{},
 		},
 		{
-			Id: 2001001,
-			TL: point.RestModel{X: -20, Y: -60},
-			BR: point.RestModel{X: 20, Y: 0},
+			Id:   2001001,
+			Name: "Item Reactor",
+			TL:   point.RestModel{X: -20, Y: -60},
+			BR:   point.RestModel{X: 20, Y: 0},
 			StateInfo: map[int8][]ReactorStateRestModel{
 				0: {
 					{
@@ -140,6 +142,7 @@ func setupTestReactorData(t *testing.T, db *gorm.DB, tenantId uuid.UUID) {
 		},
 		{
 			Id:          2006000,
+			Name:        "Empty Reactor",
 			TL:          point.RestModel{X: 0, Y: -100},
 			BR:          point.RestModel{X: 50, Y: 0},
 			StateInfo:   map[int8][]ReactorStateRestModel{},
@@ -198,6 +201,8 @@ func testGetReactorEndpoint(t *testing.T, testServer *httptest.Server, tenantId 
 		assert.Equal(t, "2001000", data["id"])
 
 		attributes := data["attributes"].(map[string]interface{})
+		assert.Contains(t, attributes, "name")
+		assert.Equal(t, "Test Reactor", attributes["name"])
 		assert.Contains(t, attributes, "tl")
 		assert.Contains(t, attributes, "br")
 		assert.Contains(t, attributes, "stateInfo")

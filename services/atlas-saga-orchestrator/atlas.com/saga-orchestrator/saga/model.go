@@ -394,6 +394,7 @@ const (
 	IncreaseBuddyCapacity        Action = "increase_buddy_capacity"
 	GainCloseness                Action = "gain_closeness"
 	SpawnMonster                 Action = "spawn_monster"
+	SpawnReactorDrops            Action = "spawn_reactor_drops"
 	CompleteQuest                Action = "complete_quest"
 	StartQuest                   Action = "start_quest"
 	ApplyConsumableEffect        Action = "apply_consumable_effect"
@@ -741,6 +742,26 @@ type SpawnMonsterPayload struct {
 	Y           int16      `json:"y"`           // Y coordinate for spawn position
 	Team        int8       `json:"team"`        // Team assignment (default 0)
 	Count       int        `json:"count"`       // Number of monsters to spawn (default 1)
+}
+
+// SpawnReactorDropsPayload represents the payload required to spawn drops from a reactor.
+// The saga-orchestrator fetches drop configuration from atlas-drop-information and calculates
+// which items to drop based on chances, then spawns them via atlas-drops.
+type SpawnReactorDropsPayload struct {
+	CharacterId    uint32     `json:"characterId"`    // CharacterId who triggered the reactor
+	WorldId        world.Id   `json:"worldId"`        // WorldId for the drop location
+	ChannelId      channel.Id `json:"channelId"`      // ChannelId for the drop location
+	MapId          uint32     `json:"mapId"`          // MapId for the drop location
+	ReactorId      uint32     `json:"reactorId"`      // Reactor template ID
+	Classification string     `json:"classification"` // Reactor classification string
+	X              int16      `json:"x"`              // X coordinate for drop position
+	Y              int16      `json:"y"`              // Y coordinate for drop position
+	DropType       string     `json:"dropType"`       // "drop" for simultaneous, "spray" for 200ms intervals
+	Meso           bool       `json:"meso"`           // Whether meso drops are enabled
+	MesoChance     uint32     `json:"mesoChance"`     // Chance for meso drop (1 = 100%)
+	MesoMin        uint32     `json:"mesoMin"`        // Minimum meso amount
+	MesoMax        uint32     `json:"mesoMax"`        // Maximum meso amount
+	MinItems       uint32     `json:"minItems"`       // Minimum guaranteed drops (padded with meso)
 }
 
 // CompleteQuestPayload represents the payload required to complete a quest.
@@ -1164,6 +1185,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case SpawnMonster:
 		var payload SpawnMonsterPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case SpawnReactorDrops:
+		var payload SpawnReactorDropsPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

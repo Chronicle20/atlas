@@ -890,6 +890,11 @@
         "handler": "DropPickUpHandle"
       },
       {
+        "opCode": "0xCD",
+        "validator": "LoggedInValidator",
+        "handler": "ReactorHitHandle"
+      },
+      {
         "opCode": "0xE4",
         "validator": "LoggedInValidator",
         "handler": "CashShopCheckWalletHandle"
@@ -2002,6 +2007,10 @@
       {
         "opCode": "0x10D",
         "writer": "DropDestroy"
+      },
+      {
+        "opCode": "0x115",
+        "writer": "ReactorHit"
       },
       {
         "opCode": "0x117",

@@ -36,6 +36,14 @@ GET /api/continents/drops
 
 Returns all continent-wide drop entries (global drops that apply across continents).
 
+### Reactor Drops
+
+```
+GET /api/reactors/{reactorId}/drops
+```
+
+Returns all drop entries for a specific reactor.
+
 ### Seed Data
 
 ```
@@ -44,7 +52,7 @@ POST /api/drops/seed
 
 Seeds the database with drop data from JSON files. This operation:
 1. Deletes all existing drop data for the current tenant
-2. Loads and inserts data from JSON files in `/drops/monsters/` and `/drops/continents/`
+2. Loads and inserts data from JSON files in `/drops/monsters/`, `/drops/continents/`, and `/drops/reactors/`
 
 Returns a summary of the seeding operation:
 ```json
@@ -57,6 +65,11 @@ Returns a summary of the seeding operation:
   "continentDrops": {
     "deletedCount": 4,
     "createdCount": 4,
+    "failedCount": 0
+  },
+  "reactorDrops": {
+    "deletedCount": 10,
+    "createdCount": 15,
     "failedCount": 0
   }
 }
@@ -94,3 +107,23 @@ Returns a summary of the seeding operation:
 ```
 
 Note: `continentId` of `-1` indicates a global drop that applies to all continents.
+
+### Reactor Drops (`/drops/reactors/*.json`)
+
+Reactor drops use JSON:API format:
+
+```json
+{
+  "data": [
+    {
+      "type": "reactor-drops",
+      "attributes": {
+        "reactorId": 1001,
+        "itemId": 4001126,
+        "questId": 0,
+        "chance": 50000
+      }
+    }
+  ]
+}
+```

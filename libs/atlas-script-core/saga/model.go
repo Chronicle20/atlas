@@ -117,6 +117,7 @@ const (
 	SendMessage            Action = "send_message"
 	AwardFame              Action = "award_fame"
 	ShowStorage            Action = "show_storage"
+	SpawnReactorDrops      Action = "spawn_reactor_drops"
 
 	// Portal-specific actions
 	PlayPortalSound Action = "play_portal_sound"
@@ -420,6 +421,26 @@ type UnblockPortalPayload struct {
 	PortalId    uint32 `json:"portalId"`    // PortalId to unblock
 }
 
+// SpawnReactorDropsPayload represents the payload for spawning drops from a reactor.
+// saga-orchestrator will fetch drop configuration from atlas-drop-information
+// and spawn drops via atlas-drops service.
+type SpawnReactorDropsPayload struct {
+	CharacterId    uint32     `json:"characterId"`    // Character who triggered the reactor
+	WorldId        world.Id   `json:"worldId"`        // WorldId for drop spawning
+	ChannelId      channel.Id `json:"channelId"`      // ChannelId for drop spawning
+	MapId          uint32     `json:"mapId"`          // MapId where drops should spawn
+	ReactorId      uint32     `json:"reactorId"`      // ReactorId for fetching drop configuration
+	Classification string     `json:"classification"` // Reactor classification string
+	X              int16      `json:"x"`              // Reactor X position (drop origin)
+	Y              int16      `json:"y"`              // Reactor Y position (drop origin)
+	DropType       string     `json:"dropType"`       // "drop" (simultaneous) or "spray" (200ms intervals)
+	Meso           bool       `json:"meso"`           // Whether meso drops are enabled
+	MesoChance     uint32     `json:"mesoChance"`     // Meso drop probability (1/chance)
+	MesoMin        uint32     `json:"mesoMin"`        // Minimum meso amount per drop
+	MesoMax        uint32     `json:"mesoMax"`        // Maximum meso amount per drop
+	MinItems       uint32     `json:"minItems"`       // Minimum guaranteed drops (padded with meso)
+}
+
 // Custom UnmarshalJSON for Step[T] to handle the generics
 func (s *Step[T]) UnmarshalJSON(data []byte) error {
 	type Alias Step[T] // Alias to avoid recursion
@@ -613,6 +634,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case UnblockPortal:
 		var payload UnblockPortalPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case SpawnReactorDrops:
+		var payload SpawnReactorDropsPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

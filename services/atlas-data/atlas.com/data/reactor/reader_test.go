@@ -311,6 +311,31 @@ const linkTestXML = `
 </imgdir>
 `
 
+const infoFallbackTestXML = `
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="0002001.img">
+  <imgdir name="info">
+    <string name="info" value="메이플아일랜드 범용리엑터"/>
+  </imgdir>
+  <imgdir name="0">
+    <imgdir name="event">
+      <imgdir name="0">
+        <int name="type" value="0"/>
+        <int name="state" value="1"/>
+      </imgdir>
+    </imgdir>
+  </imgdir>
+  <imgdir name="1">
+    <imgdir name="event">
+      <imgdir name="0">
+        <int name="type" value="0"/>
+        <int name="state" value="2"/>
+      </imgdir>
+    </imgdir>
+  </imgdir>
+</imgdir>
+`
+
 var fixedNodeProvider = func(path string, id uint32) model.Provider[xml.Node] {
 	return xml.FromByteArrayProvider([]byte(testXML))
 }
@@ -323,6 +348,10 @@ var linkedNodeProvider = func(path string, id uint32) model.Provider[xml.Node] {
 	}
 }
 
+var infoFallbackNodeProvider = func(path string, id uint32) model.Provider[xml.Node] {
+	return xml.FromByteArrayProvider([]byte(infoFallbackTestXML))
+}
+
 func TestReader(t *testing.T) {
 	l, _ := test.NewNullLogger()
 
@@ -332,6 +361,9 @@ func TestReader(t *testing.T) {
 	}
 	if rm.Id != 1002000 {
 		t.Fatal("id != 1002000")
+	}
+	if rm.Name != "거대병아리" {
+		t.Fatalf("name != 거대병아리, got %s", rm.Name)
 	}
 	if len(rm.StateInfo) != 6 {
 		t.Fatal("len(rm.StateInfo) != 6")
@@ -348,7 +380,28 @@ func TestLinkedReader(t *testing.T) {
 	if rm.Id != 1020008 {
 		t.Fatal("id != 1020008")
 	}
+	if rm.Name != "거대병아리" {
+		t.Fatalf("name != 거대병아리, got %s", rm.Name)
+	}
 	if len(rm.StateInfo) != 6 {
 		t.Fatal("len(rm.StateInfo) != 6")
+	}
+}
+
+func TestReaderInfoFallback(t *testing.T) {
+	l, _ := test.NewNullLogger()
+
+	rm, err := Read(l)("", 0, infoFallbackNodeProvider)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rm.Id != 2001 {
+		t.Fatalf("id != 2001, got %d", rm.Id)
+	}
+	if rm.Name != "메이플아일랜드 범용리엑터" {
+		t.Fatalf("name != 메이플아일랜드 범용리엑터, got %s", rm.Name)
+	}
+	if len(rm.StateInfo) != 2 {
+		t.Fatalf("len(rm.StateInfo) != 2, got %d", len(rm.StateInfo))
 	}
 }

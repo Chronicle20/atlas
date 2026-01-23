@@ -9,6 +9,7 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	_map2 "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
@@ -38,6 +39,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				t, _ = topic.EnvProvider(l)(reactor2.EnvEventStatusTopic)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCreated(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleDestroyed(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleHit(sc, wp))))
 			}
 		}
 	}
@@ -82,6 +84,30 @@ func handleDestroyed(sc server.Model, wp writer.Producer) message.Handler[reacto
 		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Map(_map2.Id(e.MapId)), session.Announce(l)(ctx)(wp)(writer.ReactorDestroy)(writer.ReactorDestroyBody(l, tenant.MustFromContext(ctx))(e.ReactorId, e.Body.State, e.Body.X, e.Body.Y)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to destroy reactor [%d] for characters in map [%d].", e.ReactorId, e.MapId)
+		}
+	}
+}
+
+func handleHit(sc server.Model, wp writer.Producer) message.Handler[reactor2.StatusEvent[reactor2.HitStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e reactor2.StatusEvent[reactor2.HitStatusEventBody]) {
+		if e.Type != reactor2.EventStatusTypeHit {
+			return
+		}
+
+		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
+			return
+		}
+
+		r := reactor.NewModelBuilder(e.WorldId, e.ChannelId, e.MapId, e.Body.Classification, "").
+			SetId(e.ReactorId).
+			SetState(e.Body.State).
+			SetPosition(e.Body.X, e.Body.Y).
+			SetDirection(e.Body.Direction).
+			MustBuild()
+
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Map(_map2.Id(e.MapId)), session.Announce(l)(ctx)(wp)(writer.ReactorHit)(writer.ReactorHitBody(l, tenant.MustFromContext(ctx))(r)))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to send reactor hit [%d] to characters in map [%d].", r.Id(), e.MapId)
 		}
 	}
 }

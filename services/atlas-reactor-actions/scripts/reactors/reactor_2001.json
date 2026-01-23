@@ -1,0 +1,23 @@
+{
+  "reactorId": "2001",
+  "description": "Maple Island Box - drops various items, notably quest items Old Wooden Board and Rusty Screw",
+  "hitRules": [],
+  "actRules": [
+    {
+      "id": "drop_items",
+      "conditions": [],
+      "operations": [
+        {
+          "type": "drop_items",
+          "params": {
+            "meso": "true",
+            "minMeso": "2",
+            "maxMeso": "8",
+            "mesoRange": "15",
+            "item": "1"
+          }
+        }
+      ]
+    }
+  ]
+}

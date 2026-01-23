@@ -7,6 +7,7 @@ import (
 
 type RestModel struct {
 	Id          uint32                           `json:"-"`
+	Name        string                           `json:"name"`
 	TL          point.RestModel                  `json:"tl"`
 	BR          point.RestModel                  `json:"br"`
 	StateInfo   map[int8][]ReactorStateRestModel `json:"stateInfo"`

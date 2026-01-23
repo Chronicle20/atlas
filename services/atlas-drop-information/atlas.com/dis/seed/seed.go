@@ -8,8 +8,9 @@ type SeedResult struct {
 	Errors       []string `json:"errors,omitempty"`
 }
 
-// CombinedSeedResult represents the combined results of seeding monster and continent drops
+// CombinedSeedResult represents the combined results of seeding monster, continent, and reactor drops
 type CombinedSeedResult struct {
 	MonsterDrops   SeedResult `json:"monsterDrops"`
 	ContinentDrops SeedResult `json:"continentDrops"`
+	ReactorDrops   SeedResult `json:"reactorDrops"`
 }

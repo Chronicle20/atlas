@@ -87,7 +87,7 @@ type Model struct {
 	incSpeed        uint32
 	incJump         uint32
 	spec            map[SpecType]int32
-	monsterSummons  map[uint32]uint32
+	monsterSummons  []SummonModel
 	morphs          map[uint32]uint32
 	skills          []uint32
 	rewards         []RewardModel
@@ -180,6 +180,11 @@ func (m Model) UnitPrice() float64 {
 
 func (m Model) SlotMax() uint32 {
 	return m.slotMax
+}
+
+type SummonModel struct {
+	templateId  uint32
+	probability uint32
 }
 
 type RewardModel struct {

@@ -5,7 +5,9 @@ import (
 	"atlas-reactors/logger"
 	"atlas-reactors/reactor"
 	"atlas-reactors/service"
+	"atlas-reactors/tasks"
 	"atlas-reactors/tracing"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
 )
@@ -47,6 +49,8 @@ func main() {
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	reactor2.InitConsumers(l)(cmf)(consumerGroupId)
 	reactor2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+
+	go tasks.Register(tasks.NewCooldownCleanup(l))
 
 	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), reactor.InitResource(GetServer()))
 

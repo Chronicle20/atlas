@@ -6,9 +6,13 @@ import (
 	"atlas-drops-information/database"
 	"atlas-drops-information/logger"
 	"atlas-drops-information/monster/drop"
+	"atlas-drops-information/reactor"
+	drop3 "atlas-drops-information/reactor/drop"
 	"atlas-drops-information/seed"
 	"atlas-drops-information/service"
 	"atlas-drops-information/tracing"
+	"os"
+
 	"github.com/Chronicle20/atlas-rest/server"
 )
 
@@ -45,9 +49,18 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	db := database.Connect(l, database.SetMigrations(drop.Migration, drop2.Migration))
+	db := database.Connect(l, database.SetMigrations(drop.Migration, drop2.Migration, drop3.Migration))
 
-	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), drop.InitResource(GetServer())(db), continent.InitResource(GetServer())(db), seed.InitResource(GetServer())(db))
+	server.New(l).
+		WithContext(tdm.Context()).
+		WithWaitGroup(tdm.WaitGroup()).
+		SetBasePath(GetServer().GetPrefix()).
+		SetPort(os.Getenv("REST_PORT")).
+		AddRouteInitializer(drop.InitResource(GetServer())(db)).
+		AddRouteInitializer(continent.InitResource(GetServer())(db)).
+		AddRouteInitializer(reactor.InitResource(GetServer())(db)).
+		AddRouteInitializer(seed.InitResource(GetServer())(db)).
+		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

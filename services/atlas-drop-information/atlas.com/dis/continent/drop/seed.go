@@ -10,7 +10,17 @@ import (
 	"strings"
 )
 
-var ContinentDropsPath = "/drops/continents"
+const defaultContinentDropsPath = "/drops/continents"
+
+// GetContinentDropsPath returns the path to the continent drops directory,
+// using the CONTINENT_DROPS_PATH environment variable if set, otherwise
+// falling back to the default path.
+func GetContinentDropsPath() string {
+	if path := os.Getenv("CONTINENT_DROPS_PATH"); path != "" {
+		return path
+	}
+	return defaultContinentDropsPath
+}
 
 // LoadContinentDropFiles reads all JSON files from the continent drops directory
 // and parses them into JSONModel structs. Returns the successfully parsed models
@@ -19,7 +29,8 @@ func LoadContinentDropFiles() ([]JSONModel, []error) {
 	var models []JSONModel
 	var errors []error
 
-	entries, err := os.ReadDir(ContinentDropsPath)
+	dropsPath := GetContinentDropsPath()
+	entries, err := os.ReadDir(dropsPath)
 	if err != nil {
 		return nil, []error{fmt.Errorf("failed to read continent drops directory: %w", err)}
 	}
@@ -33,7 +44,7 @@ func LoadContinentDropFiles() ([]JSONModel, []error) {
 			continue
 		}
 
-		filePath := filepath.Join(ContinentDropsPath, entry.Name())
+		filePath := filepath.Join(dropsPath, entry.Name())
 		data, err := os.ReadFile(filePath)
 		if err != nil {
 			errors = append(errors, fmt.Errorf("%s: failed to read file: %w", entry.Name(), err))

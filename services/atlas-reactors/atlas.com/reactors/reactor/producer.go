@@ -1,6 +1,8 @@
 package reactor
 
 import (
+	"fmt"
+
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
@@ -64,4 +66,73 @@ func destroyedStatusEventProvider(r Model) model.Provider[[]kafka.Message] {
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
+}
+
+func hitStatusEventProvider(r Model, destroyed bool) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(r.Id()))
+	value := &statusEvent[hitStatusEventBody]{
+		WorldId:   r.WorldId(),
+		ChannelId: r.ChannelId(),
+		MapId:     r.MapId(),
+		ReactorId: r.Id(),
+		Type:      EventStatusTypeHit,
+		Body: hitStatusEventBody{
+			Classification: r.Classification(),
+			State:          r.State(),
+			X:              r.X(),
+			Y:              r.Y(),
+			Direction:      r.Direction(),
+			Destroyed:      destroyed,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// hitActionsCommandProvider creates a HIT command for atlas-reactor-actions
+func hitActionsCommandProvider(r Model, characterId uint32, skillId uint32, isSkill bool) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(r.Id()))
+	value := &reactorActionsCommand[hitActionsBody]{
+		WorldId:        r.WorldId(),
+		ChannelId:      r.ChannelId(),
+		MapId:          r.MapId(),
+		ReactorId:      r.Id(),
+		Classification: formatClassification(r.Classification()),
+		ReactorName:    r.Name(),
+		ReactorState:   r.State(),
+		X:              r.X(),
+		Y:              r.Y(),
+		Type:           CommandTypeActionsHit,
+		Body: hitActionsBody{
+			CharacterId: characterId,
+			SkillId:     skillId,
+			IsSkill:     isSkill,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// triggerActionsCommandProvider creates a TRIGGER command for atlas-reactor-actions
+func triggerActionsCommandProvider(r Model, characterId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(r.Id()))
+	value := &reactorActionsCommand[triggerActionsBody]{
+		WorldId:        r.WorldId(),
+		ChannelId:      r.ChannelId(),
+		MapId:          r.MapId(),
+		ReactorId:      r.Id(),
+		Classification: formatClassification(r.Classification()),
+		ReactorName:    r.Name(),
+		ReactorState:   r.State(),
+		X:              r.X(),
+		Y:              r.Y(),
+		Type:           CommandTypeActionsTrigger,
+		Body: triggerActionsBody{
+			CharacterId: characterId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// formatClassification converts the classification uint32 to a string for script lookup
+func formatClassification(classification uint32) string {
+	return fmt.Sprintf("%d", classification)
 }

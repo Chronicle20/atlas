@@ -6,8 +6,17 @@ import (
 )
 
 type Model struct {
+	name        string
 	tl          point.Model
 	br          point.Model
 	stateInfo   map[int8][]state.Model
 	timeoutInfo map[int8]int32
+}
+
+func (m Model) Name() string {
+	return m.name
+}
+
+func (m Model) StateInfo() map[int8][]state.Model {
+	return m.stateInfo
 }

@@ -55,6 +55,11 @@ func Read(l logrus.FieldLogger) func(path string, id uint32, np xml.IdProvider) 
 			return model.FixedProvider(m)
 		}
 
+		name := info.GetString("name", "")
+		if name == "" {
+			name = info.GetString("info", "")
+		}
+
 		link := info.GetString("link", "")
 		if link != "" {
 			var linkId int
@@ -72,7 +77,7 @@ func Read(l logrus.FieldLogger) func(path string, id uint32, np xml.IdProvider) 
 
 		loadArea := info.GetIntegerWithDefault("activateByTouch", 0) != 0
 
-		m := RestModel{Id: reactorId, StateInfo: map[int8][]ReactorStateRestModel{}, TimeoutInfo: map[int8]int32{}}
+		m := RestModel{Id: reactorId, Name: name, StateInfo: map[int8][]ReactorStateRestModel{}, TimeoutInfo: map[int8]int32{}}
 		rid, err := exml.ChildByName("0")
 		i := int8(0)
 		for rid != nil {

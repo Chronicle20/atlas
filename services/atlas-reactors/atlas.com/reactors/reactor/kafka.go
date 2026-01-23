@@ -5,6 +5,7 @@ import "time"
 const (
 	EnvCommandTopic   = "COMMAND_TOPIC_REACTOR"
 	CommandTypeCreate = "CREATE"
+	CommandTypeHit    = "HIT"
 )
 
 type Command[E any] struct {
@@ -25,10 +26,52 @@ type CreateCommandBody struct {
 	Direction      byte   `json:"direction"`
 }
 
+type HitCommandBody struct {
+	ReactorId   uint32 `json:"reactorId"`
+	CharacterId uint32 `json:"characterId"`
+	Stance      uint16 `json:"stance"`
+	SkillId     uint32 `json:"skillId"`
+}
+
+// Reactor Actions topic and commands
+const (
+	EnvCommandReactorActionsTopic = "COMMAND_TOPIC_REACTOR_ACTIONS"
+	CommandTypeActionsHit         = "HIT"
+	CommandTypeActionsTrigger     = "TRIGGER"
+)
+
+// reactorActionsCommand represents a command sent to atlas-reactor-actions
+type reactorActionsCommand[E any] struct {
+	WorldId        byte   `json:"worldId"`
+	ChannelId      byte   `json:"channelId"`
+	MapId          uint32 `json:"mapId"`
+	ReactorId      uint32 `json:"reactorId"`
+	Classification string `json:"classification"`
+	ReactorName    string `json:"reactorName"`
+	ReactorState   int8   `json:"reactorState"`
+	X              int16  `json:"x"`
+	Y              int16  `json:"y"`
+	Type           string `json:"type"`
+	Body           E      `json:"body"`
+}
+
+// hitActionsBody represents the body of a HIT command to atlas-reactor-actions
+type hitActionsBody struct {
+	CharacterId uint32 `json:"characterId"`
+	SkillId     uint32 `json:"skillId"`
+	IsSkill     bool   `json:"isSkill"`
+}
+
+// triggerActionsBody represents the body of a TRIGGER command to atlas-reactor-actions
+type triggerActionsBody struct {
+	CharacterId uint32 `json:"characterId"`
+}
+
 const (
 	EnvEventStatusTopic      = "EVENT_TOPIC_REACTOR_STATUS"
 	EventStatusTypeCreated   = "CREATED"
 	EventStatusTypeDestroyed = "DESTROYED"
+	EventStatusTypeHit       = "HIT"
 )
 
 type statusEvent[E any] struct {
@@ -56,4 +99,13 @@ type destroyedStatusEventBody struct {
 	State int8  `json:"state"`
 	X     int16 `json:"x"`
 	Y     int16 `json:"y"`
+}
+
+type hitStatusEventBody struct {
+	Classification uint32 `json:"classification"`
+	State          int8   `json:"state"`
+	X              int16  `json:"x"`
+	Y              int16  `json:"y"`
+	Direction      byte   `json:"direction"`
+	Destroyed      bool   `json:"destroyed"`
 }

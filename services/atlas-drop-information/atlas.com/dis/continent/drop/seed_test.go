@@ -7,10 +7,6 @@ import (
 )
 
 func TestLoadContinentDropFiles(t *testing.T) {
-	// Save original path and restore after test
-	originalPath := ContinentDropsPath
-	defer func() { ContinentDropsPath = originalPath }()
-
 	tests := []struct {
 		name           string
 		setupPath      func() string
@@ -37,7 +33,8 @@ func TestLoadContinentDropFiles(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ContinentDropsPath = tt.setupPath()
+			os.Setenv("CONTINENT_DROPS_PATH", tt.setupPath())
+			defer os.Unsetenv("CONTINENT_DROPS_PATH")
 
 			models, errs := LoadContinentDropFiles()
 
@@ -53,10 +50,6 @@ func TestLoadContinentDropFiles(t *testing.T) {
 }
 
 func TestLoadContinentDropFilesValidData(t *testing.T) {
-	// Save original path and restore after test
-	originalPath := ContinentDropsPath
-	defer func() { ContinentDropsPath = originalPath }()
-
 	// Create a temp directory with only valid data
 	tempDir, err := os.MkdirTemp("", "continent_drops_test")
 	if err != nil {
@@ -74,7 +67,8 @@ func TestLoadContinentDropFilesValidData(t *testing.T) {
 		t.Fatalf("Failed to write test file: %v", err)
 	}
 
-	ContinentDropsPath = tempDir
+	os.Setenv("CONTINENT_DROPS_PATH", tempDir)
+	defer os.Unsetenv("CONTINENT_DROPS_PATH")
 
 	models, errs := LoadContinentDropFiles()
 
@@ -117,10 +111,6 @@ func TestLoadContinentDropFilesValidData(t *testing.T) {
 }
 
 func TestLoadContinentDropFilesEmptyDirectory(t *testing.T) {
-	// Save original path and restore after test
-	originalPath := ContinentDropsPath
-	defer func() { ContinentDropsPath = originalPath }()
-
 	// Create an empty temp directory
 	tempDir, err := os.MkdirTemp("", "continent_drops_empty_test")
 	if err != nil {
@@ -128,7 +118,8 @@ func TestLoadContinentDropFilesEmptyDirectory(t *testing.T) {
 	}
 	defer os.RemoveAll(tempDir)
 
-	ContinentDropsPath = tempDir
+	os.Setenv("CONTINENT_DROPS_PATH", tempDir)
+	defer os.Unsetenv("CONTINENT_DROPS_PATH")
 
 	models, errs := LoadContinentDropFiles()
 
@@ -142,10 +133,6 @@ func TestLoadContinentDropFilesEmptyDirectory(t *testing.T) {
 }
 
 func TestLoadContinentDropFilesIgnoresNonJSON(t *testing.T) {
-	// Save original path and restore after test
-	originalPath := ContinentDropsPath
-	defer func() { ContinentDropsPath = originalPath }()
-
 	// Create a temp directory with non-JSON files
 	tempDir, err := os.MkdirTemp("", "continent_drops_nonjson_test")
 	if err != nil {
@@ -166,7 +153,8 @@ func TestLoadContinentDropFilesIgnoresNonJSON(t *testing.T) {
 		t.Fatalf("Failed to write test file: %v", err)
 	}
 
-	ContinentDropsPath = tempDir
+	os.Setenv("CONTINENT_DROPS_PATH", tempDir)
+	defer os.Unsetenv("CONTINENT_DROPS_PATH")
 
 	models, errs := LoadContinentDropFiles()
 
@@ -181,10 +169,6 @@ func TestLoadContinentDropFilesIgnoresNonJSON(t *testing.T) {
 }
 
 func TestLoadContinentDropFilesIgnoresDirectories(t *testing.T) {
-	// Save original path and restore after test
-	originalPath := ContinentDropsPath
-	defer func() { ContinentDropsPath = originalPath }()
-
 	// Create a temp directory with a subdirectory
 	tempDir, err := os.MkdirTemp("", "continent_drops_subdir_test")
 	if err != nil {
@@ -212,7 +196,8 @@ func TestLoadContinentDropFilesIgnoresDirectories(t *testing.T) {
 		t.Fatalf("Failed to write test file: %v", err)
 	}
 
-	ContinentDropsPath = tempDir
+	os.Setenv("CONTINENT_DROPS_PATH", tempDir)
+	defer os.Unsetenv("CONTINENT_DROPS_PATH")
 
 	models, errs := LoadContinentDropFiles()
 
@@ -227,5 +212,26 @@ func TestLoadContinentDropFilesIgnoresDirectories(t *testing.T) {
 
 	if len(models) > 0 && models[0].ContinentId != -1 {
 		t.Errorf("Expected ContinentId -1 from root file, got %d", models[0].ContinentId)
+	}
+}
+
+func TestGetContinentDropsPathDefault(t *testing.T) {
+	// Ensure env var is not set
+	os.Unsetenv("CONTINENT_DROPS_PATH")
+
+	path := GetContinentDropsPath()
+	if path != defaultContinentDropsPath {
+		t.Errorf("Expected default path %s, got %s", defaultContinentDropsPath, path)
+	}
+}
+
+func TestGetContinentDropsPathFromEnv(t *testing.T) {
+	customPath := "/custom/path/to/drops"
+	os.Setenv("CONTINENT_DROPS_PATH", customPath)
+	defer os.Unsetenv("CONTINENT_DROPS_PATH")
+
+	path := GetContinentDropsPath()
+	if path != customPath {
+		t.Errorf("Expected custom path %s, got %s", customPath, path)
 	}
 }

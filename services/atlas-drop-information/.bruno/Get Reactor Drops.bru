@@ -1,0 +1,15 @@
+meta {
+  name: Get Reactor Drops
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/reactors/{{reactorId}}/drops
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  reactorId: 2001
+}

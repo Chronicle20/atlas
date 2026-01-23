@@ -10,9 +10,11 @@ import (
 	"atlas-query-aggregator/skill"
 	"atlas-query-aggregator/transport"
 	"context"
+	"errors"
 	"fmt"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
 )
 
@@ -455,31 +457,40 @@ func (p *ContextBuilderProvider) GetValidationContext(characterId uint32) model.
 			}
 		}
 
-		// Get marriage data if available
+		// Get marriage data if available (not found is not an error - character may not be married)
 		if p.marriageProvider != nil {
 			marriageModel, err := p.marriageProvider(characterId)()
-			if err != nil {
+			if err != nil && !errors.Is(err, requests.ErrNotFound) {
 				return ValidationContext{}, fmt.Errorf("failed to get marriage data: %w", err)
 			}
-			builder.SetMarriage(marriageModel)
+			if err == nil {
+				builder.SetMarriage(marriageModel)
+			}
+			// If not found, builder already has default empty marriage model
 		}
 
-		// Get buddy list data if available
+		// Get buddy list data if available (not found is not an error - character may have no buddies)
 		if p.buddyProvider != nil {
 			buddyListModel, err := p.buddyProvider(characterId)()
-			if err != nil {
+			if err != nil && !errors.Is(err, requests.ErrNotFound) {
 				return ValidationContext{}, fmt.Errorf("failed to get buddy list data: %w", err)
 			}
-			builder.SetBuddyList(buddyListModel)
+			if err == nil {
+				builder.SetBuddyList(buddyListModel)
+			}
+			// If not found, builder already has default empty buddy model
 		}
 
-		// Get pet count data if available
+		// Get pet count data if available (not found is not an error - character may have no pets)
 		if p.petCountProvider != nil {
 			petCount, err := p.petCountProvider(characterId)()
-			if err != nil {
+			if err != nil && !errors.Is(err, requests.ErrNotFound) {
 				return ValidationContext{}, fmt.Errorf("failed to get pet count data: %w", err)
 			}
-			builder.SetPetCount(petCount)
+			if err == nil {
+				builder.SetPetCount(petCount)
+			}
+			// If not found, builder already has default pet count of 0
 		}
 
 		return builder.Build(), nil

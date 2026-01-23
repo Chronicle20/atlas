@@ -2,8 +2,10 @@ package reactor
 
 import (
 	"errors"
-	"github.com/Chronicle20/atlas-tenant"
 	"sync"
+	"time"
+
+	"github.com/Chronicle20/atlas-tenant"
 )
 
 type registry struct {
@@ -11,6 +13,7 @@ type registry struct {
 	mapReactors map[tenant.Model]map[MapKey][]uint32
 	mapLocks    map[tenant.Model]map[MapKey]*sync.Mutex
 	tenantLock  map[tenant.Model]*sync.RWMutex
+	cooldowns   map[tenant.Model]map[MapKey]map[ReactorKey]time.Time
 	lock        sync.RWMutex
 }
 
@@ -25,12 +28,19 @@ type MapKey struct {
 	mapId     uint32
 }
 
+type ReactorKey struct {
+	Classification uint32
+	X              int16
+	Y              int16
+}
+
 func GetRegistry() *registry {
 	once.Do(func() {
 		reg = &registry{
 			reactors:    make(map[uint32]*Model),
 			mapReactors: make(map[tenant.Model]map[MapKey][]uint32),
 			mapLocks:    make(map[tenant.Model]map[MapKey]*sync.Mutex),
+			cooldowns:   make(map[tenant.Model]map[MapKey]map[ReactorKey]time.Time),
 			lock:        sync.RWMutex{},
 		}
 	})
@@ -208,4 +218,94 @@ func indexOf(id uint32, data []uint32) int {
 func remove(s []uint32, i int) []uint32 {
 	s[i] = s[len(s)-1]
 	return s[:len(s)-1]
+}
+
+func (r *registry) RecordCooldown(t tenant.Model, mk MapKey, classification uint32, x int16, y int16, delay uint32) {
+	if delay == 0 {
+		return
+	}
+
+	eligibleAt := time.Now().Add(time.Millisecond * time.Duration(delay))
+	rk := ReactorKey{Classification: classification, X: x, Y: y}
+
+	r.getMapLock(t, mk).Lock()
+	defer r.getMapLock(t, mk).Unlock()
+
+	r.lock.Lock()
+	if _, ok := r.cooldowns[t]; !ok {
+		r.cooldowns[t] = make(map[MapKey]map[ReactorKey]time.Time)
+	}
+	if _, ok := r.cooldowns[t][mk]; !ok {
+		r.cooldowns[t][mk] = make(map[ReactorKey]time.Time)
+	}
+	r.lock.Unlock()
+
+	r.cooldowns[t][mk][rk] = eligibleAt
+}
+
+func (r *registry) IsOnCooldown(t tenant.Model, mk MapKey, classification uint32, x int16, y int16) bool {
+	rk := ReactorKey{Classification: classification, X: x, Y: y}
+
+	r.getMapLock(t, mk).Lock()
+	defer r.getMapLock(t, mk).Unlock()
+
+	r.lock.RLock()
+	if _, ok := r.cooldowns[t]; !ok {
+		r.lock.RUnlock()
+		return false
+	}
+	if _, ok := r.cooldowns[t][mk]; !ok {
+		r.lock.RUnlock()
+		return false
+	}
+	r.lock.RUnlock()
+
+	eligibleAt, ok := r.cooldowns[t][mk][rk]
+	if !ok {
+		return false
+	}
+
+	return time.Now().Before(eligibleAt)
+}
+
+func (r *registry) ClearCooldown(t tenant.Model, mk MapKey, classification uint32, x int16, y int16) {
+	rk := ReactorKey{Classification: classification, X: x, Y: y}
+
+	r.getMapLock(t, mk).Lock()
+	defer r.getMapLock(t, mk).Unlock()
+
+	r.lock.RLock()
+	if _, ok := r.cooldowns[t]; !ok {
+		r.lock.RUnlock()
+		return
+	}
+	if _, ok := r.cooldowns[t][mk]; !ok {
+		r.lock.RUnlock()
+		return
+	}
+	r.lock.RUnlock()
+
+	delete(r.cooldowns[t][mk], rk)
+}
+
+func (r *registry) CleanupExpiredCooldowns() {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
+	now := time.Now()
+	for t, maps := range r.cooldowns {
+		for mk, reactors := range maps {
+			for rk, eligibleAt := range reactors {
+				if now.After(eligibleAt) {
+					delete(r.cooldowns[t][mk], rk)
+				}
+			}
+			if len(r.cooldowns[t][mk]) == 0 {
+				delete(r.cooldowns[t], mk)
+			}
+		}
+		if len(r.cooldowns[t]) == 0 {
+			delete(r.cooldowns, t)
+		}
+	}
 }

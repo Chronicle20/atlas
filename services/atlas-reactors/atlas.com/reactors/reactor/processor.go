@@ -33,6 +33,12 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(b *ModelBuilder
 	return func(ctx context.Context) func(b *ModelBuilder) error {
 		t := tenant.MustFromContext(ctx)
 		return func(b *ModelBuilder) error {
+			mk := MapKey{b.worldId, b.channelId, b.mapId}
+			if GetRegistry().IsOnCooldown(t, mk, b.classification, b.x, b.y) {
+				l.Debugf("Ignoring CREATE for reactor [%d] at (%d,%d) - on cooldown.", b.classification, b.x, b.y)
+				return nil
+			}
+
 			d, err := data.GetById(l)(ctx)(b.Classification())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to retrieve reactor [%d] game data.", b.Classification())
@@ -47,6 +53,7 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(b *ModelBuilder
 				l.WithError(err).Errorf("Failed to create reactor.")
 				return err
 			}
+			GetRegistry().ClearCooldown(t, mk, r.Classification(), r.X(), r.Y())
 			l.Debugf("Created reactor [%d] of [%d].", r.Id(), r.Classification())
 			return producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(createdStatusEventProvider(r))
 		}
@@ -92,6 +99,9 @@ func Destroy(l logrus.FieldLogger) func(ctx context.Context) model.Operator[Mode
 	return func(ctx context.Context) model.Operator[Model] {
 		return func(m Model) error {
 			t := tenant.MustFromContext(ctx)
+			mk := MapKey{m.WorldId(), m.ChannelId(), m.MapId()}
+			GetRegistry().RecordCooldown(t, mk, m.Classification(), m.X(), m.Y(), m.Delay())
+			l.Debugf("Recorded cooldown for reactor [%d] at (%d,%d) with delay [%d]ms.", m.Classification(), m.X(), m.Y(), m.Delay())
 			GetRegistry().Remove(t, m.Id())
 			return producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(destroyedStatusEventProvider(m))
 		}

@@ -10,10 +10,12 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
 	"gorm.io/gorm"
 )
 
@@ -42,27 +44,49 @@ func (p *ProcessorImpl) Seed() (CombinedSeedResult, error) {
 	p.l.Infof("Seeding drops for tenant [%s]", p.t.Id())
 
 	result := CombinedSeedResult{}
+	var mu sync.Mutex
 
-	// Seed monster drops
-	monsterResult, err := p.seedMonsterDrops()
-	if err != nil {
-		return result, fmt.Errorf("failed to seed monster drops: %w", err)
-	}
-	result.MonsterDrops = monsterResult
+	g, _ := errgroup.WithContext(p.ctx)
 
-	// Seed continent drops
-	continentResult, err := p.seedContinentDrops()
-	if err != nil {
-		return result, fmt.Errorf("failed to seed continent drops: %w", err)
-	}
-	result.ContinentDrops = continentResult
+	// Seed monster drops in parallel
+	g.Go(func() error {
+		monsterResult, err := p.seedMonsterDrops()
+		if err != nil {
+			return fmt.Errorf("failed to seed monster drops: %w", err)
+		}
+		mu.Lock()
+		result.MonsterDrops = monsterResult
+		mu.Unlock()
+		return nil
+	})
 
-	// Seed reactor drops
-	reactorResult, err := p.seedReactorDrops()
-	if err != nil {
-		return result, fmt.Errorf("failed to seed reactor drops: %w", err)
+	// Seed continent drops in parallel
+	g.Go(func() error {
+		continentResult, err := p.seedContinentDrops()
+		if err != nil {
+			return fmt.Errorf("failed to seed continent drops: %w", err)
+		}
+		mu.Lock()
+		result.ContinentDrops = continentResult
+		mu.Unlock()
+		return nil
+	})
+
+	// Seed reactor drops in parallel
+	g.Go(func() error {
+		reactorResult, err := p.seedReactorDrops()
+		if err != nil {
+			return fmt.Errorf("failed to seed reactor drops: %w", err)
+		}
+		mu.Lock()
+		result.ReactorDrops = reactorResult
+		mu.Unlock()
+		return nil
+	})
+
+	if err := g.Wait(); err != nil {
+		return result, err
 	}
-	result.ReactorDrops = reactorResult
 
 	p.l.Infof("Seed complete for tenant [%s]: monster_deleted=%d, monster_created=%d, continent_deleted=%d, continent_created=%d, reactor_deleted=%d, reactor_created=%d",
 		p.t.Id(),

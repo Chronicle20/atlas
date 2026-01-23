@@ -186,14 +186,19 @@ func (p *ProcessorImpl) fetchReactorDrops(classification string) ([]Model, error
 }
 
 // rollDrops determines which items drop based on their chance values
+// Drop probability formula: dropRate / chance
+// - chance=1 → 100%, chance=2 → 50%, chance=100 → 1%
+// - Higher chance values = rarer drops
+// - dropRate is a player multiplier (TODO: implement player drop rate bonuses)
 func (p *ProcessorImpl) rollDrops(drops []Model) []Model {
 	var result []Model
+	dropRate := 1.0 // TODO: Get from player data when drop rate bonuses are implemented
 	for _, d := range drops {
-		// Chance is stored as a percentage (e.g., 15 = 15%)
-		// Scale to 1000000 range where 1000000 = 100%
-		scaledChance := d.Chance() * 10000
-		roll := rand.Uint32() % 1000000
-		if roll < scaledChance {
+		if d.Chance() == 0 {
+			continue // Skip invalid chance values
+		}
+		probability := dropRate / float64(d.Chance())
+		if rand.Float64() < probability {
 			result = append(result, d)
 		}
 	}
@@ -201,14 +206,15 @@ func (p *ProcessorImpl) rollDrops(drops []Model) []Model {
 }
 
 // rollMesoChance determines if meso should drop
+// Same formula as item drops: probability = dropRate / mesoChance
+// - mesoChance=1 → 100%, mesoChance=2 → 50%, mesoChance=100 → 1%
 func (p *ProcessorImpl) rollMesoChance(mesoChance uint32) bool {
-	if mesoChance >= 1 {
-		// mesoChance of 1 means 100%
-		return true
+	if mesoChance == 0 {
+		return false // No meso drop if chance is 0
 	}
-	// Otherwise use it as a denominator
-	roll := rand.Uint32() % mesoChance
-	return roll == 0
+	dropRate := 1.0 // TODO: Get from player data when drop rate bonuses are implemented
+	probability := dropRate / float64(mesoChance)
+	return rand.Float64() < probability
 }
 
 // randomMesoAmount generates a random meso amount between min and max

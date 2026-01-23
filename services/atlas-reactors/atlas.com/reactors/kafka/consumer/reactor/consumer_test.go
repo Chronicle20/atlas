@@ -38,7 +38,7 @@ func TestInitHandlers(t *testing.T) {
 	}
 
 	consumer2.InitHandlers(l)(rf)
-	if handlerCount != 1 {
-		t.Fatalf("Expected 1 handler to be registered, got %d", handlerCount)
+	if handlerCount != 2 {
+		t.Fatalf("Expected 2 handlers to be registered, got %d", handlerCount)
 	}
 }

@@ -27,6 +27,7 @@ const (
 	CommandChangeMP            = "CHANGE_MP"
 	CommandSetHP               = "SET_HP"
 	CommandDeductExperience    = "DEDUCT_EXPERIENCE"
+	CommandResetStats          = "RESET_STATS"
 
 	ExperienceDistributionTypeWhite        = "WHITE"
 	ExperienceDistributionTypeYellow       = "YELLOW"
@@ -164,6 +165,10 @@ type SetHPBody struct {
 type DeductExperienceCommandBody struct {
 	ChannelId channel.Id `json:"channelId"`
 	Amount    uint32     `json:"amount"`
+}
+
+type ResetStatsCommandBody struct {
+	ChannelId channel.Id `json:"channelId"`
 }
 
 const (

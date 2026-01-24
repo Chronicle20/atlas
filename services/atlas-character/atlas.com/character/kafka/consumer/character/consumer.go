@@ -48,6 +48,7 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeMP(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSetHP(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleDeductExperience(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleResetStats(db))))
 			t, _ = topic.EnvProvider(l)(character2.EnvCommandTopicMovement)()
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementEvent(db))))
 			t, _ = topic.EnvProvider(l)(character2.EnvEventTopicCharacterStatus)()
@@ -308,5 +309,16 @@ func handleMovementEvent(db *gorm.DB) message.Handler[character2.MovementCommand
 		if err != nil {
 			l.WithError(err).Errorf("Error processing movement for character [%d].", c.ObjectId)
 		}
+	}
+}
+
+func handleResetStats(db *gorm.DB) message.Handler[character2.Command[character2.ResetStatsCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.ResetStatsCommandBody]) {
+		if c.Type != character2.CommandResetStats {
+			return
+		}
+
+		cha := channel.NewModel(c.WorldId, c.Body.ChannelId)
+		_ = character.NewProcessor(l, ctx, db).ResetStatsAndEmit(c.TransactionId, c.CharacterId, cha)
 	}
 }

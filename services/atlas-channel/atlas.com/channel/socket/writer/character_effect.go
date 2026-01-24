@@ -2,7 +2,6 @@ package writer
 
 import (
 	"atlas-channel/socket/model"
-	"strconv"
 
 	"github.com/Chronicle20/atlas-constants/skill"
 	"github.com/Chronicle20/atlas-socket/response"
@@ -12,37 +11,38 @@ import (
 const CharacterEffect = "CharacterEffect"
 const CharacterEffectForeign = "CharacterEffectForeign"
 
+type CharacterEffectMode string
+
+// CUser::OnEffect
+
 const (
-	CharacterEffectLevelUp                          = "LEVEL_UP"
-	CharacterEffectSkillUse                         = "SKILL_USE"
-	CharacterEffectSkillAffected                    = "SKILL_AFFECTED"
-	CharacterEffectQuest                            = "QUEST"
-	CharacterEffectPet                              = "PET"
-	CharacterEffectSkillSpecial                     = "SKILL_SPECIAL"
-	CharacterEffectProtectOnDieItemUse              = "PROTECT_ON_DIE_ITEM_USE"
-	CharacterEffectPlayPortalSoundEffect            = "PLAY_PORTAL_SOUND_EFFECT"
-	CharacterEffectJobChanged                       = "JOB_CHANGED"
-	CharacterEffectQuestComplete                    = "QUEST_COMPLETE"
-	CharacterEffectIncDecHPEffect                   = "INC_DEC_HP_EFFECT"
-	CharacterEffectBuffItemEffect                   = "BUFF_ITEM_EFFECT"
-	CharacterEffectShowIntroEffect                  = "SHOW_INTRO"
-	CharacterEffectMonsterBookCardGet               = "MONSTER_BOOK_CARD_GET"
-	CharacterEffectLotteryUse                       = "LOTTERY_USE"
-	CharacterEffectItemLevelUp                      = "ITEM_LEVEL_UP"
-	CharacterEffectItemMaker                        = "ITEM_MAKER"
-	CharacterEffectShowInfo                         = "SHOW_INFO"
-	CharacterEffectReservedEffect                   = "RESERVED_EFFECT"
-	CharacterEffectBuff                             = "BUFF"
-	CharacterEffectConsumeEffect                    = "CONSUME_EFFECT"
-	CharacterEffectUpgradeTombItemUse               = "UPGRADE_TOMB_ITEM_USE"
-	CharacterEffectBattlefieldItemUse               = "BATTLEFIELD_ITEM_USE"
-	CharacterEffectAvatarOriented                   = "AVATAR_ORIENTED"
-	CharacterEffectIncubatorUse                     = "INCUBATOR_USE"
-	CharacterEffectPlaySoundWithMuteBackgroundMusic = "PLAY_SOUND_WITH_MUTE_BACKGROUND_MUSIC"
-	CharacterEffectSoulStoneUse                     = "SOUL_STONE_USE"
-	CharacterEffectDeliveryQuestItemUse             = "DELIVERY_QUEST_ITEM_USE"
-	CharacterEffectRepeatEffectRemove               = "REPEAT_REPEAT_EFFECT"
-	CharacterEffectEvolutionRing                    = "EVOLUTION_RING"
+	CharacterEffectLevelUp                          CharacterEffectMode = "LEVEL_UP"                              // 0
+	CharacterEffectSkillUse                         CharacterEffectMode = "SKILL_USE"                             // 1
+	CharacterEffectSkillAffected                    CharacterEffectMode = "SKILL_AFFECTED"                        // 2
+	CharacterEffectQuest                            CharacterEffectMode = "QUEST"                                 // 3
+	CharacterEffectPet                              CharacterEffectMode = "PET"                                   // 4
+	CharacterEffectSkillSpecial                     CharacterEffectMode = "SKILL_SPECIAL"                         // 5
+	CharacterEffectProtectOnDieItemUse              CharacterEffectMode = "PROTECT_ON_DIE_ITEM_USE"               // 6
+	CharacterEffectPlayPortalSoundEffect            CharacterEffectMode = "PLAY_PORTAL_SOUND_EFFECT"              // 7
+	CharacterEffectJobChanged                       CharacterEffectMode = "JOB_CHANGED"                           // 8
+	CharacterEffectQuestComplete                    CharacterEffectMode = "QUEST_COMPLETE"                        // 9
+	CharacterEffectIncDecHPEffect                   CharacterEffectMode = "INC_DEC_HP_EFFECT"                     // 10
+	CharacterEffectBuffItemEffect                   CharacterEffectMode = "BUFF_ITEM_EFFECT"                      // 11
+	CharacterEffectShowIntroEffect                  CharacterEffectMode = "SHOW_INTRO"                            // 12
+	CharacterEffectMonsterBookCardGet               CharacterEffectMode = "MONSTER_BOOK_CARD_GET"                 // 13
+	CharacterEffectLotteryUse                       CharacterEffectMode = "LOTTERY_USE"                           // 14
+	CharacterEffectItemLevelUp                      CharacterEffectMode = "ITEM_LEVEL_UP"                         // 15
+	CharacterEffectItemMaker                        CharacterEffectMode = "ITEM_MAKER"                            // 16
+	CharacterEffectItemExperienceConsumed           CharacterEffectMode = "ITEM_EXPERIENCE_CONSUMED"              // 17
+	CharacterEffectReservedEffect                   CharacterEffectMode = "RESERVED_EFFECT"                       // 18
+	CharacterEffectBuff                             CharacterEffectMode = "BUFF"                                  // 19 not in v83
+	CharacterEffectConsumeEffect                    CharacterEffectMode = "CONSUME_EFFECT"                        // 20
+	CharacterEffectUpgradeTombItemUse               CharacterEffectMode = "UPGRADE_TOMB_ITEM_USE"                 // 21
+	CharacterEffectBattlefieldItemUse               CharacterEffectMode = "BATTLEFIELD_ITEM_USE"                  // 22
+	CharacterEffectShowInfo                         CharacterEffectMode = "SHOW_INFO"                             // 23
+	CharacterEffectIncubatorUse                     CharacterEffectMode = "INCUBATOR_USE"                         // 24
+	CharacterEffectPlaySoundWithMuteBackgroundMusic CharacterEffectMode = "PLAY_SOUND_WITH_MUTE_BACKGROUND_MUSIC" // 25
+	CharacterEffectSoulStoneUse                     CharacterEffectMode = "SOUL_STONE_USE"                        // 26
 
 	PetEffectLevelUp   = byte(0)
 	PetEffectDisappear = byte(1)
@@ -116,6 +116,7 @@ func CharacterSkillAffectedEffectForeignBody(l logrus.FieldLogger) func(characte
 	}
 }
 
+// TODO this is how we communicate quest complete
 func CharacterQuestEffectBody(l logrus.FieldLogger) func(message string, rewards []model.QuestReward, nEffect uint32) BodyProducer {
 	return func(message string, rewards []model.QuestReward, nEffect uint32) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
@@ -494,26 +495,6 @@ func CharacterBattlefieldItemUseEffectForeignBody(l logrus.FieldLogger) func(cha
 	}
 }
 
-func CharacterAvatarOrientedEffectBody(l logrus.FieldLogger) func(message string) BodyProducer {
-	return func(message string) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectAvatarOriented))
-			w.WriteAsciiString(message)
-			w.WriteInt(0) // unused
-			return w.Bytes()
-		}
-	}
-}
-
-func CharacterAvatarOrientedEffectForeignBody(l logrus.FieldLogger) func(characterId uint32, message string) BodyProducer {
-	return func(characterId uint32, message string) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteInt(characterId)
-			return CharacterAvatarOrientedEffectBody(l)(message)(w, options)
-		}
-	}
-}
-
 func CharacterIncubatorUseEffectBody(l logrus.FieldLogger) func(itemId uint32, message string) BodyProducer {
 	return func(itemId uint32, message string) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
@@ -571,8 +552,8 @@ func CharacterSoulStoneUseEffectForeignBody(l logrus.FieldLogger) func(character
 	}
 }
 
-func getCharacterEffect(l logrus.FieldLogger) func(options map[string]interface{}, key string) byte {
-	return func(options map[string]interface{}, key string) byte {
+func getCharacterEffect(l logrus.FieldLogger) func(options map[string]interface{}, key CharacterEffectMode) byte {
+	return func(options map[string]interface{}, key CharacterEffectMode) byte {
 		var genericCodes interface{}
 		var ok bool
 		if genericCodes, ok = options["operations"]; !ok {
@@ -586,14 +567,8 @@ func getCharacterEffect(l logrus.FieldLogger) func(options map[string]interface{
 			return 99
 		}
 
-		var code interface{}
-		if code, ok = codes[key]; !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-
-		op, err := strconv.ParseUint(code.(string), 0, 16)
-		if err != nil {
+		op, ok := codes[string(key)].(float64)
+		if !ok {
 			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
 			return 99
 		}

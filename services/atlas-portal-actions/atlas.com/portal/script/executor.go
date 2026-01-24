@@ -132,7 +132,9 @@ func (e *OperationExecutor) executeWarp(f field.Model, characterId uint32, op op
 			saga.WarpToPortal,
 			saga.WarpToPortalPayload{
 				CharacterId: characterId,
-				FieldId:     field.NewBuilder(f.WorldId(), f.ChannelId(), _map.Id(mapId)).Build().Id(),
+				WorldId:     f.WorldId(),
+				ChannelId:   f.ChannelId(),
+				MapId:       _map.Id(mapId),
 				PortalId:    portalId,
 				PortalName:  portalName,
 			},

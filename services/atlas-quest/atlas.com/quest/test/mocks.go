@@ -3,6 +3,7 @@ package test
 import (
 	dataquest "atlas-quest/data/quest"
 	"atlas-quest/data/validation"
+	questmessage "atlas-quest/kafka/message/quest"
 	"atlas-quest/kafka/message/saga"
 	"atlas-quest/quest"
 	"errors"
@@ -180,6 +181,7 @@ type QuestEvent struct {
 	CharacterId uint32
 	WorldId     byte
 	QuestId     uint32
+	Items       []questmessage.ItemReward
 }
 
 // ProgressEvent represents a progress update event for testing
@@ -207,8 +209,8 @@ func (m *MockEventEmitter) EmitQuestStarted(transactionId uuid.UUID, characterId
 	return nil
 }
 
-func (m *MockEventEmitter) EmitQuestCompleted(transactionId uuid.UUID, characterId uint32, worldId byte, questId uint32, completedAt time.Time) error {
-	m.CompletedEvents = append(m.CompletedEvents, QuestEvent{CharacterId: characterId, WorldId: worldId, QuestId: questId})
+func (m *MockEventEmitter) EmitQuestCompleted(transactionId uuid.UUID, characterId uint32, worldId byte, questId uint32, completedAt time.Time, items []questmessage.ItemReward) error {
+	m.CompletedEvents = append(m.CompletedEvents, QuestEvent{CharacterId: characterId, WorldId: worldId, QuestId: questId, Items: items})
 	return nil
 }
 

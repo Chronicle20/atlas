@@ -97,10 +97,17 @@ type QuestStartedEventBody struct {
 	Progress string `json:"progress"`
 }
 
+// ItemReward represents an item reward given during quest completion
+type ItemReward struct {
+	ItemId uint32 `json:"itemId"`
+	Amount int32  `json:"amount"`
+}
+
 // QuestCompletedEventBody is the body for quest completed events
 type QuestCompletedEventBody struct {
-	QuestId     uint32    `json:"questId"`
-	CompletedAt time.Time `json:"completedAt"`
+	QuestId     uint32       `json:"questId"`
+	CompletedAt time.Time    `json:"completedAt"`
+	Items       []ItemReward `json:"items,omitempty"`
 }
 
 // QuestForfeitedEventBody is the body for quest forfeited events

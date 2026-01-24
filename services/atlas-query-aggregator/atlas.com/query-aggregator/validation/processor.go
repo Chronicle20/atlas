@@ -79,7 +79,7 @@ func (p *ProcessorImpl) ValidateStructured(resultDecorators ...model.Decorator[V
 			}
 
 			// Check if this condition requires context-based evaluation
-			if condition.conditionType == QuestStatusCondition || condition.conditionType == QuestProgressCondition {
+			if condition.conditionType == QuestStatusCondition || condition.conditionType == QuestProgressCondition || condition.conditionType == BuffCondition {
 				needsContext = true
 			}
 		}

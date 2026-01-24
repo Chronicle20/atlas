@@ -8,6 +8,8 @@ import (
 	"atlas-parties/party"
 	"atlas-parties/service"
 	"atlas-parties/tracing"
+	"os"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
 )
@@ -54,7 +56,13 @@ func main() {
 	character.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	invite.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
-	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), party.InitResource(GetServer()))
+	server.New(l).
+		WithContext(tdm.Context()).
+		WithWaitGroup(tdm.WaitGroup()).
+		SetBasePath(GetServer().GetPrefix()).
+		SetPort(os.Getenv("REST_PORT")).
+		AddRouteInitializer(party.InitResource(GetServer())).
+		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

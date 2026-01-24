@@ -4,49 +4,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"io"
 	"log"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 )
 
-type ConfigFunc func(config *Config)
-
-type Config struct {
-	readTimeout  time.Duration
-	writeTimeout time.Duration
-	idleTimeout  time.Duration
-	addr         string
-}
-
-// NewServer deprecated
-//
-//goland:noinspection GoUnusedExportedFunction
-func NewServer(cl *logrus.Logger, ctx context.Context, wg *sync.WaitGroup, routerProducer func(l logrus.FieldLogger) http.Handler, configurators ...ConfigFunc) {
-	config := &Config{
-		readTimeout:  time.Duration(5) * time.Second,
-		writeTimeout: time.Duration(10) * time.Second,
-		idleTimeout:  time.Duration(120) * time.Second,
-		addr:         ":8080",
-	}
-
-	for _, configurator := range configurators {
-		configurator(config)
-	}
-
-	New(cl).
-		WithContext(ctx).
-		WithWaitGroup(wg).
-		SetRouterProducer(routerProducer).
-		SetReadTimeout(config.readTimeout).
-		SetWriteTimeout(config.writeTimeout).
-		SetIdleTimeout(config.idleTimeout).
-		SetAddr(config.addr).
-		Run()
-}
+type RouteInitializer func(*mux.Router, logrus.FieldLogger)
 
 func CommonHeader(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -61,6 +30,20 @@ func LoggingMiddleware(l logrus.FieldLogger) func(next http.Handler) http.Handle
 			l.Debugf("Handling [%s] request on [%s]", r.Method, r.RequestURI)
 			next.ServeHTTP(w, r)
 		})
+	}
+}
+
+func produceRoutes(basePath string, initializers ...RouteInitializer) func(l logrus.FieldLogger) http.Handler {
+	return func(l logrus.FieldLogger) http.Handler {
+		router := mux.NewRouter().PathPrefix(basePath).Subrouter().StrictSlash(true)
+		router.Use(CommonHeader)
+		router.Use(LoggingMiddleware(l))
+
+		for _, initializer := range initializers {
+			initializer(router, l)
+		}
+
+		return router
 	}
 }
 
@@ -94,7 +77,7 @@ func New(l *logrus.Logger) *Builder {
 	sb.basePath = "/"
 	sb.routeInitializers = make([]RouteInitializer, 0)
 	sb.routerProducer = func(l logrus.FieldLogger) http.Handler {
-		return ProduceRoutes(sb.basePath, sb.routeInitializers...)(l)
+		return produceRoutes(sb.basePath, sb.routeInitializers...)(l)
 	}
 	return sb
 }
@@ -148,11 +131,6 @@ func (sb *Builder) SetBasePath(path string) *Builder {
 
 func (sb *Builder) AddRouteInitializer(initializer RouteInitializer) *Builder {
 	sb.routeInitializers = append(sb.routeInitializers, initializer)
-	return sb
-}
-
-func (sb *Builder) SetRouteInitializers(initializers ...RouteInitializer) *Builder {
-	sb.routeInitializers = append(sb.routeInitializers, initializers...)
 	return sb
 }
 

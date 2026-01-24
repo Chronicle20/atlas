@@ -1,0 +1,128 @@
+# Account Domain
+
+## Responsibility
+
+The account domain manages user account lifecycle including creation, authentication, session state tracking, and account attribute updates.
+
+## Core Models
+
+### Model
+
+Immutable domain representation of an account.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| tenantId | uuid.UUID | Tenant identifier |
+| id | uint32 | Account identifier |
+| name | string | Account name |
+| password | string | Hashed password |
+| pin | string | Account PIN |
+| pic | string | Account PIC |
+| state | State | Current session state |
+| gender | byte | Gender value |
+| banned | bool | Ban status |
+| tos | bool | Terms of service acceptance |
+| updatedAt | time.Time | Last update timestamp |
+
+### State
+
+Account session state enumeration.
+
+| Value | Name | Description |
+|-------|------|-------------|
+| 0 | StateNotLoggedIn | Account is not logged in |
+| 1 | StateLoggedIn | Account is logged in |
+| 2 | StateTransition | Account is transitioning between services |
+
+### AccountKey
+
+Composite key for account identification in the registry.
+
+| Field | Type |
+|-------|------|
+| Tenant | tenant.Model |
+| AccountId | uint32 |
+
+### ServiceKey
+
+Composite key for service session identification.
+
+| Field | Type |
+|-------|------|
+| SessionId | uuid.UUID |
+| Service | Service |
+
+### Service
+
+Service type enumeration.
+
+| Value | Description |
+|-------|-------------|
+| LOGIN | Login service |
+| CHANNEL | Channel service |
+
+## Invariants
+
+- Password is stored as bcrypt hash
+- Gender defaults to 0 (Male) or 10 (UI Choose) based on region and version
+- An account cannot log in if already logged in via another session
+- Channel login requires an existing session in transition state
+- Logout is blocked for sessions in transition state (State 2)
+
+## State Transitions
+
+```
+StateNotLoggedIn -> StateLoggedIn (via Login)
+StateLoggedIn -> StateTransition (via Transition)
+StateTransition -> StateLoggedIn (via Channel Login)
+StateLoggedIn -> StateNotLoggedIn (via Logout)
+StateTransition -> StateNotLoggedIn (via Terminate or Expiration)
+```
+
+## Processors
+
+### Processor
+
+Primary domain processor providing account operations.
+
+| Method | Description |
+|--------|-------------|
+| GetById | Retrieve account by ID |
+| GetByName | Retrieve account by name |
+| GetByTenant | Retrieve all accounts for tenant |
+| LoggedInTenantProvider | Retrieve logged-in accounts for tenant |
+| GetOrCreate | Retrieve or create account if automatic registration enabled |
+| Create | Create new account with hashed password |
+| Update | Update account attributes (pin, pic, tos, gender) |
+| Login | Record login for account and session |
+| Logout | Record logout for account and session |
+| AttemptLogin | Validate credentials and process login attempt |
+| ProgressState | Transition account to specified state |
+
+### Registry
+
+In-memory session state registry (singleton).
+
+| Method | Description |
+|--------|-------------|
+| GetStates | Get all session states for an account |
+| MaximalState | Get the minimal state value across sessions |
+| IsLoggedIn | Check if account has any active session |
+| Login | Record login for service key |
+| Transition | Set session to transition state |
+| ExpireTransition | Remove expired transition sessions |
+| Logout | Remove session for service key |
+| Terminate | Remove all sessions for account |
+| GetExpiredInTransition | Get accounts with expired transition sessions |
+| Tenants | Get all tenants with active sessions |
+
+## Error Codes
+
+| Code | Description |
+|------|-------------|
+| SYSTEM_ERROR | Internal system error |
+| NOT_REGISTERED | Account not found and auto-register disabled |
+| DELETED_OR_BLOCKED | Account is banned |
+| ALREADY_LOGGED_IN | Account already has active session |
+| INCORRECT_PASSWORD | Password validation failed |
+| TOO_MANY_ATTEMPTS | Login attempt limit exceeded |

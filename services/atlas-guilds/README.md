@@ -1,65 +1,43 @@
 # atlas-guilds
-Mushroom game guilds Service
+
+Manages guild lifecycle, membership, titles, and bulletin board threads for game characters.
 
 ## Overview
 
-A RESTful resource which provides guilds services.
+This service handles guild creation, member management, emblem customization, title configuration, and guild bulletin board functionality. It coordinates guild creation agreements among party members and processes member status updates based on character login/logout events.
 
-## Environment
+## External Dependencies
 
-### Configuration
-- JAEGER_HOST_PORT - Jaeger [host]:[port] for distributed tracing
-- LOG_LEVEL - Logging level - Panic / Fatal / Error / Warn / Info / Debug / Trace
+- **PostgreSQL**: Persistent storage for guilds, members, titles, threads, replies, and character-guild mappings
+- **Kafka**: Asynchronous command/event messaging for guild operations, thread management, character status, and invite handling
+- **Jaeger**: Distributed tracing
+
+## Runtime Configuration
+
+### General
+- `JAEGER_HOST_PORT` - Jaeger host:port for distributed tracing
+- `LOG_LEVEL` - Logging level (Panic / Fatal / Error / Warn / Info / Debug / Trace)
 
 ### Database
-- DB_USER - Postgres user name
-- DB_PASSWORD - Postgres user password
-- DB_HOST - Postgres Database host
-- DB_PORT - Postgres Database port
-- DB_NAME - Postgres Database name
+- `DB_USER` - PostgreSQL user name
+- `DB_PASSWORD` - PostgreSQL user password
+- `DB_HOST` - PostgreSQL database host
+- `DB_PORT` - PostgreSQL database port
+- `DB_NAME` - PostgreSQL database name
 
 ### Kafka
-- BOOTSTRAP_SERVERS - Kafka [host]:[port]
+- `BOOTSTRAP_SERVERS` - Kafka host:port
+- `COMMAND_TOPIC_GUILD` - Topic for guild commands
+- `COMMAND_TOPIC_GUILD_THREAD` - Topic for thread commands
+- `COMMAND_TOPIC_INVITE` - Topic for invite commands
+- `EVENT_TOPIC_CHARACTER_STATUS` - Topic for character status events
+- `EVENT_TOPIC_INVITE_STATUS` - Topic for invite status events
+- `EVENT_TOPIC_GUILD_STATUS` - Topic for guild status events
+- `EVENT_TOPIC_GUILD_THREAD_STATUS` - Topic for thread status events
 
-#### Command Topics
-- COMMAND_TOPIC_GUILD - Kafka topic for transmitting Guild commands
-- COMMAND_TOPIC_GUILD_THREAD - Kafka topic for transmitting Guild Thread commands
-- COMMAND_TOPIC_INVITE - Kafka topic for transmitting Invite commands
+## Documentation
 
-#### Event Topics
-- EVENT_TOPIC_CHARACTER_STATUS - Kafka Topic for receiving Character status events
-- EVENT_TOPIC_INVITE_STATUS - Kafka Topic for receiving Invite status events
-- EVENT_TOPIC_GUILD_STATUS - Kafka Topic for receiving Guild status events
-- EVENT_TOPIC_GUILD_THREAD_STATUS - Kafka Topic for receiving Guild Thread status events
-
-## API
-
-### Header
-
-All RESTful requests require the supplied header information to identify the server instance.
-
-```
-TENANT_ID:083839c6-c47c-42a6-9585-76492795d123
-REGION:GMS
-MAJOR_VERSION:83
-MINOR_VERSION:1
-```
-
-### Endpoints
-
-#### Guild Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/guilds` | Get all guilds |
-| GET | `/guilds?filter[members.id]={memberId}` | Get guilds by member ID |
-| GET | `/guilds/{guildId}` | Get a specific guild by ID |
-
-#### Thread Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/guilds/{guildId}/threads` | Get all threads for a specific guild |
-| GET | `/guilds/{guildId}/threads/{threadId}` | Get a specific thread by ID for a specific guild |
-
-### Requests
+- [Domain](docs/domain.md)
+- [Kafka](docs/kafka.md)
+- [REST](docs/rest.md)
+- [Storage](docs/storage.md)

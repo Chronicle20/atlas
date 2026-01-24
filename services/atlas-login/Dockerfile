@@ -2,23 +2,53 @@
 # and a workspace (GOPATH) configured at /go.
 FROM golang:1.25.5-alpine3.21 AS build-env
 
-# Copy the local package files to the container's workspace.
-
-# Build the outyet command inside the container.
-# (You may fetch or manage dependencies here,
-# either manually or with a tool like "godep".)
 RUN apk add --no-cache git
 
-ADD ./atlas.com/login/go.mod ./atlas.com/login/go.sum /atlas.com/login/
-WORKDIR /atlas.com/login
-RUN go mod download
+WORKDIR /app
 
-ADD ./atlas.com/login /atlas.com/login
-RUN go build -o /server
+# Copy library module definitions
+COPY libs/atlas-constants/go.mod libs/atlas-constants/go.sum libs/atlas-constants/
+COPY libs/atlas-kafka/go.mod libs/atlas-kafka/go.sum libs/atlas-kafka/
+COPY libs/atlas-model/go.mod libs/atlas-model/go.sum libs/atlas-model/
+COPY libs/atlas-rest/go.mod libs/atlas-rest/go.sum libs/atlas-rest/
+COPY libs/atlas-socket/go.mod libs/atlas-socket/go.sum libs/atlas-socket/
+COPY libs/atlas-tenant/go.mod libs/atlas-tenant/go.sum libs/atlas-tenant/
+
+# Copy service module definitions
+COPY services/atlas-login/atlas.com/login/go.mod services/atlas-login/atlas.com/login/go.sum services/atlas-login/atlas.com/login/
+
+# Create a minimal go.work for this build
+RUN echo 'go 1.25.5' > go.work && \
+    echo '' >> go.work && \
+    echo 'use (' >> go.work && \
+    echo '    ./libs/atlas-constants' >> go.work && \
+    echo '    ./libs/atlas-kafka' >> go.work && \
+    echo '    ./libs/atlas-model' >> go.work && \
+    echo '    ./libs/atlas-rest' >> go.work && \
+    echo '    ./libs/atlas-socket' >> go.work && \
+    echo '    ./libs/atlas-tenant' >> go.work && \
+    echo '    ./services/atlas-login/atlas.com/login' >> go.work && \
+    echo ')' >> go.work
+
+# Download dependencies
+RUN go mod download -C services/atlas-login/atlas.com/login || true
+
+# Copy library source code
+COPY libs/atlas-constants libs/atlas-constants
+COPY libs/atlas-kafka libs/atlas-kafka
+COPY libs/atlas-model libs/atlas-model
+COPY libs/atlas-rest libs/atlas-rest
+COPY libs/atlas-socket libs/atlas-socket
+COPY libs/atlas-tenant libs/atlas-tenant
+
+# Copy service source code
+COPY services/atlas-login/atlas.com/login services/atlas-login/atlas.com/login
+
+# Build
+RUN go build -C services/atlas-login/atlas.com/login -o /server
 
 FROM alpine:3.23
 
-# Port 8080 belongs to our application
 EXPOSE 8080
 
 RUN apk add --no-cache libc6-compat

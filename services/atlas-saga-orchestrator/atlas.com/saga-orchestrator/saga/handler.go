@@ -1268,6 +1268,10 @@ func (h *HandlerImpl) handleSendMessage(s Saga, st Step[any]) error {
 		return err
 	}
 
+	// SendMessage is a synchronous command with no async response event
+	// Mark the step as completed immediately after successfully sending the command
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
 	return nil
 }
 

@@ -40,6 +40,8 @@ Portal scripts are **simpler than NPC conversations**. They:
 | `warp` | `pi.warp(mapId, portalId)` | `mapId`, `portalId` or `portalName` |
 | `drop_message` | `dropMessage()` | `message`, `messageType` |
 | `block_portal` | `pi.blockPortal()` | - |
+| `show_hint` | `pi.showInstruction(msg, width, height)` | `hint`, `width`, `height` |
+| `show_info` | `pi.showInfo(path)` | `path` (e.g., "UI/tutorial.img/25") |
 
 ### NOT YET SUPPORTED (Skip These Scripts)
 The following patterns require additional design work:
@@ -47,7 +49,6 @@ The following patterns require additional design work:
 - Event manager checks (`getEventManager()`)
 - Saved location warps (`getSavedLocation()`)
 - Area info updates (`containsAreaInfo()`, `updateAreaInfo()`)
-- Tutorial effects (`showInfo()`)
 
 If a script uses these features, **skip the conversion** and report it as "requires unsupported features."
 
@@ -68,6 +69,8 @@ Identify the key patterns:
 - `pi.warp(mapId, portalId)` → `warp` operation
 - `pi.getPlayer().dropMessage(type, msg)` → `drop_message` operation
 - `pi.blockPortal()` → `block_portal` operation
+- `pi.showInstruction(msg, width, height)` → `show_hint` operation (params: `hint`, `width`, `height`)
+- `pi.showInfo(path)` → `show_info` operation (params: `path`)
 
 ### 2. Convert to Rules Format
 
@@ -151,7 +154,6 @@ The script to convert: **$ARGUMENTS**
    - `getEventManager()`
    - `getSavedLocation()`
    - `containsAreaInfo()`, `updateAreaInfo()`
-   - `showInfo()`
 
    Then **STOP** and report: "Script uses unsupported features: [list features]. Skipping conversion."
 

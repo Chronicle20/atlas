@@ -72,6 +72,8 @@ type Processor interface {
 	ChangeSkin(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, styleId byte) error
 	AwardExperienceAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, experience []ExperienceModel) error
 	AwardExperience(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, experience []ExperienceModel) error
+	DeductExperienceAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, amount uint32) error
+	DeductExperience(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, amount uint32) error
 	AwardLevelAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, level byte) error
 	AwardLevel(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, level byte) error
 	Move(characterId uint32, x int16, y int16, stance byte) error
@@ -547,6 +549,47 @@ func (p *ProcessorImpl) AwardExperience(mb *message.Buffer) func(transactionId u
 		if awardedLevels > 0 {
 			_ = mb.Put(character2.EnvCommandTopic, awardLevelCommandProvider(transactionId, characterId, channel, awardedLevels))
 		}
+		return nil
+	}
+}
+
+func (p *ProcessorImpl) DeductExperienceAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, amount uint32) error {
+	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+		return p.DeductExperience(buf)(transactionId, characterId, channel, amount)
+	})
+}
+
+func (p *ProcessorImpl) DeductExperience(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, amount uint32) error {
+	return func(transactionId uuid.UUID, characterId uint32, channel channel.Model, amount uint32) error {
+		p.l.Debugf("Attempting to deduct [%d] experience from character [%d].", amount, characterId)
+		current := uint32(0)
+		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+			c, err := p.WithTransaction(tx).GetById()(characterId)
+			if err != nil {
+				return err
+			}
+
+			if c.Experience() >= amount {
+				current = c.Experience() - amount
+			} else {
+				current = 0
+			}
+
+			err = dynamicUpdate(tx)(SetExperience(current))(p.t.Id())(c)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+		if txErr != nil {
+			p.l.WithError(txErr).Errorf("Could not deduct [%d] experience from character [%d].", amount, characterId)
+			return txErr
+		}
+
+		// Create an experience distribution representing the deduction (negative display)
+		deduction := []ExperienceModel{{experienceType: character2.ExperienceDistributionTypeDeath, amount: amount, attr1: 0}}
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, experienceChangedEventProvider(transactionId, characterId, channel, deduction, current))
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []string{"EXPERIENCE"}))
 		return nil
 	}
 }

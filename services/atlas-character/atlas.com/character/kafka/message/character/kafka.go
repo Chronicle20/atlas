@@ -26,6 +26,7 @@ const (
 	CommandChangeHP            = "CHANGE_HP"
 	CommandChangeMP            = "CHANGE_MP"
 	CommandSetHP               = "SET_HP"
+	CommandDeductExperience    = "DEDUCT_EXPERIENCE"
 
 	ExperienceDistributionTypeWhite        = "WHITE"
 	ExperienceDistributionTypeYellow       = "YELLOW"
@@ -41,6 +42,7 @@ const (
 	ExperienceDistributionTypeRainbowWeek  = "RAINBOW_WEEK"
 	ExperienceDistributionTypePartyRing    = "PARTY_RING"
 	ExperienceDistributionTypeCakePie      = "CAKE_PIE"
+	ExperienceDistributionTypeDeath        = "DEATH"
 )
 
 type Command[E any] struct {
@@ -157,6 +159,11 @@ type ChangeMPBody struct {
 type SetHPBody struct {
 	ChannelId channel.Id `json:"channelId"`
 	Amount    uint16     `json:"amount"`
+}
+
+type DeductExperienceCommandBody struct {
+	ChannelId channel.Id `json:"channelId"`
+	Amount    uint32     `json:"amount"`
 }
 
 const (

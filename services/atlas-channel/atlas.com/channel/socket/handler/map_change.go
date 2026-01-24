@@ -4,11 +4,13 @@ import (
 	as "atlas-channel/account/session"
 	"atlas-channel/cashshop"
 	"atlas-channel/channel"
+	"atlas-channel/character"
 	"atlas-channel/portal"
 	"atlas-channel/session"
 	"atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
+
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -55,8 +57,10 @@ func MapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Pro
 		fieldKey = r.ReadByte()
 		targetId = r.ReadUint32()
 		portalName = r.ReadAsciiString()
-		x = r.ReadInt16()
-		y = r.ReadInt16()
+		if len(portalName) == 0 {
+			x = r.ReadInt16()
+			y = r.ReadInt16()
+		}
 		unused = r.ReadByte()
 		premium = r.ReadByte()
 		if t.Region() == "GMS" && t.MajorVersion() >= 83 {
@@ -65,6 +69,23 @@ func MapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Pro
 		if chase {
 			targetX = r.ReadInt32()
 			targetY = r.ReadInt32()
+		}
+
+		c, err := character.NewProcessor(l, ctx).GetById()(s.CharacterId())
+		if err != nil {
+			l.WithError(err).Errorf("Unable to get character [%d]", s.CharacterId())
+			return
+		}
+		if c.Hp() == 0 {
+			l.Debugf("Character [%d] attempting to revive.", s.CharacterId())
+			// TODO does the player own a wheel of fortune? 5510000
+			// TODO if so, consume wheel cash item 5510000
+			// TODO emit CharacterBattlefieldItemUseEffectBody if wheel item is used
+			// TODO set hp to 50
+			// TODO cancel all buffs
+
+			// TODO if wheel of fortune was consumed, respawn in the same map, otherwise warp to return map of current map
+			return
 		}
 
 		l.Debugf("Character [%d] attempting to enter portal [%s] at [%d,%d] heading to [%d]. FieldKey [%d].", s.CharacterId(), portalName, x, y, targetId, fieldKey)

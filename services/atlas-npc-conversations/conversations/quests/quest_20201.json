@@ -1,0 +1,171 @@
+{
+  "questId": 20201,
+  "npcId": 1101003,
+  "questName": "Knighthood Exam: Dawn Warrior",
+  "startStateMachine": {
+    "startState": "noDialogue",
+    "states": [
+      {
+        "id": "noDialogue",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "askBecomeKnight",
+    "states": [
+      {
+        "id": "askBecomeKnight",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendYesNo",
+          "text": "So you brought all of #t4032096#... Okay, I believe that your are now qualified to become an official knight. Do you want to become one?",
+          "choices": [
+            {"text": "Yes", "nextState": "checkExcessSp"},
+            {"text": "No", "nextState": "notReady"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "notReady",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "I guess you are not ready to tackle on the responsibilities of an official knight.",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "checkExcessSp",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "jobId", "operator": "=", "value": "1100"},
+                {"type": "excessSp", "operator": ">", "value": "0", "referenceId": "30"}
+              ],
+              "nextState": "tooMuchSp"
+            },
+            {
+              "conditions": [
+                {"type": "jobId", "operator": "=", "value": "1110"}
+              ],
+              "nextState": "congratulations"
+            },
+            {
+              "conditions": [],
+              "nextState": "checkInventory"
+            }
+          ]
+        }
+      },
+      {
+        "id": "tooMuchSp",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "You have too much #bSP#k with you. Use some more on the 1st-level skill.",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "checkInventory",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1142067"}
+              ],
+              "nextState": "performAdvancement"
+            },
+            {
+              "conditions": [],
+              "nextState": "noInventorySpace"
+            }
+          ]
+        }
+      },
+      {
+        "id": "noInventorySpace",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "If you wish to receive the medal befitting the title, you may want to make some room in your equipment inventory.",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "performAdvancement",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "destroy_item", "params": {"itemId": "4032096", "quantity": "30"}},
+            {"type": "award_item", "params": {"itemId": "1142067", "quantity": "1"}},
+            {"type": "change_job", "params": {"jobId": "1110"}},
+            {"type": "complete_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "congratulations"}
+          ]
+        }
+      },
+      {
+        "id": "congratulations",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "You are a Knight-in-Training no more. You are now an official knight of the Cygnus Knights.",
+          "choices": [
+            {"text": "Next", "nextState": "spExplanation"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "spExplanation",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "I have given you some #bSP#k. I have also given you a number of skills for a Dawn Warrior that's only available to knights, so I want you to work on it and hopefully cultivate it as much as your soul.",
+          "choices": [
+            {"text": "Previous", "nextState": "congratulations"},
+            {"text": "Next", "nextState": "finalAdvice"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "finalAdvice",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendPrev",
+          "text": "Now that you are officially a Cygnus Knight, act like one so you will keep the Empress's name up high.",
+          "choices": [
+            {"text": "Previous", "nextState": "spExplanation"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

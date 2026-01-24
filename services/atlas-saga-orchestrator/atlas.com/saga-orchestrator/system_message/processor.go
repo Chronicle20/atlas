@@ -23,6 +23,8 @@ type Processor interface {
 	UpdateAreaInfo(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32, area uint16, info string) error
 	// ShowHint sends a command to show a hint box for a character
 	ShowHint(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32, hint string, width uint16, height uint16) error
+	// ShowIntro sends a command to show an intro/direction effect for a character
+	ShowIntro(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32, path string) error
 }
 
 // ProcessorImpl is the implementation of the Processor interface
@@ -67,4 +69,9 @@ func (p *ProcessorImpl) UpdateAreaInfo(transactionId uuid.UUID, worldId byte, ch
 // ShowHint sends a Kafka command to atlas-channel to show a hint box
 func (p *ProcessorImpl) ShowHint(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32, hint string, width uint16, height uint16) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(system_message.EnvCommandTopic)(ShowHintCommandProvider(transactionId, worldId, channelId, characterId, hint, width, height))
+}
+
+// ShowIntro sends a Kafka command to atlas-channel to show an intro/direction effect
+func (p *ProcessorImpl) ShowIntro(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32, path string) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(system_message.EnvCommandTopic)(ShowIntroCommandProvider(transactionId, worldId, channelId, characterId, path))
 }

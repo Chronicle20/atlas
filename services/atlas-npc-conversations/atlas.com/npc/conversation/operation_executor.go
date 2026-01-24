@@ -1784,6 +1784,30 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 		return stepId, saga.Pending, saga.ShowHint, payload, nil
 
+	case "show_intro":
+		// Format: show_intro
+		// Params: path (string, required) - path to the intro/direction effect (e.g., "Effect/Direction1.img/aranTutorial/ClickPoleArm")
+		// Shows an intro/direction effect to the character
+		// Used for tutorial animations and direction effects (e.g., qm.showIntro() in scripts)
+		pathValue, exists := operation.Params()["path"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing path parameter for show_intro operation")
+		}
+
+		path, err := e.evaluateContextValue(characterId, "path", pathValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		payload := saga.ShowIntroPayload{
+			CharacterId: characterId,
+			WorldId:     byte(f.WorldId()),
+			ChannelId:   byte(f.ChannelId()),
+			Path:        path,
+		}
+
+		return stepId, saga.Pending, saga.ShowIntro, payload, nil
+
 	case "set_hp":
 		// Format: set_hp
 		// Params: amount (uint16, required) - absolute HP value to set (clamped to 0..MaxHP)

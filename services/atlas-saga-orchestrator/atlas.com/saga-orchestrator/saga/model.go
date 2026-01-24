@@ -429,6 +429,7 @@ const (
 	ShowInfoText     Action = "show_info_text"     // Show info text message to character
 	UpdateAreaInfo   Action = "update_area_info"   // Update area info (quest record ex) for character
 	ShowHint         Action = "show_hint"          // Show hint box to character
+	ShowIntro        Action = "show_intro"         // Show intro/direction effect to character (e.g., tutorial animations)
 	BlockPortal      Action = "block_portal"       // Block a portal for a character (session-based)
 	UnblockPortal    Action = "unblock_portal"     // Unblock a portal for a character
 )
@@ -874,6 +875,16 @@ type ShowHintPayload struct {
 	Height      uint16     `json:"height"`      // Height of the hint box (0 for auto-calculation)
 }
 
+// ShowIntroPayload represents the payload required to show an intro/direction effect to a character.
+// This is a synchronous action that immediately completes after sending.
+// Used for tutorial animations like "Effect/Direction1.img/aranTutorial/ClickPoleArm".
+type ShowIntroPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to show intro for
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	Path        string     `json:"path"`        // Path to the intro effect (e.g., "Effect/Direction1.img/aranTutorial/ClickPoleArm")
+}
+
 // SetHPPayload represents the payload required to set a character's HP to an absolute value.
 // This is an asynchronous action that completes when the character status event is received.
 type SetHPPayload struct {
@@ -1309,6 +1320,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case ShowHint:
 		var payload ShowHintPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case ShowIntro:
+		var payload ShowIntroPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

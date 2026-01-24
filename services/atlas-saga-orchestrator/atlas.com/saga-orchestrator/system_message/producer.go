@@ -106,3 +106,19 @@ func ShowHintCommandProvider(transactionId uuid.UUID, worldId byte, channelId by
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+// ShowIntroCommandProvider creates a Kafka message for showing an intro/direction effect
+func ShowIntroCommandProvider(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32, path string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &system_message.Command[system_message.ShowIntroBody]{
+		TransactionId: transactionId,
+		WorldId:       worldId,
+		ChannelId:     channelId,
+		CharacterId:   characterId,
+		Type:          system_message.CommandShowIntro,
+		Body: system_message.ShowIntroBody{
+			Path: path,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

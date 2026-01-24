@@ -725,7 +725,7 @@ func (p *ProcessorImpl) processListSelectionState(ctx ConversationContext, state
 
 	mb := message.NewBuilder().AddText(processedTitle).NewLine()
 	for i, choice := range listSelection.Choices() {
-		if choice.NextState() == "" {
+		if choice.NextState() == "" || choice.Text() == "Exit" {
 			continue
 		}
 

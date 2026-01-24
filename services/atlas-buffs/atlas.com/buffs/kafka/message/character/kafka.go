@@ -3,9 +3,10 @@ package character
 import "time"
 
 const (
-	EnvCommandTopic   = "COMMAND_TOPIC_CHARACTER_BUFF"
-	CommandTypeApply  = "APPLY"
-	CommandTypeCancel = "CANCEL"
+	EnvCommandTopic      = "COMMAND_TOPIC_CHARACTER_BUFF"
+	CommandTypeApply     = "APPLY"
+	CommandTypeCancel    = "CANCEL"
+	CommandTypeCancelAll = "CANCEL_ALL"
 )
 
 type Command[E any] struct {
@@ -30,6 +31,9 @@ type StatChange struct {
 
 type CancelCommandBody struct {
 	SourceId int32 `json:"sourceId"`
+}
+
+type CancelAllCommandBody struct {
 }
 
 const (

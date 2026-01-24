@@ -167,6 +167,26 @@ func (r *Registry) GetExpired(t tenant.Model, characterId uint32) []buff.Model {
 	return res
 }
 
+func (r *Registry) CancelAll(t tenant.Model, characterId uint32) []buff.Model {
+	cm, cml := r.getOrCreateTenantMaps(t)
+
+	cml.Lock()
+	defer cml.Unlock()
+
+	c, ok := cm[characterId]
+	if !ok {
+		return make([]buff.Model, 0)
+	}
+
+	res := make([]buff.Model, 0, len(c.buffs))
+	for _, m := range c.buffs {
+		res = append(res, m)
+	}
+	c.buffs = make(map[int32]buff.Model)
+	cm[characterId] = c
+	return res
+}
+
 // ResetForTesting clears all registry state. Only for use in tests.
 func (r *Registry) ResetForTesting() {
 	r.lock.Lock()

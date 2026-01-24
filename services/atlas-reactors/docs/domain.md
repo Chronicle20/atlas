@@ -1,0 +1,159 @@
+# Reactor Domain
+
+## Responsibility
+
+Manages reactor instances as in-memory volatile game objects. Reactors are interactive objects within maps that respond to player actions. This domain handles reactor lifecycle (creation, hit, destruction), state transitions, and cooldown management.
+
+## Core Models
+
+### Model
+
+Represents a reactor instance.
+
+| Field          | Type         | Description                            |
+|----------------|--------------|----------------------------------------|
+| tenant         | tenant.Model | Tenant context                         |
+| id             | uint32       | Unique reactor instance ID             |
+| worldId        | byte         | World identifier                       |
+| channelId      | byte         | Channel identifier                     |
+| mapId          | uint32       | Map identifier                         |
+| classification | uint32       | Reactor type/classification ID         |
+| name           | string       | Reactor name                           |
+| data           | data.Model   | Reactor game data (state info)         |
+| state          | int8         | Current reactor state                  |
+| eventState     | byte         | Event state                            |
+| delay          | uint32       | Respawn delay in milliseconds          |
+| direction      | byte         | Facing direction                       |
+| x              | int16        | X coordinate position                  |
+| y              | int16        | Y coordinate position                  |
+| updateTime     | time.Time    | Last update timestamp                  |
+
+### data.Model
+
+Represents reactor game data retrieved from atlas-data service.
+
+| Field       | Type                      | Description                          |
+|-------------|---------------------------|--------------------------------------|
+| name        | string                    | Reactor name from game data          |
+| tl          | point.Model               | Top-left bounding point              |
+| br          | point.Model               | Bottom-right bounding point          |
+| stateInfo   | map[int8][]state.Model    | State transition definitions         |
+| timeoutInfo | map[int8]int32            | Timeout per state                    |
+
+### state.Model
+
+Represents a state transition event.
+
+| Field        | Type        | Description                          |
+|--------------|-------------|--------------------------------------|
+| theType      | int32       | Event type                           |
+| reactorItem  | *item.Model | Associated item (optional)           |
+| activeSkills | []uint32    | Skills that can trigger transition   |
+| nextState    | int8        | State to transition to               |
+
+### point.Model
+
+Represents a 2D coordinate.
+
+| Field | Type  | Description    |
+|-------|-------|----------------|
+| x     | int16 | X coordinate   |
+| y     | int16 | Y coordinate   |
+
+### MapKey
+
+Composite key for map-scoped operations.
+
+| Field     | Type   | Description        |
+|-----------|--------|--------------------|
+| worldId   | byte   | World identifier   |
+| channelId | byte   | Channel identifier |
+| mapId     | uint32 | Map identifier     |
+
+### ReactorKey
+
+Composite key for reactor cooldown tracking.
+
+| Field          | Type   | Description                    |
+|----------------|--------|--------------------------------|
+| Classification | uint32 | Reactor type/classification ID |
+| X              | int16  | X coordinate position          |
+| Y              | int16  | Y coordinate position          |
+
+## Invariants
+
+- Classification is required when building a reactor model
+- Reactor IDs are assigned from a running counter starting at 1000000001
+- Reactor IDs wrap around to 1000000001 if they exceed 2000000000
+- A reactor cannot be created at the same location (classification, x, y) while on cooldown
+- Cooldown is recorded when a reactor is destroyed, based on its delay value
+- Cooldowns are cleared when a reactor is successfully created at that location
+
+## State Transitions
+
+Reactors transition through states based on hits:
+
+1. **Initial State**: Reactor starts at configured initial state
+2. **Hit Processing**: When hit, the reactor checks its current state's events
+3. **Next State**: If a matching event exists (skill match or no skill requirement), transition to nextState
+4. **Terminal State**: If no valid next state exists, or the next state has no further transitions, the reactor triggers and is destroyed
+
+A state is considered terminal when:
+- No events defined for that state
+- All events lead to states not defined in stateInfo
+
+## Processors
+
+### GetById
+
+Retrieves a reactor by its unique ID from the in-memory registry.
+
+### GetInMap
+
+Retrieves all reactors in a specific world/channel/map combination.
+
+### Create
+
+Creates a new reactor instance:
+1. Checks cooldown status for the location
+2. Retrieves reactor game data from atlas-data service
+3. Sets reactor name from game data if not provided
+4. Registers reactor in the in-memory registry
+5. Clears any cooldown for that location
+6. Emits CREATED status event
+
+### Destroy
+
+Destroys a reactor instance:
+1. Records cooldown based on reactor delay
+2. Removes reactor from registry
+3. Emits DESTROYED status event
+
+### Hit
+
+Processes a hit on a reactor:
+1. Retrieves reactor from registry
+2. Emits HIT command to atlas-reactor-actions
+3. Evaluates state transitions based on current state and skill
+4. Updates state or triggers destruction if terminal
+5. Emits HIT status event
+
+### TriggerAndDestroy
+
+Triggers reactor script execution and destroys the reactor:
+1. Emits TRIGGER command to atlas-reactor-actions
+2. Calls Destroy processor
+
+### Teardown
+
+Destroys all reactors during service shutdown.
+
+### data.GetById
+
+Retrieves reactor game data from atlas-data service by classification ID.
+
+## Background Tasks
+
+### CooldownCleanup
+
+Runs every 60 seconds to remove expired cooldown entries from the registry.

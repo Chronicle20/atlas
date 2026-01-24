@@ -28,6 +28,7 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		t, _ = topic.EnvProvider(l)(character2.EnvCommandTopic)()
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleApply)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCancel)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCancelAll)))
 	}
 }
 
@@ -53,5 +54,15 @@ func handleCancel(l logrus.FieldLogger, ctx context.Context, c character2.Comman
 
 	if err := character.NewProcessor(l, ctx).Cancel(c.WorldId, c.CharacterId, c.Body.SourceId); err != nil {
 		l.WithError(err).Errorf("Unable to cancel buff [%d] for character [%d].", c.Body.SourceId, c.CharacterId)
+	}
+}
+
+func handleCancelAll(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.CancelAllCommandBody]) {
+	if c.Type != character2.CommandTypeCancelAll {
+		return
+	}
+
+	if err := character.NewProcessor(l, ctx).CancelAll(c.WorldId, c.CharacterId); err != nil {
+		l.WithError(err).Errorf("Unable to cancel all buffs for character [%d].", c.CharacterId)
 	}
 }

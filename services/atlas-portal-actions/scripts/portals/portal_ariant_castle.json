@@ -1,0 +1,35 @@
+{
+  "portalId": "ariant_castle",
+  "mapId": 260000000,
+  "description": "Ariant - Entry gate to Ariant Castle requiring Entry Pass to the Palace",
+  "rules": [
+    {
+      "id": "has_entry_pass",
+      "conditions": [
+        {
+          "type": "item",
+          "operator": ">=",
+          "value": "1",
+          "referenceId": "4031582"
+        }
+      ],
+      "onMatch": {
+        "allow": true,
+        "operations": [
+          { "type": "play_portal_sound" },
+          { "type": "warp", "params": { "mapId": "260000301", "portalId": "5" } }
+        ]
+      }
+    },
+    {
+      "id": "default_deny",
+      "conditions": [],
+      "onMatch": {
+        "allow": false,
+        "operations": [
+          { "type": "drop_message", "params": { "message": "You can enter only if you have a Entry Pass to the Palace.", "messageType": "PINK_TEXT" } }
+        ]
+      }
+    }
+  ]
+}

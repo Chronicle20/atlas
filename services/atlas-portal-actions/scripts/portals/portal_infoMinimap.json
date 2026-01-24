@@ -7,7 +7,7 @@
       "id": "quest_active_show_info",
       "conditions": [
         {
-          "type": "quest_status",
+          "type": "questStatus",
           "operator": "=",
           "value": "1",
           "referenceId": "1031"

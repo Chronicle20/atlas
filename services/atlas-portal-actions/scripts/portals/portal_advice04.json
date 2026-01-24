@@ -1,0 +1,24 @@
+{
+  "portalId": "advice04",
+  "mapId": 10000,
+  "description": "Mushroom Town - Tutorial portal showing instruction to click NPC Sera",
+  "rules": [
+    {
+      "id": "show_sera_hint",
+      "conditions": [],
+      "onMatch": {
+        "allow": true,
+        "operations": [
+          {
+            "type": "show_hint",
+            "params": {
+              "hint": "Click \r\\#b<Sera>",
+              "width": "100",
+              "height": "5"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

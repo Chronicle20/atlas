@@ -1,0 +1,24 @@
+{
+  "portalId": "advice07",
+  "mapId": 10000,
+  "description": "Mushroom Town - Tutorial portal showing World Map key instructions",
+  "rules": [
+    {
+      "id": "show_worldmap_hint",
+      "conditions": [],
+      "onMatch": {
+        "allow": true,
+        "operations": [
+          {
+            "type": "show_hint",
+            "params": {
+              "hint": "You can view the World Map by pressing the #e#b[W]#k#nkey.",
+              "width": "350",
+              "height": "5"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "portalId": "aranTutorAloneX",
+  "mapId": 914000000,
+  "description": "Aran Tutorial - Warp to Black Road - Ready to Leave",
+  "rules": [
+    {
+      "id": "always_allow",
+      "conditions": [],
+      "onMatch": {
+        "allow": true,
+        "operations": [
+          { "type": "play_portal_sound" },
+          { "type": "warp", "params": { "mapId": "914000100", "portalId": "1" } }
+        ]
+      }
+    }
+  ]
+}

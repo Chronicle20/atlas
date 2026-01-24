@@ -60,6 +60,9 @@ func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonap
 
 func Extract(rm RestModel) (Model, error) {
 	return Model{
-		clock: rm.Clock,
+		clock:       rm.Clock,
+		returnMapId: rm.ReturnMapId,
+		fieldLimit:  rm.FieldLimit,
+		town:        rm.Town,
 	}, nil
 }

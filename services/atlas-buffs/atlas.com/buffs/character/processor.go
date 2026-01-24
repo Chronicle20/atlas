@@ -15,6 +15,7 @@ type Processor interface {
 	GetById(characterId uint32) (Model, error)
 	Apply(worldId byte, characterId uint32, fromId uint32, sourceId int32, duration int32, changes []stat.Model) error
 	Cancel(worldId byte, characterId uint32, sourceId int32) error
+	CancelAll(worldId byte, characterId uint32) error
 	ExpireBuffs() error
 }
 
@@ -53,6 +54,21 @@ func (p *ProcessorImpl) Cancel(worldId byte, characterId uint32, sourceId int32)
 	}
 	return message.Emit(p.l, p.ctx)(func(buf *message.Buffer) error {
 		return buf.Put(character2.EnvEventStatusTopic, expiredStatusEventProvider(worldId, characterId, b.SourceId(), b.Duration(), b.Changes(), b.CreatedAt(), b.ExpiresAt()))
+	})
+}
+
+func (p *ProcessorImpl) CancelAll(worldId byte, characterId uint32) error {
+	buffs := GetRegistry().CancelAll(p.t, characterId)
+	if len(buffs) == 0 {
+		return nil
+	}
+	return message.Emit(p.l, p.ctx)(func(buf *message.Buffer) error {
+		for _, b := range buffs {
+			if err := buf.Put(character2.EnvEventStatusTopic, expiredStatusEventProvider(worldId, characterId, b.SourceId(), b.Duration(), b.Changes(), b.CreatedAt(), b.ExpiresAt())); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 }
 

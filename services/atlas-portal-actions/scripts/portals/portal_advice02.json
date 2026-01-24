@@ -1,0 +1,24 @@
+{
+  "portalId": "advice02",
+  "mapId": 10000,
+  "description": "Mushroom Town - Tutorial portal showing jump instructions",
+  "rules": [
+    {
+      "id": "show_jump_hint",
+      "conditions": [],
+      "onMatch": {
+        "allow": true,
+        "operations": [
+          {
+            "type": "show_hint",
+            "params": {
+              "hint": "Press #e#b[Alt]#k#n to\r\\ JUMP.",
+              "width": "100",
+              "height": "5"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

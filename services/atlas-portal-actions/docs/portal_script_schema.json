@@ -91,7 +91,8 @@
             "job",
             "item",
             "meso",
-            "quest_status"
+            "quest_status",
+            "buff"
           ]
         },
         "operator": {
@@ -132,6 +133,14 @@
           "then": {
             "required": ["operator", "value", "referenceId"]
           }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "buff" } }
+          },
+          "then": {
+            "required": ["operator", "value", "referenceId"]
+          }
         }
       ]
     },
@@ -151,7 +160,9 @@
             "drop_message",
             "block_portal",
             "show_info",
-            "show_hint"
+            "show_hint",
+            "create_skill",
+            "update_skill"
           ]
         },
         "params": {
@@ -254,6 +265,68 @@
                   "height": {
                     "type": "string",
                     "description": "Height of the hint box (optional, auto-calculated if not specified)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "create_skill" } }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": ["skillId", "level", "masterLevel"],
+                "properties": {
+                  "skillId": {
+                    "type": "string",
+                    "description": "The skill ID to create"
+                  },
+                  "level": {
+                    "type": "string",
+                    "description": "The skill level"
+                  },
+                  "masterLevel": {
+                    "type": "string",
+                    "description": "The master level of the skill"
+                  },
+                  "expiration": {
+                    "type": "string",
+                    "description": "Expiration time in milliseconds (-1 for no expiration)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "update_skill" } }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": ["skillId", "level", "masterLevel"],
+                "properties": {
+                  "skillId": {
+                    "type": "string",
+                    "description": "The skill ID to update"
+                  },
+                  "level": {
+                    "type": "string",
+                    "description": "The new skill level"
+                  },
+                  "masterLevel": {
+                    "type": "string",
+                    "description": "The new master level of the skill"
+                  },
+                  "expiration": {
+                    "type": "string",
+                    "description": "Expiration time in milliseconds (-1 for no expiration)"
                   }
                 }
               }

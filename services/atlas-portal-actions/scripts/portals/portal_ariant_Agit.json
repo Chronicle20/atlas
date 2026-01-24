@@ -1,0 +1,47 @@
+{
+  "portalId": "ariant_Agit",
+  "mapId": 260000200,
+  "description": "Ariant - Portal to Agit's hideout (leader of the Sand Bandits)",
+  "rules": [
+    {
+      "id": "all_quests_completed",
+      "conditions": [
+        {
+          "type": "quest_status",
+          "operator": "=",
+          "value": "2",
+          "referenceId": "3928"
+        },
+        {
+          "type": "quest_status",
+          "operator": "=",
+          "value": "2",
+          "referenceId": "3931"
+        },
+        {
+          "type": "quest_status",
+          "operator": "=",
+          "value": "2",
+          "referenceId": "3934"
+        }
+      ],
+      "onMatch": {
+        "allow": true,
+        "operations": [
+          { "type": "play_portal_sound" },
+          { "type": "warp", "params": { "mapId": "260000201", "portalId": "1" } }
+        ]
+      }
+    },
+    {
+      "id": "default_deny",
+      "conditions": [],
+      "onMatch": {
+        "allow": false,
+        "operations": [
+          { "type": "drop_message", "params": { "message": "Access restricted to only members of the Sand Bandits team." } }
+        ]
+      }
+    }
+  ]
+}

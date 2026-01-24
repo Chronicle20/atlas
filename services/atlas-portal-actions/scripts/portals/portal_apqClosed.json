@@ -1,0 +1,22 @@
+{
+  "portalId": "apqClosed",
+  "mapId": 670010100,
+  "description": "Amoria Party Quest - Closed gate portal that blocks entry until opened",
+  "rules": [
+    {
+      "id": "always_deny",
+      "conditions": [],
+      "onMatch": {
+        "allow": false,
+        "operations": [
+          {
+            "type": "drop_message",
+            "params": {
+              "message": "The gate is not opened yet."
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

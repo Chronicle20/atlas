@@ -18,9 +18,11 @@ type ProcessorMock struct {
 	WarpRandomFunc             func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, field field.Model) error
 	WarpToPortalAndEmitFunc    func(transactionId uuid.UUID, characterId uint32, field field.Model, pp model.Provider[uint32]) error
 	WarpToPortalFunc           func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, field field.Model, pp model.Provider[uint32]) error
-	AwardExperienceAndEmitFunc func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, distributions []character2.ExperienceDistributions) error
-	AwardExperienceFunc        func(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, distributions []character2.ExperienceDistributions) error
-	AwardLevelAndEmitFunc      func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount byte) error
+	AwardExperienceAndEmitFunc  func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, distributions []character2.ExperienceDistributions) error
+	AwardExperienceFunc         func(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, distributions []character2.ExperienceDistributions) error
+	DeductExperienceAndEmitFunc func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount uint32) error
+	DeductExperienceFunc        func(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount uint32) error
+	AwardLevelAndEmitFunc       func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount byte) error
 	AwardLevelFunc             func(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount byte) error
 	AwardMesosAndEmitFunc      func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error
 	AwardMesosFunc             func(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error
@@ -89,6 +91,24 @@ func (m *ProcessorMock) AwardExperience(mb *message.Buffer) func(transactionId u
 		return m.AwardExperienceFunc(mb)
 	}
 	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, distributions []character2.ExperienceDistributions) error {
+		return nil
+	}
+}
+
+// DeductExperienceAndEmit is a mock implementation of the character.Processor.DeductExperienceAndEmit method
+func (m *ProcessorMock) DeductExperienceAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount uint32) error {
+	if m.DeductExperienceAndEmitFunc != nil {
+		return m.DeductExperienceAndEmitFunc(transactionId, worldId, characterId, channelId, amount)
+	}
+	return nil
+}
+
+// DeductExperience is a mock implementation of the character.Processor.DeductExperience method
+func (m *ProcessorMock) DeductExperience(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount uint32) error {
+	if m.DeductExperienceFunc != nil {
+		return m.DeductExperienceFunc(mb)
+	}
+	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount uint32) error {
 		return nil
 	}
 }

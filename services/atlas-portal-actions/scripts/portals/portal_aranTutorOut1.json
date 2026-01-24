@@ -1,0 +1,39 @@
+{
+  "portalId": "aranTutorOut1",
+  "mapId": 914000100,
+  "description": "Black Road - Ready to Leave exit portal to Burning Forest 1 (Aran tutorial)",
+  "rules": [
+    {
+      "id": "quest_started_allow",
+      "conditions": [
+        {
+          "type": "quest_status",
+          "operator": "=",
+          "value": "1",
+          "referenceId": "21000"
+        }
+      ],
+      "onMatch": {
+        "allow": true,
+        "operations": [
+          { "type": "create_skill", "params": { "skillId": "20000017", "level": "0", "masterLevel": "-1", "expiration": "-1" } },
+          { "type": "create_skill", "params": { "skillId": "20000018", "level": "0", "masterLevel": "-1", "expiration": "-1" } },
+          { "type": "update_skill", "params": { "skillId": "20000017", "level": "1", "masterLevel": "0", "expiration": "-1" } },
+          { "type": "update_skill", "params": { "skillId": "20000018", "level": "1", "masterLevel": "0", "expiration": "-1" } },
+          { "type": "play_portal_sound" },
+          { "type": "warp", "params": { "mapId": "914000200", "portalId": "1" } }
+        ]
+      }
+    },
+    {
+      "id": "default_deny",
+      "conditions": [],
+      "onMatch": {
+        "allow": false,
+        "operations": [
+          { "type": "drop_message", "params": { "message": "You can only exit after you accept the quest from Athena Pierce, who is to your right." } }
+        ]
+      }
+    }
+  ]
+}

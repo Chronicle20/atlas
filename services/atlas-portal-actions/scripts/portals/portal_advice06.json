@@ -1,0 +1,24 @@
+{
+  "portalId": "advice06",
+  "mapId": 10000,
+  "description": "Mushroom Town - Tutorial portal showing portal usage instructions",
+  "rules": [
+    {
+      "id": "show_portal_hint",
+      "conditions": [],
+      "onMatch": {
+        "allow": true,
+        "operations": [
+          {
+            "type": "show_hint",
+            "params": {
+              "hint": "Press the #e#b[Up]#k arrow#n to use the portal \r\\and move to the next map.",
+              "width": "230",
+              "height": "5"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "portalId": "aqua_pq_boss_0",
+  "mapId": 230040400,
+  "description": "Aquarium Party Quest - Entry portal to The Cave of Pianus boss room",
+  "rules": [
+    {
+      "id": "always_allow",
+      "conditions": [],
+      "onMatch": {
+        "allow": true,
+        "operations": [
+          { "type": "play_portal_sound" },
+          { "type": "warp", "params": { "mapId": "230040420", "portalId": "0" } }
+        ]
+      }
+    }
+  ]
+}

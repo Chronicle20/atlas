@@ -2,6 +2,7 @@ package validation
 
 import (
 	"atlas-query-aggregator/buddy"
+	"atlas-query-aggregator/buff"
 	"atlas-query-aggregator/character"
 	"atlas-query-aggregator/item"
 	npcMap "atlas-query-aggregator/map"
@@ -30,6 +31,7 @@ type ValidationContext struct {
 	itemP      item.Processor
 	transportP transport.Processor
 	skillP     skill.Processor
+	buffP      buff.Processor
 	l          logrus.FieldLogger
 	ctx        context.Context
 }
@@ -47,6 +49,7 @@ func NewValidationContext(char character.Model) ValidationContext {
 		itemP:      nil,
 		transportP: nil,
 		skillP:     nil,
+		buffP:      nil,
 		l:          nil,
 		ctx:        nil,
 	}
@@ -65,6 +68,7 @@ func NewValidationContextWithLogger(char character.Model, l logrus.FieldLogger, 
 		itemP:      item.NewProcessor(l, ctx),
 		transportP: transport.NewProcessor(l, ctx),
 		skillP:     skill.NewProcessor(l, ctx),
+		buffP:      buff.NewProcessor(l, ctx),
 		l:          l,
 		ctx:        ctx,
 	}
@@ -108,6 +112,29 @@ func (ctx ValidationContext) GetSkillLevel(skillId uint32) byte {
 	}
 
 	return 0
+}
+
+// HasActiveBuff returns true if the character has an active buff with the specified source ID
+// This method queries the buff processor if available
+func (ctx ValidationContext) HasActiveBuff(sourceId int32) bool {
+	// If buff processor is not available, return false (graceful degradation)
+	if ctx.buffP == nil {
+		if ctx.l != nil {
+			ctx.l.Warnf("Buff processor not available, returning false for buff source %d", sourceId)
+		}
+		return false
+	}
+
+	// Query buff status
+	hasBuff, err := ctx.buffP.HasActiveBuff(ctx.character.Id(), sourceId)()
+	if err != nil {
+		if ctx.l != nil {
+			ctx.l.WithError(err).Debugf("Failed to check buff status for source %d", sourceId)
+		}
+		return false
+	}
+
+	return hasBuff
 }
 
 // SkillProcessor returns the skill processor for querying skill data
@@ -207,6 +234,7 @@ func (ctx ValidationContext) WithQuest(questModel quest.Model) ValidationContext
 		itemP:      ctx.itemP,
 		transportP: ctx.transportP,
 		skillP:     ctx.skillP,
+		buffP:      ctx.buffP,
 		l:          ctx.l,
 		ctx:        ctx.ctx,
 	}
@@ -231,6 +259,7 @@ func (ctx ValidationContext) WithSkill(skillModel skill.Model) ValidationContext
 		itemP:      ctx.itemP,
 		transportP: ctx.transportP,
 		skillP:     ctx.skillP,
+		buffP:      ctx.buffP,
 		l:          ctx.l,
 		ctx:        ctx.ctx,
 	}
@@ -249,6 +278,7 @@ func (ctx ValidationContext) WithMarriage(marriageModel marriage.Model) Validati
 		itemP:      ctx.itemP,
 		transportP: ctx.transportP,
 		skillP:     ctx.skillP,
+		buffP:      ctx.buffP,
 		l:          ctx.l,
 		ctx:        ctx.ctx,
 	}
@@ -267,6 +297,7 @@ func (ctx ValidationContext) WithBuddyList(buddyListModel buddy.Model) Validatio
 		itemP:      ctx.itemP,
 		transportP: ctx.transportP,
 		skillP:     ctx.skillP,
+		buffP:      ctx.buffP,
 		l:          ctx.l,
 		ctx:        ctx.ctx,
 	}
@@ -285,6 +316,7 @@ func (ctx ValidationContext) WithPetCount(count int) ValidationContext {
 		itemP:      ctx.itemP,
 		transportP: ctx.transportP,
 		skillP:     ctx.skillP,
+		buffP:      ctx.buffP,
 		l:          ctx.l,
 		ctx:        ctx.ctx,
 	}
@@ -302,6 +334,7 @@ type ValidationContextBuilder struct {
 	itemP      item.Processor
 	transportP transport.Processor
 	skillP     skill.Processor
+	buffP      buff.Processor
 	l          logrus.FieldLogger
 	ctx        context.Context
 }
@@ -319,6 +352,7 @@ func NewValidationContextBuilder(char character.Model) *ValidationContextBuilder
 		itemP:      nil,
 		transportP: nil,
 		skillP:     nil,
+		buffP:      nil,
 		l:          nil,
 		ctx:        nil,
 	}
@@ -337,6 +371,7 @@ func NewValidationContextBuilderWithLogger(char character.Model, l logrus.FieldL
 		itemP:      item.NewProcessor(l, ctx),
 		transportP: transport.NewProcessor(l, ctx),
 		skillP:     skill.NewProcessor(l, ctx),
+		buffP:      buff.NewProcessor(l, ctx),
 		l:          l,
 		ctx:        ctx,
 	}
@@ -391,6 +426,7 @@ func (b *ValidationContextBuilder) Build() ValidationContext {
 		itemP:      b.itemP,
 		transportP: b.transportP,
 		skillP:     b.skillP,
+		buffP:      b.buffP,
 		l:          b.l,
 		ctx:        b.ctx,
 	}

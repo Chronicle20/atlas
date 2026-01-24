@@ -2,6 +2,7 @@ package saga
 
 import (
 	"atlas-saga-orchestrator/buddylist"
+	"atlas-saga-orchestrator/buff"
 	"atlas-saga-orchestrator/cashshop"
 	"atlas-saga-orchestrator/character"
 	"atlas-saga-orchestrator/compartment"
@@ -49,6 +50,7 @@ type Handler interface {
 	WithSystemMessageProcessor(system_message.Processor) Handler
 	WithQuestProcessor(quest.Processor) Handler
 	WithStorageProcessor(storage.Processor) Handler
+	WithBuffProcessor(buff.Processor) Handler
 
 	GetHandler(action Action) (ActionHandler, bool)
 
@@ -103,6 +105,8 @@ type Handler interface {
 	handleShowHint(s Saga, st Step[any]) error
 	handleBlockPortal(s Saga, st Step[any]) error
 	handleUnblockPortal(s Saga, st Step[any]) error
+	handleDeductExperience(s Saga, st Step[any]) error
+	handleCancelAllBuffs(s Saga, st Step[any]) error
 }
 
 type HandlerImpl struct {
@@ -127,6 +131,7 @@ type HandlerImpl struct {
 	systemMessageP  system_message.Processor
 	questP          quest.Processor
 	storageP        storage.Processor
+	buffP           buff.Processor
 }
 
 func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
@@ -151,6 +156,7 @@ func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
 		systemMessageP:  system_message.NewProcessor(l, ctx),
 		questP:          quest.NewProcessor(l, ctx),
 		storageP:        storage.NewProcessor(l, ctx),
+		buffP:           buff.NewProcessor(l, ctx),
 	}
 }
 
@@ -464,6 +470,32 @@ func (h *HandlerImpl) WithStorageProcessor(storageP storage.Processor) Handler {
 		systemMessageP: h.systemMessageP,
 		questP:         h.questP,
 		storageP:       storageP,
+		buffP:          h.buffP,
+	}
+}
+
+func (h *HandlerImpl) WithBuffProcessor(buffP buff.Processor) Handler {
+	return &HandlerImpl{
+		l:              h.l,
+		ctx:            h.ctx,
+		t:              h.t,
+		charP:          h.charP,
+		compP:          h.compP,
+		skillP:         h.skillP,
+		validP:         h.validP,
+		guildP:         h.guildP,
+		inviteP:        h.inviteP,
+		buddyListP:     h.buddyListP,
+		petP:           h.petP,
+		footholdP:      h.footholdP,
+		monsterP:       h.monsterP,
+		consumableP:    h.consumableP,
+		portalP:        h.portalP,
+		cashshopP:      h.cashshopP,
+		systemMessageP: h.systemMessageP,
+		questP:         h.questP,
+		storageP:       h.storageP,
+		buffP:          buffP,
 	}
 }
 
@@ -574,6 +606,10 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleBlockPortal, true
 	case UnblockPortal:
 		return h.handleUnblockPortal, true
+	case DeductExperience:
+		return h.handleDeductExperience, true
+	case CancelAllBuffs:
+		return h.handleCancelAllBuffs, true
 	}
 	return nil, false
 }
@@ -1650,6 +1686,45 @@ func (h *HandlerImpl) handleUnblockPortal(s Saga, st Step[any]) error {
 
 	// UnblockPortal is a synchronous command with no async response
 	// Mark the step as completed immediately after successfully sending the command
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
+// handleDeductExperience handles the DeductExperience action
+// This is an asynchronous action - we send the command and wait for the status event
+func (h *HandlerImpl) handleDeductExperience(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(DeductExperiencePayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.charP.DeductExperienceAndEmit(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.ChannelId, payload.Amount)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to deduct experience.")
+		return err
+	}
+
+	// DeductExperience is an asynchronous command - the consumer will mark completion when the status event arrives
+	return nil
+}
+
+// handleCancelAllBuffs handles the CancelAllBuffs action
+// This is an asynchronous action - we send the command and wait for the status event
+func (h *HandlerImpl) handleCancelAllBuffs(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(CancelAllBuffsPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.buffP.CancelAllAndEmit(payload.WorldId, payload.ChannelId, payload.CharacterId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to cancel all buffs.")
+		return err
+	}
+
+	// CancelAllBuffs is a fire-and-forget command - mark as complete immediately
+	// The buff service handles the cancellation and emits status events but saga doesn't need to wait
 	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
 
 	return nil

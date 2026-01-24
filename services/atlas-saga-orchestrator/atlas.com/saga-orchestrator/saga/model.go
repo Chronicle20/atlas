@@ -25,6 +25,7 @@ const (
 	TradeTransaction     Type = "trade_transaction"
 	CharacterCreation    Type = "character_creation"
 	StorageOperation     Type = "storage_operation"
+	CharacterRespawn     Type = "character_respawn"
 )
 
 // Saga represents the entire saga transaction.
@@ -415,7 +416,9 @@ const (
 	ReleaseFromCashShop          Action = "release_from_cash_shop"  // Internal step (created by expansion)
 
 	// Character stat actions
-	SetHP Action = "set_hp" // Set character HP to an absolute value
+	SetHP            Action = "set_hp"             // Set character HP to an absolute value
+	DeductExperience Action = "deduct_experience"  // Deduct experience from character (with floor at 0)
+	CancelAllBuffs   Action = "cancel_all_buffs"   // Cancel all active buffs on character
 
 	// Portal-specific actions
 	PlayPortalSound  Action = "play_portal_sound"  // Play portal sound effect to character
@@ -855,6 +858,24 @@ type SetHPPayload struct {
 	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
 	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
 	Amount      uint16     `json:"amount"`      // Absolute HP value to set (clamped to 0..MaxHP)
+}
+
+// DeductExperiencePayload represents the payload required to deduct experience from a character.
+// This is an asynchronous action that completes when the character status event is received.
+// The experience deducted will not go below 0.
+type DeductExperiencePayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to deduct experience from
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	Amount      uint32     `json:"amount"`      // Amount of experience to deduct (will not go below 0)
+}
+
+// CancelAllBuffsPayload represents the payload required to cancel all active buffs on a character.
+// This is an asynchronous action that completes when the buff status events are received.
+type CancelAllBuffsPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to cancel buffs for
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
 }
 
 // BlockPortalPayload represents the payload required to block a portal for a character.

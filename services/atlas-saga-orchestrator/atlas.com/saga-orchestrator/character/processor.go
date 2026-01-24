@@ -24,6 +24,8 @@ type Processor interface {
 	WarpToPortal(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, field field.Model, pp model.Provider[uint32]) error
 	AwardExperienceAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, distributions []character2.ExperienceDistributions) error
 	AwardExperience(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, distributions []character2.ExperienceDistributions) error
+	DeductExperienceAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount uint32) error
+	DeductExperience(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount uint32) error
 	AwardLevelAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount byte) error
 	AwardLevel(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount byte) error
 	AwardMesosAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error
@@ -98,6 +100,18 @@ func (p *ProcessorImpl) AwardExperienceAndEmit(transactionId uuid.UUID, worldId 
 func (p *ProcessorImpl) AwardExperience(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, distributions []character2.ExperienceDistributions) error {
 	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, distributions []character2.ExperienceDistributions) error {
 		return mb.Put(character2.EnvCommandTopic, AwardExperienceProvider(transactionId, worldId, characterId, channelId, distributions))
+	}
+}
+
+func (p *ProcessorImpl) DeductExperienceAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount uint32) error {
+	return message.Emit(p.p)(func(mb *message.Buffer) error {
+		return p.DeductExperience(mb)(transactionId, worldId, characterId, channelId, amount)
+	})
+}
+
+func (p *ProcessorImpl) DeductExperience(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount uint32) error {
+	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount uint32) error {
+		return mb.Put(character2.EnvCommandTopic, DeductExperienceProvider(transactionId, worldId, characterId, channelId, amount))
 	}
 }
 

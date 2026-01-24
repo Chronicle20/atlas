@@ -43,6 +43,7 @@ const (
 	SkillLevelCondition             ConditionType = "skillLevel"
 	HpCondition                     ConditionType = "hp"
 	MaxHpCondition                  ConditionType = "maxHp"
+	BuffCondition                   ConditionType = "buff"
 )
 
 // Operator represents the comparison operator in a condition
@@ -121,7 +122,7 @@ func (b *ConditionBuilder) SetType(condType string) *ConditionBuilder {
 	}
 
 	switch ConditionType(condType) {
-	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition, GmLevelCondition, GuildIdCondition, GuildRankCondition, QuestStatusCondition, QuestProgressCondition, UnclaimedMarriageGiftsCondition, StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition, GuildLeaderCondition, BuddyCapacityCondition, PetCountCondition, MapCapacityCondition, InventorySpaceCondition, TransportAvailableCondition, SkillLevelCondition, HpCondition, MaxHpCondition:
+	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition, GmLevelCondition, GuildIdCondition, GuildRankCondition, QuestStatusCondition, QuestProgressCondition, UnclaimedMarriageGiftsCondition, StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition, GuildLeaderCondition, BuddyCapacityCondition, PetCountCondition, MapCapacityCondition, InventorySpaceCondition, TransportAvailableCondition, SkillLevelCondition, HpCondition, MaxHpCondition, BuffCondition:
 		b.conditionType = ConditionType(condType)
 	default:
 		b.err = fmt.Errorf("unsupported condition type: %s", condType)
@@ -267,6 +268,10 @@ func (b *ConditionBuilder) FromInput(input ConditionInput) *ConditionBuilder {
 		if input.ReferenceId == 0 {
 			b.err = fmt.Errorf("referenceId is required for skillLevel conditions")
 		}
+	case BuffCondition:
+		if input.ReferenceId == 0 {
+			b.err = fmt.Errorf("referenceId is required for buff conditions")
+		}
 	}
 
 	return b
@@ -329,6 +334,11 @@ func (b *ConditionBuilder) Validate() *ConditionBuilder {
 	case SkillLevelCondition:
 		if b.referenceId == nil {
 			b.err = fmt.Errorf("referenceId is required for skillLevel conditions")
+			return b
+		}
+	case BuffCondition:
+		if b.referenceId == nil {
+			b.err = fmt.Errorf("referenceId is required for buff conditions")
 			return b
 		}
 	}
@@ -497,6 +507,16 @@ func (c Condition) Evaluate(character character.Model) ConditionResult {
 		return ConditionResult{
 			Passed:      false,
 			Description: fmt.Sprintf("Map Capacity validation for map %d requires ValidationContext", c.referenceId),
+			Type:        c.conditionType,
+			Operator:    c.operator,
+			Value:       c.value,
+			ActualValue: 0,
+		}
+	case BuffCondition:
+		// Buff validation requires context - return error state
+		return ConditionResult{
+			Passed:      false,
+			Description: fmt.Sprintf("Buff validation for source %d requires ValidationContext", c.referenceId),
 			Type:        c.conditionType,
 			Operator:    c.operator,
 			Value:       c.value,
@@ -746,6 +766,16 @@ func (c Condition) EvaluateWithContext(ctx ValidationContext) ConditionResult {
 		skillLevel := ctx.GetSkillLevel(c.referenceId)
 		actualValue = int(skillLevel)
 		description = fmt.Sprintf("Skill %d Level %s %d", c.referenceId, c.operator, c.value)
+
+	case BuffCondition:
+		// Check if character has an active buff with the specified source ID
+		hasBuff := ctx.HasActiveBuff(int32(c.referenceId))
+		if hasBuff {
+			actualValue = 1
+		} else {
+			actualValue = 0
+		}
+		description = fmt.Sprintf("Buff %d Active %s %d", c.referenceId, c.operator, c.value)
 
 	default:
 		// For non-context-specific conditions, delegate to the original Evaluate method

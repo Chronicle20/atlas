@@ -1,0 +1,20 @@
+{
+  "portalId": "aranTutorOut3",
+  "mapId": 914000210,
+  "description": "Aran Tutorial - Exit from Burning Forest 2 to Burning Forest 3, grants Combo Ability skill",
+  "rules": [
+    {
+      "id": "always_allow",
+      "conditions": [],
+      "onMatch": {
+        "allow": true,
+        "operations": [
+          { "type": "create_skill", "params": { "skillId": "20000016", "level": "0", "masterLevel": "-1", "expiration": "-1" } },
+          { "type": "update_skill", "params": { "skillId": "20000016", "level": "1", "masterLevel": "0", "expiration": "-1" } },
+          { "type": "play_portal_sound" },
+          { "type": "warp", "params": { "mapId": "914000220", "portalId": "1" } }
+        ]
+      }
+    }
+  ]
+}

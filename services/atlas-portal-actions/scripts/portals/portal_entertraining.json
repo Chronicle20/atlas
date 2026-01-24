@@ -1,0 +1,89 @@
+{
+  "portalId": "entertraining",
+  "mapId": 1010000,
+  "description": "Maple Road - Entrance to Adventurer Training Center - Warps to appropriate training center based on active quest from Mai",
+  "rules": [
+    {
+      "id": "quest_1041_training_center_1",
+      "conditions": [
+        {
+          "type": "questStatus",
+          "operator": "=",
+          "value": "1",
+          "referenceId": "1041"
+        }
+      ],
+      "onMatch": {
+        "allow": true,
+        "operations": [
+          { "type": "play_portal_sound" },
+          { "type": "warp", "params": { "mapId": "1010100", "portalId": "4" } }
+        ]
+      }
+    },
+    {
+      "id": "quest_1042_training_center_2",
+      "conditions": [
+        {
+          "type": "questStatus",
+          "operator": "=",
+          "value": "1",
+          "referenceId": "1042"
+        }
+      ],
+      "onMatch": {
+        "allow": true,
+        "operations": [
+          { "type": "play_portal_sound" },
+          { "type": "warp", "params": { "mapId": "1010200", "portalId": "4" } }
+        ]
+      }
+    },
+    {
+      "id": "quest_1043_training_center_3",
+      "conditions": [
+        {
+          "type": "questStatus",
+          "operator": "=",
+          "value": "1",
+          "referenceId": "1043"
+        }
+      ],
+      "onMatch": {
+        "allow": true,
+        "operations": [
+          { "type": "play_portal_sound" },
+          { "type": "warp", "params": { "mapId": "1010300", "portalId": "4" } }
+        ]
+      }
+    },
+    {
+      "id": "quest_1044_training_center_4",
+      "conditions": [
+        {
+          "type": "questStatus",
+          "operator": "=",
+          "value": "1",
+          "referenceId": "1044"
+        }
+      ],
+      "onMatch": {
+        "allow": true,
+        "operations": [
+          { "type": "play_portal_sound" },
+          { "type": "warp", "params": { "mapId": "1010400", "portalId": "4" } }
+        ]
+      }
+    },
+    {
+      "id": "default_deny",
+      "conditions": [],
+      "onMatch": {
+        "allow": false,
+        "operations": [
+          { "type": "drop_message", "params": { "message": "Only the adventurers that have been trained by Mai may enter.", "messageType": "PINK_TEXT" } }
+        ]
+      }
+    }
+  ]
+}

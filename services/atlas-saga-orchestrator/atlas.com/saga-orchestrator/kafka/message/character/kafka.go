@@ -17,6 +17,7 @@ const (
 	CommandChangeFace          = "CHANGE_FACE"
 	CommandChangeSkin          = "CHANGE_SKIN"
 	CommandAwardExperience     = "AWARD_EXPERIENCE"
+	CommandDeductExperience    = "DEDUCT_EXPERIENCE"
 	CommandAwardLevel          = "AWARD_LEVEL"
 	CommandRequestChangeMeso   = "REQUEST_CHANGE_MESO"
 	CommandRequestDropMeso     = "REQUEST_DROP_MESO"
@@ -140,6 +141,11 @@ type ChangeMPBody struct {
 type SetHPBody struct {
 	ChannelId channel.Id `json:"channelId"`
 	Amount    uint16     `json:"amount"`
+}
+
+type DeductExperienceCommandBody struct {
+	ChannelId channel.Id `json:"channelId"`
+	Amount    uint32     `json:"amount"`
 }
 
 type CreateCharacterCommandBody struct {

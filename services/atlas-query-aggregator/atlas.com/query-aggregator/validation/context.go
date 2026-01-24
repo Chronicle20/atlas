@@ -2,6 +2,7 @@ package validation
 
 import (
 	"atlas-query-aggregator/buddy"
+	"atlas-query-aggregator/buff"
 	"atlas-query-aggregator/character"
 	"atlas-query-aggregator/item"
 	npcMap "atlas-query-aggregator/map"
@@ -10,9 +11,11 @@ import (
 	"atlas-query-aggregator/skill"
 	"atlas-query-aggregator/transport"
 	"context"
+	"errors"
 	"fmt"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
 )
 
@@ -28,6 +31,7 @@ type ValidationContext struct {
 	itemP      item.Processor
 	transportP transport.Processor
 	skillP     skill.Processor
+	buffP      buff.Processor
 	l          logrus.FieldLogger
 	ctx        context.Context
 }
@@ -45,6 +49,7 @@ func NewValidationContext(char character.Model) ValidationContext {
 		itemP:      nil,
 		transportP: nil,
 		skillP:     nil,
+		buffP:      nil,
 		l:          nil,
 		ctx:        nil,
 	}
@@ -63,6 +68,7 @@ func NewValidationContextWithLogger(char character.Model, l logrus.FieldLogger, 
 		itemP:      item.NewProcessor(l, ctx),
 		transportP: transport.NewProcessor(l, ctx),
 		skillP:     skill.NewProcessor(l, ctx),
+		buffP:      buff.NewProcessor(l, ctx),
 		l:          l,
 		ctx:        ctx,
 	}
@@ -106,6 +112,29 @@ func (ctx ValidationContext) GetSkillLevel(skillId uint32) byte {
 	}
 
 	return 0
+}
+
+// HasActiveBuff returns true if the character has an active buff with the specified source ID
+// This method queries the buff processor if available
+func (ctx ValidationContext) HasActiveBuff(sourceId int32) bool {
+	// If buff processor is not available, return false (graceful degradation)
+	if ctx.buffP == nil {
+		if ctx.l != nil {
+			ctx.l.Warnf("Buff processor not available, returning false for buff source %d", sourceId)
+		}
+		return false
+	}
+
+	// Query buff status
+	hasBuff, err := ctx.buffP.HasActiveBuff(ctx.character.Id(), sourceId)()
+	if err != nil {
+		if ctx.l != nil {
+			ctx.l.WithError(err).Debugf("Failed to check buff status for source %d", sourceId)
+		}
+		return false
+	}
+
+	return hasBuff
 }
 
 // SkillProcessor returns the skill processor for querying skill data
@@ -205,6 +234,7 @@ func (ctx ValidationContext) WithQuest(questModel quest.Model) ValidationContext
 		itemP:      ctx.itemP,
 		transportP: ctx.transportP,
 		skillP:     ctx.skillP,
+		buffP:      ctx.buffP,
 		l:          ctx.l,
 		ctx:        ctx.ctx,
 	}
@@ -229,6 +259,7 @@ func (ctx ValidationContext) WithSkill(skillModel skill.Model) ValidationContext
 		itemP:      ctx.itemP,
 		transportP: ctx.transportP,
 		skillP:     ctx.skillP,
+		buffP:      ctx.buffP,
 		l:          ctx.l,
 		ctx:        ctx.ctx,
 	}
@@ -247,6 +278,7 @@ func (ctx ValidationContext) WithMarriage(marriageModel marriage.Model) Validati
 		itemP:      ctx.itemP,
 		transportP: ctx.transportP,
 		skillP:     ctx.skillP,
+		buffP:      ctx.buffP,
 		l:          ctx.l,
 		ctx:        ctx.ctx,
 	}
@@ -265,6 +297,7 @@ func (ctx ValidationContext) WithBuddyList(buddyListModel buddy.Model) Validatio
 		itemP:      ctx.itemP,
 		transportP: ctx.transportP,
 		skillP:     ctx.skillP,
+		buffP:      ctx.buffP,
 		l:          ctx.l,
 		ctx:        ctx.ctx,
 	}
@@ -283,6 +316,7 @@ func (ctx ValidationContext) WithPetCount(count int) ValidationContext {
 		itemP:      ctx.itemP,
 		transportP: ctx.transportP,
 		skillP:     ctx.skillP,
+		buffP:      ctx.buffP,
 		l:          ctx.l,
 		ctx:        ctx.ctx,
 	}
@@ -300,6 +334,7 @@ type ValidationContextBuilder struct {
 	itemP      item.Processor
 	transportP transport.Processor
 	skillP     skill.Processor
+	buffP      buff.Processor
 	l          logrus.FieldLogger
 	ctx        context.Context
 }
@@ -317,6 +352,7 @@ func NewValidationContextBuilder(char character.Model) *ValidationContextBuilder
 		itemP:      nil,
 		transportP: nil,
 		skillP:     nil,
+		buffP:      nil,
 		l:          nil,
 		ctx:        nil,
 	}
@@ -335,6 +371,7 @@ func NewValidationContextBuilderWithLogger(char character.Model, l logrus.FieldL
 		itemP:      item.NewProcessor(l, ctx),
 		transportP: transport.NewProcessor(l, ctx),
 		skillP:     skill.NewProcessor(l, ctx),
+		buffP:      buff.NewProcessor(l, ctx),
 		l:          l,
 		ctx:        ctx,
 	}
@@ -389,6 +426,7 @@ func (b *ValidationContextBuilder) Build() ValidationContext {
 		itemP:      b.itemP,
 		transportP: b.transportP,
 		skillP:     b.skillP,
+		buffP:      b.buffP,
 		l:          b.l,
 		ctx:        b.ctx,
 	}
@@ -455,31 +493,40 @@ func (p *ContextBuilderProvider) GetValidationContext(characterId uint32) model.
 			}
 		}
 
-		// Get marriage data if available
+		// Get marriage data if available (not found is not an error - character may not be married)
 		if p.marriageProvider != nil {
 			marriageModel, err := p.marriageProvider(characterId)()
-			if err != nil {
+			if err != nil && !errors.Is(err, requests.ErrNotFound) {
 				return ValidationContext{}, fmt.Errorf("failed to get marriage data: %w", err)
 			}
-			builder.SetMarriage(marriageModel)
+			if err == nil {
+				builder.SetMarriage(marriageModel)
+			}
+			// If not found, builder already has default empty marriage model
 		}
 
-		// Get buddy list data if available
+		// Get buddy list data if available (not found is not an error - character may have no buddies)
 		if p.buddyProvider != nil {
 			buddyListModel, err := p.buddyProvider(characterId)()
-			if err != nil {
+			if err != nil && !errors.Is(err, requests.ErrNotFound) {
 				return ValidationContext{}, fmt.Errorf("failed to get buddy list data: %w", err)
 			}
-			builder.SetBuddyList(buddyListModel)
+			if err == nil {
+				builder.SetBuddyList(buddyListModel)
+			}
+			// If not found, builder already has default empty buddy model
 		}
 
-		// Get pet count data if available
+		// Get pet count data if available (not found is not an error - character may have no pets)
 		if p.petCountProvider != nil {
 			petCount, err := p.petCountProvider(characterId)()
-			if err != nil {
+			if err != nil && !errors.Is(err, requests.ErrNotFound) {
 				return ValidationContext{}, fmt.Errorf("failed to get pet count data: %w", err)
 			}
-			builder.SetPetCount(petCount)
+			if err == nil {
+				builder.SetPetCount(petCount)
+			}
+			// If not found, builder already has default pet count of 0
 		}
 
 		return builder.Build(), nil

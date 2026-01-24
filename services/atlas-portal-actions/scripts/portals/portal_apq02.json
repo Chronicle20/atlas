@@ -1,0 +1,18 @@
+{
+  "portalId": "apq02",
+  "mapId": 670010200,
+  "description": "Amoria Party Quest - Portal to Stage 2 Heart Strings",
+  "rules": [
+    {
+      "id": "always_allow",
+      "conditions": [],
+      "onMatch": {
+        "allow": true,
+        "operations": [
+          { "type": "play_portal_sound" },
+          { "type": "warp", "params": { "mapId": "670010302", "portalId": "0" } }
+        ]
+      }
+    }
+  ]
+}

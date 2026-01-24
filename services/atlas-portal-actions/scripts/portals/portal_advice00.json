@@ -1,0 +1,24 @@
+{
+  "portalId": "advice00",
+  "mapId": 10000,
+  "description": "Mushroom Town - Tutorial portal showing movement instructions",
+  "rules": [
+    {
+      "id": "show_movement_hint",
+      "conditions": [],
+      "onMatch": {
+        "allow": true,
+        "operations": [
+          {
+            "type": "show_hint",
+            "params": {
+              "hint": "You can move by using the arrow keys.",
+              "width": "250",
+              "height": "5"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

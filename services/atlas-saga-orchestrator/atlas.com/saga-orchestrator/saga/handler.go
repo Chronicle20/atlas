@@ -676,10 +676,8 @@ func (h *HandlerImpl) handleWarpToPortal(s Saga, st Step[any]) error {
 		return errors.New("invalid payload")
 	}
 
-	f, ok := field.FromId(payload.FieldId)
-	if !ok {
-		return errors.New("invalid field id")
-	}
+	// Build the field from the individual components
+	f := field.NewBuilder(payload.WorldId, payload.ChannelId, payload.MapId).Build()
 
 	// Determine portal provider: use name-based lookup if PortalName is provided, otherwise use PortalId
 	var portalProvider model.Provider[uint32]

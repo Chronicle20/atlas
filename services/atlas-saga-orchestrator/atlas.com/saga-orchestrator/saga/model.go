@@ -398,6 +398,7 @@ const (
 	SpawnReactorDrops            Action = "spawn_reactor_drops"
 	CompleteQuest                Action = "complete_quest"
 	StartQuest                   Action = "start_quest"
+	SetQuestProgress             Action = "set_quest_progress"
 	ApplyConsumableEffect        Action = "apply_consumable_effect"
 	SendMessage                  Action = "send_message"
 	DepositToStorage             Action = "deposit_to_storage"
@@ -419,6 +420,7 @@ const (
 	SetHP            Action = "set_hp"             // Set character HP to an absolute value
 	DeductExperience Action = "deduct_experience"  // Deduct experience from character (with floor at 0)
 	CancelAllBuffs   Action = "cancel_all_buffs"   // Cancel all active buffs on character
+	ResetStats       Action = "reset_stats"        // Reset character stats (for job advancement)
 
 	// Portal-specific actions
 	PlayPortalSound  Action = "play_portal_sound"  // Play portal sound effect to character
@@ -786,6 +788,15 @@ type StartQuestPayload struct {
 	NpcId       uint32   `json:"npcId"`       // NPC ID initiating the quest
 }
 
+// SetQuestProgressPayload represents the payload required to update quest progress.
+type SetQuestProgressPayload struct {
+	CharacterId uint32   `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id `json:"worldId"`     // WorldId associated with the action
+	QuestId     uint32   `json:"questId"`     // QuestId to update progress for
+	InfoNumber  uint32   `json:"infoNumber"`  // Progress info number/step to update
+	Progress    string   `json:"progress"`    // Progress value to set
+}
+
 // ApplyConsumableEffectPayload represents the payload required to apply consumable item effects to a character.
 // This is used for NPC-initiated item usage where the item effects are applied
 // without consuming from inventory (e.g., NPC buffs like Shinsoo's blessing).
@@ -876,6 +887,14 @@ type DeductExperiencePayload struct {
 // This is an asynchronous action that completes when the buff status events are received.
 type CancelAllBuffsPayload struct {
 	CharacterId uint32     `json:"characterId"` // CharacterId to cancel buffs for
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+}
+
+// ResetStatsPayload represents the payload required to reset a character's stats.
+// This is used during job advancement to reset AP distribution.
+type ResetStatsPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to reset stats for
 	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
 	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
 }
@@ -1230,6 +1249,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
 		s.payload = any(payload).(T)
+	case SetQuestProgress:
+		var payload SetQuestProgressPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
 	case ApplyConsumableEffect:
 		var payload ApplyConsumableEffectPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
@@ -1280,6 +1305,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case CancelAllBuffs:
 		var payload CancelAllBuffsPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case ResetStats:
+		var payload ResetStatsPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

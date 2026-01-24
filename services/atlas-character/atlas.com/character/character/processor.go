@@ -95,6 +95,8 @@ type Processor interface {
 	ProcessJobChange(mb *message.Buffer) func(transactionId uuid.UUID, channel channel.Model, characterId uint32, jobId job.Id) error
 	UpdateAndEmit(transactionId uuid.UUID, characterId uint32, input RestModel) error
 	Update(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, input RestModel) error
+	ResetStatsAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model) error
+	ResetStats(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model) error
 }
 
 type ProcessorImpl struct {
@@ -1509,5 +1511,24 @@ func (p *ProcessorImpl) isValidSkinColor(skinColor byte) bool {
 func (p *ProcessorImpl) isValidGm(gm int) bool {
 	// GM level must be non-negative. 0 = not GM, 1+ = GM level
 	return gm >= 0
+}
+
+func (p *ProcessorImpl) ResetStatsAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model) error {
+	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+		return p.ResetStats(buf)(transactionId, characterId, channel)
+	})
+}
+
+func (p *ProcessorImpl) ResetStats(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model) error {
+	return func(transactionId uuid.UUID, characterId uint32, channel channel.Model) error {
+		// TODO: Implement stat reset logic for job advancement
+		// This should reset STR, DEX, INT, LUK to base values and return
+		// the AP spent back to the character's available AP pool
+		p.l.Debugf("Reset stats requested for character [%d] - implementation pending.", characterId)
+
+		// Emit stat changed event to complete the saga step
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []string{"AP", "STR", "DEX", "INT", "LUK"}))
+		return nil
+	}
 }
 

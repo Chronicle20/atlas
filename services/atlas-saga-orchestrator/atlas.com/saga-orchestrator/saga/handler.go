@@ -86,6 +86,7 @@ type Handler interface {
 	handleSpawnReactorDrops(s Saga, st Step[any]) error
 	handleCompleteQuest(s Saga, st Step[any]) error
 	handleStartQuest(s Saga, st Step[any]) error
+	handleSetQuestProgress(s Saga, st Step[any]) error
 	handleApplyConsumableEffect(s Saga, st Step[any]) error
 	handleSendMessage(s Saga, st Step[any]) error
 	handleDepositToStorage(s Saga, st Step[any]) error
@@ -107,6 +108,7 @@ type Handler interface {
 	handleUnblockPortal(s Saga, st Step[any]) error
 	handleDeductExperience(s Saga, st Step[any]) error
 	handleCancelAllBuffs(s Saga, st Step[any]) error
+	handleResetStats(s Saga, st Step[any]) error
 }
 
 type HandlerImpl struct {
@@ -566,6 +568,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleCompleteQuest, true
 	case StartQuest:
 		return h.handleStartQuest, true
+	case SetQuestProgress:
+		return h.handleSetQuestProgress, true
 	case ApplyConsumableEffect:
 		return h.handleApplyConsumableEffect, true
 	case SendMessage:
@@ -610,6 +614,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleDeductExperience, true
 	case CancelAllBuffs:
 		return h.handleCancelAllBuffs, true
+	case ResetStats:
+		return h.handleResetStats, true
 	}
 	return nil, false
 }
@@ -1237,6 +1243,22 @@ func (h *HandlerImpl) handleStartQuest(s Saga, st Step[any]) error {
 	return nil
 }
 
+// handleSetQuestProgress handles the SetQuestProgress action
+func (h *HandlerImpl) handleSetQuestProgress(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(SetQuestProgressPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.questP.RequestUpdateProgress(s.TransactionId(), byte(payload.WorldId), payload.CharacterId, payload.QuestId, payload.InfoNumber, payload.Progress)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to set quest progress.")
+		return err
+	}
+
+	return nil
+}
+
 // handleApplyConsumableEffect handles the ApplyConsumableEffect action
 // This applies consumable item effects to a character without consuming from inventory
 func (h *HandlerImpl) handleApplyConsumableEffect(s Saga, st Step[any]) error {
@@ -1728,6 +1750,23 @@ func (h *HandlerImpl) handleCancelAllBuffs(s Saga, st Step[any]) error {
 	// CancelAllBuffs is a fire-and-forget command - mark as complete immediately
 	// The buff service handles the cancellation and emits status events but saga doesn't need to wait
 	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
+// handleResetStats handles the ResetStats action
+// This is used during job advancement to reset character stats
+func (h *HandlerImpl) handleResetStats(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ResetStatsPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.charP.ResetStatsAndEmit(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.ChannelId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to reset stats.")
+		return err
+	}
 
 	return nil
 }

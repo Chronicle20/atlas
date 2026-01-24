@@ -32,6 +32,7 @@ type (
 	ChangeSkinPayload            = scriptsaga.ChangeSkinPayload
 	SpawnMonsterPayload          = scriptsaga.SpawnMonsterPayload
 	CompleteQuestPayload         = scriptsaga.CompleteQuestPayload
+	SetQuestProgressPayload      = scriptsaga.SetQuestProgressPayload
 	ApplyConsumableEffectPayload = scriptsaga.ApplyConsumableEffectPayload
 	SendMessagePayload           = scriptsaga.SendMessagePayload
 	AwardFamePayload             = scriptsaga.AwardFamePayload
@@ -53,6 +54,14 @@ type SetHPPayload struct {
 	WorldId     byte   `json:"worldId"`
 	ChannelId   byte   `json:"channelId"`
 	Amount      uint16 `json:"amount"`
+}
+
+// ResetStatsPayload represents the payload required to reset a character's stats.
+// This is used during job advancement to reset AP distribution.
+type ResetStatsPayload struct {
+	CharacterId uint32 `json:"characterId"`
+	WorldId     byte   `json:"worldId"`
+	ChannelId   byte   `json:"channelId"`
 }
 
 // StartQuestPayload represents the payload required to start a quest.
@@ -96,6 +105,7 @@ const (
 	SpawnMonster           = scriptsaga.SpawnMonster
 	CompleteQuest          = scriptsaga.CompleteQuest
 	StartQuest             = scriptsaga.StartQuest
+	SetQuestProgress       = scriptsaga.SetQuestProgress
 	ApplyConsumableEffect  = scriptsaga.ApplyConsumableEffect
 	SendMessage            = scriptsaga.SendMessage
 	AwardFame              = scriptsaga.AwardFame
@@ -109,7 +119,8 @@ const (
 	ShowHint        = scriptsaga.ShowHint
 
 	// Character stat actions (local definition until added to atlas-script-core)
-	SetHP Action = "set_hp"
+	SetHP      Action = "set_hp"
+	ResetStats Action = "reset_stats"
 )
 
 // ValidateCharacterStatePayload uses the NPC service's validation.ConditionInput

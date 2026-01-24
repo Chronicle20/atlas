@@ -114,6 +114,7 @@ const (
 	SpawnMonster           Action = "spawn_monster"
 	CompleteQuest          Action = "complete_quest"
 	StartQuest             Action = "start_quest"
+	SetQuestProgress       Action = "set_quest_progress"
 	ApplyConsumableEffect  Action = "apply_consumable_effect"
 	SendMessage            Action = "send_message"
 	AwardFame              Action = "award_fame"
@@ -315,6 +316,15 @@ type StartQuestPayload struct {
 	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
 	QuestId     uint32 `json:"questId"`     // QuestId to start
 	NpcId       uint32 `json:"npcId"`       // NpcId that started the quest
+}
+
+// SetQuestProgressPayload represents the payload required to update quest progress.
+type SetQuestProgressPayload struct {
+	CharacterId uint32   `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id `json:"worldId"`     // WorldId associated with the action
+	QuestId     uint32   `json:"questId"`     // QuestId to update progress for
+	InfoNumber  uint32   `json:"infoNumber"`  // Progress info number/step to update
+	Progress    string   `json:"progress"`    // Progress value to set
 }
 
 // ApplyConsumableEffectPayload represents the payload required to apply consumable item effects to a character.
@@ -553,6 +563,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case StartQuest:
 		var payload StartQuestPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case SetQuestProgress:
+		var payload SetQuestProgressPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

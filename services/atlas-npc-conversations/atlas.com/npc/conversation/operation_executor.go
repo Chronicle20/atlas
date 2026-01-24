@@ -1429,6 +1429,64 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 		return stepId, saga.Pending, saga.StartQuest, payload, nil
 
+	case "set_quest_progress":
+		// Format: set_quest_progress
+		// Params: questId (uint32, optional - defaults to context questId for quest conversations),
+		//         infoNumber (uint32), progress (string)
+		// Updates quest progress for a specific info number/step
+		var questIdInt int
+		var err error
+		if questIdValue, exists := operation.Params()["questId"]; exists {
+			questIdInt, err = e.evaluateContextValueAsInt(characterId, "questId", questIdValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
+		} else {
+			// Check context for questId (set by quest conversations)
+			ctx, err := GetRegistry().GetPreviousContext(e.t, characterId)
+			if err != nil {
+				return "", "", "", nil, fmt.Errorf("failed to get conversation context for questId: %w", err)
+			}
+			if contextQuestId, exists := ctx.Context()["questId"]; exists {
+				questIdInt, err = strconv.Atoi(contextQuestId)
+				if err != nil {
+					return "", "", "", nil, fmt.Errorf("invalid questId in context: %w", err)
+				}
+			} else {
+				return "", "", "", nil, errors.New("missing questId parameter for set_quest_progress operation")
+			}
+		}
+
+		// InfoNumber is required
+		infoNumberValue, exists := operation.Params()["infoNumber"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing infoNumber parameter for set_quest_progress operation")
+		}
+		infoNumberInt, err := e.evaluateContextValueAsInt(characterId, "infoNumber", infoNumberValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		// Progress is required
+		progressValue, exists := operation.Params()["progress"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing progress parameter for set_quest_progress operation")
+		}
+		progress, err := e.evaluateContextValue(characterId, "progress", progressValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		payload := saga.SetQuestProgressPayload{
+			CharacterId: characterId,
+			WorldId:     f.WorldId(),
+			QuestId:     uint32(questIdInt),
+			InfoNumber:  uint32(infoNumberInt),
+			Progress:    progress,
+		}
+
+		return stepId, saga.Pending, saga.SetQuestProgress, payload, nil
+
 	case "apply_consumable_effect":
 		// Format: apply_consumable_effect
 		// Params: itemId (uint32)
@@ -1707,6 +1765,18 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		}
 
 		return stepId, saga.Pending, saga.SetHP, payload, nil
+
+	case "reset_stats":
+		// Format: reset_stats
+		// Params: none
+		// Resets a character's stats (used during job advancement)
+		payload := saga.ResetStatsPayload{
+			CharacterId: characterId,
+			WorldId:     byte(f.WorldId()),
+			ChannelId:   byte(f.ChannelId()),
+		}
+
+		return stepId, saga.Pending, saga.ResetStats, payload, nil
 
 	default:
 		return "", "", "", nil, fmt.Errorf("unknown operation type: %s", operation.Type())

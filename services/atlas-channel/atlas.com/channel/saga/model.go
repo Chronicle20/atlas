@@ -14,6 +14,7 @@ const (
 	InventoryTransaction Type = "inventory_transaction"
 	StorageOperation     Type = "storage_operation"
 	CashShopOperation    Type = "cash_shop_operation"
+	CharacterRespawn     Type = "character_respawn"
 )
 
 // Saga represents the entire saga transaction
@@ -50,6 +51,10 @@ const (
 	ReleaseFromCharacter Action = "release_from_character" // Internal (created by saga-orchestrator)
 	AcceptToCharacter    Action = "accept_to_character"    // Internal (created by saga-orchestrator)
 	ReleaseFromStorage   Action = "release_from_storage"   // Internal (created by saga-orchestrator)
+	SetHP                Action = "set_hp"                 // Set character HP to an absolute value
+	DeductExperience     Action = "deduct_experience"      // Deduct experience from character
+	CancelAllBuffs       Action = "cancel_all_buffs"       // Cancel all active buffs
+	WarpToPortal         Action = "warp_to_portal"         // Warp character to a portal
 )
 
 // Step represents a single step within a saga
@@ -161,4 +166,36 @@ type WithdrawFromCashShopPayload struct {
 	CashId          uint64    `json:"cashId"`          // Cash serial number of the item to withdraw
 	CompartmentType byte      `json:"compartmentType"` // Cash shop compartment type (1=Explorer, 2=Cygnus, 3=Legend)
 	InventoryType   byte      `json:"inventoryType"`   // Target character inventory type
+}
+
+// SetHPPayload represents the payload for the set_hp action
+type SetHPPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to set HP for
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	Amount      uint16     `json:"amount"`      // Absolute HP value to set
+}
+
+// DeductExperiencePayload represents the payload for the deduct_experience action
+type DeductExperiencePayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to deduct experience from
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	Amount      uint32     `json:"amount"`      // Amount of experience to deduct
+}
+
+// CancelAllBuffsPayload represents the payload for the cancel_all_buffs action
+type CancelAllBuffsPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to cancel buffs for
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+}
+
+// WarpToPortalPayload represents the payload for the warp_to_portal action
+type WarpToPortalPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to warp
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	MapId       uint32     `json:"mapId"`       // Target map ID
+	PortalId    uint32     `json:"portalId"`    // Target portal ID (0 for spawn point)
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"time"
 
 	portalsaga "atlas-portal-actions/saga"
 
@@ -50,6 +51,12 @@ func (e *OperationExecutor) ExecuteOperation(f field.Model, characterId uint32, 
 
 	case "block_portal":
 		return e.executeBlockPortal(f, characterId, portalId, op)
+
+	case "create_skill":
+		return e.executeCreateSkill(characterId, op)
+
+	case "update_skill":
+		return e.executeUpdateSkill(characterId, op)
 
 	default:
 		e.l.Warnf("Unknown operation type [%s] for character [%d]", op.Type(), characterId)
@@ -256,6 +263,144 @@ func (e *OperationExecutor) executeBlockPortal(f field.Model, characterId uint32
 				CharacterId: characterId,
 				MapId:       mapId,
 				PortalId:    portalId,
+			},
+		).Build()
+
+	return e.sagaP.Create(s)
+}
+
+// executeCreateSkill creates a new skill for the character
+func (e *OperationExecutor) executeCreateSkill(characterId uint32, op operation.Model) error {
+	params := op.Params()
+
+	skillIdStr, ok := params["skillId"]
+	if !ok {
+		return fmt.Errorf("create_skill operation missing skillId parameter")
+	}
+
+	skillId, err := strconv.ParseUint(skillIdStr, 10, 32)
+	if err != nil {
+		return fmt.Errorf("invalid skillId [%s]: %w", skillIdStr, err)
+	}
+
+	var level byte = 1
+	if levelStr, hasLevel := params["level"]; hasLevel {
+		l, err := strconv.ParseInt(levelStr, 10, 8)
+		if err != nil {
+			return fmt.Errorf("invalid level [%s]: %w", levelStr, err)
+		}
+		level = byte(l)
+	}
+
+	var masterLevel byte = 1
+	if masterLevelStr, hasMasterLevel := params["masterLevel"]; hasMasterLevel {
+		ml, err := strconv.ParseInt(masterLevelStr, 10, 8)
+		if err != nil {
+			return fmt.Errorf("invalid masterLevel [%s]: %w", masterLevelStr, err)
+		}
+		masterLevel = byte(ml)
+	}
+
+	expiration := time.Now().Add(365 * 24 * time.Hour) // Default to 1 year from now
+	if expirationStr, hasExpiration := params["expiration"]; hasExpiration {
+		if expirationStr == "-1" {
+			// -1 means no expiration, use a far future date
+			expiration = time.Now().Add(100 * 365 * 24 * time.Hour)
+		} else {
+			expMs, err := strconv.ParseInt(expirationStr, 10, 64)
+			if err != nil {
+				return fmt.Errorf("invalid expiration [%s]: %w", expirationStr, err)
+			}
+			if expMs > 0 {
+				expiration = time.UnixMilli(expMs)
+			}
+		}
+	}
+
+	e.l.Debugf("Creating skill [%d] for character [%d] (level=%d, masterLevel=%d)", skillId, characterId, level, masterLevel)
+
+	s := saga.NewBuilder().
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("portal-action-create-skill").
+		AddStep(
+			fmt.Sprintf("create-skill-%d-%d", characterId, skillId),
+			saga.Pending,
+			saga.CreateSkill,
+			saga.CreateSkillPayload{
+				CharacterId: characterId,
+				SkillId:     uint32(skillId),
+				Level:       level,
+				MasterLevel: masterLevel,
+				Expiration:  expiration,
+			},
+		).Build()
+
+	return e.sagaP.Create(s)
+}
+
+// executeUpdateSkill updates an existing skill for the character
+func (e *OperationExecutor) executeUpdateSkill(characterId uint32, op operation.Model) error {
+	params := op.Params()
+
+	skillIdStr, ok := params["skillId"]
+	if !ok {
+		return fmt.Errorf("update_skill operation missing skillId parameter")
+	}
+
+	skillId, err := strconv.ParseUint(skillIdStr, 10, 32)
+	if err != nil {
+		return fmt.Errorf("invalid skillId [%s]: %w", skillIdStr, err)
+	}
+
+	var level byte = 1
+	if levelStr, hasLevel := params["level"]; hasLevel {
+		l, err := strconv.ParseInt(levelStr, 10, 8)
+		if err != nil {
+			return fmt.Errorf("invalid level [%s]: %w", levelStr, err)
+		}
+		level = byte(l)
+	}
+
+	var masterLevel byte = 1
+	if masterLevelStr, hasMasterLevel := params["masterLevel"]; hasMasterLevel {
+		ml, err := strconv.ParseInt(masterLevelStr, 10, 8)
+		if err != nil {
+			return fmt.Errorf("invalid masterLevel [%s]: %w", masterLevelStr, err)
+		}
+		masterLevel = byte(ml)
+	}
+
+	expiration := time.Now().Add(365 * 24 * time.Hour) // Default to 1 year from now
+	if expirationStr, hasExpiration := params["expiration"]; hasExpiration {
+		if expirationStr == "-1" {
+			// -1 means no expiration, use a far future date
+			expiration = time.Now().Add(100 * 365 * 24 * time.Hour)
+		} else {
+			expMs, err := strconv.ParseInt(expirationStr, 10, 64)
+			if err != nil {
+				return fmt.Errorf("invalid expiration [%s]: %w", expirationStr, err)
+			}
+			if expMs > 0 {
+				expiration = time.UnixMilli(expMs)
+			}
+		}
+	}
+
+	e.l.Debugf("Updating skill [%d] for character [%d] (level=%d, masterLevel=%d)", skillId, characterId, level, masterLevel)
+
+	s := saga.NewBuilder().
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("portal-action-update-skill").
+		AddStep(
+			fmt.Sprintf("update-skill-%d-%d", characterId, skillId),
+			saga.Pending,
+			saga.UpdateSkill,
+			saga.UpdateSkillPayload{
+				CharacterId: characterId,
+				SkillId:     uint32(skillId),
+				Level:       level,
+				MasterLevel: masterLevel,
+				Expiration:  expiration,
 			},
 		).Build()
 

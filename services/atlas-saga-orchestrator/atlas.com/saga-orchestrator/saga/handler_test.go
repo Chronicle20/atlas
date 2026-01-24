@@ -156,7 +156,6 @@ func TestHandleWarpToPortal(t *testing.T) {
 	tests := []struct {
 		name          string
 		payload       WarpToPortalPayload
-		fieldExists   bool
 		mockError     error
 		expectError   bool
 		errorContains string
@@ -165,33 +164,23 @@ func TestHandleWarpToPortal(t *testing.T) {
 			name: "Success case",
 			payload: WarpToPortalPayload{
 				CharacterId: 12345,
-				FieldId:     field.Id("0:1:0:00000000-0000-0000-0000-000000000000"),
+				WorldId:     0,
+				ChannelId:   1,
+				MapId:       100000000,
 				PortalId:    1,
 			},
-			fieldExists: true,
 			mockError:   nil,
 			expectError: false,
-		},
-		{
-			name: "Field not found",
-			payload: WarpToPortalPayload{
-				CharacterId: 12345,
-				FieldId:     field.Id("0000000000000"),
-				PortalId:    1,
-			},
-			fieldExists:   false,
-			mockError:     nil,
-			expectError:   true,
-			errorContains: "invalid field id",
 		},
 		{
 			name: "Warp error",
 			payload: WarpToPortalPayload{
 				CharacterId: 12345,
-				FieldId:     field.Id("0:1:0:00000000-0000-0000-0000-000000000000"),
+				WorldId:     0,
+				ChannelId:   1,
+				MapId:       100000000,
 				PortalId:    1,
 			},
-			fieldExists:   true,
 			mockError:     errors.New("failed to warp"),
 			expectError:   true,
 			errorContains: "failed to warp",
@@ -213,7 +202,9 @@ func TestHandleWarpToPortal(t *testing.T) {
 			charP.WarpToPortalAndEmitFunc = func(transactionId uuid.UUID, characterId uint32, f field.Model, pp model.Provider[uint32]) error {
 				// Verify parameters
 				assert.Equal(t, tt.payload.CharacterId, characterId)
-				assert.Equal(t, tt.payload.FieldId, f.Id())
+				assert.Equal(t, tt.payload.WorldId, f.WorldId())
+				assert.Equal(t, tt.payload.ChannelId, f.ChannelId())
+				assert.Equal(t, tt.payload.MapId, f.MapId())
 
 				// Verify portal provider
 				portalId, err := pp()
@@ -233,12 +224,6 @@ func TestHandleWarpToPortal(t *testing.T) {
 			assert.NoError(t, err)
 
 			step := NewStep[any]("test-step", Pending, WarpToPortal, tt.payload)
-
-			// Mock field.FromId
-			if !tt.fieldExists {
-				// This will cause the test to fail with "invalid field id" error
-				// We can't directly mock field.FromId since it's not an interface
-			}
 
 			// Execute
 			err = NewHandler(logger, ctx).WithCharacterProcessor(charP).handleWarpToPortal(saga, step)

@@ -1,16 +1,17 @@
 package main
 
 import (
+	"atlas-quest/database"
 	assetConsumer "atlas-quest/kafka/consumer/asset"
 	characterConsumer "atlas-quest/kafka/consumer/character"
 	monsterConsumer "atlas-quest/kafka/consumer/monster"
 	questConsumer "atlas-quest/kafka/consumer/quest"
-	"atlas-quest/database"
 	"atlas-quest/logger"
 	"atlas-quest/quest"
 	"atlas-quest/quest/progress"
 	"atlas-quest/service"
 	"atlas-quest/tracing"
+	"os"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
@@ -70,7 +71,14 @@ func main() {
 	characterConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	characterConsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 
-	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), quest.InitResource(GetServer())(db))
+	// Create the service with the router
+	server.New(l).
+		WithContext(tdm.Context()).
+		WithWaitGroup(tdm.WaitGroup()).
+		SetBasePath(GetServer().GetPrefix()).
+		SetPort(os.Getenv("REST_PORT")).
+		AddRouteInitializer(quest.InitResource(GetServer())(db)).
+		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

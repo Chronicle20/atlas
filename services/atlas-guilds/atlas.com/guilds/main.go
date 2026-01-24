@@ -16,9 +16,11 @@ import (
 	"atlas-guilds/thread"
 	"atlas-guilds/thread/reply"
 	"atlas-guilds/tracing"
+	"os"
+	"time"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
-	"time"
 )
 
 const serviceName = "atlas-guilds"
@@ -68,7 +70,14 @@ func main() {
 	invite.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 	thread2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 
-	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), guild.InitResource(GetServer())(db), thread.InitResource(GetServer())(db))
+	server.New(l).
+		WithContext(tdm.Context()).
+		WithWaitGroup(tdm.WaitGroup()).
+		SetBasePath(GetServer().GetPrefix()).
+		SetPort(os.Getenv("REST_PORT")).
+		AddRouteInitializer(guild.InitResource(GetServer())(db)).
+		AddRouteInitializer(thread.InitResource(GetServer())(db)).
+		Run()
 
 	go tasks.Register(l, tdm.Context())(guild.NewTransitionTimeout(l, db, time.Second*time.Duration(35)))
 

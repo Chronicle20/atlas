@@ -916,7 +916,9 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 		payload := saga.WarpToPortalPayload{
 			CharacterId: characterId,
-			FieldId:     field.NewBuilder(f.WorldId(), f.ChannelId(), _map.Id(mapIdInt)).Build().Id(),
+			WorldId:     f.WorldId(),
+			ChannelId:   f.ChannelId(),
+			MapId:       _map.Id(mapIdInt),
 			PortalId:    uint32(portalIdInt),
 			PortalName:  portalName,
 		}

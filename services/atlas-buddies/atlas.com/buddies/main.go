@@ -11,6 +11,8 @@ import (
 	"atlas-buddies/logger"
 	"atlas-buddies/service"
 	"atlas-buddies/tracing"
+	"os"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
 )
@@ -61,7 +63,13 @@ func main() {
 	invite2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 	cashshop.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 
-	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), list.InitResource(GetServer())(db))
+	server.New(l).
+		WithContext(tdm.Context()).
+		WithWaitGroup(tdm.WaitGroup()).
+		SetBasePath(GetServer().GetPrefix()).
+		SetPort(os.Getenv("REST_PORT")).
+		AddRouteInitializer(list.InitResource(GetServer())(db)).
+		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

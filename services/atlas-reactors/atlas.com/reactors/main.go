@@ -7,6 +7,7 @@ import (
 	"atlas-reactors/service"
 	"atlas-reactors/tasks"
 	"atlas-reactors/tracing"
+	"os"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
@@ -52,7 +53,13 @@ func main() {
 
 	go tasks.Register(tasks.NewCooldownCleanup(l))
 
-	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), reactor.InitResource(GetServer()))
+	server.New(l).
+		WithContext(tdm.Context()).
+		WithWaitGroup(tdm.WaitGroup()).
+		SetBasePath(GetServer().GetPrefix()).
+		SetPort(os.Getenv("REST_PORT")).
+		AddRouteInitializer(reactor.InitResource(GetServer())).
+		Run()
 
 	tdm.TeardownFunc(reactor.Teardown(l))
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

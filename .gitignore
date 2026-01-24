@@ -25,3 +25,6 @@ services/atlas-portal-actions/tmp
 /services/atlas-portal-actions/atlas.com/portal/atlas-portal-actions
 /services/atlas-portals/atlas.com/portals/atlas-portals
 tmp
+services/atlas-account/atlas.com/account/atlas-account
+services/atlas-buddies/atlas.com/buddies/atlas-buddies
+services/atlas-buffs/atlas.com/buffs/atlas-buffs

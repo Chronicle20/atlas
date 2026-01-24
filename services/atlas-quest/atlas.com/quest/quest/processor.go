@@ -4,6 +4,7 @@ import (
 	"atlas-quest/database"
 	dataquest "atlas-quest/data/quest"
 	"atlas-quest/data/validation"
+	questmessage "atlas-quest/kafka/message/quest"
 	"atlas-quest/kafka/message/saga"
 	sagaproducer "atlas-quest/kafka/producer/saga"
 	"context"
@@ -415,14 +416,15 @@ func (p *ProcessorImpl) Complete(transactionId uuid.UUID, characterId uint32, qu
 		return 0, err
 	}
 
-	// Process end actions/rewards
-	if err := p.processEndActions(characterId, questId, questDef, f); err != nil {
+	// Process end actions/rewards and collect awarded items
+	awardedItems, err := p.processEndActions(characterId, questId, questDef, f)
+	if err != nil {
 		p.l.WithError(err).Warnf("Unable to process end actions for quest [%d] character [%d].", questId, characterId)
 		// Don't fail the completion, just log the error
 	}
 
-	// Emit quest completed event
-	if err := p.eventEmitter.EmitQuestCompleted(transactionId, characterId, byte(f.WorldId()), questId, completedAt); err != nil {
+	// Emit quest completed event with awarded items
+	if err := p.eventEmitter.EmitQuestCompleted(transactionId, characterId, byte(f.WorldId()), questId, completedAt, awardedItems); err != nil {
 		p.l.WithError(err).Warnf("Unable to emit quest completed event for quest [%d] character [%d].", questId, characterId)
 	}
 
@@ -779,8 +781,9 @@ func (p *ProcessorImpl) processStartActions(characterId uint32, questId uint32, 
 	return nil
 }
 
-func (p *ProcessorImpl) processEndActions(characterId uint32, questId uint32, questDef dataquest.RestModel, f field.Model) error {
+func (p *ProcessorImpl) processEndActions(characterId uint32, questId uint32, questDef dataquest.RestModel, f field.Model) ([]questmessage.ItemReward, error) {
 	actions := questDef.EndActions
+	var awardedItems []questmessage.ItemReward
 
 	// Build saga for end actions
 	builder := sagaproducer.NewBuilder(saga.QuestComplete, fmt.Sprintf("quest_%d", questId))
@@ -804,6 +807,7 @@ func (p *ProcessorImpl) processEndActions(characterId uint32, questId uint32, qu
 		selected := selectRandomItem(randomPool)
 		if selected != nil {
 			builder.AddAwardItem(characterId, selected.Id, uint32(selected.Count))
+			awardedItems = append(awardedItems, questmessage.ItemReward{ItemId: selected.Id, Amount: selected.Count})
 		}
 	}
 
@@ -811,6 +815,7 @@ func (p *ProcessorImpl) processEndActions(characterId uint32, questId uint32, qu
 	for _, item := range unconditionalItems {
 		if item.Count > 0 {
 			builder.AddAwardItem(characterId, item.Id, uint32(item.Count))
+			awardedItems = append(awardedItems, questmessage.ItemReward{ItemId: item.Id, Amount: item.Count})
 		} else if item.Count < 0 {
 			builder.AddConsumeItem(characterId, item.Id, uint32(-item.Count))
 		}
@@ -839,10 +844,10 @@ func (p *ProcessorImpl) processEndActions(characterId uint32, questId uint32, qu
 	// Emit saga if there are steps
 	if builder.HasSteps() {
 		s := builder.Build()
-		return p.eventEmitter.EmitSaga(s)
+		return awardedItems, p.eventEmitter.EmitSaga(s)
 	}
 
-	return nil
+	return awardedItems, nil
 }
 
 // selectRandomItem selects one item from the pool based on weighted probability (Prop values)

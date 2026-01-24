@@ -8,9 +8,11 @@ import (
 	"atlas-account/service"
 	"atlas-account/tasks"
 	"atlas-account/tracing"
+	"os"
+	"time"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
-	"time"
 )
 
 const serviceName = "atlas-account"
@@ -53,7 +55,13 @@ func main() {
 	account2.InitConsumers(l)(cmf)(consumerGroupId)
 	account2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 
-	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), account.InitResource(GetServer())(db))
+	server.New(l).
+		WithContext(tdm.Context()).
+		WithWaitGroup(tdm.WaitGroup()).
+		SetBasePath(GetServer().GetPrefix()).
+		SetPort(os.Getenv("REST_PORT")).
+		AddRouteInitializer(account.InitResource(GetServer())(db)).
+		Run()
 
 	go tasks.Register(l, tdm.Context())(account.NewTransitionTimeout(l, db, time.Second*time.Duration(5)))
 

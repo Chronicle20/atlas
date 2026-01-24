@@ -29,6 +29,7 @@ type CreateAndEquipAssetPayload struct {
 type Processor interface {
 	RequestCreateItem(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time) error
 	RequestDestroyItem(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, removeAll bool) error
+	RequestDestroyItemFromSlot(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, quantity uint32) error
 	RequestEquipAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
 	RequestUnequipAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
 	RequestCreateAndEquipAsset(transactionId uuid.UUID, payload CreateAndEquipAssetPayload) error
@@ -83,6 +84,10 @@ func (p *ProcessorImpl) RequestDestroyItem(transactionId uuid.UUID, characterId 
 	}
 
 	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestDestroyAssetCommandProvider(transactionId, characterId, inventoryType, slot, quantity, removeAll))
+}
+
+func (p *ProcessorImpl) RequestDestroyItemFromSlot(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, quantity uint32) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestDestroyAssetCommandProvider(transactionId, characterId, inventory.Type(inventoryType), slot, quantity, false))
 }
 
 func (p *ProcessorImpl) RequestEquipAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error {

@@ -21,7 +21,8 @@ type (
 	AwardExperiencePayload       = scriptsaga.AwardExperiencePayload
 	AwardLevelPayload            = scriptsaga.AwardLevelPayload
 	AwardMesosPayload            = scriptsaga.AwardMesosPayload
-	DestroyAssetPayload          = scriptsaga.DestroyAssetPayload
+	DestroyAssetPayload            = scriptsaga.DestroyAssetPayload
+	DestroyAssetFromSlotPayload    = scriptsaga.DestroyAssetFromSlotPayload
 	ChangeJobPayload             = scriptsaga.ChangeJobPayload
 	CreateSkillPayload           = scriptsaga.CreateSkillPayload
 	UpdateSkillPayload           = scriptsaga.UpdateSkillPayload
@@ -93,6 +94,7 @@ const (
 	WarpToRandomPortal     = scriptsaga.WarpToRandomPortal
 	WarpToPortal           = scriptsaga.WarpToPortal
 	DestroyAsset           = scriptsaga.DestroyAsset
+	DestroyAssetFromSlot   = scriptsaga.DestroyAssetFromSlot
 	ChangeJob              = scriptsaga.ChangeJob
 	CreateSkill            = scriptsaga.CreateSkill
 	UpdateSkill            = scriptsaga.UpdateSkill

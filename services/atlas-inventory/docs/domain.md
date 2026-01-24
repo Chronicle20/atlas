@@ -80,7 +80,7 @@ Represents an item in a compartment slot with type-specific reference data.
 ### Reference Data Types
 
 - `EquipableReferenceData` - Contains statistics, slots, owner, and equipment flags
-- `CashEquipableReferenceData` - Contains cashId
+- `CashEquipableReferenceData` - Contains cashId and statistics
 - `ConsumableReferenceData` - Contains quantity, owner, flag, rechargeable
 - `SetupReferenceData` - Contains quantity, owner, flag
 - `EtcReferenceData` - Contains quantity, owner, flag

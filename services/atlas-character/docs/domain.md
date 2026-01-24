@@ -114,7 +114,9 @@ Handles character operations.
 | RequestDistributeAp | Process AP distribution |
 | RequestDistributeSp | Process SP distribution |
 | ChangeHP | Modify HP |
+| SetHP | Set HP to specific value |
 | ChangeMP | Modify MP |
+| DeductExperience | Deduct experience |
 | ProcessLevelChange | Apply level-up bonuses |
 | ProcessJobChange | Apply job-change bonuses |
 | Update | Update character properties |

@@ -64,6 +64,20 @@ Reactor instance in a map.
 | y | int16 | Y coordinate |
 | updateTime | time.Time | Last update time |
 
+### Data Reactor Model
+
+Reactor data from atlas-data service.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uint32 | Reactor identifier |
+| classification | uint32 | Reactor classification |
+| name | string | Reactor name |
+| x | int16 | X coordinate |
+| y | int16 | Y coordinate |
+| delay | uint32 | Delay value |
+| direction | byte | Direction |
+
 ## Invariants
 
 - SpawnPoints with MobTime < 0 are not spawnable
@@ -71,6 +85,8 @@ Reactor instance in a map.
 - Each MapKey maintains a separate spawn point registry
 - Spawn points have a 5-second cooldown after spawning
 - Only spawn points with NextSpawnAt <= now are eligible for spawning
+- Reactor name cannot be empty
+- Reactor classification must be positive
 
 ## Processors
 
@@ -79,9 +95,14 @@ Reactor instance in a map.
 Coordinates character entry and exit from maps.
 
 - Enter: Registers character in map, triggers monster and reactor spawning, emits CHARACTER_ENTER event
+- EnterAndEmit: Executes Enter with Kafka emission
 - Exit: Removes character from map, emits CHARACTER_EXIT event
+- ExitAndEmit: Executes Exit with Kafka emission
 - TransitionMap: Exits old map and enters new map
+- TransitionMapAndEmit: Executes TransitionMap with Kafka emission
 - TransitionChannel: Exits old channel and enters new channel
+- TransitionChannelAndEmit: Executes TransitionChannel with Kafka emission
+- GetCharactersInMap: Returns character IDs in a map
 
 ### Character Processor
 
@@ -114,6 +135,7 @@ Interacts with external monster service.
 
 Manages reactor spawning.
 
+- InMapModelProvider: Provides reactor models in map via REST
 - GetInMap: Gets reactors in map via REST
 - Spawn: Creates reactors that do not exist in map
 - SpawnAndEmit: Spawns reactors and emits Kafka messages
@@ -124,6 +146,8 @@ Manages reactor spawning.
 
 Retrieves spawn point data from atlas-data service.
 
+- SpawnPointProvider: Provides all spawn points for a map
+- SpawnableSpawnPointProvider: Provides spawn points where MobTime >= 0
 - GetSpawnPoints: Gets all spawn points for a map
 - GetSpawnableSpawnPoints: Gets spawn points where MobTime >= 0
 

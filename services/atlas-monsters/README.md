@@ -1,34 +1,33 @@
 # atlas-monsters
 
-Mushroom game monsters Service
+Manages monster instances in game maps, including spawning, movement, damage, control assignment, and destruction.
 
 ## Overview
 
-A RESTful resource which provides monsters services.
+This service maintains an in-memory registry of active monster instances across all tenants, worlds, channels, and maps. It handles monster lifecycle events, assigns character controllers to monsters, tracks damage dealt by characters, and emits status events for downstream consumers.
 
-## Environment
+## External Dependencies
 
-- JAEGER_HOST - Jaeger [host]:[port]
-- LOG_LEVEL - Logging level - Panic / Fatal / Error / Warn / Info / Debug / Trace
-- BOOTSTRAP_SERVERS - Kafka [host]:[port]
-- BASE_SERVICE_URL - [scheme]://[host]:[port]/api/
-- EVENT_TOPIC_MAP_STATUS - Kafka Topic for transmitting Map Status events.
-- EVENT_TOPIC_MONSTER_STATUS - Kafka Topic for transmitting Monster Status events.
-- EVENT_TOPIC_MONSTER_MOVEMENT - Kafka Topic for transmitting Monster Movement events.
-- COMMAND_TOPIC_MONSTER_DAMAGE - Kafka Topic for issuing Monster Damage commands.
-- COMMAND_TOPIC_MONSTER_MOVEMENT - Kafka Topic for issuing Monster Movement commands.
+- Kafka: Consumes map status events and monster commands; produces monster status events
+- atlas-data: REST API for retrieving monster information (HP, MP)
+- atlas-maps: REST API for retrieving character IDs in maps
+- Jaeger: Distributed tracing
 
-## API
+## Runtime Configuration
 
-### Header
+| Variable | Description |
+|----------|-------------|
+| JAEGER_HOST | Jaeger host:port |
+| LOG_LEVEL | Logging level (Panic/Fatal/Error/Warn/Info/Debug/Trace) |
+| BOOTSTRAP_SERVERS | Kafka host:port |
+| REST_PORT | HTTP server port |
+| EVENT_TOPIC_MAP_STATUS | Kafka topic for map status events (consumed) |
+| EVENT_TOPIC_MONSTER_STATUS | Kafka topic for monster status events (produced) |
+| COMMAND_TOPIC_MONSTER | Kafka topic for monster damage commands (consumed) |
+| COMMAND_TOPIC_MONSTER_MOVEMENT | Kafka topic for monster movement commands (consumed) |
 
-All RESTful requests require the supplied header information to identify the server instance.
+## Documentation
 
-```
-TENANT_ID:083839c6-c47c-42a6-9585-76492795d123
-REGION:GMS
-MAJOR_VERSION:83
-MINOR_VERSION:1
-```
-
-### Requests
+- [Domain](docs/domain.md)
+- [Kafka](docs/kafka.md)
+- [REST](docs/rest.md)

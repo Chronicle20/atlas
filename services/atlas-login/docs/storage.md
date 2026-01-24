@@ -23,6 +23,7 @@ Stores active sessions in memory, keyed by tenant ID and session ID.
 | channelId | byte | Selected channel identifier |
 | con | net.Conn | TCP connection |
 | send | crypto.AESOFB | Send encryption cipher |
+| sendLock | *sync.Mutex | Mutex for send operations |
 | recv | crypto.AESOFB | Receive encryption cipher |
 | encryptFunc | crypto.EncryptFunc | Encryption function |
 | lastPacket | time.Time | Last packet timestamp |

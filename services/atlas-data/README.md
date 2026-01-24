@@ -16,10 +16,16 @@ The atlas-data service serves static game data parsed from XML data files. It is
 
 | Variable | Description |
 |----------|-------------|
-| JAEGER_HOST_PORT | Jaeger host:port |
+| DB_USER | PostgreSQL username |
+| DB_PASSWORD | PostgreSQL password |
+| DB_HOST | PostgreSQL host |
+| DB_PORT | PostgreSQL port |
+| DB_NAME | PostgreSQL database name |
+| JAEGER_HOST_PORT | Jaeger OTLP gRPC endpoint (host:port) |
 | LOG_LEVEL | Logging level (Panic/Fatal/Error/Warn/Info/Debug/Trace) |
 | REST_PORT | Port for the REST API server |
 | COMMAND_TOPIC_DATA | Kafka topic for data commands |
+| ZIP_DIR | Directory for storing uploaded ZIP files |
 
 ## Documentation
 

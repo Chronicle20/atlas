@@ -4,7 +4,7 @@ Mushroom game maps Service
 
 ## Overview
 
-A service that tracks character presence in maps and manages spawning of monsters and reactors. Maintains in-memory registries of character locations and spawn point states.
+A service that tracks character presence in maps and manages spawning of monsters and reactors. Maintains in-memory registries of character locations and spawn point cooldown states.
 
 ## External Dependencies
 
@@ -31,3 +31,4 @@ A service that tracks character presence in maps and manages spawning of monster
 - [Domain](docs/domain.md)
 - [Kafka](docs/kafka.md)
 - [REST](docs/rest.md)
+- [Storage](docs/storage.md)

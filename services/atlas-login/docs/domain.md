@@ -18,6 +18,7 @@ Represents an active client connection to the login server.
 | channelId | byte | Selected channel identifier |
 | con | net.Conn | TCP connection |
 | send | crypto.AESOFB | Send encryption cipher |
+| sendLock | *sync.Mutex | Mutex for send operations |
 | recv | crypto.AESOFB | Receive encryption cipher |
 | encryptFunc | crypto.EncryptFunc | Encryption function |
 | lastPacket | time.Time | Timestamp of last packet received |
@@ -67,11 +68,14 @@ Represents character data retrieved from the character service.
 | maxHp | uint16 | Maximum HP |
 | mp | uint16 | Current MP |
 | maxMp | uint16 | Maximum MP |
+| hpMpUsed | int | HP/MP used count |
 | ap | uint16 | Available ability points |
 | sp | string | Skill points (comma-separated) |
 | experience | uint32 | Experience points |
 | fame | int16 | Fame points |
+| gachaponExperience | uint32 | Gachapon experience points |
 | mapId | uint32 | Current map identifier |
+| spawnPoint | uint32 | Spawn point identifier |
 | gm | int | GM status |
 | meso | uint32 | Currency amount |
 | pets | []pet.Model | Active pets |
@@ -89,7 +93,7 @@ Represents world server data.
 | state | State | World state (Normal, Event, New, Hot) |
 | message | string | World message |
 | eventMessage | string | Event message |
-| recommendedMessage | string | Recommendation message |
+| recommendedMessage | string | Recommendation message (non-empty indicates recommended) |
 | capacityStatus | Status | Capacity status (Normal, HighlyPopulated, Full) |
 | channels | []channel.Model | Available channels |
 

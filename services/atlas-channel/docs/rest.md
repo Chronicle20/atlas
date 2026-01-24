@@ -440,6 +440,17 @@ Base URL: `BASE_SERVICE_URL` + STORAGE root
 
 ---
 
+### QUESTS
+Base URL: `BASE_SERVICE_URL` + QUESTS root
+
+#### GET /characters/{characterId}/quests
+- Parameters: characterId (uint32)
+- Request Model: None
+- Response Model: `[]RestModel` - Character quest progress
+- Error Conditions: None
+
+---
+
 ### WORLDS
 Base URL: `BASE_SERVICE_URL` + WORLDS root
 

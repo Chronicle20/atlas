@@ -34,6 +34,7 @@ Consumed from COMMAND_TOPIC_CHARACTER_BUFF. Generic envelope with typed body.
 |------|-----------|-------------|
 | APPLY | ApplyCommandBody | Apply buff to character |
 | CANCEL | CancelCommandBody | Cancel buff on character |
+| CANCEL_ALL | CancelAllCommandBody | Cancel all buffs on character |
 
 ##### ApplyCommandBody
 
@@ -49,6 +50,10 @@ Consumed from COMMAND_TOPIC_CHARACTER_BUFF. Generic envelope with typed body.
 | Field | Type |
 |-------|------|
 | SourceId | int32 |
+
+##### CancelAllCommandBody
+
+Empty body.
 
 ##### StatChange
 

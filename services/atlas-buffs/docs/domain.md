@@ -58,6 +58,7 @@ Primary domain processor for buff operations.
 | GetById | Retrieve character with buffs by character ID |
 | Apply | Apply buff to character and emit applied event |
 | Cancel | Cancel buff by sourceId and emit expired event |
+| CancelAll | Cancel all buffs for character and emit expired events |
 | ExpireBuffs | Process and emit events for all expired buffs |
 
 ### Registry
@@ -71,6 +72,7 @@ In-memory buff storage (singleton). Thread-safe with per-tenant locking.
 | GetTenants | Get all tenants with registered characters |
 | GetCharacters | Get all characters for a tenant |
 | Cancel | Remove buff by sourceId |
+| CancelAll | Remove all buffs for character |
 | GetExpired | Remove and return expired buffs for character |
 
 ## Background Tasks

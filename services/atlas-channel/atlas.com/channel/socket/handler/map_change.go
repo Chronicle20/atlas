@@ -6,6 +6,7 @@ import (
 	"atlas-channel/channel"
 	"atlas-channel/character"
 	"atlas-channel/portal"
+	"atlas-channel/respawn"
 	"atlas-channel/session"
 	"atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
@@ -78,13 +79,10 @@ func MapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Pro
 		}
 		if c.Hp() == 0 {
 			l.Debugf("Character [%d] attempting to revive.", s.CharacterId())
-			// TODO does the player own a wheel of fortune? 5510000
-			// TODO if so, consume wheel cash item 5510000
-			// TODO emit CharacterBattlefieldItemUseEffectBody if wheel item is used
-			// TODO set hp to 50
-			// TODO cancel all buffs
-
-			// TODO if wheel of fortune was consumed, respawn in the same map, otherwise warp to return map of current map
+			err = respawn.NewProcessor(l, ctx).Respawn(s.WorldId(), s.ChannelId(), s.CharacterId(), s.Map().MapId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to process respawn for character [%d].", s.CharacterId())
+			}
 			return
 		}
 

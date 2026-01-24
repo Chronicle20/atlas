@@ -1,0 +1,57 @@
+{
+  "questId": 2332,
+  "questName": "Where's Violetta?",
+  "startStateMachine": {
+    "startState": "checkConditions",
+    "states": [
+      {
+        "id": "checkConditions",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "item", "operator": ">=", "value": "1", "referenceId": "4032388"},
+                {"type": "questStatus", "operator": "=", "value": "1", "referenceId": "2332"}
+              ],
+              "nextState": "startQuestAndShowHint"
+            },
+            {
+              "conditions": [],
+              "nextState": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "startQuestAndShowHint",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}},
+            {"type": "show_hint", "params": {"hint": "I must find Violetta!! (#bquest started#k)"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "noDialogue",
+    "states": [
+      {
+        "id": "noDialogue",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

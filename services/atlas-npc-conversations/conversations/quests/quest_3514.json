@@ -1,0 +1,220 @@
+{
+  "questId": 3514,
+  "questName": "The Sorcerer Who Sells Emotions",
+  "startStateMachine": {
+    "startState": "checkMesos",
+    "states": [
+      {
+        "id": "checkMesos",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "meso", "operator": "<", "value": "1000000"}
+              ],
+              "nextState": "notEnoughMesos"
+            },
+            {
+              "conditions": [],
+              "nextState": "checkInventorySpace"
+            }
+          ]
+        }
+      },
+      {
+        "id": "notEnoughMesos",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Oy, you don't have the money. I charge #r1,000,000 mesos#k for the emotion potion. No money, no deal.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "checkInventorySpace",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "2022337"}
+              ],
+              "nextState": "giveItemAndStartQuest"
+            },
+            {
+              "conditions": [],
+              "nextState": "noInventorySpace"
+            }
+          ]
+        }
+      },
+      {
+        "id": "noInventorySpace",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Check out for a slot on your USE inventory first.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "giveItemAndStartQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "award_item", "params": {"itemId": "2022337", "quantity": "1"}},
+            {"type": "award_mesos", "params": {"amount": "-1000000"}},
+            {"type": "start_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "checkPotionUsed",
+    "states": [
+      {
+        "id": "checkPotionUsed",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "buff", "operator": "=", "value": "1", "referenceId": "2022337"}
+              ],
+              "nextState": "potionWorked"
+            },
+            {
+              "conditions": [],
+              "nextState": "checkHasPotion"
+            }
+          ]
+        }
+      },
+      {
+        "id": "checkHasPotion",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "item", "operator": ">=", "value": "1", "referenceId": "2022337"}
+              ],
+              "nextState": "scaredToDrink"
+            },
+            {
+              "conditions": [],
+              "nextState": "checkCanRecoverPotion"
+            }
+          ]
+        }
+      },
+      {
+        "id": "scaredToDrink",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Are you scared to drink the potion? I can assure you it has only a minor #rside effect#k.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "checkCanRecoverPotion",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "2022337"}
+              ],
+              "nextState": "recoverPotionAndGive"
+            },
+            {
+              "conditions": [],
+              "nextState": "noRoomForRecoveredPotion"
+            }
+          ]
+        }
+      },
+      {
+        "id": "recoverPotionAndGive",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "award_item", "params": {"itemId": "2022337", "quantity": "1"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "lostItRecovered"}
+          ]
+        }
+      },
+      {
+        "id": "lostItRecovered",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Lost it? Luckily for you I managed to recover it back. Take it.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "noRoomForRecoveredPotion",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Lost it? Luckily for you I managed to recover it back. Make a room to get it.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "potionWorked",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "It seems the potion worked and your emotions are no longer frozen. And, oh, my... You're ailing bad, #bpurge#k that out quickly.",
+          "choices": [
+            {"text": "Ok", "nextState": "completeQuestAndReward"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "completeQuestAndReward",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "award_exp", "params": {"amount": "891500"}},
+            {"type": "complete_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

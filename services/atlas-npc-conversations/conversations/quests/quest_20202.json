@@ -1,0 +1,189 @@
+{
+  "questId": 20202,
+  "npcId": 1101004,
+  "questName": "Knighthood Exam: Blaze Wizard",
+  "startStateMachine": {
+    "startState": "noDialogue",
+    "states": [
+      {
+        "id": "noDialogue",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "askBecome",
+    "states": [
+      {
+        "id": "askBecome",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendYesNo",
+          "text": "You managed to bring all of #t4032097#!!! Okay, I believe that your are now qualified to become an official knight! Do you want to become one?",
+          "choices": [
+            {"text": "Yes", "nextState": "checkJob"},
+            {"text": "No", "nextState": "declined"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "declined",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Eh? Why? Is there something wrong?",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "checkJob",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "jobId", "operator": "=", "value": "1200"}
+              ],
+              "nextState": "checkExcessSp"
+            },
+            {
+              "conditions": [
+                {"type": "jobId", "operator": "=", "value": "1210"}
+              ],
+              "nextState": "congratulations"
+            },
+            {
+              "conditions": [],
+              "nextState": "congratulations"
+            }
+          ]
+        }
+      },
+      {
+        "id": "checkExcessSp",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "excessSp", "operator": ">", "value": "0", "referenceId": "30"}
+              ],
+              "nextState": "tooMuchSp"
+            },
+            {
+              "conditions": [],
+              "nextState": "checkInventory"
+            }
+          ]
+        }
+      },
+      {
+        "id": "tooMuchSp",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Wa, wait... you have way too much #bSP#k with you. You'll need to spend more SP on 1st-level skills to become an official knight.",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "checkInventory",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "inventorySpace", "operator": "<", "value": "1", "referenceId": "1142067"}
+              ],
+              "nextState": "noInventorySpace"
+            },
+            {
+              "conditions": [],
+              "nextState": "grantRewards"
+            }
+          ]
+        }
+      },
+      {
+        "id": "noInventorySpace",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "If you wish to receive the medal befitting the title, you may want to make some room in your equipment inventory.",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "grantRewards",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "destroy_item", "params": {"itemId": "4032097", "quantity": "30"}},
+            {"type": "award_item", "params": {"itemId": "1142067", "quantity": "1"}},
+            {"type": "change_job", "params": {"jobId": "1210"}},
+            {"type": "complete_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "congratulations"}
+          ]
+        }
+      },
+      {
+        "id": "congratulations",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "You are no longer a Knight-in-Training. You are now an official Cygnus Knight!",
+          "choices": [
+            {"text": "Next", "nextState": "spAndSkills"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "spAndSkills",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "I have given you some #bSP#k. I have also given you some skills of Blaze Wizards that are only available to official knights, so keep working!",
+          "choices": [
+            {"text": "Previous", "nextState": "congratulations"},
+            {"text": "Next", "nextState": "finalMessage"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "finalMessage",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendPrev",
+          "text": "Now that you have officially become one, I want you to keep that fire in you that you had when you first started this journey, but this time, as a proud member of the Cygnus Knights!",
+          "choices": [
+            {"text": "Previous", "nextState": "spAndSkills"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -91,7 +91,8 @@
             "job",
             "item",
             "meso",
-            "quest_status"
+            "quest_status",
+            "buff"
           ]
         },
         "operator": {
@@ -128,6 +129,14 @@
         {
           "if": {
             "properties": { "type": { "const": "quest_status" } }
+          },
+          "then": {
+            "required": ["operator", "value", "referenceId"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "buff" } }
           },
           "then": {
             "required": ["operator", "value", "referenceId"]

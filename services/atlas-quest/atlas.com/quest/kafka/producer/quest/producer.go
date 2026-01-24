@@ -28,7 +28,7 @@ func QuestStartedEventProvider(transactionId uuid.UUID, characterId uint32, worl
 	return producer.SingleMessageProvider(key, value)
 }
 
-func QuestCompletedEventProvider(transactionId uuid.UUID, characterId uint32, worldId byte, questId uint32, completedAt time.Time) model.Provider[[]kafka.Message] {
+func QuestCompletedEventProvider(transactionId uuid.UUID, characterId uint32, worldId byte, questId uint32, completedAt time.Time, items []quest2.ItemReward) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &quest2.StatusEvent[quest2.QuestCompletedEventBody]{
 		TransactionId: transactionId,
@@ -38,6 +38,7 @@ func QuestCompletedEventProvider(transactionId uuid.UUID, characterId uint32, wo
 		Body: quest2.QuestCompletedEventBody{
 			QuestId:     questId,
 			CompletedAt: completedAt,
+			Items:       items,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
@@ -100,8 +101,8 @@ func EmitQuestStarted(l logrus.FieldLogger, ctx context.Context, transactionId u
 }
 
 // EmitQuestCompleted emits a quest completed event
-func EmitQuestCompleted(l logrus.FieldLogger, ctx context.Context, transactionId uuid.UUID, characterId uint32, worldId byte, questId uint32, completedAt time.Time) error {
-	return emitEvent(l, ctx, QuestCompletedEventProvider(transactionId, characterId, worldId, questId, completedAt))
+func EmitQuestCompleted(l logrus.FieldLogger, ctx context.Context, transactionId uuid.UUID, characterId uint32, worldId byte, questId uint32, completedAt time.Time, items []quest2.ItemReward) error {
+	return emitEvent(l, ctx, QuestCompletedEventProvider(transactionId, characterId, worldId, questId, completedAt, items))
 }
 
 // EmitQuestForfeited emits a quest forfeited event

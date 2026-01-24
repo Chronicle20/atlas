@@ -3,8 +3,10 @@ package quest
 import (
 	consumer2 "atlas-channel/kafka/consumer"
 	"atlas-channel/kafka/message/quest"
+	_map "atlas-channel/map"
 	"atlas-channel/server"
 	"atlas-channel/session"
+	socketmodel "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
 	"time"
@@ -80,18 +82,35 @@ func handleQuestCompleted(sc server.Model, wp writer.Producer) message.Handler[q
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, announceQuestCompleted(l)(ctx)(wp)(e.Body.QuestId, e.Body.CompletedAt))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, announceQuestCompleted(l)(ctx)(wp)(e.Body.QuestId, e.Body.CompletedAt, e.Body.Items))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce quest [%d] completed for character [%d].", e.Body.QuestId, e.CharacterId)
 		}
 	}
 }
 
-func announceQuestCompleted(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(questId uint32, completedAt time.Time) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(questId uint32, completedAt time.Time) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(questId uint32, completedAt time.Time) model.Operator[session.Model] {
-			return func(questId uint32, completedAt time.Time) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.CharacterStatusMessage)(writer.CharacterStatusMessageOperationCompleteQuestRecordBody(l)(uint16(questId), completedAt))
+func announceQuestCompleted(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(questId uint32, completedAt time.Time, items []quest.ItemReward) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(questId uint32, completedAt time.Time, items []quest.ItemReward) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(questId uint32, completedAt time.Time, items []quest.ItemReward) model.Operator[session.Model] {
+			return func(questId uint32, completedAt time.Time, items []quest.ItemReward) model.Operator[session.Model] {
+				return func(s session.Model) error {
+					// Send status message to update quest record
+					_ = session.Announce(l)(ctx)(wp)(writer.CharacterStatusMessage)(writer.CharacterStatusMessageOperationCompleteQuestRecordBody(l)(uint16(questId), completedAt))(s)
+
+					// Convert items to QuestReward model
+					rewards := make([]socketmodel.QuestReward, len(items))
+					for i, item := range items {
+						rewards[i] = socketmodel.NewQuestReward(item.ItemId, item.Amount)
+					}
+
+					// Send quest effect to player showing rewards
+					_ = session.Announce(l)(ctx)(wp)(writer.CharacterEffect)(writer.CharacterQuestEffectBody(l)("", rewards, 0))(s)
+
+					// Announce quest complete effect to other players in the map
+					_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Map(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.CharacterEffectForeign)(writer.CharacterQuestEffectForeignBody(l)(s.CharacterId(), "", rewards, 0)))
+
+					return nil
+				}
 			}
 		}
 	}

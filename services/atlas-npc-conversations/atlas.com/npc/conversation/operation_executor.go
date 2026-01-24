@@ -1121,6 +1121,48 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 		return stepId, saga.Pending, saga.DestroyAsset, payload, nil
 
+	case "destroy_item_from_slot":
+		// Format: destroy_item_from_slot
+		// Params: inventoryType (byte, required), slot (int16, required), quantity (uint32, optional, default 1)
+		// Destroys an item from a specific inventory slot (including equipped items with negative slot values)
+		inventoryTypeValue, exists := operation.Params()["inventoryType"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing inventoryType parameter for destroy_item_from_slot operation")
+		}
+
+		inventoryTypeInt, err := e.evaluateContextValueAsInt(characterId, "inventoryType", inventoryTypeValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		slotValue, exists := operation.Params()["slot"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing slot parameter for destroy_item_from_slot operation")
+		}
+
+		slotInt, err := e.evaluateContextValueAsInt(characterId, "slot", slotValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		// Quantity is optional, defaults to 1
+		quantityInt := 1
+		if quantityValue, exists := operation.Params()["quantity"]; exists {
+			quantityInt, err = e.evaluateContextValueAsInt(characterId, "quantity", quantityValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
+		}
+
+		payload := saga.DestroyAssetFromSlotPayload{
+			CharacterId:   characterId,
+			InventoryType: byte(inventoryTypeInt),
+			Slot:          int16(slotInt),
+			Quantity:      uint32(quantityInt),
+		}
+
+		return stepId, saga.Pending, saga.DestroyAssetFromSlot, payload, nil
+
 	case "gain_closeness":
 		// Format: gain_closeness
 		// Supports either petId (uint32) or petIndex (int8) + characterId lookup

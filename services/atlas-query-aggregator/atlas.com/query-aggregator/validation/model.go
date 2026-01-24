@@ -44,6 +44,7 @@ const (
 	HpCondition                     ConditionType = "hp"
 	MaxHpCondition                  ConditionType = "maxHp"
 	BuffCondition                   ConditionType = "buff"
+	ExcessSPCondition               ConditionType = "excessSp"
 )
 
 // Operator represents the comparison operator in a condition
@@ -122,7 +123,7 @@ func (b *ConditionBuilder) SetType(condType string) *ConditionBuilder {
 	}
 
 	switch ConditionType(condType) {
-	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition, GmLevelCondition, GuildIdCondition, GuildRankCondition, QuestStatusCondition, QuestProgressCondition, UnclaimedMarriageGiftsCondition, StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition, GuildLeaderCondition, BuddyCapacityCondition, PetCountCondition, MapCapacityCondition, InventorySpaceCondition, TransportAvailableCondition, SkillLevelCondition, HpCondition, MaxHpCondition, BuffCondition:
+	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition, GmLevelCondition, GuildIdCondition, GuildRankCondition, QuestStatusCondition, QuestProgressCondition, UnclaimedMarriageGiftsCondition, StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition, GuildLeaderCondition, BuddyCapacityCondition, PetCountCondition, MapCapacityCondition, InventorySpaceCondition, TransportAvailableCondition, SkillLevelCondition, HpCondition, MaxHpCondition, BuffCondition, ExcessSPCondition:
 		b.conditionType = ConditionType(condType)
 	default:
 		b.err = fmt.Errorf("unsupported condition type: %s", condType)
@@ -272,6 +273,10 @@ func (b *ConditionBuilder) FromInput(input ConditionInput) *ConditionBuilder {
 		if input.ReferenceId == 0 {
 			b.err = fmt.Errorf("referenceId is required for buff conditions")
 		}
+	case ExcessSPCondition:
+		if input.ReferenceId == 0 {
+			b.err = fmt.Errorf("referenceId (base level) is required for excessSp conditions")
+		}
 	}
 
 	return b
@@ -339,6 +344,11 @@ func (b *ConditionBuilder) Validate() *ConditionBuilder {
 	case BuffCondition:
 		if b.referenceId == nil {
 			b.err = fmt.Errorf("referenceId is required for buff conditions")
+			return b
+		}
+	case ExcessSPCondition:
+		if b.referenceId == nil {
+			b.err = fmt.Errorf("referenceId (base level) is required for excessSp conditions")
 			return b
 		}
 	}
@@ -492,6 +502,17 @@ func (c Condition) Evaluate(character character.Model) ConditionResult {
 	case LuckCondition:
 		actualValue = int(character.Luck())
 		description = fmt.Sprintf("Luck %s %d", c.operator, c.value)
+	case ExcessSPCondition:
+		// Calculates excess SP beyond what's expected for the job tier
+		// referenceId is the base level for the job tier (30 for 2nd job, 70 for 3rd job, 120 for 4th job)
+		// Formula: excessSp = remainingSp - (level - baseLevel) * 3
+		baseLevel := int(c.referenceId)
+		expectedSp := (int(character.Level()) - baseLevel) * 3
+		if expectedSp < 0 {
+			expectedSp = 0
+		}
+		actualValue = int(character.RemainingSp()) - expectedSp
+		description = fmt.Sprintf("Excess SP (base level %d) %s %d", baseLevel, c.operator, c.value)
 	case BuddyCapacityCondition:
 		// Buddy capacity requires context - return error state
 		return ConditionResult{

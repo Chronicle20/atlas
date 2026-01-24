@@ -64,6 +64,7 @@ type Handler interface {
 	handleAwardMesos(s Saga, st Step[any]) error
 	handleAwardCurrency(s Saga, st Step[any]) error
 	handleDestroyAsset(s Saga, st Step[any]) error
+	handleDestroyAssetFromSlot(s Saga, st Step[any]) error
 	handleEquipAsset(s Saga, st Step[any]) error
 	handleUnequipAsset(s Saga, st Step[any]) error
 	handleChangeJob(s Saga, st Step[any]) error
@@ -524,6 +525,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleAwardCurrency, true
 	case DestroyAsset:
 		return h.handleDestroyAsset, true
+	case DestroyAssetFromSlot:
+		return h.handleDestroyAssetFromSlot, true
 	case EquipAsset:
 		return h.handleEquipAsset, true
 	case UnequipAsset:
@@ -783,6 +786,23 @@ func (h *HandlerImpl) handleDestroyAsset(s Saga, st Step[any]) error {
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to destroy asset.")
+		return err
+	}
+
+	return nil
+}
+
+// handleDestroyAssetFromSlot handles the DestroyAssetFromSlot action
+func (h *HandlerImpl) handleDestroyAssetFromSlot(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(DestroyAssetFromSlotPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.compP.RequestDestroyItemFromSlot(s.TransactionId(), payload.CharacterId, payload.InventoryType, payload.Slot, payload.Quantity)
+
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to destroy asset from slot.")
 		return err
 	}
 

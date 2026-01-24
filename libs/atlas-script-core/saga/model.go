@@ -102,6 +102,7 @@ const (
 	WarpToRandomPortal     Action = "warp_to_random_portal"
 	WarpToPortal           Action = "warp_to_portal"
 	DestroyAsset           Action = "destroy_asset"
+	DestroyAssetFromSlot   Action = "destroy_asset_from_slot"
 	ChangeJob              Action = "change_job"
 	CreateSkill            Action = "create_skill"
 	UpdateSkill            Action = "update_skill"
@@ -202,6 +203,15 @@ type DestroyAssetPayload struct {
 	TemplateId  uint32 `json:"templateId"`  // TemplateId of the item to destroy
 	Quantity    uint32 `json:"quantity"`    // Quantity of the item to destroy (ignored if RemoveAll is true)
 	RemoveAll   bool   `json:"removeAll"`   // If true, remove all instances of the item regardless of Quantity
+}
+
+// DestroyAssetFromSlotPayload represents the payload required to destroy an asset from a specific inventory slot.
+// Unlike DestroyAssetPayload which finds items by template ID, this targets a specific slot directly.
+type DestroyAssetFromSlotPayload struct {
+	CharacterId   uint32 `json:"characterId"`   // CharacterId associated with the action
+	InventoryType byte   `json:"inventoryType"` // Type of inventory (1=equip, 2=use, 3=setup, 4=etc, 5=cash)
+	Slot          int16  `json:"slot"`          // Slot to destroy from (negative for equipped slots, positive for inventory slots)
+	Quantity      uint32 `json:"quantity"`      // Quantity to destroy (0 or 1 for equipment)
 }
 
 // ChangeJobPayload represents the payload required to change a character's job.
@@ -509,6 +519,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case DestroyAsset:
 		var payload DestroyAssetPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case DestroyAssetFromSlot:
+		var payload DestroyAssetFromSlotPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

@@ -8,6 +8,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-constants/job"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 )
@@ -160,10 +161,12 @@ type WarpToRandomPortalPayload struct {
 
 // WarpToPortalPayload represents the payload required to warp a character to a specific portal in a field.
 type WarpToPortalPayload struct {
-	CharacterId uint32   `json:"characterId"`          // CharacterId associated with the action
-	FieldId     field.Id `json:"fieldId"`              // FieldId references the unique identifier of the field associated with the warp action.
-	PortalId    uint32   `json:"portalId"`             // PortalId specifies the unique identifier of the portal for the warp action.
-	PortalName  string   `json:"portalName,omitempty"` // PortalName specifies the name of the portal (resolved to ID if provided).
+	CharacterId uint32     `json:"characterId"`          // CharacterId associated with the action
+	WorldId     world.Id   `json:"worldId"`              // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`            // ChannelId associated with the action
+	MapId       _map.Id    `json:"mapId"`                // MapId specifies the map to warp to
+	PortalId    uint32     `json:"portalId"`             // PortalId specifies the unique identifier of the portal for the warp action.
+	PortalName  string     `json:"portalName,omitempty"` // PortalName specifies the name of the portal (resolved to ID if provided).
 }
 
 // AwardExperiencePayload represents the payload required to award experience to a character.

@@ -1,0 +1,36 @@
+{
+  "questId": 3524,
+  "npcId": 2140001,
+  "questName": "In search for the lost memory - mage",
+  "startStateMachine": {
+    "startState": "questActions",
+    "states": [
+      {
+        "id": "questActions",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}},
+            {"type": "set_quest_progress", "params": {"questId": "3507", "infoNumber": "7081", "progress": "1"}},
+            {"type": "complete_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "confirmMessage"}
+          ]
+        }
+      },
+      {
+        "id": "confirmMessage",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "You have regained your memories, talk to #b#p2140001##k to get the pass.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

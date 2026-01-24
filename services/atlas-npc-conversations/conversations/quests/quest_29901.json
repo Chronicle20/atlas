@@ -1,0 +1,83 @@
+{
+  "questId": 29901,
+  "questName": "Junior Adventurer",
+  "startStateMachine": {
+    "startState": "startQuest",
+    "states": [
+      {
+        "id": "startQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}},
+            {"type": "show_info_text", "params": {"text": "You have earned the <Junior Adventurer> title. You can receive a Medal from NPC Dalair."}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "congratulations",
+    "states": [
+      {
+        "id": "congratulations",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Congratulations on earning your honorable #b<Junior Adventurer>#k title. I wish you the best of luck in your future endeavors! Keep up the good work.\r\n\r\n#fUI/UIWindow.img/QuestIcon/4/0#\r\n #v1142108:# #t1142108# 1",
+          "choices": [
+            {"text": "Next", "nextState": "checkInventory"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "checkInventory",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1142108"}
+              ],
+              "nextState": "awardMedal"
+            },
+            {
+              "conditions": [],
+              "nextState": "insufficientSpace"
+            }
+          ]
+        }
+      },
+      {
+        "id": "awardMedal",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "award_item", "params": {"itemId": "1142108", "quantity": "1"}},
+            {"type": "complete_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "insufficientSpace",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Please make room in your inventory",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

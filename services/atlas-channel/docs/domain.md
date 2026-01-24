@@ -226,10 +226,10 @@ Represents items or meso dropped on the ground in a map.
 Represents interactive objects in maps that respond to player actions.
 
 ### Core Models
-- `Model` - Contains reactor state and position data
+- `Model` - Contains id, worldId, channelId, mapId, classification, name, state, eventState, delay, direction, x, y, updateTime
 
 ### Processors
-- `Processor` - Iterates reactors in map
+- `Processor` - Iterates reactors in map, issues hit commands
 
 ---
 
@@ -356,6 +356,24 @@ Manages transport (boat/train) routes and schedules between maps.
 
 ### Processors
 - `Processor` - Checks if transport is in map
+
+---
+
+## Quest
+
+### Responsibility
+Represents character quest progress and state.
+
+### Core Models
+- `Model` - Contains id, characterId, questId, state, startedAt, completedAt, expirationTime, completedCount, forfeitCount, progress
+- `Progress` - Contains infoNumber, progress string
+
+### State Transitions
+- StateNotStarted → StateStarted → StateCompleted
+- StateStarted → StateNotStarted (forfeit)
+
+### Processors
+- `Processor` - Retrieves quests by character ID, issues start/complete/forfeit/restore item commands
 
 ---
 

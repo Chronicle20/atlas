@@ -1,72 +1,43 @@
 # atlas-monster-death
-Mushroom game Monster Death Event Handler
 
-## Overview
+A Kafka consumer service that handles monster death events. When a monster is killed, this service evaluates and creates item/meso drops based on monster drop tables and distributes experience to characters who damaged the monster.
 
-A Kafka consumer service that handles monster death events. When a monster is killed, this service:
-1. Evaluates and creates item/meso drops based on monster drop tables
-2. Distributes experience to characters who damaged the monster
+This service has no REST endpoints and no persistent storage. It operates purely through Kafka message consumption and production.
 
-This service has no REST endpoints - it operates purely through Kafka message consumption and production.
+## External Dependencies
 
-## Architecture
-
-```
-Monster Killed Event (Kafka)
-         │
-         ▼
-┌─────────────────────┐
-│  atlas-monster-death │
-│                     │
-│  • Evaluate drops   │
-│  • Calculate exp    │
-└─────────────────────┘
-         │
-         ├──► Spawn Drop Commands (Kafka)
-         │
-         └──► Award Experience Commands (Kafka)
-```
-
-## Environment Variables
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| JAEGER_HOST | Jaeger tracing endpoint | `jaeger:6831` |
-| LOG_LEVEL | Logging level | `Panic` / `Fatal` / `Error` / `Warn` / `Info` / `Debug` / `Trace` |
-| BOOTSTRAP_SERVERS | Kafka bootstrap servers | `kafka:9092` |
-
-## Kafka Topics
-
-### Consumed Topics
-- Monster killed events
-
-### Produced Topics
-- Spawn drop commands
-- Award experience commands
-
-## Multi-Tenancy
-
-This service supports multi-tenancy through Kafka headers:
-
-```
-TENANT_ID: 083839c6-c47c-42a6-9585-76492795d123
-REGION: GMS
-MAJOR_VERSION: 83
-MINOR_VERSION: 1
-```
-
-These headers are propagated from incoming Kafka messages to outgoing REST calls and Kafka commands.
+- **Kafka**: Message broker for event consumption and command production
+- **Jaeger**: Distributed tracing
 
 ## External Service Dependencies
 
-This service makes REST calls to the following services:
-- **Character Service** - Get character information (level)
-- **Map Service** - Get characters currently in map
-- **Monster Data Service** - Get monster drop tables and information
+This service makes REST calls to:
 
-## Testing
+- **Character Service** (`CHARACTERS`): Retrieve character information (level)
+- **Map Service** (`MAPS`): Get character IDs currently in a map
+- **Data Service** (`DATA`): Get monster information (HP, experience) and calculate drop positions
+- **Drop Information Service** (`DROPS_INFORMATION`): Get monster drop tables
 
-Run tests with:
-```bash
-go test ./...
-```
+## Runtime Configuration
+
+| Variable | Description |
+|----------|-------------|
+| `BOOTSTRAP_SERVERS` | Kafka bootstrap servers |
+| `JAEGER_HOST` | Jaeger tracing endpoint |
+| `LOG_LEVEL` | Logging level |
+| `EVENT_TOPIC_MONSTER_STATUS` | Topic for monster status events |
+| `COMMAND_TOPIC_DROP` | Topic for drop spawn commands |
+| `COMMAND_TOPIC_CHARACTER` | Topic for character commands |
+| `CHARACTERS` | Base URL for character service |
+| `MAPS` | Base URL for map service |
+| `DATA` | Base URL for data service |
+| `DROPS_INFORMATION` | Base URL for drop information service |
+
+## Multi-Tenancy
+
+This service supports multi-tenancy through Kafka headers. Headers are propagated from incoming Kafka messages to outgoing REST calls and Kafka commands.
+
+## Documentation
+
+- [Domain](docs/domain.md)
+- [Kafka](docs/kafka.md)

@@ -1,6 +1,6 @@
 # atlas-drop-information
 
-A RESTful service providing drop information for monsters and continents. Data is stored in a PostgreSQL database and can be seeded from JSON files.
+A RESTful service providing drop information for monsters, continents, and reactors. Data is stored in a PostgreSQL database and can be seeded from JSON files.
 
 ## External Dependencies
 
@@ -18,9 +18,11 @@ A RESTful service providing drop information for monsters and continents. Data i
 | `DB_PASSWORD` | PostgreSQL user password |
 | `JAEGER_HOST_PORT` | Jaeger tracing endpoint (host:port) |
 | `LOG_LEVEL` | Logging level (Panic/Fatal/Error/Warn/Info/Debug/Trace) |
+| `REACTOR_DROPS_PATH` | Path to reactor drops directory (default: /drops/reactors) |
 
 ## Documentation
 
 - [Domain](docs/domain.md)
+- [Kafka](docs/kafka.md)
 - [REST API](docs/rest.md)
 - [Storage](docs/storage.md)

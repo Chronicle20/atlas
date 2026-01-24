@@ -41,6 +41,8 @@
 | REQUEST_DISTRIBUTE_SP | Command[RequestDistributeSpCommandBody] | Distribute SP |
 | CHANGE_HP | Command[ChangeHPBody] | Change HP |
 | CHANGE_MP | Command[ChangeMPBody] | Change MP |
+| SET_HP | Command[SetHPBody] | Set HP to specific value |
+| DEDUCT_EXPERIENCE | Command[DeductExperienceCommandBody] | Deduct experience |
 
 #### Character Movement Command Topic
 

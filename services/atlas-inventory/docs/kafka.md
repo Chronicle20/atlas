@@ -64,6 +64,8 @@ Asset state change events.
 | DELETED | Asset deleted from compartment |
 | MOVED | Asset moved to different slot |
 | QUANTITY_CHANGED | Asset quantity updated |
+| ACCEPTED | Asset accepted into compartment from external source |
+| RELEASED | Asset released from compartment to external destination |
 
 ### EVENT_TOPIC_COMPARTMENT_STATUS
 

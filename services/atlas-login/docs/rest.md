@@ -154,6 +154,13 @@ type RestModel struct {
 }
 ```
 
+**JSON:API References**
+
+| Type | Name |
+|------|------|
+| equipment | equipment |
+| inventories | inventories |
+
 #### DELETE /characters/{id}
 
 Deletes a character by ID.

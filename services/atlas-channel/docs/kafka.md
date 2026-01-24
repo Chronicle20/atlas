@@ -102,6 +102,21 @@
 - Message Type: Storage status events
 - Purpose: Receives storage operation results
 
+### EVENT_TOPIC_QUEST_STATUS
+- Direction: Event
+- Message Type: `StatusEvent[QuestStartedEventBody]`, `StatusEvent[QuestCompletedEventBody]`, `StatusEvent[QuestForfeitedEventBody]`, `StatusEvent[QuestProgressUpdatedEventBody]`
+- Purpose: Receives quest state change events
+
+### EVENT_TOPIC_REACTOR_STATUS
+- Direction: Event
+- Message Type: `StatusEvent[CreatedStatusEventBody]`, `StatusEvent[DestroyedStatusEventBody]`, `StatusEvent[HitStatusEventBody]`
+- Purpose: Receives reactor spawn, destroy, and hit events
+
+### EVENT_TOPIC_SAGA_STATUS
+- Direction: Event
+- Message Type: `StatusEvent[StatusEventCompletedBody]`, `StatusEvent[StatusEventFailedBody]`
+- Purpose: Receives saga transaction completion and failure events
+
 ---
 
 ## Topics Produced
@@ -285,6 +300,16 @@
 - Direction: Command
 - Message Type: Saga commands
 - Purpose: Issues saga orchestration commands
+
+### COMMAND_TOPIC_QUEST
+- Direction: Command
+- Message Type: `QuestCommand[StartQuestCommandBody]`, `QuestCommand[CompleteQuestCommandBody]`, `QuestCommand[ForfeitQuestCommandBody]`, `QuestCommand[RestoreItemCommandBody]`
+- Purpose: Issues quest start, complete, forfeit, and item restore commands
+
+### COMMAND_TOPIC_REACTOR
+- Direction: Command
+- Message Type: `Command[HitCommandBody]`
+- Purpose: Issues reactor hit commands
 
 ---
 

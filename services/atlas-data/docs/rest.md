@@ -599,3 +599,67 @@ Returns skill information.
 
 - 200: skills resource with effects
 - 404: Not found
+
+---
+
+### GET /api/data/npcs
+
+Returns all NPCs.
+
+#### Query Parameters
+
+- filter[storebank]: Filter by storebank status (true)
+
+#### Response Model
+
+- 200: Array of npcs resources
+
+---
+
+### GET /api/data/npcs/{npcId}
+
+Returns a specific NPC.
+
+#### Parameters
+
+- npcId (path): NPC ID
+
+#### Response Model
+
+- 200: npcs resource
+- 404: Not found
+
+---
+
+### GET /api/data/quests
+
+Returns all quests.
+
+#### Response Model
+
+- 200: Array of quests resources
+
+---
+
+### GET /api/data/quests/auto-start
+
+Returns all auto-start quests.
+
+#### Response Model
+
+- 200: Array of quests resources (filtered by autoStart = true)
+
+---
+
+### GET /api/data/quests/{questId}
+
+Returns a specific quest.
+
+#### Parameters
+
+- questId (path): Quest ID
+
+#### Response Model
+
+- 200: quests resource
+- 404: Not found

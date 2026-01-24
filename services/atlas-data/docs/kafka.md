@@ -8,7 +8,9 @@
 
 ## Topics Produced
 
-None.
+| Topic | Environment Variable | Description |
+|-------|---------------------|-------------|
+| Data Command | COMMAND_TOPIC_DATA | Produces START_WORKER commands to trigger worker processing |
 
 ## Message Types
 

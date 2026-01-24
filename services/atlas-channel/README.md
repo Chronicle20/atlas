@@ -35,6 +35,7 @@ The channel service acts as the primary interface between game clients and the b
   - NPC_SHOP - NPC shop data
   - PARTIES - Party data
   - PETS - Pet data
+  - QUESTS - Quest progress data
   - REACTORS - Reactor state
   - ROUTES - Transport routes
   - SKILLS - Character skills
@@ -100,8 +101,13 @@ The channel service acts as the primary interface between game clients and the b
 | COMMAND_TOPIC_PET | Pet commands |
 | COMMAND_TOPIC_PET_MOVEMENT | Pet movement commands |
 | COMMAND_TOPIC_PORTAL | Portal commands |
-| COMMAND_TOPIC_QUEST_CONVERSATION | Quest commands |
+| COMMAND_TOPIC_QUEST_CONVERSATION | Quest conversation commands |
+| COMMAND_TOPIC_QUEST | Quest commands |
+| COMMAND_TOPIC_REACTOR | Reactor commands |
 | COMMAND_TOPIC_SAGA | Saga commands |
+| EVENT_TOPIC_QUEST_STATUS | Quest status events |
+| EVENT_TOPIC_REACTOR_STATUS | Reactor status events |
+| EVENT_TOPIC_SAGA_STATUS | Saga status events |
 | COMMAND_TOPIC_SKILL | Skill commands |
 | COMMAND_TOPIC_SKILL_MACRO | Skill macro commands |
 | COMMAND_TOPIC_STORAGE | Storage commands |

@@ -11,7 +11,7 @@ Stores all game data documents as JSON blobs with tenant isolation.
 | id | UUID | PRIMARY KEY, DEFAULT uuid_generate_v4() | Unique document identifier |
 | tenant_id | UUID | NOT NULL | Tenant identifier for multi-tenancy |
 | type | VARCHAR | NOT NULL | Document type (CASH, EQUIPMENT, MAP, etc.) |
-| document_id | INTEGER | NOT NULL | Domain-specific document identifier |
+| document_id | INTEGER (uint32) | NOT NULL | Domain-specific document identifier |
 | content | JSON | NOT NULL | JSON representation of the document |
 
 ## Relationships
@@ -20,17 +20,19 @@ The documents table stores all data types in a single table with the `type` colu
 
 Document types:
 - CASH
+- CHARACTER_TEMPLATE
+- COMMODITY
+- CONSUMABLE
 - EQUIPMENT
+- ETC
 - MAP
 - MONSTER
-- CONSUMABLE
-- ETC
+- NPC
 - PET
+- QUEST
 - REACTOR
 - SETUP
 - SKILL
-- COMMODITY
-- CHARACTER_TEMPLATE
 
 ## Indexes
 

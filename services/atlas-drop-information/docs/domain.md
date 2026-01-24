@@ -81,6 +81,35 @@ Aggregates continent drops grouped by continent identifier.
 
 ---
 
+## Reactor Drop
+
+### Responsibility
+
+Represents an item that can drop from a specific reactor.
+
+### Core Models
+
+**Model** (`reactor/drop/model.go`)
+- `tenantId` - UUID identifying the tenant
+- `id` - unique drop identifier
+- `reactorId` - identifier of the reactor that drops the item
+- `itemId` - identifier of the dropped item
+- `questId` - associated quest identifier (0 if none)
+- `chance` - drop chance value
+
+### Invariants
+
+- All fields are immutable after construction
+- Model is constructed via Builder pattern
+
+### Processors
+
+**Processor** (`reactor/drop/processor.go`)
+- `GetAll` - retrieves all reactor drops for the current tenant
+- `GetForReactor` - retrieves all drops for a specific reactor
+
+---
+
 ## Seed
 
 ### Responsibility
@@ -98,8 +127,9 @@ Handles seeding of drop data from JSON files into the database.
 **CombinedSeedResult** (`seed/seed.go`)
 - `MonsterDrops` - seed result for monster drops
 - `ContinentDrops` - seed result for continent drops
+- `ReactorDrops` - seed result for reactor drops
 
 ### Processors
 
 **Processor** (`seed/processor.go`)
-- `Seed` - executes full seed operation for both monster and continent drops
+- `Seed` - executes full seed operation for monster, continent, and reactor drops

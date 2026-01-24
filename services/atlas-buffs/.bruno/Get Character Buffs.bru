@@ -5,7 +5,11 @@ meta {
 }
 
 get {
-  url: {{scheme}}://{{host}}:{{port}}/api/characters/3/buffs
+  url: {{scheme}}://{{host}}:{{port}}/api/characters/{{characterId}}/buffs
   body: none
   auth: none
+}
+
+vars:pre-request {
+  characterId: 2
 }

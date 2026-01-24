@@ -48,6 +48,15 @@ type (
 	ShowHintPayload         = scriptsaga.ShowHintPayload
 )
 
+// ShowIntroPayload represents the payload required to show an intro/direction effect to a character.
+// This is local until added to atlas-script-core.
+type ShowIntroPayload struct {
+	CharacterId uint32 `json:"characterId"`
+	WorldId     byte   `json:"worldId"`
+	ChannelId   byte   `json:"channelId"`
+	Path        string `json:"path"` // Path to the intro effect (e.g., "Effect/Direction1.img/aranTutorial/ClickPoleArm")
+}
+
 // SetHPPayload represents the payload required to set a character's HP to an absolute value.
 // This is local until added to atlas-script-core.
 type SetHPPayload struct {
@@ -121,6 +130,7 @@ const (
 	ShowHint        = scriptsaga.ShowHint
 
 	// Character stat actions (local definition until added to atlas-script-core)
+	ShowIntro  Action = "show_intro"
 	SetHP      Action = "set_hp"
 	ResetStats Action = "reset_stats"
 )

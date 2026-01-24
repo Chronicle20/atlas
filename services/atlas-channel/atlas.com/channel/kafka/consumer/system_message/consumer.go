@@ -40,6 +40,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleShowInfoText(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleUpdateAreaInfo(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleShowHint(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleShowIntro(sc, wp))))
 			}
 		}
 	}
@@ -195,6 +196,29 @@ func handleShowHint(sc server.Model, wp writer.Producer) message.Handler[system_
 			session.Announce(l)(ctx)(wp)(writer.CharacterHint)(writer.CharacterHintBody(cmd.Body.Hint, cmd.Body.Width, cmd.Body.Height, false, 0, 0)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to show hint for character [%d].", cmd.CharacterId)
+		}
+	}
+}
+
+func handleShowIntro(sc server.Model, wp writer.Producer) message.Handler[system_message2.Command[system_message2.ShowIntroBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, cmd system_message2.Command[system_message2.ShowIntroBody]) {
+		if cmd.Type != system_message2.CommandShowIntro {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		if !sc.Is(t, world.Id(cmd.WorldId), channel.Id(cmd.ChannelId)) {
+			return
+		}
+
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(cmd.CharacterId,
+			session.Announce(l)(ctx)(wp)(writer.CharacterEffect)(writer.CharacterShowIntroEffectBody(l)(cmd.Body.Path)))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to show intro for character [%d].", cmd.CharacterId)
 		}
 	}
 }

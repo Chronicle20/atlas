@@ -105,6 +105,7 @@ type Handler interface {
 	handleShowInfoText(s Saga, st Step[any]) error
 	handleUpdateAreaInfo(s Saga, st Step[any]) error
 	handleShowHint(s Saga, st Step[any]) error
+	handleShowIntro(s Saga, st Step[any]) error
 	handleBlockPortal(s Saga, st Step[any]) error
 	handleUnblockPortal(s Saga, st Step[any]) error
 	handleDeductExperience(s Saga, st Step[any]) error
@@ -607,6 +608,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleUpdateAreaInfo, true
 	case ShowHint:
 		return h.handleShowHint, true
+	case ShowIntro:
+		return h.handleShowIntro, true
 	case SetHP:
 		return h.handleSetHP, true
 	case BlockPortal:
@@ -1668,6 +1671,27 @@ func (h *HandlerImpl) handleShowHint(s Saga, st Step[any]) error {
 	}
 
 	// ShowHint is a synchronous command with no async response event
+	// Mark the step as completed immediately after successfully sending the command
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
+// handleShowIntro handles the ShowIntro action
+// This is a synchronous action - we send the command and immediately mark complete
+func (h *HandlerImpl) handleShowIntro(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ShowIntroPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.systemMessageP.ShowIntro(s.TransactionId(), byte(payload.WorldId), byte(payload.ChannelId), payload.CharacterId, payload.Path)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to show intro.")
+		return err
+	}
+
+	// ShowIntro is a synchronous command with no async response event
 	// Mark the step as completed immediately after successfully sending the command
 	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
 

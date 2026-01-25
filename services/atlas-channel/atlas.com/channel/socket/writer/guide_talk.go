@@ -9,21 +9,27 @@ const (
 	GuideTalk = "GuideTalk"
 )
 
-func GuideTalkBody(_ logrus.FieldLogger) func(message string, hintId uint32, duration uint32) BodyProducer {
-	return func(message string, hintId uint32, duration uint32) BodyProducer {
+func GuideTalkMessageBody(_ logrus.FieldLogger) func(message string, width uint32, duration uint32) BodyProducer {
+	return func(message string, width uint32, duration uint32) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			// default width is 200
+			// default duration is 4000 (ms?)
+			w.WriteBool(true)
+			w.WriteAsciiString(message)
+			w.WriteInt(width)
+			w.WriteInt(duration)
+			return w.Bytes()
+		}
+	}
+}
+
+func GuideTalkIdxBody(_ logrus.FieldLogger) func(hintId uint32, duration uint32) BodyProducer {
+	return func(hintId uint32, duration uint32) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			// default duration is 7000 (ms?)
-
-			if len(message) == 0 {
-				w.WriteBool(false)
-				w.WriteInt(hintId)
-				w.WriteInt(duration)
-			} else {
-				w.WriteBool(true)
-				w.WriteAsciiString(message)
-				w.WriteInt(hintId)
-				w.WriteInt(duration)
-			}
+			w.WriteBool(false)
+			w.WriteInt(hintId)
+			w.WriteInt(duration)
 			return w.Bytes()
 		}
 	}

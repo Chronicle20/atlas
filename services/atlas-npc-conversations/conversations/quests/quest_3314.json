@@ -1,0 +1,133 @@
+{
+  "questId": 3314,
+  "questName": "Pill Experiment Results",
+  "startStateMachine": {
+    "startState": "noDialogue",
+    "states": [
+      {
+        "id": "noDialogue",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "checkBuff",
+    "states": [
+      {
+        "id": "checkBuff",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "buff", "operator": "=", "value": "1", "referenceId": "2022198"}
+              ],
+              "nextState": "checkInventory"
+            },
+            {
+              "conditions": [],
+              "nextState": "noPillUsed"
+            }
+          ]
+        }
+      },
+      {
+        "id": "noPillUsed",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "You seem pretty normal, don't you? I can't detect any possible effect from my experiment on you. Go take the pill I asked you to take and show me the effects, will you?",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "checkInventory",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "inventorySpace", "operator": ">=", "value": "10", "referenceId": "2050004"},
+                {"type": "inventorySpace", "operator": ">=", "value": "20", "referenceId": "2022224"}
+              ],
+              "nextState": "giveRewards"
+            },
+            {
+              "conditions": [],
+              "nextState": "inventoryFull"
+            }
+          ]
+        }
+      },
+      {
+        "id": "inventoryFull",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Huh, your inventory is full. Free some spaces on your USE first.",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "giveRewards",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "award_exp", "params": {"amount": "12500"}},
+            {"type": "award_item", "params": {"itemId": "2050004", "quantity": "10"}},
+            {
+              "type": "local:select_random_weighted",
+              "params": {
+                "items": "2022224,2022225,2022226,2022227,2022228",
+                "weights": "1,1,1,1,1",
+                "outputContextKey": "randomRewardItem"
+              }
+            }
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "giveRandomReward"}
+          ]
+        }
+      },
+      {
+        "id": "giveRandomReward",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "award_item", "params": {"itemId": "{context.randomRewardItem}", "quantity": "10"}},
+            {"type": "complete_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "rewardMessage"}
+          ]
+        }
+      },
+      {
+        "id": "rewardMessage",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "You did take my experiments. Hmm, so THAT is the result of it, hehehehe... Ok, take that as compensation will you? And oh, you can #rspew that#k right away (#bright-click on the pill icon at the top-right corner of the screen#k), no worries.",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

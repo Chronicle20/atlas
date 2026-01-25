@@ -1,0 +1,122 @@
+{
+  "questId": 21618,
+  "questName": "Aran lv 200 mount quest",
+  "startStateMachine": {
+    "startState": "mahaIntro",
+    "states": [
+      {
+        "id": "mahaIntro",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Oh, this befriended wolf of yours... I sense some hidden powers hidden behind his furs, you see. Wat'cha say, master, if I awaken it's hidden power?",
+          "choices": [
+            {"text": "Next", "nextState": "playerReaction"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "playerReaction",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "Wait, can you do that?",
+          "speaker": "CHARACTER_RIGHT",
+          "choices": [
+            {"text": "Previous", "nextState": "mahaIntro"},
+            {"text": "Next", "nextState": "mahaOffer"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "mahaOffer",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendAcceptDecline",
+          "text": "Astonished, huh? Does all that time frozen in the glacier hindered your senses as well? Why, of course! Tell me when you're ready!",
+          "choices": [
+            {"text": "Accept", "nextState": "startQuest"},
+            {"text": "Decline", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "startQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "checkWolfInInventory",
+    "states": [
+      {
+        "id": "checkWolfInInventory",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "item", "operator": "<", "value": "1", "referenceId": "1902017"}
+              ],
+              "nextState": "needUnequip"
+            },
+            {
+              "conditions": [],
+              "nextState": "mahaAwaken"
+            }
+          ]
+        }
+      },
+      {
+        "id": "needUnequip",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "You will have to unequip the wolf first before going for the evolution.",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "mahaAwaken",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Step aside, behold the mighty prowess of Maha!!",
+          "choices": [
+            {"text": "Next", "nextState": "completeQuest"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {}},
+            {"type": "destroy_item", "params": {"itemId": "1902017", "quantity": "1"}},
+            {"type": "award_item", "params": {"itemId": "1902018", "quantity": "1"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

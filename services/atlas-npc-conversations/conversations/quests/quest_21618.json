@@ -22,7 +22,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "Wait, can you do that?",
-          "speaker": "CHARACTER_RIGHT",
+          "speaker": "CHARACTER", "endChat": false,
           "choices": [
             {"text": "Previous", "nextState": "mahaIntro"},
             {"text": "Next", "nextState": "mahaOffer"},

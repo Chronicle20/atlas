@@ -21,7 +21,7 @@
         "type": "dialogue",
         "dialogue": {
           "dialogueType": "sendNextPrev",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "text": "Eh, I still don't get what's going on, but I can't let a poor little critter like you starve, right? Food, you say? What do you want to eat?",
           "choices": [
             { "text": "Previous", "nextState": "dragonIntro" },

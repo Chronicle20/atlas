@@ -22,7 +22,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "#b(You tell her that you were able to remember the Combo Ability skill.)#k",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "askTraining"},
             {"text": "Next", "nextState": "congratulations"},

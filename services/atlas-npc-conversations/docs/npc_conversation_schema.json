@@ -68,15 +68,18 @@
               },
               "speaker": {
                 "type": "string",
-                "description": "Optional speaker override. Defaults to NPC_LEFT if not specified.",
-                "enum": [
-                  "NPC_LEFT",
-                  "NPC_RIGHT",
-                  "CHARACTER_LEFT",
-                  "CHARACTER_RIGHT",
-                  "UNKNOWN",
-                  "UNKNOWN2"
-                ]
+                "description": "Who is speaking. 'NPC' (default) or 'CHARACTER'. Position is derived: NPC without secondaryNpcId appears on left, CHARACTER and NPC with secondaryNpcId appear on right.",
+                "enum": ["NPC", "CHARACTER"],
+                "default": "NPC"
+              },
+              "endChat": {
+                "type": "boolean",
+                "description": "Whether to show the end chat button. Defaults to true if not specified.",
+                "default": true
+              },
+              "secondaryNpcId": {
+                "type": "integer",
+                "description": "Optional secondary NPC template ID for dual-NPC dialogues. When specified with NPC speaker, displays second NPC portrait on right side."
               },
               "choices": {
                 "type": "array",

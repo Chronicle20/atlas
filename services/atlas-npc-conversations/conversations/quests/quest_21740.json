@@ -9,7 +9,7 @@
         "type": "dialogue",
         "dialogue": {
           "dialogueType": "sendNext",
-          "speaker": "NPC_LEFT",
+          "speaker": "NPC",
           "text": "The Orbis seal has been stolen by the Black Wings? Hmm, that has gone awry. Go tell #bLilin#k about this, she must have something in mind on this situation.",
           "choices": [
             {"text": "Next", "nextState": "startQuest"},
@@ -39,7 +39,7 @@
         "type": "dialogue",
         "dialogue": {
           "dialogueType": "sendNext",
-          "speaker": "NPC_LEFT",
+          "speaker": "NPC",
           "text": "Oh, hi #h0#! You won't believe what I just uncovered. It's one of your lost skills... What, the seal of Orbis got stolen by the Black Wings? Oh my...",
           "choices": [
             {"text": "Next", "nextState": "lilinTeachesSkill"},
@@ -52,7 +52,7 @@
         "type": "dialogue",
         "dialogue": {
           "dialogueType": "sendNextPrev",
-          "speaker": "NPC_LEFT",
+          "speaker": "NPC",
           "text": "For now, let me teach you the #bCombo Smash#k, with it you will be able to deal massive amount of damage to many monsters at once. We will need to use it if we want to stand a chance against the Black Wings now, so don't forget it!",
           "choices": [
             {"text": "Previous", "nextState": "end"},

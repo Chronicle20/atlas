@@ -23,7 +23,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "#bHm... So you're not a herbivore. You might be a carnivore. You're a Dragon, after all. How does some #t4032453# sound?",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "intro"},
             {"text": "Next", "nextState": "askAccept"},
@@ -74,7 +74,7 @@
         "dialogue": {
           "dialogueType": "sendNext",
           "text": "#b#b(Try giving #p1013000# some #t4032453#. You have to hunt a few #o1210100#s at the farm. Ten should be plenty...)",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Next", "nextState": null},
             {"text": "Exit", "nextState": null}

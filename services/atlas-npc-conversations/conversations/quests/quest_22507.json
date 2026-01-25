@@ -23,7 +23,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "#bI see. How did we end up in this pact anyway?",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "mirSpeaks1"},
             {"text": "Next", "nextState": "mirSpeaks2"},
@@ -50,7 +50,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "#b#b(Wait! That sounds just like that one dream you had... Did the two of you meet in a dream? Is it possible that the giant Dragon you saw in that dream was...#p1013000#?)",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "mirSpeaks2"},
             {"text": "Next", "nextState": "mirSpeaks3"},
@@ -77,7 +77,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "#bI paid a price?",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "mirSpeaks3"},
             {"text": "Next", "nextState": "mirSpeaks4"},
@@ -104,7 +104,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "#bOne in...spirit?",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "mirSpeaks4"},
             {"text": "Next", "nextState": "mirSpeaks5"},
@@ -131,7 +131,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "#bI have no idea what you're talking about, but it sounds like a pretty big deal.",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "mirSpeaks5"},
             {"text": "Next", "nextState": "mirSpeaks6"},
@@ -158,7 +158,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "#bBut it's peaceful here. There are no dangerous monsters around.",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "mirSpeaks6"},
             {"text": "Next", "nextState": "mirSpeaks7"},
@@ -185,7 +185,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "#bIt's not part of my five year plan. I'm just kidding, but seriously, I'm a farmer's kid...",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "mirSpeaks7"},
             {"text": "Next", "nextState": "acceptPact"},
@@ -249,7 +249,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "#b(You're a bit confused, but you are now traveling with Mir the Dragon. Perhaps you'll go on an adventure together, like he said.)",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "confirmed"},
             {"text": "Next", "nextState": "playerThoughts2"},
@@ -263,7 +263,7 @@
         "dialogue": {
           "dialogueType": "sendPrev",
           "text": "#b#b(You still have an errand to run. Your dad needs to talk to you, so go and see him now.)",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "playerThoughts1"},
             {"text": "Ok", "nextState": null},

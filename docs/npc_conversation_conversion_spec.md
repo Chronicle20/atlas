@@ -375,6 +375,7 @@ Always verify by reading the file, but common types include:
 - `petCount` - Number of pets
 - `mapCapacity` - Player count in map (requires `referenceId` with map ID)
 - `item` - Item possession (requires `referenceId`)
+- `excessSp` - Excess skill points beyond expected for job tier (requires `referenceId` with base level: 30 for 2nd job, 70 for 3rd job, 120 for 4th job). Returns `remainingSp - (level - baseLevel) * 3`. Use with `> 0` to check if player has too much unspent SP.
 - And others (check model.go for complete list)
 
 #### Operators (from validation/model.go)
@@ -409,7 +410,8 @@ Verify in saga-orchestrator, but common operations:
 - `award_mesos` - Give mesos (params: `amount`, `actorId`, `actorType`)
 - `award_exp` - Give experience (params: `amount`, `type`, `attr1`)
 - `award_level` - Give levels (params: `amount`)
-- `destroy_item` - Remove item (params: `itemId`, `quantity`)
+- `destroy_item` - Remove item by template ID (params: `itemId`, `quantity`)
+- `destroy_item_from_slot` - Remove item from specific inventory slot (params: `inventoryType`, `slot`, `quantity`) - for equipped items use negative slot values (e.g., -11 for cape)
 - `change_job` - Change job (params: `jobId`)
 - `change_hair` - Change hair style (params: `styleId`)
 - `change_face` - Change face style (params: `styleId`)

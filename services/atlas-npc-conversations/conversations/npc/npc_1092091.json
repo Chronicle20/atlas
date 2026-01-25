@@ -1,0 +1,289 @@
+{
+  "npcId": 1092091,
+  "startState": "checkAlreadyMilked",
+  "states": [
+    {
+      "id": "checkAlreadyMilked",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "questProgress",
+                "operator": "=",
+                "value": "2",
+                "referenceId": "2180",
+                "step": "1"
+              }
+            ],
+            "nextState": "alreadyMilked"
+          },
+          {
+            "conditions": [],
+            "nextState": "checkEmptyBottle"
+          }
+        ]
+      }
+    },
+    {
+      "id": "alreadyMilked",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "You have taken milk from this cow recently, check another cow.",
+        "choices": [
+          { "text": "Next", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "checkEmptyBottle",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4031848"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4031847"
+              }
+            ],
+            "nextState": "fillFirstThird"
+          },
+          {
+            "conditions": [],
+            "nextState": "checkOneThirdBottle"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkOneThirdBottle",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4031849"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4031848"
+              }
+            ],
+            "nextState": "fillSecondThird"
+          },
+          {
+            "conditions": [],
+            "nextState": "checkTwoThirdBottle"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkTwoThirdBottle",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "inventorySpace",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4031850"
+              },
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "4031849"
+              }
+            ],
+            "nextState": "fillComplete"
+          },
+          {
+            "conditions": [],
+            "nextState": "inventoryFull"
+          }
+        ]
+      }
+    },
+    {
+      "id": "fillFirstThird",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4031847",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4031848",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "set_quest_progress",
+            "params": {
+              "questId": "2180",
+              "infoNumber": "1",
+              "progress": "2"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "firstThirdMessage"
+          }
+        ]
+      }
+    },
+    {
+      "id": "firstThirdMessage",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Now filling up the bottle with milk. The bottle is now 1/3 full of milk.",
+        "choices": [
+          { "text": "Next", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "fillSecondThird",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4031848",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4031849",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "set_quest_progress",
+            "params": {
+              "questId": "2180",
+              "infoNumber": "1",
+              "progress": "2"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "secondThirdMessage"
+          }
+        ]
+      }
+    },
+    {
+      "id": "secondThirdMessage",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Now filling up the bottle with milk. The bottle is now 2/3 full of milk.",
+        "choices": [
+          { "text": "Next", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "fillComplete",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": {
+              "itemId": "4031849",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "award_item",
+            "params": {
+              "itemId": "4031850",
+              "quantity": "1"
+            }
+          },
+          {
+            "type": "set_quest_progress",
+            "params": {
+              "questId": "2180",
+              "infoNumber": "1",
+              "progress": "2"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "completeMessage"
+          }
+        ]
+      }
+    },
+    {
+      "id": "completeMessage",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Now filling up the bottle with milk. The bottle is now completely full of milk.",
+        "choices": [
+          { "text": "Next", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "inventoryFull",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Your inventory is full, and there's no room for a milk bottle.",
+        "choices": [
+          { "text": "Next", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    }
+  ]
+}

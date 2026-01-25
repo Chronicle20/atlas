@@ -1121,6 +1121,48 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 		return stepId, saga.Pending, saga.DestroyAsset, payload, nil
 
+	case "destroy_item_from_slot":
+		// Format: destroy_item_from_slot
+		// Params: inventoryType (byte, required), slot (int16, required), quantity (uint32, optional, default 1)
+		// Destroys an item from a specific inventory slot (including equipped items with negative slot values)
+		inventoryTypeValue, exists := operation.Params()["inventoryType"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing inventoryType parameter for destroy_item_from_slot operation")
+		}
+
+		inventoryTypeInt, err := e.evaluateContextValueAsInt(characterId, "inventoryType", inventoryTypeValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		slotValue, exists := operation.Params()["slot"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing slot parameter for destroy_item_from_slot operation")
+		}
+
+		slotInt, err := e.evaluateContextValueAsInt(characterId, "slot", slotValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		// Quantity is optional, defaults to 1
+		quantityInt := 1
+		if quantityValue, exists := operation.Params()["quantity"]; exists {
+			quantityInt, err = e.evaluateContextValueAsInt(characterId, "quantity", quantityValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
+		}
+
+		payload := saga.DestroyAssetFromSlotPayload{
+			CharacterId:   characterId,
+			InventoryType: byte(inventoryTypeInt),
+			Slot:          int16(slotInt),
+			Quantity:      uint32(quantityInt),
+		}
+
+		return stepId, saga.Pending, saga.DestroyAssetFromSlot, payload, nil
+
 	case "gain_closeness":
 		// Format: gain_closeness
 		// Supports either petId (uint32) or petIndex (int8) + characterId lookup
@@ -1429,6 +1471,64 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 		return stepId, saga.Pending, saga.StartQuest, payload, nil
 
+	case "set_quest_progress":
+		// Format: set_quest_progress
+		// Params: questId (uint32, optional - defaults to context questId for quest conversations),
+		//         infoNumber (uint32), progress (string)
+		// Updates quest progress for a specific info number/step
+		var questIdInt int
+		var err error
+		if questIdValue, exists := operation.Params()["questId"]; exists {
+			questIdInt, err = e.evaluateContextValueAsInt(characterId, "questId", questIdValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
+		} else {
+			// Check context for questId (set by quest conversations)
+			ctx, err := GetRegistry().GetPreviousContext(e.t, characterId)
+			if err != nil {
+				return "", "", "", nil, fmt.Errorf("failed to get conversation context for questId: %w", err)
+			}
+			if contextQuestId, exists := ctx.Context()["questId"]; exists {
+				questIdInt, err = strconv.Atoi(contextQuestId)
+				if err != nil {
+					return "", "", "", nil, fmt.Errorf("invalid questId in context: %w", err)
+				}
+			} else {
+				return "", "", "", nil, errors.New("missing questId parameter for set_quest_progress operation")
+			}
+		}
+
+		// InfoNumber is required
+		infoNumberValue, exists := operation.Params()["infoNumber"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing infoNumber parameter for set_quest_progress operation")
+		}
+		infoNumberInt, err := e.evaluateContextValueAsInt(characterId, "infoNumber", infoNumberValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		// Progress is required
+		progressValue, exists := operation.Params()["progress"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing progress parameter for set_quest_progress operation")
+		}
+		progress, err := e.evaluateContextValue(characterId, "progress", progressValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		payload := saga.SetQuestProgressPayload{
+			CharacterId: characterId,
+			WorldId:     f.WorldId(),
+			QuestId:     uint32(questIdInt),
+			InfoNumber:  uint32(infoNumberInt),
+			Progress:    progress,
+		}
+
+		return stepId, saga.Pending, saga.SetQuestProgress, payload, nil
+
 	case "apply_consumable_effect":
 		// Format: apply_consumable_effect
 		// Params: itemId (uint32)
@@ -1684,6 +1784,64 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 		return stepId, saga.Pending, saga.ShowHint, payload, nil
 
+	case "show_guide_hint":
+		// Format: show_guide_hint
+		// Params: hintId (uint32, required), duration (uint32, optional)
+		// Shows a pre-defined guide hint by ID to the character
+		// Used for guide hints (e.g., qm.guideHint(2) in quest scripts)
+		hintIdValue, exists := operation.Params()["hintId"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing hintId parameter for show_guide_hint operation")
+		}
+
+		hintIdInt, err := e.evaluateContextValueAsInt(characterId, "hintId", hintIdValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		// Duration is optional, defaults to 0 (7000ms will be used by channel)
+		var durationInt int = 0
+		if durationValue, exists := operation.Params()["duration"]; exists {
+			durationInt, err = e.evaluateContextValueAsInt(characterId, "duration", durationValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
+		}
+
+		payload := saga.ShowGuideHintPayload{
+			CharacterId: characterId,
+			WorldId:     byte(f.WorldId()),
+			ChannelId:   byte(f.ChannelId()),
+			HintId:      uint32(hintIdInt),
+			Duration:    uint32(durationInt),
+		}
+
+		return stepId, saga.Pending, saga.ShowGuideHint, payload, nil
+
+	case "show_intro":
+		// Format: show_intro
+		// Params: path (string, required) - path to the intro/direction effect (e.g., "Effect/Direction1.img/aranTutorial/ClickPoleArm")
+		// Shows an intro/direction effect to the character
+		// Used for tutorial animations and direction effects (e.g., qm.showIntro() in scripts)
+		pathValue, exists := operation.Params()["path"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing path parameter for show_intro operation")
+		}
+
+		path, err := e.evaluateContextValue(characterId, "path", pathValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		payload := saga.ShowIntroPayload{
+			CharacterId: characterId,
+			WorldId:     byte(f.WorldId()),
+			ChannelId:   byte(f.ChannelId()),
+			Path:        path,
+		}
+
+		return stepId, saga.Pending, saga.ShowIntro, payload, nil
+
 	case "set_hp":
 		// Format: set_hp
 		// Params: amount (uint16, required) - absolute HP value to set (clamped to 0..MaxHP)
@@ -1707,6 +1865,18 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		}
 
 		return stepId, saga.Pending, saga.SetHP, payload, nil
+
+	case "reset_stats":
+		// Format: reset_stats
+		// Params: none
+		// Resets a character's stats (used during job advancement)
+		payload := saga.ResetStatsPayload{
+			CharacterId: characterId,
+			WorldId:     byte(f.WorldId()),
+			ChannelId:   byte(f.ChannelId()),
+		}
+
+		return stepId, saga.Pending, saga.ResetStats, payload, nil
 
 	default:
 		return "", "", "", nil, fmt.Errorf("unknown operation type: %s", operation.Type())

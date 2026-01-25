@@ -1,0 +1,187 @@
+{
+  "questId": 21001,
+  "questName": "Aran Tutorial - Save the Child",
+  "startStateMachine": {
+    "startState": "askAccept",
+    "states": [
+      {
+        "id": "askAccept",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendAcceptDecline",
+          "text": "*Sniff sniff* I was so scared... Please take me to Athena Pierce.",
+          "choices": [
+            {"text": "Accept", "nextState": "giveItemAndStart"},
+            {"text": "Decline", "nextState": "declineMessage"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "declineMessage",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "*Sob* Aran has declined my request!",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "giveItemAndStart",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "award_item", "params": {"itemId": "4001271", "quantity": "1"}},
+            {"type": "start_quest", "params": {}},
+            {"type": "warp_to_map", "params": {"mapId": "914000300", "portalId": "0"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "askAboutChild",
+    "states": [
+      {
+        "id": "askAboutChild",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendYesNo",
+          "text": "You made it back safely! What about the child?! Did you bring the child with you?!",
+          "choices": [
+            {"text": "Yes", "nextState": "relief"},
+            {"text": "No", "nextState": "noChildMessage"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "noChildMessage",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "What about the child? Please give me the child!",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "relief",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Oh, what a relief. I'm so glad...",
+          "choices": [
+            {"text": "Next", "nextState": "hurryBoard"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "hurryBoard",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "Hurry and board the ship! We don't have much time!",
+          "speaker": "CHARACTER", "endChat": false,
+          "choices": [
+            {"text": "Previous", "nextState": "relief"},
+            {"text": "Next", "nextState": "noTimeToWaste"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "noTimeToWaste",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "We don't have any time to waste. The Black Mage's forces are getting closer and closer! We're doomed if we don't leave right right this moment!",
+          "choices": [
+            {"text": "Previous", "nextState": "hurryBoard"},
+            {"text": "Next", "nextState": "leaveNow"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "leaveNow",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "Leave, now!",
+          "speaker": "CHARACTER", "endChat": false,
+          "choices": [
+            {"text": "Previous", "nextState": "noTimeToWaste"},
+            {"text": "Next", "nextState": "pleaToStay"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "pleaToStay",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "Aran, please! I know you want to stay and fight the Black Mage, but it's too late! Leave it to the others and come to Victoria Island with us!",
+          "choices": [
+            {"text": "Previous", "nextState": "leaveNow"},
+            {"text": "Next", "nextState": "noCant"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "noCant",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "No, I can't!",
+          "speaker": "CHARACTER", "endChat": false,
+          "choices": [
+            {"text": "Previous", "nextState": "pleaToStay"},
+            {"text": "Next", "nextState": "promiseToReturn"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "promiseToReturn",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "Athena Pierce, why don't you leave for Victoria Island first? I promise I'll come for you later. I'll be alright. I must fight the Black Mage with the other heroes!",
+          "speaker": "CHARACTER", "endChat": false,
+          "choices": [
+            {"text": "Previous", "nextState": "noCant"},
+            {"text": "Next", "nextState": "completeQuest"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "completeQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "destroy_item", "params": {"itemId": "4001271", "quantity": "1"}},
+            {"type": "destroy_item_from_slot", "params": {"inventoryType": "1", "slot": "-11"}},
+            {"type": "complete_quest", "params": {}},
+            {"type": "warp_to_map", "params": {"mapId": "914090010", "portalId": "0"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

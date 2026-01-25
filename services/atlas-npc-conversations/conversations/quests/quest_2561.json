@@ -22,7 +22,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "I remember...I was on my way to Maple Island, to become an Explorer... What happened? What's going on?",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "monkeyGreeting"},
             {"text": "Next", "nextState": "monkeyOok2"},
@@ -49,7 +49,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "I was talking to the captain, and admiring the scenery, and... Balrog! Balrog attacked the ship! So... Did I fall overboard? Then, why am I alive? I know #bI can swim#k, but can I swim while unconscious? Maybe I can. Maybe I'm a natural swimmer!",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "monkeyOok2"},
             {"text": "Next", "nextState": "monkeyAngry"},
@@ -75,7 +75,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "Huh? Why are you waving your arms like that? Are you trying to tell me something? (The monkey took an apple out of the nearby chest. It looks delicious. But, what is he trying to tell you?)\r\n\r\n#i2010000#",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "monkeyAngry"},
             {"text": "Next", "nextState": "askAcceptApple"},
@@ -102,7 +102,7 @@
         "dialogue": {
           "dialogueType": "sendNext",
           "text": "The thing is, I don't like apples... Sorry, but no thanks.",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Next", "nextState": null},
             {"text": "Exit", "nextState": null}
@@ -128,7 +128,7 @@
         "dialogue": {
           "dialogueType": "sendNext",
           "text": "(You have received a delicious-looking apple. You should eat it. Now...how do you open your Inventory? Was it the #bI#k key...?)",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Next", "nextState": "showTutorial"},
             {"text": "Exit", "nextState": null}

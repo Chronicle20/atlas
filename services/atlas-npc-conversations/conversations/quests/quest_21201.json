@@ -52,7 +52,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "I did tell #p1203000# to make a pole arm for me if I could prove my worth.",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "dialogue1"},
             {"text": "Next", "nextState": "dialogue3"},
@@ -79,7 +79,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "Hey, I never begged for you.",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "dialogue3"},
             {"text": "Next", "nextState": "dialogue5"},
@@ -106,7 +106,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "Maybe a little bit...",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "dialogue5"},
             {"text": "Next", "nextState": "dialogue7"},

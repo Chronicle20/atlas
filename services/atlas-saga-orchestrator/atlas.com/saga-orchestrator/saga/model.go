@@ -376,6 +376,7 @@ const (
 	WarpToRandomPortal           Action = "warp_to_random_portal"
 	WarpToPortal                 Action = "warp_to_portal"
 	DestroyAsset                 Action = "destroy_asset"
+	DestroyAssetFromSlot         Action = "destroy_asset_from_slot"
 	EquipAsset                   Action = "equip_asset"
 	UnequipAsset                 Action = "unequip_asset"
 	ChangeJob                    Action = "change_job"
@@ -398,6 +399,7 @@ const (
 	SpawnReactorDrops            Action = "spawn_reactor_drops"
 	CompleteQuest                Action = "complete_quest"
 	StartQuest                   Action = "start_quest"
+	SetQuestProgress             Action = "set_quest_progress"
 	ApplyConsumableEffect        Action = "apply_consumable_effect"
 	SendMessage                  Action = "send_message"
 	DepositToStorage             Action = "deposit_to_storage"
@@ -419,6 +421,7 @@ const (
 	SetHP            Action = "set_hp"             // Set character HP to an absolute value
 	DeductExperience Action = "deduct_experience"  // Deduct experience from character (with floor at 0)
 	CancelAllBuffs   Action = "cancel_all_buffs"   // Cancel all active buffs on character
+	ResetStats       Action = "reset_stats"        // Reset character stats (for job advancement)
 
 	// Portal-specific actions
 	PlayPortalSound  Action = "play_portal_sound"  // Play portal sound effect to character
@@ -426,6 +429,8 @@ const (
 	ShowInfoText     Action = "show_info_text"     // Show info text message to character
 	UpdateAreaInfo   Action = "update_area_info"   // Update area info (quest record ex) for character
 	ShowHint         Action = "show_hint"          // Show hint box to character
+	ShowGuideHint    Action = "show_guide_hint"   // Show pre-defined guide hint by ID to character
+	ShowIntro        Action = "show_intro"        // Show intro/direction effect to character (e.g., tutorial animations)
 	BlockPortal      Action = "block_portal"       // Block a portal for a character (session-based)
 	UnblockPortal    Action = "unblock_portal"     // Unblock a portal for a character
 )
@@ -572,6 +577,15 @@ type DestroyAssetPayload struct {
 	TemplateId  uint32 `json:"templateId"`  // TemplateId of the item to destroy
 	Quantity    uint32 `json:"quantity"`    // Quantity of the item to destroy (ignored if RemoveAll is true)
 	RemoveAll   bool   `json:"removeAll"`   // If true, remove all instances of the item regardless of Quantity
+}
+
+// DestroyAssetFromSlotPayload represents the payload required to destroy an asset from a specific inventory slot.
+// Unlike DestroyAssetPayload which finds items by template ID, this targets a specific slot directly.
+type DestroyAssetFromSlotPayload struct {
+	CharacterId   uint32 `json:"characterId"`   // CharacterId associated with the action
+	InventoryType byte   `json:"inventoryType"` // Type of inventory (1=equip, 2=use, 3=setup, 4=etc, 5=cash)
+	Slot          int16  `json:"slot"`          // Slot to destroy from (negative for equipped slots, positive for inventory slots)
+	Quantity      uint32 `json:"quantity"`      // Quantity to destroy (0 or 1 for equipment)
 }
 
 // EquipAssetPayload represents the payload required to equip an asset from one inventory slot to an equipped slot.
@@ -786,6 +800,15 @@ type StartQuestPayload struct {
 	NpcId       uint32   `json:"npcId"`       // NPC ID initiating the quest
 }
 
+// SetQuestProgressPayload represents the payload required to update quest progress.
+type SetQuestProgressPayload struct {
+	CharacterId uint32   `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id `json:"worldId"`     // WorldId associated with the action
+	QuestId     uint32   `json:"questId"`     // QuestId to update progress for
+	InfoNumber  uint32   `json:"infoNumber"`  // Progress info number/step to update
+	Progress    string   `json:"progress"`    // Progress value to set
+}
+
 // ApplyConsumableEffectPayload represents the payload required to apply consumable item effects to a character.
 // This is used for NPC-initiated item usage where the item effects are applied
 // without consuming from inventory (e.g., NPC buffs like Shinsoo's blessing).
@@ -853,6 +876,27 @@ type ShowHintPayload struct {
 	Height      uint16     `json:"height"`      // Height of the hint box (0 for auto-calculation)
 }
 
+// ShowGuideHintPayload represents the payload required to show a pre-defined guide hint by ID.
+// This is a synchronous action that immediately completes after sending.
+// Used for guide hints like qm.guideHint(2) in quest scripts.
+type ShowGuideHintPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to show guide hint to
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	HintId      uint32     `json:"hintId"`      // Pre-defined hint ID (maps to client's guide hint system)
+	Duration    uint32     `json:"duration"`    // Duration in milliseconds (default 7000ms if 0)
+}
+
+// ShowIntroPayload represents the payload required to show an intro/direction effect to a character.
+// This is a synchronous action that immediately completes after sending.
+// Used for tutorial animations like "Effect/Direction1.img/aranTutorial/ClickPoleArm".
+type ShowIntroPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to show intro for
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	Path        string     `json:"path"`        // Path to the intro effect (e.g., "Effect/Direction1.img/aranTutorial/ClickPoleArm")
+}
+
 // SetHPPayload represents the payload required to set a character's HP to an absolute value.
 // This is an asynchronous action that completes when the character status event is received.
 type SetHPPayload struct {
@@ -876,6 +920,14 @@ type DeductExperiencePayload struct {
 // This is an asynchronous action that completes when the buff status events are received.
 type CancelAllBuffsPayload struct {
 	CharacterId uint32     `json:"characterId"` // CharacterId to cancel buffs for
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+}
+
+// ResetStatsPayload represents the payload required to reset a character's stats.
+// This is used during job advancement to reset AP distribution.
+type ResetStatsPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to reset stats for
 	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
 	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
 }
@@ -1134,6 +1186,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
 		s.payload = any(payload).(T)
+	case DestroyAssetFromSlot:
+		var payload DestroyAssetFromSlotPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
 	case EquipAsset:
 		var payload EquipAssetPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
@@ -1230,6 +1288,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
 		s.payload = any(payload).(T)
+	case SetQuestProgress:
+		var payload SetQuestProgressPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
 	case ApplyConsumableEffect:
 		var payload ApplyConsumableEffectPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
@@ -1272,6 +1336,18 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
 		s.payload = any(payload).(T)
+	case ShowGuideHint:
+		var payload ShowGuideHintPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case ShowIntro:
+		var payload ShowIntroPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
 	case SetHP:
 		var payload SetHPPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
@@ -1280,6 +1356,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case CancelAllBuffs:
 		var payload CancelAllBuffsPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case ResetStats:
+		var payload ResetStatsPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

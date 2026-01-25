@@ -181,6 +181,20 @@ func DeductExperienceProvider(transactionId uuid.UUID, worldId world.Id, charact
 	return producer.SingleMessageProvider(key, value)
 }
 
+func ResetStatsProvider(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character2.Command[character2.ResetStatsCommandBody]{
+		TransactionId: transactionId,
+		WorldId:       worldId,
+		CharacterId:   characterId,
+		Type:          character2.CommandResetStats,
+		Body: character2.ResetStatsCommandBody{
+			ChannelId: channelId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func RequestCreateCharacterProvider(transactionId uuid.UUID, accountId uint32, worldId byte, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(accountId))
 	value := &character2.Command[character2.CreateCharacterCommandBody]{

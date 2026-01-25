@@ -54,7 +54,7 @@ func handleSimpleConversationCommand(sc server.Model, wp writer.Producer) messag
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(c.CharacterId, announceSimpleConversation(l)(ctx)(wp)(c.NpcId, c.Body.Type, c.Message, c.Speaker))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(c.CharacterId, announceSimpleConversation(l)(ctx)(wp)(c.NpcId, c.Body.Type, c.Message, c.Speaker, c.EndChat, c.SecondaryNpcId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, c.CharacterId)
 		}
@@ -71,7 +71,7 @@ func handleNumberConversationCommand(sc server.Model, wp writer.Producer) messag
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(c.CharacterId, announceNumberConversation(l)(ctx)(wp)(c.NpcId, "NUM", c.Message, c.Body.DefaultValue, c.Body.MinValue, c.Body.MaxValue, getNPCTalkSpeaker(c.Speaker)))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(c.CharacterId, announceNumberConversation(l)(ctx)(wp)(c.NpcId, "NUM", c.Message, c.Body.DefaultValue, c.Body.MinValue, c.Body.MaxValue, c.Speaker, c.EndChat, c.SecondaryNpcId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to write number conversation for character [%d].", c.CharacterId)
 		}
@@ -88,17 +88,17 @@ func handleStyleConversationCommand(sc server.Model, wp writer.Producer) message
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(c.CharacterId, announceStyleConversation(l)(ctx)(wp)(c.NpcId, "STYLE", c.Message, c.Body.Styles, getNPCTalkSpeaker(c.Speaker)))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(c.CharacterId, announceStyleConversation(l)(ctx)(wp)(c.NpcId, "STYLE", c.Message, c.Body.Styles, c.Speaker, c.EndChat, c.SecondaryNpcId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to write style conversation for character [%d].", c.CharacterId)
 		}
 	}
 }
 
-func announceSimpleConversation(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, talkType string, message string, speaker string) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, talkType string, message string, speaker string) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(npcId uint32, talkType string, message string, speaker string) model.Operator[session.Model] {
-			return func(npcId uint32, talkType string, message string, speaker string) model.Operator[session.Model] {
+func announceSimpleConversation(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, talkType string, message string, speaker string, endChat bool, secondaryNpcId uint32) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, talkType string, message string, speaker string, endChat bool, secondaryNpcId uint32) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(npcId uint32, talkType string, message string, speaker string, endChat bool, secondaryNpcId uint32) model.Operator[session.Model] {
+			return func(npcId uint32, talkType string, message string, speaker string, endChat bool, secondaryNpcId uint32) model.Operator[session.Model] {
 				t := tenant.MustFromContext(ctx)
 				scm := &model2.SayConversationDetail{Message: message}
 				if talkType == "NEXT" || talkType == "NEXT_PREVIOUS" {
@@ -107,7 +107,8 @@ func announceSimpleConversation(l logrus.FieldLogger) func(ctx context.Context) 
 				if talkType == "PREVIOUS" || talkType == "NEXT_PREVIOUS" {
 					scm.Previous = true
 				}
-				ncm := model2.NewNpcConversation(npcId, getNPCTalkType(talkType), getNPCTalkSpeaker(speaker), scm)
+				speakerByte := computeSpeakerByte(speaker, endChat, secondaryNpcId)
+				ncm := model2.NewNpcConversation(npcId, getNPCTalkType(talkType), speakerByte, secondaryNpcId, scm)
 
 				return session.Announce(l)(ctx)(wp)(writer.NPCConversation)(writer.NPCConversationBody(l, t)(ncm))
 			}
@@ -115,44 +116,50 @@ func announceSimpleConversation(l logrus.FieldLogger) func(ctx context.Context) 
 	}
 }
 
-func announceNumberConversation(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, talkType string, message string, def uint32, min uint32, max uint32, speaker byte) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, talkType string, message string, def uint32, min uint32, max uint32, speaker byte) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(npcId uint32, talkType string, message string, def uint32, min uint32, max uint32, speaker byte) model.Operator[session.Model] {
-			return func(npcId uint32, talkType string, message string, def uint32, min uint32, max uint32, speaker byte) model.Operator[session.Model] {
+func announceNumberConversation(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, talkType string, message string, def uint32, min uint32, max uint32, speaker string, endChat bool, secondaryNpcId uint32) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, talkType string, message string, def uint32, min uint32, max uint32, speaker string, endChat bool, secondaryNpcId uint32) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(npcId uint32, talkType string, message string, def uint32, min uint32, max uint32, speaker string, endChat bool, secondaryNpcId uint32) model.Operator[session.Model] {
+			return func(npcId uint32, talkType string, message string, def uint32, min uint32, max uint32, speaker string, endChat bool, secondaryNpcId uint32) model.Operator[session.Model] {
 				t := tenant.MustFromContext(ctx)
 				scm := &model2.AskNumberConversationDetail{Message: message, Def: def, Min: min, Max: max}
-				ncm := model2.NewNpcConversation(npcId, getNPCTalkType(talkType), 0, scm)
+				speakerByte := computeSpeakerByte(speaker, endChat, secondaryNpcId)
+				ncm := model2.NewNpcConversation(npcId, getNPCTalkType(talkType), speakerByte, secondaryNpcId, scm)
 				return session.Announce(l)(ctx)(wp)(writer.NPCConversation)(writer.NPCConversationBody(l, t)(ncm))
 			}
 		}
 	}
 }
 
-func announceStyleConversation(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, talkType string, message string, styles []uint32, speaker byte) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, talkType string, message string, styles []uint32, speaker byte) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(npcId uint32, talkType string, message string, styles []uint32, speaker byte) model.Operator[session.Model] {
-			return func(npcId uint32, talkType string, message string, styles []uint32, speaker byte) model.Operator[session.Model] {
+func announceStyleConversation(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, talkType string, message string, styles []uint32, speaker string, endChat bool, secondaryNpcId uint32) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, talkType string, message string, styles []uint32, speaker string, endChat bool, secondaryNpcId uint32) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(npcId uint32, talkType string, message string, styles []uint32, speaker string, endChat bool, secondaryNpcId uint32) model.Operator[session.Model] {
+			return func(npcId uint32, talkType string, message string, styles []uint32, speaker string, endChat bool, secondaryNpcId uint32) model.Operator[session.Model] {
 				t := tenant.MustFromContext(ctx)
 				scm := &model2.AskAvatarConversationDetail{Message: message, Styles: styles}
-				ncm := model2.NewNpcConversation(npcId, getNPCTalkType(talkType), 0, scm)
+				speakerByte := computeSpeakerByte(speaker, endChat, secondaryNpcId)
+				ncm := model2.NewNpcConversation(npcId, getNPCTalkType(talkType), speakerByte, secondaryNpcId, scm)
 				return session.Announce(l)(ctx)(wp)(writer.NPCConversation)(writer.NPCConversationBody(l, t)(ncm))
 			}
 		}
 	}
 }
 
-func getNPCTalkSpeaker(speaker string) byte {
-	switch speaker {
-	case "NPC_LEFT":
-		return 0
-	case "NPC_RIGHT":
-		return 1
-	case "CHARACTER_LEFT":
-		return 2
-	case "CHARACTER_RIGHT":
-		return 3
+// computeSpeakerByte calculates the speaker byte for the client protocol.
+// Bit 0: end chat visibility (0 = show, 1 = hide)
+// Bit 1: speaker type (0 = NPC, 1 = CHARACTER)
+// Bit 2: secondary NPC (0 = none, 1 = has secondary NPC template ID)
+func computeSpeakerByte(speaker string, endChat bool, secondaryNpcId uint32) byte {
+	var b byte = 0
+	if !endChat {
+		b |= 1
 	}
-	panic(fmt.Sprintf("unsupported npc talk speaker %s", speaker))
+	if speaker == "CHARACTER" {
+		b |= 2
+	}
+	if secondaryNpcId != 0 {
+		b |= 4
+	}
+	return b
 }
 
 func getNPCTalkType(t string) model2.NpcConversationMessageType {

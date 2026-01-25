@@ -43,6 +43,8 @@ type Processor interface {
 	RequestCreateCharacter(transactionId uuid.UUID, accountId uint32, worldId byte, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id) error
 	SetHPAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount uint16) error
 	SetHP(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount uint16) error
+	ResetStatsAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id) error
+	ResetStats(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id) error
 }
 
 type ProcessorImpl struct {
@@ -214,5 +216,17 @@ func (p *ProcessorImpl) SetHPAndEmit(transactionId uuid.UUID, worldId world.Id, 
 func (p *ProcessorImpl) SetHP(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount uint16) error {
 	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount uint16) error {
 		return mb.Put(character2.EnvCommandTopic, SetHPProvider(transactionId, worldId, characterId, channelId, amount))
+	}
+}
+
+func (p *ProcessorImpl) ResetStatsAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id) error {
+	return message.Emit(p.p)(func(mb *message.Buffer) error {
+		return p.ResetStats(mb)(transactionId, worldId, characterId, channelId)
+	})
+}
+
+func (p *ProcessorImpl) ResetStats(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id) error {
+	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id) error {
+		return mb.Put(character2.EnvCommandTopic, ResetStatsProvider(transactionId, worldId, characterId, channelId))
 	}
 }

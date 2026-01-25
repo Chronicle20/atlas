@@ -1,0 +1,46 @@
+{
+  "questId": 3529,
+  "questName": "Regained Memories",
+  "startStateMachine": {
+    "startState": "showMessage",
+    "states": [
+      {
+        "id": "showMessage",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "You have regained your memories, talk to #b#p2140001##k to get the pass.",
+          "choices": [
+            {"text": "Ok", "nextState": "performActions"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "performActions",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {
+              "type": "set_quest_progress",
+              "params": {
+                "questId": "3507",
+                "infoNumber": "7081",
+                "progress": "1"
+              }
+            },
+            {
+              "type": "complete_quest",
+              "params": {
+                "force": "true"
+              }
+            }
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

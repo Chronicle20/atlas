@@ -78,7 +78,8 @@ var payloadUnmarshalers = map[Action]PayloadUnmarshaler{
 	AwardMesos:         unmarshalAwardMesosPayload,
 	WarpToRandomPortal: unmarshalWarpToRandomPortalPayload,
 	WarpToPortal:       unmarshalWarpToPortalPayload,
-	DestroyAsset:       unmarshalDestroyAssetPayload,
+	DestroyAsset:         unmarshalDestroyAssetPayload,
+	DestroyAssetFromSlot: unmarshalDestroyAssetFromSlotPayload,
 }
 
 // parseTime parses a time string in RFC3339 format, returning current time if parsing fails
@@ -147,6 +148,10 @@ func unmarshalAwardMesosPayload(rawPayload interface{}) (any, error) {
 
 func unmarshalDestroyAssetPayload(rawPayload interface{}) (any, error) {
 	return unmarshalGenericPayload[DestroyAssetPayload](rawPayload)
+}
+
+func unmarshalDestroyAssetFromSlotPayload(rawPayload interface{}) (any, error) {
+	return unmarshalGenericPayload[DestroyAssetFromSlotPayload](rawPayload)
 }
 
 // Extract converts a REST model to a domain model

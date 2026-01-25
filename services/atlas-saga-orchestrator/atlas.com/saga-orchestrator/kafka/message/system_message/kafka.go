@@ -11,6 +11,8 @@ const (
 	CommandShowInfoText    = "SHOW_INFO_TEXT"
 	CommandUpdateAreaInfo  = "UPDATE_AREA_INFO"
 	CommandShowHint        = "SHOW_HINT"
+	CommandShowGuideHint   = "SHOW_GUIDE_HINT"
+	CommandShowIntro       = "SHOW_INTRO"
 )
 
 // Command represents a Kafka command for system message operations
@@ -55,4 +57,15 @@ type ShowHintBody struct {
 	Hint   string `json:"hint"`   // Hint text to display
 	Width  uint16 `json:"width"`  // Width of the hint box (0 for auto-calculation)
 	Height uint16 `json:"height"` // Height of the hint box (0 for auto-calculation)
+}
+
+// ShowGuideHintBody is the body for showing a pre-defined guide hint by ID to a character
+type ShowGuideHintBody struct {
+	HintId   uint32 `json:"hintId"`   // Pre-defined hint ID (maps to client's guide hint system)
+	Duration uint32 `json:"duration"` // Duration in milliseconds (default 7000ms if 0)
+}
+
+// ShowIntroBody is the body for showing an intro/direction effect to a character
+type ShowIntroBody struct {
+	Path string `json:"path"` // Path to the intro effect (e.g., "Effect/Direction1.img/aranTutorial/ClickPoleArm")
 }

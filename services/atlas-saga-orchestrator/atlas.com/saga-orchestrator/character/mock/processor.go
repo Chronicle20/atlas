@@ -39,6 +39,8 @@ type ProcessorMock struct {
 	RequestCreateCharacterFunc func(transactionId uuid.UUID, accountId uint32, worldId byte, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id) error
 	SetHPAndEmitFunc           func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount uint16) error
 	SetHPFunc                  func(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount uint16) error
+	ResetStatsAndEmitFunc      func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id) error
+	ResetStatsFunc             func(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id) error
 }
 
 // WarpRandomAndEmit is a mock implementation of the character.Processor.WarpRandomAndEmit method
@@ -261,6 +263,24 @@ func (m *ProcessorMock) SetHP(mb *message.Buffer) func(transactionId uuid.UUID, 
 		return m.SetHPFunc(mb)
 	}
 	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount uint16) error {
+		return nil
+	}
+}
+
+// ResetStatsAndEmit is a mock implementation of the character.Processor.ResetStatsAndEmit method
+func (m *ProcessorMock) ResetStatsAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id) error {
+	if m.ResetStatsAndEmitFunc != nil {
+		return m.ResetStatsAndEmitFunc(transactionId, worldId, characterId, channelId)
+	}
+	return nil
+}
+
+// ResetStats is a mock implementation of the character.Processor.ResetStats method
+func (m *ProcessorMock) ResetStats(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id) error {
+	if m.ResetStatsFunc != nil {
+		return m.ResetStatsFunc(mb)
+	}
+	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id) error {
 		return nil
 	}
 }

@@ -52,6 +52,30 @@ Some quest scripts only have an `end()` function (quest is started by another NP
 
 This handles the case where the player interacts with the quest before it's been started through its intended mechanism - the conversation simply ends silently.
 
+## CRITICAL - Stop and Ask When Uncertain
+
+**🚨 MANDATORY RULE: If you encounter ANY situation where you are uncertain how to proceed, you MUST STOP and ASK the user before continuing. DO NOT skip functionality or proceed with assumptions.**
+
+Examples of situations that require asking:
+- A JavaScript function/method is used that has no corresponding JSON operation (e.g., `qm.setQuestProgress()`, `qm.changeMusic()`, etc.)
+- Uncertain how to map a script construct to the JSON schema
+- The script uses functionality you haven't seen before
+- Required operations or conditions are not implemented in the codebase
+- The script logic is complex or ambiguous
+
+**What to do:**
+1. STOP the conversion process
+2. Present a clear report to the user explaining:
+   - What you found in the script
+   - What operation/functionality is missing or uncertain
+   - Ask how to proceed (skip it, implement workaround, abort conversion, etc.)
+3. WAIT for user response before continuing
+
+**DO NOT:**
+- Silently skip operations that aren't implemented
+- Proceed with partial conversions without user approval
+- Make assumptions about what the user wants
+
 ## Conversion Requirements
 
 **CRITICAL - Preserve Original Script Exactly:**
@@ -103,6 +127,15 @@ Identify and understand:
     - `sendPrev`: `"Previous"` and `"Exit"`
     - `listSelection`: Must include `"Exit"` choice
   - Terminal choices (nextState: null) should use text `"Exit"`
+  - **Speaker Fields** (optional, for controlling who speaks and how):
+    - `speaker`: Who is speaking - `"NPC"` (default) or `"CHARACTER"`. Position is derived automatically:
+      - NPC without `secondaryNpcId` → appears on LEFT
+      - NPC with `secondaryNpcId` → appears on RIGHT with second NPC portrait
+      - CHARACTER → always appears on RIGHT
+    - `endChat`: Whether to show the end chat button. Defaults to `true`. Set to `false` to hide it.
+    - `secondaryNpcId`: Optional integer. Secondary NPC template ID for dual-NPC dialogues.
+    - Example - Character speaking: `"speaker": "CHARACTER"`
+    - Example - Character speaking without end chat: `"speaker": "CHARACTER", "endChat": false`
 - **genericAction**: Execute logic/validation (item checks, start/complete quest, etc.)
   - All outcomes MUST have `conditions` array (can be empty)
 - **listSelection**: Dynamic choice lists

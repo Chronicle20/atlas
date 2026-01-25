@@ -1784,6 +1784,40 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 		return stepId, saga.Pending, saga.ShowHint, payload, nil
 
+	case "show_guide_hint":
+		// Format: show_guide_hint
+		// Params: hintId (uint32, required), duration (uint32, optional)
+		// Shows a pre-defined guide hint by ID to the character
+		// Used for guide hints (e.g., qm.guideHint(2) in quest scripts)
+		hintIdValue, exists := operation.Params()["hintId"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing hintId parameter for show_guide_hint operation")
+		}
+
+		hintIdInt, err := e.evaluateContextValueAsInt(characterId, "hintId", hintIdValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		// Duration is optional, defaults to 0 (7000ms will be used by channel)
+		var durationInt int = 0
+		if durationValue, exists := operation.Params()["duration"]; exists {
+			durationInt, err = e.evaluateContextValueAsInt(characterId, "duration", durationValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
+		}
+
+		payload := saga.ShowGuideHintPayload{
+			CharacterId: characterId,
+			WorldId:     byte(f.WorldId()),
+			ChannelId:   byte(f.ChannelId()),
+			HintId:      uint32(hintIdInt),
+			Duration:    uint32(durationInt),
+		}
+
+		return stepId, saga.Pending, saga.ShowGuideHint, payload, nil
+
 	case "show_intro":
 		// Format: show_intro
 		// Params: path (string, required) - path to the intro/direction effect (e.g., "Effect/Direction1.img/aranTutorial/ClickPoleArm")

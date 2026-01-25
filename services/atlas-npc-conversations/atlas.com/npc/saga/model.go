@@ -48,6 +48,16 @@ type (
 	ShowHintPayload         = scriptsaga.ShowHintPayload
 )
 
+// ShowGuideHintPayload represents the payload required to show a pre-defined guide hint by ID.
+// This is local until added to atlas-script-core.
+type ShowGuideHintPayload struct {
+	CharacterId uint32 `json:"characterId"`
+	WorldId     byte   `json:"worldId"`
+	ChannelId   byte   `json:"channelId"`
+	HintId      uint32 `json:"hintId"`   // Pre-defined hint ID (maps to client's guide hint system)
+	Duration    uint32 `json:"duration"` // Duration in milliseconds (default 7000ms if 0)
+}
+
 // ShowIntroPayload represents the payload required to show an intro/direction effect to a character.
 // This is local until added to atlas-script-core.
 type ShowIntroPayload struct {
@@ -130,7 +140,8 @@ const (
 	ShowHint        = scriptsaga.ShowHint
 
 	// Character stat actions (local definition until added to atlas-script-core)
-	ShowIntro  Action = "show_intro"
+	ShowGuideHint Action = "show_guide_hint"
+	ShowIntro     Action = "show_intro"
 	SetHP      Action = "set_hp"
 	ResetStats Action = "reset_stats"
 )

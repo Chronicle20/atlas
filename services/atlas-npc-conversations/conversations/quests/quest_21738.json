@@ -21,7 +21,7 @@
         "type": "dialogue",
         "dialogue": {
           "dialogueType": "sendNextPrev",
-          "speaker": "CHARACTER_RIGHT",
+          "speaker": "CHARACTER", "endChat": false,
           "text": "(You tell her about Giant Nependeath.)",
           "choices": [
             {"text": "Previous", "nextState": "intro"},
@@ -48,7 +48,7 @@
         "type": "dialogue",
         "dialogue": {
           "dialogueType": "sendNextPrev",
-          "speaker": "CHARACTER_RIGHT",
+          "speaker": "CHARACTER", "endChat": false,
           "text": "Neglected Strolling Path.",
           "choices": [
             {"text": "Previous", "nextState": "npcResponse1"},
@@ -75,7 +75,7 @@
         "type": "dialogue",
         "dialogue": {
           "dialogueType": "sendNextPrev",
-          "speaker": "CHARACTER_RIGHT",
+          "speaker": "CHARACTER", "endChat": false,
           "text": "Sealed Garden?",
           "choices": [
             {"text": "Previous", "nextState": "npcResponse2"},

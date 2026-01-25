@@ -48,7 +48,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "I see...\r\n#b(Wow, how pretty could she be?)",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "explanation"},
             {"text": "Next", "nextState": "playerReaction2"},
@@ -62,7 +62,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "#b(What the--)",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "playerReaction1"},
             {"text": "Next", "nextState": "playerReaction3"},
@@ -76,7 +76,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "#b(Is that what's considered pretty in the world of mushrooms?!)",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "playerReaction2"},
             {"text": "Next", "nextState": "finalWords"},

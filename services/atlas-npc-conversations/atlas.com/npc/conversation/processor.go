@@ -485,10 +485,14 @@ func (p *ProcessorImpl) processDialogueState(ctx ConversationContext, state Stat
 		processedText = dialogue.Text()
 	}
 
-	// Build configurators - include speaker override if specified
+	// Build configurators for speaker settings
 	var configs []npcSender.TalkConfigurator
 	if dialogue.Speaker() != "" {
 		configs = append(configs, npcSender.WithSpeaker(dialogue.Speaker()))
+	}
+	configs = append(configs, npcSender.WithEndChat(dialogue.EndChat()))
+	if dialogue.SecondaryNpcId() != 0 {
+		configs = append(configs, npcSender.WithSecondaryNpcId(dialogue.SecondaryNpcId()))
 	}
 
 	// Send the dialogue to the client
@@ -725,7 +729,7 @@ func (p *ProcessorImpl) processListSelectionState(ctx ConversationContext, state
 
 	mb := message.NewBuilder().AddText(processedTitle).NewLine()
 	for i, choice := range listSelection.Choices() {
-		if choice.NextState() == "" {
+		if choice.NextState() == "" || choice.Text() == "Exit" {
 			continue
 		}
 

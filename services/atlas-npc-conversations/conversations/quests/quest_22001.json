@@ -22,7 +22,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "#bWhat? That's #p1013101#'s job!",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "intro"},
             {"text": "Next", "nextState": "askAccept"},

@@ -64,6 +64,7 @@ type Handler interface {
 	handleAwardMesos(s Saga, st Step[any]) error
 	handleAwardCurrency(s Saga, st Step[any]) error
 	handleDestroyAsset(s Saga, st Step[any]) error
+	handleDestroyAssetFromSlot(s Saga, st Step[any]) error
 	handleEquipAsset(s Saga, st Step[any]) error
 	handleUnequipAsset(s Saga, st Step[any]) error
 	handleChangeJob(s Saga, st Step[any]) error
@@ -86,6 +87,7 @@ type Handler interface {
 	handleSpawnReactorDrops(s Saga, st Step[any]) error
 	handleCompleteQuest(s Saga, st Step[any]) error
 	handleStartQuest(s Saga, st Step[any]) error
+	handleSetQuestProgress(s Saga, st Step[any]) error
 	handleApplyConsumableEffect(s Saga, st Step[any]) error
 	handleSendMessage(s Saga, st Step[any]) error
 	handleDepositToStorage(s Saga, st Step[any]) error
@@ -103,10 +105,13 @@ type Handler interface {
 	handleShowInfoText(s Saga, st Step[any]) error
 	handleUpdateAreaInfo(s Saga, st Step[any]) error
 	handleShowHint(s Saga, st Step[any]) error
+	handleShowGuideHint(s Saga, st Step[any]) error
+	handleShowIntro(s Saga, st Step[any]) error
 	handleBlockPortal(s Saga, st Step[any]) error
 	handleUnblockPortal(s Saga, st Step[any]) error
 	handleDeductExperience(s Saga, st Step[any]) error
 	handleCancelAllBuffs(s Saga, st Step[any]) error
+	handleResetStats(s Saga, st Step[any]) error
 }
 
 type HandlerImpl struct {
@@ -522,6 +527,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleAwardCurrency, true
 	case DestroyAsset:
 		return h.handleDestroyAsset, true
+	case DestroyAssetFromSlot:
+		return h.handleDestroyAssetFromSlot, true
 	case EquipAsset:
 		return h.handleEquipAsset, true
 	case UnequipAsset:
@@ -566,6 +573,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleCompleteQuest, true
 	case StartQuest:
 		return h.handleStartQuest, true
+	case SetQuestProgress:
+		return h.handleSetQuestProgress, true
 	case ApplyConsumableEffect:
 		return h.handleApplyConsumableEffect, true
 	case SendMessage:
@@ -600,6 +609,10 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleUpdateAreaInfo, true
 	case ShowHint:
 		return h.handleShowHint, true
+	case ShowGuideHint:
+		return h.handleShowGuideHint, true
+	case ShowIntro:
+		return h.handleShowIntro, true
 	case SetHP:
 		return h.handleSetHP, true
 	case BlockPortal:
@@ -610,6 +623,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleDeductExperience, true
 	case CancelAllBuffs:
 		return h.handleCancelAllBuffs, true
+	case ResetStats:
+		return h.handleResetStats, true
 	}
 	return nil, false
 }
@@ -777,6 +792,23 @@ func (h *HandlerImpl) handleDestroyAsset(s Saga, st Step[any]) error {
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to destroy asset.")
+		return err
+	}
+
+	return nil
+}
+
+// handleDestroyAssetFromSlot handles the DestroyAssetFromSlot action
+func (h *HandlerImpl) handleDestroyAssetFromSlot(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(DestroyAssetFromSlotPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.compP.RequestDestroyItemFromSlot(s.TransactionId(), payload.CharacterId, payload.InventoryType, payload.Slot, payload.Quantity)
+
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to destroy asset from slot.")
 		return err
 	}
 
@@ -1237,6 +1269,22 @@ func (h *HandlerImpl) handleStartQuest(s Saga, st Step[any]) error {
 	return nil
 }
 
+// handleSetQuestProgress handles the SetQuestProgress action
+func (h *HandlerImpl) handleSetQuestProgress(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(SetQuestProgressPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.questP.RequestUpdateProgress(s.TransactionId(), byte(payload.WorldId), payload.CharacterId, payload.QuestId, payload.InfoNumber, payload.Progress)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to set quest progress.")
+		return err
+	}
+
+	return nil
+}
+
 // handleApplyConsumableEffect handles the ApplyConsumableEffect action
 // This applies consumable item effects to a character without consuming from inventory
 func (h *HandlerImpl) handleApplyConsumableEffect(s Saga, st Step[any]) error {
@@ -1632,6 +1680,48 @@ func (h *HandlerImpl) handleShowHint(s Saga, st Step[any]) error {
 	return nil
 }
 
+// handleShowGuideHint handles the ShowGuideHint action
+// This is a synchronous action - we send the command and immediately mark complete
+func (h *HandlerImpl) handleShowGuideHint(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ShowGuideHintPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.systemMessageP.ShowGuideHint(s.TransactionId(), byte(payload.WorldId), byte(payload.ChannelId), payload.CharacterId, payload.HintId, payload.Duration)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to show guide hint.")
+		return err
+	}
+
+	// ShowGuideHint is a synchronous command with no async response event
+	// Mark the step as completed immediately after successfully sending the command
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
+// handleShowIntro handles the ShowIntro action
+// This is a synchronous action - we send the command and immediately mark complete
+func (h *HandlerImpl) handleShowIntro(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ShowIntroPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.systemMessageP.ShowIntro(s.TransactionId(), byte(payload.WorldId), byte(payload.ChannelId), payload.CharacterId, payload.Path)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to show intro.")
+		return err
+	}
+
+	// ShowIntro is a synchronous command with no async response event
+	// Mark the step as completed immediately after successfully sending the command
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
 // handleSetHP handles the SetHP action
 // This is an asynchronous action - we send the command and wait for the status event
 func (h *HandlerImpl) handleSetHP(s Saga, st Step[any]) error {
@@ -1728,6 +1818,23 @@ func (h *HandlerImpl) handleCancelAllBuffs(s Saga, st Step[any]) error {
 	// CancelAllBuffs is a fire-and-forget command - mark as complete immediately
 	// The buff service handles the cancellation and emits status events but saga doesn't need to wait
 	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
+// handleResetStats handles the ResetStats action
+// This is used during job advancement to reset character stats
+func (h *HandlerImpl) handleResetStats(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ResetStatsPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.charP.ResetStatsAndEmit(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.ChannelId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to reset stats.")
+		return err
+	}
 
 	return nil
 }

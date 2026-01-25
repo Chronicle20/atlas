@@ -106,3 +106,36 @@ func ShowHintCommandProvider(transactionId uuid.UUID, worldId byte, channelId by
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+// ShowGuideHintCommandProvider creates a Kafka message for showing a pre-defined guide hint by ID
+func ShowGuideHintCommandProvider(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32, hintId uint32, duration uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &system_message.Command[system_message.ShowGuideHintBody]{
+		TransactionId: transactionId,
+		WorldId:       worldId,
+		ChannelId:     channelId,
+		CharacterId:   characterId,
+		Type:          system_message.CommandShowGuideHint,
+		Body: system_message.ShowGuideHintBody{
+			HintId:   hintId,
+			Duration: duration,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// ShowIntroCommandProvider creates a Kafka message for showing an intro/direction effect
+func ShowIntroCommandProvider(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32, path string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &system_message.Command[system_message.ShowIntroBody]{
+		TransactionId: transactionId,
+		WorldId:       worldId,
+		ChannelId:     channelId,
+		CharacterId:   characterId,
+		Type:          system_message.CommandShowIntro,
+		Body: system_message.ShowIntroBody{
+			Path: path,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

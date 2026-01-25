@@ -1,0 +1,189 @@
+{
+  "questId": 20204,
+  "npcId": 1101006,
+  "questName": "Knighthood Exam: Night Walker",
+  "startStateMachine": {
+    "startState": "noDialogue",
+    "states": [
+      {
+        "id": "noDialogue",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "askBecome",
+    "states": [
+      {
+        "id": "askBecome",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendYesNo",
+          "text": "So you brought all the #t4032099#s with you. This is much b... way, I shouldn't congratulate you for doing something that you should be doing. At least, I can tell that you are now qualified to become an official knight. Do you want to become one right now?",
+          "choices": [
+            {"text": "Yes", "nextState": "checkJob"},
+            {"text": "No", "nextState": "declined"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "declined",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "What's holding you back?",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "checkJob",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "jobId", "operator": "=", "value": "1400"}
+              ],
+              "nextState": "checkExcessSp"
+            },
+            {
+              "conditions": [
+                {"type": "jobId", "operator": "=", "value": "1410"}
+              ],
+              "nextState": "congratulations"
+            },
+            {
+              "conditions": [],
+              "nextState": "congratulations"
+            }
+          ]
+        }
+      },
+      {
+        "id": "checkExcessSp",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "excessSp", "operator": ">", "value": "0", "referenceId": "30"}
+              ],
+              "nextState": "tooMuchSp"
+            },
+            {
+              "conditions": [],
+              "nextState": "checkInventory"
+            }
+          ]
+        }
+      },
+      {
+        "id": "tooMuchSp",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "What's with all this #bSP#k lying around? Use more SP on your 1st-level skills.",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "checkInventory",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "inventorySpace", "operator": "<", "value": "1", "referenceId": "1142067"}
+              ],
+              "nextState": "noInventorySpace"
+            },
+            {
+              "conditions": [],
+              "nextState": "grantRewards"
+            }
+          ]
+        }
+      },
+      {
+        "id": "noInventorySpace",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "If you wish to receive the medal befitting the title, you may want to make some room in your equipment inventory.",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "grantRewards",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "destroy_item", "params": {"itemId": "4032099", "quantity": "30"}},
+            {"type": "award_item", "params": {"itemId": "1142067", "quantity": "1"}},
+            {"type": "change_job", "params": {"jobId": "1410"}},
+            {"type": "complete_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "congratulations"}
+          ]
+        }
+      },
+      {
+        "id": "congratulations",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "You are no longer a Knight-in-Training. You have officially become a Cygnus Knight.",
+          "choices": [
+            {"text": "Next", "nextState": "spAndSkills"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "spAndSkills",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "I have given you some #bSP#k. I have also given you some skills of Night Walker that are only available to official knights, so keep working!",
+          "choices": [
+            {"text": "Previous", "nextState": "congratulations"},
+            {"text": "Next", "nextState": "finalMessage"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "finalMessage",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendPrev",
+          "text": "As a member of the Cygnus Knights, I hope you remain unaffected by temptations and stay strong.",
+          "choices": [
+            {"text": "Previous", "nextState": "spAndSkills"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

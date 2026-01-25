@@ -1761,6 +1761,10 @@
         "writer": "CharacterHint"
       },
       {
+        "opCode": "0xE0",
+        "writer": "GuideTalk"
+      },
+      {
         "opCode": "0xEA",
         "writer": "CharacterSkillCooldown"
       },

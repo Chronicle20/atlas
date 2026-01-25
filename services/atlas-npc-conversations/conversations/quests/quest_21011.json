@@ -242,7 +242,7 @@
         "dialogue": {
           "dialogueType": "sendNext",
           "text": "#b(Your skills are nowhere close to being hero-like... But a sword? Have you ever even held a sword in your lifetime? You can't remember... How do you even equip it?)",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Next", "nextState": null},
             {"text": "Exit", "nextState": null}

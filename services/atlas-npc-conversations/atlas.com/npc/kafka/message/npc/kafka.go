@@ -37,14 +37,16 @@ type CommandConversationEndBody struct {
 }
 
 type ConversationCommand[E any] struct {
-	WorldId     byte   `json:"worldId"`
-	ChannelId   byte   `json:"channelId"`
-	CharacterId uint32 `json:"characterId"`
-	NpcId       uint32 `json:"npcId"`
-	Speaker     string `json:"speaker"`
-	Message     string `json:"message"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	WorldId        byte   `json:"worldId"`
+	ChannelId      byte   `json:"channelId"`
+	CharacterId    uint32 `json:"characterId"`
+	NpcId          uint32 `json:"npcId"`
+	Speaker        string `json:"speaker"`
+	EndChat        bool   `json:"endChat"`
+	SecondaryNpcId uint32 `json:"secondaryNpcId"`
+	Message        string `json:"message"`
+	Type           string `json:"type"`
+	Body           E      `json:"body"`
 }
 
 type CommandSimpleBody struct {

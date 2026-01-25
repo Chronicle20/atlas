@@ -22,7 +22,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "#b(You didn't even train that long with him... Why is he crying?)#k",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "dialogue1"},
             {"text": "Next", "nextState": "dialogue3"},
@@ -49,7 +49,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "Well, a little bit...",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "dialogue3"},
             {"text": "Next", "nextState": "dialogue5"},
@@ -76,7 +76,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "#b(Is that really true?)#k",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "dialogue5"},
             {"text": "Next", "nextState": "askAccept"},
@@ -156,7 +156,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "#b(Is he pulling your leg?)#k'",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "endDialogue1"},
             {"text": "Next", "nextState": "askComplete"},
@@ -228,7 +228,7 @@
         "dialogue": {
           "dialogueType": "sendNext",
           "text": "(You remembered the #bCombo Ability#k skill! You were skeptical of the training at first, since the old man suffers from Alzheimer's and all, but boy, was it effective!)",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Next", "nextState": "finalDialogue"},
             {"text": "Exit", "nextState": null}

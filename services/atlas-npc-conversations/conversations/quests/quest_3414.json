@@ -1,0 +1,156 @@
+{
+  "questId": 3414,
+  "questName": "Eliminating Mateons (10% Scrolls)",
+  "startStateMachine": {
+    "startState": "noDialogue",
+    "states": [
+      {
+        "id": "noDialogue",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "introDialogue",
+    "states": [
+      {
+        "id": "introDialogue",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Whoa... this is it!!! With this sample, the studies that are taking place in Omega Sector will be reinvigorated with results! I am also at a loss for words for finding someone that is more talented than me at hunting. I'll have to get back on track! Anyway, for your job well done, I'll have to reward you accordingly.",
+          "choices": [
+            {"text": "Next", "nextState": "checkJobStyle"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "checkJobStyle",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "jobId", "operator": "<", "value": "200"}
+              ],
+              "nextState": "warriorSelection"
+            },
+            {
+              "conditions": [
+                {"type": "jobId", "operator": ">=", "value": "200"},
+                {"type": "jobId", "operator": "<", "value": "300"}
+              ],
+              "nextState": "magicianSelection"
+            },
+            {
+              "conditions": [
+                {"type": "jobId", "operator": ">=", "value": "300"},
+                {"type": "jobId", "operator": "<", "value": "400"}
+              ],
+              "nextState": "bowmanSelection"
+            },
+            {
+              "conditions": [
+                {"type": "jobId", "operator": ">=", "value": "400"},
+                {"type": "jobId", "operator": "<", "value": "500"}
+              ],
+              "nextState": "thiefSelection"
+            },
+            {
+              "conditions": [],
+              "nextState": "pirateSelection"
+            }
+          ]
+        }
+      },
+      {
+        "id": "warriorSelection",
+        "type": "listSelection",
+        "listSelection": {
+          "title": "Here, please select the scroll of your choice. All success rates are at 10%. \r\n\r\n#rSELECT A ITEM\r\n#b",
+          "choices": [
+            {"text": "#i2043002# #t2043002#", "nextState": "awardItem", "context": {"selectedItem": "2043002"}},
+            {"text": "#i2043102# #t2043102#", "nextState": "awardItem", "context": {"selectedItem": "2043102"}},
+            {"text": "#i2043202# #t2043202#", "nextState": "awardItem", "context": {"selectedItem": "2043202"}},
+            {"text": "#i2044002# #t2044002#", "nextState": "awardItem", "context": {"selectedItem": "2044002"}},
+            {"text": "#i2044102# #t2044102#", "nextState": "awardItem", "context": {"selectedItem": "2044102"}},
+            {"text": "#i2044202# #t2044202#", "nextState": "awardItem", "context": {"selectedItem": "2044202"}},
+            {"text": "#i2044402# #t2044402#", "nextState": "awardItem", "context": {"selectedItem": "2044402"}},
+            {"text": "#i2044302# #t2044302#", "nextState": "awardItem", "context": {"selectedItem": "2044302"}},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "magicianSelection",
+        "type": "listSelection",
+        "listSelection": {
+          "title": "Here, please select the scroll of your choice. All success rates are at 10%. \r\n\r\n#rSELECT A ITEM\r\n#b",
+          "choices": [
+            {"text": "#i2043702# #t2043702#", "nextState": "awardItem", "context": {"selectedItem": "2043702"}},
+            {"text": "#i2043802# #t2043802#", "nextState": "awardItem", "context": {"selectedItem": "2043802"}},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "bowmanSelection",
+        "type": "listSelection",
+        "listSelection": {
+          "title": "Here, please select the scroll of your choice. All success rates are at 10%. \r\n\r\n#rSELECT A ITEM\r\n#b",
+          "choices": [
+            {"text": "#i2044502# #t2044502#", "nextState": "awardItem", "context": {"selectedItem": "2044502"}},
+            {"text": "#i2044602# #t2044602#", "nextState": "awardItem", "context": {"selectedItem": "2044602"}},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "thiefSelection",
+        "type": "listSelection",
+        "listSelection": {
+          "title": "Here, please select the scroll of your choice. All success rates are at 10%. \r\n\r\n#rSELECT A ITEM\r\n#b",
+          "choices": [
+            {"text": "#i2043302# #t2043302#", "nextState": "awardItem", "context": {"selectedItem": "2043302"}},
+            {"text": "#i2044702# #t2044702#", "nextState": "awardItem", "context": {"selectedItem": "2044702"}},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "pirateSelection",
+        "type": "listSelection",
+        "listSelection": {
+          "title": "Here, please select the scroll of your choice. All success rates are at 10%. \r\n\r\n#rSELECT A ITEM\r\n#b",
+          "choices": [
+            {"text": "#i2044802# #t2044802#", "nextState": "awardItem", "context": {"selectedItem": "2044802"}},
+            {"text": "#i2044902# #t2044902#", "nextState": "awardItem", "context": {"selectedItem": "2044902"}},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "awardItem",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "award_item", "params": {"itemId": "{context.selectedItem}", "quantity": "1"}},
+            {"type": "award_exp", "params": {"amount": "12000"}},
+            {"type": "complete_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,189 @@
+{
+  "questId": 20205,
+  "npcId": 1101007,
+  "questName": "Knighthood Exam: Thunder Breaker",
+  "startStateMachine": {
+    "startState": "noDialogue",
+    "states": [
+      {
+        "id": "noDialogue",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "askBecome",
+    "states": [
+      {
+        "id": "askBecome",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendYesNo",
+          "text": "Oh, you brought all #t4032100#s! Ahaha, I knew you'd be good at it. Tell you what, I now commend that you're now ready to become an official knight. Do you want to become one right now?",
+          "choices": [
+            {"text": "Yes", "nextState": "checkJob"},
+            {"text": "No", "nextState": "declined"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "declined",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Hmm? Why? What's holding you back?",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "checkJob",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "jobId", "operator": "=", "value": "1500"}
+              ],
+              "nextState": "checkExcessSp"
+            },
+            {
+              "conditions": [
+                {"type": "jobId", "operator": "=", "value": "1510"}
+              ],
+              "nextState": "congratulations"
+            },
+            {
+              "conditions": [],
+              "nextState": "congratulations"
+            }
+          ]
+        }
+      },
+      {
+        "id": "checkExcessSp",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "excessSp", "operator": ">", "value": "0", "referenceId": "30"}
+              ],
+              "nextState": "tooMuchSp"
+            },
+            {
+              "conditions": [],
+              "nextState": "checkInventory"
+            }
+          ]
+        }
+      },
+      {
+        "id": "tooMuchSp",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Hey, how did you manage to hunt all that? You have way too much #bSP#k lying around unused! You can't become an official knight like this! Use more SP on the 1st level skill.",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "checkInventory",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "inventorySpace", "operator": "<", "value": "1", "referenceId": "1142067"}
+              ],
+              "nextState": "noInventorySpace"
+            },
+            {
+              "conditions": [],
+              "nextState": "grantRewards"
+            }
+          ]
+        }
+      },
+      {
+        "id": "noInventorySpace",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "If you wish to receive the medal befitting the title, you may want to make some room in your equipment inventory.",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "grantRewards",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "destroy_item", "params": {"itemId": "4032100", "quantity": "30"}},
+            {"type": "award_item", "params": {"itemId": "1142067", "quantity": "1"}},
+            {"type": "change_job", "params": {"jobId": "1510"}},
+            {"type": "complete_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "congratulations"}
+          ]
+        }
+      },
+      {
+        "id": "congratulations",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "You are now no longer a Knight-in-Training. You have now officially become a Cygnus Knight.",
+          "choices": [
+            {"text": "Next", "nextState": "spAndSkills"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "spAndSkills",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "I have also given you some #bSP#k and the accompanying skills of a Thunder Breakers that are only available to the official knights. These skills are lightning-based, so use them wisely!",
+          "choices": [
+            {"text": "Previous", "nextState": "congratulations"},
+            {"text": "Next", "nextState": "finalMessage"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "finalMessage",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendPrev",
+          "text": "Well, personally, I hope you don't lose your enthusiasm even after becoming the Cygnus Knights. Always seek out the positive even if you're in the midst of a barrage of negative items.",
+          "choices": [
+            {"text": "Previous", "nextState": "spAndSkills"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

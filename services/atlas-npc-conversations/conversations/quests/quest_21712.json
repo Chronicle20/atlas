@@ -72,7 +72,7 @@
         "type": "dialogue",
         "dialogue": {
           "dialogueType": "sendPrev",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "text": "#b(You were able to find out what caused the changes in the #o1210102#s. You should report to #p1002104# and deliver the information you've gathered.)#k",
           "choices": [
             {"text": "Previous", "nextState": "truThoughts"},

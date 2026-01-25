@@ -1,0 +1,62 @@
+{
+  "npcId": 1209000,
+  "startState": "greeting",
+  "states": [
+    {
+      "id": "greeting",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Aran, you're awake! How are you feeling? Hm? You want to know what's been going on?",
+        "choices": [
+          { "text": "Next", "nextState": "explain" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "explain",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "We're almost done preparing for the escape. You don't have to worry. Everyone I could possibly find has boarded the ark, and Shinsoo has agreed to guide the way. We'll head to Victoria Island as soon as we finish the remaining preparations.",
+        "choices": [
+          { "text": "Next", "nextState": "heroes" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "heroes",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "The other heroes? They've left to fight the Black Mage. They're buying us time to escape. What? You want to fight with them? No! You can't! You're hurt. You must leave with us!",
+        "choices": [
+          { "text": "Next", "nextState": "showIntro" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "showIntro",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "show_intro",
+            "params": {
+              "path": "Effect/Direction1.img/aranTutorial/Trio"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

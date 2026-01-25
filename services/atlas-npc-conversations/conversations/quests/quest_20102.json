@@ -1,0 +1,208 @@
+{
+  "questId": 20102,
+  "questName": "Cygnus 1st Job advancement - Blaze Wizard",
+  "startStateMachine": {
+    "startState": "noDialogue",
+    "states": [
+      {
+        "id": "noDialogue",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "askConfirmation",
+    "states": [
+      {
+        "id": "askConfirmation",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendYesNo",
+          "text": "Have you made your decision? The decision will be final, so think carefully before deciding what to do. Are you sure you want to become a Blaze Wizard?",
+          "choices": [
+            {"text": "Yes", "nextState": "checkRequirements"},
+            {"text": "No", "nextState": "declineMessage"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "declineMessage",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "This is an important decision to make.",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "checkRequirements",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "jobId", "operator": "=", "value": "1200"}
+              ],
+              "nextState": "alreadyBlazeWizard"
+            },
+            {
+              "conditions": [
+                {"type": "level", "operator": "<", "value": "10"}
+              ],
+              "nextState": "requirementsNotMet"
+            },
+            {
+              "conditions": [
+                {"type": "stat", "operator": "<", "value": "20", "referenceId": "int"}
+              ],
+              "nextState": "requirementsNotMet"
+            },
+            {
+              "conditions": [
+                {"type": "inventorySpace", "operator": "<", "value": "1", "referenceId": "1372043"}
+              ],
+              "nextState": "inventoryFull"
+            },
+            {
+              "conditions": [
+                {"type": "inventorySpace", "operator": "<", "value": "1", "referenceId": "1142066"}
+              ],
+              "nextState": "inventoryFull"
+            },
+            {
+              "conditions": [],
+              "nextState": "performJobChange"
+            }
+          ]
+        }
+      },
+      {
+        "id": "alreadyBlazeWizard",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "jobChangeComplete"}
+          ]
+        }
+      },
+      {
+        "id": "requirementsNotMet",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Train a bit more until you reach #blevel 10, INT 20#k and I can show you the way of the #rBlaze Wizard#k.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "inventoryFull",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Make some room in your inventory and talk back to me.",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "performJobChange",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "award_item", "params": {"itemId": "1372043", "quantity": "1"}},
+            {"type": "award_item", "params": {"itemId": "1142066", "quantity": "1"}},
+            {"type": "change_job", "params": {"jobId": "1200"}},
+            {"type": "reset_stats", "params": {}},
+            {"type": "complete_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "jobChangeComplete"}
+          ]
+        }
+      },
+      {
+        "id": "jobChangeComplete",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "I have just molded your body to make it perfect for a Blaze Wizard. If you wish to become more powerful, use Stat Window (S) to raise the appropriate stats. If you aren't sure what to raise, just click on #bAuto#k.",
+          "choices": [
+            {"text": "Next", "nextState": "inventoryExpanded"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "inventoryExpanded",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "I have also expanded your inventory slot counts for your equipment and etc. inventory. Use those slots wisely and fill them up with items required for Knights to carry.",
+          "choices": [
+            {"text": "Previous", "nextState": "jobChangeComplete"},
+            {"text": "Next", "nextState": "spHint"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "spHint",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "I have also given you a hint of #bSP#k, so open the #bSkill Menu#k to acquire new skills. Of course, you can't raise them at all once, and there are some skills out there where you won't be able to acquire them unless you master the basic skills first.",
+          "choices": [
+            {"text": "Previous", "nextState": "inventoryExpanded"},
+            {"text": "Next", "nextState": "expLossWarning"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "expLossWarning",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "Unlike your time as a Noblesse, once you become the Blaze Wizard, you will lost a portion of your EXP when you run out of HP, okay?",
+          "choices": [
+            {"text": "Previous", "nextState": "spHint"},
+            {"text": "Next", "nextState": "farewell"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "farewell",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "Now... I want you to go out there and show the world how the Knights of Cygnus operate.",
+          "choices": [
+            {"text": "Previous", "nextState": "expLossWarning"},
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

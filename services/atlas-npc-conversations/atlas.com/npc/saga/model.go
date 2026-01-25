@@ -21,7 +21,8 @@ type (
 	AwardExperiencePayload       = scriptsaga.AwardExperiencePayload
 	AwardLevelPayload            = scriptsaga.AwardLevelPayload
 	AwardMesosPayload            = scriptsaga.AwardMesosPayload
-	DestroyAssetPayload          = scriptsaga.DestroyAssetPayload
+	DestroyAssetPayload            = scriptsaga.DestroyAssetPayload
+	DestroyAssetFromSlotPayload    = scriptsaga.DestroyAssetFromSlotPayload
 	ChangeJobPayload             = scriptsaga.ChangeJobPayload
 	CreateSkillPayload           = scriptsaga.CreateSkillPayload
 	UpdateSkillPayload           = scriptsaga.UpdateSkillPayload
@@ -32,6 +33,7 @@ type (
 	ChangeSkinPayload            = scriptsaga.ChangeSkinPayload
 	SpawnMonsterPayload          = scriptsaga.SpawnMonsterPayload
 	CompleteQuestPayload         = scriptsaga.CompleteQuestPayload
+	SetQuestProgressPayload      = scriptsaga.SetQuestProgressPayload
 	ApplyConsumableEffectPayload = scriptsaga.ApplyConsumableEffectPayload
 	SendMessagePayload           = scriptsaga.SendMessagePayload
 	AwardFamePayload             = scriptsaga.AwardFamePayload
@@ -46,6 +48,25 @@ type (
 	ShowHintPayload         = scriptsaga.ShowHintPayload
 )
 
+// ShowGuideHintPayload represents the payload required to show a pre-defined guide hint by ID.
+// This is local until added to atlas-script-core.
+type ShowGuideHintPayload struct {
+	CharacterId uint32 `json:"characterId"`
+	WorldId     byte   `json:"worldId"`
+	ChannelId   byte   `json:"channelId"`
+	HintId      uint32 `json:"hintId"`   // Pre-defined hint ID (maps to client's guide hint system)
+	Duration    uint32 `json:"duration"` // Duration in milliseconds (default 7000ms if 0)
+}
+
+// ShowIntroPayload represents the payload required to show an intro/direction effect to a character.
+// This is local until added to atlas-script-core.
+type ShowIntroPayload struct {
+	CharacterId uint32 `json:"characterId"`
+	WorldId     byte   `json:"worldId"`
+	ChannelId   byte   `json:"channelId"`
+	Path        string `json:"path"` // Path to the intro effect (e.g., "Effect/Direction1.img/aranTutorial/ClickPoleArm")
+}
+
 // SetHPPayload represents the payload required to set a character's HP to an absolute value.
 // This is local until added to atlas-script-core.
 type SetHPPayload struct {
@@ -53,6 +74,14 @@ type SetHPPayload struct {
 	WorldId     byte   `json:"worldId"`
 	ChannelId   byte   `json:"channelId"`
 	Amount      uint16 `json:"amount"`
+}
+
+// ResetStatsPayload represents the payload required to reset a character's stats.
+// This is used during job advancement to reset AP distribution.
+type ResetStatsPayload struct {
+	CharacterId uint32 `json:"characterId"`
+	WorldId     byte   `json:"worldId"`
+	ChannelId   byte   `json:"channelId"`
 }
 
 // StartQuestPayload represents the payload required to start a quest.
@@ -84,6 +113,7 @@ const (
 	WarpToRandomPortal     = scriptsaga.WarpToRandomPortal
 	WarpToPortal           = scriptsaga.WarpToPortal
 	DestroyAsset           = scriptsaga.DestroyAsset
+	DestroyAssetFromSlot   = scriptsaga.DestroyAssetFromSlot
 	ChangeJob              = scriptsaga.ChangeJob
 	CreateSkill            = scriptsaga.CreateSkill
 	UpdateSkill            = scriptsaga.UpdateSkill
@@ -96,6 +126,7 @@ const (
 	SpawnMonster           = scriptsaga.SpawnMonster
 	CompleteQuest          = scriptsaga.CompleteQuest
 	StartQuest             = scriptsaga.StartQuest
+	SetQuestProgress       = scriptsaga.SetQuestProgress
 	ApplyConsumableEffect  = scriptsaga.ApplyConsumableEffect
 	SendMessage            = scriptsaga.SendMessage
 	AwardFame              = scriptsaga.AwardFame
@@ -109,7 +140,10 @@ const (
 	ShowHint        = scriptsaga.ShowHint
 
 	// Character stat actions (local definition until added to atlas-script-core)
-	SetHP Action = "set_hp"
+	ShowGuideHint Action = "show_guide_hint"
+	ShowIntro     Action = "show_intro"
+	SetHP      Action = "set_hp"
+	ResetStats Action = "reset_stats"
 )
 
 // ValidateCharacterStatePayload uses the NPC service's validation.ConditionInput

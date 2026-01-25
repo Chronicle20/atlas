@@ -1,0 +1,215 @@
+{
+  "questId": 21012,
+  "questName": "Back to Battle",
+  "startStateMachine": {
+    "startState": "welcome",
+    "states": [
+      {
+        "id": "welcome",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Welcome, hero! What's that? You want to know how I knew who you were? That's easy. I eavesdropped on some people talking loudly next to me. I'm sure the rumor has spread through the entire island already. Everyone knows that you've returned!",
+          "choices": [
+            {"text": "Next", "nextState": "trySword"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "trySword",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "Hm, how about trying out that sword? Wouldn't that bring back some memories? How about #bfighthing some monsters#k?",
+          "choices": [
+            {"text": "Previous", "nextState": "welcome"},
+            {"text": "Next", "nextState": "askFavor"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "askFavor",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendAcceptDecline",
+          "text": "Ah, I'm so sorry. I was so happy to have finally met you that I guess I got a little carried away. Whew, deep breaths. Deep breaths. Okay, I feel better now. But um...can I ask you a favor? Please?",
+          "choices": [
+            {"text": "Accept", "nextState": "startQuest"},
+            {"text": "Decline", "nextState": "declineMessage"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "declineMessage",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Hm... You don't think that would help? Think about it. It could help, you know...",
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "startQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "huntMurus"}
+          ]
+        }
+      },
+      {
+        "id": "huntMurus",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "It just so happens that there are a lot of #rTutorial Murus #knear here. How about defeating just #r3 #kof them? It could help you remember a thing or two.",
+          "choices": [
+            {"text": "Next", "nextState": "skillsExplanation"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "skillsExplanation",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNextPrev",
+          "text": "Ah, you've also forgotten how to use your skills? #bPlace skills in the quick slots for easy access. #kYou can also place consumable items in the slots, so use the slots to your advantage.",
+          "choices": [
+            {"text": "Previous", "nextState": "huntMurus"},
+            {"text": "Next", "nextState": "showGuideHint"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "showGuideHint",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "show_guide_hint", "params": {"hintId": "17"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "completionMessage",
+    "states": [
+      {
+        "id": "completionMessage",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "Hm... Your expression tells me that the exercise didn't jog any memories. But don't you worry. They'll come back, eventually. Here, drink this potion and power up!\r\n\r\n#fUI/UIWindow.img/QuestIcon/4/0#\r\n#v2000022# 10 #t2000022#\r\n#v2000023# 10 #t2000023#\r\n\r\n#fUI/UIWindow.img/QuestIcon/8/0# 57 exp",
+          "choices": [
+            {"text": "Ok", "nextState": "checkCompletion"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "checkCompletion",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [],
+          "outcomes": [
+            {
+              "conditions": [
+                {"type": "questStatus", "operator": "=", "value": "3", "referenceId": "21012"}
+              ],
+              "nextState": "alreadyCompleted"
+            },
+            {
+              "conditions": [
+                {"type": "inventorySpace", "operator": ">=", "value": "10", "referenceId": "2000022"},
+                {"type": "inventorySpace", "operator": ">=", "value": "10", "referenceId": "2000023"}
+              ],
+              "nextState": "giveRewards"
+            },
+            {
+              "conditions": [],
+              "nextState": "inventoryFull"
+            }
+          ]
+        }
+      },
+      {
+        "id": "alreadyCompleted",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "send_message", "params": {"messageType": "POP_UP", "message": "Unknown Error"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "inventoryFull",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "send_message", "params": {"messageType": "POP_UP", "message": "Your inventory is full"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "giveRewards",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {}},
+            {"type": "award_exp", "params": {"amount": "57"}},
+            {"type": "award_item", "params": {"itemId": "2000022", "quantity": "10"}},
+            {"type": "award_item", "params": {"itemId": "2000023", "quantity": "10"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "finalMessage"}
+          ]
+        }
+      },
+      {
+        "id": "finalMessage",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendOk",
+          "text": "#b(Even if you're really the hero everyone says you are... What good are you without any skills?)",
+          "speaker": "CHARACTER", "endChat": false,
+          "choices": [
+            {"text": "Ok", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "declineReward",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "What? You don't want the potion?",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

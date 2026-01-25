@@ -28,7 +28,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "Who are you?",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {
               "text": "Previous",

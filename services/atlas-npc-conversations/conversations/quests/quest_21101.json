@@ -154,7 +154,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "#b(You might be starting to remember something...)#k",
-          "speaker": "CHARACTER_RIGHT",
+          "speaker": "CHARACTER", "endChat": false,
           "choices": [
             {
               "text": "Previous",

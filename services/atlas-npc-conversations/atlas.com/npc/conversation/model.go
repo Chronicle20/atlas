@@ -249,10 +249,12 @@ const (
 
 // DialogueModel represents a dialogue state
 type DialogueModel struct {
-	dialogueType DialogueType
-	text         string
-	speaker      string // Optional speaker override (e.g., "NPC_LEFT", "CHARACTER_LEFT", etc.)
-	choices      []ChoiceModel
+	dialogueType   DialogueType
+	text           string
+	speaker        string // Speaker type: "NPC" or "CHARACTER"
+	endChat        bool   // Whether to show the end chat button (default: true)
+	secondaryNpcId uint32 // Optional secondary NPC template ID for dual-NPC dialogues
+	choices        []ChoiceModel
 }
 
 // DialogueType returns the dialogue type
@@ -265,9 +267,19 @@ func (d DialogueModel) Text() string {
 	return d.text
 }
 
-// Speaker returns the speaker override (empty string means use default)
+// Speaker returns the speaker type ("NPC" or "CHARACTER")
 func (d DialogueModel) Speaker() string {
 	return d.speaker
+}
+
+// EndChat returns whether to show the end chat button
+func (d DialogueModel) EndChat() bool {
+	return d.endChat
+}
+
+// SecondaryNpcId returns the secondary NPC template ID (0 means none)
+func (d DialogueModel) SecondaryNpcId() uint32 {
+	return d.secondaryNpcId
 }
 
 // Choices returns the dialogue choices
@@ -333,15 +345,18 @@ func (d DialogueModel) ChoiceFromAction(action byte) (ChoiceModel, bool) {
 
 // DialogueBuilder is a builder for DialogueModel
 type DialogueBuilder struct {
-	dialogueType DialogueType
-	text         string
-	speaker      string
-	choices      []ChoiceModel
+	dialogueType   DialogueType
+	text           string
+	speaker        string
+	endChat        bool
+	secondaryNpcId uint32
+	choices        []ChoiceModel
 }
 
 // NewDialogueBuilder creates a new DialogueBuilder
 func NewDialogueBuilder() *DialogueBuilder {
 	return &DialogueBuilder{
+		endChat: true, // Default to showing end chat button
 		choices: make([]ChoiceModel, 0),
 	}
 }
@@ -358,9 +373,21 @@ func (b *DialogueBuilder) SetText(text string) *DialogueBuilder {
 	return b
 }
 
-// SetSpeaker sets the speaker override
+// SetSpeaker sets the speaker type ("NPC" or "CHARACTER")
 func (b *DialogueBuilder) SetSpeaker(speaker string) *DialogueBuilder {
 	b.speaker = speaker
+	return b
+}
+
+// SetEndChat sets whether to show the end chat button
+func (b *DialogueBuilder) SetEndChat(endChat bool) *DialogueBuilder {
+	b.endChat = endChat
+	return b
+}
+
+// SetSecondaryNpcId sets the secondary NPC template ID
+func (b *DialogueBuilder) SetSecondaryNpcId(npcId uint32) *DialogueBuilder {
+	b.secondaryNpcId = npcId
 	return b
 }
 
@@ -414,10 +441,12 @@ func (b *DialogueBuilder) Build() (*DialogueModel, error) {
 	}
 
 	return &DialogueModel{
-		dialogueType: b.dialogueType,
-		text:         b.text,
-		speaker:      b.speaker,
-		choices:      b.choices,
+		dialogueType:   b.dialogueType,
+		text:           b.text,
+		speaker:        b.speaker,
+		endChat:        b.endChat,
+		secondaryNpcId: b.secondaryNpcId,
+		choices:        b.choices,
 	}, nil
 }
 

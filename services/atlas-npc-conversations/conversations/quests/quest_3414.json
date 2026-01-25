@@ -1,6 +1,6 @@
 {
   "questId": 3414,
-  "questName": "Eliminating Aliens (Quest 3414)",
+  "questName": "Eliminating Mateons (10% Scrolls)",
   "startStateMachine": {
     "startState": "noDialogue",
     "states": [
@@ -26,44 +26,41 @@
           "dialogueType": "sendNext",
           "text": "Whoa... this is it!!! With this sample, the studies that are taking place in Omega Sector will be reinvigorated with results! I am also at a loss for words for finding someone that is more talented than me at hunting. I'll have to get back on track! Anyway, for your job well done, I'll have to reward you accordingly.",
           "choices": [
-            {"text": "Next", "nextState": "checkInventorySpace"},
+            {"text": "Next", "nextState": "checkJobStyle"},
             {"text": "Exit", "nextState": null}
           ]
         }
       },
       {
-        "id": "checkInventorySpace",
+        "id": "checkJobStyle",
         "type": "genericAction",
         "genericAction": {
           "operations": [],
           "outcomes": [
             {
               "conditions": [
-                {"type": "inventorySpace", "operator": "<", "value": "1", "referenceId": "2043002"}
-              ],
-              "nextState": "inventoryFull"
-            },
-            {
-              "conditions": [
-                {"type": "jobId", "operator": "in", "values": ["0", "100", "110", "111", "112", "120", "121", "122", "130", "131", "132"]}
+                {"type": "jobId", "operator": "<", "value": "200"}
               ],
               "nextState": "warriorSelection"
             },
             {
               "conditions": [
-                {"type": "jobId", "operator": "in", "values": ["200", "210", "211", "212", "220", "221", "222", "230", "231", "232"]}
+                {"type": "jobId", "operator": ">=", "value": "200"},
+                {"type": "jobId", "operator": "<", "value": "300"}
               ],
               "nextState": "magicianSelection"
             },
             {
               "conditions": [
-                {"type": "jobId", "operator": "in", "values": ["300", "310", "311", "312", "320", "321", "322"]}
+                {"type": "jobId", "operator": ">=", "value": "300"},
+                {"type": "jobId", "operator": "<", "value": "400"}
               ],
               "nextState": "bowmanSelection"
             },
             {
               "conditions": [
-                {"type": "jobId", "operator": "in", "values": ["400", "410", "411", "412", "420", "421", "422"]}
+                {"type": "jobId", "operator": ">=", "value": "400"},
+                {"type": "jobId", "operator": "<", "value": "500"}
               ],
               "nextState": "thiefSelection"
             },
@@ -71,24 +68,6 @@
               "conditions": [],
               "nextState": "pirateSelection"
             }
-          ]
-        }
-      },
-      {
-        "id": "inventoryFull",
-        "type": "genericAction",
-        "genericAction": {
-          "operations": [
-            {
-              "type": "send_message",
-              "params": {
-                "messageType": "POP_UP",
-                "message": "USE inventory full."
-              }
-            }
-          ],
-          "outcomes": [
-            {"conditions": [], "nextState": null}
           ]
         }
       },
@@ -164,10 +143,6 @@
         "genericAction": {
           "operations": [
             {"type": "award_item", "params": {"itemId": "{context.selectedItem}", "quantity": "1"}},
-            {"type": "destroy_item", "params": {"itemId": "4031103", "quantity": "1"}},
-            {"type": "destroy_item", "params": {"itemId": "4031104", "quantity": "1"}},
-            {"type": "destroy_item", "params": {"itemId": "4031105", "quantity": "1"}},
-            {"type": "destroy_item", "params": {"itemId": "4031106", "quantity": "1"}},
             {"type": "award_exp", "params": {"amount": "12000"}},
             {"type": "complete_quest", "params": {}}
           ],

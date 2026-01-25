@@ -13,9 +13,10 @@ type ProcessorMock struct {
 	RequestDestroyItemFunc         func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, removeAll bool) error
 	RequestEquipAssetFunc          func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
 	RequestUnequipAssetFunc        func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
-	RequestCreateAndEquipAssetFunc func(transactionId uuid.UUID, payload compartment.CreateAndEquipAssetPayload) error
-	RequestAcceptAssetFunc         func(transactionId uuid.UUID, characterId uint32, inventoryType byte, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, quantity uint32) error
-	RequestReleaseAssetFunc        func(transactionId uuid.UUID, characterId uint32, inventoryType byte, assetId uint32, quantity uint32) error
+	RequestCreateAndEquipAssetFunc   func(transactionId uuid.UUID, payload compartment.CreateAndEquipAssetPayload) error
+	RequestAcceptAssetFunc           func(transactionId uuid.UUID, characterId uint32, inventoryType byte, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, quantity uint32) error
+	RequestReleaseAssetFunc          func(transactionId uuid.UUID, characterId uint32, inventoryType byte, assetId uint32, quantity uint32) error
+	RequestDestroyItemFromSlotFunc   func(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, quantity uint32) error
 }
 
 // RequestCreateItem is a mock implementation of the compartment.Processor.RequestCreateItem method
@@ -70,6 +71,14 @@ func (m *ProcessorMock) RequestAcceptAsset(transactionId uuid.UUID, characterId 
 func (m *ProcessorMock) RequestReleaseAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, assetId uint32, quantity uint32) error {
 	if m.RequestReleaseAssetFunc != nil {
 		return m.RequestReleaseAssetFunc(transactionId, characterId, inventoryType, assetId, quantity)
+	}
+	return nil
+}
+
+// RequestDestroyItemFromSlot is a mock implementation of the compartment.Processor.RequestDestroyItemFromSlot method
+func (m *ProcessorMock) RequestDestroyItemFromSlot(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, quantity uint32) error {
+	if m.RequestDestroyItemFromSlotFunc != nil {
+		return m.RequestDestroyItemFromSlotFunc(transactionId, characterId, inventoryType, slot, quantity)
 	}
 	return nil
 }

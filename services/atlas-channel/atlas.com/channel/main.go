@@ -315,6 +315,7 @@ func produceWriters() []string {
 		writer.StorageOperation,
 		writer.CharacterHint,
 		writer.ReactorHit,
+		writer.GuideTalk,
 	}
 }
 

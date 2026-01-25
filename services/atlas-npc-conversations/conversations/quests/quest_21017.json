@@ -10,7 +10,7 @@
         "dialogue": {
           "dialogueType": "sendNext",
           "text": "It seems like you're warmed up now. This is when rigorous training can really help you build a strong foundation. Let's proceed with the Basic Training, shall we?",
-          "speaker": "NPC_RIGHT",
+          "speaker": "NPC", "endChat": false,
           "choices": [
             {"text": "Next", "nextState": "explainTask"},
             {"text": "Exit", "nextState": null}
@@ -23,7 +23,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "Go defeat some #r#o0100133#s#k in #b#m140020200##k this time. I think about  #r20#k should do it. Go on ahead and... Hm? Do you have something you'd like to say?",
-          "speaker": "NPC_RIGHT",
+          "speaker": "NPC", "endChat": false,
           "choices": [
             {"text": "Previous", "nextState": "intro"},
             {"text": "Next", "nextState": "playerQuestion"},
@@ -37,7 +37,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "Isn't the number getting bigger and bigger?",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "explainTask"},
             {"text": "Next", "nextState": "npcResponse"},
@@ -51,7 +51,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "Of course it is. What, are you not happy with 20? Would you like to defeat 100 of them instead? Oh, how about 999 of them? Someone in Sleepywood would be able to do it easily. After all, we are training...",
-          "speaker": "NPC_RIGHT",
+          "speaker": "NPC", "endChat": false,
           "choices": [
             {"text": "Previous", "nextState": "playerQuestion"},
             {"text": "Next", "nextState": "playerReply"},
@@ -65,7 +65,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "Oh no, no, no. Twenty is plenty.",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "npcResponse"},
             {"text": "Next", "nextState": "askAccept"},
@@ -92,7 +92,7 @@
         "dialogue": {
           "dialogueType": "sendNext",
           "text": "#b(You declined out of fear, but it's not like you can run away like this. Take a big breath, calm down, and try again.)#k",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Next", "nextState": null},
             {"text": "Exit", "nextState": null}
@@ -117,7 +117,7 @@
         "dialogue": {
           "dialogueType": "sendNext",
           "text": "#b(You accepted, thinking you might end up having to 999 of them if you let her keep talking.)#k",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Next", "nextState": "finalInstructions"},
             {"text": "Exit", "nextState": null}
@@ -130,7 +130,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "Please go ahead and slay 20 #o0100133#s.",
-          "speaker": "NPC_RIGHT",
+          "speaker": "NPC", "endChat": false,
           "choices": [
             {"text": "Previous", "nextState": "acceptMessage"},
             {"text": "Next", "nextState": "showTutorial"},

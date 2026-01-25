@@ -1,0 +1,163 @@
+{
+  "questId": 21013,
+  "questName": "Aran Tutorial - A Gift for the Hero",
+  "startStateMachine": {
+    "startState": "greeting",
+    "states": [
+      {
+        "id": "greeting",
+        "type": "listSelection",
+        "listSelection": {
+          "title": "Ah, you're the hero. I've been dying to meet you. \r\n#b#L0#(Seems a bit shy...)#l",
+          "choices": [
+            {"text": "(Seems a bit shy...)", "nextState": "askAccept"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "askAccept",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendAcceptDecline",
+          "text": "I have something I've been wanting to give you as a gift for a very long time... I know you're busy, especially since you're on your way to town, but will you accept my gift?",
+          "choices": [
+            {"text": "Accept", "nextState": "startQuest"},
+            {"text": "Decline", "nextState": "declineMessage"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "declineMessage",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "I'm sure it will come in handy during your journey. Please, don't decline my offer.",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "startQuest",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "start_quest", "params": {}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "questStartedMessage"}
+          ]
+        }
+      },
+      {
+        "id": "questStartedMessage",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "The parts of the gift have been packed inside a box nearby. Sorry to trouble you, but could you break the box and bring me a #b#t4032309##k and some #b#t4032310##k? I'll assemble them for you right away.",
+          "choices": [
+            {"text": "Next", "nextState": "showGuideHint"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "showGuideHint",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "show_guide_hint", "params": {"hintId": "18"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  },
+  "endStateMachine": {
+    "startState": "confirmReward",
+    "states": [
+      {
+        "id": "confirmReward",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendYesNo",
+          "text": "Ah, you've brought all the components. Give me a few seconds to assemble them.. Like this.. And like that.. and...\r\n\r\n#fUI/UIWindow.img/QuestIcon/4/0#\r\n#v3010062# 1 #t3010062#\r\n\r\n#fUI/UIWindow.img/QuestIcon/8/0# 95 exp",
+          "choices": [
+            {"text": "Yes", "nextState": "giveRewards"},
+            {"text": "No", "nextState": "declineReward"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "declineReward",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "What? You don't want the potion?",
+          "choices": [
+            {"text": "Next", "nextState": null},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "giveRewards",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "complete_quest", "params": {}},
+            {"type": "award_exp", "params": {"amount": "95"}},
+            {"type": "destroy_item", "params": {"itemId": "4032309", "quantity": "1"}},
+            {"type": "destroy_item", "params": {"itemId": "4032310", "quantity": "1"}},
+            {"type": "award_item", "params": {"itemId": "3010062", "quantity": "1"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": "rewardMessage"}
+          ]
+        }
+      },
+      {
+        "id": "rewardMessage",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "Here, a fully-assembled chair, just for you! I've always wanted to give you a chair as a gift, because I know a hero can occasionally use some good rest. Tee hee.",
+          "choices": [
+            {"text": "Next", "nextState": "encouragementMessage"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "encouragementMessage",
+        "type": "dialogue",
+        "dialogue": {
+          "dialogueType": "sendNext",
+          "text": "A hero is not invincible. A hero is human. I'm sure you will face challenges and even falter at times. But you are a hero because you have what it takes to overcome any obstacles you may encounter.",
+          "choices": [
+            {"text": "Next", "nextState": "showEndGuideHint"},
+            {"text": "Exit", "nextState": null}
+          ]
+        }
+      },
+      {
+        "id": "showEndGuideHint",
+        "type": "genericAction",
+        "genericAction": {
+          "operations": [
+            {"type": "show_guide_hint", "params": {"hintId": "19"}}
+          ],
+          "outcomes": [
+            {"conditions": [], "nextState": null}
+          ]
+        }
+      }
+    ]
+  }
+}

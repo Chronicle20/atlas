@@ -92,9 +92,12 @@ type RestStateModel struct {
 
 // RestDialogueModel represents the REST model for dialogue states
 type RestDialogueModel struct {
-	DialogueType string            `json:"dialogueType"`
-	Text         string            `json:"text"`
-	Choices      []RestChoiceModel `json:"choices,omitempty"`
+	DialogueType   string            `json:"dialogueType"`
+	Text           string            `json:"text"`
+	Speaker        string            `json:"speaker,omitempty"`         // Speaker type: "NPC" or "CHARACTER"
+	EndChat        *bool             `json:"endChat,omitempty"`         // Whether to show end chat button (defaults to true)
+	SecondaryNpcId uint32            `json:"secondaryNpcId,omitempty"`  // Optional secondary NPC template ID
+	Choices        []RestChoiceModel `json:"choices,omitempty"`
 }
 
 // RestChoiceModel represents the REST model for dialogue choices
@@ -285,10 +288,14 @@ func TransformDialogue(m conversation.DialogueModel) (RestDialogueModel, error) 
 		})
 	}
 
+	endChat := m.EndChat()
 	return RestDialogueModel{
-		DialogueType: string(m.DialogueType()),
-		Text:         m.Text(),
-		Choices:      restChoices,
+		DialogueType:   string(m.DialogueType()),
+		Text:           m.Text(),
+		Speaker:        m.Speaker(),
+		EndChat:        &endChat,
+		SecondaryNpcId: m.SecondaryNpcId(),
+		Choices:        restChoices,
 	}, nil
 }
 
@@ -507,7 +514,16 @@ func ExtractState(r RestStateModel) (conversation.StateModel, error) {
 func ExtractDialogue(r RestDialogueModel) (*conversation.DialogueModel, error) {
 	dialogueBuilder := conversation.NewDialogueBuilder().
 		SetDialogueType(conversation.DialogueType(r.DialogueType)).
-		SetText(r.Text)
+		SetText(r.Text).
+		SetSpeaker(normalizeSpeaker(r.Speaker)).
+		SetSecondaryNpcId(r.SecondaryNpcId)
+
+	// Handle endChat - defaults to true if not specified
+	if r.EndChat != nil {
+		dialogueBuilder.SetEndChat(*r.EndChat)
+	} else {
+		dialogueBuilder.SetEndChat(true)
+	}
 
 	for _, restChoice := range r.Choices {
 		choice, err := ExtractChoice(restChoice)
@@ -518,6 +534,14 @@ func ExtractDialogue(r RestDialogueModel) (*conversation.DialogueModel, error) {
 	}
 
 	return dialogueBuilder.Build()
+}
+
+// normalizeSpeaker returns the speaker value, defaulting to "NPC" if empty
+func normalizeSpeaker(speaker string) string {
+	if speaker == "" {
+		return "NPC"
+	}
+	return speaker
 }
 
 // ExtractChoice converts a RestChoiceModel to a ChoiceModel

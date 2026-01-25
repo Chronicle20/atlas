@@ -27,20 +27,22 @@ const (
 )
 
 type NpcConversation struct {
-	SpeakerTypeId      byte
-	SpeakerTemplateId  uint32
-	MsgType            NpcConversationMessageType
-	Param              byte
-	ConversationDetail Encoder
+	SpeakerTypeId           byte
+	SpeakerTemplateId       uint32
+	SecondaryNpcTemplateId  uint32
+	MsgType                 NpcConversationMessageType
+	Param                   byte
+	ConversationDetail      Encoder
 }
 
-func NewNpcConversation(npcId uint32, msgType NpcConversationMessageType, param byte, conversationDetail Encoder) NpcConversation {
+func NewNpcConversation(npcId uint32, msgType NpcConversationMessageType, speakerByte byte, secondaryNpcId uint32, conversationDetail Encoder) NpcConversation {
 	return NpcConversation{
-		SpeakerTypeId:      4,
-		SpeakerTemplateId:  npcId,
-		MsgType:            msgType,
-		Param:              param,
-		ConversationDetail: conversationDetail,
+		SpeakerTypeId:          speakerByte,
+		SpeakerTemplateId:      npcId,
+		SecondaryNpcTemplateId: secondaryNpcId,
+		MsgType:                msgType,
+		Param:                  speakerByte,
+		ConversationDetail:     conversationDetail,
 	}
 }
 
@@ -50,6 +52,9 @@ func (b *NpcConversation) Encode(l logrus.FieldLogger, t tenant.Model, ops map[s
 		w.WriteInt(b.SpeakerTemplateId)
 		w.WriteByte(getNpcConversationMessageType(l)(ops, b.MsgType))
 		w.WriteByte(b.Param)
+		if b.Param&4 != 0 {
+			w.WriteInt(b.SecondaryNpcTemplateId)
+		}
 		b.ConversationDetail.Encode(l, t, ops)(w)
 	}
 }

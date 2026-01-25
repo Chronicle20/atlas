@@ -70,6 +70,16 @@ Identify and understand:
     - Use `sendNextPrev` for middle pages that allow both forward and backward navigation
     - Use `sendPrev` for final page that only allows backward navigation (or ends conversation)
   - Terminal choices (nextState: null) should use text `"Exit"`
+  - **Speaker Fields** (optional, for controlling who speaks and how):
+    - `speaker`: Who is speaking - `"NPC"` (default) or `"CHARACTER"`. Position is derived automatically:
+      - NPC without `secondaryNpcId` → appears on LEFT
+      - NPC with `secondaryNpcId` → appears on RIGHT with second NPC portrait
+      - CHARACTER → always appears on RIGHT
+    - `endChat`: Whether to show the end chat button. Defaults to `true`. Set to `false` to hide it.
+    - `secondaryNpcId`: Optional integer. Secondary NPC template ID for dual-NPC dialogues.
+    - Example - Character speaking: `"speaker": "CHARACTER"`
+    - Example - Character speaking without end chat: `"speaker": "CHARACTER", "endChat": false`
+    - Example - NPC with second NPC: `"speaker": "NPC", "secondaryNpcId": 1234567`
 - **genericAction**: Execute logic/validation (meso checks, warps, item operations)
   - All outcomes MUST have `conditions` array (can be empty)
 - **craftAction**: Define crafting with materials, quantities, meso cost

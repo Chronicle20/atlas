@@ -23,7 +23,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "#b(You tell her that you remember a few skills.)#k",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "initial"},
             {"text": "Next", "nextState": "recovery"},
@@ -50,7 +50,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "How do I recover my abilities?",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "recovery"},
             {"text": "Next", "nextState": "askTraining"},

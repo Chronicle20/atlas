@@ -88,7 +88,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "#b(The #p1201001# is producing an undulating echo. But who is that boy standing over there?)",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "end_intro"},
             {"text": "Next", "nextState": "end_neverSeen"},
@@ -102,7 +102,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "#b(You've never seen him before. He doesn't look human.)",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "end_polearmEcho"},
             {"text": "Next", "nextState": "end_yoAran"},
@@ -129,7 +129,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "#b(Hm? Who's voice was that? It sounds like an angry boy...)",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "end_yoAran"},
             {"text": "Next", "nextState": "end_onlyMaster"},
@@ -156,7 +156,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "Who...are you?",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "end_onlyMaster"},
             {"text": "Next", "nextState": "end_hearMeNow"},
@@ -183,7 +183,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "#b(...#p1201002#? A #p1201001# can talk?)",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "end_hearMeNow"},
             {"text": "Next", "nextState": "end_suspicious"},
@@ -210,7 +210,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "I'm so sorry, but I can't remember a thing.",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "end_suspicious"},
             {"text": "Next", "nextState": "end_rememberMe"},
@@ -249,7 +249,7 @@
         "dialogue": {
           "dialogueType": "sendNext",
           "text": "#b(The voice that claims to be #p1201002# the #p1201001# is yelling in frustration. You don't think this conversation is going anywhere. You better go talk to #p1201000# first.)",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Next", "nextState": null},
             {"text": "Exit", "nextState": null}

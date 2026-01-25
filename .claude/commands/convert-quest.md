@@ -127,6 +127,15 @@ Identify and understand:
     - `sendPrev`: `"Previous"` and `"Exit"`
     - `listSelection`: Must include `"Exit"` choice
   - Terminal choices (nextState: null) should use text `"Exit"`
+  - **Speaker Fields** (optional, for controlling who speaks and how):
+    - `speaker`: Who is speaking - `"NPC"` (default) or `"CHARACTER"`. Position is derived automatically:
+      - NPC without `secondaryNpcId` → appears on LEFT
+      - NPC with `secondaryNpcId` → appears on RIGHT with second NPC portrait
+      - CHARACTER → always appears on RIGHT
+    - `endChat`: Whether to show the end chat button. Defaults to `true`. Set to `false` to hide it.
+    - `secondaryNpcId`: Optional integer. Secondary NPC template ID for dual-NPC dialogues.
+    - Example - Character speaking: `"speaker": "CHARACTER"`
+    - Example - Character speaking without end chat: `"speaker": "CHARACTER", "endChat": false`
 - **genericAction**: Execute logic/validation (item checks, start/complete quest, etc.)
   - All outcomes MUST have `conditions` array (can be empty)
 - **listSelection**: Dynamic choice lists

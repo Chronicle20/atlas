@@ -29,7 +29,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "Hey, I was just passing by and could not refrain from hearing you just now. I can lend you my strength, where did the thief go?",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {
               "text": "Previous",
@@ -75,7 +75,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "Ok, wait there. I will return it back to you in no time!",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {
               "text": "Previous",

@@ -22,7 +22,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "Well, that hit the spot, but... I still don't understand what happened. Where's the ship? Hey, do you know what happened to me?",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "monkeyGreeting"},
             {"text": "Next", "nextState": "askAccept"},

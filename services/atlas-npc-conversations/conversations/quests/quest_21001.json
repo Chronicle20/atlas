@@ -91,7 +91,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "Hurry and board the ship! We don't have much time!",
-          "speaker": "CHARACTER_RIGHT",
+          "speaker": "CHARACTER", "endChat": false,
           "choices": [
             {"text": "Previous", "nextState": "relief"},
             {"text": "Next", "nextState": "noTimeToWaste"},
@@ -118,7 +118,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "Leave, now!",
-          "speaker": "CHARACTER_RIGHT",
+          "speaker": "CHARACTER", "endChat": false,
           "choices": [
             {"text": "Previous", "nextState": "noTimeToWaste"},
             {"text": "Next", "nextState": "pleaToStay"},
@@ -145,7 +145,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "No, I can't!",
-          "speaker": "CHARACTER_RIGHT",
+          "speaker": "CHARACTER", "endChat": false,
           "choices": [
             {"text": "Previous", "nextState": "pleaToStay"},
             {"text": "Next", "nextState": "promiseToReturn"},
@@ -159,7 +159,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "Athena Pierce, why don't you leave for Victoria Island first? I promise I'll come for you later. I'll be alright. I must fight the Black Mage with the other heroes!",
-          "speaker": "CHARACTER_RIGHT",
+          "speaker": "CHARACTER", "endChat": false,
           "choices": [
             {"text": "Previous", "nextState": "noCant"},
             {"text": "Next", "nextState": "completeQuest"},

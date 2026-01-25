@@ -40,7 +40,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "Don't be afriad, #b#p1300005##k sent me here.",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "jamesScared"},
             {"text": "Next", "nextState": "completeQuest"},

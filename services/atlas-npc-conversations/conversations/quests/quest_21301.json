@@ -123,7 +123,7 @@
         "dialogue": {
           "dialogueType": "sendNextPrev",
           "text": "#b(Maha is beginning to really get hysterical. I better leave right this minute. Maybe Lilin can do something about it.)",
-          "speaker": "CHARACTER_LEFT",
+          "speaker": "CHARACTER",
           "choices": [
             {"text": "Previous", "nextState": "dialogue6"},
             {"text": "Next", "nextState": null},

@@ -27,9 +27,6 @@ This document tracks planned features and improvements for the Atlas MapleStory 
 - [ ] Trigger channel request for target when adding buddy (`list/processor.go:216`)
 - [ ] Trigger channel request for target when accepting buddy (`list/processor.go:386`)
 
-### Cash Shop Service
-- [ ] Refactor item resource handling (`item/resource.go:106`)
-
 ### Chalkboards Service
 - [ ] Ensure character is in a valid location for chalkboard (`chalkboard/processor.go:53`)
 - [ ] Ensure character is alive before setting chalkboard (`chalkboard/processor.go:54`)
@@ -230,5 +227,5 @@ Location: `socket/handler/character_damage.go:23-32`
   - **Scheduled transports**: Have boarding windows, departure times, and use `transportAvailable` condition (e.g., ships, subway to NLC)
   - **Instance-based transports**: Available on-demand with capacity limits, no fixed schedule (e.g., Kerning Square Train)
 
-- **Total inline TODOs found**: 195 across the codebase
+- **Total inline TODOs found**: 194 across the codebase
 - **Most concentrated areas**: Channel Service (97), Character Service (9), Inventory Service (12)

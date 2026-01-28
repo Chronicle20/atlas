@@ -1538,13 +1538,49 @@ func (p *ProcessorImpl) ResetStatsAndEmit(transactionId uuid.UUID, characterId u
 
 func (p *ProcessorImpl) ResetStats(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model) error {
 	return func(transactionId uuid.UUID, characterId uint32, channel channel.Model) error {
-		// TODO: Implement stat reset logic for job advancement
-		// This should reset STR, DEX, INT, LUK to base values and return
-		// the AP spent back to the character's available AP pool
-		p.l.Debugf("Reset stats requested for character [%d] - implementation pending.", characterId)
+		const baseStat uint16 = 4
 
-		// Emit stat changed event to complete the saga step
-		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []string{"AP", "STR", "DEX", "INT", "LUK"}))
+		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+			c, err := p.WithTransaction(tx).GetById()(characterId)
+			if err != nil {
+				return err
+			}
+
+			// Calculate AP to return from stats above base value
+			returnedAP := uint16(0)
+			if c.Strength() > baseStat {
+				returnedAP += c.Strength() - baseStat
+			}
+			if c.Dexterity() > baseStat {
+				returnedAP += c.Dexterity() - baseStat
+			}
+			if c.Intelligence() > baseStat {
+				returnedAP += c.Intelligence() - baseStat
+			}
+			if c.Luck() > baseStat {
+				returnedAP += c.Luck() - baseStat
+			}
+
+			p.l.Debugf("Resetting stats for character [%d]. Returning [%d] AP. STR: %d->%d, DEX: %d->%d, INT: %d->%d, LUK: %d->%d",
+				characterId, returnedAP,
+				c.Strength(), baseStat,
+				c.Dexterity(), baseStat,
+				c.Intelligence(), baseStat,
+				c.Luck(), baseStat)
+
+			return dynamicUpdate(tx)(
+				SetStrength(baseStat),
+				SetDexterity(baseStat),
+				SetIntelligence(baseStat),
+				SetLuck(baseStat),
+				SetAP(c.AP()+returnedAP),
+			)(p.t.Id())(c)
+		})
+		if txErr != nil {
+			return txErr
+		}
+
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []string{"AVAILABLE_AP", "STRENGTH", "DEXTERITY", "INTELLIGENCE", "LUCK"}))
 		return nil
 	}
 }

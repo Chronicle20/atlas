@@ -8,7 +8,6 @@ This document tracks planned features and improvements for the Atlas MapleStory 
 
 ### Critical (Core Gameplay)
 - [ ] **Character Attack Effects** - 27 unimplemented combat mechanics in `character_attack_common.go`
-- [ ] **Stat Reset Logic** - Job advancement stat reset not implemented
 
 ### High Priority (Feature Incomplete)
 - [ ] **TokenItem Purchasing** - Returns "not implemented" error in NPC shops
@@ -129,7 +128,6 @@ Location: `socket/handler/character_damage.go:23-32`
 - [ ] Pre-compute HP and MP to avoid loop cost (`processor.go:1111`)
 - [ ] Account for 6 beginner skill levels (`processor.go:1163`)
 - [ ] Award job change AP (Cygnus only?) (`processor.go:1285`)
-- [ ] **Implement stat reset logic for job advancement** (`processor.go:1541`)
 
 ### Consumables Service
 - [ ] Consume Vega scroll (`consumable/processor.go:512`)

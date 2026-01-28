@@ -122,7 +122,6 @@ Location: `socket/handler/character_damage.go:23-32`
 - [ ] Consider effective (temporary) Max MP (`processor.go:1054`)
 - [ ] Define AP auto-assign range for Beginner/Noblesse/Legend (`processor.go:1095`)
 - [ ] Pre-compute HP and MP to avoid loop cost (`processor.go:1111`)
-- [ ] Account for 6 beginner skill levels (`processor.go:1163`)
 - [ ] Award job change AP (Cygnus only?) (`processor.go:1285`)
 
 ### Consumables Service
@@ -174,8 +173,6 @@ Location: `socket/handler/character_damage.go:23-32`
 
 ### NPC Conversations Service
 - [ ] Transmit stats in NPC conversations (`kafka/message/npc/kafka.go:78`)
-- [ ] Integrate with WZ data registry for cosmetic validation (`cosmetic/validator.go:26`)
-- [ ] Integrate with character equipment query for cosmetics (`cosmetic/validator.go:44`)
 
 ### NPC Shops Service
 - [ ] Better transaction handling (`shops/processor.go:396,450`)
@@ -227,5 +224,5 @@ Location: `socket/handler/character_damage.go:23-32`
   - **Scheduled transports**: Have boarding windows, departure times, and use `transportAvailable` condition (e.g., ships, subway to NLC)
   - **Instance-based transports**: Available on-demand with capacity limits, no fixed schedule (e.g., Kerning Square Train)
 
-- **Total inline TODOs found**: 194 across the codebase
-- **Most concentrated areas**: Channel Service (97), Character Service (9), Inventory Service (12)
+- **Total inline TODOs found**: 191 across the codebase
+- **Most concentrated areas**: Channel Service (97), Character Service (8), Inventory Service (12)

@@ -1107,7 +1107,7 @@ func (p *ProcessorImpl) ProcessLevelChange(mb *message.Buffer) func(transactionI
 					addedAP += computeOnLevelAddedAP(c.JobId(), effectiveLevel)
 				}
 
-				addedSP += computeOnLevelAddedSP(c.JobId())
+				addedSP += computeOnLevelAddedSP(c.JobId(), effectiveLevel)
 				// TODO could potentially pre-compute HP and MP so you don't incur loop cost
 				aHP, aMP := p.computeOnLevelAddedHPandMP(c)
 				addedHP += aHP
@@ -1159,9 +1159,11 @@ func computeOnLevelAddedAP(jobId job.Id, level byte) uint16 {
 	return toGain
 }
 
-func computeOnLevelAddedSP(jobId job.Id) uint32 {
-	// TODO need to account for 6 beginner skill levels
+func computeOnLevelAddedSP(jobId job.Id, effectiveLevel byte) uint32 {
 	if job.IsBeginner(jobId) {
+		if effectiveLevel >= 2 && effectiveLevel <= 7 {
+			return 1
+		}
 		return 0
 	}
 	return 3

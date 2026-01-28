@@ -6,6 +6,8 @@ import (
 	"atlas-data/characters/templates"
 	"atlas-data/commodity"
 	"atlas-data/consumable"
+	"atlas-data/cosmetic/face"
+	"atlas-data/cosmetic/hair"
 	"atlas-data/equipment"
 	"atlas-data/etc"
 	"atlas-data/kafka/producer"
@@ -45,9 +47,11 @@ const (
 	WorkerCharacterCreation = "CHARACTER_CREATION"
 	WorkerQuest             = "QUEST"
 	WorkerNPC               = "NPC"
+	WorkerFace              = "FACE"
+	WorkerHair              = "HAIR"
 )
 
-var Workers = []string{WorkerMap, WorkerMonster, WorkerCharacter, WorkerReactor, WorkerSkill, WorkerPet, WorkerConsume, WorkerCash, WorkerCommodity, WorkerEtc, WorkerSetup, WorkerCharacterCreation, WorkerQuest, WorkerNPC}
+var Workers = []string{WorkerMap, WorkerMonster, WorkerCharacter, WorkerReactor, WorkerSkill, WorkerPet, WorkerConsume, WorkerCash, WorkerCommodity, WorkerEtc, WorkerSetup, WorkerCharacterCreation, WorkerQuest, WorkerNPC, WorkerFace, WorkerHair}
 
 func ProcessZip(l logrus.FieldLogger) func(ctx context.Context) func(file multipart.File, handler *multipart.FileHeader) error {
 	return func(ctx context.Context) func(file multipart.File, handler *multipart.FileHeader) error {
@@ -194,6 +198,10 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 					_ = npc.InitString(t, filepath.Join(path, "String.wz", "Npc.img.xml"))
 					err = RegisterAllData(l)(ctx)(path, "Npc.wz", npc.RegisterNpc(db))()
 					_ = npc.GetNpcStringRegistry().Clear(t)
+				} else if name == WorkerFace {
+					err = RegisterAllData(l)(ctx)(path, filepath.Join("Character.wz", "Face"), face.RegisterFace(db))()
+				} else if name == WorkerHair {
+					err = RegisterAllData(l)(ctx)(path, filepath.Join("Character.wz", "Hair"), hair.RegisterHair(db))()
 				}
 				if err != nil {
 					l.WithError(err).Errorf("Worker [%s] failed with error.", name)

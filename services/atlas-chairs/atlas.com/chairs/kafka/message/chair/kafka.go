@@ -42,6 +42,7 @@ const (
 	ErrorTypeInternal       = "INTERNAL"
 	ErrorTypeAlreadySitting = "ALREADY_SITING"
 	ErrorTypeDoesNotExist   = "DOES_NOT_EXIT"
+	ErrorTypeNotOwned       = "NOT_OWNED"
 )
 
 type StatusEvent[E any] struct {

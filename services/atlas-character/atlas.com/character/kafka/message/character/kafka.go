@@ -193,9 +193,15 @@ const (
 	StatusEventTypeGenderChanged     = "GENDER_CHANGED"
 	StatusEventTypeSkinColorChanged  = "SKIN_COLOR_CHANGED"
 	StatusEventTypeGmChanged         = "GM_CHANGED"
+	StatusEventTypeDied              = "DIED"
 
 	StatusEventTypeError              = "ERROR"
 	StatusEventErrorTypeNotEnoughMeso = "NOT_ENOUGH_MESO"
+
+	KillerTypeMonster     = "MONSTER"
+	KillerTypeCharacter   = "CHARACTER"
+	KillerTypeEnvironment = "ENVIRONMENT"
+	KillerTypeUnknown     = "UNKNOWN"
 )
 
 type StatusEvent[E any] struct {
@@ -324,6 +330,13 @@ type StatusEventSkinColorChangedBody struct {
 type StatusEventGmChangedBody struct {
 	OldGm bool `json:"oldGm"`
 	NewGm bool `json:"newGm"`
+}
+
+type StatusEventDiedBody struct {
+	ChannelId  channel.Id `json:"channelId"`
+	MapId      _map.Id    `json:"mapId"`
+	KillerId   uint32     `json:"killerId"`
+	KillerType string     `json:"killerType"`
 }
 
 const (

@@ -48,7 +48,6 @@ This document tracks planned features and improvements for the Atlas MapleStory 
 - [ ] Block cash shop entry during: Vega scrolling, events, mini dungeons, already in shop (`cash_shop_entry.go:28-31`)
 - [ ] Performance optimization for character queries (`character/processor.go:103,117`)
 - [ ] Restrict skill targets to those in range based on bitmap (`skill/handler/common.go:19`)
-- [ ] Consume summoning rock for Shadow Partner (`skill/handler/shadow_partner.go:29`)
 - [ ] Pet lookup for movement processing (`movement/processor.go:79`)
 - [ ] Optimize extra queries in pet consumer (`kafka/consumer/pet/consumer.go:236,274`)
 - [ ] Pet skill and item writing (`socket/writer/character_info.go:32`)

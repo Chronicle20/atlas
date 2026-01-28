@@ -7,12 +7,11 @@ import (
 )
 
 type Registry struct {
-	mutex  sync.Mutex
-	idLock sync.Mutex
+	mutex sync.Mutex
 
-	tenantMonsterId map[tenant.Model]uint32
-	mapMonsterReg   map[MapKey][]MonsterKey
-	mapLocks        map[MapKey]*sync.RWMutex
+	idAllocators  map[tenant.Model]*TenantIdAllocator
+	mapMonsterReg map[MapKey][]MonsterKey
+	mapLocks      map[MapKey]*sync.RWMutex
 
 	monsterReg  map[MonsterKey]Model
 	monsterLock *sync.RWMutex
@@ -25,7 +24,7 @@ func GetMonsterRegistry() *Registry {
 	once.Do(func() {
 		registry = &Registry{}
 
-		registry.tenantMonsterId = make(map[tenant.Model]uint32)
+		registry.idAllocators = make(map[tenant.Model]*TenantIdAllocator)
 		registry.mapMonsterReg = make(map[MapKey][]MonsterKey)
 		registry.mapLocks = make(map[MapKey]*sync.RWMutex)
 
@@ -48,6 +47,18 @@ func (r *Registry) getMapLock(key MapKey) *sync.RWMutex {
 	return cm
 }
 
+func (r *Registry) getOrCreateAllocator(t tenant.Model) *TenantIdAllocator {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+
+	if allocator, ok := r.idAllocators[t]; ok {
+		return allocator
+	}
+	allocator := NewTenantIdAllocator()
+	r.idAllocators[t] = allocator
+	return allocator
+}
+
 func (r *Registry) CreateMonster(tenant tenant.Model, worldId byte, channelId byte, mapId uint32, monsterId uint32, x int16, y int16, fh int16, stance byte, team int8, hp uint32, mp uint32) Model {
 	mapKey := MapKey{Tenant: tenant, WorldId: worldId, ChannelId: channelId, MapId: mapId}
 
@@ -55,35 +66,9 @@ func (r *Registry) CreateMonster(tenant tenant.Model, worldId byte, channelId by
 	mapLock.Lock()
 	defer mapLock.Unlock()
 
-	r.idLock.Lock()
-	// TODO need a more efficient mechanism for ID reuse.
-	var currentUniqueId = uint32(1000000000)
-	if val, ok := r.tenantMonsterId[tenant]; ok {
-		currentUniqueId = val
-	}
+	uniqueId := r.getOrCreateAllocator(tenant).Allocate()
 
-	var ids = make(map[uint32]bool)
-	for mk := range r.mapMonsterReg {
-		if mk.Tenant == tenant {
-			for _, id := range r.mapMonsterReg[mk] {
-				ids[id.MonsterId] = true
-			}
-		}
-	}
-
-	for {
-		if _, ok := ids[currentUniqueId]; !ok {
-			break
-		}
-		currentUniqueId = currentUniqueId + 1
-		if currentUniqueId > 2000000000 {
-			currentUniqueId = 1000000000
-		}
-		r.tenantMonsterId[tenant] = currentUniqueId
-	}
-	r.idLock.Unlock()
-
-	m := NewMonster(worldId, channelId, mapId, currentUniqueId, monsterId, x, y, fh, stance, team, hp, mp)
+	m := NewMonster(worldId, channelId, mapId, uniqueId, monsterId, x, y, fh, stance, team, hp, mp)
 
 	monKey := MonsterKey{Tenant: tenant, MonsterId: m.UniqueId()}
 	r.mapMonsterReg[mapKey] = append(r.mapMonsterReg[mapKey], monKey)
@@ -191,23 +176,40 @@ func (r *Registry) ApplyDamage(tenant tenant.Model, characterId uint32, damage u
 func (r *Registry) RemoveMonster(tenant tenant.Model, uniqueId uint32) (Model, error) {
 	monKey := MonsterKey{Tenant: tenant, MonsterId: uniqueId}
 
+	// First, look up the monster to get its map info (read lock only)
+	r.monsterLock.RLock()
+	val, ok := r.monsterReg[monKey]
+	if !ok {
+		r.monsterLock.RUnlock()
+		return Model{}, errors.New("monster not found")
+	}
+	mapKey := NewMapKey(tenant, val.WorldId(), val.ChannelId(), val.MapId())
+	r.monsterLock.RUnlock()
+
+	// Acquire locks in same order as CreateMonster: mapLock -> monsterLock
+	mapLock := r.getMapLock(mapKey)
+	mapLock.Lock()
+	defer mapLock.Unlock()
+
 	r.monsterLock.Lock()
 	defer r.monsterLock.Unlock()
 
-	if val, ok := r.monsterReg[monKey]; ok {
-		mapKey := NewMapKey(tenant, val.WorldId(), val.ChannelId(), val.MapId())
-		mapLock := r.getMapLock(mapKey)
-		mapLock.Lock()
-		defer mapLock.Unlock()
-
-		if mapMons, ok := r.mapMonsterReg[mapKey]; ok {
-			r.mapMonsterReg[mapKey] = removeIfExists(mapMons, val)
-		}
-
-		delete(r.monsterReg, monKey)
-		return val, nil
+	// Re-verify the monster still exists (may have been removed concurrently)
+	val, ok = r.monsterReg[monKey]
+	if !ok {
+		return Model{}, errors.New("monster not found")
 	}
-	return Model{}, errors.New("monster not found")
+
+	if mapMons, ok := r.mapMonsterReg[mapKey]; ok {
+		r.mapMonsterReg[mapKey] = removeIfExists(mapMons, val)
+	}
+
+	delete(r.monsterReg, monKey)
+
+	// Release the ID back to the allocator for reuse
+	r.getOrCreateAllocator(tenant).Release(uniqueId)
+
+	return val, nil
 }
 
 func removeIfExists(slice []MonsterKey, value Model) []MonsterKey {
@@ -236,7 +238,7 @@ func (r *Registry) GetMonsters() map[tenant.Model][]Model {
 }
 
 func (r *Registry) Clear() {
-	r.tenantMonsterId = make(map[tenant.Model]uint32)
+	r.idAllocators = make(map[tenant.Model]*TenantIdAllocator)
 	r.mapMonsterReg = make(map[MapKey][]MonsterKey)
 	r.mapLocks = make(map[MapKey]*sync.RWMutex)
 	r.monsterReg = make(map[MonsterKey]Model)

@@ -4,6 +4,7 @@ import (
 	_map2 "atlas-chairs/data/map"
 	chair2 "atlas-chairs/kafka/message/chair"
 	"atlas-chairs/kafka/producer"
+	"atlas-chairs/validation"
 	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-constants/field"
@@ -70,7 +71,18 @@ func (p *ProcessorImpl) Set(field field.Model, chairType string, chairId uint32,
 			return errors.New("chair does not exist")
 		}
 
-		// TODO ensure character has item.
+		hasItem, err := validation.NewProcessor(p.l, p.ctx).HasItem(characterId, chairId)
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to validate item ownership for character [%d].", characterId)
+			_ = producer.ProviderImpl(p.l)(p.ctx)(chair2.EnvEventTopicStatus)(statusEventErrorProvider(field, chairType, chairId, characterId, chair2.ErrorTypeInternal))
+			return err
+		}
+		if !hasItem {
+			p.l.Errorf("Character [%d] does not own portable chair [%d].", characterId, chairId)
+			_ = producer.ProviderImpl(p.l)(p.ctx)(chair2.EnvEventTopicStatus)(statusEventErrorProvider(field, chairType, chairId, characterId, chair2.ErrorTypeNotOwned))
+			return errors.New("character does not own chair")
+		}
+		p.l.Debugf("Character [%d] validated ownership of portable chair [%d].", characterId, chairId)
 	}
 
 	c := Model{

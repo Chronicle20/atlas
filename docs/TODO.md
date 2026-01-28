@@ -32,9 +32,6 @@ This document tracks planned features and improvements for the Atlas MapleStory 
 ### Cash Shop Service
 - [ ] Refactor item resource handling (`item/resource.go:106`)
 
-### Chairs Service
-- [ ] Verify character has chair item before sitting (`chair/processor.go:73`)
-
 ### Chalkboards Service
 - [ ] Ensure character is in a valid location for chalkboard (`chalkboard/processor.go:53`)
 - [ ] Ensure character is alive before setting chalkboard (`chalkboard/processor.go:54`)

@@ -126,9 +126,9 @@ func ParseWalletId(l logrus.FieldLogger, next WalletIdHandler) http.HandlerFunc 
 	}
 }
 
-type ItemIdHandler func(itemId uuid.UUID) http.HandlerFunc
+type WishlistItemIdHandler func(itemId uuid.UUID) http.HandlerFunc
 
-func ParseItemId(l logrus.FieldLogger, next ItemIdHandler) http.HandlerFunc {
+func ParseWishlistItemId(l logrus.FieldLogger, next WishlistItemIdHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		itemId, err := uuid.Parse(mux.Vars(r)["itemId"])
 		if err != nil {
@@ -137,6 +137,20 @@ func ParseItemId(l logrus.FieldLogger, next ItemIdHandler) http.HandlerFunc {
 			return
 		}
 		next(itemId)(w, r)
+	}
+}
+
+type CashItemIdHandler func(itemId uint32) http.HandlerFunc
+
+func ParseCashItemId(l logrus.FieldLogger, next CashItemIdHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		itemId, err := strconv.Atoi(mux.Vars(r)["itemId"])
+		if err != nil {
+			l.WithError(err).Errorf("Unable to properly parse itemId from path.")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(uint32(itemId))(w, r)
 	}
 }
 

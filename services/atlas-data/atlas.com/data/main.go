@@ -5,6 +5,8 @@ import (
 	"atlas-data/characters/templates"
 	"atlas-data/commodity"
 	"atlas-data/consumable"
+	"atlas-data/cosmetic/face"
+	"atlas-data/cosmetic/hair"
 	"atlas-data/data"
 	"atlas-data/database"
 	"atlas-data/document"
@@ -87,6 +89,8 @@ func main() {
 		AddRouteInitializer(templates.InitResource(db)(GetServer())).
 		AddRouteInitializer(quest.InitResource(db)(GetServer())).
 		AddRouteInitializer(npc.InitResource(db)(GetServer())).
+		AddRouteInitializer(face.InitResource(db)(GetServer())).
+		AddRouteInitializer(hair.InitResource(db)(GetServer())).
 		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

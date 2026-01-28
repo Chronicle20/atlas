@@ -36,7 +36,7 @@ func NoteOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 				return
 			}
 
-			err = np.SendNote(s.CharacterId(), tc.Id(), message, 1)
+			err = np.SendNote(s.WorldId(), s.ChannelId(), s.CharacterId(), tc.Id(), message, 1)
 			if err != nil {
 				l.WithError(err).Errorf("Character [%d] unable to send note.", s.CharacterId())
 			}
@@ -72,7 +72,7 @@ func NoteOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 				noteIds = append(noteIds, id)
 			}
 
-			err := np.DiscardNotes(s.CharacterId(), noteIds)
+			err := np.DiscardNotes(s.WorldId(), s.ChannelId(), s.CharacterId(), noteIds)
 			if err != nil {
 				l.WithError(err).Errorf("Character [%d] unable to discard notes.", s.CharacterId())
 			}

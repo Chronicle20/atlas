@@ -2,14 +2,19 @@ package note
 
 import (
 	"atlas-channel/kafka/message/note"
+
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 )
 
-func CreateCommandProvider(actorId uint32, receiverId uint32, message string, flag byte) model.Provider[[]kafka.Message] {
+func CreateCommandProvider(worldId world.Id, channelId channel.Id, actorId uint32, receiverId uint32, message string, flag byte) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(actorId))
 	value := &note.Command[note.CommandCreateBody]{
+		WorldId:     worldId,
+		ChannelId:   channelId,
 		CharacterId: receiverId,
 		Type:        note.CommandTypeCreate,
 		Body: note.CommandCreateBody{
@@ -21,9 +26,11 @@ func CreateCommandProvider(actorId uint32, receiverId uint32, message string, fl
 	return producer.SingleMessageProvider(key, value)
 }
 
-func DiscardCommandProvider(characterId uint32, noteIds []uint32) model.Provider[[]kafka.Message] {
+func DiscardCommandProvider(worldId world.Id, channelId channel.Id, characterId uint32, noteIds []uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &note.Command[note.CommandDiscardBody]{
+		WorldId:     worldId,
+		ChannelId:   channelId,
 		CharacterId: characterId,
 		Type:        note.CommandTypeDiscard,
 		Body: note.CommandDiscardBody{

@@ -9,7 +9,6 @@ This document tracks planned features and improvements for the Atlas MapleStory 
 ### Critical (Core Gameplay)
 - [ ] **Character Attack Effects** - 27 unimplemented combat mechanics in `character_attack_common.go`
 - [ ] **Stat Reset Logic** - Job advancement stat reset not implemented
-- [ ] **Quest Service** - StartQuestPayload is a stub, no quest service exists yet
 
 ### High Priority (Feature Incomplete)
 - [ ] **TokenItem Purchasing** - Returns "not implemented" error in NPC shops
@@ -237,9 +236,6 @@ Location: `socket/handler/character_damage.go:23-32`
 
 ### atlas-constants
 - [ ] Define HiddenStreet Nett's Pyramid battle room maps (926010100-926023500) (`map/model.go:434`)
-
-### atlas-script-core
-- [ ] **Implement quest service** - StartQuestPayload is currently a stub (`saga/model.go:324-329`)
 
 ---
 

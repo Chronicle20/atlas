@@ -314,9 +314,8 @@ func (p *ProcessorImpl) AttemptLogin(mb *message.Buffer) func(sessionId uuid.UUI
 
 		if a.State() != StateNotLoggedIn {
 			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), AlreadyLoggedIn))
-		} else if a.Password()[0] == uint8('$') && a.Password()[1] == uint8('2') && bcrypt.CompareHashAndPassword([]byte(a.Password()), []byte(password)) == nil {
-			// TODO implement tos tracking
-		} else {
+		}
+		if a.Password()[0] != uint8('$') || a.Password()[1] != uint8('2') || bcrypt.CompareHashAndPassword([]byte(a.Password()), []byte(password)) != nil {
 			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), IncorrectPassword))
 		}
 

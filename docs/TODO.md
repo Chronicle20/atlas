@@ -22,7 +22,6 @@ This document tracks planned features and improvements for the Atlas MapleStory 
 
 ### Account Service
 - [ ] Implement IP, MAC, and temporary banning practices (`processor.go:313`)
-- [ ] Implement Terms of Service tracking (`processor.go:318`)
 
 ### Buddies Service
 - [ ] Trigger channel request for target when adding buddy (`list/processor.go:216`)

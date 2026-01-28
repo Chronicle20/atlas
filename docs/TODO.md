@@ -127,14 +127,13 @@ Location: `socket/handler/character_damage.go:23-32`
 ### Character Service
 - [ ] Determine appropriate drop type and mod (`processor.go:707`)
 - [ ] Incorporate computed total intelligence with buffs/weapons (`processor.go:949`)
-- [ ] Consider effective (temporary) Max HP (`processor.go:981`)
-- [ ] Emit event when character dies (`processor.go:989`)
-- [ ] Consider effective (temporary) Max MP (`processor.go:1037`)
-- [ ] Define AP auto-assign range for Beginner/Noblesse/Legend (`processor.go:1078`)
-- [ ] Pre-compute HP and MP to avoid loop cost (`processor.go:1094`)
-- [ ] Account for 6 beginner skill levels (`processor.go:1146`)
-- [ ] Award job change AP (Cygnus only?) (`processor.go:1268`)
-- [ ] **Implement stat reset logic for job advancement** (`processor.go:1522-1527`)
+- [ ] Consider effective (temporary) Max HP (`processor.go:982`)
+- [ ] Consider effective (temporary) Max MP (`processor.go:1054`)
+- [ ] Define AP auto-assign range for Beginner/Noblesse/Legend (`processor.go:1095`)
+- [ ] Pre-compute HP and MP to avoid loop cost (`processor.go:1111`)
+- [ ] Account for 6 beginner skill levels (`processor.go:1163`)
+- [ ] Award job change AP (Cygnus only?) (`processor.go:1285`)
+- [ ] **Implement stat reset logic for job advancement** (`processor.go:1541`)
 
 ### Consumables Service
 - [ ] Consume Vega scroll (`consumable/processor.go:512`)
@@ -238,5 +237,5 @@ Location: `socket/handler/character_damage.go:23-32`
   - **Scheduled transports**: Have boarding windows, departure times, and use `transportAvailable` condition (e.g., ships, subway to NLC)
   - **Instance-based transports**: Available on-demand with capacity limits, no fixed schedule (e.g., Kerning Square Train)
 
-- **Total inline TODOs found**: 196 across the codebase
-- **Most concentrated areas**: Channel Service (98), Character Service (11), Inventory Service (12)
+- **Total inline TODOs found**: 195 across the codebase
+- **Most concentrated areas**: Channel Service (97), Character Service (9), Inventory Service (12)

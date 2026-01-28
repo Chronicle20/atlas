@@ -5,6 +5,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-constants/job"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
@@ -350,6 +351,23 @@ func gmChangedEventProvider(transactionId uuid.UUID, characterId uint32, worldId
 		Body: character2.StatusEventGmChangedBody{
 			OldGm: oldGm,
 			NewGm: newGm,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func diedEventProvider(transactionId uuid.UUID, characterId uint32, channel channel.Model, mapId _map.Id, killerId uint32, killerType string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character2.StatusEvent[character2.StatusEventDiedBody]{
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		WorldId:       channel.WorldId(),
+		Type:          character2.StatusEventTypeDied,
+		Body: character2.StatusEventDiedBody{
+			ChannelId:  channel.Id(),
+			MapId:      mapId,
+			KillerId:   killerId,
+			KillerType: killerType,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

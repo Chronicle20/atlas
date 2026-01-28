@@ -321,7 +321,6 @@ type CompleteQuestPayload struct {
 }
 
 // StartQuestPayload represents the payload required to start a quest.
-// Note: This is currently a stub as no quest service exists yet.
 type StartQuestPayload struct {
 	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
 	QuestId     uint32 `json:"questId"`     // QuestId to start

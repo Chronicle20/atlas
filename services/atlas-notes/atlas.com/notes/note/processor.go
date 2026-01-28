@@ -4,8 +4,14 @@ import (
 	"atlas-notes/kafka/message"
 	"atlas-notes/kafka/message/note"
 	"atlas-notes/kafka/producer"
+	"atlas-notes/saga"
 	"context"
+	"fmt"
+
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
+	scriptsaga "github.com/Chronicle20/atlas-script-core/saga"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -20,8 +26,8 @@ type Processor interface {
 	DeleteAndEmit(id uint32) error
 	DeleteAll(mb *message.Buffer) func(characterId uint32) error
 	DeleteAllAndEmit(characterId uint32) error
-	Discard(mb *message.Buffer) func(characterId uint32) func(noteIds []uint32) error
-	DiscardAndEmit(characterId uint32, noteIds []uint32) error
+	Discard(mb *message.Buffer) func(worldId world.Id) func(channelId channel.Id) func(characterId uint32) func(noteIds []uint32) error
+	DiscardAndEmit(worldId world.Id, channelId channel.Id, characterId uint32, noteIds []uint32) error
 	ByIdProvider(id uint32) model.Provider[Model]
 	ByCharacterProvider(characterId uint32) model.Provider[[]Model]
 	InTenantProvider() model.Provider[[]Model]
@@ -33,6 +39,7 @@ type ProcessorImpl struct {
 	db       *gorm.DB
 	t        tenant.Model
 	producer producer.Provider
+	sagaP    saga.Processor
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
@@ -42,6 +49,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		db:       db,
 		t:        tenant.MustFromContext(ctx),
 		producer: producer.ProviderImpl(l)(ctx),
+		sagaP:    saga.NewProcessor(l, ctx),
 	}
 }
 
@@ -187,42 +195,83 @@ func (p *ProcessorImpl) InTenantProvider() model.Provider[[]Model] {
 }
 
 // Discard discards multiple notes for a character
-func (p *ProcessorImpl) Discard(mb *message.Buffer) func(characterId uint32) func(noteIds []uint32) error {
-	return func(characterId uint32) func(noteIds []uint32) error {
-		return func(noteIds []uint32) error {
-			for _, noteId := range noteIds {
-				// Check if the note exists and belongs to the character
-				m, err := p.ByIdProvider(noteId)()
-				if err != nil {
-					return err
-				}
+func (p *ProcessorImpl) Discard(mb *message.Buffer) func(worldId world.Id) func(channelId channel.Id) func(characterId uint32) func(noteIds []uint32) error {
+	return func(worldId world.Id) func(channelId channel.Id) func(characterId uint32) func(noteIds []uint32) error {
+		return func(channelId channel.Id) func(characterId uint32) func(noteIds []uint32) error {
+			return func(characterId uint32) func(noteIds []uint32) error {
+				return func(noteIds []uint32) error {
+					for _, noteId := range noteIds {
+						// Check if the note exists and belongs to the character
+						m, err := p.ByIdProvider(noteId)()
+						if err != nil {
+							return err
+						}
 
-				if m.CharacterId() != characterId {
-					continue // Skip notes that don't belong to this character
-				}
+						if m.CharacterId() != characterId {
+							continue // Skip notes that don't belong to this character
+						}
 
-				// Delete the note
-				err = deleteNote(p.db)(p.t.Id())(noteId)
-				if err != nil {
-					return err
-				}
+						// Delete the note
+						err = deleteNote(p.db)(p.t.Id())(noteId)
+						if err != nil {
+							return err
+						}
 
-				// Add delete event to message buffer
-				err = mb.Put(note.EnvEventTopicNoteStatus, DeleteNoteStatusEventProvider(characterId, noteId))
-				if err != nil {
-					return err
-				}
+						// Add delete event to message buffer
+						err = mb.Put(note.EnvEventTopicNoteStatus, DeleteNoteStatusEventProvider(characterId, noteId))
+						if err != nil {
+							return err
+						}
 
-				// TODO award fame when a note is discarded
+						// Award fame to the note sender
+						p.awardFameToSender(worldId, channelId, characterId, m.SenderId(), noteId)
+					}
+					return nil
+				}
 			}
-			return nil
 		}
 	}
 }
 
+// awardFameToSender creates a saga to award +1 fame to the note sender
+func (p *ProcessorImpl) awardFameToSender(worldId world.Id, channelId channel.Id, recipientId uint32, senderId uint32, noteId uint32) {
+	// Skip if sender is 0 (system note) or sender is the same as recipient (self-note)
+	if senderId == 0 {
+		p.l.Debugf("Skipping fame award for note [%d]: system note (senderId=0)", noteId)
+		return
+	}
+	if senderId == recipientId {
+		p.l.Debugf("Skipping fame award for note [%d]: self-note (senderId=%d equals recipientId)", noteId, senderId)
+		return
+	}
+
+	s := scriptsaga.NewBuilder().
+		SetSagaType(scriptsaga.InventoryTransaction).
+		SetInitiatedBy("note-discard-fame").
+		AddStep(
+			fmt.Sprintf("award-fame-%d-%d", senderId, noteId),
+			scriptsaga.Pending,
+			scriptsaga.AwardFame,
+			scriptsaga.AwardFamePayload{
+				CharacterId: senderId,
+				WorldId:     worldId,
+				ChannelId:   channelId,
+				Amount:      1,
+			},
+		).Build()
+
+	err := p.sagaP.Create(s)
+	if err != nil {
+		// Log error but don't fail the discard operation
+		p.l.WithError(err).Errorf("Failed to create fame award saga for note [%d] sender [%d]", noteId, senderId)
+	} else {
+		p.l.Debugf("Created fame award saga for note [%d] sender [%d]", noteId, senderId)
+	}
+}
+
 // DiscardAndEmit discards multiple notes for a character and emits status events
-func (p *ProcessorImpl) DiscardAndEmit(characterId uint32, noteIds []uint32) error {
+func (p *ProcessorImpl) DiscardAndEmit(worldId world.Id, channelId channel.Id, characterId uint32, noteIds []uint32) error {
 	return message.Emit(p.producer)(func(mb *message.Buffer) error {
-		return p.Discard(mb)(characterId)(noteIds)
+		return p.Discard(mb)(worldId)(channelId)(characterId)(noteIds)
 	})
 }

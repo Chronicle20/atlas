@@ -1,6 +1,11 @@
 package note
 
-import "time"
+import (
+	"time"
+
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
+)
 
 const (
 	EnvCommandTopic         = "COMMAND_TOPIC_NOTE"
@@ -16,9 +21,11 @@ const (
 
 // Command represents a Kafka command for note operations
 type Command[E any] struct {
-	CharacterId uint32 `json:"characterId"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	WorldId     world.Id   `json:"worldId"`
+	ChannelId   channel.Id `json:"channelId"`
+	CharacterId uint32     `json:"characterId"`
+	Type        string     `json:"type"`
+	Body        E          `json:"body"`
 }
 
 // CommandCreateBody contains data for creating a note

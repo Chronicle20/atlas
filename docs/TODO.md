@@ -186,9 +186,6 @@ Location: `socket/handler/character_damage.go:23-32`
 ### Monsters Service
 - [ ] More efficient mechanism for ID reuse (`monster/registry.go:59`)
 
-### Notes Service
-- [ ] Award fame when a note is discarded (`note/processor.go:216`)
-
 ### NPC Conversations Service
 - [ ] Transmit stats in NPC conversations (`kafka/message/npc/kafka.go:78`)
 - [ ] Integrate with WZ data registry for cosmetic validation (`cosmetic/validator.go:26`)
@@ -244,5 +241,5 @@ Location: `socket/handler/character_damage.go:23-32`
   - **Scheduled transports**: Have boarding windows, departure times, and use `transportAvailable` condition (e.g., ships, subway to NLC)
   - **Instance-based transports**: Available on-demand with capacity limits, no fixed schedule (e.g., Kerning Square Train)
 
-- **Total inline TODOs found**: 198 across the codebase
+- **Total inline TODOs found**: 197 across the codebase
 - **Most concentrated areas**: Channel Service (98), Character Service (11), Inventory Service (12)

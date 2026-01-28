@@ -173,7 +173,6 @@ Location: `socket/handler/character_damage.go:23-32`
 - [ ] Implement error responses for character selection (multiple handlers)
 - [ ] Terminate on too many PIN attempts (`after_login.go:98`)
 - [ ] Clarify gender defaulting logic (`create_character.go:55`)
-- [ ] Verify character is not a guild master before deletion (`delete_character.go:65`)
 - [ ] Verify character is not engaged before deletion (`delete_character.go:66`)
 - [ ] Verify character is not part of a family before deletion (`delete_character.go:67`)
 

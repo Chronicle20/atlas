@@ -33,8 +33,10 @@ type RestModel struct {
 	LevelType      byte      `json:"levelType"`
 	Level          byte      `json:"level"`
 	Experience     uint32    `json:"experience"`
-	HammersApplied uint32    `json:"hammersApplied"`
-	Expiration     time.Time `json:"expiration"`
+	HammersApplied uint32     `json:"hammersApplied"`
+	Expiration     time.Time  `json:"expiration"`
+	CreatedAt      time.Time  `json:"createdAt"`
+	EquippedSince  *time.Time `json:"equippedSince,omitempty"`
 }
 
 func (r RestModel) GetName() string {
@@ -85,6 +87,8 @@ func Transform(m Model) (RestModel, error) {
 		Experience:     m.Experience(),
 		HammersApplied: m.HammersApplied(),
 		Expiration:     m.Expiration(),
+		CreatedAt:      m.CreatedAt(),
+		EquippedSince:  m.EquippedSince(),
 	}, nil
 }
 
@@ -119,5 +123,7 @@ func Extract(rm RestModel) (Model, error) {
 		experience:     rm.Experience,
 		hammersApplied: rm.HammersApplied,
 		expiration:     rm.Expiration,
+		createdAt:      rm.CreatedAt,
+		equippedSince:  rm.EquippedSince,
 	}, nil
 }

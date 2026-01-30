@@ -40,7 +40,9 @@ type entity struct {
 	Level          byte      `gorm:"not null;default=0"`
 	Experience     uint32    `gorm:"not null;default=0"`
 	HammersApplied uint32    `gorm:"not null;default=0"`
-	Expiration     time.Time `gorm:"not null;default=0"`
+	Expiration     time.Time  `gorm:"not null;default=0"`
+	CreatedAt      time.Time  `gorm:"not null"`
+	EquippedSince  *time.Time `gorm:"default:null"` // When item was equipped (null if not equipped)
 }
 
 func (e entity) TableName() string {

@@ -1,0 +1,15 @@
+meta {
+  name: Get Character Sessions Playtime
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/characters/{{characterId}}/sessions/playtime
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  characterId: 2
+}

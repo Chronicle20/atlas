@@ -1,0 +1,15 @@
+meta {
+  name: Get Character Sessions
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/characters/{{characterId}}/sessions
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  characterId: 2
+}

@@ -2,6 +2,7 @@ package session
 
 import (
 	"atlas-character/character"
+	"atlas-character/session/history"
 	"context"
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-tenant"
@@ -44,7 +45,14 @@ func (t *Timeout) Run() {
 			t.l.Debugf("Timing out record for character [%d].", m.CharacterId())
 			GetRegistry().Remove(m.Tenant(), m.CharacterId())
 
-			err := cp.LogoutAndEmit(uuid.New(), m.CharacterId(), cha)
+			// Close session history
+			hp := history.NewProcessor(t.l, tctx, t.db)
+			err := hp.EndSession(m.CharacterId())
+			if err != nil {
+				t.l.WithError(err).Warnf("Failed to end session history for character [%d].", m.CharacterId())
+			}
+
+			err = cp.LogoutAndEmit(uuid.New(), m.CharacterId(), cha)
 			if err != nil {
 				t.l.WithError(err).Errorf("Unable to logout character [%d] as a result of session being destroyed.", m.CharacterId())
 			}

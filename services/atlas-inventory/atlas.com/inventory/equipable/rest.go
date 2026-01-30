@@ -35,6 +35,7 @@ type RestModel struct {
 	Experience     uint32    `json:"experience"`
 	HammersApplied uint32    `json:"hammersApplied"`
 	Expiration     time.Time `json:"expiration"`
+	CreatedAt      time.Time `json:"createdAt"`
 }
 
 func (r RestModel) GetName() string {
@@ -85,6 +86,7 @@ func Transform(m Model) (RestModel, error) {
 		Experience:     m.experience,
 		HammersApplied: m.hammersApplied,
 		Expiration:     m.expiration,
+		CreatedAt:      m.createdAt,
 	}, nil
 }
 
@@ -119,5 +121,6 @@ func Extract(rm RestModel) (Model, error) {
 		experience:     rm.Experience,
 		hammersApplied: rm.HammersApplied,
 		expiration:     rm.Expiration,
+		createdAt:      rm.CreatedAt,
 	}, nil
 }

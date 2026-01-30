@@ -2,6 +2,8 @@ package asset
 
 import (
 	"atlas-inventory/kafka/message/asset"
+	"time"
+
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
@@ -43,7 +45,7 @@ func DeletedEventStatusProvider(transactionId uuid.UUID, characterId uint32, com
 	return producer.SingleMessageProvider(key, value)
 }
 
-func MovedEventStatusProvider(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, assetId uint32, templateId uint32, newSlot int16, oldSlot int16) model.Provider[[]kafka.Message] {
+func MovedEventStatusProvider(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, assetId uint32, templateId uint32, newSlot int16, oldSlot int16, createdAt time.Time) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(assetId))
 	value := &asset.StatusEvent[asset.MovedStatusEventBody]{
 		TransactionId: transactionId,
@@ -54,7 +56,8 @@ func MovedEventStatusProvider(transactionId uuid.UUID, characterId uint32, compa
 		Slot:          newSlot,
 		Type:          asset.StatusEventTypeMoved,
 		Body: asset.MovedStatusEventBody{
-			OldSlot: oldSlot,
+			OldSlot:   oldSlot,
+			CreatedAt: createdAt,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
@@ -136,6 +139,20 @@ func ReleasedEventStatusProvider(transactionId uuid.UUID, characterId uint32, co
 	return producer.SingleMessageProvider(key, value)
 }
 
+// getCreatedAtFromReferenceData extracts the createdAt timestamp from the asset's reference data
+func getCreatedAtFromReferenceData(data any) time.Time {
+	if erd, ok := data.(EquipableReferenceData); ok {
+		return erd.CreatedAt()
+	}
+	if cerd, ok := data.(CashEquipableReferenceData); ok {
+		return cerd.GetCreatedAt()
+	}
+	if crd, ok := data.(CashReferenceData); ok {
+		return crd.CreatedAt()
+	}
+	return time.Time{}
+}
+
 func getReferenceData(data any) interface{} {
 	if erd, ok := data.(EquipableReferenceData); ok {
 		return asset.EquipableReferenceData{
@@ -169,6 +186,7 @@ func getReferenceData(data any) interface{} {
 			Level:          erd.level,
 			Experience:     erd.experience,
 			HammersApplied: erd.hammersApplied,
+			CreatedAt:      erd.createdAt,
 		}
 	}
 	if crd, ok := data.(CashEquipableReferenceData); ok {
@@ -225,6 +243,7 @@ func getReferenceData(data any) interface{} {
 			},
 			Flag:        crd.Flag(),
 			PurchasedBy: crd.PurchaseBy(),
+			CreatedAt:   crd.CreatedAt(),
 		}
 	}
 	if prd, ok := data.(PetReferenceData); ok {

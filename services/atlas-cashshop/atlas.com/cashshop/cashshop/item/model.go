@@ -11,6 +11,7 @@ type Model struct {
 	flag        uint16
 	purchasedBy uint32
 	expiration  time.Time
+	createdAt   time.Time
 }
 
 func (m Model) Id() uint32 {
@@ -45,6 +46,10 @@ func (m Model) Expiration() time.Time {
 	return m.expiration
 }
 
+func (m Model) CreatedAt() time.Time {
+	return m.createdAt
+}
+
 type Builder struct {
 	id          uint32
 	cashId      int64
@@ -54,6 +59,7 @@ type Builder struct {
 	flag        uint16
 	purchasedBy uint32
 	expiration  time.Time
+	createdAt   time.Time
 }
 
 func NewBuilder() *Builder {
@@ -100,6 +106,11 @@ func (b *Builder) SetExpiration(expiration time.Time) *Builder {
 	return b
 }
 
+func (b *Builder) SetCreatedAt(createdAt time.Time) *Builder {
+	b.createdAt = createdAt
+	return b
+}
+
 func (b *Builder) Build() Model {
 	return Model{
 		id:          b.id,
@@ -110,5 +121,6 @@ func (b *Builder) Build() Model {
 		flag:        b.flag,
 		purchasedBy: b.purchasedBy,
 		expiration:  b.expiration,
+		createdAt:   b.createdAt,
 	}
 }

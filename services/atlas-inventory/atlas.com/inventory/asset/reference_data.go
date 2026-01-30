@@ -218,6 +218,7 @@ type EquipableReferenceData struct {
 	experience     uint32
 	hammersApplied uint32
 	expiration     time.Time
+	createdAt      time.Time
 }
 
 func (e EquipableReferenceData) Slots() uint16          { return e.slots }
@@ -231,6 +232,7 @@ func (e EquipableReferenceData) Level() byte            { return e.level }
 func (e EquipableReferenceData) Experience() uint32     { return e.experience }
 func (e EquipableReferenceData) HammersApplied() uint32 { return e.hammersApplied }
 func (e EquipableReferenceData) Expiration() time.Time  { return e.expiration }
+func (e EquipableReferenceData) CreatedAt() time.Time   { return e.createdAt }
 
 type EquipableReferenceDataBuilder struct {
 	StatisticDataBuilder
@@ -246,6 +248,7 @@ type EquipableReferenceDataBuilder struct {
 	experience     uint32
 	hammersApplied uint32
 	expiration     time.Time
+	createdAt      time.Time
 }
 
 // NewEquipableReferenceDataBuilder creates a new builder instance.
@@ -286,6 +289,7 @@ func (b *EquipableReferenceDataBuilder) Clone(model EquipableReferenceData) *Equ
 	b.experience = model.experience
 	b.hammersApplied = model.hammersApplied
 	b.expiration = model.expiration
+	b.createdAt = model.createdAt
 	return b
 }
 
@@ -323,6 +327,7 @@ func (b *EquipableReferenceDataBuilder) Build() EquipableReferenceData {
 		experience:     b.experience,
 		hammersApplied: b.hammersApplied,
 		expiration:     b.expiration,
+		createdAt:      b.createdAt,
 	}
 }
 
@@ -461,6 +466,11 @@ func (b *EquipableReferenceDataBuilder) SetExpiration(value time.Time) *Equipabl
 	return b
 }
 
+func (b *EquipableReferenceDataBuilder) SetCreatedAt(value time.Time) *EquipableReferenceDataBuilder {
+	b.createdAt = value
+	return b
+}
+
 type CashEquipableReferenceData struct {
 	StatisticData
 	OwnerData
@@ -476,6 +486,7 @@ type CashEquipableReferenceData struct {
 	experience     uint32
 	hammersApplied uint32
 	expiration     time.Time
+	createdAt      time.Time
 }
 
 func (e CashEquipableReferenceData) GetSlots() uint16          { return e.slots }
@@ -489,6 +500,7 @@ func (e CashEquipableReferenceData) GetLevel() byte            { return e.level 
 func (e CashEquipableReferenceData) GetExperience() uint32     { return e.experience }
 func (e CashEquipableReferenceData) GetHammersApplied() uint32 { return e.hammersApplied }
 func (e CashEquipableReferenceData) GetExpiration() time.Time  { return e.expiration }
+func (e CashEquipableReferenceData) GetCreatedAt() time.Time   { return e.createdAt }
 
 type CashEquipableReferenceDataBuilder struct {
 	StatisticDataBuilder
@@ -505,6 +517,7 @@ type CashEquipableReferenceDataBuilder struct {
 	experience     uint32
 	hammersApplied uint32
 	expiration     time.Time
+	createdAt      time.Time
 }
 
 // NewCashEquipableReferenceDataBuilder creates a new builder instance.
@@ -548,6 +561,7 @@ func (b *CashEquipableReferenceDataBuilder) Clone(model CashEquipableReferenceDa
 	b.experience = model.experience
 	b.hammersApplied = model.hammersApplied
 	b.expiration = model.expiration
+	b.createdAt = model.createdAt
 	return b
 }
 
@@ -588,6 +602,7 @@ func (b *CashEquipableReferenceDataBuilder) Build() CashEquipableReferenceData {
 		experience:     b.experience,
 		hammersApplied: b.hammersApplied,
 		expiration:     b.expiration,
+		createdAt:      b.createdAt,
 	}
 }
 
@@ -728,6 +743,11 @@ func (b *CashEquipableReferenceDataBuilder) SetHammersApplied(value uint32) *Cas
 
 func (b *CashEquipableReferenceDataBuilder) SetExpiration(value time.Time) *CashEquipableReferenceDataBuilder {
 	b.expiration = value
+	return b
+}
+
+func (b *CashEquipableReferenceDataBuilder) SetCreatedAt(value time.Time) *CashEquipableReferenceDataBuilder {
+	b.createdAt = value
 	return b
 }
 
@@ -884,7 +904,10 @@ type CashReferenceData struct {
 	FlagData
 	CashData
 	PurchaseData
+	createdAt time.Time
 }
+
+func (c CashReferenceData) CreatedAt() time.Time { return c.createdAt }
 
 type CashReferenceDataBuilder struct {
 	OwnerDataBuilder
@@ -892,6 +915,7 @@ type CashReferenceDataBuilder struct {
 	FlagDataBuilder
 	CashDataBuilder
 	PurchaseDataBuilder
+	createdAt time.Time
 }
 
 func NewCashReferenceDataBuilder() *CashReferenceDataBuilder {
@@ -923,6 +947,11 @@ func (b *CashReferenceDataBuilder) SetPurchaseBy(value uint32) *CashReferenceDat
 	return b
 }
 
+func (b *CashReferenceDataBuilder) SetCreatedAt(value time.Time) *CashReferenceDataBuilder {
+	b.createdAt = value
+	return b
+}
+
 func (b *CashReferenceDataBuilder) Build() CashReferenceData {
 	return CashReferenceData{
 		OwnerData: OwnerData{
@@ -940,6 +969,7 @@ func (b *CashReferenceDataBuilder) Build() CashReferenceData {
 		PurchaseData: PurchaseData{
 			purchaseBy: b.PurchaseDataBuilder.purchaseBy,
 		},
+		createdAt: b.createdAt,
 	}
 }
 

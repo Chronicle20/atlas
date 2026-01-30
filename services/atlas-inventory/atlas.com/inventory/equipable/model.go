@@ -32,6 +32,7 @@ type Model struct {
 	experience     uint32
 	hammersApplied uint32
 	expiration     time.Time
+	createdAt      time.Time
 }
 
 func (m Model) Strength() uint16 {
@@ -151,6 +152,10 @@ func (m Model) Expiration() time.Time {
 	return m.expiration
 }
 
+func (m Model) CreatedAt() time.Time {
+	return m.createdAt
+}
+
 type ModelBuilder struct {
 	id             uint32
 	itemId         uint32
@@ -181,6 +186,7 @@ type ModelBuilder struct {
 	experience     uint32
 	hammersApplied uint32
 	expiration     time.Time
+	createdAt      time.Time
 }
 
 func (m *ModelBuilder) SetItemId(itemId uint32) *ModelBuilder {
@@ -323,6 +329,11 @@ func (m *ModelBuilder) SetExpiration(expiration time.Time) *ModelBuilder {
 	return m
 }
 
+func (m *ModelBuilder) SetCreatedAt(createdAt time.Time) *ModelBuilder {
+	m.createdAt = createdAt
+	return m
+}
+
 func (m *ModelBuilder) Build() Model {
 	return Model{
 		id:             m.id,
@@ -354,5 +365,6 @@ func (m *ModelBuilder) Build() Model {
 		experience:     m.experience,
 		hammersApplied: m.hammersApplied,
 		expiration:     m.expiration,
+		createdAt:      m.createdAt,
 	}
 }

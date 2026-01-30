@@ -62,8 +62,8 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 		}
 
 		// Parse bonusExp tiers if present (e.g., Pendant of Spirit)
-		bonusExpTiers := make([]BonusExpTier, 0)
-		if bonusExpNode, err := info.ChildByName("bonusExp"); err == nil {
+		var bonusExpTiers []BonusExpTier
+		if bonusExpNode, err := info.ChildByName("bonusExp"); err == nil && len(bonusExpNode.ChildNodes) > 0 {
 			// Iterate over tier nodes (named "0", "1", "2", etc.)
 			for _, tierNode := range bonusExpNode.ChildNodes {
 				tier := BonusExpTier{

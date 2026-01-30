@@ -61,6 +61,19 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 			})
 		}
 
+		// Parse bonusExp tiers if present (e.g., Pendant of Spirit)
+		bonusExpTiers := make([]BonusExpTier, 0)
+		if bonusExpNode, err := info.ChildByName("bonusExp"); err == nil {
+			// Iterate over tier nodes (named "0", "1", "2", etc.)
+			for _, tierNode := range bonusExpNode.ChildNodes {
+				tier := BonusExpTier{
+					IncExpR:   tierNode.GetIntegerWithDefault("incExpR", 0),
+					TermStart: tierNode.GetIntegerWithDefault("termStart", 0),
+				}
+				bonusExpTiers = append(bonusExpTiers, tier)
+			}
+		}
+
 		m := RestModel{
 			Id:            itemId,
 			Strength:      info.GetShort("incSTR", 0),
@@ -80,6 +93,7 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 			Slots:         info.GetShort("tuc", 0),
 			Cash:          info.GetBool("cash", false),
 			Price:         uint32(info.GetIntegerWithDefault("price", 0)),
+			BonusExp:      bonusExpTiers,
 			EquipSlots:    srm,
 		}
 		return model.FixedProvider(m)

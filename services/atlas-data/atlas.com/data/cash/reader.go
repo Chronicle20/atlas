@@ -41,6 +41,14 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 			}
 			m.SlotMax = uint32(i.GetIntegerWithDefault("slotMax", 0))
 
+			// Parse rate coupon properties from info node (EXP coupons 0521.img, Drop coupons 0536.img)
+			if rate := i.GetIntegerWithDefault("rate", 0); rate != 0 {
+				m.Spec[SpecTypeRate] = rate
+			}
+			if time := i.GetIntegerWithDefault("time", 0); time != 0 {
+				m.Spec[SpecTypeTime] = time
+			}
+
 			s, err := cxml.ChildByName("spec")
 			if err == nil && s != nil {
 				m.Spec[SpecTypeInc] = s.GetIntegerWithDefault(string(SpecTypeInc), 0)

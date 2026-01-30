@@ -217,3 +217,33 @@ func ParseQuestId(l logrus.FieldLogger, next QuestIdHandler) http.HandlerFunc {
 		next(uint32(questId))(w, r)
 	}
 }
+
+type FaceIdHandler func(faceId uint32) http.HandlerFunc
+
+func ParseFaceId(l logrus.FieldLogger, next FaceIdHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		faceId, err := strconv.Atoi(vars["faceId"])
+		if err != nil {
+			l.WithError(err).Errorf("Error parsing faceId as uint32")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(uint32(faceId))(w, r)
+	}
+}
+
+type HairIdHandler func(hairId uint32) http.HandlerFunc
+
+func ParseHairId(l logrus.FieldLogger, next HairIdHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		hairId, err := strconv.Atoi(vars["hairId"])
+		if err != nil {
+			l.WithError(err).Errorf("Error parsing hairId as uint32")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(uint32(hairId))(w, r)
+	}
+}

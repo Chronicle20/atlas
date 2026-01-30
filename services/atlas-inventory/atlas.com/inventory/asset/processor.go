@@ -209,6 +209,7 @@ func MakeEquipableReferenceData(e equipable.Model) EquipableReferenceData {
 		experience:     e.Experience(),
 		hammersApplied: e.HammersApplied(),
 		expiration:     e.Expiration(),
+		createdAt:      e.CreatedAt(),
 	}
 }
 
@@ -312,6 +313,7 @@ func (p *Processor) DecorateCash(m Model[any]) (Model[any], error) {
 				PurchaseData: PurchaseData{
 					purchaseBy: ci.PurchasedBy(),
 				},
+				createdAt: ci.CreatedAt(),
 			}).
 			Build(), nil
 	} else if m.ReferenceType() == ReferenceTypePet {
@@ -433,7 +435,8 @@ func (p *Processor) UpdateSlot(mb *message.Buffer) func(transactionId uuid.UUID,
 			return err
 		}
 		if a.Slot() != int16(math.MinInt16) && s != int16(math.MinInt16) {
-			return mb.Put(asset.EnvEventTopicStatus, MovedEventStatusProvider(transactionId, characterId, compartmentId, a.Id(), a.TemplateId(), a.Slot(), s))
+			createdAt := getCreatedAtFromReferenceData(a.ReferenceData())
+			return mb.Put(asset.EnvEventTopicStatus, MovedEventStatusProvider(transactionId, characterId, compartmentId, a.Id(), a.TemplateId(), a.Slot(), s, createdAt))
 		}
 		return nil
 	}

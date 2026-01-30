@@ -973,20 +973,28 @@ func (p *ProcessorImpl) ChangeHPAndEmit(transactionId uuid.UUID, channel channel
 
 func (p *ProcessorImpl) ChangeHP(mb *message.Buffer) func(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount int16) error {
 	return func(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount int16) error {
+		var adjusted uint16
 		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
 			c, err := p.WithTransaction(tx).GetById()(characterId)
 			if err != nil {
 				return err
 			}
 			// TODO consider effective (temporary) Max HP.
-			adjusted := enforceBounds(amount, c.HP(), c.MaxHP(), 0)
+			adjusted = enforceBounds(amount, c.HP(), c.MaxHP(), 0)
 			p.l.Debugf("Attempting to adjust character [%d] health by [%d] to [%d].", characterId, amount, adjusted)
 			return dynamicUpdate(tx)(SetHealth(adjusted))(p.t.Id())(c)
 		})
 		if txErr != nil {
 			return txErr
 		}
-		// TODO need to emit event when character dies.
+
+		if adjusted == 0 {
+			c, err := p.GetById()(characterId)
+			if err == nil {
+				_ = mb.Put(character2.EnvEventTopicCharacterStatus, diedEventProvider(transactionId, characterId, channel, c.MapId(), 0, character2.KillerTypeUnknown))
+			}
+		}
+
 		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []string{"HP"}))
 		return nil
 	}
@@ -1000,13 +1008,14 @@ func (p *ProcessorImpl) SetHPAndEmit(transactionId uuid.UUID, channel channel.Mo
 
 func (p *ProcessorImpl) SetHP(mb *message.Buffer) func(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount uint16) error {
 	return func(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount uint16) error {
+		var clamped uint16
 		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
 			c, err := p.WithTransaction(tx).GetById()(characterId)
 			if err != nil {
 				return err
 			}
 			// Clamp amount between 0 and MaxHP
-			clamped := amount
+			clamped = amount
 			if clamped > c.MaxHP() {
 				clamped = c.MaxHP()
 			}
@@ -1016,6 +1025,14 @@ func (p *ProcessorImpl) SetHP(mb *message.Buffer) func(transactionId uuid.UUID, 
 		if txErr != nil {
 			return txErr
 		}
+
+		if clamped == 0 {
+			c, err := p.GetById()(characterId)
+			if err == nil {
+				_ = mb.Put(character2.EnvEventTopicCharacterStatus, diedEventProvider(transactionId, characterId, channel, c.MapId(), 0, character2.KillerTypeUnknown))
+			}
+		}
+
 		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []string{"HP"}))
 		return nil
 	}
@@ -1090,7 +1107,7 @@ func (p *ProcessorImpl) ProcessLevelChange(mb *message.Buffer) func(transactionI
 					addedAP += computeOnLevelAddedAP(c.JobId(), effectiveLevel)
 				}
 
-				addedSP += computeOnLevelAddedSP(c.JobId())
+				addedSP += computeOnLevelAddedSP(c.JobId(), effectiveLevel)
 				// TODO could potentially pre-compute HP and MP so you don't incur loop cost
 				aHP, aMP := p.computeOnLevelAddedHPandMP(c)
 				addedHP += aHP
@@ -1142,9 +1159,11 @@ func computeOnLevelAddedAP(jobId job.Id, level byte) uint16 {
 	return toGain
 }
 
-func computeOnLevelAddedSP(jobId job.Id) uint32 {
-	// TODO need to account for 6 beginner skill levels
+func computeOnLevelAddedSP(jobId job.Id, effectiveLevel byte) uint32 {
 	if job.IsBeginner(jobId) {
+		if effectiveLevel >= 2 && effectiveLevel <= 7 {
+			return 1
+		}
 		return 0
 	}
 	return 3
@@ -1521,13 +1540,49 @@ func (p *ProcessorImpl) ResetStatsAndEmit(transactionId uuid.UUID, characterId u
 
 func (p *ProcessorImpl) ResetStats(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model) error {
 	return func(transactionId uuid.UUID, characterId uint32, channel channel.Model) error {
-		// TODO: Implement stat reset logic for job advancement
-		// This should reset STR, DEX, INT, LUK to base values and return
-		// the AP spent back to the character's available AP pool
-		p.l.Debugf("Reset stats requested for character [%d] - implementation pending.", characterId)
+		const baseStat uint16 = 4
 
-		// Emit stat changed event to complete the saga step
-		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []string{"AP", "STR", "DEX", "INT", "LUK"}))
+		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+			c, err := p.WithTransaction(tx).GetById()(characterId)
+			if err != nil {
+				return err
+			}
+
+			// Calculate AP to return from stats above base value
+			returnedAP := uint16(0)
+			if c.Strength() > baseStat {
+				returnedAP += c.Strength() - baseStat
+			}
+			if c.Dexterity() > baseStat {
+				returnedAP += c.Dexterity() - baseStat
+			}
+			if c.Intelligence() > baseStat {
+				returnedAP += c.Intelligence() - baseStat
+			}
+			if c.Luck() > baseStat {
+				returnedAP += c.Luck() - baseStat
+			}
+
+			p.l.Debugf("Resetting stats for character [%d]. Returning [%d] AP. STR: %d->%d, DEX: %d->%d, INT: %d->%d, LUK: %d->%d",
+				characterId, returnedAP,
+				c.Strength(), baseStat,
+				c.Dexterity(), baseStat,
+				c.Intelligence(), baseStat,
+				c.Luck(), baseStat)
+
+			return dynamicUpdate(tx)(
+				SetStrength(baseStat),
+				SetDexterity(baseStat),
+				SetIntelligence(baseStat),
+				SetLuck(baseStat),
+				SetAP(c.AP()+returnedAP),
+			)(p.t.Id())(c)
+		})
+		if txErr != nil {
+			return txErr
+		}
+
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []string{"AVAILABLE_AP", "STRENGTH", "DEXTERITY", "INTELLIGENCE", "LUCK"}))
 		return nil
 	}
 }

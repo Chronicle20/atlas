@@ -3,6 +3,7 @@ package handler
 import (
 	"atlas-login/account"
 	"atlas-login/character"
+	"atlas-login/guild"
 	"atlas-login/session"
 	"atlas-login/socket/writer"
 	"context"
@@ -62,7 +63,25 @@ func DeleteCharacterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 			return
 		}
 
-		// TODO - verify the character is not a guild master.
+		isGuildMaster, err := guild.NewProcessor(l, ctx).IsGuildMaster(characterId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to check if character [%d] is a guild master.", characterId)
+			err = deleteCharacterResponseFunc(s, writer.DeleteCharacterErrorBody(l, t)(characterId, writer.DeleteCharacterCodeUnknownError))
+			if err != nil {
+				l.WithError(err).Errorf("Failed to write delete character response body.")
+			}
+			return
+		}
+
+		if isGuildMaster {
+			l.Debugf("Failing character deletion because character [%d] is a guild master.", characterId)
+			err = deleteCharacterResponseFunc(s, writer.DeleteCharacterErrorBody(l, t)(characterId, writer.DeleteCharacterCodeCannotDeleteGuildMaster))
+			if err != nil {
+				l.WithError(err).Errorf("Failed to write delete character response body.")
+			}
+			return
+		}
+
 		// TODO - verify the character is not engaged.
 		// TODO - verify the character is not part of a family.
 

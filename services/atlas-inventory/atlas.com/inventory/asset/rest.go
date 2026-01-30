@@ -66,16 +66,17 @@ type StackableRestData struct {
 type EquipableRestData struct {
 	BaseData
 	StatisticRestData
-	Slots          uint16 `json:"slots"`
-	Locked         bool   `json:"locked"`
-	Spikes         bool   `json:"spikes"`
-	KarmaUsed      bool   `json:"karmaUsed"`
-	Cold           bool   `json:"cold"`
-	CanBeTraded    bool   `json:"canBeTraded"`
-	LevelType      byte   `json:"levelType"`
-	Level          byte   `json:"level"`
-	Experience     uint32 `json:"experience"`
-	HammersApplied uint32 `json:"hammersApplied"`
+	Slots          uint16    `json:"slots"`
+	Locked         bool      `json:"locked"`
+	Spikes         bool      `json:"spikes"`
+	KarmaUsed      bool      `json:"karmaUsed"`
+	Cold           bool      `json:"cold"`
+	CanBeTraded    bool      `json:"canBeTraded"`
+	LevelType      byte      `json:"levelType"`
+	Level          byte      `json:"level"`
+	Experience     uint32    `json:"experience"`
+	HammersApplied uint32    `json:"hammersApplied"`
+	CreatedAt      time.Time `json:"createdAt"`
 }
 
 type CashEquipableRestData struct {
@@ -117,8 +118,9 @@ type CashRestData struct {
 	BaseData
 	CashBaseRestData
 	StackableRestData
-	Flag        uint16 `json:"flag"`
-	PurchasedBy uint32 `json:"purchasedBy"`
+	Flag        uint16    `json:"flag"`
+	PurchasedBy uint32    `json:"purchasedBy"`
+	CreatedAt   time.Time `json:"createdAt"`
 }
 
 type PetRestData struct {
@@ -240,6 +242,7 @@ func Transform(m Model[any]) (BaseRestModel, error) {
 				Level:          em.level,
 				Experience:     em.experience,
 				HammersApplied: em.hammersApplied,
+				CreatedAt:      em.createdAt,
 			}
 		}
 	}
@@ -306,6 +309,7 @@ func Transform(m Model[any]) (BaseRestModel, error) {
 				},
 				Flag:        cm.flag,
 				PurchasedBy: cm.purchaseBy,
+				CreatedAt:   cm.createdAt,
 			}
 		}
 	}
@@ -374,6 +378,7 @@ func Extract(rm BaseRestModel) (Model[any], error) {
 			level:          erm.Level,
 			experience:     erm.Experience,
 			hammersApplied: erm.HammersApplied,
+			createdAt:      erm.CreatedAt,
 		}
 	}
 	if cem, ok := rm.ReferenceData.(CashEquipableRestData); ok {
@@ -440,6 +445,7 @@ func Extract(rm BaseRestModel) (Model[any], error) {
 			PurchaseData: PurchaseData{
 				purchaseBy: crm.PurchasedBy,
 			},
+			createdAt: crm.CreatedAt,
 		}
 	}
 	if prm, ok := rm.ReferenceData.(PetRestData); ok {

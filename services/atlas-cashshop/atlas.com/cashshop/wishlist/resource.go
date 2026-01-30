@@ -98,7 +98,7 @@ func handleClearWishlist(db *gorm.DB) rest.GetHandler {
 func handleRemoveFromWishlist(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
-			return rest.ParseItemId(d.Logger(), func(itemId uuid.UUID) http.HandlerFunc {
+			return rest.ParseWishlistItemId(d.Logger(), func(itemId uuid.UUID) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
 					err := NewProcessor(d.Logger(), d.Context(), db).DeleteAndEmit(characterId, itemId)
 					if err != nil {

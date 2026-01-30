@@ -80,3 +80,11 @@ func (m Model) Duration() int32 {
 func (m Model) Cooldown() uint32 {
 	return m.cooldown
 }
+
+func (m Model) ItemConsume() uint32 {
+	return m.itemCon
+}
+
+func (m Model) ItemConsumeAmount() uint32 {
+	return m.itemConNo
+}

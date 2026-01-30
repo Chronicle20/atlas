@@ -5,6 +5,7 @@ import (
 	consumer2 "atlas-character/kafka/consumer"
 	session2 "atlas-character/kafka/message/session"
 	"atlas-character/session"
+	"atlas-character/session/history"
 	"context"
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -44,6 +45,8 @@ func handleStatusEvent(db *gorm.DB) message.Handler[session2.StatusEvent] {
 		}
 
 		t := tenant.MustFromContext(ctx)
+		hp := history.NewProcessor(l, ctx, db)
+
 		if e.Type == session2.EventSessionStatusTypeCreated {
 			cs, err := session.GetRegistry().Get(t, e.CharacterId)
 			if err != nil || cs.State() == session.StateLoggedOut {
@@ -53,6 +56,13 @@ func handleStatusEvent(db *gorm.DB) message.Handler[session2.StatusEvent] {
 					l.WithError(err).Errorf("Character [%d] already logged in. Eating event.", e.CharacterId)
 					return
 				}
+
+				// Start session history tracking
+				_, err = hp.StartSession(e.CharacterId, e.WorldId, e.ChannelId)
+				if err != nil {
+					l.WithError(err).Warnf("Failed to start session history for character [%d].", e.CharacterId)
+				}
+
 				err = character.NewProcessor(l, ctx, db).LoginAndEmit(uuid.New(), e.CharacterId, channel.NewModel(e.WorldId, e.ChannelId))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to login character [%d] as a result of session [%s] being created.", e.CharacterId, e.SessionId.String())
@@ -61,6 +71,14 @@ func handleStatusEvent(db *gorm.DB) message.Handler[session2.StatusEvent] {
 			} else if cs.State() == session.StateTransition {
 				l.Debugf("Processing a session status event of [%s] which will trigger a change channel.", e.Type)
 				err = session.GetRegistry().Set(t, e.CharacterId, e.WorldId, e.ChannelId, session.StateLoggedIn)
+
+				// End previous session and start new one for channel change
+				_ = hp.EndSession(e.CharacterId)
+				_, err = hp.StartSession(e.CharacterId, e.WorldId, e.ChannelId)
+				if err != nil {
+					l.WithError(err).Warnf("Failed to start session history for character [%d] on channel change.", e.CharacterId)
+				}
+
 				err = character.NewProcessor(l, ctx, db).ChangeChannelAndEmit(uuid.New(), e.CharacterId, channel.NewModel(e.WorldId, e.ChannelId), cs.ChannelId())
 				if err != nil {
 					l.WithError(err).Errorf("Unable to change character [%d] channel as a result of session [%s] being created.", e.CharacterId, e.SessionId.String())

@@ -1,6 +1,7 @@
 package cosmetic
 
 import (
+	"atlas-npc-conversations/cosmetic/data"
 	"context"
 	"fmt"
 	"strconv"
@@ -45,7 +46,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, appearanceProvider 
 		l:                  l,
 		ctx:                ctx,
 		generator:          NewGenerator(l, ctx),
-		validator:          NewValidator(l, ctx),
+		validator:          NewValidatorWithAppearance(l, ctx, appearanceProvider),
 		appearanceProvider: appearanceProvider,
 	}
 }
@@ -86,9 +87,14 @@ func (p *ProcessorImpl) GenerateHairStyles(
 	// Generate styles
 	styles := p.generator.GenerateHairStyles(appearance, baseStyles, genderFilter, preserveColor)
 
-	// Validate if requested
+	// Filter by existence if requested (calls atlas-data REST)
 	if validateExists {
-		styles = p.validator.FilterValid(characterId, styles, CosmeticTypeHair, excludeEquipped)
+		styles = p.filterByExistence(styles, CosmeticTypeHair)
+	}
+
+	// Filter out equipped styles if requested
+	if excludeEquipped {
+		styles = p.validator.FilterEquipped(characterId, styles)
 	}
 
 	if len(styles) == 0 {
@@ -134,9 +140,14 @@ func (p *ProcessorImpl) GenerateHairColors(
 	// Generate color variants
 	styles := p.generator.GenerateHairColors(appearance, colors)
 
-	// Validate if requested
+	// Filter by existence if requested (calls atlas-data REST)
 	if validateExists {
-		styles = p.validator.FilterValid(characterId, styles, CosmeticTypeHair, excludeEquipped)
+		styles = p.filterByExistence(styles, CosmeticTypeHair)
+	}
+
+	// Filter out equipped styles if requested
+	if excludeEquipped {
+		styles = p.validator.FilterEquipped(characterId, styles)
 	}
 
 	if len(styles) == 0 {
@@ -183,9 +194,14 @@ func (p *ProcessorImpl) GenerateFaceStyles(
 	// Generate styles
 	styles := p.generator.GenerateFaceStyles(appearance, baseStyles, genderFilter)
 
-	// Validate if requested
+	// Filter by existence if requested (calls atlas-data REST)
 	if validateExists {
-		styles = p.validator.FilterValid(characterId, styles, CosmeticTypeFace, excludeEquipped)
+		styles = p.filterByExistence(styles, CosmeticTypeFace)
+	}
+
+	// Filter out equipped styles if requested
+	if excludeEquipped {
+		styles = p.validator.FilterEquipped(characterId, styles)
 	}
 
 	if len(styles) == 0 {
@@ -235,9 +251,14 @@ func (p *ProcessorImpl) GenerateFaceColors(
 	// Generate color variants
 	styles := p.generator.GenerateFaceColors(appearance, colorOffsets)
 
-	// Validate if requested
+	// Filter by existence if requested (calls atlas-data REST)
 	if validateExists {
-		styles = p.validator.FilterValid(characterId, styles, CosmeticTypeFace, excludeEquipped)
+		styles = p.filterByExistence(styles, CosmeticTypeFace)
+	}
+
+	// Filter out equipped styles if requested
+	if excludeEquipped {
+		styles = p.validator.FilterEquipped(characterId, styles)
 	}
 
 	if len(styles) == 0 {
@@ -298,9 +319,14 @@ func (p *ProcessorImpl) GenerateFaceColorsForOnetimeLens(
 	// Generate color variants for the offsets where the player has items
 	styles := p.generator.GenerateFaceColors(appearance, validColorOffsets)
 
-	// Validate if requested
+	// Filter by existence if requested (calls atlas-data REST)
 	if validateExists {
-		styles = p.validator.FilterValid(characterId, styles, CosmeticTypeFace, excludeEquipped)
+		styles = p.filterByExistence(styles, CosmeticTypeFace)
+	}
+
+	// Filter out equipped styles if requested
+	if excludeEquipped {
+		styles = p.validator.FilterEquipped(characterId, styles)
 	}
 
 	if len(styles) == 0 {
@@ -409,4 +435,71 @@ func (p *ProcessorImpl) UpdateCharacterAppearance(characterId uint32, cosmeticTy
 
 	p.l.Infof("Successfully updated %s to %d for character %d", cosmeticType, styleId, characterId)
 	return nil
+}
+
+// hairExists checks if a hair style exists in atlas-data via REST call
+func (p *ProcessorImpl) hairExists(hairId uint32) bool {
+	// Quick range check to avoid unnecessary API calls
+	if hairId < 30000 || hairId > 49999 {
+		return false
+	}
+
+	// Query atlas-data service - 404 means not found
+	_, err := data.RequestHairById(hairId)(p.l, p.ctx)
+	if err != nil {
+		p.l.Debugf("Hair %d not found in atlas-data (may not exist or service unavailable)", hairId)
+		return false
+	}
+	return true
+}
+
+// faceExists checks if a face style exists in atlas-data via REST call
+func (p *ProcessorImpl) faceExists(faceId uint32) bool {
+	// Quick range check to avoid unnecessary API calls
+	if faceId < 20000 || faceId > 29999 {
+		return false
+	}
+
+	// Query atlas-data service - 404 means not found
+	_, err := data.RequestFaceById(faceId)(p.l, p.ctx)
+	if err != nil {
+		p.l.Debugf("Face %d not found in atlas-data (may not exist or service unavailable)", faceId)
+		return false
+	}
+	return true
+}
+
+// skinExists checks if a skin color is valid (hardcoded, not in WZ data)
+func (p *ProcessorImpl) skinExists(skinId uint32) bool {
+	return skinId <= 13
+}
+
+// filterByExistence filters styles by checking existence via atlas-data REST calls
+func (p *ProcessorImpl) filterByExistence(styles []uint32, styleType CosmeticType) []uint32 {
+	result := make([]uint32, 0, len(styles))
+	invalidCount := 0
+
+	for _, styleId := range styles {
+		var exists bool
+		switch styleType {
+		case CosmeticTypeHair:
+			exists = p.hairExists(styleId)
+		case CosmeticTypeFace:
+			exists = p.faceExists(styleId)
+		case CosmeticTypeSkin:
+			exists = p.skinExists(styleId)
+		}
+
+		if !exists {
+			p.l.Warnf("Style %d (type %s) does not exist - excluding from list", styleId, styleType)
+			invalidCount++
+			continue
+		}
+		result = append(result, styleId)
+	}
+
+	if invalidCount > 0 {
+		p.l.Infof("Filtered %d non-existent styles, %d remaining", invalidCount, len(result))
+	}
+	return result
 }

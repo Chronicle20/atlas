@@ -32,6 +32,8 @@ type Model struct {
 	experience     uint32
 	hammersApplied uint32
 	expiration     time.Time
+	createdAt      time.Time
+	equippedSince  *time.Time
 }
 
 func (m Model) Id() uint32 {
@@ -148,4 +150,17 @@ func (m Model) HammersApplied() uint32 {
 
 func (m Model) Expiration() time.Time {
 	return m.expiration
+}
+
+func (m Model) CreatedAt() time.Time {
+	return m.createdAt
+}
+
+func (m Model) EquippedSince() *time.Time {
+	return m.equippedSince
+}
+
+// IsEquipped returns true if the item is currently equipped
+func (m Model) IsEquipped() bool {
+	return m.equippedSince != nil
 }

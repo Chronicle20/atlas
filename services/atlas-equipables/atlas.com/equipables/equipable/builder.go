@@ -33,6 +33,8 @@ func Clone(m Model) *ModelBuilder {
 		experience:     m.experience,
 		hammersApplied: m.hammersApplied,
 		expiration:     m.expiration,
+		createdAt:      m.createdAt,
+		equippedSince:  m.equippedSince,
 	}
 }
 
@@ -66,6 +68,8 @@ type ModelBuilder struct {
 	experience     uint32
 	hammersApplied uint32
 	expiration     time.Time
+	createdAt      time.Time
+	equippedSince  *time.Time
 }
 
 func NewBuilder(id uint32) *ModelBuilder {
@@ -212,6 +216,16 @@ func (b *ModelBuilder) SetExpiration(expiration time.Time) *ModelBuilder {
 	return b
 }
 
+func (b *ModelBuilder) SetCreatedAt(createdAt time.Time) *ModelBuilder {
+	b.createdAt = createdAt
+	return b
+}
+
+func (b *ModelBuilder) SetEquippedSince(equippedSince *time.Time) *ModelBuilder {
+	b.equippedSince = equippedSince
+	return b
+}
+
 func (b *ModelBuilder) AddStrength(delta int16) *ModelBuilder {
 	b.strength = addUint16(b.strength, int(delta))
 	return b
@@ -338,6 +352,8 @@ func (b *ModelBuilder) Build() Model {
 		experience:     b.experience,
 		hammersApplied: b.hammersApplied,
 		expiration:     b.expiration,
+		createdAt:      b.createdAt,
+		equippedSince:  b.equippedSince,
 	}
 }
 

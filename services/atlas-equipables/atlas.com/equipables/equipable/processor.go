@@ -246,6 +246,18 @@ func (p *Processor) DeleteByIdAndEmit(id uint32) error {
 	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(model.Flip(p.DeleteById)(id))
 }
 
+// MarkEquipped sets the equippedSince timestamp to now for the given equipment
+func (p *Processor) MarkEquipped(id uint32) error {
+	p.l.Debugf("Marking equipment [%d] as equipped.", id)
+	return setEquipped(p.db, p.t.Id(), id)
+}
+
+// MarkUnequipped clears the equippedSince timestamp for the given equipment
+func (p *Processor) MarkUnequipped(id uint32) error {
+	p.l.Debugf("Marking equipment [%d] as unequipped.", id)
+	return clearEquipped(p.db, p.t.Id(), id)
+}
+
 func (p *Processor) DeleteById(mb *message.Buffer) func(id uint32) error {
 	return func(id uint32) error {
 		p.l.Debugf("Attempting to delete equipable [%d].", id)

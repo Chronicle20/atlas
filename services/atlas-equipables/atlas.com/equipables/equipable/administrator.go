@@ -1,6 +1,8 @@
 package equipable
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -31,6 +33,7 @@ func create(db *gorm.DB, tenantId uuid.UUID, itemId uint32, strength uint16, dex
 		Speed:         speed,
 		Jump:          jump,
 		Slots:         slots,
+		CreatedAt:     time.Now(),
 	}
 
 	err := db.Create(e).Error
@@ -86,6 +89,23 @@ func Make(e entity) (Model, error) {
 		SetExperience(e.Experience).
 		SetHammersApplied(e.HammersApplied).
 		SetExpiration(e.Expiration).
+		SetCreatedAt(e.CreatedAt).
+		SetEquippedSince(e.EquippedSince).
 		Build()
 	return r, nil
+}
+
+// setEquipped marks the equipment as equipped (sets equippedSince to now)
+func setEquipped(db *gorm.DB, tenantId uuid.UUID, id uint32) error {
+	now := time.Now()
+	return db.Model(&entity{}).
+		Where("tenant_id = ? AND id = ?", tenantId, id).
+		Update("equipped_since", now).Error
+}
+
+// clearEquipped marks the equipment as unequipped (sets equippedSince to null)
+func clearEquipped(db *gorm.DB, tenantId uuid.UUID, id uint32) error {
+	return db.Model(&entity{}).
+		Where("tenant_id = ? AND id = ?", tenantId, id).
+		Update("equipped_since", nil).Error
 }

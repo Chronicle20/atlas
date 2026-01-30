@@ -11,7 +11,6 @@ import (
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
-	scriptsaga "github.com/Chronicle20/atlas-script-core/saga"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -245,14 +244,14 @@ func (p *ProcessorImpl) awardFameToSender(worldId world.Id, channelId channel.Id
 		return
 	}
 
-	s := scriptsaga.NewBuilder().
-		SetSagaType(scriptsaga.InventoryTransaction).
+	s := saga.NewBuilder().
+		SetSagaType(saga.InventoryTransaction).
 		SetInitiatedBy("note-discard-fame").
 		AddStep(
 			fmt.Sprintf("award-fame-%d-%d", senderId, noteId),
-			scriptsaga.Pending,
-			scriptsaga.AwardFame,
-			scriptsaga.AwardFamePayload{
+			saga.Pending,
+			saga.AwardFame,
+			saga.AwardFamePayload{
 				CharacterId: senderId,
 				WorldId:     worldId,
 				ChannelId:   channelId,

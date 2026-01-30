@@ -1,16 +1,15 @@
 package saga
 
 import (
-	"atlas-notes/kafka/message/saga"
+	msgsaga "atlas-notes/kafka/message/saga"
 	"atlas-notes/kafka/producer"
 	"context"
 
-	scriptsaga "github.com/Chronicle20/atlas-script-core/saga"
 	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {
-	Create(s scriptsaga.Saga) error
+	Create(s Saga) error
 }
 
 type ProcessorImpl struct {
@@ -25,6 +24,6 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
-func (p *ProcessorImpl) Create(s scriptsaga.Saga) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(saga.EnvCommandTopic)(CreateCommandProvider(s))
+func (p *ProcessorImpl) Create(s Saga) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(msgsaga.EnvCommandTopic)(CreateCommandProvider(s))
 }

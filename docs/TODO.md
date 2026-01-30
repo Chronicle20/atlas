@@ -8,8 +8,6 @@ This document tracks planned features and improvements for the Atlas MapleStory 
 
 ### Critical (Core Gameplay)
 - [ ] **Character Attack Effects** - 27 unimplemented combat mechanics in `character_attack_common.go`
-- [ ] **Stat Reset Logic** - Job advancement stat reset not implemented
-- [ ] **Quest Service** - StartQuestPayload is a stub, no quest service exists yet
 
 ### High Priority (Feature Incomplete)
 - [ ] **TokenItem Purchasing** - Returns "not implemented" error in NPC shops
@@ -24,17 +22,10 @@ This document tracks planned features and improvements for the Atlas MapleStory 
 
 ### Account Service
 - [ ] Implement IP, MAC, and temporary banning practices (`processor.go:313`)
-- [ ] Implement Terms of Service tracking (`processor.go:318`)
 
 ### Buddies Service
 - [ ] Trigger channel request for target when adding buddy (`list/processor.go:216`)
 - [ ] Trigger channel request for target when accepting buddy (`list/processor.go:386`)
-
-### Cash Shop Service
-- [ ] Refactor item resource handling (`item/resource.go:106`)
-
-### Chairs Service
-- [ ] Verify character has chair item before sitting (`chair/processor.go:73`)
 
 ### Chalkboards Service
 - [ ] Ensure character is in a valid location for chalkboard (`chalkboard/processor.go:53`)
@@ -49,7 +40,6 @@ This document tracks planned features and improvements for the Atlas MapleStory 
 - [ ] Block cash shop entry during: Vega scrolling, events, mini dungeons, already in shop (`cash_shop_entry.go:28-31`)
 - [ ] Performance optimization for character queries (`character/processor.go:103,117`)
 - [ ] Restrict skill targets to those in range based on bitmap (`skill/handler/common.go:19`)
-- [ ] Consume summoning rock for Shadow Partner (`skill/handler/shadow_partner.go:29`)
 - [ ] Pet lookup for movement processing (`movement/processor.go:79`)
 - [ ] Optimize extra queries in pet consumer (`kafka/consumer/pet/consumer.go:236,274`)
 - [ ] Pet skill and item writing (`socket/writer/character_info.go:32`)
@@ -128,14 +118,11 @@ Location: `socket/handler/character_damage.go:23-32`
 ### Character Service
 - [ ] Determine appropriate drop type and mod (`processor.go:707`)
 - [ ] Incorporate computed total intelligence with buffs/weapons (`processor.go:949`)
-- [ ] Consider effective (temporary) Max HP (`processor.go:981`)
-- [ ] Emit event when character dies (`processor.go:989`)
-- [ ] Consider effective (temporary) Max MP (`processor.go:1037`)
-- [ ] Define AP auto-assign range for Beginner/Noblesse/Legend (`processor.go:1078`)
-- [ ] Pre-compute HP and MP to avoid loop cost (`processor.go:1094`)
-- [ ] Account for 6 beginner skill levels (`processor.go:1146`)
-- [ ] Award job change AP (Cygnus only?) (`processor.go:1268`)
-- [ ] **Implement stat reset logic for job advancement** (`processor.go:1522-1527`)
+- [ ] Consider effective (temporary) Max HP (`processor.go:982`)
+- [ ] Consider effective (temporary) Max MP (`processor.go:1054`)
+- [ ] Define AP auto-assign range for Beginner/Noblesse/Legend (`processor.go:1095`)
+- [ ] Pre-compute HP and MP to avoid loop cost (`processor.go:1111`)
+- [ ] Award job change AP (Cygnus only?) (`processor.go:1285`)
 
 ### Consumables Service
 - [ ] Consume Vega scroll (`consumable/processor.go:512`)
@@ -174,7 +161,6 @@ Location: `socket/handler/character_damage.go:23-32`
 - [ ] Implement error responses for character selection (multiple handlers)
 - [ ] Terminate on too many PIN attempts (`after_login.go:98`)
 - [ ] Clarify gender defaulting logic (`create_character.go:55`)
-- [ ] Verify character is not a guild master before deletion (`delete_character.go:65`)
 - [ ] Verify character is not engaged before deletion (`delete_character.go:66`)
 - [ ] Verify character is not part of a family before deletion (`delete_character.go:67`)
 
@@ -185,16 +171,8 @@ Location: `socket/handler/character_damage.go:23-32`
 - [ ] Party drop distribution (`monster/processor.go:93`)
 - [ ] Account for healing (`monster/processor.go:104`)
 
-### Monsters Service
-- [ ] More efficient mechanism for ID reuse (`monster/registry.go:59`)
-
-### Notes Service
-- [ ] Award fame when a note is discarded (`note/processor.go:216`)
-
 ### NPC Conversations Service
 - [ ] Transmit stats in NPC conversations (`kafka/message/npc/kafka.go:78`)
-- [ ] Integrate with WZ data registry for cosmetic validation (`cosmetic/validator.go:26`)
-- [ ] Integrate with character equipment query for cosmetics (`cosmetic/validator.go:44`)
 
 ### NPC Shops Service
 - [ ] Better transaction handling (`shops/processor.go:396,450`)
@@ -238,9 +216,6 @@ Location: `socket/handler/character_damage.go:23-32`
 ### atlas-constants
 - [ ] Define HiddenStreet Nett's Pyramid battle room maps (926010100-926023500) (`map/model.go:434`)
 
-### atlas-script-core
-- [ ] **Implement quest service** - StartQuestPayload is currently a stub (`saga/model.go:324-329`)
-
 ---
 
 ## Notes
@@ -249,5 +224,5 @@ Location: `socket/handler/character_damage.go:23-32`
   - **Scheduled transports**: Have boarding windows, departure times, and use `transportAvailable` condition (e.g., ships, subway to NLC)
   - **Instance-based transports**: Available on-demand with capacity limits, no fixed schedule (e.g., Kerning Square Train)
 
-- **Total inline TODOs found**: 198 across the codebase
-- **Most concentrated areas**: Channel Service (98), Character Service (11), Inventory Service (12)
+- **Total inline TODOs found**: 191 across the codebase
+- **Most concentrated areas**: Channel Service (97), Character Service (8), Inventory Service (12)

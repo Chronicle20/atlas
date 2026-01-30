@@ -31,6 +31,7 @@ func create(tenantId uuid.UUID, templateId uint32, commodityId uint32, quantity 
 
 		expiration := time.Now().AddDate(0, 0, 30) // 30 days from now
 
+		now := time.Now()
 		entity := Entity{
 			TenantId:    tenantId,
 			CashId:      cashId,
@@ -40,6 +41,7 @@ func create(tenantId uuid.UUID, templateId uint32, commodityId uint32, quantity 
 			Flag:        0, // Default flag value
 			PurchasedBy: purchasedBy,
 			Expiration:  expiration,
+			CreatedAt:   now,
 		}
 
 		err = db.Create(&entity).Error
@@ -71,7 +73,8 @@ func findOrCreateByCashId(tenantId uuid.UUID, cashId int64, templateId uint32, c
 		}
 
 		// No existing item found, create a new one
-		expiration := time.Now().AddDate(0, 0, 30) // 30 days from now
+		now := time.Now()
+		expiration := now.AddDate(0, 0, 30) // 30 days from now
 
 		entity := Entity{
 			TenantId:    tenantId,
@@ -82,6 +85,7 @@ func findOrCreateByCashId(tenantId uuid.UUID, cashId int64, templateId uint32, c
 			Flag:        0, // Default flag value
 			PurchasedBy: purchasedBy,
 			Expiration:  expiration,
+			CreatedAt:   now,
 		}
 
 		err = db.Create(&entity).Error

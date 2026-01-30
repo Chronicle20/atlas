@@ -5,26 +5,34 @@ import (
 	"strconv"
 )
 
+// BonusExpTier represents a time-based EXP bonus tier
+// Equipment like Pendant of Spirit has multiple tiers that unlock based on equip duration
+type BonusExpTier struct {
+	IncExpR   int32 `json:"incExpR"`   // EXP bonus percentage (e.g., 10 = +10%)
+	TermStart int32 `json:"termStart"` // Hours equipped before this tier activates
+}
+
 type RestModel struct {
-	Id            uint32          `json:"-"`
-	Strength      uint16          `json:"strength"`
-	Dexterity     uint16          `json:"dexterity"`
-	Intelligence  uint16          `json:"intelligence"`
-	Luck          uint16          `json:"luck"`
-	HP            uint16          `json:"hp"`
-	MP            uint16          `json:"mp"`
-	WeaponAttack  uint16          `json:"weaponAttack"`
-	MagicAttack   uint16          `json:"magicAttack"`
-	WeaponDefense uint16          `json:"weaponDefense"`
-	MagicDefense  uint16          `json:"magicDefense"`
-	Accuracy      uint16          `json:"accuracy"`
-	Avoidability  uint16          `json:"avoidability"`
-	Speed         uint16          `json:"speed"`
-	Jump          uint16          `json:"jump"`
-	Slots         uint16          `json:"slots"`
-	Cash          bool            `json:"cash"`
-	Price         uint32          `json:"price"`
-	EquipSlots    []SlotRestModel `json:"-"`
+	Id            uint32           `json:"-"`
+	Strength      uint16           `json:"strength"`
+	Dexterity     uint16           `json:"dexterity"`
+	Intelligence  uint16           `json:"intelligence"`
+	Luck          uint16           `json:"luck"`
+	HP            uint16           `json:"hp"`
+	MP            uint16           `json:"mp"`
+	WeaponAttack  uint16           `json:"weaponAttack"`
+	MagicAttack   uint16           `json:"magicAttack"`
+	WeaponDefense uint16           `json:"weaponDefense"`
+	MagicDefense  uint16           `json:"magicDefense"`
+	Accuracy      uint16           `json:"accuracy"`
+	Avoidability  uint16           `json:"avoidability"`
+	Speed         uint16           `json:"speed"`
+	Jump          uint16           `json:"jump"`
+	Slots         uint16           `json:"slots"`
+	Cash          bool             `json:"cash"`
+	Price         uint32           `json:"price"`
+	BonusExp      []BonusExpTier   `json:"bonusExp,omitempty"` // Time-based EXP bonus tiers
+	EquipSlots    []SlotRestModel  `json:"-"`
 }
 
 func (r RestModel) GetName() string {

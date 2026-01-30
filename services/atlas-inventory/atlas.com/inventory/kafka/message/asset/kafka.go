@@ -83,6 +83,7 @@ type EquipableReferenceData struct {
 	Experience     uint32    `json:"experience"`
 	HammersApplied uint32    `json:"hammersApplied"`
 	Expiration     time.Time `json:"expiration"`
+	CreatedAt      time.Time `json:"createdAt"`
 }
 
 type CashEquipableReferenceData struct {
@@ -100,6 +101,7 @@ type CashEquipableReferenceData struct {
 	Experience     uint32    `json:"experience"`
 	HammersApplied uint32    `json:"hammersApplied"`
 	Expiration     time.Time `json:"expiration"`
+	CreatedAt      time.Time `json:"createdAt"`
 }
 
 type ConsumableReferenceData struct {
@@ -125,8 +127,9 @@ type CashReferenceData struct {
 	BaseData
 	CashData
 	StackableData
-	Flag        uint16 `json:"flag"`
-	PurchasedBy uint32 `json:"purchasedBy"`
+	Flag        uint16    `json:"flag"`
+	PurchasedBy uint32    `json:"purchasedBy"`
+	CreatedAt   time.Time `json:"createdAt"`
 }
 
 type PetReferenceData struct {
@@ -145,7 +148,8 @@ type DeletedStatusEventBody struct {
 }
 
 type MovedStatusEventBody struct {
-	OldSlot int16 `json:"oldSlot"`
+	OldSlot   int16     `json:"oldSlot"`
+	CreatedAt time.Time `json:"createdAt,omitempty"`
 }
 
 type QuantityChangedEventBody struct {

@@ -1,14 +1,18 @@
 package cash
 
-import "strconv"
+import (
+	"strconv"
+	"time"
+)
 
 type RestModel struct {
 	Id          uint32 `json:"-"`
 	CashId      int64  `json:"cashId,string"`
 	TemplateId  uint32 `json:"templateId"`
 	Quantity    uint32 `json:"quantity"`
-	Flag        uint16 `json:"flag"`
-	PurchasedBy uint32 `json:"purchasedBy"`
+	Flag        uint16    `json:"flag"`
+	PurchasedBy uint32    `json:"purchasedBy"`
+	CreatedAt   time.Time `json:"createdAt"`
 }
 
 func (r RestModel) GetName() string {
@@ -36,6 +40,7 @@ func Transform(m Model) (RestModel, error) {
 		Quantity:    m.quantity,
 		Flag:        m.flag,
 		PurchasedBy: m.purchasedBy,
+		CreatedAt:   m.createdAt,
 	}, nil
 }
 
@@ -47,5 +52,6 @@ func Extract(rm RestModel) (Model, error) {
 		quantity:    rm.Quantity,
 		flag:        rm.Flag,
 		purchasedBy: rm.PurchasedBy,
+		createdAt:   rm.CreatedAt,
 	}, nil
 }

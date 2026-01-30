@@ -1,6 +1,9 @@
 package item
 
-import "strconv"
+import (
+	"strconv"
+	"time"
+)
 
 type RestModel struct {
 	Id          uint32 `json:"-"`
@@ -8,8 +11,9 @@ type RestModel struct {
 	TemplateId  uint32 `json:"templateId"`
 	CommodityId uint32 `json:"commodityId"`
 	Quantity    uint32 `json:"quantity"`
-	Flag        uint16 `json:"flag"`
-	PurchasedBy uint32 `json:"purchasedBy"`
+	Flag        uint16    `json:"flag"`
+	PurchasedBy uint32    `json:"purchasedBy"`
+	CreatedAt   time.Time `json:"createdAt"`
 }
 
 func (r RestModel) GetName() string {
@@ -38,6 +42,7 @@ func Transform(m Model) (RestModel, error) {
 		Quantity:    m.Quantity(),
 		Flag:        m.Flag(),
 		PurchasedBy: m.PurchasedBy(),
+		CreatedAt:   m.CreatedAt(),
 	}, nil
 }
 
@@ -50,5 +55,6 @@ func Extract(rm RestModel) (Model, error) {
 		quantity:    rm.Quantity,
 		flag:        rm.Flag,
 		purchasedBy: rm.PurchasedBy,
+		createdAt:   rm.CreatedAt,
 	}, nil
 }

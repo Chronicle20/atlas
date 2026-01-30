@@ -20,6 +20,7 @@ type Entity struct {
 	Flag        uint16    `gorm:"not null"`
 	PurchasedBy uint32    `gorm:"not null"`
 	Expiration  time.Time `gorm:"not null"`
+	CreatedAt   time.Time `gorm:"not null"`
 }
 
 func (e Entity) TableName() string {
@@ -36,5 +37,6 @@ func Make(e Entity) (Model, error) {
 		flag:        e.Flag,
 		purchasedBy: e.PurchasedBy,
 		expiration:  e.Expiration,
+		createdAt:   e.CreatedAt,
 	}, nil
 }

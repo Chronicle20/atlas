@@ -4,7 +4,6 @@ import (
 	"atlas-cashshop/rest"
 	"errors"
 	"net/http"
-	"strconv"
 
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
@@ -29,7 +28,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 
 func handleGetItem(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-		return ParseItemId(d.Logger(), func(itemId uint32) http.HandlerFunc {
+		return rest.ParseCashItemId(d.Logger(), func(itemId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				ms, err := NewProcessor(d.Logger(), d.Context(), db).GetById(itemId)
 				if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -89,7 +88,7 @@ func handleCreateItem(db *gorm.DB) rest.InputHandler[RestModel] {
 
 func handleDeleteItem(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-		return ParseItemId(d.Logger(), func(itemId uint32) http.HandlerFunc {
+		return rest.ParseCashItemId(d.Logger(), func(itemId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				err := NewProcessor(d.Logger(), d.Context(), db).DeleteAndEmit(itemId)
 				if err != nil {
@@ -100,20 +99,5 @@ func handleDeleteItem(db *gorm.DB) rest.GetHandler {
 				w.WriteHeader(http.StatusNoContent)
 			}
 		})
-	}
-}
-
-// TODO refactor
-type ItemIdHandler func(itemId uint32) http.HandlerFunc
-
-func ParseItemId(l logrus.FieldLogger, next ItemIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		itemId, err := strconv.Atoi(mux.Vars(r)["itemId"])
-		if err != nil {
-			l.WithError(err).Errorf("Unable to properly parse itemId from path.")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(uint32(itemId))(w, r)
 	}
 }

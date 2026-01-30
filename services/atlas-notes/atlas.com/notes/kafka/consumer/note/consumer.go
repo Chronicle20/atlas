@@ -51,6 +51,6 @@ func handleNoteDiscard(db *gorm.DB) message.Handler[note2.Command[note2.CommandD
 		}
 
 		// Call the processor to discard the notes
-		_ = note.NewProcessor(l, ctx, db).DiscardAndEmit(c.CharacterId, c.Body.NoteIds)
+		_ = note.NewProcessor(l, ctx, db).DiscardAndEmit(c.WorldId, c.ChannelId, c.CharacterId, c.Body.NoteIds)
 	}
 }

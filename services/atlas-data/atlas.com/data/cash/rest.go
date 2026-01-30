@@ -18,6 +18,9 @@ const (
 	SpecTypeIndexSeven = SpecType("7")
 	SpecTypeIndexEight = SpecType("8")
 	SpecTypeIndexNine  = SpecType("9")
+	// Rate coupon properties (EXP coupons in 0521.img, Drop coupons in 0536.img)
+	SpecTypeRate = SpecType("rate") // Rate multiplier (e.g., 2 for 2x)
+	SpecTypeTime = SpecType("time") // Active duration in minutes
 )
 
 var SpecTypeIndexes = []SpecType{SpecTypeIndexZero, SpecTypeIndexOne, SpecTypeIndexTwo, SpecTypeIndexThree, SpecTypeIndexFour, SpecTypeIndexFive, SpecTypeIndexSix, SpecTypeIndexSeven, SpecTypeIndexEight, SpecTypeIndexNine}

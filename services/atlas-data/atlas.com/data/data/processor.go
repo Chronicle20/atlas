@@ -177,7 +177,9 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 				} else if name == WorkerReactor {
 					err = RegisterAllData(l)(ctx)(path, "Reactor.wz", reactor.RegisterReactor(db))()
 				} else if name == WorkerSkill {
+					_ = skill.InitString(t, filepath.Join(path, "String.wz", "Skill.img.xml"))
 					err = RegisterAllData(l)(ctx)(path, "Skill.wz", skill.RegisterSkill(db))()
+					_ = skill.GetSkillStringRegistry().Clear(t)
 				} else if name == WorkerPet {
 					err = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Pet"), pet.RegisterPet(db))()
 				} else if name == WorkerConsume {

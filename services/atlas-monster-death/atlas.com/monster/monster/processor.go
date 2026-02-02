@@ -5,11 +5,13 @@ import (
 	_map "atlas-monster-death/map"
 	"atlas-monster-death/monster/drop"
 	"atlas-monster-death/monster/information"
+	"atlas-monster-death/rates"
 	"context"
-	"github.com/Chronicle20/atlas-model/model"
-	"github.com/sirupsen/logrus"
 	"math"
 	"math/rand"
+
+	"github.com/Chronicle20/atlas-model/model"
+	"github.com/sirupsen/logrus"
 )
 
 func CreateDrops(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, id uint32, monsterId uint32, x int16, y int16, killerId uint32) error {
@@ -24,32 +26,34 @@ func CreateDrops(l logrus.FieldLogger) func(ctx context.Context) func(worldId by
 			}
 			l.Debugf("Monster [%d] has [%d] drops to evaluate.", monsterId, len(ds))
 
-			ds = getSuccessfulDrops(ds, killerId)
+			// Get rates for the killer
+			r := rates.GetForCharacter(l)(ctx)(worldId, channelId, killerId)
+			l.Debugf("Character [%d] rates: itemDrop=%.2f, meso=%.2f", killerId, r.ItemDropRate(), r.MesoRate())
+
+			ds = getSuccessfulDrops(ds, r.ItemDropRate())
 
 			for i, d := range ds {
-				_ = drop.Create(l)(ctx)(worldId, channelId, mapId, i+1, id, x, y, killerId, dropType, d)
+				_ = drop.Create(l)(ctx)(worldId, channelId, mapId, i+1, id, x, y, killerId, dropType, d, r.MesoRate())
 			}
 			return nil
 		}
 	}
 }
 
-func getSuccessfulDrops(options []drop.Model, killerId uint32) []drop.Model {
+func getSuccessfulDrops(options []drop.Model, itemDropRate float64) []drop.Model {
 	res := make([]drop.Model, 0)
 	for _, d := range options {
-		if evaluateSuccess(d, killerId) {
+		if evaluateSuccess(d, itemDropRate) {
 			res = append(res, d)
 		}
 	}
 	return res
 }
 
-func evaluateSuccess(d drop.Model, killerId uint32) bool {
-	//TODO evaluate rates
-	//TODO channel rate
-	//TODO buff rate  (cards)
-	//TODO evaluate card rate for killer, whether it's meso or drop.
-	chance := int32(math.Min(float64(d.Chance()), math.MaxUint32))
+func evaluateSuccess(d drop.Model, itemDropRate float64) bool {
+	// Apply item drop rate multiplier to base chance
+	adjustedChance := float64(d.Chance()) * itemDropRate
+	chance := int32(math.Min(adjustedChance, math.MaxInt32))
 	return rand.Int31n(999999) < chance
 }
 
@@ -63,6 +67,11 @@ func DistributeExperience(l logrus.FieldLogger) func(ctx context.Context) func(w
 				if err != nil {
 					l.WithError(err).Errorf("Unable to locate character %d whose for distributing experience from monster death.", k)
 				} else {
+					// Get rates for the character and apply exp rate
+					r := rates.GetForCharacter(l)(ctx)(worldId, channelId, c.Id())
+					exp = exp * r.ExpRate()
+					l.Debugf("Character [%d] exp rate: %.2f, adjusted exp: %.2f", c.Id(), r.ExpRate(), exp)
+
 					whiteExperienceGain := isWhiteExperienceGain(c.Id(), d.PersonalRatio(), d.StandardDeviationRatio())
 					distributeCharacterExperience(l)(ctx)(worldId, channelId, c.Id(), c.Level(), exp, 0.0, c.Level(), true, whiteExperienceGain, false)
 				}

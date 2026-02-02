@@ -409,6 +409,134 @@ func Identity[M any](m M) M {
 	return m
 }
 
+const testExpCouponXML = `
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="0521.img">
+  <imgdir name="05211000">
+    <imgdir name="info">
+      <canvas name="icon" width="32" height="32">
+        <vector name="origin" x="0" y="32"/>
+      </canvas>
+      <int name="cash" value="1"/>
+      <int name="slotMax" value="1"/>
+      <int name="rate" value="2"/>
+      <imgdir name="time">
+        <string name="0" value="MON:18-20"/>
+        <string name="1" value="TUE:18-20"/>
+        <string name="2" value="WED:18-20"/>
+        <string name="3" value="THU:18-20"/>
+        <string name="4" value="FRI:18-20"/>
+        <string name="5" value="SAT:18-20"/>
+        <string name="6" value="SUN:18-20"/>
+      </imgdir>
+    </imgdir>
+    <imgdir name="spec">
+      <int name="time" value="2147483647"/>
+      <int name="expR" value="2"/>
+    </imgdir>
+  </imgdir>
+  <imgdir name="05211048">
+    <imgdir name="info">
+      <canvas name="icon" width="32" height="32">
+        <vector name="origin" x="0" y="32"/>
+      </canvas>
+      <int name="cash" value="1"/>
+      <int name="slotMax" value="1"/>
+      <int name="rate" value="2"/>
+      <imgdir name="time">
+        <string name="0" value="MON:00-24"/>
+        <string name="1" value="TUE:00-24"/>
+        <string name="2" value="WED:00-24"/>
+        <string name="3" value="THU:00-24"/>
+        <string name="4" value="FRI:00-24"/>
+        <string name="5" value="SAT:00-24"/>
+        <string name="6" value="SUN:00-24"/>
+      </imgdir>
+    </imgdir>
+    <imgdir name="spec">
+      <int name="time" value="2147483647"/>
+      <int name="expR" value="3"/>
+    </imgdir>
+  </imgdir>
+  <imgdir name="05211060">
+    <imgdir name="info">
+      <canvas name="icon" width="32" height="32">
+        <vector name="origin" x="0" y="32"/>
+      </canvas>
+      <int name="cash" value="1"/>
+      <int name="slotMax" value="1"/>
+      <int name="rate" value="3"/>
+      <imgdir name="time">
+        <string name="0" value="MON:00-24"/>
+        <string name="1" value="TUE:00-24"/>
+        <string name="2" value="WED:00-24"/>
+        <string name="3" value="THU:00-24"/>
+        <string name="4" value="FRI:00-24"/>
+        <string name="5" value="SAT:00-24"/>
+        <string name="6" value="SUN:00-24"/>
+        <string name="7" value="HOL:00-24"/>
+      </imgdir>
+    </imgdir>
+    <imgdir name="spec">
+      <int name="time" value="2147483647"/>
+      <int name="expR" value="4"/>
+    </imgdir>
+  </imgdir>
+</imgdir>
+`
+
+const testDropCouponXML = `
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="0536.img">
+  <imgdir name="05360000">
+    <imgdir name="info">
+      <canvas name="icon" width="32" height="32">
+        <vector name="origin" x="0" y="32"/>
+      </canvas>
+      <int name="cash" value="1"/>
+      <int name="slotMax" value="1"/>
+      <int name="rate" value="2"/>
+      <imgdir name="time">
+        <string name="0" value="MON:00-24"/>
+        <string name="1" value="TUE:00-24"/>
+        <string name="2" value="WED:00-24"/>
+        <string name="3" value="THU:00-24"/>
+        <string name="4" value="FRI:00-24"/>
+        <string name="5" value="SAT:00-24"/>
+        <string name="6" value="SUN:00-24"/>
+      </imgdir>
+    </imgdir>
+    <imgdir name="spec">
+      <int name="time" value="2147483647"/>
+      <int name="drpR" value="1"/>
+    </imgdir>
+  </imgdir>
+  <imgdir name="05360042">
+    <imgdir name="info">
+      <canvas name="icon" width="32" height="32">
+        <vector name="origin" x="0" y="32"/>
+      </canvas>
+      <int name="cash" value="1"/>
+      <int name="slotMax" value="1"/>
+      <int name="rate" value="2"/>
+      <imgdir name="time">
+        <string name="0" value="MON:00-24"/>
+        <string name="1" value="TUE:00-24"/>
+        <string name="2" value="WED:00-24"/>
+        <string name="3" value="THU:00-24"/>
+        <string name="4" value="FRI:00-24"/>
+        <string name="5" value="SAT:00-24"/>
+        <string name="6" value="SUN:00-24"/>
+      </imgdir>
+    </imgdir>
+    <imgdir name="spec">
+      <int name="time" value="2147483647"/>
+      <int name="drpR" value="2"/>
+    </imgdir>
+  </imgdir>
+</imgdir>
+`
+
 func TestReader(t *testing.T) {
 	l, _ := test.NewNullLogger()
 
@@ -439,5 +567,212 @@ func TestReader(t *testing.T) {
 	}
 	if spec != 5000066 {
 		t.Fatalf("rmm.Spec[SpecTypeIndexZero].Spec = %d, want 5000066", spec)
+	}
+}
+
+func TestReaderExpCoupons(t *testing.T) {
+	l, _ := test.NewNullLogger()
+
+	rms := Read(l)(xml.FromByteArrayProvider([]byte(testExpCouponXML)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rmm) != 3 {
+		t.Fatalf("len(rmm) = %d, want 3", len(rmm))
+	}
+
+	// Test 5211000 - 2x EXP coupon with restricted time windows (18-20)
+	rm, ok := rmm[strconv.Itoa(5211000)]
+	if !ok {
+		t.Fatalf("rmm[5211000] does not exist")
+	}
+	if rm.SlotMax != 1 {
+		t.Fatalf("rm.SlotMax = %d, want 1", rm.SlotMax)
+	}
+	// Check info/rate value
+	rate, ok := rm.Spec[SpecTypeRate]
+	if !ok {
+		t.Fatalf("rm.Spec[SpecTypeRate] does not exist")
+	}
+	if rate != 2 {
+		t.Fatalf("rm.Spec[SpecTypeRate] = %d, want 2", rate)
+	}
+	// Check spec/expR value
+	expR, ok := rm.Spec[SpecTypeExpR]
+	if !ok {
+		t.Fatalf("rm.Spec[SpecTypeExpR] does not exist")
+	}
+	if expR != 2 {
+		t.Fatalf("rm.Spec[SpecTypeExpR] = %d, want 2", expR)
+	}
+	specTime, ok := rm.Spec[SpecTypeTime]
+	if !ok {
+		t.Fatalf("rm.Spec[SpecTypeTime] does not exist")
+	}
+	if specTime != 2147483647 {
+		t.Fatalf("rm.Spec[SpecTypeTime] = %d, want 2147483647", specTime)
+	}
+	if len(rm.TimeWindows) != 7 {
+		t.Fatalf("len(rm.TimeWindows) = %d, want 7", len(rm.TimeWindows))
+	}
+	// Verify first time window
+	if rm.TimeWindows[0].Day != "MON" {
+		t.Fatalf("rm.TimeWindows[0].Day = %s, want MON", rm.TimeWindows[0].Day)
+	}
+	if rm.TimeWindows[0].StartHour != 18 {
+		t.Fatalf("rm.TimeWindows[0].StartHour = %d, want 18", rm.TimeWindows[0].StartHour)
+	}
+	if rm.TimeWindows[0].EndHour != 20 {
+		t.Fatalf("rm.TimeWindows[0].EndHour = %d, want 20", rm.TimeWindows[0].EndHour)
+	}
+
+	// Test 5211048 - 3x EXP coupon with all-day windows
+	rm, ok = rmm[strconv.Itoa(5211048)]
+	if !ok {
+		t.Fatalf("rmm[5211048] does not exist")
+	}
+	// Check info/rate value
+	rate, ok = rm.Spec[SpecTypeRate]
+	if !ok {
+		t.Fatalf("rm.Spec[SpecTypeRate] does not exist for 5211048")
+	}
+	if rate != 2 {
+		t.Fatalf("rm.Spec[SpecTypeRate] = %d, want 2", rate)
+	}
+	// Check spec/expR value
+	expR, ok = rm.Spec[SpecTypeExpR]
+	if !ok {
+		t.Fatalf("rm.Spec[SpecTypeExpR] does not exist for 5211048")
+	}
+	if expR != 3 {
+		t.Fatalf("rm.Spec[SpecTypeExpR] = %d, want 3", expR)
+	}
+	if len(rm.TimeWindows) != 7 {
+		t.Fatalf("len(rm.TimeWindows) = %d, want 7", len(rm.TimeWindows))
+	}
+	// Verify all-day window
+	if rm.TimeWindows[0].StartHour != 0 {
+		t.Fatalf("rm.TimeWindows[0].StartHour = %d, want 0", rm.TimeWindows[0].StartHour)
+	}
+	if rm.TimeWindows[0].EndHour != 24 {
+		t.Fatalf("rm.TimeWindows[0].EndHour = %d, want 24", rm.TimeWindows[0].EndHour)
+	}
+
+	// Test 5211060 - 4x EXP coupon with 8 time windows (including HOL)
+	rm, ok = rmm[strconv.Itoa(5211060)]
+	if !ok {
+		t.Fatalf("rmm[5211060] does not exist")
+	}
+	// Check info/rate value
+	rate, ok = rm.Spec[SpecTypeRate]
+	if !ok {
+		t.Fatalf("rm.Spec[SpecTypeRate] does not exist for 5211060")
+	}
+	if rate != 3 {
+		t.Fatalf("rm.Spec[SpecTypeRate] = %d, want 3", rate)
+	}
+	// Check spec/expR value
+	expR, ok = rm.Spec[SpecTypeExpR]
+	if !ok {
+		t.Fatalf("rm.Spec[SpecTypeExpR] does not exist for 5211060")
+	}
+	if expR != 4 {
+		t.Fatalf("rm.Spec[SpecTypeExpR] = %d, want 4", expR)
+	}
+	if len(rm.TimeWindows) != 8 {
+		t.Fatalf("len(rm.TimeWindows) = %d, want 8", len(rm.TimeWindows))
+	}
+	// Verify HOL window
+	if rm.TimeWindows[7].Day != "HOL" {
+		t.Fatalf("rm.TimeWindows[7].Day = %s, want HOL", rm.TimeWindows[7].Day)
+	}
+}
+
+func TestReaderDropCoupons(t *testing.T) {
+	l, _ := test.NewNullLogger()
+
+	rms := Read(l)(xml.FromByteArrayProvider([]byte(testDropCouponXML)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rmm) != 2 {
+		t.Fatalf("len(rmm) = %d, want 2", len(rmm))
+	}
+
+	// Test 5360000 - 1x drop rate coupon (base rate, no bonus)
+	rm, ok := rmm[strconv.Itoa(5360000)]
+	if !ok {
+		t.Fatalf("rmm[5360000] does not exist")
+	}
+	drpR, ok := rm.Spec[SpecTypeDrpR]
+	if !ok {
+		t.Fatalf("rm.Spec[SpecTypeDrpR] does not exist")
+	}
+	if drpR != 1 {
+		t.Fatalf("rm.Spec[SpecTypeDrpR] = %d, want 1", drpR)
+	}
+	specTime, ok := rm.Spec[SpecTypeTime]
+	if !ok {
+		t.Fatalf("rm.Spec[SpecTypeTime] does not exist")
+	}
+	if specTime != 2147483647 {
+		t.Fatalf("rm.Spec[SpecTypeTime] = %d, want 2147483647", specTime)
+	}
+	if len(rm.TimeWindows) != 7 {
+		t.Fatalf("len(rm.TimeWindows) = %d, want 7", len(rm.TimeWindows))
+	}
+
+	// Test 5360042 - 2x drop rate coupon
+	rm, ok = rmm[strconv.Itoa(5360042)]
+	if !ok {
+		t.Fatalf("rmm[5360042] does not exist")
+	}
+	drpR, ok = rm.Spec[SpecTypeDrpR]
+	if !ok {
+		t.Fatalf("rm.Spec[SpecTypeDrpR] does not exist for 5360042")
+	}
+	if drpR != 2 {
+		t.Fatalf("rm.Spec[SpecTypeDrpR] = %d, want 2", drpR)
+	}
+}
+
+func TestParseTimeWindow(t *testing.T) {
+	tests := []struct {
+		input     string
+		wantDay   string
+		wantStart int
+		wantEnd   int
+		wantOk    bool
+	}{
+		{"MON:18-20", "MON", 18, 20, true},
+		{"TUE:00-24", "TUE", 0, 24, true},
+		{"HOL:00-24", "HOL", 0, 24, true},
+		{"SAT:12-18", "SAT", 12, 18, true},
+		{"invalid", "", 0, 0, false},
+		{"MON:invalid", "", 0, 0, false},
+		{"MON:18", "", 0, 0, false},
+		{"", "", 0, 0, false},
+	}
+
+	for _, tt := range tests {
+		tw, ok := parseTimeWindow(tt.input)
+		if ok != tt.wantOk {
+			t.Errorf("parseTimeWindow(%q) ok = %v, want %v", tt.input, ok, tt.wantOk)
+			continue
+		}
+		if !ok {
+			continue
+		}
+		if tw.Day != tt.wantDay {
+			t.Errorf("parseTimeWindow(%q).Day = %s, want %s", tt.input, tw.Day, tt.wantDay)
+		}
+		if tw.StartHour != tt.wantStart {
+			t.Errorf("parseTimeWindow(%q).StartHour = %d, want %d", tt.input, tw.StartHour, tt.wantStart)
+		}
+		if tw.EndHour != tt.wantEnd {
+			t.Errorf("parseTimeWindow(%q).EndHour = %d, want %d", tt.input, tw.EndHour, tt.wantEnd)
+		}
 	}
 }

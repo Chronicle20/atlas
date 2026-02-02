@@ -6,6 +6,7 @@ import (
 
 type Model struct {
 	id            uint32
+	name          string
 	action        bool
 	element       string
 	animationTime uint32
@@ -18,6 +19,10 @@ func (m Model) Effects() []effect.Model {
 
 func (m Model) Id() uint32 {
 	return m.id
+}
+
+func (m Model) Name() string {
+	return m.name
 }
 
 func (m Model) Action() bool {

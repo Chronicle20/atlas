@@ -18,11 +18,20 @@ type modelBuilder struct {
 	recommendedMessage string
 	capacityStatus     Status
 	channels           []channel.Model
+	expRate            float64
+	mesoRate           float64
+	itemDropRate       float64
+	questExpRate       float64
 }
 
 // NewModelBuilder creates a new builder instance
 func NewModelBuilder() *modelBuilder {
-	return &modelBuilder{}
+	return &modelBuilder{
+		expRate:      1.0,
+		mesoRate:     1.0,
+		itemDropRate: 1.0,
+		questExpRate: 1.0,
+	}
 }
 
 // CloneModel creates a builder initialized with the Model's values
@@ -36,6 +45,10 @@ func CloneModel(m Model) *modelBuilder {
 		recommendedMessage: m.recommendedMessage,
 		capacityStatus:     m.capacityStatus,
 		channels:           m.channels,
+		expRate:            m.expRate,
+		mesoRate:           m.mesoRate,
+		itemDropRate:       m.itemDropRate,
+		questExpRate:       m.questExpRate,
 	}
 }
 
@@ -87,6 +100,30 @@ func (b *modelBuilder) SetChannels(channels []channel.Model) *modelBuilder {
 	return b
 }
 
+// SetExpRate sets the experience rate multiplier
+func (b *modelBuilder) SetExpRate(expRate float64) *modelBuilder {
+	b.expRate = expRate
+	return b
+}
+
+// SetMesoRate sets the meso rate multiplier
+func (b *modelBuilder) SetMesoRate(mesoRate float64) *modelBuilder {
+	b.mesoRate = mesoRate
+	return b
+}
+
+// SetItemDropRate sets the item drop rate multiplier
+func (b *modelBuilder) SetItemDropRate(itemDropRate float64) *modelBuilder {
+	b.itemDropRate = itemDropRate
+	return b
+}
+
+// SetQuestExpRate sets the quest experience rate multiplier
+func (b *modelBuilder) SetQuestExpRate(questExpRate float64) *modelBuilder {
+	b.questExpRate = questExpRate
+	return b
+}
+
 // Build creates a new Model instance with validation
 func (b *modelBuilder) Build() (Model, error) {
 	if b.name == "" {
@@ -101,6 +138,10 @@ func (b *modelBuilder) Build() (Model, error) {
 		recommendedMessage: b.recommendedMessage,
 		capacityStatus:     b.capacityStatus,
 		channels:           b.channels,
+		expRate:            b.expRate,
+		mesoRate:           b.mesoRate,
+		itemDropRate:       b.itemDropRate,
+		questExpRate:       b.questExpRate,
 	}, nil
 }
 

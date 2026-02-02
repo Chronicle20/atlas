@@ -1178,147 +1178,231 @@
       "flag": "Nothing",
       "serverMessage": "Welcome to Scania!",
       "eventMessage": "Scania!",
-      "whyAmIRecommended": "Most Populated!"
+      "whyAmIRecommended": "Most Populated!",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
     },
     {
       "name": "Bera",
       "flag": "Nothing",
       "serverMessage": "Welcome to Bera!",
       "eventMessage": "Bera!",
-      "whyAmIRecommended": ""
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
     },
     {
       "name": "Broa",
       "flag": "Nothing",
       "serverMessage": "Welcome to Broa!",
       "eventMessage": "Broa!",
-      "whyAmIRecommended": ""
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
     },
     {
       "name": "Windia",
       "flag": "Nothing",
       "serverMessage": "Welcome to Windia!",
       "eventMessage": "Windia!",
-      "whyAmIRecommended": ""
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
     },
     {
       "name": "Khaini",
       "flag": "Nothing",
       "serverMessage": "Welcome to Khaini!",
       "eventMessage": "Khaini!",
-      "whyAmIRecommended": ""
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
     },
     {
       "name": "Bellocan",
       "flag": "Nothing",
       "serverMessage": "Welcome to Bellocan!",
       "eventMessage": "Bellocan!",
-      "whyAmIRecommended": ""
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
     },
     {
       "name": "Mardia",
       "flag": "Nothing",
       "serverMessage": "Welcome to Mardia!",
       "eventMessage": "Mardia!",
-      "whyAmIRecommended": ""
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
     },
     {
       "name": "Kradia",
       "flag": "Nothing",
       "serverMessage": "Welcome to Kradia!",
       "eventMessage": "Kradia!",
-      "whyAmIRecommended": ""
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
     },
     {
       "name": "Yellonde",
       "flag": "Nothing",
       "serverMessage": "Welcome to Yellonde!",
       "eventMessage": "Yellonde!",
-      "whyAmIRecommended": ""
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
     },
     {
       "name": "Demethos",
       "flag": "Nothing",
       "serverMessage": "Welcome to Demethos!",
       "eventMessage": "Demethos!",
-      "whyAmIRecommended": ""
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
     },
     {
       "name": "Galicia",
       "flag": "Nothing",
       "serverMessage": "Welcome to Galicia!",
       "eventMessage": "Galicia!",
-      "whyAmIRecommended": ""
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
     },
     {
       "name": "El Nido",
       "flag": "Nothing",
       "serverMessage": "Welcome to El Nido!",
       "eventMessage": "El Nido!",
-      "whyAmIRecommended": ""
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
     },
     {
       "name": "Zenith",
       "flag": "Nothing",
       "serverMessage": "Welcome to Zenith!",
       "eventMessage": "Zenith!",
-      "whyAmIRecommended": ""
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
     },
     {
       "name": "Arcenia",
       "flag": "Nothing",
       "serverMessage": "Welcome to Arcenia!",
       "eventMessage": "Arcenia!",
-      "whyAmIRecommended": ""
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
     },
     {
       "name": "Kastia",
       "flag": "Nothing",
       "serverMessage": "Welcome to Kastia!",
       "eventMessage": "Kastia!",
-      "whyAmIRecommended": ""
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
     },
     {
       "name": "Judis",
       "flag": "Nothing",
       "serverMessage": "Welcome to Judis!",
       "eventMessage": "Judis!",
-      "whyAmIRecommended": ""
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
     },
     {
       "name": "Plana",
       "flag": "Nothing",
       "serverMessage": "Welcome to Plana!",
       "eventMessage": "Plana!",
-      "whyAmIRecommended": ""
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
     },
     {
       "name": "Kalluna",
       "flag": "Nothing",
       "serverMessage": "Welcome to Kalluna!",
       "eventMessage": "Kalluna!",
-      "whyAmIRecommended": ""
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
     },
     {
       "name": "Stius",
       "flag": "Nothing",
       "serverMessage": "Welcome to Stius!",
       "eventMessage": "Stius!",
-      "whyAmIRecommended": ""
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
     },
     {
       "name": "Croa",
       "flag": "Nothing",
       "serverMessage": "Welcome to Croa!",
       "eventMessage": "Croa!",
-      "whyAmIRecommended": ""
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
     },
     {
       "name": "Medere",
       "flag": "Nothing",
       "serverMessage": "Welcome to Medere!",
       "eventMessage": "Medere!",
-      "whyAmIRecommended": ""
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
     }
   ]
 }

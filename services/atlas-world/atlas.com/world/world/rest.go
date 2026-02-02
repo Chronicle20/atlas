@@ -17,6 +17,10 @@ type RestModel struct {
 	RecommendedMessage string              `json:"recommendedMessage"`
 	CapacityStatus     uint16              `json:"capacityStatus"`
 	Channels           []channel.RestModel `json:"-"`
+	ExpRate            float64             `json:"expRate"`
+	MesoRate           float64             `json:"mesoRate"`
+	ItemDropRate       float64             `json:"itemDropRate"`
+	QuestExpRate       float64             `json:"questExpRate"`
 }
 
 func (r RestModel) GetName() string {
@@ -82,6 +86,10 @@ func Transform(m Model) (RestModel, error) {
 		RecommendedMessage: m.RecommendedMessage(),
 		CapacityStatus:     uint16(m.CapacityStatus()),
 		Channels:           cms,
+		ExpRate:            m.ExpRate(),
+		MesoRate:           m.MesoRate(),
+		ItemDropRate:       m.ItemDropRate(),
+		QuestExpRate:       m.QuestExpRate(),
 	}, nil
 }
 
@@ -121,5 +129,9 @@ func Extract(r RestModel) (Model, error) {
 		SetRecommendedMessage(r.RecommendedMessage).
 		SetCapacityStatus(Status(r.CapacityStatus)).
 		SetChannels(cms).
+		SetExpRate(r.ExpRate).
+		SetMesoRate(r.MesoRate).
+		SetItemDropRate(r.ItemDropRate).
+		SetQuestExpRate(r.QuestExpRate).
 		Build()
 }

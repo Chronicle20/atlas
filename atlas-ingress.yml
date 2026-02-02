@@ -261,6 +261,10 @@ data:
           proxy_pass http://atlas-query-aggregator.atlas.svc.cluster.local:8080;
         }
 
+        location ~ ^/api/worlds/[^/]+/channels/[^/]+/characters/[^/]+/rates(/.*)?$ {
+          proxy_pass http://atlas-rates.atlas.svc.cluster.local:8080;
+        }
+
         location ~ ^/api/worlds(/.*)?$ {
           proxy_pass http://atlas-world.atlas.svc.cluster.local:8080;
         }

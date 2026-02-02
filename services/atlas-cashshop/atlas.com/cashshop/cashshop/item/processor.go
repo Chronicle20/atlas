@@ -1,6 +1,8 @@
 package item
 
 import (
+	"atlas-cashshop/cashshop/commodity"
+	"atlas-cashshop/configuration"
 	"atlas-cashshop/kafka/message"
 	"atlas-cashshop/kafka/message/item"
 	"atlas-cashshop/kafka/producer"
@@ -30,6 +32,7 @@ type ProcessorImpl struct {
 	db  *gorm.DB
 	t   tenant.Model
 	p   producer.Provider
+	cp  commodity.Processor
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
@@ -39,6 +42,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		db:  db,
 		t:   tenant.MustFromContext(ctx),
 		p:   producer.ProviderImpl(l)(ctx),
+		cp:  commodity.NewProcessor(l, ctx),
 	}
 	return p
 }
@@ -56,7 +60,21 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(templateId uint32) func(
 		return func(commodityId uint32) func(quantity uint32) func(purchasedBy uint32) (Model, error) {
 			return func(quantity uint32) func(purchasedBy uint32) (Model, error) {
 				return func(purchasedBy uint32) (Model, error) {
-					entity, err := create(p.t.Id(), templateId, commodityId, quantity, purchasedBy)(p.db)()
+					// Fetch commodity to get period
+					var period uint32 = 30 // default to 30 days if commodity not found
+					if commodityId != 0 {
+						c, err := p.cp.GetById(commodityId)
+						if err == nil {
+							period = c.Period()
+						} else {
+							p.l.WithError(err).Warnf("Failed to fetch commodity %d, using default period", commodityId)
+						}
+					}
+
+					// Get hourly expirations config
+					hourlyConfig := configuration.GetHourlyExpirations(p.l, p.ctx, p.t.Id())
+
+					entity, err := create(p.t.Id(), templateId, commodityId, quantity, purchasedBy, period, hourlyConfig)(p.db)()
 					if err != nil {
 						return Model{}, err
 					}
@@ -95,7 +113,21 @@ func (p *ProcessorImpl) CreateWithCashId(mb *message.Buffer) func(cashId int64) 
 			return func(commodityId uint32) func(quantity uint32) func(purchasedBy uint32) (Model, error) {
 				return func(quantity uint32) func(purchasedBy uint32) (Model, error) {
 					return func(purchasedBy uint32) (Model, error) {
-						entity, err := findOrCreateByCashId(p.t.Id(), cashId, templateId, commodityId, quantity, purchasedBy)(p.db)()
+						// Fetch commodity to get period
+						var period uint32 = 30 // default to 30 days if commodity not found
+						if commodityId != 0 {
+							c, err := p.cp.GetById(commodityId)
+							if err == nil {
+								period = c.Period()
+							} else {
+								p.l.WithError(err).Warnf("Failed to fetch commodity %d, using default period", commodityId)
+							}
+						}
+
+						// Get hourly expirations config
+						hourlyConfig := configuration.GetHourlyExpirations(p.l, p.ctx, p.t.Id())
+
+						entity, err := findOrCreateByCashId(p.t.Id(), cashId, templateId, commodityId, quantity, purchasedBy, period, hourlyConfig)(p.db)()
 						if err != nil {
 							return Model{}, err
 						}

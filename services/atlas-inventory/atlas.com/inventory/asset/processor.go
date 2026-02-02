@@ -352,6 +352,27 @@ func MakePetReferenceData(pi pet.Model) PetReferenceData {
 	}
 }
 
+func MakeCashReferenceData(ci cash.Model, ownerId uint32) CashReferenceData {
+	return CashReferenceData{
+		CashData: CashData{
+			cashId: ci.CashId(),
+		},
+		StackableData: StackableData{
+			quantity: ci.Quantity(),
+		},
+		OwnerData: OwnerData{
+			ownerId: ownerId,
+		},
+		FlagData: FlagData{
+			flag: ci.Flag(),
+		},
+		PurchaseData: PurchaseData{
+			purchaseBy: ci.PurchasedBy(),
+		},
+		createdAt: ci.CreatedAt(),
+	}
+}
+
 func (p *Processor) Delete(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID) func(a Model[any]) error {
 	return func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID) func(a Model[any]) error {
 		return func(a Model[any]) error {
@@ -567,7 +588,13 @@ func (p *Processor) Create(mb *message.Buffer) func(transactionId uuid.UUID, cha
 					referenceType = ReferenceTypePet
 					rd = MakePetReferenceData(pe)
 				} else {
-					// TODO
+					ci, err := p.cashProcessor.Create(templateId, 0, quantity, ownerId)
+					if err != nil {
+						return err
+					}
+					referenceId = ci.Id()
+					referenceType = ReferenceTypeCash
+					rd = MakeCashReferenceData(ci, ownerId)
 				}
 			}
 

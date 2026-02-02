@@ -1,0 +1,15 @@
+meta {
+  name: Get Commodity Statistics
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/data/commodity/items/{{serialNumber}}
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  serialNumber: 50200069
+}

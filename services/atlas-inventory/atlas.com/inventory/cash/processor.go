@@ -34,3 +34,7 @@ func (p *Processor) UpdateQuantity(itemId uint32, quantity uint32) error {
 func (p *Processor) Delete(itemId uint32) error {
 	return requestDelete(p.l, p.ctx)(itemId)
 }
+
+func (p *Processor) Create(templateId uint32, commodityId uint32, quantity uint32, purchasedBy uint32) (Model, error) {
+	return requestCreate(p.l, p.ctx)(templateId, commodityId, quantity, purchasedBy)
+}

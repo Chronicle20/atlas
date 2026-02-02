@@ -1,0 +1,15 @@
+meta {
+  name: Get Cash Statistics
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/data/cash/items/{{templateId}}
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  templateId: 5211048
+}

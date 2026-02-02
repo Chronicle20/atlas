@@ -5,9 +5,11 @@ import (
 	"atlas-messages/command"
 	"atlas-messages/map"
 	"atlas-messages/message"
+	"atlas-messages/rate"
 	"atlas-messages/saga"
 	"context"
 	"errors"
+	"fmt"
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
 	_map2 "github.com/Chronicle20/atlas-constants/map"
@@ -16,6 +18,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 func WarpCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
@@ -106,4 +109,79 @@ func WhereAmICommandProducer(_ logrus.FieldLogger) func(_ context.Context) func(
 			}, true
 		}
 	}
+}
+
+func RatesCommandProducer(_ logrus.FieldLogger) func(_ context.Context) func(worldId byte, channelId byte, character character.Model, m string) (command.Executor, bool) {
+	return func(_ context.Context) func(worldId byte, channelId byte, character character.Model, m string) (command.Executor, bool) {
+		return func(worldId byte, channelId byte, character character.Model, m string) (command.Executor, bool) {
+			re := regexp.MustCompile(`^@query rates$`)
+			match := re.FindStringSubmatch(m)
+			if len(match) != 1 {
+				return nil, false
+			}
+
+			if !character.Gm() {
+				return nil, false
+			}
+
+			return func(l logrus.FieldLogger) func(ctx context.Context) error {
+				return func(ctx context.Context) error {
+					rp := rate.NewProcessor(l, ctx)
+					mp := message.NewProcessor(l, ctx)
+
+					r, err := rp.GetByCharacter(worldId, channelId, character.Id())
+					if err != nil {
+						l.WithError(err).Errorf("Unable to get rates for character [%d].", character.Id())
+						return mp.IssuePinkText(worldId, channelId, character.MapId(), 0, "Unable to retrieve rate information.", []uint32{character.Id()})
+					}
+
+					messages := buildRatesMessages(r)
+					for _, msg := range messages {
+						_ = mp.IssuePinkText(worldId, channelId, character.MapId(), 0, msg, []uint32{character.Id()})
+					}
+					return nil
+				}
+			}, true
+		}
+	}
+}
+
+func buildRatesMessages(r rate.Model) []string {
+	messages := []string{
+		"=== Current Rates ===",
+		fmt.Sprintf("EXP: %.2fx | Meso: %.2fx | Drop: %.2fx | Quest: %.2fx", r.ExpRate(), r.MesoRate(), r.ItemDropRate(), r.QuestExpRate()),
+	}
+
+	factors := r.Factors()
+	if len(factors) > 0 {
+		messages = append(messages, "=== Rate Factors ===")
+
+		expFactors := r.FactorsByType("exp")
+		mesoFactors := r.FactorsByType("meso")
+		dropFactors := r.FactorsByType("item_drop")
+		questExpFactors := r.FactorsByType("quest_exp")
+
+		if len(expFactors) > 0 {
+			messages = append(messages, "EXP: "+formatFactors(expFactors))
+		}
+		if len(mesoFactors) > 0 {
+			messages = append(messages, "Meso: "+formatFactors(mesoFactors))
+		}
+		if len(dropFactors) > 0 {
+			messages = append(messages, "Drop: "+formatFactors(dropFactors))
+		}
+		if len(questExpFactors) > 0 {
+			messages = append(messages, "Quest: "+formatFactors(questExpFactors))
+		}
+	}
+
+	return messages
+}
+
+func formatFactors(factors []rate.Factor) string {
+	var parts []string
+	for _, f := range factors {
+		parts = append(parts, fmt.Sprintf("%s(%.2fx)", f.Source(), f.Multiplier()))
+	}
+	return strings.Join(parts, ", ")
 }

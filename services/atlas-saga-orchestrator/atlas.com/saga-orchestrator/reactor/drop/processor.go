@@ -2,6 +2,7 @@ package drop
 
 import (
 	"atlas-saga-orchestrator/kafka/producer"
+	"atlas-saga-orchestrator/rates"
 	"context"
 	"math/rand"
 	"strconv"
@@ -70,6 +71,9 @@ func (p *ProcessorImpl) SpawnReactorDrops(
 	mesoMax uint32,
 	minItems uint32,
 ) error {
+	// Fetch rates for the character
+	r := rates.GetForCharacter(p.l)(p.ctx)(byte(worldId), byte(channelId), characterId)
+
 	// Fetch reactor drops from atlas-drop-information using classification
 	drops, err := p.fetchReactorDrops(classification)
 	if err != nil {
@@ -78,7 +82,7 @@ func (p *ProcessorImpl) SpawnReactorDrops(
 	}
 
 	// Roll chances to determine which items to drop
-	itemsToDrop := p.rollDrops(drops)
+	itemsToDrop := p.rollDrops(drops, r.ItemDropRate())
 
 	p.l.Debugf("Reactor [%d] dropped %d items out of %d possible", reactorId, len(itemsToDrop), len(drops))
 
@@ -86,7 +90,7 @@ func (p *ProcessorImpl) SpawnReactorDrops(
 	mesoDropCount := 0
 	if minItems > 0 && uint32(len(itemsToDrop)) < minItems {
 		mesoDropCount = int(minItems) - len(itemsToDrop)
-	} else if mesoEnabled && p.rollMesoChance(mesoChance) {
+	} else if mesoEnabled && p.rollMesoChance(mesoChance, r.ItemDropRate()) {
 		// If meso is enabled and we didn't need padding, roll for a single meso drop
 		mesoDropCount = 1
 	}
@@ -135,7 +139,8 @@ func (p *ProcessorImpl) SpawnReactorDrops(
 	for i := 0; i < mesoDropCount; i++ {
 		mod := p.calculateMod(isSpray, dropIndex)
 		dropX := p.calculateDropX(x, dropIndex)
-		mesoAmount := p.randomMesoAmount(mesoMin, mesoMax)
+		baseMeso := p.randomMesoAmount(mesoMin, mesoMax)
+		mesoAmount := uint32(float64(baseMeso) * r.MesoRate())
 
 		// Calculate proper drop position using foothold data
 		finalX, finalY := p.calculateDropPosition(mapId, dropX, y, x, y)
@@ -189,15 +194,14 @@ func (p *ProcessorImpl) fetchReactorDrops(classification string) ([]Model, error
 // Drop probability formula: dropRate / chance
 // - chance=1 → 100%, chance=2 → 50%, chance=100 → 1%
 // - Higher chance values = rarer drops
-// - dropRate is a player multiplier (TODO: implement player drop rate bonuses)
-func (p *ProcessorImpl) rollDrops(drops []Model) []Model {
+// - dropRate is the player's item drop rate multiplier
+func (p *ProcessorImpl) rollDrops(drops []Model, itemDropRate float64) []Model {
 	var result []Model
-	dropRate := 1.0 // TODO: Get from player data when drop rate bonuses are implemented
 	for _, d := range drops {
 		if d.Chance() == 0 {
 			continue // Skip invalid chance values
 		}
-		probability := dropRate / float64(d.Chance())
+		probability := itemDropRate / float64(d.Chance())
 		if rand.Float64() < probability {
 			result = append(result, d)
 		}
@@ -208,12 +212,11 @@ func (p *ProcessorImpl) rollDrops(drops []Model) []Model {
 // rollMesoChance determines if meso should drop
 // Same formula as item drops: probability = dropRate / mesoChance
 // - mesoChance=1 → 100%, mesoChance=2 → 50%, mesoChance=100 → 1%
-func (p *ProcessorImpl) rollMesoChance(mesoChance uint32) bool {
+func (p *ProcessorImpl) rollMesoChance(mesoChance uint32, itemDropRate float64) bool {
 	if mesoChance == 0 {
 		return false // No meso drop if chance is 0
 	}
-	dropRate := 1.0 // TODO: Get from player data when drop rate bonuses are implemented
-	probability := dropRate / float64(mesoChance)
+	probability := itemDropRate / float64(mesoChance)
 	return rand.Float64() < probability
 }
 

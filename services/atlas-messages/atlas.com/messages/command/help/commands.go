@@ -15,6 +15,7 @@ var commandSyntaxList = []string{
 	"@help - Display this list of available commands",
 	"@warp <target> <mapId> - Warp a character to a map",
 	"@query map - Display your current map ID",
+	"@query rates - Display your current rates (exp, meso, drop)",
 	"@award <target> experience <amount> - Award experience points",
 	"@award <target> <amount> level - Award levels",
 	"@award <target> meso <amount> - Award mesos (can be negative)",

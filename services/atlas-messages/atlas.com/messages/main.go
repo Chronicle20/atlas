@@ -32,6 +32,7 @@ func main() {
 	command.Registry().Add(help.HelpCommandProducer)
 	command.Registry().Add(_map.WarpCommandProducer)
 	command.Registry().Add(_map.WhereAmICommandProducer)
+	command.Registry().Add(_map.RatesCommandProducer)
 	command.Registry().Add(inventory.AwardItemCommandProducer)
 	command.Registry().Add(character.AwardExperienceCommandProducer)
 	command.Registry().Add(character.AwardLevelCommandProducer)

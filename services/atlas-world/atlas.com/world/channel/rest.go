@@ -14,6 +14,10 @@ type RestModel struct {
 	CurrentCapacity uint32    `json:"currentCapacity"`
 	MaxCapacity     uint32    `json:"maxCapacity"`
 	CreatedAt       time.Time `json:"createdAt"`
+	ExpRate         float64   `json:"expRate"`
+	MesoRate        float64   `json:"mesoRate"`
+	ItemDropRate    float64   `json:"itemDropRate"`
+	QuestExpRate    float64   `json:"questExpRate"`
 }
 
 func (r RestModel) GetName() string {
@@ -39,6 +43,10 @@ func Transform(m Model) (RestModel, error) {
 		CurrentCapacity: m.CurrentCapacity(),
 		MaxCapacity:     m.MaxCapacity(),
 		CreatedAt:       m.CreatedAt(),
+		ExpRate:         m.ExpRate(),
+		MesoRate:        m.MesoRate(),
+		ItemDropRate:    m.ItemDropRate(),
+		QuestExpRate:    m.QuestExpRate(),
 	}, nil
 }
 
@@ -53,5 +61,9 @@ func Extract(r RestModel) (Model, error) {
 		SetCurrentCapacity(r.CurrentCapacity).
 		SetMaxCapacity(r.MaxCapacity).
 		SetCreatedAt(r.CreatedAt).
+		SetExpRate(r.ExpRate).
+		SetMesoRate(r.MesoRate).
+		SetItemDropRate(r.ItemDropRate).
+		SetQuestExpRate(r.QuestExpRate).
 		Build()
 }

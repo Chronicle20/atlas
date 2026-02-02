@@ -23,6 +23,7 @@ var commandSyntaxList = []string{
 	"@change <target> job <jobId> - Change job",
 	"@skill max <skillId> - Maximize a skill",
 	"@skill reset <skillId> - Reset a skill",
+	"@buff <target> <skillName> [duration] - Apply a buff (target: me, map, name)",
 }
 
 func HelpCommandProducer(_ logrus.FieldLogger) func(_ context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {

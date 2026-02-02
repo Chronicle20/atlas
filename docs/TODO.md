@@ -12,7 +12,7 @@ This document tracks planned features and improvements for the Atlas MapleStory 
 ### High Priority (Feature Incomplete)
 - [ ] **TokenItem Purchasing** - Returns "not implemented" error in NPC shops
 - [ ] **Damage Reduction Effects** - 10 defensive abilities missing
-- [ ] **Drop Rate System** - Player bonuses, buff rates, card rates not applied
+- [x] **Drop Rate System** - Implemented via atlas-rates service (world rates, buff rates, item rates)
 - [ ] **IP/MAC Banning** - Security feature missing in account service
 - [ ] **Reactor Actions** - Boss weakening, environment manipulation, mass kill sagas
 
@@ -165,9 +165,9 @@ Location: `socket/handler/character_damage.go:23-32`
 - [ ] Verify character is not part of a family before deletion (`delete_character.go:67`)
 
 ### Monster Death Service
-- [ ] Apply character's meso buff (`monster/drop/processor.go:38`)
+- [x] Apply character's meso buff - via atlas-rates service
 - [ ] Determine drop type (`monster/processor.go:18`)
-- [ ] Evaluate rates: channel rate, buff rate, card rate (`monster/processor.go:48-51`)
+- [x] Evaluate rates: world rate, buff rate, item rate - via atlas-rates service
 - [ ] Party drop distribution (`monster/processor.go:93`)
 - [ ] Account for healing (`monster/processor.go:104`)
 
@@ -190,7 +190,7 @@ Location: `socket/handler/character_damage.go:23-32`
 - [ ] Create saga action for mass monster killing (`script/executor.go:268,273`)
 
 ### Saga Orchestrator
-- [ ] Player drop rate bonuses (hardcoded to 1.0) (`reactor/drop/processor.go:192,195,215`)
+- [x] Player drop rate bonuses - via atlas-rates service integration
 
 ---
 

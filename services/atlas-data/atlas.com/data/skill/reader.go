@@ -4,6 +4,7 @@ import (
 	"atlas-data/skill/effect"
 	"atlas-data/skill/effect/statup"
 	"atlas-data/xml"
+	"context"
 	"errors"
 	"fmt"
 	"github.com/Chronicle20/atlas-constants/character"
@@ -11,6 +12,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/monster"
 	"github.com/Chronicle20/atlas-constants/skill"
 	"github.com/Chronicle20/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"math"
 	"path/filepath"
@@ -32,43 +34,46 @@ func parseJobId(filePath string) (uint32, error) {
 
 }
 
-func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider[[]RestModel] {
-	return func(np model.Provider[xml.Node]) model.Provider[[]RestModel] {
-		exml, err := np()
-		if err != nil {
-			return model.ErrorProvider[[]RestModel](err)
-		}
-
-		jobId, err := parseJobId(exml.Name)
-		if err != nil {
-			return model.ErrorProvider[[]RestModel](err)
-		}
-		l.Debugf("Processing skills for job [%d].", jobId)
-
-		ssxml, err := exml.ChildByName("skill")
-		if err != nil {
-			return model.ErrorProvider[[]RestModel](err)
-		}
-
-		ms := make([]RestModel, 0)
-		for _, sxml := range ssxml.ChildNodes {
-			skillId, err := strconv.Atoi(sxml.Name)
+func Read(l logrus.FieldLogger) func(ctx context.Context) func(np model.Provider[xml.Node]) model.Provider[[]RestModel] {
+	return func(ctx context.Context) func(np model.Provider[xml.Node]) model.Provider[[]RestModel] {
+		t := tenant.MustFromContext(ctx)
+		return func(np model.Provider[xml.Node]) model.Provider[[]RestModel] {
+			exml, err := np()
 			if err != nil {
 				return model.ErrorProvider[[]RestModel](err)
 			}
-			l.Debugf("Processing skill [%d] for job [%d].", skillId, jobId)
 
-			m, err := produceSkill(skill.Id(skillId), sxml)
+			jobId, err := parseJobId(exml.Name)
 			if err != nil {
 				return model.ErrorProvider[[]RestModel](err)
 			}
-			ms = append(ms, m)
+			l.Debugf("Processing skills for job [%d].", jobId)
+
+			ssxml, err := exml.ChildByName("skill")
+			if err != nil {
+				return model.ErrorProvider[[]RestModel](err)
+			}
+
+			ms := make([]RestModel, 0)
+			for _, sxml := range ssxml.ChildNodes {
+				skillId, err := strconv.Atoi(sxml.Name)
+				if err != nil {
+					return model.ErrorProvider[[]RestModel](err)
+				}
+				l.Debugf("Processing skill [%d] for job [%d].", skillId, jobId)
+
+				m, err := produceSkill(t, skill.Id(skillId), sxml)
+				if err != nil {
+					return model.ErrorProvider[[]RestModel](err)
+				}
+				ms = append(ms, m)
+			}
+			return model.FixedProvider[[]RestModel](ms)
 		}
-		return model.FixedProvider[[]RestModel](ms)
 	}
 }
 
-func produceSkill(skillId skill.Id, xml xml.Node) (RestModel, error) {
+func produceSkill(t tenant.Model, skillId skill.Id, xml xml.Node) (RestModel, error) {
 	element := readElement(xml)
 	action := false
 	buff := false
@@ -93,8 +98,16 @@ func produceSkill(skillId skill.Id, xml xml.Node) (RestModel, error) {
 	if err == nil {
 		es = getEffects(skillId, buff, level.ChildNodes)
 	}
+
+	name := ""
+	ss, err := GetSkillStringRegistry().Get(t, strconv.Itoa(int(skillId)))
+	if err == nil {
+		name = ss.Name()
+	}
+
 	m := RestModel{
 		Id:            uint32(skillId),
+		Name:          name,
 		Action:        action,
 		Element:       element,
 		AnimationTime: 0,

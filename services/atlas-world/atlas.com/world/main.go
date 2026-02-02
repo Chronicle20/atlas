@@ -5,6 +5,7 @@ import (
 	"atlas-world/configuration"
 	channel2 "atlas-world/kafka/consumer/channel"
 	"atlas-world/logger"
+	"atlas-world/rate"
 	"atlas-world/service"
 	"atlas-world/tasks"
 	"atlas-world/tracing"
@@ -64,6 +65,7 @@ func main() {
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(channel.InitResource(GetServer())).
 		AddRouteInitializer(world.InitResource(GetServer())).
+		AddRouteInitializer(rate.InitResource(GetServer())).
 		Run()
 
 	l.Infof("Service started.")

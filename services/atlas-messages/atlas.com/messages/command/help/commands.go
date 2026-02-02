@@ -15,6 +15,7 @@ var commandSyntaxList = []string{
 	"@help - Display this list of available commands",
 	"@warp <target> <mapId> - Warp a character to a map",
 	"@query map - Display your current map ID",
+	"@query rates - Display your current rates (exp, meso, drop)",
 	"@award <target> experience <amount> - Award experience points",
 	"@award <target> <amount> level - Award levels",
 	"@award <target> meso <amount> - Award mesos (can be negative)",
@@ -23,6 +24,8 @@ var commandSyntaxList = []string{
 	"@change <target> job <jobId> - Change job",
 	"@skill max <skillId> - Maximize a skill",
 	"@skill reset <skillId> - Reset a skill",
+	"@buff <target> <skillName> [duration] - Apply a buff by name",
+	"@buff <target> #<skillId> [duration] - Apply a buff by ID",
 }
 
 func HelpCommandProducer(_ logrus.FieldLogger) func(_ context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {

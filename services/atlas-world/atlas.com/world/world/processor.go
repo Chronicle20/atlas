@@ -3,8 +3,10 @@ package world
 import (
 	"atlas-world/channel"
 	"atlas-world/configuration"
+	"atlas-world/rate"
 	"context"
 	"errors"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -82,6 +84,9 @@ func (p *ProcessorImpl) ByWorldIdProvider(decorators ...model.Decorator[Model]) 
 		}
 		wc := c.Worlds[worldId]
 
+		// Get current rates from registry (may have been updated at runtime)
+		rates := rate.GetRegistry().GetWorldRates(p.t, worldId)
+
 		m, err := NewModelBuilder().
 			SetId(worldId).
 			SetName(wc.Name).
@@ -90,6 +95,10 @@ func (p *ProcessorImpl) ByWorldIdProvider(decorators ...model.Decorator[Model]) 
 			SetEventMessage(wc.EventMessage).
 			SetRecommendedMessage(wc.WhyAmIRecommended).
 			SetCapacityStatus(0).
+			SetExpRate(rates.ExpRate()).
+			SetMesoRate(rates.MesoRate()).
+			SetItemDropRate(rates.ItemDropRate()).
+			SetQuestExpRate(rates.QuestExpRate()).
 			Build()
 		if err != nil {
 			return model.ErrorProvider[Model](err)

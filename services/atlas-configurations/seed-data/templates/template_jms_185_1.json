@@ -1313,91 +1313,143 @@
       "flag": "Nothing",
       "serverMessage": "かえでへようこそ！",
       "eventMessage": "かえで!",
-      "whyAmIRecommended": "人口が多い!"
+      "whyAmIRecommended": "人口が多い!",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
     },
     {
       "name": "もみじ",
       "flag": "Nothing",
       "serverMessage": "もみじへようこそ！",
       "eventMessage": "もみじ!",
-      "whyAmIRecommended": ""
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
     },
     {
       "name": "あんず",
       "flag": "Nothing",
       "serverMessage": "あんずへようこそ！",
       "eventMessage": "あんず!",
-      "whyAmIRecommended": ""
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
     },
     {
       "name": "かりん",
       "flag": "Nothing",
       "serverMessage": "かりんへようこそ！",
       "eventMessage": "かりん!",
-      "whyAmIRecommended": ""
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
     },
     {
       "name": "さくら",
       "flag": "Nothing",
       "serverMessage": "さくらへようこそ！",
       "eventMessage": "さくら!",
-      "whyAmIRecommended": ""
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
     },
     {
       "name": "すもも",
       "flag": "Nothing",
       "serverMessage": "すももへようこそ！",
       "eventMessage": "すもも!",
-      "whyAmIRecommended": ""
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
     },
     {
       "name": "ぽぷら",
       "flag": "Nothing",
       "serverMessage": "ぽぷらへようこそ！",
       "eventMessage": "ぽぷら!",
-      "whyAmIRecommended": ""
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
     },
     {
       "name": "けやき",
       "flag": "Nothing",
       "serverMessage": "けやきへようこそ！",
       "eventMessage": "けやき!",
-      "whyAmIRecommended": ""
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
     },
     {
       "name": "ぷらむ",
       "flag": "Nothing",
       "serverMessage": "ぷらむへようこそ！",
       "eventMessage": "ぷらむ!",
-      "whyAmIRecommended": ""
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
     },
     {
       "name": "なつめ",
       "flag": "Nothing",
       "serverMessage": "なつめへようこそ！",
       "eventMessage": "なつめ!",
-      "whyAmIRecommended": ""
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
     },
     {
       "name": "くぬぎ",
       "flag": "Nothing",
       "serverMessage": "くぬぎへようこそ！",
       "eventMessage": "くぬぎ!",
-      "whyAmIRecommended": ""
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
     },
     {
       "name": "つばき",
       "flag": "Nothing",
       "serverMessage": "つばきへようこそ！",
       "eventMessage": "つばき!",
-      "whyAmIRecommended": ""
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
     },
     {
       "name": "みずき",
       "flag": "Nothing",
       "serverMessage": "みずきへようこそ！",
       "eventMessage": "みずき!",
-      "whyAmIRecommended": ""
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
     }
   ]
 }

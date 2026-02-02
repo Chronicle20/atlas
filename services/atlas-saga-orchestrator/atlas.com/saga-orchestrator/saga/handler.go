@@ -17,6 +17,7 @@ import (
 	"atlas-saga-orchestrator/pet"
 	portalBlocking "atlas-saga-orchestrator/portal"
 	"atlas-saga-orchestrator/quest"
+	"atlas-saga-orchestrator/rates"
 	reactorDrop "atlas-saga-orchestrator/reactor/drop"
 	"atlas-saga-orchestrator/skill"
 	"atlas-saga-orchestrator/storage"
@@ -26,7 +27,9 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -719,7 +722,10 @@ func (h *HandlerImpl) handleAwardExperience(s Saga, st Step[any]) error {
 		return errors.New("invalid payload")
 	}
 
-	eds := TransformExperienceDistributions(payload.Distributions)
+	// Apply questExpRate to QUEST experience distributions
+	distributions := applyQuestExpRate(h.l, h.ctx, payload.WorldId, payload.ChannelId, payload.CharacterId, payload.Distributions)
+
+	eds := TransformExperienceDistributions(distributions)
 	err := h.charP.AwardExperienceAndEmit(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.ChannelId, eds)
 
 	if err != nil {
@@ -995,6 +1001,38 @@ func TransformExperienceDistributions(source []ExperienceDistributions) []charac
 	}
 
 	return target
+}
+
+// applyQuestExpRate applies the questExpRate multiplier to QUEST experience distributions
+func applyQuestExpRate(l logrus.FieldLogger, ctx context.Context, worldId world.Id, channelId channel.Id, characterId uint32, distributions []ExperienceDistributions) []ExperienceDistributions {
+	// Check if there are any QUEST distributions that need rate adjustment
+	hasQuestExp := false
+	for _, d := range distributions {
+		if d.ExperienceType == "QUEST" {
+			hasQuestExp = true
+			break
+		}
+	}
+
+	if !hasQuestExp {
+		return distributions
+	}
+
+	// Query rates for the character
+	r := rates.GetForCharacter(l)(ctx)(byte(worldId), byte(channelId), characterId)
+
+	// Apply questExpRate to QUEST distributions
+	result := make([]ExperienceDistributions, len(distributions))
+	for i, d := range distributions {
+		result[i] = d
+		if d.ExperienceType == "QUEST" && r.QuestExpRate() != 1.0 {
+			adjustedAmount := uint32(float64(d.Amount) * r.QuestExpRate())
+			l.Debugf("Character [%d] questExpRate: %.2f, adjusted quest exp: %d -> %d", characterId, r.QuestExpRate(), d.Amount, adjustedAmount)
+			result[i].Amount = adjustedAmount
+		}
+	}
+
+	return result
 }
 
 // handleValidateCharacterState handles the ValidateCharacterState action

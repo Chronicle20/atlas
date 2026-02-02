@@ -173,11 +173,12 @@ func initializeCashCoupons(l logrus.FieldLogger, ctx context.Context, p Processo
 
 		rateMultiplier := float64(cashData.GetRate())
 		durationMins := cashData.GetTime()
+		timeWindows := cashData.GetTimeWindows()
 
-		l.Infof("Initializing coupon tracking for item [%d], rate type [%s], multiplier [%.2f], duration [%d mins], createdAt [%v] for character [%d].",
-			asset.TemplateId, rateType, rateMultiplier, durationMins, createdAt, characterId)
+		l.Infof("Initializing coupon tracking for item [%d], rate type [%s], multiplier [%.2f], duration [%d mins], createdAt [%v], time windows [%d] for character [%d].",
+			asset.TemplateId, rateType, rateMultiplier, durationMins, createdAt, len(timeWindows), characterId)
 
-		if err := p.TrackCouponItem(characterId, asset.TemplateId, rateType, rateMultiplier, durationMins, createdAt); err != nil {
+		if err := p.TrackCouponItem(characterId, asset.TemplateId, rateType, rateMultiplier, durationMins, createdAt, timeWindows); err != nil {
 			l.WithError(err).Errorf("Unable to track coupon for character [%d].", characterId)
 		}
 	}

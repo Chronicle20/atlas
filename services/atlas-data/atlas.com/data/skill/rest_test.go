@@ -2,8 +2,11 @@ package skill
 
 import (
 	"atlas-data/xml"
+	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus/hooks/test"
 	"net/http"
@@ -35,7 +38,13 @@ func GetServer() Server {
 func TestRest(t *testing.T) {
 	l, _ := test.NewNullLogger()
 
-	rms := Read(l)(xml.FromByteArrayProvider([]byte(testXML)))
+	tn, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(testXML)))
 	res, err := rms()
 	if err != nil {
 		t.Fatal(err)

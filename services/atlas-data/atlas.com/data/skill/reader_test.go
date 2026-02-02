@@ -3,7 +3,10 @@ package skill
 import (
 	"atlas-data/skill/effect"
 	"atlas-data/xml"
+	"context"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
 	"strconv"
 	"testing"
@@ -2758,7 +2761,13 @@ func Identity[M any](m M) M {
 func TestReader(t *testing.T) {
 	l, _ := test.NewNullLogger()
 
-	rms := Read(l)(xml.FromByteArrayProvider([]byte(testXML)))
+	tn, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(testXML)))
 	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
 	if err != nil {
 		t.Fatal(err)

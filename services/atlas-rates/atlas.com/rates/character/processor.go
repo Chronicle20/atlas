@@ -1,6 +1,7 @@
 package character
 
 import (
+	"atlas-rates/data/cash"
 	"atlas-rates/data/equipment"
 	"atlas-rates/rate"
 	"context"
@@ -29,7 +30,7 @@ type Processor interface {
 	RemoveAllItemFactors(characterId uint32, templateId uint32) error
 	// Time-based item tracking methods
 	TrackBonusExpItem(characterId uint32, templateId uint32, tiers []BonusExpTier, equippedSince *time.Time) error
-	TrackCouponItem(characterId uint32, templateId uint32, rateType rate.Type, rateMultiplier float64, durationMins int32, createdAt time.Time) error
+	TrackCouponItem(characterId uint32, templateId uint32, rateType rate.Type, rateMultiplier float64, durationMins int32, createdAt time.Time, timeWindows []cash.TimeWindow) error
 	UntrackItem(characterId uint32, templateId uint32) error
 	UpdateBonusExpEquippedSince(characterId uint32, templateId uint32, equippedSince *time.Time) error
 	GetItemRateFactors(characterId uint32) []rate.Factor
@@ -175,7 +176,8 @@ func (p *ProcessorImpl) TrackBonusExpItem(characterId uint32, templateId uint32,
 
 // TrackCouponItem starts tracking a cash coupon with time-limited rate bonus
 // The createdAt timestamp should come from the authoritative source (atlas-cashshop via atlas-inventory)
-func (p *ProcessorImpl) TrackCouponItem(characterId uint32, templateId uint32, rateType rate.Type, rateMultiplier float64, durationMins int32, createdAt time.Time) error {
+// The timeWindows define when during the day/week the coupon is active (empty = always active)
+func (p *ProcessorImpl) TrackCouponItem(characterId uint32, templateId uint32, rateType rate.Type, rateMultiplier float64, durationMins int32, createdAt time.Time, timeWindows []cash.TimeWindow) error {
 	item := TrackedItem{
 		TemplateId:   templateId,
 		ItemType:     ItemTypeCoupon,
@@ -183,11 +185,17 @@ func (p *ProcessorImpl) TrackCouponItem(characterId uint32, templateId uint32, r
 		RateType:     rateType,
 		BaseRate:     rateMultiplier,
 		DurationMins: durationMins,
+		TimeWindows:  timeWindows,
 	}
 
 	GetItemTracker().TrackItem(p.t, characterId, item)
-	p.l.Debugf("Started tracking coupon [%d] for character [%d]: rate type [%s], multiplier [%.2f], duration [%d mins], createdAt [%v].",
-		templateId, characterId, rateType, rateMultiplier, durationMins, createdAt)
+	if len(timeWindows) > 0 {
+		p.l.Debugf("Started tracking coupon [%d] for character [%d]: rate type [%s], multiplier [%.2f], duration [%d mins], createdAt [%v], time windows [%d].",
+			templateId, characterId, rateType, rateMultiplier, durationMins, createdAt, len(timeWindows))
+	} else {
+		p.l.Debugf("Started tracking coupon [%d] for character [%d]: rate type [%s], multiplier [%.2f], duration [%d mins], createdAt [%v], always active.",
+			templateId, characterId, rateType, rateMultiplier, durationMins, createdAt)
+	}
 	return nil
 }
 

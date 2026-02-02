@@ -23,12 +23,20 @@ type modelBuilder struct {
 	currentCapacity uint32
 	maxCapacity     uint32
 	createdAt       time.Time
+	expRate         float64
+	mesoRate        float64
+	itemDropRate    float64
+	questExpRate    float64
 }
 
 // NewModelBuilder creates a new builder instance
 func NewModelBuilder() *modelBuilder {
 	return &modelBuilder{
-		createdAt: time.Now(),
+		createdAt:    time.Now(),
+		expRate:      1.0,
+		mesoRate:     1.0,
+		itemDropRate: 1.0,
+		questExpRate: 1.0,
 	}
 }
 
@@ -43,6 +51,10 @@ func CloneModel(m Model) *modelBuilder {
 		currentCapacity: m.currentCapacity,
 		maxCapacity:     m.maxCapacity,
 		createdAt:       m.createdAt,
+		expRate:         m.expRate,
+		mesoRate:        m.mesoRate,
+		itemDropRate:    m.itemDropRate,
+		questExpRate:    m.questExpRate,
 	}
 }
 
@@ -94,6 +106,30 @@ func (b *modelBuilder) SetMaxCapacity(maxCapacity uint32) *modelBuilder {
 	return b
 }
 
+// SetExpRate sets the experience rate multiplier
+func (b *modelBuilder) SetExpRate(expRate float64) *modelBuilder {
+	b.expRate = expRate
+	return b
+}
+
+// SetMesoRate sets the meso rate multiplier
+func (b *modelBuilder) SetMesoRate(mesoRate float64) *modelBuilder {
+	b.mesoRate = mesoRate
+	return b
+}
+
+// SetItemDropRate sets the item drop rate multiplier
+func (b *modelBuilder) SetItemDropRate(itemDropRate float64) *modelBuilder {
+	b.itemDropRate = itemDropRate
+	return b
+}
+
+// SetQuestExpRate sets the quest experience rate multiplier
+func (b *modelBuilder) SetQuestExpRate(questExpRate float64) *modelBuilder {
+	b.questExpRate = questExpRate
+	return b
+}
+
 // Build creates a new Model instance with validation
 func (b *modelBuilder) Build() (Model, error) {
 	if b.id == uuid.Nil {
@@ -117,6 +153,10 @@ func (b *modelBuilder) Build() (Model, error) {
 		currentCapacity: b.currentCapacity,
 		maxCapacity:     b.maxCapacity,
 		createdAt:       b.createdAt,
+		expRate:         b.expRate,
+		mesoRate:        b.mesoRate,
+		itemDropRate:    b.itemDropRate,
+		questExpRate:    b.questExpRate,
 	}, nil
 }
 

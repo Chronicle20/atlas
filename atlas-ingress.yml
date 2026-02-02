@@ -253,6 +253,10 @@ data:
           proxy_pass http://atlas-reactors.atlas.svc.cluster.local:8080;
         }
 
+        location ~ ^/api/rates(/.*)?$ {
+          proxy_pass http://atlas-rates.atlas.svc.cluster.local:8080;
+        }
+
         location ~ ^/api/sagas(/.*)?$ {
           proxy_pass http://atlas-saga-orchestrator.atlas.svc.cluster.local:8080;
         }

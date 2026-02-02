@@ -1,0 +1,39 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-rates
+  namespace: atlas
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: atlas-rates
+  template:
+    metadata:
+      labels:
+        app: atlas-rates
+    spec:
+      containers:
+      - name: rates
+        image: ghcr.io/chronicle20/atlas-rates/atlas-rates:latest
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: atlas-env
+        env:
+        - name: LOG_LEVEL
+          value: "debug"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-rates
+  namespace: atlas
+spec:
+  selector:
+    app: atlas-rates
+  ports:
+  - protocol: TCP
+    port: 8080

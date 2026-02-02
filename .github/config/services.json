@@ -310,6 +310,14 @@
       "docker_context": "."
     },
     {
+      "name": "atlas-rates",
+      "type": "go-service",
+      "path": "services/atlas-rates",
+      "module_path": "services/atlas-rates/atlas.com/rates",
+      "docker_image": "ghcr.io/chronicle20/atlas-rates/atlas-rates",
+      "docker_context": "."
+    },
+    {
       "name": "atlas-reactor-actions",
       "type": "go-service",
       "path": "services/atlas-reactor-actions",

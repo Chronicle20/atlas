@@ -8,9 +8,9 @@ import (
 	"math/rand"
 )
 
-func Create(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, index int, monsterId uint32, x int16, y int16, killerId uint32, dropType byte, m Model) error {
-	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, index int, monsterId uint32, x int16, y int16, killerId uint32, dropType byte, m Model) error {
-		return func(worldId byte, channelId byte, mapId uint32, index int, monsterId uint32, x int16, y int16, killerId uint32, dropType byte, m Model) error {
+func Create(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, index int, monsterId uint32, x int16, y int16, killerId uint32, dropType byte, m Model, mesoRate float64) error {
+	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, index int, monsterId uint32, x int16, y int16, killerId uint32, dropType byte, m Model, mesoRate float64) error {
+		return func(worldId byte, channelId byte, mapId uint32, index int, monsterId uint32, x int16, y int16, killerId uint32, dropType byte, m Model, mesoRate float64) error {
 			factor := 0
 			if dropType == 3 {
 				factor = 40
@@ -24,18 +24,20 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, c
 				newX += int16(-(factor * (index / 2)))
 			}
 			if m.ItemId() == 0 {
-				return SpawnMeso(l)(ctx)(worldId, channelId, mapId, monsterId, x, y, killerId, dropType, m, newX, y)
+				return SpawnMeso(l)(ctx)(worldId, channelId, mapId, monsterId, x, y, killerId, dropType, m, newX, y, mesoRate)
 			}
 			return SpawnItem(l)(ctx)(worldId, channelId, mapId, m.ItemId(), monsterId, x, y, killerId, dropType, m, newX, y)
 		}
 	}
 }
 
-func SpawnMeso(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, monsterId uint32, x int16, y int16, killerId uint32, dropType byte, m Model, posX int16, posY int16) error {
-	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, monsterId uint32, x int16, y int16, killerId uint32, dropType byte, m Model, posX int16, posY int16) error {
-		return func(worldId byte, channelId byte, mapId uint32, monsterId uint32, x int16, y int16, killerId uint32, dropType byte, m Model, posX int16, posY int16) error {
-			mesos := uint32(rand.Int31n(int32(m.MaximumQuantity()-m.MinimumQuantity())+1)) + m.MinimumQuantity()
-			//TODO apply characters meso buff.
+func SpawnMeso(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, monsterId uint32, x int16, y int16, killerId uint32, dropType byte, m Model, posX int16, posY int16, mesoRate float64) error {
+	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, monsterId uint32, x int16, y int16, killerId uint32, dropType byte, m Model, posX int16, posY int16, mesoRate float64) error {
+		return func(worldId byte, channelId byte, mapId uint32, monsterId uint32, x int16, y int16, killerId uint32, dropType byte, m Model, posX int16, posY int16, mesoRate float64) error {
+			baseMesos := uint32(rand.Int31n(int32(m.MaximumQuantity()-m.MinimumQuantity())+1)) + m.MinimumQuantity()
+			// Apply meso rate multiplier
+			mesos := uint32(float64(baseMesos) * mesoRate)
+			l.Debugf("Meso drop: base=%d, rate=%.2f, final=%d", baseMesos, mesoRate, mesos)
 			return SpawnDrop(l)(ctx)(worldId, channelId, mapId, 0, 0, mesos, posX, posY, x, y, monsterId, killerId, false, dropType)
 		}
 	}

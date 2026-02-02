@@ -2,7 +2,10 @@ package configuration
 
 import (
 	"atlas-world/configuration/tenant"
+	"atlas-world/rate"
 	"context"
+
+	tenant2 "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"log"
@@ -39,9 +42,34 @@ func Init(l logrus.FieldLogger) func(ctx context.Context) func(serviceId uuid.UU
 				}
 
 				for _, tc := range tcs {
-					tenantConfig[uuid.MustParse(tc.Id)] = tc
+					tenantId := uuid.MustParse(tc.Id)
+					tenantConfig[tenantId] = tc
+
+					// Initialize world rates from configuration
+					initializeRatesFromConfig(l, tenantId, tc)
 				}
 			})
 		}
+	}
+}
+
+// initializeRatesFromConfig initializes the rate registry with rates from configuration
+func initializeRatesFromConfig(l logrus.FieldLogger, tenantId uuid.UUID, tc tenant.RestModel) {
+	t, err := tenant2.Create(tenantId, tc.Region, tc.MajorVersion, tc.MinorVersion)
+	if err != nil {
+		l.WithError(err).Errorf("Unable to create tenant model for rate initialization.")
+		return
+	}
+
+	for worldId, wc := range tc.Worlds {
+		rates := rate.NewModel()
+		rates = rates.WithRate(rate.TypeExp, wc.GetExpRate())
+		rates = rates.WithRate(rate.TypeMeso, wc.GetMesoRate())
+		rates = rates.WithRate(rate.TypeItemDrop, wc.GetItemDropRate())
+		rates = rates.WithRate(rate.TypeQuestExp, wc.GetQuestExpRate())
+
+		rate.GetRegistry().InitWorldRates(t, byte(worldId), rates)
+		l.Infof("Initialized world [%d] rates from config: exp=%.2f, meso=%.2f, drop=%.2f, quest=%.2f",
+			worldId, wc.GetExpRate(), wc.GetMesoRate(), wc.GetItemDropRate(), wc.GetQuestExpRate())
 	}
 }

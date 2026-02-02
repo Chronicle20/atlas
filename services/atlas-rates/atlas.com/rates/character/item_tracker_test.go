@@ -1,13 +1,16 @@
 package character
 
 import (
+	"atlas-rates/data/cash"
 	"atlas-rates/data/equipment"
 	"atlas-rates/rate"
+	"context"
 	"testing"
 	"time"
 
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus/hooks/test"
 )
 
 func createTestTenantForTracker() tenant.Model {
@@ -28,70 +31,17 @@ func TestItemTrackerSingleton(t *testing.T) {
 	}
 }
 
-func TestTrackedItem_BonusExpMultiplier_NoTiers(t *testing.T) {
+func TestTrackedItem_BonusExp_NotCoupon(t *testing.T) {
+	// BonusExp items should return 1.0 from GetCouponMultiplier since they're not coupons
+	// BonusExp multipliers are computed via ComputeItemRateFactors using session history
 	item := TrackedItem{
 		ItemType:      ItemTypeBonusExp,
-		AcquiredAt:   time.Now().Add(-48 * time.Hour),
-		BonusExpTiers: nil,
+		BonusExpTiers: []equipment.BonusExpTier{{IncExpR: 10, TermStart: 0}},
 	}
 
-	mult := item.GetCurrentMultiplier()
+	mult := item.GetCouponMultiplier()
 	if mult != 1.0 {
-		t.Errorf("GetCurrentMultiplier() = %v, want 1.0", mult)
-	}
-}
-
-func TestTrackedItem_BonusExpMultiplier_SingleTier(t *testing.T) {
-	tiers := []equipment.BonusExpTier{
-		{IncExpR: 10, TermStart: 0}, // +10% immediately
-	}
-
-	item := TrackedItem{
-		ItemType:      ItemTypeBonusExp,
-		AcquiredAt:   time.Now().Add(-1 * time.Hour),
-		BonusExpTiers: tiers,
-	}
-
-	// +10% = 1.10
-	mult := item.GetCurrentMultiplier()
-	if mult != 1.10 {
-		t.Errorf("GetCurrentMultiplier() = %v, want 1.10", mult)
-	}
-}
-
-func TestTrackedItem_BonusExpMultiplier_MultipleTiers(t *testing.T) {
-	tiers := []equipment.BonusExpTier{
-		{IncExpR: 10, TermStart: 0},  // +10% at 0 hours
-		{IncExpR: 20, TermStart: 24}, // +20% at 24 hours
-		{IncExpR: 30, TermStart: 72}, // +30% at 72 hours
-	}
-
-	tests := []struct {
-		name        string
-		hoursAgo    int
-		expectedMul float64
-	}{
-		{"just equipped", 0, 1.10},     // 0 hours: tier 0 (+10%)
-		{"12 hours", 12, 1.10},         // 12 hours: still tier 0
-		{"exactly 24 hours", 24, 1.20}, // 24 hours: tier 1 (+20%)
-		{"36 hours", 36, 1.20},         // 36 hours: still tier 1
-		{"exactly 72 hours", 72, 1.30}, // 72 hours: tier 2 (+30%)
-		{"100 hours", 100, 1.30},       // 100 hours: still tier 2
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			item := TrackedItem{
-				ItemType:      ItemTypeBonusExp,
-				AcquiredAt:    time.Now().Add(-time.Duration(tt.hoursAgo) * time.Hour),
-				BonusExpTiers: tiers,
-			}
-
-			mult := item.GetCurrentMultiplier()
-			if mult != tt.expectedMul {
-				t.Errorf("GetCurrentMultiplier() at %d hours = %v, want %v", tt.hoursAgo, mult, tt.expectedMul)
-			}
-		})
+		t.Errorf("GetCouponMultiplier() for bonusExp item = %v, want 1.0", mult)
 	}
 }
 
@@ -103,9 +53,9 @@ func TestTrackedItem_CouponMultiplier_Active(t *testing.T) {
 		DurationMins: 60, // 60 minutes duration
 	}
 
-	mult := item.GetCurrentMultiplier()
+	mult := item.GetCouponMultiplier()
 	if mult != 2.0 {
-		t.Errorf("GetCurrentMultiplier() = %v, want 2.0", mult)
+		t.Errorf("GetCouponMultiplier() = %v, want 2.0", mult)
 	}
 }
 
@@ -117,9 +67,9 @@ func TestTrackedItem_CouponMultiplier_Expired(t *testing.T) {
 		DurationMins: 60, // 60 minutes duration, expired
 	}
 
-	mult := item.GetCurrentMultiplier()
+	mult := item.GetCouponMultiplier()
 	if mult != 1.0 {
-		t.Errorf("GetCurrentMultiplier() for expired coupon = %v, want 1.0", mult)
+		t.Errorf("GetCouponMultiplier() for expired coupon = %v, want 1.0", mult)
 	}
 }
 
@@ -132,9 +82,83 @@ func TestTrackedItem_CouponMultiplier_Permanent(t *testing.T) {
 		DurationMins: 0, // Permanent
 	}
 
-	mult := item.GetCurrentMultiplier()
+	mult := item.GetCouponMultiplier()
 	if mult != 1.5 {
-		t.Errorf("GetCurrentMultiplier() for permanent coupon = %v, want 1.5", mult)
+		t.Errorf("GetCouponMultiplier() for permanent coupon = %v, want 1.5", mult)
+	}
+}
+
+func TestTrackedItem_CouponMultiplier_WithTimeWindows(t *testing.T) {
+	// Monday at 19:00 (within 18-20 window)
+	mondayEvening := time.Date(2024, 1, 1, 19, 0, 0, 0, time.UTC) // Jan 1, 2024 was a Monday
+
+	// Monday at 10:00 (outside 18-20 window)
+	mondayMorning := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
+
+	item := TrackedItem{
+		ItemType:     ItemTypeCoupon,
+		AcquiredAt:   time.Now().Add(-30 * time.Minute),
+		BaseRate:     2.0,
+		DurationMins: 0, // Permanent
+		TimeWindows: []cash.TimeWindow{
+			{Day: "MON", StartHour: 18, EndHour: 20},
+		},
+	}
+
+	// Within time window - should return base rate
+	mult := item.GetCouponMultiplierAt(mondayEvening, false)
+	if mult != 2.0 {
+		t.Errorf("GetCouponMultiplierAt() within window = %v, want 2.0", mult)
+	}
+
+	// Outside time window - should return 1.0
+	mult = item.GetCouponMultiplierAt(mondayMorning, false)
+	if mult != 1.0 {
+		t.Errorf("GetCouponMultiplierAt() outside window = %v, want 1.0", mult)
+	}
+}
+
+func TestTrackedItem_CouponMultiplier_AllDayWindow(t *testing.T) {
+	// Coupon with 00-24 window (all day)
+	item := TrackedItem{
+		ItemType:     ItemTypeCoupon,
+		AcquiredAt:   time.Now().Add(-30 * time.Minute),
+		BaseRate:     2.0,
+		DurationMins: 0, // Permanent
+		TimeWindows: []cash.TimeWindow{
+			{Day: "MON", StartHour: 0, EndHour: 24},
+			{Day: "TUE", StartHour: 0, EndHour: 24},
+			{Day: "WED", StartHour: 0, EndHour: 24},
+			{Day: "THU", StartHour: 0, EndHour: 24},
+			{Day: "FRI", StartHour: 0, EndHour: 24},
+			{Day: "SAT", StartHour: 0, EndHour: 24},
+			{Day: "SUN", StartHour: 0, EndHour: 24},
+		},
+	}
+
+	// Any time on Monday should be active
+	mondayMorning := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
+	mult := item.GetCouponMultiplierAt(mondayMorning, false)
+	if mult != 2.0 {
+		t.Errorf("GetCouponMultiplierAt() all-day window = %v, want 2.0", mult)
+	}
+}
+
+func TestTrackedItem_CouponMultiplier_NoTimeWindows(t *testing.T) {
+	// Coupon with no time windows (always active)
+	item := TrackedItem{
+		ItemType:     ItemTypeCoupon,
+		AcquiredAt:   time.Now().Add(-30 * time.Minute),
+		BaseRate:     2.0,
+		DurationMins: 0, // Permanent
+		TimeWindows:  nil,
+	}
+
+	// Any time should be active
+	anyTime := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
+	mult := item.GetCouponMultiplierAt(anyTime, false)
+	if mult != 2.0 {
+		t.Errorf("GetCouponMultiplierAt() no time windows = %v, want 2.0", mult)
 	}
 }
 
@@ -225,21 +249,24 @@ func TestItemTrackerGetAllTrackedItems(t *testing.T) {
 	}
 }
 
-func TestItemTrackerComputeItemRateFactors(t *testing.T) {
+func TestItemTrackerComputeItemRateFactors_Coupon(t *testing.T) {
 	resetItemTracker()
 	ten := createTestTenantForTracker()
+	l, _ := test.NewNullLogger()
+	ctx := tenant.WithContext(context.Background(), ten)
 
-	// Track a bonusExp item with +10%
+	// Track an active coupon with 2x rate
 	item := TrackedItem{
-		TemplateId:    1002357,
-		ItemType:      ItemTypeBonusExp,
-		AcquiredAt:    time.Now(),
-		RateType:      rate.TypeExp,
-		BonusExpTiers: []equipment.BonusExpTier{{IncExpR: 10, TermStart: 0}},
+		TemplateId:   5210000,
+		ItemType:     ItemTypeCoupon,
+		AcquiredAt:   time.Now(),
+		RateType:     rate.TypeExp,
+		BaseRate:     2.0,
+		DurationMins: 60, // 60 minutes, still active
 	}
 	GetItemTracker().TrackItem(ten, 12345, item)
 
-	factors := GetItemTracker().ComputeItemRateFactors(ten, 12345)
+	factors := GetItemTracker().ComputeItemRateFactors(l, ctx, ten, 12345)
 
 	if len(factors) != 1 {
 		t.Fatalf("ComputeItemRateFactors() returned %v factors, want 1", len(factors))
@@ -248,14 +275,16 @@ func TestItemTrackerComputeItemRateFactors(t *testing.T) {
 	if factors[0].RateType() != rate.TypeExp {
 		t.Errorf("Factor RateType = %v, want %v", factors[0].RateType(), rate.TypeExp)
 	}
-	if factors[0].Multiplier() != 1.10 {
-		t.Errorf("Factor Multiplier = %v, want 1.10", factors[0].Multiplier())
+	if factors[0].Multiplier() != 2.0 {
+		t.Errorf("Factor Multiplier = %v, want 2.0", factors[0].Multiplier())
 	}
 }
 
 func TestItemTrackerComputeItemRateFactors_Filters1x(t *testing.T) {
 	resetItemTracker()
 	ten := createTestTenantForTracker()
+	l, _ := test.NewNullLogger()
+	ctx := tenant.WithContext(context.Background(), ten)
 
 	// Track an expired coupon (multiplier will be 1.0)
 	item := TrackedItem{
@@ -268,7 +297,7 @@ func TestItemTrackerComputeItemRateFactors_Filters1x(t *testing.T) {
 	}
 	GetItemTracker().TrackItem(ten, 12345, item)
 
-	factors := GetItemTracker().ComputeItemRateFactors(ten, 12345)
+	factors := GetItemTracker().ComputeItemRateFactors(l, ctx, ten, 12345)
 
 	// Should not include the 1.0 multiplier factor
 	if len(factors) != 0 {

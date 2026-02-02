@@ -66,18 +66,19 @@ func handleAssetCreated(l logrus.FieldLogger, ctx context.Context, e asset.Statu
 		return
 	}
 
-	// Get rate multiplier and duration
+	// Get rate multiplier, duration, and time windows
 	rateMultiplier := float64(cashData.GetRate())
 	durationMins := cashData.GetTime()
+	timeWindows := cashData.GetTimeWindows()
 
 	// Get createdAt from event's reference data
 	createdAt := e.Body.GetCreatedAt()
 
-	l.Infof("Tracking cash coupon: item [%d], rate type [%s], multiplier [%.2f], duration [%d mins], createdAt [%v] for character [%d].",
-		e.TemplateId, rateType, rateMultiplier, durationMins, createdAt, e.CharacterId)
+	l.Infof("Tracking cash coupon: item [%d], rate type [%s], multiplier [%.2f], duration [%d mins], createdAt [%v], time windows [%d] for character [%d].",
+		e.TemplateId, rateType, rateMultiplier, durationMins, createdAt, len(timeWindows), e.CharacterId)
 
 	p := character.NewProcessor(l, ctx)
-	if err := p.TrackCouponItem(e.CharacterId, e.TemplateId, rateType, rateMultiplier, durationMins, createdAt); err != nil {
+	if err := p.TrackCouponItem(e.CharacterId, e.TemplateId, rateType, rateMultiplier, durationMins, createdAt, timeWindows); err != nil {
 		l.WithError(err).Errorf("Unable to track coupon for character [%d].", e.CharacterId)
 	}
 }
@@ -110,18 +111,19 @@ func handleAssetAccepted(l logrus.FieldLogger, ctx context.Context, e asset.Stat
 		return
 	}
 
-	// Get rate multiplier and duration
+	// Get rate multiplier, duration, and time windows
 	rateMultiplier := float64(cashData.GetRate())
 	durationMins := cashData.GetTime()
+	timeWindows := cashData.GetTimeWindows()
 
 	// Get createdAt from event's reference data
 	createdAt := e.Body.GetCreatedAt()
 
-	l.Infof("Tracking cash coupon (accepted): item [%d], rate type [%s], multiplier [%.2f], duration [%d mins], createdAt [%v] for character [%d].",
-		e.TemplateId, rateType, rateMultiplier, durationMins, createdAt, e.CharacterId)
+	l.Infof("Tracking cash coupon (accepted): item [%d], rate type [%s], multiplier [%.2f], duration [%d mins], createdAt [%v], time windows [%d] for character [%d].",
+		e.TemplateId, rateType, rateMultiplier, durationMins, createdAt, len(timeWindows), e.CharacterId)
 
 	p := character.NewProcessor(l, ctx)
-	if err := p.TrackCouponItem(e.CharacterId, e.TemplateId, rateType, rateMultiplier, durationMins, createdAt); err != nil {
+	if err := p.TrackCouponItem(e.CharacterId, e.TemplateId, rateType, rateMultiplier, durationMins, createdAt, timeWindows); err != nil {
 		l.WithError(err).Errorf("Unable to track coupon for character [%d].", e.CharacterId)
 	}
 }

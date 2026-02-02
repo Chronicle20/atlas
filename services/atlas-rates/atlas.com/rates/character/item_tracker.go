@@ -2,6 +2,7 @@ package character
 
 import (
 	"atlas-rates/bonusexp"
+	"atlas-rates/data/cash"
 	"atlas-rates/data/equipment"
 	"atlas-rates/rate"
 	"context"
@@ -25,16 +26,17 @@ const (
 type TrackedItem struct {
 	TemplateId    uint32
 	ItemType      ItemType
-	RateType      rate.Type              // What rate this item affects
+	RateType      rate.Type                // What rate this item affects
 	BonusExpTiers []equipment.BonusExpTier // Tiers for bonusExp items
 
 	// For bonusExp items: When the item was equipped (from atlas-equipables)
 	EquippedSince *time.Time
 
 	// For coupons: Acquisition info
-	AcquiredAt   time.Time // When the coupon was acquired
-	BaseRate     float64   // Base rate multiplier
-	DurationMins int32     // Active duration in minutes (0 = permanent)
+	AcquiredAt   time.Time         // When the coupon was acquired
+	BaseRate     float64           // Base rate multiplier
+	DurationMins int32             // Active duration in minutes (0 = permanent)
+	TimeWindows  []cash.TimeWindow // Active time windows (empty = always active)
 }
 
 // IsExpired returns true if a coupon has expired
@@ -49,13 +51,71 @@ func (t TrackedItem) IsExpired() bool {
 // GetCouponMultiplier returns the multiplier for a coupon item
 // For bonusExp items, use ComputeBonusExpMultiplier instead
 func (t TrackedItem) GetCouponMultiplier() float64 {
+	return t.GetCouponMultiplierAt(time.Now(), false)
+}
+
+// GetCouponMultiplierAt returns the multiplier for a coupon item at a specific time
+// The isHoliday parameter should be true if the given time is a holiday
+func (t TrackedItem) GetCouponMultiplierAt(checkTime time.Time, isHoliday bool) float64 {
 	if t.ItemType != ItemTypeCoupon {
 		return 1.0
 	}
 	if t.IsExpired() {
 		return 1.0
 	}
+	if !t.IsActiveAt(checkTime, isHoliday) {
+		return 1.0
+	}
 	return t.BaseRate
+}
+
+// IsActiveAt checks if the coupon is active at a given time based on time windows
+// If no time windows are defined, returns true (always active)
+func (t TrackedItem) IsActiveAt(checkTime time.Time, isHoliday bool) bool {
+	if len(t.TimeWindows) == 0 {
+		return true
+	}
+
+	hour := checkTime.Hour()
+	weekday := checkTime.Weekday()
+
+	// Map Go's time.Weekday to WZ day abbreviations
+	dayAbbreviations := map[time.Weekday]string{
+		time.Monday:    "MON",
+		time.Tuesday:   "TUE",
+		time.Wednesday: "WED",
+		time.Thursday:  "THU",
+		time.Friday:    "FRI",
+		time.Saturday:  "SAT",
+		time.Sunday:    "SUN",
+	}
+	dayAbbr := dayAbbreviations[weekday]
+
+	for _, tw := range t.TimeWindows {
+		// Check holiday window
+		if isHoliday && tw.Day == "HOL" {
+			if hour >= tw.StartHour && hour < tw.EndHour {
+				return true
+			}
+			// EndHour of 24 means through midnight
+			if tw.EndHour == 24 && hour >= tw.StartHour {
+				return true
+			}
+		}
+
+		// Check regular day window
+		if tw.Day == dayAbbr {
+			if hour >= tw.StartHour && hour < tw.EndHour {
+				return true
+			}
+			// EndHour of 24 means through midnight
+			if tw.EndHour == 24 && hour >= tw.StartHour {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 // ItemTracker tracks time-based rate items per character

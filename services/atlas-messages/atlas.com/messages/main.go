@@ -2,6 +2,7 @@ package main
 
 import (
 	"atlas-messages/command"
+	"atlas-messages/command/buff"
 	"atlas-messages/command/character"
 	"atlas-messages/command/character/inventory"
 	"atlas-messages/command/character/skill"
@@ -39,6 +40,7 @@ func main() {
 	command.Registry().Add(character.ChangeJobCommandProducer)
 	command.Registry().Add(skill.MaxSkillCommandProducer)
 	command.Registry().Add(skill.ResetSkillCommandProducer)
+	command.Registry().Add(buff.BuffCommandProducer)
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	message2.InitConsumers(l)(cmf)(consumerGroupId)

@@ -37,7 +37,7 @@ func GetEquippedAssets(l logrus.FieldLogger) func(ctx context.Context) func(char
 
 			// Find the equip compartment and get equipped items
 			for _, comp := range inv.Compartments {
-				if comp.Type == "equip" || comp.Type == "EQUIP" {
+				if comp.Type == CompartmentTypeEquip {
 					assets, err := GetAssets(l)(ctx)(characterId, comp.Id)
 					if err != nil {
 						l.WithError(err).Warnf("Failed to get assets for compartment [%s].", comp.Id)
@@ -71,7 +71,7 @@ func GetCashAssets(l logrus.FieldLogger) func(ctx context.Context) func(characte
 
 			// Find the cash compartment
 			for _, comp := range inv.Compartments {
-				if comp.Type == "cash" || comp.Type == "CASH" {
+				if comp.Type == CompartmentTypeCash {
 					assets, err := GetAssets(l)(ctx)(characterId, comp.Id)
 					if err != nil {
 						l.WithError(err).Warnf("Failed to get assets for compartment [%s].", comp.Id)

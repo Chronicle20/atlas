@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	Resource = "rates/%d/%d/%d"
+	Resource = "worlds/%d/channels/%d/characters/%d/rates"
 )
 
 func getBaseRequest() string {

@@ -22,6 +22,9 @@ func BuffCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(wo
 		sdp := skill.NewProcessor(l, ctx)
 		mp := _map.NewProcessor(l, ctx)
 		return func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
+			// Support both name-based and ID-based syntax:
+			// @buff <target> <skillName> [duration]
+			// @buff <target> #<skillId> [duration]
 			re := regexp.MustCompile(`^@buff\s+(\w+)\s+"?([^"]+)"?(?:\s+(\d+))?$`)
 			match := re.FindStringSubmatch(m)
 			if len(match) < 3 {
@@ -34,7 +37,7 @@ func BuffCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(wo
 			}
 
 			target := match[1]
-			skillName := strings.TrimSpace(match[2])
+			skillQuery := strings.TrimSpace(match[2])
 			var durationOverride int32 = 0
 			if len(match) >= 4 && match[3] != "" {
 				dur, err := strconv.Atoi(match[3])
@@ -43,23 +46,95 @@ func BuffCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(wo
 				}
 			}
 
-			skills, err := sdp.GetByName(skillName)
-			if err != nil || len(skills) == 0 {
-				return func(l logrus.FieldLogger) func(ctx context.Context) error {
-					return func(ctx context.Context) error {
-						msgProc := message.NewProcessor(l, ctx)
-						return msgProc.IssuePinkText(worldId, channelId, c.MapId(), 0, fmt.Sprintf("Unknown skill: %s", skillName), []uint32{c.Id()})
+			var foundSkill skill.Model
+			var maxLevel byte
+
+			// Check if using skill ID syntax (#<skillId>)
+			if strings.HasPrefix(skillQuery, "#") {
+				skillIdStr := strings.TrimPrefix(skillQuery, "#")
+				skillId, err := strconv.ParseUint(skillIdStr, 10, 32)
+				if err != nil {
+					return func(l logrus.FieldLogger) func(ctx context.Context) error {
+						return func(ctx context.Context) error {
+							msgProc := message.NewProcessor(l, ctx)
+							return msgProc.IssuePinkText(worldId, channelId, c.MapId(), 0, fmt.Sprintf("Invalid skill ID: %s", skillIdStr), []uint32{c.Id()})
+						}
+					}, true
+				}
+
+				s, err := sdp.GetById(uint32(skillId))
+				if err != nil {
+					return func(l logrus.FieldLogger) func(ctx context.Context) error {
+						return func(ctx context.Context) error {
+							msgProc := message.NewProcessor(l, ctx)
+							return msgProc.IssuePinkText(worldId, channelId, c.MapId(), 0, fmt.Sprintf("Unknown skill ID: %d", skillId), []uint32{c.Id()})
+						}
+					}, true
+				}
+
+				if !isBuffable(s) {
+					return func(l logrus.FieldLogger) func(ctx context.Context) error {
+						return func(ctx context.Context) error {
+							msgProc := message.NewProcessor(l, ctx)
+							return msgProc.IssuePinkText(worldId, channelId, c.MapId(), 0, fmt.Sprintf("Skill #%d is not a buff skill.", skillId), []uint32{c.Id()})
+						}
+					}, true
+				}
+
+				foundSkill = s
+				maxLevel = getBuffableLevel(s)
+			} else {
+				// Name-based lookup
+				skills, err := sdp.GetByName(skillQuery)
+				if err != nil || len(skills) == 0 {
+					return func(l logrus.FieldLogger) func(ctx context.Context) error {
+						return func(ctx context.Context) error {
+							msgProc := message.NewProcessor(l, ctx)
+							return msgProc.IssuePinkText(worldId, channelId, c.MapId(), 0, fmt.Sprintf("Unknown skill: %s", skillQuery), []uint32{c.Id()})
+						}
+					}, true
+				}
+
+				// Filter to only buffable skills
+				buffableSkills := make([]skill.Model, 0)
+				for _, s := range skills {
+					if isBuffable(s) {
+						buffableSkills = append(buffableSkills, s)
 					}
-				}, true
+				}
+
+				if len(buffableSkills) == 0 {
+					return func(l logrus.FieldLogger) func(ctx context.Context) error {
+						return func(ctx context.Context) error {
+							msgProc := message.NewProcessor(l, ctx)
+							return msgProc.IssuePinkText(worldId, channelId, c.MapId(), 0, fmt.Sprintf("No buff skills match: %s", skillQuery), []uint32{c.Id()})
+						}
+					}, true
+				}
+
+				if len(buffableSkills) > 1 {
+					// Multiple matches - show list to user
+					return func(l logrus.FieldLogger) func(ctx context.Context) error {
+						return func(ctx context.Context) error {
+							msgProc := message.NewProcessor(l, ctx)
+							_ = msgProc.IssuePinkText(worldId, channelId, c.MapId(), 0, fmt.Sprintf("Multiple skills match \"%s\":", skillQuery), []uint32{c.Id()})
+							for _, s := range buffableSkills {
+								_ = msgProc.IssuePinkText(worldId, channelId, c.MapId(), 0, fmt.Sprintf("  #%d - %s", s.Id(), s.Name()), []uint32{c.Id()})
+							}
+							return msgProc.IssuePinkText(worldId, channelId, c.MapId(), 0, "Use @buff <target> #<skillId> for a specific skill.", []uint32{c.Id()})
+						}
+					}, true
+				}
+
+				foundSkill = buffableSkills[0]
+				maxLevel = getBuffableLevel(foundSkill)
 			}
 
-			foundSkill := skills[0]
-			maxLevel := byte(len(foundSkill.Effects()))
 			if maxLevel == 0 {
 				return func(l logrus.FieldLogger) func(ctx context.Context) error {
 					return func(ctx context.Context) error {
 						msgProc := message.NewProcessor(l, ctx)
-						return msgProc.IssuePinkText(worldId, channelId, c.MapId(), 0, fmt.Sprintf("Skill %s has no effects", foundSkill.Name()), []uint32{c.Id()})
+						return msgProc.IssuePinkText(worldId, channelId, c.MapId(), 0, fmt.Sprintf("Skill %s has no buff effects.", foundSkill.Name()), []uint32{c.Id()})
 					}
 				}, true
 			}
@@ -103,4 +178,25 @@ func BuffCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(wo
 			}, true
 		}
 	}
+}
+
+// isBuffable returns true if the skill has at least one effect with positive duration and statups
+func isBuffable(s skill.Model) bool {
+	for _, e := range s.Effects() {
+		if e.Duration() > 0 && len(e.StatUps()) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+// getBuffableLevel returns the highest level that has positive duration and statups
+func getBuffableLevel(s skill.Model) byte {
+	var maxLevel byte = 0
+	for i, e := range s.Effects() {
+		if e.Duration() > 0 && len(e.StatUps()) > 0 {
+			maxLevel = byte(i + 1)
+		}
+	}
+	return maxLevel
 }

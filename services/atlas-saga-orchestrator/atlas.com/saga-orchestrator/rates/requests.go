@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	ratesPath = "rates/%d/%d/%d"
+	ratesPath = "worlds/%d/channels/%d/characters/%d/rates"
 )
 
 func getBaseRequest() string {

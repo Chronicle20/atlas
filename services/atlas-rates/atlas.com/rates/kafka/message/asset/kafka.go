@@ -8,7 +8,9 @@ import (
 const (
 	EnvEventTopicStatus            = "EVENT_TOPIC_ASSET_STATUS"
 	StatusEventTypeCreated         = "CREATED"
+	StatusEventTypeAccepted        = "ACCEPTED"
 	StatusEventTypeDeleted         = "DELETED"
+	StatusEventTypeReleased        = "RELEASED"
 	StatusEventTypeMoved           = "MOVED"
 	StatusEventTypeQuantityChanged = "QUANTITY_CHANGED"
 )
@@ -46,8 +48,34 @@ func (b CreatedStatusEventBody) GetCreatedAt() time.Time {
 	return time.Time{}
 }
 
+// AcceptedStatusEventBody contains info for assets accepted from storage (same structure as Created)
+type AcceptedStatusEventBody struct {
+	ReferenceId   uint32                 `json:"referenceId"`
+	ReferenceType string                 `json:"referenceType"`
+	ReferenceData map[string]interface{} `json:"referenceData"`
+	Expiration    time.Time              `json:"expiration"`
+}
+
+// GetCreatedAt extracts the createdAt timestamp from the ReferenceData if present
+func (b AcceptedStatusEventBody) GetCreatedAt() time.Time {
+	if b.ReferenceData == nil {
+		return time.Time{}
+	}
+	if createdAtStr, ok := b.ReferenceData["createdAt"].(string); ok {
+		if t, err := time.Parse(time.RFC3339, createdAtStr); err == nil {
+			return t
+		}
+	}
+	return time.Time{}
+}
+
 // DeletedStatusEventBody is empty for deleted assets
 type DeletedStatusEventBody struct {
+}
+
+// ReleasedStatusEventBody contains info for assets released to storage
+type ReleasedStatusEventBody struct {
+	ReferenceType string `json:"referenceType"`
 }
 
 // MovedStatusEventBody contains the previous slot for moved assets

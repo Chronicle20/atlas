@@ -30,7 +30,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		var t string
 		t, _ = topic.EnvProvider(l)(asset.EnvEventTopicStatus)()
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetCreated)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetAccepted)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetDeleted)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetReleased)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetMoved)))
 	}
 }
@@ -80,6 +82,50 @@ func handleAssetCreated(l logrus.FieldLogger, ctx context.Context, e asset.Statu
 	}
 }
 
+// handleAssetAccepted handles ACCEPTED events for cash coupons transferred from storage
+func handleAssetAccepted(l logrus.FieldLogger, ctx context.Context, e asset.StatusEvent[asset.AcceptedStatusEventBody]) {
+	if e.Type != asset.StatusEventTypeAccepted {
+		return
+	}
+
+	l.Debugf("Processing asset accepted event for character [%d], template [%d], slot [%d].",
+		e.CharacterId, e.TemplateId, e.Slot)
+
+	// Check if this is a cash item with rate properties
+	cashData, err := cash.GetById(l)(ctx)(e.TemplateId)
+	if err != nil {
+		l.Debugf("Item [%d] is not a cash item or failed to fetch: %v", e.TemplateId, err)
+		return
+	}
+
+	if !cashData.HasRateProperties() {
+		l.Debugf("Cash item [%d] does not have rate properties.", e.TemplateId)
+		return
+	}
+
+	// Determine rate type based on item ID range
+	rateType := character.GetRateTypeFromTemplateId(e.TemplateId)
+	if rateType == "" {
+		l.Debugf("Cash item [%d] is not a recognized rate coupon.", e.TemplateId)
+		return
+	}
+
+	// Get rate multiplier and duration
+	rateMultiplier := float64(cashData.GetRate())
+	durationMins := cashData.GetTime()
+
+	// Get createdAt from event's reference data
+	createdAt := e.Body.GetCreatedAt()
+
+	l.Infof("Tracking cash coupon (accepted): item [%d], rate type [%s], multiplier [%.2f], duration [%d mins], createdAt [%v] for character [%d].",
+		e.TemplateId, rateType, rateMultiplier, durationMins, createdAt, e.CharacterId)
+
+	p := character.NewProcessor(l, ctx)
+	if err := p.TrackCouponItem(e.CharacterId, e.TemplateId, rateType, rateMultiplier, durationMins, createdAt); err != nil {
+		l.WithError(err).Errorf("Unable to track coupon for character [%d].", e.CharacterId)
+	}
+}
+
 // handleAssetDeleted handles DELETED events to remove item rate factors
 func handleAssetDeleted(l logrus.FieldLogger, ctx context.Context, e asset.StatusEvent[asset.DeletedStatusEventBody]) {
 	if e.Type != asset.StatusEventTypeDeleted {
@@ -87,6 +133,30 @@ func handleAssetDeleted(l logrus.FieldLogger, ctx context.Context, e asset.Statu
 	}
 
 	l.Debugf("Processing asset deleted event for character [%d], template [%d].",
+		e.CharacterId, e.TemplateId)
+
+	p := character.NewProcessor(l, ctx)
+
+	// Untrack time-based item (coupons, bonusExp equipment)
+	if err := p.UntrackItem(e.CharacterId, e.TemplateId); err != nil {
+		l.WithError(err).Debugf("Unable to untrack item for character [%d], item [%d].",
+			e.CharacterId, e.TemplateId)
+	}
+
+	// Also remove any static factors (for backwards compatibility)
+	if err := p.RemoveAllItemFactors(e.CharacterId, e.TemplateId); err != nil {
+		l.WithError(err).Debugf("Unable to remove item factors for character [%d], item [%d] (may not have had any).",
+			e.CharacterId, e.TemplateId)
+	}
+}
+
+// handleAssetReleased handles RELEASED events to remove item rate factors (item moved to storage)
+func handleAssetReleased(l logrus.FieldLogger, ctx context.Context, e asset.StatusEvent[asset.ReleasedStatusEventBody]) {
+	if e.Type != asset.StatusEventTypeReleased {
+		return
+	}
+
+	l.Debugf("Processing asset released event for character [%d], template [%d].",
 		e.CharacterId, e.TemplateId)
 
 	p := character.NewProcessor(l, ctx)

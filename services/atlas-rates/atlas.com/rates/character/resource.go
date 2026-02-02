@@ -15,8 +15,8 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 	return func(router *mux.Router, l logrus.FieldLogger) {
 		registerGet := rest.RegisterHandler(l)(si)
 
-		r := router.PathPrefix("/rates").Subrouter()
-		r.HandleFunc("/{worldId}/{channelId}/{characterId}", registerGet("get_character_rates", handleGetRates)).Methods(http.MethodGet)
+		r := router.PathPrefix("/worlds/{worldId}/channels/{channelId}/characters/{characterId}").Subrouter()
+		r.HandleFunc("/rates", registerGet("get_character_rates", handleGetRates)).Methods(http.MethodGet)
 	}
 }
 

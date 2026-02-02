@@ -814,5 +814,14 @@
       "itemDropRate": 1.0,
       "questExpRate": 1.0
     }
-  ]
+  ],
+  "cashShop": {
+    "commodities": {
+      "hourlyExpirations": [
+        {"templateId": 5211060, "hours": 2},
+        {"templateId": 5211048, "hours": 4},
+        {"templateId": 5360042, "hours": 4}
+      ]
+    }
+  }
 }

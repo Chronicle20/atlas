@@ -55,3 +55,14 @@ func Extract(rm RestModel) (Model, error) {
 		createdAt:   rm.CreatedAt,
 	}, nil
 }
+
+type InputRestModel struct {
+	TemplateId  uint32 `json:"templateId"`
+	CommodityId uint32 `json:"commodityId"`
+	Quantity    uint32 `json:"quantity"`
+	PurchasedBy uint32 `json:"purchasedBy"`
+}
+
+func (r InputRestModel) GetName() string {
+	return "items"
+}

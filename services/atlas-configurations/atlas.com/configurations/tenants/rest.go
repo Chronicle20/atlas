@@ -1,6 +1,7 @@
 package tenants
 
 import (
+	"atlas-configurations/tenants/cashshop"
 	"atlas-configurations/tenants/characters"
 	"atlas-configurations/tenants/npcs"
 	"atlas-configurations/tenants/socket"
@@ -17,6 +18,7 @@ type RestModel struct {
 	Characters   characters.RestModel `json:"characters"`
 	NPCs         []npcs.RestModel     `json:"npcs"`
 	Worlds       []worlds.RestModel   `json:"worlds"`
+	CashShop     cashshop.RestModel   `json:"cashShop"`
 }
 
 func (r RestModel) GetName() string {

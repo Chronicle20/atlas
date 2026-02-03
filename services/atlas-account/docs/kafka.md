@@ -4,7 +4,7 @@
 
 | Topic Environment Variable | Consumer Group | Description |
 |---------------------------|----------------|-------------|
-| COMMAND_TOPIC_CREATE_ACCOUNT | Account Service | Account creation commands |
+| COMMAND_TOPIC_ACCOUNT | Account Service | Account commands (create, delete) |
 | COMMAND_TOPIC_ACCOUNT_SESSION | Account Service | Session commands |
 
 ## Topics Produced
@@ -18,16 +18,36 @@
 
 ### Commands
 
-#### CreateCommand
+#### Command[E]
 
-Consumed from COMMAND_TOPIC_CREATE_ACCOUNT.
+Consumed from COMMAND_TOPIC_ACCOUNT. Generic envelope with typed body.
+
+| Field | Type |
+|-------|------|
+| Type | string |
+| Body | varies |
+
+##### Account Command Types
+
+| Type | Body Type | Description |
+|------|-----------|-------------|
+| CREATE | CreateCommandBody | Account creation |
+| DELETE | DeleteCommandBody | Account deletion |
+
+##### CreateCommandBody
 
 | Field | Type |
 |-------|------|
 | Name | string |
 | Password | string |
 
-#### SessionCommand
+##### DeleteCommandBody
+
+| Field | Type |
+|-------|------|
+| AccountId | uint32 |
+
+#### SessionCommand[E]
 
 Consumed from COMMAND_TOPIC_ACCOUNT_SESSION. Generic envelope with typed body.
 
@@ -93,8 +113,9 @@ Produced to EVENT_TOPIC_ACCOUNT_STATUS.
 | CREATED | Account created |
 | LOGGED_IN | Account logged in |
 | LOGGED_OUT | Account logged out |
+| DELETED | Account deleted |
 
-#### SessionStatusEvent
+#### SessionStatusEvent[E]
 
 Produced to EVENT_TOPIC_ACCOUNT_SESSION_STATUS. Generic envelope with typed body.
 

@@ -2,7 +2,7 @@
 
 ## Responsibility
 
-The account domain manages user account lifecycle including creation, authentication, session state tracking, and account attribute updates.
+The account domain manages user account lifecycle including creation, authentication, deletion, session state tracking, and account attribute updates.
 
 ## Core Models
 
@@ -66,6 +66,7 @@ Service type enumeration.
 - Password is stored as bcrypt hash
 - Gender defaults to 0 (Male) or 10 (UI Choose) based on region and version
 - An account cannot log in if already logged in via another session
+- An account cannot be deleted if currently logged in
 - Channel login requires an existing session in transition state
 - Logout is blocked for sessions in transition state (State 2)
 
@@ -93,11 +94,17 @@ Primary domain processor providing account operations.
 | LoggedInTenantProvider | Retrieve logged-in accounts for tenant |
 | GetOrCreate | Retrieve or create account if automatic registration enabled |
 | Create | Create new account with hashed password |
+| CreateAndEmit | Create account and emit status event |
 | Update | Update account attributes (pin, pic, tos, gender) |
+| Delete | Delete account and emit status event |
+| DeleteAndEmit | Delete account and emit status event |
 | Login | Record login for account and session |
 | Logout | Record logout for account and session |
+| LogoutAndEmit | Logout and emit status event |
 | AttemptLogin | Validate credentials and process login attempt |
+| AttemptLoginAndEmit | Attempt login and emit session status event |
 | ProgressState | Transition account to specified state |
+| ProgressStateAndEmit | Progress state and emit session status event |
 
 ### Registry
 
@@ -115,6 +122,13 @@ In-memory session state registry (singleton).
 | Terminate | Remove all sessions for account |
 | GetExpiredInTransition | Get accounts with expired transition sessions |
 | Tenants | Get all tenants with active sessions |
+
+## Error Types
+
+| Error | Description |
+|-------|-------------|
+| ErrAccountNotFound | Account does not exist |
+| ErrAccountLoggedIn | Account is currently logged in and cannot be deleted |
 
 ## Error Codes
 

@@ -42,6 +42,14 @@ Character status events (cleanup triggers).
 | `CHANNEL_CHANGED` | ChangeChannelEventLoginBody | Character changed channels |
 | `MAP_CHANGED` | StatusEventMapChangedBody | Character changed maps |
 
+### EVENT_TOPIC_ACCOUNT_STATUS
+
+Account status events (cleanup triggers).
+
+| Event Type | Body Type | Description |
+|------------|-----------|-------------|
+| `DELETED` | StatusEvent | Account deleted - triggers storage cleanup |
+
 ---
 
 ## Topics Produced
@@ -59,6 +67,7 @@ Storage status events.
 | `ERROR` | ErrorEventBody | Operation error occurred |
 | `PROJECTION_CREATED` | ProjectionCreatedEventBody | Storage projection created |
 | `PROJECTION_DESTROYED` | ProjectionDestroyedEventBody | Storage projection destroyed |
+| `EXPIRED` | ExpiredStatusEventBody | Asset expired from storage |
 
 ### EVENT_TOPIC_STORAGE_COMPARTMENT_STATUS
 
@@ -221,6 +230,13 @@ npcId: uint32
 characterId: uint32
 ```
 
+**ExpiredStatusEventBody**
+```
+isCash: bool
+replaceItemId: uint32
+replaceMessage: string
+```
+
 **StatusEventAcceptedBody**
 ```
 transactionId: UUID
@@ -243,6 +259,15 @@ errorCode: string
 message: string (optional)
 ```
 
+### Account Status Event Messages
+
+**StatusEvent**
+```
+accountId: uint32
+name: string
+status: string
+```
+
 ---
 
 ## Transaction Semantics
@@ -251,6 +276,7 @@ message: string (optional)
 - Status events include transactionId to enable saga coordination
 - Compartment commands (ACCEPT/RELEASE) participate in two-phase transfer sagas
 - Error events are emitted on operation failures with error codes
+- Account deletion events trigger cascade deletion of all storage data
 
 ---
 

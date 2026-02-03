@@ -40,6 +40,7 @@ type Provider interface {
 	GetById(id uint32) (Model[any], error)
 	GetSlotMax(templateId uint32) (uint32, error)
 	Delete(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID) func(a Model[any]) error
+	Expire(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, isCash bool, replaceItemId uint32, replaceMessage string) func(a Model[any]) error
 	Drop(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID) func(a Model[any]) error
 	UpdateSlot(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, ap model.Provider[Model[any]], sp model.Provider[int16]) error
 	UpdateQuantity(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, a Model[any], quantity uint32) error
@@ -411,6 +412,51 @@ func (p *Processor) Delete(mb *message.Buffer) func(transactionId uuid.UUID, cha
 				return txErr
 			}
 			p.l.Debugf("Deleted asset [%d].", a.Id())
+			return nil
+		}
+	}
+}
+
+// Expire deletes an asset and emits an EXPIRED event instead of DELETED.
+// This is used when items expire due to time limits.
+func (p *Processor) Expire(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, isCash bool, replaceItemId uint32, replaceMessage string) func(a Model[any]) error {
+	return func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, isCash bool, replaceItemId uint32, replaceMessage string) func(a Model[any]) error {
+		return func(a Model[any]) error {
+			p.l.Debugf("Attempting to expire asset [%d].", a.Id())
+			txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+				var deleteRefFunc func(id uint32) error
+				if a.ReferenceType() == ReferenceTypeEquipable {
+					deleteRefFunc = p.equipableProcessor.Delete
+				} else if a.ReferenceType() == ReferenceTypeCashEquipable {
+					// TODO Cash Shop
+				} else if a.ReferenceType() == ReferenceTypeConsumable || a.ReferenceType() == ReferenceTypeSetup || a.ReferenceType() == ReferenceTypeEtc {
+					deleteRefFunc = p.stackableProcessor.Delete
+				} else if a.ReferenceType() == ReferenceTypeCash {
+					deleteRefFunc = p.cashProcessor.Delete
+				} else if a.ReferenceType() == ReferenceTypePet {
+					// TODO Cash Shop
+				}
+
+				if deleteRefFunc == nil {
+					p.l.Errorf("Unable to locate delete function for asset [%d]. This will lead to a dangling asset.", a.Id())
+					return nil
+				}
+				err := deleteRefFunc(a.ReferenceId())
+				if err != nil {
+					p.l.WithError(err).Errorf("Unable to expire asset [%d], due to error deleting reference [%d].", a.Id(), a.ReferenceId())
+					return err
+				}
+				err = deleteById(tx, p.t.Id(), a.Id())
+				if err != nil {
+					return err
+				}
+				return mb.Put(asset.EnvEventTopicStatus, ExpiredEventStatusProvider(transactionId, characterId, compartmentId, a.Id(), a.TemplateId(), a.Slot(), isCash, replaceItemId, replaceMessage))
+			})
+			if txErr != nil {
+				p.l.WithError(txErr).Errorf("Unable to expire asset [%d].", a.Id())
+				return txErr
+			}
+			p.l.Debugf("Expired asset [%d].", a.Id())
 			return nil
 		}
 	}

@@ -101,6 +101,8 @@ type RestModel struct {
 	Skills          []uint32           `json:"skills"`
 	Rewards         []RewardRestModel  `json:"rewards"`
 	Rechargeable    bool               `json:"rechargeable"`
+	ReplaceItemId   uint32             `json:"replaceItemId,omitempty"`
+	ReplaceMessage  string             `json:"replaceMessage,omitempty"`
 }
 
 func (r RestModel) GetName() string {

@@ -22,3 +22,17 @@ func CreateStatusEventProvider(id uint32, cashId int64, templateId uint32, quant
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func ExpireStatusEventProvider(replaceItemId uint32, replaceMessage string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(replaceItemId))
+	value := &item.StatusEvent[item.StatusEventExpiredBody]{
+		CharacterId: 0,
+		Type:        item.StatusExpired,
+		Body: item.StatusEventExpiredBody{
+			IsCash:         true,
+			ReplaceItemId:  replaceItemId,
+			ReplaceMessage: replaceMessage,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

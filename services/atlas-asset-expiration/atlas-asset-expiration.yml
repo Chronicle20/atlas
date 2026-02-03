@@ -1,0 +1,27 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-asset-expiration
+  namespace: atlas
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: atlas-asset-expiration
+  template:
+    metadata:
+      labels:
+        app: atlas-asset-expiration
+    spec:
+      containers:
+      - name: asset-expiration
+        image: ghcr.io/chronicle20/atlas-asset-expiration/atlas-asset-expiration:latest
+        envFrom:
+        - configMapRef:
+            name: atlas-env
+        env:
+        - name: LOG_LEVEL
+          value: "debug"
+        - name: EXPIRATION_CHECK_INTERVAL_SECONDS
+          value: "60"

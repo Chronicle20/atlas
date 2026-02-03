@@ -5,6 +5,7 @@ import (
 	"atlas-inventory/compartment"
 	"atlas-inventory/database"
 	"atlas-inventory/inventory"
+	assetConsumer "atlas-inventory/kafka/consumer/asset"
 	"atlas-inventory/kafka/consumer/character"
 	compartment2 "atlas-inventory/kafka/consumer/compartment"
 	"atlas-inventory/kafka/consumer/drop"
@@ -56,11 +57,13 @@ func main() {
 	db := database.Connect(l, database.SetMigrations(compartment.Migration, asset.Migration, stackable.Migration))
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	assetConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	compartment2.InitConsumers(l)(cmf)(consumerGroupId)
 	drop.InitConsumers(l)(cmf)(consumerGroupId)
 	equipable.InitConsumers(l)(cmf)(consumerGroupId)
 
+	assetConsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 	character.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 	compartment2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 	drop.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)

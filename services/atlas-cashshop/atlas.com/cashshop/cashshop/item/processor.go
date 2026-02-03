@@ -24,6 +24,8 @@ type Processor interface {
 	CreateWithCashIdAndEmit(cashId int64, templateId uint32, commodityId uint32, quantity uint32, purchasedBy uint32) (Model, error)
 	Delete(mb *message.Buffer) func(itemId uint32) error
 	DeleteAndEmit(itemId uint32) error
+	Expire(mb *message.Buffer) func(itemId uint32) func(replaceItemId uint32) func(replaceMessage string) error
+	ExpireAndEmit(itemId uint32, replaceItemId uint32, replaceMessage string) error
 }
 
 type ProcessorImpl struct {
@@ -170,5 +172,46 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(itemId uint32) error {
 func (p *ProcessorImpl) DeleteAndEmit(itemId uint32) error {
 	return message.Emit(p.p)(func(buf *message.Buffer) error {
 		return p.Delete(buf)(itemId)
+	})
+}
+
+func (p *ProcessorImpl) Expire(mb *message.Buffer) func(itemId uint32) func(replaceItemId uint32) func(replaceMessage string) error {
+	return func(itemId uint32) func(replaceItemId uint32) func(replaceMessage string) error {
+		return func(replaceItemId uint32) func(replaceMessage string) error {
+			return func(replaceMessage string) error {
+				p.l.Debugf("Expiring cash shop item [%d].", itemId)
+
+				// Delete the item
+				err := deleteById(p.db, p.t.Id(), itemId)
+				if err != nil {
+					return err
+				}
+
+				// Emit EXPIRED status event
+				err = mb.Put(item.EnvStatusTopic, itemProducer.ExpireStatusEventProvider(replaceItemId, replaceMessage))
+				if err != nil {
+					return err
+				}
+
+				// If there's a replacement item, create it
+				if replaceItemId > 0 {
+					p.l.Debugf("Creating replacement item [%d] for expired cash shop item [%d].", replaceItemId, itemId)
+					_, err = p.Create(mb)(replaceItemId)(0)(1)(0)
+					if err != nil {
+						p.l.WithError(err).Warnf("Failed to create replacement item [%d] for expired cash shop item.", replaceItemId)
+						return nil // Don't fail the expiration if we can't create the replacement
+					}
+				}
+
+				p.l.Debugf("Expired cash shop item [%d].", itemId)
+				return nil
+			}
+		}
+	}
+}
+
+func (p *ProcessorImpl) ExpireAndEmit(itemId uint32, replaceItemId uint32, replaceMessage string) error {
+	return message.Emit(p.p)(func(buf *message.Buffer) error {
+		return p.Expire(buf)(itemId)(replaceItemId)(replaceMessage)
 	})
 }

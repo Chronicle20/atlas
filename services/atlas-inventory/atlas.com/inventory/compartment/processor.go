@@ -56,6 +56,8 @@ type Provider interface {
 	ConsumeAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) error
 	DestroyAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, quantity uint32) error
 	DestroyAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, quantity uint32) error
+	ExpireAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, isCash bool, replaceItemId uint32, replaceMessage string) error
+	ExpireAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, isCash bool, replaceItemId uint32, replaceMessage string) error
 	CreateAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64) error
 	CreateAssetAndLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64) error
 	CreateAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64) error
@@ -864,6 +866,61 @@ func (p *Processor) DestroyAsset(mb *message.Buffer) func(transactionId uuid.UUI
 			return txErr
 		}
 		p.l.Debugf("Character [%d] destroyed asset [%d].", characterId, a.Id())
+		return nil
+	}
+}
+
+func (p *Processor) ExpireAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, isCash bool, replaceItemId uint32, replaceMessage string) error {
+	return message.Emit(p.producer)(func(buf *message.Buffer) error {
+		return p.ExpireAsset(buf)(transactionId, characterId, inventoryType, slot, isCash, replaceItemId, replaceMessage)
+	})
+}
+
+func (p *Processor) ExpireAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, isCash bool, replaceItemId uint32, replaceMessage string) error {
+	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, isCash bool, replaceItemId uint32, replaceMessage string) error {
+		p.l.Debugf("Character [%d] attempting to expire asset in inventory [%d] slot [%d].", characterId, inventoryType, slot)
+		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock.Lock()
+		defer invLock.Unlock()
+
+		var a asset.Model[any]
+		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+			c, err := p.WithTransaction(tx).GetByCharacterAndType(characterId)(inventoryType)
+			if err != nil {
+				return err
+			}
+			a, err = p.assetProcessor.WithTransaction(tx).GetBySlot(c.Id(), slot)
+			if err != nil {
+				return err
+			}
+
+			// Expire the asset (deletes and emits EXPIRED event)
+			err = p.assetProcessor.WithTransaction(tx).Expire(mb)(transactionId, characterId, c.Id(), isCash, replaceItemId, replaceMessage)(a)
+			if err != nil {
+				return err
+			}
+
+			// If there's a replacement item, create it
+			if replaceItemId > 0 {
+				p.l.Debugf("Creating replacement item [%d] for expired item [%d].", replaceItemId, a.TemplateId())
+				nfs, err := c.NextFreeSlot()
+				if err != nil {
+					p.l.WithError(err).Warnf("Unable to find free slot for replacement item [%d]. Item will not be created.", replaceItemId)
+					return nil // Don't fail the expiration if we can't create the replacement
+				}
+				_, err = p.assetProcessor.WithTransaction(tx).Create(mb)(transactionId, characterId, c.Id(), replaceItemId, nfs, 1, time.Time{}, 0, 0, 0)
+				if err != nil {
+					p.l.WithError(err).Warnf("Unable to create replacement item [%d] for character [%d].", replaceItemId, characterId)
+					return nil // Don't fail the expiration if we can't create the replacement
+				}
+			}
+			return nil
+		})
+		if txErr != nil {
+			p.l.WithError(txErr).Errorf("Character [%d] unable to expire asset in inventory [%d] slot [%d].", characterId, inventoryType, slot)
+			return txErr
+		}
+		p.l.Debugf("Character [%d] expired asset [%d].", characterId, a.Id())
 		return nil
 	}
 }

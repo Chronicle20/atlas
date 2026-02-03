@@ -2,6 +2,7 @@ package drop
 
 import (
 	"atlas-saga-orchestrator/kafka/producer"
+	queststate "atlas-saga-orchestrator/quest/state"
 	"atlas-saga-orchestrator/rates"
 	"context"
 	"math/rand"
@@ -80,6 +81,11 @@ func (p *ProcessorImpl) SpawnReactorDrops(
 		p.l.WithError(err).Warnf("Failed to fetch drops for reactor [%d], proceeding with empty drops", reactorId)
 		drops = []Model{}
 	}
+	p.l.Debugf("Reactor [%d] has [%d] drops to evaluate.", reactorId, len(drops))
+
+	// Filter quest-specific drops
+	drops = p.filterByQuestState(characterId, drops)
+	p.l.Debugf("After quest filtering, [%d] drops remain.", len(drops))
 
 	// Roll chances to determine which items to drop
 	itemsToDrop := p.rollDrops(drops, r.ItemDropRate())
@@ -218,6 +224,44 @@ func (p *ProcessorImpl) rollMesoChance(mesoChance uint32, itemDropRate float64) 
 	}
 	probability := itemDropRate / float64(mesoChance)
 	return rand.Float64() < probability
+}
+
+// filterByQuestState filters drops to only include non-quest items and quest items for started quests
+func (p *ProcessorImpl) filterByQuestState(characterId uint32, drops []Model) []Model {
+	// Check if any drops require quest filtering
+	hasQuestDrops := false
+	for _, d := range drops {
+		if d.QuestId() != 0 {
+			hasQuestDrops = true
+			break
+		}
+	}
+
+	// Skip quest lookup if no quest-specific drops
+	if !hasQuestDrops {
+		return drops
+	}
+
+	// Fetch started quest IDs for character
+	startedQuests, err := queststate.GetStartedQuestIds(p.l)(p.ctx)(characterId)
+	if err != nil {
+		p.l.WithError(err).Warnf("Unable to fetch started quests for character [%d], excluding all quest drops.", characterId)
+		// On error, exclude all quest-specific drops for safety
+		startedQuests = make(map[uint32]bool)
+	}
+
+	result := make([]Model, 0, len(drops))
+	for _, d := range drops {
+		if d.QuestId() == 0 {
+			// Non-quest item, always include
+			result = append(result, d)
+		} else if startedQuests[d.QuestId()] {
+			// Quest item with started quest
+			result = append(result, d)
+		}
+		// Quest item without started quest is excluded
+	}
+	return result
 }
 
 // randomMesoAmount generates a random meso amount between min and max

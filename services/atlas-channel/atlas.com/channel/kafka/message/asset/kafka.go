@@ -15,6 +15,7 @@ const (
 	StatusEventTypeQuantityChanged = "QUANTITY_CHANGED"
 	StatusEventTypeAccepted        = "ACCEPTED"
 	StatusEventTypeReleased        = "RELEASED"
+	StatusEventTypeExpired         = "EXPIRED"
 )
 
 type StatusEvent[E any] struct {
@@ -163,4 +164,11 @@ type AcceptedStatusEventBody[E any] struct {
 // ReleasedStatusEventBody is for assets released from inventory (e.g., to storage)
 type ReleasedStatusEventBody struct {
 	ReferenceType string `json:"referenceType"`
+}
+
+// ExpiredStatusEventBody is for assets that have expired
+type ExpiredStatusEventBody struct {
+	IsCash         bool   `json:"isCash"`
+	ReplaceItemId  uint32 `json:"replaceItemId,omitempty"`
+	ReplaceMessage string `json:"replaceMessage,omitempty"`
 }

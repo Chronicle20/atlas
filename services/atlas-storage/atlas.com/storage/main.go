@@ -3,6 +3,7 @@ package main
 import (
 	"atlas-storage/asset"
 	"atlas-storage/database"
+	assetConsumer "atlas-storage/kafka/consumer/asset"
 	"atlas-storage/kafka/consumer/character"
 	"atlas-storage/kafka/consumer/compartment"
 	storage2 "atlas-storage/kafka/consumer/storage"
@@ -67,9 +68,11 @@ func main() {
 	// Initialize Kafka consumers for command handling
 	if service.GetMode() == service.Mixed {
 		cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+		assetConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 		storage2.InitConsumers(l)(cmf)(consumerGroupId)
 		compartment.InitConsumers(l)(cmf)(consumerGroupId)
 		character.InitConsumers(l)(cmf)(consumerGroupId)
+		assetConsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 		storage2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 		compartment.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 		character.InitHandlers(l)(consumer.GetManager().RegisterHandler)

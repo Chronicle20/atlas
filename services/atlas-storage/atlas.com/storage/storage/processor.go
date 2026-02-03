@@ -891,6 +891,85 @@ func (p *Processor) EmitProjectionCreatedEvent(characterId uint32, accountId uin
 	return producer.ProviderImpl(p.l)(p.ctx)(message.EnvEventTopic)(createMessageProvider(accountId, event))
 }
 
+// ExpireAndEmit expires an asset from storage and emits an EXPIRED event
+func (p *Processor) ExpireAndEmit(transactionId uuid.UUID, worldId byte, accountId uint32, assetId uint32, isCash bool, replaceItemId uint32, replaceMessage string) error {
+	t := tenant.MustFromContext(p.ctx)
+
+	// Get the asset before deleting to capture its info
+	a, err := asset.GetById(p.l, p.db, t.Id())(assetId)
+	if err != nil {
+		p.l.WithError(err).Errorf("Failed to find asset [%d] for expiration.", assetId)
+		return err
+	}
+
+	// Delete stackable data if exists
+	if a.IsStackable() {
+		_ = stackable.Delete(p.l, p.db)(assetId)
+	}
+
+	// Delete the asset
+	err = asset.Delete(p.l, p.db, t.Id())(assetId)
+	if err != nil {
+		p.l.WithError(err).Errorf("Failed to delete expired asset [%d].", assetId)
+		return err
+	}
+
+	// Emit EXPIRED event
+	_ = p.emitExpiredEvent(transactionId, worldId, accountId, a, isCash, replaceItemId, replaceMessage)
+
+	// If there's a replacement item, create it
+	if replaceItemId > 0 {
+		p.l.Debugf("Creating replacement item [%d] for expired storage item [%d].", replaceItemId, a.TemplateId())
+
+		// Get or create storage
+		s, err := p.GetOrCreateStorage(worldId, accountId)
+		if err != nil {
+			p.l.WithError(err).Warnf("Failed to get storage for replacement item creation.")
+			return nil // Don't fail the expiration if we can't create the replacement
+		}
+
+		// Find next available slot
+		assets, err := asset.GetByStorageId(p.l, p.db, t.Id())(s.Id())
+		if err != nil {
+			p.l.WithError(err).Warnf("Failed to get assets for slot calculation.")
+			return nil
+		}
+		nextSlot := int16(len(assets))
+
+		// Create replacement item
+		_, err = asset.Create(p.l, p.db, t.Id())(
+			s.Id(),
+			nextSlot,
+			replaceItemId,
+			time.Time{}, // No expiration for replacement item
+			0,           // No referenceId
+			a.ReferenceType(),
+		)
+		if err != nil {
+			p.l.WithError(err).Warnf("Failed to create replacement item [%d] for account [%d].", replaceItemId, accountId)
+		}
+	}
+
+	p.l.Debugf("Expired asset [%d] from storage for account [%d].", assetId, accountId)
+	return nil
+}
+
+func (p *Processor) emitExpiredEvent(transactionId uuid.UUID, worldId byte, accountId uint32, a asset.Model[any], isCash bool, replaceItemId uint32, replaceMessage string) error {
+	event := &message.StatusEvent[message.ExpiredStatusEventBody]{
+		TransactionId: transactionId,
+		WorldId:       worldId,
+		AccountId:     accountId,
+		Type:          message.StatusEventTypeExpired,
+		Body: message.ExpiredStatusEventBody{
+			IsCash:         isCash,
+			ReplaceItemId:  replaceItemId,
+			ReplaceMessage: replaceMessage,
+		},
+	}
+
+	return producer.ProviderImpl(p.l)(p.ctx)(message.EnvEventTopic)(createMessageProvider(accountId, event))
+}
+
 // EmitProjectionDestroyedEvent emits a PROJECTION_DESTROYED event
 func (p *Processor) EmitProjectionDestroyedEvent(characterId uint32, accountId uint32, worldId byte) error {
 	event := &message.StatusEvent[message.ProjectionDestroyedEventBody]{

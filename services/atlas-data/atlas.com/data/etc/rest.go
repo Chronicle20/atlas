@@ -5,10 +5,13 @@ import (
 )
 
 type RestModel struct {
-	Id        uint32  `json:"-"`
-	Price     uint32  `json:"price"`
-	UnitPrice float64 `json:"unitPrice"`
-	SlotMax   uint32  `json:"slotMax"`
+	Id             uint32  `json:"-"`
+	Price          uint32  `json:"price"`
+	UnitPrice      float64 `json:"unitPrice"`
+	SlotMax        uint32  `json:"slotMax"`
+	TimeLimited    bool    `json:"timeLimited"`
+	ReplaceItemId  uint32  `json:"replaceItemId,omitempty"`
+	ReplaceMessage string  `json:"replaceMessage,omitempty"`
 }
 
 func (r RestModel) GetName() string {

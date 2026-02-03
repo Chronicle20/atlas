@@ -55,4 +55,5 @@ use (
 	./services/atlas-tenants/atlas.com/tenants
 	./services/atlas-transports/atlas.com/transports
 	./services/atlas-world/atlas.com/world
+	./services/atlas-asset-expiration/atlas.com/asset-expiration
 )

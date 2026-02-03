@@ -6,8 +6,9 @@ import (
 )
 
 const (
-	EnvCommandTopic = "COMMAND_TOPIC_STORAGE"
-	EnvEventTopic   = "EVENT_TOPIC_STORAGE_STATUS"
+	EnvCommandTopic            = "COMMAND_TOPIC_STORAGE"
+	EnvEventTopic              = "EVENT_TOPIC_STORAGE_STATUS"
+	EnvCommandTopicAssetExpire = "COMMAND_TOPIC_ASSET_EXPIRE"
 )
 
 // Command types
@@ -28,13 +29,14 @@ const (
 
 // Event types
 const (
-	StatusEventTypeDeposited          = "DEPOSITED"
-	StatusEventTypeWithdrawn          = "WITHDRAWN"
-	StatusEventTypeMesosUpdated       = "MESOS_UPDATED"
-	StatusEventTypeArranged           = "ARRANGED"
-	StatusEventTypeError              = "ERROR"
-	StatusEventTypeProjectionCreated  = "PROJECTION_CREATED"
+	StatusEventTypeDeposited           = "DEPOSITED"
+	StatusEventTypeWithdrawn           = "WITHDRAWN"
+	StatusEventTypeMesosUpdated        = "MESOS_UPDATED"
+	StatusEventTypeArranged            = "ARRANGED"
+	StatusEventTypeError               = "ERROR"
+	StatusEventTypeProjectionCreated   = "PROJECTION_CREATED"
 	StatusEventTypeProjectionDestroyed = "PROJECTION_DESTROYED"
+	StatusEventTypeExpired             = "EXPIRED"
 )
 
 // Error codes
@@ -166,4 +168,26 @@ type ProjectionCreatedEventBody struct {
 // ProjectionDestroyedEventBody contains the data for a projection destroyed event
 type ProjectionDestroyedEventBody struct {
 	CharacterId uint32 `json:"characterId"`
+}
+
+// ExpireCommand is received from atlas-asset-expiration to expire an item
+type ExpireCommand struct {
+	TransactionId  uuid.UUID `json:"transactionId"`
+	CharacterId    uint32    `json:"characterId"`
+	AccountId      uint32    `json:"accountId"`
+	WorldId        byte      `json:"worldId"`
+	AssetId        uint32    `json:"assetId"`
+	TemplateId     uint32    `json:"templateId"`
+	InventoryType  int8      `json:"inventoryType"`
+	Slot           int16     `json:"slot"`
+	ReplaceItemId  uint32    `json:"replaceItemId"`
+	ReplaceMessage string    `json:"replaceMessage"`
+	Source         string    `json:"source"` // "INVENTORY", "STORAGE", or "CASHSHOP"
+}
+
+// ExpiredStatusEventBody contains information about an expired item for client notification
+type ExpiredStatusEventBody struct {
+	IsCash         bool   `json:"isCash"`
+	ReplaceItemId  uint32 `json:"replaceItemId,omitempty"`
+	ReplaceMessage string `json:"replaceMessage,omitempty"`
 }

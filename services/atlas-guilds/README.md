@@ -17,6 +17,7 @@ This service handles guild creation, member management, emblem customization, ti
 ### General
 - `JAEGER_HOST_PORT` - Jaeger host:port for distributed tracing
 - `LOG_LEVEL` - Logging level (Panic / Fatal / Error / Warn / Info / Debug / Trace)
+- `REST_PORT` - HTTP server port
 
 ### Database
 - `DB_USER` - PostgreSQL user name

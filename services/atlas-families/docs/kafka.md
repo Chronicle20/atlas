@@ -5,6 +5,7 @@
 | Environment Variable | Direction | Description |
 |---------------------|-----------|-------------|
 | COMMAND_TOPIC_FAMILY | Command | Family operation commands |
+| EVENT_TOPIC_CHARACTER_STATUS | Event | Character status events |
 
 ## Topics Produced
 
@@ -190,9 +191,34 @@ type Event[E any] struct {
 | ErrorMessage | string | Error message |
 | Timestamp | time.Time | Event timestamp |
 
+## Consumed Events
+
+### Character Status Events (EVENT_TOPIC_CHARACTER_STATUS)
+
+#### StatusEvent Wrapper
+
+```go
+type StatusEvent[E any] struct {
+    WorldId     byte   `json:"worldId"`
+    CharacterId uint32 `json:"characterId"`
+    Type        string `json:"type"`
+    Body        E      `json:"body"`
+}
+```
+
+#### Status Event Types
+
+| Type | Body Struct | Description |
+|------|-------------|-------------|
+| DELETED | StatusEventDeletedBody | Character deleted event |
+
+#### StatusEventDeletedBody
+
+Empty body struct. Triggers family member removal.
+
 ## Transaction Semantics
 
 - Commands require transactionId header for idempotency
 - Messages partitioned by characterId for ordering
-- Consumer group: family_command
+- Consumer groups: family_command, character_status
 - Headers parsed: SpanHeaderParser, TenantHeaderParser

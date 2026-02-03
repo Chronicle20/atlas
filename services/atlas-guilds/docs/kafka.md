@@ -51,6 +51,7 @@ Character status event topic.
 
 | Type | Body | Description |
 |------|------|-------------|
+| `DELETED` | `StatusEventDeletedBody` | Character deleted |
 | `LOGIN` | `StatusEventLoginBody` | Character logged in |
 | `LOGOUT` | `StatusEventLogoutBody` | Character logged out |
 

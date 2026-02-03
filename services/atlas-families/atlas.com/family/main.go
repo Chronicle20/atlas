@@ -3,6 +3,7 @@ package main
 import (
 	"atlas-family/database"
 	"atlas-family/family"
+	character "atlas-family/kafka/consumer/character"
 	family2 "atlas-family/kafka/consumer/family"
 	"atlas-family/logger"
 	"atlas-family/scheduler"
@@ -58,6 +59,8 @@ func main() {
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	family2.InitConsumers(l)(cmf)(consumerGroupId)
 	family2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	character.InitConsumers(l)(cmf)(consumerGroupId)
+	character.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 
 	// Initialize and start reputation reset scheduler
 	reputationResetJob := scheduler.NewReputationResetJob(l, db)

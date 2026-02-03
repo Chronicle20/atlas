@@ -28,6 +28,9 @@ type Processor interface {
 	RequestChange(mb *message.Buffer) func(transactionId uuid.UUID) func(worldId world.Id) func(channelId channel.Id) func(characterId uint32) func(mapId uint32) func(targetId uint32) func(amount int8) error
 	// RequestChangeAndEmit requests a fame change and emits a message
 	RequestChangeAndEmit(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, characterId uint32, mapId uint32, targetId uint32, amount int8) error
+
+	// DeleteByCharacterId deletes all fame logs involving a character (as giver or receiver)
+	DeleteByCharacterId(characterId uint32) error
 }
 
 type ProcessorImpl struct {
@@ -121,5 +124,11 @@ func (p *ProcessorImpl) RequestChangeAndEmit(transactionId uuid.UUID, worldId wo
 	producerProvider := producer.ProviderImpl(p.l)(p.ctx)
 	return message.Emit(producerProvider)(func(mb *message.Buffer) error {
 		return p.RequestChange(mb)(transactionId)(worldId)(channelId)(characterId)(mapId)(targetId)(amount)
+	})
+}
+
+func (p *ProcessorImpl) DeleteByCharacterId(characterId uint32) error {
+	return database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		return deleteByCharacterId(tx, p.t.Id(), characterId)
 	})
 }

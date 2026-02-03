@@ -23,6 +23,7 @@ const (
 	CommandSort              = "SORT"
 	CommandAccept            = "ACCEPT"
 	CommandRelease           = "RELEASE"
+	CommandExpire            = "EXPIRE"
 )
 
 type Command[E any] struct {
@@ -122,6 +123,15 @@ type ReleaseCommandBody struct {
 	TransactionId uuid.UUID `json:"transactionId"`
 	AssetId       uint32    `json:"assetId"`
 	Quantity      uint32    `json:"quantity"` // Quantity to release (0 = all)
+}
+
+// ExpireCommandBody contains the data for expiring an item in the inventory
+type ExpireCommandBody struct {
+	AssetId        uint32 `json:"assetId"`
+	TemplateId     uint32 `json:"templateId"`
+	Slot           int16  `json:"slot"`
+	ReplaceItemId  uint32 `json:"replaceItemId"`
+	ReplaceMessage string `json:"replaceMessage"`
 }
 
 const (

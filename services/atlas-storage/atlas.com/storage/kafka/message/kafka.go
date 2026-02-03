@@ -6,9 +6,8 @@ import (
 )
 
 const (
-	EnvCommandTopic            = "COMMAND_TOPIC_STORAGE"
-	EnvEventTopic              = "EVENT_TOPIC_STORAGE_STATUS"
-	EnvCommandTopicAssetExpire = "COMMAND_TOPIC_ASSET_EXPIRE"
+	EnvCommandTopic = "COMMAND_TOPIC_STORAGE"
+	EnvEventTopic   = "EVENT_TOPIC_STORAGE_STATUS"
 )
 
 // Command types
@@ -20,11 +19,7 @@ const (
 	CommandTypeArrange         = "ARRANGE"
 	CommandTypeShowStorage     = "SHOW_STORAGE"
 	CommandTypeCloseStorage    = "CLOSE_STORAGE"
-)
-
-// Additional command topic for show/close storage operations
-const (
-	EnvShowStorageCommandTopic = "COMMAND_TOPIC_STORAGE_SHOW"
+	CommandTypeExpire          = "EXPIRE"
 )
 
 // Event types
@@ -170,19 +165,15 @@ type ProjectionDestroyedEventBody struct {
 	CharacterId uint32 `json:"characterId"`
 }
 
-// ExpireCommand is received from atlas-asset-expiration to expire an item
-type ExpireCommand struct {
-	TransactionId  uuid.UUID `json:"transactionId"`
-	CharacterId    uint32    `json:"characterId"`
-	AccountId      uint32    `json:"accountId"`
-	WorldId        byte      `json:"worldId"`
-	AssetId        uint32    `json:"assetId"`
-	TemplateId     uint32    `json:"templateId"`
-	InventoryType  int8      `json:"inventoryType"`
-	Slot           int16     `json:"slot"`
-	ReplaceItemId  uint32    `json:"replaceItemId"`
-	ReplaceMessage string    `json:"replaceMessage"`
-	Source         string    `json:"source"` // "INVENTORY", "STORAGE", or "CASHSHOP"
+// ExpireBody contains the data for expiring an item in storage
+type ExpireBody struct {
+	CharacterId    uint32 `json:"characterId"`
+	AssetId        uint32 `json:"assetId"`
+	TemplateId     uint32 `json:"templateId"`
+	InventoryType  int8   `json:"inventoryType"`
+	Slot           int16  `json:"slot"`
+	ReplaceItemId  uint32 `json:"replaceItemId"`
+	ReplaceMessage string `json:"replaceMessage"`
 }
 
 // ExpiredStatusEventBody contains information about an expired item for client notification

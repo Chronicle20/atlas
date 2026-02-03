@@ -62,19 +62,8 @@ func checkInventory(l logrus.FieldLogger, pp producer.Provider, ctx context.Cont
 				// Parse asset ID
 				assetId, _ := strconv.ParseUint(a.Id, 10, 32)
 
-				// Emit expire command
-				emitExpireCommand(l, pp, ctx, asset.ExpireCommand{
-					TransactionId:  uuid.New(),
-					CharacterId:    characterId,
-					AccountId:      0,
-					AssetId:        uint32(assetId),
-					TemplateId:     a.TemplateId,
-					InventoryType:  int8(comp.Type),
-					Slot:           a.Slot,
-					ReplaceItemId:  replaceInfo.ReplaceItemId,
-					ReplaceMessage: replaceInfo.ReplaceMessage,
-					Source:         "INVENTORY",
-				})
+				// Emit expire command to compartment topic
+				emitCompartmentExpireCommand(l, pp, ctx, characterId, uint32(assetId), a.TemplateId, byte(comp.Type), a.Slot, replaceInfo.ReplaceItemId, replaceInfo.ReplaceMessage)
 			}
 		}
 	}
@@ -94,20 +83,8 @@ func checkStorage(l logrus.FieldLogger, pp producer.Provider, ctx context.Contex
 			// Get replacement info
 			replaceInfo := data.GetReplaceInfo(l)(ctx)(a.TemplateId)
 
-			// Emit expire command
-			emitExpireCommand(l, pp, ctx, asset.ExpireCommand{
-				TransactionId:  uuid.New(),
-				CharacterId:    0,
-				AccountId:      accountId,
-				WorldId:        worldId,
-				AssetId:        a.GetAssetId(),
-				TemplateId:     a.TemplateId,
-				InventoryType:  0,
-				Slot:           a.Slot,
-				ReplaceItemId:  replaceInfo.ReplaceItemId,
-				ReplaceMessage: replaceInfo.ReplaceMessage,
-				Source:         "STORAGE",
-			})
+			// Emit expire command to storage topic
+			emitStorageExpireCommand(l, pp, ctx, accountId, worldId, a.GetAssetId(), a.TemplateId, a.Slot, replaceInfo.ReplaceItemId, replaceInfo.ReplaceMessage)
 		}
 	}
 }
@@ -126,28 +103,77 @@ func checkCashshop(l logrus.FieldLogger, pp producer.Provider, ctx context.Conte
 			// Get replacement info
 			replaceInfo := data.GetReplaceInfo(l)(ctx)(item.TemplateId)
 
-			// Emit expire command
-			emitExpireCommand(l, pp, ctx, asset.ExpireCommand{
-				TransactionId:  uuid.New(),
-				CharacterId:    0,
-				AccountId:      accountId,
-				AssetId:        item.GetItemId(),
-				TemplateId:     item.TemplateId,
-				InventoryType:  0,
-				Slot:           0,
-				ReplaceItemId:  replaceInfo.ReplaceItemId,
-				ReplaceMessage: replaceInfo.ReplaceMessage,
-				Source:         "CASHSHOP",
-			})
+			// Emit expire command to cashshop topic
+			emitCashShopExpireCommand(l, pp, ctx, accountId, item.GetItemId(), item.TemplateId, replaceInfo.ReplaceItemId, replaceInfo.ReplaceMessage)
 		}
 	}
 }
 
-func emitExpireCommand(l logrus.FieldLogger, pp producer.Provider, ctx context.Context, cmd asset.ExpireCommand) {
-	err := pp(asset.EnvCommandTopicAssetExpire)(kafkaProducer.SingleMessageProvider(kafkaProducer.CreateKey(int(cmd.AssetId)), cmd))
+func emitStorageExpireCommand(l logrus.FieldLogger, pp producer.Provider, ctx context.Context, accountId uint32, worldId byte, assetId uint32, templateId uint32, slot int16, replaceItemId uint32, replaceMessage string) {
+	cmd := asset.StorageExpireCommand{
+		TransactionId: uuid.New(),
+		WorldId:       worldId,
+		AccountId:     accountId,
+		Type:          asset.CommandTypeExpire,
+		Body: asset.StorageExpireBody{
+			CharacterId:    0,
+			AssetId:        assetId,
+			TemplateId:     templateId,
+			InventoryType:  0,
+			Slot:           slot,
+			ReplaceItemId:  replaceItemId,
+			ReplaceMessage: replaceMessage,
+		},
+	}
+	err := pp(asset.EnvCommandTopicStorage)(kafkaProducer.SingleMessageProvider(kafkaProducer.CreateKey(int(assetId)), cmd))
 	if err != nil {
-		l.WithError(err).Errorf("Failed to emit expire command for asset [%d] (template [%d]).", cmd.AssetId, cmd.TemplateId)
+		l.WithError(err).Errorf("Failed to emit storage expire command for asset [%d] (template [%d]).", assetId, templateId)
 	} else {
-		l.Infof("Emitted expire command for asset [%d] (template [%d]), source [%s].", cmd.AssetId, cmd.TemplateId, cmd.Source)
+		l.Infof("Emitted storage expire command for asset [%d] (template [%d]).", assetId, templateId)
+	}
+}
+
+func emitCashShopExpireCommand(l logrus.FieldLogger, pp producer.Provider, ctx context.Context, accountId uint32, assetId uint32, templateId uint32, replaceItemId uint32, replaceMessage string) {
+	cmd := asset.CashShopExpireCommand{
+		CharacterId: 0,
+		Type:        asset.CommandTypeExpire,
+		Body: asset.CashShopExpireBody{
+			AccountId:      accountId,
+			WorldId:        0,
+			AssetId:        assetId,
+			TemplateId:     templateId,
+			InventoryType:  0,
+			Slot:           0,
+			ReplaceItemId:  replaceItemId,
+			ReplaceMessage: replaceMessage,
+		},
+	}
+	err := pp(asset.EnvCommandTopicCashShop)(kafkaProducer.SingleMessageProvider(kafkaProducer.CreateKey(int(assetId)), cmd))
+	if err != nil {
+		l.WithError(err).Errorf("Failed to emit cashshop expire command for asset [%d] (template [%d]).", assetId, templateId)
+	} else {
+		l.Infof("Emitted cashshop expire command for asset [%d] (template [%d]).", assetId, templateId)
+	}
+}
+
+func emitCompartmentExpireCommand(l logrus.FieldLogger, pp producer.Provider, ctx context.Context, characterId uint32, assetId uint32, templateId uint32, inventoryType byte, slot int16, replaceItemId uint32, replaceMessage string) {
+	cmd := asset.CompartmentExpireCommand{
+		TransactionId: uuid.New(),
+		CharacterId:   characterId,
+		InventoryType: inventoryType,
+		Type:          asset.CommandTypeExpire,
+		Body: asset.CompartmentExpireBody{
+			AssetId:        assetId,
+			TemplateId:     templateId,
+			Slot:           slot,
+			ReplaceItemId:  replaceItemId,
+			ReplaceMessage: replaceMessage,
+		},
+	}
+	err := pp(asset.EnvCommandTopicCompartment)(kafkaProducer.SingleMessageProvider(kafkaProducer.CreateKey(int(assetId)), cmd))
+	if err != nil {
+		l.WithError(err).Errorf("Failed to emit compartment expire command for asset [%d] (template [%d]).", assetId, templateId)
+	} else {
+		l.Infof("Emitted compartment expire command for asset [%d] (template [%d]).", assetId, templateId)
 	}
 }

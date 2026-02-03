@@ -21,7 +21,6 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
 			rf(consumer2.NewConfig(l)("storage_command")(message.EnvCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-			rf(consumer2.NewConfig(l)("storage_show_command")(message.EnvShowStorageCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 		}
 	}
 }
@@ -36,11 +35,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			_, _ = rf(t, kafkaMessage.AdaptHandler(kafkaMessage.PersistentConfig(handleUpdateMesosCommand(db))))
 			_, _ = rf(t, kafkaMessage.AdaptHandler(kafkaMessage.PersistentConfig(handleDepositRollbackCommand(db))))
 			_, _ = rf(t, kafkaMessage.AdaptHandler(kafkaMessage.PersistentConfig(handleArrangeCommand(db))))
-
-			// Register show storage command handlers
-			t, _ = topic.EnvProvider(l)(message.EnvShowStorageCommandTopic)()
 			_, _ = rf(t, kafkaMessage.AdaptHandler(kafkaMessage.PersistentConfig(handleShowStorageCommand(db))))
 			_, _ = rf(t, kafkaMessage.AdaptHandler(kafkaMessage.PersistentConfig(handleCloseStorageCommand())))
+			_, _ = rf(t, kafkaMessage.AdaptHandler(kafkaMessage.PersistentConfig(handleExpireCommand(db))))
 		}
 	}
 }
@@ -160,5 +157,32 @@ func handleCloseStorageCommand() kafkaMessage.Handler[message.CloseStorageComman
 		projection.GetManager().Delete(c.CharacterId)
 
 		l.Debugf("Removed projection and NPC context for character [%d]", c.CharacterId)
+	}
+}
+
+func handleExpireCommand(db *gorm.DB) kafkaMessage.Handler[message.Command[message.ExpireBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c message.Command[message.ExpireBody]) {
+		if c.Type != message.CommandTypeExpire {
+			return
+		}
+
+		l.Debugf("Received EXPIRE command for account [%d], asset [%d], template [%d].",
+			c.AccountId, c.Body.AssetId, c.Body.TemplateId)
+
+		// Storage items are always non-cash items (cash items are in cashshop)
+		isCash := false
+
+		err := storage.NewProcessor(l, ctx, db).ExpireAndEmit(
+			c.TransactionId,
+			c.WorldId,
+			c.AccountId,
+			c.Body.AssetId,
+			isCash,
+			c.Body.ReplaceItemId,
+			c.Body.ReplaceMessage,
+		)
+		if err != nil {
+			l.WithError(err).Errorf("Failed to expire storage asset [%d] for account [%d].", c.Body.AssetId, c.AccountId)
+		}
 	}
 }

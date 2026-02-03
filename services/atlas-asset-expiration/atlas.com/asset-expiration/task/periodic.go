@@ -77,9 +77,13 @@ func (t *PeriodicTask) checkAllSessions() {
 	t.l.Infof("Running periodic expiration check for [%d] sessions.", len(sessions))
 
 	for _, s := range sessions {
-		// Create a context with tenant info for each session
-		// In a real implementation, we'd need to track the tenant ID per session
-		ctx := tenant.WithContext(context.Background(), tenant.Model{})
+		// Create a context with tenant info from the stored session
+		tm, err := tenant.Create(s.TenantId, s.Region, s.MajorVersion, s.MinorVersion)
+		if err != nil {
+			t.l.WithError(err).Warnf("Failed to create tenant model for character [%d].", s.CharacterId)
+			continue
+		}
+		ctx := tenant.WithContext(context.Background(), tm)
 
 		pp := producer.ProviderImpl(t.l)(ctx)
 		character.CheckAndExpire(t.l)(pp)(ctx)(s.CharacterId, s.AccountId, s.WorldId)

@@ -3,14 +3,12 @@ package storage
 import "github.com/google/uuid"
 
 const (
-	EnvShowStorageCommandTopic = "COMMAND_TOPIC_STORAGE_SHOW"
-	CommandTypeShowStorage     = "SHOW_STORAGE"
-	CommandTypeCloseStorage    = "CLOSE_STORAGE"
-
 	// Storage command topic for operations
-	EnvCommandTopic        = "COMMAND_TOPIC_STORAGE"
-	CommandTypeArrange     = "ARRANGE"
-	CommandTypeUpdateMesos = "UPDATE_MESOS"
+	EnvCommandTopic         = "COMMAND_TOPIC_STORAGE"
+	CommandTypeShowStorage  = "SHOW_STORAGE"
+	CommandTypeCloseStorage = "CLOSE_STORAGE"
+	CommandTypeArrange      = "ARRANGE"
+	CommandTypeUpdateMesos  = "UPDATE_MESOS"
 
 	// Mesos operations
 	MesosOperationSet      = "SET"

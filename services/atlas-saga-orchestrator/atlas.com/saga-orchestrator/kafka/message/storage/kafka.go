@@ -7,7 +7,6 @@ import (
 
 const (
 	EnvCommandTopic            = "COMMAND_TOPIC_STORAGE"
-	EnvShowStorageCommandTopic = "COMMAND_TOPIC_STORAGE_SHOW"
 	CommandTypeDeposit         = "DEPOSIT"
 	CommandTypeWithdraw        = "WITHDRAW"
 	CommandTypeUpdateMesos     = "UPDATE_MESOS"

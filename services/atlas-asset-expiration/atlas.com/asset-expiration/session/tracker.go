@@ -2,14 +2,20 @@ package session
 
 import (
 	"sync"
+
+	"github.com/google/uuid"
 )
 
 // Session represents an online session
 type Session struct {
-	CharacterId uint32
-	AccountId   uint32
-	WorldId     byte
-	ChannelId   byte
+	CharacterId  uint32
+	AccountId    uint32
+	WorldId      byte
+	ChannelId    byte
+	TenantId     uuid.UUID
+	Region       string
+	MajorVersion uint16
+	MinorVersion uint16
 }
 
 // Tracker tracks online sessions for periodic expiration checks
@@ -32,14 +38,18 @@ func GetTracker() *Tracker {
 }
 
 // Add adds or updates a session
-func (t *Tracker) Add(characterId, accountId uint32, worldId, channelId byte) {
+func (t *Tracker) Add(characterId, accountId uint32, worldId, channelId byte, tenantId uuid.UUID, region string, majorVersion, minorVersion uint16) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	t.sessions[characterId] = Session{
-		CharacterId: characterId,
-		AccountId:   accountId,
-		WorldId:     worldId,
-		ChannelId:   channelId,
+		CharacterId:  characterId,
+		AccountId:    accountId,
+		WorldId:      worldId,
+		ChannelId:    channelId,
+		TenantId:     tenantId,
+		Region:       region,
+		MajorVersion: majorVersion,
+		MinorVersion: minorVersion,
 	}
 }
 

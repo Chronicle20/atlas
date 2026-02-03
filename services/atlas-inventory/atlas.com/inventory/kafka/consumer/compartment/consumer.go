@@ -48,6 +48,7 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSortCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAcceptCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleReleaseCommand(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleExpireCommand(db))))
 		}
 	}
 }
@@ -230,5 +231,32 @@ func handleReleaseCommand(db *gorm.DB) message.Handler[compartment2.Command[comp
 			transactionId = c.Body.TransactionId
 		}
 		_ = compartment.NewProcessor(l, ctx, db).ReleaseAndEmit(transactionId, c.CharacterId, inventory.Type(c.InventoryType), c.Body.AssetId, c.Body.Quantity)
+	}
+}
+
+func handleExpireCommand(db *gorm.DB) message.Handler[compartment2.Command[compartment2.ExpireCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c compartment2.Command[compartment2.ExpireCommandBody]) {
+		if c.Type != compartment2.CommandExpire {
+			return
+		}
+
+		l.Debugf("Received EXPIRE command for character [%d], asset [%d], template [%d], slot [%d].",
+			c.CharacterId, c.Body.AssetId, c.Body.TemplateId, c.Body.Slot)
+
+		// Determine if this is a cash item based on inventory type
+		isCash := inventory.Type(c.InventoryType) == inventory.TypeValueCash
+
+		err := compartment.NewProcessor(l, ctx, db).ExpireAssetAndEmit(
+			c.TransactionId,
+			c.CharacterId,
+			inventory.Type(c.InventoryType),
+			c.Body.Slot,
+			isCash,
+			c.Body.ReplaceItemId,
+			c.Body.ReplaceMessage,
+		)
+		if err != nil {
+			l.WithError(err).Errorf("Failed to expire asset [%d] for character [%d].", c.Body.AssetId, c.CharacterId)
+		}
 	}
 }

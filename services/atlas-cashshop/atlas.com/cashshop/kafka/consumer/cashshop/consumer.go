@@ -2,6 +2,7 @@ package cashshop
 
 import (
 	cashshop3 "atlas-cashshop/cashshop"
+	item2 "atlas-cashshop/cashshop/item"
 	consumer2 "atlas-cashshop/kafka/consumer"
 	"atlas-cashshop/kafka/message/cashshop"
 	"atlas-cashshop/kafka/producer"
@@ -36,6 +37,7 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestStorageIncrease(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestStorageIncreaseByItem(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestCharacterSlotIncreaseByItem(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandExpire(db))))
 		}
 	}
 }
@@ -91,5 +93,25 @@ func handleCommandRequestCharacterSlotIncreaseByItem(db *gorm.DB) message.Handle
 			return
 		}
 		_ = producer.ProviderImpl(l)(ctx)(cashshop.EnvEventTopicStatus)(cashshop2.ErrorStatusEventProvider(c.CharacterId, "UNKNOWN_ERROR"))
+	}
+}
+
+func handleCommandExpire(db *gorm.DB) message.Handler[cashshop.Command[cashshop.ExpireCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c cashshop.Command[cashshop.ExpireCommandBody]) {
+		if c.Type != cashshop.CommandTypeExpire {
+			return
+		}
+
+		l.Debugf("Received EXPIRE command for account [%d], asset [%d], template [%d].",
+			c.Body.AccountId, c.Body.AssetId, c.Body.TemplateId)
+
+		err := item2.NewProcessor(l, ctx, db).ExpireAndEmit(
+			c.Body.AssetId,
+			c.Body.ReplaceItemId,
+			c.Body.ReplaceMessage,
+		)
+		if err != nil {
+			l.WithError(err).Errorf("Failed to expire cashshop item [%d] for account [%d].", c.Body.AssetId, c.Body.AccountId)
+		}
 	}
 }

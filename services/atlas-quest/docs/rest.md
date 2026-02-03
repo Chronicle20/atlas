@@ -155,8 +155,8 @@ Completes a quest for a character.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| worldId | byte | Yes | World identifier |
-| channelId | byte | Yes | Channel identifier |
+| worldId | byte | No | World identifier |
+| channelId | byte | No | Channel identifier |
 | mapId | uint32 | No | Map identifier |
 | skipValidation | bool | No | Skip requirement validation (default: false) |
 

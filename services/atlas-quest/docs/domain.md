@@ -69,6 +69,11 @@ Manages quest state operations.
 
 | Method | Description |
 |--------|-------------|
+| WithTransaction | Returns processor with transaction context |
+| ByIdProvider | Returns provider for quest status by internal ID |
+| ByCharacterIdProvider | Returns provider for all quest statuses for a character |
+| ByCharacterIdAndQuestIdProvider | Returns provider for specific quest status for a character |
+| ByCharacterIdAndStateProvider | Returns provider for quest statuses by state for a character |
 | GetById | Retrieves quest status by internal ID |
 | GetByCharacterId | Retrieves all quest statuses for a character |
 | GetByCharacterIdAndQuestId | Retrieves specific quest status for a character |
@@ -82,3 +87,15 @@ Manages quest state operations.
 | GetQuestDefinition | Fetches quest definition from atlas-data |
 | CheckAutoComplete | Checks if quest can be auto-completed and completes if requirements met |
 | CheckAutoStart | Checks for auto-start quests on map entry |
+
+### EventEmitter
+
+Emits quest-related events to Kafka.
+
+| Method | Description |
+|--------|-------------|
+| EmitQuestStarted | Emits quest started event |
+| EmitQuestCompleted | Emits quest completed event with awarded items |
+| EmitQuestForfeited | Emits quest forfeited event |
+| EmitProgressUpdated | Emits quest progress updated event |
+| EmitSaga | Emits saga command for rewards processing |

@@ -74,6 +74,8 @@ Represents a character's membership in a guild.
 **member.Processor**
 - Adds members to guilds
 - Removes members from guilds
+- Updates member online status
+- Updates member title
 - Updates character-guild mapping on membership changes
 
 ---

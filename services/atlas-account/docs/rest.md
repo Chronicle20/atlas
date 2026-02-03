@@ -166,6 +166,36 @@ Updated Account resource (see GET /accounts/).
 
 ---
 
+### DELETE /accounts/{accountId}
+
+Deletes an account.
+
+#### Parameters
+
+| Name | Location | Type | Required |
+|------|----------|------|----------|
+| accountId | path | uint32 | yes |
+
+#### Request Model
+
+None.
+
+#### Response Model
+
+None.
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 204 No Content | Account deleted |
+| 400 Bad Request | Invalid account ID |
+| 404 Not Found | Account not found |
+| 409 Conflict | Account is currently logged in |
+| 500 Internal Server Error | Database error |
+
+---
+
 ### DELETE /accounts/{accountId}/session
 
 Logs out account by publishing logout command.

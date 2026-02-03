@@ -9,6 +9,7 @@ import (
 
 const (
 	EnvEventTopicCharacterStatus       = "EVENT_TOPIC_CHARACTER_STATUS"
+	EventCharacterStatusTypeDeleted    = "DELETED"
 	EventCharacterStatusTypeLogin      = "LOGIN"
 	EventCharacterStatusTypeMapChanged = "MAP_CHANGED"
 )
@@ -31,4 +32,7 @@ type StatusEventMapChangedBody struct {
 	OldMapId       _map.Id    `json:"oldMapId"`
 	TargetMapId    _map.Id    `json:"targetMapId"`
 	TargetPortalId uint32     `json:"targetPortalId"`
+}
+
+type StatusEventDeletedBody struct {
 }

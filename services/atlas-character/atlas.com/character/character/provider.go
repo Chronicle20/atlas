@@ -23,6 +23,13 @@ func getForAccountInWorld(tenantId uuid.UUID, accountId uint32, worldId world.Id
 	}
 }
 
+func getForAccount(tenantId uuid.UUID, accountId uint32) database.EntityProvider[[]entity] {
+	return func(db *gorm.DB) model.Provider[[]entity] {
+		where := map[string]interface{}{"tenant_id": tenantId, "account_id": accountId}
+		return database.SliceQuery[entity](db, where)
+	}
+}
+
 func getForMapInWorld(tenantId uuid.UUID, worldId world.Id, mapId _map.Id) database.EntityProvider[[]entity] {
 	return func(db *gorm.DB) model.Provider[[]entity] {
 		return database.SliceQuery[entity](db, &entity{TenantId: tenantId, World: worldId, MapId: mapId})

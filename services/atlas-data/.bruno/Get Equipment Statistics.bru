@@ -5,7 +5,11 @@ meta {
 }
 
 get {
-  url: {{scheme}}://{{host}}:{{port}}/api/data/equipment/1002357
+  url: {{scheme}}://{{host}}:{{port}}/api/data/equipment/{{templateId}}
   body: none
   auth: none
+}
+
+vars:pre-request {
+  templateId: 1141001
 }

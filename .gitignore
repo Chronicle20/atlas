@@ -28,3 +28,7 @@ tmp
 services/atlas-account/atlas.com/account/atlas-account
 services/atlas-buddies/atlas.com/buddies/atlas-buddies
 services/atlas-buffs/atlas.com/buffs/atlas-buffs
+services/atlas-fame/atlas-fame
+services/atlas-families/atlas-family
+services/atlas-guilds/atlas-guilds
+services/atlas-effective-stats/atlas.com/effective-stats/atlas-effective-stats

@@ -14,6 +14,14 @@
       "docker_context": "."
     },
     {
+      "name": "atlas-asset-expiration",
+      "type": "go-service",
+      "path": "services/atlas-asset-expiration",
+      "module_path": "services/atlas-asset-expiration/atlas.com/asset-expiration",
+      "docker_image": "ghcr.io/chronicle20/atlas-asset-expiration/atlas-asset-expiration",
+      "docker_context": "."
+    },
+    {
       "name": "atlas-buddies",
       "type": "go-service",
       "path": "services/atlas-buddies",
@@ -115,6 +123,14 @@
       "path": "services/atlas-drops",
       "module_path": "services/atlas-drops/atlas.com/drops",
       "docker_image": "ghcr.io/chronicle20/atlas-drops/atlas-drops",
+      "docker_context": "."
+    },
+    {
+      "name": "atlas-effective-stats",
+      "type": "go-service",
+      "path": "services/atlas-effective-stats",
+      "module_path": "services/atlas-effective-stats/atlas.com/effective-stats",
+      "docker_image": "ghcr.io/chronicle20/atlas-effective-stats/atlas-effective-stats",
       "docker_context": "."
     },
     {

@@ -44,16 +44,16 @@ Stores progress entries for quest objectives.
 | Name | Columns | Description |
 |------|---------|-------------|
 | idx_quest_tenant_char | tenant_id, character_id | Lookup by tenant and character |
-| idx_quest_id | quest_id | Lookup by quest definition |
+| idx_entities_quest_id | quest_id | Lookup by quest definition |
 
 ### quest_progress
 
 | Name | Columns | Description |
 |------|---------|-------------|
-| idx_progress_tenant | tenant_id | Lookup by tenant |
-| idx_progress_status | quest_status_id | Lookup by parent status |
+| idx_entities_tenant_id | tenant_id | Lookup by tenant |
+| idx_entities_quest_status_id | quest_status_id | Lookup by parent status |
 
 ## Migration Rules
 
 - Tables are auto-migrated via GORM AutoMigrate
-- Quest progress entries are deleted when parent quest status is deleted
+- Quest progress entries are deleted when parent quest status is deleted (cascading delete in code)

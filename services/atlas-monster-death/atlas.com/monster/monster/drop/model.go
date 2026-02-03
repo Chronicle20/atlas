@@ -23,3 +23,7 @@ func (m Model) MaximumQuantity() uint32 {
 func (m Model) MinimumQuantity() uint32 {
 	return m.minimumQuantity
 }
+
+func (m Model) QuestId() uint32 {
+	return m.questId
+}

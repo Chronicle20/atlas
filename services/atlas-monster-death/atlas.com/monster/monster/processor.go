@@ -5,6 +5,7 @@ import (
 	_map "atlas-monster-death/map"
 	"atlas-monster-death/monster/drop"
 	"atlas-monster-death/monster/information"
+	"atlas-monster-death/quest"
 	"atlas-monster-death/rates"
 	"context"
 	"math"
@@ -25,6 +26,10 @@ func CreateDrops(l logrus.FieldLogger) func(ctx context.Context) func(worldId by
 				return err
 			}
 			l.Debugf("Monster [%d] has [%d] drops to evaluate.", monsterId, len(ds))
+
+			// Filter quest-specific drops
+			ds = filterByQuestState(l)(ctx)(killerId, ds)
+			l.Debugf("After quest filtering, [%d] drops remain.", len(ds))
 
 			// Get rates for the killer
 			r := rates.GetForCharacter(l)(ctx)(worldId, channelId, killerId)
@@ -55,6 +60,47 @@ func evaluateSuccess(d drop.Model, itemDropRate float64) bool {
 	adjustedChance := float64(d.Chance()) * itemDropRate
 	chance := int32(math.Min(adjustedChance, math.MaxInt32))
 	return rand.Int31n(999999) < chance
+}
+
+func filterByQuestState(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, drops []drop.Model) []drop.Model {
+	return func(ctx context.Context) func(characterId uint32, drops []drop.Model) []drop.Model {
+		return func(characterId uint32, drops []drop.Model) []drop.Model {
+			// Check if any drops require quest filtering
+			hasQuestDrops := false
+			for _, d := range drops {
+				if d.QuestId() != 0 {
+					hasQuestDrops = true
+					break
+				}
+			}
+
+			// Skip quest lookup if no quest-specific drops
+			if !hasQuestDrops {
+				return drops
+			}
+
+			// Fetch started quest IDs for character
+			startedQuests, err := quest.GetStartedQuestIds(l)(ctx)(characterId)
+			if err != nil {
+				l.WithError(err).Warnf("Unable to fetch started quests for character [%d], excluding all quest drops.", characterId)
+				// On error, exclude all quest-specific drops for safety
+				startedQuests = make(map[uint32]bool)
+			}
+
+			result := make([]drop.Model, 0, len(drops))
+			for _, d := range drops {
+				if d.QuestId() == 0 {
+					// Non-quest item, always include
+					result = append(result, d)
+				} else if startedQuests[d.QuestId()] {
+					// Quest item with started quest
+					result = append(result, d)
+				}
+				// Quest item without started quest is excluded
+			}
+			return result
+		}
+	}
 }
 
 func DistributeExperience(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, monsterId uint32, damageEntries []DamageEntryModel) error {

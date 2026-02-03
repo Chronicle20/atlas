@@ -292,5 +292,5 @@ func (p *ProcessorImpl) WithdrawMesos(worldId byte, accountId uint32, mesos uint
 // CloseStorage sends a CLOSE_STORAGE command to clear NPC context for a character
 func (p *ProcessorImpl) CloseStorage(characterId uint32) error {
 	p.l.Debugf("Sending CLOSE_STORAGE command for character [%d].", characterId)
-	return producer.ProviderImpl(p.l)(p.ctx)(storage.EnvShowStorageCommandTopic)(CloseStorageCommandProvider(characterId))
+	return producer.ProviderImpl(p.l)(p.ctx)(storage.EnvCommandTopic)(CloseStorageCommandProvider(characterId))
 }

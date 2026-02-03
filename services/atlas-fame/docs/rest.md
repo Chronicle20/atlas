@@ -1,23 +1,23 @@
-# Fame REST Integration
+# REST
 
 ## Endpoints
 
 This service does not expose any REST endpoints.
 
-## External REST Dependencies
+## External Dependencies
 
-### Character Service
+### atlas-character
 
-The service consumes the character REST API to retrieve character data.
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | /characters/{characterId} | Retrieve character by ID |
 
-**GET** `{CHARACTERS}/characters/{id}`
+#### Response Model
 
-Response model:
+Resource type: `characters`
 
 | Field | Type | Description |
 |-------|------|-------------|
 | id | uint32 | Character identifier |
 | name | string | Character name |
 | level | byte | Character level |
-
-Resource type: `characters`

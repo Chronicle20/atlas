@@ -7,6 +7,15 @@ Coordinates distributed transactions across Atlas microservices using the saga p
 - Kafka (message broker)
 - Jaeger (distributed tracing)
 
+## External Service Dependencies
+
+This service makes REST calls to:
+
+- **Rate Service** (`RATES`): Get character rate multipliers
+- **Quest Service** (`QUESTS`): Get started quests for quest-aware drop filtering
+- **Drop Information Service** (`DROP_INFORMATION`): Get reactor drop tables
+- **Data Service** (`DATA`): Calculate drop positions
+
 ## Runtime Configuration
 
 | Variable | Description |
@@ -15,6 +24,10 @@ Coordinates distributed transactions across Atlas microservices using the saga p
 | JAEGER_HOST_PORT | Jaeger host and port |
 | LOG_LEVEL | Logging level (Panic/Fatal/Error/Warn/Info/Debug/Trace) |
 | REST_PORT | REST API server port |
+| RATES | Base URL for rate service |
+| QUESTS | Base URL for quest service |
+| DROP_INFORMATION | Base URL for drop information service |
+| DATA | Base URL for data service |
 
 ### Kafka Topics
 

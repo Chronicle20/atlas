@@ -508,3 +508,142 @@ func TestProcessor_MultipleDeposits(t *testing.T) {
 		t.Fatalf("Expected 3 assets, got %d", len(assets))
 	}
 }
+
+func TestProcessor_DeleteByAccountId(t *testing.T) {
+	db := testDatabase(t)
+	ctx := testContext()
+	p := storage.NewProcessor(testLogger(), ctx, db)
+	te := tenant.MustFromContext(ctx)
+
+	worldId := byte(0)
+	accountId := uint32(12345)
+
+	// Create storage and deposit items
+	s, err := p.GetOrCreateStorage(worldId, accountId)
+	if err != nil {
+		t.Fatalf("Failed to create storage: %v", err)
+	}
+
+	// Deposit an equipable item
+	body1 := message.DepositBody{
+		Slot:          0,
+		TemplateId:    1302000,
+		Expiration:    time.Now().Add(time.Hour * 24 * 365),
+		ReferenceId:   100,
+		ReferenceType: string(asset.ReferenceTypeEquipable),
+	}
+	_, err = p.Deposit(worldId, accountId, body1)
+	if err != nil {
+		t.Fatalf("Failed to deposit item: %v", err)
+	}
+
+	// Deposit a stackable item
+	body2 := message.DepositBody{
+		Slot:          1,
+		TemplateId:    2000000,
+		Expiration:    time.Now().Add(time.Hour * 24 * 365),
+		ReferenceId:   0,
+		ReferenceType: string(asset.ReferenceTypeConsumable),
+		ReferenceData: message.ReferenceData{
+			Quantity: 50,
+			OwnerId:  0,
+			Flag:     0,
+		},
+	}
+	_, err = p.Deposit(worldId, accountId, body2)
+	if err != nil {
+		t.Fatalf("Failed to deposit stackable item: %v", err)
+	}
+
+	// Verify storage and assets exist before deletion
+	assets, err := asset.GetByStorageId(testLogger(), db, te.Id())(s.Id())
+	if err != nil {
+		t.Fatalf("Failed to get assets: %v", err)
+	}
+	if len(assets) != 2 {
+		t.Fatalf("Expected 2 assets before deletion, got %d", len(assets))
+	}
+
+	// Delete all storage for account
+	err = p.DeleteByAccountId(accountId)
+	if err != nil {
+		t.Fatalf("Failed to delete storage by account ID: %v", err)
+	}
+
+	// Verify storage is deleted
+	storages, err := storage.GetByAccountId(testLogger(), db, te.Id())(accountId)
+	if err != nil {
+		t.Fatalf("Failed to query storages: %v", err)
+	}
+	if len(storages) != 0 {
+		t.Fatalf("Expected 0 storages after deletion, got %d", len(storages))
+	}
+}
+
+func TestProcessor_DeleteByAccountId_MultipleWorlds(t *testing.T) {
+	db := testDatabase(t)
+	ctx := testContext()
+	p := storage.NewProcessor(testLogger(), ctx, db)
+	te := tenant.MustFromContext(ctx)
+
+	accountId := uint32(12345)
+
+	// Create storage in multiple worlds
+	for worldId := byte(0); worldId < 3; worldId++ {
+		_, err := p.GetOrCreateStorage(worldId, accountId)
+		if err != nil {
+			t.Fatalf("Failed to create storage in world %d: %v", worldId, err)
+		}
+
+		// Deposit an item in each world
+		body := message.DepositBody{
+			Slot:          0,
+			TemplateId:    1302000 + uint32(worldId),
+			Expiration:    time.Now().Add(time.Hour * 24 * 365),
+			ReferenceId:   100 + uint32(worldId),
+			ReferenceType: string(asset.ReferenceTypeEquipable),
+		}
+		_, err = p.Deposit(worldId, accountId, body)
+		if err != nil {
+			t.Fatalf("Failed to deposit item in world %d: %v", worldId, err)
+		}
+	}
+
+	// Verify storages exist before deletion
+	storages, err := storage.GetByAccountId(testLogger(), db, te.Id())(accountId)
+	if err != nil {
+		t.Fatalf("Failed to query storages: %v", err)
+	}
+	if len(storages) != 3 {
+		t.Fatalf("Expected 3 storages before deletion, got %d", len(storages))
+	}
+
+	// Delete all storage for account
+	err = p.DeleteByAccountId(accountId)
+	if err != nil {
+		t.Fatalf("Failed to delete storage by account ID: %v", err)
+	}
+
+	// Verify all storages are deleted
+	storages, err = storage.GetByAccountId(testLogger(), db, te.Id())(accountId)
+	if err != nil {
+		t.Fatalf("Failed to query storages: %v", err)
+	}
+	if len(storages) != 0 {
+		t.Fatalf("Expected 0 storages after deletion, got %d", len(storages))
+	}
+}
+
+func TestProcessor_DeleteByAccountId_NoStorage(t *testing.T) {
+	db := testDatabase(t)
+	ctx := testContext()
+	p := storage.NewProcessor(testLogger(), ctx, db)
+
+	accountId := uint32(99999) // Account with no storage
+
+	// Should not error when deleting non-existent storage
+	err := p.DeleteByAccountId(accountId)
+	if err != nil {
+		t.Fatalf("DeleteByAccountId should not error for non-existent account: %v", err)
+	}
+}

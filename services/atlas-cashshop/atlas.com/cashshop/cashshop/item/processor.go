@@ -1,6 +1,8 @@
 package item
 
 import (
+	"atlas-cashshop/cashshop/commodity"
+	"atlas-cashshop/configuration"
 	"atlas-cashshop/kafka/message"
 	"atlas-cashshop/kafka/message/item"
 	"atlas-cashshop/kafka/producer"
@@ -22,6 +24,8 @@ type Processor interface {
 	CreateWithCashIdAndEmit(cashId int64, templateId uint32, commodityId uint32, quantity uint32, purchasedBy uint32) (Model, error)
 	Delete(mb *message.Buffer) func(itemId uint32) error
 	DeleteAndEmit(itemId uint32) error
+	Expire(mb *message.Buffer) func(itemId uint32) func(replaceItemId uint32) func(replaceMessage string) error
+	ExpireAndEmit(itemId uint32, replaceItemId uint32, replaceMessage string) error
 }
 
 type ProcessorImpl struct {
@@ -30,6 +34,7 @@ type ProcessorImpl struct {
 	db  *gorm.DB
 	t   tenant.Model
 	p   producer.Provider
+	cp  commodity.Processor
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
@@ -39,6 +44,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		db:  db,
 		t:   tenant.MustFromContext(ctx),
 		p:   producer.ProviderImpl(l)(ctx),
+		cp:  commodity.NewProcessor(l, ctx),
 	}
 	return p
 }
@@ -56,7 +62,21 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(templateId uint32) func(
 		return func(commodityId uint32) func(quantity uint32) func(purchasedBy uint32) (Model, error) {
 			return func(quantity uint32) func(purchasedBy uint32) (Model, error) {
 				return func(purchasedBy uint32) (Model, error) {
-					entity, err := create(p.t.Id(), templateId, commodityId, quantity, purchasedBy)(p.db)()
+					// Fetch commodity to get period
+					var period uint32 = 30 // default to 30 days if commodity not found
+					if commodityId != 0 {
+						c, err := p.cp.GetById(commodityId)
+						if err == nil {
+							period = c.Period()
+						} else {
+							p.l.WithError(err).Warnf("Failed to fetch commodity %d, using default period", commodityId)
+						}
+					}
+
+					// Get hourly expirations config
+					hourlyConfig := configuration.GetHourlyExpirations(p.l, p.ctx, p.t.Id())
+
+					entity, err := create(p.t.Id(), templateId, commodityId, quantity, purchasedBy, period, hourlyConfig)(p.db)()
 					if err != nil {
 						return Model{}, err
 					}
@@ -95,7 +115,21 @@ func (p *ProcessorImpl) CreateWithCashId(mb *message.Buffer) func(cashId int64) 
 			return func(commodityId uint32) func(quantity uint32) func(purchasedBy uint32) (Model, error) {
 				return func(quantity uint32) func(purchasedBy uint32) (Model, error) {
 					return func(purchasedBy uint32) (Model, error) {
-						entity, err := findOrCreateByCashId(p.t.Id(), cashId, templateId, commodityId, quantity, purchasedBy)(p.db)()
+						// Fetch commodity to get period
+						var period uint32 = 30 // default to 30 days if commodity not found
+						if commodityId != 0 {
+							c, err := p.cp.GetById(commodityId)
+							if err == nil {
+								period = c.Period()
+							} else {
+								p.l.WithError(err).Warnf("Failed to fetch commodity %d, using default period", commodityId)
+							}
+						}
+
+						// Get hourly expirations config
+						hourlyConfig := configuration.GetHourlyExpirations(p.l, p.ctx, p.t.Id())
+
+						entity, err := findOrCreateByCashId(p.t.Id(), cashId, templateId, commodityId, quantity, purchasedBy, period, hourlyConfig)(p.db)()
 						if err != nil {
 							return Model{}, err
 						}
@@ -138,5 +172,46 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(itemId uint32) error {
 func (p *ProcessorImpl) DeleteAndEmit(itemId uint32) error {
 	return message.Emit(p.p)(func(buf *message.Buffer) error {
 		return p.Delete(buf)(itemId)
+	})
+}
+
+func (p *ProcessorImpl) Expire(mb *message.Buffer) func(itemId uint32) func(replaceItemId uint32) func(replaceMessage string) error {
+	return func(itemId uint32) func(replaceItemId uint32) func(replaceMessage string) error {
+		return func(replaceItemId uint32) func(replaceMessage string) error {
+			return func(replaceMessage string) error {
+				p.l.Debugf("Expiring cash shop item [%d].", itemId)
+
+				// Delete the item
+				err := deleteById(p.db, p.t.Id(), itemId)
+				if err != nil {
+					return err
+				}
+
+				// Emit EXPIRED status event
+				err = mb.Put(item.EnvStatusTopic, itemProducer.ExpireStatusEventProvider(replaceItemId, replaceMessage))
+				if err != nil {
+					return err
+				}
+
+				// If there's a replacement item, create it
+				if replaceItemId > 0 {
+					p.l.Debugf("Creating replacement item [%d] for expired cash shop item [%d].", replaceItemId, itemId)
+					_, err = p.Create(mb)(replaceItemId)(0)(1)(0)
+					if err != nil {
+						p.l.WithError(err).Warnf("Failed to create replacement item [%d] for expired cash shop item.", replaceItemId)
+						return nil // Don't fail the expiration if we can't create the replacement
+					}
+				}
+
+				p.l.Debugf("Expired cash shop item [%d].", itemId)
+				return nil
+			}
+		}
+	}
+}
+
+func (p *ProcessorImpl) ExpireAndEmit(itemId uint32, replaceItemId uint32, replaceMessage string) error {
+	return message.Emit(p.p)(func(buf *message.Buffer) error {
+		return p.Expire(buf)(itemId)(replaceItemId)(replaceMessage)
 	})
 }

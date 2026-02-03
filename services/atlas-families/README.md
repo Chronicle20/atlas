@@ -25,11 +25,12 @@ Manages hierarchical character relationships (senior-junior) and reputation trac
 
 | Variable | Description |
 |----------|-------------|
-| KAFKA_BROKERS | Comma-separated Kafka brokers |
+| BOOTSTRAP_SERVERS | Kafka broker address |
 | COMMAND_TOPIC_FAMILY | Family command topic |
 | EVENT_TOPIC_FAMILY_STATUS | Family status event topic |
 | EVENT_TOPIC_FAMILY_REPUTATION | Family reputation event topic |
 | EVENT_TOPIC_FAMILY_ERRORS | Family error event topic |
+| EVENT_TOPIC_CHARACTER_STATUS | Character status event topic (consumed) |
 
 ### Scheduler
 

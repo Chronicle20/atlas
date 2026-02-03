@@ -26,7 +26,6 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("storage_show_command")(storage2.EnvShowStorageCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 			rf(consumer2.NewConfig(l)("storage_status_event")(storage2.EnvEventTopicStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 			rf(consumer2.NewConfig(l)("storage_compartment_status_event")(storage2.EnvEventTopicStorageCompartmentStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 		}
@@ -38,66 +37,16 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
 			return func(rf func(topic string, handler handler.Handler) (string, error)) {
 				var t string
-				// Legacy ShowStorage command handler - kept for backwards compatibility
-				//t, _ = topic.EnvProvider(l)(storage2.EnvShowStorageCommandTopic)()
-				//_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleShowStorageCommand(sc, wp))))
-
 				t, _ = topic.EnvProvider(l)(storage2.EnvEventTopicStatus)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMesosUpdatedEvent(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleArrangedEvent(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStorageErrorEvent(sc, wp))))
-				// New projection created event handler
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleProjectionCreatedEvent(sc, wp))))
 
 				t, _ = topic.EnvProvider(l)(storage2.EnvEventTopicStorageCompartmentStatus)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStorageCompartmentAcceptedEvent(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStorageCompartmentReleasedEvent(sc, wp))))
 			}
-		}
-	}
-}
-
-func handleShowStorageCommand(sc server.Model, wp writer.Producer) message.Handler[storage2.ShowStorageCommand] {
-	return func(l logrus.FieldLogger, ctx context.Context, cmd storage2.ShowStorageCommand) {
-		if cmd.Type != storage2.CommandTypeShowStorage {
-			return
-		}
-
-		t := tenant.MustFromContext(ctx)
-		if !t.Is(sc.Tenant()) {
-			return
-		}
-
-		if !sc.Is(t, world.Id(cmd.WorldId), channel.Id(cmd.ChannelId)) {
-			return
-		}
-
-		l.Debugf("Received ShowStorage command for character %d, NPC %d, account %d", cmd.CharacterId, cmd.NpcId, cmd.AccountId)
-
-		// Fetch storage data from storage service
-		storageProc := storage.NewProcessor(l, ctx)
-		storageData, err := storageProc.GetStorageData(cmd.AccountId, cmd.WorldId)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to fetch storage data for account %d.", cmd.AccountId)
-			return
-		}
-
-		// Send storage UI to the character and set the storage NPC ID on the session
-		sessionProc := session.NewProcessor(l, ctx)
-		err = sessionProc.IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(cmd.CharacterId, func(s session.Model) error {
-			// Store the NPC ID for fee lookup during storage operations
-			sessionProc.SetStorageNpcId(s.SessionId(), cmd.NpcId)
-
-			assets := storageData.Assets
-			sort.Slice(assets, func(i, j int) bool {
-				return assets[i].InventoryType() < assets[j].InventoryType()
-			})
-
-			return session.Announce(l)(ctx)(wp)(writer.StorageOperation)(
-				writer.StorageOperationShowBody(l, sc.Tenant())(cmd.NpcId, storageData.Capacity, storageData.Mesos, assets))(s)
-		})
-		if err != nil {
-			l.WithError(err).Errorf("Unable to show storage to character [%d].", cmd.CharacterId)
 		}
 	}
 }

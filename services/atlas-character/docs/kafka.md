@@ -9,6 +9,7 @@
 | Character Status Event | EVENT_TOPIC_CHARACTER_STATUS | Event |
 | Session Status Event | EVENT_TOPIC_SESSION_STATUS | Event |
 | Drop Status Event | EVENT_TOPIC_DROP_STATUS | Event |
+| Account Status Event | EVENT_TOPIC_ACCOUNT_STATUS | Event |
 
 ## Topics Produced
 
@@ -72,6 +73,12 @@
 |------|---------------|-------------|
 | RESERVED | StatusEvent[ReservedStatusEventBody] | Drop reserved for pickup |
 
+#### Account Status Event Topic
+
+| Type | Message Struct | Description |
+|------|---------------|-------------|
+| DELETED | StatusEvent | Account deleted - triggers character cleanup |
+
 ### Events Produced
 
 #### Character Status Event Topic
@@ -117,9 +124,19 @@
 | REQUEST_PICK_UP | Command[RequestPickUpCommandBody] | Request drop pickup |
 | CANCEL_RESERVATION | Command[CancelReservationCommandBody] | Cancel drop reservation |
 
+## Account Status Event Messages
+
+**StatusEvent**
+```
+accountId: uint32
+name: string
+status: string
+```
+
 ## Transaction Semantics
 
 - All commands include transactionId for correlation
 - Commands are keyed by characterId for ordering
 - Drop commands are keyed by mapId for ordering
 - Headers include tenant context and trace span
+- Account deletion events trigger cascade deletion of all characters for the account

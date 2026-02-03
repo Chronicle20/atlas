@@ -153,6 +153,26 @@ func getCreatedAtFromReferenceData(data any) time.Time {
 	return time.Time{}
 }
 
+// ExpiredEventStatusProvider emits an EXPIRED event when an asset has expired
+func ExpiredEventStatusProvider(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, assetId uint32, templateId uint32, slot int16, isCash bool, replaceItemId uint32, replaceMessage string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(assetId))
+	value := &asset.StatusEvent[asset.ExpiredStatusEventBody]{
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		CompartmentId: compartmentId,
+		AssetId:       assetId,
+		TemplateId:    templateId,
+		Slot:          slot,
+		Type:          asset.StatusEventTypeExpired,
+		Body: asset.ExpiredStatusEventBody{
+			IsCash:         isCash,
+			ReplaceItemId:  replaceItemId,
+			ReplaceMessage: replaceMessage,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func getReferenceData(data any) interface{} {
 	if erd, ok := data.(EquipableReferenceData); ok {
 		return asset.EquipableReferenceData{

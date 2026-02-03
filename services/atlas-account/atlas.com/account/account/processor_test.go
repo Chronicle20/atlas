@@ -304,3 +304,138 @@ func TestGetByTenantEmpty(t *testing.T) {
 		t.Errorf("Expected 0 accounts, got %v", len(accounts))
 	}
 }
+
+func TestDelete(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	db := setupTestDatabase(t)
+	st := sampleTenant()
+	tctx := tenant.WithContext(context.Background(), st)
+
+	// Create an account
+	mb := message.NewBuffer()
+	created, err := NewProcessor(l, tctx, db).Create(mb)("testuser")("password")
+	if err != nil {
+		t.Fatalf("Failed to create account: %v", err)
+	}
+
+	// Verify account exists
+	p := NewProcessor(l, tctx, db)
+	_, err = p.GetById(created.Id())
+	if err != nil {
+		t.Fatalf("Account should exist before deletion: %v", err)
+	}
+
+	// Delete the account
+	mb = message.NewBuffer()
+	err = p.Delete(mb)(created.Id())
+	if err != nil {
+		t.Fatalf("Failed to delete account: %v", err)
+	}
+
+	// Verify account no longer exists
+	_, err = p.GetById(created.Id())
+	if err == nil {
+		t.Fatal("Account should not exist after deletion")
+	}
+}
+
+func TestDeleteNotFound(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	db := setupTestDatabase(t)
+	st := sampleTenant()
+	tctx := tenant.WithContext(context.Background(), st)
+
+	p := NewProcessor(l, tctx, db)
+	mb := message.NewBuffer()
+	err := p.Delete(mb)(99999)
+
+	if err == nil {
+		t.Fatal("Expected error when deleting non-existent account")
+	}
+
+	if err != ErrAccountNotFound {
+		t.Errorf("Expected ErrAccountNotFound, got: %v", err)
+	}
+}
+
+func TestDeleteLoggedIn(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	db := setupTestDatabase(t)
+	st := sampleTenant()
+	tctx := tenant.WithContext(context.Background(), st)
+
+	// Create an account
+	mb := message.NewBuffer()
+	created, err := NewProcessor(l, tctx, db).Create(mb)("testuser")("password")
+	if err != nil {
+		t.Fatalf("Failed to create account: %v", err)
+	}
+
+	// Simulate login by adding to registry
+	ak := AccountKey{Tenant: st, AccountId: created.Id()}
+	sk := ServiceKey{Service: ServiceLogin}
+	_ = Get().Login(ak, sk)
+
+	// Attempt to delete should fail
+	p := NewProcessor(l, tctx, db)
+	mb = message.NewBuffer()
+	err = p.Delete(mb)(created.Id())
+
+	if err == nil {
+		t.Fatal("Expected error when deleting logged-in account")
+	}
+
+	if err != ErrAccountLoggedIn {
+		t.Errorf("Expected ErrAccountLoggedIn, got: %v", err)
+	}
+
+	// Clean up: logout the account
+	Get().Terminate(ak)
+}
+
+func TestDeleteMultipleAccounts(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	db := setupTestDatabase(t)
+	st := sampleTenant()
+	tctx := tenant.WithContext(context.Background(), st)
+
+	// Create multiple accounts
+	mb := message.NewBuffer()
+	p := NewProcessor(l, tctx, db)
+	created1, _ := p.Create(mb)("user1")("password")
+	created2, _ := p.Create(mb)("user2")("password")
+	created3, _ := p.Create(mb)("user3")("password")
+
+	// Verify all exist
+	accounts, _ := p.GetByTenant()
+	if len(accounts) != 3 {
+		t.Fatalf("Expected 3 accounts, got %v", len(accounts))
+	}
+
+	// Delete middle account
+	mb = message.NewBuffer()
+	err := p.Delete(mb)(created2.Id())
+	if err != nil {
+		t.Fatalf("Failed to delete account: %v", err)
+	}
+
+	// Verify only 2 remain
+	accounts, _ = p.GetByTenant()
+	if len(accounts) != 2 {
+		t.Fatalf("Expected 2 accounts after deletion, got %v", len(accounts))
+	}
+
+	// Verify correct accounts remain
+	_, err = p.GetById(created1.Id())
+	if err != nil {
+		t.Errorf("Account 1 should still exist")
+	}
+	_, err = p.GetById(created2.Id())
+	if err == nil {
+		t.Errorf("Account 2 should be deleted")
+	}
+	_, err = p.GetById(created3.Id())
+	if err != nil {
+		t.Errorf("Account 3 should still exist")
+	}
+}

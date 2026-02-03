@@ -19,22 +19,19 @@ const (
 	CommandTypeArrange         = "ARRANGE"
 	CommandTypeShowStorage     = "SHOW_STORAGE"
 	CommandTypeCloseStorage    = "CLOSE_STORAGE"
-)
-
-// Additional command topic for show/close storage operations
-const (
-	EnvShowStorageCommandTopic = "COMMAND_TOPIC_STORAGE_SHOW"
+	CommandTypeExpire          = "EXPIRE"
 )
 
 // Event types
 const (
-	StatusEventTypeDeposited          = "DEPOSITED"
-	StatusEventTypeWithdrawn          = "WITHDRAWN"
-	StatusEventTypeMesosUpdated       = "MESOS_UPDATED"
-	StatusEventTypeArranged           = "ARRANGED"
-	StatusEventTypeError              = "ERROR"
-	StatusEventTypeProjectionCreated  = "PROJECTION_CREATED"
+	StatusEventTypeDeposited           = "DEPOSITED"
+	StatusEventTypeWithdrawn           = "WITHDRAWN"
+	StatusEventTypeMesosUpdated        = "MESOS_UPDATED"
+	StatusEventTypeArranged            = "ARRANGED"
+	StatusEventTypeError               = "ERROR"
+	StatusEventTypeProjectionCreated   = "PROJECTION_CREATED"
 	StatusEventTypeProjectionDestroyed = "PROJECTION_DESTROYED"
+	StatusEventTypeExpired             = "EXPIRED"
 )
 
 // Error codes
@@ -166,4 +163,22 @@ type ProjectionCreatedEventBody struct {
 // ProjectionDestroyedEventBody contains the data for a projection destroyed event
 type ProjectionDestroyedEventBody struct {
 	CharacterId uint32 `json:"characterId"`
+}
+
+// ExpireBody contains the data for expiring an item in storage
+type ExpireBody struct {
+	CharacterId    uint32 `json:"characterId"`
+	AssetId        uint32 `json:"assetId"`
+	TemplateId     uint32 `json:"templateId"`
+	InventoryType  int8   `json:"inventoryType"`
+	Slot           int16  `json:"slot"`
+	ReplaceItemId  uint32 `json:"replaceItemId"`
+	ReplaceMessage string `json:"replaceMessage"`
+}
+
+// ExpiredStatusEventBody contains information about an expired item for client notification
+type ExpiredStatusEventBody struct {
+	IsCash         bool   `json:"isCash"`
+	ReplaceItemId  uint32 `json:"replaceItemId,omitempty"`
+	ReplaceMessage string `json:"replaceMessage,omitempty"`
 }

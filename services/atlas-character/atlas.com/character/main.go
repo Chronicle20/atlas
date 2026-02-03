@@ -3,6 +3,7 @@ package main
 import (
 	"atlas-character/character"
 	"atlas-character/database"
+	account2 "atlas-character/kafka/consumer/account"
 	character2 "atlas-character/kafka/consumer/character"
 	"atlas-character/kafka/consumer/drop"
 	session2 "atlas-character/kafka/consumer/session"
@@ -57,9 +58,11 @@ func main() {
 
 	if service.GetMode() == service.Mixed {
 		cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+		account2.InitConsumers(l)(cmf)(consumerGroupId)
 		character2.InitConsumers(l)(cmf)(consumerGroupId)
 		session2.InitConsumers(l)(cmf)(consumerGroupId)
 		drop.InitConsumers(l)(cmf)(consumerGroupId)
+		account2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 		character2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 		session2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 		drop.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)

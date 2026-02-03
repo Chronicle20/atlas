@@ -26,11 +26,18 @@ const (
 	TooManyAttempts   = "TOO_MANY_ATTEMPTS"
 )
 
+var (
+	ErrAccountNotFound = errors.New("account not found")
+	ErrAccountLoggedIn = errors.New("account is currently logged in")
+)
+
 type Processor interface {
 	GetOrCreate(mb *message.Buffer) func(name string, password string, automaticRegister bool) (Model, error)
 	CreateAndEmit(name string, password string) (Model, error)
 	Create(mb *message.Buffer) func(name string) func(password string) (Model, error)
 	Update(accountId uint32, input Model) (Model, error)
+	Delete(mb *message.Buffer) func(accountId uint32) error
+	DeleteAndEmit(accountId uint32) error
 	Login(mb *message.Buffer) func(sessionId uuid.UUID) func(accountId uint32) func(issuer string) error
 	LogoutAndEmit(sessionId uuid.UUID, accountId uint32, issuer string) error
 	Logout(mb *message.Buffer) func(sessionId uuid.UUID) func(accountId uint32) func(issuer string) error
@@ -194,6 +201,38 @@ func (p *ProcessorImpl) Update(accountId uint32, input Model) (Model, error) {
 	}
 
 	return p.GetById(accountId)
+}
+
+func (p *ProcessorImpl) DeleteAndEmit(accountId uint32) error {
+	return message.Emit(p.p)(func(buf *message.Buffer) error {
+		return p.Delete(buf)(accountId)
+	})
+}
+
+func (p *ProcessorImpl) Delete(mb *message.Buffer) func(accountId uint32) error {
+	return func(accountId uint32) error {
+		a, err := p.GetById(accountId)
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to locate account [%d] being deleted.", accountId)
+			return ErrAccountNotFound
+		}
+
+		if a.State() != StateNotLoggedIn {
+			p.l.Warnf("Cannot delete account [%d] because it is currently logged in.", accountId)
+			return ErrAccountLoggedIn
+		}
+
+		err = deleteById(p.db)(p.t, accountId)
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to delete account [%d].", accountId)
+			return err
+		}
+
+		Get().Terminate(AccountKey{Tenant: p.t, AccountId: accountId})
+
+		p.l.Infof("Deleted account [%d] [%s].", a.Id(), a.Name())
+		return mb.Put(account2.EnvEventTopicStatus, deletedEventProvider()(a.Id(), a.Name()))
+	}
 }
 
 func (p *ProcessorImpl) Login(mb *message.Buffer) func(sessionId uuid.UUID) func(accountId uint32) func(issuer string) error {

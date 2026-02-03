@@ -26,6 +26,7 @@ The atlas-fame service manages character fame (reputation) transactions. It vali
 | COMMAND_TOPIC_FAME | Kafka topic for fame commands |
 | COMMAND_TOPIC_CHARACTER | Kafka topic for character commands |
 | EVENT_TOPIC_FAME_STATUS | Kafka topic for fame status events |
+| EVENT_TOPIC_CHARACTER_STATUS | Kafka topic for character status events |
 | CHARACTERS | Character service URL |
 
 ## Documentation

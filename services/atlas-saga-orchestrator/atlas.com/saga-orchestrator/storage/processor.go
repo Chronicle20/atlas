@@ -98,7 +98,7 @@ func (p *ProcessorImpl) ShowStorageAndEmit(transactionId uuid.UUID, worldId byte
 
 func (p *ProcessorImpl) ShowStorage(mb *message.Buffer) func(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32, npcId uint32, accountId uint32) error {
 	return func(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32, npcId uint32, accountId uint32) error {
-		return mb.Put(storage2.EnvShowStorageCommandTopic, ShowStorageCommandProvider(transactionId, worldId, channelId, characterId, npcId, accountId))
+		return mb.Put(storage2.EnvCommandTopic, ShowStorageCommandProvider(transactionId, worldId, channelId, characterId, npcId, accountId))
 	}
 }
 

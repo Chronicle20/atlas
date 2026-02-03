@@ -1,6 +1,7 @@
 package templates
 
 import (
+	"atlas-configurations/templates/cashshop"
 	"atlas-configurations/templates/characters"
 	"atlas-configurations/templates/npcs"
 	"atlas-configurations/templates/socket"
@@ -17,6 +18,7 @@ type RestModel struct {
 	Characters   characters.RestModel `json:"characters"`
 	NPCs         []npcs.RestModel     `json:"npcs"`
 	Worlds       []worlds.RestModel   `json:"worlds"`
+	CashShop     cashshop.RestModel   `json:"cashShop"`
 }
 
 func (r RestModel) GetName() string {

@@ -9,6 +9,7 @@ use (
 	./libs/atlas-socket
 	./libs/atlas-tenant
 	./services/atlas-account/atlas.com/account
+	./services/atlas-asset-expiration/atlas.com/asset-expiration
 	./services/atlas-buddies/atlas.com/buddies
 	./services/atlas-buffs/atlas.com/buffs
 	./services/atlas-cashshop/atlas.com/cashshop
@@ -22,6 +23,7 @@ use (
 	./services/atlas-data/atlas.com/data
 	./services/atlas-drop-information/atlas.com/dis
 	./services/atlas-drops/atlas.com/drops
+	./services/atlas-effective-stats/atlas.com/effective-stats
 	./services/atlas-equipables/atlas.com/equipables
 	./services/atlas-expressions/atlas.com/expressions
 	./services/atlas-fame/atlas.com/fame

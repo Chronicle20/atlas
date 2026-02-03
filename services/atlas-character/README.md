@@ -34,6 +34,7 @@ The service coordinates with external services for skill management, drop handli
 | EVENT_TOPIC_CHARACTER_STATUS | Character status events topic |
 | EVENT_TOPIC_SESSION_STATUS | Session status events topic |
 | EVENT_TOPIC_DROP_STATUS | Drop status events topic |
+| EVENT_TOPIC_ACCOUNT_STATUS | Account status events topic (consumed) |
 
 ## Documentation
 

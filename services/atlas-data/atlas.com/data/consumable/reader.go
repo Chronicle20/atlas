@@ -166,6 +166,12 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 			}
 			m.Rechargeable = item.IsBullet(item.Id(consumableId)) || item.IsThrowingStar(item.Id(consumableId))
 
+			// Parse replace attributes if present
+			if replaceNode, err := i.ChildByName("replace"); err == nil && replaceNode != nil {
+				m.ReplaceItemId = uint32(replaceNode.GetIntegerWithDefault("itemid", 0))
+				m.ReplaceMessage = replaceNode.GetString("msg", "")
+			}
+
 			res = append(res, m)
 		}
 

@@ -41,3 +41,10 @@ func UpdateCapacity(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID) func(
 			Update("capacity", capacity).Error
 	}
 }
+
+// Delete deletes a storage by ID
+func Delete(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID) func(id uuid.UUID) error {
+	return func(id uuid.UUID) error {
+		return db.Where("tenant_id = ? AND id = ?", tenantId, id).Delete(&Entity{}).Error
+	}
+}

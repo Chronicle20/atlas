@@ -23,6 +23,10 @@ func (m Model) Count() uint32 {
 	return m.count
 }
 
+func (m Model) Period() uint32 {
+	return m.period
+}
+
 func Extract(rm RestModel) (Model, error) {
 	return Model{
 		id:       rm.Id,

@@ -28,6 +28,8 @@ const (
 	CommandSetHP               = "SET_HP"
 	CommandDeductExperience    = "DEDUCT_EXPERIENCE"
 	CommandResetStats          = "RESET_STATS"
+	CommandClampHP             = "CLAMP_HP"
+	CommandClampMP             = "CLAMP_MP"
 
 	ExperienceDistributionTypeWhite        = "WHITE"
 	ExperienceDistributionTypeYellow       = "YELLOW"
@@ -162,6 +164,16 @@ type SetHPBody struct {
 	Amount    uint16     `json:"amount"`
 }
 
+type ClampHPBody struct {
+	ChannelId channel.Id `json:"channelId"`
+	MaxValue  uint16     `json:"maxValue"`
+}
+
+type ClampMPBody struct {
+	ChannelId channel.Id `json:"channelId"`
+	MaxValue  uint16     `json:"maxValue"`
+}
+
 type DeductExperienceCommandBody struct {
 	ChannelId channel.Id `json:"channelId"`
 	Amount    uint32     `json:"amount"`
@@ -293,9 +305,10 @@ type FameChangedStatusEventBody struct {
 }
 
 type StatusEventStatChangedBody struct {
-	ChannelId       channel.Id `json:"channelId"`
-	ExclRequestSent bool       `json:"exclRequestSent"`
-	Updates         []string   `json:"updates"`
+	ChannelId       channel.Id             `json:"channelId"`
+	ExclRequestSent bool                   `json:"exclRequestSent"`
+	Updates         []string               `json:"updates"`
+	Values          map[string]interface{} `json:"values,omitempty"`
 }
 
 type StatusEventUpdatedBody struct {

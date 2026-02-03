@@ -42,6 +42,8 @@ Represents an account-level storage container within a world. Holds mesos and re
 - `ReleaseAndEmit`: Releases an item and emits RELEASED status event
 - `MergeAndSort`: Merges stackable items with same templateId/ownerId/flag and sorts by templateId
 - `ArrangeAndEmit`: Arranges storage and emits ARRANGED event
+- `ExpireAndEmit`: Expires an asset from storage and emits EXPIRED event
+- `DeleteByAccountId`: Deletes all storage records and associated assets for an account
 - `EmitProjectionCreatedEvent`: Emits PROJECTION_CREATED event
 - `EmitProjectionDestroyedEvent`: Emits PROJECTION_DESTROYED event
 

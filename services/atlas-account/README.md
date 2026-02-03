@@ -22,7 +22,7 @@ The service manages user accounts including authentication, session state tracki
 | DB_PORT | PostgreSQL database port |
 | DB_NAME | PostgreSQL database name |
 | BOOTSTRAP_SERVERS | Kafka host:port |
-| COMMAND_TOPIC_CREATE_ACCOUNT | Topic for account creation commands |
+| COMMAND_TOPIC_ACCOUNT | Topic for account commands (create, delete) |
 | COMMAND_TOPIC_ACCOUNT_SESSION | Topic for session commands |
 | EVENT_TOPIC_ACCOUNT_STATUS | Topic for account status events |
 | EVENT_TOPIC_ACCOUNT_SESSION_STATUS | Topic for session status events |

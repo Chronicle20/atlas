@@ -48,6 +48,13 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 			m.DistanceY = uint32(i.GetIntegerWithDefault("distanceY", 0))
 			m.MaxDiff = uint32(i.GetIntegerWithDefault("maxDiff", 0))
 			m.Direction = uint32(i.GetIntegerWithDefault("direction", 0))
+			m.TimeLimited = i.GetBool("timeLimited", false)
+
+			// Parse replace attributes if present
+			if replaceNode, err := i.ChildByName("replace"); err == nil && replaceNode != nil {
+				m.ReplaceItemId = uint32(replaceNode.GetIntegerWithDefault("itemid", 0))
+				m.ReplaceMessage = replaceNode.GetString("msg", "")
+			}
 
 			res = append(res, m)
 		}

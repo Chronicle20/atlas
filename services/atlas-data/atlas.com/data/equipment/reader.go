@@ -74,27 +74,38 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 			}
 		}
 
+		// Parse replace attributes if present
+		var replaceItemId uint32
+		var replaceMessage string
+		if replaceNode, err := info.ChildByName("replace"); err == nil && replaceNode != nil {
+			replaceItemId = uint32(replaceNode.GetIntegerWithDefault("itemid", 0))
+			replaceMessage = replaceNode.GetString("msg", "")
+		}
+
 		m := RestModel{
-			Id:            itemId,
-			Strength:      info.GetShort("incSTR", 0),
-			Dexterity:     info.GetShort("incDEX", 0),
-			Intelligence:  info.GetShort("incINT", 0),
-			Luck:          info.GetShort("incLUK", 0),
-			WeaponAttack:  info.GetShort("incPAD", 0),
-			WeaponDefense: info.GetShort("incPDD", 0),
-			MagicAttack:   info.GetShort("incMAD", 0),
-			MagicDefense:  info.GetShort("incMDD", 0),
-			Accuracy:      info.GetShort("incACC", 0),
-			Avoidability:  info.GetShort("incEVA", 0),
-			Speed:         info.GetShort("incSpeed", 0),
-			Jump:          info.GetShort("incJump", 0),
-			HP:            info.GetShort("incMHP", 0),
-			MP:            info.GetShort("incMMP", 0),
-			Slots:         info.GetShort("tuc", 0),
-			Cash:          info.GetBool("cash", false),
-			Price:         uint32(info.GetIntegerWithDefault("price", 0)),
-			BonusExp:      bonusExpTiers,
-			EquipSlots:    srm,
+			Id:             itemId,
+			Strength:       info.GetShort("incSTR", 0),
+			Dexterity:      info.GetShort("incDEX", 0),
+			Intelligence:   info.GetShort("incINT", 0),
+			Luck:           info.GetShort("incLUK", 0),
+			WeaponAttack:   info.GetShort("incPAD", 0),
+			WeaponDefense:  info.GetShort("incPDD", 0),
+			MagicAttack:    info.GetShort("incMAD", 0),
+			MagicDefense:   info.GetShort("incMDD", 0),
+			Accuracy:       info.GetShort("incACC", 0),
+			Avoidability:   info.GetShort("incEVA", 0),
+			Speed:          info.GetShort("incSpeed", 0),
+			Jump:           info.GetShort("incJump", 0),
+			HP:             info.GetShort("incMHP", 0),
+			MP:             info.GetShort("incMMP", 0),
+			Slots:          info.GetShort("tuc", 0),
+			Cash:           info.GetBool("cash", false),
+			Price:          uint32(info.GetIntegerWithDefault("price", 0)),
+			TimeLimited:    info.GetBool("timeLimited", false),
+			ReplaceItemId:  replaceItemId,
+			ReplaceMessage: replaceMessage,
+			BonusExp:       bonusExpTiers,
+			EquipSlots:     srm,
 		}
 		return model.FixedProvider(m)
 	}

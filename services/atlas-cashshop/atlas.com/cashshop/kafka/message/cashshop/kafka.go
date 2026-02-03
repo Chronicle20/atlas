@@ -10,6 +10,7 @@ const (
 	CommandTypeRequestStorageIncrease             = "REQUEST_STORAGE_INCREASE"
 	CommandTypeRequestStorageIncreaseByItem       = "REQUEST_STORAGE_INCREASE_BY_ITEM"
 	CommandTypeRequestCharacterSlotIncreaseByItem = "REQUEST_CHARACTER_SLOT_INCREASE_BY_ITEM"
+	CommandTypeExpire                             = "EXPIRE"
 )
 
 type Command[E any] struct {
@@ -77,4 +78,16 @@ type PurchaseEventBody struct {
 	CompartmentId uuid.UUID `json:"compartmentId"`
 	AssetId       uuid.UUID `json:"assetId"`
 	ItemId        uint32    `json:"itemId"`
+}
+
+// ExpireCommandBody contains the data for expiring a cash shop item
+type ExpireCommandBody struct {
+	AccountId      uint32 `json:"accountId"`
+	WorldId        byte   `json:"worldId"`
+	AssetId        uint32 `json:"assetId"`
+	TemplateId     uint32 `json:"templateId"`
+	InventoryType  int8   `json:"inventoryType"`
+	Slot           int16  `json:"slot"`
+	ReplaceItemId  uint32 `json:"replaceItemId"`
+	ReplaceMessage string `json:"replaceMessage"`
 }

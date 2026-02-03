@@ -9,7 +9,7 @@ Quest state management and progress tracking service. Handles quest lifecycle op
 | PostgreSQL | Database | Quest status and progress persistence |
 | Kafka | Messaging | Command/event communication |
 | Jaeger | Tracing | Distributed tracing |
-| atlas-data | Service | Quest definitions |
+| atlas-data | Service | Quest definitions and auto-start quest lookup |
 | query-aggregator | Service | Character state validation |
 | saga-orchestrator | Service | Rewards distribution |
 
@@ -25,15 +25,13 @@ Quest state management and progress tracking service. Handles quest lifecycle op
 | DB_PORT | PostgreSQL port |
 | DB_NAME | PostgreSQL database name |
 | BOOTSTRAP_SERVERS | Kafka host:port |
-| BASE_SERVICE_URL | Service base URL |
+| REST_PORT | REST server port |
 | COMMAND_TOPIC_QUEST | Quest command topic |
 | COMMAND_TOPIC_SAGA | Saga command topic |
 | EVENT_TOPIC_QUEST_STATUS | Quest status event topic |
 | EVENT_TOPIC_MONSTER_STATUS | Monster status event topic |
 | EVENT_TOPIC_ASSET_STATUS | Asset status event topic |
 | EVENT_TOPIC_CHARACTER_STATUS | Character status event topic |
-| DATA_BASE_URL | atlas-data service URL |
-| QUERY_AGGREGATOR_BASE_URL | query-aggregator service URL |
 
 ## Documentation
 

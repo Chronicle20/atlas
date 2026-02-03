@@ -28,8 +28,29 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 		return func(rf func(topic string, handler handler.Handler) (string, error)) {
 			var t string
 			t, _ = topic.EnvProvider(l)(character2.EnvEventTopicCharacterStatus)()
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventDeleted(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLogin(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLogout(db))))
+		}
+	}
+}
+
+func handleStatusEventDeleted(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, event character2.StatusEvent[character2.StatusEventDeletedBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventDeletedBody]) {
+		if e.Type != character2.EventCharacterStatusTypeDeleted {
+			return
+		}
+
+		p := guild.NewProcessor(l, ctx, db)
+		g, err := p.GetByMemberId(e.CharacterId)
+		if err != nil {
+			// Character not in a guild, nothing to clean up
+			return
+		}
+
+		err = p.LeaveAndEmit(g.Id(), e.CharacterId, true, uuid.New())
+		if err != nil {
+			l.WithError(err).Errorf("Unable to remove deleted character [%d] from guild [%d].", e.CharacterId, g.Id())
 		}
 	}
 }

@@ -7,6 +7,7 @@ const (
 	CommandCreate = "CREATE"
 
 	StatusCreated = "CREATED"
+	StatusExpired = "EXPIRED"
 )
 
 type Command[E any] struct {
@@ -34,4 +35,11 @@ type StatusEventCreatedBody struct {
 	Quantity    uint32 `json:"quantity"`
 	PurchasedBy uint32 `json:"purchasedBy"`
 	Flag        uint16 `json:"flag"`
+}
+
+// StatusEventExpiredBody contains information about an expired item
+type StatusEventExpiredBody struct {
+	IsCash         bool   `json:"isCash"`
+	ReplaceItemId  uint32 `json:"replaceItemId,omitempty"`
+	ReplaceMessage string `json:"replaceMessage,omitempty"`
 }

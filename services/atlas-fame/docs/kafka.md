@@ -1,23 +1,16 @@
-# Fame Kafka Integration
+# Kafka
 
 ## Topics Consumed
 
-| Topic | Environment Variable | Consumer Group |
-|-------|---------------------|----------------|
-| Fame command topic | COMMAND_TOPIC_FAME | Fame Service |
+### COMMAND_TOPIC_FAME
 
-## Topics Produced
+Fame command topic for requesting fame changes.
 
-| Topic | Environment Variable |
-|-------|---------------------|
-| Fame status event topic | EVENT_TOPIC_FAME_STATUS |
-| Character command topic | COMMAND_TOPIC_CHARACTER |
+| Message Type | Direction | Description |
+|--------------|-----------|-------------|
+| REQUEST_CHANGE | Command | Request to change fame between characters |
 
-## Message Types
-
-### Command: Request Change
-
-Direction: Consumed
+#### Command Structure
 
 ```json
 {
@@ -34,9 +27,36 @@ Direction: Consumed
 }
 ```
 
-### Event: Fame Status Error
+### EVENT_TOPIC_CHARACTER_STATUS
 
-Direction: Produced
+Character status event topic for character lifecycle events.
+
+| Message Type | Direction | Description |
+|--------------|-----------|-------------|
+| DELETED | Event | Character was deleted |
+
+#### Event Structure
+
+```json
+{
+  "worldId": "byte",
+  "characterId": "uint32",
+  "type": "DELETED",
+  "body": {}
+}
+```
+
+## Topics Produced
+
+### EVENT_TOPIC_FAME_STATUS
+
+Fame status event topic for fame operation results.
+
+| Message Type | Direction | Description |
+|--------------|-----------|-------------|
+| ERROR | Event | Fame change request failed |
+
+#### Event Structure
 
 ```json
 {
@@ -51,16 +71,25 @@ Direction: Produced
 }
 ```
 
-Error values:
-- `NOT_TODAY`
-- `NOT_THIS_MONTH`
-- `INVALID_NAME`
-- `NOT_MINIMUM_LEVEL`
-- `UNEXPECTED`
+#### Error Types
 
-### Command: Request Change Fame (Character)
+| Error | Description |
+|-------|-------------|
+| NOT_TODAY | Character already gave fame today |
+| NOT_THIS_MONTH | Character already gave fame to this target this month |
+| INVALID_NAME | Target character does not exist |
+| NOT_MINIMUM_LEVEL | Character is below level 15 |
+| UNEXPECTED | Unexpected error occurred |
 
-Direction: Produced
+### COMMAND_TOPIC_CHARACTER
+
+Character command topic for requesting character operations.
+
+| Message Type | Direction | Description |
+|--------------|-----------|-------------|
+| REQUEST_CHANGE_FAME | Command | Request to change a character's fame value |
+
+#### Command Structure
 
 ```json
 {
@@ -76,7 +105,29 @@ Direction: Produced
 }
 ```
 
+## Message Types
+
+### Fame Messages
+
+| Struct | Purpose |
+|--------|---------|
+| Command[E] | Generic fame command envelope |
+| RequestChangeCommandBody | Body for REQUEST_CHANGE command |
+| StatusEvent[E] | Generic fame status event envelope |
+| StatusEventErrorBody | Body for ERROR status event |
+
+### Character Messages
+
+| Struct | Purpose |
+|--------|---------|
+| CommandEvent[E] | Generic character command envelope |
+| RequestChangeFameBody | Body for REQUEST_CHANGE_FAME command |
+| StatusEvent[E] | Generic character status event envelope |
+| StatusEventDeletedBody | Body for DELETED status event |
+
 ## Transaction Semantics
 
-- Commands are processed with tenant header parsing
-- Messages are keyed by characterId for partition ordering
+- Fame change requests are processed within a database transaction
+- On success, a REQUEST_CHANGE_FAME command is emitted to the character service
+- On failure, an ERROR event is emitted to the fame status topic
+- Message partitioning uses characterId as the key

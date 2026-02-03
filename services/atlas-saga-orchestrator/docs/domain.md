@@ -185,3 +185,113 @@ In-memory storage for active sagas, tenant-scoped.
 | GetById | Returns a saga by ID for a tenant |
 | Put | Stores a saga for a tenant |
 | Remove | Removes a saga from a tenant |
+
+---
+
+# Reactor Drop
+
+## Responsibility
+
+Spawns item and meso drops from reactor activation with quest-aware filtering and rate multipliers.
+
+## Core Models
+
+### Model
+
+| Field | Type | Description |
+|-------|------|-------------|
+| reactorId | uint32 | Reactor identifier |
+| itemId | uint32 | Item identifier |
+| questId | uint32 | Associated quest identifier (0 for non-quest items) |
+| chance | uint32 | Drop chance (higher = rarer) |
+
+### DropType Constants
+
+| Value | Name | Description |
+|-------|------|-------------|
+| 1 | DropTypeSpray | Spray drop animation |
+| 2 | DropTypeImmediate | Immediate drop |
+
+## Processors
+
+### SpawnReactorDrops
+
+Spawns drops from reactor activation.
+
+- Fetches character rate multipliers
+- Retrieves reactor drop configuration from drop information service
+- Filters quest-specific drops based on character's started quests
+- Rolls chances to determine which items drop
+- Calculates meso padding if minimum items not met
+- Calculates drop positions using foothold data
+- Produces spawn drop commands via Kafka
+
+### filterByQuestState
+
+Filters drops based on character's quest state.
+
+- Returns all drops unchanged if no quest-specific drops exist
+- Fetches started quest IDs for the character from quest service
+- Includes drops with questId == 0 (non-quest items)
+- Includes drops with questId matching a started quest
+- Excludes drops with questId not matching any started quest
+- On quest service error, excludes all quest-specific drops
+
+---
+
+# Quest State
+
+## Responsibility
+
+Represents quest state information retrieved from external service for quest-aware drop filtering.
+
+## Core Models
+
+### State
+
+Quest state enumeration.
+
+| Value | Name | Description |
+|-------|------|-------------|
+| 0 | StateNotStarted | Quest not started |
+| 1 | StateStarted | Quest in progress |
+| 2 | StateCompleted | Quest completed |
+
+### Model
+
+| Field | Type | Description |
+|-------|------|-------------|
+| characterId | uint32 | Character identifier |
+| questId | uint32 | Quest identifier |
+| state | State | Quest state |
+
+## Processors
+
+### GetStartedQuestIds
+
+Retrieves a set of started quest IDs for a character.
+
+---
+
+# Rates
+
+## Responsibility
+
+Represents character rate multipliers retrieved from external service.
+
+## Core Models
+
+### Model
+
+| Field | Type | Description |
+|-------|------|-------------|
+| expRate | float64 | Experience rate multiplier |
+| mesoRate | float64 | Meso rate multiplier |
+| itemDropRate | float64 | Item drop rate multiplier |
+| questExpRate | float64 | Quest experience rate multiplier |
+
+## Processors
+
+### GetForCharacter
+
+Retrieves computed rates for a character. Returns default rates (all 1.0) if the rate service is unavailable.

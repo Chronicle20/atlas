@@ -6,8 +6,8 @@
 |-------|---------------------|-----------|-------------|
 | Quest Command | COMMAND_TOPIC_QUEST | Command | Quest lifecycle commands |
 | Monster Status | EVENT_TOPIC_MONSTER_STATUS | Event | Monster kill events for progress tracking |
-| Asset Status | EVENT_TOPIC_ASSET_STATUS | Event | Asset events (consumer registered but no handlers) |
-| Character Status | EVENT_TOPIC_CHARACTER_STATUS | Event | Character map change events for progress and auto-start |
+| Asset Status | EVENT_TOPIC_ASSET_STATUS | Event | Asset events (consumer registered, no handlers) |
+| Character Status | EVENT_TOPIC_CHARACTER_STATUS | Event | Character deletion and map change events |
 
 ## Topics Produced
 
@@ -119,6 +119,14 @@ Generic event envelope.
 |-------|------|-------------|
 | questId | uint32 | Quest identifier |
 | completedAt | time.Time | Completion timestamp |
+| items | []ItemReward | Awarded items (optional) |
+
+#### ItemReward
+
+| Field | Type | Description |
+|-------|------|-------------|
+| itemId | uint32 | Item template identifier |
+| amount | int32 | Item quantity |
 
 #### QuestForfeitedEventBody
 
@@ -151,6 +159,71 @@ Generic event envelope.
 | QUEST_ALREADY_COMPLETED | Quest already completed |
 | REQUIREMENTS_NOT_MET | Requirements not satisfied |
 | UNKNOWN_ERROR | Unexpected error |
+
+### Monster Status Events (Consumed)
+
+#### StatusEvent
+
+| Field | Type | Description |
+|-------|------|-------------|
+| worldId | byte | World identifier |
+| channelId | byte | Channel identifier |
+| mapId | uint32 | Map identifier |
+| uniqueId | uint32 | Monster unique identifier |
+| monsterId | uint32 | Monster template identifier |
+| type | string | Event type |
+| body | object | Event-specific payload |
+
+#### StatusEventKilledBody
+
+Consumed from EVENT_TOPIC_MONSTER_STATUS. Processes KILLED events to update monster kill progress for active quests.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| x | int16 | X coordinate |
+| y | int16 | Y coordinate |
+| actorId | uint32 | Actor identifier |
+| damageEntries | []DamageEntry | Damage entries per character |
+
+#### DamageEntry
+
+| Field | Type | Description |
+|-------|------|-------------|
+| characterId | uint32 | Character identifier |
+| damage | uint32 | Damage dealt |
+
+### Character Status Events (Consumed)
+
+#### StatusEvent
+
+| Field | Type | Description |
+|-------|------|-------------|
+| transactionId | uuid.UUID | Transaction identifier |
+| characterId | uint32 | Character identifier |
+| worldId | world.Id | World identifier |
+| type | string | Event type |
+| body | object | Event-specific payload |
+
+#### Event Types Handled
+
+| Type | Body | Description |
+|------|------|-------------|
+| DELETED | StatusEventDeletedBody | Character deleted, cascade delete quests |
+| MAP_CHANGED | StatusEventMapChangedBody | Character changed maps |
+
+#### StatusEventMapChangedBody
+
+Consumed from EVENT_TOPIC_CHARACTER_STATUS. Processes MAP_CHANGED events to:
+- Check for auto-start quests on the new map
+- Update map visit progress for active quests
+- Check for auto-complete after progress updates
+
+| Field | Type | Description |
+|-------|------|-------------|
+| channelId | channel.Id | Channel identifier |
+| oldMapId | map.Id | Previous map identifier |
+| targetMapId | map.Id | New map identifier |
+| targetPortalId | uint32 | Target portal identifier |
 
 ### Saga Commands (Produced)
 
@@ -191,16 +264,78 @@ Generic event envelope.
 | create_skill | CreateSkillPayload | Grant skill |
 | destroy_asset | ConsumeItemPayload | Consume item |
 
-### Monster Status Events (Consumed)
+#### AwardItemPayload
 
-Consumed from EVENT_TOPIC_MONSTER_STATUS. Processes KILLED events to update monster kill progress for active quests.
+| Field | Type | Description |
+|-------|------|-------------|
+| characterId | uint32 | Character identifier |
+| item | ItemDetail | Item details |
 
-### Character Status Events (Consumed)
+#### ItemDetail
 
-Consumed from EVENT_TOPIC_CHARACTER_STATUS. Processes MAP_CHANGED events to:
-- Update map visit progress for active quests
-- Trigger auto-start quest checks for the new map
-- Check for auto-complete after progress updates
+| Field | Type | Description |
+|-------|------|-------------|
+| templateId | uint32 | Item template identifier |
+| quantity | uint32 | Item quantity |
+| period | uint32 | Item period (optional) |
+| expiration | time.Time | Item expiration (optional) |
+
+#### AwardExperiencePayload
+
+| Field | Type | Description |
+|-------|------|-------------|
+| characterId | uint32 | Character identifier |
+| worldId | byte | World identifier |
+| channelId | byte | Channel identifier |
+| distributions | []ExperienceDistribution | Experience distributions |
+
+#### ExperienceDistribution
+
+| Field | Type | Description |
+|-------|------|-------------|
+| experienceType | string | Experience type (WHITE) |
+| amount | uint32 | Experience amount |
+| attr1 | uint32 | Additional attribute |
+
+#### AwardMesosPayload
+
+| Field | Type | Description |
+|-------|------|-------------|
+| characterId | uint32 | Character identifier |
+| worldId | byte | World identifier |
+| channelId | byte | Channel identifier |
+| actorId | uint32 | Quest identifier |
+| actorType | string | Actor type (quest) |
+| amount | int32 | Meso amount |
+
+#### AwardFamePayload
+
+| Field | Type | Description |
+|-------|------|-------------|
+| characterId | uint32 | Character identifier |
+| worldId | byte | World identifier |
+| channelId | byte | Channel identifier |
+| actorId | uint32 | Quest identifier |
+| actorType | string | Actor type (quest) |
+| amount | int16 | Fame amount |
+
+#### CreateSkillPayload
+
+| Field | Type | Description |
+|-------|------|-------------|
+| characterId | uint32 | Character identifier |
+| skillId | uint32 | Skill identifier |
+| level | byte | Skill level |
+| masterLevel | byte | Skill master level |
+| expiration | time.Time | Skill expiration (optional) |
+
+#### ConsumeItemPayload
+
+| Field | Type | Description |
+|-------|------|-------------|
+| characterId | uint32 | Character identifier |
+| templateId | uint32 | Item template identifier |
+| quantity | uint32 | Quantity to consume |
 
 ## Transaction Semantics
 

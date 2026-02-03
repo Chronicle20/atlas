@@ -1,0 +1,79 @@
+package main
+
+import (
+	"atlas-effective-stats/character"
+	asset2 "atlas-effective-stats/kafka/consumer/asset"
+	buff2 "atlas-effective-stats/kafka/consumer/buff"
+	session2 "atlas-effective-stats/kafka/consumer/session"
+	"atlas-effective-stats/logger"
+	"atlas-effective-stats/service"
+	"atlas-effective-stats/tracing"
+	"os"
+
+	"github.com/Chronicle20/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas-rest/server"
+)
+
+const serviceName = "atlas-effective-stats"
+const consumerGroupId = "Effective Stats Service"
+
+type Server struct {
+	baseUrl string
+	prefix  string
+}
+
+func (s Server) GetBaseURL() string {
+	return s.baseUrl
+}
+
+func (s Server) GetPrefix() string {
+	return s.prefix
+}
+
+func GetServer() Server {
+	return Server{
+		baseUrl: "",
+		prefix:  "/api/",
+	}
+}
+
+func main() {
+	l := logger.CreateLogger(serviceName)
+	l.Infoln("Starting main service.")
+
+	tdm := service.GetTeardownManager()
+
+	tc, err := tracing.InitTracer(serviceName)
+	if err != nil {
+		l.WithError(err).Fatal("Unable to initialize tracer.")
+	}
+
+	// Initialize Kafka consumers
+	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+
+	// Session status events consumer (login/logout)
+	session2.InitConsumers(l)(cmf)(consumerGroupId)
+	session2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+
+	// Buff status events consumer (apply/expire)
+	buff2.InitConsumers(l)(cmf)(consumerGroupId)
+	buff2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+
+	// Asset status events consumer (equip/unequip)
+	asset2.InitConsumers(l)(cmf)(consumerGroupId)
+	asset2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+
+	// Start REST server
+	server.New(l).
+		WithContext(tdm.Context()).
+		WithWaitGroup(tdm.WaitGroup()).
+		SetBasePath(GetServer().GetPrefix()).
+		SetPort(os.Getenv("REST_PORT")).
+		AddRouteInitializer(character.InitResource(GetServer())).
+		Run()
+
+	tdm.TeardownFunc(tracing.Teardown(l)(tc))
+
+	tdm.Wait()
+	l.Infoln("Service shutdown.")
+}

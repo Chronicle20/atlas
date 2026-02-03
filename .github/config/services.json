@@ -126,6 +126,14 @@
       "docker_context": "."
     },
     {
+      "name": "atlas-effective-stats",
+      "type": "go-service",
+      "path": "services/atlas-effective-stats",
+      "module_path": "services/atlas-effective-stats/atlas.com/effective-stats",
+      "docker_image": "ghcr.io/chronicle20/atlas-effective-stats/atlas-effective-stats",
+      "docker_context": "."
+    },
+    {
       "name": "atlas-equipables",
       "type": "go-service",
       "path": "services/atlas-equipables",

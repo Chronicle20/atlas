@@ -5,15 +5,21 @@ import (
 	"errors"
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 )
 
 type ModelBuilder struct {
 	tenant         tenant.Model
 	id             uint32
-	worldId        byte
-	channelId      byte
-	mapId          uint32
+	worldId        world.Id
+	channelId      channel.Id
+	mapId          _map.Id
+	instance       uuid.UUID
 	classification uint32
 	name           string
 	data           data.Model
@@ -26,12 +32,13 @@ type ModelBuilder struct {
 	updateTime     time.Time
 }
 
-func NewModelBuilder(t tenant.Model, worldId byte, channelId byte, mapId uint32, classification uint32, name string) *ModelBuilder {
+func NewModelBuilder(t tenant.Model, f field.Model, classification uint32, name string) *ModelBuilder {
 	return &ModelBuilder{
 		tenant:         t,
-		worldId:        worldId,
-		channelId:      channelId,
-		mapId:          mapId,
+		worldId:        f.WorldId(),
+		channelId:      f.ChannelId(),
+		mapId:          f.MapId(),
+		instance:       f.Instance(),
 		classification: classification,
 		name:           name,
 		updateTime:     time.Now(),
@@ -45,6 +52,7 @@ func NewFromModel(m Model) *ModelBuilder {
 		worldId:        m.WorldId(),
 		channelId:      m.ChannelId(),
 		mapId:          m.MapId(),
+		instance:       m.Instance(),
 		classification: m.Classification(),
 		name:           m.Name(),
 		data:           m.Data(),
@@ -68,6 +76,7 @@ func (b *ModelBuilder) Build() (Model, error) {
 		worldId:        b.worldId,
 		channelId:      b.channelId,
 		mapId:          b.mapId,
+		instance:       b.instance,
 		classification: b.classification,
 		name:           b.name,
 		data:           b.data,

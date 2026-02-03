@@ -107,7 +107,7 @@ func announceQuestCompleted(l logrus.FieldLogger) func(ctx context.Context) func
 					_ = session.Announce(l)(ctx)(wp)(writer.CharacterEffect)(writer.CharacterQuestEffectBody(l)("", rewards, 0))(s)
 
 					// Announce quest complete effect to other players in the map
-					_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Map(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.CharacterEffectForeign)(writer.CharacterQuestEffectForeignBody(l)(s.CharacterId(), "", rewards, 0)))
+					_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.CharacterEffectForeign)(writer.CharacterQuestEffectForeignBody(l)(s.CharacterId(), "", rewards, 0)))
 
 					return nil
 				}

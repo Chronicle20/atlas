@@ -21,7 +21,7 @@ import (
 	"atlas-channel/transport/route"
 	"context"
 	"github.com/Chronicle20/atlas-constants/channel"
-	_map2 "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
@@ -65,19 +65,20 @@ func handleStatusEventCharacterEnter(sc server.Model, wp writer.Producer) func(l
 			return
 		}
 
-		l.Debugf("Character [%d] has entered map [%d] in worldId [%d] channelId [%d].", e.Body.CharacterId, e.MapId, e.WorldId, e.ChannelId)
-		session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, enterMap(l, ctx, wp)(sc.Map(_map2.Id(e.MapId))))
+		l.Debugf("Character [%d] has entered map [%d] instance [%s] in worldId [%d] channelId [%d].", e.Body.CharacterId, e.MapId, e.Instance, e.WorldId, e.ChannelId)
+		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
+		session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, enterMap(l, ctx, wp)(f))
 	}
 }
 
-func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(m _map2.Model) model.Operator[session.Model] {
+func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(f field.Model) model.Operator[session.Model] {
 	t := tenant.MustFromContext(ctx)
-	return func(m _map2.Model) model.Operator[session.Model] {
+	return func(f field.Model) model.Operator[session.Model] {
 		return func(s session.Model) error {
-			l.Debugf("Processing character [%d] entering map [%d].", s.CharacterId(), m.MapId())
-			ids, err := _map.NewProcessor(l, ctx).GetCharacterIdsInMap(m)
+			l.Debugf("Processing character [%d] entering map [%d] instance [%s].", s.CharacterId(), f.MapId(), f.Instance())
+			ids, err := _map.NewProcessor(l, ctx).GetCharacterIdsInMap(f)
 			if err != nil {
-				l.WithError(err).Errorf("No characters found in map [%d] for world [%d] and channel [%d].", m.MapId(), s.WorldId(), s.ChannelId())
+				l.WithError(err).Errorf("No characters found in map [%d] instance [%s] for world [%d] and channel [%d].", f.MapId(), f.Instance(), s.WorldId(), s.ChannelId())
 				return err
 			}
 
@@ -144,42 +145,42 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 			}()
 
 			go func() {
-				err = npc2.NewProcessor(l, ctx).ForEachInMap(m.MapId(), spawnNPCForSession(l)(ctx)(wp)(s))
+				err = npc2.NewProcessor(l, ctx).ForEachInMap(f.MapId(), spawnNPCForSession(l)(ctx)(wp)(s))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to spawn npcs for character [%d].", s.CharacterId())
 				}
 			}()
 
 			go func() {
-				err = monster.NewProcessor(l, ctx).ForEachInMap(m, spawnMonsterForSession(l)(ctx)(wp)(s))
+				err = monster.NewProcessor(l, ctx).ForEachInMap(f, spawnMonsterForSession(l)(ctx)(wp)(s))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to spawn monsters for character [%d].", s.CharacterId())
 				}
 			}()
 
 			go func() {
-				err = drop.NewProcessor(l, ctx).ForEachInMap(m, spawnDropsForSession(l)(ctx)(wp)(s))
+				err = drop.NewProcessor(l, ctx).ForEachInMap(f, spawnDropsForSession(l)(ctx)(wp)(s))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to spawn drops for character [%d].", s.CharacterId())
 				}
 			}()
 
 			go func() {
-				err = reactor.NewProcessor(l, ctx).ForEachInMap(m, spawnReactorsForSession(l)(ctx)(wp)(s))
+				err = reactor.NewProcessor(l, ctx).ForEachInMap(f, spawnReactorsForSession(l)(ctx)(wp)(s))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to spawn reactors for character [%d].", s.CharacterId())
 				}
 			}()
 
 			go func() {
-				err = chalkboard.NewProcessor(l, ctx).ForEachInMap(m, spawnChalkboardsForSession(l)(ctx)(wp)(s))
+				err = chalkboard.NewProcessor(l, ctx).ForEachInMap(f, spawnChalkboardsForSession(l)(ctx)(wp)(s))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to spawn drops for character [%d].", s.CharacterId())
 				}
 			}()
 
 			go func() {
-				err = chair.NewProcessor(l, ctx).ForEachInMap(m, spawnChairsForSession(l)(ctx)(wp)(s))
+				err = chair.NewProcessor(l, ctx).ForEachInMap(f, spawnChairsForSession(l)(ctx)(wp)(s))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to spawn drops for character [%d].", s.CharacterId())
 				}
@@ -200,9 +201,9 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 
 			go func() {
 				var md mapData.Model
-				md, err = mapData.NewProcessor(l, ctx).GetById(m.MapId())
+				md, err = mapData.NewProcessor(l, ctx).GetById(f.MapId())
 				if err != nil {
-					l.WithError(err).Errorf("Unable to retrieve map data for map [%d].", m.MapId())
+					l.WithError(err).Errorf("Unable to retrieve map data for map [%d].", f.MapId())
 					return
 				}
 				if md.Clock() {
@@ -212,9 +213,9 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 
 			go func() {
 				var hasShip bool
-				hasShip, err = route.NewProcessor(l, ctx).IsBoatInMap(m.MapId())
+				hasShip, err = route.NewProcessor(l, ctx).IsBoatInMap(f.MapId())
 				if err != nil {
-					l.WithError(err).Errorf("Unable to retrieve boat data for map [%d].", m.MapId())
+					l.WithError(err).Errorf("Unable to retrieve boat data for map [%d].", f.MapId())
 					return
 				}
 				if hasShip {
@@ -263,10 +264,11 @@ func handleStatusEventCharacterExit(sc server.Model, wp writer.Producer) func(l 
 			return
 		}
 
-		l.Debugf("Character [%d] has left map [%d] in worldId [%d] channelId [%d].", e.Body.CharacterId, e.MapId, e.WorldId, e.ChannelId)
-		err := _map.NewProcessor(l, ctx).ForOtherSessionsInMap(sc.Map(_map2.Id(e.MapId)), e.Body.CharacterId, despawnForSession(l)(ctx)(wp)(e.Body.CharacterId))
+		l.Debugf("Character [%d] has left map [%d] instance [%s] in worldId [%d] channelId [%d].", e.Body.CharacterId, e.MapId, e.Instance, e.WorldId, e.ChannelId)
+		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
+		err := _map.NewProcessor(l, ctx).ForOtherSessionsInMap(f, e.Body.CharacterId, despawnForSession(l)(ctx)(wp)(e.Body.CharacterId))
 		if err != nil {
-			l.WithError(err).Errorf("Unable to despawn character [%d] for characters in map [%d].", e.Body.CharacterId, e.MapId)
+			l.WithError(err).Errorf("Unable to despawn character [%d] for characters in map [%d] instance [%s].", e.Body.CharacterId, e.MapId, e.Instance)
 		}
 		return
 	}

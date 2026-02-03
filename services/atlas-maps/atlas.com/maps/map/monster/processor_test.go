@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
@@ -990,10 +991,10 @@ type mockCharacterProcessor struct {
 	charactersInMap map[character.MapKey][]uint32
 }
 
-func (m *mockCharacterProcessor) GetCharactersInMap(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id) ([]uint32, error) {
-	// Check all stored map keys to find a match by world/channel/map (ignoring tenant)
+func (m *mockCharacterProcessor) GetCharactersInMap(transactionId uuid.UUID, f field.Model) ([]uint32, error) {
+	// Check all stored map keys to find a match by world/channel/map/instance (ignoring tenant)
 	for storedMapKey, characters := range m.charactersInMap {
-		if storedMapKey.WorldId == worldId && storedMapKey.ChannelId == channelId && storedMapKey.MapId == mapId {
+		if storedMapKey.WorldId == f.WorldId() && storedMapKey.ChannelId == f.ChannelId() && storedMapKey.MapId == f.MapId() && storedMapKey.Instance == f.Instance() {
 			return characters, nil
 		}
 	}
@@ -1008,10 +1009,10 @@ func (m *mockCharacterProcessor) GetMapsWithCharacters() []character.MapKey {
 	return keys
 }
 
-func (m *mockCharacterProcessor) Enter(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, characterId uint32) {
+func (m *mockCharacterProcessor) Enter(transactionId uuid.UUID, f field.Model, characterId uint32) {
 }
 
-func (m *mockCharacterProcessor) Exit(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, characterId uint32) {
+func (m *mockCharacterProcessor) Exit(transactionId uuid.UUID, f field.Model, characterId uint32) {
 }
 
 type mockMonsterProcessor struct {

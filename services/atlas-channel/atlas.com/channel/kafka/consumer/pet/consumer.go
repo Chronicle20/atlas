@@ -95,7 +95,7 @@ func announceSpawn(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					if err != nil {
 						l.WithError(err).Errorf("Unable to write pet spawned to character.")
 					}
-					err = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Map(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(l)(t)(p)))
+					err = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(l)(t)(p)))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to write pet spawned to other characters.")
 					}
@@ -138,7 +138,7 @@ func announceDespawn(l logrus.FieldLogger) func(ctx context.Context) func(wp wri
 					if err != nil {
 						l.WithError(err).Errorf("Unable to write pet despawned to character.")
 					}
-					err = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Map(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetDespawnBody(l)(s.CharacterId(), slot, reason)))
+					err = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetDespawnBody(l)(s.CharacterId(), slot, reason)))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to write pet despawned to other characters.")
 					}
@@ -178,7 +178,7 @@ func handleCommandResponse(sc server.Model, wp writer.Producer) message.Handler[
 				SetCloseness(e.Body.Closeness).
 				SetFullness(e.Body.Fullness).
 				MustBuild()
-			_ = _map.NewProcessor(l, ctx).ForSessionsInMap(s.Map(), session.Announce(l)(ctx)(wp)(writer.PetCommandResponse)(writer.PetCommandResponseBody(p, e.Body.CommandId, e.Body.Success, false)))
+			_ = _map.NewProcessor(l, ctx).ForSessionsInMap(s.Field(), session.Announce(l)(ctx)(wp)(writer.PetCommandResponse)(writer.PetCommandResponseBody(p, e.Body.CommandId, e.Body.Success, false)))
 		}()
 	}
 }
@@ -244,7 +244,7 @@ func handleFullnessChanged(sc server.Model, wp writer.Producer) message.Handler[
 				return err
 			}
 
-			return _map.NewProcessor(l, ctx).ForSessionsInMap(s.Map(), func(os session.Model) error {
+			return _map.NewProcessor(l, ctx).ForSessionsInMap(s.Field(), func(os session.Model) error {
 				if e.Body.Amount > 0 {
 					err := session.Announce(l)(ctx)(wp)(writer.PetCommandResponse)(writer.PetFoodResponseBody(p, 0, true, false))(os)
 					if err != nil {
@@ -282,7 +282,7 @@ func handleLevelChanged(sc server.Model, wp writer.Producer) message.Handler[pet
 				return err
 			}
 
-			return _map.NewProcessor(l, ctx).ForSessionsInMap(s.Map(), func(os session.Model) error {
+			return _map.NewProcessor(l, ctx).ForSessionsInMap(s.Field(), func(os session.Model) error {
 				if s.CharacterId() == os.CharacterId() {
 					err = session.Announce(l)(ctx)(wp)(writer.CharacterEffect)(writer.CharacterPetEffectBody(l)(byte(e.Body.Slot), 0))(os)
 					if err != nil {

@@ -5,6 +5,8 @@ import (
 	_map "atlas-monsters/map"
 	"atlas-monsters/monster"
 	"context"
+
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -35,9 +37,11 @@ func handleStatusEventCharacterEnter(l logrus.FieldLogger, ctx context.Context, 
 		return
 	}
 
+	f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
+
 	p := monster.NewProcessor(l, ctx)
-	provider := p.NotControlledInMapProvider(e.WorldId, e.ChannelId, e.MapId)
-	_ = model.ForEachSlice(provider, p.FindNextController(_map.CharacterIdsInMapProvider(l)(ctx)(e.WorldId, e.ChannelId, e.MapId)), model.ParallelExecute())
+	provider := p.NotControlledInFieldProvider(f)
+	_ = model.ForEachSlice(provider, p.FindNextController(_map.CharacterIdsInFieldProvider(l)(ctx)(f)), model.ParallelExecute())
 }
 
 func handleStatusEventCharacterExit(l logrus.FieldLogger, ctx context.Context, e statusEvent[characterExit]) {
@@ -45,13 +49,15 @@ func handleStatusEventCharacterExit(l logrus.FieldLogger, ctx context.Context, e
 		return
 	}
 
-	ocids, err := _map.CharacterIdsInMapProvider(l)(ctx)(e.WorldId, e.ChannelId, e.MapId)()
+	f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
+
+	ocids, err := _map.CharacterIdsInFieldProvider(l)(ctx)(f)()
 	if err != nil {
 		return
 	}
 
 	p := monster.NewProcessor(l, ctx)
-	provider := p.ControlledByCharacterInMapProvider(e.WorldId, e.ChannelId, e.MapId, e.Body.CharacterId)
+	provider := p.ControlledByCharacterInFieldProvider(f, e.Body.CharacterId)
 	_ = model.ForEachSlice(provider, p.StopControl, model.ParallelExecute())
 	_ = model.ForEachSlice(provider, p.FindNextController(model.FixedProvider(ocids)), model.ParallelExecute())
 }

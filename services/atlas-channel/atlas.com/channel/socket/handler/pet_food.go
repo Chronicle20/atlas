@@ -16,6 +16,6 @@ func PetFoodHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Produ
 		updateTime := r.ReadUint32()
 		slot := r.ReadInt16()
 		itemId := r.ReadUint32()
-		_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.WorldId(), s.ChannelId(), s.CharacterId(), itemId, slot, updateTime)
+		_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.Field(), s.CharacterId(), itemId, slot, updateTime)
 	}
 }

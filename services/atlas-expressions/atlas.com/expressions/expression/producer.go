@@ -11,7 +11,7 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func expressionEventProvider(transactionId uuid.UUID, characterId uint32, worldId world.Id, channelId channel.Id, mapId _map.Id, expressionId uint32) model.Provider[[]kafka.Message] {
+func expressionEventProvider(transactionId uuid.UUID, characterId uint32, worldId world.Id, channelId channel.Id, mapId _map.Id, instance uuid.UUID, expressionId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &expression.StatusEvent{
 		TransactionId: transactionId,
@@ -19,6 +19,7 @@ func expressionEventProvider(transactionId uuid.UUID, characterId uint32, worldI
 		WorldId:       worldId,
 		ChannelId:     channelId,
 		MapId:         mapId,
+		Instance:      instance,
 		Expression:    expressionId,
 	}
 	return producer.SingleMessageProvider(key, value)

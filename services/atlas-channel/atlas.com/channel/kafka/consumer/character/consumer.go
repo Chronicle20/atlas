@@ -370,7 +370,7 @@ func handleStatusEventLevelChanged(sc server.Model, wp writer.Producer) message.
 
 		session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
 			_ = session.Announce(l)(ctx)(wp)(writer.CharacterEffect)(writer.CharacterLevelUpEffectBody(l)())(s)
-			_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Map(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.CharacterEffectForeign)(writer.CharacterLevelUpEffectForeignBody(l)(s.CharacterId())))
+			_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.CharacterEffectForeign)(writer.CharacterLevelUpEffectForeignBody(l)(s.CharacterId())))
 			return nil
 		})
 

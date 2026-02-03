@@ -3,6 +3,8 @@ package character
 import (
 	"github.com/Chronicle20/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
 )
 
 const (
@@ -40,27 +42,32 @@ const (
 )
 
 type StatusEvent[E any] struct {
-	CharacterId uint32 `json:"characterId"`
-	Type        string `json:"type"`
-	WorldId     byte   `json:"worldId"`
-	Body        E      `json:"body"`
+	TransactionId uuid.UUID `json:"transactionId"`
+	CharacterId   uint32    `json:"characterId"`
+	Type          string    `json:"type"`
+	WorldId       world.Id  `json:"worldId"`
+	Body          E         `json:"body"`
 }
 
 type StatusEventLogoutBody struct {
-	ChannelId byte   `json:"channelId"`
-	MapId     uint32 `json:"mapId"`
+	ChannelId channel.Id `json:"channelId"`
+	MapId     _map.Id    `json:"mapId"`
+	Instance  uuid.UUID  `json:"instance"`
 }
 
 type StatusEventChannelChangedBody struct {
-	ChannelId    byte   `json:"channelId"`
-	OldChannelId byte   `json:"oldChannelId"`
-	MapId        uint32 `json:"mapId"`
+	ChannelId    channel.Id `json:"channelId"`
+	OldChannelId channel.Id `json:"oldChannelId"`
+	MapId        _map.Id    `json:"mapId"`
+	Instance     uuid.UUID  `json:"instance"`
 }
 
 type StatusEventMapChangedBody struct {
 	ChannelId      channel.Id `json:"channelId"`
 	OldMapId       _map.Id    `json:"oldMapId"`
+	OldInstance    uuid.UUID  `json:"oldInstance"`
 	TargetMapId    _map.Id    `json:"targetMapId"`
+	TargetInstance uuid.UUID  `json:"targetInstance"`
 	TargetPortalId uint32     `json:"targetPortalId"`
 }
 

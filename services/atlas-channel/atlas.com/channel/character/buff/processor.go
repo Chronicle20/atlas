@@ -5,7 +5,7 @@ import (
 	buff2 "atlas-channel/kafka/message/buff"
 	"atlas-channel/kafka/producer"
 	"context"
-	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
@@ -15,8 +15,8 @@ import (
 type Processor interface {
 	ByCharacterIdProvider(characterId uint32) model.Provider[[]Model]
 	GetByCharacterId(characterId uint32) ([]Model, error)
-	Apply(m _map.Model, fromId uint32, sourceId int32, duration int32, statups []statup.Model) model.Operator[uint32]
-	Cancel(m _map.Model, characterId uint32, sourceId int32) error
+	Apply(f field.Model, fromId uint32, sourceId int32, duration int32, statups []statup.Model) model.Operator[uint32]
+	Cancel(f field.Model, characterId uint32, sourceId int32) error
 }
 
 // ProcessorImpl implements the Processor interface
@@ -41,14 +41,14 @@ func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {
 	return p.ByCharacterIdProvider(characterId)()
 }
 
-func (p *ProcessorImpl) Apply(m _map.Model, fromId uint32, sourceId int32, duration int32, statups []statup.Model) model.Operator[uint32] {
+func (p *ProcessorImpl) Apply(f field.Model, fromId uint32, sourceId int32, duration int32, statups []statup.Model) model.Operator[uint32] {
 	return func(characterId uint32) error {
 		p.l.Debugf("Character [%d] applying effect from source [%d].", characterId, sourceId)
-		return producer.ProviderImpl(p.l)(p.ctx)(buff2.EnvCommandTopic)(ApplyCommandProvider(m, characterId, fromId, sourceId, duration, statups))
+		return producer.ProviderImpl(p.l)(p.ctx)(buff2.EnvCommandTopic)(ApplyCommandProvider(f, characterId, fromId, sourceId, duration, statups))
 	}
 }
 
-func (p *ProcessorImpl) Cancel(m _map.Model, characterId uint32, sourceId int32) error {
+func (p *ProcessorImpl) Cancel(f field.Model, characterId uint32, sourceId int32) error {
 	p.l.Debugf("Character [%d] cancelling effect from source [%d].", characterId, sourceId)
-	return producer.ProviderImpl(p.l)(p.ctx)(buff2.EnvCommandTopic)(CancelCommandProvider(m, characterId, sourceId))
+	return producer.ProviderImpl(p.l)(p.ctx)(buff2.EnvCommandTopic)(CancelCommandProvider(f, characterId, sourceId))
 }

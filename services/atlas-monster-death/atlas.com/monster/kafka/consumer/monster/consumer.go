@@ -6,6 +6,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -35,17 +36,20 @@ func handleKilledStatusEvent(l logrus.FieldLogger, ctx context.Context, e status
 		return
 	}
 
+	f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
+
 	var wg sync.WaitGroup
 	wg.Add(2)
 
 	go func() {
 		defer wg.Done()
-		err := monster.CreateDrops(l)(ctx)(e.WorldId, e.ChannelId, e.MapId, e.UniqueId, e.MonsterId, e.Body.X, e.Body.Y, e.Body.ActorId)
+		err := monster.CreateDrops(l)(ctx)(f, e.UniqueId, e.MonsterId, e.Body.X, e.Body.Y, e.Body.ActorId)
 		if err != nil {
 			l.WithError(err).WithFields(logrus.Fields{
 				"worldId":   e.WorldId,
 				"channelId": e.ChannelId,
 				"mapId":     e.MapId,
+				"instance":  e.Instance,
 				"monsterId": e.MonsterId,
 			}).Error("Failed to create drops for monster death.")
 		}
@@ -61,17 +65,19 @@ func handleKilledStatusEvent(l logrus.FieldLogger, ctx context.Context, e status
 				"worldId":   e.WorldId,
 				"channelId": e.ChannelId,
 				"mapId":     e.MapId,
+				"instance":  e.Instance,
 				"monsterId": e.MonsterId,
 			}).Error("Failed to map damage entries.")
 			return
 		}
 
-		err = monster.DistributeExperience(l)(ctx)(e.WorldId, e.ChannelId, e.MapId, e.MonsterId, dms)
+		err = monster.DistributeExperience(l)(ctx)(f, e.MonsterId, dms)
 		if err != nil {
 			l.WithError(err).WithFields(logrus.Fields{
 				"worldId":   e.WorldId,
 				"channelId": e.ChannelId,
 				"mapId":     e.MapId,
+				"instance":  e.Instance,
 				"monsterId": e.MonsterId,
 			}).Error("Failed to distribute experience for monster death.")
 		}

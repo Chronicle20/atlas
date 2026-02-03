@@ -8,6 +8,10 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/sirupsen/logrus"
 )
 
@@ -45,8 +49,9 @@ func HelpCommandProducer(_ logrus.FieldLogger) func(_ context.Context) func(worl
 				return func(ctx context.Context) error {
 					mp := message.NewProcessor(l, ctx)
 
+					f := field.NewBuilder(world.Id(worldId), channel.Id(channelId), _map.Id(c.MapId())).Build()
 					helpText := strings.Join(commandSyntaxList, "\r\n")
-					return mp.IssuePinkText(worldId, channelId, c.MapId(), 0, helpText, []uint32{c.Id()})
+					return mp.IssuePinkText(f, 0, helpText, []uint32{c.Id()})
 				}
 			}, true
 		}

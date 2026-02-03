@@ -12,11 +12,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	skill2 "github.com/Chronicle20/atlas-constants/skill"
 	"math/rand"
 	"sort"
 
-	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/field"
+	skill2 "github.com/Chronicle20/atlas-constants/skill"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -48,7 +48,7 @@ type Processor interface {
 	DeleteForCharacterAndEmit(characterId uint32) error
 	DeleteForCharacter(mb *message.Buffer) func(characterId uint32) error
 	Delete(mb *message.Buffer) func(petId uint32) func(ownerId uint32) error
-	Move(petId uint32, m _map.Model, ownerId uint32, x int16, y int16, stance byte) error
+	Move(petId uint32, f field.Model, ownerId uint32, x int16, y int16, stance byte) error
 	SpawnAndEmit(petId uint32, actorId uint32, lead bool) error
 	Spawn(mb *message.Buffer) func(petId uint32) func(actorId uint32) func(lead bool) error
 	DespawnAndEmit(petId uint32, actorId uint32, reason string) error
@@ -307,7 +307,7 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(petId uint32) func(owner
 	}
 }
 
-func (p *ProcessorImpl) Move(petId uint32, m _map.Model, ownerId uint32, x int16, y int16, stance byte) error {
+func (p *ProcessorImpl) Move(petId uint32, f field.Model, ownerId uint32, x int16, y int16, stance byte) error {
 	pe, err := p.GetById(petId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Movement issued for pet by character [%d], which pet [%d] does not exist.", ownerId, petId)
@@ -318,7 +318,7 @@ func (p *ProcessorImpl) Move(petId uint32, m _map.Model, ownerId uint32, x int16
 		return errors.New("pet not owned by character")
 	}
 
-	fh, err := p.pp.GetBelow(uint32(m.MapId()), x, y)()
+	fh, err := p.pp.GetBelow(uint32(f.MapId()), x, y)()
 	if err != nil {
 		return err
 	}

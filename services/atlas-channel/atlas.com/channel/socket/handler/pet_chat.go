@@ -32,6 +32,6 @@ func PetChatHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Produ
 		if p.OwnerId() != s.CharacterId() {
 			return
 		}
-		_ = message.NewProcessor(l, ctx).PetChat(s.Map(), petId, msg, s.CharacterId(), p.Slot(), nType, nAction, false)
+		_ = message.NewProcessor(l, ctx).PetChat(s.Field(), petId, msg, s.CharacterId(), p.Slot(), nType, nAction, false)
 	}
 }

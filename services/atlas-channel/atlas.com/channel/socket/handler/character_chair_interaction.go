@@ -17,10 +17,10 @@ func CharacterChairFixedHandleFunc(l logrus.FieldLogger, ctx context.Context, _ 
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		chairId := r.ReadInt16()
 		if chairId == -1 {
-			_ = cp.Cancel(s.Map(), s.CharacterId())
+			_ = cp.Cancel(s.Field(), s.CharacterId())
 			return
 		}
 
-		_ = cp.Use(s.Map(), chair2.TypeFixed, uint32(chairId), s.CharacterId())
+		_ = cp.Use(s.Field(), chair2.TypeFixed, uint32(chairId), s.CharacterId())
 	}
 }

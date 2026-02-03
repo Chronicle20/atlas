@@ -3,6 +3,9 @@ package quest
 import (
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 )
 
@@ -20,13 +23,14 @@ const (
 
 // Command represents a quest command message
 type Command[E any] struct {
-	TransactionId uuid.UUID `json:"transactionId"`
-	WorldId       byte      `json:"worldId"`
-	ChannelId     byte      `json:"channelId"`
-	MapId         uint32    `json:"mapId"`
-	CharacterId   uint32    `json:"characterId"`
-	Type          string    `json:"type"`
-	Body          E         `json:"body"`
+	TransactionId uuid.UUID  `json:"transactionId"`
+	WorldId       world.Id   `json:"worldId"`
+	ChannelId     channel.Id `json:"channelId"`
+	MapId         _map.Id    `json:"mapId"`
+	Instance      uuid.UUID  `json:"instance"`
+	CharacterId   uint32     `json:"characterId"`
+	Type          string     `json:"type"`
+	Body          E          `json:"body"`
 }
 
 // StartCommandBody is the body for starting a quest

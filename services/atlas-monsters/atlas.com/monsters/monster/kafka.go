@@ -1,5 +1,13 @@
 package monster
 
+import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
+)
+
 const (
 	EnvEventTopicMonsterStatus = "EVENT_TOPIC_MONSTER_STATUS"
 
@@ -12,13 +20,27 @@ const (
 )
 
 type statusEvent[E any] struct {
-	WorldId   byte   `json:"worldId"`
-	ChannelId byte   `json:"channelId"`
-	MapId     uint32 `json:"mapId"`
-	UniqueId  uint32 `json:"uniqueId"`
-	MonsterId uint32 `json:"monsterId"`
-	Type      string `json:"type"`
-	Body      E      `json:"body"`
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
+	MapId     _map.Id    `json:"mapId"`
+	Instance  uuid.UUID  `json:"instance"`
+	UniqueId  uint32     `json:"uniqueId"`
+	MonsterId uint32     `json:"monsterId"`
+	Type      string     `json:"type"`
+	Body      E          `json:"body"`
+}
+
+func statusEventFromField[E any](f field.Model, uniqueId uint32, monsterId uint32, theType string, body E) statusEvent[E] {
+	return statusEvent[E]{
+		WorldId:   f.WorldId(),
+		ChannelId: f.ChannelId(),
+		MapId:     f.MapId(),
+		Instance:  f.Instance(),
+		UniqueId:  uniqueId,
+		MonsterId: monsterId,
+		Type:      theType,
+		Body:      body,
+	}
 }
 
 type statusEventCreatedBody struct {

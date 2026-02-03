@@ -1,5 +1,10 @@
 package character
 
+import (
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
+)
+
 const (
 	EnvEventTopicCharacterStatus    = "EVENT_TOPIC_CHARACTER_STATUS"
 	EventCharacterStatusTypeCreated = "CREATED"
@@ -8,10 +13,11 @@ const (
 )
 
 type StatusEvent[E any] struct {
-	CharacterId uint32 `json:"characterId"`
-	Type        string `json:"type"`
-	WorldId     byte   `json:"worldId"`
-	Body        E      `json:"body"`
+	TransactionId uuid.UUID `json:"transactionId"`
+	CharacterId   uint32    `json:"characterId"`
+	Type          string    `json:"type"`
+	WorldId       world.Id  `json:"worldId"`
+	Body          E         `json:"body"`
 }
 
 type StatusEventCreatedBody struct {

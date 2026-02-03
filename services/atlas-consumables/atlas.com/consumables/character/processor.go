@@ -5,7 +5,8 @@ import (
 	character2 "atlas-consumables/kafka/message/character"
 	"atlas-consumables/kafka/producer"
 	"context"
-	_map "github.com/Chronicle20/atlas-constants/map"
+
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
@@ -41,14 +42,14 @@ func (p *Processor) InventoryDecorator(m Model) Model {
 	return m.SetInventory(i)
 }
 
-func (p *Processor) ChangeMap(m _map.Model, characterId uint32, portalId uint32) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(changeMapProvider(m, characterId, portalId))
+func (p *Processor) ChangeMap(f field.Model, characterId uint32, portalId uint32) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(changeMapProvider(f, characterId, portalId))
 }
 
-func (p *Processor) ChangeHP(m _map.Model, characterId uint32, amount int16) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(changeHPCommandProvider(m, characterId, amount))
+func (p *Processor) ChangeHP(f field.Model, characterId uint32, amount int16) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(changeHPCommandProvider(f, characterId, amount))
 }
 
-func (p *Processor) ChangeMP(m _map.Model, characterId uint32, amount int16) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(changeMPCommandProvider(m, characterId, amount))
+func (p *Processor) ChangeMP(f field.Model, characterId uint32, amount int16) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(changeMPCommandProvider(f, characterId, amount))
 }

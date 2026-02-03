@@ -6,6 +6,7 @@ import (
 	"atlas-reactors/reactor/data/state"
 	"context"
 
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -20,11 +21,11 @@ func GetById(l logrus.FieldLogger) func(ctx context.Context) func(id uint32) (Mo
 	}
 }
 
-func GetInMap(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32) ([]Model, error) {
-	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32) ([]Model, error) {
+func GetInField(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model) ([]Model, error) {
+	return func(ctx context.Context) func(f field.Model) ([]Model, error) {
 		t := tenant.MustFromContext(ctx)
-		return func(worldId byte, channelId byte, mapId uint32) ([]Model, error) {
-			return GetRegistry().GetInMap(t, worldId, channelId, mapId), nil
+		return func(f field.Model) ([]Model, error) {
+			return GetRegistry().GetInField(t, f), nil
 		}
 	}
 }
@@ -33,7 +34,8 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(b *ModelBuilder
 	return func(ctx context.Context) func(b *ModelBuilder) error {
 		t := tenant.MustFromContext(ctx)
 		return func(b *ModelBuilder) error {
-			mk := MapKey{b.worldId, b.channelId, b.mapId}
+			f := field.NewBuilder(b.worldId, b.channelId, b.mapId).SetInstance(b.instance).Build()
+			mk := NewMapKey(f)
 			if GetRegistry().IsOnCooldown(t, mk, b.classification, b.x, b.y) {
 				l.Debugf("Ignoring CREATE for reactor [%d] at (%d,%d) - on cooldown.", b.classification, b.x, b.y)
 				return nil
@@ -99,7 +101,7 @@ func Destroy(l logrus.FieldLogger) func(ctx context.Context) model.Operator[Mode
 	return func(ctx context.Context) model.Operator[Model] {
 		return func(m Model) error {
 			t := tenant.MustFromContext(ctx)
-			mk := MapKey{m.WorldId(), m.ChannelId(), m.MapId()}
+			mk := NewMapKey(m.Field())
 			GetRegistry().RecordCooldown(t, mk, m.Classification(), m.X(), m.Y(), m.Delay())
 			l.Debugf("Recorded cooldown for reactor [%d] at (%d,%d) with delay [%d]ms.", m.Classification(), m.X(), m.Y(), m.Delay())
 			GetRegistry().Remove(t, m.Id())

@@ -18,6 +18,7 @@ type ModelBuilder struct {
 	worldId     world.Id
 	channelId   channel.Id
 	mapId       _map.Id
+	instance    uuid.UUID
 	expression  uint32
 	expiration  time.Time
 }
@@ -37,6 +38,7 @@ func CloneModelBuilder(m Model) *ModelBuilder {
 		worldId:     m.WorldId(),
 		channelId:   m.ChannelId(),
 		mapId:       m.MapId(),
+		instance:    m.Instance(),
 		expression:  m.Expression(),
 		expiration:  m.Expiration(),
 	}
@@ -66,6 +68,12 @@ func (b *ModelBuilder) SetMapId(mapId _map.Id) *ModelBuilder {
 	return b
 }
 
+// SetInstance sets the instance UUID.
+func (b *ModelBuilder) SetInstance(instance uuid.UUID) *ModelBuilder {
+	b.instance = instance
+	return b
+}
+
 // SetExpression sets the expression value.
 func (b *ModelBuilder) SetExpression(expression uint32) *ModelBuilder {
 	b.expression = expression
@@ -78,11 +86,12 @@ func (b *ModelBuilder) SetExpiration(expiration time.Time) *ModelBuilder {
 	return b
 }
 
-// SetLocation sets worldId, channelId, and mapId together.
-func (b *ModelBuilder) SetLocation(worldId world.Id, channelId channel.Id, mapId _map.Id) *ModelBuilder {
+// SetLocation sets worldId, channelId, mapId, and instance together.
+func (b *ModelBuilder) SetLocation(worldId world.Id, channelId channel.Id, mapId _map.Id, instance uuid.UUID) *ModelBuilder {
 	b.worldId = worldId
 	b.channelId = channelId
 	b.mapId = mapId
+	b.instance = instance
 	return b
 }
 
@@ -103,6 +112,7 @@ func (b *ModelBuilder) Build() (Model, error) {
 		worldId:     b.worldId,
 		channelId:   b.channelId,
 		mapId:       b.mapId,
+		instance:    b.instance,
 		expression:  b.expression,
 		expiration:  b.expiration,
 	}, nil
@@ -141,6 +151,11 @@ func (b *ModelBuilder) ChannelId() channel.Id {
 // MapId returns the mapId from the builder.
 func (b *ModelBuilder) MapId() _map.Id {
 	return b.mapId
+}
+
+// Instance returns the instance from the builder.
+func (b *ModelBuilder) Instance() uuid.UUID {
+	return b.instance
 }
 
 // Expression returns the expression from the builder.

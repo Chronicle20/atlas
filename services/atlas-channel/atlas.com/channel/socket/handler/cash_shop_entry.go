@@ -94,7 +94,7 @@ func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 
 		}
 
-		err = cashshop.NewProcessor(l, ctx).Enter(s.CharacterId(), s.Map())
+		err = cashshop.NewProcessor(l, ctx).Enter(s.CharacterId(), s.Field())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce [%d] has entered the cash shop.", s.CharacterId())
 		}

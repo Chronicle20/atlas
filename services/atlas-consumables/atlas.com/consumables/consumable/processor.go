@@ -23,7 +23,11 @@ import (
 	"atlas-consumables/pet"
 	"context"
 	"errors"
+	"math"
+	"math/rand"
+
 	ts "github.com/Chronicle20/atlas-constants/character"
+	"github.com/Chronicle20/atlas-constants/field"
 	inventory2 "github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/inventory/slot"
 	item2 "github.com/Chronicle20/atlas-constants/item"
@@ -34,8 +38,6 @@ import (
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-	"math"
-	"math/rand"
 )
 
 var ErrPetCannotConsume = errors.New("pet cannot consume")
@@ -66,7 +68,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 // ApplyItemEffects applies the effects of a consumable item to a character.
 // This is the shared logic used by both regular item consumption and NPC-initiated item use.
 // It handles stat buffs (accuracy, evasion, attack, defense, speed, jump) and HP/MP recovery.
-func ApplyItemEffects(l logrus.FieldLogger, ctx context.Context, c character.Model, m _map2.Model, ci consumable3.Model, characterId uint32, itemId item2.Id) {
+func ApplyItemEffects(l logrus.FieldLogger, ctx context.Context, c character.Model, f field.Model, ci consumable3.Model, characterId uint32, itemId item2.Id) {
 	bp := buff.NewProcessor(l, ctx)
 	cp := character.NewProcessor(l, ctx)
 
@@ -86,12 +88,12 @@ func ApplyItemEffects(l logrus.FieldLogger, ctx context.Context, c character.Mod
 		})
 	}
 	if val, ok := ci.GetSpec(consumable3.SpecTypeHP); ok && val > 0 {
-		_ = cp.ChangeHP(m, characterId, int16(val))
+		_ = cp.ChangeHP(f, characterId, int16(val))
 	}
 	if val, ok := ci.GetSpec(consumable3.SpecTypeHPRecovery); ok && val > 0 {
 		pct := float64(val) / float64(100)
 		res := int16(math.Floor(float64(c.MaxHp()) * pct))
-		_ = cp.ChangeHP(m, characterId, res)
+		_ = cp.ChangeHP(f, characterId, res)
 	}
 	if val, ok := ci.GetSpec(consumable3.SpecTypeJump); ok && val > 0 {
 		statups = append(statups, stat.Model{
@@ -112,12 +114,12 @@ func ApplyItemEffects(l logrus.FieldLogger, ctx context.Context, c character.Mod
 		})
 	}
 	if val, ok := ci.GetSpec(consumable3.SpecTypeMP); ok && val > 0 {
-		_ = cp.ChangeMP(m, characterId, int16(val))
+		_ = cp.ChangeMP(f, characterId, int16(val))
 	}
 	if val, ok := ci.GetSpec(consumable3.SpecTypeMPRecovery); ok && val > 0 {
 		pct := float64(val) / float64(100)
 		res := int16(math.Floor(float64(c.MaxMp()) * pct))
-		_ = cp.ChangeMP(m, characterId, res)
+		_ = cp.ChangeMP(f, characterId, res)
 	}
 	if val, ok := ci.GetSpec(consumable3.SpecTypeWeaponAttack); ok && val > 0 {
 		statups = append(statups, stat.Model{
@@ -142,7 +144,7 @@ func ApplyItemEffects(l logrus.FieldLogger, ctx context.Context, c character.Mod
 	}
 
 	if len(statups) > 0 {
-		_ = bp.Apply(m, characterId, -int32(itemId), duration, statups)(characterId)
+		_ = bp.Apply(f, characterId, -int32(itemId), duration, statups)(characterId)
 	}
 }
 
@@ -264,7 +266,8 @@ func ConsumeTownScroll(transactionId uuid.UUID, characterId uint32, slot int16, 
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
 
-			err = _map.NewProcessor(l, ctx).WarpRandom(_map2.NewModel(m.WorldId())(m.ChannelId())(toMapId))(characterId)
+			toField := field.NewBuilder(m.WorldId(), m.ChannelId(), toMapId).SetInstance(m.Instance()).Build()
+			err = _map.NewProcessor(l, ctx).WarpRandom(toField)(characterId)
 			if err != nil {
 				return err
 			}

@@ -5,8 +5,8 @@ import (
 	"atlas-channel/kafka/producer"
 	"context"
 
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-constants/inventory"
-	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
@@ -18,7 +18,7 @@ type Processor interface {
 	Unequip(characterId uint32, inventoryType inventory.Type, source int16, destination int16) error
 	Equip(characterId uint32, inventoryType inventory.Type, source int16, destination int16) error
 	Move(characterId uint32, inventoryType inventory.Type, source int16, destination int16) error
-	Drop(m _map.Model, characterId uint32, inventoryType inventory.Type, source int16, quantity int16, x int16, y int16) error
+	Drop(f field.Model, characterId uint32, inventoryType inventory.Type, source int16, quantity int16, x int16, y int16) error
 	Merge(characterId uint32, inventoryType inventory.Type, updateTime uint32) error
 	Sort(characterId uint32, inventoryType inventory.Type, updateTime uint32) error
 }
@@ -55,8 +55,8 @@ func (p *ProcessorImpl) Move(characterId uint32, inventoryType inventory.Type, s
 	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(MoveAssetCommandProvider(characterId, inventoryType, source, destination))
 }
 
-func (p *ProcessorImpl) Drop(m _map.Model, characterId uint32, inventoryType inventory.Type, source int16, quantity int16, x int16, y int16) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(DropAssetCommandProvider(m, characterId, inventoryType, source, quantity, x, y))
+func (p *ProcessorImpl) Drop(f field.Model, characterId uint32, inventoryType inventory.Type, source int16, quantity int16, x int16, y int16) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(DropAssetCommandProvider(f, characterId, inventoryType, source, quantity, x, y))
 }
 
 func (p *ProcessorImpl) Merge(characterId uint32, inventoryType inventory.Type, updateTime uint32) error {

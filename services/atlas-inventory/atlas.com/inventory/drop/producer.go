@@ -2,18 +2,20 @@ package drop
 
 import (
 	"atlas-inventory/kafka/message/drop"
-	_map "github.com/Chronicle20/atlas-constants/map"
+
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 )
 
-func EquipmentProvider(m _map.Model, itemId uint32, equipmentId uint32, dropType byte, x int16, y int16, ownerId uint32) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(m.MapId()))
+func EquipmentProvider(f field.Model, itemId uint32, equipmentId uint32, dropType byte, x int16, y int16, ownerId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(f.MapId()))
 	value := &drop.Command[drop.SpawnFromCharacterCommandBody]{
-		WorldId:   byte(m.WorldId()),
-		ChannelId: byte(m.ChannelId()),
-		MapId:     uint32(m.MapId()),
+		WorldId:   f.WorldId(),
+		ChannelId: f.ChannelId(),
+		MapId:     f.MapId(),
+		Instance:  f.Instance(),
 		Type:      drop.CommandTypeSpawnFromCharacter,
 		Body: drop.SpawnFromCharacterCommandBody{
 			ItemId:      itemId,
@@ -32,12 +34,13 @@ func EquipmentProvider(m _map.Model, itemId uint32, equipmentId uint32, dropType
 	return producer.SingleMessageProvider(key, value)
 }
 
-func ItemProvider(m _map.Model, itemId uint32, quantity uint32, dropType byte, x int16, y int16, ownerId uint32) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(m.MapId()))
+func ItemProvider(f field.Model, itemId uint32, quantity uint32, dropType byte, x int16, y int16, ownerId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(f.MapId()))
 	value := &drop.Command[drop.SpawnFromCharacterCommandBody]{
-		WorldId:   byte(m.WorldId()),
-		ChannelId: byte(m.ChannelId()),
-		MapId:     uint32(m.MapId()),
+		WorldId:   f.WorldId(),
+		ChannelId: f.ChannelId(),
+		MapId:     f.MapId(),
+		Instance:  f.Instance(),
 		Type:      drop.CommandTypeSpawnFromCharacter,
 		Body: drop.SpawnFromCharacterCommandBody{
 			ItemId:     itemId,
@@ -55,12 +58,13 @@ func ItemProvider(m _map.Model, itemId uint32, quantity uint32, dropType byte, x
 	return producer.SingleMessageProvider(key, value)
 }
 
-func CancelReservationCommandProvider(m _map.Model, dropId uint32, characterId uint32) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(m.MapId()))
+func CancelReservationCommandProvider(f field.Model, dropId uint32, characterId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(f.MapId()))
 	value := &drop.Command[drop.CancelReservationCommandBody]{
-		WorldId:   byte(m.WorldId()),
-		ChannelId: byte(m.ChannelId()),
-		MapId:     uint32(m.MapId()),
+		WorldId:   f.WorldId(),
+		ChannelId: f.ChannelId(),
+		MapId:     f.MapId(),
+		Instance:  f.Instance(),
 		Type:      drop.CommandTypeCancelReservation,
 		Body: drop.CancelReservationCommandBody{
 			DropId:      dropId,
@@ -70,12 +74,13 @@ func CancelReservationCommandProvider(m _map.Model, dropId uint32, characterId u
 	return producer.SingleMessageProvider(key, value)
 }
 
-func RequestPickUpCommandProvider(m _map.Model, dropId uint32, characterId uint32) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(m.MapId()))
+func RequestPickUpCommandProvider(f field.Model, dropId uint32, characterId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(f.MapId()))
 	value := &drop.Command[drop.RequestPickUpCommandBody]{
-		WorldId:   byte(m.WorldId()),
-		ChannelId: byte(m.ChannelId()),
-		MapId:     uint32(m.MapId()),
+		WorldId:   f.WorldId(),
+		ChannelId: f.ChannelId(),
+		MapId:     f.MapId(),
+		Instance:  f.Instance(),
 		Type:      drop.CommandTypeRequestPickUp,
 		Body: drop.RequestPickUpCommandBody{
 			DropId:      dropId,

@@ -14,12 +14,13 @@ const (
 )
 
 type StatusEvent[E any] struct {
-	TransactionId uuid.UUID `json:"transactionId"`
-	WorldId       world.Id  `json:"worldId"`
+	TransactionId uuid.UUID  `json:"transactionId"`
+	WorldId       world.Id   `json:"worldId"`
 	ChannelId     channel.Id `json:"channelId"`
-	MapId         _map.Id   `json:"mapId"`
-	Type          string    `json:"type"`
-	Body          E         `json:"body"`
+	MapId         _map.Id    `json:"mapId"`
+	Instance      uuid.UUID  `json:"instance"`
+	Type          string     `json:"type"`
+	Body          E          `json:"body"`
 }
 
 type CharacterEnter struct {

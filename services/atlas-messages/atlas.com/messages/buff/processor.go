@@ -5,11 +5,13 @@ import (
 	"atlas-messages/kafka/message/buff"
 	"atlas-messages/kafka/producer"
 	"context"
+
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {
-	Apply(worldId byte, channelId byte, characterId uint32, fromId uint32, skillId uint32, level byte, durationOverride int32) error
+	Apply(f field.Model, characterId uint32, fromId uint32, skillId uint32, level byte, durationOverride int32) error
 }
 
 type ProcessorImpl struct {
@@ -24,7 +26,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
-func (p *ProcessorImpl) Apply(worldId byte, channelId byte, characterId uint32, fromId uint32, skillId uint32, level byte, durationOverride int32) error {
+func (p *ProcessorImpl) Apply(f field.Model, characterId uint32, fromId uint32, skillId uint32, level byte, durationOverride int32) error {
 	sdp := skill.NewProcessor(p.l, p.ctx)
 
 	effect, err := sdp.GetEffect(skillId, level)
@@ -48,8 +50,10 @@ func (p *ProcessorImpl) Apply(worldId byte, channelId byte, characterId uint32, 
 	}
 
 	return producer.ProviderImpl(p.l)(p.ctx)(buff.EnvCommandTopic)(buff.ApplyCommandProvider(
-		worldId,
-		channelId,
+		f.WorldId(),
+		f.ChannelId(),
+		f.MapId(),
+		f.Instance(),
 		characterId,
 		fromId,
 		int32(skillId),

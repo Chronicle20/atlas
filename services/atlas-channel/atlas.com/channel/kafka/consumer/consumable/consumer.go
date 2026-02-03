@@ -78,7 +78,7 @@ func handleScrollConsumableEvent(sc server.Model, wp writer.Producer) message.Ha
 		}
 
 		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
-			return _map.NewProcessor(l, ctx).ForSessionsInMap(s.Map(), session.Announce(l)(ctx)(wp)(writer.CharacterItemUpgrade)(writer.CharacterItemUpgradeBody(e.CharacterId, e.Body.Success, e.Body.Cursed, e.Body.LegendarySpirit, e.Body.WhiteScroll)))
+			return _map.NewProcessor(l, ctx).ForSessionsInMap(s.Field(), session.Announce(l)(ctx)(wp)(writer.CharacterItemUpgrade)(writer.CharacterItemUpgradeBody(e.CharacterId, e.Body.Success, e.Body.Cursed, e.Body.LegendarySpirit, e.Body.WhiteScroll)))
 		})
 		if err != nil {
 			l.WithError(err).Errorf("Unable to process scroll event for character [%d].", e.CharacterId)

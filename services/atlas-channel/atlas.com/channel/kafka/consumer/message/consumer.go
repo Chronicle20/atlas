@@ -21,6 +21,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 )
@@ -66,7 +67,7 @@ func handleGeneralChat(sc server.Model, wp writer.Producer) message.Handler[mess
 			return
 		}
 
-		err = _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Map(_map2.Id(e.MapId)), showGeneralChatForSession(l)(ctx)(wp)(e, c.Gm()))
+		err = _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(_map2.Id(e.MapId), uuid.Nil), showGeneralChatForSession(l)(ctx)(wp)(e, c.Gm()))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to send message from character [%d] to map [%d].", e.ActorId, e.MapId)
 		}
@@ -189,7 +190,7 @@ func handlePetChat(sc server.Model, wp writer.Producer) message.Handler[message3
 		}
 
 		p := pet.NewModelBuilder(e.ActorId, 0, 0, "").SetOwnerID(e.Body.OwnerId).SetSlot(e.Body.PetSlot).MustBuild()
-		_ = _map.NewProcessor(l, ctx).ForSessionsInMap(s.Map(), session.Announce(l)(ctx)(wp)(writer.PetChat)(writer.PetChatBody(p, e.Body.Type, e.Body.Action, e.Message, e.Body.Balloon)))
+		_ = _map.NewProcessor(l, ctx).ForSessionsInMap(s.Field(), session.Announce(l)(ctx)(wp)(writer.PetChat)(writer.PetChatBody(p, e.Body.Type, e.Body.Action, e.Message, e.Body.Balloon)))
 	}
 }
 

@@ -31,5 +31,5 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 
 func handleChangeCommand(l logrus.FieldLogger, ctx context.Context, c expressionMsg.Command) {
 	processor := expression.NewProcessor(l, ctx)
-	_, _ = processor.ChangeAndEmit(c.TransactionId, c.CharacterId, c.WorldId, c.ChannelId, c.MapId, c.Expression)
+	_, _ = processor.ChangeAndEmit(c.TransactionId, c.CharacterId, c.WorldId, c.ChannelId, c.MapId, c.Instance, c.Expression)
 }

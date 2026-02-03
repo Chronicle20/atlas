@@ -1,20 +1,30 @@
 package character
 
+import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
+)
+
 const (
 	EnvEventTopicCharacterStatus = "EVENT_TOPIC_CHARACTER_STATUS"
 	StatusEventTypeMapChanged    = "MAP_CHANGED"
 )
 
 type StatusEvent[E any] struct {
-	CharacterId uint32 `json:"characterId"`
-	Type        string `json:"type"`
-	WorldId     byte   `json:"worldId"`
-	Body        E      `json:"body"`
+	TransactionId uuid.UUID `json:"transactionId"`
+	CharacterId   uint32    `json:"characterId"`
+	Type          string    `json:"type"`
+	WorldId       world.Id  `json:"worldId"`
+	Body          E         `json:"body"`
 }
 
 type StatusEventMapChangedBody struct {
-	ChannelId      byte   `json:"channelId"`
-	OldMapId       uint32 `json:"oldMapId"`
-	TargetMapId    uint32 `json:"targetMapId"`
-	TargetPortalId uint32 `json:"targetPortalId"`
+	ChannelId      channel.Id `json:"channelId"`
+	OldMapId       _map.Id    `json:"oldMapId"`
+	OldInstance    uuid.UUID  `json:"oldInstance"`
+	TargetMapId    _map.Id    `json:"targetMapId"`
+	TargetInstance uuid.UUID  `json:"targetInstance"`
+	TargetPortalId uint32     `json:"targetPortalId"`
 }

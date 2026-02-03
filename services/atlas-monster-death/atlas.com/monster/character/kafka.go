@@ -1,5 +1,10 @@
 package character
 
+import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
+)
+
 const (
 	EnvCommandTopic        = "COMMAND_TOPIC_CHARACTER"
 	CommandAwardExperience = "AWARD_EXPERIENCE"
@@ -21,14 +26,14 @@ const (
 )
 
 type command[E any] struct {
-	WorldId     byte   `json:"worldId"`
-	CharacterId uint32 `json:"characterId"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	WorldId     world.Id `json:"worldId"`
+	CharacterId uint32   `json:"characterId"`
+	Type        string   `json:"type"`
+	Body        E        `json:"body"`
 }
 
 type awardExperienceCommandBody struct {
-	ChannelId     byte                      `json:"channelId"`
+	ChannelId     channel.Id                `json:"channelId"`
 	Distributions []experienceDistributions `json:"distributions"`
 }
 

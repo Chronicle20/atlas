@@ -14,6 +14,7 @@ func dropMesoProvider(field field.Model, mesos uint32, dropType byte, x int16, y
 		WorldId:   field.WorldId(),
 		ChannelId: field.ChannelId(),
 		MapId:     field.MapId(),
+		Instance:  field.Instance(),
 		Type:      drop2.CommandTypeSpawnFromCharacter,
 		Body: drop2.SpawnFromCharacterCommandBody{
 			Mesos:      mesos,
@@ -36,6 +37,7 @@ func cancelReservationCommandProvider(field field.Model, dropId uint32, characte
 		WorldId:   field.WorldId(),
 		ChannelId: field.ChannelId(),
 		MapId:     field.MapId(),
+		Instance:  field.Instance(),
 		Type:      drop2.CommandTypeCancelReservation,
 		Body: drop2.CancelReservationCommandBody{
 			DropId:      dropId,
@@ -51,6 +53,7 @@ func requestPickUpCommandProvider(field field.Model, dropId uint32, characterId 
 		WorldId:   field.WorldId(),
 		ChannelId: field.ChannelId(),
 		MapId:     field.MapId(),
+		Instance:  field.Instance(),
 		Type:      drop2.CommandTypeRequestPickUp,
 		Body: drop2.RequestPickUpCommandBody{
 			DropId:      dropId,

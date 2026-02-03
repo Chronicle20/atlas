@@ -3,9 +3,11 @@ package server
 import (
 	"fmt"
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 )
 
 type Model struct {
@@ -63,4 +65,8 @@ func (m Model) IsWorld(t tenant.Model, worldId world.Id) bool {
 
 func (m Model) Map(mapId _map.Id) _map.Model {
 	return _map.NewModel(m.WorldId())(m.ChannelId())(mapId)
+}
+
+func (m Model) Field(mapId _map.Id, instance uuid.UUID) field.Model {
+	return field.NewBuilder(m.WorldId(), m.ChannelId(), mapId).SetInstance(instance).Build()
 }

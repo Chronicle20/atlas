@@ -65,7 +65,7 @@ func handleStatusEventApplied(sc server.Model, wp writer.Producer) message.Handl
 				l.WithError(err).Errorf("Unable to write new character [%d] buffs.", e.CharacterId)
 			}
 
-			_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Map(), s.CharacterId(), func(os session.Model) error {
+			_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), func(os session.Model) error {
 				err = session.Announce(l)(ctx)(wp)(writer.CharacterBuffGiveForeign)(writer.CharacterBuffGiveForeignBody(l)(ctx)(e.CharacterId, bs))(os)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to write new character [%d] buffs.", e.CharacterId)
@@ -101,7 +101,7 @@ func handleStatusEventExpired(sc server.Model, wp writer.Producer) message.Handl
 				l.WithError(err).Errorf("Unable to write character [%d] cancelled buffs.", e.CharacterId)
 			}
 
-			_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Map(), s.CharacterId(), func(os session.Model) error {
+			_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), func(os session.Model) error {
 				err = session.Announce(l)(ctx)(wp)(writer.CharacterBuffCancelForeign)(writer.CharacterBuffCancelForeignBody(l)(ctx)(e.CharacterId, ebs))(os)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to write new character [%d] buffs.", e.CharacterId)

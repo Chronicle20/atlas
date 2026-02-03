@@ -110,7 +110,7 @@ func MessengerOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 					rids = append(rids, mm.Id())
 				}
 			}
-			err = message.NewProcessor(l, ctx).MessengerChat(s.Map(), s.CharacterId(), msg, rids)
+			err = message.NewProcessor(l, ctx).MessengerChat(s.Field(), s.CharacterId(), msg, rids)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to relay messenger [%d] to recipients.", m.Id())
 			}

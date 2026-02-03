@@ -14,9 +14,9 @@ func enableActionsProvider(worldId world.Id, channelId channel.Id, characterId u
 	value := &npc2.StatusEvent[npc2.StatusEventStatChangedBody]{
 		CharacterId: characterId,
 		Type:        npc2.EventCharacterStatusTypeStatChanged,
-		WorldId:     byte(worldId),
+		WorldId:     worldId,
 		Body: npc2.StatusEventStatChangedBody{
-			ChannelId:       byte(channelId),
+			ChannelId:       channelId,
 			ExclRequestSent: true,
 		},
 	}
@@ -26,8 +26,8 @@ func enableActionsProvider(worldId world.Id, channelId channel.Id, characterId u
 func simpleConversationProvider(worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32, message string, messageType string, speaker string, endChat bool, secondaryNpcId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &npc2.ConversationCommand[npc2.CommandSimpleBody]{
-		WorldId:        byte(worldId),
-		ChannelId:      byte(channelId),
+		WorldId:        worldId,
+		ChannelId:      channelId,
 		CharacterId:    characterId,
 		NpcId:          npcId,
 		Speaker:        speaker,
@@ -43,8 +43,8 @@ func simpleConversationProvider(worldId world.Id, channelId channel.Id, characte
 func numberConversationProvider(worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32, message string, def uint32, min uint32, max uint32, speaker string, endChat bool, secondaryNpcId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &npc2.ConversationCommand[npc2.CommandNumberBody]{
-		WorldId:        byte(worldId),
-		ChannelId:      byte(channelId),
+		WorldId:        worldId,
+		ChannelId:      channelId,
 		CharacterId:    characterId,
 		NpcId:          npcId,
 		Speaker:        speaker,
@@ -64,8 +64,8 @@ func numberConversationProvider(worldId world.Id, channelId channel.Id, characte
 func styleConversationProvider(worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32, message string, styles []uint32, speaker string, endChat bool, secondaryNpcId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &npc2.ConversationCommand[npc2.CommandStyleBody]{
-		WorldId:        byte(worldId),
-		ChannelId:      byte(channelId),
+		WorldId:        worldId,
+		ChannelId:      channelId,
 		CharacterId:    characterId,
 		NpcId:          npcId,
 		Speaker:        speaker,

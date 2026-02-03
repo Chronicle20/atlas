@@ -27,6 +27,6 @@ func CharacterAutoDistributeApHandleFunc(l logrus.FieldLogger, ctx context.Conte
 		}
 
 		l.Debugf("Reading Auto Distribute AP packet for character [%d]. UpdateTime [%d], nValue [%d].", updateTime, nValue)
-		_ = character.NewProcessor(l, ctx).RequestDistributeAp(s.Map(), s.CharacterId(), updateTime, distributes)
+		_ = character.NewProcessor(l, ctx).RequestDistributeAp(s.Field(), s.CharacterId(), updateTime, distributes)
 	}
 }

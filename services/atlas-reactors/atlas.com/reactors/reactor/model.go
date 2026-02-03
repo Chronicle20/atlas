@@ -4,15 +4,21 @@ import (
 	"atlas-reactors/reactor/data"
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 )
 
 type Model struct {
 	tenant         tenant.Model
 	id             uint32
-	worldId        byte
-	channelId      byte
-	mapId          uint32
+	worldId        world.Id
+	channelId      channel.Id
+	mapId          _map.Id
+	instance       uuid.UUID
 	classification uint32
 	name           string
 	data           data.Model
@@ -29,16 +35,24 @@ func (m Model) Id() uint32 {
 	return m.id
 }
 
-func (m Model) WorldId() byte {
+func (m Model) WorldId() world.Id {
 	return m.worldId
 }
 
-func (m Model) ChannelId() byte {
+func (m Model) ChannelId() channel.Id {
 	return m.channelId
 }
 
-func (m Model) MapId() uint32 {
+func (m Model) MapId() _map.Id {
 	return m.mapId
+}
+
+func (m Model) Instance() uuid.UUID {
+	return m.instance
+}
+
+func (m Model) Field() field.Model {
+	return field.NewBuilder(m.worldId, m.channelId, m.mapId).SetInstance(m.instance).Build()
 }
 
 func (m Model) Classification() uint32 {

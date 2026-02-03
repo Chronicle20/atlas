@@ -12,8 +12,8 @@ import (
 	"errors"
 	"sort"
 
+	"github.com/Chronicle20/atlas-constants/field"
 	inventory2 "github.com/Chronicle20/atlas-constants/inventory"
-	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
@@ -30,11 +30,11 @@ type Processor interface {
 	GetItemInSlot(characterId uint32, inventoryType inventory2.Type, slot int16) model.Provider[asset.Model[any]]
 	ByNameProvider(name string) model.Provider[[]Model]
 	GetByName(name string) (Model, error)
-	RequestDistributeAp(m _map.Model, characterId uint32, updateTime uint32, distributes []DistributePacket) error
-	RequestDropMeso(m _map.Model, characterId uint32, amount uint32) error
-	ChangeHP(m _map.Model, characterId uint32, amount int16) error
-	ChangeMP(m _map.Model, characterId uint32, amount int16) error
-	RequestDistributeSp(m _map.Model, characterId uint32, updateTime uint32, skillId uint32, amount int8) error
+	RequestDistributeAp(f field.Model, characterId uint32, updateTime uint32, distributes []DistributePacket) error
+	RequestDropMeso(f field.Model, characterId uint32, amount uint32) error
+	ChangeHP(f field.Model, characterId uint32, amount int16) error
+	ChangeMP(f field.Model, characterId uint32, amount int16) error
+	RequestDistributeSp(f field.Model, characterId uint32, updateTime uint32, skillId uint32, amount int8) error
 }
 
 // ProcessorImpl implements the Processor interface
@@ -142,7 +142,7 @@ type DistributePacket struct {
 	Value uint32
 }
 
-func (p *ProcessorImpl) RequestDistributeAp(m _map.Model, characterId uint32, updateTime uint32, distributes []DistributePacket) error {
+func (p *ProcessorImpl) RequestDistributeAp(f field.Model, characterId uint32, updateTime uint32, distributes []DistributePacket) error {
 	var distributions = make([]character2.DistributePair, 0)
 	for _, d := range distributes {
 		a, err := abilityFromFlag(d.Flag)
@@ -156,7 +156,7 @@ func (p *ProcessorImpl) RequestDistributeAp(m _map.Model, characterId uint32, up
 			Amount:  int8(d.Value),
 		})
 	}
-	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(RequestDistributeApCommandProvider(m, characterId, distributions))
+	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(RequestDistributeApCommandProvider(f, characterId, distributions))
 }
 
 func abilityFromFlag(flag uint32) (string, error) {
@@ -177,18 +177,18 @@ func abilityFromFlag(flag uint32) (string, error) {
 	return "", errors.New("invalid flag")
 }
 
-func (p *ProcessorImpl) RequestDropMeso(m _map.Model, characterId uint32, amount uint32) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(RequestDropMesoCommandProvider(m, characterId, amount))
+func (p *ProcessorImpl) RequestDropMeso(f field.Model, characterId uint32, amount uint32) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(RequestDropMesoCommandProvider(f, characterId, amount))
 }
 
-func (p *ProcessorImpl) ChangeHP(m _map.Model, characterId uint32, amount int16) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(ChangeHPCommandProvider(m, characterId, amount))
+func (p *ProcessorImpl) ChangeHP(f field.Model, characterId uint32, amount int16) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(ChangeHPCommandProvider(f, characterId, amount))
 }
 
-func (p *ProcessorImpl) ChangeMP(m _map.Model, characterId uint32, amount int16) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(ChangeMPCommandProvider(m, characterId, amount))
+func (p *ProcessorImpl) ChangeMP(f field.Model, characterId uint32, amount int16) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(ChangeMPCommandProvider(f, characterId, amount))
 }
 
-func (p *ProcessorImpl) RequestDistributeSp(m _map.Model, characterId uint32, updateTime uint32, skillId uint32, amount int8) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(RequestDistributeSpCommandProvider(m, characterId, skillId, amount))
+func (p *ProcessorImpl) RequestDistributeSp(f field.Model, characterId uint32, updateTime uint32, skillId uint32, amount int8) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(RequestDistributeSpCommandProvider(f, characterId, skillId, amount))
 }

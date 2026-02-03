@@ -43,7 +43,7 @@ func MapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Pro
 				return
 			}
 
-			err = cashshop.NewProcessor(l, ctx).Exit(s.CharacterId(), s.Map())
+			err = cashshop.NewProcessor(l, ctx).Exit(s.CharacterId(), s.Field())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce [%d] has returned from cash shop.", s.CharacterId())
 			}
@@ -79,7 +79,7 @@ func MapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Pro
 		}
 		if c.Hp() == 0 {
 			l.Debugf("Character [%d] attempting to revive.", s.CharacterId())
-			err = respawn.NewProcessor(l, ctx).Respawn(s.WorldId(), s.ChannelId(), s.CharacterId(), s.Map().MapId())
+			err = respawn.NewProcessor(l, ctx).Respawn(s.WorldId(), s.ChannelId(), s.CharacterId(), s.MapId())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to process respawn for character [%d].", s.CharacterId())
 			}
@@ -88,6 +88,6 @@ func MapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Pro
 
 		l.Debugf("Character [%d] attempting to enter portal [%s] at [%d,%d] heading to [%d]. FieldKey [%d].", s.CharacterId(), portalName, x, y, targetId, fieldKey)
 		l.Debugf("Unused [%d], Premium [%d], Chase [%t], TargetX [%d], TargetY [%d]", unused, premium, chase, targetX, targetY)
-		_ = portal.NewProcessor(l, ctx).Enter(s.Map(), portalName, s.CharacterId())
+		_ = portal.NewProcessor(l, ctx).Enter(s.Field(), portalName, s.CharacterId())
 	}
 }

@@ -19,8 +19,8 @@ import (
 type Processor interface {
 	InMapModelProvider(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id) model.Provider[[]Model]
 	GetInMap(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id) ([]Model, error)
-	Spawn(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id) error
-	SpawnAndEmit(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id) error
+	Spawn(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, instance uuid.UUID) error
+	SpawnAndEmit(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, instance uuid.UUID) error
 }
 
 type ProcessorImpl struct {
@@ -56,8 +56,8 @@ func (p *ProcessorImpl) doesNotExist(existing []Model) model.Filter[reactor2.Mod
 	}
 }
 
-func (p *ProcessorImpl) Spawn(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id) error {
-	return func(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id) error {
+func (p *ProcessorImpl) Spawn(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, instance uuid.UUID) error {
+	return func(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, instance uuid.UUID) error {
 		existing, err := p.GetInMap(transactionId, worldId, channelId, mapId)
 		if err != nil {
 			return err
@@ -65,20 +65,20 @@ func (p *ProcessorImpl) Spawn(mb *message.Buffer) func(transactionId uuid.UUID, 
 
 		rp := reactor2.NewProcessor(p.l, p.ctx).InMapProvider(mapId)
 		np := model.FilteredProvider(rp, model.Filters[reactor2.Model](p.doesNotExist(existing)))
-		return model.ForEachSlice(np, p.issueCreate(mb)(transactionId, worldId, channelId, mapId), model.ParallelExecute())
+		return model.ForEachSlice(np, p.issueCreate(mb)(transactionId, worldId, channelId, mapId, instance), model.ParallelExecute())
 	}
 }
 
-func (p *ProcessorImpl) SpawnAndEmit(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id) error {
+func (p *ProcessorImpl) SpawnAndEmit(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, instance uuid.UUID) error {
 	return message.Emit(p.p)(func(buf *message.Buffer) error {
-		return p.Spawn(buf)(transactionId, worldId, channelId, mapId)
+		return p.Spawn(buf)(transactionId, worldId, channelId, mapId, instance)
 	})
 }
 
-func (p *ProcessorImpl) issueCreate(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id) model.Operator[reactor2.Model] {
-	return func(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id) model.Operator[reactor2.Model] {
+func (p *ProcessorImpl) issueCreate(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, instance uuid.UUID) model.Operator[reactor2.Model] {
+	return func(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, instance uuid.UUID) model.Operator[reactor2.Model] {
 		return func(r reactor2.Model) error {
-			return mb.Put(reactorKafka.EnvCommandTopic, createCommandProvider(transactionId, worldId, channelId, mapId, r.Classification(), r.Name(), 0, r.X(), r.Y(), r.Delay(), r.Direction()))
+			return mb.Put(reactorKafka.EnvCommandTopic, createCommandProvider(transactionId, worldId, channelId, mapId, instance, r.Classification(), r.Name(), 0, r.X(), r.Y(), r.Delay(), r.Direction()))
 		}
 	}
 }

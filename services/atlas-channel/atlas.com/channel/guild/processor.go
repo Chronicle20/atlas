@@ -5,11 +5,12 @@ import (
 	guild2 "atlas-channel/kafka/message/guild"
 	"atlas-channel/kafka/producer"
 	"context"
-	_map "github.com/Chronicle20/atlas-constants/map"
+	"strings"
+
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
-	"strings"
 )
 
 type Processor struct {
@@ -68,9 +69,9 @@ func (p *Processor) GetMemberIds(guildId uint32, filters []model.Filter[member.M
 	return model.FixedProvider(ids)
 }
 
-func (p *Processor) RequestCreate(m _map.Model, characterId uint32, name string) error {
-	p.l.Debugf("Character [%d] attempting to create guild [%s] in world [%d] channel [%d] map [%d].", characterId, name, m.WorldId(), m.ChannelId(), m.MapId())
-	return producer.ProviderImpl(p.l)(p.ctx)(guild2.EnvCommandTopic)(RequestCreateProvider(m, characterId, name))
+func (p *Processor) RequestCreate(f field.Model, characterId uint32, name string) error {
+	p.l.Debugf("Character [%d] attempting to create guild [%s] in world [%d] channel [%d] map [%d].", characterId, name, f.WorldId(), f.ChannelId(), f.MapId())
+	return producer.ProviderImpl(p.l)(p.ctx)(guild2.EnvCommandTopic)(RequestCreateProvider(f, characterId, name))
 }
 
 func (p *Processor) CreationAgreement(characterId uint32, agreed bool) error {

@@ -40,7 +40,9 @@ Represents the distribution of damage across characters for experience calculati
 Evaluates monster drop tables and creates drops for a killed monster.
 
 - Retrieves drop information for the monster
-- Evaluates drop success based on chance
+- Filters quest-specific drops based on character's started quests
+- Retrieves character rate multipliers
+- Evaluates drop success based on chance and item drop rate
 - Creates item or meso drops at calculated positions
 
 #### DistributeExperience
@@ -50,8 +52,20 @@ Distributes experience to characters who damaged the monster.
 - Builds damage distribution from damage entries
 - Filters characters to those still present in the map
 - Calculates experience per damage based on monster HP and experience value
+- Retrieves character rate multipliers and applies exp rate
 - Calculates personal ratio and standard deviation threshold
 - Awards experience to each character based on their damage contribution
+
+#### filterByQuestState
+
+Filters drops based on character's quest state.
+
+- Returns all drops unchanged if no quest-specific drops exist
+- Fetches started quest IDs for the character from quest service
+- Includes drops with questId == 0 (non-quest items)
+- Includes drops with questId matching a started quest
+- Excludes drops with questId not matching any started quest
+- On quest service error, excludes all quest-specific drops
 
 ---
 
@@ -157,3 +171,62 @@ Represents monster static data retrieved from external service.
 |-------|------|-------------|
 | hp | uint32 | Monster hit points |
 | experience | uint32 | Base experience value |
+
+---
+
+## Quest
+
+### Responsibility
+
+Represents quest state information retrieved from external service for quest-aware drop filtering.
+
+### Core Models
+
+#### State
+
+Quest state enumeration.
+
+| Value | Name | Description |
+|-------|------|-------------|
+| 0 | StateNotStarted | Quest not started |
+| 1 | StateStarted | Quest in progress |
+| 2 | StateCompleted | Quest completed |
+
+#### Model
+
+| Field | Type | Description |
+|-------|------|-------------|
+| characterId | uint32 | Character identifier |
+| questId | uint32 | Quest identifier |
+| state | State | Quest state |
+
+### Processors
+
+#### GetStartedQuestIds
+
+Retrieves a set of started quest IDs for a character.
+
+---
+
+## Rates
+
+### Responsibility
+
+Represents character rate multipliers retrieved from external service.
+
+### Core Models
+
+#### Model
+
+| Field | Type | Description |
+|-------|------|-------------|
+| expRate | float64 | Experience rate multiplier |
+| mesoRate | float64 | Meso rate multiplier |
+| itemDropRate | float64 | Item drop rate multiplier |
+| questExpRate | float64 | Quest experience rate multiplier |
+
+### Processors
+
+#### GetForCharacter
+
+Retrieves computed rates for a character. Returns default rates (all 1.0) if the rate service is unavailable.

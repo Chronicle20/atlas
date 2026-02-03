@@ -17,6 +17,8 @@ This service makes REST calls to:
 - **Map Service** (`MAPS`): Get character IDs currently in a map
 - **Data Service** (`DATA`): Get monster information (HP, experience) and calculate drop positions
 - **Drop Information Service** (`DROPS_INFORMATION`): Get monster drop tables
+- **Quest Service** (`QUESTS`): Get started quests for quest-aware drop filtering
+- **Rate Service** (`RATES`): Get character rate multipliers (exp, meso, item drop)
 
 ## Runtime Configuration
 
@@ -32,6 +34,8 @@ This service makes REST calls to:
 | `MAPS` | Base URL for map service |
 | `DATA` | Base URL for data service |
 | `DROPS_INFORMATION` | Base URL for drop information service |
+| `QUESTS` | Base URL for quest service |
+| `RATES` | Base URL for rate service |
 
 ## Multi-Tenancy
 

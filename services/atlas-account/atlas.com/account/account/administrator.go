@@ -40,6 +40,12 @@ func update(db *gorm.DB) func(modifiers ...EntityUpdateFunction) IdOperator {
 	}
 }
 
+func deleteById(db *gorm.DB) IdOperator {
+	return func(tenant tenant.Model, id uint32) error {
+		return db.Where(&Entity{TenantId: tenant.Id(), ID: id}).Delete(&Entity{}).Error
+	}
+}
+
 func updatePic(pic string) EntityUpdateFunction {
 	return func() ([]string, func(e *Entity)) {
 		var cs = []string{"pic"}

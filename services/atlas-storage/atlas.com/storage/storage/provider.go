@@ -39,6 +39,39 @@ func GetByWorldAndAccountId(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUI
 	}
 }
 
+// GetByAccountId retrieves all storages for an account (across all worlds)
+func GetByAccountId(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID) func(accountId uint32) ([]Model, error) {
+	return func(accountId uint32) ([]Model, error) {
+		var entities []Entity
+		err := db.Where("tenant_id = ? AND account_id = ?", tenantId, accountId).Find(&entities).Error
+		if err != nil {
+			return nil, err
+		}
+
+		var models []Model
+		for _, e := range entities {
+			// Load assets for this storage
+			assets, err := asset.GetByStorageId(l, db, tenantId)(e.Id)
+			if err != nil {
+				l.WithError(err).Warnf("Failed to load assets for storage %s, returning empty assets", e.Id)
+				assets = []asset.Model[any]{}
+			}
+
+			m := NewModelBuilder().
+				SetId(e.Id).
+				SetWorldId(e.WorldId).
+				SetAccountId(e.AccountId).
+				SetCapacity(e.Capacity).
+				SetMesos(e.Mesos).
+				SetAssets(assets).
+				MustBuild()
+			models = append(models, m)
+		}
+
+		return models, nil
+	}
+}
+
 // GetById retrieves storage by ID
 func GetById(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID) func(id uuid.UUID) (Model, error) {
 	return func(id uuid.UUID) (Model, error) {

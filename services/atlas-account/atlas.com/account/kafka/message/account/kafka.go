@@ -3,7 +3,10 @@ package account
 import "github.com/google/uuid"
 
 const (
-	EnvCommandTopicCreateAccount = "COMMAND_TOPIC_CREATE_ACCOUNT"
+	EnvCommandTopic = "COMMAND_TOPIC_ACCOUNT"
+
+	CommandTypeCreate = "CREATE"
+	CommandTypeDelete = "DELETE"
 
 	EnvCommandSessionTopic = "COMMAND_TOPIC_ACCOUNT_SESSION"
 
@@ -16,9 +19,18 @@ const (
 	SessionCommandTypeLogout        = "LOGOUT"
 )
 
-type CreateCommand struct {
+type Command[E any] struct {
+	Type string `json:"type"`
+	Body E      `json:"body"`
+}
+
+type CreateCommandBody struct {
 	Name     string `json:"name"`
 	Password string `json:"password"`
+}
+
+type DeleteCommandBody struct {
+	AccountId uint32 `json:"accountId"`
 }
 
 type SessionCommand[E any] struct {
@@ -48,6 +60,7 @@ const (
 	EventStatusCreated   = "CREATED"
 	EventStatusLoggedIn  = "LOGGED_IN"
 	EventStatusLoggedOut = "LOGGED_OUT"
+	EventStatusDeleted   = "DELETED"
 
 	EnvEventSessionStatusTopic                    = "EVENT_TOPIC_ACCOUNT_SESSION_STATUS"
 	SessionEventStatusTypeCreated                 = "CREATED"

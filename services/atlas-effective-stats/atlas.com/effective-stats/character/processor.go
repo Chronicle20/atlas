@@ -1,11 +1,16 @@
 package character
 
 import (
+	character2 "atlas-effective-stats/kafka/message/character"
+	"atlas-effective-stats/kafka/producer"
 	"atlas-effective-stats/stat"
 	"context"
 	"fmt"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -79,23 +84,51 @@ func (p *ProcessorImpl) AddMultiplierBonus(worldId, channelId byte, characterId 
 
 // RemoveBonus removes a specific stat bonus for a character
 func (p *ProcessorImpl) RemoveBonus(characterId uint32, source string, statType stat.Type) error {
-	m, err := GetRegistry().RemoveBonus(p.t, characterId, source, statType)
+	// Get current model to capture old MaxHP/MaxMP before removal
+	oldModel, err := GetRegistry().Get(p.t, characterId)
 	if err != nil {
 		return err
 	}
+	oldComputed := oldModel.Computed()
+
+	// Remove bonus and recompute
+	newModel, err := GetRegistry().RemoveBonus(p.t, characterId, source, statType)
+	if err != nil {
+		return err
+	}
+	newComputed := newModel.Computed()
+
 	p.l.Debugf("Removed bonus [%s] type [%s] for character [%d]", source, statType, characterId)
-	p.logEffectiveStats(characterId, m.Computed())
+	p.logEffectiveStats(characterId, newComputed)
+
+	// Check for MaxHP/MaxMP decreases and publish clamp commands if needed
+	p.checkAndPublishClampCommands(newModel, oldComputed, newComputed)
+
 	return nil
 }
 
 // RemoveBonusesBySource removes all bonuses from a specific source for a character
 func (p *ProcessorImpl) RemoveBonusesBySource(characterId uint32, source string) error {
-	m, err := GetRegistry().RemoveBonusesBySource(p.t, characterId, source)
+	// Get current model to capture old MaxHP/MaxMP before removal
+	oldModel, err := GetRegistry().Get(p.t, characterId)
 	if err != nil {
 		return err
 	}
+	oldComputed := oldModel.Computed()
+
+	// Remove bonuses and recompute
+	newModel, err := GetRegistry().RemoveBonusesBySource(p.t, characterId, source)
+	if err != nil {
+		return err
+	}
+	newComputed := newModel.Computed()
+
 	p.l.Debugf("Removed all bonuses from source [%s] for character [%d]", source, characterId)
-	p.logEffectiveStats(characterId, m.Computed())
+	p.logEffectiveStats(characterId, newComputed)
+
+	// Check for MaxHP/MaxMP decreases and publish clamp commands if needed
+	p.checkAndPublishClampCommands(newModel, oldComputed, newComputed)
+
 	return nil
 }
 
@@ -176,4 +209,26 @@ func (p *ProcessorImpl) logEffectiveStats(characterId uint32, c stat.Computed) {
 	p.l.Debugf("Character [%d] effective stats: STR=%d, DEX=%d, INT=%d, LUK=%d, MaxHP=%d, MaxMP=%d, WATK=%d, MATK=%d",
 		characterId, c.Strength(), c.Dexterity(), c.Intelligence(), c.Luck(),
 		c.MaxHP(), c.MaxMP(), c.WeaponAttack(), c.MagicAttack())
+}
+
+// checkAndPublishClampCommands checks if MaxHP or MaxMP decreased and publishes clamp commands if needed
+func (p *ProcessorImpl) checkAndPublishClampCommands(m Model, oldComputed, newComputed stat.Computed) {
+	transactionId := uuid.New()
+	worldId := world.Id(m.WorldId())
+	channelId := channel.Id(m.ChannelId())
+	characterId := m.CharacterId()
+
+	// Check for MaxHP decrease
+	if newComputed.MaxHP() < oldComputed.MaxHP() {
+		p.l.Debugf("MaxHP decreased for character [%d]: %d -> %d, publishing clamp command",
+			characterId, oldComputed.MaxHP(), newComputed.MaxHP())
+		_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(clampHPCommandProvider(transactionId, worldId, channelId, characterId, uint16(newComputed.MaxHP())))
+	}
+
+	// Check for MaxMP decrease
+	if newComputed.MaxMP() < oldComputed.MaxMP() {
+		p.l.Debugf("MaxMP decreased for character [%d]: %d -> %d, publishing clamp command",
+			characterId, oldComputed.MaxMP(), newComputed.MaxMP())
+		_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(clampMPCommandProvider(transactionId, worldId, channelId, characterId, uint16(newComputed.MaxMP())))
+	}
 }

@@ -49,6 +49,8 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSetHP(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleDeductExperience(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleResetStats(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleClampHP(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleClampMP(db))))
 			t, _ = topic.EnvProvider(l)(character2.EnvCommandTopicMovement)()
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementEvent(db))))
 			t, _ = topic.EnvProvider(l)(character2.EnvEventTopicCharacterStatus)()
@@ -320,5 +322,27 @@ func handleResetStats(db *gorm.DB) message.Handler[character2.Command[character2
 
 		cha := channel.NewModel(c.WorldId, c.Body.ChannelId)
 		_ = character.NewProcessor(l, ctx, db).ResetStatsAndEmit(c.TransactionId, c.CharacterId, cha)
+	}
+}
+
+func handleClampHP(db *gorm.DB) message.Handler[character2.Command[character2.ClampHPBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.ClampHPBody]) {
+		if c.Type != character2.CommandClampHP {
+			return
+		}
+
+		cha := channel.NewModel(c.WorldId, c.Body.ChannelId)
+		_ = character.NewProcessor(l, ctx, db).ClampHPAndEmit(c.TransactionId, cha, c.CharacterId, c.Body.MaxValue)
+	}
+}
+
+func handleClampMP(db *gorm.DB) message.Handler[character2.Command[character2.ClampMPBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.ClampMPBody]) {
+		if c.Type != character2.CommandClampMP {
+			return
+		}
+
+		cha := channel.NewModel(c.WorldId, c.Body.ChannelId)
+		_ = character.NewProcessor(l, ctx, db).ClampMPAndEmit(c.TransactionId, cha, c.CharacterId, c.Body.MaxValue)
 	}
 }

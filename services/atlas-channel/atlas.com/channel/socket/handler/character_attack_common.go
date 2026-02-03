@@ -47,23 +47,23 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 							return err
 						}
 						if se.HPConsume() > 0 {
-							_ = cp.ChangeHP(s.Map(), s.CharacterId(), -int16(se.HPConsume()))
+							_ = cp.ChangeHP(s.Field(), s.CharacterId(), -int16(se.HPConsume()))
 						}
 						if se.MPConsume() > 0 {
-							_ = cp.ChangeMP(s.Map(), s.CharacterId(), -int16(se.MPConsume()))
+							_ = cp.ChangeMP(s.Field(), s.CharacterId(), -int16(se.MPConsume()))
 						}
 					}
 
 					for _, di := range ai.DamageInfo() {
 						for _, d := range di.Damages() {
-							err := monster.NewProcessor(l, ctx).Damage(s.Map(), di.MonsterId(), s.CharacterId(), d)
+							err := monster.NewProcessor(l, ctx).Damage(s.Field(), di.MonsterId(), s.CharacterId(), d)
 							if err != nil {
 								l.WithError(err).Errorf("Unable to apply damage [%d] to monster [%d] from character [%d].", d, di.MonsterId(), s.CharacterId())
 							}
 						}
 					}
 
-					_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Map(), s.CharacterId(), func(os session.Model) error {
+					_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), func(os session.Model) error {
 						var writerName string
 						var bodyProducer writer.BodyProducer
 						if ai.AttackType() == model2.AttackTypeMelee {

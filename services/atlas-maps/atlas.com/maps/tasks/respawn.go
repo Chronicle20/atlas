@@ -40,7 +40,7 @@ func (r *Respawn) Run() {
 		}()
 		go func(mk character.MapKey) {
 			rp := reactor.NewProcessor(r.l, tctx, producer.ProviderImpl(r.l)(tctx))
-			_ = rp.SpawnAndEmit(transactionId, mk.WorldId, mk.ChannelId, mk.MapId)
+			_ = rp.SpawnAndEmit(transactionId, mk.WorldId, mk.ChannelId, mk.MapId, mk.Instance)
 		}(mk)
 	}
 }

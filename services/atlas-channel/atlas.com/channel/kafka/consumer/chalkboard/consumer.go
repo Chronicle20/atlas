@@ -18,6 +18,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 )
@@ -53,7 +54,7 @@ func handleSetCommand(sc server.Model, wp writer.Producer) message.Handler[chalk
 			return
 		}
 
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Map(_map2.Id(e.MapId)), func(s session.Model) error {
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(_map2.Id(e.MapId), uuid.Nil), func(s session.Model) error {
 			return session.Announce(l)(ctx)(wp)(writer.ChalkboardUse)(writer.ChalkboardUseBody(e.CharacterId, e.Body.Message))(s)
 		})
 		if err != nil {
@@ -72,7 +73,7 @@ func handleClearCommand(sc server.Model, wp writer.Producer) message.Handler[cha
 			return
 		}
 
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Map(_map2.Id(e.MapId)), func(s session.Model) error {
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(_map2.Id(e.MapId), uuid.Nil), func(s session.Model) error {
 			return session.Announce(l)(ctx)(wp)(writer.ChalkboardUse)(writer.ChalkboardClearBody(e.CharacterId))(s)
 		})
 		if err != nil {

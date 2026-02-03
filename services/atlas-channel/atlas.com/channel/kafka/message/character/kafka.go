@@ -4,6 +4,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
 )
 
 const (
@@ -103,7 +104,9 @@ type StatusEventStatChangedBody struct {
 type StatusEventMapChangedBody struct {
 	ChannelId      channel.Id `json:"channelId"`
 	OldMapId       _map.Id    `json:"oldMapId"`
+	OldInstance    uuid.UUID  `json:"oldInstance"`
 	TargetMapId    _map.Id    `json:"targetMapId"`
+	TargetInstance uuid.UUID  `json:"targetInstance"`
 	TargetPortalId uint32     `json:"targetPortalId"`
 }
 

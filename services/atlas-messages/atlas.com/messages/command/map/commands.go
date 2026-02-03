@@ -104,7 +104,8 @@ func WhereAmICommandProducer(_ logrus.FieldLogger) func(_ context.Context) func(
 
 			return func(l logrus.FieldLogger) func(ctx context.Context) error {
 				return func(ctx context.Context) error {
-					return message.NewProcessor(l, ctx).IssuePinkText(worldId, channelId, character.MapId(), 0, "You are in map "+strconv.Itoa(int(character.MapId())), []uint32{character.Id()})
+					f := field.NewBuilder(world.Id(worldId), channel.Id(channelId), _map2.Id(character.MapId())).Build()
+					return message.NewProcessor(l, ctx).IssuePinkText(f, 0, "You are in map "+strconv.Itoa(int(character.MapId())), []uint32{character.Id()})
 				}
 			}, true
 		}
@@ -128,16 +129,17 @@ func RatesCommandProducer(_ logrus.FieldLogger) func(_ context.Context) func(wor
 				return func(ctx context.Context) error {
 					rp := rate.NewProcessor(l, ctx)
 					mp := message.NewProcessor(l, ctx)
+					f := field.NewBuilder(world.Id(worldId), channel.Id(channelId), _map2.Id(character.MapId())).Build()
 
 					r, err := rp.GetByCharacter(worldId, channelId, character.Id())
 					if err != nil {
 						l.WithError(err).Errorf("Unable to get rates for character [%d].", character.Id())
-						return mp.IssuePinkText(worldId, channelId, character.MapId(), 0, "Unable to retrieve rate information.", []uint32{character.Id()})
+						return mp.IssuePinkText(f, 0, "Unable to retrieve rate information.", []uint32{character.Id()})
 					}
 
 					messages := buildRatesMessages(r)
 					for _, msg := range messages {
-						_ = mp.IssuePinkText(worldId, channelId, character.MapId(), 0, msg, []uint32{character.Id()})
+						_ = mp.IssuePinkText(f, 0, msg, []uint32{character.Id()})
 					}
 					return nil
 				}

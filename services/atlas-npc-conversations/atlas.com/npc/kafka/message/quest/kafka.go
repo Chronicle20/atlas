@@ -1,5 +1,12 @@
 package quest
 
+import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
+)
+
 const (
 	EnvCommandTopic                   = "COMMAND_TOPIC_QUEST_CONVERSATION"
 	CommandTypeStartQuestConversation = "START_QUEST_CONVERSATION"
@@ -14,7 +21,8 @@ type Command[E any] struct {
 }
 
 type StartQuestConversationCommandBody struct {
-	WorldId   byte   `json:"worldId"`
-	ChannelId byte   `json:"channelId"`
-	MapId     uint32 `json:"mapId"`
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
+	MapId     _map.Id    `json:"mapId"`
+	Instance  uuid.UUID  `json:"instance"`
 }

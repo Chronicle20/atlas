@@ -2,6 +2,7 @@ package session
 
 import (
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-socket/crypto"
@@ -20,6 +21,7 @@ type Model struct {
 	worldId      world.Id
 	channelId    channel.Id
 	mapId        _map.Id
+	instance     uuid.UUID
 	gm           bool
 	storageNpcId uint32
 	con          net.Conn
@@ -69,6 +71,7 @@ func CloneSession(s Model) Model {
 		worldId:      s.worldId,
 		channelId:    s.channelId,
 		mapId:        s.mapId,
+		instance:     s.instance,
 		characterId:  s.characterId,
 		storageNpcId: s.storageNpcId,
 		con:          s.con,
@@ -157,6 +160,12 @@ func (s *Model) setMapId(id _map.Id) Model {
 	return ns
 }
 
+func (s *Model) setInstance(instance uuid.UUID) Model {
+	ns := CloneSession(*s)
+	ns.instance = instance
+	return ns
+}
+
 func (s *Model) WorldId() world.Id {
 	return s.worldId
 }
@@ -169,8 +178,16 @@ func (s *Model) MapId() _map.Id {
 	return s.mapId
 }
 
+func (s *Model) Instance() uuid.UUID {
+	return s.instance
+}
+
 func (s *Model) Map() _map.Model {
 	return _map.NewModel(s.worldId)(s.channelId)(s.mapId)
+}
+
+func (s *Model) Field() field.Model {
+	return field.NewBuilder(s.worldId, s.channelId, s.mapId).SetInstance(s.instance).Build()
 }
 
 func (s *Model) updateLastRequest() Model {

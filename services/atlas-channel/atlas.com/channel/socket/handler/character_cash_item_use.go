@@ -35,7 +35,7 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 			if !updateTimeFirst {
 				updateTime = r.ReadUint32()
 			}
-			_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.WorldId(), s.ChannelId(), s.CharacterId(), itemId, slot, updateTime)
+			_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.Field(), s.CharacterId(), itemId, slot, updateTime)
 			return
 		}
 		if it == CashSlotItemTypeChalkboard {
@@ -43,7 +43,7 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 			if !updateTimeFirst {
 				updateTime = r.ReadUint32()
 			}
-			_ = chalkboard.NewProcessor(l, ctx).AttemptUse(s.Map(), s.CharacterId(), message)
+			_ = chalkboard.NewProcessor(l, ctx).AttemptUse(s.Field(), s.CharacterId(), message)
 			return
 		}
 

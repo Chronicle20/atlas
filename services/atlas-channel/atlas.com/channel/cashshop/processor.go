@@ -8,15 +8,15 @@ import (
 	"context"
 	"time"
 
-	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
 // Processor interface defines the operations for cashshop processing
 type Processor interface {
-	Enter(characterId uint32, m _map.Model) error
-	Exit(characterId uint32, m _map.Model) error
+	Enter(characterId uint32, f field.Model) error
+	Exit(characterId uint32, f field.Model) error
 	RequestInventoryIncreasePurchaseByType(characterId uint32, isPoints bool, currency uint32, inventoryType byte) error
 	RequestInventoryIncreasePurchaseByItem(characterId uint32, isPoints bool, currency uint32, serialNumber uint32) error
 	RequestStorageIncreasePurchase(characterId uint32, isPoints bool, currency uint32) error
@@ -41,12 +41,12 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return p
 }
 
-func (p *ProcessorImpl) Enter(characterId uint32, m _map.Model) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvEventTopicStatus)(CharacterEnterCashShopStatusEventProvider(characterId, m))
+func (p *ProcessorImpl) Enter(characterId uint32, f field.Model) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvEventTopicStatus)(CharacterEnterCashShopStatusEventProvider(characterId, f))
 }
 
-func (p *ProcessorImpl) Exit(characterId uint32, m _map.Model) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvEventTopicStatus)(CharacterExitCashShopStatusEventProvider(characterId, m))
+func (p *ProcessorImpl) Exit(characterId uint32, f field.Model) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvEventTopicStatus)(CharacterExitCashShopStatusEventProvider(characterId, f))
 }
 
 type PointType string

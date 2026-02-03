@@ -31,6 +31,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
@@ -101,12 +102,13 @@ func (p *ProcessorImpl) SpawnMonsters(transactionId uuid.UUID) func(worldId worl
 			return func(mapId _map.Id) error {
 				p.l.Debugf("Executing spawn mechanism for Tenant [%s] World [%d] Channel [%d] Map [%d].", p.t.String(), worldId, channelId, mapId)
 
-				// Create MapKey for registry access
+				// Create MapKey for registry access (non-instanced maps use uuid.Nil)
 				mapKey := character.MapKey{
 					Tenant:    p.t,
 					WorldId:   worldId,
 					ChannelId: channelId,
 					MapId:     mapId,
+					Instance:  uuid.Nil,
 				}
 
 				// Get spawn points from singleton registry with initialization if needed
@@ -117,7 +119,8 @@ func (p *ProcessorImpl) SpawnMonsters(transactionId uuid.UUID) func(worldId worl
 					return err
 				}
 
-				cs, err := p.cp.GetCharactersInMap(transactionId, worldId, channelId, mapId)
+				f := field.NewBuilder(worldId, channelId, mapId).Build()
+				cs, err := p.cp.GetCharactersInMap(transactionId, f)
 				if err != nil {
 					p.l.WithError(err).Errorf("Unable to retrieve characters in map. Aborting spawning for world [%d] channel [%d] map [%d].", worldId, channelId, mapId)
 					return err

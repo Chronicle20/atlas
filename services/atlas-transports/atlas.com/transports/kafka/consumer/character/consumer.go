@@ -5,10 +5,8 @@ import (
 	character2 "atlas-transports/kafka/message/character"
 	"atlas-transports/transport"
 	"context"
-	"github.com/Chronicle20/atlas-constants/channel"
+
 	"github.com/Chronicle20/atlas-constants/field"
-	map2 "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	message2 "github.com/Chronicle20/atlas-kafka/message"
@@ -41,6 +39,6 @@ func handleEventStatus(l logrus.FieldLogger, ctx context.Context, e character2.S
 	l.Debugf("Character [%d] logged out in map [%d].", e.CharacterId, e.Body.MapId)
 
 	// Warp character to route start map if they logged out in a transport map
-	f := field.NewBuilder(world.Id(e.WorldId), channel.Id(e.Body.ChannelId), map2.Id(e.Body.MapId)).Build()
+	f := field.NewBuilder(e.WorldId, e.Body.ChannelId, e.Body.MapId).SetInstance(e.Body.Instance).Build()
 	_ = transport.NewProcessor(l, ctx).WarpToRouteStartMapOnLogoutAndEmit(e.CharacterId, f)
 }

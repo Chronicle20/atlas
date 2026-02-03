@@ -52,6 +52,6 @@ func MonsterMovementHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 		monsterMoveStartResult := dwFlag > 0
 
 		l.Debugf("Monster [%d] moved. MoveId [%d], dwFlag [%d], nActionAndDir [%d], skillData [%d].", uniqueId, moveId, dwFlag, nActionAndDir, skillData)
-		_ = movement.NewProcessor(l, ctx, wp).ForMonster(s.Map(), s.CharacterId(), uniqueId, moveId, monsterMoveStartResult, nActionAndDir, skillId, skillLevel, multiTargetForBall, randTimeForAreaAttack, mp)
+		_ = movement.NewProcessor(l, ctx, wp).ForMonster(s.Field(), s.CharacterId(), uniqueId, moveId, monsterMoveStartResult, nActionAndDir, skillId, skillLevel, multiTargetForBall, randTimeForAreaAttack, mp)
 	}
 }

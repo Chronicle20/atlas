@@ -39,5 +39,5 @@ func handleMapChanged(l logrus.FieldLogger, ctx context.Context, e message.Statu
 
 	// Delegate to the shared initializer
 	// This is idempotent - if already initialized, it returns immediately
-	character.InitializeCharacterRates(l, ctx, e.CharacterId, e.WorldId, e.Body.ChannelId)
+	character.InitializeCharacterRates(l, ctx, e.CharacterId, byte(e.WorldId), byte(e.Body.ChannelId))
 }

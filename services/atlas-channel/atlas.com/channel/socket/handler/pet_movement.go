@@ -24,6 +24,6 @@ func PetMovementHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.
 			return
 		}
 
-		_ = movement.NewProcessor(l, ctx, wp).ForPet(s.Map(), s.CharacterId(), uint32(petId), mp)
+		_ = movement.NewProcessor(l, ctx, wp).ForPet(s.Field(), s.CharacterId(), uint32(petId), mp)
 	}
 }

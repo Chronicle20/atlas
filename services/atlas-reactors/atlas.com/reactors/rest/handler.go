@@ -2,13 +2,18 @@ package rest
 
 import (
 	"context"
-	"github.com/Chronicle20/atlas-rest/server"
-	"github.com/gorilla/mux"
-	"github.com/jtumidanski/api2go/jsonapi"
-	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
 	"strconv"
+
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/google/uuid"
+	"github.com/gorilla/mux"
+	"github.com/jtumidanski/api2go/jsonapi"
+	"github.com/sirupsen/logrus"
 )
 
 type HandlerDependency struct {
@@ -97,7 +102,7 @@ func ParseReactorId(l logrus.FieldLogger, next ReactorIdHandler) http.HandlerFun
 	}
 }
 
-type WorldIdHandler func(worldId byte) http.HandlerFunc
+type WorldIdHandler func(worldId world.Id) http.HandlerFunc
 
 func ParseWorldId(l logrus.FieldLogger, next WorldIdHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -108,11 +113,11 @@ func ParseWorldId(l logrus.FieldLogger, next WorldIdHandler) http.HandlerFunc {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		next(byte(worldId))(w, r)
+		next(world.Id(worldId))(w, r)
 	}
 }
 
-type ChannelIdHandler func(channelId byte) http.HandlerFunc
+type ChannelIdHandler func(channelId channel.Id) http.HandlerFunc
 
 func ParseChannelId(l logrus.FieldLogger, next ChannelIdHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -122,11 +127,11 @@ func ParseChannelId(l logrus.FieldLogger, next ChannelIdHandler) http.HandlerFun
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		next(byte(channelId))(w, r)
+		next(channel.Id(channelId))(w, r)
 	}
 }
 
-type MapIdHandler func(mapId uint32) http.HandlerFunc
+type MapIdHandler func(mapId _map.Id) http.HandlerFunc
 
 func ParseMapId(l logrus.FieldLogger, next MapIdHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -137,6 +142,25 @@ func ParseMapId(l logrus.FieldLogger, next MapIdHandler) http.HandlerFunc {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		next(uint32(mapId))(w, r)
+		next(_map.Id(mapId))(w, r)
+	}
+}
+
+type InstanceHandler func(instance uuid.UUID) http.HandlerFunc
+
+func ParseInstance(l logrus.FieldLogger, next InstanceHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		instanceStr := r.URL.Query().Get("instance")
+		var instance uuid.UUID
+		if instanceStr != "" {
+			var err error
+			instance, err = uuid.Parse(instanceStr)
+			if err != nil {
+				l.WithError(err).Errorf("Error parsing instance as UUID")
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+		}
+		next(instance)(w, r)
 	}
 }

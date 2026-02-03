@@ -3,12 +3,18 @@ package reactor
 import (
 	"atlas-reactors/kafka/producer"
 	"atlas-reactors/rest"
+	"net/http"
+
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
-	"net/http"
 )
 
 func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
@@ -46,26 +52,28 @@ func handleGetById(d *rest.HandlerDependency, c *rest.HandlerContext) http.Handl
 }
 
 func handleGetByIdInMap(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseWorldId(d.Logger(), func(worldId byte) http.HandlerFunc {
-		return rest.ParseChannelId(d.Logger(), func(channelId byte) http.HandlerFunc {
-			return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
-				return rest.ParseReactorId(d.Logger(), func(reactorId uint32) http.HandlerFunc {
-					return func(w http.ResponseWriter, r *http.Request) {
-						m, err := GetById(d.Logger())(d.Context())(reactorId)
-						if err != nil || m.WorldId() != worldId || m.ChannelId() != channelId || m.MapId() != mapId {
-							w.WriteHeader(http.StatusNotFound)
-							return
-						}
+	return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
+		return rest.ParseChannelId(d.Logger(), func(channelId channel.Id) http.HandlerFunc {
+			return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
+				return rest.ParseInstance(d.Logger(), func(instance uuid.UUID) http.HandlerFunc {
+					return rest.ParseReactorId(d.Logger(), func(reactorId uint32) http.HandlerFunc {
+						return func(w http.ResponseWriter, r *http.Request) {
+							m, err := GetById(d.Logger())(d.Context())(reactorId)
+							if err != nil || m.WorldId() != worldId || m.ChannelId() != channelId || m.MapId() != mapId {
+								w.WriteHeader(http.StatusNotFound)
+								return
+							}
 
-						res, err := model.Map(Transform)(model.FixedProvider(m))()
-						if err != nil {
-							d.Logger().WithError(err).Errorf("Creating REST model.")
-							w.WriteHeader(http.StatusInternalServerError)
-							return
-						}
+							res, err := model.Map(Transform)(model.FixedProvider(m))()
+							if err != nil {
+								d.Logger().WithError(err).Errorf("Creating REST model.")
+								w.WriteHeader(http.StatusInternalServerError)
+								return
+							}
 
-						server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
-					}
+							server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
+						}
+					})
 				})
 			})
 		})
@@ -73,43 +81,49 @@ func handleGetByIdInMap(d *rest.HandlerDependency, c *rest.HandlerContext) http.
 }
 
 func handleCreateInMap(d *rest.HandlerDependency, c *rest.HandlerContext, i RestModel) http.HandlerFunc {
-	return rest.ParseWorldId(d.Logger(), func(worldId byte) http.HandlerFunc {
-		return rest.ParseChannelId(d.Logger(), func(channelId byte) http.HandlerFunc {
-			return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
-				return func(w http.ResponseWriter, r *http.Request) {
-					err := producer.ProviderImpl(d.Logger())(d.Context())(EnvCommandTopic)(createCommandProvider(worldId, channelId, mapId, i.Classification, i.Name, i.State, i.X, i.Y, i.Delay, i.Direction))
-					if err != nil {
-						d.Logger().WithError(err).Errorf("Unable to accept reactor creation request for processing.")
-						w.WriteHeader(http.StatusInternalServerError)
-						return
+	return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
+		return rest.ParseChannelId(d.Logger(), func(channelId channel.Id) http.HandlerFunc {
+			return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
+				return rest.ParseInstance(d.Logger(), func(instance uuid.UUID) http.HandlerFunc {
+					return func(w http.ResponseWriter, r *http.Request) {
+						f := field.NewBuilder(worldId, channelId, mapId).SetInstance(instance).Build()
+						err := producer.ProviderImpl(d.Logger())(d.Context())(EnvCommandTopic)(createCommandProvider(f, i.Classification, i.Name, i.State, i.X, i.Y, i.Delay, i.Direction))
+						if err != nil {
+							d.Logger().WithError(err).Errorf("Unable to accept reactor creation request for processing.")
+							w.WriteHeader(http.StatusInternalServerError)
+							return
+						}
+						w.WriteHeader(http.StatusAccepted)
 					}
-					w.WriteHeader(http.StatusAccepted)
-				}
+				})
 			})
 		})
 	})
 }
 
 func handleGetInMap(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseWorldId(d.Logger(), func(worldId byte) http.HandlerFunc {
-		return rest.ParseChannelId(d.Logger(), func(channelId byte) http.HandlerFunc {
-			return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
-				return func(w http.ResponseWriter, r *http.Request) {
-					ms, err := GetInMap(d.Logger())(d.Context())(worldId, channelId, mapId)
-					if err != nil {
-						w.WriteHeader(http.StatusInternalServerError)
-						return
-					}
+	return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
+		return rest.ParseChannelId(d.Logger(), func(channelId channel.Id) http.HandlerFunc {
+			return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
+				return rest.ParseInstance(d.Logger(), func(instance uuid.UUID) http.HandlerFunc {
+					return func(w http.ResponseWriter, r *http.Request) {
+						f := field.NewBuilder(worldId, channelId, mapId).SetInstance(instance).Build()
+						ms, err := GetInField(d.Logger())(d.Context())(f)
+						if err != nil {
+							w.WriteHeader(http.StatusInternalServerError)
+							return
+						}
 
-					res, err := model.SliceMap(Transform)(model.FixedProvider(ms))()()
-					if err != nil {
-						d.Logger().WithError(err).Errorf("Creating REST model.")
-						w.WriteHeader(http.StatusInternalServerError)
-						return
-					}
+						res, err := model.SliceMap(Transform)(model.FixedProvider(ms))()()
+						if err != nil {
+							d.Logger().WithError(err).Errorf("Creating REST model.")
+							w.WriteHeader(http.StatusInternalServerError)
+							return
+						}
 
-					server.Marshal[[]RestModel](d.Logger())(w)(c.ServerInformation())(res)
-				}
+						server.Marshal[[]RestModel](d.Logger())(w)(c.ServerInformation())(res)
+					}
+				})
 			})
 		})
 	})

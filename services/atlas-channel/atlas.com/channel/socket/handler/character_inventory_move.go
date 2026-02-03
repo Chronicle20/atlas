@@ -42,7 +42,7 @@ func CharacterInventoryMoveHandleFunc(l logrus.FieldLogger, ctx context.Context,
 				l.WithError(err).Errorf("Unable to locate character [%d] dropping item.", s.CharacterId())
 				return
 			}
-			err = compartment.NewProcessor(l, ctx).Drop(s.Map(), s.CharacterId(), inventoryType, source, count, c.X(), c.Y())
+			err = compartment.NewProcessor(l, ctx).Drop(s.Field(), s.CharacterId(), inventoryType, source, count, c.X(), c.Y())
 			if err != nil {
 				l.WithError(err).Errorf("Error dropping [%d] item from slot [%d] for character [%d].", count, source, s.CharacterId())
 			}

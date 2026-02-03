@@ -20,6 +20,6 @@ func DropPickUpHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Pr
 		dropId := r.ReadUint32()
 		crc := r.ReadUint32()
 		l.Debugf("Character [%d] is attempting to pick up drop [%d] at [%d,%d]. FieldKey [%d], UpdateTime [%d], crc [%d].", s.CharacterId(), dropId, x, y, fieldKey, updateTime, crc)
-		_ = drop.NewProcessor(l, ctx).RequestReservation(s.Map(), dropId, s.CharacterId(), x, y, -1)
+		_ = drop.NewProcessor(l, ctx).RequestReservation(s.Field(), dropId, s.CharacterId(), x, y, -1)
 	}
 }

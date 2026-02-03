@@ -65,6 +65,6 @@ func (p *ProcessorImpl) WarpToPortal(mb *message.Buffer) func(characterId uint32
 		if err != nil {
 			return err
 		}
-		return mb.Put(character2.EnvCommandTopic, ChangeMapProvider(f.WorldId(), f.ChannelId(), characterId, f.MapId(), portalId))
+		return mb.Put(character2.EnvCommandTopic, ChangeMapProvider(f, characterId, f.MapId(), portalId))
 	}
 }

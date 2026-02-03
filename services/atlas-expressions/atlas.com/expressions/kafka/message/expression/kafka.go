@@ -19,6 +19,7 @@ type StatusEvent struct {
 	WorldId       world.Id   `json:"worldId"`
 	ChannelId     channel.Id `json:"channelId"`
 	MapId         _map.Id    `json:"mapId"`
+	Instance      uuid.UUID  `json:"instance"`
 	Expression    uint32     `json:"expression"`
 }
 
@@ -29,5 +30,6 @@ type Command struct {
 	WorldId       world.Id   `json:"worldId"`
 	ChannelId     channel.Id `json:"channelId"`
 	MapId         _map.Id    `json:"mapId"`
+	Instance      uuid.UUID  `json:"instance"`
 	Expression    uint32     `json:"expression"`
 }

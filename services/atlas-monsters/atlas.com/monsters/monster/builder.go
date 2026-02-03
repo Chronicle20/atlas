@@ -1,5 +1,12 @@
 package monster
 
+import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
+)
+
 // Clone creates a ModelBuilder initialized from an existing Model.
 // This centralizes field copying for immutable model mutations.
 func Clone(m Model) *ModelBuilder {
@@ -8,6 +15,7 @@ func Clone(m Model) *ModelBuilder {
 		worldId:            m.worldId,
 		channelId:          m.channelId,
 		mapId:              m.mapId,
+		instance:           m.instance,
 		maxHp:              m.maxHp,
 		hp:                 m.hp,
 		maxMp:              m.maxMp,
@@ -26,9 +34,10 @@ func Clone(m Model) *ModelBuilder {
 // ModelBuilder provides a fluent interface for creating Model instances.
 type ModelBuilder struct {
 	uniqueId           uint32
-	worldId            byte
-	channelId          byte
-	mapId              uint32
+	worldId            world.Id
+	channelId          channel.Id
+	mapId              _map.Id
+	instance           uuid.UUID
 	maxHp              uint32
 	hp                 uint32
 	maxMp              uint32
@@ -89,6 +98,7 @@ func (b *ModelBuilder) Build() Model {
 		worldId:            b.worldId,
 		channelId:          b.channelId,
 		mapId:              b.mapId,
+		instance:           b.instance,
 		maxHp:              b.maxHp,
 		hp:                 b.hp,
 		maxMp:              b.maxMp,

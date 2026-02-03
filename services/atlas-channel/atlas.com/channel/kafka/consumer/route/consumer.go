@@ -15,6 +15,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 )
@@ -57,7 +58,7 @@ func handleStatusEventArrived(sc server.Model, wp writer.Producer) message.Handl
 		l.Debugf("Transport route [%s] has arrived at map [%d].", e.RouteId, mapId)
 
 		// Broadcast to all characters in the map
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Map(mapId), 
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(mapId, uuid.Nil),
 			session.Announce(l)(ctx)(wp)(writer.FieldTransportState)(writer.FieldTransportStateBody(l, t)(writer.TransportStateEnter1, false)))
 
 		if err != nil {
@@ -79,7 +80,7 @@ func handleStatusEventDeparted(sc server.Model, wp writer.Producer) message.Hand
 		l.Debugf("Transport route [%s] has departed from map [%d].", e.RouteId, mapId)
 
 		// Broadcast to all characters in the map
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Map(mapId), 
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(mapId, uuid.Nil),
 			session.Announce(l)(ctx)(wp)(writer.FieldTransportState)(writer.FieldTransportStateBody(l, t)(writer.TransportStateMove1, false)))
 
 		if err != nil {

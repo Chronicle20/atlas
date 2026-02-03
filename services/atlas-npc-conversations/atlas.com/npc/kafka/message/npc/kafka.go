@@ -1,5 +1,12 @@
 package npc
 
+import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
+)
+
 const (
 	EnvCommandTopic                 = "COMMAND_TOPIC_NPC"
 	CommandTypeStartConversation    = "START_CONVERSATION"
@@ -21,10 +28,11 @@ type Command[E any] struct {
 }
 
 type CommandConversationStartBody struct {
-	WorldId   byte   `json:"worldId"`
-	ChannelId byte   `json:"channelId"`
-	MapId     uint32 `json:"mapId"`
-	AccountId uint32 `json:"accountId"`
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
+	MapId     _map.Id    `json:"mapId"`
+	Instance  uuid.UUID  `json:"instance"`
+	AccountId uint32     `json:"accountId"`
 }
 
 type CommandConversationContinueBody struct {
@@ -37,16 +45,18 @@ type CommandConversationEndBody struct {
 }
 
 type ConversationCommand[E any] struct {
-	WorldId        byte   `json:"worldId"`
-	ChannelId      byte   `json:"channelId"`
-	CharacterId    uint32 `json:"characterId"`
-	NpcId          uint32 `json:"npcId"`
-	Speaker        string `json:"speaker"`
-	EndChat        bool   `json:"endChat"`
-	SecondaryNpcId uint32 `json:"secondaryNpcId"`
-	Message        string `json:"message"`
-	Type           string `json:"type"`
-	Body           E      `json:"body"`
+	WorldId        world.Id   `json:"worldId"`
+	ChannelId      channel.Id `json:"channelId"`
+	MapId          _map.Id    `json:"mapId"`
+	Instance       uuid.UUID  `json:"instance"`
+	CharacterId    uint32     `json:"characterId"`
+	NpcId          uint32     `json:"npcId"`
+	Speaker        string     `json:"speaker"`
+	EndChat        bool       `json:"endChat"`
+	SecondaryNpcId uint32     `json:"secondaryNpcId"`
+	Message        string     `json:"message"`
+	Type           string     `json:"type"`
+	Body           E          `json:"body"`
 }
 
 type CommandSimpleBody struct {
@@ -69,14 +79,14 @@ const (
 )
 
 type StatusEvent[E any] struct {
-	CharacterId uint32 `json:"characterId"`
-	Type        string `json:"type"`
-	WorldId     byte   `json:"worldId"`
-	Body        E      `json:"body"`
+	CharacterId uint32   `json:"characterId"`
+	Type        string   `json:"type"`
+	WorldId     world.Id `json:"worldId"`
+	Body        E        `json:"body"`
 }
 
 // TODO this should transmit stats
 type StatusEventStatChangedBody struct {
-	ChannelId       byte `json:"channelId"`
-	ExclRequestSent bool `json:"exclRequestSent"`
+	ChannelId       channel.Id `json:"channelId"`
+	ExclRequestSent bool       `json:"exclRequestSent"`
 }

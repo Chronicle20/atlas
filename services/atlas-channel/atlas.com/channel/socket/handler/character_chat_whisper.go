@@ -40,7 +40,7 @@ func CharacterChatWhisperHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		}
 		if mode == WhisperModeChat {
 			msg = r.ReadAsciiString()
-			err := message.NewProcessor(l, ctx).WhisperChat(s.Map(), s.CharacterId(), msg, targetName)
+			err := message.NewProcessor(l, ctx).WhisperChat(s.Field(), s.CharacterId(), msg, targetName)
 			if err != nil {
 				_ = session.Announce(l)(ctx)(wp)(writer.CharacterChatWhisper)(writer.CharacterChatWhisperSendFailureResultBody(targetName, false))(s)
 				return

@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	inventory2 "github.com/Chronicle20/atlas-constants/inventory"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/skill"
@@ -319,7 +320,7 @@ func TestProcessor_Move(t *testing.T) {
 	stance := byte(1)
 
 	// test execution
-	err = p.Move(i.Id(), _map.NewModel(world.Id(0))(channel.Id(1))(_map.Id(50000)), i.OwnerId(), x, y, stance)
+	err = p.Move(i.Id(), field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(50000)).SetInstance(uuid.Nil).Build(), i.OwnerId(), x, y, stance)
 	if err != nil {
 		t.Fatalf("Failed to move pet: %v", err)
 	}

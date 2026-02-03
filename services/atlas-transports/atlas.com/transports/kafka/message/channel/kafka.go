@@ -1,5 +1,10 @@
 package channel
 
+import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
+)
+
 const (
 	EnvCommandTopic          = "COMMAND_TOPIC_CHANNEL_STATUS"
 	CommandTypeStatusRequest = "STATUS_REQUEST"
@@ -16,9 +21,9 @@ const (
 )
 
 type StatusEvent struct {
-	Type      string `json:"type"`
-	WorldId   byte   `json:"worldId"`
-	ChannelId byte   `json:"channelId"`
-	IpAddress string `json:"ipAddress"`
-	Port      int    `json:"port"`
+	Type      string     `json:"type"`
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
+	IpAddress string     `json:"ipAddress"`
+	Port      int        `json:"port"`
 }

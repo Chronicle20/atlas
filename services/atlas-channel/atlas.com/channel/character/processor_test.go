@@ -7,7 +7,8 @@ import (
 	"errors"
 	"testing"
 
-	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/field"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 )
@@ -198,30 +199,30 @@ func TestMockProcessor_Decorators(t *testing.T) {
 
 func TestMockProcessor_CommandMethods(t *testing.T) {
 	mockProc := mock.NewMockProcessor()
-	testMap := _map.NewModel(0)(0)(100000000)
+	testField := field.NewBuilder(0, 0, 100000000).SetInstance(uuid.Nil).Build()
 
 	// Test that command methods don't error (mock returns nil)
-	err := mockProc.RequestDistributeAp(testMap, 123, 0, nil)
+	err := mockProc.RequestDistributeAp(testField, 123, 0, nil)
 	if err != nil {
 		t.Errorf("RequestDistributeAp() unexpected error: %v", err)
 	}
 
-	err = mockProc.RequestDropMeso(testMap, 123, 1000)
+	err = mockProc.RequestDropMeso(testField, 123, 1000)
 	if err != nil {
 		t.Errorf("RequestDropMeso() unexpected error: %v", err)
 	}
 
-	err = mockProc.ChangeHP(testMap, 123, 10)
+	err = mockProc.ChangeHP(testField, 123, 10)
 	if err != nil {
 		t.Errorf("ChangeHP() unexpected error: %v", err)
 	}
 
-	err = mockProc.ChangeMP(testMap, 123, 10)
+	err = mockProc.ChangeMP(testField, 123, 10)
 	if err != nil {
 		t.Errorf("ChangeMP() unexpected error: %v", err)
 	}
 
-	err = mockProc.RequestDistributeSp(testMap, 123, 0, 1001001, 1)
+	err = mockProc.RequestDistributeSp(testField, 123, 0, 1001001, 1)
 	if err != nil {
 		t.Errorf("RequestDistributeSp() unexpected error: %v", err)
 	}

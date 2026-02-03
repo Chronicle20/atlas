@@ -21,7 +21,7 @@ func CharacterItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, _ wri
 		updateTime := r.ReadUint32()
 		slot := r.ReadInt16()
 		itemId := r.ReadUint32()
-		_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.WorldId(), s.ChannelId(), s.CharacterId(), itemId, slot, updateTime)
+		_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.Field(), s.CharacterId(), itemId, slot, updateTime)
 	}
 }
 
@@ -30,7 +30,7 @@ func CharacterItemUseTownScrollHandleFunc(l logrus.FieldLogger, ctx context.Cont
 		updateTime := r.ReadUint32()
 		slot := r.ReadInt16()
 		itemId := r.ReadUint32()
-		_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.WorldId(), s.ChannelId(), s.CharacterId(), itemId, slot, updateTime)
+		_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.Field(), s.CharacterId(), itemId, slot, updateTime)
 	}
 }
 
@@ -42,7 +42,7 @@ func CharacterItemUseScrollHandleFunc(l logrus.FieldLogger, ctx context.Context,
 		bWhiteScroll := r.ReadInt16()
 		whiteScroll := (bWhiteScroll & 2) == 2
 		legendarySpirit := r.ReadBool()
-		_ = consumable.NewProcessor(l, ctx).RequestScrollUse(s.WorldId(), s.ChannelId(), s.CharacterId(), scrollSlot, equipSlot, whiteScroll, legendarySpirit, updateTime)
+		_ = consumable.NewProcessor(l, ctx).RequestScrollUse(s.Field(), s.CharacterId(), scrollSlot, equipSlot, whiteScroll, legendarySpirit, updateTime)
 	}
 }
 
@@ -51,6 +51,6 @@ func CharacterItemUseSummonBagHandleFunc(l logrus.FieldLogger, ctx context.Conte
 		updateTime := r.ReadUint32()
 		slot := r.ReadInt16()
 		itemId := r.ReadUint32()
-		_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.WorldId(), s.ChannelId(), s.CharacterId(), itemId, slot, updateTime)
+		_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.Field(), s.CharacterId(), itemId, slot, updateTime)
 	}
 }

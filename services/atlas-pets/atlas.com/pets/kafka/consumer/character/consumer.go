@@ -55,7 +55,7 @@ func handleStatusEventLogin(db *gorm.DB) message.Handler[character2.StatusEvent[
 	return func(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventLoginBody]) {
 		if e.Type == character2.StatusEventTypeLogin {
 			l.Debugf("Character [%d] has logged in. worldId [%d] channelId [%d] mapId [%d].", e.CharacterId, e.WorldId, e.Body.ChannelId, e.Body.MapId)
-			character.NewProcessor(l, ctx).Enter(e.WorldId, e.Body.ChannelId, e.Body.MapId, e.CharacterId)
+			character.NewProcessor(l, ctx).Enter(byte(e.WorldId), byte(e.Body.ChannelId), uint32(e.Body.MapId), e.CharacterId)
 			_ = pet.NewProcessor(l, ctx, db).ClearPositions(e.CharacterId)
 		}
 	}
@@ -65,7 +65,7 @@ func handleStatusEventLogout(db *gorm.DB) message.Handler[character2.StatusEvent
 	return func(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventLogoutBody]) {
 		if e.Type == character2.StatusEventTypeLogout {
 			l.Debugf("Character [%d] has logged out. worldId [%d] channelId [%d] mapId [%d].", e.CharacterId, e.WorldId, e.Body.ChannelId, e.Body.MapId)
-			character.NewProcessor(l, ctx).Exit(e.WorldId, e.Body.ChannelId, e.Body.MapId, e.CharacterId)
+			character.NewProcessor(l, ctx).Exit(byte(e.WorldId), byte(e.Body.ChannelId), uint32(e.Body.MapId), e.CharacterId)
 			_ = pet.NewProcessor(l, ctx, db).ClearPositions(e.CharacterId)
 		}
 	}
@@ -75,7 +75,7 @@ func handleStatusEventMapChanged(db *gorm.DB) message.Handler[character2.StatusE
 	return func(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventMapChangedBody]) {
 		if e.Type == character2.StatusEventTypeMapChanged {
 			l.Debugf("Character [%d] has changed maps. worldId [%d] channelId [%d] oldMapId [%d] newMapId [%d].", e.CharacterId, e.WorldId, e.Body.ChannelId, e.Body.OldMapId, e.Body.TargetMapId)
-			character.NewProcessor(l, ctx).TransitionMap(e.WorldId, e.Body.ChannelId, e.Body.TargetMapId, e.CharacterId, e.Body.OldMapId)
+			character.NewProcessor(l, ctx).TransitionMap(byte(e.WorldId), byte(e.Body.ChannelId), uint32(e.Body.TargetMapId), e.CharacterId, uint32(e.Body.OldMapId))
 			_ = pet.NewProcessor(l, ctx, db).ClearPositions(e.CharacterId)
 		}
 	}
@@ -85,7 +85,7 @@ func handleStatusEventChannelChanged(db *gorm.DB) message.Handler[character2.Sta
 	return func(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.ChangeChannelEventLoginBody]) {
 		if e.Type == character2.StatusEventTypeChannelChanged {
 			l.Debugf("Character [%d] has changed channels. worldId [%d] channelId [%d] oldChannelId [%d].", e.CharacterId, e.WorldId, e.Body.ChannelId, e.Body.OldChannelId)
-			character.NewProcessor(l, ctx).TransitionChannel(e.WorldId, e.Body.ChannelId, e.Body.OldChannelId, e.CharacterId, e.Body.MapId)
+			character.NewProcessor(l, ctx).TransitionChannel(byte(e.WorldId), byte(e.Body.ChannelId), byte(e.Body.OldChannelId), e.CharacterId, uint32(e.Body.MapId))
 			_ = pet.NewProcessor(l, ctx, db).ClearPositions(e.CharacterId)
 		}
 	}

@@ -38,7 +38,7 @@ func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 		op := r.ReadByte()
 		if isGuildOperation(l)(readerOptions, op, GuildOperationRequestCreate) {
 			name := r.ReadAsciiString()
-			_ = guild.NewProcessor(l, ctx).RequestCreate(s.Map(), s.CharacterId(), name)
+			_ = guild.NewProcessor(l, ctx).RequestCreate(s.Field(), s.CharacterId(), name)
 			return
 		}
 		if isGuildOperation(l)(readerOptions, op, GuildOperationAgreementResponse) {

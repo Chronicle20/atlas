@@ -1,6 +1,14 @@
 package reactor
 
-import "time"
+import (
+	"time"
+
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
+)
 
 const (
 	EnvCommandTopic   = "COMMAND_TOPIC_REACTOR"
@@ -9,11 +17,12 @@ const (
 )
 
 type Command[E any] struct {
-	WorldId   byte   `json:"worldId"`
-	ChannelId byte   `json:"channelId"`
-	MapId     uint32 `json:"mapId"`
-	Type      string `json:"type"`
-	Body      E      `json:"body"`
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
+	MapId     _map.Id    `json:"mapId"`
+	Instance  uuid.UUID  `json:"instance"`
+	Type      string     `json:"type"`
+	Body      E          `json:"body"`
 }
 
 type CreateCommandBody struct {
@@ -42,17 +51,18 @@ const (
 
 // reactorActionsCommand represents a command sent to atlas-reactor-actions
 type reactorActionsCommand[E any] struct {
-	WorldId        byte   `json:"worldId"`
-	ChannelId      byte   `json:"channelId"`
-	MapId          uint32 `json:"mapId"`
-	ReactorId      uint32 `json:"reactorId"`
-	Classification string `json:"classification"`
-	ReactorName    string `json:"reactorName"`
-	ReactorState   int8   `json:"reactorState"`
-	X              int16  `json:"x"`
-	Y              int16  `json:"y"`
-	Type           string `json:"type"`
-	Body           E      `json:"body"`
+	WorldId        world.Id   `json:"worldId"`
+	ChannelId      channel.Id `json:"channelId"`
+	MapId          _map.Id    `json:"mapId"`
+	Instance       uuid.UUID  `json:"instance"`
+	ReactorId      uint32     `json:"reactorId"`
+	Classification string     `json:"classification"`
+	ReactorName    string     `json:"reactorName"`
+	ReactorState   int8       `json:"reactorState"`
+	X              int16      `json:"x"`
+	Y              int16      `json:"y"`
+	Type           string     `json:"type"`
+	Body           E          `json:"body"`
 }
 
 // hitActionsBody represents the body of a HIT command to atlas-reactor-actions
@@ -75,12 +85,25 @@ const (
 )
 
 type statusEvent[E any] struct {
-	WorldId   byte   `json:"worldId"`
-	ChannelId byte   `json:"channelId"`
-	MapId     uint32 `json:"mapId"`
-	ReactorId uint32 `json:"reactorId"`
-	Type      string `json:"type"`
-	Body      E      `json:"body"`
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
+	MapId     _map.Id    `json:"mapId"`
+	Instance  uuid.UUID  `json:"instance"`
+	ReactorId uint32     `json:"reactorId"`
+	Type      string     `json:"type"`
+	Body      E          `json:"body"`
+}
+
+func statusEventFromField[E any](f field.Model, reactorId uint32, theType string, body E) statusEvent[E] {
+	return statusEvent[E]{
+		WorldId:   f.WorldId(),
+		ChannelId: f.ChannelId(),
+		MapId:     f.MapId(),
+		Instance:  f.Instance(),
+		ReactorId: reactorId,
+		Type:      theType,
+		Body:      body,
+	}
 }
 
 type createdStatusEventBody struct {

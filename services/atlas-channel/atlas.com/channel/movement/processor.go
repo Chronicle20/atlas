@@ -11,7 +11,7 @@ import (
 	"atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
-	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/field"
 	model2 "github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -36,12 +36,12 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 	return p
 }
 
-func (p *Processor) ForCharacter(m _map.Model, characterId uint32, movement model.Movement) error {
+func (p *Processor) ForCharacter(f field.Model, characterId uint32, movement model.Movement) error {
 	go func() {
 		op := session.Announce(p.l)(p.ctx)(p.wp)(writer.CharacterMovement)(writer.CharacterMovementBody(p.l, tenant.MustFromContext(p.ctx))(characterId, movement))
-		err := _map2.NewProcessor(p.l, p.ctx).ForOtherSessionsInMap(m, characterId, op)
+		err := _map2.NewProcessor(p.l, p.ctx).ForOtherSessionsInMap(f, characterId, op)
 		if err != nil {
-			p.l.WithError(err).Errorf("Unable to move character [%d] for characters in map [%d].", characterId, m.MapId())
+			p.l.WithError(err).Errorf("Unable to move character [%d] for characters in map [%d].", characterId, f.MapId())
 		}
 	}()
 	go func() {
@@ -49,7 +49,7 @@ func (p *Processor) ForCharacter(m _map.Model, characterId uint32, movement mode
 		if err != nil {
 			return
 		}
-		err = producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandCharacterMovement)(CommandProducer(m, uint64(characterId), characterId, ms.X, ms.Y, ms.Stance))
+		err = producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandCharacterMovement)(CommandProducer(f, uint64(characterId), characterId, ms.X, ms.Y, ms.Stance))
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to issue movement command [%d].", characterId)
 		}
@@ -57,15 +57,15 @@ func (p *Processor) ForCharacter(m _map.Model, characterId uint32, movement mode
 	return nil
 }
 
-func (p *Processor) ForNPC(m _map.Model, characterId uint32, objectId uint32, unk byte, unk2 byte, movement model.Movement) error {
+func (p *Processor) ForNPC(f field.Model, characterId uint32, objectId uint32, unk byte, unk2 byte, movement model.Movement) error {
 	go func() {
-		n, err := npc.NewProcessor(p.l, p.ctx).GetInMapByObjectId(m.MapId(), objectId)
+		n, err := npc.NewProcessor(p.l, p.ctx).GetInMapByObjectId(f.MapId(), objectId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to retrieve npc moving.")
 			return
 		}
 		op := session.Announce(p.l)(p.ctx)(p.wp)(writer.NPCAction)(writer.NPCActionMoveBody(p.l, p.t)(objectId, unk, unk2, movement))
-		err = p.sp.IfPresentByCharacterId(m.WorldId(), m.ChannelId())(characterId, op)
+		err = p.sp.IfPresentByCharacterId(f.WorldId(), f.ChannelId())(characterId, op)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to move npc [%d] for character [%d].", n.Template(), characterId)
 		}
@@ -74,7 +74,7 @@ func (p *Processor) ForNPC(m _map.Model, characterId uint32, objectId uint32, un
 	return nil
 }
 
-func (p *Processor) ForPet(m _map.Model, characterId uint32, petId uint32, movement model.Movement) error {
+func (p *Processor) ForPet(f field.Model, characterId uint32, petId uint32, movement model.Movement) error {
 	go func() {
 		// TODO look up pet.
 		pe := pet.NewModelBuilder(petId, 0, 0, "").
@@ -83,9 +83,9 @@ func (p *Processor) ForPet(m _map.Model, characterId uint32, petId uint32, movem
 			MustBuild()
 
 		op := session.Announce(p.l)(p.ctx)(p.wp)(writer.PetMovement)(writer.PetMovementBody(p.l, p.t)(pe, movement))
-		err := _map2.NewProcessor(p.l, p.ctx).ForOtherSessionsInMap(m, characterId, op)
+		err := _map2.NewProcessor(p.l, p.ctx).ForOtherSessionsInMap(f, characterId, op)
 		if err != nil {
-			p.l.WithError(err).Errorf("Unable to move pet [%d] for characters in map [%d].", characterId, m.MapId())
+			p.l.WithError(err).Errorf("Unable to move pet [%d] for characters in map [%d].", characterId, f.MapId())
 		}
 	}()
 	go func() {
@@ -93,7 +93,7 @@ func (p *Processor) ForPet(m _map.Model, characterId uint32, petId uint32, movem
 		if err != nil {
 			return
 		}
-		err = producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandPetMovement)(CommandProducer(m, uint64(petId), characterId, ms.X, ms.Y, ms.Stance))
+		err = producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandPetMovement)(CommandProducer(f, uint64(petId), characterId, ms.X, ms.Y, ms.Stance))
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to issue movement command [%d].", characterId)
 		}
@@ -101,29 +101,29 @@ func (p *Processor) ForPet(m _map.Model, characterId uint32, petId uint32, movem
 	return nil
 }
 
-func (p *Processor) ForMonster(m _map.Model, characterId uint32, objectId uint32, moveId int16, skillPossible bool, skill int8, skillId int16, skillLevel int16, mt model.MultiTargetForBall, rt model.RandTimeForAreaAttack, movement model.Movement) error {
+func (p *Processor) ForMonster(f field.Model, characterId uint32, objectId uint32, moveId int16, skillPossible bool, skill int8, skillId int16, skillLevel int16, mt model.MultiTargetForBall, rt model.RandTimeForAreaAttack, movement model.Movement) error {
 	mo, err := monster.NewProcessor(p.l, p.ctx).GetById(objectId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to locate monster [%d] moving.", objectId)
 		return err
 	}
 
-	if m.WorldId() != mo.WorldId() || m.ChannelId() != mo.ChannelId() || m.MapId() != mo.MapId() {
+	if f.WorldId() != mo.WorldId() || f.ChannelId() != mo.ChannelId() || f.MapId() != mo.MapId() {
 		p.l.Errorf("Monster [%d] movement issued by [%d] does not have consistent map data.", objectId, characterId)
 		return err
 	}
 	go func() {
 		op := session.Announce(p.l)(p.ctx)(p.wp)(writer.MoveMonsterAck)(writer.MoveMonsterAckBody(p.l, p.t)(objectId, moveId, uint16(mo.MP()), false, 0, 0))
-		err = p.sp.IfPresentByCharacterId(m.WorldId(), m.ChannelId())(characterId, op)
+		err = p.sp.IfPresentByCharacterId(f.WorldId(), f.ChannelId())(characterId, op)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to ack monster [%d] movement for character [%d].", objectId, characterId)
 		}
 	}()
 	go func() {
 		op := session.Announce(p.l)(p.ctx)(p.wp)(writer.MoveMonster)(writer.MoveMonsterBody(p.l, p.t)(objectId, false, skillPossible, false, skill, skillId, skillLevel, mt, rt, movement))
-		err = _map2.NewProcessor(p.l, p.ctx).ForOtherSessionsInMap(m, characterId, op)
+		err = _map2.NewProcessor(p.l, p.ctx).ForOtherSessionsInMap(f, characterId, op)
 		if err != nil {
-			p.l.WithError(err).Errorf("Unable to move monster [%d] for characters in map [%d].", objectId, m.MapId())
+			p.l.WithError(err).Errorf("Unable to move monster [%d] for characters in map [%d].", objectId, f.MapId())
 		}
 	}()
 	go func() {
@@ -132,7 +132,7 @@ func (p *Processor) ForMonster(m _map.Model, characterId uint32, objectId uint32
 		if err != nil {
 			return
 		}
-		err = producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandMonsterMovement)(CommandProducer(m, uint64(objectId), characterId, ms.X, ms.Y, ms.Stance))
+		err = producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandMonsterMovement)(CommandProducer(f, uint64(objectId), characterId, ms.X, ms.Y, ms.Stance))
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to issue movement command [%d].", characterId)
 		}

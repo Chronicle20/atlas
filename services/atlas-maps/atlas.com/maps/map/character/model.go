@@ -2,9 +2,10 @@ package character
 
 import (
 	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/world"
 	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 )
 
 type MapKey struct {
@@ -12,4 +13,5 @@ type MapKey struct {
 	WorldId   world.Id
 	ChannelId channel.Id
 	MapId     _map.Id
+	Instance  uuid.UUID
 }

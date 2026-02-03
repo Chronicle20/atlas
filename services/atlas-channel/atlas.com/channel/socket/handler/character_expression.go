@@ -14,6 +14,6 @@ const CharacterExpressionHandle = "CharacterExpressionHandle"
 func CharacterExpressionHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		emote := r.ReadUint32()
-		_ = expression.NewProcessor(l, ctx).Change(s.CharacterId(), s.Map(), emote)
+		_ = expression.NewProcessor(l, ctx).Change(s.CharacterId(), s.Field(), emote)
 	}
 }

@@ -661,7 +661,7 @@ func moveInCompartment(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 						errChannels <- err
 					}()
 					go func() {
-						errChannels <- _map.NewProcessor(l, ctx).ForSessionsInMap(s.Map(), updateAppearance(l)(ctx)(wp)(c))
+						errChannels <- _map.NewProcessor(l, ctx).ForSessionsInMap(s.Field(), updateAppearance(l)(ctx)(wp)(c))
 					}()
 					go func() {
 						it, ok := inventory.TypeFromItemId(item.Id(e.TemplateId))

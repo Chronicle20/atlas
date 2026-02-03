@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
@@ -194,6 +195,18 @@ func (p *Processor) SetMapId(id uuid.UUID, mapId _map.Id) Model {
 	var ok bool
 	if s, ok = getRegistry().Get(p.t.Id(), id); ok {
 		s = s.setMapId(mapId)
+		getRegistry().Update(p.t.Id(), s)
+		return s
+	}
+	return s
+}
+
+func (p *Processor) SetField(id uuid.UUID, f field.Model) Model {
+	s := Model{}
+	var ok bool
+	if s, ok = getRegistry().Get(p.t.Id(), id); ok {
+		s = s.setMapId(f.MapId())
+		s = s.setInstance(f.Instance())
 		getRegistry().Update(p.t.Id(), s)
 		return s
 	}

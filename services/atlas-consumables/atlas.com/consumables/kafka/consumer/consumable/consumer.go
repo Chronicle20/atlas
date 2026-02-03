@@ -36,7 +36,7 @@ func handleRequestItemConsume(l logrus.FieldLogger, ctx context.Context, c consu
 	if c.Type != consumable2.CommandRequestItemConsume {
 		return
 	}
-	err := consumable.NewProcessor(l, ctx).RequestItemConsume(c.WorldId, c.ChannelId, c.CharacterId, c.Body.Source, item.Id(c.Body.ItemId), c.Body.Quantity)
+	err := consumable.NewProcessor(l, ctx).RequestItemConsume(byte(c.WorldId), byte(c.ChannelId), c.CharacterId, c.Body.Source, item.Id(c.Body.ItemId), c.Body.Quantity)
 	if err != nil {
 		l.WithError(err).Errorf("Character [%d] unable to consume item in slot [%d] as expected.", c.CharacterId, c.Body.Source)
 	}
@@ -56,7 +56,7 @@ func handleApplyConsumableEffect(l logrus.FieldLogger, ctx context.Context, c co
 	if c.Type != consumable2.CommandApplyConsumableEffect {
 		return
 	}
-	err := consumable.NewProcessor(l, ctx).ApplyConsumableEffect(c.TransactionId, c.WorldId, c.ChannelId, c.CharacterId, item.Id(c.Body.ItemId))
+	err := consumable.NewProcessor(l, ctx).ApplyConsumableEffect(c.TransactionId, byte(c.WorldId), byte(c.ChannelId), c.CharacterId, item.Id(c.Body.ItemId))
 	if err != nil {
 		l.WithError(err).Errorf("Character [%d] unable to apply consumable effect [%d] as expected.", c.CharacterId, c.Body.ItemId)
 	}

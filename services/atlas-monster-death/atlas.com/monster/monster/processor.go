@@ -11,13 +11,14 @@ import (
 	"math"
 	"math/rand"
 
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
 )
 
-func CreateDrops(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, id uint32, monsterId uint32, x int16, y int16, killerId uint32) error {
-	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, id uint32, monsterId uint32, x int16, y int16, killerId uint32) error {
-		return func(worldId byte, channelId byte, mapId uint32, id uint32, monsterId uint32, x int16, y int16, killerId uint32) error {
+func CreateDrops(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, id uint32, monsterId uint32, x int16, y int16, killerId uint32) error {
+	return func(ctx context.Context) func(f field.Model, id uint32, monsterId uint32, x int16, y int16, killerId uint32) error {
+		return func(f field.Model, id uint32, monsterId uint32, x int16, y int16, killerId uint32) error {
 			// TODO determine type of drop
 			dropType := byte(0)
 
@@ -32,13 +33,13 @@ func CreateDrops(l logrus.FieldLogger) func(ctx context.Context) func(worldId by
 			l.Debugf("After quest filtering, [%d] drops remain.", len(ds))
 
 			// Get rates for the killer
-			r := rates.GetForCharacter(l)(ctx)(worldId, channelId, killerId)
+			r := rates.GetForCharacter(l)(ctx)(f.WorldId(), f.ChannelId(), killerId)
 			l.Debugf("Character [%d] rates: itemDrop=%.2f, meso=%.2f", killerId, r.ItemDropRate(), r.MesoRate())
 
 			ds = getSuccessfulDrops(ds, r.ItemDropRate())
 
 			for i, d := range ds {
-				_ = drop.Create(l)(ctx)(worldId, channelId, mapId, i+1, id, x, y, killerId, dropType, d, r.MesoRate())
+				_ = drop.Create(l)(ctx)(f, i+1, id, x, y, killerId, dropType, d, r.MesoRate())
 			}
 			return nil
 		}
@@ -103,10 +104,10 @@ func filterByQuestState(l logrus.FieldLogger) func(ctx context.Context) func(cha
 	}
 }
 
-func DistributeExperience(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, monsterId uint32, damageEntries []DamageEntryModel) error {
-	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, monsterId uint32, damageEntries []DamageEntryModel) error {
-		return func(worldId byte, channelId byte, mapId uint32, monsterId uint32, damageEntries []DamageEntryModel) error {
-			d, _ := produceDistribution(l)(ctx)(worldId, channelId, mapId, monsterId, damageEntries)()
+func DistributeExperience(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, monsterId uint32, damageEntries []DamageEntryModel) error {
+	return func(ctx context.Context) func(f field.Model, monsterId uint32, damageEntries []DamageEntryModel) error {
+		return func(f field.Model, monsterId uint32, damageEntries []DamageEntryModel) error {
+			d, _ := produceDistribution(l)(ctx)(f, monsterId, damageEntries)()
 			for k, v := range d.Solo() {
 				exp := float64(v) * d.ExperiencePerDamage()
 				c, err := character.GetById(l)(ctx)(k)
@@ -114,12 +115,12 @@ func DistributeExperience(l logrus.FieldLogger) func(ctx context.Context) func(w
 					l.WithError(err).Errorf("Unable to locate character %d whose for distributing experience from monster death.", k)
 				} else {
 					// Get rates for the character and apply exp rate
-					r := rates.GetForCharacter(l)(ctx)(worldId, channelId, c.Id())
+					r := rates.GetForCharacter(l)(ctx)(f.WorldId(), f.ChannelId(), c.Id())
 					exp = exp * r.ExpRate()
 					l.Debugf("Character [%d] exp rate: %.2f, adjusted exp: %.2f", c.Id(), r.ExpRate(), exp)
 
 					whiteExperienceGain := isWhiteExperienceGain(c.Id(), d.PersonalRatio(), d.StandardDeviationRatio())
-					distributeCharacterExperience(l)(ctx)(worldId, channelId, c.Id(), c.Level(), exp, 0.0, c.Level(), true, whiteExperienceGain, false)
+					distributeCharacterExperience(l)(ctx)(f, c.Id(), c.Level(), exp, 0.0, c.Level(), true, whiteExperienceGain, false)
 				}
 			}
 			return nil
@@ -127,15 +128,15 @@ func DistributeExperience(l logrus.FieldLogger) func(ctx context.Context) func(w
 	}
 }
 
-func produceDistribution(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, monsterId uint32, damageEntries []DamageEntryModel) model.Provider[DamageDistributionModel] {
-	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, monsterId uint32, damageEntries []DamageEntryModel) model.Provider[DamageDistributionModel] {
-		return func(worldId byte, channelId byte, mapId uint32, monsterId uint32, damageEntries []DamageEntryModel) model.Provider[DamageDistributionModel] {
+func produceDistribution(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, monsterId uint32, damageEntries []DamageEntryModel) model.Provider[DamageDistributionModel] {
+	return func(ctx context.Context) func(f field.Model, monsterId uint32, damageEntries []DamageEntryModel) model.Provider[DamageDistributionModel] {
+		return func(f field.Model, monsterId uint32, damageEntries []DamageEntryModel) model.Provider[DamageDistributionModel] {
 			mi, err := information.GetById(l)(ctx)(monsterId)
 			if err != nil {
 				return model.ErrorProvider[DamageDistributionModel](err)
 			}
 
-			cim, err := model.CollectToMap[uint32, uint32, bool](_map.CharacterIdsInMapModelProvider(l)(ctx)(worldId, channelId, mapId), func(m uint32) uint32 {
+			cim, err := model.CollectToMap[uint32, uint32, bool](_map.CharacterIdsInFieldModelProvider(l)(ctx)(f), func(m uint32) uint32 {
 				return m
 			}, func(m uint32) bool {
 				return true
@@ -216,9 +217,9 @@ func isWhiteExperienceGain(characterId uint32, personalRatio map[uint32]float64,
 	}
 }
 
-func distributeCharacterExperience(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, level byte, experience float64, partyBonusMod float64, totalPartyLevel byte, hightestPartyDamage bool, whiteExperienceGain bool, hasPartySharers bool) {
-	return func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, level byte, experience float64, partyBonusMod float64, totalPartyLevel byte, hightestPartyDamage bool, whiteExperienceGain bool, hasPartySharers bool) {
-		return func(worldId byte, channelId byte, characterId uint32, level byte, experience float64, partyBonusMod float64, totalPartyLevel byte, hightestPartyDamage bool, whiteExperienceGain bool, hasPartySharers bool) {
+func distributeCharacterExperience(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, characterId uint32, level byte, experience float64, partyBonusMod float64, totalPartyLevel byte, hightestPartyDamage bool, whiteExperienceGain bool, hasPartySharers bool) {
+	return func(ctx context.Context) func(f field.Model, characterId uint32, level byte, experience float64, partyBonusMod float64, totalPartyLevel byte, hightestPartyDamage bool, whiteExperienceGain bool, hasPartySharers bool) {
+		return func(f field.Model, characterId uint32, level byte, experience float64, partyBonusMod float64, totalPartyLevel byte, hightestPartyDamage bool, whiteExperienceGain bool, hasPartySharers bool) {
 			expSplitCommonMod := 0.8
 			characterExperience := (float64(expSplitCommonMod) * float64(level)) / float64(totalPartyLevel)
 			if hightestPartyDamage {
@@ -227,7 +228,7 @@ func distributeCharacterExperience(l logrus.FieldLogger) func(ctx context.Contex
 			characterExperience *= experience
 			bonusExperience := partyBonusMod * characterExperience
 
-			_ = character.AwardExperience(l)(ctx)(worldId, channelId, characterId, whiteExperienceGain, uint32(characterExperience), uint32(bonusExperience))
+			_ = character.AwardExperience(l)(ctx)(f.WorldId(), f.ChannelId(), characterId, whiteExperienceGain, uint32(characterExperience), uint32(bonusExperience))
 		}
 	}
 }

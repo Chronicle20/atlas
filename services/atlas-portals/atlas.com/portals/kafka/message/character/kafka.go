@@ -24,9 +24,11 @@ type StatusEvent[E any] struct {
 type StatusEventLoginBody struct {
 	ChannelId channel.Id `json:"channelId"`
 	MapId     _map.Id    `json:"mapId"`
+	Instance  uuid.UUID  `json:"instance"`
 }
 
 type StatusEventLogoutBody struct {
 	ChannelId channel.Id `json:"channelId"`
 	MapId     _map.Id    `json:"mapId"`
+	Instance  uuid.UUID  `json:"instance"`
 }

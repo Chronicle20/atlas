@@ -1,6 +1,10 @@
 package portal
 
-import "strconv"
+import (
+	"strconv"
+
+	_map "github.com/Chronicle20/atlas-constants/map"
+)
 
 type RestModel struct {
 	Id          string `json:"-"`
@@ -39,7 +43,7 @@ func Extract(rm RestModel) (Model, error) {
 		portalType:  rm.Type,
 		x:           rm.X,
 		y:           rm.Y,
-		targetMapId: rm.TargetMapId,
+		targetMapId: _map.Id(rm.TargetMapId),
 		scriptName:  rm.ScriptName,
 	}, nil
 }

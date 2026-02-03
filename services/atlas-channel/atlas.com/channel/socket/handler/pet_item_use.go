@@ -19,6 +19,6 @@ func PetItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Pr
 		slot := r.ReadInt16()
 		itemId := r.ReadUint32()
 		l.Debugf("Character [%d] pet [%d] attempting to use item [%d] from slot [%d]. updateTime [%d], buffSkill [%t].", s.CharacterId(), petId, itemId, slot, updateTime, buffSkill)
-		_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.WorldId(), s.ChannelId(), s.CharacterId(), itemId, slot, updateTime)
+		_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.Field(), s.CharacterId(), itemId, slot, updateTime)
 	}
 }

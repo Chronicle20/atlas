@@ -30,7 +30,7 @@ func (e *RevertTask) Run() {
 	for _, exp := range GetRegistry().popExpired() {
 		tctx := tenant.WithContext(sctx, exp.Tenant())
 		transactionId := uuid.New() // Generate a new transaction ID for each expired expression
-		_ = producer.ProviderImpl(e.l)(tctx)(expression.EnvExpressionEvent)(expressionEventProvider(transactionId, exp.CharacterId(), exp.WorldId(), exp.ChannelId(), exp.MapId(), 0))
+		_ = producer.ProviderImpl(e.l)(tctx)(expression.EnvExpressionEvent)(expressionEventProvider(transactionId, exp.CharacterId(), exp.WorldId(), exp.ChannelId(), exp.MapId(), exp.Instance(), 0))
 	}
 }
 

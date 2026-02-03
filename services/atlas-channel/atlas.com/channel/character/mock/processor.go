@@ -5,8 +5,8 @@ import (
 	"atlas-channel/character"
 	"errors"
 
+	"github.com/Chronicle20/atlas-constants/field"
 	inventory2 "github.com/Chronicle20/atlas-constants/inventory"
-	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
 )
 
@@ -99,22 +99,22 @@ func (m *MockProcessor) GetByName(name string) (character.Model, error) {
 	return c, nil
 }
 
-func (m *MockProcessor) RequestDistributeAp(mapModel _map.Model, characterId uint32, updateTime uint32, distributes []character.DistributePacket) error {
+func (m *MockProcessor) RequestDistributeAp(f field.Model, characterId uint32, updateTime uint32, distributes []character.DistributePacket) error {
 	return nil
 }
 
-func (m *MockProcessor) RequestDropMeso(mapModel _map.Model, characterId uint32, amount uint32) error {
+func (m *MockProcessor) RequestDropMeso(f field.Model, characterId uint32, amount uint32) error {
 	return nil
 }
 
-func (m *MockProcessor) ChangeHP(mapModel _map.Model, characterId uint32, amount int16) error {
+func (m *MockProcessor) ChangeHP(f field.Model, characterId uint32, amount int16) error {
 	return nil
 }
 
-func (m *MockProcessor) ChangeMP(mapModel _map.Model, characterId uint32, amount int16) error {
+func (m *MockProcessor) ChangeMP(f field.Model, characterId uint32, amount int16) error {
 	return nil
 }
 
-func (m *MockProcessor) RequestDistributeSp(mapModel _map.Model, characterId uint32, updateTime uint32, skillId uint32, amount int8) error {
+func (m *MockProcessor) RequestDistributeSp(f field.Model, characterId uint32, updateTime uint32, skillId uint32, amount int8) error {
 	return nil
 }

@@ -970,6 +970,48 @@ func (p *Processor) emitExpiredEvent(transactionId uuid.UUID, worldId byte, acco
 	return producer.ProviderImpl(p.l)(p.ctx)(message.EnvEventTopic)(createMessageProvider(accountId, event))
 }
 
+// DeleteByAccountId deletes all storage records and associated assets for an account
+func (p *Processor) DeleteByAccountId(accountId uint32) error {
+	t := tenant.MustFromContext(p.ctx)
+
+	// Get all storages for the account
+	storages, err := GetByAccountId(p.l, p.db, t.Id())(accountId)
+	if err != nil {
+		p.l.WithError(err).Errorf("Failed to retrieve storages for account [%d].", accountId)
+		return err
+	}
+
+	p.l.Infof("Deleting [%d] storage(s) for account [%d].", len(storages), accountId)
+
+	for _, s := range storages {
+		// Delete all assets in this storage
+		assets, err := asset.GetByStorageId(p.l, p.db, t.Id())(s.Id())
+		if err != nil {
+			p.l.WithError(err).Warnf("Failed to get assets for storage [%s].", s.Id())
+		} else {
+			for _, a := range assets {
+				// Delete stackable data if exists
+				if a.IsStackable() {
+					_ = stackable.Delete(p.l, p.db)(a.Id())
+				}
+				// Delete asset
+				err = asset.Delete(p.l, p.db, t.Id())(a.Id())
+				if err != nil {
+					p.l.WithError(err).Warnf("Failed to delete asset [%d] from storage [%s].", a.Id(), s.Id())
+				}
+			}
+		}
+
+		// Delete storage
+		err = Delete(p.l, p.db, t.Id())(s.Id())
+		if err != nil {
+			p.l.WithError(err).Errorf("Failed to delete storage [%s] for account [%d].", s.Id(), accountId)
+		}
+	}
+
+	return nil
+}
+
 // EmitProjectionDestroyedEvent emits a PROJECTION_DESTROYED event
 func (p *Processor) EmitProjectionDestroyedEvent(characterId uint32, accountId uint32, worldId byte) error {
 	event := &message.StatusEvent[message.ProjectionDestroyedEventBody]{

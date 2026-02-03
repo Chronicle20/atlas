@@ -18,7 +18,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("create_account_command")(account2.EnvCommandTopicCreateAccount)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+			rf(consumer2.NewConfig(l)("account_command")(account2.EnvCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 			rf(consumer2.NewConfig(l)("account_session_command")(account2.EnvCommandSessionTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 		}
 	}
@@ -28,8 +28,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
 		return func(rf func(topic string, handler handler.Handler) (string, error)) {
 			var t string
-			t, _ = topic.EnvProvider(l)(account2.EnvCommandTopicCreateAccount)()
+			t, _ = topic.EnvProvider(l)(account2.EnvCommandTopic)()
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCreateAccountCommand(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleDeleteAccountCommand(db))))
 			t, _ = topic.EnvProvider(l)(account2.EnvCommandSessionTopic)()
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCreateAccountSessionCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleProgressStateAccountSessionCommand(db))))
@@ -38,12 +39,29 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 	}
 }
 
-func handleCreateAccountCommand(db *gorm.DB) message.Handler[account2.CreateCommand] {
-	return func(l logrus.FieldLogger, ctx context.Context, c account2.CreateCommand) {
-		l.Debugf("Received create account command name [%s] password [%s].", c.Name, c.Password)
-		_, err := account.NewProcessor(l, ctx, db).CreateAndEmit(c.Name, c.Password)
+func handleCreateAccountCommand(db *gorm.DB) message.Handler[account2.Command[account2.CreateCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c account2.Command[account2.CreateCommandBody]) {
+		if c.Type != account2.CommandTypeCreate {
+			return
+		}
+		l.Debugf("Received create account command name [%s] password [%s].", c.Body.Name, c.Body.Password)
+		_, err := account.NewProcessor(l, ctx, db).CreateAndEmit(c.Body.Name, c.Body.Password)
 		if err != nil {
-			l.WithError(err).Errorf("Error processing command to create account [%s].", c.Name)
+			l.WithError(err).Errorf("Error processing command to create account [%s].", c.Body.Name)
+			return
+		}
+	}
+}
+
+func handleDeleteAccountCommand(db *gorm.DB) message.Handler[account2.Command[account2.DeleteCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c account2.Command[account2.DeleteCommandBody]) {
+		if c.Type != account2.CommandTypeDelete {
+			return
+		}
+		l.Debugf("Received delete account command for account [%d].", c.Body.AccountId)
+		err := account.NewProcessor(l, ctx, db).DeleteAndEmit(c.Body.AccountId)
+		if err != nil {
+			l.WithError(err).Errorf("Error processing command to delete account [%d].", c.Body.AccountId)
 			return
 		}
 	}

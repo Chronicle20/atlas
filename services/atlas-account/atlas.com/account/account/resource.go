@@ -4,6 +4,7 @@ import (
 	account2 "atlas-account/kafka/message/account"
 	"atlas-account/kafka/producer"
 	"atlas-account/rest"
+	"errors"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
@@ -25,6 +26,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r.HandleFunc("/", register("get_accounts", handleGetAccounts)).Methods(http.MethodGet)
 			r.HandleFunc("/{accountId}", register("get_account", handleGetAccountById)).Methods(http.MethodGet)
 			r.HandleFunc("/{accountId}", registerInput("update_account", handleUpdateAccount)).Methods(http.MethodPatch)
+			r.HandleFunc("/{accountId}", register("delete_account", handleDeleteAccount)).Methods(http.MethodDelete)
 			r.HandleFunc("/{accountId}/session", register("delete_account_session", handleDeleteAccountSession)).Methods(http.MethodDelete)
 		}
 	}
@@ -62,7 +64,7 @@ func handleUpdateAccount(d *rest.HandlerDependency, c *rest.HandlerContext, inpu
 
 func handleCreateAccount(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		_ = producer.ProviderImpl(d.Logger())(d.Context())(account2.EnvCommandTopicCreateAccount)(createCommandProvider(input.Name, input.Password))
+		_ = producer.ProviderImpl(d.Logger())(d.Context())(account2.EnvCommandTopic)(createCommandProvider(input.Name, input.Password))
 		w.WriteHeader(http.StatusAccepted)
 	}
 }
@@ -132,6 +134,28 @@ func handleGetAccountById(d *rest.HandlerDependency, c *rest.HandlerContext) htt
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
 			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+		}
+	})
+}
+
+func handleDeleteAccount(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return rest.ParseAccountId(d.Logger(), func(accountId uint32) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			err := NewProcessor(d.Logger(), d.Context(), d.DB()).DeleteAndEmit(accountId)
+			if err != nil {
+				if errors.Is(err, ErrAccountNotFound) {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+				if errors.Is(err, ErrAccountLoggedIn) {
+					w.WriteHeader(http.StatusConflict)
+					return
+				}
+				d.Logger().WithError(err).Errorf("Unable to delete account [%d].", accountId)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
 		}
 	})
 }

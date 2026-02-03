@@ -54,6 +54,8 @@ type Processor interface {
 	Create(mb *message.Buffer) func(transactionId uuid.UUID, input Model) (Model, error)
 	DeleteAndEmit(transactionId uuid.UUID, characterId uint32) error
 	Delete(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) error
+	DeleteByAccountIdAndEmit(accountId uint32) error
+	DeleteByAccountId(mb *message.Buffer) func(accountId uint32) error
 	LoginAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model) error
 	Login(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model) error
 	LogoutAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model) error
@@ -276,6 +278,31 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(transactionId uuid.UUID,
 		if txErr != nil {
 			p.l.WithError(txErr).Errorf("Error deleting character [%d] from database.", characterId)
 			return txErr
+		}
+		return nil
+	}
+}
+
+func (p *ProcessorImpl) DeleteByAccountIdAndEmit(accountId uint32) error {
+	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+		return p.DeleteByAccountId(buf)(accountId)
+	})
+}
+
+func (p *ProcessorImpl) DeleteByAccountId(mb *message.Buffer) func(accountId uint32) error {
+	return func(accountId uint32) error {
+		cs, err := model.SliceMap(modelFromEntity)(getForAccount(p.t.Id(), accountId)(p.db))(model.ParallelMap())()
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to retrieve characters for account [%d].", accountId)
+			return err
+		}
+
+		p.l.Infof("Deleting [%d] characters for account [%d].", len(cs), accountId)
+		for _, c := range cs {
+			err = p.Delete(mb)(uuid.Nil, c.Id())
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to delete character [%d] for account [%d].", c.Id(), accountId)
+			}
 		}
 		return nil
 	}

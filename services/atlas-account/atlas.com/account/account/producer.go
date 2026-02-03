@@ -11,9 +11,12 @@ import (
 
 func createCommandProvider(name string, password string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(rand.Int())
-	value := &account2.CreateCommand{
-		Name:     name,
-		Password: password,
+	value := &account2.Command[account2.CreateCommandBody]{
+		Type: account2.CommandTypeCreate,
+		Body: account2.CreateCommandBody{
+			Name:     name,
+			Password: password,
+		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
@@ -28,6 +31,10 @@ func loggedInEventProvider() func(accountId uint32, name string) model.Provider[
 
 func loggedOutEventProvider() func(accountId uint32, name string) model.Provider[[]kafka.Message] {
 	return accountStatusEventProvider(account2.EventStatusLoggedOut)
+}
+
+func deletedEventProvider() func(accountId uint32, name string) model.Provider[[]kafka.Message] {
+	return accountStatusEventProvider(account2.EventStatusDeleted)
 }
 
 func accountStatusEventProvider(status string) func(accountId uint32, name string) model.Provider[[]kafka.Message] {

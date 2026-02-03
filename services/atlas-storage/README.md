@@ -24,6 +24,7 @@ The atlas-storage service manages account-level storage (warehouse) for items an
 | `EVENT_TOPIC_STORAGE_STATUS` | Kafka topic for storage status events |
 | `EVENT_TOPIC_STORAGE_COMPARTMENT_STATUS` | Kafka topic for compartment status events |
 | `EVENT_TOPIC_CHARACTER_STATUS` | Kafka topic for character status events (consumed) |
+| `EVENT_TOPIC_ACCOUNT_STATUS` | Kafka topic for account status events (consumed) |
 
 ## Documentation
 

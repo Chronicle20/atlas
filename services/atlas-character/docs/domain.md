@@ -96,6 +96,7 @@ Handles character operations.
 | IsValidName | Validate character name |
 | Create | Create new character |
 | Delete | Delete character |
+| DeleteByAccountId | Delete all characters for an account |
 | Login | Process character login |
 | Logout | Process character logout |
 | ChangeChannel | Process channel change |

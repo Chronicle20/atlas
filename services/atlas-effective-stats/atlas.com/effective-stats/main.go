@@ -4,6 +4,7 @@ import (
 	"atlas-effective-stats/character"
 	asset2 "atlas-effective-stats/kafka/consumer/asset"
 	buff2 "atlas-effective-stats/kafka/consumer/buff"
+	character2 "atlas-effective-stats/kafka/consumer/character"
 	session2 "atlas-effective-stats/kafka/consumer/session"
 	"atlas-effective-stats/logger"
 	"atlas-effective-stats/service"
@@ -62,6 +63,10 @@ func main() {
 	// Asset status events consumer (equip/unequip)
 	asset2.InitConsumers(l)(cmf)(consumerGroupId)
 	asset2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+
+	// Character status events consumer (stat changes)
+	character2.InitConsumers(l)(cmf)(consumerGroupId)
+	character2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
 	// Start REST server
 	server.New(l).

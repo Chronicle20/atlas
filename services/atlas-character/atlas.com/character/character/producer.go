@@ -236,7 +236,7 @@ func creationFailedEventProvider(transactionId uuid.UUID, worldId world.Id, name
 	return producer.SingleMessageProvider(key, value)
 }
 
-func statChangedProvider(transactionId uuid.UUID, channel channel.Model, characterId uint32, updates []string) model.Provider[[]kafka.Message] {
+func statChangedProvider(transactionId uuid.UUID, channel channel.Model, characterId uint32, updates []string, values map[string]interface{}) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &character2.StatusEvent[character2.StatusEventStatChangedBody]{
 		TransactionId: transactionId,
@@ -247,6 +247,7 @@ func statChangedProvider(transactionId uuid.UUID, channel channel.Model, charact
 			ChannelId:       channel.Id(),
 			ExclRequestSent: true,
 			Updates:         updates,
+			Values:          values,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

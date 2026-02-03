@@ -33,7 +33,21 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 		return func(rf func(topic string, handler handler.Handler) (string, error)) {
 			var t string
 			t, _ = topic.EnvProvider(l)(character.EnvEventTopicCharacterStatus)()
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventDeleted(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMapChangedEvent(db))))
+		}
+	}
+}
+
+func handleStatusEventDeleted(db *gorm.DB) message.Handler[character.StatusEvent[character.StatusEventDeletedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e character.StatusEvent[character.StatusEventDeletedBody]) {
+		if e.Type != character.EventCharacterStatusTypeDeleted {
+			return
+		}
+
+		err := quest.NewProcessor(l, ctx, db).DeleteByCharacterId(e.CharacterId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to delete quests for character [%d].", e.CharacterId)
 		}
 	}
 }

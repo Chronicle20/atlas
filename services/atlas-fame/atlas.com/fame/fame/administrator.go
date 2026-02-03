@@ -2,6 +2,7 @@ package fame
 
 import (
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"time"
 )
@@ -25,4 +26,8 @@ func create(db *gorm.DB, t tenant.Model, characterId uint32, targetId uint32, am
 		return Model{}, err
 	}
 	return Make(*e)
+}
+
+func deleteByCharacterId(db *gorm.DB, tenantId uuid.UUID, characterId uint32) error {
+	return db.Where("tenant_id = ? AND (character_id = ? OR target_id = ?)", tenantId, characterId, characterId).Delete(&Entity{}).Error
 }

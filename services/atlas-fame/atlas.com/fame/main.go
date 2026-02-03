@@ -3,6 +3,7 @@ package main
 import (
 	"atlas-fame/database"
 	"atlas-fame/fame"
+	character "atlas-fame/kafka/consumer/character"
 	fame2 "atlas-fame/kafka/consumer/fame"
 	"atlas-fame/logger"
 	"atlas-fame/service"
@@ -29,6 +30,8 @@ func main() {
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	fame2.InitConsumers(l)(cmf)(consumerGroupId)
 	fame2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	character.InitConsumers(l)(cmf)(consumerGroupId)
+	character.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

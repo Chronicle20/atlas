@@ -401,7 +401,8 @@
       "name": "atlas-ui",
       "type": "node-service",
       "path": "services/atlas-ui",
-      "docker_image": "ghcr.io/chronicle20/atlas-ui/atlas-ui"
+      "docker_image": "ghcr.io/chronicle20/atlas-ui/atlas-ui",
+      "docker_context": "."
     }
   ],
   "libraries": [

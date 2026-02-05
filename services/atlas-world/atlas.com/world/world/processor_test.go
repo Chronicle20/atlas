@@ -29,7 +29,7 @@ func setupProcessor(t *testing.T) (world.Processor, func()) {
 		// Clean up any registered channels
 		servers := channel.GetChannelRegistry().ChannelServers(tenant)
 		for _, s := range servers {
-			_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, s.WorldId(), s.ChannelId())
+			_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, channelConstant.NewModel(s.WorldId(), s.ChannelId()))
 		}
 	}
 
@@ -67,8 +67,8 @@ func TestChannelDecorator_WithChannels(t *testing.T) {
 	channelProcessor := channel.NewProcessor(logger, ctx)
 
 	// Register some channels for world 1
-	_, _ = channelProcessor.Register(1, 0, "192.168.1.1", 8080, 0, 100)
-	_, _ = channelProcessor.Register(1, 1, "192.168.1.2", 8081, 0, 100)
+	_, _ = channelProcessor.Register(channelConstant.NewModel(1, 0), "192.168.1.1", 8080, 0, 100)
+	_, _ = channelProcessor.Register(channelConstant.NewModel(1, 1), "192.168.1.2", 8081, 0, 100)
 
 	// Create a world model
 	worldModel, _ := world.NewModelBuilder().
@@ -85,8 +85,8 @@ func TestChannelDecorator_WithChannels(t *testing.T) {
 
 	// Cleanup
 	tenant := test.CreateMockTenant(tenantId)
-	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, 1, 0)
-	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, 1, 1)
+	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, channelConstant.NewModel(1, 0))
+	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, channelConstant.NewModel(1, 1))
 }
 
 func TestChannelDecorator_NoChannels(t *testing.T) {
@@ -120,7 +120,7 @@ func TestChannelDecorator_PreservesOtherFields(t *testing.T) {
 	channelProcessor := channel.NewProcessor(logger, ctx)
 
 	// Register a channel
-	_, _ = channelProcessor.Register(2, 0, "192.168.1.1", 8080, 0, 100)
+	_, _ = channelProcessor.Register(channelConstant.NewModel(2, 0), "192.168.1.1", 8080, 0, 100)
 
 	// Create a world with all fields set
 	worldModel, _ := world.NewModelBuilder().
@@ -165,7 +165,7 @@ func TestChannelDecorator_PreservesOtherFields(t *testing.T) {
 
 	// Cleanup
 	tenant := test.CreateMockTenant(tenantId)
-	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, 2, 0)
+	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, channelConstant.NewModel(2, 0))
 }
 
 func TestGetFlag(t *testing.T) {
@@ -245,11 +245,11 @@ func TestMapDistinctWorldId(t *testing.T) {
 	channelProcessor := channel.NewProcessor(logger, ctx)
 
 	// Register channels in different worlds
-	_, _ = channelProcessor.Register(1, 0, "192.168.1.1", 8080, 0, 100)
-	_, _ = channelProcessor.Register(1, 1, "192.168.1.2", 8081, 0, 100)
-	_, _ = channelProcessor.Register(2, 0, "192.168.1.3", 8082, 0, 100)
-	_, _ = channelProcessor.Register(3, 0, "192.168.1.4", 8083, 0, 100)
-	_, _ = channelProcessor.Register(3, 1, "192.168.1.5", 8084, 0, 100)
+	_, _ = channelProcessor.Register(channelConstant.NewModel(1, 0), "192.168.1.1", 8080, 0, 100)
+	_, _ = channelProcessor.Register(channelConstant.NewModel(1, 1), "192.168.1.2", 8081, 0, 100)
+	_, _ = channelProcessor.Register(channelConstant.NewModel(2, 0), "192.168.1.3", 8082, 0, 100)
+	_, _ = channelProcessor.Register(channelConstant.NewModel(3, 0), "192.168.1.4", 8083, 0, 100)
+	_, _ = channelProcessor.Register(channelConstant.NewModel(3, 1), "192.168.1.5", 8084, 0, 100)
 
 	// Get all channels
 	tenant := test.CreateMockTenant(tenantId)
@@ -266,11 +266,11 @@ func TestMapDistinctWorldId(t *testing.T) {
 	}
 
 	// Cleanup
-	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, 1, 0)
-	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, 1, 1)
-	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, 2, 0)
-	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, 3, 0)
-	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, 3, 1)
+	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, channelConstant.NewModel(1, 0))
+	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, channelConstant.NewModel(1, 1))
+	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, channelConstant.NewModel(2, 0))
+	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, channelConstant.NewModel(3, 0))
+	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, channelConstant.NewModel(3, 1))
 }
 
 func TestProcessorWithMultipleChannels(t *testing.T) {
@@ -282,9 +282,9 @@ func TestProcessorWithMultipleChannels(t *testing.T) {
 	channelProcessor := channel.NewProcessor(logger, ctx)
 
 	// Register multiple channels across multiple worlds
-	_, _ = channelProcessor.Register(0, 0, "192.168.1.1", 8080, 10, 100)
-	_, _ = channelProcessor.Register(0, 1, "192.168.1.2", 8081, 20, 100)
-	_, _ = channelProcessor.Register(0, 2, "192.168.1.3", 8082, 30, 100)
+	_, _ = channelProcessor.Register(channelConstant.NewModel(0, 0), "192.168.1.1", 8080, 10, 100)
+	_, _ = channelProcessor.Register(channelConstant.NewModel(0, 1), "192.168.1.2", 8081, 20, 100)
+	_, _ = channelProcessor.Register(channelConstant.NewModel(0, 2), "192.168.1.3", 8082, 30, 100)
 
 	// Create a world model for world 0
 	worldModel, _ := world.NewModelBuilder().
@@ -312,9 +312,9 @@ func TestProcessorWithMultipleChannels(t *testing.T) {
 
 	// Cleanup
 	tenant := test.CreateMockTenant(tenantId)
-	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, 0, 0)
-	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, 0, 1)
-	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, 0, 2)
+	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, channelConstant.NewModel(0, 0))
+	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, channelConstant.NewModel(0, 1))
+	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, channelConstant.NewModel(0, 2))
 }
 
 func createTestChannelInRegistry(t *testing.T, tenantId uuid.UUID, worldId worldConstant.Id, channelId channelConstant.Id) {

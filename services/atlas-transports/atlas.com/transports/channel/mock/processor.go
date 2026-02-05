@@ -4,7 +4,6 @@ import (
 	"atlas-transports/channel"
 
 	channel2 "github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/world"
 )
 
 // Compile-time interface compliance check
@@ -12,23 +11,23 @@ var _ channel.Processor = (*ProcessorMock)(nil)
 
 // ProcessorMock is a mock implementation of the channel.Processor interface
 type ProcessorMock struct {
-	RegisterFunc   func(worldId world.Id, channelId channel2.Id) error
-	UnregisterFunc func(worldId world.Id, channelId channel2.Id) error
+	RegisterFunc   func(ch channel2.Model) error
+	UnregisterFunc func(ch channel2.Model) error
 	GetAllFunc     func() []channel2.Model
 }
 
 // Register is a mock implementation
-func (m *ProcessorMock) Register(worldId world.Id, channelId channel2.Id) error {
+func (m *ProcessorMock) Register(ch channel2.Model) error {
 	if m.RegisterFunc != nil {
-		return m.RegisterFunc(worldId, channelId)
+		return m.RegisterFunc(ch)
 	}
 	return nil
 }
 
 // Unregister is a mock implementation
-func (m *ProcessorMock) Unregister(worldId world.Id, channelId channel2.Id) error {
+func (m *ProcessorMock) Unregister(ch channel2.Model) error {
 	if m.UnregisterFunc != nil {
-		return m.UnregisterFunc(worldId, channelId)
+		return m.UnregisterFunc(ch)
 	}
 	return nil
 }

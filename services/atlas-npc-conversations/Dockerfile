@@ -7,6 +7,7 @@ RUN apk add --no-cache git
 WORKDIR /app
 
 # Copy lib and service module definitions
+COPY libs/atlas-constants/go.mod libs/atlas-constants/go.sum libs/atlas-constants/
 COPY libs/atlas-script-core/go.mod libs/atlas-script-core/go.sum libs/atlas-script-core/
 COPY services/atlas-npc-conversations/atlas.com/npc/go.mod services/atlas-npc-conversations/atlas.com/npc/go.sum services/atlas-npc-conversations/atlas.com/npc/
 
@@ -14,6 +15,7 @@ COPY services/atlas-npc-conversations/atlas.com/npc/go.mod services/atlas-npc-co
 RUN echo 'go 1.25.5' > go.work && \
     echo '' >> go.work && \
     echo 'use (' >> go.work && \
+    echo '    ./libs/atlas-constants' >> go.work && \
     echo '    ./libs/atlas-script-core' >> go.work && \
     echo '    ./services/atlas-npc-conversations/atlas.com/npc' >> go.work && \
     echo ')' >> go.work
@@ -22,6 +24,7 @@ RUN echo 'go 1.25.5' > go.work && \
 RUN go mod download -C services/atlas-npc-conversations/atlas.com/npc
 
 # Copy source code
+COPY libs/atlas-constants libs/atlas-constants
 COPY libs/atlas-script-core libs/atlas-script-core
 COPY services/atlas-npc-conversations/atlas.com/npc services/atlas-npc-conversations/atlas.com/npc
 

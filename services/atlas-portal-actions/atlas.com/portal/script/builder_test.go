@@ -3,6 +3,7 @@ package script
 import (
 	"testing"
 
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-script-core/condition"
 	"github.com/Chronicle20/atlas-script-core/operation"
 )
@@ -11,7 +12,7 @@ func TestPortalScriptBuilder_Build(t *testing.T) {
 	tests := []struct {
 		name        string
 		portalId    string
-		mapId       uint32
+		mapId       _map.Id
 		description string
 		rules       []Rule
 	}{

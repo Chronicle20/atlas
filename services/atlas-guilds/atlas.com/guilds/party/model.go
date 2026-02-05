@@ -3,6 +3,7 @@ package party
 import (
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
+	"github.com/Chronicle20/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 )
@@ -29,7 +30,7 @@ type MemberModel struct {
 	id     uint32
 	name   string
 	level  byte
-	jobId  uint16
+	jobId  job.Id
 	field  field.Model
 	online bool
 }
@@ -42,7 +43,7 @@ func (m MemberModel) Name() string {
 	return m.name
 }
 
-func (m MemberModel) JobId() uint16 {
+func (m MemberModel) JobId() job.Id {
 	return m.jobId
 }
 

@@ -14,14 +14,14 @@ type Processor struct {
 	AllProviderFunc          func() model.Provider[[]channel.Model]
 	GetByWorldFunc           func(worldId world.Id) ([]channel.Model, error)
 	ByWorldProviderFunc      func(worldId world.Id) model.Provider[[]channel.Model]
-	GetByIdFunc              func(worldId world.Id, channelId channelConstant.Id) (channel.Model, error)
-	ByIdProviderFunc         func(worldId world.Id, channelId channelConstant.Id) model.Provider[channel.Model]
-	RegisterFunc             func(worldId world.Id, channelId channelConstant.Id, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) (channel.Model, error)
-	UnregisterFunc           func(worldId world.Id, channelId channelConstant.Id) error
+	GetByIdFunc              func(ch channelConstant.Model) (channel.Model, error)
+	ByIdProviderFunc         func(ch channelConstant.Model) model.Provider[channel.Model]
+	RegisterFunc             func(ch channelConstant.Model, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) (channel.Model, error)
+	UnregisterFunc           func(ch channelConstant.Model) error
 	RequestStatusFunc        func(mb *message.Buffer) error
 	RequestStatusAndEmitFunc func() error
-	EmitStartedFunc          func(mb *message.Buffer) func(worldId world.Id, channelId channelConstant.Id, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) error
-	EmitStartedAndEmitFunc   func(worldId world.Id, channelId channelConstant.Id, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) error
+	EmitStartedFunc          func(mb *message.Buffer) func(ch channelConstant.Model, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) error
+	EmitStartedAndEmitFunc   func(ch channelConstant.Model, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) error
 }
 
 // Compile-time interface check
@@ -48,30 +48,30 @@ func (m *Processor) ByWorldProvider(worldId world.Id) model.Provider[[]channel.M
 	return model.FixedProvider[[]channel.Model](nil)
 }
 
-func (m *Processor) GetById(worldId world.Id, channelId channelConstant.Id) (channel.Model, error) {
+func (m *Processor) GetById(ch channelConstant.Model) (channel.Model, error) {
 	if m.GetByIdFunc != nil {
-		return m.GetByIdFunc(worldId, channelId)
+		return m.GetByIdFunc(ch)
 	}
 	return channel.Model{}, nil
 }
 
-func (m *Processor) ByIdProvider(worldId world.Id, channelId channelConstant.Id) model.Provider[channel.Model] {
+func (m *Processor) ByIdProvider(ch channelConstant.Model) model.Provider[channel.Model] {
 	if m.ByIdProviderFunc != nil {
-		return m.ByIdProviderFunc(worldId, channelId)
+		return m.ByIdProviderFunc(ch)
 	}
 	return model.FixedProvider[channel.Model](channel.Model{})
 }
 
-func (m *Processor) Register(worldId world.Id, channelId channelConstant.Id, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) (channel.Model, error) {
+func (m *Processor) Register(ch channelConstant.Model, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) (channel.Model, error) {
 	if m.RegisterFunc != nil {
-		return m.RegisterFunc(worldId, channelId, ipAddress, port, currentCapacity, maxCapacity)
+		return m.RegisterFunc(ch, ipAddress, port, currentCapacity, maxCapacity)
 	}
 	return channel.Model{}, nil
 }
 
-func (m *Processor) Unregister(worldId world.Id, channelId channelConstant.Id) error {
+func (m *Processor) Unregister(ch channelConstant.Model) error {
 	if m.UnregisterFunc != nil {
-		return m.UnregisterFunc(worldId, channelId)
+		return m.UnregisterFunc(ch)
 	}
 	return nil
 }
@@ -90,18 +90,18 @@ func (m *Processor) RequestStatusAndEmit() error {
 	return nil
 }
 
-func (m *Processor) EmitStarted(mb *message.Buffer) func(worldId world.Id, channelId channelConstant.Id, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) error {
+func (m *Processor) EmitStarted(mb *message.Buffer) func(ch channelConstant.Model, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) error {
 	if m.EmitStartedFunc != nil {
 		return m.EmitStartedFunc(mb)
 	}
-	return func(worldId world.Id, channelId channelConstant.Id, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) error {
+	return func(ch channelConstant.Model, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) error {
 		return nil
 	}
 }
 
-func (m *Processor) EmitStartedAndEmit(worldId world.Id, channelId channelConstant.Id, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) error {
+func (m *Processor) EmitStartedAndEmit(ch channelConstant.Model, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) error {
 	if m.EmitStartedAndEmitFunc != nil {
-		return m.EmitStartedAndEmitFunc(worldId, channelId, ipAddress, port, currentCapacity, maxCapacity)
+		return m.EmitStartedAndEmitFunc(ch, ipAddress, port, currentCapacity, maxCapacity)
 	}
 	return nil
 }

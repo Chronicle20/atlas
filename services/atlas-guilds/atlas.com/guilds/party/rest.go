@@ -5,6 +5,7 @@ import (
 
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
+	"github.com/Chronicle20/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
@@ -119,7 +120,7 @@ type MemberRestModel struct {
 	Id        uint32     `json:"-"`
 	Name      string     `json:"name"`
 	Level     byte       `json:"level"`
-	JobId     uint16     `json:"jobId"`
+	JobId     job.Id     `json:"jobId"`
 	WorldId   world.Id   `json:"worldId"`
 	ChannelId channel.Id `json:"channelId"`
 	MapId     _map.Id    `json:"mapId"`

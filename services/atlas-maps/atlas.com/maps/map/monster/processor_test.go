@@ -1027,8 +1027,8 @@ type MockCreatedMonster struct {
 	MonsterId uint32
 	X         int16
 	Y         int16
-	Fh        uint16
-	Team      int32
+	Fh        int16
+	Team      int8
 }
 
 func (m *mockMonsterProcessor) CountInMap(transactionId uuid.UUID, f field.Model) (int, error) {
@@ -1041,7 +1041,7 @@ func (m *mockMonsterProcessor) CountInMap(transactionId uuid.UUID, f field.Model
 	return 0, nil
 }
 
-func (m *mockMonsterProcessor) CreateMonster(transactionId uuid.UUID, f field.Model, monsterId uint32, x int16, y int16, fh uint16, team int32) {
+func (m *mockMonsterProcessor) CreateMonster(transactionId uuid.UUID, f field.Model, monsterId uint32, x int16, y int16, fh int16, team int8) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 

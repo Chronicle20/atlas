@@ -13,7 +13,7 @@ type RestModel struct {
 	WorldId   world.Id         `json:"world_id"`
 	AccountId uint32           `json:"account_id"`
 	Capacity  uint32           `json:"capacity"`
-	Mesos     uint64           `json:"mesos"`
+	Mesos     uint32           `json:"mesos"`
 	Assets    []AssetRestModel `json:"-"`
 }
 

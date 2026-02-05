@@ -1,12 +1,14 @@
 package _map
 
 import (
+	"strconv"
+
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/jtumidanski/api2go/jsonapi"
 )
 
 type RestModel struct {
-	Id                string  `json:"-"`
+	Id                _map.Id `json:"-"`
 	Name              string  `json:"name"`
 	StreetName        string  `json:"streetName"`
 	ReturnMapId       _map.Id `json:"returnMapId"`
@@ -34,11 +36,15 @@ func (r RestModel) GetName() string {
 }
 
 func (r RestModel) GetID() string {
-	return r.Id
+	return strconv.Itoa(int(r.Id))
 }
 
 func (r *RestModel) SetID(idStr string) error {
-	r.Id = idStr
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		return err
+	}
+	r.Id = _map.Id(id)
 	return nil
 }
 

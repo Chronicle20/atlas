@@ -38,6 +38,7 @@ func NewModelBuilder(uniqueId uint32, field field.Model, monsterId uint32) *mode
 func CloneModel(m Model) *modelBuilder {
 	return &modelBuilder{
 		field:              m.field,
+		uniqueId:           m.uniqueId,
 		maxHp:              m.maxHp,
 		hp:                 m.hp,
 		mp:                 m.mp,

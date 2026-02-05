@@ -8,6 +8,7 @@ import (
 	"atlas-login/socket/model"
 	"atlas-login/socket/writer"
 	"context"
+
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -46,7 +47,7 @@ func RegisterPicHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.
 			l.WithError(err).Errorf("Unable to register PIC for account [%d].", s.AccountId())
 		}
 
-		c, err := channel.NewProcessor(l, ctx).GetById(s.WorldId(), s.ChannelId())
+		c, err := channel.NewProcessor(l, ctx).GetById(s.Channel())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve channel information being logged in to.")
 			err = serverIpFunc(s, writer.ServerIPBodySimpleError(l)(writer.ServerIPCodeServerUnderInspection))

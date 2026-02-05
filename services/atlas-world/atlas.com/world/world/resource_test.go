@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	channelConstant "github.com/Chronicle20/atlas-constants/channel"
 	"github.com/gorilla/mux"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 )
@@ -29,7 +30,7 @@ func TestHandleGetWorlds_NoChannelsRegistered(t *testing.T) {
 	// Ensure no channels exist for this tenant
 	servers := channel.GetChannelRegistry().ChannelServers(tenant)
 	for _, s := range servers {
-		_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, s.WorldId(), s.ChannelId())
+		_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, channelConstant.NewModel(s.WorldId(), s.ChannelId()))
 	}
 
 	// Create router with the world resource
@@ -63,7 +64,7 @@ func TestHandleGetWorld_NotFound(t *testing.T) {
 	// Ensure no channels exist for this tenant
 	servers := channel.GetChannelRegistry().ChannelServers(tenant)
 	for _, s := range servers {
-		_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, s.WorldId(), s.ChannelId())
+		_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, channelConstant.NewModel(s.WorldId(), s.ChannelId()))
 	}
 
 	// Create router with the world resource

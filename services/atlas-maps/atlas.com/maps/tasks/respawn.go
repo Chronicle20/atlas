@@ -6,12 +6,12 @@ import (
 	"atlas-maps/map/monster"
 	"atlas-maps/reactor"
 	"context"
-	"github.com/Chronicle20/atlas-constants/field"
+	"time"
+
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
-	"time"
 )
 
 const RespawnTask = "respawn_task"
@@ -36,9 +36,9 @@ func (r *Respawn) Run() {
 	for _, mk := range mks {
 		tctx := tenant.WithContext(ctx, mk.Tenant)
 		transactionId := uuid.New()
-		go func() {
-			_ = monster.NewProcessor(r.l, tctx).SpawnMonsters(transactionId)(mk.WorldId)(mk.ChannelId)(mk.MapId)
-		}()
+		go func(mk character.MapKey) {
+			_ = monster.NewProcessor(r.l, tctx).SpawnMonsters(transactionId, mk.Field)
+		}(mk)
 		go func(mk character.MapKey) {
 			rp := reactor.NewProcessor(r.l, tctx, producer.ProviderImpl(r.l)(tctx))
 			_ = rp.SpawnAndEmit(transactionId, mk.Field)

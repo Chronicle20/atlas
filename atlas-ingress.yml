@@ -129,11 +129,11 @@ data:
           proxy_pass http://atlas-cashshop.atlas.svc.cluster.local:8080;
         }
 
-        location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/drops(/.*)?$ {
+        location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/drops(/.*)?$ {
           proxy_pass http://atlas-drops.atlas.svc.cluster.local:8080;
         }
 
-        location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/chalkboards(/.*)?$ {
+        location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/chalkboards(/.*)?$ {
           proxy_pass http://atlas-chalkboards.atlas.svc.cluster.local:8080;
         }
 
@@ -141,7 +141,7 @@ data:
           proxy_pass http://atlas-chalkboards.atlas.svc.cluster.local:8080;
         }
 
-        location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/chairs(/.*)?$ {
+        location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/chairs(/.*)?$ {
           proxy_pass http://atlas-chairs.atlas.svc.cluster.local:8080;
         }
 
@@ -185,11 +185,11 @@ data:
           proxy_pass http://atlas-equipables.atlas.svc.cluster.local:8080;
         }
 
-        location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/characters(/.*)?$ {
+        location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/characters(/.*)?$ {
           proxy_pass http://atlas-maps.atlas.svc.cluster.local:8080;
         }
 
-        location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/monsters(/.*)?$ {
+        location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/monsters(/.*)?$ {
           proxy_pass http://atlas-monsters.atlas.svc.cluster.local:8080;
         }
 
@@ -233,7 +233,7 @@ data:
           proxy_pass http://atlas-transports.atlas.svc.cluster.local:8080;
         }
 
-        location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/reactors(/.*)?$ {
+        location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/reactors(/.*)?$ {
           proxy_pass http://atlas-reactors.atlas.svc.cluster.local:8080;
         }
 

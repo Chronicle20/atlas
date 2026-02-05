@@ -257,14 +257,14 @@ type GainClosenessPayload struct {
 // ValidationConditionInput represents a condition for character state validation
 // This is a simplified version for the shared library
 type ValidationConditionInput struct {
-	Type            string `json:"type"`
-	Operator        string `json:"operator"`
-	Value           int    `json:"value"`
-	ReferenceId     uint32 `json:"referenceId,omitempty"`
-	Step            string `json:"step,omitempty"`
-	WorldId         byte   `json:"worldId,omitempty"`
-	ChannelId       byte   `json:"channelId,omitempty"`
-	IncludeEquipped bool   `json:"includeEquipped,omitempty"`
+	Type            string     `json:"type"`
+	Operator        string     `json:"operator"`
+	Value           int        `json:"value"`
+	ReferenceId     uint32     `json:"referenceId,omitempty"`
+	Step            string     `json:"step,omitempty"`
+	WorldId         world.Id   `json:"worldId,omitempty"`
+	ChannelId       channel.Id `json:"channelId,omitempty"`
+	IncludeEquipped bool       `json:"includeEquipped,omitempty"`
 }
 
 // ValidateCharacterStatePayload represents the payload required to validate a character's state.
@@ -303,12 +303,13 @@ type SpawnMonsterPayload struct {
 	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
 	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
 	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
-	MapId       uint32     `json:"mapId"`       // MapId where monsters should spawn
-	MonsterId   uint32     `json:"monsterId"`   // MonsterId to spawn
-	X           int16      `json:"x"`           // X coordinate for spawn
-	Y           int16      `json:"y"`           // Y coordinate for spawn
-	Team        int8       `json:"team"`        // Team assignment (optional, defaults to 0)
-	Count       int        `json:"count"`       // Number of monsters to spawn (optional, defaults to 1)
+	MapId       _map.Id    `json:"mapId"`       // MapId where monsters should spawn
+	Instance    uuid.UUID  `json:"instance"`
+	MonsterId   uint32     `json:"monsterId"` // MonsterId to spawn
+	X           int16      `json:"x"`         // X coordinate for spawn
+	Y           int16      `json:"y"`         // Y coordinate for spawn
+	Team        int8       `json:"team"`      // Team assignment (optional, defaults to 0)
+	Count       int        `json:"count"`     // Number of monsters to spawn (optional, defaults to 1)
 }
 
 // CompleteQuestPayload represents the payload required to complete a quest.
@@ -447,10 +448,11 @@ type UnblockPortalPayload struct {
 // saga-orchestrator will fetch drop configuration from atlas-drop-information
 // and spawn drops via atlas-drops service.
 type SpawnReactorDropsPayload struct {
-	CharacterId    uint32     `json:"characterId"`    // Character who triggered the reactor
-	WorldId        world.Id   `json:"worldId"`        // WorldId for drop spawning
-	ChannelId      channel.Id `json:"channelId"`      // ChannelId for drop spawning
-	MapId          uint32     `json:"mapId"`          // MapId where drops should spawn
+	CharacterId    uint32     `json:"characterId"` // Character who triggered the reactor
+	WorldId        world.Id   `json:"worldId"`     // WorldId for drop spawning
+	ChannelId      channel.Id `json:"channelId"`   // ChannelId for drop spawning
+	MapId          _map.Id    `json:"mapId"`       // MapId where drops should spawn
+	Instance       uuid.UUID  `json:"instance"`
 	ReactorId      uint32     `json:"reactorId"`      // ReactorId for fetching drop configuration
 	Classification string     `json:"classification"` // Reactor classification string
 	X              int16      `json:"x"`              // Reactor X position (drop origin)

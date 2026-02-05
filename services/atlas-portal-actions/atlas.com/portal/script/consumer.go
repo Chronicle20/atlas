@@ -15,18 +15,20 @@ import (
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
 // commandEvent represents a Kafka command message
 type commandEvent[E any] struct {
-	WorldId   byte   `json:"worldId"`
-	ChannelId byte   `json:"channelId"`
-	MapId     uint32 `json:"mapId"`
-	PortalId  uint32 `json:"portalId"`
-	Type      string `json:"type"`
-	Body      E      `json:"body"`
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
+	MapId     _map.Id    `json:"mapId"`
+	Instance  uuid.UUID  `json:"instance"`
+	PortalId  uint32     `json:"portalId"`
+	Type      string     `json:"type"`
+	Body      E          `json:"body"`
 }
 
 // enterBody represents the body of an enter portal command
@@ -63,37 +65,38 @@ func handleEnterCommandFunc(l logrus.FieldLogger, db *gorm.DB) func(logrus.Field
 }
 
 // handleEnterCommand handles a portal enter command
-func handleEnterCommand(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, command commandEvent[enterBody]) {
+func handleEnterCommand(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, c commandEvent[enterBody]) {
 	l.Debugf("Received portal enter command for character [%d] on portal [%s] (id=%d) in map [%d]",
-		command.Body.CharacterId, command.Body.PortalName, command.PortalId, command.MapId)
+		c.Body.CharacterId, c.Body.PortalName, c.PortalId, c.MapId)
 
 	// Create field model from command
-	f := field.NewBuilder(world.Id(command.WorldId), channel.Id(command.ChannelId), _map.Id(command.MapId)).Build()
+	ch := channel.NewModel(c.WorldId, c.ChannelId)
+	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
 
 	// Create processor with tenant context from Kafka message
 	processor := NewProcessor(l, ctx, db)
 
 	// Process the portal script (pass numeric portalId for use in operations like block_portal)
-	result := processor.Process(f, command.Body.CharacterId, command.Body.PortalName, command.PortalId)
+	result := processor.Process(f, c.Body.CharacterId, c.Body.PortalName, c.PortalId)
 
 	if result.Error != nil {
 		l.WithError(result.Error).Errorf("Failed to process portal script [%s] for character [%d]",
-			command.Body.PortalName, command.Body.CharacterId)
+			c.Body.PortalName, c.Body.CharacterId)
 		// On error, enable character actions so they're not stuck
-		character.EnableActions(l)(ctx)(command.WorldId, command.ChannelId, command.Body.CharacterId)
+		character.EnableActions(l)(ctx)(ch, c.Body.CharacterId)
 		return
 	}
 
 	l.Debugf("Portal script [%s] result: allow=%t, matchedRule=%s",
-		command.Body.PortalName, result.Allow, result.MatchedRule)
+		c.Body.PortalName, result.Allow, result.MatchedRule)
 
 	// If not allowed, just enable character actions (they stay where they are)
 	if !result.Allow {
-		character.EnableActions(l)(ctx)(command.WorldId, command.ChannelId, command.Body.CharacterId)
+		character.EnableActions(l)(ctx)(ch, c.Body.CharacterId)
 		return
 	}
 
 	// If allowed with no explicit warp operation, enable actions
 	// (the portal itself may handle the warp in atlas-portals)
-	character.EnableActions(l)(ctx)(command.WorldId, command.ChannelId, command.Body.CharacterId)
+	character.EnableActions(l)(ctx)(ch, c.Body.CharacterId)
 }

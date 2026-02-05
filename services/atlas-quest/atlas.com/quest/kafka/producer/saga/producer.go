@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
@@ -66,7 +67,7 @@ func (b *Builder) AddAwardItem(characterId uint32, templateId uint32, quantity u
 }
 
 // AddAwardMesos adds a meso award step
-func (b *Builder) AddAwardMesos(characterId uint32, worldId byte, channelId byte, amount int32, actorId uint32) *Builder {
+func (b *Builder) AddAwardMesos(characterId uint32, ch channel.Model, amount int32, actorId uint32) *Builder {
 	b.stepCounter++
 	b.steps = append(b.steps, saga.Step{
 		Id:     stepId(b.stepCounter),
@@ -74,8 +75,8 @@ func (b *Builder) AddAwardMesos(characterId uint32, worldId byte, channelId byte
 		Action: saga.AwardMesos,
 		Payload: saga.AwardMesosPayload{
 			CharacterId: characterId,
-			WorldId:     worldId,
-			ChannelId:   channelId,
+			WorldId:     ch.WorldId(),
+			ChannelId:   ch.Id(),
 			ActorId:     actorId,
 			ActorType:   "quest",
 			Amount:      amount,
@@ -85,7 +86,7 @@ func (b *Builder) AddAwardMesos(characterId uint32, worldId byte, channelId byte
 }
 
 // AddAwardExperience adds an experience award step
-func (b *Builder) AddAwardExperience(characterId uint32, worldId byte, channelId byte, amount int32) *Builder {
+func (b *Builder) AddAwardExperience(characterId uint32, ch channel.Model, amount int32) *Builder {
 	b.stepCounter++
 	b.steps = append(b.steps, saga.Step{
 		Id:     stepId(b.stepCounter),
@@ -93,8 +94,8 @@ func (b *Builder) AddAwardExperience(characterId uint32, worldId byte, channelId
 		Action: saga.AwardExperience,
 		Payload: saga.AwardExperiencePayload{
 			CharacterId: characterId,
-			WorldId:     worldId,
-			ChannelId:   channelId,
+			WorldId:     ch.WorldId(),
+			ChannelId:   ch.Id(),
 			Distributions: []saga.ExperienceDistribution{
 				{
 					ExperienceType: "WHITE",
@@ -107,7 +108,7 @@ func (b *Builder) AddAwardExperience(characterId uint32, worldId byte, channelId
 }
 
 // AddAwardFame adds a fame award step
-func (b *Builder) AddAwardFame(characterId uint32, worldId byte, channelId byte, amount int16, actorId uint32) *Builder {
+func (b *Builder) AddAwardFame(characterId uint32, ch channel.Model, amount int16, actorId uint32) *Builder {
 	b.stepCounter++
 	b.steps = append(b.steps, saga.Step{
 		Id:     stepId(b.stepCounter),
@@ -115,8 +116,8 @@ func (b *Builder) AddAwardFame(characterId uint32, worldId byte, channelId byte,
 		Action: saga.AwardFame,
 		Payload: saga.AwardFamePayload{
 			CharacterId: characterId,
-			WorldId:     worldId,
-			ChannelId:   channelId,
+			WorldId:     ch.WorldId(),
+			ChannelId:   ch.Id(),
 			ActorId:     actorId,
 			ActorType:   "quest",
 			Amount:      amount,

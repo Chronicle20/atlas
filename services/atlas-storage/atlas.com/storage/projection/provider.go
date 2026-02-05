@@ -4,6 +4,8 @@ import (
 	"atlas-storage/asset"
 	"atlas-storage/storage"
 	"context"
+
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -11,8 +13,8 @@ import (
 
 // BuildProjection creates a new projection from storage data.
 // All compartment slices are initialized with ALL assets from storage.
-func BuildProjection(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID, ctx context.Context) func(characterId uint32, accountId uint32, worldId byte, npcId uint32) (Model, error) {
-	return func(characterId uint32, accountId uint32, worldId byte, npcId uint32) (Model, error) {
+func BuildProjection(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID, ctx context.Context) func(characterId uint32, accountId uint32, worldId world.Id, npcId uint32) (Model, error) {
+	return func(characterId uint32, accountId uint32, worldId world.Id, npcId uint32) (Model, error) {
 		// Get storage with decorated assets
 		s, err := storage.GetByWorldAndAccountId(l, db, tenantId, ctx)(worldId, accountId)
 		if err != nil {

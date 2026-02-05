@@ -4,6 +4,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
 	"strconv"
 	"time"
 )
@@ -13,6 +14,7 @@ type RestModel struct {
 	WorldId       world.Id   `json:"worldId"`
 	ChannelId     channel.Id `json:"channelId"`
 	MapId         _map.Id    `json:"mapId"`
+	Instance      uuid.UUID  `json:"instance"`
 	ItemId        uint32     `json:"itemId"`
 	EquipmentId   uint32     `json:"equipmentId"`
 	Quantity      uint32     `json:"quantity"`
@@ -53,6 +55,7 @@ func Transform(m Model) (RestModel, error) {
 		WorldId:       m.WorldId(),
 		ChannelId:     m.ChannelId(),
 		MapId:         m.MapId(),
+		Instance:      m.Instance(),
 		ItemId:        m.ItemId(),
 		EquipmentId:   m.EquipmentId(),
 		Quantity:      m.Quantity(),

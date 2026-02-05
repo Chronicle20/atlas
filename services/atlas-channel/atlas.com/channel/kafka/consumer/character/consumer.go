@@ -11,8 +11,11 @@ import (
 	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
+
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	_map2 "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/stat"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
@@ -64,21 +67,23 @@ func handleStatusEventStatChanged(sc server.Model, wp writer.Producer) func(l lo
 			return
 		}
 
-		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, statChanged(l)(ctx)(wp)(c, e.Body.ExclRequestSent, e.Body.Updates))
+		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, statChanged(l)(ctx)(wp)(c, e.Body.ExclRequestSent, e.Body.Updates))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to issue stat changed to character [%d].", e.CharacterId)
 		}
 
 		var hpChange bool
 		for _, u := range e.Body.Updates {
-			if u == writer.StatHp || u == writer.StatMaxHp {
+			if u == stat.TypeHP || u == stat.TypeMaxHP {
 				hpChange = true
 			}
 		}
 		if hpChange {
-			imf := party.OtherMemberInMap(sc.WorldId(), sc.ChannelId(), _map2.Id(c.MapId()), c.Id())
+			// TODO - field migration this seems like a bug not using instance
+			f := field.NewBuilder(e.WorldId, e.Body.ChannelId, c.MapId()).Build()
+			imf := party.OtherMemberInMap(f, c.Id())
 			oip := party.MemberToMemberIdMapper(party.FilteredMemberProvider(imf)(party.NewProcessor(l, ctx).ByMemberIdProvider(e.CharacterId)))
-			err = session.NewProcessor(l, ctx).ForEachByCharacterId(sc.WorldId(), sc.ChannelId())(oip, session.Announce(l)(ctx)(wp)(writer.PartyMemberHP)(writer.PartyMemberHPBody(c.Id(), c.Hp(), c.MaxHp())))
+			err = session.NewProcessor(l, ctx).ForEachByCharacterId(sc.Channel())(oip, session.Announce(l)(ctx)(wp)(writer.PartyMemberHP)(writer.PartyMemberHPBody(c.Id(), c.Hp(), c.MaxHp())))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce character [%d] health to party members.", c.Id())
 			}
@@ -86,69 +91,69 @@ func handleStatusEventStatChanged(sc server.Model, wp writer.Producer) func(l lo
 	}
 }
 
-func statChanged(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(c character.Model, exclRequestSent bool, updates []string) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(c character.Model, exclRequestSent bool, updates []string) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(c character.Model, exclRequestSent bool, updates []string) model.Operator[session.Model] {
-			return func(c character.Model, exclRequestSent bool, updates []string) model.Operator[session.Model] {
+func statChanged(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(c character.Model, exclRequestSent bool, updates []stat.Type) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(c character.Model, exclRequestSent bool, updates []stat.Type) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(c character.Model, exclRequestSent bool, updates []stat.Type) model.Operator[session.Model] {
+			return func(c character.Model, exclRequestSent bool, updates []stat.Type) model.Operator[session.Model] {
 				return func(s session.Model) error {
 					var su = make([]model2.StatUpdate, 0)
 					for _, update := range updates {
 						value := int64(0)
-						if update == writer.StatSkin {
+						if update == stat.TypeSkin {
 							value = int64(c.SkinColor())
-						} else if update == writer.StatFace {
+						} else if update == stat.TypeFace {
 							value = int64(c.Face())
-						} else if update == writer.StatHair {
+						} else if update == stat.TypeHair {
 							value = int64(c.Hair())
-						} else if update == writer.StatPetSn1 {
+						} else if update == stat.TypePetSn1 {
 							if len(c.Pets()) > 0 {
 								value = int64(c.Pets()[0].Id())
 							} else {
 								value = int64(0)
 							}
-						} else if update == writer.StatLevel {
+						} else if update == stat.TypeLevel {
 							value = int64(c.Level())
-						} else if update == writer.StatJob {
+						} else if update == stat.TypeJob {
 							value = int64(c.JobId())
-						} else if update == writer.StatStrength {
+						} else if update == stat.TypeStrength {
 							value = int64(c.Strength())
-						} else if update == writer.StatDexterity {
+						} else if update == stat.TypeDexterity {
 							value = int64(c.Dexterity())
-						} else if update == writer.StatIntelligence {
+						} else if update == stat.TypeIntelligence {
 							value = int64(c.Intelligence())
-						} else if update == writer.StatLuck {
+						} else if update == stat.TypeLuck {
 							value = int64(c.Luck())
-						} else if update == writer.StatHp {
+						} else if update == stat.TypeHP {
 							value = int64(c.Hp())
-						} else if update == writer.StatMaxHp {
+						} else if update == stat.TypeMaxHP {
 							value = int64(c.MaxHp())
-						} else if update == writer.StatMp {
+						} else if update == stat.TypeMP {
 							value = int64(c.Mp())
-						} else if update == writer.StatMaxMp {
+						} else if update == stat.TypeMaxMP {
 							value = int64(c.MaxMp())
-						} else if update == writer.StatAvailableAp {
+						} else if update == stat.TypeAvailableAP {
 							value = int64(c.Ap())
-						} else if update == writer.StatAvailableSp {
+						} else if update == stat.TypeAvailableSP {
 							value = int64(c.Sp()[0])
-						} else if update == writer.StatExperience {
+						} else if update == stat.TypeExperience {
 							value = int64(c.Experience())
-						} else if update == writer.StatFame {
+						} else if update == stat.TypeFame {
 							value = int64(c.Fame())
-						} else if update == writer.StatMeso {
+						} else if update == stat.TypeMeso {
 							value = int64(c.Meso())
-						} else if update == writer.StatPetSn2 {
+						} else if update == stat.TypePetSn2 {
 							if len(c.Pets()) > 1 {
 								value = int64(c.Pets()[1].Id())
 							} else {
 								value = int64(0)
 							}
-						} else if update == writer.StatPetSn3 {
+						} else if update == stat.TypePetSn3 {
 							if len(c.Pets()) > 2 {
 								value = int64(c.Pets()[2].Id())
 							} else {
 								value = int64(0)
 							}
-						} else if update == writer.StatGachaponExperience {
+						} else if update == stat.TypeGachaponExperience {
 							value = int64(c.GachaponExperience())
 						}
 						su = append(su, model2.NewStatUpdate(update, value))
@@ -176,7 +181,7 @@ func handleStatusEventMapChanged(sc server.Model, wp writer.Producer) func(l log
 			return
 		}
 
-		session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(event.CharacterId, warpCharacter(l)(ctx)(wp)(event))
+		session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(event.CharacterId, warpCharacter(l)(ctx)(wp)(event))
 	}
 }
 
@@ -216,7 +221,7 @@ func handleStatusEventExperienceChanged(sc server.Model, wp writer.Producer) mes
 			return
 		}
 
-		session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, announceExperienceGain(l)(ctx)(wp)(e.Body.Distributions))
+		session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, announceExperienceGain(l)(ctx)(wp)(e.Body.Distributions))
 	}
 }
 
@@ -299,11 +304,11 @@ func handleStatusEventFameChanged(sc server.Model, wp writer.Producer) message.H
 				return
 			}
 
-			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, receiveFame(l)(ctx)(wp)(ac.Name(), e.Body.Amount))
+			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, receiveFame(l)(ctx)(wp)(ac.Name(), e.Body.Amount))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to notify character [%d] they received fame [%d] from [%s].", e.CharacterId, e.Body.Amount, ac.Name())
 			}
-			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.ActorId, giveFame(l)(ctx)(wp)(c.Name(), e.Body.Amount, c.Fame()))
+			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.ActorId, giveFame(l)(ctx)(wp)(c.Name(), e.Body.Amount, c.Fame()))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to notify character [%d] they received fame [%d] from [%s].", e.Body.ActorId, e.Body.Amount, c.Name())
 			}
@@ -341,7 +346,7 @@ func handleStatusEventMesoChanged(sc server.Model, wp writer.Producer) message.H
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, mesoChanged(l)(ctx)(wp)(e.Body.Amount))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, mesoChanged(l)(ctx)(wp)(e.Body.Amount))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to notify character [%d] they received meso [%d].", e.CharacterId, e.Body.Amount)
 		}
@@ -368,9 +373,9 @@ func handleStatusEventLevelChanged(sc server.Model, wp writer.Producer) message.
 			return
 		}
 
-		session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
+		session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
 			_ = session.Announce(l)(ctx)(wp)(writer.CharacterEffect)(writer.CharacterLevelUpEffectBody(l)())(s)
-			_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Map(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.CharacterEffectForeign)(writer.CharacterLevelUpEffectForeignBody(l)(s.CharacterId())))
+			_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.CharacterEffectForeign)(writer.CharacterLevelUpEffectForeignBody(l)(s.CharacterId())))
 			return nil
 		})
 

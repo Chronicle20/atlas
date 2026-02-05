@@ -6,6 +6,7 @@ import (
 	message "atlas-effective-stats/kafka/message/session"
 	"context"
 
+	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	kafkaMessage "github.com/Chronicle20/atlas-kafka/message"
@@ -49,7 +50,8 @@ func handleSessionCreated(l logrus.FieldLogger, ctx context.Context, e message.S
 	l.Debugf("Session created for character [%d] on world [%d] channel [%d].", e.CharacterId, e.WorldId, e.ChannelId)
 
 	// Initialize effective stats for this character
-	if err := character.InitializeCharacter(l, ctx, e.CharacterId, byte(e.WorldId), byte(e.ChannelId)); err != nil {
+	ch := channel.NewModel(e.WorldId, e.ChannelId)
+	if err := character.InitializeCharacter(l, ctx, e.CharacterId, ch); err != nil {
 		l.WithError(err).Warnf("Failed to initialize effective stats for character [%d].", e.CharacterId)
 	}
 }

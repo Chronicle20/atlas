@@ -9,6 +9,8 @@ import (
 	"atlas-login/socket/writer"
 	"atlas-login/world"
 	"context"
+
+	world2 "github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
@@ -20,7 +22,7 @@ func CharacterViewAllSelectedHandleFunc(l logrus.FieldLogger, ctx context.Contex
 	sp := session.NewProcessor(l, ctx)
 	return func(s session.Model, r *request.Reader) {
 		characterId := r.ReadUint32()
-		worldId := r.ReadUint32()
+		worldId := world2.Id(r.ReadUint32())
 		macAddress := r.ReadAsciiString()
 		macAddressWithHDDSerial := r.ReadAsciiString()
 		l.Debugf("Character [%d] attempting to login via view all. worldId [%d], macAddress [%s], macAddressWithHDDSerial [%s].", characterId, worldId, macAddress, macAddressWithHDDSerial)
@@ -32,7 +34,7 @@ func CharacterViewAllSelectedHandleFunc(l logrus.FieldLogger, ctx context.Contex
 			return
 		}
 
-		if c.WorldId() != byte(worldId) {
+		if c.WorldId() != worldId {
 			l.Errorf("Character is not part of world provided by client. Potential packet exploit from [%d]. Terminating session.", s.AccountId())
 			_ = sp.Destroy(s)
 			return
@@ -44,7 +46,7 @@ func CharacterViewAllSelectedHandleFunc(l logrus.FieldLogger, ctx context.Contex
 			return
 		}
 
-		w, err := world.NewProcessor(l, ctx).GetById(byte(worldId))
+		w, err := world.NewProcessor(l, ctx).GetById(worldId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to get world [%d].", worldId)
 			// TODO issue error
@@ -57,9 +59,9 @@ func CharacterViewAllSelectedHandleFunc(l logrus.FieldLogger, ctx context.Contex
 			return
 		}
 
-		s = sp.SetWorldId(s.SessionId(), byte(worldId))
+		s = sp.SetWorldId(s.SessionId(), worldId)
 
-		ch, err := channel.NewProcessor(l, ctx).GetRandomInWorld(byte(worldId))
+		ch, err := channel.NewProcessor(l, ctx).GetRandomInWorld(worldId)
 		s = sp.SetChannelId(s.SessionId(), ch.ChannelId())
 
 		err = as.NewProcessor(l, ctx).UpdateState(s.SessionId(), s.AccountId(), 2, model.ChannelSelect{IPAddress: ch.IpAddress(), Port: uint16(ch.Port()), CharacterId: characterId})

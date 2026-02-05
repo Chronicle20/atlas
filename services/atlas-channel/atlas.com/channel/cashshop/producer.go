@@ -2,35 +2,36 @@ package cashshop
 
 import (
 	"atlas-channel/kafka/message/cashshop"
-	_map "github.com/Chronicle20/atlas-constants/map"
+
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 )
 
-func CharacterEnterCashShopStatusEventProvider(actorId uint32, m _map.Model) model.Provider[[]kafka.Message] {
+func CharacterEnterCashShopStatusEventProvider(actorId uint32, f field.Model) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(actorId))
 	value := &cashshop.StatusEvent[cashshop.CharacterMovementBody]{
-		WorldId: m.WorldId(),
+		WorldId: f.WorldId(),
 		Type:    cashshop.EventCashShopStatusTypeCharacterEnter,
 		Body: cashshop.CharacterMovementBody{
 			CharacterId: actorId,
-			ChannelId:   m.ChannelId(),
-			MapId:       m.MapId(),
+			ChannelId:   f.ChannelId(),
+			MapId:       f.MapId(),
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func CharacterExitCashShopStatusEventProvider(actorId uint32, m _map.Model) model.Provider[[]kafka.Message] {
+func CharacterExitCashShopStatusEventProvider(actorId uint32, f field.Model) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(actorId))
 	value := &cashshop.StatusEvent[cashshop.CharacterMovementBody]{
-		WorldId: m.WorldId(),
+		WorldId: f.WorldId(),
 		Type:    cashshop.EventCashShopStatusTypeCharacterExit,
 		Body: cashshop.CharacterMovementBody{
 			CharacterId: actorId,
-			ChannelId:   m.ChannelId(),
-			MapId:       m.MapId(),
+			ChannelId:   f.ChannelId(),
+			MapId:       f.MapId(),
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/world"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -45,7 +46,7 @@ func testDatabase(t *testing.T) *gorm.DB {
 	return db
 }
 
-func createTestStorage(t *testing.T, db *gorm.DB, tenantId uuid.UUID, worldId byte, accountId uint32) storage.Model {
+func createTestStorage(t *testing.T, db *gorm.DB, tenantId uuid.UUID, worldId world.Id, accountId uint32) storage.Model {
 	s, err := storage.Create(testLogger(), db, tenantId)(worldId, accountId)
 	if err != nil {
 		t.Fatalf("Failed to create test storage: %v", err)

@@ -30,7 +30,7 @@ func TestHandleEventStatus_ChannelStarted(t *testing.T) {
 
 	// Create the event
 	event := channel2.StatusEvent{
-		Type:      channel2.StatusTypeStarted,
+		Type:      channel3.StatusTypeStarted,
 		WorldId:   0,
 		ChannelId: 1,
 		IpAddress: "127.0.0.1",
@@ -66,7 +66,7 @@ func TestHandleEventStatus_ChannelShutdown(t *testing.T) {
 
 	// First, register a channel
 	startEvent := channel2.StatusEvent{
-		Type:      channel2.StatusTypeStarted,
+		Type:      channel3.StatusTypeStarted,
 		WorldId:   0,
 		ChannelId: 2,
 		IpAddress: "127.0.0.1",
@@ -81,7 +81,7 @@ func TestHandleEventStatus_ChannelShutdown(t *testing.T) {
 
 	// Now send shutdown event
 	shutdownEvent := channel2.StatusEvent{
-		Type:      channel2.StatusTypeShutdown,
+		Type:      channel3.StatusTypeShutdown,
 		WorldId:   0,
 		ChannelId: 2,
 		IpAddress: "127.0.0.1",
@@ -146,9 +146,9 @@ func TestHandleEventStatus_MultipleChannels(t *testing.T) {
 
 	// Register multiple channels
 	events := []channel2.StatusEvent{
-		{Type: channel2.StatusTypeStarted, WorldId: 0, ChannelId: 1, IpAddress: "127.0.0.1", Port: 8484},
-		{Type: channel2.StatusTypeStarted, WorldId: 0, ChannelId: 2, IpAddress: "127.0.0.1", Port: 8485},
-		{Type: channel2.StatusTypeStarted, WorldId: 1, ChannelId: 1, IpAddress: "127.0.0.1", Port: 8486},
+		{Type: channel3.StatusTypeStarted, WorldId: 0, ChannelId: 1, IpAddress: "127.0.0.1", Port: 8484},
+		{Type: channel3.StatusTypeStarted, WorldId: 0, ChannelId: 2, IpAddress: "127.0.0.1", Port: 8485},
+		{Type: channel3.StatusTypeStarted, WorldId: 1, ChannelId: 1, IpAddress: "127.0.0.1", Port: 8486},
 	}
 
 	for _, event := range events {
@@ -176,7 +176,7 @@ func TestHandleEventStatus_DuplicateChannelIgnored(t *testing.T) {
 
 	// Register the same channel twice
 	event := channel2.StatusEvent{
-		Type:      channel2.StatusTypeStarted,
+		Type:      channel3.StatusTypeStarted,
 		WorldId:   0,
 		ChannelId: 5,
 		IpAddress: "127.0.0.1",

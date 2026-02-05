@@ -2,13 +2,14 @@ package buddylist
 
 import (
 	"atlas-channel/kafka/message/buddylist"
+	"github.com/Chronicle20/atlas-constants/character"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 )
 
-func RequestAddBuddyCommandProvider(characterId uint32, worldId world.Id, targetId uint32, group string) model.Provider[[]kafka.Message] {
+func RequestAddBuddyCommandProvider(characterId character.Id, worldId world.Id, targetId character.Id, group string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &buddylist.Command[buddylist.RequestAddBuddyCommandBody]{
 		WorldId:     worldId,
@@ -22,7 +23,7 @@ func RequestAddBuddyCommandProvider(characterId uint32, worldId world.Id, target
 	return producer.SingleMessageProvider(key, value)
 }
 
-func RequestDeleteBuddyCommandProvider(characterId uint32, worldId world.Id, targetId uint32) model.Provider[[]kafka.Message] {
+func RequestDeleteBuddyCommandProvider(characterId character.Id, worldId world.Id, targetId character.Id) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &buddylist.Command[buddylist.RequestDeleteBuddyCommandBody]{
 		WorldId:     worldId,

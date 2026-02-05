@@ -1,9 +1,10 @@
 package chalkboard
 
 import (
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
 )
 
 const (
@@ -16,9 +17,10 @@ type Command[E any] struct {
 	WorldId     world.Id   `json:"worldId"`
 	ChannelId   channel.Id `json:"channelId"`
 	MapId       _map.Id    `json:"mapId"`
-	CharacterId uint32 `json:"characterId"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	Instance    uuid.UUID  `json:"instance"`
+	CharacterId uint32     `json:"characterId"`
+	Type        string     `json:"type"`
+	Body        E          `json:"body"`
 }
 
 type SetCommandBody struct {
@@ -38,9 +40,10 @@ type StatusEvent[E any] struct {
 	WorldId     world.Id   `json:"worldId"`
 	ChannelId   channel.Id `json:"channelId"`
 	MapId       _map.Id    `json:"mapId"`
-	CharacterId uint32 `json:"characterId"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	Instance    uuid.UUID  `json:"instance"`
+	CharacterId uint32     `json:"characterId"`
+	Type        string     `json:"type"`
+	Body        E          `json:"body"`
 }
 
 type SetStatusEventBody struct {

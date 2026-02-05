@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	channelConstant "github.com/Chronicle20/atlas-constants/channel"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	logtest "github.com/sirupsen/logrus/hooks/test"
@@ -30,13 +31,13 @@ func TestHandleGetChannelServers_Success(t *testing.T) {
 
 	// Register some test channels
 	processor := channel.NewProcessor(logger, ctx)
-	_, _ = processor.Register(1, 0, "192.168.1.1", 8080, 0, 100)
-	_, _ = processor.Register(1, 1, "192.168.1.2", 8081, 50, 100)
+	_, _ = processor.Register(channelConstant.NewModel(1, 0), "192.168.1.1", 8080, 0, 100)
+	_, _ = processor.Register(channelConstant.NewModel(1, 1), "192.168.1.2", 8081, 50, 100)
 
 	// Clean up after test
 	defer func() {
-		_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, 1, 0)
-		_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, 1, 1)
+		_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, channelConstant.NewModel(1, 0))
+		_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, channelConstant.NewModel(1, 1))
 	}()
 
 	// Create router with the channel resource
@@ -76,7 +77,7 @@ func TestHandleGetChannelServers_Empty(t *testing.T) {
 	servers := channel.GetChannelRegistry().ChannelServers(tenant)
 	for _, s := range servers {
 		if s.WorldId() == 99 {
-			_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, s.WorldId(), s.ChannelId())
+			_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, channelConstant.NewModel(s.WorldId(), s.ChannelId()))
 		}
 	}
 
@@ -111,11 +112,11 @@ func TestHandleGetChannel_Success(t *testing.T) {
 
 	// Register a test channel
 	processor := channel.NewProcessor(logger, ctx)
-	_, _ = processor.Register(1, 2, "192.168.1.1", 8080, 50, 100)
+	_, _ = processor.Register(channelConstant.NewModel(1, 2), "192.168.1.1", 8080, 50, 100)
 
 	// Clean up after test
 	defer func() {
-		_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, 1, 2)
+		_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, channelConstant.NewModel(1, 2))
 	}()
 
 	// Create router with the channel resource

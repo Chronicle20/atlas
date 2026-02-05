@@ -6,6 +6,7 @@ import (
 	"context"
 	"testing"
 
+	channel2 "github.com/Chronicle20/atlas-constants/channel"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -26,7 +27,8 @@ func setupProcessor(t *testing.T) (channel.Processor, tenant.Model, func()) {
 		// Clean up registered channels for this tenant
 		servers := channel.GetChannelRegistry().ChannelServers(tenant)
 		for _, s := range servers {
-			_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, s.WorldId(), s.ChannelId())
+			ch := channel2.NewModel(s.WorldId(), s.ChannelId())
+			_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, ch)
 		}
 	}
 
@@ -60,9 +62,9 @@ func TestAllProvider_WithChannels(t *testing.T) {
 	defer cleanup()
 
 	// Register some channels
-	_, _ = processor.Register(1, 0, "192.168.1.1", 8080, 0, 100)
-	_, _ = processor.Register(1, 1, "192.168.1.2", 8081, 0, 100)
-	_, _ = processor.Register(2, 0, "192.168.1.3", 8082, 0, 100)
+	_, _ = processor.Register(channel2.NewModel(1, 0), "192.168.1.1", 8080, 0, 100)
+	_, _ = processor.Register(channel2.NewModel(1, 1), "192.168.1.2", 8081, 0, 100)
+	_, _ = processor.Register(channel2.NewModel(2, 0), "192.168.1.3", 8082, 0, 100)
 
 	channels, err := processor.AllProvider()()
 	if err != nil {
@@ -78,9 +80,9 @@ func TestGetByWorld(t *testing.T) {
 	defer cleanup()
 
 	// Register channels in different worlds
-	_, _ = processor.Register(1, 0, "192.168.1.1", 8080, 0, 100)
-	_, _ = processor.Register(1, 1, "192.168.1.2", 8081, 0, 100)
-	_, _ = processor.Register(2, 0, "192.168.1.3", 8082, 0, 100)
+	_, _ = processor.Register(channel2.NewModel(1, 0), "192.168.1.1", 8080, 0, 100)
+	_, _ = processor.Register(channel2.NewModel(1, 1), "192.168.1.2", 8081, 0, 100)
+	_, _ = processor.Register(channel2.NewModel(2, 0), "192.168.1.3", 8082, 0, 100)
 
 	// Get channels for world 1
 	channels, err := processor.GetByWorld(1)
@@ -103,7 +105,7 @@ func TestGetByWorld_Empty(t *testing.T) {
 	defer cleanup()
 
 	// Register channels in world 1 only
-	_, _ = processor.Register(1, 0, "192.168.1.1", 8080, 0, 100)
+	_, _ = processor.Register(channel2.NewModel(1, 0), "192.168.1.1", 8080, 0, 100)
 
 	// Get channels for world 2 (none)
 	channels, err := processor.GetByWorld(2)
@@ -119,8 +121,8 @@ func TestByWorldProvider(t *testing.T) {
 	processor, _, cleanup := setupProcessor(t)
 	defer cleanup()
 
-	_, _ = processor.Register(1, 0, "192.168.1.1", 8080, 0, 100)
-	_, _ = processor.Register(2, 0, "192.168.1.2", 8081, 0, 100)
+	_, _ = processor.Register(channel2.NewModel(1, 0), "192.168.1.1", 8080, 0, 100)
+	_, _ = processor.Register(channel2.NewModel(2, 0), "192.168.1.2", 8081, 0, 100)
 
 	provider := processor.ByWorldProvider(1)
 	channels, err := provider()
@@ -136,9 +138,9 @@ func TestGetById(t *testing.T) {
 	processor, _, cleanup := setupProcessor(t)
 	defer cleanup()
 
-	registered, _ := processor.Register(1, 2, "192.168.1.1", 8080, 50, 100)
+	registered, _ := processor.Register(channel2.NewModel(1, 2), "192.168.1.1", 8080, 50, 100)
 
-	ch, err := processor.GetById(1, 2)
+	ch, err := processor.GetById(channel2.NewModel(1, 2))
 	if err != nil {
 		t.Fatalf("GetById() unexpected error: %v", err)
 	}
@@ -157,7 +159,7 @@ func TestGetById_NotFound(t *testing.T) {
 	processor, _, cleanup := setupProcessor(t)
 	defer cleanup()
 
-	_, err := processor.GetById(99, 99)
+	_, err := processor.GetById(channel2.NewModel(99, 99))
 	if err == nil {
 		t.Error("GetById() expected error for non-existent channel")
 	}
@@ -166,15 +168,15 @@ func TestGetById_NotFound(t *testing.T) {
 func TestByIdProvider(t *testing.T) {
 	processor, _, cleanup := setupProcessor(t)
 	defer cleanup()
+	ch := channel2.NewModel(1, 0)
+	registered, _ := processor.Register(ch, "192.168.1.1", 8080, 0, 100)
 
-	registered, _ := processor.Register(1, 0, "192.168.1.1", 8080, 0, 100)
-
-	provider := processor.ByIdProvider(1, 0)
-	ch, err := provider()
+	provider := processor.ByIdProvider(ch)
+	m, err := provider()
 	if err != nil {
 		t.Fatalf("ByIdProvider() unexpected error: %v", err)
 	}
-	if ch.Id() != registered.Id() {
+	if m.Id() != registered.Id() {
 		t.Errorf("ByIdProvider() returned different channel")
 	}
 }
@@ -183,7 +185,7 @@ func TestByIdProvider_NotFound(t *testing.T) {
 	processor, _, cleanup := setupProcessor(t)
 	defer cleanup()
 
-	provider := processor.ByIdProvider(99, 99)
+	provider := processor.ByIdProvider(channel2.NewModel(99, 99))
 	_, err := provider()
 	if err == nil {
 		t.Error("ByIdProvider() expected error for non-existent channel")
@@ -194,7 +196,7 @@ func TestProcessor_Register(t *testing.T) {
 	processor, _, cleanup := setupProcessor(t)
 	defer cleanup()
 
-	ch, err := processor.Register(1, 0, "192.168.1.1", 8080, 50, 100)
+	ch, err := processor.Register(channel2.NewModel(1, 0), "192.168.1.1", 8080, 50, 100)
 	if err != nil {
 		t.Fatalf("Register() unexpected error: %v", err)
 	}
@@ -225,20 +227,21 @@ func TestProcessor_Register_InvalidInput(t *testing.T) {
 	processor, _, cleanup := setupProcessor(t)
 	defer cleanup()
 
+	ch := channel2.NewModel(1, 0)
 	// Invalid port
-	_, err := processor.Register(1, 0, "192.168.1.1", 0, 0, 100)
+	_, err := processor.Register(ch, "192.168.1.1", 0, 0, 100)
 	if err == nil {
 		t.Error("Register() expected error for invalid port")
 	}
 
 	// Empty IP
-	_, err = processor.Register(1, 0, "", 8080, 0, 100)
+	_, err = processor.Register(ch, "", 8080, 0, 100)
 	if err == nil {
 		t.Error("Register() expected error for empty IP address")
 	}
 
 	// Zero max capacity
-	_, err = processor.Register(1, 0, "192.168.1.1", 8080, 0, 0)
+	_, err = processor.Register(ch, "192.168.1.1", 8080, 0, 0)
 	if err == nil {
 		t.Error("Register() expected error for zero max capacity")
 	}
@@ -248,15 +251,16 @@ func TestUnregister(t *testing.T) {
 	processor, _, cleanup := setupProcessor(t)
 	defer cleanup()
 
-	_, _ = processor.Register(1, 0, "192.168.1.1", 8080, 0, 100)
+	ch := channel2.NewModel(1, 0)
+	_, _ = processor.Register(ch, "192.168.1.1", 8080, 0, 100)
 
-	err := processor.Unregister(1, 0)
+	err := processor.Unregister(ch)
 	if err != nil {
 		t.Fatalf("Unregister() unexpected error: %v", err)
 	}
 
 	// Verify channel is unregistered
-	_, err = processor.GetById(1, 0)
+	_, err = processor.GetById(ch)
 	if err == nil {
 		t.Error("Channel should have been unregistered")
 	}
@@ -266,7 +270,8 @@ func TestUnregister_NotFound(t *testing.T) {
 	processor, _, cleanup := setupProcessor(t)
 	defer cleanup()
 
-	err := processor.Unregister(99, 99)
+	ch := channel2.NewModel(99, 99)
+	err := processor.Unregister(ch)
 	if err == nil {
 		t.Error("Unregister() expected error for non-existent channel")
 	}
@@ -314,10 +319,11 @@ func TestProcessorTenantIsolation(t *testing.T) {
 	processor2 := channel.NewProcessor(logger, ctx2)
 
 	// Register channel with tenant 1
-	ch1, _ := processor1.Register(1, 0, "192.168.1.1", 8080, 0, 100)
+	ch := channel2.NewModel(1, 0)
+	ch1, _ := processor1.Register(ch, "192.168.1.1", 8080, 0, 100)
 
 	// Register channel with tenant 2
-	ch2, _ := processor2.Register(1, 0, "192.168.1.2", 8081, 0, 100)
+	ch2, _ := processor2.Register(ch, "192.168.1.2", 8081, 0, 100)
 
 	// Verify tenant 1 only sees their channel
 	channels1, _ := processor1.AllProvider()()
@@ -340,8 +346,8 @@ func TestProcessorTenantIsolation(t *testing.T) {
 	// Cleanup
 	tenant1 := test.CreateMockTenant(tenant1Id)
 	tenant2 := test.CreateMockTenant(tenant2Id)
-	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant1, 1, 0)
-	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant2, 1, 0)
+	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant1, ch)
+	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant2, ch)
 }
 
 func TestNewProcessor_ExtractsTenantFromContext(t *testing.T) {
@@ -357,14 +363,16 @@ func TestNewProcessor_ExtractsTenantFromContext(t *testing.T) {
 	}
 
 	// Register and verify it works
-	ch, err := processor.Register(1, 0, "192.168.1.1", 8080, 0, 100)
+	ch := channel2.NewModel(1, 0)
+	m, err := processor.Register(ch, "192.168.1.1", 8080, 0, 100)
 	if err != nil {
 		t.Fatalf("Register() unexpected error: %v", err)
 	}
 
 	// Cleanup
 	tenant := test.CreateMockTenant(tenantId)
-	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, ch.WorldId(), ch.ChannelId())
+	mch := channel2.NewModel(m.WorldId(), m.ChannelId())
+	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, mch)
 }
 
 func TestNewProcessor_PanicsWithoutTenant(t *testing.T) {

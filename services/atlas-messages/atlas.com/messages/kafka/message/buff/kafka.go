@@ -1,8 +1,13 @@
 package buff
 
 import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -12,11 +17,13 @@ const (
 )
 
 type Command[E any] struct {
-	WorldId     byte   `json:"worldId"`
-	ChannelId   byte   `json:"channelId"`
-	CharacterId uint32 `json:"characterId"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	WorldId     world.Id   `json:"worldId"`
+	ChannelId   channel.Id `json:"channelId"`
+	MapId       _map.Id    `json:"mapId"`
+	Instance    uuid.UUID  `json:"instance"`
+	CharacterId uint32     `json:"characterId"`
+	Type        string     `json:"type"`
+	Body        E          `json:"body"`
 }
 
 type ApplyCommandBody struct {
@@ -31,11 +38,13 @@ type StatChange struct {
 	Amount int32  `json:"amount"`
 }
 
-func ApplyCommandProvider(worldId byte, channelId byte, characterId uint32, fromId uint32, sourceId int32, duration int32, changes []StatChange) model.Provider[[]kafka.Message] {
+func ApplyCommandProvider(field field.Model, characterId uint32, fromId uint32, sourceId int32, duration int32, changes []StatChange) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := Command[ApplyCommandBody]{
-		WorldId:     worldId,
-		ChannelId:   channelId,
+		WorldId:     field.WorldId(),
+		ChannelId:   field.ChannelId(),
+		MapId:       field.MapId(),
+		Instance:    field.Instance(),
 		CharacterId: characterId,
 		Type:        CommandTypeApply,
 		Body: ApplyCommandBody{

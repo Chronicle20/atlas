@@ -4,6 +4,8 @@ import (
 	"atlas-guilds/guild/member"
 	"atlas-guilds/guild/title"
 	"errors"
+
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 )
 
@@ -11,7 +13,7 @@ import (
 type Builder struct {
 	tenantId            *uuid.UUID
 	id                  *uint32
-	worldId             *byte
+	worldId             *world.Id
 	name                *string
 	notice              *string
 	points              *uint32
@@ -26,7 +28,7 @@ type Builder struct {
 }
 
 // NewBuilder creates a new builder with required parameters
-func NewBuilder(tenantId uuid.UUID, id uint32, worldId byte, name string, leaderId uint32) *Builder {
+func NewBuilder(tenantId uuid.UUID, id uint32, worldId world.Id, name string, leaderId uint32) *Builder {
 	return &Builder{
 		tenantId: &tenantId,
 		id:       &id,

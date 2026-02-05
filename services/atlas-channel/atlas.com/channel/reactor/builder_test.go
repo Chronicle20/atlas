@@ -5,19 +5,22 @@ import (
 	"testing"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 )
 
 func TestNewModelBuilder(t *testing.T) {
-	builder := reactor.NewModelBuilder(world.Id(0), channel.Id(1), _map.Id(100000000), 100, "testReactor")
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(100000000)).Build()
+	builder := reactor.NewModelBuilder(f, 100, "testReactor")
 	if builder == nil {
 		t.Fatal("Expected builder to be initialized")
 	}
 }
 
 func TestBuild_AllFieldsSet(t *testing.T) {
-	model, err := reactor.NewModelBuilder(world.Id(0), channel.Id(1), _map.Id(100000000), 100, "testReactor").
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(100000000)).Build()
+	model, err := reactor.NewModelBuilder(f, 100, "testReactor").
 		SetId(1).
 		SetState(1).
 		SetEventState(2).
@@ -41,7 +44,8 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 }
 
 func TestBuild_MissingId(t *testing.T) {
-	_, err := reactor.NewModelBuilder(world.Id(0), channel.Id(1), _map.Id(100000000), 100, "testReactor").
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(100000000)).Build()
+	_, err := reactor.NewModelBuilder(f, 100, "testReactor").
 		Build()
 
 	if err != reactor.ErrInvalidId {
@@ -56,7 +60,8 @@ func TestMustBuild_Success(t *testing.T) {
 		}
 	}()
 
-	model := reactor.NewModelBuilder(world.Id(0), channel.Id(1), _map.Id(100000000), 100, "testReactor").
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(100000000)).Build()
+	model := reactor.NewModelBuilder(f, 100, "testReactor").
 		SetId(1).
 		MustBuild()
 
@@ -72,11 +77,13 @@ func TestMustBuild_Panics(t *testing.T) {
 		}
 	}()
 
-	reactor.NewModelBuilder(world.Id(0), channel.Id(1), _map.Id(100000000), 100, "testReactor").MustBuild()
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(100000000)).Build()
+	reactor.NewModelBuilder(f, 100, "testReactor").MustBuild()
 }
 
 func TestCloneModel(t *testing.T) {
-	original, _ := reactor.NewModelBuilder(world.Id(0), channel.Id(1), _map.Id(100000000), 100, "testReactor").
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(100000000)).Build()
+	original, _ := reactor.NewModelBuilder(f, 100, "testReactor").
 		SetId(1).
 		SetPosition(100, 200).
 		Build()

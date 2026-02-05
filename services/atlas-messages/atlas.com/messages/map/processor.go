@@ -3,16 +3,20 @@ package _map
 import (
 	"atlas-messages/data/map"
 	"context"
+	"strconv"
+
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
+	_map2 "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
-	"strconv"
 )
 
 type Processor interface {
-	Exists(mapId uint32) bool
-	CharacterIdsInMapStringProvider(worldId byte, channelId byte, mapStr string) model.Provider[[]uint32]
-	CharacterIdsInMapProvider(worldId byte, channelId byte, mapId uint32) model.Provider[[]uint32]
+	Exists(mapId _map2.Id) bool
+	CharacterIdsInMapStringProvider(ch channel.Model, mapStr string) model.Provider[[]uint32]
+	CharacterIdsInFieldProvider(f field.Model) model.Provider[[]uint32]
 }
 
 type ProcessorImpl struct {
@@ -30,7 +34,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return p
 }
 
-func (p *ProcessorImpl) Exists(mapId uint32) bool {
+func (p *ProcessorImpl) Exists(mapId _map2.Id) bool {
 	_, err := p.dp.GetById(mapId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to find requested map [%d].", mapId)
@@ -39,14 +43,15 @@ func (p *ProcessorImpl) Exists(mapId uint32) bool {
 	return true
 }
 
-func (p *ProcessorImpl) CharacterIdsInMapStringProvider(worldId byte, channelId byte, mapStr string) model.Provider[[]uint32] {
+func (p *ProcessorImpl) CharacterIdsInMapStringProvider(ch channel.Model, mapStr string) model.Provider[[]uint32] {
 	mapId, err := strconv.ParseUint(mapStr, 10, 32)
 	if err != nil {
 		return model.ErrorProvider[[]uint32](err)
 	}
-	return p.CharacterIdsInMapProvider(worldId, channelId, uint32(mapId))
+	f := field.NewBuilder(ch.WorldId(), ch.Id(), _map2.Id(mapId)).Build()
+	return p.CharacterIdsInFieldProvider(f)
 }
 
-func (p *ProcessorImpl) CharacterIdsInMapProvider(worldId byte, channelId byte, mapId uint32) model.Provider[[]uint32] {
-	return requests.SliceProvider[RestModel, uint32](p.l, p.ctx)(requestCharactersInMap(worldId, channelId, mapId), Extract, model.Filters[uint32]())
+func (p *ProcessorImpl) CharacterIdsInFieldProvider(f field.Model) model.Provider[[]uint32] {
+	return requests.SliceProvider[RestModel, uint32](p.l, p.ctx)(requestCharactersInMap(f), Extract, model.Filters[uint32]())
 }

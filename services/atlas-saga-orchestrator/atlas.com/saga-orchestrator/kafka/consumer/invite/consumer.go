@@ -2,9 +2,10 @@ package invite
 
 import (
 	consumer2 "atlas-saga-orchestrator/kafka/consumer"
-	"atlas-saga-orchestrator/kafka/message/invite"
+	invite2 "atlas-saga-orchestrator/kafka/message/invite"
 	"atlas-saga-orchestrator/saga"
 	"context"
+	"github.com/Chronicle20/atlas-constants/invite"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -17,7 +18,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("invite_status_event")(invite.EnvEventStatusTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
+			rf(consumer2.NewConfig(l)("invite_status_event")(invite2.EnvEventStatusTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 		}
 	}
 }
@@ -25,15 +26,15 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) {
 	return func(rf func(topic string, handler handler.Handler) (string, error)) {
 		var t string
-		t, _ = topic.EnvProvider(l)(invite.EnvEventStatusTopic)()
+		t, _ = topic.EnvProvider(l)(invite2.EnvEventStatusTopic)()
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCreatedStatusEvent)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAcceptedStatusEvent)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRejectedStatusEvent)))
 	}
 }
 
-func handleCreatedStatusEvent(l logrus.FieldLogger, ctx context.Context, e invite.StatusEvent[invite.CreatedEventBody]) {
-	if e.Type != invite.EventInviteStatusTypeCreated {
+func handleCreatedStatusEvent(l logrus.FieldLogger, ctx context.Context, e invite2.StatusEvent[invite2.CreatedEventBody]) {
+	if e.Type != invite.StatusTypeCreated {
 		return
 	}
 
@@ -48,8 +49,8 @@ func handleCreatedStatusEvent(l logrus.FieldLogger, ctx context.Context, e invit
 	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
 }
 
-func handleAcceptedStatusEvent(l logrus.FieldLogger, ctx context.Context, e invite.StatusEvent[invite.AcceptedEventBody]) {
-	if e.Type != invite.EventInviteStatusTypeAccepted {
+func handleAcceptedStatusEvent(l logrus.FieldLogger, ctx context.Context, e invite2.StatusEvent[invite2.AcceptedEventBody]) {
+	if e.Type != invite.StatusTypeAccepted {
 		return
 	}
 
@@ -64,8 +65,8 @@ func handleAcceptedStatusEvent(l logrus.FieldLogger, ctx context.Context, e invi
 	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
 }
 
-func handleRejectedStatusEvent(l logrus.FieldLogger, ctx context.Context, e invite.StatusEvent[invite.RejectedEventBody]) {
-	if e.Type != invite.EventInviteStatusTypeRejected {
+func handleRejectedStatusEvent(l logrus.FieldLogger, ctx context.Context, e invite2.StatusEvent[invite2.RejectedEventBody]) {
+	if e.Type != invite.StatusTypeRejected {
 		return
 	}
 

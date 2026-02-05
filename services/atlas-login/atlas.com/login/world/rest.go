@@ -2,9 +2,11 @@ package world
 
 import (
 	"atlas-login/channel"
+	"strconv"
+
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/jtumidanski/api2go/jsonapi"
-	"strconv"
 )
 
 type RestModel struct {
@@ -17,6 +19,10 @@ type RestModel struct {
 	RecommendedMessage string              `json:"recommendedMessage"`
 	CapacityStatus     uint16              `json:"capacityStatus"`
 	Channels           []channel.RestModel `json:"-"`
+	ExpRate            float64             `json:"expRate"`
+	MesoRate           float64             `json:"mesoRate"`
+	ItemDropRate       float64             `json:"itemDropRate"`
+	QuestExpRate       float64             `json:"questExpRate"`
 }
 
 func (r RestModel) GetName() string {
@@ -113,7 +119,7 @@ func Extract(r RestModel) (Model, error) {
 	}
 
 	return NewBuilder().
-		SetId(byte(id)).
+		SetId(world.Id(id)).
 		SetName(r.Name).
 		SetState(State(r.State)).
 		SetMessage(r.Message).

@@ -5,13 +5,13 @@ FROM node:24-alpine AS builder
 WORKDIR /app
 
 # Copy package.json and package-lock.json (or yarn.lock) for dependency installation
-COPY package*.json ./
+COPY services/atlas-ui/package*.json ./
 
 # Install dependencies
 RUN npm install
 
 # Copy the rest of the application code
-COPY . .
+COPY services/atlas-ui/ .
 
 # Build the Next.js app
 RUN npm run build

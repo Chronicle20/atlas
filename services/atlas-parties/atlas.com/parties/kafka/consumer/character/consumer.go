@@ -6,6 +6,7 @@ import (
 	"atlas-parties/party"
 	"context"
 
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -48,7 +49,8 @@ func handleStatusEventLogin(l logrus.FieldLogger, ctx context.Context, e StatusE
 		WithField("mapId", e.Body.MapId).
 		Debugf("Processing login event for character [%d].", e.CharacterId)
 
-	err := character.NewProcessor(l, ctx).LoginAndEmit(byte(e.WorldId), byte(e.Body.ChannelId), uint32(e.Body.MapId), e.CharacterId)
+	f := field.NewBuilder(e.WorldId, e.Body.ChannelId, e.Body.MapId).Build()
+	err := character.NewProcessor(l, ctx).LoginAndEmit(f, e.CharacterId)
 	if err != nil {
 		l.WithError(err).
 			WithField("characterId", e.CharacterId).
@@ -111,7 +113,7 @@ func handleStatusEventChannelChanged(l logrus.FieldLogger, ctx context.Context, 
 		WithField("mapId", e.Body.MapId).
 		Debugf("Processing channel change event for character [%d].", e.CharacterId)
 
-	err := character.NewProcessor(l, ctx).ChannelChange(e.CharacterId, byte(e.Body.ChannelId))
+	err := character.NewProcessor(l, ctx).ChannelChange(e.CharacterId, e.Body.ChannelId)
 	if err != nil {
 		l.WithError(err).
 			WithField("characterId", e.CharacterId).
@@ -144,7 +146,7 @@ func handleMapChangedStatusEventLogout(l logrus.FieldLogger, ctx context.Context
 		WithField("channelId", e.Body.ChannelId).
 		Debugf("Processing map change event for character [%d].", e.CharacterId)
 
-	err := character.NewProcessor(l, ctx).MapChange(e.CharacterId, uint32(e.Body.TargetMapId))
+	err := character.NewProcessor(l, ctx).MapChange(e.CharacterId, e.Body.TargetMapId)
 	if err != nil {
 		l.WithError(err).
 			WithField("characterId", e.CharacterId).

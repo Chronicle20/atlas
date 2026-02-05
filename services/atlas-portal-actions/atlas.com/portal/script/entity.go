@@ -135,7 +135,7 @@ func ToEntity(m PortalScript, tenantId uuid.UUID) (Entity, error) {
 	return Entity{
 		TenantID: tenantId,
 		PortalID: m.PortalId(),
-		MapID:    m.MapId(),
+		MapID:    uint32(m.MapId()),
 		Data:     string(jsonData),
 	}, nil
 }

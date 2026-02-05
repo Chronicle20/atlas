@@ -6,6 +6,7 @@ import (
 	"atlas-maps/kafka/producer"
 	_map "atlas-maps/map"
 	"context"
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -36,8 +37,9 @@ func handleStatusEventEnter(l logrus.FieldLogger, ctx context.Context, event cas
 	if event.Type == cashshopKafka.EventCashShopStatusTypeCharacterEnter {
 		l.Debugf("Character [%d] has entered cash shop.", event.Body.CharacterId)
 		transactionId := uuid.New()
+		f := field.NewBuilder(event.WorldId, event.Body.ChannelId, event.Body.MapId).Build()
 		p := _map.NewProcessor(l, ctx, producer.ProviderImpl(l)(ctx))
-		_ = p.ExitAndEmit(transactionId, event.WorldId, event.Body.ChannelId, event.Body.MapId, event.Body.CharacterId)
+		_ = p.ExitAndEmit(transactionId, f, event.Body.CharacterId)
 		return
 	}
 }
@@ -46,8 +48,9 @@ func handleStatusEventExit(l logrus.FieldLogger, ctx context.Context, event cash
 	if event.Type == cashshopKafka.EventCashShopStatusTypeCharacterExit {
 		l.Debugf("Character [%d] has exited cash shop.", event.Body.CharacterId)
 		transactionId := uuid.New()
+		f := field.NewBuilder(event.WorldId, event.Body.ChannelId, event.Body.MapId).Build()
 		p := _map.NewProcessor(l, ctx, producer.ProviderImpl(l)(ctx))
-		_ = p.EnterAndEmit(transactionId, event.WorldId, event.Body.ChannelId, event.Body.MapId, event.Body.CharacterId)
+		_ = p.EnterAndEmit(transactionId, f, event.Body.CharacterId)
 		return
 	}
 }

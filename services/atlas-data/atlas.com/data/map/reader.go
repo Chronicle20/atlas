@@ -10,17 +10,19 @@ import (
 	"atlas-data/xml"
 	"context"
 	"fmt"
-	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-tenant"
-	"github.com/sirupsen/logrus"
 	"math"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"sync/atomic"
+
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-tenant"
+	"github.com/sirupsen/logrus"
 )
 
-func parseMapId(filePath string) (uint32, error) {
+func parseMapId(filePath string) (_map.Id, error) {
 	baseName := filepath.Base(filePath)
 	if !strings.HasSuffix(baseName, ".img") {
 		return 0, fmt.Errorf("file does not match expected format: %s", filePath)
@@ -30,7 +32,7 @@ func parseMapId(filePath string) (uint32, error) {
 	if err != nil {
 		return 0, err
 	}
-	return uint32(id), nil
+	return _map.Id(id), nil
 }
 
 func Read(l logrus.FieldLogger) func(ctx context.Context) func(path string, id uint32, np xml.IdProvider) model.Provider[RestModel] {
@@ -70,7 +72,7 @@ func Read(l logrus.FieldLogger) func(ctx context.Context) func(path string, id u
 			}
 
 			m := &RestModel{Id: mapId}
-			m.ReturnMapId = uint32(i.GetIntegerWithDefault("returnMap", 0))
+			m.ReturnMapId = _map.Id(i.GetIntegerWithDefault("returnMap", 0))
 			m.MonsterRate = i.GetFloatWithDefault("mobRate", 0)
 
 			firstUserEnter := i.GetString("onFirstUserEnter", strconv.Itoa(int(mapId)))
@@ -100,7 +102,7 @@ func Read(l logrus.FieldLogger) func(ctx context.Context) func(path string, id u
 			m.Town = i.GetIntegerWithDefault("town", 0) > 0
 			m.DecHP = uint32(i.GetIntegerWithDefault("decHP", 0))
 			m.ProtectItem = uint32(i.GetIntegerWithDefault("protectItem", 0))
-			m.ForcedReturnMapId = uint32(i.GetIntegerWithDefault("forcedReturn", 999999999))
+			m.ForcedReturnMapId = _map.Id(i.GetIntegerWithDefault("forcedReturn", 999999999))
 			m.Boat = isBoat(exml)
 			m.TimeLimit = i.GetIntegerWithDefault("timeLimit", -1)
 			m.FieldType = uint32(i.GetIntegerWithDefault("fieldType", 0))
@@ -162,7 +164,7 @@ func getPortals(exml xml.Node) []portal.RestModel {
 			Type:        pt,
 			X:           int16(c.GetIntegerWithDefault("x", 0)),
 			Y:           int16(c.GetFloatWithDefault("y", 0)),
-			TargetMapId: uint32(c.GetIntegerWithDefault("tm", 0)),
+			TargetMapId: _map.Id(c.GetIntegerWithDefault("tm", 0)),
 			ScriptName:  c.GetString("script", ""),
 		}
 		portals = append(portals, portal)
@@ -298,7 +300,7 @@ func getSeats(exml xml.Node) uint32 {
 	return uint32(len(s.PointNodes))
 }
 
-func getPlaceName(tenant tenant.Model, mapId uint32) string {
+func getPlaceName(tenant tenant.Model, mapId _map.Id) string {
 	md, err := GetMapStringRegistry().Get(tenant, strconv.Itoa(int(mapId)))
 	if err != nil {
 		return ""
@@ -306,7 +308,7 @@ func getPlaceName(tenant tenant.Model, mapId uint32) string {
 	return md.MapName()
 }
 
-func getStreetName(tenant tenant.Model, mapId uint32) string {
+func getStreetName(tenant tenant.Model, mapId _map.Id) string {
 	md, err := GetMapStringRegistry().Get(tenant, strconv.Itoa(int(mapId)))
 	if err != nil {
 		return ""

@@ -4,6 +4,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 )
@@ -100,25 +104,23 @@ func TestTransform_AllFields(t *testing.T) {
 	dropTime := time.Now()
 
 	m := Model{
-		tenant:        ten,
-		id:            123,
-		worldId:       1,
-		channelId:     2,
-		mapId:         100000000,
-		itemId:        1000000,
-		equipmentId:   99999,
-		quantity:      50,
-		meso:          5000,
-		dropType:      1,
-		x:             100,
-		y:             200,
-		ownerId:       12345,
-		ownerPartyId:  67890,
-		dropTime:      dropTime,
-		dropperId:     11111,
-		dropperX:      50,
-		dropperY:      75,
-		playerDrop:    true,
+		tenant:       ten,
+		id:           123,
+		field:        field.NewBuilder(1, 2, 100000000).Build(),
+		itemId:       1000000,
+		equipmentId:  99999,
+		quantity:     50,
+		meso:         5000,
+		dropType:     1,
+		x:            100,
+		y:            200,
+		ownerId:      12345,
+		ownerPartyId: 67890,
+		dropTime:     dropTime,
+		dropperId:    11111,
+		dropperX:     50,
+		dropperY:     75,
+		playerDrop:   true,
 	}
 
 	rm, err := Transform(m)
@@ -207,7 +209,8 @@ func TestTransform_ZeroValues(t *testing.T) {
 func TestTransform_MesoDrop(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 
-	m, err := NewModelBuilder(ten, 1, 1, 100000000).
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	m, err := NewModelBuilder(ten, f).
 		SetId(456).
 		SetMeso(10000).
 		SetType(3).

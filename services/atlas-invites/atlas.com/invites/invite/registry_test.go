@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -23,7 +24,7 @@ func TestRegistry_Create(t *testing.T) {
 	assert.NotZero(t, m.Id())
 	assert.Equal(t, ten, m.Tenant())
 	assert.Equal(t, uint32(1001), m.OriginatorId())
-	assert.Equal(t, byte(1), m.WorldId())
+	assert.Equal(t, world.Id(1), m.WorldId())
 	assert.Equal(t, uint32(2001), m.TargetId())
 	assert.Equal(t, "BUDDY", m.Type())
 	assert.Equal(t, uint32(5001), m.ReferenceId())

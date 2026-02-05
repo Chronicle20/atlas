@@ -7,6 +7,7 @@ import (
 	"atlas-storage/storage"
 	"context"
 
+	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	kafkaMessage "github.com/Chronicle20/atlas-kafka/message"
@@ -133,8 +134,8 @@ func handleShowStorageCommand(db *gorm.DB) kafkaMessage.Handler[message.ShowStor
 			c.CharacterId, proj.StorageId(), proj.Capacity(), proj.Mesos())
 
 		// Emit PROJECTION_CREATED event
-		err = storage.NewProcessor(l, ctx, db).EmitProjectionCreatedEvent(
-			c.CharacterId, c.AccountId, c.WorldId, c.ChannelId, c.NpcId)
+		ch := channel.NewModel(c.WorldId, c.ChannelId)
+		err = storage.NewProcessor(l, ctx, db).EmitProjectionCreatedEvent(c.CharacterId, c.AccountId, ch, c.NpcId)
 		if err != nil {
 			l.WithError(err).Errorf("Failed to emit PROJECTION_CREATED event for character [%d]", c.CharacterId)
 		}
@@ -176,7 +177,7 @@ func handleExpireCommand(db *gorm.DB) kafkaMessage.Handler[message.Command[messa
 			c.TransactionId,
 			c.WorldId,
 			c.AccountId,
-			c.Body.AssetId,
+			uint32(c.Body.AssetId),
 			isCash,
 			c.Body.ReplaceItemId,
 			c.Body.ReplaceMessage,

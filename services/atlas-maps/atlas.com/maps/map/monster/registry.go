@@ -74,7 +74,7 @@ func (r *SpawnPointRegistry) InitializeForMap(mapKey character.MapKey, dp monste
 	}
 
 	// Get spawn points from the data provider
-	spawnPoints, err := dp.GetSpawnableSpawnPoints(uint32(mapKey.MapId))
+	spawnPoints, err := dp.GetSpawnableSpawnPoints(mapKey.Field.MapId())
 	if err != nil {
 		return err
 	}
@@ -94,7 +94,7 @@ func (r *SpawnPointRegistry) InitializeForMap(mapKey character.MapKey, dp monste
 	r.spawnPointMu[mapKey] = &sync.RWMutex{}
 
 	l.Debugf("Initialized spawn point registry for map key: Tenant [%s] World [%d] Channel [%d] Map [%d] with %d spawn points",
-		mapKey.Tenant.String(), mapKey.WorldId, mapKey.ChannelId, mapKey.MapId, len(cooldownSpawnPoints))
+		mapKey.Tenant.String(), mapKey.Field.WorldId(), mapKey.Field.ChannelId(), mapKey.Field.MapId(), len(cooldownSpawnPoints))
 
 	return nil
 }

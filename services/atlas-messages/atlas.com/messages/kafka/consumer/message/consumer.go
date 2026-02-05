@@ -4,6 +4,8 @@ import (
 	consumer2 "atlas-messages/kafka/consumer"
 	message2 "atlas-messages/message"
 	"context"
+
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -36,33 +38,38 @@ func handleGeneralChat(l logrus.FieldLogger, ctx context.Context, e chatCommand[
 	if e.Type != ChatTypeGeneral {
 		return
 	}
-	_ = message2.NewProcessor(l, ctx).HandleGeneral(e.WorldId, e.ChannelId, e.MapId, e.ActorId, e.Message, e.Body.BalloonOnly)
+	f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
+	_ = message2.NewProcessor(l, ctx).HandleGeneral(f, e.ActorId, e.Message, e.Body.BalloonOnly)
 }
 
 func handleMultiChat(l logrus.FieldLogger, ctx context.Context, e chatCommand[multiChatBody]) {
 	if e.Type != ChatTypeBuddy && e.Type != ChatTypeParty && e.Type != ChatTypeGuild && e.Type != ChatTypeAlliance {
 		return
 	}
-	_ = message2.NewProcessor(l, ctx).HandleMulti(e.WorldId, e.ChannelId, e.MapId, e.ActorId, e.Message, e.Type, e.Body.Recipients)
+	f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
+	_ = message2.NewProcessor(l, ctx).HandleMulti(f, e.ActorId, e.Message, e.Type, e.Body.Recipients)
 }
 
 func handleWhisperChat(l logrus.FieldLogger, ctx context.Context, e chatCommand[whisperChatBody]) {
 	if e.Type != ChatTypeWhisper {
 		return
 	}
-	_ = message2.NewProcessor(l, ctx).HandleWhisper(e.WorldId, e.ChannelId, e.MapId, e.ActorId, e.Message, e.Body.RecipientName)
+	f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
+	_ = message2.NewProcessor(l, ctx).HandleWhisper(f, e.ActorId, e.Message, e.Body.RecipientName)
 }
 
 func handleMessengerChat(l logrus.FieldLogger, ctx context.Context, e chatCommand[messengerChatBody]) {
 	if e.Type != ChatTypeMessenger {
 		return
 	}
-	_ = message2.NewProcessor(l, ctx).HandleMessenger(e.WorldId, e.ChannelId, e.MapId, e.ActorId, e.Message, e.Body.Recipients)
+	f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
+	_ = message2.NewProcessor(l, ctx).HandleMessenger(f, e.ActorId, e.Message, e.Body.Recipients)
 }
 
 func handlePetChat(l logrus.FieldLogger, ctx context.Context, e chatCommand[petChatBody]) {
 	if e.Type != ChatTypePet {
 		return
 	}
-	_ = message2.NewProcessor(l, ctx).HandlePet(e.WorldId, e.ChannelId, e.MapId, e.ActorId, e.Message, e.Body.OwnerId, e.Body.PetSlot, e.Body.Type, e.Body.Action, e.Body.Balloon)
+	f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
+	_ = message2.NewProcessor(l, ctx).HandlePet(f, e.ActorId, e.Message, e.Body.OwnerId, e.Body.PetSlot, e.Body.Type, e.Body.Action, e.Body.Balloon)
 }

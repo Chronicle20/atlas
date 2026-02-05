@@ -5,6 +5,8 @@ import (
 	consumer2 "atlas-expressions/kafka/consumer"
 	expressionMsg "atlas-expressions/kafka/message/expression"
 	"context"
+
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -31,5 +33,6 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 
 func handleChangeCommand(l logrus.FieldLogger, ctx context.Context, c expressionMsg.Command) {
 	processor := expression.NewProcessor(l, ctx)
-	_, _ = processor.ChangeAndEmit(c.TransactionId, c.CharacterId, c.WorldId, c.ChannelId, c.MapId, c.Expression)
+	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
+	_, _ = processor.ChangeAndEmit(c.TransactionId, c.CharacterId, f, c.Expression)
 }

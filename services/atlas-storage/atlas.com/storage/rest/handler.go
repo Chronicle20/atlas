@@ -2,13 +2,15 @@ package rest
 
 import (
 	"context"
+	"io"
+	"net/http"
+	"strconv"
+
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
-	"io"
-	"net/http"
-	"strconv"
 )
 
 type HandlerDependency struct {
@@ -98,7 +100,7 @@ func ParseAccountId(l logrus.FieldLogger, next AccountIdHandler) http.HandlerFun
 	}
 }
 
-type WorldIdHandler func(worldId byte) http.HandlerFunc
+type WorldIdHandler func(worldId world.Id) http.HandlerFunc
 
 func ParseWorldId(l logrus.FieldLogger, next WorldIdHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -109,13 +111,13 @@ func ParseWorldId(l logrus.FieldLogger, next WorldIdHandler) http.HandlerFunc {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		worldId, err := strconv.Atoi(worldIdStr)
+		worldIdInt, err := strconv.Atoi(worldIdStr)
 		if err != nil {
-			l.WithError(err).Errorf("Error parsing worldId as byte")
+			l.WithError(err).Errorf("Error parsing worldId")
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		next(byte(worldId))(w, r)
+		next(world.Id(worldIdInt))(w, r)
 	}
 }
 

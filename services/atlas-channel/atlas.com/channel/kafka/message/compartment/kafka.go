@@ -50,6 +50,7 @@ type DropCommandBody struct {
 	WorldId   world.Id   `json:"worldId"`
 	ChannelId channel.Id `json:"channelId"`
 	MapId     _map.Id    `json:"mapId"`
+	Instance  uuid.UUID  `json:"instance"`
 	Source    int16      `json:"source"`
 	Quantity  int16      `json:"quantity"`
 	X         int16      `json:"x"`

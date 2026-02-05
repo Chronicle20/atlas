@@ -1,12 +1,11 @@
 package expression
 
 import (
-	"github.com/Chronicle20/atlas-constants/channel"
-	_map "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-constants/world"
-	"github.com/Chronicle20/atlas-tenant"
 	"sync"
 	"time"
+
+	"github.com/Chronicle20/atlas-constants/field"
+	"github.com/Chronicle20/atlas-tenant"
 )
 
 type Registry struct {
@@ -48,7 +47,7 @@ func (r *Registry) getOrCreateTenantMaps(t tenant.Model) (map[uint32]Model, *syn
 	return em, tl
 }
 
-func (r *Registry) add(t tenant.Model, characterId uint32, worldId world.Id, channelId channel.Id, mapId _map.Id, expression uint32) Model {
+func (r *Registry) add(t tenant.Model, characterId uint32, field field.Model, expression uint32) Model {
 	em, tl := r.getOrCreateTenantMaps(t)
 
 	tl.Lock()
@@ -58,7 +57,7 @@ func (r *Registry) add(t tenant.Model, characterId uint32, worldId world.Id, cha
 
 	e := NewModelBuilder(t).
 		SetCharacterId(characterId).
-		SetLocation(worldId, channelId, mapId).
+		SetLocation(field).
 		SetExpression(expression).
 		SetExpiration(expiration).
 		MustBuild()

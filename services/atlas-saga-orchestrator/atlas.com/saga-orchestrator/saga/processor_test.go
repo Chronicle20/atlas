@@ -10,6 +10,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"testing"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas-constants/map"
@@ -19,7 +21,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func setupContext() (tenant.Model, context.Context) {
@@ -77,7 +78,7 @@ func TestCharacterCreationSagaIntegration(t *testing.T) {
 			processor, hook := setupTestProcessor(ctx, charP, compP, validP)
 
 			// Configure mocks
-			charP.RequestCreateCharacterFunc = func(transactionId uuid.UUID, accountId uint32, worldId byte, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id) error {
+			charP.RequestCreateCharacterFunc = func(transactionId uuid.UUID, accountId uint32, worldId world.Id, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id) error {
 				return tt.characterCreationResult
 			}
 
@@ -273,21 +274,21 @@ func TestCharacterCreationSagaCompensation(t *testing.T) {
 			processor, _ := setupTestProcessor(ctx, charP, compP, validP)
 
 			// Configure mocks to fail at specific step
-			charP.RequestCreateCharacterFunc = func(transactionId uuid.UUID, accountId uint32, worldId byte, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id) error {
+			charP.RequestCreateCharacterFunc = func(transactionId uuid.UUID, accountId uint32, worldId world.Id, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id) error {
 				if tt.failureAtStep == 0 {
 					return errors.New("character creation failed")
 				}
 				return nil
 			}
 
-			charP.AwardLevelAndEmitFunc = func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount byte) error {
+			charP.AwardLevelAndEmitFunc = func(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount byte) error {
 				if tt.failureAtStep == 1 {
 					return errors.New("level award failed")
 				}
 				return nil
 			}
 
-			charP.AwardMesosAndEmitFunc = func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error {
+			charP.AwardMesosAndEmitFunc = func(transactionId uuid.UUID, ch channel.Model, characterId uint32, actorId uint32, actorType string, amount int32) error {
 				if tt.failureAtStep == 2 {
 					return errors.New("mesos award failed")
 				}

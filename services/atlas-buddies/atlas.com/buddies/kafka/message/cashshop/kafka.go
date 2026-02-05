@@ -1,5 +1,7 @@
 package cashshop
 
+import "github.com/Chronicle20/atlas-constants/world"
+
 const (
 	EnvEventTopicStatus           = "EVENT_TOPIC_CASH_SHOP_STATUS"
 	EventStatusTypeCharacterEnter = "CHARACTER_ENTER"
@@ -7,9 +9,9 @@ const (
 )
 
 type StatusEvent[E any] struct {
-	WorldId byte   `json:"worldId"`
-	Type    string `json:"type"`
-	Body    E      `json:"body"`
+	WorldId world.Id `json:"worldId"`
+	Type    string   `json:"type"`
+	Body    E        `json:"body"`
 }
 
 type MovementBody struct {

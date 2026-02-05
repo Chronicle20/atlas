@@ -1,6 +1,8 @@
 package guild
 
 import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 )
 
@@ -20,23 +22,23 @@ type Command[E any] struct {
 }
 
 type RequestNameBody struct {
-	WorldId   byte `json:"worldId"`
-	ChannelId byte `json:"channelId"`
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
 }
 
 type RequestEmblemBody struct {
-	WorldId   byte `json:"worldId"`
-	ChannelId byte `json:"channelId"`
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
 }
 
 type RequestDisbandBody struct {
-	WorldId   byte `json:"worldId"`
-	ChannelId byte `json:"channelId"`
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
 }
 
 type RequestCapacityIncreaseBody struct {
-	WorldId   byte `json:"worldId"`
-	ChannelId byte `json:"channelId"`
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
 }
 
 const (
@@ -56,7 +58,7 @@ const (
 )
 
 type StatusEvent[E any] struct {
-	WorldId       byte      `json:"worldId"`
+	WorldId       world.Id  `json:"worldId"`
 	GuildId       uint32    `json:"guildId"`
 	Type          string    `json:"type"`
 	Body          E         `json:"body"`

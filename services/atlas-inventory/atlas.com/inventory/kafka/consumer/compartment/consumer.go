@@ -5,10 +5,10 @@ import (
 	consumer2 "atlas-inventory/kafka/consumer"
 	compartment2 "atlas-inventory/kafka/message/compartment"
 	"context"
-	"github.com/Chronicle20/atlas-constants/channel"
+	"math"
+
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-constants/inventory"
-	_map "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -17,7 +17,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"math"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -95,8 +94,8 @@ func handleDropItemCommand(db *gorm.DB) message.Handler[compartment2.Command[com
 			return
 		}
 
-		m := _map.NewModel(world.Id(c.Body.WorldId))(channel.Id(c.Body.ChannelId))(_map.Id(c.Body.MapId))
-		_ = compartment.NewProcessor(l, ctx, db).DropAndEmit(c.TransactionId, c.CharacterId, inventory.Type(c.InventoryType), m, c.Body.X, c.Body.Y, c.Body.Source, c.Body.Quantity)
+		f := field.NewBuilder(c.Body.WorldId, c.Body.ChannelId, c.Body.MapId).SetInstance(c.Body.Instance).Build()
+		_ = compartment.NewProcessor(l, ctx, db).DropAndEmit(c.TransactionId, c.CharacterId, inventory.Type(c.InventoryType), f, c.Body.X, c.Body.Y, c.Body.Source, c.Body.Quantity)
 	}
 }
 

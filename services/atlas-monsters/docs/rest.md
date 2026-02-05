@@ -63,9 +63,9 @@ Retrieves a monster by its unique ID.
 
 ---
 
-### GET /api/worlds/{worldId}/channels/{channelId}/maps/{mapId}/monsters
+### GET /api/worlds/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/monsters
 
-Retrieves all monsters in a map.
+Retrieves all monsters in a map instance.
 
 **Parameters:**
 
@@ -74,6 +74,7 @@ Retrieves all monsters in a map.
 | worldId | path | byte | yes | World identifier |
 | channelId | path | byte | yes | Channel identifier |
 | mapId | path | uint32 | yes | Map identifier |
+| instanceId | path | uuid | yes | Instance identifier |
 
 **Headers:**
 
@@ -123,9 +124,9 @@ Retrieves all monsters in a map.
 
 ---
 
-### POST /api/worlds/{worldId}/channels/{channelId}/maps/{mapId}/monsters
+### POST /api/worlds/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/monsters
 
-Creates a monster in a map.
+Creates a monster in a map instance.
 
 **Parameters:**
 
@@ -134,6 +135,7 @@ Creates a monster in a map.
 | worldId | path | byte | yes | World identifier |
 | channelId | path | byte | yes | Channel identifier |
 | mapId | path | uint32 | yes | Map identifier |
+| instanceId | path | uuid | yes | Instance identifier |
 
 **Headers:**
 
@@ -182,9 +184,9 @@ Returns the created monster in the same format as GET /api/monsters/{monsterId}.
 
 ---
 
-### DELETE /api/worlds/{worldId}/channels/{channelId}/maps/{mapId}/monsters
+### DELETE /api/worlds/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/monsters
 
-Destroys all monsters in a map.
+Destroys all monsters in a map instance.
 
 **Parameters:**
 
@@ -193,6 +195,7 @@ Destroys all monsters in a map.
 | worldId | path | byte | yes | World identifier |
 | channelId | path | byte | yes | Channel identifier |
 | mapId | path | uint32 | yes | Map identifier |
+| instanceId | path | uuid | yes | Instance identifier |
 
 **Headers:**
 

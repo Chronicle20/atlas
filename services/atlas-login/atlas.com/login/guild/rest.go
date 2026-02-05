@@ -2,14 +2,27 @@ package guild
 
 import (
 	"atlas-login/guild/member"
-	"github.com/Chronicle20/atlas-model/model"
+	"atlas-login/guild/title"
 	"strconv"
+
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas-model/model"
 )
 
 type RestModel struct {
-	Id       uint32             `json:"-"`
-	LeaderId uint32             `json:"leaderId"`
-	Members  []member.RestModel `json:"members"`
+	Id                  uint32             `json:"-"`
+	WorldId             world.Id           `json:"worldId"`
+	Name                string             `json:"name"`
+	Notice              string             `json:"notice"`
+	Points              uint32             `json:"points"`
+	Capacity            uint32             `json:"capacity"`
+	Logo                uint16             `json:"logo"`
+	LogoColor           byte               `json:"logoColor"`
+	LogoBackground      uint16             `json:"logoBackground"`
+	LogoBackgroundColor byte               `json:"logoBackgroundColor"`
+	LeaderId            uint32             `json:"leaderId"`
+	Members             []member.RestModel `json:"members"`
+	Titles              []title.RestModel  `json:"titles"`
 }
 
 func (r RestModel) GetName() string {

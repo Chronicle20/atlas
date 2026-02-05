@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -18,8 +19,8 @@ type Processor interface {
 	ChannelDecorator(m Model) Model
 	GetWorlds(decorators ...model.Decorator[Model]) ([]Model, error)
 	AllWorldProvider(decorators ...model.Decorator[Model]) model.Provider[[]Model]
-	GetWorld(decorators ...model.Decorator[Model]) func(worldId byte) (Model, error)
-	ByWorldIdProvider(decorators ...model.Decorator[Model]) func(worldId byte) model.Provider[Model]
+	GetWorld(decorators ...model.Decorator[Model]) func(worldId world.Id) (Model, error)
+	ByWorldIdProvider(decorators ...model.Decorator[Model]) func(worldId world.Id) model.Provider[Model]
 }
 
 type ProcessorImpl struct {
@@ -52,17 +53,17 @@ func (p *ProcessorImpl) ChannelDecorator(m Model) Model {
 
 func (p *ProcessorImpl) AllWorldProvider(decorators ...model.Decorator[Model]) model.Provider[[]Model] {
 	worldIds := mapDistinctWorldId(channel.GetChannelRegistry().ChannelServers(p.t))
-	return model.SliceMap[byte, Model](func(b byte) (Model, error) {
-		return p.ByWorldIdProvider(decorators...)(b)()
-	})(model.FixedProvider[[]byte](worldIds))(model.ParallelMap())
+	return model.SliceMap[world.Id, Model](func(wid world.Id) (Model, error) {
+		return p.ByWorldIdProvider(decorators...)(wid)()
+	})(model.FixedProvider[[]world.Id](worldIds))(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) GetWorlds(decorators ...model.Decorator[Model]) ([]Model, error) {
 	return p.AllWorldProvider(decorators...)()
 }
 
-func (p *ProcessorImpl) ByWorldIdProvider(decorators ...model.Decorator[Model]) func(worldId byte) model.Provider[Model] {
-	return func(worldId byte) model.Provider[Model] {
+func (p *ProcessorImpl) ByWorldIdProvider(decorators ...model.Decorator[Model]) func(worldId world.Id) model.Provider[Model] {
+	return func(worldId world.Id) model.Provider[Model] {
 		worldIds := mapDistinctWorldId(channel.GetChannelRegistry().ChannelServers(p.t))
 		var exists = false
 		for _, wid := range worldIds {
@@ -107,19 +108,19 @@ func (p *ProcessorImpl) ByWorldIdProvider(decorators ...model.Decorator[Model]) 
 	}
 }
 
-func (p *ProcessorImpl) GetWorld(decorators ...model.Decorator[Model]) func(worldId byte) (Model, error) {
-	return func(worldId byte) (Model, error) {
+func (p *ProcessorImpl) GetWorld(decorators ...model.Decorator[Model]) func(worldId world.Id) (Model, error) {
+	return func(worldId world.Id) (Model, error) {
 		return p.ByWorldIdProvider(decorators...)(worldId)()
 	}
 }
 
-func mapDistinctWorldId(channelServers []channel.Model) []byte {
-	m := make(map[byte]struct{})
+func mapDistinctWorldId(channelServers []channel.Model) []world.Id {
+	m := make(map[world.Id]struct{})
 	for _, element := range channelServers {
 		m[element.WorldId()] = struct{}{}
 	}
 
-	keys := make([]byte, 0, len(m))
+	keys := make([]world.Id, 0, len(m))
 	for k := range m {
 		keys = append(keys, k)
 	}

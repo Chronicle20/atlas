@@ -2,15 +2,13 @@ package server
 
 import (
 	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 )
 
-func Register(t tenant.Model, worldId world.Id, channelId channel.Id, ipAddress string, port int) Model {
+func Register(t tenant.Model, ch channel.Model, ipAddress string, port int) Model {
 	m := Model{
 		tenant:    t,
-		worldId:   worldId,
-		channelId: channelId,
+		ch:        ch,
 		ipAddress: ipAddress,
 		port:      port,
 	}

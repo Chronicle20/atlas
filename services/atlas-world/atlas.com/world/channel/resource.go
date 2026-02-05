@@ -3,12 +3,15 @@ package channel
 import (
 	"atlas-world/rest"
 	"errors"
+	"net/http"
+
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
-	"net/http"
 )
 
 func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
@@ -23,7 +26,7 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 }
 
 func handleGetChannelServers(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseWorldId(d.Logger(), func(worldId byte) http.HandlerFunc {
+	return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			cs, err := NewProcessor(d.Logger(), d.Context()).GetByWorld(worldId)
 			if err != nil {
@@ -46,9 +49,10 @@ func handleGetChannelServers(d *rest.HandlerDependency, c *rest.HandlerContext) 
 }
 
 func handleRegisterChannelServer(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
-	return rest.ParseWorldId(d.Logger(), func(worldId byte) http.HandlerFunc {
+	return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			err := NewProcessor(d.Logger(), d.Context()).EmitStartedAndEmit(worldId, input.ChannelId, input.IpAddress, input.Port, input.CurrentCapacity, input.MaxCapacity)
+			ch := channel.NewModel(worldId, input.ChannelId)
+			err := NewProcessor(d.Logger(), d.Context()).EmitStartedAndEmit(ch, input.IpAddress, input.Port, input.CurrentCapacity, input.MaxCapacity)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to emit channel started event.")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -60,10 +64,11 @@ func handleRegisterChannelServer(d *rest.HandlerDependency, c *rest.HandlerConte
 }
 
 func handleGetChannel(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseWorldId(d.Logger(), func(worldId byte) http.HandlerFunc {
-		return rest.ParseChannelId(d.Logger(), func(channelId byte) http.HandlerFunc {
+	return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
+		return rest.ParseChannelId(d.Logger(), func(channelId channel.Id) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				ch, err := NewProcessor(d.Logger(), d.Context()).GetById(worldId, channelId)
+				ch := channel.NewModel(worldId, channelId)
+				m, err := NewProcessor(d.Logger(), d.Context()).GetById(ch)
 				if err != nil {
 					if errors.Is(err, ErrChannelNotFound) {
 						w.WriteHeader(http.StatusNotFound)
@@ -74,7 +79,7 @@ func handleGetChannel(d *rest.HandlerDependency, c *rest.HandlerContext) http.Ha
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
-				rm, err := model.Map(Transform)(model.FixedProvider(ch))()
+				rm, err := model.Map(Transform)(model.FixedProvider(m))()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
 					w.WriteHeader(http.StatusInternalServerError)

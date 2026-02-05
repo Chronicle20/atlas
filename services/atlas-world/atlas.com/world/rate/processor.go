@@ -7,13 +7,14 @@ import (
 	rateProducer "atlas-world/kafka/producer/rate"
 	"context"
 
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {
-	GetWorldRates(worldId byte) Model
-	UpdateWorldRate(worldId byte, rateType Type, multiplier float64) error
+	GetWorldRates(worldId world.Id) Model
+	UpdateWorldRate(worldId world.Id, rateType Type, multiplier float64) error
 }
 
 type ProcessorImpl struct {
@@ -30,11 +31,11 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
-func (p *ProcessorImpl) GetWorldRates(worldId byte) Model {
+func (p *ProcessorImpl) GetWorldRates(worldId world.Id) Model {
 	return GetRegistry().GetWorldRates(p.t, worldId)
 }
 
-func (p *ProcessorImpl) UpdateWorldRate(worldId byte, rateType Type, multiplier float64) error {
+func (p *ProcessorImpl) UpdateWorldRate(worldId world.Id, rateType Type, multiplier float64) error {
 	p.l.Debugf("Updating world [%d] rate [%s] to [%.2f] for tenant [%s].", worldId, rateType, multiplier, p.t.String())
 
 	GetRegistry().SetWorldRate(p.t, worldId, rateType, multiplier)

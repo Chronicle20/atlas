@@ -2,15 +2,20 @@ package message
 
 import (
 	"testing"
+
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 )
 
 // TestGeneralChatEventProvider tests the general chat event provider
 func TestGeneralChatEventProvider(t *testing.T) {
 	testCases := []struct {
 		name        string
-		worldId     byte
-		channelId   byte
-		mapId       uint32
+		worldId     world.Id
+		channelId   channel.Id
+		mapId       _map.Id
 		actorId     uint32
 		message     string
 		balloonOnly bool
@@ -46,7 +51,8 @@ func TestGeneralChatEventProvider(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			provider := generalChatEventProvider(tc.worldId, tc.channelId, tc.mapId, tc.actorId, tc.message, tc.balloonOnly)
+			f := field.NewBuilder(tc.worldId, tc.channelId, tc.mapId).Build()
+			provider := generalChatEventProvider(f, tc.actorId, tc.message, tc.balloonOnly)
 
 			// Provider should not be nil
 			if provider == nil {
@@ -76,9 +82,9 @@ func TestGeneralChatEventProvider(t *testing.T) {
 func TestMultiChatEventProvider(t *testing.T) {
 	testCases := []struct {
 		name       string
-		worldId    byte
-		channelId  byte
-		mapId      uint32
+		worldId    world.Id
+		channelId  channel.Id
+		mapId      _map.Id
 		actorId    uint32
 		message    string
 		chatType   string
@@ -118,7 +124,8 @@ func TestMultiChatEventProvider(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			provider := multiChatEventProvider(tc.worldId, tc.channelId, tc.mapId, tc.actorId, tc.message, tc.chatType, tc.recipients)
+			f := field.NewBuilder(tc.worldId, tc.channelId, tc.mapId).Build()
+			provider := multiChatEventProvider(f, tc.actorId, tc.message, tc.chatType, tc.recipients)
 
 			if provider == nil {
 				t.Fatal("Expected provider to be non-nil")
@@ -140,9 +147,9 @@ func TestMultiChatEventProvider(t *testing.T) {
 func TestWhisperChatEventProvider(t *testing.T) {
 	testCases := []struct {
 		name      string
-		worldId   byte
-		channelId byte
-		mapId     uint32
+		worldId   world.Id
+		channelId channel.Id
+		mapId     _map.Id
 		actorId   uint32
 		message   string
 		recipient uint32
@@ -169,7 +176,8 @@ func TestWhisperChatEventProvider(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			provider := whisperChatEventProvider(tc.worldId, tc.channelId, tc.mapId, tc.actorId, tc.message, tc.recipient)
+			f := field.NewBuilder(tc.worldId, tc.channelId, tc.mapId).Build()
+			provider := whisperChatEventProvider(f, tc.actorId, tc.message, tc.recipient)
 
 			if provider == nil {
 				t.Fatal("Expected provider to be non-nil")
@@ -191,9 +199,9 @@ func TestWhisperChatEventProvider(t *testing.T) {
 func TestMessengerChatEventProvider(t *testing.T) {
 	testCases := []struct {
 		name       string
-		worldId    byte
-		channelId  byte
-		mapId      uint32
+		worldId    world.Id
+		channelId  channel.Id
+		mapId      _map.Id
 		actorId    uint32
 		message    string
 		recipients []uint32
@@ -211,7 +219,8 @@ func TestMessengerChatEventProvider(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			provider := messengerChatEventProvider(tc.worldId, tc.channelId, tc.mapId, tc.actorId, tc.message, tc.recipients)
+			f := field.NewBuilder(tc.worldId, tc.channelId, tc.mapId).Build()
+			provider := messengerChatEventProvider(f, tc.actorId, tc.message, tc.recipients)
 
 			if provider == nil {
 				t.Fatal("Expected provider to be non-nil")
@@ -233,9 +242,9 @@ func TestMessengerChatEventProvider(t *testing.T) {
 func TestPetChatEventProvider(t *testing.T) {
 	testCases := []struct {
 		name      string
-		worldId   byte
-		channelId byte
-		mapId     uint32
+		worldId   world.Id
+		channelId channel.Id
+		mapId     _map.Id
 		petId     uint32
 		message   string
 		ownerId   uint32
@@ -274,7 +283,8 @@ func TestPetChatEventProvider(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			provider := petChatEventProvider(tc.worldId, tc.channelId, tc.mapId, tc.petId, tc.message, tc.ownerId, tc.petSlot, tc.nType, tc.nAction, tc.balloon)
+			f := field.NewBuilder(tc.worldId, tc.channelId, tc.mapId).Build()
+			provider := petChatEventProvider(f, tc.petId, tc.message, tc.ownerId, tc.petSlot, tc.nType, tc.nAction, tc.balloon)
 
 			if provider == nil {
 				t.Fatal("Expected provider to be non-nil")
@@ -296,9 +306,9 @@ func TestPetChatEventProvider(t *testing.T) {
 func TestPinkTextChatEventProvider(t *testing.T) {
 	testCases := []struct {
 		name       string
-		worldId    byte
-		channelId  byte
-		mapId      uint32
+		worldId    world.Id
+		channelId  channel.Id
+		mapId      _map.Id
 		actorId    uint32
 		message    string
 		recipients []uint32
@@ -325,7 +335,8 @@ func TestPinkTextChatEventProvider(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			provider := pinkTextChatEventProvider(tc.worldId, tc.channelId, tc.mapId, tc.actorId, tc.message, tc.recipients)
+			f := field.NewBuilder(tc.worldId, tc.channelId, tc.mapId).Build()
+			provider := pinkTextChatEventProvider(f, tc.actorId, tc.message, tc.recipients)
 
 			if provider == nil {
 				t.Fatal("Expected provider to be non-nil")
@@ -349,6 +360,7 @@ func TestEventProviders_MessageKeyConsistency(t *testing.T) {
 	// Key is based on actor ID
 
 	actorId := uint32(12345)
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
 
 	providers := []struct {
 		name     string
@@ -357,7 +369,7 @@ func TestEventProviders_MessageKeyConsistency(t *testing.T) {
 		{
 			name: "General chat",
 			provider: func() ([]byte, error) {
-				msgs, err := generalChatEventProvider(1, 1, 100000000, actorId, "test", false)()
+				msgs, err := generalChatEventProvider(f, actorId, "test", false)()
 				if err != nil || len(msgs) == 0 {
 					return nil, err
 				}
@@ -367,7 +379,7 @@ func TestEventProviders_MessageKeyConsistency(t *testing.T) {
 		{
 			name: "Multi chat",
 			provider: func() ([]byte, error) {
-				msgs, err := multiChatEventProvider(1, 1, 100000000, actorId, "test", "party", []uint32{})()
+				msgs, err := multiChatEventProvider(f, actorId, "test", "party", []uint32{})()
 				if err != nil || len(msgs) == 0 {
 					return nil, err
 				}
@@ -377,7 +389,7 @@ func TestEventProviders_MessageKeyConsistency(t *testing.T) {
 		{
 			name: "Whisper chat",
 			provider: func() ([]byte, error) {
-				msgs, err := whisperChatEventProvider(1, 1, 100000000, actorId, "test", 67890)()
+				msgs, err := whisperChatEventProvider(f, actorId, "test", 67890)()
 				if err != nil || len(msgs) == 0 {
 					return nil, err
 				}

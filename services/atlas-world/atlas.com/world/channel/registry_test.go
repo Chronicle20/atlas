@@ -7,11 +7,13 @@ import (
 	"testing"
 	"time"
 
+	channelConstant "github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 )
 
-func createTestChannel(t *testing.T, worldId, channelId byte, ipAddress string, port int) channel.Model {
+func createTestChannel(t *testing.T, worldId world.Id, channelId channelConstant.Id, ipAddress string, port int) channel.Model {
 	t.Helper()
 	m, err := channel.NewModelBuilder().
 		SetId(uuid.New()).
@@ -132,7 +134,7 @@ func TestChannelServer_Found(t *testing.T) {
 	ch := createTestChannel(t, 1, 2, "192.168.1.1", 8080)
 	registry.Register(tenant, ch)
 
-	result, err := registry.ChannelServer(tenant, 1, 2)
+	result, err := registry.ChannelServer(tenant, channelConstant.NewModel(1, 2))
 
 	if err != nil {
 		t.Fatalf("ChannelServer() unexpected error: %v", err)
@@ -149,7 +151,7 @@ func TestChannelServer_NotFound_World(t *testing.T) {
 	ch := createTestChannel(t, 1, 0, "192.168.1.1", 8080)
 	registry.Register(tenant, ch)
 
-	_, err := registry.ChannelServer(tenant, 99, 0)
+	_, err := registry.ChannelServer(tenant, channelConstant.NewModel(99, 0))
 
 	if err != channel.ErrChannelNotFound {
 		t.Errorf("ChannelServer() error = %v, want ErrChannelNotFound", err)
@@ -163,7 +165,7 @@ func TestChannelServer_NotFound_Channel(t *testing.T) {
 	ch := createTestChannel(t, 1, 0, "192.168.1.1", 8080)
 	registry.Register(tenant, ch)
 
-	_, err := registry.ChannelServer(tenant, 1, 99)
+	_, err := registry.ChannelServer(tenant, channelConstant.NewModel(1, 99))
 
 	if err != channel.ErrChannelNotFound {
 		t.Errorf("ChannelServer() error = %v, want ErrChannelNotFound", err)
@@ -177,14 +179,14 @@ func TestRemoveByWorldAndChannel_Success(t *testing.T) {
 	ch := createTestChannel(t, 1, 0, "192.168.1.1", 8080)
 	registry.Register(tenant, ch)
 
-	err := registry.RemoveByWorldAndChannel(tenant, 1, 0)
+	err := registry.RemoveByWorldAndChannel(tenant, channelConstant.NewModel(1, 0))
 
 	if err != nil {
 		t.Fatalf("RemoveByWorldAndChannel() unexpected error: %v", err)
 	}
 
 	// Verify channel is removed
-	_, err = registry.ChannelServer(tenant, 1, 0)
+	_, err = registry.ChannelServer(tenant, channelConstant.NewModel(1, 0))
 	if err != channel.ErrChannelNotFound {
 		t.Error("Channel should have been removed")
 	}
@@ -194,7 +196,7 @@ func TestRemoveByWorldAndChannel_NotFound_World(t *testing.T) {
 	registry := channel.GetChannelRegistry()
 	tenant := createUniqueTenant(t)
 
-	err := registry.RemoveByWorldAndChannel(tenant, 99, 0)
+	err := registry.RemoveByWorldAndChannel(tenant, channelConstant.NewModel(99, 0))
 
 	if err != channel.ErrChannelNotFound {
 		t.Errorf("RemoveByWorldAndChannel() error = %v, want ErrChannelNotFound", err)
@@ -208,7 +210,7 @@ func TestRemoveByWorldAndChannel_NotFound_Channel(t *testing.T) {
 	ch := createTestChannel(t, 1, 0, "192.168.1.1", 8080)
 	registry.Register(tenant, ch)
 
-	err := registry.RemoveByWorldAndChannel(tenant, 1, 99)
+	err := registry.RemoveByWorldAndChannel(tenant, channelConstant.NewModel(1, 99))
 
 	if err != channel.ErrChannelNotFound {
 		t.Errorf("RemoveByWorldAndChannel() error = %v, want ErrChannelNotFound", err)
@@ -275,7 +277,7 @@ func TestTenantIsolation(t *testing.T) {
 	}
 
 	// Tenant 1 cannot get tenant 2's channel directly
-	result, err := registry.ChannelServer(tenant1, 1, 0)
+	result, err := registry.ChannelServer(tenant1, channelConstant.NewModel(1, 0))
 	if err != nil {
 		t.Fatalf("Tenant 1 should have a channel at world 1 channel 0")
 	}
@@ -296,7 +298,7 @@ func TestConcurrentAccess(t *testing.T) {
 	for i := 0; i < numGoroutines; i++ {
 		go func(idx int) {
 			defer wg.Done()
-			ch := createTestChannel(t, byte(idx%10), byte(idx/10), "192.168.1.1", 8080+idx)
+			ch := createTestChannel(t, world.Id(idx%10), channelConstant.Id(idx/10), "192.168.1.1", 8080+idx)
 			registry.Register(tenant, ch)
 		}(i)
 	}
@@ -317,7 +319,7 @@ func TestConcurrentAccess(t *testing.T) {
 	for i := 0; i < numGoroutines; i++ {
 		go func(idx int) {
 			defer wg.Done()
-			ch := createTestChannel(t, byte(idx%5), byte(idx%10), "192.168.1.1", 9000+idx)
+			ch := createTestChannel(t, world.Id(idx%5), channelConstant.Id(idx%10), "192.168.1.1", 9000+idx)
 			registry.Register(tenant, ch)
 		}(i)
 		go func() {
@@ -344,7 +346,7 @@ func TestConcurrentTenantAccess(t *testing.T) {
 		for j := 0; j < numOps; j++ {
 			go func(opIdx int) {
 				defer wg.Done()
-				ch := createTestChannel(t, byte(opIdx%5), byte(opIdx/5), "192.168.1.1", 8080+opIdx)
+				ch := createTestChannel(t, world.Id(opIdx%5), channelConstant.Id(opIdx/5), "192.168.1.1", 8080+opIdx)
 				registry.Register(tenant, ch)
 				_ = registry.ChannelServers(tenant)
 			}(j)

@@ -67,14 +67,14 @@ func handleLeft(sc server.Model, wp writer.Producer) message.Handler[messenger2.
 		// For remaining messenger members.
 		go func() {
 			for _, m := range p.Members() {
-				err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(m.Id(), messengerLeft(l)(ctx)(wp)(e.Body.Slot))
+				err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(m.Id(), messengerLeft(l)(ctx)(wp)(e.Body.Slot))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce character [%d] has left messenger [%d].", tc.Id(), p.Id())
 				}
 			}
 		}()
 		go func() {
-			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.ActorId, messengerLeft(l)(ctx)(wp)(e.Body.Slot))
+			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.ActorId, messengerLeft(l)(ctx)(wp)(e.Body.Slot))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce character [%d] has left messenger [%d].", tc.Id(), p.Id())
 			}
@@ -128,14 +128,14 @@ func handleJoin(sc server.Model, wp writer.Producer) message.Handler[messenger2.
 					continue
 				}
 				bp := session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationAddBody(l, ctx)(e.Body.Slot, tc, mm.ChannelId()))
-				err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(m.Id(), bp)
+				err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(m.Id(), bp)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce character [%d] has joined messenger [%d].", tc.Id(), p.Id())
 				}
 			}
 		}()
 		go func() {
-			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.ActorId, func(s session.Model) error {
+			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.ActorId, func(s session.Model) error {
 				err = session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationJoinBody(l)(e.Body.Slot))(s)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce character [%d] has joined messenger [%d].", tc.Id(), p.Id())

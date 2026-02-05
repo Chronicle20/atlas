@@ -1,10 +1,11 @@
 package saga
 
 import (
+	"time"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
-	"time"
 )
 
 // Type represents the type of saga
@@ -43,18 +44,18 @@ const (
 	AwardAsset           Action = "award_asset"
 	DestroyAsset         Action = "destroy_asset"
 	DepositToStorage     Action = "deposit_to_storage"
-	TransferToStorage    Action = "transfer_to_storage"    // High-level action for inventory -> storage
-	WithdrawFromStorage  Action = "withdraw_from_storage"  // High-level action for storage -> inventory
-	TransferToCashShop   Action = "transfer_to_cash_shop"  // High-level action for inventory -> cash shop
+	TransferToStorage    Action = "transfer_to_storage"     // High-level action for inventory -> storage
+	WithdrawFromStorage  Action = "withdraw_from_storage"   // High-level action for storage -> inventory
+	TransferToCashShop   Action = "transfer_to_cash_shop"   // High-level action for inventory -> cash shop
 	WithdrawFromCashShop Action = "withdraw_from_cash_shop" // High-level action for cash shop -> inventory
-	AcceptToStorage      Action = "accept_to_storage"      // Internal (created by saga-orchestrator)
-	ReleaseFromCharacter Action = "release_from_character" // Internal (created by saga-orchestrator)
-	AcceptToCharacter    Action = "accept_to_character"    // Internal (created by saga-orchestrator)
-	ReleaseFromStorage   Action = "release_from_storage"   // Internal (created by saga-orchestrator)
-	SetHP                Action = "set_hp"                 // Set character HP to an absolute value
-	DeductExperience     Action = "deduct_experience"      // Deduct experience from character
-	CancelAllBuffs       Action = "cancel_all_buffs"       // Cancel all active buffs
-	WarpToPortal         Action = "warp_to_portal"         // Warp character to a portal
+	AcceptToStorage      Action = "accept_to_storage"       // Internal (created by saga-orchestrator)
+	ReleaseFromCharacter Action = "release_from_character"  // Internal (created by saga-orchestrator)
+	AcceptToCharacter    Action = "accept_to_character"     // Internal (created by saga-orchestrator)
+	ReleaseFromStorage   Action = "release_from_storage"    // Internal (created by saga-orchestrator)
+	SetHP                Action = "set_hp"                  // Set character HP to an absolute value
+	DeductExperience     Action = "deduct_experience"       // Deduct experience from character
+	CancelAllBuffs       Action = "cancel_all_buffs"        // Cancel all active buffs
+	WarpToPortal         Action = "warp_to_portal"          // Warp character to a portal
 )
 
 // Step represents a single step within a saga
@@ -79,11 +80,11 @@ type AwardMesosPayload struct {
 
 // UpdateStorageMesosPayload is the payload for the update_storage_mesos action
 type UpdateStorageMesosPayload struct {
-	CharacterId uint32 `json:"characterId"` // CharacterId initiating the update
-	AccountId   uint32 `json:"accountId"`   // AccountId that owns the storage
-	WorldId     byte   `json:"worldId"`     // WorldId for the storage
-	Operation   string `json:"operation"`   // Operation: "SET", "ADD", "SUBTRACT"
-	Mesos       uint32 `json:"mesos"`       // Mesos amount
+	CharacterId uint32   `json:"characterId"` // CharacterId initiating the update
+	AccountId   uint32   `json:"accountId"`   // AccountId that owns the storage
+	WorldId     world.Id `json:"worldId"`     // WorldId for the storage
+	Operation   string   `json:"operation"`   // Operation: "SET", "ADD", "SUBTRACT"
+	Mesos       uint32   `json:"mesos"`       // Mesos amount
 }
 
 // AwardAssetPayload is the payload for the award_asset action
@@ -111,7 +112,7 @@ type DestroyAssetPayload struct {
 type DepositToStoragePayload struct {
 	CharacterId   uint32    `json:"characterId"`   // CharacterId initiating the deposit
 	AccountId     uint32    `json:"accountId"`     // AccountId that owns the storage
-	WorldId       byte      `json:"worldId"`       // WorldId for the storage (storage is world-scoped)
+	WorldId       world.Id  `json:"worldId"`       // WorldId for the storage (storage is world-scoped)
 	Slot          int16     `json:"slot"`          // Target slot in storage
 	TemplateId    uint32    `json:"templateId"`    // Item template ID
 	ReferenceId   uint32    `json:"referenceId"`   // Reference ID for the item data (external service ID)
@@ -127,7 +128,7 @@ type DepositToStoragePayload struct {
 type TransferToStoragePayload struct {
 	TransactionId       uuid.UUID `json:"transactionId"`       // Saga transaction ID
 	CharacterId         uint32    `json:"characterId"`         // Character initiating the transfer
-	WorldId             byte      `json:"worldId"`             // World ID
+	WorldId             world.Id  `json:"worldId"`             // World ID
 	AccountId           uint32    `json:"accountId"`           // Account ID (storage owner)
 	SourceSlot          int16     `json:"sourceSlot"`          // Slot in character inventory
 	SourceInventoryType byte      `json:"sourceInventoryType"` // Character inventory type
@@ -139,7 +140,7 @@ type TransferToStoragePayload struct {
 type WithdrawFromStoragePayload struct {
 	TransactionId uuid.UUID `json:"transactionId"` // Saga transaction ID
 	CharacterId   uint32    `json:"characterId"`   // Character receiving the item
-	WorldId       byte      `json:"worldId"`       // World ID
+	WorldId       world.Id  `json:"worldId"`       // World ID
 	AccountId     uint32    `json:"accountId"`     // Account ID (storage owner)
 	SourceSlot    int16     `json:"sourceSlot"`    // Slot in storage
 	InventoryType byte      `json:"inventoryType"` // Target character inventory type

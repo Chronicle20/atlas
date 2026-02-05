@@ -2,10 +2,10 @@ package character
 
 import (
 	"errors"
-	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/world"
-	"github.com/Chronicle20/atlas-tenant"
 	"sync"
+
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-tenant"
 )
 
 var ErrNotFound = errors.New("not found")
@@ -28,7 +28,7 @@ func GetRegistry() *Registry {
 	return registry
 }
 
-func (r *Registry) Create(t tenant.Model, worldId world.Id, channelId channel.Id, id uint32, name string) Model {
+func (r *Registry) Create(t tenant.Model, ch channel.Model, id uint32, name string) Model {
 	r.lock.Lock()
 
 	var cm map[uint32]Model
@@ -50,8 +50,8 @@ func (r *Registry) Create(t tenant.Model, worldId world.Id, channelId channel.Id
 		SetTenantId(t.Id()).
 		SetId(id).
 		SetName(name).
-		SetWorldId(worldId).
-		SetChannelId(channelId).
+		SetWorldId(ch.WorldId()).
+		SetChannelId(ch.Id()).
 		Build()
 
 	cm[id] = m

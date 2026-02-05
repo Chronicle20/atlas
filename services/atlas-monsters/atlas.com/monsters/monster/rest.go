@@ -1,15 +1,21 @@
 package monster
 
 import (
-	"github.com/Chronicle20/atlas-model/model"
 	"strconv"
+
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas-model/model"
+	"github.com/google/uuid"
 )
 
 type RestModel struct {
 	Id                 string        `json:"-"`
-	WorldId            byte          `json:"worldId"`
-	ChannelId          byte          `json:"channelId"`
-	MapId              uint32        `json:"mapId"`
+	WorldId            world.Id      `json:"worldId"`
+	ChannelId          channel.Id   `json:"channelId"`
+	MapId              _map.Id       `json:"mapId"`
+	Instance           uuid.UUID     `json:"instance"`
 	MonsterId          uint32        `json:"monsterId"`
 	ControlCharacterId uint32        `json:"controlCharacterId"`
 	X                  int16         `json:"x"`
@@ -53,6 +59,7 @@ func Transform(m Model) (RestModel, error) {
 		WorldId:            m.worldId,
 		ChannelId:          m.channelId,
 		MapId:              m.mapId,
+		Instance:           m.instance,
 		MonsterId:          m.monsterId,
 		ControlCharacterId: m.controlCharacterId,
 		X:                  m.x,

@@ -2,22 +2,24 @@ package npc
 
 import (
 	npc2 "atlas-channel/kafka/message/npc"
-	_map "github.com/Chronicle20/atlas-constants/map"
+
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 )
 
-func StartConversationCommandProvider(m _map.Model, npcId uint32, characterId uint32, accountId uint32) model.Provider[[]kafka.Message] {
+func StartConversationCommandProvider(f field.Model, npcId uint32, characterId uint32, accountId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &npc2.Command[npc2.StartConversationCommandBody]{
 		NpcId:       npcId,
 		CharacterId: characterId,
 		Type:        npc2.CommandTypeStartConversation,
 		Body: npc2.StartConversationCommandBody{
-			WorldId:   m.WorldId(),
-			ChannelId: m.ChannelId(),
-			MapId:     m.MapId(),
+			WorldId:   f.WorldId(),
+			ChannelId: f.ChannelId(),
+			MapId:     f.MapId(),
+			Instance:  f.Instance(),
 			AccountId: accountId,
 		},
 	}

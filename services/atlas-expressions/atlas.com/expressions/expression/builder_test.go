@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
@@ -72,7 +73,8 @@ func TestModelBuilder_SetExpiration(t *testing.T) {
 func TestModelBuilder_SetLocation(t *testing.T) {
 	ten := setupTestTenant(t)
 
-	b := NewModelBuilder(ten).SetLocation(world.Id(1), channel.Id(2), _map.Id(300000000))
+	f := field.NewBuilder(world.Id(1), channel.Id(2), _map.Id(300000000)).Build()
+	b := NewModelBuilder(ten).SetLocation(f)
 
 	assert.Equal(t, world.Id(1), b.WorldId())
 	assert.Equal(t, channel.Id(2), b.ChannelId())
@@ -104,9 +106,10 @@ func TestModelBuilder_Build_Success(t *testing.T) {
 	ten := setupTestTenant(t)
 	expiration := time.Now().Add(5 * time.Second)
 
+	f := field.NewBuilder(world.Id(1), channel.Id(2), _map.Id(100000000)).Build()
 	m, err := NewModelBuilder(ten).
 		SetCharacterId(1000).
-		SetLocation(world.Id(1), channel.Id(2), _map.Id(100000000)).
+		SetLocation(f).
 		SetExpression(5).
 		SetExpiration(expiration).
 		Build()
@@ -185,9 +188,10 @@ func TestCloneModelBuilder(t *testing.T) {
 	ten := setupTestTenant(t)
 	expiration := time.Now().Add(5 * time.Second)
 
+	f := field.NewBuilder(world.Id(1), channel.Id(2), _map.Id(100000000)).Build()
 	original := NewModelBuilder(ten).
 		SetCharacterId(1000).
-		SetLocation(world.Id(1), channel.Id(2), _map.Id(100000000)).
+		SetLocation(f).
 		SetExpression(5).
 		SetExpiration(expiration).
 		MustBuild()
@@ -207,9 +211,10 @@ func TestCloneModelBuilder_Modify(t *testing.T) {
 	ten := setupTestTenant(t)
 	expiration := time.Now().Add(5 * time.Second)
 
+	f := field.NewBuilder(world.Id(1), channel.Id(2), _map.Id(100000000)).Build()
 	original := NewModelBuilder(ten).
 		SetCharacterId(1000).
-		SetLocation(world.Id(1), channel.Id(2), _map.Id(100000000)).
+		SetLocation(f).
 		SetExpression(5).
 		SetExpiration(expiration).
 		MustBuild()

@@ -97,7 +97,7 @@ func (b *Builder) AddStep(stepId string, status Status, action Action, payload a
 }
 
 // AddAwardFame adds a fame award step
-func (b *Builder) AddAwardFame(characterId uint32, worldId world.Id, channelId channel.Id, amount int16) *Builder {
+func (b *Builder) AddAwardFame(characterId uint32, ch channel.Model, amount int16) *Builder {
 	b.stepCounter++
 	b.steps = append(b.steps, Step{
 		StepId: fmt.Sprintf("step_%d", b.stepCounter),
@@ -105,8 +105,8 @@ func (b *Builder) AddAwardFame(characterId uint32, worldId world.Id, channelId c
 		Action: AwardFame,
 		Payload: AwardFamePayload{
 			CharacterId: characterId,
-			WorldId:     worldId,
-			ChannelId:   channelId,
+			WorldId:     ch.WorldId(),
+			ChannelId:   ch.Id(),
 			Amount:      amount,
 		},
 	})

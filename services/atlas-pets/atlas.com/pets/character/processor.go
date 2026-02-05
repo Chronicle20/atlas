@@ -3,6 +3,10 @@ package character
 import (
 	"atlas-pets/inventory"
 	"context"
+
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/Chronicle20/atlas-tenant"
@@ -12,10 +16,10 @@ import (
 type Processor interface {
 	GetById(decorators ...model.Decorator[Model]) func(characterId uint32) (Model, error)
 	InventoryDecorator(m Model) Model
-	Enter(worldId byte, channelId byte, mapId uint32, characterId uint32)
-	Exit(worldId byte, channelId byte, mapId uint32, characterId uint32)
-	TransitionMap(worldId byte, channelId byte, mapId uint32, characterId uint32, oldMapId uint32)
-	TransitionChannel(worldId byte, channelId byte, oldChannelId byte, characterId uint32, mapId uint32)
+	Enter(field field.Model, characterId uint32)
+	Exit(field field.Model, characterId uint32)
+	TransitionMap(field field.Model, characterId uint32, oldMapId _map.Id)
+	TransitionChannel(field field.Model, characterId uint32, channelId channel.Id)
 }
 
 type ProcessorImpl struct {
@@ -54,20 +58,20 @@ func GetLoggedIn() model.Provider[map[uint32]MapKey] {
 	return model.FixedProvider(getRegistry().GetLoggedIn())
 }
 
-func (p *ProcessorImpl) Enter(worldId byte, channelId byte, mapId uint32, characterId uint32) {
-	getRegistry().AddCharacter(characterId, MapKey{Tenant: p.t, WorldId: worldId, ChannelId: channelId, MapId: mapId})
+func (p *ProcessorImpl) Enter(field field.Model, characterId uint32) {
+	getRegistry().AddCharacter(characterId, MapKey{Tenant: p.t, Field: field})
 }
 
-func (p *ProcessorImpl) Exit(worldId byte, channelId byte, mapId uint32, characterId uint32) {
+func (p *ProcessorImpl) Exit(field field.Model, characterId uint32) {
 	getRegistry().RemoveCharacter(characterId)
 }
 
-func (p *ProcessorImpl) TransitionMap(worldId byte, channelId byte, mapId uint32, characterId uint32, oldMapId uint32) {
-	p.Exit(worldId, channelId, oldMapId, characterId)
-	p.Enter(worldId, channelId, mapId, characterId)
+func (p *ProcessorImpl) TransitionMap(field field.Model, characterId uint32, oldMapId _map.Id) {
+	p.Exit(field.Clone().SetMapId(oldMapId).Build(), characterId)
+	p.Enter(field, characterId)
 }
 
-func (p *ProcessorImpl) TransitionChannel(worldId byte, channelId byte, oldChannelId byte, characterId uint32, mapId uint32) {
-	p.Exit(worldId, oldChannelId, mapId, characterId)
-	p.Enter(worldId, channelId, mapId, characterId)
+func (p *ProcessorImpl) TransitionChannel(field field.Model, characterId uint32, oldChannelId channel.Id) {
+	p.Exit(field.Clone().SetChannelId(oldChannelId).Build(), characterId)
+	p.Enter(field, characterId)
 }

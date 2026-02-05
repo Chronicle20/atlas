@@ -2,6 +2,7 @@ package character
 
 import (
 	"context"
+
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
@@ -32,7 +33,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 }
 
 func (p *ProcessorImpl) InMapProvider(field field.Model) model.Provider[[]uint32] {
-	cids := getRegistry().GetInMap(MapKey{Tenant: p.t, WorldId: field.WorldId(), ChannelId: field.ChannelId(), MapId: field.MapId()})
+	cids := getRegistry().GetInMap(MapKey{Tenant: p.t, Field: field})
 	return model.FixedProvider(cids)
 }
 
@@ -41,11 +42,11 @@ func (p *ProcessorImpl) GetCharactersInMap(field field.Model) ([]uint32, error) 
 }
 
 func (p *ProcessorImpl) Enter(field field.Model, characterId uint32) {
-	getRegistry().AddCharacter(MapKey{Tenant: p.t, WorldId: field.WorldId(), ChannelId: field.ChannelId(), MapId: field.MapId()}, characterId)
+	getRegistry().AddCharacter(MapKey{Tenant: p.t, Field: field}, characterId)
 }
 
 func (p *ProcessorImpl) Exit(field field.Model, characterId uint32) {
-	getRegistry().RemoveCharacter(MapKey{Tenant: p.t, WorldId: field.WorldId(), ChannelId: field.ChannelId(), MapId: field.MapId()}, characterId)
+	getRegistry().RemoveCharacter(MapKey{Tenant: p.t, Field: field}, characterId)
 }
 
 func (p *ProcessorImpl) TransitionMap(oldField field.Model, newField field.Model, characterId uint32) {

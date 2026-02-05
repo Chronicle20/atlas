@@ -8,6 +8,7 @@ import (
 	"atlas-channel/quest"
 	"errors"
 
+	"github.com/Chronicle20/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 )
@@ -26,7 +27,7 @@ type modelBuilder struct {
 	face               uint32
 	hair               uint32
 	level              byte
-	jobId              uint16
+	jobId              job.Id
 	strength           uint16
 	dexterity          uint16
 	intelligence       uint16
@@ -111,7 +112,7 @@ func (b *modelBuilder) SetSkinColor(v byte) *modelBuilder      { b.skinColor = v
 func (b *modelBuilder) SetFace(v uint32) *modelBuilder         { b.face = v; return b }
 func (b *modelBuilder) SetHair(v uint32) *modelBuilder         { b.hair = v; return b }
 func (b *modelBuilder) SetLevel(v byte) *modelBuilder          { b.level = v; return b }
-func (b *modelBuilder) SetJobId(v uint16) *modelBuilder        { b.jobId = v; return b }
+func (b *modelBuilder) SetJobId(v job.Id) *modelBuilder        { b.jobId = v; return b }
 func (b *modelBuilder) SetStrength(v uint16) *modelBuilder     { b.strength = v; return b }
 func (b *modelBuilder) SetDexterity(v uint16) *modelBuilder    { b.dexterity = v; return b }
 func (b *modelBuilder) SetIntelligence(v uint16) *modelBuilder { b.intelligence = v; return b }
@@ -129,15 +130,15 @@ func (b *modelBuilder) SetGachaponExperience(v uint32) *modelBuilder {
 	b.gachaponExperience = v
 	return b
 }
-func (b *modelBuilder) SetMapId(v _map.Id) *modelBuilder              { b.mapId = v; return b }
-func (b *modelBuilder) SetSpawnPoint(v uint32) *modelBuilder          { b.spawnPoint = v; return b }
-func (b *modelBuilder) SetGm(v int) *modelBuilder                     { b.gm = v; return b }
-func (b *modelBuilder) SetMeso(v uint32) *modelBuilder                { b.meso = v; return b }
-func (b *modelBuilder) SetPets(v []pet.Model) *modelBuilder           { b.pets = v; return b }
-func (b *modelBuilder) SetEquipment(v equipment.Model) *modelBuilder  { b.equipment = v; return b }
-func (b *modelBuilder) SetInventory(v inventory.Model) *modelBuilder  { b.inventory = v; return b }
-func (b *modelBuilder) SetSkills(v []skill.Model) *modelBuilder       { b.skills = v; return b }
-func (b *modelBuilder) SetQuests(v []quest.Model) *modelBuilder       { b.quests = v; return b }
+func (b *modelBuilder) SetMapId(v _map.Id) *modelBuilder             { b.mapId = v; return b }
+func (b *modelBuilder) SetSpawnPoint(v uint32) *modelBuilder         { b.spawnPoint = v; return b }
+func (b *modelBuilder) SetGm(v int) *modelBuilder                    { b.gm = v; return b }
+func (b *modelBuilder) SetMeso(v uint32) *modelBuilder               { b.meso = v; return b }
+func (b *modelBuilder) SetPets(v []pet.Model) *modelBuilder          { b.pets = v; return b }
+func (b *modelBuilder) SetEquipment(v equipment.Model) *modelBuilder { b.equipment = v; return b }
+func (b *modelBuilder) SetInventory(v inventory.Model) *modelBuilder { b.inventory = v; return b }
+func (b *modelBuilder) SetSkills(v []skill.Model) *modelBuilder      { b.skills = v; return b }
+func (b *modelBuilder) SetQuests(v []quest.Model) *modelBuilder      { b.quests = v; return b }
 
 // Build creates a new Model instance with validation
 func (b *modelBuilder) Build() (Model, error) {

@@ -10,6 +10,7 @@ import (
 	"atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
+
 	"github.com/Chronicle20/atlas-constants/skill"
 	model2 "github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-socket/request"
@@ -65,15 +66,15 @@ func CharacterUseSkillHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 		}
 
 		l.Debugf("Character [%d] using skill [%d] at level [%d].", s.CharacterId(), sui.SkillId(), sui.SkillLevel())
-		err = handler.UseSkill(l)(ctx)(s.Map(), s.CharacterId(), *sui, se)
+		err = handler.UseSkill(l)(ctx)(s.Field(), s.CharacterId(), *sui, se)
 		if err != nil {
 			l.WithError(err).Errorf("Character [%d] failed to use skill [%d].", s.CharacterId(), sui.SkillId())
 			return
 		}
 
-		session.NewProcessor(l, ctx).IfPresentByCharacterId(s.WorldId(), s.ChannelId())(s.CharacterId(), announceSkillUse(l)(ctx)(wp)(sui.SkillId(), c.Level(), sui.SkillLevel()))
+		session.NewProcessor(l, ctx).IfPresentByCharacterId(s.Field().Channel())(s.CharacterId(), announceSkillUse(l)(ctx)(wp)(sui.SkillId(), c.Level(), sui.SkillLevel()))
 
-		_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Map(), s.CharacterId(), announceForeignSkillUse(l)(ctx)(wp)(s.CharacterId(), sui.SkillId(), c.Level(), sui.SkillLevel()))
+		_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), announceForeignSkillUse(l)(ctx)(wp)(s.CharacterId(), sui.SkillId(), c.Level(), sui.SkillLevel()))
 
 		err = enableActions(l)(ctx)(wp)(s)
 		if err != nil {

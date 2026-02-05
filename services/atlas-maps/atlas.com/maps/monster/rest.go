@@ -1,24 +1,35 @@
 package monster
 
+import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
+)
+
 type RestModel struct {
 	Id                 string        `json:"-"`
-	WorldId            byte          `json:"worldId"`
-	ChannelId          byte          `json:"channelId"`
-	MapId              int           `json:"mapId"`
+	WorldId            world.Id      `json:"worldId"`
+	ChannelId          channel.Id    `json:"channelId"`
+	MapId              _map.Id       `json:"mapId"`
+	Instance           uuid.UUID     `json:"instance"`
 	MonsterId          uint32        `json:"monsterId"`
-	ControlCharacterId int           `json:"controlCharacterId"`
+	ControlCharacterId uint32        `json:"controlCharacterId"`
 	X                  int16         `json:"x"`
 	Y                  int16         `json:"y"`
-	Fh                 uint16        `json:"fh"`
-	Stance             int           `json:"stance"`
-	Team               int32         `json:"team"`
-	Hp                 int           `json:"hp"`
-	DamageEntries      []damageEntry `json:"damageEntries"`
+	Fh                 int16         `json:"fh"`
+	Stance             byte          `json:"stance"`
+	Team               int8          `json:"team"`
+	MaxHp              uint32        `json:"maxHp"`
+	Hp                 uint32        `json:"hp"`
+	MaxMp              uint32        `json:"maxMp"`
+	Mp                 uint32        `json:"mp"`
+	DamageEntries      []DamageEntry `json:"damageEntries"`
 }
 
-type damageEntry struct {
-	CharacterId int   `json:"characterId"`
-	Damage      int64 `json:"damage"`
+type DamageEntry struct {
+	CharacterId uint32 `json:"characterId"`
+	Damage      uint32 `json:"damage"`
 }
 
 func (m RestModel) GetID() string {

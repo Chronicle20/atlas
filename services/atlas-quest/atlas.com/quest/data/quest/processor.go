@@ -2,6 +2,8 @@ package quest
 
 import (
 	"context"
+
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/sirupsen/logrus"
 )
 
@@ -11,7 +13,7 @@ type Processor interface {
 	GetQuestDefinition(questId uint32) (RestModel, error)
 	// GetAutoStartQuests fetches all auto-start quests and filters by mapId.
 	// If mapId is 0, returns all auto-start quests.
-	GetAutoStartQuests(mapId uint32) ([]RestModel, error)
+	GetAutoStartQuests(mapId _map.Id) ([]RestModel, error)
 }
 
 type ProcessorImpl struct {
@@ -35,7 +37,7 @@ func (p *ProcessorImpl) GetQuestDefinition(questId uint32) (RestModel, error) {
 	return result, nil
 }
 
-func (p *ProcessorImpl) GetAutoStartQuests(mapId uint32) ([]RestModel, error) {
+func (p *ProcessorImpl) GetAutoStartQuests(mapId _map.Id) ([]RestModel, error) {
 	allAutoStart, err := requestAutoStartQuests()(p.l, p.ctx)
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to get auto-start quests")

@@ -1,8 +1,12 @@
 package storage
 
 import (
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/Chronicle20/atlas-constants/asset"
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
 )
 
 const (
@@ -16,7 +20,7 @@ const (
 
 type Command[E any] struct {
 	TransactionId uuid.UUID `json:"transactionId"`
-	WorldId       byte      `json:"worldId"`
+	WorldId       world.Id  `json:"worldId"`
 	AccountId     uint32    `json:"accountId"`
 	Type          string    `json:"type"`
 	Body          E         `json:"body"`
@@ -41,8 +45,8 @@ type ReferenceData struct {
 
 // WithdrawBody contains the data needed to withdraw an item from storage
 type WithdrawBody struct {
-	AssetId  uint32 `json:"assetId"`
-	Quantity uint32 `json:"quantity,omitempty"`
+	AssetId  asset.Id       `json:"assetId"`
+	Quantity asset.Quantity `json:"quantity,omitempty"`
 }
 
 // UpdateMesosBody contains the data needed to update mesos in storage
@@ -53,7 +57,7 @@ type UpdateMesosBody struct {
 
 // DepositRollbackBody contains the data needed to rollback a deposit
 type DepositRollbackBody struct {
-	AssetId uint32 `json:"assetId"`
+	AssetId asset.Id `json:"assetId"`
 }
 
 const (
@@ -66,7 +70,7 @@ const (
 
 type StatusEvent[E any] struct {
 	TransactionId uuid.UUID `json:"transactionId"`
-	WorldId       byte      `json:"worldId"`
+	WorldId       world.Id  `json:"worldId"`
 	AccountId     uint32    `json:"accountId"`
 	Type          string    `json:"type"`
 	Body          E         `json:"body"`
@@ -74,7 +78,7 @@ type StatusEvent[E any] struct {
 
 // DepositedEventBody contains the data for a deposited event
 type DepositedEventBody struct {
-	AssetId       uint32    `json:"assetId"`
+	AssetId       asset.Id  `json:"assetId"`
 	Slot          int16     `json:"slot"`
 	TemplateId    uint32    `json:"templateId"`
 	ReferenceId   uint32    `json:"referenceId"`
@@ -84,10 +88,10 @@ type DepositedEventBody struct {
 
 // WithdrawnEventBody contains the data for a withdrawn event
 type WithdrawnEventBody struct {
-	AssetId    uint32 `json:"assetId"`
-	Slot       int16  `json:"slot"`
-	TemplateId uint32 `json:"templateId"`
-	Quantity   uint32 `json:"quantity,omitempty"`
+	AssetId    asset.Id       `json:"assetId"`
+	Slot       int16          `json:"slot"`
+	TemplateId uint32         `json:"templateId"`
+	Quantity   asset.Quantity `json:"quantity,omitempty"`
 }
 
 // MesosUpdatedEventBody contains the data for a mesos updated event
@@ -104,11 +108,11 @@ type ErrorEventBody struct {
 
 // ShowStorageCommand is sent to the channel service to display storage UI
 type ShowStorageCommand struct {
-	TransactionId uuid.UUID `json:"transactionId"`
-	WorldId       byte      `json:"worldId"`
-	ChannelId     byte      `json:"channelId"`
-	CharacterId   uint32    `json:"characterId"`
-	NpcId         uint32    `json:"npcId"`
-	AccountId     uint32    `json:"accountId"`
-	Type          string    `json:"type"`
+	TransactionId uuid.UUID  `json:"transactionId"`
+	WorldId       world.Id   `json:"worldId"`
+	ChannelId     channel.Id `json:"channelId"`
+	CharacterId   uint32     `json:"characterId"`
+	NpcId         uint32     `json:"npcId"`
+	AccountId     uint32     `json:"accountId"`
+	Type          string     `json:"type"`
 }

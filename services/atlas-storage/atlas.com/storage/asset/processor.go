@@ -5,6 +5,8 @@ import (
 	"atlas-storage/pet"
 	"atlas-storage/stackable"
 	"context"
+
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -56,33 +58,33 @@ func (StorageEntity) TableName() string {
 }
 
 // GetOrCreateStorageId retrieves or creates a storage and returns its ID
-func (p *Processor) GetOrCreateStorageId(worldId byte, accountId uint32) (uuid.UUID, error) {
+func (p *Processor) GetOrCreateStorageId(worldId world.Id, accountId uint32) (uuid.UUID, error) {
 	t := tenant.MustFromContext(p.ctx)
 
-	// Try to get existing storage
-	var storage StorageEntity
-	err := p.db.Where("tenant_id = ? AND world_id = ? AND account_id = ?", t.Id(), worldId, accountId).
-		First(&storage).Error
+	// Try to get existing storage - convert to byte for database query
+	var storageEntity StorageEntity
+	err := p.db.Where("tenant_id = ? AND world_id = ? AND account_id = ?", t.Id(), byte(worldId), accountId).
+		First(&storageEntity).Error
 
 	if err == nil {
-		return storage.Id, nil
+		return storageEntity.Id, nil
 	}
 
-	// Storage not found, create it
+	// Storage not found, create it - convert to byte for database entity
 	if err == gorm.ErrRecordNotFound {
-		storage = StorageEntity{
+		storageEntity = StorageEntity{
 			TenantId:  t.Id(),
 			Id:        uuid.New(),
-			WorldId:   worldId,
+			WorldId:   byte(worldId),
 			AccountId: accountId,
 			Capacity:  4,
 			Mesos:     0,
 		}
-		createErr := p.db.Create(&storage).Error
+		createErr := p.db.Create(&storageEntity).Error
 		if createErr != nil {
 			return uuid.Nil, createErr
 		}
-		return storage.Id, nil
+		return storageEntity.Id, nil
 	}
 
 	return uuid.Nil, err

@@ -58,7 +58,7 @@ func handleAcceptedEvent(sc server.Model, wp writer.Producer) message.Handler[ca
 
 		l.Debugf("Cash-shop compartment accepted item. CharacterId: [%d], AssetId: [%s].", e.CharacterId, e.Body.AssetId)
 
-		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
 			// Fetch the cash-shop asset that was just created
 			a, err := asset.NewProcessor(l, ctx).GetById(e.AccountId, e.CompartmentId, e.Body.AssetId)
 			if err != nil {
@@ -91,7 +91,7 @@ func handleReleasedEvent(sc server.Model, wp writer.Producer) message.Handler[ca
 
 		l.Debugf("Cash-shop compartment released item. CharacterId: [%d], CashId: [%d], TemplateId: [%d].", e.CharacterId, e.Body.CashId, e.Body.TemplateId)
 
-		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
 			// Determine the inventory type from the template ID
 			invType, ok := inventory.TypeFromItemId(item.Id(e.Body.TemplateId))
 			if !ok {

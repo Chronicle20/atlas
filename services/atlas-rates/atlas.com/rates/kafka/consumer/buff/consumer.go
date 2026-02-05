@@ -7,6 +7,7 @@ import (
 	"atlas-rates/rate"
 	"context"
 
+	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -61,7 +62,8 @@ func handleBuffApplied(l logrus.FieldLogger, ctx context.Context, e buff.StatusE
 		l.Debugf("Adding buff factor: stat type [%s] -> rate type [%s], amount [%d] -> multiplier [%.2f].",
 			change.Type, rateType, change.Amount, multiplier)
 
-		if err := p.AddBuffFactor(e.WorldId, e.ChannelId, e.CharacterId, e.Body.SourceId, rateType, multiplier); err != nil {
+		ch := channel.NewModel(e.WorldId, e.ChannelId)
+		if err := p.AddBuffFactor(ch, e.CharacterId, e.Body.SourceId, rateType, multiplier); err != nil {
 			l.WithError(err).Errorf("Unable to add buff factor for character [%d].", e.CharacterId)
 		}
 	}
@@ -81,4 +83,3 @@ func handleBuffExpired(l logrus.FieldLogger, ctx context.Context, e buff.StatusE
 		l.WithError(err).Errorf("Unable to remove buff factors for character [%d].", e.CharacterId)
 	}
 }
-

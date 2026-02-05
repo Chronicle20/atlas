@@ -2,32 +2,32 @@ package npc
 
 import (
 	npc2 "atlas-npc-conversations/kafka/message/npc"
+
 	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 )
 
-func enableActionsProvider(worldId world.Id, channelId channel.Id, characterId uint32) model.Provider[[]kafka.Message] {
+func enableActionsProvider(ch channel.Model, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &npc2.StatusEvent[npc2.StatusEventStatChangedBody]{
 		CharacterId: characterId,
 		Type:        npc2.EventCharacterStatusTypeStatChanged,
-		WorldId:     byte(worldId),
+		WorldId:     ch.WorldId(),
 		Body: npc2.StatusEventStatChangedBody{
-			ChannelId:       byte(channelId),
+			ChannelId:       ch.Id(),
 			ExclRequestSent: true,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func simpleConversationProvider(worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32, message string, messageType string, speaker string, endChat bool, secondaryNpcId uint32) model.Provider[[]kafka.Message] {
+func simpleConversationProvider(ch channel.Model, characterId uint32, npcId uint32, message string, messageType string, speaker string, endChat bool, secondaryNpcId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &npc2.ConversationCommand[npc2.CommandSimpleBody]{
-		WorldId:        byte(worldId),
-		ChannelId:      byte(channelId),
+		WorldId:        ch.WorldId(),
+		ChannelId:      ch.Id(),
 		CharacterId:    characterId,
 		NpcId:          npcId,
 		Speaker:        speaker,
@@ -40,11 +40,11 @@ func simpleConversationProvider(worldId world.Id, channelId channel.Id, characte
 	return producer.SingleMessageProvider(key, value)
 }
 
-func numberConversationProvider(worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32, message string, def uint32, min uint32, max uint32, speaker string, endChat bool, secondaryNpcId uint32) model.Provider[[]kafka.Message] {
+func numberConversationProvider(ch channel.Model, characterId uint32, npcId uint32, message string, def uint32, min uint32, max uint32, speaker string, endChat bool, secondaryNpcId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &npc2.ConversationCommand[npc2.CommandNumberBody]{
-		WorldId:        byte(worldId),
-		ChannelId:      byte(channelId),
+		WorldId:        ch.WorldId(),
+		ChannelId:      ch.Id(),
 		CharacterId:    characterId,
 		NpcId:          npcId,
 		Speaker:        speaker,
@@ -61,11 +61,11 @@ func numberConversationProvider(worldId world.Id, channelId channel.Id, characte
 	return producer.SingleMessageProvider(key, value)
 }
 
-func styleConversationProvider(worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32, message string, styles []uint32, speaker string, endChat bool, secondaryNpcId uint32) model.Provider[[]kafka.Message] {
+func styleConversationProvider(ch channel.Model, characterId uint32, npcId uint32, message string, styles []uint32, speaker string, endChat bool, secondaryNpcId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &npc2.ConversationCommand[npc2.CommandStyleBody]{
-		WorldId:        byte(worldId),
-		ChannelId:      byte(channelId),
+		WorldId:        ch.WorldId(),
+		ChannelId:      ch.Id(),
 		CharacterId:    characterId,
 		NpcId:          npcId,
 		Speaker:        speaker,

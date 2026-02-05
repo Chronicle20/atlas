@@ -1,6 +1,9 @@
 package quest
 
-import "github.com/google/uuid"
+import (
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
+)
 
 const (
 	// EnvCommandTopic defines the environment variable for the quest command topic
@@ -16,7 +19,7 @@ const (
 // Command represents a quest command message
 type Command[E any] struct {
 	TransactionId uuid.UUID `json:"transactionId"`
-	WorldId       byte      `json:"worldId"`
+	WorldId       world.Id  `json:"worldId"`
 	CharacterId   uint32    `json:"characterId"`
 	Type          string    `json:"type"`
 	Body          E         `json:"body"`
@@ -71,7 +74,7 @@ const (
 // StatusEvent represents a quest status event message
 type StatusEvent[E any] struct {
 	TransactionId uuid.UUID `json:"transactionId"`
-	WorldId       byte      `json:"worldId"`
+	WorldId       world.Id  `json:"worldId"`
 	CharacterId   uint32    `json:"characterId"`
 	Type          string    `json:"type"`
 	Body          E         `json:"body"`

@@ -1,6 +1,10 @@
 package portal
 
-import "fmt"
+import (
+	"fmt"
+
+	_map "github.com/Chronicle20/atlas-constants/map"
+)
 
 type Model struct {
 	id          uint32
@@ -9,7 +13,7 @@ type Model struct {
 	portalType  uint8
 	x           int16
 	y           int16
-	targetMapId uint32
+	targetMapId _map.Id
 	scriptName  string
 }
 
@@ -29,7 +33,7 @@ func (m Model) HasTargetMap() bool {
 	return m.targetMapId != 999999999
 }
 
-func (m Model) TargetMapId() uint32 {
+func (m Model) TargetMapId() _map.Id {
 	return m.targetMapId
 }
 

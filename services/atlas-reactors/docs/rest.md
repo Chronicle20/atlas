@@ -47,17 +47,18 @@ JSON:API document with type `reactors`.
 
 ---
 
-### GET /api/worlds/{worldId}/channels/{channelId}/maps/{mapId}/reactors
+### GET /api/worlds/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/reactors
 
-Retrieves all reactors in a specific world/channel/map.
+Retrieves all reactors in a specific world/channel/map/instance.
 
 **Parameters:**
 
-| Name      | In   | Type   | Required | Description        |
-|-----------|------|--------|----------|--------------------|
-| worldId   | path | byte   | Yes      | World identifier   |
-| channelId | path | byte   | Yes      | Channel identifier |
-| mapId     | path | uint32 | Yes      | Map identifier     |
+| Name       | In   | Type   | Required | Description         |
+|------------|------|--------|----------|---------------------|
+| worldId    | path | byte   | Yes      | World identifier    |
+| channelId  | path | byte   | Yes      | Channel identifier  |
+| mapId      | path | uint32 | Yes      | Map identifier      |
+| instanceId | path | uuid   | Yes      | Instance identifier |
 
 **Request Headers:**
 
@@ -80,18 +81,19 @@ JSON:API document with array of type `reactors`.
 
 ---
 
-### GET /api/worlds/{worldId}/channels/{channelId}/maps/{mapId}/reactors/{reactorId}
+### GET /api/worlds/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/reactors/{reactorId}
 
-Retrieves a specific reactor within a map context.
+Retrieves a specific reactor within a map/instance context.
 
 **Parameters:**
 
-| Name      | In   | Type   | Required | Description        |
-|-----------|------|--------|----------|--------------------|
-| worldId   | path | byte   | Yes      | World identifier   |
-| channelId | path | byte   | Yes      | Channel identifier |
-| mapId     | path | uint32 | Yes      | Map identifier     |
-| reactorId | path | uint32 | Yes      | Unique reactor ID  |
+| Name       | In   | Type   | Required | Description         |
+|------------|------|--------|----------|---------------------|
+| worldId    | path | byte   | Yes      | World identifier    |
+| channelId  | path | byte   | Yes      | Channel identifier  |
+| mapId      | path | uint32 | Yes      | Map identifier      |
+| instanceId | path | uuid   | Yes      | Instance identifier |
+| reactorId  | path | uint32 | Yes      | Unique reactor ID   |
 
 **Request Headers:**
 
@@ -114,17 +116,18 @@ JSON:API document with type `reactors`.
 
 ---
 
-### POST /api/worlds/{worldId}/channels/{channelId}/maps/{mapId}/reactors
+### POST /api/worlds/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/reactors
 
-Creates a new reactor in the specified map. Request is processed asynchronously via Kafka.
+Creates a new reactor in the specified map/instance. Request is processed asynchronously via Kafka.
 
 **Parameters:**
 
-| Name      | In   | Type   | Required | Description        |
-|-----------|------|--------|----------|--------------------|
-| worldId   | path | byte   | Yes      | World identifier   |
-| channelId | path | byte   | Yes      | Channel identifier |
-| mapId     | path | uint32 | Yes      | Map identifier     |
+| Name       | In   | Type   | Required | Description         |
+|------------|------|--------|----------|---------------------|
+| worldId    | path | byte   | Yes      | World identifier    |
+| channelId  | path | byte   | Yes      | Channel identifier  |
+| mapId      | path | uint32 | Yes      | Map identifier      |
+| instanceId | path | uuid   | Yes      | Instance identifier |
 
 **Request Headers:**
 

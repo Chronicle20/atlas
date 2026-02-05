@@ -1,12 +1,17 @@
 package _map
 
-import "github.com/jtumidanski/api2go/jsonapi"
+import (
+	"strconv"
+
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/jtumidanski/api2go/jsonapi"
+)
 
 type RestModel struct {
-	Id                string  `json:"-"`
+	Id                _map.Id `json:"-"`
 	Name              string  `json:"name"`
 	StreetName        string  `json:"streetName"`
-	ReturnMapId       uint32  `json:"returnMapId"`
+	ReturnMapId       _map.Id `json:"returnMapId"`
 	MonsterRate       float64 `json:"monsterRate"`
 	OnFirstUserEnter  string  `json:"onFirstUserEnter"`
 	OnUserEnter       string  `json:"onUserEnter"`
@@ -18,7 +23,7 @@ type RestModel struct {
 	Town              bool    `json:"town"`
 	DecHP             uint32  `json:"decHP"`
 	ProtectItem       uint32  `json:"protectItem"`
-	ForcedReturnMapId uint32  `json:"forcedReturnMapId"`
+	ForcedReturnMapId _map.Id `json:"forcedReturnMapId"`
 	Boat              bool    `json:"boat"`
 	TimeLimit         int32   `json:"timeLimit"`
 	FieldType         uint32  `json:"fieldType"`
@@ -31,11 +36,15 @@ func (r RestModel) GetName() string {
 }
 
 func (r RestModel) GetID() string {
-	return r.Id
+	return strconv.Itoa(int(r.Id))
 }
 
 func (r *RestModel) SetID(idStr string) error {
-	r.Id = idStr
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		return err
+	}
+	r.Id = _map.Id(id)
 	return nil
 }
 

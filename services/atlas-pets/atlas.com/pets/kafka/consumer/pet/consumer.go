@@ -6,9 +6,8 @@ import (
 	"atlas-pets/pet"
 	"context"
 
-	"github.com/Chronicle20/atlas-constants/channel"
-	_map "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas-constants/field"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -119,8 +118,8 @@ func handleSetExcludeCommand(db *gorm.DB) message.Handler[pet2.Command[pet2.SetE
 
 func handleMovementCommand(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, c pet2.MovementCommand) {
 	return func(l logrus.FieldLogger, ctx context.Context, c pet2.MovementCommand) {
-		m := _map.NewModel(world.Id(c.WorldId))(channel.Id(c.ChannelId))(_map.Id(c.MapId))
-		err := pet.NewProcessor(l, ctx, db).Move(uint32(c.ObjectId), m, c.ObserverId, c.X, c.Y, c.Stance)
+		f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
+		err := pet.NewProcessor(l, ctx, db).Move(uint32(c.ObjectId), f, c.ObserverId, c.X, c.Y, c.Stance)
 		if err != nil {
 			l.WithError(err).Errorf("Error processing movement for pet [%d].", c.ObjectId)
 		}

@@ -2,8 +2,9 @@ package message
 
 import (
 	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/world"
 	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
 )
 
 const (
@@ -26,6 +27,7 @@ type Command[E any] struct {
 	WorldId   world.Id   `json:"worldId"`
 	ChannelId channel.Id `json:"channelId"`
 	MapId     _map.Id    `json:"mapId"`
+	Instance  uuid.UUID  `json:"instance"`
 	ActorId   uint32     `json:"actorId"`
 	Message   string     `json:"message"`
 	Type      string     `json:"type"`
@@ -40,6 +42,7 @@ type ChatEvent[E any] struct {
 	WorldId   world.Id   `json:"worldId"`
 	ChannelId channel.Id `json:"channelId"`
 	MapId     _map.Id    `json:"mapId"`
+	Instance  uuid.UUID  `json:"instance"`
 	ActorId   uint32     `json:"actorId"`
 	Message   string     `json:"message"`
 	Type      string     `json:"type"`

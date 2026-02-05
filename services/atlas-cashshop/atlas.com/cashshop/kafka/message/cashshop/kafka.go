@@ -1,6 +1,9 @@
 package cashshop
 
-import "github.com/google/uuid"
+import (
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
+)
 
 const (
 	EnvCommandTopic                               = "COMMAND_TOPIC_CASH_SHOP"
@@ -82,12 +85,12 @@ type PurchaseEventBody struct {
 
 // ExpireCommandBody contains the data for expiring a cash shop item
 type ExpireCommandBody struct {
-	AccountId      uint32 `json:"accountId"`
-	WorldId        byte   `json:"worldId"`
-	AssetId        uint32 `json:"assetId"`
-	TemplateId     uint32 `json:"templateId"`
-	InventoryType  int8   `json:"inventoryType"`
-	Slot           int16  `json:"slot"`
-	ReplaceItemId  uint32 `json:"replaceItemId"`
-	ReplaceMessage string `json:"replaceMessage"`
+	AccountId      uint32   `json:"accountId"`
+	WorldId        world.Id `json:"worldId"`
+	AssetId        uint32   `json:"assetId"`
+	TemplateId     uint32   `json:"templateId"`
+	InventoryType  int8     `json:"inventoryType"`
+	Slot           int16    `json:"slot"`
+	ReplaceItemId  uint32   `json:"replaceItemId"`
+	ReplaceMessage string   `json:"replaceMessage"`
 }

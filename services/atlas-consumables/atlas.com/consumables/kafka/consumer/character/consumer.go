@@ -5,6 +5,8 @@ import (
 	character2 "atlas-consumables/kafka/message/character"
 	"atlas-consumables/map/character"
 	"context"
+
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -32,32 +34,36 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 	}
 }
 
-func handleStatusEventLogin(l logrus.FieldLogger, ctx context.Context, event character2.StatusEvent[character2.StatusEventLoginBody]) {
-	if event.Type == character2.EventCharacterStatusTypeLogin {
-		l.Debugf("Character [%d] has logged in. worldId [%d] channelId [%d] mapId [%d].", event.CharacterId, event.WorldId, event.Body.ChannelId, event.Body.MapId)
-		character.NewProcessor(l, ctx).Enter(event.WorldId, event.Body.ChannelId, event.Body.MapId, event.CharacterId)
+func handleStatusEventLogin(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventLoginBody]) {
+	if e.Type == character2.EventCharacterStatusTypeLogin {
+		f := field.NewBuilder(e.WorldId, e.Body.ChannelId, e.Body.MapId).SetInstance(e.Body.Instance).Build()
+		l.Debugf("Character [%d] has logged into field [%s].", e.CharacterId, f.Id())
+		character.NewProcessor(l, ctx).Enter(f, e.CharacterId)
 		return
 	}
 }
 
-func handleStatusEventLogout(l logrus.FieldLogger, ctx context.Context, event character2.StatusEvent[character2.StatusEventLogoutBody]) {
-	if event.Type == character2.EventCharacterStatusTypeLogout {
-		l.Debugf("Character [%d] has logged out. worldId [%d] channelId [%d] mapId [%d].", event.CharacterId, event.WorldId, event.Body.ChannelId, event.Body.MapId)
-		character.NewProcessor(l, ctx).Exit(event.WorldId, event.Body.ChannelId, event.Body.MapId, event.CharacterId)
+func handleStatusEventLogout(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventLogoutBody]) {
+	if e.Type == character2.EventCharacterStatusTypeLogout {
+		f := field.NewBuilder(e.WorldId, e.Body.ChannelId, e.Body.MapId).SetInstance(e.Body.Instance).Build()
+		l.Debugf("Character [%d] has logged out of field [%s].", e.CharacterId, f.Id())
+		character.NewProcessor(l, ctx).Exit(f, e.CharacterId)
 		return
 	}
 }
 
-func handleStatusEventMapChanged(l logrus.FieldLogger, ctx context.Context, event character2.StatusEvent[character2.StatusEventMapChangedBody]) {
-	if event.Type == character2.EventCharacterStatusTypeMapChanged {
-		l.Debugf("Character [%d] has changed maps. worldId [%d] channelId [%d] oldMapId [%d] newMapId [%d].", event.CharacterId, event.WorldId, event.Body.ChannelId, event.Body.OldMapId, event.Body.TargetMapId)
-		character.NewProcessor(l, ctx).TransitionMap(event.WorldId, event.Body.ChannelId, event.Body.TargetMapId, event.CharacterId, event.Body.OldMapId)
+func handleStatusEventMapChanged(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventMapChangedBody]) {
+	if e.Type == character2.EventCharacterStatusTypeMapChanged {
+		f := field.NewBuilder(e.WorldId, e.Body.ChannelId, e.Body.TargetMapId).SetInstance(e.Body.TargetInstance).Build()
+		l.Debugf("Character [%d] has changed maps. field [%s]. oldMapId [%d].", e.CharacterId, f.Id(), e.Body.OldMapId)
+		character.NewProcessor(l, ctx).TransitionMap(f, e.CharacterId)
 	}
 }
 
-func handleStatusEventChannelChanged(l logrus.FieldLogger, ctx context.Context, event character2.StatusEvent[character2.ChangeChannelEventLoginBody]) {
-	if event.Type == character2.EventCharacterStatusTypeChannelChanged {
-		l.Debugf("Character [%d] has changed channels. worldId [%d] channelId [%d] oldChannelId [%d].", event.CharacterId, event.WorldId, event.Body.ChannelId, event.Body.OldChannelId)
-		character.NewProcessor(l, ctx).TransitionChannel(event.WorldId, event.Body.ChannelId, event.Body.OldChannelId, event.CharacterId, event.Body.MapId)
+func handleStatusEventChannelChanged(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.ChangeChannelEventLoginBody]) {
+	if e.Type == character2.EventCharacterStatusTypeChannelChanged {
+		f := field.NewBuilder(e.WorldId, e.Body.ChannelId, e.Body.MapId).SetInstance(e.Body.Instance).Build()
+		l.Debugf("Character [%d] has changed channels. field [%s]. oldChannelId [%d].", e.CharacterId, f.Id(), e.Body.OldChannelId)
+		character.NewProcessor(l, ctx).TransitionChannel(f, e.CharacterId)
 	}
 }

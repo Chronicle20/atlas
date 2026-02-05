@@ -2,9 +2,9 @@
 
 ## Endpoints
 
-### GET /worlds/{worldId}/channels/{channelId}/maps/{mapId}/characters
+### GET /worlds/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/characters
 
-Returns character IDs present in the specified map.
+Returns character IDs present in the specified map instance.
 
 #### Parameters
 
@@ -13,6 +13,7 @@ Returns character IDs present in the specified map.
 | worldId | path | byte | yes | World identifier |
 | channelId | path | byte | yes | Channel identifier |
 | mapId | path | uint32 | yes | Map identifier |
+| instanceId | path | uuid | yes | Instance identifier (use 00000000-0000-0000-0000-000000000000 for non-instanced maps) |
 
 #### Request Headers
 

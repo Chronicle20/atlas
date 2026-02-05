@@ -2,13 +2,15 @@ package storage
 
 import (
 	"atlas-storage/rest"
+	"net/http"
+	"strings"
+
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"net/http"
-	"strings"
 )
 
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
@@ -27,7 +29,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 func handleGetStorageRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseAccountId(d.Logger(), func(accountId uint32) http.HandlerFunc {
-			return rest.ParseWorldId(d.Logger(), func(worldId byte) http.HandlerFunc {
+			return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
 					// Use processor to get or create storage lazily
 					s, err := NewProcessor(d.Logger(), d.Context(), db).GetOrCreateStorage(worldId, accountId)
@@ -57,7 +59,7 @@ func handleGetStorageRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *res
 func handleCreateStorageRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseAccountId(d.Logger(), func(accountId uint32) http.HandlerFunc {
-			return rest.ParseWorldId(d.Logger(), func(worldId byte) http.HandlerFunc {
+			return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
 					// Use processor to create storage
 					s, err := NewProcessor(d.Logger(), d.Context(), db).CreateStorage(worldId, accountId)

@@ -8,6 +8,7 @@ import (
 	"atlas-asset-expiration/session"
 	"context"
 
+	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	kafkaMessage "github.com/Chronicle20/atlas-kafka/message"
@@ -33,7 +34,7 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 	}
 }
 
-func handleSessionStatus(l logrus.FieldLogger) kafkaMessage.Handler[message.StatusEvent] {
+func handleSessionStatus(_ logrus.FieldLogger) kafkaMessage.Handler[message.StatusEvent] {
 	return func(l logrus.FieldLogger, ctx context.Context, e message.StatusEvent) {
 		if e.Type == message.EventSessionStatusTypeCreated {
 			handleSessionCreated(l, ctx, e)
@@ -59,14 +60,15 @@ func handleSessionCreated(l logrus.FieldLogger, ctx context.Context, e message.S
 	}
 
 	// Add to session tracker for periodic checks
-	session.GetTracker().Add(e.CharacterId, e.AccountId, e.WorldId, e.ChannelId, t.Id(), t.Region(), t.MajorVersion(), t.MinorVersion())
+	ch := channel.NewModel(e.WorldId, e.ChannelId)
+	session.GetTracker().Add(e.CharacterId, e.AccountId, ch, t.Id(), t.Region(), t.MajorVersion(), t.MinorVersion())
 
 	// Immediate expiration check on login
 	pp := producer.ProviderImpl(l)(ctx)
 	character.CheckAndExpire(l)(pp)(ctx)(e.CharacterId, e.AccountId, e.WorldId)
 }
 
-func handleSessionDestroyed(l logrus.FieldLogger, ctx context.Context, e message.StatusEvent) {
+func handleSessionDestroyed(l logrus.FieldLogger, _ context.Context, e message.StatusEvent) {
 	l.Debugf("Session destroyed for character [%d].", e.CharacterId)
 
 	// Remove from session tracker

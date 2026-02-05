@@ -3,6 +3,7 @@ package mock
 import (
 	"atlas-world/world"
 
+	worldConstant "github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 )
 
@@ -11,8 +12,8 @@ type Processor struct {
 	ChannelDecoratorFunc  func(m world.Model) world.Model
 	GetWorldsFunc         func(decorators ...model.Decorator[world.Model]) ([]world.Model, error)
 	AllWorldProviderFunc  func(decorators ...model.Decorator[world.Model]) model.Provider[[]world.Model]
-	GetWorldFunc          func(decorators ...model.Decorator[world.Model]) func(worldId byte) (world.Model, error)
-	ByWorldIdProviderFunc func(decorators ...model.Decorator[world.Model]) func(worldId byte) model.Provider[world.Model]
+	GetWorldFunc          func(decorators ...model.Decorator[world.Model]) func(worldId worldConstant.Id) (world.Model, error)
+	ByWorldIdProviderFunc func(decorators ...model.Decorator[world.Model]) func(worldId worldConstant.Id) model.Provider[world.Model]
 }
 
 // Compile-time interface check
@@ -39,20 +40,20 @@ func (m *Processor) AllWorldProvider(decorators ...model.Decorator[world.Model])
 	return model.FixedProvider[[]world.Model](nil)
 }
 
-func (m *Processor) GetWorld(decorators ...model.Decorator[world.Model]) func(worldId byte) (world.Model, error) {
+func (m *Processor) GetWorld(decorators ...model.Decorator[world.Model]) func(worldId worldConstant.Id) (world.Model, error) {
 	if m.GetWorldFunc != nil {
 		return m.GetWorldFunc(decorators...)
 	}
-	return func(worldId byte) (world.Model, error) {
+	return func(worldId worldConstant.Id) (world.Model, error) {
 		return world.Model{}, nil
 	}
 }
 
-func (m *Processor) ByWorldIdProvider(decorators ...model.Decorator[world.Model]) func(worldId byte) model.Provider[world.Model] {
+func (m *Processor) ByWorldIdProvider(decorators ...model.Decorator[world.Model]) func(worldId worldConstant.Id) model.Provider[world.Model] {
 	if m.ByWorldIdProviderFunc != nil {
 		return m.ByWorldIdProviderFunc(decorators...)
 	}
-	return func(worldId byte) model.Provider[world.Model] {
+	return func(worldId worldConstant.Id) model.Provider[world.Model] {
 		return model.FixedProvider[world.Model](world.Model{})
 	}
 }

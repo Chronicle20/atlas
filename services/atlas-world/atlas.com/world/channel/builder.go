@@ -4,20 +4,22 @@ import (
 	"errors"
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 )
 
 var (
-	ErrMissingId         = errors.New("channel id is required")
-	ErrInvalidIpAddress  = errors.New("ip address is required")
-	ErrInvalidPort       = errors.New("port must be between 1 and 65535")
-	ErrInvalidCapacity   = errors.New("max capacity must be greater than 0")
+	ErrMissingId        = errors.New("channel id is required")
+	ErrInvalidIpAddress = errors.New("ip address is required")
+	ErrInvalidPort      = errors.New("port must be between 1 and 65535")
+	ErrInvalidCapacity  = errors.New("max capacity must be greater than 0")
 )
 
 type modelBuilder struct {
 	id              uuid.UUID
-	worldId         byte
-	channelId       byte
+	worldId         world.Id
+	channelId       channel.Id
 	ipAddress       string
 	port            int
 	currentCapacity uint32
@@ -65,13 +67,13 @@ func (b *modelBuilder) SetId(id uuid.UUID) *modelBuilder {
 }
 
 // SetWorldId sets the worldId field
-func (b *modelBuilder) SetWorldId(worldId byte) *modelBuilder {
+func (b *modelBuilder) SetWorldId(worldId world.Id) *modelBuilder {
 	b.worldId = worldId
 	return b
 }
 
 // SetChannelId sets the channelId field
-func (b *modelBuilder) SetChannelId(channelId byte) *modelBuilder {
+func (b *modelBuilder) SetChannelId(channelId channel.Id) *modelBuilder {
 	b.channelId = channelId
 	return b
 }

@@ -3,11 +3,13 @@ package invite
 import (
 	"atlas-guilds/kafka/producer"
 	"context"
+
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {
-	Create(actorId uint32, worldId byte, referenceId uint32, targetId uint32) error
+	Create(actorId uint32, worldId world.Id, referenceId uint32, targetId uint32) error
 }
 
 type ProcessorImpl struct {
@@ -22,7 +24,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
-func (p *ProcessorImpl) Create(actorId uint32, worldId byte, referenceId uint32, targetId uint32) error {
+func (p *ProcessorImpl) Create(actorId uint32, worldId world.Id, referenceId uint32, targetId uint32) error {
 	p.l.Debugf("Creating guild [%d] invitation for [%d] from [%d].", referenceId, targetId, actorId)
 	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(createInviteCommandProvider(actorId, referenceId, worldId, targetId))
 }

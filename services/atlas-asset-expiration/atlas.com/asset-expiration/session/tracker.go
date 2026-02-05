@@ -3,6 +3,7 @@ package session
 import (
 	"sync"
 
+	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/google/uuid"
 )
 
@@ -10,8 +11,7 @@ import (
 type Session struct {
 	CharacterId  uint32
 	AccountId    uint32
-	WorldId      byte
-	ChannelId    byte
+	Channel      channel.Model
 	TenantId     uuid.UUID
 	Region       string
 	MajorVersion uint16
@@ -38,14 +38,13 @@ func GetTracker() *Tracker {
 }
 
 // Add adds or updates a session
-func (t *Tracker) Add(characterId, accountId uint32, worldId, channelId byte, tenantId uuid.UUID, region string, majorVersion, minorVersion uint16) {
+func (t *Tracker) Add(characterId, accountId uint32, ch channel.Model, tenantId uuid.UUID, region string, majorVersion, minorVersion uint16) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	t.sessions[characterId] = Session{
 		CharacterId:  characterId,
 		AccountId:    accountId,
-		WorldId:      worldId,
-		ChannelId:    channelId,
+		Channel:      ch,
 		TenantId:     tenantId,
 		Region:       region,
 		MajorVersion: majorVersion,

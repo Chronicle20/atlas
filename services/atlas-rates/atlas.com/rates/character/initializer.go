@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
@@ -64,7 +65,7 @@ func ResetInitializedForTesting() {
 // InitializeCharacterRates queries inventory and buffs to initialize rate tracking for a character
 // This is called lazily when rates are queried or on map change events
 // worldId and channelId are optional (pass 0 if not available) - used for buff factor registration
-func InitializeCharacterRates(l logrus.FieldLogger, ctx context.Context, characterId uint32, worldId, channelId byte) {
+func InitializeCharacterRates(l logrus.FieldLogger, ctx context.Context, characterId uint32, ch channel.Model) {
 	t := tenant.MustFromContext(ctx)
 
 	// Check if already initialized
@@ -86,7 +87,7 @@ func InitializeCharacterRates(l logrus.FieldLogger, ctx context.Context, charact
 	initializeCashCoupons(l, ctx, p, characterId)
 
 	// Initialize active buffs with rate effects
-	initializeActiveBuffs(l, ctx, characterId, worldId, channelId)
+	initializeActiveBuffs(l, ctx, characterId, ch)
 }
 
 // initializeEquippedItems queries equipped items and tracks those with bonusExp
@@ -199,7 +200,7 @@ func GetRateTypeFromTemplateId(templateId uint32) rate.Type {
 }
 
 // initializeActiveBuffs queries atlas-buffs for active buffs and initializes rate factors
-func initializeActiveBuffs(l logrus.FieldLogger, ctx context.Context, characterId uint32, worldId, channelId byte) {
+func initializeActiveBuffs(l logrus.FieldLogger, ctx context.Context, characterId uint32, ch channel.Model) {
 	activeBuffs, err := buffs.GetActiveBuffs(l)(ctx)(characterId)
 	if err != nil {
 		l.WithError(err).Warnf("Failed to get active buffs for character [%d]. Skipping buff initialization.", characterId)
@@ -241,7 +242,7 @@ func initializeActiveBuffs(l logrus.FieldLogger, ctx context.Context, characterI
 
 			// Add the factor to the registry
 			f := rate.NewFactor(source, rateType, multiplier)
-			GetRegistry().AddFactor(t, worldId, channelId, characterId, f)
+			GetRegistry().AddFactor(t, ch, characterId, f)
 		}
 	}
 }

@@ -9,6 +9,7 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -66,7 +67,7 @@ func handleLoginEvent(sc server.Model, wp writer.Producer) message.Handler[membe
 
 		go func() {
 			for _, m := range p.Members() {
-				err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(m.Id(), partyUpdate(l)(ctx)(wp)(p, tc, sc.ChannelId()))
+				err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(m.Id(), partyUpdate(l)(ctx)(wp)(p, tc, sc.ChannelId()))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce character [%d] triggered party [%d] update.", m.Id(), p.Id())
 				}
@@ -99,7 +100,7 @@ func handleLogoutEvent(sc server.Model, wp writer.Producer) message.Handler[memb
 
 		go func() {
 			for _, m := range p.Members() {
-				err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(m.Id(), partyUpdate(l)(ctx)(wp)(p, tc, sc.ChannelId()))
+				err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(m.Id(), partyUpdate(l)(ctx)(wp)(p, tc, sc.ChannelId()))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce character [%d] triggered party [%d] update.", m.Id(), p.Id())
 				}

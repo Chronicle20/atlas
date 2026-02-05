@@ -3,6 +3,7 @@ package family
 import (
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -36,7 +37,7 @@ func Migration(db *gorm.DB) error {
 
 	// Get the database dialect name
 	dialectName := db.Dialector.Name()
-	
+
 	// Add indexes for optimized queries
 	err = db.Exec(`
 		CREATE INDEX IF NOT EXISTS idx_family_members_tenant_character 
@@ -82,7 +83,7 @@ func Migration(db *gorm.DB) error {
 		if err != nil {
 			return err
 		}
-		
+
 		// Add PostgreSQL-specific constraints
 		err = db.Exec(`
 			DO $$ BEGIN
@@ -151,7 +152,7 @@ func Make(entity Entity) (FamilyMember, error) {
 		rep:         entity.Rep,
 		dailyRep:    entity.DailyRep,
 		level:       entity.Level,
-		world:       entity.World,
+		world:       world.Id(entity.World),
 		createdAt:   entity.CreatedAt,
 		updatedAt:   entity.UpdatedAt,
 	}, nil
@@ -172,7 +173,7 @@ func ToEntity(fm FamilyMember) Entity {
 		Rep:         fm.rep,
 		DailyRep:    fm.dailyRep,
 		Level:       fm.level,
-		World:       fm.world,
+		World:       byte(fm.world),
 		CreatedAt:   fm.createdAt,
 		UpdatedAt:   fm.updatedAt,
 	}

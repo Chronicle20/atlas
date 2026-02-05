@@ -1,6 +1,7 @@
 package script
 
 import (
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-script-core/condition"
 	"github.com/Chronicle20/atlas-script-core/operation"
 )
@@ -8,7 +9,7 @@ import (
 // PortalScriptBuilder builds a PortalScript
 type PortalScriptBuilder struct {
 	portalId    string
-	mapId       uint32
+	mapId       _map.Id
 	description string
 	rules       []Rule
 }
@@ -27,7 +28,7 @@ func (b *PortalScriptBuilder) SetPortalId(portalId string) *PortalScriptBuilder 
 }
 
 // SetMapId sets the map ID
-func (b *PortalScriptBuilder) SetMapId(mapId uint32) *PortalScriptBuilder {
+func (b *PortalScriptBuilder) SetMapId(mapId _map.Id) *PortalScriptBuilder {
 	b.mapId = mapId
 	return b
 }

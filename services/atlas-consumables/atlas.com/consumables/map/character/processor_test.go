@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -29,28 +31,29 @@ func TestProcessor_Enter(t *testing.T) {
 	r := getRegistry()
 
 	characterId := uint32(20001)
-	worldId := byte(1)
-	channelId := byte(2)
-	mapId := uint32(100000000)
+	worldId := world.Id(1)
+	channelId := channel.Id(2)
+	mapId := _map.Id(100000000)
 
 	// Clean up
 	r.RemoveCharacter(characterId)
 
-	p.Enter(worldId, channelId, mapId, characterId)
+	f := field.NewBuilder(worldId, channelId, mapId).Build()
+	p.Enter(f, characterId)
 
 	mk, ok := r.GetMap(characterId)
 	if !ok {
 		t.Fatal("character should be registered after Enter")
 	}
 
-	if mk.WorldId != worldId {
-		t.Errorf("expected WorldId %d, got %d", worldId, mk.WorldId)
+	if mk.Field.WorldId() != worldId {
+		t.Errorf("expected WorldId %d, got %d", worldId, mk.Field.WorldId())
 	}
-	if mk.ChannelId != channelId {
-		t.Errorf("expected ChannelId %d, got %d", channelId, mk.ChannelId)
+	if mk.Field.ChannelId() != channelId {
+		t.Errorf("expected ChannelId %d, got %d", channelId, mk.Field.ChannelId())
 	}
-	if mk.MapId != mapId {
-		t.Errorf("expected MapId %d, got %d", mapId, mk.MapId)
+	if mk.Field.MapId() != mapId {
+		t.Errorf("expected MapId %d, got %d", mapId, mk.Field.MapId())
 	}
 
 	// Clean up
@@ -64,12 +67,13 @@ func TestProcessor_Exit(t *testing.T) {
 	r := getRegistry()
 
 	characterId := uint32(20002)
-	worldId := byte(1)
-	channelId := byte(2)
-	mapId := uint32(100000000)
+	worldId := world.Id(1)
+	channelId := channel.Id(2)
+	mapId := _map.Id(100000000)
 
 	// Setup: enter first
-	p.Enter(worldId, channelId, mapId, characterId)
+	f := field.NewBuilder(worldId, channelId, mapId).Build()
+	p.Enter(f, characterId)
 
 	// Verify character exists
 	_, ok := r.GetMap(characterId)
@@ -78,7 +82,7 @@ func TestProcessor_Exit(t *testing.T) {
 	}
 
 	// Exit
-	p.Exit(worldId, channelId, mapId, characterId)
+	p.Exit(f, characterId)
 
 	// Verify character is gone
 	_, ok = r.GetMap(characterId)
@@ -94,15 +98,16 @@ func TestProcessor_GetMap(t *testing.T) {
 	r := getRegistry()
 
 	characterId := uint32(20003)
-	worldId := byte(1)
-	channelId := byte(2)
-	mapId := uint32(100000000)
+	worldId := world.Id(1)
+	channelId := channel.Id(2)
+	mapId := _map.Id(100000000)
 
 	// Clean up
 	r.RemoveCharacter(characterId)
 
 	// Enter
-	p.Enter(worldId, channelId, mapId, characterId)
+	f := field.NewBuilder(worldId, channelId, mapId).Build()
+	p.Enter(f, characterId)
 
 	// Get map via processor
 	m, err := p.GetMap(characterId)
@@ -110,13 +115,13 @@ func TestProcessor_GetMap(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if m.WorldId() != world.Id(worldId) {
+	if m.WorldId() != worldId {
 		t.Errorf("expected WorldId %d, got %d", worldId, m.WorldId())
 	}
-	if m.ChannelId() != channel.Id(channelId) {
+	if m.ChannelId() != channelId {
 		t.Errorf("expected ChannelId %d, got %d", channelId, m.ChannelId())
 	}
-	if uint32(m.MapId()) != mapId {
+	if m.MapId() != mapId {
 		t.Errorf("expected MapId %d, got %d", mapId, m.MapId())
 	}
 
@@ -148,19 +153,21 @@ func TestProcessor_TransitionMap(t *testing.T) {
 	r := getRegistry()
 
 	characterId := uint32(20004)
-	worldId := byte(1)
-	channelId := byte(2)
-	oldMapId := uint32(100000000)
-	newMapId := uint32(200000000)
+	worldId := world.Id(1)
+	channelId := channel.Id(2)
+	oldMapId := _map.Id(100000000)
+	newMapId := _map.Id(200000000)
 
 	// Clean up
 	r.RemoveCharacter(characterId)
 
 	// Enter old map
-	p.Enter(worldId, channelId, oldMapId, characterId)
+	f := field.NewBuilder(worldId, channelId, oldMapId).Build()
+	p.Enter(f, characterId)
 
 	// Transition to new map
-	p.TransitionMap(worldId, channelId, newMapId, characterId, oldMapId)
+	f = f.Clone().SetMapId(newMapId).Build()
+	p.TransitionMap(f, characterId)
 
 	// Verify new location
 	mk, ok := r.GetMap(characterId)
@@ -168,8 +175,8 @@ func TestProcessor_TransitionMap(t *testing.T) {
 		t.Fatal("character should exist after transition")
 	}
 
-	if mk.MapId != newMapId {
-		t.Errorf("expected MapId %d, got %d", newMapId, mk.MapId)
+	if mk.Field.MapId() != newMapId {
+		t.Errorf("expected MapId %d, got %d", newMapId, mk.Field.MapId())
 	}
 
 	// Clean up
@@ -183,19 +190,21 @@ func TestProcessor_TransitionChannel(t *testing.T) {
 	r := getRegistry()
 
 	characterId := uint32(20005)
-	worldId := byte(1)
-	oldChannelId := byte(1)
-	newChannelId := byte(2)
-	mapId := uint32(100000000)
+	worldId := world.Id(1)
+	oldChannelId := channel.Id(1)
+	newChannelId := channel.Id(2)
+	mapId := _map.Id(100000000)
 
 	// Clean up
 	r.RemoveCharacter(characterId)
 
 	// Enter with old channel
-	p.Enter(worldId, oldChannelId, mapId, characterId)
+	f := field.NewBuilder(worldId, oldChannelId, mapId).Build()
+	p.Enter(f, characterId)
 
 	// Transition channel
-	p.TransitionChannel(worldId, newChannelId, oldChannelId, characterId, mapId)
+	f = f.Clone().SetChannelId(newChannelId).Build()
+	p.TransitionChannel(f, characterId)
 
 	// Verify new channel
 	mk, ok := r.GetMap(characterId)
@@ -203,8 +212,8 @@ func TestProcessor_TransitionChannel(t *testing.T) {
 		t.Fatal("character should exist after channel transition")
 	}
 
-	if mk.ChannelId != newChannelId {
-		t.Errorf("expected ChannelId %d, got %d", newChannelId, mk.ChannelId)
+	if mk.Field.ChannelId() != newChannelId {
+		t.Errorf("expected ChannelId %d, got %d", newChannelId, mk.Field.ChannelId())
 	}
 
 	// Clean up

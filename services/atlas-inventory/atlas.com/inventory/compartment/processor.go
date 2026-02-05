@@ -14,10 +14,10 @@ import (
 	"sort"
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas-constants/item"
-	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas-model/model"
@@ -46,8 +46,8 @@ type Provider interface {
 	Move(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, source int16, destination int16) error
 	IncreaseCapacityAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, amount uint32) error
 	IncreaseCapacity(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, amount uint32) error
-	DropAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, m _map.Model, x int16, y int16, source int16, quantity int16) error
-	Drop(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, m _map.Model, x int16, y int16, source int16, quantity int16) error
+	DropAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, f field.Model, x int16, y int16, source int16, quantity int16) error
+	Drop(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, f field.Model, x int16, y int16, source int16, quantity int16) error
 	RequestReserveAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, reservationRequests []ReservationRequest) error
 	RequestReserve(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, reservationRequests []ReservationRequest) error
 	CancelReservationAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) error
@@ -61,10 +61,10 @@ type Provider interface {
 	CreateAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64) error
 	CreateAssetAndLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64) error
 	CreateAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64) error
-	AttemptEquipmentPickUpAndEmit(transactionId uuid.UUID, m _map.Model, characterId uint32, dropId uint32, templateId uint32, referenceId uint32) error
-	AttemptEquipmentPickUp(mb *message.Buffer) func(transactionId uuid.UUID, m _map.Model, characterId uint32, dropId uint32, templateId uint32, referenceId uint32) error
-	AttemptItemPickUpAndEmit(transactionId uuid.UUID, m _map.Model, characterId uint32, dropId uint32, templateId uint32, quantity uint32) error
-	AttemptItemPickUp(mb *message.Buffer) func(transactionId uuid.UUID, m _map.Model, characterId uint32, dropId uint32, templateId uint32, quantity uint32) error
+	AttemptEquipmentPickUpAndEmit(transactionId uuid.UUID, f field.Model, characterId uint32, dropId uint32, templateId uint32, referenceId uint32) error
+	AttemptEquipmentPickUp(mb *message.Buffer) func(transactionId uuid.UUID, f field.Model, characterId uint32, dropId uint32, templateId uint32, referenceId uint32) error
+	AttemptItemPickUpAndEmit(transactionId uuid.UUID, f field.Model, characterId uint32, dropId uint32, templateId uint32, quantity uint32) error
+	AttemptItemPickUp(mb *message.Buffer) func(transactionId uuid.UUID, f field.Model, characterId uint32, dropId uint32, templateId uint32, quantity uint32) error
 	RechargeAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, quantity uint32) error
 	RechargeAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, quantity uint32) error
 	MergeAndCompactAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type) error
@@ -631,14 +631,14 @@ func (p *Processor) IncreaseCapacity(mb *message.Buffer) func(transactionId uuid
 	}
 }
 
-func (p *Processor) DropAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, m _map.Model, x int16, y int16, source int16, quantity int16) error {
+func (p *Processor) DropAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, f field.Model, x int16, y int16, source int16, quantity int16) error {
 	return message.Emit(p.producer)(func(buf *message.Buffer) error {
-		return p.Drop(buf)(transactionId, characterId, inventoryType, m, x, y, source, quantity)
+		return p.Drop(buf)(transactionId, characterId, inventoryType, f, x, y, source, quantity)
 	})
 }
 
-func (p *Processor) Drop(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, m _map.Model, x int16, y int16, source int16, quantity int16) error {
-	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, m _map.Model, x int16, y int16, source int16, quantity int16) error {
+func (p *Processor) Drop(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, f field.Model, x int16, y int16, source int16, quantity int16) error {
+	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, f field.Model, x int16, y int16, source int16, quantity int16) error {
 		p.l.Debugf("Character [%d] attempting to drop [%d] asset from slot [%d].", characterId, quantity, source)
 		if quantity < 0 {
 			return errors.New("cannot drop negative quantity")
@@ -687,9 +687,9 @@ func (p *Processor) Drop(mb *message.Buffer) func(transactionId uuid.UUID, chara
 		}
 		p.l.Debugf("Character [%d] dropped [%d] asset [%d] from slot [%d].", characterId, quantity, a.Id(), source)
 		if inventoryType == inventory.TypeValueEquip {
-			return p.dropProcessor.CreateForEquipment(mb)(m, a.TemplateId(), a.ReferenceId(), 2, x, y, characterId)
+			return p.dropProcessor.CreateForEquipment(mb)(f, a.TemplateId(), a.ReferenceId(), 2, x, y, characterId)
 		} else {
-			return p.dropProcessor.CreateForItem(mb)(m, a.TemplateId(), uint32(math.Abs(float64(quantity))), 2, x, y, characterId)
+			return p.dropProcessor.CreateForItem(mb)(f, a.TemplateId(), uint32(math.Abs(float64(quantity))), 2, x, y, characterId)
 		}
 	}
 }
@@ -969,14 +969,14 @@ func (p *Processor) CreateAsset(mb *message.Buffer) func(transactionId uuid.UUID
 	}
 }
 
-func (p *Processor) AttemptEquipmentPickUpAndEmit(transactionId uuid.UUID, m _map.Model, characterId uint32, dropId uint32, templateId uint32, referenceId uint32) error {
+func (p *Processor) AttemptEquipmentPickUpAndEmit(transactionId uuid.UUID, f field.Model, characterId uint32, dropId uint32, templateId uint32, referenceId uint32) error {
 	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		return p.AttemptEquipmentPickUp(buf)(transactionId, m, characterId, dropId, templateId, referenceId)
+		return p.AttemptEquipmentPickUp(buf)(transactionId, f, characterId, dropId, templateId, referenceId)
 	})
 }
 
-func (p *Processor) AttemptEquipmentPickUp(mb *message.Buffer) func(transactionId uuid.UUID, m _map.Model, characterId uint32, dropId uint32, templateId uint32, referenceId uint32) error {
-	return func(transactionId uuid.UUID, m _map.Model, characterId uint32, dropId uint32, templateId uint32, referenceId uint32) error {
+func (p *Processor) AttemptEquipmentPickUp(mb *message.Buffer) func(transactionId uuid.UUID, f field.Model, characterId uint32, dropId uint32, templateId uint32, referenceId uint32) error {
+	return func(transactionId uuid.UUID, f field.Model, characterId uint32, dropId uint32, templateId uint32, referenceId uint32) error {
 
 		inventoryType, ok := inventory.TypeFromItemId(item.Id(templateId))
 		if !ok {
@@ -1014,20 +1014,20 @@ func (p *Processor) AttemptEquipmentPickUp(mb *message.Buffer) func(transactionI
 		})
 		if txErr != nil {
 			mb = message.NewBuffer()
-			return p.dropProcessor.CancelReservation(mb)(m, dropId, characterId)
+			return p.dropProcessor.CancelReservation(mb)(f, dropId, characterId)
 		}
-		return p.dropProcessor.RequestPickUp(mb)(m, dropId, characterId)
+		return p.dropProcessor.RequestPickUp(mb)(f, dropId, characterId)
 	}
 }
 
-func (p *Processor) AttemptItemPickUpAndEmit(transactionId uuid.UUID, m _map.Model, characterId uint32, dropId uint32, templateId uint32, quantity uint32) error {
+func (p *Processor) AttemptItemPickUpAndEmit(transactionId uuid.UUID, f field.Model, characterId uint32, dropId uint32, templateId uint32, quantity uint32) error {
 	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		return p.AttemptItemPickUp(buf)(transactionId, m, characterId, dropId, templateId, quantity)
+		return p.AttemptItemPickUp(buf)(transactionId, f, characterId, dropId, templateId, quantity)
 	})
 }
 
-func (p *Processor) AttemptItemPickUp(mb *message.Buffer) func(transactionId uuid.UUID, m _map.Model, characterId uint32, dropId uint32, templateId uint32, quantity uint32) error {
-	return func(transactionId uuid.UUID, m _map.Model, characterId uint32, dropId uint32, templateId uint32, quantity uint32) error {
+func (p *Processor) AttemptItemPickUp(mb *message.Buffer) func(transactionId uuid.UUID, f field.Model, characterId uint32, dropId uint32, templateId uint32, quantity uint32) error {
+	return func(transactionId uuid.UUID, f field.Model, characterId uint32, dropId uint32, templateId uint32, quantity uint32) error {
 		inventoryType, ok := inventory.TypeFromItemId(item.Id(templateId))
 		if !ok {
 			return errors.New("invalid inventory item")
@@ -1113,9 +1113,9 @@ func (p *Processor) AttemptItemPickUp(mb *message.Buffer) func(transactionId uui
 
 		if txErr != nil {
 			mb = message.NewBuffer()
-			return p.dropProcessor.CancelReservation(mb)(m, dropId, characterId)
+			return p.dropProcessor.CancelReservation(mb)(f, dropId, characterId)
 		}
-		return p.dropProcessor.RequestPickUp(mb)(m, dropId, characterId)
+		return p.dropProcessor.RequestPickUp(mb)(f, dropId, characterId)
 	}
 }
 

@@ -37,9 +37,9 @@ Resource type: `chalkboards`
 
 ---
 
-### GET /worlds/{worldId}/channels/{channelId}/maps/{mapId}/chalkboards
+### GET /worlds/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/chalkboards
 
-Retrieves all chalkboard messages in a specific map.
+Retrieves all chalkboard messages in a specific map instance.
 
 #### Parameters
 
@@ -48,6 +48,7 @@ Retrieves all chalkboard messages in a specific map.
 | worldId | path | world.Id | yes |
 | channelId | path | channel.Id | yes |
 | mapId | path | map.Id | yes |
+| instanceId | path | uuid.UUID | yes |
 
 #### Request Model
 

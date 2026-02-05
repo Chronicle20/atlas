@@ -1,6 +1,11 @@
 package pet
 
-import "github.com/google/uuid"
+import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
+)
 
 const (
 	EnvCommandTopic          = "COMMAND_TOPIC_PET"
@@ -54,14 +59,15 @@ const (
 )
 
 type MovementCommand struct {
-	WorldId    byte   `json:"worldId"`
-	ChannelId  byte   `json:"channelId"`
-	MapId      uint32 `json:"mapId"`
-	ObjectId   uint64 `json:"objectId"`
-	ObserverId uint32 `json:"observerId"`
-	X          int16  `json:"x"`
-	Y          int16  `json:"y"`
-	Stance     byte   `json:"stance"`
+	WorldId    world.Id   `json:"worldId"`
+	ChannelId  channel.Id `json:"channelId"`
+	MapId      _map.Id    `json:"mapId"`
+	Instance   uuid.UUID  `json:"instance"`
+	ObjectId   uint64     `json:"objectId"`
+	ObserverId uint32     `json:"observerId"`
+	X          int16      `json:"x"`
+	Y          int16      `json:"y"`
+	Stance     byte       `json:"stance"`
 }
 
 const (

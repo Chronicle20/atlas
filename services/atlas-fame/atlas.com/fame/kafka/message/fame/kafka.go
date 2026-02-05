@@ -2,6 +2,7 @@ package fame
 
 import (
 	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 )
@@ -34,15 +35,16 @@ type StatusEventErrorBody struct {
 
 type Command[E any] struct {
 	TransactionId uuid.UUID `json:"transactionId"`
-	WorldId       byte      `json:"worldId"`
+	WorldId       world.Id  `json:"worldId"`
 	CharacterId   uint32    `json:"characterId"`
 	Type          string    `json:"type"`
 	Body          E         `json:"body"`
 }
 
 type RequestChangeCommandBody struct {
-	ChannelId byte   `json:"channelId"`
-	MapId     uint32 `json:"mapId"`
-	TargetId  uint32 `json:"targetId"`
-	Amount    int8   `json:"amount"`
+	ChannelId channel.Id `json:"channelId"`
+	MapId     _map.Id    `json:"mapId"`
+	Instance  uuid.UUID  `json:"instance"`
+	TargetId  uint32     `json:"targetId"`
+	Amount    int8       `json:"amount"`
 }

@@ -2,6 +2,7 @@ package guild
 
 import (
 	guild2 "atlas-guilds/kafka/message/guild"
+
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
@@ -12,7 +13,7 @@ import (
 func statusEventRequestAgreementProvider(worldId world.Id, characterId uint32, proposedName string, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &guild2.StatusEvent[guild2.StatusEventRequestAgreementBody]{
-		WorldId:       byte(worldId),
+		WorldId:       worldId,
 		GuildId:       0,
 		Type:          guild2.StatusEventTypeRequestAgreement,
 		TransactionId: transactionId,
@@ -24,7 +25,7 @@ func statusEventRequestAgreementProvider(worldId world.Id, characterId uint32, p
 	return producer.SingleMessageProvider(key, value)
 }
 
-func statusEventCreatedProvider(worldId byte, guildId uint32, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+func statusEventCreatedProvider(worldId world.Id, guildId uint32, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(guildId))
 	value := &guild2.StatusEvent[guild2.StatusEventCreatedBody]{
 		WorldId:       worldId,
@@ -36,7 +37,7 @@ func statusEventCreatedProvider(worldId byte, guildId uint32, transactionId uuid
 	return producer.SingleMessageProvider(key, value)
 }
 
-func statusEventDisbandedProvider(worldId byte, guildId uint32, members []uint32, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+func statusEventDisbandedProvider(worldId world.Id, guildId uint32, members []uint32, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(guildId))
 	value := &guild2.StatusEvent[guild2.StatusEventDisbandedBody]{
 		WorldId:       worldId,
@@ -50,7 +51,7 @@ func statusEventDisbandedProvider(worldId byte, guildId uint32, members []uint32
 	return producer.SingleMessageProvider(key, value)
 }
 
-func statusEventEmblemUpdatedProvider(worldId byte, guildId uint32, logo uint16, logoColor byte, logoBackground uint16, logoBackgroundColor byte, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+func statusEventEmblemUpdatedProvider(worldId world.Id, guildId uint32, logo uint16, logoColor byte, logoBackground uint16, logoBackgroundColor byte, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(guildId))
 	value := &guild2.StatusEvent[guild2.StatusEventEmblemUpdatedBody]{
 		WorldId:       worldId,
@@ -67,7 +68,7 @@ func statusEventEmblemUpdatedProvider(worldId byte, guildId uint32, logo uint16,
 	return producer.SingleMessageProvider(key, value)
 }
 
-func statusEventMemberStatusUpdatedProvider(worldId byte, guildId uint32, characterId uint32, online bool, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+func statusEventMemberStatusUpdatedProvider(worldId world.Id, guildId uint32, characterId uint32, online bool, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(guildId))
 	value := &guild2.StatusEvent[guild2.StatusEventMemberStatusUpdatedBody]{
 		WorldId:       worldId,
@@ -82,7 +83,7 @@ func statusEventMemberStatusUpdatedProvider(worldId byte, guildId uint32, charac
 	return producer.SingleMessageProvider(key, value)
 }
 
-func statusEventMemberTitleUpdatedProvider(worldId byte, guildId uint32, characterId uint32, title byte, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+func statusEventMemberTitleUpdatedProvider(worldId world.Id, guildId uint32, characterId uint32, title byte, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(guildId))
 	value := &guild2.StatusEvent[guild2.StatusEventMemberTitleUpdatedBody]{
 		WorldId:       worldId,
@@ -97,7 +98,7 @@ func statusEventMemberTitleUpdatedProvider(worldId byte, guildId uint32, charact
 	return producer.SingleMessageProvider(key, value)
 }
 
-func statusEventNoticeUpdatedProvider(worldId byte, guildId uint32, notice string, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+func statusEventNoticeUpdatedProvider(worldId world.Id, guildId uint32, notice string, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(guildId))
 	value := &guild2.StatusEvent[guild2.StatusEventNoticeUpdatedBody]{
 		WorldId:       worldId,
@@ -111,7 +112,7 @@ func statusEventNoticeUpdatedProvider(worldId byte, guildId uint32, notice strin
 	return producer.SingleMessageProvider(key, value)
 }
 
-func statusEventCapacityUpdatedProvider(worldId byte, guildId uint32, capacity uint32, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+func statusEventCapacityUpdatedProvider(worldId world.Id, guildId uint32, capacity uint32, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(guildId))
 	value := &guild2.StatusEvent[guild2.StatusEventCapacityUpdatedBody]{
 		WorldId:       worldId,
@@ -125,7 +126,7 @@ func statusEventCapacityUpdatedProvider(worldId byte, guildId uint32, capacity u
 	return producer.SingleMessageProvider(key, value)
 }
 
-func statusEventMemberLeftProvider(worldId byte, guildId uint32, characterId uint32, force bool, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+func statusEventMemberLeftProvider(worldId world.Id, guildId uint32, characterId uint32, force bool, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(guildId))
 	value := &guild2.StatusEvent[guild2.StatusEventMemberLeftBody]{
 		WorldId:       worldId,
@@ -140,7 +141,7 @@ func statusEventMemberLeftProvider(worldId byte, guildId uint32, characterId uin
 	return producer.SingleMessageProvider(key, value)
 }
 
-func statusEventMemberJoinedProvider(worldId byte, guildId uint32, characterId uint32, name string, jobId uint16, level byte, title byte, allianceTitle byte, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+func statusEventMemberJoinedProvider(worldId world.Id, guildId uint32, characterId uint32, name string, jobId uint16, level byte, title byte, allianceTitle byte, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(guildId))
 	value := &guild2.StatusEvent[guild2.StatusEventMemberJoinedBody]{
 		WorldId:       worldId,
@@ -160,7 +161,7 @@ func statusEventMemberJoinedProvider(worldId byte, guildId uint32, characterId u
 	return producer.SingleMessageProvider(key, value)
 }
 
-func statusEventTitlesUpdatedProvider(worldId byte, guildId uint32, titles []string, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+func statusEventTitlesUpdatedProvider(worldId world.Id, guildId uint32, titles []string, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(guildId))
 	value := &guild2.StatusEvent[guild2.StatusEventTitlesUpdatedBody]{
 		WorldId:       worldId,
@@ -177,7 +178,7 @@ func statusEventTitlesUpdatedProvider(worldId byte, guildId uint32, titles []str
 func statusEventErrorProvider(worldId world.Id, characterId uint32, error string, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &guild2.StatusEvent[guild2.StatusEventErrorBody]{
-		WorldId:       byte(worldId),
+		WorldId:       worldId,
 		GuildId:       0,
 		Type:          guild2.StatusEventTypeError,
 		TransactionId: transactionId,

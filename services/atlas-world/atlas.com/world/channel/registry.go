@@ -4,12 +4,14 @@ import (
 	"errors"
 	"sync"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 )
 
 type tenantData struct {
 	lock     sync.RWMutex
-	channels map[byte]map[byte]Model
+	channels map[world.Id]map[channel.Id]Model
 }
 
 type Registry struct {
@@ -50,7 +52,7 @@ func (r *Registry) getTenantData(t tenant.Model) *tenantData {
 	}
 
 	td := &tenantData{
-		channels: make(map[byte]map[byte]Model),
+		channels: make(map[world.Id]map[channel.Id]Model),
 	}
 	r.tenants[t] = td
 	return td
@@ -62,7 +64,7 @@ func (r *Registry) Register(t tenant.Model, m Model) Model {
 	defer td.lock.Unlock()
 
 	if _, ok := td.channels[m.WorldId()]; !ok {
-		td.channels[m.WorldId()] = make(map[byte]Model)
+		td.channels[m.WorldId()] = make(map[channel.Id]Model)
 	}
 	td.channels[m.WorldId()][m.channelId] = m
 	return m
@@ -82,34 +84,34 @@ func (r *Registry) ChannelServers(t tenant.Model) []Model {
 	return results
 }
 
-func (r *Registry) ChannelServer(t tenant.Model, worldId byte, channelId byte) (Model, error) {
+func (r *Registry) ChannelServer(t tenant.Model, ch channel.Model) (Model, error) {
 	td := r.getTenantData(t)
 	td.lock.RLock()
 	defer td.lock.RUnlock()
 
 	var ok bool
 	var result Model
-	if _, ok = td.channels[worldId]; !ok {
+	if _, ok = td.channels[ch.WorldId()]; !ok {
 		return result, ErrChannelNotFound
 	}
-	if result, ok = td.channels[worldId][channelId]; !ok {
+	if result, ok = td.channels[ch.WorldId()][ch.Id()]; !ok {
 		return result, ErrChannelNotFound
 	}
 	return result, nil
 }
 
-func (r *Registry) RemoveByWorldAndChannel(t tenant.Model, worldId byte, channelId byte) error {
+func (r *Registry) RemoveByWorldAndChannel(t tenant.Model, ch channel.Model) error {
 	td := r.getTenantData(t)
 	td.lock.Lock()
 	defer td.lock.Unlock()
 
-	if _, ok := td.channels[worldId]; !ok {
+	if _, ok := td.channels[ch.WorldId()]; !ok {
 		return ErrChannelNotFound
 	}
-	if _, ok := td.channels[worldId][channelId]; !ok {
+	if _, ok := td.channels[ch.WorldId()][ch.Id()]; !ok {
 		return ErrChannelNotFound
 	}
-	delete(td.channels[worldId], channelId)
+	delete(td.channels[ch.WorldId()], ch.Id())
 	return nil
 }
 

@@ -21,6 +21,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 )
@@ -66,7 +67,7 @@ func handleGeneralChat(sc server.Model, wp writer.Producer) message.Handler[mess
 			return
 		}
 
-		err = _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Map(_map2.Id(e.MapId)), showGeneralChatForSession(l)(ctx)(wp)(e, c.Gm()))
+		err = _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(_map2.Id(e.MapId), uuid.Nil), showGeneralChatForSession(l)(ctx)(wp)(e, c.Gm()))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to send message from character [%d] to map [%d].", e.ActorId, e.MapId)
 		}
@@ -100,7 +101,7 @@ func handleMultiChat(sc server.Model, wp writer.Producer) message.Handler[messag
 		}
 
 		for _, cid := range e.Body.Recipients {
-			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(cid, sendMultiChat(l)(ctx)(wp)(c.Name(), e.Message, message2.MultiChatTypeStrToInd(e.Type)))
+			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(cid, sendMultiChat(l)(ctx)(wp)(c.Name(), e.Message, message2.MultiChatTypeStrToInd(e.Type)))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to send message of type [%s] to character [%d].", e.Type, cid)
 			}
@@ -140,13 +141,13 @@ func handleWhisperChat(sc server.Model, wp writer.Producer) message.Handler[mess
 		}
 
 		bp := writer.CharacterChatWhisperSendResultBody(tc, true)
-		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.ActorId, session.Announce(l)(ctx)(wp)(writer.CharacterChatWhisper)(bp))
+		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.ActorId, session.Announce(l)(ctx)(wp)(writer.CharacterChatWhisper)(bp))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to send whisper message from [%d] to [%d].", e.ActorId, e.Body.Recipient)
 		}
 
 		bp = writer.CharacterChatWhisperReceiptBody(c, e.ChannelId, e.Message)
-		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.Recipient, session.Announce(l)(ctx)(wp)(writer.CharacterChatWhisper)(bp))
+		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.Recipient, session.Announce(l)(ctx)(wp)(writer.CharacterChatWhisper)(bp))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to send whisper message from [%d] to [%d].", e.ActorId, e.Body.Recipient)
 		}
@@ -165,7 +166,7 @@ func handleMessengerChat(sc server.Model, wp writer.Producer) message.Handler[me
 
 		for _, cid := range e.Body.Recipients {
 			bp := session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationChatBody(l)(e.Message))
-			err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(cid, bp)
+			err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(cid, bp)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to send message of type [%s] to character [%d].", e.Type, cid)
 			}
@@ -183,13 +184,13 @@ func handlePetChat(sc server.Model, wp writer.Producer) message.Handler[message3
 			return
 		}
 
-		s, err := session.NewProcessor(l, ctx).GetByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.OwnerId)
+		s, err := session.NewProcessor(l, ctx).GetByCharacterId(sc.Channel())(e.Body.OwnerId)
 		if err != nil {
 			return
 		}
 
 		p := pet.NewModelBuilder(e.ActorId, 0, 0, "").SetOwnerID(e.Body.OwnerId).SetSlot(e.Body.PetSlot).MustBuild()
-		_ = _map.NewProcessor(l, ctx).ForSessionsInMap(s.Map(), session.Announce(l)(ctx)(wp)(writer.PetChat)(writer.PetChatBody(p, e.Body.Type, e.Body.Action, e.Message, e.Body.Balloon)))
+		_ = _map.NewProcessor(l, ctx).ForSessionsInMap(s.Field(), session.Announce(l)(ctx)(wp)(writer.PetChat)(writer.PetChatBody(p, e.Body.Type, e.Body.Action, e.Message, e.Body.Balloon)))
 	}
 }
 
@@ -213,7 +214,7 @@ func handlePinkChat(sc server.Model, wp writer.Producer) message.Handler[message
 		// TODO retrieve medal name
 		for _, cid := range e.Body.Recipients {
 			bp := session.Announce(l)(ctx)(wp)(writer.WorldMessage)(writer.WorldMessagePinkTextBody(l, sc.Tenant())("", characterName, e.Message))
-			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(cid, bp)
+			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(cid, bp)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to send message of type [%s] to character [%d].", e.Type, cid)
 			}

@@ -66,7 +66,7 @@ func handleChangeMap(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context
 			return
 		}
 
-		f := field.NewBuilder(c.WorldId, c.Body.ChannelId, c.Body.MapId).Build()
+		f := field.NewBuilder(c.WorldId, c.Body.ChannelId, c.Body.MapId).SetInstance(c.Body.Instance).Build()
 		err := character.NewProcessor(l, ctx, db).ChangeMapAndEmit(c.TransactionId, c.CharacterId, f, c.Body.PortalId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to change character [%d] map.", c.CharacterId)

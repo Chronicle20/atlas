@@ -2,10 +2,9 @@ package reactor
 
 import (
 	"errors"
-	"github.com/Chronicle20/atlas-constants/channel"
-	_map "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-constants/world"
 	"time"
+
+	"github.com/Chronicle20/atlas-constants/field"
 )
 
 var (
@@ -14,9 +13,7 @@ var (
 
 type modelBuilder struct {
 	id             uint32
-	worldId        world.Id
-	channelId      channel.Id
-	mapId          _map.Id
+	field          field.Model
 	classification uint32
 	name           string
 	state          int8
@@ -28,11 +25,9 @@ type modelBuilder struct {
 	updateTime     time.Time
 }
 
-func NewModelBuilder(worldId world.Id, channelId channel.Id, mapId _map.Id, classification uint32, name string) *modelBuilder {
+func NewModelBuilder(field field.Model, classification uint32, name string) *modelBuilder {
 	return &modelBuilder{
-		worldId:        worldId,
-		channelId:      channelId,
-		mapId:          mapId,
+		field:          field,
 		classification: classification,
 		name:           name,
 		updateTime:     time.Now(),
@@ -42,9 +37,7 @@ func NewModelBuilder(worldId world.Id, channelId channel.Id, mapId _map.Id, clas
 func CloneModel(m Model) *modelBuilder {
 	return &modelBuilder{
 		id:             m.id,
-		worldId:        m.worldId,
-		channelId:      m.channelId,
-		mapId:          m.mapId,
+		field:          m.field,
 		classification: m.classification,
 		name:           m.name,
 		state:          m.state,
@@ -108,9 +101,7 @@ func (b *modelBuilder) Build() (Model, error) {
 	}
 	return Model{
 		id:             b.id,
-		worldId:        b.worldId,
-		channelId:      b.channelId,
-		mapId:          b.mapId,
+		field:          b.field,
 		classification: b.classification,
 		name:           b.name,
 		state:          b.state,

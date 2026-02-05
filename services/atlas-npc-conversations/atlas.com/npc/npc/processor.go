@@ -6,7 +6,6 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/sirupsen/logrus"
 )
 
@@ -27,17 +26,17 @@ const (
 )
 
 type Processor interface {
-	Dispose(worldId world.Id, channelId channel.Id, characterId uint32)
-	SendSimple(worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32) TalkFunc
-	SendNext(worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32) TalkFunc
-	SendNextPrevious(worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32) TalkFunc
-	SendPrevious(worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32) TalkFunc
-	SendOk(worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32) TalkFunc
-	SendYesNo(worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32) TalkFunc
-	SendAcceptDecline(worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32) TalkFunc
-	SendNumber(worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32, message string, def uint32, min uint32, max uint32) error
-	SendStyle(worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32, message string, styles []uint32) error
-	SendNPCTalk(worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32, config *TalkConfig) func(message string, configurations ...TalkConfigurator)
+	Dispose(ch channel.Model, characterId uint32)
+	SendSimple(ch channel.Model, characterId uint32, npcId uint32) TalkFunc
+	SendNext(ch channel.Model, characterId uint32, npcId uint32) TalkFunc
+	SendNextPrevious(ch channel.Model, characterId uint32, npcId uint32) TalkFunc
+	SendPrevious(ch channel.Model, characterId uint32, npcId uint32) TalkFunc
+	SendOk(ch channel.Model, characterId uint32, npcId uint32) TalkFunc
+	SendYesNo(ch channel.Model, characterId uint32, npcId uint32) TalkFunc
+	SendAcceptDecline(ch channel.Model, characterId uint32, npcId uint32) TalkFunc
+	SendNumber(ch channel.Model, characterId uint32, npcId uint32, message string, def uint32, min uint32, max uint32) error
+	SendStyle(ch channel.Model, characterId uint32, npcId uint32, message string, styles []uint32) error
+	SendNPCTalk(ch channel.Model, characterId uint32, npcId uint32, config *TalkConfig) func(message string, configurations ...TalkConfigurator)
 }
 
 type ProcessorImpl struct {
@@ -52,8 +51,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
-func (p *ProcessorImpl) Dispose(worldId world.Id, channelId channel.Id, characterId uint32) {
-	_ = producer.ProviderImpl(p.l)(p.ctx)(npc2.EnvEventTopicCharacterStatus)(enableActionsProvider(worldId, channelId, characterId))
+func (p *ProcessorImpl) Dispose(ch channel.Model, characterId uint32) {
+	_ = producer.ProviderImpl(p.l)(p.ctx)(npc2.EnvEventTopicCharacterStatus)(enableActionsProvider(ch, characterId))
 }
 
 type TalkConfig struct {
@@ -106,47 +105,47 @@ func WithSecondaryNpcId(npcId uint32) TalkConfigurator {
 	}
 }
 
-func (p *ProcessorImpl) SendSimple(worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32) TalkFunc {
-	return p.SendNPCTalk(worldId, channelId, characterId, npcId, &TalkConfig{messageType: MessageTypeSimple, speaker: SpeakerNPC, endChat: true})
+func (p *ProcessorImpl) SendSimple(ch channel.Model, characterId uint32, npcId uint32) TalkFunc {
+	return p.SendNPCTalk(ch, characterId, npcId, &TalkConfig{messageType: MessageTypeSimple, speaker: SpeakerNPC, endChat: true})
 }
 
-func (p *ProcessorImpl) SendNext(worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32) TalkFunc {
-	return p.SendNPCTalk(worldId, channelId, characterId, npcId, &TalkConfig{messageType: MessageTypeNext, speaker: SpeakerNPC, endChat: true})
+func (p *ProcessorImpl) SendNext(ch channel.Model, characterId uint32, npcId uint32) TalkFunc {
+	return p.SendNPCTalk(ch, characterId, npcId, &TalkConfig{messageType: MessageTypeNext, speaker: SpeakerNPC, endChat: true})
 }
 
-func (p *ProcessorImpl) SendNextPrevious(worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32) TalkFunc {
-	return p.SendNPCTalk(worldId, channelId, characterId, npcId, &TalkConfig{messageType: MessageTypeNextPrevious, speaker: SpeakerNPC, endChat: true})
+func (p *ProcessorImpl) SendNextPrevious(ch channel.Model, characterId uint32, npcId uint32) TalkFunc {
+	return p.SendNPCTalk(ch, characterId, npcId, &TalkConfig{messageType: MessageTypeNextPrevious, speaker: SpeakerNPC, endChat: true})
 }
 
-func (p *ProcessorImpl) SendPrevious(worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32) TalkFunc {
-	return p.SendNPCTalk(worldId, channelId, characterId, npcId, &TalkConfig{messageType: MessageTypePrevious, speaker: SpeakerNPC, endChat: true})
+func (p *ProcessorImpl) SendPrevious(ch channel.Model, characterId uint32, npcId uint32) TalkFunc {
+	return p.SendNPCTalk(ch, characterId, npcId, &TalkConfig{messageType: MessageTypePrevious, speaker: SpeakerNPC, endChat: true})
 }
 
-func (p *ProcessorImpl) SendOk(worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32) TalkFunc {
-	return p.SendNPCTalk(worldId, channelId, characterId, npcId, &TalkConfig{messageType: MessageTypeOk, speaker: SpeakerNPC, endChat: true})
+func (p *ProcessorImpl) SendOk(ch channel.Model, characterId uint32, npcId uint32) TalkFunc {
+	return p.SendNPCTalk(ch, characterId, npcId, &TalkConfig{messageType: MessageTypeOk, speaker: SpeakerNPC, endChat: true})
 }
 
-func (p *ProcessorImpl) SendYesNo(worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32) TalkFunc {
-	return p.SendNPCTalk(worldId, channelId, characterId, npcId, &TalkConfig{messageType: MessageTypeYesNo, speaker: SpeakerNPC, endChat: true})
+func (p *ProcessorImpl) SendYesNo(ch channel.Model, characterId uint32, npcId uint32) TalkFunc {
+	return p.SendNPCTalk(ch, characterId, npcId, &TalkConfig{messageType: MessageTypeYesNo, speaker: SpeakerNPC, endChat: true})
 }
 
-func (p *ProcessorImpl) SendAcceptDecline(worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32) TalkFunc {
-	return p.SendNPCTalk(worldId, channelId, characterId, npcId, &TalkConfig{messageType: MessageTypeAcceptDecline, speaker: SpeakerNPC, endChat: true})
+func (p *ProcessorImpl) SendAcceptDecline(ch channel.Model, characterId uint32, npcId uint32) TalkFunc {
+	return p.SendNPCTalk(ch, characterId, npcId, &TalkConfig{messageType: MessageTypeAcceptDecline, speaker: SpeakerNPC, endChat: true})
 }
 
-func (p *ProcessorImpl) SendNumber(worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32, message string, def uint32, min uint32, max uint32) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(npc2.EnvConversationCommandTopic)(numberConversationProvider(worldId, channelId, characterId, npcId, message, def, min, max, SpeakerNPC, true, 0))
+func (p *ProcessorImpl) SendNumber(ch channel.Model, characterId uint32, npcId uint32, message string, def uint32, min uint32, max uint32) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(npc2.EnvConversationCommandTopic)(numberConversationProvider(ch, characterId, npcId, message, def, min, max, SpeakerNPC, true, 0))
 }
 
-func (p *ProcessorImpl) SendStyle(worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32, message string, styles []uint32) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(npc2.EnvConversationCommandTopic)(styleConversationProvider(worldId, channelId, characterId, npcId, message, styles, SpeakerNPC, true, 0))
+func (p *ProcessorImpl) SendStyle(ch channel.Model, characterId uint32, npcId uint32, message string, styles []uint32) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(npc2.EnvConversationCommandTopic)(styleConversationProvider(ch, characterId, npcId, message, styles, SpeakerNPC, true, 0))
 }
 
-func (p *ProcessorImpl) SendNPCTalk(worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32, config *TalkConfig) func(message string, configurations ...TalkConfigurator) {
+func (p *ProcessorImpl) SendNPCTalk(ch channel.Model, characterId uint32, npcId uint32, config *TalkConfig) func(message string, configurations ...TalkConfigurator) {
 	return func(message string, configurations ...TalkConfigurator) {
 		for _, configuration := range configurations {
 			configuration(config)
 		}
-		_ = producer.ProviderImpl(p.l)(p.ctx)(npc2.EnvConversationCommandTopic)(simpleConversationProvider(worldId, channelId, characterId, npcId, message, config.MessageType(), config.Speaker(), config.EndChat(), config.SecondaryNpcId()))
+		_ = producer.ProviderImpl(p.l)(p.ctx)(npc2.EnvConversationCommandTopic)(simpleConversationProvider(ch, characterId, npcId, message, config.MessageType(), config.Speaker(), config.EndChat(), config.SecondaryNpcId()))
 	}
 }

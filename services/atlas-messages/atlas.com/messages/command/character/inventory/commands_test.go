@@ -5,12 +5,14 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/sirupsen/logrus/hooks/test"
 	"golang.org/x/net/context"
 )
 
 // createTestCharacter creates a character model for testing
-func createTestCharacter(id uint32, name string, isGm bool, mapId uint32) character.Model {
+func createTestCharacter(id uint32, name string, isGm bool, mapId _map.Id) character.Model {
 	gm := 0
 	if isGm {
 		gm = 1
@@ -161,9 +163,10 @@ func TestAwardItemCommandProducer_GmCheck(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			char := createTestCharacter(12345, "TestPlayer", tc.isGm, 100000000)
+			ch := channel.NewModel(1, 1)
 
 			producer := AwardItemCommandProducer(logger)
-			_, found := producer(ctx)(1, 1, char, tc.message)
+			_, found := producer(ctx)(ch, char, tc.message)
 
 			// Note: The actual command may not find the executor if the item doesn't exist
 			// in the asset processor. We're testing the initial pattern matching and GM check.
@@ -183,6 +186,7 @@ func TestAwardItemCommandProducer_NoMatchReturnsNil(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	ctx := context.Background()
 	gmChar := createTestCharacter(12345, "TestGM", true, 100000000)
+	ch := channel.NewModel(1, 1)
 
 	testCases := []struct {
 		name    string
@@ -209,7 +213,7 @@ func TestAwardItemCommandProducer_NoMatchReturnsNil(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			producer := AwardItemCommandProducer(logger)
-			executor, found := producer(ctx)(1, 1, gmChar, tc.message)
+			executor, found := producer(ctx)(ch, gmChar, tc.message)
 
 			if found {
 				t.Errorf("Expected found=false for message '%s', got found=true", tc.message)

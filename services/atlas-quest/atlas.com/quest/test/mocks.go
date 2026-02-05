@@ -9,20 +9,22 @@ import (
 	"errors"
 	"time"
 
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 )
 
 // MockDataProcessor implements dataquest.Processor for testing
 type MockDataProcessor struct {
-	Definitions    map[uint32]dataquest.RestModel
+	Definitions     map[uint32]dataquest.RestModel
 	AutoStartQuests []dataquest.RestModel
-	GetError       error
+	GetError        error
 }
 
 // NewMockDataProcessor creates a new mock data processor
 func NewMockDataProcessor() *MockDataProcessor {
 	return &MockDataProcessor{
-		Definitions:    make(map[uint32]dataquest.RestModel),
+		Definitions:     make(map[uint32]dataquest.RestModel),
 		AutoStartQuests: make([]dataquest.RestModel, 0),
 	}
 }
@@ -45,7 +47,7 @@ func (m *MockDataProcessor) GetQuestDefinition(questId uint32) (dataquest.RestMo
 }
 
 // GetAutoStartQuests implements dataquest.Processor
-func (m *MockDataProcessor) GetAutoStartQuests(mapId uint32) ([]dataquest.RestModel, error) {
+func (m *MockDataProcessor) GetAutoStartQuests(mapId _map.Id) ([]dataquest.RestModel, error) {
 	if m.GetError != nil {
 		return nil, m.GetError
 	}
@@ -104,9 +106,9 @@ var _ validation.Processor = (*MockValidationProcessor)(nil)
 // CreateSimpleQuestDefinition creates a basic quest definition for testing
 func CreateSimpleQuestDefinition(questId uint32) dataquest.RestModel {
 	return dataquest.RestModel{
-		Id:           questId,
-		Name:         "Test Quest",
-		AutoComplete: false,
+		Id:                questId,
+		Name:              "Test Quest",
+		AutoComplete:      false,
 		StartRequirements: dataquest.RequirementsRestModel{},
 		EndRequirements:   dataquest.RequirementsRestModel{},
 		StartActions:      dataquest.ActionsRestModel{},
@@ -179,7 +181,7 @@ type MockEventEmitter struct {
 // QuestEvent represents a quest event for testing
 type QuestEvent struct {
 	CharacterId uint32
-	WorldId     byte
+	WorldId     world.Id
 	QuestId     uint32
 	Items       []questmessage.ItemReward
 }
@@ -187,7 +189,7 @@ type QuestEvent struct {
 // ProgressEvent represents a progress update event for testing
 type ProgressEvent struct {
 	CharacterId uint32
-	WorldId     byte
+	WorldId     world.Id
 	QuestId     uint32
 	InfoNumber  uint32
 	Progress    string
@@ -204,22 +206,22 @@ func NewMockEventEmitter() *MockEventEmitter {
 	}
 }
 
-func (m *MockEventEmitter) EmitQuestStarted(transactionId uuid.UUID, characterId uint32, worldId byte, questId uint32, progress string) error {
+func (m *MockEventEmitter) EmitQuestStarted(transactionId uuid.UUID, characterId uint32, worldId world.Id, questId uint32, progress string) error {
 	m.StartedEvents = append(m.StartedEvents, QuestEvent{CharacterId: characterId, WorldId: worldId, QuestId: questId})
 	return nil
 }
 
-func (m *MockEventEmitter) EmitQuestCompleted(transactionId uuid.UUID, characterId uint32, worldId byte, questId uint32, completedAt time.Time, items []questmessage.ItemReward) error {
+func (m *MockEventEmitter) EmitQuestCompleted(transactionId uuid.UUID, characterId uint32, worldId world.Id, questId uint32, completedAt time.Time, items []questmessage.ItemReward) error {
 	m.CompletedEvents = append(m.CompletedEvents, QuestEvent{CharacterId: characterId, WorldId: worldId, QuestId: questId, Items: items})
 	return nil
 }
 
-func (m *MockEventEmitter) EmitQuestForfeited(transactionId uuid.UUID, characterId uint32, worldId byte, questId uint32) error {
+func (m *MockEventEmitter) EmitQuestForfeited(transactionId uuid.UUID, characterId uint32, worldId world.Id, questId uint32) error {
 	m.ForfeitedEvents = append(m.ForfeitedEvents, QuestEvent{CharacterId: characterId, WorldId: worldId, QuestId: questId})
 	return nil
 }
 
-func (m *MockEventEmitter) EmitProgressUpdated(transactionId uuid.UUID, characterId uint32, worldId byte, questId uint32, infoNumber uint32, progress string) error {
+func (m *MockEventEmitter) EmitProgressUpdated(transactionId uuid.UUID, characterId uint32, worldId world.Id, questId uint32, infoNumber uint32, progress string) error {
 	m.ProgressEvents = append(m.ProgressEvents, ProgressEvent{CharacterId: characterId, WorldId: worldId, QuestId: questId, InfoNumber: infoNumber, Progress: progress})
 	return nil
 }

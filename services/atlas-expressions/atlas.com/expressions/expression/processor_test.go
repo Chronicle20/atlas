@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
@@ -74,7 +75,8 @@ func TestProcessor_Change(t *testing.T) {
 	mapId := _map.Id(100000000)
 	expr := uint32(5)
 
-	model, err := p.Change(mb, transactionId, characterId, worldId, channelId, mapId, expr)
+	f := field.NewBuilder(worldId, channelId, mapId).Build()
+	model, err := p.Change(mb, transactionId, characterId, f, expr)
 
 	assert.NoError(t, err)
 	assert.Equal(t, characterId, model.CharacterId())
@@ -96,7 +98,9 @@ func TestProcessor_Change_AddsToRegistry(t *testing.T) {
 	mb := message.NewBuffer()
 
 	characterId := uint32(1000)
-	_, _ = p.Change(mb, uuid.New(), characterId, world.Id(0), channel.Id(1), _map.Id(100000000), 5)
+
+	f := field.NewBuilder(0, 1, 100000000).Build()
+	_, _ = p.Change(mb, uuid.New(), characterId, f, 5)
 
 	// Verify expression was added to registry
 	retrieved, found := r.get(ten, characterId)
@@ -115,7 +119,8 @@ func TestProcessor_Change_AddsMessageToBuffer(t *testing.T) {
 	p := NewProcessor(l, ctx)
 	mb := message.NewBuffer()
 
-	_, err := p.Change(mb, uuid.New(), 1000, world.Id(0), channel.Id(1), _map.Id(100000000), 5)
+	f := field.NewBuilder(0, 1, 100000000).Build()
+	_, err := p.Change(mb, uuid.New(), 1000, f, 5)
 
 	assert.NoError(t, err)
 
@@ -134,7 +139,8 @@ func TestProcessor_Clear(t *testing.T) {
 
 	// First add an expression
 	characterId := uint32(1000)
-	r.add(ten, characterId, world.Id(0), channel.Id(1), _map.Id(100000000), 5)
+	f := field.NewBuilder(0, 1, 100000000).Build()
+	r.add(ten, characterId, f, 5)
 
 	// Verify it exists
 	_, found := r.get(ten, characterId)
@@ -185,7 +191,8 @@ func TestProcessor_MultipleChanges(t *testing.T) {
 	// Change multiple characters
 	for i := uint32(0); i < 10; i++ {
 		mb := message.NewBuffer()
-		_, err := p.Change(mb, uuid.New(), 1000+i, world.Id(0), channel.Id(1), _map.Id(100000000), i)
+		f := field.NewBuilder(0, 1, 100000000).Build()
+		_, err := p.Change(mb, uuid.New(), 1000+i, f, i)
 		assert.NoError(t, err)
 	}
 
@@ -207,14 +214,15 @@ func TestProcessor_ChangeReplacesPrevious(t *testing.T) {
 
 	p := NewProcessor(l, ctx)
 	characterId := uint32(1000)
+	f := field.NewBuilder(0, 1, 100000000).Build()
 
 	// First change
 	mb1 := message.NewBuffer()
-	_, _ = p.Change(mb1, uuid.New(), characterId, world.Id(0), channel.Id(1), _map.Id(100000000), 5)
+	_, _ = p.Change(mb1, uuid.New(), characterId, f, 5)
 
 	// Second change (should replace)
 	mb2 := message.NewBuffer()
-	_, _ = p.Change(mb2, uuid.New(), characterId, world.Id(0), channel.Id(1), _map.Id(100000000), 10)
+	_, _ = p.Change(mb2, uuid.New(), characterId, f, 10)
 
 	// Verify the new expression replaced the old one
 	retrieved, found := r.get(ten, characterId)

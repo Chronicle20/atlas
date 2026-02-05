@@ -26,7 +26,7 @@ func NPCActionHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 		if len(rest) > 0 {
 			mp := model.Movement{}
 			mp.Decode(l, t, readerOptions)(r)
-			_ = movement.NewProcessor(l, ctx, wp).ForNPC(s.Map(), s.CharacterId(), objectId, unk, unk2, mp)
+			_ = movement.NewProcessor(l, ctx, wp).ForNPC(s.Field(), s.CharacterId(), objectId, unk, unk2, mp)
 			return
 		}
 

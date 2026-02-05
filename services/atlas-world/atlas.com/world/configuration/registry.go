@@ -4,12 +4,13 @@ import (
 	"atlas-world/configuration/tenant"
 	"atlas-world/rate"
 	"context"
+	"log"
+	"sync"
 
+	"github.com/Chronicle20/atlas-constants/world"
 	tenant2 "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-	"log"
-	"sync"
 )
 
 var once sync.Once
@@ -68,7 +69,7 @@ func initializeRatesFromConfig(l logrus.FieldLogger, tenantId uuid.UUID, tc tena
 		rates = rates.WithRate(rate.TypeItemDrop, wc.GetItemDropRate())
 		rates = rates.WithRate(rate.TypeQuestExp, wc.GetQuestExpRate())
 
-		rate.GetRegistry().InitWorldRates(t, byte(worldId), rates)
+		rate.GetRegistry().InitWorldRates(t, world.Id(worldId), rates)
 		l.Infof("Initialized world [%d] rates from config: exp=%.2f, meso=%.2f, drop=%.2f, quest=%.2f",
 			worldId, wc.GetExpRate(), wc.GetMesoRate(), wc.GetItemDropRate(), wc.GetQuestExpRate())
 	}

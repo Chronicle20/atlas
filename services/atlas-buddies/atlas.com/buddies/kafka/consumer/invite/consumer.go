@@ -5,6 +5,7 @@ import (
 	invite2 "atlas-buddies/kafka/message/invite"
 	"atlas-buddies/list"
 	"context"
+	"github.com/Chronicle20/atlas-constants/invite"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -35,28 +36,28 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 
 func handleAcceptedStatusEvent(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, e invite2.StatusEvent[invite2.AcceptedEventBody]) {
 	return func(l logrus.FieldLogger, ctx context.Context, e invite2.StatusEvent[invite2.AcceptedEventBody]) {
-		if e.Type != invite2.EventInviteStatusTypeAccepted {
+		if e.Type != invite.StatusTypeAccepted {
 			return
 		}
 
-		if e.InviteType != invite2.InviteTypeBuddy {
+		if e.InviteType != invite.TypeBuddy {
 			return
 		}
 
-		_ = list.NewProcessor(l, ctx, db).AcceptInviteAndEmit(e.Body.TargetId, e.WorldId, e.Body.OriginatorId)
+		_ = list.NewProcessor(l, ctx, db).AcceptInviteAndEmit(uint32(e.Body.TargetId), e.WorldId, uint32(e.Body.OriginatorId))
 	}
 }
 
 func handleRejectedStatusEvent(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, e invite2.StatusEvent[invite2.RejectedEventBody]) {
 	return func(l logrus.FieldLogger, ctx context.Context, e invite2.StatusEvent[invite2.RejectedEventBody]) {
-		if e.Type != invite2.EventInviteStatusTypeRejected {
+		if e.Type != invite.StatusTypeRejected {
 			return
 		}
 
-		if e.InviteType != invite2.InviteTypeBuddy {
+		if e.InviteType != invite.TypeBuddy {
 			return
 		}
 
-		_ = list.NewProcessor(l, ctx, db).DeleteBuddyAndEmit(e.Body.OriginatorId, e.WorldId, e.Body.TargetId)
+		_ = list.NewProcessor(l, ctx, db).DeleteBuddyAndEmit(uint32(e.Body.OriginatorId), e.WorldId, uint32(e.Body.TargetId))
 	}
 }

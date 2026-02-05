@@ -5,7 +5,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 )
 
 type registry struct {
@@ -23,9 +28,19 @@ var reg *registry
 var runningId = uint32(1000000001)
 
 type MapKey struct {
-	worldId   byte
-	channelId byte
-	mapId     uint32
+	worldId   world.Id
+	channelId channel.Id
+	mapId     _map.Id
+	instance  uuid.UUID
+}
+
+func NewMapKey(f field.Model) MapKey {
+	return MapKey{
+		worldId:   f.WorldId(),
+		channelId: f.ChannelId(),
+		mapId:     f.MapId(),
+		instance:  f.Instance(),
+	}
 }
 
 type ReactorKey struct {
@@ -78,8 +93,8 @@ func (r *registry) GetAll() map[tenant.Model][]Model {
 	return res
 }
 
-func (r *registry) GetInMap(t tenant.Model, worldId byte, channelId byte, mapId uint32) []Model {
-	mk := MapKey{worldId, channelId, mapId}
+func (r *registry) GetInField(t tenant.Model, f field.Model) []Model {
+	mk := NewMapKey(f)
 
 	r.getMapLock(t, mk).Lock()
 	defer r.getMapLock(t, mk).Unlock()
@@ -124,7 +139,7 @@ func (r *registry) Create(t tenant.Model, b *ModelBuilder) (Model, error) {
 	r.reactors[id] = &m
 	r.lock.Unlock()
 
-	mk := MapKey{m.WorldId(), m.ChannelId(), m.MapId()}
+	mk := NewMapKey(m.Field())
 	r.getMapLock(t, mk).Lock()
 	defer r.getMapLock(t, mk).Unlock()
 
@@ -178,7 +193,7 @@ func (r *registry) Remove(t tenant.Model, id uint32) {
 
 	r.lock.Unlock()
 
-	mk := MapKey{val.WorldId(), val.ChannelId(), val.MapId()}
+	mk := NewMapKey(val.Field())
 	r.getMapLock(t, mk).Lock()
 	if _, ok := r.mapReactors[t][mk]; ok {
 		index := indexOf(id, r.mapReactors[t][mk])

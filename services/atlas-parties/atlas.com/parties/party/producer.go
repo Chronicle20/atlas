@@ -1,6 +1,7 @@
 package party
 
 import (
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
@@ -54,7 +55,7 @@ func changeLeaderCommandProvider(characterId uint32, partyId uint32, leaderId ui
 	return producer.SingleMessageProvider(key, value)
 }
 
-func createdEventProvider(actorId uint32, partyId uint32, worldId byte) model.Provider[[]kafka.Message] {
+func createdEventProvider(actorId uint32, partyId uint32, worldId world.Id) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(partyId))
 	value := &statusEvent[createdEventBody]{
 		ActorId: actorId,
@@ -66,7 +67,7 @@ func createdEventProvider(actorId uint32, partyId uint32, worldId byte) model.Pr
 	return producer.SingleMessageProvider(key, value)
 }
 
-func joinedEventProvider(actorId uint32, partyId uint32, worldId byte) model.Provider[[]kafka.Message] {
+func joinedEventProvider(actorId uint32, partyId uint32, worldId world.Id) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(partyId))
 	value := &statusEvent[joinedEventBody]{
 		ActorId: actorId,
@@ -78,7 +79,7 @@ func joinedEventProvider(actorId uint32, partyId uint32, worldId byte) model.Pro
 	return producer.SingleMessageProvider(key, value)
 }
 
-func leftEventProvider(actorId uint32, partyId uint32, worldId byte) model.Provider[[]kafka.Message] {
+func leftEventProvider(actorId uint32, partyId uint32, worldId world.Id) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(partyId))
 	value := &statusEvent[leftEventBody]{
 		ActorId: actorId,
@@ -90,7 +91,7 @@ func leftEventProvider(actorId uint32, partyId uint32, worldId byte) model.Provi
 	return producer.SingleMessageProvider(key, value)
 }
 
-func expelEventProvider(actorId uint32, partyId uint32, worldId byte, characterId uint32) model.Provider[[]kafka.Message] {
+func expelEventProvider(actorId uint32, partyId uint32, worldId world.Id, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(partyId))
 	value := &statusEvent[expelEventBody]{
 		ActorId: actorId,
@@ -104,7 +105,7 @@ func expelEventProvider(actorId uint32, partyId uint32, worldId byte, characterI
 	return producer.SingleMessageProvider(key, value)
 }
 
-func disbandEventProvider(actorId uint32, partyId uint32, worldId byte, members []uint32) model.Provider[[]kafka.Message] {
+func disbandEventProvider(actorId uint32, partyId uint32, worldId world.Id, members []uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(partyId))
 	value := &statusEvent[disbandEventBody]{
 		ActorId: actorId,
@@ -118,7 +119,7 @@ func disbandEventProvider(actorId uint32, partyId uint32, worldId byte, members 
 	return producer.SingleMessageProvider(key, value)
 }
 
-func changeLeaderEventProvider(actorId uint32, partyId uint32, worldId byte, characterId uint32) model.Provider[[]kafka.Message] {
+func changeLeaderEventProvider(actorId uint32, partyId uint32, worldId world.Id, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(partyId))
 	value := &statusEvent[changeLeaderEventBody]{
 		ActorId: actorId,
@@ -133,7 +134,7 @@ func changeLeaderEventProvider(actorId uint32, partyId uint32, worldId byte, cha
 	return producer.SingleMessageProvider(key, value)
 }
 
-func errorEventProvider(actorId uint32, partyId uint32, worldId byte, errorType string, characterName string) model.Provider[[]kafka.Message] {
+func errorEventProvider(actorId uint32, partyId uint32, worldId world.Id, errorType string, characterName string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(partyId))
 	value := &statusEvent[errorEventBody]{
 		ActorId: actorId,

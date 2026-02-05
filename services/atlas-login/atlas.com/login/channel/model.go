@@ -1,14 +1,17 @@
 package channel
 
 import (
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
 )
 
 type Model struct {
 	id              uuid.UUID
-	worldId         byte
-	channelId       byte
+	worldId         world.Id
+	channelId       channel.Id
 	ipAddress       string
 	port            int
 	currentCapacity uint32
@@ -20,11 +23,11 @@ func (m Model) Id() uuid.UUID {
 	return m.id
 }
 
-func (m Model) WorldId() byte {
+func (m Model) WorldId() world.Id {
 	return m.worldId
 }
 
-func (m Model) ChannelId() byte {
+func (m Model) ChannelId() channel.Id {
 	return m.channelId
 }
 
@@ -51,8 +54,8 @@ func (m Model) MaxCapacity() uint32 {
 // Builder is used to construct a Model instance
 type Builder struct {
 	id              uuid.UUID
-	worldId         byte
-	channelId       byte
+	worldId         world.Id
+	channelId       channel.Id
 	ipAddress       string
 	port            int
 	currentCapacity uint32
@@ -74,13 +77,13 @@ func (b *Builder) SetId(id uuid.UUID) *Builder {
 }
 
 // SetWorldId sets the worldId field
-func (b *Builder) SetWorldId(worldId byte) *Builder {
+func (b *Builder) SetWorldId(worldId world.Id) *Builder {
 	b.worldId = worldId
 	return b
 }
 
 // SetChannelId sets the channelId field
-func (b *Builder) SetChannelId(channelId byte) *Builder {
+func (b *Builder) SetChannelId(channelId channel.Id) *Builder {
 	b.channelId = channelId
 	return b
 }

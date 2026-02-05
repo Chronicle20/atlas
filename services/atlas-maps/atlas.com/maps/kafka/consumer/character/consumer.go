@@ -6,6 +6,7 @@ import (
 	"atlas-maps/kafka/producer"
 	_map "atlas-maps/map"
 	"context"
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -36,38 +37,43 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 
 func handleStatusEventLogin(l logrus.FieldLogger, ctx context.Context, event characterKafka.StatusEvent[characterKafka.StatusEventLoginBody]) {
 	if event.Type == characterKafka.EventCharacterStatusTypeLogin {
-		l.Debugf("Character [%d] has logged in. worldId [%d] channelId [%d] mapId [%d].", event.CharacterId, event.WorldId, event.Body.ChannelId, event.Body.MapId)
+		l.Debugf("Character [%d] has logged in. worldId [%d] channelId [%d] mapId [%d] instance [%s].", event.CharacterId, event.WorldId, event.Body.ChannelId, event.Body.MapId, event.Body.Instance)
 		transactionId := uuid.New()
+		f := field.NewBuilder(event.WorldId, event.Body.ChannelId, event.Body.MapId).SetInstance(event.Body.Instance).Build()
 		p := _map.NewProcessor(l, ctx, producer.ProviderImpl(l)(ctx))
-		_ = p.EnterAndEmit(transactionId, event.WorldId, event.Body.ChannelId, event.Body.MapId, event.CharacterId)
+		_ = p.EnterAndEmit(transactionId, f, event.CharacterId)
 		return
 	}
 }
 
 func handleStatusEventLogout(l logrus.FieldLogger, ctx context.Context, event characterKafka.StatusEvent[characterKafka.StatusEventLogoutBody]) {
 	if event.Type == characterKafka.EventCharacterStatusTypeLogout {
-		l.Debugf("Character [%d] has logged out. worldId [%d] channelId [%d] mapId [%d].", event.CharacterId, event.WorldId, event.Body.ChannelId, event.Body.MapId)
+		l.Debugf("Character [%d] has logged out. worldId [%d] channelId [%d] mapId [%d] instance [%s].", event.CharacterId, event.WorldId, event.Body.ChannelId, event.Body.MapId, event.Body.Instance)
 		transactionId := uuid.New()
+		f := field.NewBuilder(event.WorldId, event.Body.ChannelId, event.Body.MapId).SetInstance(event.Body.Instance).Build()
 		p := _map.NewProcessor(l, ctx, producer.ProviderImpl(l)(ctx))
-		_ = p.ExitAndEmit(transactionId, event.WorldId, event.Body.ChannelId, event.Body.MapId, event.CharacterId)
+		_ = p.ExitAndEmit(transactionId, f, event.CharacterId)
 		return
 	}
 }
 
 func handleStatusEventMapChanged(l logrus.FieldLogger, ctx context.Context, event characterKafka.StatusEvent[characterKafka.StatusEventMapChangedBody]) {
 	if event.Type == characterKafka.EventCharacterStatusTypeMapChanged {
-		l.Debugf("Character [%d] has changed maps. worldId [%d] channelId [%d] oldMapId [%d] newMapId [%d].", event.CharacterId, event.WorldId, event.Body.ChannelId, event.Body.OldMapId, event.Body.TargetMapId)
+		l.Debugf("Character [%d] has changed maps. worldId [%d] channelId [%d] oldMapId [%d] oldInstance [%s] newMapId [%d] newInstance [%s].", event.CharacterId, event.WorldId, event.Body.ChannelId, event.Body.OldMapId, event.Body.OldInstance, event.Body.TargetMapId, event.Body.TargetInstance)
 		transactionId := uuid.New()
+		newField := field.NewBuilder(event.WorldId, event.Body.ChannelId, event.Body.TargetMapId).SetInstance(event.Body.TargetInstance).Build()
+		oldField := field.NewBuilder(event.WorldId, event.Body.ChannelId, event.Body.OldMapId).SetInstance(event.Body.OldInstance).Build()
 		p := _map.NewProcessor(l, ctx, producer.ProviderImpl(l)(ctx))
-		_ = p.TransitionMapAndEmit(transactionId, event.WorldId, event.Body.ChannelId, event.Body.TargetMapId, event.CharacterId, event.Body.OldMapId)
+		_ = p.TransitionMapAndEmit(transactionId, newField, event.CharacterId, oldField)
 	}
 }
 
 func handleStatusEventChannelChanged(l logrus.FieldLogger, ctx context.Context, event characterKafka.StatusEvent[characterKafka.ChangeChannelEventLoginBody]) {
 	if event.Type == characterKafka.EventCharacterStatusTypeChannelChanged {
-		l.Debugf("Character [%d] has changed channels. worldId [%d] channelId [%d] oldChannelId [%d].", event.CharacterId, event.WorldId, event.Body.ChannelId, event.Body.OldChannelId)
+		l.Debugf("Character [%d] has changed channels. worldId [%d] channelId [%d] oldChannelId [%d] instance [%s].", event.CharacterId, event.WorldId, event.Body.ChannelId, event.Body.OldChannelId, event.Body.Instance)
 		transactionId := uuid.New()
+		newField := field.NewBuilder(event.WorldId, event.Body.ChannelId, event.Body.MapId).SetInstance(event.Body.Instance).Build()
 		p := _map.NewProcessor(l, ctx, producer.ProviderImpl(l)(ctx))
-		_ = p.TransitionChannelAndEmit(transactionId, event.WorldId, event.Body.ChannelId, event.Body.OldChannelId, event.CharacterId, event.Body.MapId)
+		_ = p.TransitionChannelAndEmit(transactionId, newField, event.Body.OldChannelId, event.CharacterId)
 	}
 }

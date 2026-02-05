@@ -2,6 +2,8 @@ package test
 
 import (
 	"atlas-portals/portal"
+
+	_map "github.com/Chronicle20/atlas-constants/map"
 )
 
 // PortalFixture contains test data for creating portal models
@@ -12,7 +14,7 @@ type PortalFixture struct {
 	Type        uint8
 	X           int16
 	Y           int16
-	TargetMapId uint32
+	TargetMapId _map.Id
 	ScriptName  string
 }
 
@@ -38,7 +40,7 @@ func PortalWithScript(scriptName string) PortalFixture {
 }
 
 // PortalWithTarget returns a portal fixture that has a target map
-func PortalWithTarget(targetMapId uint32, targetName string) PortalFixture {
+func PortalWithTarget(targetMapId _map.Id, targetName string) PortalFixture {
 	f := DefaultPortalFixture()
 	f.TargetMapId = targetMapId
 	f.Target = targetName

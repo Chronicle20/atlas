@@ -37,6 +37,6 @@ func CreateTestField() field.Model {
 }
 
 // CreateTestFieldWithMap creates a field model with a specific map ID
-func CreateTestFieldWithMap(mapId uint32) field.Model {
-	return field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(mapId)).Build()
+func CreateTestFieldWithMap(mapId _map.Id) field.Model {
+	return field.NewBuilder(world.Id(1), channel.Id(1), mapId).Build()
 }

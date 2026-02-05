@@ -2,36 +2,13 @@ package writer
 
 import (
 	"atlas-channel/socket/model"
+	"github.com/Chronicle20/atlas-constants/stat"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 	"sort"
 )
 
-const (
-	StatChanged            = "StatChanged"
-	StatSkin               = "SKIN"
-	StatFace               = "FACE"
-	StatHair               = "HAIR"
-	StatPetSn1             = "PET_SN_1"
-	StatLevel              = "LEVEL"
-	StatJob                = "JOB"
-	StatStrength           = "STRENGTH"
-	StatDexterity          = "DEXTERITY"
-	StatIntelligence       = "INTELLIGENCE"
-	StatLuck               = "LUCK"
-	StatHp                 = "HP"
-	StatMaxHp              = "MAX_HP"
-	StatMp                 = "MP"
-	StatMaxMp              = "MAX_MP"
-	StatAvailableAp        = "AVAILABLE_AP"
-	StatAvailableSp        = "AVAILABLE_SP"
-	StatExperience         = "EXPERIENCE"
-	StatFame               = "FAME"
-	StatMeso               = "MESO"
-	StatPetSn2             = "PET_SN_2"
-	StatPetSn3             = "PET_SN_3"
-	StatGachaponExperience = "GACHAPON_EXPERIENCE"
-)
+const StatChanged = "StatChanged"
 
 func StatChangedBody(l logrus.FieldLogger) func(updates []model.StatUpdate, exclRequestSent bool) BodyProducer {
 	return func(updates []model.StatUpdate, exclRequestSent bool) BodyProducer {
@@ -52,15 +29,15 @@ func StatChangedBody(l logrus.FieldLogger) func(updates []model.StatUpdate, excl
 			w.WriteInt(updateMask)
 
 			for _, u := range updates {
-				if u.Stat() == StatSkin || u.Stat() == StatLevel {
+				if u.Stat() == stat.TypeSkin || u.Stat() == stat.TypeLevel {
 					w.WriteByte(byte(u.Value()))
-				} else if u.Stat() == StatJob || u.Stat() == StatStrength || u.Stat() == StatDexterity || u.Stat() == StatIntelligence || u.Stat() == StatLuck || u.Stat() == StatHp || u.Stat() == StatMaxHp || u.Stat() == StatMp || u.Stat() == StatMaxMp || u.Stat() == StatAvailableAp || u.Stat() == StatFame {
+				} else if u.Stat() == stat.TypeJob || u.Stat() == stat.TypeStrength || u.Stat() == stat.TypeDexterity || u.Stat() == stat.TypeIntelligence || u.Stat() == stat.TypeLuck || u.Stat() == stat.TypeHP || u.Stat() == stat.TypeMaxHP || u.Stat() == stat.TypeMP || u.Stat() == stat.TypeMaxMP || u.Stat() == stat.TypeAvailableAP || u.Stat() == stat.TypeFame {
 					w.WriteInt16(int16(u.Value()))
-				} else if u.Stat() == StatAvailableSp {
+				} else if u.Stat() == stat.TypeAvailableSP {
 					w.WriteShort(uint16(u.Value()))
-				} else if u.Stat() == StatFace || u.Stat() == StatHair || u.Stat() == StatExperience || u.Stat() == StatMeso || u.Stat() == StatGachaponExperience {
+				} else if u.Stat() == stat.TypeFace || u.Stat() == stat.TypeHair || u.Stat() == stat.TypeExperience || u.Stat() == stat.TypeMeso || u.Stat() == stat.TypeGachaponExperience {
 					w.WriteInt(uint32(u.Value()))
-				} else if u.Stat() == StatPetSn1 || u.Stat() == StatPetSn2 || u.Stat() == StatPetSn3 {
+				} else if u.Stat() == stat.TypePetSn1 || u.Stat() == stat.TypePetSn2 || u.Stat() == stat.TypePetSn3 {
 					w.WriteLong(uint64(u.Value()))
 				}
 			}
@@ -70,8 +47,9 @@ func StatChangedBody(l logrus.FieldLogger) func(updates []model.StatUpdate, excl
 	}
 }
 
-func getStatIndex(l logrus.FieldLogger) func(options map[string]interface{}, stat string) uint8 {
-	return func(options map[string]interface{}, key string) uint8 {
+func getStatIndex(l logrus.FieldLogger) func(options map[string]interface{}, statType stat.Type) uint8 {
+	return func(options map[string]interface{}, statType stat.Type) uint8 {
+		key := string(statType)
 
 		var genericCodes interface{}
 		var ok bool

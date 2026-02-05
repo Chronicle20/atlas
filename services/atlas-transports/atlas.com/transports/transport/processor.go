@@ -9,6 +9,8 @@ import (
 	_map "atlas-transports/map"
 	"context"
 	"errors"
+	"time"
+
 	channel2 "github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
 	map2 "github.com/Chronicle20/atlas-constants/map"
@@ -16,7 +18,6 @@ import (
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-	"time"
 )
 
 type Processor interface {
@@ -187,7 +188,7 @@ func (p *ProcessorImpl) UpdateRoute(mb *message.Buffer) func(route Model) error 
 
 func (p *ProcessorImpl) warpTo(mb *message.Buffer) func(fromField field.Model, toField field.Model) error {
 	return func(ff field.Model, tf field.Model) error {
-		cp := p.mp.CharacterIdsInMapProvider(ff.WorldId(), ff.ChannelId(), ff.MapId())
+		cp := p.mp.CharacterIdsInMapProvider(ff)
 		return model.ForEachSlice(cp, func(characterId uint32) error {
 			p.l.Infof("Warping character [%d] from map [%d] to map [%d].", characterId, ff.MapId(), tf.MapId())
 			return p.charP.WarpRandom(mb)(characterId)(tf.Id())

@@ -49,7 +49,7 @@ func ExtractCharacterId(step Step[any]) uint32 {
 	case StartQuestPayload:
 		return p.CharacterId
 	case ApplyConsumableEffectPayload:
-		return p.CharacterId
+		return uint32(p.CharacterId)
 	case SendMessagePayload:
 		return p.CharacterId
 	case DepositToStoragePayload:

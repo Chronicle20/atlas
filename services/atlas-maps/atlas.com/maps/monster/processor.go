@@ -10,7 +10,7 @@ import (
 
 type Processor interface {
 	CountInMap(transactionId uuid.UUID, field field.Model) (int, error)
-	CreateMonster(transactionId uuid.UUID, field field.Model, monsterId uint32, x int16, y int16, fh uint16, team int32)
+	CreateMonster(transactionId uuid.UUID, field field.Model, monsterId uint32, x int16, y int16, fh int16, team int8)
 }
 
 type ProcessorImpl struct {
@@ -33,7 +33,7 @@ func (p *ProcessorImpl) CountInMap(transactionId uuid.UUID, field field.Model) (
 	return len(data), nil
 }
 
-func (p *ProcessorImpl) CreateMonster(transactionId uuid.UUID, field field.Model, monsterId uint32, x int16, y int16, fh uint16, team int32) {
+func (p *ProcessorImpl) CreateMonster(transactionId uuid.UUID, field field.Model, monsterId uint32, x int16, y int16, fh int16, team int8) {
 	_, err := requestCreate(field, monsterId, x, y, fh, team)(p.l, p.ctx)
 	if err != nil {
 		p.l.WithError(err).Errorf("Creating monster for field [%s].", field.Id())

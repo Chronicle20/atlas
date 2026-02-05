@@ -16,7 +16,7 @@ func getBaseRequest() string {
 	return requests.RootUrl("MONSTERS")
 }
 
-func requestCreate(f field.Model, monsterId uint32, x int16, y int16, fh uint16, team int32) requests.Request[RestModel] {
+func requestCreate(f field.Model, monsterId uint32, x int16, y int16, fh int16, team int8) requests.Request[RestModel] {
 	m := RestModel{
 		Id:        "0",
 		MonsterId: monsterId,

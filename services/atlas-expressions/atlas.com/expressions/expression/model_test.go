@@ -98,7 +98,7 @@ func TestModel_AllAccessors(t *testing.T) {
 	m := Model{
 		tenant:      ten,
 		characterId: 2000,
-		field:       field.NewBuilder(0, 2, 200000000).Build(),
+		field:       field.NewBuilder(1, 2, 200000000).Build(),
 		expression:  10,
 		expiration:  expiration,
 	}

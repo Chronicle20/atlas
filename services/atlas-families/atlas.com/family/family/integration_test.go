@@ -3,6 +3,7 @@ package family
 import (
 	"testing"
 
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 )
 
@@ -13,9 +14,9 @@ func TestFamilyIntegration_EntityTransformation(t *testing.T) {
 	characterId := uint32(12345)
 	tenantId := uuid.New()
 	level := uint16(50)
-	world := byte(1)
+	worldId := world.Id(1)
 
-	member, err := NewBuilder(characterId, tenantId, level, world).
+	member, err := NewBuilder(characterId, tenantId, level, worldId).
 		SetRep(1000).
 		SetDailyRep(100).
 		Build()
@@ -40,8 +41,8 @@ func TestFamilyIntegration_EntityTransformation(t *testing.T) {
 		t.Errorf("Expected Level %d, got %d", level, entity.Level)
 	}
 
-	if entity.World != world {
-		t.Errorf("Expected World %d, got %d", world, entity.World)
+	if entity.World != byte(worldId) {
+		t.Errorf("Expected World %d, got %d", worldId, entity.World)
 	}
 
 	if entity.Rep != 1000 {
@@ -71,8 +72,8 @@ func TestFamilyIntegration_EntityTransformation(t *testing.T) {
 		t.Errorf("Expected Level %d, got %d", level, retrievedMember.Level())
 	}
 
-	if retrievedMember.World() != world {
-		t.Errorf("Expected World %d, got %d", world, retrievedMember.World())
+	if retrievedMember.World() != worldId {
+		t.Errorf("Expected World %d, got %d", worldId, retrievedMember.World())
 	}
 
 	if retrievedMember.Rep() != 1000 {

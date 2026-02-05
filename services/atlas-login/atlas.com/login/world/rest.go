@@ -19,6 +19,10 @@ type RestModel struct {
 	RecommendedMessage string              `json:"recommendedMessage"`
 	CapacityStatus     uint16              `json:"capacityStatus"`
 	Channels           []channel.RestModel `json:"-"`
+	ExpRate            float64             `json:"expRate"`
+	MesoRate           float64             `json:"mesoRate"`
+	ItemDropRate       float64             `json:"itemDropRate"`
+	QuestExpRate       float64             `json:"questExpRate"`
 }
 
 func (r RestModel) GetName() string {

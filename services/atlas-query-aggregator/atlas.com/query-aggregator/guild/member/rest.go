@@ -1,13 +1,13 @@
 package member
 
 type RestModel struct {
-	CharacterId  uint32 `json:"characterId"`
-	Name         string `json:"name"`
-	JobId        uint16 `json:"jobId"`
-	Level        byte   `json:"level"`
-	Rank         byte   `json:"rank"`
-	Online       bool   `json:"online"`
-	AllianceRank byte   `json:"allianceRank"`
+	CharacterId   uint32 `json:"characterId"`
+	Name          string `json:"name"`
+	JobId         uint16 `json:"jobId"`
+	Level         byte   `json:"level"`
+	Title         byte   `json:"title"`
+	Online        bool   `json:"online"`
+	AllianceTitle byte   `json:"allianceTitle"`
 }
 
 func Extract(rm RestModel) (Model, error) {
@@ -16,8 +16,8 @@ func Extract(rm RestModel) (Model, error) {
 		name:         rm.Name,
 		jobId:        rm.JobId,
 		level:        rm.Level,
-		rank:         rm.Rank,
+		rank:         rm.Title,
 		online:       rm.Online,
-		allianceRank: rm.AllianceRank,
+		allianceRank: rm.AllianceTitle,
 	}, nil
 }

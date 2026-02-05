@@ -8,7 +8,7 @@ import (
 )
 
 type RestModel struct {
-	Id                uint32  `json:"-"`
+	Id                _map.Id `json:"-"`
 	Name              string  `json:"name"`
 	StreetName        string  `json:"streetName"`
 	ReturnMapId       _map.Id `json:"returnMapId"`
@@ -44,7 +44,7 @@ func (r *RestModel) SetID(idStr string) error {
 	if err != nil {
 		return err
 	}
-	r.Id = uint32(id)
+	r.Id = _map.Id(id)
 	return nil
 }
 

@@ -6,7 +6,9 @@ import (
 	"testing"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-constants/job"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -28,7 +30,8 @@ func setupEventHandlerTest() (logrus.FieldLogger, context.Context, tenant.Model)
 // Helper to create a character for testing
 func createTestCharacter(ten tenant.Model, characterId uint32, partyId uint32, level byte, jobId job.Id) character.Model {
 	registry := character.GetRegistry()
-	char := registry.Create(ten, 1, 1, 100000, characterId, "TestChar", level, jobId, 0)
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000)).Build()
+	char := registry.Create(ten, f, characterId, "TestChar", level, jobId, 0)
 	
 	if partyId != 0 {
 		char = registry.Update(ten, characterId, func(m character.Model) character.Model {

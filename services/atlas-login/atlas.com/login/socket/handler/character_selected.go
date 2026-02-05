@@ -7,6 +7,7 @@ import (
 	"atlas-login/socket/model"
 	"atlas-login/socket/writer"
 	"context"
+
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -30,7 +31,7 @@ func CharacterSelectedHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 		}
 		l.Debugf("Character [%d] selected for login to channel [%d:%d]. hwid [%s] hwid [%s].", characterId, s.WorldId(), s.ChannelId(), sMacAddressWithHDDSerial, sMacAddressWithHDDSerial2)
 
-		c, err := channel.NewProcessor(l, ctx).GetById(s.WorldId(), s.ChannelId())
+		c, err := channel.NewProcessor(l, ctx).GetById(s.Channel())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve channel information being logged in to.")
 			err = serverIpFunc(s, writer.ServerIPBodySimpleError(l)(writer.ServerIPCodeServerUnderInspection))

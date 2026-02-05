@@ -3,6 +3,7 @@ package family
 import (
 	"testing"
 
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 )
 
@@ -10,10 +11,10 @@ func TestBuilder_FluentInterface(t *testing.T) {
 	characterId := uint32(12345)
 	tenantId := uuid.New()
 	level := uint16(50)
-	world := byte(1)
+	worldId := world.Id(1)
 
 	// Test fluent interface with method chaining
-	member, err := NewBuilder(characterId, tenantId, level, world).
+	member, err := NewBuilder(characterId, tenantId, level, worldId).
 		SetSeniorId(99999).
 		SetJuniorIds([]uint32{11111, 22222}).
 		SetRep(1000).
@@ -54,9 +55,9 @@ func TestBuilder_BusinessLogicMethods(t *testing.T) {
 	characterId := uint32(12345)
 	tenantId := uuid.New()
 	level := uint16(50)
-	world := byte(1)
+	worldId := world.Id(1)
 
-	builder := NewBuilder(characterId, tenantId, level, world)
+	builder := NewBuilder(characterId, tenantId, level, worldId)
 
 	t.Run("AddJunior", func(t *testing.T) {
 		builderWithJunior := builder.AddJunior(11111)
@@ -76,7 +77,7 @@ func TestBuilder_BusinessLogicMethods(t *testing.T) {
 
 	t.Run("AddMultipleJuniors", func(t *testing.T) {
 		// Create a fresh builder for this test
-		freshBuilder := NewBuilder(characterId, tenantId, level, world)
+		freshBuilder := NewBuilder(characterId, tenantId, level, worldId)
 		builderWithJuniors := freshBuilder.AddJunior(11111).AddJunior(22222)
 		member, err := builderWithJuniors.Build()
 		if err != nil {
@@ -89,7 +90,7 @@ func TestBuilder_BusinessLogicMethods(t *testing.T) {
 	})
 
 	t.Run("AddTooManyJuniors", func(t *testing.T) {
-		freshBuilder := NewBuilder(characterId, tenantId, level, world)
+		freshBuilder := NewBuilder(characterId, tenantId, level, worldId)
 		builderWithTooManyJuniors := freshBuilder.AddJunior(11111).AddJunior(22222).AddJunior(33333)
 		_, err := builderWithTooManyJuniors.Build()
 		if err == nil {
@@ -98,7 +99,7 @@ func TestBuilder_BusinessLogicMethods(t *testing.T) {
 	})
 
 	t.Run("RemoveJunior", func(t *testing.T) {
-		freshBuilder := NewBuilder(characterId, tenantId, level, world)
+		freshBuilder := NewBuilder(characterId, tenantId, level, worldId)
 		builderWithJuniors := freshBuilder.AddJunior(11111).AddJunior(22222)
 		builderRemovedJunior := builderWithJuniors.RemoveJunior(11111)
 		member, err := builderRemovedJunior.Build()
@@ -116,7 +117,7 @@ func TestBuilder_BusinessLogicMethods(t *testing.T) {
 	})
 
 	t.Run("AddRep", func(t *testing.T) {
-		freshBuilder := NewBuilder(characterId, tenantId, level, world)
+		freshBuilder := NewBuilder(characterId, tenantId, level, worldId)
 		builderWithRep := freshBuilder.SetRep(1000).AddRep(500)
 		member, err := builderWithRep.Build()
 		if err != nil {
@@ -129,7 +130,7 @@ func TestBuilder_BusinessLogicMethods(t *testing.T) {
 	})
 
 	t.Run("SubtractRep", func(t *testing.T) {
-		freshBuilder := NewBuilder(characterId, tenantId, level, world)
+		freshBuilder := NewBuilder(characterId, tenantId, level, worldId)
 		builderWithRep := freshBuilder.SetRep(1000).SubtractRep(300)
 		member, err := builderWithRep.Build()
 		if err != nil {
@@ -142,7 +143,7 @@ func TestBuilder_BusinessLogicMethods(t *testing.T) {
 	})
 
 	t.Run("SubtractTooMuchRep", func(t *testing.T) {
-		freshBuilder := NewBuilder(characterId, tenantId, level, world)
+		freshBuilder := NewBuilder(characterId, tenantId, level, worldId)
 		builderWithRep := freshBuilder.SetRep(1000).SubtractRep(1500)
 		member, err := builderWithRep.Build()
 		if err != nil {
@@ -155,7 +156,7 @@ func TestBuilder_BusinessLogicMethods(t *testing.T) {
 	})
 
 	t.Run("AddDailyRep", func(t *testing.T) {
-		freshBuilder := NewBuilder(characterId, tenantId, level, world)
+		freshBuilder := NewBuilder(characterId, tenantId, level, worldId)
 		builderWithDailyRep := freshBuilder.SetDailyRep(100).AddDailyRep(200)
 		member, err := builderWithDailyRep.Build()
 		if err != nil {
@@ -168,7 +169,7 @@ func TestBuilder_BusinessLogicMethods(t *testing.T) {
 	})
 
 	t.Run("ResetDailyRep", func(t *testing.T) {
-		freshBuilder := NewBuilder(characterId, tenantId, level, world)
+		freshBuilder := NewBuilder(characterId, tenantId, level, worldId)
 		builderWithReset := freshBuilder.SetDailyRep(1000).ResetDailyRep()
 		member, err := builderWithReset.Build()
 		if err != nil {
@@ -181,7 +182,7 @@ func TestBuilder_BusinessLogicMethods(t *testing.T) {
 	})
 
 	t.Run("ClearSenior", func(t *testing.T) {
-		freshBuilder := NewBuilder(characterId, tenantId, level, world)
+		freshBuilder := NewBuilder(characterId, tenantId, level, worldId)
 		builderWithoutSenior := freshBuilder.SetSeniorId(99999).ClearSeniorId()
 		member, err := builderWithoutSenior.Build()
 		if err != nil {
@@ -194,7 +195,7 @@ func TestBuilder_BusinessLogicMethods(t *testing.T) {
 	})
 
 	t.Run("ClearJuniors", func(t *testing.T) {
-		freshBuilder := NewBuilder(characterId, tenantId, level, world)
+		freshBuilder := NewBuilder(characterId, tenantId, level, worldId)
 		builderWithoutJuniors := freshBuilder.AddJunior(11111).AddJunior(22222).SetJuniorIds([]uint32{})
 		member, err := builderWithoutJuniors.Build()
 		if err != nil {
@@ -211,10 +212,10 @@ func TestBuilder_ModificationWorkflow(t *testing.T) {
 	characterId := uint32(12345)
 	tenantId := uuid.New()
 	level := uint16(50)
-	world := byte(1)
+	worldId := world.Id(1)
 
 	// Create initial member
-	original, err := NewBuilder(characterId, tenantId, level, world).
+	original, err := NewBuilder(characterId, tenantId, level, worldId).
 		SetSeniorId(99999).
 		SetJuniorIds([]uint32{11111}).
 		SetRep(1000).
@@ -276,7 +277,7 @@ func TestBuilder_ValidationErrors(t *testing.T) {
 	characterId := uint32(12345)
 	tenantId := uuid.New()
 	level := uint16(50)
-	world := byte(1)
+	worldId := world.Id(1)
 
 	tests := []struct {
 		name        string
@@ -286,14 +287,14 @@ func TestBuilder_ValidationErrors(t *testing.T) {
 		{
 			name: "Valid builder",
 			setupBuilder: func() *Builder {
-				return NewBuilder(characterId, tenantId, level, world)
+				return NewBuilder(characterId, tenantId, level, worldId)
 			},
 			expectError: false,
 		},
 		{
 			name: "Too many juniors",
 			setupBuilder: func() *Builder {
-				return NewBuilder(characterId, tenantId, level, world).
+				return NewBuilder(characterId, tenantId, level, worldId).
 					AddJunior(11111).
 					AddJunior(22222).
 					AddJunior(33333)
@@ -303,7 +304,7 @@ func TestBuilder_ValidationErrors(t *testing.T) {
 		{
 			name: "Daily rep over cap",
 			setupBuilder: func() *Builder {
-				return NewBuilder(characterId, tenantId, level, world).
+				return NewBuilder(characterId, tenantId, level, worldId).
 					SetDailyRep(6000)
 			},
 			expectError: true,
@@ -311,7 +312,7 @@ func TestBuilder_ValidationErrors(t *testing.T) {
 		{
 			name: "Self reference as senior",
 			setupBuilder: func() *Builder {
-				return NewBuilder(characterId, tenantId, level, world).
+				return NewBuilder(characterId, tenantId, level, worldId).
 					SetSeniorId(characterId)
 			},
 			expectError: true,
@@ -319,7 +320,7 @@ func TestBuilder_ValidationErrors(t *testing.T) {
 		{
 			name: "Self reference in juniors",
 			setupBuilder: func() *Builder {
-				return NewBuilder(characterId, tenantId, level, world).
+				return NewBuilder(characterId, tenantId, level, worldId).
 					AddJunior(characterId)
 			},
 			expectError: true,
@@ -327,7 +328,7 @@ func TestBuilder_ValidationErrors(t *testing.T) {
 		{
 			name: "Duplicate juniors",
 			setupBuilder: func() *Builder {
-				return NewBuilder(characterId, tenantId, level, world).
+				return NewBuilder(characterId, tenantId, level, worldId).
 					AddJunior(11111).
 					AddJunior(11111)
 			},
@@ -355,16 +356,16 @@ func TestBuilder_Immutability(t *testing.T) {
 	characterId := uint32(12345)
 	tenantId := uuid.New()
 	level := uint16(50)
-	world := byte(1)
+	worldId := world.Id(1)
 
 	// Create two independent builders 
-	builder1 := NewBuilder(characterId, tenantId, level, world).
+	builder1 := NewBuilder(characterId, tenantId, level, worldId).
 		SetSeniorId(99999).
 		SetRep(1000).
 		AddJunior(11111).
 		SetDailyRep(100)
 	
-	builder2 := NewBuilder(characterId, tenantId, level, world).
+	builder2 := NewBuilder(characterId, tenantId, level, worldId).
 		SetSeniorId(99999).
 		SetRep(1000).
 		AddJunior(22222).

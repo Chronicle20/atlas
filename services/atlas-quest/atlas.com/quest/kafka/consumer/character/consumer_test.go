@@ -74,10 +74,10 @@ func TestHandleMapChangedEvent_UpdatesMapProgress(t *testing.T) {
 
 	questId := uint32(1000)
 	characterId := uint32(12345)
-	mapId := uint32(100000000)
+	mapId := _map.Id(100000000)
 
 	// Create quest with map requirement
-	mockData.AddQuestDefinition(questId, test.CreateQuestWithMapRequirement(questId, []uint32{mapId}))
+	mockData.AddQuestDefinition(questId, test.CreateQuestWithMapRequirement(questId, []uint32{uint32(mapId)}))
 
 	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
@@ -86,7 +86,7 @@ func TestHandleMapChangedEvent_UpdatesMapProgress(t *testing.T) {
 
 	// Verify initial progress (0 = not visited)
 	fetched, _ := processor.GetByCharacterIdAndQuestId(characterId, questId)
-	progress, _ := fetched.GetProgress(mapId)
+	progress, _ := fetched.GetProgress(uint32(mapId))
 	if progress.Progress() != "0" {
 		t.Errorf("Initial map progress = %s, want \"0\"", progress.Progress())
 	}
@@ -120,7 +120,7 @@ func TestHandleMapChangedEvent_UpdatesMapProgress(t *testing.T) {
 
 	// Verify map was marked as visited
 	fetched, _ = processor.GetByCharacterIdAndQuestId(characterId, questId)
-	progress, found := fetched.GetProgress(mapId)
+	progress, found := fetched.GetProgress(uint32(mapId))
 	if !found {
 		t.Fatal("Expected map progress entry to exist")
 	}
@@ -192,10 +192,10 @@ func TestHandleMapChangedEvent_AutoComplete(t *testing.T) {
 
 	questId := uint32(1002)
 	characterId := uint32(12345)
-	mapId := uint32(100000000)
+	mapId := _map.Id(100000000)
 
 	// Create auto-complete quest with single map requirement
-	def := test.CreateQuestWithMapRequirement(questId, []uint32{mapId})
+	def := test.CreateQuestWithMapRequirement(questId, []uint32{uint32(mapId)})
 	def.AutoComplete = true
 	mockData.AddQuestDefinition(questId, def)
 
@@ -207,8 +207,8 @@ func TestHandleMapChangedEvent_AutoComplete(t *testing.T) {
 	// Simulate map change and auto-complete check
 	quests, _ := processor.GetByCharacterIdAndState(characterId, quest.StateStarted)
 	for _, q := range quests {
-		if _, found := q.GetProgress(mapId); found {
-			_ = processor.SetProgress(uuid.Nil, characterId, q.QuestId(), mapId, "1")
+		if _, found := q.GetProgress(uint32(mapId)); found {
+			_ = processor.SetProgress(uuid.Nil, characterId, q.QuestId(), uint32(mapId), "1")
 
 			// Check auto-complete
 			_, completed, _ := processor.CheckAutoComplete(characterId, q.QuestId(), test.CreateTestFieldWithMap(mapId))
@@ -239,10 +239,10 @@ func TestHandleMapChangedEvent_ChainedQuest(t *testing.T) {
 	questId := uint32(1003)
 	nextQuestId := uint32(1004)
 	characterId := uint32(12345)
-	mapId := uint32(100000000)
+	mapId := _map.Id(100000000)
 
 	// Create auto-complete quest with chain
-	def := test.CreateQuestWithMapRequirement(questId, []uint32{mapId})
+	def := test.CreateQuestWithMapRequirement(questId, []uint32{uint32(mapId)})
 	def.AutoComplete = true
 	def.EndActions.NextQuest = nextQuestId
 	mockData.AddQuestDefinition(questId, def)
@@ -256,8 +256,8 @@ func TestHandleMapChangedEvent_ChainedQuest(t *testing.T) {
 	// Simulate map change with chain handling
 	quests, _ := processor.GetByCharacterIdAndState(characterId, quest.StateStarted)
 	for _, q := range quests {
-		if _, found := q.GetProgress(mapId); found {
-			_ = processor.SetProgress(uuid.Nil, characterId, q.QuestId(), mapId, "1")
+		if _, found := q.GetProgress(uint32(mapId)); found {
+			_ = processor.SetProgress(uuid.Nil, characterId, q.QuestId(), uint32(mapId), "1")
 
 			nextId, completed, _ := processor.CheckAutoComplete(characterId, q.QuestId(), test.CreateTestFieldWithMap(mapId))
 			if completed && nextId > 0 {

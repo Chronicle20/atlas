@@ -20,7 +20,7 @@ func requestInMap(field field.Model) requests.Request[[]RestModel] {
 	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+mapMonstersResource, field.WorldId(), field.ChannelId(), field.MapId(), field.Instance()))
 }
 
-func requestCreate(field field.Model, monsterId uint32, x int16, y int16, fh uint16, team int32) requests.Request[RestModel] {
+func requestCreate(field field.Model, monsterId uint32, x int16, y int16, fh int16, team int8) requests.Request[RestModel] {
 	m := RestModel{
 		Id:        "0",
 		MonsterId: monsterId,

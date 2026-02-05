@@ -1,10 +1,11 @@
 package channel
 
 import (
+	"time"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
-	"time"
 )
 
 type Model struct {
@@ -13,8 +14,8 @@ type Model struct {
 	channelId       channel.Id
 	ipAddress       string
 	port            int
-	currentCapacity int
-	maxCapacity     int
+	currentCapacity uint32
+	maxCapacity     uint32
 	createdAt       time.Time
 }
 
@@ -42,10 +43,10 @@ func (m Model) CreatedAt() time.Time {
 	return m.createdAt
 }
 
-func (m Model) CurrentCapacity() int {
+func (m Model) CurrentCapacity() uint32 {
 	return m.currentCapacity
 }
 
-func (m Model) MaxCapacity() int {
+func (m Model) MaxCapacity() uint32 {
 	return m.maxCapacity
 }

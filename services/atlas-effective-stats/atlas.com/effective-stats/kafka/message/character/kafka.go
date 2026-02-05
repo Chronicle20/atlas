@@ -2,6 +2,7 @@ package character
 
 import (
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/stat"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 )
@@ -26,7 +27,7 @@ type StatusEvent[E any] struct {
 type StatusEventStatChangedBody struct {
 	ChannelId       channel.Id             `json:"channelId"`
 	ExclRequestSent bool                   `json:"exclRequestSent"`
-	Updates         []string               `json:"updates"`
+	Updates         []stat.Type            `json:"updates"`
 	Values          map[string]interface{} `json:"values,omitempty"`
 }
 

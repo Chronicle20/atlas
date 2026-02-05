@@ -2,12 +2,14 @@ package thread
 
 import (
 	thread2 "atlas-guilds/kafka/message/thread"
+
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 )
 
-func statusEventCreatedProvider(worldId byte, guildId uint32, threadId uint32, actorId uint32) model.Provider[[]kafka.Message] {
+func statusEventCreatedProvider(worldId world.Id, guildId uint32, threadId uint32, actorId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(guildId))
 	value := &thread2.StatusEvent[thread2.CreatedStatusEventBody]{
 		WorldId:  worldId,
@@ -20,7 +22,7 @@ func statusEventCreatedProvider(worldId byte, guildId uint32, threadId uint32, a
 	return producer.SingleMessageProvider(key, value)
 }
 
-func statusEventUpdatedProvider(worldId byte, guildId uint32, threadId uint32, actorId uint32) model.Provider[[]kafka.Message] {
+func statusEventUpdatedProvider(worldId world.Id, guildId uint32, threadId uint32, actorId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(guildId))
 	value := &thread2.StatusEvent[thread2.UpdatedStatusEventBody]{
 		WorldId:  worldId,
@@ -33,7 +35,7 @@ func statusEventUpdatedProvider(worldId byte, guildId uint32, threadId uint32, a
 	return producer.SingleMessageProvider(key, value)
 }
 
-func statusEventDeletedProvider(worldId byte, guildId uint32, threadId uint32, actorId uint32) model.Provider[[]kafka.Message] {
+func statusEventDeletedProvider(worldId world.Id, guildId uint32, threadId uint32, actorId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(guildId))
 	value := &thread2.StatusEvent[thread2.DeletedStatusEventBody]{
 		WorldId:  worldId,
@@ -46,7 +48,7 @@ func statusEventDeletedProvider(worldId byte, guildId uint32, threadId uint32, a
 	return producer.SingleMessageProvider(key, value)
 }
 
-func statusEventReplyAddedProvider(worldId byte, guildId uint32, threadId uint32, actorId uint32, replyId uint32) model.Provider[[]kafka.Message] {
+func statusEventReplyAddedProvider(worldId world.Id, guildId uint32, threadId uint32, actorId uint32, replyId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(guildId))
 	value := &thread2.StatusEvent[thread2.ReplyAddedStatusEventBody]{
 		WorldId:  worldId,
@@ -61,7 +63,7 @@ func statusEventReplyAddedProvider(worldId byte, guildId uint32, threadId uint32
 	return producer.SingleMessageProvider(key, value)
 }
 
-func statusEventReplyDeletedProvider(worldId byte, guildId uint32, threadId uint32, actorId uint32, replyId uint32) model.Provider[[]kafka.Message] {
+func statusEventReplyDeletedProvider(worldId world.Id, guildId uint32, threadId uint32, actorId uint32, replyId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(guildId))
 	value := &thread2.StatusEvent[thread2.ReplyDeletedStatusEventBody]{
 		WorldId:  worldId,

@@ -6,10 +6,11 @@ import (
 	"atlas-channel/session"
 	"context"
 	"errors"
-	"github.com/Chronicle20/atlas-socket"
-	"github.com/sirupsen/logrus"
 	"net"
 	"sync"
+
+	"github.com/Chronicle20/atlas-socket"
+	"github.com/sirupsen/logrus"
 )
 
 func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) func(hp socket.HandlerProducer, rw socket.OpReadWriter, sc server.Model, ipAddress string, port int) {
@@ -36,7 +37,7 @@ func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 				err := socket.Run(l, ctx, wg,
 					socket.SetHandlers(hp),
 					socket.SetPort(port),
-					socket.SetCreator(sp.Create(sc.WorldId(), sc.ChannelId(), locale)),
+					socket.SetCreator(sp.Create(sc.Channel(), locale)),
 					socket.SetMessageDecryptor(sp.Decrypt(true, hasMapleEncryption)),
 					socket.SetDestroyer(sp.DestroyByIdWithSpan),
 					socket.SetReadWriter(rw),
@@ -50,7 +51,7 @@ func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 				}
 			}()
 
-			err := channel.NewProcessor(l, ctx).Register(sc.WorldId(), sc.ChannelId(), ipAddress, port)
+			err := channel.NewProcessor(l, ctx).Register(sc.Channel(), ipAddress, port)
 			if err != nil {
 				l.WithError(err).Errorf("Socket service registration error.")
 			}

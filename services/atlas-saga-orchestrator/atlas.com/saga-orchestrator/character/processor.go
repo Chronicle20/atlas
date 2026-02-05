@@ -6,6 +6,7 @@ import (
 	character2 "atlas-saga-orchestrator/kafka/message/character"
 	"atlas-saga-orchestrator/kafka/producer"
 	"context"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-constants/job"
@@ -22,29 +23,29 @@ type Processor interface {
 	WarpRandom(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, field field.Model) error
 	WarpToPortalAndEmit(transactionId uuid.UUID, characterId uint32, field field.Model, pp model.Provider[uint32]) error
 	WarpToPortal(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, field field.Model, pp model.Provider[uint32]) error
-	AwardExperienceAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, distributions []character2.ExperienceDistributions) error
-	AwardExperience(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, distributions []character2.ExperienceDistributions) error
-	DeductExperienceAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount uint32) error
-	DeductExperience(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount uint32) error
-	AwardLevelAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount byte) error
-	AwardLevel(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount byte) error
-	AwardMesosAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error
-	AwardMesos(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error
-	AwardFameAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount int16) error
-	AwardFame(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount int16) error
-	ChangeJobAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, jobId job.Id) error
-	ChangeJob(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, jobId job.Id) error
-	ChangeHairAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, styleId uint32) error
-	ChangeHair(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, styleId uint32) error
-	ChangeFaceAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, styleId uint32) error
-	ChangeFace(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, styleId uint32) error
-	ChangeSkinAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, styleId byte) error
-	ChangeSkin(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, styleId byte) error
-	RequestCreateCharacter(transactionId uuid.UUID, accountId uint32, worldId byte, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id) error
-	SetHPAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount uint16) error
-	SetHP(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount uint16) error
-	ResetStatsAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id) error
-	ResetStats(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id) error
+	AwardExperienceAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, distributions []character2.ExperienceDistributions) error
+	AwardExperience(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, distributions []character2.ExperienceDistributions) error
+	DeductExperienceAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount uint32) error
+	DeductExperience(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount uint32) error
+	AwardLevelAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount byte) error
+	AwardLevel(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount byte) error
+	AwardMesosAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, actorId uint32, actorType string, amount int32) error
+	AwardMesos(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, actorId uint32, actorType string, amount int32) error
+	AwardFameAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount int16) error
+	AwardFame(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount int16) error
+	ChangeJobAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, jobId job.Id) error
+	ChangeJob(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, jobId job.Id) error
+	ChangeHairAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, styleId uint32) error
+	ChangeHair(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, styleId uint32) error
+	ChangeFaceAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, styleId uint32) error
+	ChangeFace(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, styleId uint32) error
+	ChangeSkinAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, styleId byte) error
+	ChangeSkin(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, styleId byte) error
+	RequestCreateCharacter(transactionId uuid.UUID, accountId uint32, worldId world.Id, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id) error
+	SetHPAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount uint16) error
+	SetHP(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount uint16) error
+	ResetStatsAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32) error
+	ResetStats(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32) error
 }
 
 type ProcessorImpl struct {
@@ -93,140 +94,140 @@ func (p *ProcessorImpl) WarpToPortal(mb *message.Buffer) func(transactionId uuid
 	}
 }
 
-func (p *ProcessorImpl) AwardExperienceAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, distributions []character2.ExperienceDistributions) error {
+func (p *ProcessorImpl) AwardExperienceAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, distributions []character2.ExperienceDistributions) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
-		return p.AwardExperience(mb)(transactionId, worldId, characterId, channelId, distributions)
+		return p.AwardExperience(mb)(transactionId, ch, characterId, distributions)
 	})
 }
 
-func (p *ProcessorImpl) AwardExperience(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, distributions []character2.ExperienceDistributions) error {
-	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, distributions []character2.ExperienceDistributions) error {
-		return mb.Put(character2.EnvCommandTopic, AwardExperienceProvider(transactionId, worldId, characterId, channelId, distributions))
+func (p *ProcessorImpl) AwardExperience(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, distributions []character2.ExperienceDistributions) error {
+	return func(transactionId uuid.UUID, ch channel.Model, characterId uint32, distributions []character2.ExperienceDistributions) error {
+		return mb.Put(character2.EnvCommandTopic, AwardExperienceProvider(transactionId, ch, characterId, distributions))
 	}
 }
 
-func (p *ProcessorImpl) DeductExperienceAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount uint32) error {
+func (p *ProcessorImpl) DeductExperienceAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount uint32) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
-		return p.DeductExperience(mb)(transactionId, worldId, characterId, channelId, amount)
+		return p.DeductExperience(mb)(transactionId, ch, characterId, amount)
 	})
 }
 
-func (p *ProcessorImpl) DeductExperience(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount uint32) error {
-	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount uint32) error {
-		return mb.Put(character2.EnvCommandTopic, DeductExperienceProvider(transactionId, worldId, characterId, channelId, amount))
+func (p *ProcessorImpl) DeductExperience(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount uint32) error {
+	return func(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount uint32) error {
+		return mb.Put(character2.EnvCommandTopic, DeductExperienceProvider(transactionId, ch, characterId, amount))
 	}
 }
 
-func (p *ProcessorImpl) AwardLevelAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount byte) error {
+func (p *ProcessorImpl) AwardLevelAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount byte) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
-		return p.AwardLevel(mb)(transactionId, worldId, characterId, channelId, amount)
+		return p.AwardLevel(mb)(transactionId, ch, characterId, amount)
 	})
 }
 
-func (p *ProcessorImpl) AwardLevel(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount byte) error {
-	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount byte) error {
-		return mb.Put(character2.EnvCommandTopic, AwardLevelProvider(transactionId, worldId, characterId, channelId, amount))
+func (p *ProcessorImpl) AwardLevel(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount byte) error {
+	return func(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount byte) error {
+		return mb.Put(character2.EnvCommandTopic, AwardLevelProvider(transactionId, ch, characterId, amount))
 	}
 }
 
-func (p *ProcessorImpl) AwardMesosAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error {
+func (p *ProcessorImpl) AwardMesosAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, actorId uint32, actorType string, amount int32) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
-		return p.AwardMesos(mb)(transactionId, worldId, characterId, channelId, actorId, actorType, amount)
+		return p.AwardMesos(mb)(transactionId, ch, characterId, actorId, actorType, amount)
 	})
 }
 
-func (p *ProcessorImpl) AwardMesos(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error {
-	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error {
-		return mb.Put(character2.EnvCommandTopic, AwardMesosProvider(transactionId, worldId, characterId, channelId, actorId, actorType, amount))
+func (p *ProcessorImpl) AwardMesos(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, actorId uint32, actorType string, amount int32) error {
+	return func(transactionId uuid.UUID, ch channel.Model, characterId uint32, actorId uint32, actorType string, amount int32) error {
+		return mb.Put(character2.EnvCommandTopic, AwardMesosProvider(transactionId, ch, characterId, actorId, actorType, amount))
 	}
 }
 
-func (p *ProcessorImpl) AwardFameAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount int16) error {
+func (p *ProcessorImpl) AwardFameAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount int16) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
-		return p.AwardFame(mb)(transactionId, worldId, characterId, channelId, amount)
+		return p.AwardFame(mb)(transactionId, ch, characterId, amount)
 	})
 }
 
-func (p *ProcessorImpl) AwardFame(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount int16) error {
-	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount int16) error {
-		return mb.Put(character2.EnvCommandTopic, AwardFameProvider(transactionId, worldId, characterId, channelId, amount))
+func (p *ProcessorImpl) AwardFame(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount int16) error {
+	return func(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount int16) error {
+		return mb.Put(character2.EnvCommandTopic, AwardFameProvider(transactionId, ch, characterId, amount))
 	}
 }
 
-func (p *ProcessorImpl) ChangeJobAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, jobId job.Id) error {
+func (p *ProcessorImpl) ChangeJobAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, jobId job.Id) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
-		return p.ChangeJob(mb)(transactionId, worldId, characterId, channelId, jobId)
+		return p.ChangeJob(mb)(transactionId, ch, characterId, jobId)
 	})
 }
 
-func (p *ProcessorImpl) ChangeJob(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, jobId job.Id) error {
-	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, jobId job.Id) error {
-		return mb.Put(character2.EnvCommandTopic, ChangeJobProvider(transactionId, worldId, characterId, channelId, jobId))
+func (p *ProcessorImpl) ChangeJob(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, jobId job.Id) error {
+	return func(transactionId uuid.UUID, ch channel.Model, characterId uint32, jobId job.Id) error {
+		return mb.Put(character2.EnvCommandTopic, ChangeJobProvider(transactionId, ch, characterId, jobId))
 	}
 }
 
-func (p *ProcessorImpl) ChangeHairAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, styleId uint32) error {
+func (p *ProcessorImpl) ChangeHairAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, styleId uint32) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
-		return p.ChangeHair(mb)(transactionId, worldId, characterId, channelId, styleId)
+		return p.ChangeHair(mb)(transactionId, ch, characterId, styleId)
 	})
 }
 
-func (p *ProcessorImpl) ChangeHair(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, styleId uint32) error {
-	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, styleId uint32) error {
-		return mb.Put(character2.EnvCommandTopic, ChangeHairProvider(transactionId, worldId, characterId, channelId, styleId))
+func (p *ProcessorImpl) ChangeHair(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, styleId uint32) error {
+	return func(transactionId uuid.UUID, ch channel.Model, characterId uint32, styleId uint32) error {
+		return mb.Put(character2.EnvCommandTopic, ChangeHairProvider(transactionId, ch, characterId, styleId))
 	}
 }
 
-func (p *ProcessorImpl) ChangeFaceAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, styleId uint32) error {
+func (p *ProcessorImpl) ChangeFaceAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, styleId uint32) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
-		return p.ChangeFace(mb)(transactionId, worldId, characterId, channelId, styleId)
+		return p.ChangeFace(mb)(transactionId, ch, characterId, styleId)
 	})
 }
 
-func (p *ProcessorImpl) ChangeFace(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, styleId uint32) error {
-	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, styleId uint32) error {
-		return mb.Put(character2.EnvCommandTopic, ChangeFaceProvider(transactionId, worldId, characterId, channelId, styleId))
+func (p *ProcessorImpl) ChangeFace(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, styleId uint32) error {
+	return func(transactionId uuid.UUID, ch channel.Model, characterId uint32, styleId uint32) error {
+		return mb.Put(character2.EnvCommandTopic, ChangeFaceProvider(transactionId, ch, characterId, styleId))
 	}
 }
 
-func (p *ProcessorImpl) ChangeSkinAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, styleId byte) error {
+func (p *ProcessorImpl) ChangeSkinAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, styleId byte) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
-		return p.ChangeSkin(mb)(transactionId, worldId, characterId, channelId, styleId)
+		return p.ChangeSkin(mb)(transactionId, ch, characterId, styleId)
 	})
 }
 
-func (p *ProcessorImpl) ChangeSkin(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, styleId byte) error {
-	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, styleId byte) error {
-		return mb.Put(character2.EnvCommandTopic, ChangeSkinProvider(transactionId, worldId, characterId, channelId, styleId))
+func (p *ProcessorImpl) ChangeSkin(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, styleId byte) error {
+	return func(transactionId uuid.UUID, ch channel.Model, characterId uint32, styleId byte) error {
+		return mb.Put(character2.EnvCommandTopic, ChangeSkinProvider(transactionId, ch, characterId, styleId))
 	}
 }
 
-func (p *ProcessorImpl) RequestCreateCharacter(transactionId uuid.UUID, accountId uint32, worldId byte, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id) error {
+func (p *ProcessorImpl) RequestCreateCharacter(transactionId uuid.UUID, accountId uint32, worldId world.Id, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
 		return mb.Put(character2.EnvCommandTopic, RequestCreateCharacterProvider(transactionId, accountId, worldId, name, level, strength, dexterity, intelligence, luck, hp, mp, jobId, gender, face, hair, skin, mapId))
 	})
 }
 
-func (p *ProcessorImpl) SetHPAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount uint16) error {
+func (p *ProcessorImpl) SetHPAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount uint16) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
-		return p.SetHP(mb)(transactionId, worldId, characterId, channelId, amount)
+		return p.SetHP(mb)(transactionId, ch, characterId, amount)
 	})
 }
 
-func (p *ProcessorImpl) SetHP(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount uint16) error {
-	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount uint16) error {
-		return mb.Put(character2.EnvCommandTopic, SetHPProvider(transactionId, worldId, characterId, channelId, amount))
+func (p *ProcessorImpl) SetHP(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount uint16) error {
+	return func(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount uint16) error {
+		return mb.Put(character2.EnvCommandTopic, SetHPProvider(transactionId, ch, characterId, amount))
 	}
 }
 
-func (p *ProcessorImpl) ResetStatsAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id) error {
+func (p *ProcessorImpl) ResetStatsAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
-		return p.ResetStats(mb)(transactionId, worldId, characterId, channelId)
+		return p.ResetStats(mb)(transactionId, ch, characterId)
 	})
 }
 
-func (p *ProcessorImpl) ResetStats(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id) error {
-	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id) error {
-		return mb.Put(character2.EnvCommandTopic, ResetStatsProvider(transactionId, worldId, characterId, channelId))
+func (p *ProcessorImpl) ResetStats(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32) error {
+	return func(transactionId uuid.UUID, ch channel.Model, characterId uint32) error {
+		return mb.Put(character2.EnvCommandTopic, ResetStatsProvider(transactionId, ch, characterId))
 	}
 }

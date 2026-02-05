@@ -44,7 +44,7 @@ func QuestActionHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.P
 				y = r.ReadInt16()
 			}
 			l.Debugf("Character [%d] starting quest [%d] conversation with NPC [%d]. x,y [%d,%d]", s.CharacterId(), questId, npcId, x, y)
-			err := quest.NewProcessor(l, ctx).StartQuest(s.WorldId(), s.ChannelId(), s.MapId(), s.CharacterId(), questId, npcId, false)
+			err := quest.NewProcessor(l, ctx).StartQuest(s.Field(), s.CharacterId(), questId, npcId, false)
 			if err != nil {
 				l.WithError(err).Errorf("Failed to start quest [%d] conversation for character [%d] with NPC [%d].", questId, s.CharacterId(), npcId)
 			}
@@ -54,7 +54,7 @@ func QuestActionHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.P
 			x := r.ReadInt16()
 			y := r.ReadInt16()
 			l.Debugf("Character [%d] starting scripted quest [%d] conversation with NPC [%d]. x,y [%d,%d]", s.CharacterId(), questId, npcId, x, y)
-			err := quest.NewProcessor(l, ctx).StartQuestConversation(s.Map(), questId, npcId, s.CharacterId())
+			err := quest.NewProcessor(l, ctx).StartQuestConversation(s.Field(), questId, npcId, s.CharacterId())
 			if err != nil {
 				l.WithError(err).Errorf("Failed to start quest [%d] conversation for character [%d] with NPC [%d].", questId, s.CharacterId(), npcId)
 			}
@@ -69,7 +69,7 @@ func QuestActionHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.P
 			}
 			selection := r.ReadInt32()
 			l.Debugf("Character [%d] completing quest [%d] conversation with NPC [%d]. x,y [%d,%d]", s.CharacterId(), questId, npcId, x, y)
-			err := quest.NewProcessor(l, ctx).CompleteQuest(s.WorldId(), s.ChannelId(), s.MapId(), s.CharacterId(), questId, npcId, selection, false)
+			err := quest.NewProcessor(l, ctx).CompleteQuest(s.Field(), s.CharacterId(), questId, npcId, selection, false)
 			if err != nil {
 				l.WithError(err).Errorf("Failed to start quest [%d] completion conversation for character [%d] with NPC [%d].", questId, s.CharacterId(), npcId)
 			}
@@ -79,14 +79,14 @@ func QuestActionHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.P
 			x := r.ReadInt16()
 			y := r.ReadInt16()
 			l.Debugf("Character [%d] completing scripted quest [%d] conversation with NPC [%d]. x,y [%d,%d]", s.CharacterId(), questId, npcId, x, y)
-			err := quest.NewProcessor(l, ctx).StartQuestConversation(s.Map(), questId, npcId, s.CharacterId())
+			err := quest.NewProcessor(l, ctx).StartQuestConversation(s.Field(), questId, npcId, s.CharacterId())
 			if err != nil {
 				l.WithError(err).Errorf("Failed to start quest [%d] completion conversation for character [%d] with NPC [%d].", questId, s.CharacterId(), npcId)
 			}
 			return
 		case QuestActionForfeit:
 			l.Debugf("Character [%d] forfeiting quest [%d].", s.CharacterId(), questId)
-			err := quest.NewProcessor(l, ctx).ForfeitQuest(s.WorldId(), s.ChannelId(), s.MapId(), s.CharacterId(), questId)
+			err := quest.NewProcessor(l, ctx).ForfeitQuest(s.Field(), s.CharacterId(), questId)
 			if err != nil {
 				l.WithError(err).Errorf("Failed to forfeit quest [%d] for character [%d].", questId, s.CharacterId())
 			}
@@ -95,7 +95,7 @@ func QuestActionHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.P
 			unk1 := r.ReadUint32()
 			itemId := r.ReadUint32()
 			l.Debugf("Character [%d] restoring lost item [%d] for quest [%d]. unk1 [%d]. rem [%d]", s.CharacterId(), itemId, questId, unk1, r.Available())
-			err := quest.NewProcessor(l, ctx).RestoreItem(s.WorldId(), s.ChannelId(), s.MapId(), s.CharacterId(), questId, itemId)
+			err := quest.NewProcessor(l, ctx).RestoreItem(s.Field(), s.CharacterId(), questId, itemId)
 			if err != nil {
 				l.WithError(err).Errorf("Failed to restore item [%d] for quest [%d] for character [%d].", itemId, questId, s.CharacterId())
 			}

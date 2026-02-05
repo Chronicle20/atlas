@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 )
 
@@ -16,7 +17,7 @@ type Builder struct {
 	referenceId  uint32
 	originatorId uint32
 	targetId     uint32
-	worldId      byte
+	worldId      world.Id
 	age          time.Time
 }
 
@@ -64,7 +65,7 @@ func (b *Builder) SetTargetId(targetId uint32) *Builder {
 }
 
 // SetWorldId sets the game world ID.
-func (b *Builder) SetWorldId(worldId byte) *Builder {
+func (b *Builder) SetWorldId(worldId world.Id) *Builder {
 	b.worldId = worldId
 	return b
 }

@@ -1,16 +1,36 @@
 package drop
 
+import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
+)
+
 const (
 	EnvCommandTopic  = "COMMAND_TOPIC_DROP"
 	CommandTypeSpawn = "SPAWN"
 )
 
 type command[E any] struct {
-	WorldId   byte   `json:"worldId"`
-	ChannelId byte   `json:"channelId"`
-	MapId     uint32 `json:"mapId"`
-	Type      string `json:"type"`
-	Body      E      `json:"body"`
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
+	MapId     _map.Id    `json:"mapId"`
+	Instance  uuid.UUID  `json:"instance"`
+	Type      string     `json:"type"`
+	Body      E          `json:"body"`
+}
+
+func commandFromField[E any](f field.Model, theType string, body E) command[E] {
+	return command[E]{
+		WorldId:   f.WorldId(),
+		ChannelId: f.ChannelId(),
+		MapId:     f.MapId(),
+		Instance:  f.Instance(),
+		Type:      theType,
+		Body:      body,
+	}
 }
 
 type spawnCommandBody struct {

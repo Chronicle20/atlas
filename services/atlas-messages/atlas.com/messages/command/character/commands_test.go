@@ -6,12 +6,14 @@ import (
 	"regexp"
 	"testing"
 
+	channel2 "github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/sirupsen/logrus/hooks/test"
 	"golang.org/x/net/context"
 )
 
 // createTestCharacter creates a character model for testing
-func createTestCharacter(id uint32, name string, isGm bool, mapId uint32) character.Model {
+func createTestCharacter(id uint32, name string, isGm bool, mapId _map.Id) character.Model {
 	gm := 0
 	if isGm {
 		gm = 1
@@ -336,7 +338,8 @@ func TestAwardExperienceCommandProducer_GmCheck(t *testing.T) {
 			char := createTestCharacter(12345, "TestPlayer", tc.isGm, 100000000)
 
 			producer := AwardExperienceCommandProducer(logger)
-			_, found := producer(ctx)(1, 1, char, tc.message)
+			ch := channel2.NewModel(1, 1)
+			_, found := producer(ctx)(ch, char, tc.message)
 
 			if found != tc.expectFound {
 				t.Errorf("Expected found=%v for GM=%v, got found=%v", tc.expectFound, tc.isGm, found)
@@ -375,7 +378,8 @@ func TestAwardLevelCommandProducer_GmCheck(t *testing.T) {
 			char := createTestCharacter(12345, "TestPlayer", tc.isGm, 100000000)
 
 			producer := AwardLevelCommandProducer(logger)
-			_, found := producer(ctx)(1, 1, char, tc.message)
+			ch := channel2.NewModel(1, 1)
+			_, found := producer(ctx)(ch, char, tc.message)
 
 			if found != tc.expectFound {
 				t.Errorf("Expected found=%v for GM=%v, got found=%v", tc.expectFound, tc.isGm, found)
@@ -414,7 +418,8 @@ func TestChangeJobCommandProducer_GmCheck(t *testing.T) {
 			char := createTestCharacter(12345, "TestPlayer", tc.isGm, 100000000)
 
 			producer := ChangeJobCommandProducer(logger)
-			_, found := producer(ctx)(1, 1, char, tc.message)
+			ch := channel2.NewModel(1, 1)
+			_, found := producer(ctx)(ch, char, tc.message)
 
 			if found != tc.expectFound {
 				t.Errorf("Expected found=%v for GM=%v, got found=%v", tc.expectFound, tc.isGm, found)
@@ -453,7 +458,8 @@ func TestAwardMesoCommandProducer_GmCheck(t *testing.T) {
 			char := createTestCharacter(12345, "TestPlayer", tc.isGm, 100000000)
 
 			producer := AwardMesoCommandProducer(logger)
-			_, found := producer(ctx)(1, 1, char, tc.message)
+			ch := channel2.NewModel(1, 1)
+			_, found := producer(ctx)(ch, char, tc.message)
 
 			if found != tc.expectFound {
 				t.Errorf("Expected found=%v for GM=%v, got found=%v", tc.expectFound, tc.isGm, found)
@@ -502,7 +508,8 @@ func TestCommandProducers_NoMatchReturnsNil(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			executor, found := tc.producer(logger)(ctx)(1, 1, gmChar, tc.message)
+			ch := channel2.NewModel(1, 1)
+			executor, found := tc.producer(logger)(ctx)(ch, gmChar, tc.message)
 
 			if found {
 				t.Errorf("Expected found=false for message '%s', got found=true", tc.message)
@@ -543,7 +550,8 @@ func TestAwardExperienceCommandProducer_InvalidAmount(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			producer := AwardExperienceCommandProducer(logger)
-			_, found := producer(ctx)(1, 1, gmChar, tc.message)
+			ch := channel2.NewModel(1, 1)
+			_, found := producer(ctx)(ch, gmChar, tc.message)
 
 			if found != tc.expectFound {
 				t.Errorf("Expected found=%v, got found=%v", tc.expectFound, found)
@@ -578,7 +586,8 @@ func TestAwardLevelCommandProducer_InvalidAmount(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			producer := AwardLevelCommandProducer(logger)
-			_, found := producer(ctx)(1, 1, gmChar, tc.message)
+			ch := channel2.NewModel(1, 1)
+			_, found := producer(ctx)(ch, gmChar, tc.message)
 
 			if found != tc.expectFound {
 				t.Errorf("Expected found=%v, got found=%v", tc.expectFound, found)

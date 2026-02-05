@@ -9,6 +9,7 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -51,7 +52,7 @@ func handleEnteredStatusEvent(l logrus.FieldLogger, sc server.Model, wp writer.P
 			return
 		}
 
-		s, err := session.NewProcessor(l, ctx).GetByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId)
+		s, err := session.NewProcessor(l, ctx).GetByCharacterId(sc.Channel())(e.CharacterId)
 		if err != nil {
 			return
 		}
@@ -82,7 +83,7 @@ func handleErrorStatusEvent(l logrus.FieldLogger, sc server.Model, wp writer.Pro
 			return
 		}
 
-		s, err := session.NewProcessor(l, ctx).GetByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId)
+		s, err := session.NewProcessor(l, ctx).GetByCharacterId(sc.Channel())(e.CharacterId)
 		if err != nil {
 			return
 		}

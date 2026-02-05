@@ -62,9 +62,9 @@ Retrieves a drop by ID.
 
 ---
 
-### GET /api/worlds/{worldId}/channels/{channelId}/maps/{mapId}/drops
+### GET /api/worlds/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/drops
 
-Retrieves all drops for a specific map.
+Retrieves all drops for a specific map instance.
 
 #### Parameters
 
@@ -73,6 +73,7 @@ Retrieves all drops for a specific map.
 | worldId | path | uint8 | Yes | World identifier |
 | channelId | path | uint8 | Yes | Channel identifier |
 | mapId | path | uint32 | Yes | Map identifier |
+| instanceId | path | uuid | Yes | Instance identifier (use 00000000-0000-0000-0000-000000000000 for non-instanced maps) |
 
 #### Request Headers
 

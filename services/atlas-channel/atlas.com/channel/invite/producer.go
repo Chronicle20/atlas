@@ -2,6 +2,8 @@ package invite
 
 import (
 	invite2 "atlas-channel/kafka/message/invite"
+	"github.com/Chronicle20/atlas-constants/character"
+	"github.com/Chronicle20/atlas-constants/invite"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
@@ -12,11 +14,11 @@ func AcceptInviteCommandProvider(actorId uint32, worldId world.Id, inviteType st
 	key := producer.CreateKey(int(actorId))
 	value := &invite2.Command[invite2.AcceptCommandBody]{
 		WorldId:    worldId,
-		InviteType: inviteType,
-		Type:       invite2.CommandInviteTypeAccept,
+		InviteType: invite.Type(inviteType),
+		Type:       invite.CommandTypeAccept,
 		Body: invite2.AcceptCommandBody{
-			ReferenceId: referenceId,
-			TargetId:    actorId,
+			ReferenceId: invite.Id(referenceId),
+			TargetId:    character.Id(actorId),
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
@@ -26,11 +28,11 @@ func RejectInviteCommandProvider(actorId uint32, worldId world.Id, inviteType st
 	key := producer.CreateKey(int(actorId))
 	value := &invite2.Command[invite2.RejectCommandBody]{
 		WorldId:    worldId,
-		InviteType: inviteType,
-		Type:       invite2.CommandInviteTypeReject,
+		InviteType: invite.Type(inviteType),
+		Type:       invite.CommandTypeReject,
 		Body: invite2.RejectCommandBody{
-			OriginatorId: originatorId,
-			TargetId:     actorId,
+			OriginatorId: character.Id(originatorId),
+			TargetId:     character.Id(actorId),
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

@@ -7,6 +7,7 @@ import (
 	"atlas-world/test"
 	"testing"
 
+	channel2 "github.com/Chronicle20/atlas-constants/channel"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
@@ -33,7 +34,7 @@ func TestHandleEventStatus_Started(t *testing.T) {
 	tenant := test.CreateMockTenant(tenantId)
 
 	event := message.StatusEvent{
-		Type:            message.StatusTypeStarted,
+		Type:            channel2.StatusTypeStarted,
 		WorldId:         1,
 		ChannelId:       0,
 		IpAddress:       "192.168.1.100",
@@ -47,7 +48,7 @@ func TestHandleEventStatus_Started(t *testing.T) {
 
 	// Verify channel was registered
 	registry := channel.GetChannelRegistry()
-	ch, err := registry.ChannelServer(tenant, 1, 0)
+	ch, err := registry.ChannelServer(tenant, channel2.NewModel(1, 0))
 	if err != nil {
 		t.Fatalf("Channel should have been registered, got error: %v", err)
 	}
@@ -72,7 +73,7 @@ func TestHandleEventStatus_Started(t *testing.T) {
 	}
 
 	// Cleanup
-	_ = registry.RemoveByWorldAndChannel(tenant, 1, 0)
+	_ = registry.RemoveByWorldAndChannel(tenant, channel2.NewModel(1, 0))
 }
 
 func TestHandleEventStatus_Shutdown(t *testing.T) {
@@ -85,21 +86,21 @@ func TestHandleEventStatus_Shutdown(t *testing.T) {
 
 	// First register a channel
 	channelProcessor := channel.NewProcessor(logger, ctx)
-	_, err := channelProcessor.Register(2, 1, "192.168.1.200", 9000, 0, 50)
+	_, err := channelProcessor.Register(channel2.NewModel(2, 1), "192.168.1.200", 9000, 0, 50)
 	if err != nil {
 		t.Fatalf("Failed to register channel: %v", err)
 	}
 
 	// Verify it exists
 	registry := channel.GetChannelRegistry()
-	_, err = registry.ChannelServer(tenant, 2, 1)
+	_, err = registry.ChannelServer(tenant, channel2.NewModel(2, 1))
 	if err != nil {
 		t.Fatalf("Channel should exist before shutdown event")
 	}
 
 	// Send shutdown event
 	event := message.StatusEvent{
-		Type:      message.StatusTypeShutdown,
+		Type:      channel2.StatusTypeShutdown,
 		WorldId:   2,
 		ChannelId: 1,
 		IpAddress: "192.168.1.200",
@@ -109,7 +110,7 @@ func TestHandleEventStatus_Shutdown(t *testing.T) {
 	consumer.HandleEventStatusForTest(logger, ctx, event)
 
 	// Verify channel was unregistered
-	_, err = registry.ChannelServer(tenant, 2, 1)
+	_, err = registry.ChannelServer(tenant, channel2.NewModel(2, 1))
 	if err == nil {
 		t.Error("Channel should have been unregistered")
 	}
@@ -154,7 +155,7 @@ func TestHandleEventStatus_MultipleStarted(t *testing.T) {
 
 	// Register first channel
 	event1 := message.StatusEvent{
-		Type:        message.StatusTypeStarted,
+		Type:        channel2.StatusTypeStarted,
 		WorldId:     1,
 		ChannelId:   0,
 		IpAddress:   "192.168.1.1",
@@ -165,7 +166,7 @@ func TestHandleEventStatus_MultipleStarted(t *testing.T) {
 
 	// Register second channel
 	event2 := message.StatusEvent{
-		Type:        message.StatusTypeStarted,
+		Type:        channel2.StatusTypeStarted,
 		WorldId:     1,
 		ChannelId:   1,
 		IpAddress:   "192.168.1.2",
@@ -183,8 +184,8 @@ func TestHandleEventStatus_MultipleStarted(t *testing.T) {
 	}
 
 	// Cleanup
-	_ = registry.RemoveByWorldAndChannel(tenant, 1, 0)
-	_ = registry.RemoveByWorldAndChannel(tenant, 1, 1)
+	_ = registry.RemoveByWorldAndChannel(tenant, channel2.NewModel(1, 0))
+	_ = registry.RemoveByWorldAndChannel(tenant, channel2.NewModel(1, 1))
 }
 
 func TestHandleEventStatus_StartedThenShutdown(t *testing.T) {
@@ -197,7 +198,7 @@ func TestHandleEventStatus_StartedThenShutdown(t *testing.T) {
 
 	// Start channel
 	startEvent := message.StatusEvent{
-		Type:        message.StatusTypeStarted,
+		Type:        channel2.StatusTypeStarted,
 		WorldId:     3,
 		ChannelId:   0,
 		IpAddress:   "192.168.1.50",
@@ -208,14 +209,14 @@ func TestHandleEventStatus_StartedThenShutdown(t *testing.T) {
 
 	// Verify exists
 	registry := channel.GetChannelRegistry()
-	_, err := registry.ChannelServer(tenant, 3, 0)
+	_, err := registry.ChannelServer(tenant, channel2.NewModel(3, 0))
 	if err != nil {
 		t.Fatal("Channel should exist after start event")
 	}
 
 	// Shutdown channel
 	shutdownEvent := message.StatusEvent{
-		Type:      message.StatusTypeShutdown,
+		Type:      channel2.StatusTypeShutdown,
 		WorldId:   3,
 		ChannelId: 0,
 		IpAddress: "192.168.1.50",
@@ -224,7 +225,7 @@ func TestHandleEventStatus_StartedThenShutdown(t *testing.T) {
 	consumer.HandleEventStatusForTest(logger, ctx, shutdownEvent)
 
 	// Verify removed
-	_, err = registry.ChannelServer(tenant, 3, 0)
+	_, err = registry.ChannelServer(tenant, channel2.NewModel(3, 0))
 	if err == nil {
 		t.Error("Channel should be removed after shutdown event")
 	}
@@ -240,7 +241,7 @@ func TestHandleEventStatus_ShutdownNonExistent(t *testing.T) {
 	// Try to shutdown a channel that doesn't exist
 	// This should not panic
 	event := message.StatusEvent{
-		Type:      message.StatusTypeShutdown,
+		Type:      channel2.StatusTypeShutdown,
 		WorldId:   99,
 		ChannelId: 99,
 		IpAddress: "192.168.1.1",

@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
@@ -21,13 +22,13 @@ func IsInitialized(t tenant.Model, characterId uint32) bool {
 
 // InitializeCharacter performs lazy initialization of a character's effective stats
 // This is called when stats are first requested for a character that hasn't been initialized
-func InitializeCharacter(l logrus.FieldLogger, ctx context.Context, characterId uint32, worldId, channelId byte) error {
+func InitializeCharacter(l logrus.FieldLogger, ctx context.Context, characterId uint32, ch channel.Model) error {
 	t := tenant.MustFromContext(ctx)
 
-	l.Debugf("Initializing effective stats for character [%d] on world [%d] channel [%d].", characterId, worldId, channelId)
+	l.Debugf("Initializing effective stats for character [%d] on world [%d] channel [%d].", characterId, ch.WorldId(), ch.Id())
 
 	// Create or get existing model
-	m := GetRegistry().GetOrCreate(t, worldId, channelId, characterId)
+	m := GetRegistry().GetOrCreate(t, ch, characterId)
 
 	// Mark as initialized first to prevent recursive initialization
 	if err := GetRegistry().MarkInitialized(t, characterId); err != nil {

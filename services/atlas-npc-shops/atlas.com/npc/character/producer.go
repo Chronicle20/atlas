@@ -12,7 +12,7 @@ func RequestChangeMesoCommandProvider(characterId uint32, worldId world.Id, acto
 	key := producer.CreateKey(int(characterId))
 	value := &character2.Command[character2.RequestChangeMesoBody]{
 		CharacterId: characterId,
-		WorldId:     byte(worldId),
+		WorldId:     worldId,
 		Type:        character2.CommandRequestChangeMeso,
 		Body: character2.RequestChangeMesoBody{
 			ActorId:   actorId,

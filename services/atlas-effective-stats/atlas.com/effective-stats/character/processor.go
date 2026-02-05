@@ -8,27 +8,26 @@ import (
 	"fmt"
 
 	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {
-	GetEffectiveStats(worldId, channelId byte, characterId uint32) (stat.Computed, []stat.Bonus, error)
-	AddBonus(worldId, channelId byte, characterId uint32, source string, statType stat.Type, amount int32) error
-	AddMultiplierBonus(worldId, channelId byte, characterId uint32, source string, statType stat.Type, multiplier float64) error
+	GetEffectiveStats(ch channel.Model, characterId uint32) (stat.Computed, []stat.Bonus, error)
+	AddBonus(ch channel.Model, characterId uint32, source string, statType stat.Type, amount int32) error
+	AddMultiplierBonus(ch channel.Model, characterId uint32, source string, statType stat.Type, multiplier float64) error
 	RemoveBonus(characterId uint32, source string, statType stat.Type) error
 	RemoveBonusesBySource(characterId uint32, source string) error
-	SetBaseStats(worldId, channelId byte, characterId uint32, base stat.Base) error
+	SetBaseStats(ch channel.Model, characterId uint32, base stat.Base) error
 	// Equipment bonus methods
-	AddEquipmentBonuses(worldId, channelId byte, characterId uint32, equipmentId uint32, bonuses []stat.Bonus) error
+	AddEquipmentBonuses(ch channel.Model, characterId uint32, equipmentId uint32, bonuses []stat.Bonus) error
 	RemoveEquipmentBonuses(characterId uint32, equipmentId uint32) error
 	// Buff bonus methods
-	AddBuffBonuses(worldId, channelId byte, characterId uint32, buffSourceId int32, bonuses []stat.Bonus) error
+	AddBuffBonuses(ch channel.Model, characterId uint32, buffSourceId int32, bonuses []stat.Bonus) error
 	RemoveBuffBonuses(characterId uint32, buffSourceId int32) error
 	// Passive skill bonus methods
-	AddPassiveBonuses(worldId, channelId byte, characterId uint32, skillId uint32, bonuses []stat.Bonus) error
+	AddPassiveBonuses(ch channel.Model, characterId uint32, skillId uint32, bonuses []stat.Bonus) error
 	RemovePassiveBonuses(characterId uint32, skillId uint32) error
 	// Cleanup
 	RemoveCharacter(characterId uint32)
@@ -50,33 +49,33 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 
 // GetEffectiveStats retrieves computed effective stats and bonuses for a character
 // If the character hasn't been initialized yet, this will lazily initialize them
-func (p *ProcessorImpl) GetEffectiveStats(worldId, channelId byte, characterId uint32) (stat.Computed, []stat.Bonus, error) {
+func (p *ProcessorImpl) GetEffectiveStats(ch channel.Model, characterId uint32) (stat.Computed, []stat.Bonus, error) {
 	// Lazy initialization - ensure character's data is set up
 	if !GetRegistry().IsInitialized(p.t, characterId) {
 		p.l.Debugf("Character [%d] not initialized, performing lazy initialization.", characterId)
-		if err := InitializeCharacter(p.l, p.ctx, characterId, worldId, channelId); err != nil {
+		if err := InitializeCharacter(p.l, p.ctx, characterId, ch); err != nil {
 			p.l.WithError(err).Warnf("Failed to initialize character [%d], returning current state.", characterId)
 		}
 	}
 
-	m := GetRegistry().GetOrCreate(p.t, worldId, channelId, characterId)
+	m := GetRegistry().GetOrCreate(p.t, ch, characterId)
 
 	return m.Computed(), m.Bonuses(), nil
 }
 
 // AddBonus adds or updates a flat stat bonus for a character
-func (p *ProcessorImpl) AddBonus(worldId, channelId byte, characterId uint32, source string, statType stat.Type, amount int32) error {
+func (p *ProcessorImpl) AddBonus(ch channel.Model, characterId uint32, source string, statType stat.Type, amount int32) error {
 	b := stat.NewBonus(source, statType, amount)
-	m := GetRegistry().AddBonus(p.t, worldId, channelId, characterId, b)
+	m := GetRegistry().AddBonus(p.t, ch, characterId, b)
 	p.l.Debugf("Added bonus [%s] for character [%d]: %s = %d", source, characterId, statType, amount)
 	p.logEffectiveStats(characterId, m.Computed())
 	return nil
 }
 
 // AddMultiplierBonus adds or updates a percentage stat bonus for a character
-func (p *ProcessorImpl) AddMultiplierBonus(worldId, channelId byte, characterId uint32, source string, statType stat.Type, multiplier float64) error {
+func (p *ProcessorImpl) AddMultiplierBonus(ch channel.Model, characterId uint32, source string, statType stat.Type, multiplier float64) error {
 	b := stat.NewMultiplierBonus(source, statType, multiplier)
-	m := GetRegistry().AddBonus(p.t, worldId, channelId, characterId, b)
+	m := GetRegistry().AddBonus(p.t, ch, characterId, b)
 	p.l.Debugf("Added multiplier bonus [%s] for character [%d]: %s = %.2f%%", source, characterId, statType, multiplier*100)
 	p.logEffectiveStats(characterId, m.Computed())
 	return nil
@@ -133,8 +132,8 @@ func (p *ProcessorImpl) RemoveBonusesBySource(characterId uint32, source string)
 }
 
 // SetBaseStats sets the base stats for a character
-func (p *ProcessorImpl) SetBaseStats(worldId, channelId byte, characterId uint32, base stat.Base) error {
-	m := GetRegistry().SetBaseStats(p.t, worldId, channelId, characterId, base)
+func (p *ProcessorImpl) SetBaseStats(ch channel.Model, characterId uint32, base stat.Base) error {
+	m := GetRegistry().SetBaseStats(p.t, ch, characterId, base)
 	p.l.Debugf("Set base stats for character [%d]: STR=%d, DEX=%d, INT=%d, LUK=%d, MaxHP=%d, MaxMP=%d",
 		characterId, base.Strength(), base.Dexterity(), base.Intelligence(), base.Luck(), base.MaxHP(), base.MaxMP())
 	p.logEffectiveStats(characterId, m.Computed())
@@ -142,13 +141,13 @@ func (p *ProcessorImpl) SetBaseStats(worldId, channelId byte, characterId uint32
 }
 
 // AddEquipmentBonuses adds stat bonuses from equipment
-func (p *ProcessorImpl) AddEquipmentBonuses(worldId, channelId byte, characterId uint32, equipmentId uint32, bonuses []stat.Bonus) error {
+func (p *ProcessorImpl) AddEquipmentBonuses(ch channel.Model, characterId uint32, equipmentId uint32, bonuses []stat.Bonus) error {
 	source := fmt.Sprintf("equipment:%d", equipmentId)
 	sourcedBonuses := make([]stat.Bonus, 0, len(bonuses))
 	for _, b := range bonuses {
 		sourcedBonuses = append(sourcedBonuses, stat.NewFullBonus(source, b.StatType(), b.Amount(), b.Multiplier()))
 	}
-	m := GetRegistry().AddBonuses(p.t, worldId, channelId, characterId, sourcedBonuses)
+	m := GetRegistry().AddBonuses(p.t, ch, characterId, sourcedBonuses)
 	p.l.Debugf("Added equipment [%d] bonuses for character [%d]: %d stats", equipmentId, characterId, len(bonuses))
 	p.logEffectiveStats(characterId, m.Computed())
 	return nil
@@ -161,13 +160,13 @@ func (p *ProcessorImpl) RemoveEquipmentBonuses(characterId uint32, equipmentId u
 }
 
 // AddBuffBonuses adds stat bonuses from a buff
-func (p *ProcessorImpl) AddBuffBonuses(worldId, channelId byte, characterId uint32, buffSourceId int32, bonuses []stat.Bonus) error {
+func (p *ProcessorImpl) AddBuffBonuses(ch channel.Model, characterId uint32, buffSourceId int32, bonuses []stat.Bonus) error {
 	source := fmt.Sprintf("buff:%d", buffSourceId)
 	sourcedBonuses := make([]stat.Bonus, 0, len(bonuses))
 	for _, b := range bonuses {
 		sourcedBonuses = append(sourcedBonuses, stat.NewFullBonus(source, b.StatType(), b.Amount(), b.Multiplier()))
 	}
-	m := GetRegistry().AddBonuses(p.t, worldId, channelId, characterId, sourcedBonuses)
+	m := GetRegistry().AddBonuses(p.t, ch, characterId, sourcedBonuses)
 	p.l.Debugf("Added buff [%d] bonuses for character [%d]: %d stats", buffSourceId, characterId, len(bonuses))
 	p.logEffectiveStats(characterId, m.Computed())
 	return nil
@@ -180,13 +179,13 @@ func (p *ProcessorImpl) RemoveBuffBonuses(characterId uint32, buffSourceId int32
 }
 
 // AddPassiveBonuses adds stat bonuses from a passive skill
-func (p *ProcessorImpl) AddPassiveBonuses(worldId, channelId byte, characterId uint32, skillId uint32, bonuses []stat.Bonus) error {
+func (p *ProcessorImpl) AddPassiveBonuses(ch channel.Model, characterId uint32, skillId uint32, bonuses []stat.Bonus) error {
 	source := fmt.Sprintf("passive:%d", skillId)
 	sourcedBonuses := make([]stat.Bonus, 0, len(bonuses))
 	for _, b := range bonuses {
 		sourcedBonuses = append(sourcedBonuses, stat.NewFullBonus(source, b.StatType(), b.Amount(), b.Multiplier()))
 	}
-	m := GetRegistry().AddBonuses(p.t, worldId, channelId, characterId, sourcedBonuses)
+	m := GetRegistry().AddBonuses(p.t, ch, characterId, sourcedBonuses)
 	p.l.Debugf("Added passive skill [%d] bonuses for character [%d]: %d stats", skillId, characterId, len(bonuses))
 	p.logEffectiveStats(characterId, m.Computed())
 	return nil
@@ -214,21 +213,16 @@ func (p *ProcessorImpl) logEffectiveStats(characterId uint32, c stat.Computed) {
 // checkAndPublishClampCommands checks if MaxHP or MaxMP decreased and publishes clamp commands if needed
 func (p *ProcessorImpl) checkAndPublishClampCommands(m Model, oldComputed, newComputed stat.Computed) {
 	transactionId := uuid.New()
-	worldId := world.Id(m.WorldId())
-	channelId := channel.Id(m.ChannelId())
-	characterId := m.CharacterId()
 
 	// Check for MaxHP decrease
 	if newComputed.MaxHP() < oldComputed.MaxHP() {
-		p.l.Debugf("MaxHP decreased for character [%d]: %d -> %d, publishing clamp command",
-			characterId, oldComputed.MaxHP(), newComputed.MaxHP())
-		_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(clampHPCommandProvider(transactionId, worldId, channelId, characterId, uint16(newComputed.MaxHP())))
+		p.l.Debugf("MaxHP decreased for character [%d]: %d -> %d, publishing clamp command", m.CharacterId(), oldComputed.MaxHP(), newComputed.MaxHP())
+		_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(clampHPCommandProvider(transactionId, m.Channel(), m.CharacterId(), uint16(newComputed.MaxHP())))
 	}
 
 	// Check for MaxMP decrease
 	if newComputed.MaxMP() < oldComputed.MaxMP() {
-		p.l.Debugf("MaxMP decreased for character [%d]: %d -> %d, publishing clamp command",
-			characterId, oldComputed.MaxMP(), newComputed.MaxMP())
-		_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(clampMPCommandProvider(transactionId, worldId, channelId, characterId, uint16(newComputed.MaxMP())))
+		p.l.Debugf("MaxMP decreased for character [%d]: %d -> %d, publishing clamp command", m.CharacterId(), oldComputed.MaxMP(), newComputed.MaxMP())
+		_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(clampMPCommandProvider(transactionId, m.Channel(), m.CharacterId(), uint16(newComputed.MaxMP())))
 	}
 }

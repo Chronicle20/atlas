@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/Chronicle20/atlas-constants/skill"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
@@ -70,6 +71,8 @@ func TestByCharacterIdProvider_WithMacros(t *testing.T) {
 	processor, cleanup := setupProcessor(t)
 	defer cleanup()
 
+	transactionId := uuid.New()
+	worldId := world.Id(0)
 	characterId := uint32(12345)
 	mb := message.NewBuffer()
 
@@ -79,7 +82,7 @@ func TestByCharacterIdProvider_WithMacros(t *testing.T) {
 		buildMacro(t, 1, "Buff", true, skill.Id(2001001), skill.Id(2001002), skill.Id(2001003)),
 	}
 
-	_, err := processor.Update(mb)(characterId)(macros)
+	_, err := processor.Update(mb)(transactionId, worldId, characterId, macros)
 	if err != nil {
 		t.Fatalf("Update() unexpected error: %v", err)
 	}
@@ -97,6 +100,8 @@ func TestUpdate_Success(t *testing.T) {
 	processor, cleanup := setupProcessor(t)
 	defer cleanup()
 
+	transactionId := uuid.New()
+	worldId := world.Id(0)
 	characterId := uint32(12345)
 	mb := message.NewBuffer()
 
@@ -104,7 +109,7 @@ func TestUpdate_Success(t *testing.T) {
 		buildMacro(t, 0, "Attack Combo", true, skill.Id(1001001), skill.Id(1001002), skill.Id(1001003)),
 	}
 
-	result, err := processor.Update(mb)(characterId)(macros)
+	result, err := processor.Update(mb)(transactionId, worldId, characterId, macros)
 	if err != nil {
 		t.Fatalf("Update() unexpected error: %v", err)
 	}
@@ -129,6 +134,8 @@ func TestUpdate_ReplacesExisting(t *testing.T) {
 	processor, cleanup := setupProcessor(t)
 	defer cleanup()
 
+	transactionId := uuid.New()
+	worldId := world.Id(0)
 	characterId := uint32(12345)
 	mb := message.NewBuffer()
 
@@ -138,7 +145,7 @@ func TestUpdate_ReplacesExisting(t *testing.T) {
 		buildMacro(t, 1, "Old Buff", true, skill.Id(2001001), 0, 0),
 	}
 
-	_, err := processor.Update(mb)(characterId)(initialMacros)
+	_, err := processor.Update(mb)(transactionId, worldId, characterId, initialMacros)
 	if err != nil {
 		t.Fatalf("Initial Update() unexpected error: %v", err)
 	}
@@ -154,7 +161,7 @@ func TestUpdate_ReplacesExisting(t *testing.T) {
 		buildMacro(t, 0, "New Attack", true, skill.Id(3001001), 0, 0),
 	}
 
-	_, err = processor.Update(mb)(characterId)(newMacros)
+	_, err = processor.Update(mb)(transactionId, worldId, characterId, newMacros)
 	if err != nil {
 		t.Fatalf("Second Update() unexpected error: %v", err)
 	}
@@ -173,6 +180,8 @@ func TestUpdate_EmptyList(t *testing.T) {
 	processor, cleanup := setupProcessor(t)
 	defer cleanup()
 
+	transactionId := uuid.New()
+	worldId := world.Id(0)
 	characterId := uint32(12345)
 	mb := message.NewBuffer()
 
@@ -181,10 +190,10 @@ func TestUpdate_EmptyList(t *testing.T) {
 		buildMacro(t, 0, "Attack", false, 0, 0, 0),
 	}
 
-	_, _ = processor.Update(mb)(characterId)(initialMacros)
+	_, _ = processor.Update(mb)(transactionId, worldId, characterId, initialMacros)
 
 	// Replace with empty list
-	_, err := processor.Update(mb)(characterId)([]macro.Model{})
+	_, err := processor.Update(mb)(transactionId, worldId, characterId, []macro.Model{})
 	if err != nil {
 		t.Fatalf("Update() with empty list unexpected error: %v", err)
 	}
@@ -200,6 +209,8 @@ func TestDelete(t *testing.T) {
 	processor, cleanup := setupProcessor(t)
 	defer cleanup()
 
+	transactionId := uuid.New()
+	worldId := world.Id(0)
 	characterId := uint32(12345)
 	mb := message.NewBuffer()
 
@@ -209,7 +220,7 @@ func TestDelete(t *testing.T) {
 		buildMacro(t, 1, "Buff", false, 0, 0, 0),
 	}
 
-	_, _ = processor.Update(mb)(characterId)(macros)
+	_, _ = processor.Update(mb)(transactionId, worldId, characterId, macros)
 
 	// Verify macros exist
 	result, _ := processor.ByCharacterIdProvider(characterId)()
@@ -242,6 +253,8 @@ func TestTenantIsolation(t *testing.T) {
 	char2 := uint32(67890)
 
 	// Create macro with tenant 1
+	transactionId := uuid.New()
+	worldId := world.Id(0)
 	tenant1Id := uuid.New()
 	ctx1 := test.CreateTestContextWithTenant(tenant1Id)
 	processor1 := macro.NewProcessor(logger, ctx1, db)
@@ -250,7 +263,7 @@ func TestTenantIsolation(t *testing.T) {
 	macros1 := []macro.Model{
 		buildMacro(t, 0, "Tenant1 Macro", false, 0, 0, 0),
 	}
-	_, err := processor1.Update(mb1)(char1)(macros1)
+	_, err := processor1.Update(mb1)(transactionId, worldId, char1, macros1)
 	if err != nil {
 		t.Fatalf("Tenant 1 Update() unexpected error: %v", err)
 	}
@@ -264,7 +277,7 @@ func TestTenantIsolation(t *testing.T) {
 	macros2 := []macro.Model{
 		buildMacro(t, 0, "Tenant2 Macro", false, 0, 0, 0),
 	}
-	_, err = processor2.Update(mb2)(char2)(macros2)
+	_, err = processor2.Update(mb2)(transactionId, worldId, char2, macros2)
 	if err != nil {
 		t.Fatalf("Tenant 2 Update() unexpected error: %v", err)
 	}
@@ -304,6 +317,8 @@ func TestDifferentCharacters(t *testing.T) {
 	processor, cleanup := setupProcessor(t)
 	defer cleanup()
 
+	transactionId := uuid.New()
+	worldId := world.Id(0)
 	mb := message.NewBuffer()
 
 	char1 := uint32(12345)
@@ -314,13 +329,13 @@ func TestDifferentCharacters(t *testing.T) {
 		buildMacro(t, 0, "Char1 Attack", false, 0, 0, 0),
 		buildMacro(t, 1, "Char1 Buff", false, 0, 0, 0),
 	}
-	_, _ = processor.Update(mb)(char1)(macros1)
+	_, _ = processor.Update(mb)(transactionId, worldId, char1, macros1)
 
 	// Create macros for character 2
 	macros2 := []macro.Model{
 		buildMacro(t, 0, "Char2 Attack", false, 0, 0, 0),
 	}
-	_, _ = processor.Update(mb)(char2)(macros2)
+	_, _ = processor.Update(mb)(transactionId, worldId, char2, macros2)
 
 	// Verify character 1 has 2 macros
 	result1, _ := processor.ByCharacterIdProvider(char1)()
@@ -339,6 +354,8 @@ func TestMacroSkillIds(t *testing.T) {
 	processor, cleanup := setupProcessor(t)
 	defer cleanup()
 
+	transactionId := uuid.New()
+	worldId := world.Id(0)
 	characterId := uint32(12345)
 	mb := message.NewBuffer()
 
@@ -346,7 +363,7 @@ func TestMacroSkillIds(t *testing.T) {
 		buildMacro(t, 0, "Multi-Skill Macro", false, skill.Id(1001001), skill.Id(1001002), skill.Id(1001003)),
 	}
 
-	_, err := processor.Update(mb)(characterId)(macros)
+	_, err := processor.Update(mb)(transactionId, worldId, characterId, macros)
 	if err != nil {
 		t.Fatalf("Update() unexpected error: %v", err)
 	}

@@ -1,19 +1,20 @@
 package expression
 
 import (
+	"time"
+
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
-	"time"
+	"github.com/google/uuid"
 )
 
 type Model struct {
 	tenant      tenant.Model
 	characterId uint32
-	worldId     world.Id
-	channelId   channel.Id
-	mapId       _map.Id
+	field       field.Model
 	expression  uint32
 	expiration  time.Time
 }
@@ -26,10 +27,6 @@ func (m Model) CharacterId() uint32 {
 	return m.characterId
 }
 
-func (m Model) MapId() _map.Id {
-	return m.mapId
-}
-
 func (m Model) Expression() uint32 {
 	return m.expression
 }
@@ -38,10 +35,22 @@ func (m Model) Tenant() tenant.Model {
 	return m.tenant
 }
 
+func (m Model) Field() field.Model {
+	return m.field
+}
+
 func (m Model) WorldId() world.Id {
-	return m.worldId
+	return m.Field().WorldId()
 }
 
 func (m Model) ChannelId() channel.Id {
-	return m.channelId
+	return m.Field().ChannelId()
+}
+
+func (m Model) MapId() _map.Id {
+	return m.Field().MapId()
+}
+
+func (m Model) Instance() uuid.UUID {
+	return m.Field().Instance()
 }

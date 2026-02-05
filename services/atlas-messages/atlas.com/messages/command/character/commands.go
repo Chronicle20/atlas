@@ -5,22 +5,24 @@ import (
 	"atlas-messages/command"
 	_map "atlas-messages/map"
 	"atlas-messages/saga"
+	"regexp"
+	"strconv"
+
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-constants/job"
-	"github.com/Chronicle20/atlas-constants/world"
+	_map2 "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
-	"regexp"
-	"strconv"
 )
 
-func AwardExperienceCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
-	return func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
+func AwardExperienceCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
+	return func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
 		cp := character.NewProcessor(l, ctx)
 		mp := _map.NewProcessor(l, ctx)
 		sp := saga.NewProcessor(l, ctx)
-		return func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
+		return func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
 			var cn string
 			var amountStr string
 
@@ -44,7 +46,8 @@ func AwardExperienceCommandProducer(l logrus.FieldLogger) func(ctx context.Conte
 			if match[1] == "me" {
 				idProvider = model.ToSliceProvider(model.FixedProvider(c.Id()))
 			} else if match[1] == "map" {
-				idProvider = mp.CharacterIdsInMapProvider(worldId, channelId, c.MapId())
+				f := field.NewBuilder(ch.WorldId(), ch.Id(), _map2.Id(c.MapId())).Build()
+				idProvider = mp.CharacterIdsInFieldProvider(f)
 			} else {
 				idProvider = model.ToSliceProvider(cp.IdByNameProvider(match[1]))
 			}
@@ -68,8 +71,8 @@ func AwardExperienceCommandProducer(l logrus.FieldLogger) func(ctx context.Conte
 							SetInitiatedBy("COMMAND").
 							AddStep("give_experience", saga.Pending, saga.AwardExperience, saga.AwardExperiencePayload{
 								CharacterId: id,
-								WorldId:     world.Id(worldId),
-								ChannelId:   channel.Id(channelId),
+								WorldId:     ch.WorldId(),
+								ChannelId:   ch.Id(),
 								Distributions: []saga.ExperienceDistributions{{
 									ExperienceType: "WHITE",
 									Amount:         amount,
@@ -92,12 +95,12 @@ func AwardExperienceCommandProducer(l logrus.FieldLogger) func(ctx context.Conte
 	}
 }
 
-func AwardLevelCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
-	return func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
+func AwardLevelCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
+	return func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
 		cp := character.NewProcessor(l, ctx)
 		mp := _map.NewProcessor(l, ctx)
 		sp := saga.NewProcessor(l, ctx)
-		return func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
+		return func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
 			var cn string
 			var amountStr string
 
@@ -121,7 +124,8 @@ func AwardLevelCommandProducer(l logrus.FieldLogger) func(ctx context.Context) f
 			if match[1] == "me" {
 				idProvider = model.ToSliceProvider(model.FixedProvider(c.Id()))
 			} else if match[1] == "map" {
-				idProvider = mp.CharacterIdsInMapProvider(worldId, channelId, c.MapId())
+				f := field.NewBuilder(ch.WorldId(), ch.Id(), _map2.Id(c.MapId())).Build()
+				idProvider = mp.CharacterIdsInFieldProvider(f)
 			} else {
 				idProvider = model.ToSliceProvider(cp.IdByNameProvider(match[1]))
 			}
@@ -144,8 +148,8 @@ func AwardLevelCommandProducer(l logrus.FieldLogger) func(ctx context.Context) f
 							SetInitiatedBy("COMMAND").
 							AddStep("give_level", saga.Pending, saga.AwardLevel, saga.AwardLevelPayload{
 								CharacterId: id,
-								WorldId:     world.Id(worldId),
-								ChannelId:   channel.Id(channelId),
+								WorldId:     ch.WorldId(),
+								ChannelId:   ch.Id(),
 								Amount:      amount,
 							}).
 							Build()
@@ -165,11 +169,11 @@ func AwardLevelCommandProducer(l logrus.FieldLogger) func(ctx context.Context) f
 	}
 }
 
-func ChangeJobCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
-	return func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
+func ChangeJobCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
+	return func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
 		cp := character.NewProcessor(l, ctx)
 		sp := saga.NewProcessor(l, ctx)
-		return func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
+		return func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
 			var cn string
 			var jobStr string
 
@@ -214,8 +218,8 @@ func ChangeJobCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fu
 							SetInitiatedBy("COMMAND").
 							AddStep("change_job", saga.Pending, saga.ChangeJob, saga.ChangeJobPayload{
 								CharacterId: id,
-								WorldId:     world.Id(worldId),
-								ChannelId:   channel.Id(channelId),
+								WorldId:     ch.WorldId(),
+								ChannelId:   ch.Id(),
 								JobId:       job.Id(jobId),
 							}).
 							Build()
@@ -235,12 +239,12 @@ func ChangeJobCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fu
 	}
 }
 
-func AwardMesoCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
-	return func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
+func AwardMesoCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
+	return func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
 		cp := character.NewProcessor(l, ctx)
 		mp := _map.NewProcessor(l, ctx)
 		sp := saga.NewProcessor(l, ctx)
-		return func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
+		return func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
 			var cn string
 			var amountStr string
 
@@ -264,7 +268,8 @@ func AwardMesoCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fu
 			if match[1] == "me" {
 				idProvider = model.ToSliceProvider(model.FixedProvider(c.Id()))
 			} else if match[1] == "map" {
-				idProvider = mp.CharacterIdsInMapProvider(worldId, channelId, c.MapId())
+				f := field.NewBuilder(ch.WorldId(), ch.Id(), _map2.Id(c.MapId())).Build()
+				idProvider = mp.CharacterIdsInFieldProvider(f)
 			} else {
 				idProvider = model.ToSliceProvider(cp.IdByNameProvider(match[1]))
 			}
@@ -287,8 +292,8 @@ func AwardMesoCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fu
 							SetInitiatedBy("COMMAND").
 							AddStep("give_mesos", saga.Pending, saga.AwardMesos, saga.AwardMesosPayload{
 								CharacterId: id,
-								WorldId:     world.Id(worldId),
-								ChannelId:   channel.Id(channelId),
+								WorldId:     ch.WorldId(),
+								ChannelId:   ch.Id(),
 								ActorId:     c.Id(),
 								ActorType:   "CHARACTER",
 								Amount:      amount,

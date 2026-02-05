@@ -6,11 +6,14 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+	"math"
+
+	"github.com/Chronicle20/atlas-constants/character"
+	"github.com/Chronicle20/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
-	"math"
 )
 
 const CharacterCashItemUseHandle = "CharacterCashItemUseHandle"
@@ -24,18 +27,18 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 		if updateTimeFirst {
 			updateTime = r.ReadUint32()
 		}
-		slot := r.ReadInt16()
-		itemId := r.ReadUint32()
+		source := slot.Position(r.ReadInt16())
+		itemId := item.Id(r.ReadUint32())
 
 		// TODO verify item in slot as expected.
 
-		it := GetCashSlotItemType(t)(item.Id(itemId))
+		it := GetCashSlotItemType(t)(itemId)
 
 		if it == CashSlotItemTypePetConsumable {
 			if !updateTimeFirst {
 				updateTime = r.ReadUint32()
 			}
-			_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.WorldId(), s.ChannelId(), s.CharacterId(), itemId, slot, updateTime)
+			_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.Field(), character.Id(s.CharacterId()), itemId, source, updateTime)
 			return
 		}
 		if it == CashSlotItemTypeChalkboard {
@@ -43,13 +46,13 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 			if !updateTimeFirst {
 				updateTime = r.ReadUint32()
 			}
-			_ = chalkboard.NewProcessor(l, ctx).AttemptUse(s.Map(), s.CharacterId(), message)
+			_ = chalkboard.NewProcessor(l, ctx).AttemptUse(s.Field(), s.CharacterId(), message)
 			return
 		}
 
 		// TODO for v83 there is a trailing updateTime.
 
-		l.Warnf("Character [%d] attempting to use cash item [%d] in slot [%d] of type [%d]. updateTime [%d].", s.CharacterId(), itemId, slot, it, updateTime)
+		l.Warnf("Character [%d] attempting to use cash item [%d] in slot [%d] of type [%d]. updateTime [%d].", s.CharacterId(), itemId, source, it, updateTime)
 	}
 }
 

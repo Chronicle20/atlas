@@ -6,6 +6,8 @@ import (
 	messageCharacter "atlas-messengers/kafka/message/character"
 	"atlas-messengers/messenger"
 	"context"
+
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -36,7 +38,8 @@ func handleStatusEventLogin(l logrus.FieldLogger, ctx context.Context, e message
 	if e.Type != messageCharacter.EventCharacterStatusTypeLogin {
 		return
 	}
-	err := character.Login(l)(ctx)(e.TransactionID, e.WorldId, e.Body.ChannelId, e.Body.MapId, e.CharacterId)
+	f := field.NewBuilder(e.WorldId, e.Body.ChannelId, e.Body.MapId).SetInstance(e.Body.Instance).Build()
+	err := character.Login(l)(ctx)(e.TransactionId, f, e.CharacterId)
 	if err != nil {
 		l.WithError(err).Errorf("Unable to process login for character [%d].", e.CharacterId)
 	}
@@ -46,7 +49,7 @@ func handleStatusEventLogout(l logrus.FieldLogger, ctx context.Context, e messag
 	if e.Type != messageCharacter.EventCharacterStatusTypeLogout {
 		return
 	}
-	err := character.Logout(l)(ctx)(e.TransactionID, e.CharacterId)
+	err := character.Logout(l)(ctx)(e.TransactionId, e.CharacterId)
 	if err != nil {
 		l.WithError(err).Errorf("Unable to process logout for character [%d].", e.CharacterId)
 	}
@@ -54,7 +57,7 @@ func handleStatusEventLogout(l logrus.FieldLogger, ctx context.Context, e messag
 	if err != nil {
 		return
 	}
-	_, err = messenger.Leave(l)(ctx)(e.TransactionID, m.Id(), e.CharacterId)
+	_, err = messenger.Leave(l)(ctx)(e.TransactionId, m.Id(), e.CharacterId)
 	if err != nil {
 		return
 	}

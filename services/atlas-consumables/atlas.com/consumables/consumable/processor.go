@@ -23,7 +23,12 @@ import (
 	"atlas-consumables/pet"
 	"context"
 	"errors"
+	"math"
+	"math/rand"
+
+	"github.com/Chronicle20/atlas-constants/channel"
 	ts "github.com/Chronicle20/atlas-constants/character"
+	"github.com/Chronicle20/atlas-constants/field"
 	inventory2 "github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/inventory/slot"
 	item2 "github.com/Chronicle20/atlas-constants/item"
@@ -34,8 +39,6 @@ import (
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-	"math"
-	"math/rand"
 )
 
 var ErrPetCannotConsume = errors.New("pet cannot consume")
@@ -66,7 +69,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 // ApplyItemEffects applies the effects of a consumable item to a character.
 // This is the shared logic used by both regular item consumption and NPC-initiated item use.
 // It handles stat buffs (accuracy, evasion, attack, defense, speed, jump) and HP/MP recovery.
-func ApplyItemEffects(l logrus.FieldLogger, ctx context.Context, c character.Model, m _map2.Model, ci consumable3.Model, characterId uint32, itemId item2.Id) {
+func ApplyItemEffects(l logrus.FieldLogger, ctx context.Context, c character.Model, f field.Model, ci consumable3.Model, characterId uint32, itemId item2.Id) {
 	bp := buff.NewProcessor(l, ctx)
 	cp := character.NewProcessor(l, ctx)
 
@@ -86,12 +89,12 @@ func ApplyItemEffects(l logrus.FieldLogger, ctx context.Context, c character.Mod
 		})
 	}
 	if val, ok := ci.GetSpec(consumable3.SpecTypeHP); ok && val > 0 {
-		_ = cp.ChangeHP(m, characterId, int16(val))
+		_ = cp.ChangeHP(f, characterId, int16(val))
 	}
 	if val, ok := ci.GetSpec(consumable3.SpecTypeHPRecovery); ok && val > 0 {
 		pct := float64(val) / float64(100)
 		res := int16(math.Floor(float64(c.MaxHp()) * pct))
-		_ = cp.ChangeHP(m, characterId, res)
+		_ = cp.ChangeHP(f, characterId, res)
 	}
 	if val, ok := ci.GetSpec(consumable3.SpecTypeJump); ok && val > 0 {
 		statups = append(statups, stat.Model{
@@ -112,12 +115,12 @@ func ApplyItemEffects(l logrus.FieldLogger, ctx context.Context, c character.Mod
 		})
 	}
 	if val, ok := ci.GetSpec(consumable3.SpecTypeMP); ok && val > 0 {
-		_ = cp.ChangeMP(m, characterId, int16(val))
+		_ = cp.ChangeMP(f, characterId, int16(val))
 	}
 	if val, ok := ci.GetSpec(consumable3.SpecTypeMPRecovery); ok && val > 0 {
 		pct := float64(val) / float64(100)
 		res := int16(math.Floor(float64(c.MaxMp()) * pct))
-		_ = cp.ChangeMP(m, characterId, res)
+		_ = cp.ChangeMP(f, characterId, res)
 	}
 	if val, ok := ci.GetSpec(consumable3.SpecTypeWeaponAttack); ok && val > 0 {
 		statups = append(statups, stat.Model{
@@ -142,11 +145,11 @@ func ApplyItemEffects(l logrus.FieldLogger, ctx context.Context, c character.Mod
 	}
 
 	if len(statups) > 0 {
-		_ = bp.Apply(m, characterId, -int32(itemId), duration, statups)(characterId)
+		_ = bp.Apply(f, characterId, -int32(itemId), duration, statups)(characterId)
 	}
 }
 
-func (p *Processor) RequestItemConsume(worldId byte, channelId byte, characterId uint32, slot int16, itemId item2.Id, quantity int16) error {
+func (p *Processor) RequestItemConsume(c channel.Model, characterId uint32, slot int16, itemId item2.Id, quantity int16) error {
 	transactionId := uuid.New()
 	p.l.Debugf("Creating OneTime topic consumer to await transaction [%s] completion or cancellation.", transactionId.String())
 	t, _ := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
@@ -167,7 +170,7 @@ func (p *Processor) RequestItemConsume(worldId byte, channelId byte, characterId
 	} else if item2.GetClassification(itemId) == item2.ClassificationPetConsumable {
 		itemConsumer = ConsumeCashPetFood(transactionId, characterId, slot, itemId, quantity)
 	} else if item2.GetClassification(itemId) == item2.ClassificationConsumableSummoningSack {
-		itemConsumer = ConsumeSummoningSack(transactionId, worldId, channelId, characterId, slot, itemId, quantity)
+		itemConsumer = ConsumeSummoningSack(transactionId, c, characterId, slot, itemId, quantity)
 	}
 
 	handler := compartment.Consume(itemConsumer)
@@ -193,7 +196,7 @@ func (p *Processor) ConsumeError(characterId uint32, transactionId uuid.UUID, in
 		errorType = consumable.ErrorTypePetCannotConsume
 	}
 
-	cErr = producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(ErrorEventProvider(characterId, errorType))
+	cErr = producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(ErrorEventProvider(ts.Id(characterId), errorType))
 	if cErr != nil {
 		p.l.WithError(cErr).Errorf("Unable to issue consumption error [%v] on event topic. Character [%d] likely going to be stuck.", err, characterId)
 	}
@@ -256,7 +259,7 @@ func ConsumeTownScroll(transactionId uuid.UUID, characterId uint32, slot int16, 
 				if err != nil {
 					return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 				}
-				toMapId = _map2.Id(mm.ReturnMapId())
+				toMapId = mm.ReturnMapId()
 			}
 
 			err = cpp.ConsumeItem(characterId, inventory2.TypeValueUse, transactionId, slot)
@@ -264,7 +267,8 @@ func ConsumeTownScroll(transactionId uuid.UUID, characterId uint32, slot int16, 
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
 
-			err = _map.NewProcessor(l, ctx).WarpRandom(_map2.NewModel(m.WorldId())(m.ChannelId())(toMapId))(characterId)
+			toField := field.NewBuilder(m.WorldId(), m.ChannelId(), toMapId).SetInstance(m.Instance()).Build()
+			err = _map.NewProcessor(l, ctx).WarpRandom(toField)(characterId)
 			if err != nil {
 				return err
 			}
@@ -345,7 +349,7 @@ func ConsumeCashPetFood(transactionId uuid.UUID, characterId uint32, slot int16,
 	}
 }
 
-func ConsumeSummoningSack(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32, slot int16, itemId item2.Id, quantity int16) ItemConsumer {
+func ConsumeSummoningSack(transactionId uuid.UUID, ch channel.Model, characterId uint32, slot int16, itemId item2.Id, quantity int16) ItemConsumer {
 	return func(l logrus.FieldLogger) func(ctx context.Context) error {
 		return func(ctx context.Context) error {
 			c, err := character.NewProcessor(l, ctx).GetById()(characterId)
@@ -367,7 +371,8 @@ func ConsumeSummoningSack(transactionId uuid.UUID, worldId byte, channelId byte,
 			for _, msm := range ci.MonsterSummons() {
 				roll := uint32(rand.Int31n(100))
 				if roll < msm.Probability() {
-					err = monster.NewProcessor(l, ctx).CreateMonster(worldId, channelId, c.MapId(), msm.TemplateId(), pos.X(), pos.Y(), 0, 0)
+					f := field.NewBuilder(ch.WorldId(), ch.Id(), c.MapId()).Build()
+					err = monster.NewProcessor(l, ctx).CreateMonster(f, msm.TemplateId(), pos.X(), pos.Y(), 0, 0)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to summon monster [%d] for character [%d] summoning bag.", msm.TemplateId(), characterId)
 					} else {
@@ -668,12 +673,12 @@ func rollStatAdjustment() int16 {
 }
 
 func (p *Processor) PassScroll(characterId uint32, legendarySpirit bool, whiteScroll bool) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(ScrollEventProvider(characterId)(true, false, legendarySpirit, whiteScroll))
+	return producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(ScrollEventProvider(ts.Id(characterId))(true, false, legendarySpirit, whiteScroll))
 }
 
 // ApplyConsumableEffect applies item effects to a character without consuming from inventory
 // This is used for NPC-initiated buffs (e.g., NPC blessings via cm.useItem())
-func (p *Processor) ApplyConsumableEffect(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32, itemId item2.Id) error {
+func (p *Processor) ApplyConsumableEffect(transactionId uuid.UUID, _ channel.Model, characterId uint32, itemId item2.Id) error {
 	cp := character.NewProcessor(p.l, p.ctx)
 
 	c, err := cp.GetById()(characterId)
@@ -698,7 +703,7 @@ func (p *Processor) ApplyConsumableEffect(transactionId uuid.UUID, worldId byte,
 	p.l.Debugf("Successfully applied consumable [%d] effects to character [%d]", itemId, characterId)
 
 	// Emit the effect applied event for saga completion
-	err = producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(EffectAppliedEventProvider(characterId, uint32(itemId), transactionId))
+	err = producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(EffectAppliedEventProvider(ts.Id(characterId), itemId, transactionId))
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to emit effect applied event for character [%d] item [%d]", characterId, itemId)
 		return err
@@ -707,5 +712,5 @@ func (p *Processor) ApplyConsumableEffect(transactionId uuid.UUID, worldId byte,
 }
 
 func (p *Processor) FailScroll(characterId uint32, cursed bool, legendarySpirit bool, whiteScroll bool) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(ScrollEventProvider(characterId)(false, cursed, legendarySpirit, whiteScroll))
+	return producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(ScrollEventProvider(ts.Id(characterId))(false, cursed, legendarySpirit, whiteScroll))
 }

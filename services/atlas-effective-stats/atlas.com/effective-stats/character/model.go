@@ -5,14 +5,15 @@ import (
 	"math"
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 )
 
 // Model holds all stat bonuses and computed effective stats for a character
 type Model struct {
 	tenant      tenant.Model
-	worldId     byte
-	channelId   byte
+	ch          channel.Model
 	characterId uint32
 
 	// Base stats from character service
@@ -31,12 +32,16 @@ func (m Model) Tenant() tenant.Model {
 	return m.tenant
 }
 
-func (m Model) WorldId() byte {
-	return m.worldId
+func (m Model) WorldId() world.Id {
+	return m.ch.WorldId()
 }
 
-func (m Model) ChannelId() byte {
-	return m.channelId
+func (m Model) ChannelId() channel.Id {
+	return m.ch.Id()
+}
+
+func (m Model) Channel() channel.Model {
+	return m.ch
 }
 
 func (m Model) CharacterId() uint32 {
@@ -67,11 +72,10 @@ func (m Model) Initialized() bool {
 }
 
 // NewModel creates a new character effective stats model
-func NewModel(t tenant.Model, worldId, channelId byte, characterId uint32) Model {
+func NewModel(t tenant.Model, ch channel.Model, characterId uint32) Model {
 	return Model{
 		tenant:      t,
-		worldId:     worldId,
-		channelId:   channelId,
+		ch:          ch,
 		characterId: characterId,
 		bonuses:     make([]stat.Bonus, 0),
 		initialized: false,
@@ -82,8 +86,7 @@ func NewModel(t tenant.Model, worldId, channelId byte, characterId uint32) Model
 func (m Model) WithBaseStats(base stat.Base) Model {
 	return Model{
 		tenant:      m.tenant,
-		worldId:     m.worldId,
-		channelId:   m.channelId,
+		ch:          m.ch,
 		characterId: m.characterId,
 		baseStats:   base,
 		bonuses:     m.bonuses,
@@ -106,8 +109,7 @@ func (m Model) WithBonus(b stat.Bonus) Model {
 
 	return Model{
 		tenant:      m.tenant,
-		worldId:     m.worldId,
-		channelId:   m.channelId,
+		ch:          m.ch,
 		characterId: m.characterId,
 		baseStats:   m.baseStats,
 		bonuses:     newBonuses,
@@ -137,8 +139,7 @@ func (m Model) WithoutBonus(source string, statType stat.Type) Model {
 
 	return Model{
 		tenant:      m.tenant,
-		worldId:     m.worldId,
-		channelId:   m.channelId,
+		ch:          m.ch,
 		characterId: m.characterId,
 		baseStats:   m.baseStats,
 		bonuses:     newBonuses,
@@ -159,8 +160,7 @@ func (m Model) WithoutBonusesBySource(source string) Model {
 
 	return Model{
 		tenant:      m.tenant,
-		worldId:     m.worldId,
-		channelId:   m.channelId,
+		ch:          m.ch,
 		characterId: m.characterId,
 		baseStats:   m.baseStats,
 		bonuses:     newBonuses,
@@ -174,8 +174,7 @@ func (m Model) WithoutBonusesBySource(source string) Model {
 func (m Model) WithComputed(computed stat.Computed) Model {
 	return Model{
 		tenant:      m.tenant,
-		worldId:     m.worldId,
-		channelId:   m.channelId,
+		ch:          m.ch,
 		characterId: m.characterId,
 		baseStats:   m.baseStats,
 		bonuses:     m.bonuses,
@@ -189,8 +188,7 @@ func (m Model) WithComputed(computed stat.Computed) Model {
 func (m Model) WithInitialized() Model {
 	return Model{
 		tenant:      m.tenant,
-		worldId:     m.worldId,
-		channelId:   m.channelId,
+		ch:          m.ch,
 		characterId: m.characterId,
 		baseStats:   m.baseStats,
 		bonuses:     m.bonuses,

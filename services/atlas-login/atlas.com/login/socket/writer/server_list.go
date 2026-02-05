@@ -4,6 +4,8 @@ import (
 	"atlas-login/socket/model"
 	"atlas-login/world"
 	"fmt"
+
+	world2 "github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 )
@@ -11,10 +13,10 @@ import (
 const ServerListEntry = "ServerListEntry"
 const ServerListEnd = "ServerListEnd"
 
-func ServerListEntryBody(tenant tenant.Model) func(worldId byte, worldName string, state world.State, eventMessage string, channelLoad []model.Load) BodyProducer {
-	return func(worldId byte, worldName string, state world.State, eventMessage string, channelLoad []model.Load) BodyProducer {
+func ServerListEntryBody(tenant tenant.Model) func(worldId world2.Id, worldName string, state world.State, eventMessage string, channelLoad []model.Load) BodyProducer {
+	return func(worldId world2.Id, worldName string, state world.State, eventMessage string, channelLoad []model.Load) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteByte(worldId)
+			w.WriteByte(byte(worldId))
 			w.WriteAsciiString(worldName)
 
 			if tenant.Region() == "GMS" {
@@ -39,7 +41,7 @@ func ServerListEntryBody(tenant tenant.Model) func(worldId byte, worldName strin
 				w.WriteAsciiString(fmt.Sprintf("%s - %d", worldName, x.ChannelId()))
 				w.WriteInt(x.Capacity())
 				w.WriteByte(1)
-				w.WriteByte(x.ChannelId() - 1)
+				w.WriteByte(byte(x.ChannelId() - 1))
 				w.WriteBool(false) // adult channel
 			}
 

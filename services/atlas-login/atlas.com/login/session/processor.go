@@ -8,12 +8,15 @@ import (
 	"atlas-login/socket/writer"
 	"context"
 	"errors"
+	"net"
+
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
-	"net"
 )
 
 type Processor interface {
@@ -24,8 +27,8 @@ type Processor interface {
 	IfPresentByAccountId(accountId uint32, f model.Operator[Model]) error
 	SetAccountId(id uuid.UUID, accountId uint32) Model
 	UpdateLastRequest(id uuid.UUID) Model
-	SetWorldId(id uuid.UUID, worldId byte) Model
-	SetChannelId(id uuid.UUID, channelId byte) Model
+	SetWorldId(id uuid.UUID, worldId world.Id) Model
+	SetChannelId(id uuid.UUID, channelId channel.Id) Model
 	SessionCreated(s Model) error
 	Create(locale byte) func(sessionId uuid.UUID, conn net.Conn)
 	DestroyByIdWithSpan(sessionId uuid.UUID)
@@ -121,7 +124,7 @@ func (p *ProcessorImpl) UpdateLastRequest(id uuid.UUID) Model {
 	return s
 }
 
-func (p *ProcessorImpl) SetWorldId(id uuid.UUID, worldId byte) Model {
+func (p *ProcessorImpl) SetWorldId(id uuid.UUID, worldId world.Id) Model {
 	s := Model{}
 	var ok bool
 	if s, ok = getRegistry().Get(p.t.Id(), id); ok {
@@ -132,7 +135,7 @@ func (p *ProcessorImpl) SetWorldId(id uuid.UUID, worldId byte) Model {
 	return s
 }
 
-func (p *ProcessorImpl) SetChannelId(id uuid.UUID, channelId byte) Model {
+func (p *ProcessorImpl) SetChannelId(id uuid.UUID, channelId channel.Id) Model {
 	s := Model{}
 	var ok bool
 	if s, ok = getRegistry().Get(p.t.Id(), id); ok {

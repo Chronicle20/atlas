@@ -686,7 +686,7 @@ func WriteCharacterStatistics(tenant tenant.Model) func(w *response.Writer, char
 			}
 		}
 		w.WriteByte(character.Level())
-		w.WriteShort(character.JobId())
+		w.WriteShort(uint16(character.JobId()))
 		w.WriteShort(character.Strength())
 		w.WriteShort(character.Dexterity())
 		w.WriteShort(character.Intelligence())

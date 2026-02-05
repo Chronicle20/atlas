@@ -3,6 +3,8 @@ package character_test
 import (
 	"atlas-login/character"
 	"testing"
+
+	"github.com/Chronicle20/atlas-constants/job"
 )
 
 func TestBuilder_Build(t *testing.T) {
@@ -168,7 +170,7 @@ func TestCharacter_Gm(t *testing.T) {
 
 func TestCharacter_HasSPTable(t *testing.T) {
 	testCases := []struct {
-		jobId    uint16
+		jobId    job.Id
 		expected bool
 	}{
 		{2001, true},

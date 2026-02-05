@@ -4,6 +4,7 @@ import (
 	"atlas-effective-stats/stat"
 	"testing"
 
+	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 )
@@ -15,7 +16,8 @@ func createTestTenant() tenant.Model {
 
 func TestNewModel(t *testing.T) {
 	ten := createTestTenant()
-	m := NewModel(ten, 1, 2, 12345)
+	ch := channel.NewModel(1, 2)
+	m := NewModel(ten, ch, 12345)
 
 	if m.Tenant() != ten {
 		t.Errorf("Tenant() = %v, want %v", m.Tenant(), ten)
@@ -39,7 +41,8 @@ func TestNewModel(t *testing.T) {
 
 func TestModelWithBaseStats(t *testing.T) {
 	ten := createTestTenant()
-	m := NewModel(ten, 1, 2, 12345)
+	ch := channel.NewModel(1, 2)
+	m := NewModel(ten, ch, 12345)
 
 	base := stat.NewBase(50, 40, 30, 25, 5000, 3000)
 	m2 := m.WithBaseStats(base)
@@ -60,7 +63,8 @@ func TestModelWithBaseStats(t *testing.T) {
 
 func TestModelWithBonus_AddNew(t *testing.T) {
 	ten := createTestTenant()
-	m := NewModel(ten, 1, 2, 12345)
+	ch := channel.NewModel(1, 2)
+	m := NewModel(ten, ch, 12345)
 
 	b := stat.NewBonus("equipment:1", stat.TypeStrength, 20)
 	m2 := m.WithBonus(b)
@@ -78,7 +82,8 @@ func TestModelWithBonus_AddNew(t *testing.T) {
 
 func TestModelWithBonus_ReplaceSameSourceAndType(t *testing.T) {
 	ten := createTestTenant()
-	m := NewModel(ten, 1, 2, 12345)
+	ch := channel.NewModel(1, 2)
+	m := NewModel(ten, ch, 12345)
 
 	b1 := stat.NewBonus("equipment:1", stat.TypeStrength, 20)
 	m = m.WithBonus(b1)
@@ -99,7 +104,8 @@ func TestModelWithBonus_ReplaceSameSourceAndType(t *testing.T) {
 
 func TestModelWithBonus_DifferentSources(t *testing.T) {
 	ten := createTestTenant()
-	m := NewModel(ten, 1, 2, 12345)
+	ch := channel.NewModel(1, 2)
+	m := NewModel(ten, ch, 12345)
 
 	b1 := stat.NewBonus("equipment:1", stat.TypeStrength, 20)
 	b2 := stat.NewBonus("buff:2311003", stat.TypeStrength, 15)
@@ -112,7 +118,8 @@ func TestModelWithBonus_DifferentSources(t *testing.T) {
 
 func TestModelWithBonus_SameSourceDifferentTypes(t *testing.T) {
 	ten := createTestTenant()
-	m := NewModel(ten, 1, 2, 12345)
+	ch := channel.NewModel(1, 2)
+	m := NewModel(ten, ch, 12345)
 
 	b1 := stat.NewBonus("equipment:1", stat.TypeStrength, 20)
 	b2 := stat.NewBonus("equipment:1", stat.TypeDexterity, 15)
@@ -125,7 +132,8 @@ func TestModelWithBonus_SameSourceDifferentTypes(t *testing.T) {
 
 func TestModelWithoutBonus_RemoveExisting(t *testing.T) {
 	ten := createTestTenant()
-	m := NewModel(ten, 1, 2, 12345)
+	ch := channel.NewModel(1, 2)
+	m := NewModel(ten, ch, 12345)
 
 	b := stat.NewBonus("equipment:1", stat.TypeStrength, 20)
 	m = m.WithBonus(b)
@@ -145,7 +153,8 @@ func TestModelWithoutBonus_RemoveExisting(t *testing.T) {
 
 func TestModelWithoutBonus_RemoveNonExistent(t *testing.T) {
 	ten := createTestTenant()
-	m := NewModel(ten, 1, 2, 12345)
+	ch := channel.NewModel(1, 2)
+	m := NewModel(ten, ch, 12345)
 
 	b := stat.NewBonus("equipment:1", stat.TypeStrength, 20)
 	m = m.WithBonus(b)
@@ -161,7 +170,8 @@ func TestModelWithoutBonus_RemoveNonExistent(t *testing.T) {
 
 func TestModelWithoutBonusesBySource(t *testing.T) {
 	ten := createTestTenant()
-	m := NewModel(ten, 1, 2, 12345)
+	ch := channel.NewModel(1, 2)
+	m := NewModel(ten, ch, 12345)
 
 	b1 := stat.NewBonus("equipment:1", stat.TypeStrength, 20)
 	b2 := stat.NewBonus("equipment:1", stat.TypeDexterity, 15)
@@ -183,7 +193,8 @@ func TestModelWithoutBonusesBySource(t *testing.T) {
 
 func TestModelBonuses_DefensiveCopy(t *testing.T) {
 	ten := createTestTenant()
-	m := NewModel(ten, 1, 2, 12345)
+	ch := channel.NewModel(1, 2)
+	m := NewModel(ten, ch, 12345)
 
 	b := stat.NewBonus("equipment:1", stat.TypeStrength, 20)
 	m = m.WithBonus(b)
@@ -204,7 +215,8 @@ func TestModelBonuses_DefensiveCopy(t *testing.T) {
 
 func TestModelComputeEffectiveStats_BaseOnly(t *testing.T) {
 	ten := createTestTenant()
-	m := NewModel(ten, 1, 2, 12345)
+	ch := channel.NewModel(1, 2)
+	m := NewModel(ten, ch, 12345)
 
 	base := stat.NewBase(50, 40, 30, 25, 5000, 3000)
 	m = m.WithBaseStats(base)
@@ -233,7 +245,8 @@ func TestModelComputeEffectiveStats_BaseOnly(t *testing.T) {
 
 func TestModelComputeEffectiveStats_WithFlatBonus(t *testing.T) {
 	ten := createTestTenant()
-	m := NewModel(ten, 1, 2, 12345)
+	ch := channel.NewModel(1, 2)
+	m := NewModel(ten, ch, 12345)
 
 	base := stat.NewBase(50, 40, 30, 25, 5000, 3000)
 	b := stat.NewBonus("equipment:1", stat.TypeStrength, 15)
@@ -249,7 +262,8 @@ func TestModelComputeEffectiveStats_WithFlatBonus(t *testing.T) {
 
 func TestModelComputeEffectiveStats_WithMultiplierBonus(t *testing.T) {
 	ten := createTestTenant()
-	m := NewModel(ten, 1, 2, 12345)
+	ch := channel.NewModel(1, 2)
+	m := NewModel(ten, ch, 12345)
 
 	base := stat.NewBase(50, 40, 30, 25, 5000, 3000)
 	b := stat.NewMultiplierBonus("buff:2311003", stat.TypeStrength, 0.10) // +10%
@@ -267,7 +281,8 @@ func TestModelComputeEffectiveStats_MixedBonuses(t *testing.T) {
 	// Example from plan: Base 50 + Equipment 15, Maple Warrior 10%
 	// effective_str = floor((50 + 15) * (1.0 + 0.10)) = floor(65 * 1.10) = floor(71.5) = 71
 	ten := createTestTenant()
-	m := NewModel(ten, 1, 2, 12345)
+	ch := channel.NewModel(1, 2)
+	m := NewModel(ten, ch, 12345)
 
 	base := stat.NewBase(50, 40, 30, 25, 5000, 3000)
 	bEquip := stat.NewBonus("equipment:1", stat.TypeStrength, 15)
@@ -286,7 +301,8 @@ func TestModelComputeEffectiveStats_MultipleMultipliers(t *testing.T) {
 	// Example from plan: Base 5000 + Equipment 500 + Passive 200, Hyper Body 60% + Maple Warrior 10%
 	// effective_maxhp = floor((5000 + 500 + 200) * (1.0 + 0.60 + 0.10)) = floor(5700 * 1.70) = floor(9690) = 9690
 	ten := createTestTenant()
-	m := NewModel(ten, 1, 2, 12345)
+	ch := channel.NewModel(1, 2)
+	m := NewModel(ten, ch, 12345)
 
 	base := stat.NewBase(50, 40, 30, 25, 5000, 3000)
 	bEquip := stat.NewBonus("equipment:1", stat.TypeMaxHP, 500)
@@ -307,7 +323,8 @@ func TestModelComputeEffectiveStats_MultipleMultipliers(t *testing.T) {
 func TestModelComputeEffectiveStats_SecondaryStats(t *testing.T) {
 	// Test stats that start at 0 (WATK, MATK, etc.)
 	ten := createTestTenant()
-	m := NewModel(ten, 1, 2, 12345)
+	ch := channel.NewModel(1, 2)
+	m := NewModel(ten, ch, 12345)
 
 	base := stat.NewBase(50, 40, 30, 25, 5000, 3000)
 	bWatk := stat.NewBonus("equipment:1", stat.TypeWeaponAttack, 100)
@@ -325,7 +342,8 @@ func TestModelComputeEffectiveStats_SecondaryStats(t *testing.T) {
 
 func TestModelWithInitialized(t *testing.T) {
 	ten := createTestTenant()
-	m := NewModel(ten, 1, 2, 12345)
+	ch := channel.NewModel(1, 2)
+	m := NewModel(ten, ch, 12345)
 
 	if m.Initialized() {
 		t.Error("New model should not be initialized")
@@ -346,7 +364,8 @@ func TestModelWithInitialized(t *testing.T) {
 
 func TestModelRecompute(t *testing.T) {
 	ten := createTestTenant()
-	m := NewModel(ten, 1, 2, 12345)
+	ch := channel.NewModel(1, 2)
+	m := NewModel(ten, ch, 12345)
 
 	base := stat.NewBase(50, 40, 30, 25, 5000, 3000)
 	b := stat.NewBonus("equipment:1", stat.TypeStrength, 15)

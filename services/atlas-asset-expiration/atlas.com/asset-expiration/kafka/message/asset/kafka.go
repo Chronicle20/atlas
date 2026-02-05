@@ -1,6 +1,9 @@
 package asset
 
-import "github.com/google/uuid"
+import (
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
+)
 
 // Topic constants for each service
 const (
@@ -16,11 +19,11 @@ const (
 
 // StorageExpireCommand is sent to atlas-storage to expire an item
 type StorageExpireCommand struct {
-	TransactionId uuid.UUID          `json:"transactionId"`
-	WorldId       byte               `json:"worldId"`
-	AccountId     uint32             `json:"accountId"`
-	Type          string             `json:"type"`
-	Body          StorageExpireBody  `json:"body"`
+	TransactionId uuid.UUID         `json:"transactionId"`
+	WorldId       world.Id          `json:"worldId"`
+	AccountId     uint32            `json:"accountId"`
+	Type          string            `json:"type"`
+	Body          StorageExpireBody `json:"body"`
 }
 
 // StorageExpireBody contains the data for expiring a storage item
@@ -43,22 +46,22 @@ type CashShopExpireCommand struct {
 
 // CashShopExpireBody contains the data for expiring a cash shop item
 type CashShopExpireBody struct {
-	AccountId      uint32 `json:"accountId"`
-	WorldId        byte   `json:"worldId"`
-	AssetId        uint32 `json:"assetId"`
-	TemplateId     uint32 `json:"templateId"`
-	InventoryType  int8   `json:"inventoryType"`
-	Slot           int16  `json:"slot"`
-	ReplaceItemId  uint32 `json:"replaceItemId"`
-	ReplaceMessage string `json:"replaceMessage"`
+	AccountId      uint32   `json:"accountId"`
+	WorldId        world.Id `json:"worldId"`
+	AssetId        uint32   `json:"assetId"`
+	TemplateId     uint32   `json:"templateId"`
+	InventoryType  int8     `json:"inventoryType"`
+	Slot           int16    `json:"slot"`
+	ReplaceItemId  uint32   `json:"replaceItemId"`
+	ReplaceMessage string   `json:"replaceMessage"`
 }
 
 // CompartmentExpireCommand is sent to atlas-inventory to expire an item
 type CompartmentExpireCommand struct {
-	TransactionId uuid.UUID            `json:"transactionId"`
-	CharacterId   uint32               `json:"characterId"`
-	InventoryType byte                 `json:"inventoryType"`
-	Type          string               `json:"type"`
+	TransactionId uuid.UUID             `json:"transactionId"`
+	CharacterId   uint32                `json:"characterId"`
+	InventoryType byte                  `json:"inventoryType"`
+	Type          string                `json:"type"`
 	Body          CompartmentExpireBody `json:"body"`
 }
 

@@ -13,7 +13,6 @@ import (
 	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
@@ -21,7 +20,7 @@ import (
 // Processor interface defines operations for character respawn
 type Processor interface {
 	// Respawn handles character death and respawn logic
-	Respawn(worldId world.Id, channelId channel.Id, characterId uint32, currentMapId _map.Id) error
+	Respawn(ch channel.Model, characterId uint32, currentMapId _map.Id) error
 }
 
 // ProcessorImpl implements the Processor interface
@@ -47,7 +46,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 }
 
 // Respawn handles character death and respawn logic
-func (p *ProcessorImpl) Respawn(worldId world.Id, channelId channel.Id, characterId uint32, currentMapId _map.Id) error {
+func (p *ProcessorImpl) Respawn(ch channel.Model, characterId uint32, currentMapId _map.Id) error {
 	p.l.Debugf("Processing respawn for character [%d] on map [%d].", characterId, currentMapId)
 
 	// Get character data
@@ -90,7 +89,7 @@ func (p *ProcessorImpl) Respawn(worldId world.Id, channelId channel.Id, characte
 	}
 
 	// Create respawn saga
-	return p.createRespawnSaga(worldId, channelId, characterId, targetMapId, hasWheelOfFortune, protectiveItem, protectiveInventoryType, expLoss)
+	return p.createRespawnSaga(ch, characterId, targetMapId, hasWheelOfFortune, protectiveItem, protectiveInventoryType, expLoss)
 }
 
 // findProtectiveItem searches for a death protection item in the inventory
@@ -120,7 +119,7 @@ func (p *ProcessorImpl) findProtectiveItem(inv channelInventory.Model) (*uint32,
 // calculateExpLoss calculates the experience loss on death
 func (p *ProcessorImpl) calculateExpLoss(c character.Model, mapData map_.Model, hasProtection bool) uint32 {
 	// Beginners don't lose experience
-	if job.IsBeginner(job.Id(c.JobId())) {
+	if job.IsBeginner(c.JobId()) {
 		p.l.Debugf("Character [%d] is a beginner, no experience loss.", c.Id())
 		return 0
 	}
@@ -166,8 +165,7 @@ func (p *ProcessorImpl) calculateExpLoss(c character.Model, mapData map_.Model, 
 
 // createRespawnSaga creates and submits the respawn saga
 func (p *ProcessorImpl) createRespawnSaga(
-	worldId world.Id,
-	channelId channel.Id,
+	ch channel.Model,
 	characterId uint32,
 	targetMapId _map.Id,
 	useWheelOfFortune bool,
@@ -182,9 +180,9 @@ func (p *ProcessorImpl) createRespawnSaga(
 	// Step: Consume Wheel of Fortune if used
 	if useWheelOfFortune {
 		steps = append(steps, saga.Step[any]{
-			StepId:    "consume_wheel_of_fortune",
-			Status:    saga.Pending,
-			Action:    saga.DestroyAsset,
+			StepId: "consume_wheel_of_fortune",
+			Status: saga.Pending,
+			Action: saga.DestroyAsset,
 			Payload: saga.DestroyAssetPayload{
 				CharacterId: characterId,
 				TemplateId:  uint32(item.WheelOfFortuneId),
@@ -199,9 +197,9 @@ func (p *ProcessorImpl) createRespawnSaga(
 	// Step: Consume protective item if used
 	if protectiveItemId != nil {
 		steps = append(steps, saga.Step[any]{
-			StepId:    "consume_protective_item",
-			Status:    saga.Pending,
-			Action:    saga.DestroyAsset,
+			StepId: "consume_protective_item",
+			Status: saga.Pending,
+			Action: saga.DestroyAsset,
 			Payload: saga.DestroyAssetPayload{
 				CharacterId: characterId,
 				TemplateId:  *protectiveItemId,
@@ -220,8 +218,8 @@ func (p *ProcessorImpl) createRespawnSaga(
 		Action: saga.SetHP,
 		Payload: saga.SetHPPayload{
 			CharacterId: characterId,
-			WorldId:     worldId,
-			ChannelId:   channelId,
+			WorldId:     ch.WorldId(),
+			ChannelId:   ch.Id(),
 			Amount:      50,
 		},
 		CreatedAt: now,
@@ -236,8 +234,8 @@ func (p *ProcessorImpl) createRespawnSaga(
 			Action: saga.DeductExperience,
 			Payload: saga.DeductExperiencePayload{
 				CharacterId: characterId,
-				WorldId:     worldId,
-				ChannelId:   channelId,
+				WorldId:     ch.WorldId(),
+				ChannelId:   ch.Id(),
 				Amount:      expLoss,
 			},
 			CreatedAt: now,
@@ -252,8 +250,8 @@ func (p *ProcessorImpl) createRespawnSaga(
 		Action: saga.CancelAllBuffs,
 		Payload: saga.CancelAllBuffsPayload{
 			CharacterId: characterId,
-			WorldId:     worldId,
-			ChannelId:   channelId,
+			WorldId:     ch.WorldId(),
+			ChannelId:   ch.Id(),
 		},
 		CreatedAt: now,
 		UpdatedAt: now,
@@ -266,8 +264,8 @@ func (p *ProcessorImpl) createRespawnSaga(
 		Action: saga.WarpToPortal,
 		Payload: saga.WarpToPortalPayload{
 			CharacterId: characterId,
-			WorldId:     worldId,
-			ChannelId:   channelId,
+			WorldId:     ch.WorldId(),
+			ChannelId:   ch.Id(),
 			MapId:       uint32(targetMapId),
 			PortalId:    0, // 0 = spawn point
 		},

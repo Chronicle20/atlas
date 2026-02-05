@@ -2,14 +2,17 @@ package session
 
 import (
 	"time"
+
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 )
 
 // SessionRestModel represents a gameplay session from atlas-character
 type SessionRestModel struct {
 	Id          string     `json:"-"`
 	CharacterId uint32     `json:"characterId"`
-	WorldId     byte       `json:"worldId"`
-	ChannelId   byte       `json:"channelId"`
+	WorldId     world.Id   `json:"worldId"`
+	ChannelId   channel.Id `json:"channelId"`
 	LoginTime   time.Time  `json:"loginTime"`
 	LogoutTime  *time.Time `json:"logoutTime,omitempty"`
 }

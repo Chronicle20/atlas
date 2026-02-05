@@ -6,6 +6,8 @@ import (
 	"atlas-monsters/monster/information"
 	"context"
 	"errors"
+
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -16,24 +18,24 @@ import (
 type Processor interface {
 	// Providers
 	ByIdProvider(monsterId uint32) model.Provider[Model]
-	ByMapProvider(worldId byte, channelId byte, mapId uint32) model.Provider[[]Model]
-	ControlledInMapProvider(worldId byte, channelId byte, mapId uint32) model.Provider[[]Model]
-	NotControlledInMapProvider(worldId byte, channelId byte, mapId uint32) model.Provider[[]Model]
-	ControlledByCharacterInMapProvider(worldId byte, channelId byte, mapId uint32, characterId uint32) model.Provider[[]Model]
+	ByFieldProvider(f field.Model) model.Provider[[]Model]
+	ControlledInFieldProvider(f field.Model) model.Provider[[]Model]
+	NotControlledInFieldProvider(f field.Model) model.Provider[[]Model]
+	ControlledByCharacterInFieldProvider(f field.Model, characterId uint32) model.Provider[[]Model]
 
 	// Queries
 	GetById(monsterId uint32) (Model, error)
-	GetInMap(worldId byte, channelId byte, mapId uint32) ([]Model, error)
+	GetInField(f field.Model) ([]Model, error)
 
 	// Commands
-	Create(worldId byte, channelId byte, mapId uint32, input RestModel) (Model, error)
+	Create(f field.Model, input RestModel) (Model, error)
 	StartControl(uniqueId uint32, controllerId uint32) (Model, error)
 	StopControl(m Model) error
 	FindNextController(idp model.Provider[[]uint32]) model.Operator[Model]
 	Damage(id uint32, characterId uint32, damage uint32)
 	Move(id uint32, x int16, y int16, stance byte) error
 	Destroy(uniqueId uint32) error
-	DestroyInMap(worldId byte, channelId byte, mapId uint32) error
+	DestroyInField(f field.Model) error
 }
 
 // ProcessorImpl implements the Processor interface
@@ -59,26 +61,26 @@ func (p *ProcessorImpl) ByIdProvider(monsterId uint32) model.Provider[Model] {
 	}
 }
 
-// ByMapProvider returns a provider for monsters in a map
-func (p *ProcessorImpl) ByMapProvider(worldId byte, channelId byte, mapId uint32) model.Provider[[]Model] {
+// ByFieldProvider returns a provider for monsters in a field
+func (p *ProcessorImpl) ByFieldProvider(f field.Model) model.Provider[[]Model] {
 	return func() ([]Model, error) {
-		return GetMonsterRegistry().GetMonstersInMap(p.t, worldId, channelId, mapId), nil
+		return GetMonsterRegistry().GetMonstersInMap(p.t, f), nil
 	}
 }
 
-// ControlledInMapProvider returns a provider for controlled monsters in a map
-func (p *ProcessorImpl) ControlledInMapProvider(worldId byte, channelId byte, mapId uint32) model.Provider[[]Model] {
-	return model.FilteredProvider(p.ByMapProvider(worldId, channelId, mapId), model.Filters(Controlled))
+// ControlledInFieldProvider returns a provider for controlled monsters in a field
+func (p *ProcessorImpl) ControlledInFieldProvider(f field.Model) model.Provider[[]Model] {
+	return model.FilteredProvider(p.ByFieldProvider(f), model.Filters(Controlled))
 }
 
-// NotControlledInMapProvider returns a provider for uncontrolled monsters in a map
-func (p *ProcessorImpl) NotControlledInMapProvider(worldId byte, channelId byte, mapId uint32) model.Provider[[]Model] {
-	return model.FilteredProvider(p.ByMapProvider(worldId, channelId, mapId), model.Filters(NotControlled))
+// NotControlledInFieldProvider returns a provider for uncontrolled monsters in a field
+func (p *ProcessorImpl) NotControlledInFieldProvider(f field.Model) model.Provider[[]Model] {
+	return model.FilteredProvider(p.ByFieldProvider(f), model.Filters(NotControlled))
 }
 
-// ControlledByCharacterInMapProvider returns a provider for monsters controlled by a specific character
-func (p *ProcessorImpl) ControlledByCharacterInMapProvider(worldId byte, channelId byte, mapId uint32, characterId uint32) model.Provider[[]Model] {
-	return model.FilteredProvider(p.ByMapProvider(worldId, channelId, mapId), model.Filters(IsControlledBy(characterId)))
+// ControlledByCharacterInFieldProvider returns a provider for monsters controlled by a specific character
+func (p *ProcessorImpl) ControlledByCharacterInFieldProvider(f field.Model, characterId uint32) model.Provider[[]Model] {
+	return model.FilteredProvider(p.ByFieldProvider(f), model.Filters(IsControlledBy(characterId)))
 }
 
 // GetById gets a monster by ID
@@ -86,46 +88,46 @@ func (p *ProcessorImpl) GetById(monsterId uint32) (Model, error) {
 	return p.ByIdProvider(monsterId)()
 }
 
-// GetInMap gets all monsters in a map
-func (p *ProcessorImpl) GetInMap(worldId byte, channelId byte, mapId uint32) ([]Model, error) {
-	return p.ByMapProvider(worldId, channelId, mapId)()
+// GetInField gets all monsters in a field
+func (p *ProcessorImpl) GetInField(f field.Model) ([]Model, error) {
+	return p.ByFieldProvider(f)()
 }
 
-// Create creates a new monster in a map
-func (p *ProcessorImpl) Create(worldId byte, channelId byte, mapId uint32, input RestModel) (Model, error) {
-	p.l.Debugf("Attempting to create monster [%d] in world [%d] channel [%d] map [%d].", input.MonsterId, worldId, channelId, mapId)
+// Create creates a new monster in a field
+func (p *ProcessorImpl) Create(f field.Model, input RestModel) (Model, error) {
+	p.l.Debugf("Attempting to create monster [%d] in field [%s].", input.MonsterId, f.Id())
 	ma, err := information.GetById(p.l)(p.ctx)(input.MonsterId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to retrieve information necessary to create monster [%d].", input.MonsterId)
 		return Model{}, err
 	}
 
-	m := GetMonsterRegistry().CreateMonster(p.t, worldId, channelId, mapId, input.MonsterId, input.X, input.Y, input.Fh, 5, input.Team, ma.HP(), ma.MP())
+	m := GetMonsterRegistry().CreateMonster(p.t, f, input.MonsterId, input.X, input.Y, input.Fh, 5, input.Team, ma.HP(), ma.MP())
 
-	cid, err := p.getControllerCandidate(worldId, channelId, mapId, _map.CharacterIdsInMapProvider(p.l)(p.ctx)(worldId, channelId, mapId))
+	cid, err := p.getControllerCandidate(f, _map.CharacterIdsInFieldProvider(p.l)(p.ctx)(f))
 	if err == nil {
 		p.l.Debugf("Created monster [%d] with id [%d] will be controlled by [%d].", m.MonsterId(), m.UniqueId(), cid)
 		m, err = p.StartControl(m.UniqueId(), cid)
 		if err != nil {
-			p.l.WithError(err).Errorf("Unable to start [%d] controlling [%d] in world [%d] channel [%d] map [%d].", cid, m.UniqueId(), m.WorldId(), m.ChannelId(), m.MapId())
+			p.l.WithError(err).Errorf("Unable to start [%d] controlling [%d] in field [%s].", cid, m.UniqueId(), m.Field().Id())
 		}
 	}
 
-	p.l.Debugf("Created monster [%d] in world [%d] channel [%d] map [%d]. Emitting Monster Status.", input.MonsterId, worldId, channelId, mapId)
-	_ = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(createdStatusEventProvider(m.WorldId(), m.ChannelId(), m.MapId(), m.UniqueId(), m.MonsterId()))
+	p.l.Debugf("Created monster [%d] in field [%s]. Emitting Monster Status.", input.MonsterId, f.Id())
+	_ = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(createdStatusEventProvider(m))
 	return m, nil
 }
 
-// getControllerCandidate finds the best character to control monsters in a map
-func (p *ProcessorImpl) getControllerCandidate(worldId byte, channelId byte, mapId uint32, idp model.Provider[[]uint32]) (uint32, error) {
-	p.l.Debugf("Identifying controller candidate for monsters in world [%d] channel [%d] map [%d].", worldId, channelId, mapId)
+// getControllerCandidate finds the best character to control monsters in a field
+func (p *ProcessorImpl) getControllerCandidate(f field.Model, idp model.Provider[[]uint32]) (uint32, error) {
+	p.l.Debugf("Identifying controller candidate for monsters in field [%s].", f.Id())
 
 	controlCounts, err := model.CollectToMap(idp, characterIdKey, zeroValue)()
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to initialize controller candidate map.")
 		return 0, err
 	}
-	err = model.ForEachSlice(p.ControlledInMapProvider(worldId, channelId, mapId), func(m Model) error {
+	err = model.ForEachSlice(p.ControlledInFieldProvider(f), func(m Model) error {
 		controlCounts[m.ControlCharacterId()] += 1
 		return nil
 	})
@@ -149,14 +151,14 @@ func (p *ProcessorImpl) getControllerCandidate(worldId byte, channelId byte, map
 // FindNextController returns an operator that finds and assigns the next controller for a monster
 func (p *ProcessorImpl) FindNextController(idp model.Provider[[]uint32]) model.Operator[Model] {
 	return func(m Model) error {
-		cid, err := p.getControllerCandidate(m.WorldId(), m.ChannelId(), m.MapId(), idp)
+		cid, err := p.getControllerCandidate(m.Field(), idp)
 		if err != nil {
 			return err
 		}
 
 		_, err = p.StartControl(m.UniqueId(), cid)
 		if err != nil {
-			p.l.WithError(err).Errorf("Unable to start [%d] controlling [%d] in world [%d] channel [%d] map [%d].", cid, m.UniqueId(), m.WorldId(), m.ChannelId(), m.MapId())
+			p.l.WithError(err).Errorf("Unable to start [%d] controlling [%d] in field [%s].", cid, m.UniqueId(), m.Field().Id())
 		}
 		return err
 	}
@@ -190,9 +192,10 @@ func (p *ProcessorImpl) StartControl(uniqueId uint32, controllerId uint32) (Mode
 
 // StopControl stops a character from controlling a monster
 func (p *ProcessorImpl) StopControl(m Model) error {
+	oldControllerId := m.ControlCharacterId()
 	m, err := GetMonsterRegistry().ClearControl(p.t, m.UniqueId())
 	if err == nil {
-		_ = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(stopControlStatusEventProvider(m.WorldId(), m.ChannelId(), m.MapId(), m.UniqueId(), m.MonsterId(), m.ControlCharacterId()))
+		_ = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(stopControlStatusEventProvider(m, oldControllerId))
 	}
 	return err
 }
@@ -216,9 +219,9 @@ func (p *ProcessorImpl) Damage(id uint32, characterId uint32, damage uint32) {
 	}
 
 	if s.Killed {
-		err = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(killedStatusEventProvider(s.Monster.WorldId(), s.Monster.ChannelId(), s.Monster.MapId(), s.Monster.UniqueId(), s.Monster.MonsterId(), s.Monster.X(), s.Monster.Y(), s.CharacterId, s.Monster.DamageSummary()))
+		err = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(killedStatusEventProvider(s.Monster, s.CharacterId, s.Monster.DamageSummary()))
 		if err != nil {
-			p.l.WithError(err).Errorf("Monster [%d] killed, but unable to display that for the characters in the map.", s.Monster.UniqueId())
+			p.l.WithError(err).Errorf("Monster [%d] killed, but unable to display that for the characters in the field.", s.Monster.UniqueId())
 		}
 		_, err = GetMonsterRegistry().RemoveMonster(p.t, s.Monster.UniqueId())
 		if err != nil {
@@ -247,9 +250,9 @@ func (p *ProcessorImpl) Damage(id uint32, characterId uint32, damage uint32) {
 		}
 	}
 
-	err = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(damagedStatusEventProvider(s.Monster.WorldId(), s.Monster.ChannelId(), s.Monster.MapId(), s.Monster.UniqueId(), s.Monster.MonsterId(), s.Monster.X(), s.Monster.Y(), s.CharacterId, s.Monster.DamageSummary()))
+	err = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(damagedStatusEventProvider(s.Monster, s.CharacterId, s.Monster.DamageSummary()))
 	if err != nil {
-		p.l.WithError(err).Errorf("Monster [%d] damaged, but unable to display that for the characters in the map.", s.Monster.UniqueId())
+		p.l.WithError(err).Errorf("Monster [%d] damaged, but unable to display that for the characters in the field.", s.Monster.UniqueId())
 	}
 }
 
@@ -266,12 +269,12 @@ func (p *ProcessorImpl) Destroy(uniqueId uint32) error {
 		return err
 	}
 
-	return producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(destroyedStatusEventProvider(m.WorldId(), m.ChannelId(), m.MapId(), m.UniqueId(), m.MonsterId()))
+	return producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(destroyedStatusEventProvider(m))
 }
 
-// DestroyInMap destroys all monsters in a map
-func (p *ProcessorImpl) DestroyInMap(worldId byte, channelId byte, mapId uint32) error {
-	return model.ForEachSlice(model.SliceMap[Model, uint32](IdTransformer)(p.ByMapProvider(worldId, channelId, mapId))(model.ParallelMap()), p.Destroy, model.ParallelExecute())
+// DestroyInField destroys all monsters in a field
+func (p *ProcessorImpl) DestroyInField(f field.Model) error {
+	return model.ForEachSlice(model.SliceMap[Model, uint32](IdTransformer)(p.ByFieldProvider(f))(model.ParallelMap()), p.Destroy, model.ParallelExecute())
 }
 
 // Helper functions

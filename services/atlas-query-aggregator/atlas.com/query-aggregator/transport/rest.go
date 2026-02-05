@@ -11,7 +11,7 @@ type RestModel struct {
 	Id         string  `json:"-"`
 	Name       string  `json:"name"`
 	State      string  `json:"state"`
-	StartMapId uint32  `json:"startMapId"`
+	StartMapId _map.Id `json:"startMapId"`
 }
 
 // GetName returns the resource name for JSON:API
@@ -66,7 +66,7 @@ func Transform(m Model) RestModel {
 		Id:         m.Id().String(),
 		Name:       m.Name(),
 		State:      m.State(),
-		StartMapId: uint32(m.StartMapId()),
+		StartMapId: m.StartMapId(),
 	}
 }
 
@@ -81,6 +81,6 @@ func Extract(r RestModel) (Model, error) {
 		id:         id,
 		name:       r.Name,
 		state:      r.State,
-		startMapId: _map.Id(r.StartMapId),
+		startMapId: r.StartMapId,
 	}, nil
 }

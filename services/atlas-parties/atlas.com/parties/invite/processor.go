@@ -4,11 +4,12 @@ import (
 	"atlas-parties/kafka/producer"
 	"context"
 
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {
-	Create(actorId uint32, worldId byte, partyId uint32, targetId uint32) error
+	Create(actorId uint32, worldId world.Id, partyId uint32, targetId uint32) error
 }
 
 type ProcessorImpl struct {
@@ -25,7 +26,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
-func (p *ProcessorImpl) Create(actorId uint32, worldId byte, partyId uint32, targetId uint32) error {
+func (p *ProcessorImpl) Create(actorId uint32, worldId world.Id, partyId uint32, targetId uint32) error {
 	p.l.Debugf("Creating party [%d] invitation for [%d] from [%d].", partyId, targetId, actorId)
 	return p.p(EnvCommandTopic)(createInviteCommandProvider(actorId, partyId, worldId, targetId))
 }

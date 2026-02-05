@@ -5,6 +5,7 @@ import (
 	"atlas-channel/character"
 	"atlas-channel/guild"
 	"atlas-channel/pet"
+
 	"github.com/Chronicle20/atlas-constants/inventory/slot"
 
 	"github.com/Chronicle20/atlas-socket/response"
@@ -18,7 +19,7 @@ func CharacterInfoBody(tenant tenant.Model) func(c character.Model, g guild.Mode
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteInt(c.Id())
 			w.WriteByte(c.Level())
-			w.WriteShort(c.JobId())
+			w.WriteShort(uint16(c.JobId()))
 			w.WriteInt16(c.Fame())
 			w.WriteBool(false) // marriage ring
 			if g.Id() != 0 {

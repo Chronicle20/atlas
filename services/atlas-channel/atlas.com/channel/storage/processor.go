@@ -6,6 +6,7 @@ import (
 	"atlas-channel/kafka/producer"
 	"context"
 
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
@@ -14,11 +15,11 @@ import (
 const DefaultStorageCapacity byte = 4
 
 type Processor interface {
-	GetStorageData(accountId uint32, worldId byte) (StorageData, error)
+	GetStorageData(accountId uint32, worldId world.Id) (StorageData, error)
 	GetProjectionData(characterId uint32) (ProjectionData, error)
-	Arrange(worldId byte, accountId uint32) error
-	DepositMesos(worldId byte, accountId uint32, mesos uint32) error
-	WithdrawMesos(worldId byte, accountId uint32, mesos uint32) error
+	Arrange(worldId world.Id, accountId uint32) error
+	DepositMesos(worldId world.Id, accountId uint32, mesos uint32) error
+	WithdrawMesos(worldId world.Id, accountId uint32, mesos uint32) error
 	CloseStorage(characterId uint32) error
 }
 
@@ -26,7 +27,7 @@ type Processor interface {
 type ProjectionData struct {
 	CharacterId  uint32
 	AccountId    uint32
-	WorldId      byte
+	WorldId      world.Id
 	Capacity     byte
 	Mesos        uint32
 	NpcId        uint32
@@ -50,7 +51,7 @@ type StorageData struct {
 }
 
 // GetStorageData fetches storage metadata and assets for an account
-func (p *ProcessorImpl) GetStorageData(accountId uint32, worldId byte) (StorageData, error) {
+func (p *ProcessorImpl) GetStorageData(accountId uint32, worldId world.Id) (StorageData, error) {
 	// Fetch storage with assets included
 	storageModel, err := requestStorageByAccountAndWorld(accountId, worldId)(p.l, p.ctx)
 	if err != nil {
@@ -272,19 +273,19 @@ func buildReferenceDataFromRestModel(refType asset.ReferenceType, restData inter
 }
 
 // Arrange sends an ARRANGE command to the storage service to merge and sort items
-func (p *ProcessorImpl) Arrange(worldId byte, accountId uint32) error {
+func (p *ProcessorImpl) Arrange(worldId world.Id, accountId uint32) error {
 	p.l.Debugf("Sending ARRANGE command for storage account [%d] world [%d].", accountId, worldId)
 	return producer.ProviderImpl(p.l)(p.ctx)(storage.EnvCommandTopic)(ArrangeCommandProvider(worldId, accountId, uuid.New()))
 }
 
 // DepositMesos sends an UPDATE_MESOS command to add mesos to storage
-func (p *ProcessorImpl) DepositMesos(worldId byte, accountId uint32, mesos uint32) error {
+func (p *ProcessorImpl) DepositMesos(worldId world.Id, accountId uint32, mesos uint32) error {
 	p.l.Debugf("Depositing [%d] mesos to storage account [%d] world [%d].", mesos, accountId, worldId)
 	return producer.ProviderImpl(p.l)(p.ctx)(storage.EnvCommandTopic)(UpdateMesosCommandProvider(worldId, accountId, uuid.New(), mesos, storage.MesosOperationAdd))
 }
 
 // WithdrawMesos sends an UPDATE_MESOS command to withdraw mesos from storage
-func (p *ProcessorImpl) WithdrawMesos(worldId byte, accountId uint32, mesos uint32) error {
+func (p *ProcessorImpl) WithdrawMesos(worldId world.Id, accountId uint32, mesos uint32) error {
 	p.l.Debugf("Withdrawing [%d] mesos from storage account [%d] world [%d].", mesos, accountId, worldId)
 	return producer.ProviderImpl(p.l)(p.ctx)(storage.EnvCommandTopic)(UpdateMesosCommandProvider(worldId, accountId, uuid.New(), mesos, storage.MesosOperationSubtract))
 }

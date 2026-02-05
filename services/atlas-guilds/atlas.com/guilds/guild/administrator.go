@@ -1,15 +1,16 @@
 package guild
 
 import (
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-func create(db *gorm.DB, tenant tenant.Model, worldId byte, leaderId uint32, name string) (Model, error) {
+func create(db *gorm.DB, tenant tenant.Model, worldId world.Id, leaderId uint32, name string) (Model, error) {
 	e := &Entity{
 		TenantId: tenant.Id(),
-		WorldId:  worldId,
+		WorldId:  byte(worldId),
 		Name:     name,
 		LeaderId: leaderId,
 		Capacity: 30,

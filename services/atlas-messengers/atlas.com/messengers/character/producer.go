@@ -12,7 +12,7 @@ import (
 func loginEventProvider(transactionID uuid.UUID, messengerId uint32, worldId world.Id, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(messengerId))
 	value := &character.MemberStatusEvent[character.MemberLoginEventBody]{
-		TransactionID: transactionID,
+		TransactionId: transactionID,
 		MessengerId:   messengerId,
 		WorldId:       worldId,
 		CharacterId:   characterId,
@@ -25,7 +25,7 @@ func loginEventProvider(transactionID uuid.UUID, messengerId uint32, worldId wor
 func logoutEventProvider(transactionID uuid.UUID, messengerId uint32, worldId world.Id, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(messengerId))
 	value := &character.MemberStatusEvent[character.MemberLogoutEventBody]{
-		TransactionID: transactionID,
+		TransactionId: transactionID,
 		MessengerId:   messengerId,
 		WorldId:       worldId,
 		CharacterId:   characterId,

@@ -6,6 +6,7 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-tenant"
@@ -40,7 +41,7 @@ func CharacterChatWhisperHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		}
 		if mode == WhisperModeChat {
 			msg = r.ReadAsciiString()
-			err := message.NewProcessor(l, ctx).WhisperChat(s.Map(), s.CharacterId(), msg, targetName)
+			err := message.NewProcessor(l, ctx).WhisperChat(s.Field(), s.CharacterId(), msg, targetName)
 			if err != nil {
 				_ = session.Announce(l)(ctx)(wp)(writer.CharacterChatWhisper)(writer.CharacterChatWhisperSendFailureResultBody(targetName, false))(s)
 				return
@@ -75,7 +76,7 @@ func produceFindResultBody(l logrus.FieldLogger) func(ctx context.Context) func(
 						return af(writer.CharacterChatWhisperFindResultInCashShopBody(resultMode, targetName))(s)
 					}
 
-					_, err = session.NewProcessor(l, ctx).GetByCharacterId(s.WorldId(), s.ChannelId())(tc.Id())
+					_, err = session.NewProcessor(l, ctx).GetByCharacterId(s.Field().Channel())(tc.Id())
 					if err == nil {
 						return af(writer.CharacterChatWhisperFindResultInMapBody(resultMode, tc, tc.MapId()))(s)
 					}

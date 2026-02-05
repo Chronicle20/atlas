@@ -7,15 +7,16 @@ import (
 	"context"
 	"errors"
 
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {
 	GetById(characterId uint32) (Model, error)
-	Apply(worldId byte, characterId uint32, fromId uint32, sourceId int32, duration int32, changes []stat.Model) error
-	Cancel(worldId byte, characterId uint32, sourceId int32) error
-	CancelAll(worldId byte, characterId uint32) error
+	Apply(worldId world.Id, characterId uint32, fromId uint32, sourceId int32, duration int32, changes []stat.Model) error
+	Cancel(worldId world.Id, characterId uint32, sourceId int32) error
+	CancelAll(worldId world.Id, characterId uint32) error
 	ExpireBuffs() error
 }
 
@@ -37,7 +38,7 @@ func (p *ProcessorImpl) GetById(characterId uint32) (Model, error) {
 	return GetRegistry().Get(p.t, characterId)
 }
 
-func (p *ProcessorImpl) Apply(worldId byte, characterId uint32, fromId uint32, sourceId int32, duration int32, changes []stat.Model) error {
+func (p *ProcessorImpl) Apply(worldId world.Id, characterId uint32, fromId uint32, sourceId int32, duration int32, changes []stat.Model) error {
 	return message.Emit(p.l, p.ctx)(func(buf *message.Buffer) error {
 		b, err := GetRegistry().Apply(p.t, worldId, characterId, sourceId, duration, changes)
 		if err != nil {
@@ -47,7 +48,7 @@ func (p *ProcessorImpl) Apply(worldId byte, characterId uint32, fromId uint32, s
 	})
 }
 
-func (p *ProcessorImpl) Cancel(worldId byte, characterId uint32, sourceId int32) error {
+func (p *ProcessorImpl) Cancel(worldId world.Id, characterId uint32, sourceId int32) error {
 	b, err := GetRegistry().Cancel(p.t, characterId, sourceId)
 	if errors.Is(err, ErrNotFound) {
 		return nil
@@ -57,7 +58,7 @@ func (p *ProcessorImpl) Cancel(worldId byte, characterId uint32, sourceId int32)
 	})
 }
 
-func (p *ProcessorImpl) CancelAll(worldId byte, characterId uint32) error {
+func (p *ProcessorImpl) CancelAll(worldId world.Id, characterId uint32) error {
 	buffs := GetRegistry().CancelAll(p.t, characterId)
 	if len(buffs) == 0 {
 		return nil

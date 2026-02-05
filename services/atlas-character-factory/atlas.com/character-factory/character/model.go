@@ -1,9 +1,15 @@
 package character
 
+import (
+	"github.com/Chronicle20/atlas-constants/job"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
+)
+
 type Model struct {
 	id                 uint32
 	accountId          uint32
-	worldId            byte
+	worldId            world.Id
 	name               string
 	level              byte
 	experience         uint32
@@ -18,7 +24,7 @@ type Model struct {
 	maxMp              uint16
 	meso               uint32
 	hpMpUsed           int
-	jobId              uint16
+	jobId              job.Id
 	skinColor          byte
 	gender             byte
 	fame               int16
@@ -26,7 +32,7 @@ type Model struct {
 	face               uint32
 	ap                 uint16
 	sp                 string
-	mapId              uint32
+	mapId              _map.Id
 	spawnPoint         uint32
 	gm                 int
 }

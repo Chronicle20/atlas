@@ -1,6 +1,7 @@
 package script
 
 import (
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-script-core/condition"
 	"github.com/Chronicle20/atlas-script-core/operation"
 )
@@ -8,7 +9,7 @@ import (
 // PortalScript represents a portal script loaded from JSON
 type PortalScript struct {
 	portalId    string
-	mapId       uint32
+	mapId       _map.Id
 	description string
 	rules       []Rule
 }
@@ -19,7 +20,7 @@ func (s PortalScript) PortalId() string {
 }
 
 // MapId returns the map ID where this portal exists
-func (s PortalScript) MapId() uint32 {
+func (s PortalScript) MapId() _map.Id {
 	return s.mapId
 }
 

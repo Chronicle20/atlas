@@ -3,17 +3,19 @@ package reactor
 import (
 	"fmt"
 
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 )
 
-func createCommandProvider(worldId byte, channelId byte, mapId uint32, classification uint32, name string, state int8, x int16, y int16, delay uint32, direction byte) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(mapId))
+func createCommandProvider(f field.Model, classification uint32, name string, state int8, x int16, y int16, delay uint32, direction byte) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(f.MapId()))
 	value := &Command[CreateCommandBody]{
-		WorldId:   worldId,
-		ChannelId: channelId,
-		MapId:     mapId,
+		WorldId:   f.WorldId(),
+		ChannelId: f.ChannelId(),
+		MapId:     f.MapId(),
+		Instance:  f.Instance(),
 		Type:      CommandTypeCreate,
 		Body: CreateCommandBody{
 			Classification: classification,
@@ -30,62 +32,41 @@ func createCommandProvider(worldId byte, channelId byte, mapId uint32, classific
 
 func createdStatusEventProvider(r Model) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(r.Id()))
-	value := &statusEvent[createdStatusEventBody]{
-		WorldId:   r.WorldId(),
-		ChannelId: r.ChannelId(),
-		MapId:     r.MapId(),
-		ReactorId: r.Id(),
-		Type:      EventStatusTypeCreated,
-		Body: createdStatusEventBody{
-			Classification: r.Classification(),
-			Name:           r.Name(),
-			State:          r.State(),
-			EventState:     r.EventState(),
-			Delay:          r.Delay(),
-			Direction:      r.Direction(),
-			X:              r.X(),
-			Y:              r.Y(),
-			UpdateTime:     r.UpdateTime(),
-		},
-	}
-	return producer.SingleMessageProvider(key, value)
+	e := statusEventFromField(r.Field(), r.Id(), EventStatusTypeCreated, createdStatusEventBody{
+		Classification: r.Classification(),
+		Name:           r.Name(),
+		State:          r.State(),
+		EventState:     r.EventState(),
+		Delay:          r.Delay(),
+		Direction:      r.Direction(),
+		X:              r.X(),
+		Y:              r.Y(),
+		UpdateTime:     r.UpdateTime(),
+	})
+	return producer.SingleMessageProvider(key, &e)
 }
 
 func destroyedStatusEventProvider(r Model) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(r.Id()))
-	value := &statusEvent[destroyedStatusEventBody]{
-		WorldId:   r.WorldId(),
-		ChannelId: r.ChannelId(),
-		MapId:     r.MapId(),
-		ReactorId: r.Id(),
-		Type:      EventStatusTypeDestroyed,
-		Body: destroyedStatusEventBody{
-			State: r.State(),
-			X:     r.X(),
-			Y:     r.Y(),
-		},
-	}
-	return producer.SingleMessageProvider(key, value)
+	e := statusEventFromField(r.Field(), r.Id(), EventStatusTypeDestroyed, destroyedStatusEventBody{
+		State: r.State(),
+		X:     r.X(),
+		Y:     r.Y(),
+	})
+	return producer.SingleMessageProvider(key, &e)
 }
 
 func hitStatusEventProvider(r Model, destroyed bool) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(r.Id()))
-	value := &statusEvent[hitStatusEventBody]{
-		WorldId:   r.WorldId(),
-		ChannelId: r.ChannelId(),
-		MapId:     r.MapId(),
-		ReactorId: r.Id(),
-		Type:      EventStatusTypeHit,
-		Body: hitStatusEventBody{
-			Classification: r.Classification(),
-			State:          r.State(),
-			X:              r.X(),
-			Y:              r.Y(),
-			Direction:      r.Direction(),
-			Destroyed:      destroyed,
-		},
-	}
-	return producer.SingleMessageProvider(key, value)
+	e := statusEventFromField(r.Field(), r.Id(), EventStatusTypeHit, hitStatusEventBody{
+		Classification: r.Classification(),
+		State:          r.State(),
+		X:              r.X(),
+		Y:              r.Y(),
+		Direction:      r.Direction(),
+		Destroyed:      destroyed,
+	})
+	return producer.SingleMessageProvider(key, &e)
 }
 
 // hitActionsCommandProvider creates a HIT command for atlas-reactor-actions
@@ -95,6 +76,7 @@ func hitActionsCommandProvider(r Model, characterId uint32, skillId uint32, isSk
 		WorldId:        r.WorldId(),
 		ChannelId:      r.ChannelId(),
 		MapId:          r.MapId(),
+		Instance:       r.Instance(),
 		ReactorId:      r.Id(),
 		Classification: formatClassification(r.Classification()),
 		ReactorName:    r.Name(),
@@ -118,6 +100,7 @@ func triggerActionsCommandProvider(r Model, characterId uint32) model.Provider[[
 		WorldId:        r.WorldId(),
 		ChannelId:      r.ChannelId(),
 		MapId:          r.MapId(),
+		Instance:       r.Instance(),
 		ReactorId:      r.Id(),
 		Classification: formatClassification(r.Classification()),
 		ReactorName:    r.Name(),

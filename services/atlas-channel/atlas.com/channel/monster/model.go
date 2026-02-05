@@ -2,14 +2,14 @@ package monster
 
 import (
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
 )
 
 type Model struct {
-	worldId            world.Id
-	channelId          channel.Id
-	mapId              _map.Id
+	field              field.Model
 	uniqueId           uint32
 	maxHp              uint32
 	hp                 uint32
@@ -55,16 +55,24 @@ func (m Model) Team() int8 {
 	return m.team
 }
 
+func (m Model) Field() field.Model {
+	return m.field
+}
+
 func (m Model) WorldId() world.Id {
-	return m.worldId
+	return m.Field().WorldId()
 }
 
 func (m Model) ChannelId() channel.Id {
-	return m.channelId
+	return m.Field().ChannelId()
 }
 
 func (m Model) MapId() _map.Id {
-	return m.mapId
+	return m.Field().MapId()
+}
+
+func (m Model) Instance() uuid.UUID {
+	return m.Field().Instance()
 }
 
 func (m Model) MP() uint32 {
@@ -78,4 +86,3 @@ func (m Model) HP() uint32 {
 func (m Model) MaxHP() uint32 {
 	return m.maxHp
 }
-

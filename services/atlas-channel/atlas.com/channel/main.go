@@ -158,7 +158,8 @@ func main() {
 
 		for _, w := range ten.Worlds {
 			for _, c := range w.Channels {
-				sc := server.Register(t, world.Id(w.Id), channel2.Id(c.Id), ten.IPAddress, c.Port)
+				ch := channel2.NewModel(world.Id(w.Id), channel2.Id(c.Id))
+				sc := server.Register(t, ch, ten.IPAddress, c.Port)
 
 				fl := l.
 					WithField("tenant", t.Id().String()).

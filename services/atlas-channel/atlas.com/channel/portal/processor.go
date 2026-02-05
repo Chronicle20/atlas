@@ -5,12 +5,13 @@ import (
 	"atlas-channel/kafka/message/portal"
 	"atlas-channel/kafka/producer"
 	"context"
-	_map "github.com/Chronicle20/atlas-constants/map"
+
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {
-	Enter(m _map.Model, portalName string, characterId uint32) error
+	Enter(f field.Model, portalName string, characterId uint32) error
 }
 
 type ProcessorImpl struct {
@@ -28,12 +29,12 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *ProcessorImpl {
 	return p
 }
 
-func (p *ProcessorImpl) Enter(m _map.Model, portalName string, characterId uint32) error {
-	pm, err := p.pd.GetInMapByName(m.MapId(), portalName)
+func (p *ProcessorImpl) Enter(f field.Model, portalName string, characterId uint32) error {
+	pm, err := p.pd.GetInMapByName(f.MapId(), portalName)
 	if err != nil {
-		p.l.WithError(err).Errorf("Unable to locate portal [%s] in map [%d].", portalName, m.MapId())
+		p.l.WithError(err).Errorf("Unable to locate portal [%s] in map [%d].", portalName, f.MapId())
 		return err
 	}
-	err = producer.ProviderImpl(p.l)(p.ctx)(portal.EnvPortalCommandTopic)(EnterCommandProvider(m, pm.Id(), characterId))
+	err = producer.ProviderImpl(p.l)(p.ctx)(portal.EnvPortalCommandTopic)(EnterCommandProvider(f, pm.Id(), characterId))
 	return err
 }

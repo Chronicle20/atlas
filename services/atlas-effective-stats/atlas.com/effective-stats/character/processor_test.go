@@ -5,6 +5,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -29,7 +30,8 @@ func setupProcessorTest(t *testing.T) (Processor, logrus.FieldLogger, context.Co
 func TestProcessor_AddBonus(t *testing.T) {
 	p, _, _, ten := setupProcessorTest(t)
 
-	err := p.AddBonus(1, 2, 12345, "test:1", stat.TypeStrength, 20)
+	ch := channel.NewModel(1, 2)
+	err := p.AddBonus(ch, 12345, "test:1", stat.TypeStrength, 20)
 	if err != nil {
 		t.Fatalf("AddBonus() error = %v", err)
 	}
@@ -65,10 +67,11 @@ func TestProcessor_AddMultiplierBonus(t *testing.T) {
 
 	// First set base stats
 	base := stat.NewBase(100, 50, 50, 50, 5000, 3000)
-	_ = p.SetBaseStats(1, 2, 12345, base)
+	ch := channel.NewModel(1, 2)
+	_ = p.SetBaseStats(ch, 12345, base)
 
 	// Add multiplier bonus
-	err := p.AddMultiplierBonus(1, 2, 12345, "buff:123", stat.TypeStrength, 0.10)
+	err := p.AddMultiplierBonus(ch, 12345, "buff:123", stat.TypeStrength, 0.10)
 	if err != nil {
 		t.Fatalf("AddMultiplierBonus() error = %v", err)
 	}
@@ -85,7 +88,8 @@ func TestProcessor_RemoveBonus(t *testing.T) {
 	p, _, _, ten := setupProcessorTest(t)
 
 	// Add bonus first
-	_ = p.AddBonus(1, 2, 12345, "test:1", stat.TypeStrength, 20)
+	ch := channel.NewModel(1, 2)
+	_ = p.AddBonus(ch, 12345, "test:1", stat.TypeStrength, 20)
 
 	// Remove it
 	err := p.RemoveBonus(12345, "test:1", stat.TypeStrength)
@@ -113,9 +117,10 @@ func TestProcessor_RemoveBonusesBySource(t *testing.T) {
 	p, _, _, ten := setupProcessorTest(t)
 
 	// Add multiple bonuses from same source
-	_ = p.AddBonus(1, 2, 12345, "equipment:100", stat.TypeStrength, 10)
-	_ = p.AddBonus(1, 2, 12345, "equipment:100", stat.TypeDexterity, 5)
-	_ = p.AddBonus(1, 2, 12345, "buff:200", stat.TypeStrength, 15)
+	ch := channel.NewModel(1, 2)
+	_ = p.AddBonus(ch, 12345, "equipment:100", stat.TypeStrength, 10)
+	_ = p.AddBonus(ch, 12345, "equipment:100", stat.TypeDexterity, 5)
+	_ = p.AddBonus(ch, 12345, "buff:200", stat.TypeStrength, 15)
 
 	// Remove all equipment bonuses
 	err := p.RemoveBonusesBySource(12345, "equipment:100")
@@ -138,8 +143,9 @@ func TestProcessor_RemoveBonusesBySource(t *testing.T) {
 func TestProcessor_SetBaseStats(t *testing.T) {
 	p, _, _, ten := setupProcessorTest(t)
 
+	ch := channel.NewModel(1, 2)
 	base := stat.NewBase(100, 80, 60, 40, 5000, 3000)
-	err := p.SetBaseStats(1, 2, 12345, base)
+	err := p.SetBaseStats(ch, 12345, base)
 	if err != nil {
 		t.Fatalf("SetBaseStats() error = %v", err)
 	}
@@ -162,7 +168,8 @@ func TestProcessor_AddEquipmentBonuses(t *testing.T) {
 		stat.NewBonus("", stat.TypeDexterity, 10),
 	}
 
-	err := p.AddEquipmentBonuses(1, 2, 12345, 999, bonuses)
+	ch := channel.NewModel(1, 2)
+	err := p.AddEquipmentBonuses(ch, 12345, 999, bonuses)
 	if err != nil {
 		t.Fatalf("AddEquipmentBonuses() error = %v", err)
 	}
@@ -196,7 +203,8 @@ func TestProcessor_RemoveEquipmentBonuses(t *testing.T) {
 	bonuses := []stat.Bonus{
 		stat.NewBonus("", stat.TypeStrength, 15),
 	}
-	_ = p.AddEquipmentBonuses(1, 2, 12345, 999, bonuses)
+	ch := channel.NewModel(1, 2)
+	_ = p.AddEquipmentBonuses(ch, 12345, 999, bonuses)
 
 	err := p.RemoveEquipmentBonuses(12345, 999)
 	if err != nil {
@@ -213,14 +221,15 @@ func TestProcessor_AddBuffBonuses(t *testing.T) {
 	p, _, _, ten := setupProcessorTest(t)
 
 	// Set base stats first
+	ch := channel.NewModel(1, 2)
 	base := stat.NewBase(100, 50, 50, 50, 5000, 3000)
-	_ = p.SetBaseStats(1, 2, 12345, base)
+	_ = p.SetBaseStats(ch, 12345, base)
 
 	bonuses := []stat.Bonus{
 		stat.NewMultiplierBonus("", stat.TypeMaxHP, 0.60), // Hyper Body
 	}
 
-	err := p.AddBuffBonuses(1, 2, 12345, 2311003, bonuses)
+	err := p.AddBuffBonuses(ch, 12345, 2311003, bonuses)
 	if err != nil {
 		t.Fatalf("AddBuffBonuses() error = %v", err)
 	}
@@ -236,13 +245,14 @@ func TestProcessor_AddBuffBonuses(t *testing.T) {
 func TestProcessor_RemoveBuffBonuses(t *testing.T) {
 	p, _, _, ten := setupProcessorTest(t)
 
+	ch := channel.NewModel(1, 2)
 	base := stat.NewBase(100, 50, 50, 50, 5000, 3000)
-	_ = p.SetBaseStats(1, 2, 12345, base)
+	_ = p.SetBaseStats(ch, 12345, base)
 
 	bonuses := []stat.Bonus{
 		stat.NewMultiplierBonus("", stat.TypeMaxHP, 0.60),
 	}
-	_ = p.AddBuffBonuses(1, 2, 12345, 2311003, bonuses)
+	_ = p.AddBuffBonuses(ch, 12345, 2311003, bonuses)
 
 	err := p.RemoveBuffBonuses(12345, 2311003)
 	if err != nil {
@@ -264,7 +274,8 @@ func TestProcessor_AddPassiveBonuses(t *testing.T) {
 		stat.NewBonus("", stat.TypeWeaponAttack, 20),
 	}
 
-	err := p.AddPassiveBonuses(1, 2, 12345, 1000001, bonuses)
+	ch := channel.NewModel(1, 2)
+	err := p.AddPassiveBonuses(ch, 12345, 1000001, bonuses)
 	if err != nil {
 		t.Fatalf("AddPassiveBonuses() error = %v", err)
 	}
@@ -291,7 +302,8 @@ func TestProcessor_RemovePassiveBonuses(t *testing.T) {
 	bonuses := []stat.Bonus{
 		stat.NewBonus("", stat.TypeWeaponAttack, 20),
 	}
-	_ = p.AddPassiveBonuses(1, 2, 12345, 1000001, bonuses)
+	ch := channel.NewModel(1, 2)
+	_ = p.AddPassiveBonuses(ch, 12345, 1000001, bonuses)
 
 	err := p.RemovePassiveBonuses(12345, 1000001)
 	if err != nil {
@@ -308,7 +320,8 @@ func TestProcessor_RemoveCharacter(t *testing.T) {
 	p, _, _, ten := setupProcessorTest(t)
 
 	// Add some data for the character
-	_ = p.AddBonus(1, 2, 12345, "test:1", stat.TypeStrength, 20)
+	ch := channel.NewModel(1, 2)
+	_ = p.AddBonus(ch, 12345, "test:1", stat.TypeStrength, 20)
 
 	// Remove the character
 	p.RemoveCharacter(12345)
@@ -324,12 +337,13 @@ func TestProcessor_GetEffectiveStats_PreInitialized(t *testing.T) {
 	p, _, _, ten := setupProcessorTest(t)
 
 	// Pre-populate the registry (simulating initialized character)
+	ch := channel.NewModel(1, 2)
 	base := stat.NewBase(100, 80, 60, 40, 5000, 3000)
-	m := NewModel(ten, 1, 2, 12345).WithBaseStats(base).Recompute().WithInitialized()
+	m := NewModel(ten, ch, 12345).WithBaseStats(base).Recompute().WithInitialized()
 	GetRegistry().Update(ten, m)
 
 	// Now GetEffectiveStats should return without calling external services
-	computed, bonuses, err := p.GetEffectiveStats(1, 2, 12345)
+	computed, bonuses, err := p.GetEffectiveStats(ch, 12345)
 	if err != nil {
 		t.Fatalf("GetEffectiveStats() error = %v", err)
 	}
@@ -349,12 +363,13 @@ func TestProcessor_GetEffectiveStats_WithBonuses(t *testing.T) {
 	p, _, _, ten := setupProcessorTest(t)
 
 	// Pre-populate with base stats and bonuses
+	ch := channel.NewModel(1, 2)
 	base := stat.NewBase(100, 80, 60, 40, 5000, 3000)
 	b := stat.NewBonus("equipment:1", stat.TypeStrength, 15)
-	m := NewModel(ten, 1, 2, 12345).WithBaseStats(base).WithBonus(b).Recompute().WithInitialized()
+	m := NewModel(ten, ch, 12345).WithBaseStats(base).WithBonus(b).Recompute().WithInitialized()
 	GetRegistry().Update(ten, m)
 
-	computed, bonuses, err := p.GetEffectiveStats(1, 2, 12345)
+	computed, bonuses, err := p.GetEffectiveStats(ch, 12345)
 	if err != nil {
 		t.Fatalf("GetEffectiveStats() error = %v", err)
 	}
@@ -374,24 +389,25 @@ func TestProcessor_GetEffectiveStats_WithBonuses(t *testing.T) {
 func TestProcessor_MixedBonuses(t *testing.T) {
 	// Test the complete effective stats formula with mixed flat and multiplier bonuses
 	p, _, _, ten := setupProcessorTest(t)
+	ch := channel.NewModel(1, 2)
 
 	// Set base stats
 	base := stat.NewBase(50, 40, 30, 25, 5000, 3000)
-	_ = p.SetBaseStats(1, 2, 12345, base)
+	_ = p.SetBaseStats(ch, 12345, base)
 
 	// Add flat equipment bonus
 	equipBonuses := []stat.Bonus{
 		stat.NewBonus("", stat.TypeStrength, 15),
 		stat.NewBonus("", stat.TypeMaxHP, 500),
 	}
-	_ = p.AddEquipmentBonuses(1, 2, 12345, 100, equipBonuses)
+	_ = p.AddEquipmentBonuses(ch, 12345, 100, equipBonuses)
 
 	// Add multiplier buff (10% strength, 60% HP)
 	buffBonuses := []stat.Bonus{
 		stat.NewMultiplierBonus("", stat.TypeStrength, 0.10),
 		stat.NewMultiplierBonus("", stat.TypeMaxHP, 0.60),
 	}
-	_ = p.AddBuffBonuses(1, 2, 12345, 2311003, buffBonuses)
+	_ = p.AddBuffBonuses(ch, 12345, 2311003, buffBonuses)
 
 	m, _ := GetRegistry().Get(ten, 12345)
 

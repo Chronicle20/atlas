@@ -2,13 +2,14 @@ package factory
 
 import (
 	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"strconv"
 )
 
 type RestModel struct {
 	Id           uint32  `json:"-"`
 	AccountId    uint32  `json:"accountId"`
-	WorldId      byte    `json:"worldId"`
+	WorldId      world.Id `json:"worldId"`
 	Name         string  `json:"name"`
 	Gender       byte    `json:"gender"`
 	JobIndex     uint32  `json:"jobIndex"`

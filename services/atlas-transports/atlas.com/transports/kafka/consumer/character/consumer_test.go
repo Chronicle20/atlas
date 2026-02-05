@@ -36,7 +36,8 @@ func TestHandleEventStatus_NonLogoutEventIgnored(t *testing.T) {
 		Type:        "LOGIN", // Not a logout event
 		Body: character2.LogoutStatusEventBody{
 			ChannelId: 1,
-			MapId:     100000000,
+			MapId:     _map.Id(100000000),
+			Instance:  uuid.New(),
 		},
 	}
 
@@ -70,7 +71,8 @@ func TestHandleEventStatus_LogoutFromNonTransportMap(t *testing.T) {
 		Type:        character2.StatusEventTypeLogout,
 		Body: character2.LogoutStatusEventBody{
 			ChannelId: 1,
-			MapId:     100000000, // Regular map, not a transport map
+			MapId:     _map.Id(100000000), // Regular map, not a transport map
+			Instance:  uuid.New(),
 		},
 	}
 
@@ -123,7 +125,8 @@ func TestHandleEventStatus_LogoutFromTransportMap(t *testing.T) {
 		Type:        character2.StatusEventTypeLogout,
 		Body: character2.LogoutStatusEventBody{
 			ChannelId: 1,
-			MapId:     uint32(stagingMapId),
+			MapId:     stagingMapId,
+			Instance:  uuid.New(),
 		},
 	}
 
@@ -176,7 +179,8 @@ func TestHandleEventStatus_LogoutFromEnRouteMap(t *testing.T) {
 		Type:        character2.StatusEventTypeLogout,
 		Body: character2.LogoutStatusEventBody{
 			ChannelId: 1,
-			MapId:     uint32(enRouteMapId),
+			MapId:     enRouteMapId,
+			Instance:  uuid.New(),
 		},
 	}
 

@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/stretchr/testify/assert"
 )
@@ -30,7 +31,7 @@ func TestBuilderBuild(t *testing.T) {
 	assert.Equal(t, uint32(5001), m.ReferenceId())
 	assert.Equal(t, uint32(2001), m.OriginatorId())
 	assert.Equal(t, uint32(3001), m.TargetId())
-	assert.Equal(t, byte(1), m.WorldId())
+	assert.Equal(t, world.Id(1), m.WorldId())
 	assert.Equal(t, now, m.Age())
 }
 
@@ -220,7 +221,7 @@ func TestBuilderOptionalWorldId(t *testing.T) {
 		Build()
 
 	assert.NoError(t, err)
-	assert.Equal(t, byte(0), m.WorldId())
+	assert.Equal(t, world.Id(0), m.WorldId())
 }
 
 func TestBuilderDefaultAge(t *testing.T) {

@@ -1,12 +1,13 @@
 package character
 
 import (
+	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 )
 
-func awardExperienceCommandProvider(characterId uint32, worldId byte, channelId byte, white bool, amount uint32, party uint32) model.Provider[[]kafka.Message] {
+func awardExperienceCommandProvider(characterId uint32, ch channel.Model, white bool, amount uint32, party uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	ds := make([]experienceDistributions, 0)
 	if white {
@@ -27,10 +28,10 @@ func awardExperienceCommandProvider(characterId uint32, worldId byte, channelId 
 
 	value := &command[awardExperienceCommandBody]{
 		CharacterId: characterId,
-		WorldId:     worldId,
+		WorldId:     ch.WorldId(),
 		Type:        CommandAwardExperience,
 		Body: awardExperienceCommandBody{
-			ChannelId:     channelId,
+			ChannelId:     ch.Id(),
 			Distributions: ds,
 		},
 	}

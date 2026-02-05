@@ -24,7 +24,7 @@ func CharacterChatGeneralHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 		bOnlyBalloon := r.ReadBool()
 
 		l.Debugf("Character [%d] issued message [%s]. updateTime [%d]. bOnlyBalloon [%t].", s.CharacterId(), msg, updateTime, bOnlyBalloon)
-		err := message.NewProcessor(l, ctx).GeneralChat(s.Map(), s.CharacterId(), msg, bOnlyBalloon)
+		err := message.NewProcessor(l, ctx).GeneralChat(s.Field(), s.CharacterId(), msg, bOnlyBalloon)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to process general chat message for character [%d].", s.CharacterId())
 		}

@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -98,7 +100,7 @@ func ParseCharacterId(l logrus.FieldLogger, next CharacterIdHandler) http.Handle
 	}
 }
 
-type WorldChannelHandler func(worldId byte, channelId byte) http.HandlerFunc
+type WorldChannelHandler func(worldId world.Id, channelId channel.Id) http.HandlerFunc
 
 func ParseWorldChannel(l logrus.FieldLogger, next WorldChannelHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -114,6 +116,6 @@ func ParseWorldChannel(l logrus.FieldLogger, next WorldChannelHandler) http.Hand
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		next(byte(worldId), byte(channelId))(w, r)
+		next(world.Id(worldId), channel.Id(channelId))(w, r)
 	}
 }

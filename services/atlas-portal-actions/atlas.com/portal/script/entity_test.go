@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-script-core/condition"
 	"github.com/Chronicle20/atlas-script-core/operation"
 	"github.com/google/uuid"
@@ -12,11 +13,11 @@ import (
 
 func TestMake(t *testing.T) {
 	tests := []struct {
-		name    string
-		entity  Entity
-		want    struct {
+		name   string
+		entity Entity
+		want   struct {
 			portalId    string
-			mapId       uint32
+			mapId       _map.Id
 			description string
 			ruleCount   int
 		}
@@ -51,7 +52,7 @@ func TestMake(t *testing.T) {
 			},
 			want: struct {
 				portalId    string
-				mapId       uint32
+				mapId       _map.Id
 				description string
 				ruleCount   int
 			}{
@@ -78,7 +79,7 @@ func TestMake(t *testing.T) {
 			},
 			want: struct {
 				portalId    string
-				mapId       uint32
+				mapId       _map.Id
 				description string
 				ruleCount   int
 			}{

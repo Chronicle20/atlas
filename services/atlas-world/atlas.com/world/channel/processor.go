@@ -7,6 +7,8 @@ import (
 	"atlas-world/kafka/producer"
 	channel3 "atlas-world/kafka/producer/channel"
 	"context"
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -16,16 +18,16 @@ import (
 // Processor defines the interface for channel processing operations
 type Processor interface {
 	AllProvider() model.Provider[[]Model]
-	GetByWorld(worldId byte) ([]Model, error)
-	ByWorldProvider(worldId byte) model.Provider[[]Model]
-	GetById(worldId byte, channelId byte) (Model, error)
-	ByIdProvider(worldId byte, channelId byte) model.Provider[Model]
-	Register(worldId byte, channelId byte, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) (Model, error)
-	Unregister(worldId byte, channelId byte) error
+	GetByWorld(worldId world.Id) ([]Model, error)
+	ByWorldProvider(worldId world.Id) model.Provider[[]Model]
+	GetById(ch channel.Model) (Model, error)
+	ByIdProvider(ch channel.Model) model.Provider[Model]
+	Register(ch channel.Model, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) (Model, error)
+	Unregister(ch channel.Model) error
 	RequestStatus(mb *message.Buffer) error
 	RequestStatusAndEmit() error
-	EmitStarted(mb *message.Buffer) func(worldId byte, channelId byte, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) error
-	EmitStartedAndEmit(worldId byte, channelId byte, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) error
+	EmitStarted(mb *message.Buffer) func(ch channel.Model, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) error
+	EmitStartedAndEmit(ch channel.Model, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) error
 }
 
 // ProcessorImpl implements the Processor interface
@@ -49,22 +51,22 @@ func (p *ProcessorImpl) AllProvider() model.Provider[[]Model] {
 	return model.FixedProvider(GetChannelRegistry().ChannelServers(p.t))
 }
 
-func (p *ProcessorImpl) GetByWorld(worldId byte) ([]Model, error) {
+func (p *ProcessorImpl) GetByWorld(worldId world.Id) ([]Model, error) {
 	return p.ByWorldProvider(worldId)()
 }
 
 // ByWorldProvider returns all channel servers for a specific world
-func (p *ProcessorImpl) ByWorldProvider(worldId byte) model.Provider[[]Model] {
+func (p *ProcessorImpl) ByWorldProvider(worldId world.Id) model.Provider[[]Model] {
 	return model.FilteredProvider[Model](p.AllProvider(), model.Filters(ByWorldFilter(worldId)))
 }
 
-func (p *ProcessorImpl) GetById(worldId byte, channelId byte) (Model, error) {
-	return p.ByIdProvider(worldId, channelId)()
+func (p *ProcessorImpl) GetById(ch channel.Model) (Model, error) {
+	return p.ByIdProvider(ch)()
 }
 
 // ByIdProvider returns a specific channel server
-func (p *ProcessorImpl) ByIdProvider(worldId byte, channelId byte) model.Provider[Model] {
-	cs, err := GetChannelRegistry().ChannelServer(p.t, worldId, channelId)
+func (p *ProcessorImpl) ByIdProvider(ch channel.Model) model.Provider[Model] {
+	cs, err := GetChannelRegistry().ChannelServer(p.t, ch)
 	if err != nil {
 		return model.ErrorProvider[Model](err)
 	}
@@ -72,12 +74,12 @@ func (p *ProcessorImpl) ByIdProvider(worldId byte, channelId byte) model.Provide
 }
 
 // Register registers a new channel server
-func (p *ProcessorImpl) Register(worldId byte, channelId byte, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) (Model, error) {
-	p.l.Debugf("Registering world [%d] channel [%d] for tenant [%s].", worldId, channelId, p.t.String())
+func (p *ProcessorImpl) Register(ch channel.Model, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) (Model, error) {
+	p.l.Debugf("Registering world [%d] channel [%d] for tenant [%s].", ch, p.t.String())
 	m, err := NewModelBuilder().
 		SetId(uuid.New()).
-		SetWorldId(worldId).
-		SetChannelId(channelId).
+		SetWorldId(ch.WorldId()).
+		SetChannelId(ch.Id()).
 		SetIpAddress(ipAddress).
 		SetPort(port).
 		SetCurrentCapacity(currentCapacity).
@@ -90,9 +92,9 @@ func (p *ProcessorImpl) Register(worldId byte, channelId byte, ipAddress string,
 }
 
 // Unregister unregisters a channel server
-func (p *ProcessorImpl) Unregister(worldId byte, channelId byte) error {
-	p.l.Debugf("Unregistering world [%d] channel [%d] for tenant [%s].", worldId, channelId, p.t.String())
-	return GetChannelRegistry().RemoveByWorldAndChannel(p.t, worldId, channelId)
+func (p *ProcessorImpl) Unregister(ch channel.Model) error {
+	p.l.Debugf("Unregistering world [%d] channel [%d] for tenant [%s].", ch.WorldId(), ch.Id(), p.t.String())
+	return GetChannelRegistry().RemoveByWorldAndChannel(p.t, ch)
 }
 
 // RequestStatus requests the status of channels for a tenant
@@ -117,21 +119,21 @@ func (p *ProcessorImpl) RequestStatusAndEmit() error {
 }
 
 // EmitStarted returns a function that emits a channel started event to the message buffer
-func (p *ProcessorImpl) EmitStarted(mb *message.Buffer) func(worldId byte, channelId byte, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) error {
-	return func(worldId byte, channelId byte, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) error {
-		return mb.Put(channel2.EnvEventTopicStatus, channel3.StartedEventProvider(p.t, worldId, channelId, ipAddress, port, currentCapacity, maxCapacity))
+func (p *ProcessorImpl) EmitStarted(mb *message.Buffer) func(ch channel.Model, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) error {
+	return func(ch channel.Model, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) error {
+		return mb.Put(channel2.EnvEventTopicStatus, channel3.StartedEventProvider(p.t, ch, ipAddress, port, currentCapacity, maxCapacity))
 	}
 }
 
 // EmitStartedAndEmit emits a channel started event
-func (p *ProcessorImpl) EmitStartedAndEmit(worldId byte, channelId byte, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) error {
+func (p *ProcessorImpl) EmitStartedAndEmit(ch channel.Model, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) error {
 	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		return p.EmitStarted(buf)(worldId, channelId, ipAddress, port, currentCapacity, maxCapacity)
+		return p.EmitStarted(buf)(ch, ipAddress, port, currentCapacity, maxCapacity)
 	})
 }
 
 // ByWorldFilter creates a filter for channels by world ID
-func ByWorldFilter(id byte) model.Filter[Model] {
+func ByWorldFilter(id world.Id) model.Filter[Model] {
 	return func(m Model) bool {
 		return m.WorldId() == id
 	}

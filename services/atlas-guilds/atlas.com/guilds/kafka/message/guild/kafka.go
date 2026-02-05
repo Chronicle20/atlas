@@ -1,6 +1,9 @@
 package guild
 
 import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 )
 
@@ -26,10 +29,11 @@ type Command[E any] struct {
 }
 
 type RequestCreateBody struct {
-	WorldId   byte   `json:"worldId"`
-	ChannelId byte   `json:"channelId"`
-	MapId     uint32 `json:"mapId"`
-	Name      string `json:"name"`
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
+	MapId     _map.Id    `json:"mapId"`
+	Instance  uuid.UUID  `json:"instance"`
+	Name      string     `json:"name"`
 }
 
 type CreationAgreementBody struct {
@@ -71,13 +75,13 @@ type ChangeMemberTitleBody struct {
 }
 
 type RequestDisbandBody struct {
-	WorldId   byte `json:"worldId"`
-	ChannelId byte `json:"channelId"`
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
 }
 
 type RequestCapacityIncreaseBody struct {
-	WorldId   byte `json:"worldId"`
-	ChannelId byte `json:"channelId"`
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
 }
 
 const (
@@ -98,7 +102,7 @@ const (
 
 type StatusEvent[E any] struct {
 	TransactionId uuid.UUID `json:"transactionId"`
-	WorldId       byte      `json:"worldId"`
+	WorldId       world.Id  `json:"worldId"`
 	GuildId       uint32    `json:"guildId"`
 	Type          string    `json:"type"`
 	Body          E         `json:"body"`

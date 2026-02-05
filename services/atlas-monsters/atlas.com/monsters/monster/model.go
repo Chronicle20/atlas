@@ -2,6 +2,12 @@ package monster
 
 import (
 	"math"
+
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
 )
 
 type DamageSummary struct {
@@ -14,9 +20,10 @@ type DamageSummary struct {
 
 type Model struct {
 	uniqueId           uint32
-	worldId            byte
-	channelId          byte
-	mapId              uint32
+	worldId            world.Id
+	channelId          channel.Id
+	mapId              _map.Id
+	instance           uuid.UUID
 	maxHp              uint32
 	hp                 uint32
 	maxMp              uint32
@@ -36,12 +43,13 @@ type entry struct {
 	Damage      uint32
 }
 
-func NewMonster(worldId byte, channelId byte, mapId uint32, uniqueId uint32, monsterId uint32, x int16, y int16, fh int16, stance byte, team int8, hp uint32, mp uint32) Model {
+func NewMonster(f field.Model, uniqueId uint32, monsterId uint32, x int16, y int16, fh int16, stance byte, team int8, hp uint32, mp uint32) Model {
 	return Model{
 		uniqueId:           uniqueId,
-		worldId:            worldId,
-		channelId:          channelId,
-		mapId:              mapId,
+		worldId:            f.WorldId(),
+		channelId:          f.ChannelId(),
+		mapId:              f.MapId(),
+		instance:           f.Instance(),
 		maxHp:              hp,
 		hp:                 hp,
 		maxMp:              mp,
@@ -61,16 +69,24 @@ func (m Model) UniqueId() uint32 {
 	return m.uniqueId
 }
 
-func (m Model) WorldId() byte {
+func (m Model) WorldId() world.Id {
 	return m.worldId
 }
 
-func (m Model) ChannelId() byte {
+func (m Model) ChannelId() channel.Id {
 	return m.channelId
 }
 
-func (m Model) MapId() uint32 {
+func (m Model) MapId() _map.Id {
 	return m.mapId
+}
+
+func (m Model) Instance() uuid.UUID {
+	return m.instance
+}
+
+func (m Model) Field() field.Model {
+	return field.NewBuilder(m.worldId, m.channelId, m.mapId).SetInstance(m.instance).Build()
 }
 
 func (m Model) Hp() uint32 {

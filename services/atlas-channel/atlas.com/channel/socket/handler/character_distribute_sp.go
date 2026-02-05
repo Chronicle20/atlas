@@ -15,6 +15,6 @@ func CharacterDistributeSpHandleFunc(l logrus.FieldLogger, ctx context.Context, 
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		updateTime := r.ReadUint32()
 		skillId := r.ReadUint32()
-		_ = character.NewProcessor(l, ctx).RequestDistributeSp(s.Map(), s.CharacterId(), updateTime, skillId, 1)
+		_ = character.NewProcessor(l, ctx).RequestDistributeSp(s.Field(), s.CharacterId(), updateTime, skillId, 1)
 	}
 }

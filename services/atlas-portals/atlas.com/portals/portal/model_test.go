@@ -4,6 +4,8 @@ import (
 	"atlas-portals/portal"
 	"atlas-portals/test"
 	"testing"
+
+	_map "github.com/Chronicle20/atlas-constants/map"
 )
 
 func TestModel_HasScript(t *testing.T) {
@@ -38,7 +40,7 @@ func TestModel_HasScript(t *testing.T) {
 func TestModel_HasTargetMap(t *testing.T) {
 	tests := []struct {
 		name        string
-		targetMapId uint32
+		targetMapId _map.Id
 		want        bool
 	}{
 		{"with target map", 100000000, true},

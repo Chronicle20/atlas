@@ -7,8 +7,7 @@ import (
 
 	reactorsaga "atlas-reactor-actions/saga"
 
-	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-script-core/operation"
 	"github.com/Chronicle20/atlas-script-core/saga"
 	"github.com/sirupsen/logrus"
@@ -16,9 +15,7 @@ import (
 
 // ReactorContext holds context information for reactor operation execution
 type ReactorContext struct {
-	WorldId        world.Id
-	ChannelId      channel.Id
-	MapId          uint32
+	Field          field.Model
 	ReactorId      uint32
 	Classification string
 	ReactorName    string
@@ -138,7 +135,7 @@ func (e *OperationExecutor) executeDropItems(rc ReactorContext, characterId uint
 	}
 
 	e.l.Debugf("Spawning reactor drops: reactor=%s (objectId=%d), map=%d, pos=(%d,%d), char=%d, type=%s, meso=%t, mesoChance=%d, mesoMin=%d, mesoMax=%d, minItems=%d",
-		rc.Classification, rc.ReactorId, rc.MapId, rc.X, rc.Y, characterId, dropType, mesoEnabled, mesoChance, mesoMin, mesoMax, minItems)
+		rc.Classification, rc.ReactorId, rc.Field.MapId(), rc.X, rc.Y, characterId, dropType, mesoEnabled, mesoChance, mesoMin, mesoMax, minItems)
 
 	s := saga.NewBuilder().
 		SetSagaType(saga.InventoryTransaction).
@@ -149,9 +146,10 @@ func (e *OperationExecutor) executeDropItems(rc ReactorContext, characterId uint
 			saga.SpawnReactorDrops,
 			saga.SpawnReactorDropsPayload{
 				CharacterId:    characterId,
-				WorldId:        rc.WorldId,
-				ChannelId:      rc.ChannelId,
-				MapId:          rc.MapId,
+				WorldId:        rc.Field.WorldId(),
+				ChannelId:      rc.Field.ChannelId(),
+				MapId:          rc.Field.MapId(),
+				Instance:       rc.Field.Instance(),
 				ReactorId:      rc.ReactorId,
 				Classification: rc.Classification,
 				X:              rc.X,
@@ -200,9 +198,10 @@ func (e *OperationExecutor) executeSpawnMonster(rc ReactorContext, characterId u
 			saga.SpawnMonster,
 			saga.SpawnMonsterPayload{
 				CharacterId: characterId,
-				WorldId:     rc.WorldId,
-				ChannelId:   rc.ChannelId,
-				MapId:       rc.MapId,
+				WorldId:     rc.Field.WorldId(),
+				ChannelId:   rc.Field.ChannelId(),
+				MapId:       rc.Field.MapId(),
+				Instance:    rc.Field.Instance(),
 				MonsterId:   uint32(monsterId),
 				X:           rc.X,
 				Y:           rc.Y,
@@ -239,7 +238,7 @@ func (e *OperationExecutor) executeWeakenAreaBoss(rc ReactorContext, characterId
 	message := params["message"]
 
 	e.l.Infof("WEAKEN_AREA_BOSS: reactor=%s, map=%d, monsterId=%s, message=%s",
-		rc.Classification, rc.MapId, monsterIdStr, message)
+		rc.Classification, rc.Field.MapId(), monsterIdStr, message)
 
 	// TODO: Create saga command for weakening boss
 	// This will need to interface with atlas-monsters service
@@ -256,7 +255,7 @@ func (e *OperationExecutor) executeMoveEnvironment(rc ReactorContext, characterI
 	value := params["value"]
 
 	e.l.Infof("MOVE_ENVIRONMENT: reactor=%s, map=%d, name=%s, value=%s",
-		rc.Classification, rc.MapId, name, value)
+		rc.Classification, rc.Field.MapId(), name, value)
 
 	// TODO: Create saga command for moving environment objects
 	// This will need to interface with atlas-channel or atlas-maps service
@@ -268,7 +267,7 @@ func (e *OperationExecutor) executeMoveEnvironment(rc ReactorContext, characterI
 // TODO: This needs a new saga action for mass monster killing
 func (e *OperationExecutor) executeKillAllMonsters(rc ReactorContext, characterId uint32, op operation.Model) error {
 	e.l.Infof("KILL_ALL_MONSTERS: reactor=%s, map=%d",
-		rc.Classification, rc.MapId)
+		rc.Classification, rc.Field.MapId())
 
 	// TODO: Create saga command for killing all monsters
 	// This will need to interface with atlas-monsters service
@@ -309,8 +308,8 @@ func (e *OperationExecutor) executeDropMessage(rc ReactorContext, characterId ui
 			saga.SendMessage,
 			saga.SendMessagePayload{
 				CharacterId: characterId,
-				WorldId:     rc.WorldId,
-				ChannelId:   rc.ChannelId,
+				WorldId:     rc.Field.WorldId(),
+				ChannelId:   rc.Field.ChannelId(),
 				MessageType: messageType,
 				Message:     message,
 			},

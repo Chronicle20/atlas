@@ -3,6 +3,8 @@ package saga
 import (
 	"atlas-npc-conversations/validation"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	scriptsaga "github.com/Chronicle20/atlas-script-core/saga"
 )
 
@@ -21,8 +23,8 @@ type (
 	AwardExperiencePayload       = scriptsaga.AwardExperiencePayload
 	AwardLevelPayload            = scriptsaga.AwardLevelPayload
 	AwardMesosPayload            = scriptsaga.AwardMesosPayload
-	DestroyAssetPayload            = scriptsaga.DestroyAssetPayload
-	DestroyAssetFromSlotPayload    = scriptsaga.DestroyAssetFromSlotPayload
+	DestroyAssetPayload          = scriptsaga.DestroyAssetPayload
+	DestroyAssetFromSlotPayload  = scriptsaga.DestroyAssetFromSlotPayload
 	ChangeJobPayload             = scriptsaga.ChangeJobPayload
 	CreateSkillPayload           = scriptsaga.CreateSkillPayload
 	UpdateSkillPayload           = scriptsaga.UpdateSkillPayload
@@ -41,56 +43,56 @@ type (
 	ExperienceDistributions      = scriptsaga.ExperienceDistributions
 
 	// Portal-specific payload types (re-exported for completeness)
-	PlayPortalSoundPayload  = scriptsaga.PlayPortalSoundPayload
-	UpdateAreaInfoPayload   = scriptsaga.UpdateAreaInfoPayload
-	ShowInfoPayload         = scriptsaga.ShowInfoPayload
-	ShowInfoTextPayload     = scriptsaga.ShowInfoTextPayload
-	ShowHintPayload         = scriptsaga.ShowHintPayload
+	PlayPortalSoundPayload = scriptsaga.PlayPortalSoundPayload
+	UpdateAreaInfoPayload  = scriptsaga.UpdateAreaInfoPayload
+	ShowInfoPayload        = scriptsaga.ShowInfoPayload
+	ShowInfoTextPayload    = scriptsaga.ShowInfoTextPayload
+	ShowHintPayload        = scriptsaga.ShowHintPayload
 )
 
 // ShowGuideHintPayload represents the payload required to show a pre-defined guide hint by ID.
 // This is local until added to atlas-script-core.
 type ShowGuideHintPayload struct {
-	CharacterId uint32 `json:"characterId"`
-	WorldId     byte   `json:"worldId"`
-	ChannelId   byte   `json:"channelId"`
-	HintId      uint32 `json:"hintId"`   // Pre-defined hint ID (maps to client's guide hint system)
-	Duration    uint32 `json:"duration"` // Duration in milliseconds (default 7000ms if 0)
+	CharacterId uint32     `json:"characterId"`
+	WorldId     world.Id   `json:"worldId"`
+	ChannelId   channel.Id `json:"channelId"`
+	HintId      uint32     `json:"hintId"`   // Pre-defined hint ID (maps to client's guide hint system)
+	Duration    uint32     `json:"duration"` // Duration in milliseconds (default 7000ms if 0)
 }
 
 // ShowIntroPayload represents the payload required to show an intro/direction effect to a character.
 // This is local until added to atlas-script-core.
 type ShowIntroPayload struct {
-	CharacterId uint32 `json:"characterId"`
-	WorldId     byte   `json:"worldId"`
-	ChannelId   byte   `json:"channelId"`
-	Path        string `json:"path"` // Path to the intro effect (e.g., "Effect/Direction1.img/aranTutorial/ClickPoleArm")
+	CharacterId uint32     `json:"characterId"`
+	WorldId     world.Id   `json:"worldId"`
+	ChannelId   channel.Id `json:"channelId"`
+	Path        string     `json:"path"` // Path to the intro effect (e.g., "Effect/Direction1.img/aranTutorial/ClickPoleArm")
 }
 
 // SetHPPayload represents the payload required to set a character's HP to an absolute value.
 // This is local until added to atlas-script-core.
 type SetHPPayload struct {
-	CharacterId uint32 `json:"characterId"`
-	WorldId     byte   `json:"worldId"`
-	ChannelId   byte   `json:"channelId"`
-	Amount      uint16 `json:"amount"`
+	CharacterId uint32     `json:"characterId"`
+	WorldId     world.Id   `json:"worldId"`
+	ChannelId   channel.Id `json:"channelId"`
+	Amount      uint16     `json:"amount"`
 }
 
 // ResetStatsPayload represents the payload required to reset a character's stats.
 // This is used during job advancement to reset AP distribution.
 type ResetStatsPayload struct {
-	CharacterId uint32 `json:"characterId"`
-	WorldId     byte   `json:"worldId"`
-	ChannelId   byte   `json:"channelId"`
+	CharacterId uint32     `json:"characterId"`
+	WorldId     world.Id   `json:"worldId"`
+	ChannelId   channel.Id `json:"channelId"`
 }
 
 // StartQuestPayload represents the payload required to start a quest.
 // This is local until added to atlas-script-core (requires WorldId field).
 type StartQuestPayload struct {
-	CharacterId uint32 `json:"characterId"`
-	WorldId     byte   `json:"worldId"`
-	QuestId     uint32 `json:"questId"`
-	NpcId       uint32 `json:"npcId"`
+	CharacterId uint32   `json:"characterId"`
+	WorldId     world.Id `json:"worldId"`
+	QuestId     uint32   `json:"questId"`
+	NpcId       uint32   `json:"npcId"`
 }
 
 // Re-export constants from atlas-script-core/saga
@@ -142,8 +144,8 @@ const (
 	// Character stat actions (local definition until added to atlas-script-core)
 	ShowGuideHint Action = "show_guide_hint"
 	ShowIntro     Action = "show_intro"
-	SetHP      Action = "set_hp"
-	ResetStats Action = "reset_stats"
+	SetHP         Action = "set_hp"
+	ResetStats    Action = "reset_stats"
 )
 
 // ValidateCharacterStatePayload uses the NPC service's validation.ConditionInput

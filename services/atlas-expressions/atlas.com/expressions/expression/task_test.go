@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 )
@@ -53,7 +54,8 @@ func TestRevertTask_Run_NoExpiredExpressions(t *testing.T) {
 	ten := setupTestTenant(t)
 
 	// Add a non-expired expression
-	r.add(ten, 1000, 0, 1, 100000000, 5)
+	f := field.NewBuilder(0, 1, 100000000).Build()
+	r.add(ten, 1000, f, 5)
 
 	// Run should not panic and expression should still exist
 	task.Run()
@@ -73,7 +75,8 @@ func TestRevertTask_Run_WithExpiredExpressions(t *testing.T) {
 	ten := setupTestTenant(t)
 
 	// Add an expression
-	r.add(ten, 1000, 0, 1, 100000000, 5)
+	f := field.NewBuilder(0, 1, 100000000).Build()
+	r.add(ten, 1000, f, 5)
 
 	// Manually expire it
 	r.lock.Lock()
@@ -82,9 +85,7 @@ func TestRevertTask_Run_WithExpiredExpressions(t *testing.T) {
 		expired := Model{
 			tenant:      m.tenant,
 			characterId: m.characterId,
-			worldId:     m.worldId,
-			channelId:   m.channelId,
-			mapId:       m.mapId,
+			field:       m.field,
 			expression:  m.expression,
 			expiration:  time.Now().Add(-1 * time.Second),
 		}
@@ -111,8 +112,9 @@ func TestRevertTask_Run_MixedExpiredAndNonExpired(t *testing.T) {
 	ten := setupTestTenant(t)
 
 	// Add expressions
-	r.add(ten, 1000, 0, 1, 100000000, 5)
-	r.add(ten, 2000, 0, 1, 100000000, 10)
+	f := field.NewBuilder(0, 1, 100000000).Build()
+	r.add(ten, 1000, f, 5)
+	r.add(ten, 2000, f, 10)
 
 	// Manually expire only one
 	r.lock.Lock()
@@ -121,9 +123,7 @@ func TestRevertTask_Run_MixedExpiredAndNonExpired(t *testing.T) {
 		expired := Model{
 			tenant:      m.tenant,
 			characterId: m.characterId,
-			worldId:     m.worldId,
-			channelId:   m.channelId,
-			mapId:       m.mapId,
+			field:       m.field,
 			expression:  m.expression,
 			expiration:  time.Now().Add(-1 * time.Second),
 		}

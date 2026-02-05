@@ -1,5 +1,7 @@
 package thread
 
+import "github.com/Chronicle20/atlas-constants/world"
+
 const (
 	EnvCommandTopic = "COMMAND_TOPIC_GUILD_THREAD"
 
@@ -57,12 +59,12 @@ const (
 )
 
 type StatusEvent[E any] struct {
-	WorldId  byte   `json:"worldId"`
-	GuildId  uint32 `json:"guildId"`
-	ThreadId uint32 `json:"threadId"`
-	ActorId  uint32 `json:"actorId"`
-	Type     string `json:"type"`
-	Body     E      `json:"body"`
+	WorldId  world.Id `json:"worldId"`
+	GuildId  uint32   `json:"guildId"`
+	ThreadId uint32   `json:"threadId"`
+	ActorId  uint32   `json:"actorId"`
+	Type     string   `json:"type"`
+	Body     E        `json:"body"`
 }
 
 type CreatedStatusEventBody struct {

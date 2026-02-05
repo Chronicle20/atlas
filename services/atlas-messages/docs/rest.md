@@ -75,9 +75,9 @@ Resource type: `skills`
 
 ### atlas-maps
 
-#### GET /worlds/{worldId}/channels/{channelId}/maps/{mapId}/characters
+#### GET /worlds/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/characters
 
-Retrieves character IDs in a map.
+Retrieves character IDs in a map instance.
 
 **Parameters**
 
@@ -86,6 +86,7 @@ Retrieves character IDs in a map.
 | worldId | byte | path | World identifier |
 | channelId | byte | path | Channel identifier |
 | mapId | uint32 | path | Map identifier |
+| instanceId | uuid | path | Instance identifier (use nil UUID for non-instanced maps) |
 
 **Response Model**
 

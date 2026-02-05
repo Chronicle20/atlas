@@ -15,6 +15,6 @@ func CharacterDistributeApHandleFunc(l logrus.FieldLogger, ctx context.Context, 
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		updateTime := r.ReadUint32()
 		dwFlag := r.ReadUint32()
-		_ = character.NewProcessor(l, ctx).RequestDistributeAp(s.Map(), s.CharacterId(), updateTime, []character.DistributePacket{{Flag: dwFlag, Value: 1}})
+		_ = character.NewProcessor(l, ctx).RequestDistributeAp(s.Field(), s.CharacterId(), updateTime, []character.DistributePacket{{Flag: dwFlag, Value: 1}})
 	}
 }

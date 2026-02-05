@@ -4,6 +4,7 @@ import (
 	"atlas-rates/rate"
 	"testing"
 
+	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 )
@@ -15,7 +16,8 @@ func createTestTenant() tenant.Model {
 
 func TestNewModel(t *testing.T) {
 	ten := createTestTenant()
-	m := NewModel(ten, 1, 2, 12345)
+	ch := channel.NewModel(1, 2)
+	m := NewModel(ten, ch, 12345)
 
 	if m.Tenant() != ten {
 		t.Errorf("Tenant() = %v, want %v", m.Tenant(), ten)
@@ -36,7 +38,7 @@ func TestNewModel(t *testing.T) {
 
 func TestModelComputedRates_Empty(t *testing.T) {
 	ten := createTestTenant()
-	m := NewModel(ten, 1, 2, 12345)
+	m := NewModel(ten, channel.NewModel(1, 2), 12345)
 	computed := m.ComputedRates()
 
 	if computed.ExpRate() != 1.0 {
@@ -55,7 +57,7 @@ func TestModelComputedRates_Empty(t *testing.T) {
 
 func TestModelWithFactor_AddNew(t *testing.T) {
 	ten := createTestTenant()
-	m := NewModel(ten, 1, 2, 12345)
+	m := NewModel(ten, channel.NewModel(1, 2), 12345)
 
 	f := rate.NewFactor("world", rate.TypeExp, 2.0)
 	m2 := m.WithFactor(f)
@@ -77,7 +79,7 @@ func TestModelWithFactor_AddNew(t *testing.T) {
 
 func TestModelWithFactor_ReplaceSameSourceAndType(t *testing.T) {
 	ten := createTestTenant()
-	m := NewModel(ten, 1, 2, 12345)
+	m := NewModel(ten, channel.NewModel(1, 2), 12345)
 
 	f1 := rate.NewFactor("world", rate.TypeExp, 2.0)
 	m = m.WithFactor(f1)
@@ -98,7 +100,7 @@ func TestModelWithFactor_ReplaceSameSourceAndType(t *testing.T) {
 
 func TestModelWithFactor_DifferentSources(t *testing.T) {
 	ten := createTestTenant()
-	m := NewModel(ten, 1, 2, 12345)
+	m := NewModel(ten, channel.NewModel(1, 2), 12345)
 
 	f1 := rate.NewFactor("world", rate.TypeExp, 2.0)
 	f2 := rate.NewFactor("buff:2311003", rate.TypeExp, 1.5)
@@ -116,7 +118,7 @@ func TestModelWithFactor_DifferentSources(t *testing.T) {
 
 func TestModelWithFactor_SameSourceDifferentTypes(t *testing.T) {
 	ten := createTestTenant()
-	m := NewModel(ten, 1, 2, 12345)
+	m := NewModel(ten, channel.NewModel(1, 2), 12345)
 
 	f1 := rate.NewFactor("world", rate.TypeExp, 2.0)
 	f2 := rate.NewFactor("world", rate.TypeMeso, 1.5)
@@ -136,7 +138,7 @@ func TestModelWithFactor_SameSourceDifferentTypes(t *testing.T) {
 
 func TestModelWithoutFactor_RemoveExisting(t *testing.T) {
 	ten := createTestTenant()
-	m := NewModel(ten, 1, 2, 12345)
+	m := NewModel(ten, channel.NewModel(1, 2), 12345)
 
 	f := rate.NewFactor("world", rate.TypeExp, 2.0)
 	m = m.WithFactor(f)
@@ -160,7 +162,7 @@ func TestModelWithoutFactor_RemoveExisting(t *testing.T) {
 
 func TestModelWithoutFactor_RemoveNonExistent(t *testing.T) {
 	ten := createTestTenant()
-	m := NewModel(ten, 1, 2, 12345)
+	m := NewModel(ten, channel.NewModel(1, 2), 12345)
 
 	f := rate.NewFactor("world", rate.TypeExp, 2.0)
 	m = m.WithFactor(f)
@@ -176,7 +178,7 @@ func TestModelWithoutFactor_RemoveNonExistent(t *testing.T) {
 
 func TestModelWithoutFactor_PartialMatch(t *testing.T) {
 	ten := createTestTenant()
-	m := NewModel(ten, 1, 2, 12345)
+	m := NewModel(ten, channel.NewModel(1, 2), 12345)
 
 	f := rate.NewFactor("world", rate.TypeExp, 2.0)
 	m = m.WithFactor(f)
@@ -199,7 +201,7 @@ func TestModelWithoutFactor_PartialMatch(t *testing.T) {
 
 func TestModelWithoutFactorsBySource_RemoveAll(t *testing.T) {
 	ten := createTestTenant()
-	m := NewModel(ten, 1, 2, 12345)
+	m := NewModel(ten, channel.NewModel(1, 2), 12345)
 
 	f1 := rate.NewFactor("world", rate.TypeExp, 2.0)
 	f2 := rate.NewFactor("world", rate.TypeMeso, 1.5)
@@ -221,7 +223,7 @@ func TestModelWithoutFactorsBySource_RemoveAll(t *testing.T) {
 
 func TestModelWithoutFactorsBySource_NoMatch(t *testing.T) {
 	ten := createTestTenant()
-	m := NewModel(ten, 1, 2, 12345)
+	m := NewModel(ten, channel.NewModel(1, 2), 12345)
 
 	f := rate.NewFactor("world", rate.TypeExp, 2.0)
 	m = m.WithFactor(f)
@@ -235,7 +237,7 @@ func TestModelWithoutFactorsBySource_NoMatch(t *testing.T) {
 
 func TestModelFactors_DefensiveCopy(t *testing.T) {
 	ten := createTestTenant()
-	m := NewModel(ten, 1, 2, 12345)
+	m := NewModel(ten, channel.NewModel(1, 2), 12345)
 
 	f := rate.NewFactor("world", rate.TypeExp, 2.0)
 	m = m.WithFactor(f)

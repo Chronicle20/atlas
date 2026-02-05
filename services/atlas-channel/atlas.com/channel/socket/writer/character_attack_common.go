@@ -71,7 +71,7 @@ func WriteCommonAttackBody(l logrus.FieldLogger) func(ctx context.Context) func(
 					}
 
 					if weaponId > 0 {
-						nMastery = computeMasteryForWeapon(l)(ctx)(weaponId, job.Id(c.JobId()), skill2.Id(ai.SkillId()), c.Skills())
+						nMastery = computeMasteryForWeapon(l)(ctx)(weaponId, c.JobId(), skill2.Id(ai.SkillId()), c.Skills())
 					}
 
 					w.WriteByte(nMastery) // mastery

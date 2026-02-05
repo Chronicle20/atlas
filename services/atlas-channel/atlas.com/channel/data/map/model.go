@@ -4,7 +4,7 @@ import _map "github.com/Chronicle20/atlas-constants/map"
 
 type Model struct {
 	clock       bool
-	returnMapId uint32
+	returnMapId _map.Id
 	fieldLimit  uint32
 	town        bool
 }
@@ -14,7 +14,7 @@ func (m Model) Clock() bool {
 }
 
 func (m Model) ReturnMapId() _map.Id {
-	return _map.Id(m.returnMapId)
+	return m.returnMapId
 }
 
 func (m Model) FieldLimit() uint32 {

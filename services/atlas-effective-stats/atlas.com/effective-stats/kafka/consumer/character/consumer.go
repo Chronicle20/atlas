@@ -7,7 +7,7 @@ import (
 	"atlas-effective-stats/stat"
 	"context"
 
-	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -64,10 +64,8 @@ func handleStatChanged(l logrus.FieldLogger, ctx context.Context, e character2.S
 	base := extractBaseStats(e.Body.Values)
 
 	// Update base stats in the registry
-	worldId := byte(e.WorldId)
-	channelId := byte(e.Body.ChannelId)
-
-	if err := p.SetBaseStats(worldId, channelId, e.CharacterId, base); err != nil {
+	ch := channel.NewModel(e.WorldId, e.Body.ChannelId)
+	if err := p.SetBaseStats(ch, e.CharacterId, base); err != nil {
 		l.WithError(err).Errorf("Unable to set base stats for character [%d].", e.CharacterId)
 	}
 }
@@ -109,9 +107,4 @@ func extractUint16(values map[string]interface{}, key string) uint16 {
 	default:
 		return 0
 	}
-}
-
-// worldIdToByte converts a world.Id to byte for the processor
-func worldIdToByte(w world.Id) byte {
-	return byte(w)
 }

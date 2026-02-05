@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/world"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -227,7 +226,8 @@ func TestProcessorImpl_Discard(t *testing.T) {
 
 	// Discard notes 1 and 2
 	mb2 := message.NewBuffer()
-	err = np.Discard(mb2)(world.Id(0))(channel.Id(0))(characterId)([]uint32{n1.Id(), n2.Id()})
+	ch := channel.NewModel(0, 0)
+	err = np.Discard(mb2)(ch)(characterId)([]uint32{n1.Id(), n2.Id()})
 	if err != nil {
 		t.Fatalf("Failed to discard notes: %v", err)
 	}
@@ -271,7 +271,8 @@ func TestProcessorImpl_Discard_SkipsOtherCharacterNotes(t *testing.T) {
 
 	// Try to discard both notes as character 1 (should skip other's note)
 	mb2 := message.NewBuffer()
-	err = np.Discard(mb2)(world.Id(0))(channel.Id(0))(characterId)([]uint32{n1.Id(), n2.Id()})
+	ch := channel.NewModel(0, 0)
+	err = np.Discard(mb2)(ch)(characterId)([]uint32{n1.Id(), n2.Id()})
 	if err != nil {
 		t.Fatalf("Failed to discard notes: %v", err)
 	}

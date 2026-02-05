@@ -13,6 +13,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
+	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -166,25 +168,20 @@ func (ctx ValidationContext) ItemProcessor() item.Processor {
 
 // GetPlayerCountInMap returns the player count for a given map
 // Returns 0 if map processor is not available or on error (graceful degradation)
-func (ctx ValidationContext) GetPlayerCountInMap(worldId byte, channelId byte, mapId uint32) int {
+func (ctx ValidationContext) GetPlayerCountInMap(field field.Model) int {
 	// If no map processor available, return 0 (graceful degradation)
 	if ctx.mapP == nil {
 		if ctx.l != nil {
-			ctx.l.Warnf("Map processor not available, returning 0 for map [%d]", mapId)
+			ctx.l.Warnf("Map processor not available, returning 0 for map [%d]", field.MapId())
 		}
 		return 0
 	}
 
-	// If worldId is not set, try to get from character
-	if worldId == 0 {
-		worldId = byte(ctx.character.WorldId())
-	}
-
 	// Query player count
-	count, err := ctx.mapP.GetPlayerCountInMap(worldId, channelId, mapId)
+	count, err := ctx.mapP.GetPlayerCountInMap(field)
 	if err != nil {
 		if ctx.l != nil {
-			ctx.l.WithError(err).Warnf("Failed to get player count for map [%d], using 0", mapId)
+			ctx.l.WithError(err).Warnf("Failed to get player count for map [%d], using 0", field)
 		}
 		return 0
 	}

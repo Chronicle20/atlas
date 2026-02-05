@@ -4,7 +4,7 @@ import (
 	reactor2 "atlas-channel/kafka/message/reactor"
 	"atlas-channel/kafka/producer"
 	"context"
-	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
@@ -23,15 +23,15 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 	return p
 }
 
-func (p *Processor) InMapModelProvider(m _map.Model) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestInMap(m), Extract, model.Filters[Model]())
+func (p *Processor) InMapModelProvider(f field.Model) model.Provider[[]Model] {
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestInMap(f), Extract, model.Filters[Model]())
 }
 
-func (p *Processor) ForEachInMap(m _map.Model, f model.Operator[Model]) error {
-	return model.ForEachSlice(p.InMapModelProvider(m), f, model.ParallelExecute())
+func (p *Processor) ForEachInMap(f field.Model, o model.Operator[Model]) error {
+	return model.ForEachSlice(p.InMapModelProvider(f), o, model.ParallelExecute())
 }
 
-func (p *Processor) Hit(m _map.Model, reactorId uint32, characterId uint32, stance uint16, skillId uint32) error {
+func (p *Processor) Hit(f field.Model, reactorId uint32, characterId uint32, stance uint16, skillId uint32) error {
 	p.l.Debugf("Sending hit command for reactor [%d]. CharacterId [%d]. Stance [%d]. SkillId [%d].", reactorId, characterId, stance, skillId)
-	return producer.ProviderImpl(p.l)(p.ctx)(reactor2.EnvCommandTopic)(HitCommandProvider(m, reactorId, characterId, stance, skillId))
+	return producer.ProviderImpl(p.l)(p.ctx)(reactor2.EnvCommandTopic)(HitCommandProvider(f, reactorId, characterId, stance, skillId))
 }

@@ -17,6 +17,6 @@ func FameChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Pr
 		mode := r.ReadInt8()
 		amount := 2*mode - 1
 		l.Debugf("Character [%d] attempting to change [%d] fame by amount [%d]", s.CharacterId(), tid, amount)
-		_ = fame.NewProcessor(l, ctx).RequestChange(s.Map(), s.CharacterId(), tid, amount)
+		_ = fame.NewProcessor(l, ctx).RequestChange(s.Field(), s.CharacterId(), tid, amount)
 	}
 }

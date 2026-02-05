@@ -18,6 +18,7 @@ type Command[E any] struct {
 	WorldId       world.Id   `json:"worldId"`
 	ChannelId     channel.Id `json:"channelId"`
 	MapId         _map.Id    `json:"mapId"`
+	Instance      uuid.UUID  `json:"instance"`
 	CharacterId   uint32     `json:"characterId"`
 	Type          string     `json:"type"`
 	Body          E          `json:"body"`
@@ -41,6 +42,7 @@ type StatusEvent[E any] struct {
 	WorldId       world.Id   `json:"worldId"`
 	ChannelId     channel.Id `json:"channelId"`
 	MapId         _map.Id    `json:"mapId"`
+	Instance      uuid.UUID  `json:"instance"`
 	CharacterId   uint32     `json:"characterId"`
 	Type          string     `json:"type"`
 	Body          E          `json:"body"`

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 )
 
@@ -17,7 +18,7 @@ type FamilyMember struct {
 	rep         uint32
 	dailyRep    uint32
 	level       uint16
-	world       byte
+	world       world.Id
 	createdAt   time.Time
 	updatedAt   time.Time
 }
@@ -58,7 +59,7 @@ func (fm FamilyMember) Level() uint16 {
 	return fm.level
 }
 
-func (fm FamilyMember) World() byte {
+func (fm FamilyMember) World() world.Id {
 	return fm.world
 }
 
@@ -112,7 +113,7 @@ func (fm FamilyMember) ValidateLevelDifference(otherLevel uint16) bool {
 }
 
 // IsSameWorld returns true if the member is on the same world
-func (fm FamilyMember) IsSameWorld(world byte) bool {
+func (fm FamilyMember) IsSameWorld(world world.Id) bool {
 	return fm.world == world
 }
 
@@ -136,7 +137,7 @@ type Builder struct {
 	rep         uint32
 	dailyRep    uint32
 	level       uint16
-	world       byte
+	world       world.Id
 	createdAt   time.Time
 	updatedAt   time.Time
 }

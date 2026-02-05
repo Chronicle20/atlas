@@ -3,12 +3,12 @@ package handler
 import (
 	"atlas-channel/character"
 	"atlas-channel/invite"
-	invite2 "atlas-channel/kafka/message/invite"
 	"atlas-channel/party"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
 
+	invite2 "github.com/Chronicle20/atlas-constants/invite"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
@@ -37,7 +37,7 @@ func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writ
 		}
 		if isPartyOperation(l)(readerOptions, op, PartyOperationJoin) {
 			partyId := r.ReadUint32()
-			err := invite.NewProcessor(l, ctx).Accept(s.CharacterId(), s.WorldId(), invite2.InviteTypeParty, partyId)
+			err := invite.NewProcessor(l, ctx).Accept(s.CharacterId(), s.WorldId(), string(invite2.TypeParty), partyId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to issue invite acceptance command for character [%d].", s.CharacterId())
 			}
@@ -92,7 +92,7 @@ func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writ
 				}
 			}
 
-			os, err := session.NewProcessor(l, ctx).GetByCharacterId(s.WorldId(), s.ChannelId())(cs.Id())
+			os, err := session.NewProcessor(l, ctx).GetByCharacterId(s.Field().Channel())(cs.Id())
 			if err != nil || s.WorldId() != os.WorldId() || s.ChannelId() != os.ChannelId() {
 				l.WithError(err).Errorf("Character [%d] not in channel. Cannot invite to party.", cs.Id())
 				err = session.Announce(l)(ctx)(wp)(writer.PartyOperation)(writer.PartyErrorBody(l)("UNABLE_TO_FIND_THE_REQUESTED_CHARACTER_IN_THIS_CHANNEL", name))(s)

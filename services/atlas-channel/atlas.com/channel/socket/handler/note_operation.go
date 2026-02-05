@@ -7,6 +7,7 @@ import (
 	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-socket/request"
 	tenant "github.com/Chronicle20/atlas-tenant"
@@ -36,7 +37,7 @@ func NoteOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 				return
 			}
 
-			err = np.SendNote(s.WorldId(), s.ChannelId(), s.CharacterId(), tc.Id(), message, 1)
+			err = np.SendNote(s.Field().Channel(), s.CharacterId(), tc.Id(), message, 1)
 			if err != nil {
 				l.WithError(err).Errorf("Character [%d] unable to send note.", s.CharacterId())
 			}
@@ -72,7 +73,7 @@ func NoteOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 				noteIds = append(noteIds, id)
 			}
 
-			err := np.DiscardNotes(s.WorldId(), s.ChannelId(), s.CharacterId(), noteIds)
+			err := np.DiscardNotes(s.Field().Channel(), s.CharacterId(), noteIds)
 			if err != nil {
 				l.WithError(err).Errorf("Character [%d] unable to discard notes.", s.CharacterId())
 			}

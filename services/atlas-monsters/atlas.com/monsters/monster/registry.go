@@ -2,6 +2,8 @@ package monster
 
 import (
 	"errors"
+
+	"github.com/Chronicle20/atlas-constants/field"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"sync"
 )
@@ -59,8 +61,8 @@ func (r *Registry) getOrCreateAllocator(t tenant.Model) *TenantIdAllocator {
 	return allocator
 }
 
-func (r *Registry) CreateMonster(tenant tenant.Model, worldId byte, channelId byte, mapId uint32, monsterId uint32, x int16, y int16, fh int16, stance byte, team int8, hp uint32, mp uint32) Model {
-	mapKey := MapKey{Tenant: tenant, WorldId: worldId, ChannelId: channelId, MapId: mapId}
+func (r *Registry) CreateMonster(tenant tenant.Model, f field.Model, monsterId uint32, x int16, y int16, fh int16, stance byte, team int8, hp uint32, mp uint32) Model {
+	mapKey := NewMapKey(tenant, f)
 
 	mapLock := r.getMapLock(mapKey)
 	mapLock.Lock()
@@ -68,7 +70,7 @@ func (r *Registry) CreateMonster(tenant tenant.Model, worldId byte, channelId by
 
 	uniqueId := r.getOrCreateAllocator(tenant).Allocate()
 
-	m := NewMonster(worldId, channelId, mapId, uniqueId, monsterId, x, y, fh, stance, team, hp, mp)
+	m := NewMonster(f, uniqueId, monsterId, x, y, fh, stance, team, hp, mp)
 
 	monKey := MonsterKey{Tenant: tenant, MonsterId: m.UniqueId()}
 	r.mapMonsterReg[mapKey] = append(r.mapMonsterReg[mapKey], monKey)
@@ -91,8 +93,8 @@ func (r *Registry) GetMonster(tenant tenant.Model, uniqueId uint32) (Model, erro
 	return Model{}, errors.New("monster not found")
 }
 
-func (r *Registry) GetMonstersInMap(tenant tenant.Model, worldId byte, channelId byte, mapId uint32) []Model {
-	mapKey := NewMapKey(tenant, worldId, channelId, mapId)
+func (r *Registry) GetMonstersInMap(tenant tenant.Model, f field.Model) []Model {
+	mapKey := NewMapKey(tenant, f)
 	mapLock := r.getMapLock(mapKey)
 	mapLock.RLock()
 	defer mapLock.RUnlock()
@@ -183,7 +185,7 @@ func (r *Registry) RemoveMonster(tenant tenant.Model, uniqueId uint32) (Model, e
 		r.monsterLock.RUnlock()
 		return Model{}, errors.New("monster not found")
 	}
-	mapKey := NewMapKey(tenant, val.WorldId(), val.ChannelId(), val.MapId())
+	mapKey := NewMapKey(tenant, val.Field())
 	r.monsterLock.RUnlock()
 
 	// Acquire locks in same order as CreateMonster: mapLock -> monsterLock

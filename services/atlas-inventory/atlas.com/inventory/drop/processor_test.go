@@ -8,8 +8,10 @@ import (
 	"testing"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 )
@@ -19,8 +21,8 @@ func testLogger() logrus.FieldLogger {
 	return l
 }
 
-func testMapModel() _map.Model {
-	return _map.NewModel(world.Id(0))(channel.Id(0))(_map.Id(100000000))
+func testFieldModel() field.Model {
+	return field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(100000000)).SetInstance(uuid.Nil).Build()
 }
 
 func TestCreateForEquipment(t *testing.T) {
@@ -29,7 +31,7 @@ func TestCreateForEquipment(t *testing.T) {
 	p := drop.NewProcessor(l, ctx)
 	buf := message.NewBuffer()
 
-	m := testMapModel()
+	m := testFieldModel()
 	itemId := uint32(1000000)
 	equipmentId := uint32(123)
 	dropType := byte(1)
@@ -63,7 +65,7 @@ func TestCreateForItem(t *testing.T) {
 	p := drop.NewProcessor(l, ctx)
 	buf := message.NewBuffer()
 
-	m := testMapModel()
+	m := testFieldModel()
 	itemId := uint32(2000000)
 	quantity := uint32(10)
 	dropType := byte(0)
@@ -97,7 +99,7 @@ func TestCancelReservation(t *testing.T) {
 	p := drop.NewProcessor(l, ctx)
 	buf := message.NewBuffer()
 
-	m := testMapModel()
+	m := testFieldModel()
 	dropId := uint32(999)
 	characterId := uint32(123)
 
@@ -127,7 +129,7 @@ func TestRequestPickUp(t *testing.T) {
 	p := drop.NewProcessor(l, ctx)
 	buf := message.NewBuffer()
 
-	m := testMapModel()
+	m := testFieldModel()
 	dropId := uint32(888)
 	characterId := uint32(456)
 
@@ -157,7 +159,7 @@ func TestMultipleOperations(t *testing.T) {
 	p := drop.NewProcessor(l, ctx)
 	buf := message.NewBuffer()
 
-	m := testMapModel()
+	m := testFieldModel()
 
 	// Perform multiple operations on the same buffer
 	err := p.CreateForItem(buf)(m, 1000000, 5, 0, 100, 200, 123)

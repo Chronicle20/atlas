@@ -3,17 +3,19 @@ package reactor
 import (
 	"atlas-maps/rest"
 	"fmt"
+
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 
 const (
-	Resource = "worlds/%d/channels/%d/maps/%d/reactors"
+	Resource = "worlds/%d/channels/%d/maps/%d/instances/%s/reactors"
 )
 
 func getBaseRequest() string {
 	return requests.RootUrl("REACTORS")
 }
 
-func requestInMap(worldId byte, channelId byte, mapId uint32) requests.Request[[]RestModel] {
-	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+Resource, worldId, channelId, mapId))
+func requestInMap(field field.Model) requests.Request[[]RestModel] {
+	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+Resource, field.WorldId(), field.ChannelId(), field.MapId(), field.Instance()))
 }

@@ -46,6 +46,6 @@ func PetDropPickUpHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer
 
 		l.Debugf("Character [%d] pet [%d] attempting to pick up drop [%d]. fieldKey [%d], updateTime [%d], x [%d], y[%d], crc [%d], bPickupOthers [%t], bSweepForDrop [%t], bLongRange [%t], ownerX [%d], ownerY [%d], posCrc [%d], rectCrc[%d].", s.CharacterId(), petId, dropId, fieldKey, updateTime, x, y, crc, bPickupOthers, bSweepForDrop, bLongRange, ownerX, ownerY, posCrc, rectCrc)
 
-		_ = drop.NewProcessor(l, ctx).RequestReservation(s.Map(), dropId, s.CharacterId(), x, y, p.Slot())
+		_ = drop.NewProcessor(l, ctx).RequestReservation(s.Field(), dropId, s.CharacterId(), x, y, p.Slot())
 	}
 }

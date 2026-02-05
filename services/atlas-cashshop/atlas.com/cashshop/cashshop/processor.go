@@ -105,9 +105,9 @@ func (p *ProcessorImpl) Purchase(mb *message.Buffer) func(characterId uint32, cu
 			}
 
 			var compartmentType compartment.CompartmentType
-			if job.GetType(job.Id(c.JobId())) == job.TypeExplorer {
+			if job.GetType(c.JobId()) == job.TypeExplorer {
 				compartmentType = compartment.TypeExplorer
-			} else if job.GetType(job.Id(c.JobId())) == job.TypeCygnus {
+			} else if job.GetType(c.JobId()) == job.TypeCygnus {
 				compartmentType = compartment.TypeCygnus
 			} else {
 				compartmentType = compartment.TypeLegend

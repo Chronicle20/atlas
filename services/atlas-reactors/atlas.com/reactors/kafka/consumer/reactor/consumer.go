@@ -4,6 +4,8 @@ import (
 	consumer2 "atlas-reactors/kafka/consumer"
 	"atlas-reactors/reactor"
 	"context"
+
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -36,7 +38,8 @@ func handleCreate(l logrus.FieldLogger, ctx context.Context, c reactor.Command[r
 	}
 
 	t := tenant.MustFromContext(ctx)
-	b := reactor.NewModelBuilder(t, c.WorldId, c.ChannelId, c.MapId, c.Body.Classification, c.Body.Name).
+	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
+	b := reactor.NewModelBuilder(t, f, c.Body.Classification, c.Body.Name).
 		SetState(c.Body.State).
 		SetPosition(c.Body.X, c.Body.Y).
 		SetDelay(c.Body.Delay).

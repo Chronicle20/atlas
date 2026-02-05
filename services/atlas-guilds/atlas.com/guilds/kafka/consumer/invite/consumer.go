@@ -5,6 +5,7 @@ import (
 	consumer2 "atlas-guilds/kafka/consumer"
 	invite2 "atlas-guilds/kafka/message/invite"
 	"context"
+	"github.com/Chronicle20/atlas-constants/invite"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -35,14 +36,14 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 
 func handleAcceptedInvite(db *gorm.DB) message.Handler[invite2.StatusEvent[invite2.AcceptedEventBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e invite2.StatusEvent[invite2.AcceptedEventBody]) {
-		if e.Type != invite2.EventInviteStatusTypeAccepted {
+		if e.Type != invite.StatusTypeAccepted {
 			return
 		}
-		if e.InviteType != invite2.InviteTypeGuild {
+		if e.InviteType != invite.TypeGuild {
 			return
 		}
 
-		err := guild.NewProcessor(l, ctx, db).JoinAndEmit(e.ReferenceId, e.Body.TargetId, uuid.New())
+		err := guild.NewProcessor(l, ctx, db).JoinAndEmit(uint32(e.ReferenceId), uint32(e.Body.TargetId), uuid.New())
 		if err != nil {
 			l.WithError(err).Errorf("Character [%d] unable to join party [%d].", e.Body.TargetId, e.ReferenceId)
 		}

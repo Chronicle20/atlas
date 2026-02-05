@@ -1,9 +1,9 @@
 package quest
 
 import (
-	"atlas-quest/database"
 	dataquest "atlas-quest/data/quest"
 	"atlas-quest/data/validation"
+	"atlas-quest/database"
 	questmessage "atlas-quest/kafka/message/quest"
 	"atlas-quest/kafka/message/saga"
 	sagaproducer "atlas-quest/kafka/producer/saga"
@@ -23,14 +23,14 @@ import (
 )
 
 var (
-	ErrQuestAlreadyStarted      = errors.New("quest already started")
-	ErrQuestAlreadyCompleted    = errors.New("quest already completed")
-	ErrQuestNotStarted          = errors.New("quest not started")
-	ErrIntervalNotElapsed       = errors.New("interval has not elapsed since last completion")
-	ErrQuestExpired             = errors.New("quest has expired")
-	ErrStartRequirementsNotMet  = errors.New("start requirements not met")
-	ErrEndRequirementsNotMet    = errors.New("end requirements not met")
-	ErrValidationFailed         = errors.New("validation request failed")
+	ErrQuestAlreadyStarted     = errors.New("quest already started")
+	ErrQuestAlreadyCompleted   = errors.New("quest already completed")
+	ErrQuestNotStarted         = errors.New("quest not started")
+	ErrIntervalNotElapsed      = errors.New("interval has not elapsed since last completion")
+	ErrQuestExpired            = errors.New("quest has expired")
+	ErrStartRequirementsNotMet = errors.New("start requirements not met")
+	ErrEndRequirementsNotMet   = errors.New("end requirements not met")
+	ErrValidationFailed        = errors.New("validation request failed")
 )
 
 type Processor interface {
@@ -196,7 +196,7 @@ func (p *ProcessorImpl) startWithDefinition(transactionId uuid.UUID, characterId
 	}
 
 	// Emit quest started event
-	if err := p.eventEmitter.EmitQuestStarted(transactionId, characterId, byte(f.WorldId()), questId, updated.ProgressString()); err != nil {
+	if err := p.eventEmitter.EmitQuestStarted(transactionId, characterId, f.WorldId(), questId, updated.ProgressString()); err != nil {
 		p.l.WithError(err).Warnf("Unable to emit quest started event for quest [%d] character [%d].", questId, characterId)
 	}
 
@@ -332,7 +332,7 @@ func (p *ProcessorImpl) StartChained(transactionId uuid.UUID, characterId uint32
 	}
 
 	// Emit quest started event
-	if err := p.eventEmitter.EmitQuestStarted(transactionId, characterId, byte(f.WorldId()), questId, updated.ProgressString()); err != nil {
+	if err := p.eventEmitter.EmitQuestStarted(transactionId, characterId, f.WorldId(), questId, updated.ProgressString()); err != nil {
 		p.l.WithError(err).Warnf("Unable to emit quest started event for chained quest [%d] character [%d].", questId, characterId)
 	}
 
@@ -424,7 +424,7 @@ func (p *ProcessorImpl) Complete(transactionId uuid.UUID, characterId uint32, qu
 	}
 
 	// Emit quest completed event with awarded items
-	if err := p.eventEmitter.EmitQuestCompleted(transactionId, characterId, byte(f.WorldId()), questId, completedAt, awardedItems); err != nil {
+	if err := p.eventEmitter.EmitQuestCompleted(transactionId, characterId, f.WorldId(), questId, completedAt, awardedItems); err != nil {
 		p.l.WithError(err).Warnf("Unable to emit quest completed event for quest [%d] character [%d].", questId, characterId)
 	}
 
@@ -667,7 +667,7 @@ func (p *ProcessorImpl) arePrerequisiteQuestsMet(characterId uint32, questDef da
 
 func (p *ProcessorImpl) CheckAutoStart(characterId uint32, f field.Model) ([]uint32, error) {
 	// Fetch all auto-start quests from atlas-data
-	autoStartQuests, err := p.dataProcessor.GetAutoStartQuests(uint32(f.MapId()))
+	autoStartQuests, err := p.dataProcessor.GetAutoStartQuests(f.MapId())
 	if err != nil {
 		p.l.WithError(err).Warnf("Unable to fetch auto-start quests for map [%d].", f.MapId())
 		return nil, nil
@@ -764,12 +764,12 @@ func (p *ProcessorImpl) processStartActions(characterId uint32, questId uint32, 
 
 	// Award exp on start
 	if actions.Exp > 0 {
-		builder.AddAwardExperience(characterId, byte(f.WorldId()), byte(f.ChannelId()), actions.Exp)
+		builder.AddAwardExperience(characterId, f.Channel(), actions.Exp)
 	}
 
 	// Award meso on start
 	if actions.Money != 0 {
-		builder.AddAwardMesos(characterId, byte(f.WorldId()), byte(f.ChannelId()), actions.Money, questId)
+		builder.AddAwardMesos(characterId, f.Channel(), actions.Money, questId)
 	}
 
 	// Emit saga if there are steps
@@ -823,17 +823,17 @@ func (p *ProcessorImpl) processEndActions(characterId uint32, questId uint32, qu
 
 	// Award experience
 	if actions.Exp > 0 {
-		builder.AddAwardExperience(characterId, byte(f.WorldId()), byte(f.ChannelId()), actions.Exp)
+		builder.AddAwardExperience(characterId, f.Channel(), actions.Exp)
 	}
 
 	// Award meso
 	if actions.Money != 0 {
-		builder.AddAwardMesos(characterId, byte(f.WorldId()), byte(f.ChannelId()), actions.Money, questId)
+		builder.AddAwardMesos(characterId, f.Channel(), actions.Money, questId)
 	}
 
 	// Award fame
 	if actions.Fame != 0 {
-		builder.AddAwardFame(characterId, byte(f.WorldId()), byte(f.ChannelId()), actions.Fame, questId)
+		builder.AddAwardFame(characterId, f.Channel(), actions.Fame, questId)
 	}
 
 	// Award skills

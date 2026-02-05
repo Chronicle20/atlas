@@ -3,8 +3,8 @@ package compartment
 import (
 	"atlas-channel/kafka/message/compartment"
 
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-constants/inventory"
-	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
@@ -52,16 +52,17 @@ func MoveAssetCommandProvider(characterId uint32, inventoryType inventory.Type, 
 	return producer.SingleMessageProvider(key, value)
 }
 
-func DropAssetCommandProvider(m _map.Model, characterId uint32, inventoryType inventory.Type, source int16, quantity int16, x int16, y int16) model.Provider[[]kafka.Message] {
+func DropAssetCommandProvider(f field.Model, characterId uint32, inventoryType inventory.Type, source int16, quantity int16, x int16, y int16) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &compartment.Command[compartment.DropCommandBody]{
 		CharacterId:   characterId,
 		InventoryType: byte(inventoryType),
 		Type:          compartment.CommandDrop,
 		Body: compartment.DropCommandBody{
-			WorldId:   m.WorldId(),
-			ChannelId: m.ChannelId(),
-			MapId:     m.MapId(),
+			WorldId:   f.WorldId(),
+			ChannelId: f.ChannelId(),
+			MapId:     f.MapId(),
+			Instance:  f.Instance(),
 			Source:    source,
 			Quantity:  quantity,
 			X:         x,

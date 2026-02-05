@@ -2,11 +2,13 @@ package factory
 
 import (
 	"context"
+
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {
-	SeedCharacter(accountId uint32, worldId byte, name string, jobIndex uint32, subJobIndex uint16, face uint32, hair uint32, color uint32, skinColor uint32, gender byte, top uint32, bottom uint32, shoes uint32, weapon uint32, strength byte, dexterity byte, intelligence byte, luck byte) error
+	SeedCharacter(accountId uint32, worldId world.Id, name string, jobIndex uint32, subJobIndex uint16, face uint32, hair uint32, color uint32, skinColor uint32, gender byte, top uint32, bottom uint32, shoes uint32, weapon uint32, strength byte, dexterity byte, intelligence byte, luck byte) error
 }
 
 type ProcessorImpl struct {
@@ -22,7 +24,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return p
 }
 
-func (p *ProcessorImpl) SeedCharacter(accountId uint32, worldId byte, name string, jobIndex uint32, subJobIndex uint16,
+func (p *ProcessorImpl) SeedCharacter(accountId uint32, worldId world.Id, name string, jobIndex uint32, subJobIndex uint16,
 	face uint32, hair uint32, color uint32, skinColor uint32, gender byte,
 	top uint32, bottom uint32, shoes uint32, weapon uint32,
 	strength byte, dexterity byte, intelligence byte, luck byte) error {

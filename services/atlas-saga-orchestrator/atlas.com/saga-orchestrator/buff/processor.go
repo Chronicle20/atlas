@@ -6,17 +6,16 @@ import (
 	"atlas-saga-orchestrator/kafka/producer"
 	"context"
 
-	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/sirupsen/logrus"
 )
 
 // Processor is the interface for buff operations
 type Processor interface {
 	// CancelAllAndEmit sends a command to cancel all buffs for a character
-	CancelAllAndEmit(worldId world.Id, channelId channel.Id, characterId uint32) error
+	CancelAllAndEmit(field field.Model, characterId uint32) error
 	// CancelAll adds a cancel all command to the message buffer
-	CancelAll(mb *message.Buffer) func(worldId world.Id, channelId channel.Id, characterId uint32) error
+	CancelAll(mb *message.Buffer) func(field field.Model, characterId uint32) error
 }
 
 // ProcessorImpl is the implementation of the Processor interface
@@ -36,15 +35,15 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 }
 
 // CancelAllAndEmit sends a Kafka command to atlas-buffs to cancel all buffs for a character
-func (p *ProcessorImpl) CancelAllAndEmit(worldId world.Id, channelId channel.Id, characterId uint32) error {
+func (p *ProcessorImpl) CancelAllAndEmit(field field.Model, characterId uint32) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
-		return p.CancelAll(mb)(worldId, channelId, characterId)
+		return p.CancelAll(mb)(field, characterId)
 	})
 }
 
 // CancelAll adds a cancel all command to the message buffer
-func (p *ProcessorImpl) CancelAll(mb *message.Buffer) func(worldId world.Id, channelId channel.Id, characterId uint32) error {
-	return func(worldId world.Id, channelId channel.Id, characterId uint32) error {
-		return mb.Put(buffMsg.EnvCommandTopic, CancelAllCommandProvider(byte(worldId), byte(channelId), characterId))
+func (p *ProcessorImpl) CancelAll(mb *message.Buffer) func(field field.Model, characterId uint32) error {
+	return func(field field.Model, characterId uint32) error {
+		return mb.Put(buffMsg.EnvCommandTopic, CancelAllCommandProvider(field, characterId))
 	}
 }

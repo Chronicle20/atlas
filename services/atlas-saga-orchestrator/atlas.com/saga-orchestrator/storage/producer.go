@@ -1,16 +1,21 @@
 package storage
 
 import (
+	"time"
+
 	storage2 "atlas-saga-orchestrator/kafka/message/storage"
 	storageCompartment "atlas-saga-orchestrator/kafka/message/storage/compartment"
+
+	"github.com/Chronicle20/atlas-constants/asset"
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
-	"time"
 )
 
-func DepositCommandProvider(transactionId uuid.UUID, worldId byte, accountId uint32, slot int16, templateId uint32, expiration time.Time, referenceId uint32, referenceType string, referenceData storage2.ReferenceData) model.Provider[[]kafka.Message] {
+func DepositCommandProvider(transactionId uuid.UUID, worldId world.Id, accountId uint32, slot int16, templateId uint32, expiration time.Time, referenceId uint32, referenceType string, referenceData storage2.ReferenceData) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(accountId))
 	value := &storage2.Command[storage2.DepositBody]{
 		TransactionId: transactionId,
@@ -29,7 +34,7 @@ func DepositCommandProvider(transactionId uuid.UUID, worldId byte, accountId uin
 	return producer.SingleMessageProvider(key, value)
 }
 
-func WithdrawCommandProvider(transactionId uuid.UUID, worldId byte, accountId uint32, assetId uint32, quantity uint32) model.Provider[[]kafka.Message] {
+func WithdrawCommandProvider(transactionId uuid.UUID, worldId world.Id, accountId uint32, assetId asset.Id, quantity asset.Quantity) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(accountId))
 	value := &storage2.Command[storage2.WithdrawBody]{
 		TransactionId: transactionId,
@@ -44,7 +49,7 @@ func WithdrawCommandProvider(transactionId uuid.UUID, worldId byte, accountId ui
 	return producer.SingleMessageProvider(key, value)
 }
 
-func UpdateMesosCommandProvider(transactionId uuid.UUID, worldId byte, accountId uint32, mesos uint32, operation string) model.Provider[[]kafka.Message] {
+func UpdateMesosCommandProvider(transactionId uuid.UUID, worldId world.Id, accountId uint32, mesos uint32, operation string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(accountId))
 	value := &storage2.Command[storage2.UpdateMesosBody]{
 		TransactionId: transactionId,
@@ -59,7 +64,7 @@ func UpdateMesosCommandProvider(transactionId uuid.UUID, worldId byte, accountId
 	return producer.SingleMessageProvider(key, value)
 }
 
-func DepositRollbackCommandProvider(transactionId uuid.UUID, worldId byte, accountId uint32, assetId uint32) model.Provider[[]kafka.Message] {
+func DepositRollbackCommandProvider(transactionId uuid.UUID, worldId world.Id, accountId uint32, assetId asset.Id) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(accountId))
 	value := &storage2.Command[storage2.DepositRollbackBody]{
 		TransactionId: transactionId,
@@ -73,12 +78,12 @@ func DepositRollbackCommandProvider(transactionId uuid.UUID, worldId byte, accou
 	return producer.SingleMessageProvider(key, value)
 }
 
-func ShowStorageCommandProvider(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32, npcId uint32, accountId uint32) model.Provider[[]kafka.Message] {
+func ShowStorageCommandProvider(transactionId uuid.UUID, ch channel.Model, characterId uint32, npcId uint32, accountId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &storage2.ShowStorageCommand{
 		TransactionId: transactionId,
-		WorldId:       worldId,
-		ChannelId:     channelId,
+		WorldId:       ch.WorldId(),
+		ChannelId:     ch.Id(),
 		CharacterId:   characterId,
 		NpcId:         npcId,
 		AccountId:     accountId,
@@ -88,7 +93,7 @@ func ShowStorageCommandProvider(transactionId uuid.UUID, worldId byte, channelId
 }
 
 // AcceptCommandProvider creates an ACCEPT command for the storage compartment
-func AcceptCommandProvider(transactionId uuid.UUID, worldId byte, accountId uint32, characterId uint32, slot int16, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, quantity uint32) model.Provider[[]kafka.Message] {
+func AcceptCommandProvider(transactionId uuid.UUID, worldId world.Id, accountId uint32, characterId uint32, slot int16, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, quantity asset.Quantity) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(accountId))
 	value := &storageCompartment.Command[storageCompartment.AcceptCommandBody]{
 		WorldId:     worldId,
@@ -109,7 +114,7 @@ func AcceptCommandProvider(transactionId uuid.UUID, worldId byte, accountId uint
 }
 
 // ReleaseCommandProvider creates a RELEASE command for the storage compartment
-func ReleaseCommandProvider(transactionId uuid.UUID, worldId byte, accountId uint32, characterId uint32, assetId uint32, quantity uint32) model.Provider[[]kafka.Message] {
+func ReleaseCommandProvider(transactionId uuid.UUID, worldId world.Id, accountId uint32, characterId uint32, assetId asset.Id, quantity asset.Quantity) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(accountId))
 	value := &storageCompartment.Command[storageCompartment.ReleaseCommandBody]{
 		WorldId:     worldId,

@@ -18,6 +18,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 )
@@ -55,19 +56,19 @@ func handleStatusEventUsed(sc server.Model, wp writer.Producer) message.Handler[
 		}
 
 		if e.ChairType == chair2.TypePortable {
-			err := _map.NewProcessor(l, ctx).ForOtherSessionsInMap(sc.Map(_map2.Id(e.MapId)), e.Body.CharacterId, showChairForeign(l)(ctx)(wp)(e.Body.CharacterId, e.ChairId))
+			err := _map.NewProcessor(l, ctx).ForOtherSessionsInMap(sc.Field(_map2.Id(e.MapId), uuid.Nil), e.Body.CharacterId, showChairForeign(l)(ctx)(wp)(e.Body.CharacterId, e.ChairId))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to show [%d] using chair [%d] to those in map [%d].", e.Body.CharacterId, e.ChairId, e.MapId)
 			}
 
-			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, enableActions(l)(ctx)(wp))
+			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, enableActions(l)(ctx)(wp))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, e.Body.CharacterId)
 			}
 			return
 		}
 		if e.ChairType == chair2.TypeFixed {
-			err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, showChair(l)(ctx)(wp)(e.ChairId))
+			err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, showChair(l)(ctx)(wp)(e.ChairId))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.CharacterSitResult, e.Body.CharacterId)
 			}
@@ -107,12 +108,12 @@ func handleStatusEventError(sc server.Model, wp writer.Producer) message.Handler
 		}
 
 		if e.Body.Type != chair2.ErrorTypeInternal {
-			_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, session.NewProcessor(l, ctx).Destroy)
+			_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, session.NewProcessor(l, ctx).Destroy)
 			l.Errorf("Character [%d] attempting to perform chair action they cannot.", e.Body.CharacterId)
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, enableActions(l)(ctx)(wp))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, enableActions(l)(ctx)(wp))
 		l.Warnf("Internal issue performing character [%d] sit action.", e.Body.CharacterId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, e.Body.CharacterId)
@@ -139,12 +140,12 @@ func handleStatusEventCancelled(sc server.Model, wp writer.Producer) message.Han
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, cancelChair(l)(ctx)(wp))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, cancelChair(l)(ctx)(wp))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.CharacterSitResult, e.Body.CharacterId)
 		}
 
-		err = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(sc.Map(_map2.Id(e.MapId)), e.Body.CharacterId, cancelChairForeign(l)(ctx)(wp)(e.Body.CharacterId))
+		err = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(sc.Field(_map2.Id(e.MapId), uuid.Nil), e.Body.CharacterId, cancelChairForeign(l)(ctx)(wp)(e.Body.CharacterId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to write foreign character [%d] sit result completely to [%d].", e.Body.CharacterId, e.MapId)
 		}

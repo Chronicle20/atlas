@@ -19,6 +19,6 @@ func PortalScriptHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.
 		y := r.ReadInt16()
 		l.Debugf("Character [%d] attempting to execute portal script for [%s] at [%d,%d]. FieldKey [%d].", s.CharacterId(), portalName, x, y, fieldKey)
 
-		_ = portal.NewProcessor(l, ctx).Enter(s.Map(), portalName, s.CharacterId())
+		_ = portal.NewProcessor(l, ctx).Enter(s.Field(), portalName, s.CharacterId())
 	}
 }

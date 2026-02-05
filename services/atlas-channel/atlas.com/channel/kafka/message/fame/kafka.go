@@ -4,6 +4,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
 )
 
 const (
@@ -21,6 +22,7 @@ type Command[E any] struct {
 type RequestChangeCommandBody struct {
 	ChannelId channel.Id `json:"channelId"`
 	MapId     _map.Id    `json:"mapId"`
+	Instance  uuid.UUID  `json:"instance"`
 	TargetId  uint32     `json:"targetId"`
 	Amount    int8       `json:"amount"`
 }

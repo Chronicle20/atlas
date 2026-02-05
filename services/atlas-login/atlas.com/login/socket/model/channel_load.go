@@ -1,15 +1,17 @@
 package model
 
+import "github.com/Chronicle20/atlas-constants/channel"
+
 type Load struct {
-	channelId byte
+	channelId channel.Id
 	capacity  uint32
 }
 
-func NewChannelLoad(channelId byte, capacity uint32) Load {
+func NewChannelLoad(channelId channel.Id, capacity uint32) Load {
 	return Load{channelId, capacity}
 }
 
-func (cl Load) ChannelId() byte {
+func (cl Load) ChannelId() channel.Id {
 	return cl.channelId
 }
 

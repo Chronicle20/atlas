@@ -1,9 +1,9 @@
 package channel
 
 import (
-	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/world"
 	"sync"
+
+	"github.com/Chronicle20/atlas-constants/channel"
 
 	"github.com/google/uuid"
 )
@@ -48,7 +48,7 @@ func (r *Registry) Add(tenantId uuid.UUID, model channel.Model) {
 }
 
 // Remove removes a model by its ID from the given tenant's list
-func (r *Registry) Remove(tenantId uuid.UUID, worldId world.Id, id channel.Id) {
+func (r *Registry) Remove(tenantId uuid.UUID, ch channel.Model) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -59,7 +59,7 @@ func (r *Registry) Remove(tenantId uuid.UUID, worldId world.Id, id channel.Id) {
 
 	filtered := models[:0]
 	for _, m := range models {
-		if m.WorldId() != worldId || m.Id() != id {
+		if m.WorldId() != ch.WorldId() || m.Id() != ch.Id() {
 			filtered = append(filtered, m)
 		}
 	}

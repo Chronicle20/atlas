@@ -2,13 +2,15 @@ package list
 
 import (
 	list2 "atlas-buddies/kafka/message/list"
+	"github.com/Chronicle20/atlas-constants/character"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 )
 
-func CreateCommandProvider(characterId uint32, capacity byte) model.Provider[[]kafka.Message] {
+func CreateCommandProvider(characterId character.Id, capacity byte) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &list2.Command[list2.CreateCommandBody]{
 		CharacterId: characterId,
@@ -20,7 +22,7 @@ func CreateCommandProvider(characterId uint32, capacity byte) model.Provider[[]k
 	return producer.SingleMessageProvider(key, value)
 }
 
-func BuddyAddedStatusEventProvider(characterId uint32, worldId byte, buddyId uint32, buddyName string, buddyChannelId int8, group string) model.Provider[[]kafka.Message] {
+func BuddyAddedStatusEventProvider(characterId character.Id, worldId world.Id, buddyId character.Id, buddyName string, buddyChannelId int8, group string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &list2.StatusEvent[list2.BuddyAddedStatusEventBody]{
 		CharacterId: characterId,
@@ -36,7 +38,7 @@ func BuddyAddedStatusEventProvider(characterId uint32, worldId byte, buddyId uin
 	return producer.SingleMessageProvider(key, value)
 }
 
-func BuddyRemovedStatusEventProvider(characterId uint32, worldId byte, buddyId uint32) model.Provider[[]kafka.Message] {
+func BuddyRemovedStatusEventProvider(characterId character.Id, worldId world.Id, buddyId character.Id) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &list2.StatusEvent[list2.BuddyRemovedStatusEventBody]{
 		CharacterId: characterId,
@@ -49,7 +51,7 @@ func BuddyRemovedStatusEventProvider(characterId uint32, worldId byte, buddyId u
 	return producer.SingleMessageProvider(key, value)
 }
 
-func BuddyUpdatedStatusEventProvider(characterId uint32, worldId byte, buddyId uint32, group string, buddyName string, channelId int8, inShop bool) model.Provider[[]kafka.Message] {
+func BuddyUpdatedStatusEventProvider(characterId character.Id, worldId world.Id, buddyId character.Id, group string, buddyName string, channelId int8, inShop bool) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &list2.StatusEvent[list2.BuddyUpdatedStatusEventBody]{
 		CharacterId: characterId,
@@ -66,7 +68,7 @@ func BuddyUpdatedStatusEventProvider(characterId uint32, worldId byte, buddyId u
 	return producer.SingleMessageProvider(key, value)
 }
 
-func BuddyChannelChangeStatusEventProvider(characterId uint32, worldId byte, buddyId uint32, buddyChannelId int8) model.Provider[[]kafka.Message] {
+func BuddyChannelChangeStatusEventProvider(characterId character.Id, worldId world.Id, buddyId character.Id, buddyChannelId int8) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &list2.StatusEvent[list2.BuddyChannelChangeStatusEventBody]{
 		CharacterId: characterId,
@@ -80,11 +82,11 @@ func BuddyChannelChangeStatusEventProvider(characterId uint32, worldId byte, bud
 	return producer.SingleMessageProvider(key, value)
 }
 
-func BuddyCapacityChangeStatusEventProvider(characterId uint32, worldId byte, capacity byte) model.Provider[[]kafka.Message] {
+func BuddyCapacityChangeStatusEventProvider(characterId character.Id, worldId world.Id, capacity byte) model.Provider[[]kafka.Message] {
 	return BuddyCapacityChangeStatusEventWithTransactionProvider(characterId, worldId, capacity, uuid.Nil)
 }
 
-func BuddyCapacityChangeStatusEventWithTransactionProvider(characterId uint32, worldId byte, capacity byte, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+func BuddyCapacityChangeStatusEventWithTransactionProvider(characterId character.Id, worldId world.Id, capacity byte, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &list2.StatusEvent[list2.BuddyCapacityChangeStatusEventBody]{
 		CharacterId: characterId,
@@ -98,7 +100,7 @@ func BuddyCapacityChangeStatusEventWithTransactionProvider(characterId uint32, w
 	return producer.SingleMessageProvider(key, value)
 }
 
-func ErrorStatusEventProvider(characterId uint32, worldId byte, error string) model.Provider[[]kafka.Message] {
+func ErrorStatusEventProvider(characterId character.Id, worldId world.Id, error string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &list2.StatusEvent[list2.ErrorStatusEventBody]{
 		CharacterId: characterId,

@@ -6,7 +6,10 @@ import (
 	"context"
 	"errors"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-constants/job"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/Chronicle20/atlas-tenant"
@@ -14,16 +17,16 @@ import (
 )
 
 type Processor interface {
-	LoginAndEmit(worldId byte, channelId byte, mapId uint32, characterId uint32) error
-	Login(mb *message.Buffer) func(worldId byte, channelId byte, mapId uint32, characterId uint32) error
+	LoginAndEmit(f field.Model, characterId uint32) error
+	Login(mb *message.Buffer) func(f field.Model, characterId uint32) error
 	LogoutAndEmit(characterId uint32) error
 	Logout(mb *message.Buffer) func(characterId uint32) error
-	ChannelChange(characterId uint32, channelId byte) error
+	ChannelChange(characterId uint32, channelId channel.Id) error
 	LevelChangeAndEmit(characterId uint32, level byte) error
 	LevelChange(mb *message.Buffer) func(characterId uint32, level byte) error
 	JobChangeAndEmit(characterId uint32, jobId job.Id) error
 	JobChange(mb *message.Buffer) func(characterId uint32, jobId job.Id) error
-	MapChange(characterId uint32, mapId uint32) error
+	MapChange(characterId uint32, mapId _map.Id) error
 	JoinParty(characterId uint32, partyId uint32) error
 	LeaveParty(characterId uint32) error
 	Delete(characterId uint32) error
@@ -48,28 +51,28 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
-func (p *ProcessorImpl) LoginAndEmit(worldId byte, channelId byte, mapId uint32, characterId uint32) error {
+func (p *ProcessorImpl) LoginAndEmit(f field.Model, characterId uint32) error {
 	return message.Emit(p.p)(func(buf *message.Buffer) error {
-		return p.Login(buf)(worldId, channelId, mapId, characterId)
+		return p.Login(buf)(f, characterId)
 	})
 
 }
 
-func (p *ProcessorImpl) Login(mb *message.Buffer) func(worldId byte, channelId byte, mapId uint32, characterId uint32) error {
-	return func(worldId byte, channelId byte, mapId uint32, characterId uint32) error {
+func (p *ProcessorImpl) Login(mb *message.Buffer) func(f field.Model, characterId uint32) error {
+	return func(f field.Model, characterId uint32) error {
 		c, err := p.GetById(characterId)
 		if err != nil {
-			p.l.Debugf("Adding character [%d] from world [%d] to registry.", characterId, worldId)
+			p.l.Debugf("Adding character [%d] from world [%d] to registry.", characterId, f.WorldId())
 			fm, err := p.GetForeignCharacterInfo(characterId)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to retrieve needed character information from foreign service.")
 				return err
 			}
-			c = GetRegistry().Create(p.t, worldId, channelId, mapId, characterId, fm.Name(), fm.Level(), fm.JobId(), fm.GM())
+			c = GetRegistry().Create(p.t, f, characterId, fm.Name(), fm.Level(), fm.JobId(), fm.GM())
 		}
 
 		p.l.Debugf("Setting character [%d] to online in registry.", characterId)
-		fn := func(m Model) Model { return Model.ChangeChannel(m, channelId) }
+		fn := func(m Model) Model { return Model.ChangeChannel(m, f.ChannelId()) }
 		c = GetRegistry().Update(p.t, c.Id(), Model.Login, fn)
 
 		if c.PartyId() != 0 {
@@ -113,7 +116,7 @@ func (p *ProcessorImpl) Logout(mb *message.Buffer) func(characterId uint32) erro
 	}
 }
 
-func (p *ProcessorImpl) ChannelChange(characterId uint32, channelId byte) error {
+func (p *ProcessorImpl) ChannelChange(characterId uint32, channelId channel.Id) error {
 	c, err := p.GetById(characterId)
 	if err != nil {
 		p.l.WithError(err).Warnf("Unable to locate character [%d] in registry.", characterId)
@@ -139,12 +142,12 @@ func (p *ProcessorImpl) LevelChange(mb *message.Buffer) func(characterId uint32,
 			p.l.WithError(err).Warnf("Unable to locate character [%d] in registry for level change.", characterId)
 			return err
 		}
-		
+
 		oldLevel := c.Level()
 		p.l.Debugf("Updating character [%d] level from [%d] to [%d] in registry.", characterId, oldLevel, level)
 		fn := func(m Model) Model { return Model.ChangeLevel(m, level) }
 		c = GetRegistry().Update(p.t, c.Id(), fn)
-		
+
 		// If character is in a party, emit party member level changed event
 		if c.PartyId() != 0 {
 			err = mb.Put(EnvEventMemberStatusTopic, levelChangedEventProvider(c.PartyId(), c.WorldId(), characterId, oldLevel, level, c.Name()))
@@ -153,7 +156,7 @@ func (p *ProcessorImpl) LevelChange(mb *message.Buffer) func(characterId uint32,
 				return err
 			}
 		}
-		
+
 		return nil
 	}
 }
@@ -171,12 +174,12 @@ func (p *ProcessorImpl) JobChange(mb *message.Buffer) func(characterId uint32, j
 			p.l.WithError(err).Warnf("Unable to locate character [%d] in registry for job change.", characterId)
 			return err
 		}
-		
+
 		oldJobId := c.JobId()
 		p.l.Debugf("Updating character [%d] job from [%d] to [%d] in registry.", characterId, oldJobId, jobId)
 		fn := func(m Model) Model { return Model.ChangeJob(m, jobId) }
 		c = GetRegistry().Update(p.t, c.Id(), fn)
-		
+
 		// If character is in a party, emit party member job changed event
 		if c.PartyId() != 0 {
 			err = mb.Put(EnvEventMemberStatusTopic, jobChangedEventProvider(c.PartyId(), c.WorldId(), characterId, oldJobId, jobId, c.Name()))
@@ -185,12 +188,12 @@ func (p *ProcessorImpl) JobChange(mb *message.Buffer) func(characterId uint32, j
 				return err
 			}
 		}
-		
+
 		return nil
 	}
 }
 
-func (p *ProcessorImpl) MapChange(characterId uint32, mapId uint32) error {
+func (p *ProcessorImpl) MapChange(characterId uint32, mapId _map.Id) error {
 	c, err := p.GetById(characterId)
 	if err != nil {
 		p.l.WithError(err).Warnf("Unable to locate character [%d] in registry.", characterId)
@@ -262,7 +265,8 @@ func (p *ProcessorImpl) ByIdProvider(characterId uint32) model.Provider[Model] {
 			if ferr != nil {
 				return Model{}, err
 			}
-			c = GetRegistry().Create(p.t, fm.WorldId(), 0, fm.MapId(), characterId, fm.Name(), fm.Level(), fm.JobId(), fm.GM())
+			f := field.NewBuilder(fm.WorldId(), 0, fm.MapId()).Build()
+			c = GetRegistry().Create(p.t, f, characterId, fm.Name(), fm.Level(), fm.JobId(), fm.GM())
 		}
 		return c, nil
 	}

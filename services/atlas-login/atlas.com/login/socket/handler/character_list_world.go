@@ -7,6 +7,9 @@ import (
 	"atlas-login/socket/writer"
 	"atlas-login/world"
 	"context"
+
+	"github.com/Chronicle20/atlas-constants/channel"
+	world2 "github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -25,8 +28,8 @@ func CharacterListWorldHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 			// GMS v28 is not definite here, but this is not present in 28.
 			gameStartMode = r.ReadByte()
 		}
-		worldId := r.ReadByte()
-		channelId := r.ReadByte()
+		worldId := world2.Id(r.ReadByte())
+		channelId := channel.Id(r.ReadByte())
 
 		var socketAddr int32
 		if t.Region() == "GMS" && t.MajorVersion() > 12 {

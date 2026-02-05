@@ -6,8 +6,10 @@ import (
 	macro2 "atlas-skills/kafka/message/macro"
 	"atlas-skills/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -18,10 +20,10 @@ type Processor interface {
 	ByCharacterIdProvider(characterId uint32) model.Provider[[]Model]
 
 	// Update updates all macros for a character with message buffer for events
-	Update(mb *message.Buffer) func(characterId uint32) func(macros []Model) ([]Model, error)
+	Update(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, macros []Model) ([]Model, error)
 
 	// UpdateAndEmit updates all macros for a character and emits events
-	UpdateAndEmit(characterId uint32, macros []Model) ([]Model, error)
+	UpdateAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, macros []Model) ([]Model, error)
 
 	// Delete deletes all macros for a character
 	Delete(characterId uint32) error
@@ -51,50 +53,48 @@ func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider
 }
 
 // Update updates all macros for a character with message buffer for events
-func (p *ProcessorImpl) Update(mb *message.Buffer) func(characterId uint32) func(macros []Model) ([]Model, error) {
-	return func(characterId uint32) func(macros []Model) ([]Model, error) {
-		return func(macros []Model) ([]Model, error) {
-			p.l.Debugf("Updating skill macros for character [%d].", characterId)
-			var result []Model
+func (p *ProcessorImpl) Update(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, macros []Model) ([]Model, error) {
+	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, macros []Model) ([]Model, error) {
+		p.l.Debugf("Updating skill macros for character [%d].", characterId)
+		var result []Model
 
-			txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
-				err := deleteByCharacter(tx, p.t, characterId)
+		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+			err := deleteByCharacter(tx, p.t, characterId)
+			if err != nil {
+				return err
+			}
+			for _, macro := range macros {
+				_, err = create(tx, p.t.Id(), macro.Id(), characterId, macro.Name(), macro.Shout(), uint32(macro.SkillId1()), uint32(macro.SkillId2()), uint32(macro.SkillId3()))()
 				if err != nil {
 					return err
 				}
-				for _, macro := range macros {
-					_, err = create(tx, p.t.Id(), macro.Id(), characterId, macro.Name(), macro.Shout(), uint32(macro.SkillId1()), uint32(macro.SkillId2()), uint32(macro.SkillId3()))()
-					if err != nil {
-						return err
-					}
-				}
-				return nil
-			})
-
-			if txErr != nil {
-				return nil, txErr
 			}
+			return nil
+		})
 
-			// Get the updated macros
-			result, err := p.ByCharacterIdProvider(characterId)()
-			if err != nil {
-				return nil, err
-			}
-
-			// Add the status event to the message buffer
-			_ = mb.Put(macro2.EnvStatusEventTopic, statusEventUpdatedProvider(characterId, result))
-
-			return result, nil
+		if txErr != nil {
+			return nil, txErr
 		}
+
+		// Get the updated macros
+		result, err := p.ByCharacterIdProvider(characterId)()
+		if err != nil {
+			return nil, err
+		}
+
+		// Add the status event to the message buffer
+		_ = mb.Put(macro2.EnvStatusEventTopic, statusEventUpdatedProvider(transactionId, worldId, characterId, result))
+
+		return result, nil
 	}
 }
 
 // UpdateAndEmit updates all macros for a character and emits events
-func (p *ProcessorImpl) UpdateAndEmit(characterId uint32, macros []Model) ([]Model, error) {
+func (p *ProcessorImpl) UpdateAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, macros []Model) ([]Model, error) {
 	var result []Model
 	err := message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
 		var err error
-		result, err = p.Update(buf)(characterId)(macros)
+		result, err = p.Update(buf)(transactionId, worldId, characterId, macros)
 		return err
 	})
 	return result, err

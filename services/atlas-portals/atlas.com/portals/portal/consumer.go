@@ -5,6 +5,7 @@ import (
 	consumer2 "atlas-portals/kafka/consumer"
 	"context"
 
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -36,8 +37,9 @@ func handleEnterCommand(l logrus.FieldLogger, ctx context.Context, command comma
 	if command.Type != CommandTypeEnter {
 		return
 	}
+	f := field.NewBuilder(command.WorldId, command.ChannelId, command.MapId).SetInstance(command.Instance).Build()
 	l.Debugf("Received command for Character [%d] to enter portal [%d] in map [%d].", command.Body.CharacterId, command.PortalId, command.MapId)
-	Enter(l)(ctx)(command.WorldId, command.ChannelId, command.MapId, command.PortalId, command.Body.CharacterId)
+	Enter(l)(ctx)(f, command.PortalId, command.Body.CharacterId)
 }
 
 func handleBlockCommand(l logrus.FieldLogger, ctx context.Context, command commandEvent[blockBody]) {

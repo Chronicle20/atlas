@@ -7,18 +7,22 @@ import (
 	_map "atlas-messages/map"
 	"atlas-messages/saga"
 	"context"
-	"github.com/Chronicle20/atlas-model/model"
-	"github.com/sirupsen/logrus"
 	"regexp"
 	"strconv"
+
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
+	_map2 "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-model/model"
+	"github.com/sirupsen/logrus"
 )
 
-func AwardItemCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
-	return func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
+func AwardItemCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
+	return func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
 		cp := character.NewProcessor(l, ctx)
 		ap := asset.NewProcessor(l, ctx)
 		mp := _map.NewProcessor(l, ctx)
-		return func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
+		return func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
 			var cn string
 			var itemIdStr string
 			var quantityStr string
@@ -52,7 +56,8 @@ func AwardItemCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fu
 			if match[1] == "me" {
 				idProvider = model.ToSliceProvider(model.FixedProvider(c.Id()))
 			} else if match[1] == "map" {
-				idProvider = mp.CharacterIdsInMapProvider(worldId, channelId, c.MapId())
+				f := field.NewBuilder(ch.WorldId(), ch.Id(), _map2.Id(c.MapId())).Build()
+				idProvider = mp.CharacterIdsInFieldProvider(f)
 			} else {
 				idProvider = model.ToSliceProvider(cp.IdByNameProvider(match[1]))
 			}

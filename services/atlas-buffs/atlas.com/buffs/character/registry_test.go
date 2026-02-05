@@ -5,6 +5,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -31,7 +32,7 @@ func TestRegistry_Apply(t *testing.T) {
 	r.ResetForTesting()
 	ten := setupTestTenant(t)
 
-	worldId := byte(0)
+	worldId := world.Id(0)
 	characterId := uint32(1000)
 	sourceId := int32(2001001)
 	duration := int32(60)
@@ -51,7 +52,7 @@ func TestRegistry_Get(t *testing.T) {
 	r.ResetForTesting()
 	ten := setupTestTenant(t)
 
-	worldId := byte(0)
+	worldId := world.Id(0)
 	characterId := uint32(1000)
 	sourceId := int32(2001001)
 	duration := int32(60)
@@ -83,7 +84,7 @@ func TestRegistry_Cancel(t *testing.T) {
 	r.ResetForTesting()
 	ten := setupTestTenant(t)
 
-	worldId := byte(0)
+	worldId := world.Id(0)
 	characterId := uint32(1000)
 	sourceId := int32(2001001)
 	duration := int32(60)
@@ -117,7 +118,7 @@ func TestRegistry_MultipleBuffs(t *testing.T) {
 	r.ResetForTesting()
 	ten := setupTestTenant(t)
 
-	worldId := byte(0)
+	worldId := world.Id(0)
 	characterId := uint32(1000)
 	changes := setupTestChanges()
 
@@ -154,7 +155,7 @@ func TestRegistry_TenantIsolation(t *testing.T) {
 	ten1, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	ten2, _ := tenant.Create(uuid.New(), "EMS", 83, 1)
 
-	worldId := byte(0)
+	worldId := world.Id(0)
 	characterId := uint32(1000)
 	sourceId := int32(2001001)
 	changes := setupTestChanges()
@@ -181,8 +182,8 @@ func TestRegistry_GetTenants(t *testing.T) {
 	changes := setupTestChanges()
 
 	// Apply buffs in both tenants
-	_, _ = r.Apply(ten1, 0, 1000, int32(2001001), int32(60), changes)
-	_, _ = r.Apply(ten2, 0, 2000, int32(2001002), int32(60), changes)
+	_, _ = r.Apply(ten1, world.Id(0), 1000, int32(2001001), int32(60), changes)
+	_, _ = r.Apply(ten2, world.Id(0), 2000, int32(2001002), int32(60), changes)
 
 	tenants, err := r.GetTenants()
 	assert.NoError(t, err)
@@ -196,9 +197,9 @@ func TestRegistry_GetCharacters(t *testing.T) {
 	changes := setupTestChanges()
 
 	// Apply buffs to multiple characters
-	_, _ = r.Apply(ten, 0, 1000, int32(2001001), int32(60), changes)
-	_, _ = r.Apply(ten, 0, 2000, int32(2001002), int32(60), changes)
-	_, _ = r.Apply(ten, 0, 3000, int32(2001003), int32(60), changes)
+	_, _ = r.Apply(ten, world.Id(0), 1000, int32(2001001), int32(60), changes)
+	_, _ = r.Apply(ten, world.Id(0), 2000, int32(2001002), int32(60), changes)
+	_, _ = r.Apply(ten, world.Id(0), 3000, int32(2001003), int32(60), changes)
 
 	chars := r.GetCharacters(ten)
 	assert.Len(t, chars, 3)
@@ -219,7 +220,7 @@ func TestRegistry_ConcurrentApply(t *testing.T) {
 			defer wg.Done()
 			characterId := uint32(1000 + idx)
 			sourceId := int32(2001000 + idx)
-			_, _ = r.Apply(ten, 0, characterId, sourceId, int32(60), changes)
+			_, _ = r.Apply(ten, world.Id(0), characterId, sourceId, int32(60), changes)
 		}(i)
 	}
 
@@ -245,7 +246,7 @@ func TestRegistry_ConcurrentApplyAndCancel(t *testing.T) {
 		go func(idx int) {
 			defer wg.Done()
 			sourceId := int32(2001000 + idx)
-			_, _ = r.Apply(ten, 0, characterId, sourceId, int32(60), changes)
+			_, _ = r.Apply(ten, world.Id(0), characterId, sourceId, int32(60), changes)
 		}(i)
 	}
 
@@ -283,7 +284,7 @@ func TestRegistry_ConcurrentMultipleTenants(t *testing.T) {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
-			_, _ = r.Apply(ten1, 0, uint32(1000+idx), int32(2001000+idx), int32(60), changes)
+			_, _ = r.Apply(ten1, world.Id(0), uint32(1000+idx), int32(2001000+idx), int32(60), changes)
 		}(i)
 	}
 
@@ -292,7 +293,7 @@ func TestRegistry_ConcurrentMultipleTenants(t *testing.T) {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
-			_, _ = r.Apply(ten2, 0, uint32(1000+idx), int32(2001000+idx), int32(60), changes)
+			_, _ = r.Apply(ten2, world.Id(0), uint32(1000+idx), int32(2001000+idx), int32(60), changes)
 		}(i)
 	}
 
@@ -311,7 +312,7 @@ func TestRegistry_BuffReplacement(t *testing.T) {
 	ten := setupTestTenant(t)
 	changes := setupTestChanges()
 
-	worldId := byte(0)
+	worldId := world.Id(0)
 	characterId := uint32(1000)
 	sourceId := int32(2001001)
 

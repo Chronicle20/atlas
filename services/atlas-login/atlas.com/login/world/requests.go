@@ -3,6 +3,8 @@ package world
 import (
 	"atlas-login/rest"
 	"fmt"
+
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 
@@ -20,6 +22,6 @@ func requestWorlds() requests.Request[[]RestModel] {
 	return rest.MakeGetRequest[[]RestModel](getBaseRequest() + WorldsIncludeChannels)
 }
 
-func requestWorld(worldId byte) requests.Request[RestModel] {
+func requestWorld(worldId world.Id) requests.Request[RestModel] {
 	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+WorldsById, worldId))
 }

@@ -6,6 +6,7 @@ import (
 	message "atlas-rates/kafka/message/character"
 	"context"
 
+	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	kafkaMessage "github.com/Chronicle20/atlas-kafka/message"
@@ -39,5 +40,6 @@ func handleMapChanged(l logrus.FieldLogger, ctx context.Context, e message.Statu
 
 	// Delegate to the shared initializer
 	// This is idempotent - if already initialized, it returns immediately
-	character.InitializeCharacterRates(l, ctx, e.CharacterId, e.WorldId, e.Body.ChannelId)
+	ch := channel.NewModel(e.WorldId, e.Body.ChannelId)
+	character.InitializeCharacterRates(l, ctx, e.CharacterId, ch)
 }

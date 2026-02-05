@@ -4,19 +4,20 @@ import (
 	"fmt"
 	"sync"
 
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/google/uuid"
 )
 
 // Cache is an interface for a blocked portals cache
 type Cache interface {
 	// IsBlocked checks if a portal is blocked for a character
-	IsBlocked(tenantId uuid.UUID, characterId uint32, mapId uint32, portalId uint32) bool
+	IsBlocked(tenantId uuid.UUID, characterId uint32, mapId _map.Id, portalId uint32) bool
 
 	// Block adds a portal to the blocked list for a character
-	Block(tenantId uuid.UUID, characterId uint32, mapId uint32, portalId uint32)
+	Block(tenantId uuid.UUID, characterId uint32, mapId _map.Id, portalId uint32)
 
 	// Unblock removes a portal from the blocked list for a character
-	Unblock(tenantId uuid.UUID, characterId uint32, mapId uint32, portalId uint32)
+	Unblock(tenantId uuid.UUID, characterId uint32, mapId _map.Id, portalId uint32)
 
 	// ClearForCharacter removes all blocked portals for a character
 	ClearForCharacter(tenantId uuid.UUID, characterId uint32)
@@ -55,19 +56,20 @@ func ResetCache() {
 }
 
 // portalKey creates a unique key for a map/portal combination
-func portalKey(mapId uint32, portalId uint32) string {
+func portalKey(mapId _map.Id, portalId uint32) string {
 	return fmt.Sprintf("%d:%d", mapId, portalId)
 }
 
 // parsePortalKey parses a portal key back to mapId and portalId
-func parsePortalKey(key string) (uint32, uint32) {
-	var mapId, portalId uint32
+func parsePortalKey(key string) (_map.Id, uint32) {
+	var mapId _map.Id
+	var portalId uint32
 	fmt.Sscanf(key, "%d:%d", &mapId, &portalId)
 	return mapId, portalId
 }
 
 // IsBlocked checks if a portal is blocked for a character
-func (c *InMemoryCache) IsBlocked(tenantId uuid.UUID, characterId uint32, mapId uint32, portalId uint32) bool {
+func (c *InMemoryCache) IsBlocked(tenantId uuid.UUID, characterId uint32, mapId _map.Id, portalId uint32) bool {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
 
@@ -85,7 +87,7 @@ func (c *InMemoryCache) IsBlocked(tenantId uuid.UUID, characterId uint32, mapId 
 }
 
 // Block adds a portal to the blocked list for a character
-func (c *InMemoryCache) Block(tenantId uuid.UUID, characterId uint32, mapId uint32, portalId uint32) {
+func (c *InMemoryCache) Block(tenantId uuid.UUID, characterId uint32, mapId _map.Id, portalId uint32) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
@@ -101,7 +103,7 @@ func (c *InMemoryCache) Block(tenantId uuid.UUID, characterId uint32, mapId uint
 }
 
 // Unblock removes a portal from the blocked list for a character
-func (c *InMemoryCache) Unblock(tenantId uuid.UUID, characterId uint32, mapId uint32, portalId uint32) {
+func (c *InMemoryCache) Unblock(tenantId uuid.UUID, characterId uint32, mapId _map.Id, portalId uint32) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 

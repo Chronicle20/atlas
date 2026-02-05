@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	scriptctx "github.com/Chronicle20/atlas-script-core/context"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -104,7 +106,7 @@ func (e *EvaluatorImpl) EvaluateCondition(characterId uint32, condition Conditio
 		worldIdStr, _, err := ExtractContextValue(condition.WorldId(), ctx.Context())
 		if err == nil {
 			if worldIdInt, convErr := strconv.Atoi(worldIdStr); convErr == nil {
-				validationCondition.WorldId = byte(worldIdInt)
+				validationCondition.WorldId = world.Id(worldIdInt)
 			}
 		}
 	}
@@ -114,7 +116,7 @@ func (e *EvaluatorImpl) EvaluateCondition(characterId uint32, condition Conditio
 		channelIdStr, _, err := ExtractContextValue(condition.ChannelId(), ctx.Context())
 		if err == nil {
 			if channelIdInt, convErr := strconv.Atoi(channelIdStr); convErr == nil {
-				validationCondition.ChannelId = byte(channelIdInt)
+				validationCondition.ChannelId = channel.Id(channelIdInt)
 			}
 		}
 	}

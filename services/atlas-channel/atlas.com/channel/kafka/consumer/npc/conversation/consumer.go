@@ -54,7 +54,7 @@ func handleSimpleConversationCommand(sc server.Model, wp writer.Producer) messag
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(c.CharacterId, announceSimpleConversation(l)(ctx)(wp)(c.NpcId, c.Body.Type, c.Message, c.Speaker, c.EndChat, c.SecondaryNpcId))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(c.CharacterId, announceSimpleConversation(l)(ctx)(wp)(c.NpcId, c.Body.Type, c.Message, c.Speaker, c.EndChat, c.SecondaryNpcId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, c.CharacterId)
 		}
@@ -71,7 +71,7 @@ func handleNumberConversationCommand(sc server.Model, wp writer.Producer) messag
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(c.CharacterId, announceNumberConversation(l)(ctx)(wp)(c.NpcId, "NUM", c.Message, c.Body.DefaultValue, c.Body.MinValue, c.Body.MaxValue, c.Speaker, c.EndChat, c.SecondaryNpcId))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(c.CharacterId, announceNumberConversation(l)(ctx)(wp)(c.NpcId, "NUM", c.Message, c.Body.DefaultValue, c.Body.MinValue, c.Body.MaxValue, c.Speaker, c.EndChat, c.SecondaryNpcId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to write number conversation for character [%d].", c.CharacterId)
 		}
@@ -88,7 +88,7 @@ func handleStyleConversationCommand(sc server.Model, wp writer.Producer) message
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(c.CharacterId, announceStyleConversation(l)(ctx)(wp)(c.NpcId, "STYLE", c.Message, c.Body.Styles, c.Speaker, c.EndChat, c.SecondaryNpcId))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(c.CharacterId, announceStyleConversation(l)(ctx)(wp)(c.NpcId, "STYLE", c.Message, c.Body.Styles, c.Speaker, c.EndChat, c.SecondaryNpcId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to write style conversation for character [%d].", c.CharacterId)
 		}

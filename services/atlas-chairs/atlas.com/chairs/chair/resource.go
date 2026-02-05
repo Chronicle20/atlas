@@ -9,6 +9,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -22,7 +23,7 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 		cr := router.PathPrefix("/chairs/{characterId}").Subrouter()
 		cr.HandleFunc("", registerGet("chairs_by_character_id", handleGetChair)).Methods(http.MethodGet)
 
-		mr := router.PathPrefix("/worlds/{worldId}/channels/{channelId}/maps/{mapId}/chairs").Subrouter()
+		mr := router.PathPrefix("/worlds/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/chairs").Subrouter()
 		mr.HandleFunc("", registerGet("chairs_in_map", handleGetChairsInMap)).Methods(http.MethodGet)
 	}
 }
@@ -54,30 +55,32 @@ func handleGetChairsInMap(d *rest.HandlerDependency, c *rest.HandlerContext) htt
 	return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
 		return rest.ParseChannelId(d.Logger(), func(channelId channel.Id) http.HandlerFunc {
 			return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
-				return func(w http.ResponseWriter, r *http.Request) {
-					f := field.NewBuilder(worldId, channelId, mapId).Build()
-					cip := character.NewProcessor(d.Logger(), d.Context()).InMapProvider(f)
-					fcip := model.FilteredProvider(cip, model.Filters[uint32](func(cid uint32) bool {
-						_, err := NewProcessor(d.Logger(), d.Context()).GetById(cid)
-						return err == nil
-					}))
-					res, err := model.SliceMap(func(cid uint32) (RestModel, error) {
-						cm, err := NewProcessor(d.Logger(), d.Context()).GetById(cid)
+				return rest.ParseInstanceId(d.Logger(), func(instanceId uuid.UUID) http.HandlerFunc {
+					return func(w http.ResponseWriter, r *http.Request) {
+						f := field.NewBuilder(worldId, channelId, mapId).SetInstance(instanceId).Build()
+						cip := character.NewProcessor(d.Logger(), d.Context()).InMapProvider(f)
+						fcip := model.FilteredProvider(cip, model.Filters[uint32](func(cid uint32) bool {
+							_, err := NewProcessor(d.Logger(), d.Context()).GetById(cid)
+							return err == nil
+						}))
+						res, err := model.SliceMap(func(cid uint32) (RestModel, error) {
+							cm, err := NewProcessor(d.Logger(), d.Context()).GetById(cid)
+							if err != nil {
+								return RestModel{}, err
+							}
+							return Transform(cid)(cm)
+						})(fcip)(model.ParallelMap())()
 						if err != nil {
-							return RestModel{}, err
+							d.Logger().WithError(err).Errorf("Creating REST model.")
+							w.WriteHeader(http.StatusInternalServerError)
+							return
 						}
-						return Transform(cid)(cm)
-					})(fcip)(model.ParallelMap())()
-					if err != nil {
-						d.Logger().WithError(err).Errorf("Creating REST model.")
-						w.WriteHeader(http.StatusInternalServerError)
-						return
-					}
 
-					query := r.URL.Query()
-					queryParams := jsonapi.ParseQueryFields(&query)
-					server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
-				}
+						query := r.URL.Query()
+						queryParams := jsonapi.ParseQueryFields(&query)
+						server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+					}
+				})
 			})
 		})
 	})

@@ -5,12 +5,14 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/sirupsen/logrus/hooks/test"
 	"golang.org/x/net/context"
 )
 
 // createTestCharacter creates a character model for testing
-func createTestCharacter(id uint32, name string, isGm bool, mapId uint32) character.Model {
+func createTestCharacter(id uint32, name string, isGm bool, mapId _map.Id) character.Model {
 	gm := 0
 	if isGm {
 		gm = 1
@@ -144,6 +146,7 @@ func TestMaxSkillCommandProducer_NoMatchReturnsNil(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	ctx := context.Background()
 	gmChar := createTestCharacter(12345, "TestGM", true, 100000000)
+	ch := channel.NewModel(1, 1)
 
 	testCases := []struct {
 		name    string
@@ -170,7 +173,7 @@ func TestMaxSkillCommandProducer_NoMatchReturnsNil(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			producer := MaxSkillCommandProducer(logger)
-			executor, found := producer(ctx)(1, 1, gmChar, tc.message)
+			executor, found := producer(ctx)(ch, gmChar, tc.message)
 
 			if found {
 				t.Errorf("Expected found=false for message '%s', got found=true", tc.message)
@@ -188,6 +191,7 @@ func TestResetSkillCommandProducer_NoMatchReturnsNil(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	ctx := context.Background()
 	gmChar := createTestCharacter(12345, "TestGM", true, 100000000)
+	ch := channel.NewModel(1, 1)
 
 	testCases := []struct {
 		name    string
@@ -210,7 +214,7 @@ func TestResetSkillCommandProducer_NoMatchReturnsNil(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			producer := ResetSkillCommandProducer(logger)
-			executor, found := producer(ctx)(1, 1, gmChar, tc.message)
+			executor, found := producer(ctx)(ch, gmChar, tc.message)
 
 			if found {
 				t.Errorf("Expected found=false for message '%s', got found=true", tc.message)

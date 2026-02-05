@@ -3,11 +3,13 @@ package guild
 import (
 	"atlas-query-aggregator/guild/member"
 	"atlas-query-aggregator/guild/title"
+
+	"github.com/Chronicle20/atlas-constants/world"
 )
 
 type Model struct {
 	id                  uint32
-	worldId             byte
+	worldId             world.Id
 	name                string
 	notice              string
 	points              uint32

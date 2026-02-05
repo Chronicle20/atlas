@@ -3,12 +3,13 @@ package rate
 import (
 	"sync"
 
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 )
 
 type tenantData struct {
 	lock       sync.RWMutex
-	worldRates map[byte]Model
+	worldRates map[world.Id]Model
 }
 
 type Registry struct {
@@ -44,13 +45,13 @@ func (r *Registry) getTenantData(t tenant.Model) *tenantData {
 	}
 
 	td := &tenantData{
-		worldRates: make(map[byte]Model),
+		worldRates: make(map[world.Id]Model),
 	}
 	r.tenants[t] = td
 	return td
 }
 
-func (r *Registry) GetWorldRates(t tenant.Model, worldId byte) Model {
+func (r *Registry) GetWorldRates(t tenant.Model, worldId world.Id) Model {
 	td := r.getTenantData(t)
 	td.lock.RLock()
 	defer td.lock.RUnlock()
@@ -61,7 +62,7 @@ func (r *Registry) GetWorldRates(t tenant.Model, worldId byte) Model {
 	return NewModel()
 }
 
-func (r *Registry) SetWorldRate(t tenant.Model, worldId byte, rateType Type, multiplier float64) Model {
+func (r *Registry) SetWorldRate(t tenant.Model, worldId world.Id, rateType Type, multiplier float64) Model {
 	td := r.getTenantData(t)
 	td.lock.Lock()
 	defer td.lock.Unlock()
@@ -73,7 +74,7 @@ func (r *Registry) SetWorldRate(t tenant.Model, worldId byte, rateType Type, mul
 	return td.worldRates[worldId]
 }
 
-func (r *Registry) InitWorldRates(t tenant.Model, worldId byte, rates Model) {
+func (r *Registry) InitWorldRates(t tenant.Model, worldId world.Id, rates Model) {
 	td := r.getTenantData(t)
 	td.lock.Lock()
 	defer td.lock.Unlock()

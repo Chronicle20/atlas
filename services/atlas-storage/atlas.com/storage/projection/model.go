@@ -3,6 +3,8 @@ package projection
 import (
 	"atlas-storage/asset"
 	"errors"
+
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 )
 
@@ -11,7 +13,7 @@ import (
 type Model struct {
 	characterId  uint32
 	accountId    uint32
-	worldId      byte
+	worldId      world.Id
 	storageId    uuid.UUID
 	capacity     uint32
 	mesos        uint32
@@ -27,7 +29,7 @@ func (m Model) AccountId() uint32 {
 	return m.accountId
 }
 
-func (m Model) WorldId() byte {
+func (m Model) WorldId() world.Id {
 	return m.worldId
 }
 
@@ -83,7 +85,7 @@ func AllCompartmentTypes() []asset.InventoryType {
 type Builder struct {
 	characterId  uint32
 	accountId    uint32
-	worldId      byte
+	worldId      world.Id
 	storageId    uuid.UUID
 	capacity     uint32
 	mesos        uint32
@@ -107,7 +109,7 @@ func (b *Builder) SetAccountId(accountId uint32) *Builder {
 	return b
 }
 
-func (b *Builder) SetWorldId(worldId byte) *Builder {
+func (b *Builder) SetWorldId(worldId world.Id) *Builder {
 	b.worldId = worldId
 	return b
 }

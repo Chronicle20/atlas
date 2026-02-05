@@ -5,14 +5,17 @@ import (
 	"atlas-messages/command"
 	_map "atlas-messages/map"
 	"atlas-messages/saga"
+	"regexp"
+	"strconv"
+
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-constants/job"
+	_map2 "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
-	"regexp"
-	"strconv"
 )
 
 func AwardExperienceCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
@@ -44,7 +47,8 @@ func AwardExperienceCommandProducer(l logrus.FieldLogger) func(ctx context.Conte
 			if match[1] == "me" {
 				idProvider = model.ToSliceProvider(model.FixedProvider(c.Id()))
 			} else if match[1] == "map" {
-				idProvider = mp.CharacterIdsInMapProvider(worldId, channelId, c.MapId())
+				f := field.NewBuilder(world.Id(worldId), channel.Id(channelId), _map2.Id(c.MapId())).Build()
+				idProvider = mp.CharacterIdsInFieldProvider(f)
 			} else {
 				idProvider = model.ToSliceProvider(cp.IdByNameProvider(match[1]))
 			}
@@ -121,7 +125,8 @@ func AwardLevelCommandProducer(l logrus.FieldLogger) func(ctx context.Context) f
 			if match[1] == "me" {
 				idProvider = model.ToSliceProvider(model.FixedProvider(c.Id()))
 			} else if match[1] == "map" {
-				idProvider = mp.CharacterIdsInMapProvider(worldId, channelId, c.MapId())
+				f := field.NewBuilder(world.Id(worldId), channel.Id(channelId), _map2.Id(c.MapId())).Build()
+				idProvider = mp.CharacterIdsInFieldProvider(f)
 			} else {
 				idProvider = model.ToSliceProvider(cp.IdByNameProvider(match[1]))
 			}
@@ -264,7 +269,8 @@ func AwardMesoCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fu
 			if match[1] == "me" {
 				idProvider = model.ToSliceProvider(model.FixedProvider(c.Id()))
 			} else if match[1] == "map" {
-				idProvider = mp.CharacterIdsInMapProvider(worldId, channelId, c.MapId())
+				f := field.NewBuilder(world.Id(worldId), channel.Id(channelId), _map2.Id(c.MapId())).Build()
+				idProvider = mp.CharacterIdsInFieldProvider(f)
 			} else {
 				idProvider = model.ToSliceProvider(cp.IdByNameProvider(match[1]))
 			}

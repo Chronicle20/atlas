@@ -2,6 +2,8 @@ package world
 
 import (
 	"atlas-world/channel"
+
+	"github.com/Chronicle20/atlas-constants/world"
 )
 
 type State byte
@@ -19,7 +21,7 @@ const (
 )
 
 type Model struct {
-	id                 byte
+	id                 world.Id
 	name               string
 	state              State
 	message            string
@@ -33,7 +35,7 @@ type Model struct {
 	questExpRate       float64
 }
 
-func (m Model) Id() byte {
+func (m Model) Id() world.Id {
 	return m.id
 }
 

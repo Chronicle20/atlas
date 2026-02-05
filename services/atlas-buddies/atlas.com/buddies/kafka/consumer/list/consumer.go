@@ -40,7 +40,7 @@ func handleCreateBuddyListCommand(db *gorm.DB) func(l logrus.FieldLogger, ctx co
 		if c.Type != list2.CommandTypeCreate {
 			return
 		}
-		_, err := list.NewProcessor(l, ctx, db).Create(c.CharacterId, c.Body.Capacity)
+		_, err := list.NewProcessor(l, ctx, db).Create(uint32(c.CharacterId), c.Body.Capacity)
 		if err != nil {
 			l.WithError(err).Errorf("Error creating buddy list for character [%d].", c.CharacterId)
 		}
@@ -52,7 +52,7 @@ func handleRequestBuddyAddCommand(db *gorm.DB) message.Handler[list2.Command[lis
 		if c.Type != list2.CommandTypeRequestAdd {
 			return
 		}
-		err := list.NewProcessor(l, ctx, db).RequestAddBuddyAndEmit(c.CharacterId, c.WorldId, c.Body.CharacterId, c.Body.Group)
+		err := list.NewProcessor(l, ctx, db).RequestAddBuddyAndEmit(uint32(c.CharacterId), c.WorldId, uint32(c.Body.CharacterId), c.Body.Group)
 		if err != nil {
 			l.WithError(err).Errorf("Error attempting to add [%d] to character [%d] buddy list.", c.Body.CharacterId, c.CharacterId)
 		}
@@ -64,7 +64,7 @@ func handleRequestBuddyDeleteCommand(db *gorm.DB) message.Handler[list2.Command[
 		if c.Type != list2.CommandTypeRequestDelete {
 			return
 		}
-		err := list.NewProcessor(l, ctx, db).RequestDeleteBuddyAndEmit(c.CharacterId, c.WorldId, c.Body.CharacterId)
+		err := list.NewProcessor(l, ctx, db).RequestDeleteBuddyAndEmit(uint32(c.CharacterId), c.WorldId, uint32(c.Body.CharacterId))
 		if err != nil {
 			l.WithError(err).Errorf("Error attempting to delete [%d] to character [%d] buddy list.", c.Body.CharacterId, c.CharacterId)
 		}
@@ -98,7 +98,7 @@ func handleIncreaseCapacityCommand(db *gorm.DB) message.Handler[list2.Command[li
 		if c.Type != list2.CommandTypeIncreaseCapacity {
 			return
 		}
-		err := list.NewProcessor(l, ctx, db).IncreaseCapacityWithTransactionAndEmit(c.TransactionId, c.CharacterId, c.WorldId, c.Body.NewCapacity)
+		err := list.NewProcessor(l, ctx, db).IncreaseCapacityWithTransactionAndEmit(c.TransactionId, uint32(c.CharacterId), c.WorldId, c.Body.NewCapacity)
 		if err != nil {
 			l.WithError(err).Errorf("Failed to increase buddy list capacity for character [%d]. Transaction: %s", c.CharacterId, c.TransactionId.String())
 		}

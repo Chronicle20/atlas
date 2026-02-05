@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	mapMonstersResource = "worlds/%d/channels/%d/maps/%d/monsters"
+	mapMonstersResource = "worlds/%d/channels/%d/maps/%d/instances/%s/monsters"
 	monstersResource    = "monsters/%d"
 )
 
@@ -17,7 +17,7 @@ func getBaseRequest() string {
 }
 
 func requestInMap(f field.Model) requests.Request[[]RestModel] {
-	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+mapMonstersResource, f.WorldId(), f.ChannelId(), f.MapId()))
+	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+mapMonstersResource, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String()))
 }
 
 func requestById(uniqueId uint32) requests.Request[RestModel] {

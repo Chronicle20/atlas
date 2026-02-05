@@ -2,6 +2,8 @@ package foothold
 
 import (
 	"context"
+
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/sirupsen/logrus"
 )
 
@@ -9,7 +11,7 @@ import (
 type Processor interface {
 	// GetFootholdBelow looks up the foothold ID below a given position in a map.
 	// Returns the foothold ID if found, or 0 if no foothold exists at the position.
-	GetFootholdBelow(mapId uint32, x, y int16) (uint32, error)
+	GetFootholdBelow(mapId _map.Id, x, y int16) (uint32, error)
 }
 
 type ProcessorImpl struct {
@@ -24,7 +26,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
-func (p *ProcessorImpl) GetFootholdBelow(mapId uint32, x, y int16) (uint32, error) {
+func (p *ProcessorImpl) GetFootholdBelow(mapId _map.Id, x, y int16) (uint32, error) {
 	input := PositionInputRestModel{
 		X: x,
 		Y: y,

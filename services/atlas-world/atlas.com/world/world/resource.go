@@ -3,12 +3,14 @@ package world
 import (
 	"atlas-world/rest"
 	"errors"
+	"net/http"
+
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
-	"net/http"
 )
 
 const (
@@ -36,7 +38,7 @@ func decoratorsFromInclude(r *http.Request, p Processor) []model.Decorator[Model
 }
 
 func handleGetWorld(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseWorldId(d.Logger(), func(worldId byte) http.HandlerFunc {
+	return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			p := NewProcessor(d.Logger(), d.Context())
 			ws, err := p.GetWorld(decoratorsFromInclude(r, p)...)(worldId)

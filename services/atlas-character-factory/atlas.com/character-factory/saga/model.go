@@ -253,47 +253,47 @@ type ValidateCharacterStatePayload struct {
 
 // RequestGuildNamePayload represents the payload required to request a guild name.
 type RequestGuildNamePayload struct {
-	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
-	WorldId     byte   `json:"worldId"`     // WorldId associated with the action
-	ChannelId   byte   `json:"channelId"`   // ChannelId associated with the action
+	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
 }
 
 // RequestGuildEmblemPayload represents the payload required to request a guild emblem change.
 type RequestGuildEmblemPayload struct {
-	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
-	WorldId     byte   `json:"worldId"`     // WorldId associated with the action
-	ChannelId   byte   `json:"channelId"`   // ChannelId associated with the action
+	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
 }
 
 // RequestGuildDisbandPayload represents the payload required to request a guild disband.
 type RequestGuildDisbandPayload struct {
-	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
-	WorldId     byte   `json:"worldId"`     // WorldId associated with the action
-	ChannelId   byte   `json:"channelId"`   // ChannelId associated with the action
+	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
 }
 
 // RequestGuildCapacityIncreasePayload represents the payload required to request a guild capacity increase.
 type RequestGuildCapacityIncreasePayload struct {
-	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
-	WorldId     byte   `json:"worldId"`     // WorldId associated with the action
-	ChannelId   byte   `json:"channelId"`   // ChannelId associated with the action
+	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
 }
 
 // CreateInvitePayload represents the payload required to create an invitation.
 type CreateInvitePayload struct {
-	InviteType   string `json:"inviteType"`   // Type of invitation (e.g., "GUILD", "PARTY", "BUDDY")
-	OriginatorId uint32 `json:"originatorId"` // ID of the character sending the invitation
-	TargetId     uint32 `json:"targetId"`     // ID of the character receiving the invitation
-	ReferenceId  uint32 `json:"referenceId"`  // ID of the entity being invited to (e.g., guild ID, party ID)
-	WorldId      byte   `json:"worldId"`      // WorldId associated with the action
+	InviteType   string   `json:"inviteType"`   // Type of invitation (e.g., "GUILD", "PARTY", "BUDDY")
+	OriginatorId uint32   `json:"originatorId"` // ID of the character sending the invitation
+	TargetId     uint32   `json:"targetId"`     // ID of the character receiving the invitation
+	ReferenceId  uint32   `json:"referenceId"`  // ID of the entity being invited to (e.g., guild ID, party ID)
+	WorldId      world.Id `json:"worldId"`      // WorldId associated with the action
 }
 
 // CharacterCreatePayload represents the payload required to create a character.
 // Note: this does not include any character attributes, as those are determined by the character service.
 type CharacterCreatePayload struct {
-	AccountId    uint32  `json:"accountId"` // AccountId associated with the action
-	WorldId      byte    `json:"worldId"`   // WorldId associated with the action
-	Name         string  `json:"name"`      // Name of the character to create
+	AccountId    uint32   `json:"accountId"` // AccountId associated with the action
+	WorldId      world.Id `json:"worldId"`   // WorldId associated with the action
+	Name         string   `json:"name"`      // Name of the character to create
 	Gender       byte    `json:"gender"`
 	Level        byte    `json:"level"`
 	Strength     uint16  `json:"strength"`

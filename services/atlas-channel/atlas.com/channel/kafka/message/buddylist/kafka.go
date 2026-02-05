@@ -1,6 +1,7 @@
 package buddylist
 
 import (
+	"github.com/Chronicle20/atlas-constants/character"
 	"github.com/Chronicle20/atlas-constants/world"
 )
 
@@ -11,19 +12,19 @@ const (
 )
 
 type Command[E any] struct {
-	WorldId     world.Id `json:"worldId"`
-	CharacterId uint32 `json:"characterId"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	WorldId     world.Id     `json:"worldId"`
+	CharacterId character.Id `json:"characterId"`
+	Type        string       `json:"type"`
+	Body        E            `json:"body"`
 }
 
 type RequestAddBuddyCommandBody struct {
-	CharacterId uint32 `json:"characterId"`
-	Group       string `json:"group"`
+	CharacterId character.Id `json:"characterId"`
+	Group       string       `json:"group"`
 }
 
 type RequestDeleteBuddyCommandBody struct {
-	CharacterId uint32 `json:"characterId"`
+	CharacterId character.Id `json:"characterId"`
 }
 
 const (
@@ -44,34 +45,34 @@ const (
 )
 
 type StatusEvent[E any] struct {
-	WorldId     world.Id `json:"worldId"`
-	CharacterId uint32 `json:"characterId"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	WorldId     world.Id     `json:"worldId"`
+	CharacterId character.Id `json:"characterId"`
+	Type        string       `json:"type"`
+	Body        E            `json:"body"`
 }
 
 type BuddyAddedStatusEventBody struct {
-	CharacterId   uint32 `json:"characterId"`
-	Group         string `json:"group"`
-	CharacterName string `json:"characterName"`
-	ChannelId     int8   `json:"channelId"`
+	CharacterId   character.Id `json:"characterId"`
+	Group         string       `json:"group"`
+	CharacterName string       `json:"characterName"`
+	ChannelId     int8         `json:"channelId"`
 }
 
 type BuddyRemovedStatusEventBody struct {
-	CharacterId uint32 `json:"characterId"`
+	CharacterId character.Id `json:"characterId"`
 }
 
 type BuddyUpdatedStatusEventBody struct {
-	CharacterId   uint32 `json:"characterId"`
-	Group         string `json:"group"`
-	CharacterName string `json:"characterName"`
-	ChannelId     int8   `json:"channelId"`
-	InShop        bool   `json:"inShop"`
+	CharacterId   character.Id `json:"characterId"`
+	Group         string       `json:"group"`
+	CharacterName string       `json:"characterName"`
+	ChannelId     int8         `json:"channelId"`
+	InShop        bool         `json:"inShop"`
 }
 
 type BuddyChannelChangeStatusEventBody struct {
-	CharacterId uint32 `json:"characterId"`
-	ChannelId   int8   `json:"channelId"`
+	CharacterId character.Id `json:"characterId"`
+	ChannelId   int8         `json:"channelId"`
 }
 
 type BuddyCapacityChangeStatusEventBody struct {

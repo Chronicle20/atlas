@@ -38,7 +38,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, p producer.Provider
 }
 
 func (p *ProcessorImpl) InMapModelProvider(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestInMap(byte(worldId), byte(channelId), uint32(mapId)), Extract, model.Filters[Model]())
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestInMap(worldId, channelId, mapId), Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) GetInMap(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id) ([]Model, error) {

@@ -6,6 +6,7 @@ import (
 	channel2 "atlas-transports/kafka/message/channel"
 	"context"
 
+	channel3 "github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -31,13 +32,14 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 }
 
 func handleEventStatus(l logrus.FieldLogger, ctx context.Context, e channel2.StatusEvent) {
-	if e.Type == channel2.StatusTypeStarted {
+	switch e.Type {
+	case channel3.StatusTypeStarted:
 		l.Debugf("Registering channel [%d] for world [%d].", e.ChannelId, e.WorldId)
 		_ = channel.NewProcessor(l, ctx).Register(e.WorldId, e.ChannelId)
-	} else if e.Type == channel2.StatusTypeShutdown {
+	case channel3.StatusTypeShutdown:
 		l.Debugf("Unregistering channel [%d] for world [%d].", e.ChannelId, e.WorldId)
 		_ = channel.NewProcessor(l, ctx).Unregister(e.WorldId, e.ChannelId)
-	} else {
+	default:
 		l.Errorf("Unhandled event status [%s].", e.Type)
 	}
 }

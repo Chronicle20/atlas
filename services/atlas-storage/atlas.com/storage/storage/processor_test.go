@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	assetConstants "github.com/Chronicle20/atlas-constants/asset"
+	"github.com/Chronicle20/atlas-constants/world"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -50,7 +52,7 @@ func testDatabase(t *testing.T) *gorm.DB {
 func TestProcessor_GetOrCreateStorage_Create(t *testing.T) {
 	p := storage.NewProcessor(testLogger(), testContext(), testDatabase(t))
 
-	worldId := byte(0)
+	worldId := world.Id(0)
 	accountId := uint32(12345)
 
 	// Test execution - should create new storage
@@ -79,7 +81,7 @@ func TestProcessor_GetOrCreateStorage_Create(t *testing.T) {
 func TestProcessor_GetOrCreateStorage_Get(t *testing.T) {
 	p := storage.NewProcessor(testLogger(), testContext(), testDatabase(t))
 
-	worldId := byte(0)
+	worldId := world.Id(0)
 	accountId := uint32(12345)
 
 	// Create initial storage
@@ -104,7 +106,7 @@ func TestProcessor_Deposit_Equipable(t *testing.T) {
 	ctx := testContext()
 	p := storage.NewProcessor(testLogger(), ctx, db)
 
-	worldId := byte(0)
+	worldId := world.Id(0)
 	accountId := uint32(12345)
 
 	body := message.DepositBody{
@@ -145,7 +147,7 @@ func TestProcessor_Deposit_Stackable(t *testing.T) {
 	ctx := testContext()
 	p := storage.NewProcessor(testLogger(), ctx, db)
 
-	worldId := byte(0)
+	worldId := world.Id(0)
 	accountId := uint32(12345)
 
 	body := message.DepositBody{
@@ -185,7 +187,7 @@ func TestProcessor_Withdraw_Full(t *testing.T) {
 	ctx := testContext()
 	p := storage.NewProcessor(testLogger(), ctx, db)
 
-	worldId := byte(0)
+	worldId := world.Id(0)
 	accountId := uint32(12345)
 
 	// Deposit an item first
@@ -204,7 +206,7 @@ func TestProcessor_Withdraw_Full(t *testing.T) {
 
 	// Withdraw the item
 	withdrawBody := message.WithdrawBody{
-		AssetId: assetId,
+		AssetId: assetConstants.Id(assetId),
 	}
 
 	err = p.Withdraw(worldId, accountId, withdrawBody)
@@ -225,7 +227,7 @@ func TestProcessor_Withdraw_Partial(t *testing.T) {
 	ctx := testContext()
 	p := storage.NewProcessor(testLogger(), ctx, db)
 
-	worldId := byte(0)
+	worldId := world.Id(0)
 	accountId := uint32(12345)
 
 	// Deposit a stackable item
@@ -249,7 +251,7 @@ func TestProcessor_Withdraw_Partial(t *testing.T) {
 
 	// Partial withdrawal
 	withdrawBody := message.WithdrawBody{
-		AssetId:  assetId,
+		AssetId:  assetConstants.Id(assetId),
 		Quantity: 30,
 	}
 
@@ -275,7 +277,7 @@ func TestProcessor_UpdateMesos_Set(t *testing.T) {
 	ctx := testContext()
 	p := storage.NewProcessor(testLogger(), ctx, db)
 
-	worldId := byte(0)
+	worldId := world.Id(0)
 	accountId := uint32(12345)
 
 	// Create storage
@@ -311,7 +313,7 @@ func TestProcessor_UpdateMesos_Add(t *testing.T) {
 	ctx := testContext()
 	p := storage.NewProcessor(testLogger(), ctx, db)
 
-	worldId := byte(0)
+	worldId := world.Id(0)
 	accountId := uint32(12345)
 
 	// Create storage with initial mesos
@@ -348,7 +350,7 @@ func TestProcessor_UpdateMesos_Subtract(t *testing.T) {
 	ctx := testContext()
 	p := storage.NewProcessor(testLogger(), ctx, db)
 
-	worldId := byte(0)
+	worldId := world.Id(0)
 	accountId := uint32(12345)
 
 	// Create storage with initial mesos
@@ -385,7 +387,7 @@ func TestProcessor_UpdateMesos_SubtractUnderflow(t *testing.T) {
 	ctx := testContext()
 	p := storage.NewProcessor(testLogger(), ctx, db)
 
-	worldId := byte(0)
+	worldId := world.Id(0)
 	accountId := uint32(12345)
 
 	// Create storage with initial mesos
@@ -422,7 +424,7 @@ func TestProcessor_DepositRollback(t *testing.T) {
 	ctx := testContext()
 	p := storage.NewProcessor(testLogger(), ctx, db)
 
-	worldId := byte(0)
+	worldId := world.Id(0)
 	accountId := uint32(12345)
 
 	// Deposit a stackable item
@@ -446,7 +448,7 @@ func TestProcessor_DepositRollback(t *testing.T) {
 
 	// Rollback the deposit
 	rollbackBody := message.DepositRollbackBody{
-		AssetId: assetId,
+		AssetId: assetConstants.Id(assetId),
 	}
 
 	err = p.DepositRollback(worldId, accountId, rollbackBody)
@@ -473,7 +475,7 @@ func TestProcessor_MultipleDeposits(t *testing.T) {
 	ctx := testContext()
 	p := storage.NewProcessor(testLogger(), ctx, db)
 
-	worldId := byte(0)
+	worldId := world.Id(0)
 	accountId := uint32(12345)
 
 	// Deposit multiple items (0-indexed slots)
@@ -515,7 +517,7 @@ func TestProcessor_DeleteByAccountId(t *testing.T) {
 	p := storage.NewProcessor(testLogger(), ctx, db)
 	te := tenant.MustFromContext(ctx)
 
-	worldId := byte(0)
+	worldId := world.Id(0)
 	accountId := uint32(12345)
 
 	// Create storage and deposit items
@@ -589,7 +591,7 @@ func TestProcessor_DeleteByAccountId_MultipleWorlds(t *testing.T) {
 	accountId := uint32(12345)
 
 	// Create storage in multiple worlds
-	for worldId := byte(0); worldId < 3; worldId++ {
+	for worldId := world.Id(0); worldId < 3; worldId++ {
 		_, err := p.GetOrCreateStorage(worldId, accountId)
 		if err != nil {
 			t.Fatalf("Failed to create storage in world %d: %v", worldId, err)

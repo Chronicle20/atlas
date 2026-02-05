@@ -764,12 +764,12 @@ func (p *ProcessorImpl) processStartActions(characterId uint32, questId uint32, 
 
 	// Award exp on start
 	if actions.Exp > 0 {
-		builder.AddAwardExperience(characterId, byte(f.WorldId()), byte(f.ChannelId()), actions.Exp)
+		builder.AddAwardExperience(characterId, f.WorldId(), f.ChannelId(), actions.Exp)
 	}
 
 	// Award meso on start
 	if actions.Money != 0 {
-		builder.AddAwardMesos(characterId, byte(f.WorldId()), byte(f.ChannelId()), actions.Money, questId)
+		builder.AddAwardMesos(characterId, f.WorldId(), f.ChannelId(), actions.Money, questId)
 	}
 
 	// Emit saga if there are steps
@@ -823,17 +823,17 @@ func (p *ProcessorImpl) processEndActions(characterId uint32, questId uint32, qu
 
 	// Award experience
 	if actions.Exp > 0 {
-		builder.AddAwardExperience(characterId, byte(f.WorldId()), byte(f.ChannelId()), actions.Exp)
+		builder.AddAwardExperience(characterId, f.WorldId(), f.ChannelId(), actions.Exp)
 	}
 
 	// Award meso
 	if actions.Money != 0 {
-		builder.AddAwardMesos(characterId, byte(f.WorldId()), byte(f.ChannelId()), actions.Money, questId)
+		builder.AddAwardMesos(characterId, f.WorldId(), f.ChannelId(), actions.Money, questId)
 	}
 
 	// Award fame
 	if actions.Fame != 0 {
-		builder.AddAwardFame(characterId, byte(f.WorldId()), byte(f.ChannelId()), actions.Fame, questId)
+		builder.AddAwardFame(characterId, f.WorldId(), f.ChannelId(), actions.Fame, questId)
 	}
 
 	// Award skills

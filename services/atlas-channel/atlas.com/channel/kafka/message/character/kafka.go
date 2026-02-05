@@ -3,6 +3,7 @@ package character
 import (
 	"github.com/Chronicle20/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/stat"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 )
@@ -89,16 +90,18 @@ const (
 )
 
 type StatusEvent[E any] struct {
-	CharacterId uint32   `json:"characterId"`
-	Type        string   `json:"type"`
-	WorldId     world.Id `json:"worldId"`
-	Body        E        `json:"body"`
+	TransactionId uuid.UUID `json:"transactionId"`
+	WorldId       world.Id  `json:"worldId"`
+	CharacterId   uint32    `json:"characterId"`
+	Type          string    `json:"type"`
+	Body          E         `json:"body"`
 }
 
 type StatusEventStatChangedBody struct {
-	ChannelId       channel.Id `json:"channelId"`
-	ExclRequestSent bool       `json:"exclRequestSent"`
-	Updates         []string   `json:"updates"`
+	ChannelId       channel.Id             `json:"channelId"`
+	ExclRequestSent bool                   `json:"exclRequestSent"`
+	Updates         []stat.Type            `json:"updates"`
+	Values          map[string]interface{} `json:"values,omitempty"`
 }
 
 type StatusEventMapChangedBody struct {

@@ -5,9 +5,11 @@ import (
 	"atlas-query-aggregator/quest"
 	"fmt"
 
+	"github.com/Chronicle20/atlas-constants/channel"
 	inventory2 "github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 )
 
 // ConditionType represents the type of condition to validate
@@ -61,16 +63,16 @@ const (
 
 // ConditionInput represents the structured input for creating a condition
 type ConditionInput struct {
-	Type            string `json:"type"`                      // e.g., "jobId", "meso", "item"
-	Operator        string `json:"operator"`                  // e.g., "=", ">=", "<", "in"
-	Value           int    `json:"value"`                     // Value or quantity (for single value operators)
-	Values          []int  `json:"values,omitempty"`          // Values for "in" operator
-	ReferenceId     uint32 `json:"referenceId,omitempty"`     // For quest validation, item checks, etc.
-	Step            string `json:"step,omitempty"`            // For quest progress validation
-	ItemId          uint32 `json:"itemId,omitempty"`          // Deprecated: use ReferenceId instead
-	WorldId         byte   `json:"worldId,omitempty"`         // For mapCapacity conditions
-	ChannelId       byte   `json:"channelId,omitempty"`       // For mapCapacity conditions
-	IncludeEquipped bool   `json:"includeEquipped,omitempty"` // For item conditions: also check equipped items
+	Type            string     `json:"type"`                      // e.g., "jobId", "meso", "item"
+	Operator        string     `json:"operator"`                  // e.g., "=", ">=", "<", "in"
+	Value           int        `json:"value"`                     // Value or quantity (for single value operators)
+	Values          []int      `json:"values,omitempty"`          // Values for "in" operator
+	ReferenceId     uint32     `json:"referenceId,omitempty"`     // For quest validation, item checks, etc.
+	Step            string     `json:"step,omitempty"`            // For quest progress validation
+	ItemId          uint32     `json:"itemId,omitempty"`          // Deprecated: use ReferenceId instead
+	WorldId         world.Id   `json:"worldId,omitempty"`         // For mapCapacity conditions
+	ChannelId       channel.Id `json:"channelId,omitempty"`       // For mapCapacity conditions
+	IncludeEquipped bool       `json:"includeEquipped,omitempty"` // For item conditions: also check equipped items
 }
 
 // ConditionResult represents the result of a condition evaluation
@@ -89,12 +91,12 @@ type Condition struct {
 	conditionType   ConditionType
 	operator        Operator
 	value           int
-	values          []int  // Used for "in" operator
-	referenceId     uint32 // Used for quest validation, item conditions, etc.
-	step            string // Used for quest progress validation
-	worldId         byte   // Used for mapCapacity conditions
-	channelId       byte   // Used for mapCapacity conditions
-	includeEquipped bool   // For item conditions: also check equipped items
+	values          []int      // Used for "in" operator
+	referenceId     uint32     // Used for quest validation, item conditions, etc.
+	step            string     // Used for quest progress validation
+	worldId         world.Id   // Used for mapCapacity conditions
+	channelId       channel.Id // Used for mapCapacity conditions
+	includeEquipped bool       // For item conditions: also check equipped items
 }
 
 // ConditionBuilder is used to safely construct Condition objects
@@ -105,8 +107,8 @@ type ConditionBuilder struct {
 	values          []int
 	referenceId     *uint32
 	step            string
-	worldId         byte
-	channelId       byte
+	worldId         world.Id
+	channelId       channel.Id
 	includeEquipped bool
 	err             error
 }
@@ -691,7 +693,7 @@ func (c Condition) EvaluateWithContext(ctx ValidationContext) ConditionResult {
 
 	case MapCapacityCondition:
 		// Get player count for the specified map using worldId/channelId from condition
-		actualValue = ctx.GetPlayerCountInMap(c.worldId, c.channelId, c.referenceId)
+		actualValue = ctx.GetPlayerCountInMap(c.worldId, c.channelId, _map.Id(c.referenceId))
 		description = fmt.Sprintf("Map %d Player Count %s %d (world:%d channel:%d)", c.referenceId, c.operator, c.value, c.worldId, c.channelId)
 
 	case GuildIdCondition:

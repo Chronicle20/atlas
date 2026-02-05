@@ -1,5 +1,10 @@
 package macro
 
+import (
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
+)
+
 const (
 	EnvCommandTopic     = "COMMAND_TOPIC_SKILL_MACRO"
 	EnvStatusEventTopic = "STATUS_EVENT_TOPIC_SKILL_MACRO"
@@ -10,9 +15,11 @@ const (
 )
 
 type Command[E any] struct {
-	CharacterId uint32 `json:"characterId"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	TransactionId uuid.UUID `json:"transactionId"`
+	WorldId       world.Id  `json:"worldId"`
+	CharacterId   uint32    `json:"characterId"`
+	Type          string    `json:"type"`
+	Body          E         `json:"body"`
 }
 
 type UpdateCommandBody struct {
@@ -30,9 +37,11 @@ type MacroBody struct {
 
 // StatusEvent is a generic event message for macro status changes
 type StatusEvent[E any] struct {
-	CharacterId uint32 `json:"characterId"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	TransactionId uuid.UUID `json:"transactionId"`
+	WorldId       world.Id  `json:"worldId"`
+	CharacterId   uint32    `json:"characterId"`
+	Type          string    `json:"type"`
+	Body          E         `json:"body"`
 }
 
 // StatusEventUpdatedBody contains the data for an updated macro event

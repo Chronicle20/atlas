@@ -38,9 +38,9 @@ Resource type: `chairs`
 
 ---
 
-### GET /worlds/{worldId}/channels/{channelId}/maps/{mapId}/chairs
+### GET /worlds/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/chairs
 
-Retrieves all chairs in use in a specific map.
+Retrieves all chairs in use in a specific map instance.
 
 #### Parameters
 
@@ -49,6 +49,7 @@ Retrieves all chairs in use in a specific map.
 | worldId | path | world.Id | yes |
 | channelId | path | channel.Id | yes |
 | mapId | path | map.Id | yes |
+| instanceId | path | uuid.UUID | yes |
 
 #### Request Model
 

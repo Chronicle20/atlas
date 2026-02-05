@@ -13,6 +13,7 @@ import (
 	"context"
 	"errors"
 	inventory2 "github.com/Chronicle20/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas-constants/stat"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -313,29 +314,29 @@ func handleSlotChanged(sc server.Model, wp writer.Producer) message.Handler[pet2
 		}
 
 		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.OwnerId, func(s session.Model) error {
-			stat := ""
+			statType := stat.TypePetSn1
 			sn := int64(0)
 			if e.Body.NewSlot < 0 {
 				sn = 0
 				if e.Body.OldSlot == 0 {
-					stat = writer.StatPetSn1
+					statType = stat.TypePetSn1
 				} else if e.Body.OldSlot == 1 {
-					stat = writer.StatPetSn2
+					statType = stat.TypePetSn2
 				} else if e.Body.OldSlot == 2 {
-					stat = writer.StatPetSn3
+					statType = stat.TypePetSn3
 				}
 			} else if e.Body.NewSlot == 0 {
-				stat = writer.StatPetSn1
+				statType = stat.TypePetSn1
 				sn = int64(e.PetId)
 			} else if e.Body.NewSlot == 1 {
-				stat = writer.StatPetSn2
+				statType = stat.TypePetSn2
 				sn = int64(e.PetId)
 			} else {
-				stat = writer.StatPetSn3
+				statType = stat.TypePetSn3
 				sn = int64(e.PetId)
 			}
 
-			err := session.Announce(l)(ctx)(wp)(writer.StatChanged)(writer.StatChangedBody(l)([]model2.StatUpdate{model2.NewStatUpdate(stat, sn)}, true))(s)
+			err := session.Announce(l)(ctx)(wp)(writer.StatChanged)(writer.StatChangedBody(l)([]model2.StatUpdate{model2.NewStatUpdate(statType, sn)}, true))(s)
 			if err != nil {
 				return err
 			}

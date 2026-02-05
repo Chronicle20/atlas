@@ -4,6 +4,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/stat"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 )
@@ -211,9 +212,10 @@ type FameChangedStatusEventBody struct {
 }
 
 type StatusEventStatChangedBody struct {
-	ChannelId       channel.Id `json:"channelId"`
-	ExclRequestSent bool       `json:"exclRequestSent"`
-	Updates         []string   `json:"updates"`
+	ChannelId       channel.Id             `json:"channelId"`
+	ExclRequestSent bool                   `json:"exclRequestSent"`
+	Updates         []stat.Type            `json:"updates"`
+	Values          map[string]interface{} `json:"values,omitempty"`
 }
 
 const (

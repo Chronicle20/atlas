@@ -16,14 +16,12 @@ type StatusCommand struct {
 
 const (
 	EnvEventTopicStatus = "EVENT_TOPIC_CHANNEL_STATUS"
-	StatusTypeStarted   = "STARTED"
-	StatusTypeShutdown  = "SHUTDOWN"
 )
 
 type StatusEvent struct {
-	Type      string     `json:"type"`
-	WorldId   world.Id   `json:"worldId"`
-	ChannelId channel.Id `json:"channelId"`
-	IpAddress string     `json:"ipAddress"`
-	Port      int        `json:"port"`
+	Type      channel.StatusType `json:"type"`
+	WorldId   world.Id           `json:"worldId"`
+	ChannelId channel.Id         `json:"channelId"`
+	IpAddress string             `json:"ipAddress"`
+	Port      int                `json:"port"`
 }

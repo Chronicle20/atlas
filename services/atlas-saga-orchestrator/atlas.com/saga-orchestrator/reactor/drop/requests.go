@@ -4,6 +4,7 @@ import (
 	"atlas-saga-orchestrator/rest"
 	"fmt"
 
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 
@@ -24,7 +25,7 @@ func requestReactorDrops(reactorId uint32) requests.Request[ReactorRestModel] {
 	return rest.MakeGetRequest[ReactorRestModel](fmt.Sprintf(getBaseRequest()+reactorDropsPath, reactorId))
 }
 
-func requestDropPosition(mapId uint32, initialX, initialY, fallbackX, fallbackY int16) requests.Request[PositionRestModel] {
+func requestDropPosition(mapId _map.Id, initialX, initialY, fallbackX, fallbackY int16) requests.Request[PositionRestModel] {
 	input := DropPositionInputModel{
 		InitialX:  initialX,
 		InitialY:  initialY,

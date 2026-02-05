@@ -1,10 +1,12 @@
 package monster
 
 import (
+	"strconv"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
-	"strconv"
+	"github.com/google/uuid"
 )
 
 type RestModel struct {
@@ -12,6 +14,7 @@ type RestModel struct {
 	WorldId            world.Id      `json:"worldId"`
 	ChannelId          channel.Id    `json:"channelId"`
 	MapId              _map.Id       `json:"mapId"`
+	Instance           uuid.UUID     `json:"instance"`
 	MonsterId          uint32        `json:"monsterId"`
 	ControlCharacterId uint32        `json:"controlCharacterId"`
 	X                  int16         `json:"x"`
@@ -23,12 +26,12 @@ type RestModel struct {
 	Hp                 uint32        `json:"hp"`
 	MaxMp              uint32        `json:"maxMp"`
 	Mp                 uint32        `json:"mp"`
-	DamageEntries      []damageEntry `json:"damageEntries"`
+	DamageEntries      []DamageEntry `json:"damageEntries"`
 }
 
-type damageEntry struct {
-	CharacterId int   `json:"characterId"`
-	Damage      int64 `json:"damage"`
+type DamageEntry struct {
+	CharacterId uint32 `json:"characterId"`
+	Damage      uint32 `json:"damage"`
 }
 
 func (m RestModel) GetID() string {
@@ -55,6 +58,7 @@ func Extract(m RestModel) (Model, error) {
 		worldId:            m.WorldId,
 		channelId:          m.ChannelId,
 		mapId:              m.MapId,
+		instance:           m.Instance,
 		maxHp:              m.MaxHp,
 		hp:                 m.Hp,
 		mp:                 m.Mp,

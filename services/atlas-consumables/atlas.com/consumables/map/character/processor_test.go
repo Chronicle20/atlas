@@ -36,7 +36,7 @@ func TestProcessor_Enter(t *testing.T) {
 	// Clean up
 	r.RemoveCharacter(characterId)
 
-	p.Enter(worldId, channelId, mapId, characterId)
+	p.Enter(worldId, channelId, mapId, uuid.Nil, characterId)
 
 	mk, ok := r.GetMap(characterId)
 	if !ok {
@@ -69,7 +69,7 @@ func TestProcessor_Exit(t *testing.T) {
 	mapId := uint32(100000000)
 
 	// Setup: enter first
-	p.Enter(worldId, channelId, mapId, characterId)
+	p.Enter(worldId, channelId, mapId, uuid.Nil, characterId)
 
 	// Verify character exists
 	_, ok := r.GetMap(characterId)
@@ -78,7 +78,7 @@ func TestProcessor_Exit(t *testing.T) {
 	}
 
 	// Exit
-	p.Exit(worldId, channelId, mapId, characterId)
+	p.Exit(worldId, channelId, mapId, uuid.Nil, characterId)
 
 	// Verify character is gone
 	_, ok = r.GetMap(characterId)
@@ -102,7 +102,7 @@ func TestProcessor_GetMap(t *testing.T) {
 	r.RemoveCharacter(characterId)
 
 	// Enter
-	p.Enter(worldId, channelId, mapId, characterId)
+	p.Enter(worldId, channelId, mapId, uuid.Nil, characterId)
 
 	// Get map via processor
 	m, err := p.GetMap(characterId)
@@ -157,10 +157,10 @@ func TestProcessor_TransitionMap(t *testing.T) {
 	r.RemoveCharacter(characterId)
 
 	// Enter old map
-	p.Enter(worldId, channelId, oldMapId, characterId)
+	p.Enter(worldId, channelId, oldMapId, uuid.Nil, characterId)
 
 	// Transition to new map
-	p.TransitionMap(worldId, channelId, newMapId, characterId, oldMapId)
+	p.TransitionMap(worldId, channelId, newMapId, uuid.Nil, characterId, oldMapId)
 
 	// Verify new location
 	mk, ok := r.GetMap(characterId)
@@ -192,10 +192,10 @@ func TestProcessor_TransitionChannel(t *testing.T) {
 	r.RemoveCharacter(characterId)
 
 	// Enter with old channel
-	p.Enter(worldId, oldChannelId, mapId, characterId)
+	p.Enter(worldId, oldChannelId, mapId, uuid.Nil, characterId)
 
 	// Transition channel
-	p.TransitionChannel(worldId, newChannelId, oldChannelId, characterId, mapId)
+	p.TransitionChannel(worldId, newChannelId, oldChannelId, characterId, mapId, uuid.Nil)
 
 	// Verify new channel
 	mk, ok := r.GetMap(characterId)

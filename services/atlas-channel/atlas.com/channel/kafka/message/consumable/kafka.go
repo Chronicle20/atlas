@@ -2,6 +2,9 @@ package consumable
 
 import (
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/character"
+	"github.com/Chronicle20/atlas-constants/inventory/slot"
+	"github.com/Chronicle20/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
@@ -15,26 +18,26 @@ const (
 )
 
 type Command[E any] struct {
-	WorldId     world.Id   `json:"worldId"`
-	ChannelId   channel.Id `json:"channelId"`
-	MapId       _map.Id    `json:"mapId"`
-	Instance    uuid.UUID  `json:"instance"`
-	CharacterId uint32     `json:"characterId"`
-	Type        string     `json:"type"`
-	Body        E          `json:"body"`
+	WorldId     world.Id     `json:"worldId"`
+	ChannelId   channel.Id   `json:"channelId"`
+	MapId       _map.Id      `json:"mapId"`
+	Instance    uuid.UUID    `json:"instance"`
+	CharacterId character.Id `json:"characterId"`
+	Type        string       `json:"type"`
+	Body        E            `json:"body"`
 }
 
 type RequestItemConsumeBody struct {
-	Source   int16  `json:"source"`
-	ItemId   uint32 `json:"itemId"`
-	Quantity int16  `json:"quantity"`
+	Source   slot.Position `json:"source"`
+	ItemId   item.Id       `json:"itemId"`
+	Quantity int16         `json:"quantity"`
 }
 
 type RequestScrollBody struct {
-	ScrollSlot      int16 `json:"scrollSlot"`
-	EquipSlot       int16 `json:"equipSlot"`
-	WhiteScroll     bool  `json:"whiteScroll"`
-	LegendarySpirit bool  `json:"legendarySpirit"`
+	ScrollSlot      slot.Position `json:"scrollSlot"`
+	EquipSlot       slot.Position `json:"equipSlot"`
+	WhiteScroll     bool          `json:"whiteScroll"`
+	LegendarySpirit bool          `json:"legendarySpirit"`
 }
 
 const (
@@ -46,9 +49,9 @@ const (
 )
 
 type Event[E any] struct {
-	CharacterId uint32 `json:"characterId"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	CharacterId character.Id `json:"characterId"`
+	Type        string       `json:"type"`
+	Body        E            `json:"body"`
 }
 
 type ErrorBody struct {

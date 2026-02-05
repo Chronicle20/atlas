@@ -29,7 +29,8 @@ type Processor interface {
 		characterId uint32,
 		worldId world.Id,
 		channelId channel.Id,
-		mapId uint32,
+		mapId _map.Id,
+		instance uuid.UUID,
 		reactorId uint32,
 		classification string,
 		x int16,
@@ -60,7 +61,8 @@ func (p *ProcessorImpl) SpawnReactorDrops(
 	characterId uint32,
 	worldId world.Id,
 	channelId channel.Id,
-	mapId uint32,
+	mapId _map.Id,
+	instance uuid.UUID,
 	reactorId uint32,
 	classification string,
 	x int16,
@@ -73,7 +75,7 @@ func (p *ProcessorImpl) SpawnReactorDrops(
 	minItems uint32,
 ) error {
 	// Fetch rates for the character
-	r := rates.GetForCharacter(p.l)(p.ctx)(byte(worldId), byte(channelId), characterId)
+	r := rates.GetForCharacter(p.l)(p.ctx)(worldId, channelId, characterId)
 
 	// Fetch reactor drops from atlas-drop-information using classification
 	drops, err := p.fetchReactorDrops(classification)
@@ -122,6 +124,7 @@ func (p *ProcessorImpl) SpawnReactorDrops(
 			worldId,
 			channelId,
 			mapId,
+			instance,
 			item.ItemId(),
 			1, // quantity is always 1 for reactor drops
 			dropTypeByte,
@@ -156,6 +159,7 @@ func (p *ProcessorImpl) SpawnReactorDrops(
 			worldId,
 			channelId,
 			mapId,
+			instance,
 			mesoAmount,
 			dropTypeByte,
 			finalX,
@@ -296,7 +300,7 @@ func (p *ProcessorImpl) calculateDropX(centerX int16, index int) int16 {
 }
 
 // calculateDropPosition calculates the proper drop position using foothold data from the data service
-func (p *ProcessorImpl) calculateDropPosition(mapId uint32, initialX, initialY, fallbackX, fallbackY int16) (int16, int16) {
+func (p *ProcessorImpl) calculateDropPosition(mapId _map.Id, initialX, initialY, fallbackX, fallbackY int16) (int16, int16) {
 	pos, err := requestDropPosition(mapId, initialX, initialY, fallbackX, fallbackY)(p.l, p.ctx)
 	if err != nil {
 		p.l.WithError(err).Warnf("Failed to calculate drop position for map [%d], using fallback (%d, %d)", mapId, fallbackX, fallbackY)
@@ -310,7 +314,8 @@ func (p *ProcessorImpl) spawnItemDrop(
 	transactionId uuid.UUID,
 	worldId world.Id,
 	channelId channel.Id,
-	mapId uint32,
+	mapId _map.Id,
+	instance uuid.UUID,
 	itemId uint32,
 	quantity uint32,
 	dropType byte,
@@ -328,7 +333,8 @@ func (p *ProcessorImpl) spawnItemDrop(
 			transactionId,
 			worldId,
 			channelId,
-			_map.Id(mapId),
+			mapId,
+			instance,
 			itemId,
 			quantity,
 			0, // mesos = 0 for item drops
@@ -351,7 +357,8 @@ func (p *ProcessorImpl) spawnMesoDrop(
 	transactionId uuid.UUID,
 	worldId world.Id,
 	channelId channel.Id,
-	mapId uint32,
+	mapId _map.Id,
+	instance uuid.UUID,
 	mesos uint32,
 	dropType byte,
 	x int16,
@@ -368,7 +375,8 @@ func (p *ProcessorImpl) spawnMesoDrop(
 			transactionId,
 			worldId,
 			channelId,
-			_map.Id(mapId),
+			mapId,
+			instance,
 			0, // itemId = 0 for meso drops
 			0, // quantity = 0 for meso drops
 			mesos,

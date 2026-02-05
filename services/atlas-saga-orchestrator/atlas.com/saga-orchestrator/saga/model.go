@@ -8,7 +8,9 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/character"
 	"github.com/Chronicle20/atlas-constants/field"
+	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
@@ -533,6 +535,7 @@ type WarpToPortalPayload struct {
 	WorldId     world.Id   `json:"worldId"`              // WorldId associated with the action
 	ChannelId   channel.Id `json:"channelId"`            // ChannelId associated with the action
 	MapId       _map.Id    `json:"mapId"`                // MapId specifies the map to warp to
+	Instance    uuid.UUID  `json:"instance"`             // Instance specifies the map instance UUID (uuid.Nil for non-instanced maps)
 	PortalId    uint32     `json:"portalId"`             // PortalId specifies the unique identifier of the portal for the warp action.
 	PortalName  string     `json:"portalName,omitempty"` // PortalName specifies the name of the portal (resolved to ID if provided).
 }
@@ -639,6 +642,7 @@ type ChangeSkinPayload struct {
 // CreateSkillPayload represents the payload required to create a skill for a character.
 type CreateSkillPayload struct {
 	CharacterId uint32    `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id  `json:"worldId"`     // WorldId associated with the action
 	SkillId     uint32    `json:"skillId"`     // SkillId to create
 	Level       byte      `json:"level"`       // Skill level
 	MasterLevel byte      `json:"masterLevel"` // Skill master level
@@ -648,6 +652,7 @@ type CreateSkillPayload struct {
 // UpdateSkillPayload represents the payload required to update a skill for a character.
 type UpdateSkillPayload struct {
 	CharacterId uint32    `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id  `json:"worldId"`     // WorldId associated with the action
 	SkillId     uint32    `json:"skillId"`     // SkillId to update
 	Level       byte      `json:"level"`       // New skill level
 	MasterLevel byte      `json:"masterLevel"` // New skill master level
@@ -656,10 +661,10 @@ type UpdateSkillPayload struct {
 
 // IncreaseBuddyCapacityPayload represents the payload required to increase a character's buddy list capacity.
 type IncreaseBuddyCapacityPayload struct {
-	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
-	WorldId     byte   `json:"worldId"`     // WorldId associated with the action
-	ChannelId   byte   `json:"channelId"`   // ChannelId associated with the action
-	Amount      byte   `json:"amount"`      // Amount to increase buddy capacity by
+	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	Amount      byte       `json:"amount"`      // Amount to increase buddy capacity by
 }
 
 // GainClosenessPayload represents the payload required to gain closeness with a pet.
@@ -676,64 +681,64 @@ type ValidateCharacterStatePayload struct {
 
 // RequestGuildNamePayload represents the payload required to request a guild name.
 type RequestGuildNamePayload struct {
-	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
-	WorldId     byte   `json:"worldId"`     // WorldId associated with the action
-	ChannelId   byte   `json:"channelId"`   // ChannelId associated with the action
+	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
 }
 
 // RequestGuildEmblemPayload represents the payload required to request a guild emblem change.
 type RequestGuildEmblemPayload struct {
-	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
-	WorldId     byte   `json:"worldId"`     // WorldId associated with the action
-	ChannelId   byte   `json:"channelId"`   // ChannelId associated with the action
+	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
 }
 
 // RequestGuildDisbandPayload represents the payload required to request a guild disband.
 type RequestGuildDisbandPayload struct {
-	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
-	WorldId     byte   `json:"worldId"`     // WorldId associated with the action
-	ChannelId   byte   `json:"channelId"`   // ChannelId associated with the action
+	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
 }
 
 // RequestGuildCapacityIncreasePayload represents the payload required to request a guild capacity increase.
 type RequestGuildCapacityIncreasePayload struct {
-	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
-	WorldId     byte   `json:"worldId"`     // WorldId associated with the action
-	ChannelId   byte   `json:"channelId"`   // ChannelId associated with the action
+	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
 }
 
 // CreateInvitePayload represents the payload required to create an invitation.
 type CreateInvitePayload struct {
-	InviteType   string `json:"inviteType"`   // Type of invitation (e.g., "GUILD", "PARTY", "BUDDY")
-	OriginatorId uint32 `json:"originatorId"` // ID of the character sending the invitation
-	TargetId     uint32 `json:"targetId"`     // ID of the character receiving the invitation
-	ReferenceId  uint32 `json:"referenceId"`  // ID of the entity being invited to (e.g., guild ID, party ID)
-	WorldId      byte   `json:"worldId"`      // WorldId associated with the action
+	InviteType   string   `json:"inviteType"`   // Type of invitation (e.g., "GUILD", "PARTY", "BUDDY")
+	OriginatorId uint32   `json:"originatorId"` // ID of the character sending the invitation
+	TargetId     uint32   `json:"targetId"`     // ID of the character receiving the invitation
+	ReferenceId  uint32   `json:"referenceId"`  // ID of the entity being invited to (e.g., guild ID, party ID)
+	WorldId      world.Id `json:"worldId"`      // WorldId associated with the action
 }
 
 // CharacterCreatePayload represents the payload required to create a character.
 // Note: this does not include any character attributes, as those are determined by the character service.
 type CharacterCreatePayload struct {
-	AccountId    uint32  `json:"accountId"` // AccountId associated with the action
-	WorldId      byte    `json:"worldId"`   // WorldId associated with the action
-	Name         string  `json:"name"`      // Name of the character to create
-	Gender       byte    `json:"gender"`
-	Level        byte    `json:"level"`
-	Strength     uint16  `json:"strength"`
-	Dexterity    uint16  `json:"dexterity"`
-	Intelligence uint16  `json:"intelligence"`
-	Luck         uint16  `json:"luck"`
-	JobId        job.Id  `json:"jobId"` // JobId to create the character with
-	Hp           uint16  `json:"hp"`
-	Mp           uint16  `json:"mp"`
-	Face         uint32  `json:"face"`   // Face of the character
-	Hair         uint32  `json:"hair"`   // Hair of the character
-	Skin         byte    `json:"skin"`   // Skin of the character
-	Top          uint32  `json:"top"`    // Top of the character
-	Bottom       uint32  `json:"bottom"` // Bottom of the character
-	Shoes        uint32  `json:"shoes"`  // Shoes of the character
-	Weapon       uint32  `json:"weapon"` // Weapon of the character
-	MapId        _map.Id `json:"mapId"`  // Starting map ID for the character
+	AccountId    uint32   `json:"accountId"` // AccountId associated with the action
+	WorldId      world.Id `json:"worldId"`   // WorldId associated with the action
+	Name         string   `json:"name"`      // Name of the character to create
+	Gender       byte     `json:"gender"`
+	Level        byte     `json:"level"`
+	Strength     uint16   `json:"strength"`
+	Dexterity    uint16   `json:"dexterity"`
+	Intelligence uint16   `json:"intelligence"`
+	Luck         uint16   `json:"luck"`
+	JobId        job.Id   `json:"jobId"` // JobId to create the character with
+	Hp           uint16   `json:"hp"`
+	Mp           uint16   `json:"mp"`
+	Face         uint32   `json:"face"`   // Face of the character
+	Hair         uint32   `json:"hair"`   // Hair of the character
+	Skin         byte     `json:"skin"`   // Skin of the character
+	Top          uint32   `json:"top"`    // Top of the character
+	Bottom       uint32   `json:"bottom"` // Bottom of the character
+	Shoes        uint32   `json:"shoes"`  // Shoes of the character
+	Weapon       uint32   `json:"weapon"` // Weapon of the character
+	MapId        _map.Id  `json:"mapId"`  // Starting map ID for the character
 }
 
 // CreateAndEquipAssetPayload represents the payload required to create and equip an asset.
@@ -755,7 +760,8 @@ type SpawnMonsterPayload struct {
 	CharacterId uint32     `json:"characterId"` // CharacterId initiating the spawn
 	WorldId     world.Id   `json:"worldId"`     // WorldId for the spawn location
 	ChannelId   channel.Id `json:"channelId"`   // ChannelId for the spawn location
-	MapId       uint32     `json:"mapId"`       // MapId for the spawn location
+	MapId       _map.Id    `json:"mapId"`       // MapId for the spawn location
+	Instance    uuid.UUID  `json:"instance"`    // Instance UUID for the map instance
 	MonsterId   uint32     `json:"monsterId"`   // Monster template ID to spawn
 	X           int16      `json:"x"`           // X coordinate for spawn position
 	Y           int16      `json:"y"`           // Y coordinate for spawn position
@@ -770,7 +776,8 @@ type SpawnReactorDropsPayload struct {
 	CharacterId    uint32     `json:"characterId"`    // CharacterId who triggered the reactor
 	WorldId        world.Id   `json:"worldId"`        // WorldId for the drop location
 	ChannelId      channel.Id `json:"channelId"`      // ChannelId for the drop location
-	MapId          uint32     `json:"mapId"`          // MapId for the drop location
+	MapId          _map.Id    `json:"mapId"`          // MapId for the drop location
+	Instance       uuid.UUID  `json:"instance"`       // Instance identifier for the map
 	ReactorId      uint32     `json:"reactorId"`      // Reactor template ID
 	Classification string     `json:"classification"` // Reactor classification string
 	X              int16      `json:"x"`              // X coordinate for drop position
@@ -813,10 +820,10 @@ type SetQuestProgressPayload struct {
 // This is used for NPC-initiated item usage where the item effects are applied
 // without consuming from inventory (e.g., NPC buffs like Shinsoo's blessing).
 type ApplyConsumableEffectPayload struct {
-	CharacterId uint32     `json:"characterId"` // CharacterId to apply item effects to
-	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
-	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
-	ItemId      uint32     `json:"itemId"`      // Consumable item ID whose effects should be applied
+	CharacterId character.Id `json:"characterId"` // CharacterId to apply item effects to
+	WorldId     world.Id     `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id   `json:"channelId"`   // ChannelId associated with the action
+	ItemId      item.Id      `json:"itemId"`      // Consumable item ID whose effects should be applied
 }
 
 // SendMessagePayload represents the payload required to send a system message to a character.
@@ -922,6 +929,8 @@ type CancelAllBuffsPayload struct {
 	CharacterId uint32     `json:"characterId"` // CharacterId to cancel buffs for
 	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
 	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	MapId       _map.Id    `json:"mapId"`       // MapId associated with the action
+	Instance    uuid.UUID  `json:"instance"`    // Instance associated with the action
 }
 
 // ResetStatsPayload represents the payload required to reset a character's stats.
@@ -936,24 +945,24 @@ type ResetStatsPayload struct {
 // This is a synchronous action that immediately completes after sending the event.
 // The portal will remain blocked for the character until they logout or it is explicitly unblocked.
 type BlockPortalPayload struct {
-	CharacterId uint32 `json:"characterId"` // CharacterId to block the portal for
-	MapId       uint32 `json:"mapId"`       // MapId where the portal is located
-	PortalId    uint32 `json:"portalId"`    // PortalId to block
+	CharacterId uint32  `json:"characterId"` // CharacterId to block the portal for
+	MapId       _map.Id `json:"mapId"`       // MapId where the portal is located
+	PortalId    uint32  `json:"portalId"`    // PortalId to block
 }
 
 // UnblockPortalPayload represents the payload required to unblock a portal for a character.
 // This is a synchronous action that immediately completes after sending the event.
 type UnblockPortalPayload struct {
-	CharacterId uint32 `json:"characterId"` // CharacterId to unblock the portal for
-	MapId       uint32 `json:"mapId"`       // MapId where the portal is located
-	PortalId    uint32 `json:"portalId"`    // PortalId to unblock
+	CharacterId uint32  `json:"characterId"` // CharacterId to unblock the portal for
+	MapId       _map.Id `json:"mapId"`       // MapId where the portal is located
+	PortalId    uint32  `json:"portalId"`    // PortalId to unblock
 }
 
 // DepositToStoragePayload represents the payload required to deposit an item to account storage.
 type DepositToStoragePayload struct {
 	CharacterId   uint32    `json:"characterId"`   // CharacterId initiating the deposit
 	AccountId     uint32    `json:"accountId"`     // AccountId that owns the storage
-	WorldId       byte      `json:"worldId"`       // WorldId for the storage (storage is world-scoped)
+	WorldId       world.Id  `json:"worldId"`       // WorldId for the storage (storage is world-scoped)
 	Slot          int16     `json:"slot"`          // Target slot in storage
 	TemplateId    uint32    `json:"templateId"`    // Item template ID
 	ReferenceId   uint32    `json:"referenceId"`   // Reference ID for the item data (external service ID)
@@ -966,11 +975,11 @@ type DepositToStoragePayload struct {
 
 // UpdateStorageMesosPayload represents the payload required to update mesos in account storage.
 type UpdateStorageMesosPayload struct {
-	CharacterId uint32 `json:"characterId"` // CharacterId initiating the update
-	AccountId   uint32 `json:"accountId"`   // AccountId that owns the storage
-	WorldId     byte   `json:"worldId"`     // WorldId for the storage
-	Operation   string `json:"operation"`   // Operation: "SET", "ADD", "SUBTRACT"
-	Mesos       uint32 `json:"mesos"`       // Mesos amount
+	CharacterId uint32   `json:"characterId"` // CharacterId initiating the update
+	AccountId   uint32   `json:"accountId"`   // AccountId that owns the storage
+	WorldId     world.Id `json:"worldId"`     // WorldId for the storage
+	Operation   string   `json:"operation"`   // Operation: "SET", "ADD", "SUBTRACT"
+	Mesos       uint32   `json:"mesos"`       // Mesos amount
 }
 
 // AwardFamePayload represents the payload required to award fame to a character.
@@ -997,7 +1006,7 @@ type ShowStoragePayload struct {
 type TransferToStoragePayload struct {
 	TransactionId       uuid.UUID `json:"transactionId"`       // Saga transaction ID
 	CharacterId         uint32    `json:"characterId"`         // Character initiating the transfer
-	WorldId             byte      `json:"worldId"`             // World ID
+	WorldId             world.Id  `json:"worldId"`             // World ID
 	AccountId           uint32    `json:"accountId"`           // Account ID (storage owner)
 	SourceSlot          int16     `json:"sourceSlot"`          // Slot in character inventory
 	SourceInventoryType byte      `json:"sourceInventoryType"` // Character inventory type (equip, use, etc.)
@@ -1009,7 +1018,7 @@ type TransferToStoragePayload struct {
 type WithdrawFromStoragePayload struct {
 	TransactionId uuid.UUID `json:"transactionId"` // Saga transaction ID
 	CharacterId   uint32    `json:"characterId"`   // Character receiving the item
-	WorldId       byte      `json:"worldId"`       // World ID
+	WorldId       world.Id  `json:"worldId"`       // World ID
 	AccountId     uint32    `json:"accountId"`     // Account ID (storage owner)
 	SourceSlot    int16     `json:"sourceSlot"`    // Slot in storage
 	InventoryType byte      `json:"inventoryType"` // Target character inventory type
@@ -1020,7 +1029,7 @@ type WithdrawFromStoragePayload struct {
 // This is created by saga-orchestrator expansion with all asset data pre-populated
 type AcceptToStoragePayload struct {
 	TransactionId uuid.UUID       `json:"transactionId"` // Saga transaction ID
-	WorldId       byte            `json:"worldId"`       // World ID
+	WorldId       world.Id        `json:"worldId"`       // World ID
 	AccountId     uint32          `json:"accountId"`     // Account ID
 	CharacterId   uint32          `json:"characterId"`   // Character initiating the transfer
 	TemplateId    uint32          `json:"templateId"`    // Item template ID
@@ -1057,7 +1066,7 @@ type AcceptToCharacterPayload struct {
 // This is created by saga-orchestrator expansion with asset ID pre-populated
 type ReleaseFromStoragePayload struct {
 	TransactionId uuid.UUID `json:"transactionId"` // Saga transaction ID
-	WorldId       byte      `json:"worldId"`       // World ID
+	WorldId       world.Id  `json:"worldId"`       // World ID
 	AccountId     uint32    `json:"accountId"`     // Account ID
 	CharacterId   uint32    `json:"characterId"`   // Character receiving the item
 	AssetId       uint32    `json:"assetId"`       // Asset ID to release (populated during expansion)

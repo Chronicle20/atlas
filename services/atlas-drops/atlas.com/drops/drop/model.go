@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	tenant "github.com/Chronicle20/atlas-tenant"
@@ -23,6 +24,7 @@ type Model struct {
 	worldId       world.Id
 	channelId     channel.Id
 	mapId         _map.Id
+	instance      uuid.UUID
 	itemId        uint32
 	equipmentId   uint32
 	quantity      uint32
@@ -113,6 +115,10 @@ func (m Model) MapId() _map.Id {
 	return m.mapId
 }
 
+func (m Model) Instance() uuid.UUID {
+	return m.instance
+}
+
 func (m Model) WorldId() world.Id {
 	return m.worldId
 }
@@ -148,6 +154,7 @@ type ModelBuilder struct {
 	worldId       world.Id
 	channelId     channel.Id
 	mapId         _map.Id
+	instance      uuid.UUID
 	itemId        uint32
 	equipmentId   uint32
 	quantity      uint32
@@ -166,13 +173,14 @@ type ModelBuilder struct {
 	petSlot       int8
 }
 
-func NewModelBuilder(tenant tenant.Model, worldId world.Id, channelId channel.Id, mapId _map.Id) *ModelBuilder {
+func NewModelBuilder(tenant tenant.Model, f field.Model) *ModelBuilder {
 	return &ModelBuilder{
 		tenant:        tenant,
 		transactionId: uuid.New(),
-		worldId:       worldId,
-		channelId:     channelId,
-		mapId:         mapId,
+		worldId:       f.WorldId(),
+		channelId:     f.ChannelId(),
+		mapId:         f.MapId(),
+		instance:      f.Instance(),
 		dropTime:      time.Now(),
 		petSlot:       -1,
 	}
@@ -255,6 +263,7 @@ func (b *ModelBuilder) Clone(m Model) *ModelBuilder {
 	b.worldId = m.WorldId()
 	b.channelId = m.ChannelId()
 	b.mapId = m.MapId()
+	b.instance = m.Instance()
 	b.itemId = m.ItemId()
 	b.equipmentId = m.EquipmentId()
 	b.quantity = m.Quantity()
@@ -288,6 +297,7 @@ func (b *ModelBuilder) Build() (Model, error) {
 		worldId:       b.worldId,
 		channelId:     b.channelId,
 		mapId:         b.mapId,
+		instance:      b.instance,
 		itemId:        b.itemId,
 		equipmentId:   b.equipmentId,
 		quantity:      b.quantity,
@@ -331,6 +341,10 @@ func (b *ModelBuilder) ChannelId() channel.Id {
 
 func (b *ModelBuilder) MapId() _map.Id {
 	return b.mapId
+}
+
+func (b *ModelBuilder) Instance() uuid.UUID {
+	return b.instance
 }
 
 func (b *ModelBuilder) TransactionId() uuid.UUID {

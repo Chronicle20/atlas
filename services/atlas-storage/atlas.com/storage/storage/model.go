@@ -3,12 +3,14 @@ package storage
 import (
 	"atlas-storage/asset"
 	"errors"
+
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 )
 
 type Model struct {
 	id        uuid.UUID
-	worldId   byte
+	worldId   world.Id
 	accountId uint32
 	capacity  uint32
 	mesos     uint32
@@ -19,7 +21,7 @@ func (m Model) Id() uuid.UUID {
 	return m.id
 }
 
-func (m Model) WorldId() byte {
+func (m Model) WorldId() world.Id {
 	return m.worldId
 }
 

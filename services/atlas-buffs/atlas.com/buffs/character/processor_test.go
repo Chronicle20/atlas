@@ -5,6 +5,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -49,7 +50,7 @@ func TestProcessor_GetById_AfterApply(t *testing.T) {
 	processor, _ := setupProcessorTest(t)
 	changes := setupProcessorTestChanges()
 
-	worldId := byte(0)
+	worldId := world.Id(0)
 	characterId := uint32(1000)
 	fromId := uint32(2000)
 	sourceId := int32(2001001)
@@ -70,7 +71,7 @@ func TestProcessor_Apply(t *testing.T) {
 	processor, ten := setupProcessorTest(t)
 	changes := setupProcessorTestChanges()
 
-	worldId := byte(0)
+	worldId := world.Id(0)
 	characterId := uint32(1000)
 	fromId := uint32(2000)
 	sourceId := int32(2001001)
@@ -94,7 +95,7 @@ func TestProcessor_Apply_MultipleBuffs(t *testing.T) {
 	processor, ten := setupProcessorTest(t)
 	changes := setupProcessorTestChanges()
 
-	worldId := byte(0)
+	worldId := world.Id(0)
 	characterId := uint32(1000)
 	fromId := uint32(2000)
 
@@ -112,7 +113,7 @@ func TestProcessor_Cancel(t *testing.T) {
 	processor, ten := setupProcessorTest(t)
 	changes := setupProcessorTestChanges()
 
-	worldId := byte(0)
+	worldId := world.Id(0)
 	characterId := uint32(1000)
 	fromId := uint32(2000)
 	sourceId := int32(2001001)
@@ -137,7 +138,7 @@ func TestProcessor_Cancel_NotFound(t *testing.T) {
 	processor, _ := setupProcessorTest(t)
 
 	// Cancel non-existent buff should not error (silent failure)
-	err := processor.Cancel(byte(0), uint32(9999), int32(12345))
+	err := processor.Cancel(world.Id(0), uint32(9999), int32(12345))
 	assert.NoError(t, err)
 }
 
@@ -145,7 +146,7 @@ func TestProcessor_Cancel_WrongSourceId(t *testing.T) {
 	processor, ten := setupProcessorTest(t)
 	changes := setupProcessorTestChanges()
 
-	worldId := byte(0)
+	worldId := world.Id(0)
 	characterId := uint32(1000)
 	fromId := uint32(2000)
 	sourceId := int32(2001001)
@@ -187,7 +188,7 @@ func TestProcessor_TenantContext(t *testing.T) {
 	changes := setupProcessorTestChanges()
 
 	// Apply buff in tenant1
-	_ = processor1.Apply(byte(0), uint32(1000), uint32(2000), int32(2001001), int32(60), changes)
+	_ = processor1.Apply(world.Id(0), uint32(1000), uint32(2000), int32(2001001), int32(60), changes)
 
 	// Get from processor1 should work
 	m, err := processor1.GetById(uint32(1000))

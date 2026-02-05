@@ -3,6 +3,10 @@ package monster
 import (
 	"atlas-maps/rest"
 	"fmt"
+
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 
@@ -14,11 +18,11 @@ func getBaseRequest() string {
 	return requests.RootUrl("MONSTERS")
 }
 
-func requestInMap(worldId byte, channelId byte, mapId uint32) requests.Request[[]RestModel] {
+func requestInMap(worldId world.Id, channelId channel.Id, mapId _map.Id) requests.Request[[]RestModel] {
 	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+mapMonstersResource, worldId, channelId, mapId))
 }
 
-func requestCreate(worldId byte, channelId byte, mapId uint32, monsterId uint32, x int16, y int16, fh uint16, team int32) requests.Request[RestModel] {
+func requestCreate(worldId world.Id, channelId channel.Id, mapId _map.Id, monsterId uint32, x int16, y int16, fh uint16, team int32) requests.Request[RestModel] {
 	m := RestModel{
 		Id:        "0",
 		MonsterId: monsterId,

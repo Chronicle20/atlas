@@ -9,6 +9,7 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/Chronicle20/atlas-constants/invite"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
@@ -43,7 +44,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 
 func handleCreatedStatusEvent(sc server.Model, wp writer.Producer) message.Handler[invite2.StatusEvent[invite2.CreatedEventBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e invite2.StatusEvent[invite2.CreatedEventBody]) {
-		if e.Type != invite2.EventInviteStatusTypeCreated {
+		if e.Type != invite.StatusTypeCreated {
 			return
 		}
 
@@ -51,25 +52,25 @@ func handleCreatedStatusEvent(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		rc, err := character.NewProcessor(l, ctx).GetById()(e.Body.OriginatorId)
+		rc, err := character.NewProcessor(l, ctx).GetById()(uint32(e.Body.OriginatorId))
 		if err != nil {
 			l.WithError(err).Errorf("Unablet to get character [%d] details, who generated the invite.", e.Body.OriginatorId)
 			return
 		}
 
 		var eventHandler model.Operator[session.Model]
-		if e.InviteType == invite2.InviteTypeParty {
-			eventHandler = handlePartyCreatedStatusEvent(l)(ctx)(wp)(e.ReferenceId, rc.Name())
-		} else if e.InviteType == invite2.InviteTypeBuddy {
-			eventHandler = handleBuddyCreatedStatusEvent(l)(ctx)(wp)(e.Body.TargetId, e.ReferenceId, rc.Name())
-		} else if e.InviteType == invite2.InviteTypeGuild {
-			eventHandler = handleGuildCreatedStatusEvent(l)(ctx)(wp)(e.ReferenceId, rc.Name())
-		} else if e.InviteType == invite2.InviteTypeMessenger {
-			eventHandler = handleMessengerCreatedStatusEvent(l)(ctx)(wp)(e.ReferenceId, rc.Name())
+		if e.InviteType == invite.TypeParty {
+			eventHandler = handlePartyCreatedStatusEvent(l)(ctx)(wp)(uint32(e.ReferenceId), rc.Name())
+		} else if e.InviteType == invite.TypeBuddy {
+			eventHandler = handleBuddyCreatedStatusEvent(l)(ctx)(wp)(uint32(e.Body.TargetId), uint32(e.ReferenceId), rc.Name())
+		} else if e.InviteType == invite.TypeGuild {
+			eventHandler = handleGuildCreatedStatusEvent(l)(ctx)(wp)(uint32(e.ReferenceId), rc.Name())
+		} else if e.InviteType == invite.TypeMessenger {
+			eventHandler = handleMessengerCreatedStatusEvent(l)(ctx)(wp)(uint32(e.ReferenceId), rc.Name())
 		}
 
 		if eventHandler != nil {
-			session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.TargetId, eventHandler)
+			session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(uint32(e.Body.TargetId), eventHandler)
 		}
 	}
 }
@@ -117,7 +118,7 @@ func handleMessengerCreatedStatusEvent(l logrus.FieldLogger) func(ctx context.Co
 
 func handleRejectedStatusEvent(sc server.Model, wp writer.Producer) message.Handler[invite2.StatusEvent[invite2.RejectedEventBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e invite2.StatusEvent[invite2.RejectedEventBody]) {
-		if e.Type != invite2.EventInviteStatusTypeRejected {
+		if e.Type != invite.StatusTypeRejected {
 			return
 		}
 
@@ -125,25 +126,25 @@ func handleRejectedStatusEvent(sc server.Model, wp writer.Producer) message.Hand
 			return
 		}
 
-		rc, err := character.NewProcessor(l, ctx).GetById()(e.Body.TargetId)
+		rc, err := character.NewProcessor(l, ctx).GetById()(uint32(e.Body.TargetId))
 		if err != nil {
 			l.WithError(err).Errorf("Unablet to get character [%d] details, who generated the invite.", e.Body.OriginatorId)
 			return
 		}
 
 		var eventHandler model.Operator[session.Model]
-		if e.InviteType == invite2.InviteTypeParty {
+		if e.InviteType == invite.TypeParty {
 			eventHandler = handlePartyRejectedStatusEvent(l)(ctx)(wp)(rc.Name())
-		} else if e.InviteType == invite2.InviteTypeBuddy {
+		} else if e.InviteType == invite.TypeBuddy {
 			// TODO send rejection to requesting character.
-		} else if e.InviteType == invite2.InviteTypeGuild {
+		} else if e.InviteType == invite.TypeGuild {
 			eventHandler = handleGuildRejectedStatusEvent(l)(ctx)(wp)(rc.Name())
-		} else if e.InviteType == invite2.InviteTypeMessenger {
+		} else if e.InviteType == invite.TypeMessenger {
 			eventHandler = handleMessengerRejectedStatusEvent(l)(ctx)(wp)(rc.Name())
 		}
 
 		if eventHandler != nil {
-			session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.OriginatorId, eventHandler)
+			session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(uint32(e.Body.OriginatorId), eventHandler)
 		}
 	}
 }

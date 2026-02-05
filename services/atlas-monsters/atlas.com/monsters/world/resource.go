@@ -25,9 +25,9 @@ const (
 func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 	return func(router *mux.Router, l logrus.FieldLogger) {
 		r := router.PathPrefix("/worlds").Subrouter()
-		r.HandleFunc("/{worldId}/channels/{channelId}/maps/{mapId}/monsters", rest.RegisterHandler(l)(si)(getMonstersInMap, handleGetMonstersInMap)).Methods(http.MethodGet)
-		r.HandleFunc("/{worldId}/channels/{channelId}/maps/{mapId}/monsters", rest.RegisterHandler(l)(si)(getMonstersInMap, handleDeleteMonstersInMap)).Methods(http.MethodDelete)
-		r.HandleFunc("/{worldId}/channels/{channelId}/maps/{mapId}/monsters", rest.RegisterInputHandler[monster.RestModel](l)(si)(createMonsterInMap, handleCreateMonsterInMap)).Methods(http.MethodPost)
+		r.HandleFunc("/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/monsters", rest.RegisterHandler(l)(si)(getMonstersInMap, handleGetMonstersInMap)).Methods(http.MethodGet)
+		r.HandleFunc("/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/monsters", rest.RegisterHandler(l)(si)(getMonstersInMap, handleDeleteMonstersInMap)).Methods(http.MethodDelete)
+		r.HandleFunc("/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/monsters", rest.RegisterInputHandler[monster.RestModel](l)(si)(createMonsterInMap, handleCreateMonsterInMap)).Methods(http.MethodPost)
 	}
 }
 
@@ -35,7 +35,7 @@ func handleGetMonstersInMap(d *rest.HandlerDependency, c *rest.HandlerContext) h
 	return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
 		return rest.ParseChannelId(d.Logger(), func(channelId channel.Id) http.HandlerFunc {
 			return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
-				return rest.ParseInstance(d.Logger(), func(instance uuid.UUID) http.HandlerFunc {
+				return rest.ParseInstanceId(d.Logger(), func(instance uuid.UUID) http.HandlerFunc {
 					return func(w http.ResponseWriter, r *http.Request) {
 						f := field.NewBuilder(worldId, channelId, mapId).SetInstance(instance).Build()
 						p := monster.NewProcessor(d.Logger(), d.Context())
@@ -65,7 +65,7 @@ func handleDeleteMonstersInMap(d *rest.HandlerDependency, c *rest.HandlerContext
 	return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
 		return rest.ParseChannelId(d.Logger(), func(channelId channel.Id) http.HandlerFunc {
 			return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
-				return rest.ParseInstance(d.Logger(), func(instance uuid.UUID) http.HandlerFunc {
+				return rest.ParseInstanceId(d.Logger(), func(instance uuid.UUID) http.HandlerFunc {
 					return func(w http.ResponseWriter, r *http.Request) {
 						f := field.NewBuilder(worldId, channelId, mapId).SetInstance(instance).Build()
 						p := monster.NewProcessor(d.Logger(), d.Context())
@@ -87,7 +87,7 @@ func handleCreateMonsterInMap(d *rest.HandlerDependency, c *rest.HandlerContext,
 	return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
 		return rest.ParseChannelId(d.Logger(), func(channelId channel.Id) http.HandlerFunc {
 			return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
-				return rest.ParseInstance(d.Logger(), func(instance uuid.UUID) http.HandlerFunc {
+				return rest.ParseInstanceId(d.Logger(), func(instance uuid.UUID) http.HandlerFunc {
 					return func(w http.ResponseWriter, r *http.Request) {
 						f := field.NewBuilder(worldId, channelId, mapId).SetInstance(instance).Build()
 						p := monster.NewProcessor(d.Logger(), d.Context())

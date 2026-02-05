@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 )
 
@@ -18,6 +20,8 @@ func TestHandleCommandRequestCreate_Success(t *testing.T) {
 	ctx := test.CreateTestContext()
 	logger, _ := logtest.NewNullLogger()
 
+	transactionId := uuid.New()
+	worldId := world.Id(0)
 	characterId := uint32(12345)
 	skillId := uint32(1001001)
 	expiration := time.Now().Add(24 * time.Hour)
@@ -27,7 +31,7 @@ func TestHandleCommandRequestCreate_Success(t *testing.T) {
 	processor := skill.NewProcessor(logger, ctx, db)
 
 	// This tests the same logic as the consumer handler
-	_, err := processor.Create(mb)(characterId)(skillId)(10)(20)(expiration)
+	_, err := processor.Create(mb)(transactionId, worldId, characterId, skillId, 10, 20, expiration)
 	if err != nil {
 		t.Fatalf("Create() unexpected error: %v", err)
 	}
@@ -49,6 +53,8 @@ func TestHandleCommandRequestUpdate_Success(t *testing.T) {
 	ctx := test.CreateTestContext()
 	logger, _ := logtest.NewNullLogger()
 
+	transactionId := uuid.New()
+	worldId := world.Id(0)
 	characterId := uint32(12345)
 	skillId := uint32(1001001)
 	expiration := time.Now().Add(24 * time.Hour)
@@ -57,14 +63,14 @@ func TestHandleCommandRequestUpdate_Success(t *testing.T) {
 	mb := message.NewBuffer()
 
 	// Create initial skill
-	_, err := processor.Create(mb)(characterId)(skillId)(10)(20)(expiration)
+	_, err := processor.Create(mb)(transactionId, worldId, characterId, skillId, 10, 20, expiration)
 	if err != nil {
 		t.Fatalf("Create() unexpected error: %v", err)
 	}
 
 	// Update the skill (same logic as consumer handler)
 	newExpiration := time.Now().Add(48 * time.Hour)
-	_, err = processor.Update(mb)(characterId)(skillId)(15)(25)(newExpiration)
+	_, err = processor.Update(mb)(transactionId, worldId, characterId, skillId, 15, 25, newExpiration)
 	if err != nil {
 		t.Fatalf("Update() unexpected error: %v", err)
 	}

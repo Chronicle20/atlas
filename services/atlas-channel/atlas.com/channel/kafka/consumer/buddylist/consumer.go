@@ -54,7 +54,7 @@ func handleStatusEventBuddyAdded(sc server.Model, wp writer.Producer) message.Ha
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(c.CharacterId, redrawBuddyList(l)(ctx)(wp)())
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(uint32(c.CharacterId), redrawBuddyList(l)(ctx)(wp)())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to write character [%d] buddy list.", c.CharacterId)
 		}
@@ -71,7 +71,7 @@ func handleStatusEventBuddyRemoved(sc server.Model, wp writer.Producer) message.
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(c.CharacterId, redrawBuddyList(l)(ctx)(wp)())
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(uint32(c.CharacterId), redrawBuddyList(l)(ctx)(wp)())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to write character [%d] buddy list.", c.CharacterId)
 		}
@@ -110,7 +110,7 @@ func handleStatusEventBuddyUpdated(sc server.Model, wp writer.Producer) message.
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(c.CharacterId, updateBuddy(l)(ctx)(wp)(c.Body.CharacterId, c.Body.Group, c.Body.CharacterName, c.Body.ChannelId, c.Body.InShop))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(uint32(c.CharacterId), updateBuddy(l)(ctx)(wp)(uint32(c.Body.CharacterId), c.Body.Group, c.Body.CharacterName, c.Body.ChannelId, c.Body.InShop))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce character [%d] buddy [%d] channel change to [%d].", c.CharacterId, c.Body.CharacterId, c.Body.ChannelId)
 		}
@@ -138,7 +138,7 @@ func handleStatusEventBuddyChannelChange(sc server.Model, wp writer.Producer) me
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(c.CharacterId, buddyChannelChange(l)(ctx)(wp)(c.Body.CharacterId, c.Body.ChannelId))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(uint32(c.CharacterId), buddyChannelChange(l)(ctx)(wp)(uint32(c.Body.CharacterId), c.Body.ChannelId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce character [%d] buddy [%d] channel change to [%d].", c.CharacterId, c.Body.CharacterId, c.Body.ChannelId)
 		}
@@ -165,7 +165,7 @@ func handleStatusEventBuddyCapacityChange(sc server.Model, wp writer.Producer) m
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(c.CharacterId, buddyCapacityChange(l)(ctx)(wp)(c.Body.Capacity))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(uint32(c.CharacterId), buddyCapacityChange(l)(ctx)(wp)(c.Body.Capacity))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce character [%d] buddy list capacity [%d] update.", c.CharacterId, c.Body.Capacity)
 		}
@@ -192,7 +192,7 @@ func handleStatusEventBuddyError(sc server.Model, wp writer.Producer) message.Ha
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(c.CharacterId, buddyError(l)(ctx)(wp)(c.Body.Error))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(uint32(c.CharacterId), buddyError(l)(ctx)(wp)(c.Body.Error))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce character [%d] error [%s].", c.CharacterId, c.Body.Error)
 		}

@@ -3,15 +3,22 @@ package _map
 import (
 	"atlas-npc-conversations/rest"
 	"fmt"
+
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 
+const (
+	mapInstanceResource           = "worlds/%d/channels/%d/maps/%d/instances/%s"
+	mapInstanceCharactersResource = mapInstanceResource + "/characters/"
+)
+
 func getBaseRequest() string {
-	return requests.RootUrl("MAPS") + "/worlds"
+	return requests.RootUrl("MAPS")
 }
 
-func requestCharactersInMap(worldId byte, channelId byte, mapId uint32) requests.Request[[]RestModel] {
+func requestCharactersInMap(f field.Model) requests.Request[[]RestModel] {
 	return rest.MakeGetRequest[[]RestModel](
-		fmt.Sprintf(getBaseRequest()+"/%d/channels/%d/maps/%d/characters", worldId, channelId, mapId),
+		fmt.Sprintf(getBaseRequest()+mapInstanceCharactersResource, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String()),
 	)
 }

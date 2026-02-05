@@ -222,7 +222,7 @@ Provides map existence validation and character lookup within maps.
 | Method | Responsibility |
 |--------|---------------|
 | Exists | Checks if a map exists |
-| CharacterIdsInMapProvider | Returns a provider for character IDs in a map |
+| CharacterIdsInFieldProvider | Returns a provider for character IDs in a field (map instance) |
 | CharacterIdsInMapStringProvider | Returns a provider for character IDs in a map (string input) |
 
 ---

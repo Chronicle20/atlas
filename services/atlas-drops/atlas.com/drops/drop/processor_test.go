@@ -5,6 +5,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -44,7 +48,8 @@ func TestProcessor_SpawnForCharacter_CreatesDropAndBuffersMessage(t *testing.T) 
 	p := NewProcessor(l, ctx)
 	buf := message.NewBuffer()
 
-	mb := NewModelBuilder(ten, 1, 1, 100000000).
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	mb := NewModelBuilder(ten, f).
 		SetItem(1000000, 10).
 		SetPosition(100, 200).
 		SetOwner(12345, 0).
@@ -87,7 +92,8 @@ func TestProcessor_Reserve_SuccessfulReservation(t *testing.T) {
 	p := NewProcessor(l, ctx)
 	spawnBuf := message.NewBuffer()
 
-	mb := NewModelBuilder(ten, 1, 1, 100000000).
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	mb := NewModelBuilder(ten, f).
 		SetItem(1000000, 10).
 		SetPosition(100, 200)
 
@@ -121,7 +127,8 @@ func TestProcessor_Reserve_FailedReservation_BuffersFailureMessage(t *testing.T)
 	p := NewProcessor(l, ctx)
 	spawnBuf := message.NewBuffer()
 
-	mb := NewModelBuilder(ten, 1, 1, 100000000).
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	mb := NewModelBuilder(ten, f).
 		SetItem(1000000, 10)
 
 	drop, _ := p.SpawnForCharacter(spawnBuf)(mb)
@@ -150,7 +157,8 @@ func TestProcessor_CancelReservation_BuffersMessage(t *testing.T) {
 	p := NewProcessor(l, ctx)
 	spawnBuf := message.NewBuffer()
 
-	mb := NewModelBuilder(ten, 1, 1, 100000000).
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	mb := NewModelBuilder(ten, f).
 		SetItem(1000000, 10)
 
 	drop, _ := p.SpawnForCharacter(spawnBuf)(mb)
@@ -185,7 +193,8 @@ func TestProcessor_Gather_RemovesDropAndBuffersMessage(t *testing.T) {
 	p := NewProcessor(l, ctx)
 	spawnBuf := message.NewBuffer()
 
-	mb := NewModelBuilder(ten, 1, 1, 100000000).
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	mb := NewModelBuilder(ten, f).
 		SetItem(1000000, 10)
 
 	drop, _ := p.SpawnForCharacter(spawnBuf)(mb)
@@ -222,7 +231,8 @@ func TestProcessor_Expire_RemovesDropAndBuffersMessage(t *testing.T) {
 	p := NewProcessor(l, ctx)
 	spawnBuf := message.NewBuffer()
 
-	mb := NewModelBuilder(ten, 1, 1, 100000000).
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	mb := NewModelBuilder(ten, f).
 		SetItem(1000000, 10)
 
 	drop, _ := p.SpawnForCharacter(spawnBuf)(mb)
@@ -252,7 +262,8 @@ func TestProcessor_GetById_ReturnsCorrectDrop(t *testing.T) {
 	p := NewProcessor(l, ctx)
 	buf := message.NewBuffer()
 
-	mb := NewModelBuilder(ten, 1, 1, 100000000).
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	mb := NewModelBuilder(ten, f).
 		SetItem(1000000, 10)
 
 	created, _ := p.SpawnForCharacter(buf)(mb)
@@ -291,15 +302,18 @@ func TestProcessor_GetForMap_ReturnsFilteredDrops(t *testing.T) {
 	p := NewProcessor(l, ctx)
 	buf := message.NewBuffer()
 
-	mb1 := NewModelBuilder(ten, 1, 1, 100000000).SetItem(1000001, 10)
-	mb2 := NewModelBuilder(ten, 1, 1, 100000000).SetItem(1000002, 20)
-	mb3 := NewModelBuilder(ten, 1, 1, 200000000).SetItem(1000003, 30)
+	f1 := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	f2 := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(200000000)).Build()
+	mb1 := NewModelBuilder(ten, f1).SetItem(1000001, 10)
+	mb2 := NewModelBuilder(ten, f1).SetItem(1000002, 20)
+	mb3 := NewModelBuilder(ten, f2).SetItem(1000003, 30)
 
 	drop1, _ := p.SpawnForCharacter(buf)(mb1)
 	drop2, _ := p.SpawnForCharacter(buf)(mb2)
 	_, _ = p.SpawnForCharacter(buf)(mb3)
 
-	drops, err := p.GetForMap(1, 1, 100000000)
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	drops, err := p.GetForMap(f)
 	if err != nil {
 		t.Fatalf("Failed to get drops for map: %v", err)
 	}
@@ -325,7 +339,8 @@ func TestProcessor_ByIdProvider_WorksWithModelProvider(t *testing.T) {
 	p := NewProcessor(l, ctx)
 	buf := message.NewBuffer()
 
-	mb := NewModelBuilder(ten, 1, 1, 100000000).SetItem(1000000, 10)
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	mb := NewModelBuilder(ten, f).SetItem(1000000, 10)
 	created, _ := p.SpawnForCharacter(buf)(mb)
 
 	provider := p.ByIdProvider(created.Id())
@@ -347,13 +362,14 @@ func TestProcessor_ForMapProvider_WorksWithSliceProvider(t *testing.T) {
 	p := NewProcessor(l, ctx)
 	buf := message.NewBuffer()
 
-	mb1 := NewModelBuilder(ten, 1, 1, 100000000).SetItem(1000001, 10)
-	mb2 := NewModelBuilder(ten, 1, 1, 100000000).SetItem(1000002, 20)
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	mb1 := NewModelBuilder(ten, f).SetItem(1000001, 10)
+	mb2 := NewModelBuilder(ten, f).SetItem(1000002, 20)
 
 	p.SpawnForCharacter(buf)(mb1)
 	p.SpawnForCharacter(buf)(mb2)
 
-	provider := p.ForMapProvider(1, 1, 100000000)
+	provider := p.ForMapProvider(f)
 	drops, err := provider()
 	if err != nil {
 		t.Fatalf("Provider failed: %v", err)
@@ -372,9 +388,12 @@ func TestAllProvider_ReturnsAllDrops(t *testing.T) {
 	p := NewProcessor(l, ctx)
 	buf := message.NewBuffer()
 
-	mb1 := NewModelBuilder(ten, 1, 1, 100000000).SetItem(1000001, 10)
-	mb2 := NewModelBuilder(ten, 1, 2, 200000000).SetItem(1000002, 20)
-	mb3 := NewModelBuilder(ten, 2, 1, 300000000).SetItem(1000003, 30)
+	f1 := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	f2 := field.NewBuilder(world.Id(1), channel.Id(2), _map.Id(200000000)).Build()
+	f3 := field.NewBuilder(world.Id(2), channel.Id(1), _map.Id(300000000)).Build()
+	mb1 := NewModelBuilder(ten, f1).SetItem(1000001, 10)
+	mb2 := NewModelBuilder(ten, f2).SetItem(1000002, 20)
+	mb3 := NewModelBuilder(ten, f3).SetItem(1000003, 30)
 
 	p.SpawnForCharacter(buf)(mb1)
 	p.SpawnForCharacter(buf)(mb2)
@@ -398,7 +417,8 @@ func TestProcessor_Reserve_WithPetSlot(t *testing.T) {
 	p := NewProcessor(l, ctx)
 	spawnBuf := message.NewBuffer()
 
-	mb := NewModelBuilder(ten, 1, 1, 100000000).SetItem(1000000, 10)
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	mb := NewModelBuilder(ten, f).SetItem(1000000, 10)
 	drop, _ := p.SpawnForCharacter(spawnBuf)(mb)
 
 	reserveBuf := message.NewBuffer()
@@ -423,7 +443,8 @@ func TestProcessor_MultipleOperationsSequence(t *testing.T) {
 	p := NewProcessor(l, ctx)
 
 	spawnBuf := message.NewBuffer()
-	mb := NewModelBuilder(ten, 1, 1, 100000000).SetItem(1000000, 10)
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	mb := NewModelBuilder(ten, f).SetItem(1000000, 10)
 	drop, _ := p.SpawnForCharacter(spawnBuf)(mb)
 
 	found, err := p.GetById(drop.Id())
@@ -473,7 +494,8 @@ func TestProcessor_MultipleOperationsSequence(t *testing.T) {
 func TestCreatedEventStatusProvider_ReturnsValidMessages(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 
-	m, _ := NewModelBuilder(ten, 1, 2, 100000000).
+	f := field.NewBuilder(world.Id(1), channel.Id(2), _map.Id(100000000)).Build()
+	m, _ := NewModelBuilder(ten, f).
 		SetId(12345).
 		SetTransactionId(uuid.New()).
 		SetItem(1000000, 10).
@@ -498,8 +520,9 @@ func TestCreatedEventStatusProvider_ReturnsValidMessages(t *testing.T) {
 
 func TestExpiredEventStatusProvider_ReturnsValidMessages(t *testing.T) {
 	txId := uuid.New()
+	instance := uuid.New()
 
-	provider := expiredEventStatusProvider(txId, 1, 2, 100000000, 12345)
+	provider := expiredEventStatusProvider(txId, 1, 2, 100000000, instance, 12345)
 	messages, err := provider()
 	if err != nil {
 		t.Fatalf("expiredEventStatusProvider failed: %v", err)
@@ -511,8 +534,9 @@ func TestExpiredEventStatusProvider_ReturnsValidMessages(t *testing.T) {
 
 func TestPickedUpEventStatusProvider_ReturnsValidMessages(t *testing.T) {
 	txId := uuid.New()
+	instance := uuid.New()
 
-	provider := pickedUpEventStatusProvider(txId, 1, 2, 100000000, 12345, 99999, 1000000, 0, 10, 0, -1)
+	provider := pickedUpEventStatusProvider(txId, 1, 2, 100000000, instance, 12345, 99999, 1000000, 0, 10, 0, -1)
 	messages, err := provider()
 	if err != nil {
 		t.Fatalf("pickedUpEventStatusProvider failed: %v", err)
@@ -524,8 +548,9 @@ func TestPickedUpEventStatusProvider_ReturnsValidMessages(t *testing.T) {
 
 func TestReservedEventStatusProvider_ReturnsValidMessages(t *testing.T) {
 	txId := uuid.New()
+	instance := uuid.New()
 
-	provider := reservedEventStatusProvider(txId, 1, 2, 100000000, 12345, 99999, 1000000, 0, 10, 0)
+	provider := reservedEventStatusProvider(txId, 1, 2, 100000000, instance, 12345, 99999, 1000000, 0, 10, 0)
 	messages, err := provider()
 	if err != nil {
 		t.Fatalf("reservedEventStatusProvider failed: %v", err)
@@ -537,8 +562,9 @@ func TestReservedEventStatusProvider_ReturnsValidMessages(t *testing.T) {
 
 func TestReservationFailureEventStatusProvider_ReturnsValidMessages(t *testing.T) {
 	txId := uuid.New()
+	instance := uuid.New()
 
-	provider := reservationFailureEventStatusProvider(txId, 1, 2, 100000000, 12345, 99999)
+	provider := reservationFailureEventStatusProvider(txId, 1, 2, 100000000, instance, 12345, 99999)
 	messages, err := provider()
 	if err != nil {
 		t.Fatalf("reservationFailureEventStatusProvider failed: %v", err)
@@ -577,7 +603,8 @@ func TestProcessor_Expire_NonExistentDrop(t *testing.T) {
 	expireBuf := message.NewBuffer()
 
 	// Create a model that references a non-existent drop in registry
-	m, _ := NewModelBuilder(ten, 1, 1, 100000000).
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	m, _ := NewModelBuilder(ten, f).
 		SetId(999999).
 		SetStatus(StatusAvailable).
 		Build()
@@ -597,7 +624,8 @@ func TestProcessor_GetForMap_EmptyMap(t *testing.T) {
 
 	p := NewProcessor(l, ctx)
 
-	drops, err := p.GetForMap(1, 1, 999999999)
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(999999999)).Build()
+	drops, err := p.GetForMap(f)
 	if err != nil {
 		t.Fatalf("Failed to get drops for empty map: %v", err)
 	}
@@ -658,7 +686,8 @@ func TestProcessor_Gather_WithMesoDrop(t *testing.T) {
 	spawnBuf := message.NewBuffer()
 
 	// Create a meso drop
-	mb := NewModelBuilder(ten, 1, 1, 100000000).
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	mb := NewModelBuilder(ten, f).
 		SetMeso(1000).
 		SetType(3)
 
@@ -697,7 +726,8 @@ func TestProcessor_ForMapProvider_EmptyMap(t *testing.T) {
 
 	p := NewProcessor(l, ctx)
 
-	provider := p.ForMapProvider(1, 1, 999999999)
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(999999999)).Build()
+	provider := p.ForMapProvider(f)
 	drops, err := provider()
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
@@ -727,7 +757,8 @@ func TestProcessor_Gather_WithItemDrop(t *testing.T) {
 	p := NewProcessor(l, ctx)
 	spawnBuf := message.NewBuffer()
 
-	mb := NewModelBuilder(ten, 1, 1, 100000000).
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	mb := NewModelBuilder(ten, f).
 		SetItem(2000000, 5).
 		SetType(1).
 		SetOwner(12345, 67890)
@@ -746,5 +777,43 @@ func TestProcessor_Gather_WithItemDrop(t *testing.T) {
 	}
 	if gathered.Quantity() != 5 {
 		t.Fatalf("Expected quantity 5, got %d", gathered.Quantity())
+	}
+}
+
+func TestProcessor_GetForMap_FiltersInstancesCorrectly(t *testing.T) {
+	resetRegistry()
+	ctx, ten := createTestContext(t)
+	l := createTestLogger()
+
+	p := NewProcessor(l, ctx)
+	buf := message.NewBuffer()
+
+	instance1 := uuid.New()
+	instance2 := uuid.New()
+
+	// Create drops in two different instances of the same map
+	f1 := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).SetInstance(instance1).Build()
+	f2 := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).SetInstance(instance2).Build()
+
+	mb1 := NewModelBuilder(ten, f1).SetItem(1000001, 10)
+	mb2 := NewModelBuilder(ten, f2).SetItem(1000002, 20)
+
+	drop1, _ := p.SpawnForCharacter(buf)(mb1)
+	_, _ = p.SpawnForCharacter(buf)(mb2)
+
+	// Query for instance1 only
+	drops, err := p.GetForMap(f1)
+	if err != nil {
+		t.Fatalf("Failed to get drops for map: %v", err)
+	}
+
+	if len(drops) != 1 {
+		t.Fatalf("Expected 1 drop for instance1, got %d", len(drops))
+	}
+	if drops[0].Id() != drop1.Id() {
+		t.Fatal("Wrong drop returned for instance1")
+	}
+	if drops[0].Instance() != instance1 {
+		t.Fatal("Drop should have instance1 UUID")
 	}
 }

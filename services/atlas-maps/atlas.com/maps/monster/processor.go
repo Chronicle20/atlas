@@ -27,7 +27,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 }
 
 func (p *ProcessorImpl) CountInMap(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id) (int, error) {
-	data, err := requestInMap(byte(worldId), byte(channelId), uint32(mapId))(p.l, p.ctx)
+	data, err := requestInMap(worldId, channelId, mapId)(p.l, p.ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -35,7 +35,7 @@ func (p *ProcessorImpl) CountInMap(transactionId uuid.UUID, worldId world.Id, ch
 }
 
 func (p *ProcessorImpl) CreateMonster(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, monsterId uint32, x int16, y int16, fh uint16, team int32) {
-	_, err := requestCreate(byte(worldId), byte(channelId), uint32(mapId), monsterId, x, y, fh, team)(p.l, p.ctx)
+	_, err := requestCreate(worldId, channelId, mapId, monsterId, x, y, fh, team)(p.l, p.ctx)
 	if err != nil {
 		p.l.WithError(err).Errorf("Creating monster for map %d", mapId)
 	}

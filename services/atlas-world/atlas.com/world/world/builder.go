@@ -3,6 +3,8 @@ package world
 import (
 	"atlas-world/channel"
 	"errors"
+
+	"github.com/Chronicle20/atlas-constants/world"
 )
 
 var (
@@ -10,7 +12,7 @@ var (
 )
 
 type modelBuilder struct {
-	id                 byte
+	id                 world.Id
 	name               string
 	state              State
 	message            string
@@ -53,7 +55,7 @@ func CloneModel(m Model) *modelBuilder {
 }
 
 // SetId sets the id field
-func (b *modelBuilder) SetId(id byte) *modelBuilder {
+func (b *modelBuilder) SetId(id world.Id) *modelBuilder {
 	b.id = id
 	return b
 }

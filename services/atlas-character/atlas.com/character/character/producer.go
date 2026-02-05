@@ -6,6 +6,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/stat"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
@@ -98,7 +99,9 @@ func mapChangedEventProvider(transactionId uuid.UUID, characterId uint32, oldFie
 		Body: character2.StatusEventMapChangedBody{
 			ChannelId:      newField.ChannelId(),
 			OldMapId:       oldField.MapId(),
+			OldInstance:    oldField.Instance(),
 			TargetMapId:    newField.MapId(),
+			TargetInstance: newField.Instance(),
 			TargetPortalId: targetPortalId,
 		},
 	}
@@ -236,7 +239,7 @@ func creationFailedEventProvider(transactionId uuid.UUID, worldId world.Id, name
 	return producer.SingleMessageProvider(key, value)
 }
 
-func statChangedProvider(transactionId uuid.UUID, channel channel.Model, characterId uint32, updates []string, values map[string]interface{}) model.Provider[[]kafka.Message] {
+func statChangedProvider(transactionId uuid.UUID, channel channel.Model, characterId uint32, updates []stat.Type, values map[string]interface{}) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &character2.StatusEvent[character2.StatusEventStatChangedBody]{
 		TransactionId: transactionId,

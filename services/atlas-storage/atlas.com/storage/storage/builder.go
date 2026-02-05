@@ -3,13 +3,15 @@ package storage
 import (
 	"atlas-storage/asset"
 	"errors"
+
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 )
 
 // ModelBuilder for constructing Model instances
 type ModelBuilder struct {
 	id        uuid.UUID
-	worldId   byte
+	worldId   world.Id
 	accountId uint32
 	capacity  uint32
 	mesos     uint32
@@ -28,7 +30,7 @@ func (b *ModelBuilder) SetId(id uuid.UUID) *ModelBuilder {
 	return b
 }
 
-func (b *ModelBuilder) SetWorldId(worldId byte) *ModelBuilder {
+func (b *ModelBuilder) SetWorldId(worldId world.Id) *ModelBuilder {
 	b.worldId = worldId
 	return b
 }

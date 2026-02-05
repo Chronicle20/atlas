@@ -5,6 +5,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -29,8 +33,9 @@ func setupTestContext(t tenant.Model) context.Context {
 }
 
 // createTestReactor creates a reactor directly in the registry for testing
-func createTestReactor(t tenant.Model, worldId byte, channelId byte, mapId uint32, classification uint32, name string) Model {
-	builder := NewModelBuilder(t, worldId, channelId, mapId, classification, name).
+func createTestReactor(t tenant.Model, worldId world.Id, channelId channel.Id, mapId _map.Id, classification uint32, name string) Model {
+	f := field.NewBuilder(worldId, channelId, mapId).Build()
+	builder := NewModelBuilder(t, f, classification, name).
 		SetState(0).
 		SetPosition(100, 200).
 		SetDelay(0).
@@ -96,13 +101,13 @@ func TestGetById(t *testing.T) {
 	}
 }
 
-// TestGetInMap tests the GetInMap processor function
-func TestGetInMap(t *testing.T) {
+// TestGetInField tests the GetInField processor function
+func TestGetInField(t *testing.T) {
 	tests := []struct {
 		name          string
-		worldId       byte
-		channelId     byte
-		mapId         uint32
+		worldId       world.Id
+		channelId     channel.Id
+		mapId         _map.Id
 		setup         func(ten tenant.Model)
 		expectedCount int
 	}{
@@ -162,7 +167,8 @@ func TestGetInMap(t *testing.T) {
 
 			tc.setup(ten)
 
-			results, err := GetInMap(l)(ctx)(tc.worldId, tc.channelId, tc.mapId)
+			f := field.NewBuilder(tc.worldId, tc.channelId, tc.mapId).Build()
+			results, err := GetInField(l)(ctx)(f)
 
 			assert.NoError(t, err)
 			assert.Len(t, results, tc.expectedCount)
@@ -177,8 +183,8 @@ func TestGetInMap(t *testing.T) {
 	}
 }
 
-// TestGetInMap_MultiTenant verifies tenant isolation
-func TestGetInMap_MultiTenant(t *testing.T) {
+// TestGetInField_MultiTenant verifies tenant isolation
+func TestGetInField_MultiTenant(t *testing.T) {
 	l := setupTestLogger()
 
 	// Setup two different tenants
@@ -195,9 +201,11 @@ func TestGetInMap_MultiTenant(t *testing.T) {
 	createTestReactor(tenant1, 1, 1, 100000, 2000001, "tenant1-reactor")
 	createTestReactor(tenant2, 1, 1, 100000, 2000002, "tenant2-reactor")
 
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000)).Build()
+
 	// Query should only return reactors for the requesting tenant
-	results1, err1 := GetInMap(l)(ctx1)(1, 1, 100000)
-	results2, err2 := GetInMap(l)(ctx2)(1, 1, 100000)
+	results1, err1 := GetInField(l)(ctx1)(f)
+	results2, err2 := GetInField(l)(ctx2)(f)
 
 	assert.NoError(t, err1)
 	assert.NoError(t, err2)
@@ -212,7 +220,8 @@ func TestRegistry_Create(t *testing.T) {
 	ten := setupTestTenant()
 	defer cleanupRegistry(ten)
 
-	builder := NewModelBuilder(ten, 1, 1, 100000, 2000000, "test-reactor").
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000)).Build()
+	builder := NewModelBuilder(ten, f, 2000000, "test-reactor").
 		SetState(1).
 		SetPosition(150, 250).
 		SetDelay(100).
@@ -222,9 +231,9 @@ func TestRegistry_Create(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.NotEqual(t, uint32(0), created.Id())
-	assert.Equal(t, byte(1), created.WorldId())
-	assert.Equal(t, byte(1), created.ChannelId())
-	assert.Equal(t, uint32(100000), created.MapId())
+	assert.Equal(t, world.Id(1), created.WorldId())
+	assert.Equal(t, channel.Id(1), created.ChannelId())
+	assert.Equal(t, _map.Id(100000), created.MapId())
 	assert.Equal(t, uint32(2000000), created.Classification())
 	assert.Equal(t, "test-reactor", created.Name())
 	assert.Equal(t, int8(1), created.State())
@@ -278,8 +287,8 @@ func TestRegistry_Remove(t *testing.T) {
 	assert.Error(t, err)
 }
 
-// TestRegistry_GetInMap tests direct registry map queries
-func TestRegistry_GetInMap(t *testing.T) {
+// TestRegistry_GetInField tests direct registry map queries
+func TestRegistry_GetInField(t *testing.T) {
 	ten := setupTestTenant()
 	defer cleanupRegistry(ten)
 
@@ -287,7 +296,8 @@ func TestRegistry_GetInMap(t *testing.T) {
 	createTestReactor(ten, 1, 1, 100000, 2000001, "reactor-1")
 	createTestReactor(ten, 1, 1, 100000, 2000002, "reactor-2")
 
-	results := GetRegistry().GetInMap(ten, 1, 1, 100000)
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000)).Build()
+	results := GetRegistry().GetInField(ten, f)
 
 	assert.Len(t, results, 2)
 }
@@ -320,15 +330,17 @@ func TestRegistry_Remove_FromMapIndex(t *testing.T) {
 	reactor1 := createTestReactor(ten, 1, 1, 100000, 2000001, "reactor-1")
 	reactor2 := createTestReactor(ten, 1, 1, 100000, 2000002, "reactor-2")
 
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000)).Build()
+
 	// Verify both in map index
-	results := GetRegistry().GetInMap(ten, 1, 1, 100000)
+	results := GetRegistry().GetInField(ten, f)
 	assert.Len(t, results, 2)
 
 	// Remove one
 	GetRegistry().Remove(ten, reactor1.Id())
 
 	// Verify only one remains in map index
-	results = GetRegistry().GetInMap(ten, 1, 1, 100000)
+	results = GetRegistry().GetInField(ten, f)
 	assert.Len(t, results, 1)
 	assert.Equal(t, reactor2.Id(), results[0].Id())
 }

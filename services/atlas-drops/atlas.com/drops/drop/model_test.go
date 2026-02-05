@@ -4,13 +4,18 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 )
 
 func TestNewModelBuilder_DefaultValues(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
-	mb := NewModelBuilder(ten, 1, 2, 100000000)
+	f := field.NewBuilder(world.Id(1), channel.Id(2), _map.Id(100000000)).Build()
+	mb := NewModelBuilder(ten, f)
 
 	mbTenant := mb.Tenant()
 	if mbTenant.Id() != ten.Id() {
@@ -40,7 +45,8 @@ func TestNewModelBuilder_DefaultValues(t *testing.T) {
 
 func TestModelBuilder_FluentSetters(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
-	mb := NewModelBuilder(ten, 1, 1, 100000000)
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	mb := NewModelBuilder(ten, f)
 
 	result := mb.SetId(123)
 	if result != mb {
@@ -108,7 +114,8 @@ func TestModelBuilder_Build_CreatesCorrectModel(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	txId := uuid.New()
 
-	mb := NewModelBuilder(ten, 1, 2, 100000000).
+	f := field.NewBuilder(world.Id(1), channel.Id(2), _map.Id(100000000)).Build()
+	mb := NewModelBuilder(ten, f).
 		SetId(123).
 		SetTransactionId(txId).
 		SetItem(1000000, 50).
@@ -192,7 +199,8 @@ func TestCloneModelBuilder_CopiesAllFields(t *testing.T) {
 	txId := uuid.New()
 	dropTime := time.Now().Add(-time.Hour)
 
-	original, err := NewModelBuilder(ten, 1, 2, 100000000).
+	f := field.NewBuilder(world.Id(1), channel.Id(2), _map.Id(100000000)).Build()
+	original, err := NewModelBuilder(ten, f).
 		SetId(123).
 		SetTransactionId(txId).
 		SetItem(1000000, 50).
@@ -284,7 +292,8 @@ func TestCloneModelBuilder_CopiesAllFields(t *testing.T) {
 func TestModel_Reserve_ReturnsNewInstance(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 
-	original, err := NewModelBuilder(ten, 1, 1, 100000000).
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	original, err := NewModelBuilder(ten, f).
 		SetId(123).
 		SetStatus(StatusAvailable).
 		SetPetSlot(-1).
@@ -320,7 +329,8 @@ func TestModel_Reserve_ReturnsNewInstance(t *testing.T) {
 func TestModel_CancelReservation_ReturnsNewInstance(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 
-	original, err := NewModelBuilder(ten, 1, 1, 100000000).
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	original, err := NewModelBuilder(ten, f).
 		SetId(123).
 		SetStatus(StatusReserved).
 		SetPetSlot(2).
@@ -356,7 +366,8 @@ func TestModel_CancelReservation_ReturnsNewInstance(t *testing.T) {
 func TestModel_CharacterDrop_AliasForPlayerDrop(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 
-	m, err := NewModelBuilder(ten, 1, 1, 100000000).
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	m, err := NewModelBuilder(ten, f).
 		SetPlayerDrop(true).
 		Build()
 	if err != nil {
@@ -370,7 +381,8 @@ func TestModel_CharacterDrop_AliasForPlayerDrop(t *testing.T) {
 
 func TestModelBuilder_ItemId_Getter(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
-	mb := NewModelBuilder(ten, 1, 1, 100000000).SetItem(1234567, 10)
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	mb := NewModelBuilder(ten, f).SetItem(1234567, 10)
 
 	if mb.ItemId() != 1234567 {
 		t.Fatalf("Expected ItemId() 1234567, got %d", mb.ItemId())
@@ -508,7 +520,8 @@ func TestModelBuilder_Build_ValidationErrors(t *testing.T) {
 			name: "valid builder",
 			buildFunc: func() (Model, error) {
 				ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
-				return NewModelBuilder(ten, 1, 1, 100000000).Build()
+				f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+				return NewModelBuilder(ten, f).Build()
 			},
 			expectError: false,
 		},
@@ -546,7 +559,8 @@ func TestModelBuilder_MustBuild_Panics(t *testing.T) {
 
 func TestModelBuilder_MustBuild_Success(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
-	mb := NewModelBuilder(ten, 1, 1, 100000000)
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	mb := NewModelBuilder(ten, f)
 
 	// Should not panic
 	m := mb.MustBuild()

@@ -5,6 +5,7 @@ import (
 	consumer2 "atlas-drops/kafka/consumer"
 	messageDropKafka "atlas-drops/kafka/message/drop"
 	"context"
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -39,7 +40,8 @@ func handleSpawn(l logrus.FieldLogger, ctx context.Context, c messageDropKafka.C
 		return
 	}
 	t := tenant.MustFromContext(ctx)
-	mb := drop.NewModelBuilder(t, c.WorldId, c.ChannelId, c.MapId).
+	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
+	mb := drop.NewModelBuilder(t, f).
 		SetItem(c.Body.ItemId, c.Body.Quantity).
 		SetMeso(c.Body.Mesos).
 		SetType(c.Body.DropType).
@@ -56,7 +58,8 @@ func handleSpawnFromCharacter(l logrus.FieldLogger, ctx context.Context, c messa
 		return
 	}
 	t := tenant.MustFromContext(ctx)
-	mb := drop.NewModelBuilder(t, c.WorldId, c.ChannelId, c.MapId).
+	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
+	mb := drop.NewModelBuilder(t, f).
 		SetItem(c.Body.ItemId, c.Body.Quantity).
 		SetEquipmentId(c.Body.EquipmentId).
 		SetMeso(c.Body.Mesos).

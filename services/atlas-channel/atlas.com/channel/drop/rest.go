@@ -4,16 +4,18 @@ import (
 	"github.com/Chronicle20/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
 	"strconv"
 	"time"
 )
 
 type RestModel struct {
-	Id            uint32    `json:"-"`
+	Id            uint32     `json:"-"`
 	WorldId       world.Id   `json:"worldId"`
 	ChannelId     channel.Id `json:"channelId"`
 	MapId         _map.Id    `json:"mapId"`
-	ItemId        uint32    `json:"itemId"`
+	Instance      uuid.UUID  `json:"instance"`
+	ItemId        uint32     `json:"itemId"`
 	EquipmentId   uint32    `json:"equipmentId"`
 	Quantity      uint32    `json:"quantity"`
 	Meso          uint32    `json:"meso"`

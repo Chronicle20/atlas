@@ -8,6 +8,9 @@ import (
 	"os"
 	"testing"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -116,9 +119,9 @@ func TestHandleEnterCommand_ParameterExtraction(t *testing.T) {
 func TestHandleEnterCommand_DifferentParameters(t *testing.T) {
 	tests := []struct {
 		name        string
-		worldId     byte
-		channelId   byte
-		mapId       uint32
+		worldId     world.Id
+		channelId   channel.Id
+		mapId       _map.Id
 		portalId    uint32
 		characterId uint32
 	}{
@@ -161,6 +164,7 @@ func TestHandleEnterCommand_DifferentParameters(t *testing.T) {
 				WorldId:   tt.worldId,
 				ChannelId: tt.channelId,
 				MapId:     tt.mapId,
+				Instance:  uuid.New(),
 				PortalId:  tt.portalId,
 				Type:      CommandTypeEnter,
 				Body: enterBody{

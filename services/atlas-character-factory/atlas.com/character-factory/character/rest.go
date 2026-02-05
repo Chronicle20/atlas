@@ -1,14 +1,15 @@
 package character
 
 import (
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"strconv"
 )
 
 type RestModel struct {
-	Id                 uint32 `json:"-"`
-	AccountId          uint32 `json:"accountId"`
-	WorldId            byte   `json:"worldId"`
+	Id                 uint32   `json:"-"`
+	AccountId          uint32   `json:"accountId"`
+	WorldId            world.Id `json:"worldId"`
 	Name               string `json:"name"`
 	Level              byte   `json:"level"`
 	Experience         uint32 `json:"experience"`

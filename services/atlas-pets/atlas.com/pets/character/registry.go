@@ -1,15 +1,18 @@
 package character
 
 import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 	"sync"
 )
 
 type MapKey struct {
 	Tenant    tenant.Model
-	WorldId   byte
-	ChannelId byte
-	MapId     uint32
+	WorldId   world.Id
+	ChannelId channel.Id
+	MapId     _map.Id
 }
 
 type Registry struct {

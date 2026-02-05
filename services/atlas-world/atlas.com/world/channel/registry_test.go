@@ -7,11 +7,13 @@ import (
 	"testing"
 	"time"
 
+	channelConstant "github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 )
 
-func createTestChannel(t *testing.T, worldId, channelId byte, ipAddress string, port int) channel.Model {
+func createTestChannel(t *testing.T, worldId world.Id, channelId channelConstant.Id, ipAddress string, port int) channel.Model {
 	t.Helper()
 	m, err := channel.NewModelBuilder().
 		SetId(uuid.New()).
@@ -296,7 +298,7 @@ func TestConcurrentAccess(t *testing.T) {
 	for i := 0; i < numGoroutines; i++ {
 		go func(idx int) {
 			defer wg.Done()
-			ch := createTestChannel(t, byte(idx%10), byte(idx/10), "192.168.1.1", 8080+idx)
+			ch := createTestChannel(t, world.Id(idx%10), channelConstant.Id(idx/10), "192.168.1.1", 8080+idx)
 			registry.Register(tenant, ch)
 		}(i)
 	}
@@ -317,7 +319,7 @@ func TestConcurrentAccess(t *testing.T) {
 	for i := 0; i < numGoroutines; i++ {
 		go func(idx int) {
 			defer wg.Done()
-			ch := createTestChannel(t, byte(idx%5), byte(idx%10), "192.168.1.1", 9000+idx)
+			ch := createTestChannel(t, world.Id(idx%5), channelConstant.Id(idx%10), "192.168.1.1", 9000+idx)
 			registry.Register(tenant, ch)
 		}(i)
 		go func() {
@@ -344,7 +346,7 @@ func TestConcurrentTenantAccess(t *testing.T) {
 		for j := 0; j < numOps; j++ {
 			go func(opIdx int) {
 				defer wg.Done()
-				ch := createTestChannel(t, byte(opIdx%5), byte(opIdx/5), "192.168.1.1", 8080+opIdx)
+				ch := createTestChannel(t, world.Id(opIdx%5), channelConstant.Id(opIdx/5), "192.168.1.1", 8080+opIdx)
 				registry.Register(tenant, ch)
 				_ = registry.ChannelServers(tenant)
 			}(j)

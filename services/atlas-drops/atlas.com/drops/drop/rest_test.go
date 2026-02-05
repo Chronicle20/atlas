@@ -4,6 +4,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 )
@@ -207,7 +211,8 @@ func TestTransform_ZeroValues(t *testing.T) {
 func TestTransform_MesoDrop(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 
-	m, err := NewModelBuilder(ten, 1, 1, 100000000).
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	m, err := NewModelBuilder(ten, f).
 		SetId(456).
 		SetMeso(10000).
 		SetType(3).

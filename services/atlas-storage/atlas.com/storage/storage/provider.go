@@ -3,16 +3,18 @@ package storage
 import (
 	"atlas-storage/asset"
 	"context"
+
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
 // GetByWorldAndAccountId retrieves storage by world and account with decorated assets
-func GetByWorldAndAccountId(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID, ctx context.Context) func(worldId byte, accountId uint32) (Model, error) {
-	return func(worldId byte, accountId uint32) (Model, error) {
+func GetByWorldAndAccountId(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID, ctx context.Context) func(worldId world.Id, accountId uint32) (Model, error) {
+	return func(worldId world.Id, accountId uint32) (Model, error) {
 		var e Entity
-		err := db.Where("tenant_id = ? AND world_id = ? AND account_id = ?", tenantId, worldId, accountId).First(&e).Error
+		err := db.Where("tenant_id = ? AND world_id = ? AND account_id = ?", tenantId, byte(worldId), accountId).First(&e).Error
 		if err != nil {
 			return Model{}, err
 		}
@@ -30,7 +32,7 @@ func GetByWorldAndAccountId(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUI
 		// MustBuild since entities from database are trusted
 		return NewModelBuilder().
 			SetId(e.Id).
-			SetWorldId(e.WorldId).
+			SetWorldId(world.Id(e.WorldId)).
 			SetAccountId(e.AccountId).
 			SetCapacity(e.Capacity).
 			SetMesos(e.Mesos).
@@ -59,7 +61,7 @@ func GetByAccountId(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID) func(
 
 			m := NewModelBuilder().
 				SetId(e.Id).
-				SetWorldId(e.WorldId).
+				SetWorldId(world.Id(e.WorldId)).
 				SetAccountId(e.AccountId).
 				SetCapacity(e.Capacity).
 				SetMesos(e.Mesos).
@@ -91,7 +93,7 @@ func GetById(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID) func(id uuid
 		// MustBuild since entities from database are trusted
 		return NewModelBuilder().
 			SetId(e.Id).
-			SetWorldId(e.WorldId).
+			SetWorldId(world.Id(e.WorldId)).
 			SetAccountId(e.AccountId).
 			SetCapacity(e.Capacity).
 			SetMesos(e.Mesos).

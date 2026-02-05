@@ -63,7 +63,7 @@ func handleReleaseCommand(db *gorm.DB) kafkaMessage.Handler[compartment.Command[
 
 		// Get the asset before release to know its inventory type
 		t := tenant.MustFromContext(ctx)
-		assetModel, err := asset.GetById(l, db, t.Id())(c.Body.AssetId)
+		assetModel, err := asset.GetById(l, db, t.Id())(uint32(c.Body.AssetId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to get asset [%d] before release", c.Body.AssetId)
 			return

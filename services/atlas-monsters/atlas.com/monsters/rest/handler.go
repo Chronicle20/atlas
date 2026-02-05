@@ -147,21 +147,17 @@ func ParseWorldId(l logrus.FieldLogger, next WorldIdHandler) http.HandlerFunc {
 	}
 }
 
-type InstanceHandler func(instance uuid.UUID) http.HandlerFunc
+type InstanceIdHandler func(instanceId uuid.UUID) http.HandlerFunc
 
-func ParseInstance(l logrus.FieldLogger, next InstanceHandler) http.HandlerFunc {
+func ParseInstanceId(l logrus.FieldLogger, next InstanceIdHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		instanceStr := r.URL.Query().Get("instance")
-		var instance uuid.UUID
-		if instanceStr != "" {
-			var err error
-			instance, err = uuid.Parse(instanceStr)
-			if err != nil {
-				l.WithError(err).Errorf("Error parsing instance as UUID")
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
+		vars := mux.Vars(r)
+		instanceId, err := uuid.Parse(vars["instanceId"])
+		if err != nil {
+			l.WithError(err).Errorf("Error parsing instanceId as UUID")
+			w.WriteHeader(http.StatusBadRequest)
+			return
 		}
-		next(instance)(w, r)
+		next(instanceId)(w, r)
 	}
 }

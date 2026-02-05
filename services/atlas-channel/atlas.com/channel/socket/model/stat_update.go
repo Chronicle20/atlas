@@ -1,19 +1,21 @@
 package model
 
+import "github.com/Chronicle20/atlas-constants/stat"
+
 type StatUpdate struct {
-	stat  string
-	value int64
+	statType stat.Type
+	value    int64
 }
 
-func NewStatUpdate(stat string, value int64) StatUpdate {
+func NewStatUpdate(statType stat.Type, value int64) StatUpdate {
 	return StatUpdate{
-		stat:  stat,
-		value: value,
+		statType: statType,
+		value:    value,
 	}
 }
 
-func (u StatUpdate) Stat() string {
-	return u.stat
+func (u StatUpdate) Stat() stat.Type {
+	return u.statType
 }
 
 func (u StatUpdate) Value() int64 {

@@ -20,7 +20,7 @@ const (
 )
 
 type MemberStatusEvent[E any] struct {
-	TransactionID uuid.UUID `json:"transactionId"`
+	TransactionId uuid.UUID `json:"transactionId"`
 	WorldId       world.Id  `json:"worldId"`
 	MessengerId   uint32    `json:"messengerId"`
 	CharacterId   uint32    `json:"characterId"`
@@ -35,7 +35,7 @@ type MemberLogoutEventBody struct {
 }
 
 type StatusEvent[E any] struct {
-	TransactionID uuid.UUID `json:"transactionId"`
+	TransactionId uuid.UUID `json:"transactionId"`
 	WorldId       world.Id  `json:"worldId"`
 	CharacterId   uint32    `json:"characterId"`
 	Type          string    `json:"type"`

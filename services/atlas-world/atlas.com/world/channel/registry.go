@@ -4,12 +4,14 @@ import (
 	"errors"
 	"sync"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 )
 
 type tenantData struct {
 	lock     sync.RWMutex
-	channels map[byte]map[byte]Model
+	channels map[world.Id]map[channel.Id]Model
 }
 
 type Registry struct {
@@ -50,7 +52,7 @@ func (r *Registry) getTenantData(t tenant.Model) *tenantData {
 	}
 
 	td := &tenantData{
-		channels: make(map[byte]map[byte]Model),
+		channels: make(map[world.Id]map[channel.Id]Model),
 	}
 	r.tenants[t] = td
 	return td
@@ -62,7 +64,7 @@ func (r *Registry) Register(t tenant.Model, m Model) Model {
 	defer td.lock.Unlock()
 
 	if _, ok := td.channels[m.WorldId()]; !ok {
-		td.channels[m.WorldId()] = make(map[byte]Model)
+		td.channels[m.WorldId()] = make(map[channel.Id]Model)
 	}
 	td.channels[m.WorldId()][m.channelId] = m
 	return m
@@ -82,7 +84,7 @@ func (r *Registry) ChannelServers(t tenant.Model) []Model {
 	return results
 }
 
-func (r *Registry) ChannelServer(t tenant.Model, worldId byte, channelId byte) (Model, error) {
+func (r *Registry) ChannelServer(t tenant.Model, worldId world.Id, channelId channel.Id) (Model, error) {
 	td := r.getTenantData(t)
 	td.lock.RLock()
 	defer td.lock.RUnlock()
@@ -98,7 +100,7 @@ func (r *Registry) ChannelServer(t tenant.Model, worldId byte, channelId byte) (
 	return result, nil
 }
 
-func (r *Registry) RemoveByWorldAndChannel(t tenant.Model, worldId byte, channelId byte) error {
+func (r *Registry) RemoveByWorldAndChannel(t tenant.Model, worldId world.Id, channelId channel.Id) error {
 	td := r.getTenantData(t)
 	td.lock.Lock()
 	defer td.lock.Unlock()

@@ -1,9 +1,11 @@
 package character
 
+import "github.com/Chronicle20/atlas-constants/world"
+
 type Model struct {
 	id                 uint32
 	accountId          uint32
-	worldId            byte
+	worldId            world.Id
 	name               string
 	level              byte
 	experience         uint32

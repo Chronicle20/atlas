@@ -23,7 +23,7 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 		r := router.PathPrefix("/reactors").Subrouter()
 		r.HandleFunc("/{reactorId}", registerGet("get_by_id", handleGetById)).Methods(http.MethodGet)
 
-		r = router.PathPrefix("/worlds/{worldId}/channels/{channelId}/maps/{mapId}/reactors").Subrouter()
+		r = router.PathPrefix("/worlds/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/reactors").Subrouter()
 		r.HandleFunc("", rest.RegisterInputHandler[RestModel](l)(si)("create_in_map", handleCreateInMap)).Methods(http.MethodPost)
 		r.HandleFunc("", registerGet("get_in_map", handleGetInMap)).Methods(http.MethodGet)
 		r.HandleFunc("/{reactorId}", registerGet("get_by_id", handleGetByIdInMap)).Methods(http.MethodGet)
@@ -55,7 +55,7 @@ func handleGetByIdInMap(d *rest.HandlerDependency, c *rest.HandlerContext) http.
 	return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
 		return rest.ParseChannelId(d.Logger(), func(channelId channel.Id) http.HandlerFunc {
 			return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
-				return rest.ParseInstance(d.Logger(), func(instance uuid.UUID) http.HandlerFunc {
+				return rest.ParseInstanceId(d.Logger(), func(instanceId uuid.UUID) http.HandlerFunc {
 					return rest.ParseReactorId(d.Logger(), func(reactorId uint32) http.HandlerFunc {
 						return func(w http.ResponseWriter, r *http.Request) {
 							m, err := GetById(d.Logger())(d.Context())(reactorId)
@@ -84,9 +84,9 @@ func handleCreateInMap(d *rest.HandlerDependency, c *rest.HandlerContext, i Rest
 	return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
 		return rest.ParseChannelId(d.Logger(), func(channelId channel.Id) http.HandlerFunc {
 			return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
-				return rest.ParseInstance(d.Logger(), func(instance uuid.UUID) http.HandlerFunc {
+				return rest.ParseInstanceId(d.Logger(), func(instanceId uuid.UUID) http.HandlerFunc {
 					return func(w http.ResponseWriter, r *http.Request) {
-						f := field.NewBuilder(worldId, channelId, mapId).SetInstance(instance).Build()
+						f := field.NewBuilder(worldId, channelId, mapId).SetInstance(instanceId).Build()
 						err := producer.ProviderImpl(d.Logger())(d.Context())(EnvCommandTopic)(createCommandProvider(f, i.Classification, i.Name, i.State, i.X, i.Y, i.Delay, i.Direction))
 						if err != nil {
 							d.Logger().WithError(err).Errorf("Unable to accept reactor creation request for processing.")
@@ -105,9 +105,9 @@ func handleGetInMap(d *rest.HandlerDependency, c *rest.HandlerContext) http.Hand
 	return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
 		return rest.ParseChannelId(d.Logger(), func(channelId channel.Id) http.HandlerFunc {
 			return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
-				return rest.ParseInstance(d.Logger(), func(instance uuid.UUID) http.HandlerFunc {
+				return rest.ParseInstanceId(d.Logger(), func(instanceId uuid.UUID) http.HandlerFunc {
 					return func(w http.ResponseWriter, r *http.Request) {
-						f := field.NewBuilder(worldId, channelId, mapId).SetInstance(instance).Build()
+						f := field.NewBuilder(worldId, channelId, mapId).SetInstance(instanceId).Build()
 						ms, err := GetInField(d.Logger())(d.Context())(f)
 						if err != nil {
 							w.WriteHeader(http.StatusInternalServerError)

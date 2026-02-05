@@ -1,9 +1,11 @@
 package monster
 
 import (
-	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/world"
 	"strconv"
+
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 )
 
 // SpawnInputRestModel represents the input for spawning a monster.
@@ -26,22 +28,22 @@ func (r SpawnInputRestModel) GetID() string {
 
 // SpawnResponseRestModel represents the response from spawning a monster.
 type SpawnResponseRestModel struct {
-	Id                 string `json:"-"`
-	UniqueId           uint32 `json:"uniqueId"`
-	WorldId            byte   `json:"worldId"`
-	ChannelId          byte   `json:"channelId"`
-	MapId              uint32 `json:"mapId"`
-	MonsterId          uint32 `json:"monsterId"`
-	ControlCharacterId uint32 `json:"controlCharacterId"`
-	X                  int16  `json:"x"`
-	Y                  int16  `json:"y"`
-	Fh                 int16  `json:"fh"`
-	Stance             byte   `json:"stance"`
-	Team               int8   `json:"team"`
-	MaxHp              uint32 `json:"maxHp"`
-	Hp                 uint32 `json:"hp"`
-	MaxMp              uint32 `json:"maxMp"`
-	Mp                 uint32 `json:"mp"`
+	Id                 string     `json:"-"`
+	UniqueId           uint32     `json:"uniqueId"`
+	WorldId            world.Id   `json:"worldId"`
+	ChannelId          channel.Id `json:"channelId"`
+	MapId              _map.Id    `json:"mapId"`
+	MonsterId          uint32     `json:"monsterId"`
+	ControlCharacterId uint32     `json:"controlCharacterId"`
+	X                  int16      `json:"x"`
+	Y                  int16      `json:"y"`
+	Fh                 int16      `json:"fh"`
+	Stance             byte       `json:"stance"`
+	Team               int8       `json:"team"`
+	MaxHp              uint32     `json:"maxHp"`
+	Hp                 uint32     `json:"hp"`
+	MaxMp              uint32     `json:"maxMp"`
+	Mp                 uint32     `json:"mp"`
 }
 
 func (r SpawnResponseRestModel) GetName() string {
@@ -56,7 +58,7 @@ func (r SpawnResponseRestModel) GetID() string {
 type SpawnRequest struct {
 	WorldId   world.Id
 	ChannelId channel.Id
-	MapId     uint32
+	MapId     _map.Id
 	MonsterId uint32
 	X         int16
 	Y         int16

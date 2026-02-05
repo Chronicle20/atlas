@@ -39,7 +39,7 @@ func WarpCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(wo
 			if match[1] == "me" {
 				idProvider = model.ToSliceProvider(model.FixedProvider(c.Id()))
 			} else if match[1] == "map" {
-				idProvider = _map.NewProcessor(l, ctx).CharacterIdsInMapStringProvider(worldId, channelId, match[2])
+				idProvider = _map.NewProcessor(l, ctx).CharacterIdsInMapStringProvider(world.Id(worldId), channel.Id(channelId), match[2])
 			} else {
 				idProvider = model.ToSliceProvider(character.NewProcessor(l, ctx).IdByNameProvider(match[1]))
 			}
@@ -60,7 +60,7 @@ func warpCommandProducer(worldId world.Id, channelId channel.Id, actorId uint32,
 				return errors.New("map does not exist")
 			}
 
-			exists := mp.Exists(uint32(requestedMapId))
+			exists := mp.Exists(_map2.Id(requestedMapId))
 			if !exists {
 				l.Debugf("Ignoring character [%d] command [%d], because they did not input a valid map.", actorId, requestedMapId)
 				return errors.New("map does not exist")
@@ -131,7 +131,7 @@ func RatesCommandProducer(_ logrus.FieldLogger) func(_ context.Context) func(wor
 					mp := message.NewProcessor(l, ctx)
 					f := field.NewBuilder(world.Id(worldId), channel.Id(channelId), _map2.Id(character.MapId())).Build()
 
-					r, err := rp.GetByCharacter(worldId, channelId, character.Id())
+					r, err := rp.GetByCharacter(world.Id(worldId), channel.Id(channelId), character.Id())
 					if err != nil {
 						l.WithError(err).Errorf("Unable to get rates for character [%d].", character.Id())
 						return mp.IssuePinkText(f, 0, "Unable to retrieve rate information.", []uint32{character.Id()})

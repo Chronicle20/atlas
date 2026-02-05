@@ -195,7 +195,7 @@ func (p *Processor) ConsumeError(characterId uint32, transactionId uuid.UUID, in
 		errorType = consumable.ErrorTypePetCannotConsume
 	}
 
-	cErr = producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(ErrorEventProvider(characterId, errorType))
+	cErr = producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(ErrorEventProvider(ts.Id(characterId), errorType))
 	if cErr != nil {
 		p.l.WithError(cErr).Errorf("Unable to issue consumption error [%v] on event topic. Character [%d] likely going to be stuck.", err, characterId)
 	}
@@ -671,7 +671,7 @@ func rollStatAdjustment() int16 {
 }
 
 func (p *Processor) PassScroll(characterId uint32, legendarySpirit bool, whiteScroll bool) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(ScrollEventProvider(characterId)(true, false, legendarySpirit, whiteScroll))
+	return producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(ScrollEventProvider(ts.Id(characterId))(true, false, legendarySpirit, whiteScroll))
 }
 
 // ApplyConsumableEffect applies item effects to a character without consuming from inventory
@@ -701,7 +701,7 @@ func (p *Processor) ApplyConsumableEffect(transactionId uuid.UUID, worldId byte,
 	p.l.Debugf("Successfully applied consumable [%d] effects to character [%d]", itemId, characterId)
 
 	// Emit the effect applied event for saga completion
-	err = producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(EffectAppliedEventProvider(characterId, uint32(itemId), transactionId))
+	err = producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(EffectAppliedEventProvider(ts.Id(characterId), itemId, transactionId))
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to emit effect applied event for character [%d] item [%d]", characterId, itemId)
 		return err
@@ -710,5 +710,5 @@ func (p *Processor) ApplyConsumableEffect(transactionId uuid.UUID, worldId byte,
 }
 
 func (p *Processor) FailScroll(characterId uint32, cursed bool, legendarySpirit bool, whiteScroll bool) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(ScrollEventProvider(characterId)(false, cursed, legendarySpirit, whiteScroll))
+	return producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(ScrollEventProvider(ts.Id(characterId))(false, cursed, legendarySpirit, whiteScroll))
 }

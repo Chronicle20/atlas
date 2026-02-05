@@ -3,13 +3,15 @@ package character
 import (
 	"atlas-buffs/buff/stat"
 	character2 "atlas-buffs/kafka/message/character"
+	"time"
+
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
-	"time"
 )
 
-func appliedStatusEventProvider(worldId byte, characterId uint32, fromId uint32, sourceId int32, duration int32, changes []stat.Model, createdAt time.Time, expiresAt time.Time) model.Provider[[]kafka.Message] {
+func appliedStatusEventProvider(worldId world.Id, characterId uint32, fromId uint32, sourceId int32, duration int32, changes []stat.Model, createdAt time.Time, expiresAt time.Time) model.Provider[[]kafka.Message] {
 	statups := make([]character2.StatChange, 0)
 	for _, su := range changes {
 		statups = append(statups, character2.StatChange{
@@ -35,7 +37,7 @@ func appliedStatusEventProvider(worldId byte, characterId uint32, fromId uint32,
 	return producer.SingleMessageProvider(key, value)
 }
 
-func expiredStatusEventProvider(worldId byte, characterId uint32, sourceId int32, duration int32, changes []stat.Model, createdAt time.Time, expiresAt time.Time) model.Provider[[]kafka.Message] {
+func expiredStatusEventProvider(worldId world.Id, characterId uint32, sourceId int32, duration int32, changes []stat.Model, createdAt time.Time, expiresAt time.Time) model.Provider[[]kafka.Message] {
 	statups := make([]character2.StatChange, 0)
 	for _, su := range changes {
 		statups = append(statups, character2.StatChange{

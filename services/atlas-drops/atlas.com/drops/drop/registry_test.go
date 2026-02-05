@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
@@ -33,7 +34,8 @@ func createTestTenant(t *testing.T) tenant.Model {
 }
 
 func createTestBuilder(ten tenant.Model, worldId world.Id, channelId channel.Id, mapId _map.Id) *ModelBuilder {
-	return NewModelBuilder(ten, worldId, channelId, mapId).
+	f := field.NewBuilder(worldId, channelId, mapId).Build()
+	return NewModelBuilder(ten, f).
 		SetItem(1000000, 1).
 		SetPosition(100, 200).
 		SetOwner(12345, 0).
@@ -88,7 +90,8 @@ func TestCreateDrop_MultipleDropsSameMap(t *testing.T) {
 		t.Fatal("Expected all drops to have unique IDs")
 	}
 
-	drops, err := r.GetDropsForMap(ten, 1, 1, 100000000)
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	drops, err := r.GetDropsForMap(ten, f)
 	if err != nil {
 		t.Fatalf("Failed to get drops for map: %v", err)
 	}
@@ -113,8 +116,9 @@ func TestCreateDrop_MultiTenantIsolation(t *testing.T) {
 		t.Fatal("Expected drops to have different IDs")
 	}
 
-	drops1, _ := r.GetDropsForMap(ten1, 1, 1, 100000000)
-	drops2, _ := r.GetDropsForMap(ten2, 1, 1, 100000000)
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	drops1, _ := r.GetDropsForMap(ten1, f)
+	drops2, _ := r.GetDropsForMap(ten2, f)
 
 	if len(drops1) != 1 {
 		t.Fatalf("Expected 1 drop for tenant1, got %d", len(drops1))
@@ -284,7 +288,8 @@ func TestRemoveDrop_Success(t *testing.T) {
 		t.Fatal("Expected error when getting removed drop")
 	}
 
-	drops, _ := r.GetDropsForMap(ten, 1, 1, 100000000)
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	drops, _ := r.GetDropsForMap(ten, f)
 	if len(drops) != 0 {
 		t.Fatalf("Expected 0 drops in map after removal, got %d", len(drops))
 	}
@@ -346,7 +351,8 @@ func TestGetDropsForMap_ReturnsCorrectDrops(t *testing.T) {
 	drop2 := mustCreateDrop(t, r, mb2)
 	_ = mustCreateDrop(t, r, mb3)
 
-	drops, err := r.GetDropsForMap(ten, 1, 1, 100000000)
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	drops, err := r.GetDropsForMap(ten, f)
 	if err != nil {
 		t.Fatalf("Failed to get drops for map: %v", err)
 	}
@@ -374,8 +380,10 @@ func TestGetDropsForMap_DifferentChannel(t *testing.T) {
 	mustCreateDrop(t, r, mb1)
 	mustCreateDrop(t, r, mb2)
 
-	drops1, _ := r.GetDropsForMap(ten, 1, 1, 100000000)
-	drops2, _ := r.GetDropsForMap(ten, 1, 2, 100000000)
+	f1 := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	f2 := field.NewBuilder(world.Id(1), channel.Id(2), _map.Id(100000000)).Build()
+	drops1, _ := r.GetDropsForMap(ten, f1)
+	drops2, _ := r.GetDropsForMap(ten, f2)
 
 	if len(drops1) != 1 {
 		t.Fatalf("Expected 1 drop for channel 1, got %d", len(drops1))
@@ -676,14 +684,15 @@ func TestRemoveDrop_CleansUpMapIndex(t *testing.T) {
 	mb := createTestBuilder(ten, 1, 1, 100000000)
 	drop := mustCreateDrop(t, r, mb)
 
-	dropsBefore, _ := r.GetDropsForMap(ten, 1, 1, 100000000)
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	dropsBefore, _ := r.GetDropsForMap(ten, f)
 	if len(dropsBefore) != 1 {
 		t.Fatal("Expected 1 drop before removal")
 	}
 
 	_, _ = r.RemoveDrop(drop.Id())
 
-	dropsAfter, _ := r.GetDropsForMap(ten, 1, 1, 100000000)
+	dropsAfter, _ := r.GetDropsForMap(ten, f)
 	if len(dropsAfter) != 0 {
 		t.Fatalf("Expected 0 drops after removal, got %d", len(dropsAfter))
 	}
@@ -694,7 +703,8 @@ func TestGetDropsForMap_EmptyMap(t *testing.T) {
 	r := GetRegistry()
 	ten := createTestTenant(t)
 
-	drops, err := r.GetDropsForMap(ten, 1, 1, 999999999)
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(999999999)).Build()
+	drops, err := r.GetDropsForMap(ten, f)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -851,7 +861,8 @@ func TestRemoveDrop_FromMiddleOfList(t *testing.T) {
 	_, _ = r.RemoveDrop(drop2.Id())
 
 	// Verify remaining drops
-	drops, _ := r.GetDropsForMap(ten, 1, 1, 100000000)
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	drops, _ := r.GetDropsForMap(ten, f)
 	if len(drops) != 2 {
 		t.Fatalf("Expected 2 drops, got %d", len(drops))
 	}

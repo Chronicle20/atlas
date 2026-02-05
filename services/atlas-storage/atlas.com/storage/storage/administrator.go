@@ -1,17 +1,18 @@
 package storage
 
 import (
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
 // Create creates a new storage for an account in a world
-func Create(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID) func(worldId byte, accountId uint32) (Model, error) {
-	return func(worldId byte, accountId uint32) (Model, error) {
+func Create(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID) func(worldId world.Id, accountId uint32) (Model, error) {
+	return func(worldId world.Id, accountId uint32) (Model, error) {
 		e := Entity{
 			TenantId:  tenantId,
-			WorldId:   worldId,
+			WorldId:   byte(worldId),
 			AccountId: accountId,
 			Capacity:  4,
 			Mesos:     0,

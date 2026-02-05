@@ -5,6 +5,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -13,8 +17,9 @@ import (
 // TestNewModelBuilder tests the builder constructor
 func TestNewModelBuilder(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	f := field.NewBuilder(world.Id(1), channel.Id(2), _map.Id(100000)).Build()
 
-	builder := NewModelBuilder(ten, 1, 2, 100000, 2000000, "test-reactor")
+	builder := NewModelBuilder(ten, f, 2000000, "test-reactor")
 
 	assert.NotNil(t, builder)
 	assert.Equal(t, uint32(2000000), builder.Classification())
@@ -23,8 +28,9 @@ func TestNewModelBuilder(t *testing.T) {
 // TestModelBuilder_SetMethods tests all setter methods
 func TestModelBuilder_SetMethods(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	f := field.NewBuilder(world.Id(1), channel.Id(2), _map.Id(100000)).Build()
 
-	builder := NewModelBuilder(ten, 1, 2, 100000, 2000000, "test-reactor")
+	builder := NewModelBuilder(ten, f, 2000000, "test-reactor")
 
 	// Test SetState
 	result := builder.SetState(5)
@@ -60,8 +66,9 @@ func TestModelBuilder_SetMethods(t *testing.T) {
 func TestModelBuilder_Build(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	testData := data.Model{}
+	f := field.NewBuilder(world.Id(1), channel.Id(2), _map.Id(100000)).Build()
 
-	builder := NewModelBuilder(ten, 1, 2, 100000, 2000000, "test-reactor").
+	builder := NewModelBuilder(ten, f, 2000000, "test-reactor").
 		SetState(3).
 		SetPosition(150, 250).
 		SetDelay(500).
@@ -74,9 +81,9 @@ func TestModelBuilder_Build(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, ten, model.Tenant())
 	assert.Equal(t, uint32(12345), model.Id())
-	assert.Equal(t, byte(1), model.WorldId())
-	assert.Equal(t, byte(2), model.ChannelId())
-	assert.Equal(t, uint32(100000), model.MapId())
+	assert.Equal(t, world.Id(1), model.WorldId())
+	assert.Equal(t, channel.Id(2), model.ChannelId())
+	assert.Equal(t, _map.Id(100000), model.MapId())
 	assert.Equal(t, uint32(2000000), model.Classification())
 	assert.Equal(t, "test-reactor", model.Name())
 	assert.Equal(t, int8(3), model.State())
@@ -89,17 +96,18 @@ func TestModelBuilder_Build(t *testing.T) {
 // TestModelBuilder_Build_DefaultValues tests Build with minimal configuration
 func TestModelBuilder_Build_DefaultValues(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	f := field.NewBuilder(world.Id(1), channel.Id(2), _map.Id(100000)).Build()
 
-	builder := NewModelBuilder(ten, 1, 2, 100000, 2000000, "test-reactor")
+	builder := NewModelBuilder(ten, f, 2000000, "test-reactor")
 	model, err := builder.Build()
 
 	assert.NoError(t, err)
 
 	// Required fields should be set
 	assert.Equal(t, ten, model.Tenant())
-	assert.Equal(t, byte(1), model.WorldId())
-	assert.Equal(t, byte(2), model.ChannelId())
-	assert.Equal(t, uint32(100000), model.MapId())
+	assert.Equal(t, world.Id(1), model.WorldId())
+	assert.Equal(t, channel.Id(2), model.ChannelId())
+	assert.Equal(t, _map.Id(100000), model.MapId())
 	assert.Equal(t, uint32(2000000), model.Classification())
 	assert.Equal(t, "test-reactor", model.Name())
 
@@ -119,6 +127,7 @@ func TestModelBuilder_Build_DefaultValues(t *testing.T) {
 // TestModelBuilder_Build_ValidationErrors tests validation in Build
 func TestModelBuilder_Build_ValidationErrors(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	f := field.NewBuilder(world.Id(1), channel.Id(2), _map.Id(100000)).Build()
 
 	tests := []struct {
 		name    string
@@ -127,7 +136,7 @@ func TestModelBuilder_Build_ValidationErrors(t *testing.T) {
 	}{
 		{
 			name:    "missing classification",
-			builder: NewModelBuilder(ten, 1, 2, 100000, 0, "test-reactor"),
+			builder: NewModelBuilder(ten, f, 0, "test-reactor"),
 			wantErr: "classification is required",
 		},
 	}
@@ -145,8 +154,9 @@ func TestModelBuilder_Build_ValidationErrors(t *testing.T) {
 func TestNewFromModel(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	testData := data.Model{}
+	f := field.NewBuilder(world.Id(1), channel.Id(2), _map.Id(100000)).Build()
 
-	original, err := NewModelBuilder(ten, 1, 2, 100000, 2000000, "original-reactor").
+	original, err := NewModelBuilder(ten, f, 2000000, "original-reactor").
 		SetState(3).
 		SetPosition(150, 250).
 		SetDelay(500).
@@ -167,8 +177,9 @@ func TestNewFromModel(t *testing.T) {
 func TestNewFromModel_RoundTrip(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	testData := data.Model{}
+	f := field.NewBuilder(world.Id(1), channel.Id(2), _map.Id(100000)).Build()
 
-	original, err := NewModelBuilder(ten, 1, 2, 100000, 2000000, "test-reactor").
+	original, err := NewModelBuilder(ten, f, 2000000, "test-reactor").
 		SetState(3).
 		SetPosition(150, 250).
 		SetDelay(500).
@@ -202,8 +213,9 @@ func TestNewFromModel_RoundTrip(t *testing.T) {
 // TestNewFromModel_Modification tests modifying a model through builder
 func TestNewFromModel_Modification(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	f := field.NewBuilder(world.Id(1), channel.Id(2), _map.Id(100000)).Build()
 
-	original, err := NewModelBuilder(ten, 1, 2, 100000, 2000000, "test-reactor").
+	original, err := NewModelBuilder(ten, f, 2000000, "test-reactor").
 		SetState(0).
 		SetPosition(100, 200).
 		SetId(12345).
@@ -238,9 +250,10 @@ func TestNewFromModel_Modification(t *testing.T) {
 // TestModelBuilder_FluentChaining tests the fluent API pattern
 func TestModelBuilder_FluentChaining(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	f := field.NewBuilder(world.Id(1), channel.Id(2), _map.Id(100000)).Build()
 
 	// Build using fluent chaining
-	model, err := NewModelBuilder(ten, 1, 2, 100000, 2000000, "chained-reactor").
+	model, err := NewModelBuilder(ten, f, 2000000, "chained-reactor").
 		SetId(99999).
 		SetState(7).
 		SetPosition(500, 600).
@@ -261,11 +274,12 @@ func TestModelBuilder_FluentChaining(t *testing.T) {
 // TestModelBuilder_UpdateTime tests the UpdateTime method
 func TestModelBuilder_UpdateTime(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	f := field.NewBuilder(world.Id(1), channel.Id(2), _map.Id(100000)).Build()
 
 	before := time.Now()
 	time.Sleep(1 * time.Millisecond) // Ensure time difference
 
-	builder := NewModelBuilder(ten, 1, 2, 100000, 2000000, "test-reactor")
+	builder := NewModelBuilder(ten, f, 2000000, "test-reactor")
 	builder.UpdateTime()
 	model, err := builder.Build()
 
@@ -281,8 +295,9 @@ func TestModelBuilder_UpdateTime(t *testing.T) {
 // TestModelBuilder_Classification tests the Classification getter
 func TestModelBuilder_Classification(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	f := field.NewBuilder(world.Id(1), channel.Id(2), _map.Id(100000)).Build()
 
-	builder := NewModelBuilder(ten, 1, 2, 100000, 2000123, "test-reactor")
+	builder := NewModelBuilder(ten, f, 2000123, "test-reactor")
 
 	assert.Equal(t, uint32(2000123), builder.Classification())
 }

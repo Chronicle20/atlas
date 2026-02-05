@@ -176,7 +176,7 @@ func handleExpireCommand(db *gorm.DB) kafkaMessage.Handler[message.Command[messa
 			c.TransactionId,
 			c.WorldId,
 			c.AccountId,
-			c.Body.AssetId,
+			uint32(c.Body.AssetId),
 			isCash,
 			c.Body.ReplaceItemId,
 			c.Body.ReplaceMessage,

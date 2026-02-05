@@ -1,6 +1,10 @@
 package list
 
-import "github.com/google/uuid"
+import (
+	"github.com/Chronicle20/atlas-constants/character"
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
+)
 
 const (
 	// EnvCommandTopic defines the environment variable for the buddy list command topic
@@ -16,11 +20,11 @@ const (
 )
 
 type Command[E any] struct {
-	TransactionId uuid.UUID `json:"transactionId"`
-	WorldId       byte      `json:"worldId"`
-	CharacterId   uint32    `json:"characterId"`
-	Type          string    `json:"type"`
-	Body          E         `json:"body"`
+	TransactionId uuid.UUID    `json:"transactionId"`
+	WorldId       world.Id     `json:"worldId"`
+	CharacterId   character.Id `json:"characterId"`
+	Type          string       `json:"type"`
+	Body          E            `json:"body"`
 }
 
 type CreateCommandBody struct {
@@ -28,13 +32,13 @@ type CreateCommandBody struct {
 }
 
 type RequestAddBuddyCommandBody struct {
-	CharacterId   uint32 `json:"characterId"`
-	CharacterName string `json:"characterName"`
-	Group         string `json:"group"`
+	CharacterId   character.Id `json:"characterId"`
+	CharacterName string       `json:"characterName"`
+	Group         string       `json:"group"`
 }
 
 type RequestDeleteBuddyCommandBody struct {
-	CharacterId uint32 `json:"characterId"`
+	CharacterId character.Id `json:"characterId"`
 }
 
 // IncreaseCapacityCommandBody represents the body of an increase capacity command.
@@ -77,34 +81,34 @@ const (
 )
 
 type StatusEvent[E any] struct {
-	WorldId     byte   `json:"worldId"`
-	CharacterId uint32 `json:"characterId"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	WorldId     world.Id     `json:"worldId"`
+	CharacterId character.Id `json:"characterId"`
+	Type        string       `json:"type"`
+	Body        E            `json:"body"`
 }
 
 type BuddyAddedStatusEventBody struct {
-	CharacterId   uint32 `json:"characterId"`
-	Group         string `json:"group"`
-	CharacterName string `json:"characterName"`
-	ChannelId     int8   `json:"channelId"`
+	CharacterId   character.Id `json:"characterId"`
+	Group         string       `json:"group"`
+	CharacterName string       `json:"characterName"`
+	ChannelId     int8         `json:"channelId"`
 }
 
 type BuddyRemovedStatusEventBody struct {
-	CharacterId uint32 `json:"characterId"`
+	CharacterId character.Id `json:"characterId"`
 }
 
 type BuddyUpdatedStatusEventBody struct {
-	CharacterId   uint32 `json:"characterId"`
-	Group         string `json:"group"`
-	CharacterName string `json:"characterName"`
-	ChannelId     int8   `json:"channelId"`
-	InShop        bool   `json:"inShop"`
+	CharacterId   character.Id `json:"characterId"`
+	Group         string       `json:"group"`
+	CharacterName string       `json:"characterName"`
+	ChannelId     int8         `json:"channelId"`
+	InShop        bool         `json:"inShop"`
 }
 
 type BuddyChannelChangeStatusEventBody struct {
-	CharacterId uint32 `json:"characterId"`
-	ChannelId   int8   `json:"channelId"`
+	CharacterId character.Id `json:"characterId"`
+	ChannelId   int8         `json:"channelId"`
 }
 
 type BuddyCapacityChangeStatusEventBody struct {

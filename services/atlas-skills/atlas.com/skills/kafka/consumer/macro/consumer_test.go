@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/Chronicle20/atlas-constants/skill"
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 )
 
@@ -35,6 +37,8 @@ func TestHandleCommandUpdate_Success(t *testing.T) {
 	ctx := test.CreateTestContext()
 	logger, _ := logtest.NewNullLogger()
 
+	transactionId := uuid.New()
+	worldId := world.Id(0)
 	characterId := uint32(12345)
 
 	processor := macro.NewProcessor(logger, ctx, db)
@@ -46,7 +50,7 @@ func TestHandleCommandUpdate_Success(t *testing.T) {
 		buildMacro(t, 1, "Buff Combo", true, skill.Id(2001001), 0, 0),
 	}
 
-	_, err := processor.Update(mb)(characterId)(macros)
+	_, err := processor.Update(mb)(transactionId, worldId, characterId, macros)
 	if err != nil {
 		t.Fatalf("Update() unexpected error: %v", err)
 	}

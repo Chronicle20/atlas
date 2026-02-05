@@ -2,6 +2,9 @@ package compartment
 
 import (
 	"encoding/json"
+
+	"github.com/Chronicle20/atlas-constants/asset"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 )
 
@@ -13,11 +16,11 @@ const (
 
 // Command represents a storage compartment command (ACCEPT/RELEASE)
 type Command[E any] struct {
-	WorldId     byte   `json:"worldId"`
-	AccountId   uint32 `json:"accountId"`
-	CharacterId uint32 `json:"characterId,omitempty"` // Optional: for client notification
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	WorldId     world.Id `json:"worldId"`
+	AccountId   uint32   `json:"accountId"`
+	CharacterId uint32   `json:"characterId,omitempty"` // Optional: for client notification
+	Type        string   `json:"type"`
+	Body        E        `json:"body"`
 }
 
 // AcceptCommandBody contains the data for an ACCEPT command
@@ -28,14 +31,14 @@ type AcceptCommandBody struct {
 	ReferenceId   uint32          `json:"referenceId"`
 	ReferenceType string          `json:"referenceType"`
 	ReferenceData json.RawMessage `json:"referenceData,omitempty"` // Type-specific data based on ReferenceType
-	Quantity      uint32          `json:"quantity"`                // Quantity to accept (0 = all from source)
+	Quantity      asset.Quantity  `json:"quantity"`                // Quantity to accept (0 = all from source)
 }
 
 // ReleaseCommandBody contains the data for a RELEASE command
 type ReleaseCommandBody struct {
-	TransactionId uuid.UUID `json:"transactionId"`
-	AssetId       uint32    `json:"assetId"`
-	Quantity      uint32    `json:"quantity"` // Quantity to release (0 = all)
+	TransactionId uuid.UUID      `json:"transactionId"`
+	AssetId       asset.Id       `json:"assetId"`
+	Quantity      asset.Quantity `json:"quantity"` // Quantity to release (0 = all)
 }
 
 const (
@@ -47,17 +50,17 @@ const (
 
 // StatusEvent represents a storage compartment status event
 type StatusEvent[E any] struct {
-	WorldId     byte   `json:"worldId"`
-	AccountId   uint32 `json:"accountId"`
-	CharacterId uint32 `json:"characterId,omitempty"` // Optional: for client notification
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	WorldId     world.Id `json:"worldId"`
+	AccountId   uint32   `json:"accountId"`
+	CharacterId uint32   `json:"characterId,omitempty"` // Optional: for client notification
+	Type        string   `json:"type"`
+	Body        E        `json:"body"`
 }
 
 // StatusEventAcceptedBody contains the data for an ACCEPTED event
 type StatusEventAcceptedBody struct {
 	TransactionId uuid.UUID `json:"transactionId"`
-	AssetId       uint32    `json:"assetId"`
+	AssetId       asset.Id  `json:"assetId"`
 	Slot          int16     `json:"slot"`
 	InventoryType byte      `json:"inventoryType"`
 }
@@ -65,7 +68,7 @@ type StatusEventAcceptedBody struct {
 // StatusEventReleasedBody contains the data for a RELEASED event
 type StatusEventReleasedBody struct {
 	TransactionId uuid.UUID `json:"transactionId"`
-	AssetId       uint32    `json:"assetId"`
+	AssetId       asset.Id  `json:"assetId"`
 	InventoryType byte      `json:"inventoryType"`
 }
 

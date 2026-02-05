@@ -1,6 +1,9 @@
 package storage
 
-import "github.com/google/uuid"
+import (
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
+)
 
 const (
 	// Storage command topic for operations
@@ -102,11 +105,11 @@ type ErrorEventBody struct {
 
 // StorageCompartmentEvent represents a storage compartment status event
 type StorageCompartmentEvent[E any] struct {
-	WorldId     byte   `json:"worldId"`
-	AccountId   uint32 `json:"accountId"`
-	CharacterId uint32 `json:"characterId,omitempty"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	WorldId     world.Id `json:"worldId"`
+	AccountId   uint32   `json:"accountId"`
+	CharacterId uint32   `json:"characterId,omitempty"`
+	Type        string   `json:"type"`
+	Body        E        `json:"body"`
 }
 
 // CompartmentAcceptedEventBody contains the data for an ACCEPTED event

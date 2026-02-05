@@ -10,6 +10,8 @@ import (
 	"time"
 
 	skillconst "github.com/Chronicle20/atlas-constants/skill"
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 )
 
@@ -40,6 +42,8 @@ func TestHandleStatusEventDeleted(t *testing.T) {
 	ctx := test.CreateTestContext()
 	logger, _ := logtest.NewNullLogger()
 
+	transactionId := uuid.New()
+	worldId := world.Id(0)
 	characterId := uint32(12345)
 	expiration := time.Now().Add(24 * time.Hour)
 
@@ -48,11 +52,11 @@ func TestHandleStatusEventDeleted(t *testing.T) {
 	mb := message.NewBuffer()
 
 	// Create some skills and macros
-	_, err := skillProcessor.Create(mb)(characterId)(1001001)(10)(20)(expiration)
+	_, err := skillProcessor.Create(mb)(transactionId, worldId, characterId, 1001001, 10, 20, expiration)
 	if err != nil {
 		t.Fatalf("Create skill unexpected error: %v", err)
 	}
-	_, err = skillProcessor.Create(mb)(characterId)(1001002)(5)(15)(expiration)
+	_, err = skillProcessor.Create(mb)(transactionId, worldId, characterId, 1001002, 5, 15, expiration)
 	if err != nil {
 		t.Fatalf("Create skill 2 unexpected error: %v", err)
 	}
@@ -66,7 +70,7 @@ func TestHandleStatusEventDeleted(t *testing.T) {
 		t.Fatalf("Build macro unexpected error: %v", err)
 	}
 	macros := []macro.Model{testMacro}
-	_, err = macroProcessor.Update(mb)(characterId)(macros)
+	_, err = macroProcessor.Update(mb)(transactionId, worldId, characterId, macros)
 	if err != nil {
 		t.Fatalf("Create macros unexpected error: %v", err)
 	}

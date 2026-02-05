@@ -7,6 +7,7 @@ import (
 	"atlas-world/test"
 	"testing"
 
+	channel2 "github.com/Chronicle20/atlas-constants/channel"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
@@ -33,7 +34,7 @@ func TestHandleEventStatus_Started(t *testing.T) {
 	tenant := test.CreateMockTenant(tenantId)
 
 	event := message.StatusEvent{
-		Type:            message.StatusTypeStarted,
+		Type:            channel2.StatusTypeStarted,
 		WorldId:         1,
 		ChannelId:       0,
 		IpAddress:       "192.168.1.100",
@@ -99,7 +100,7 @@ func TestHandleEventStatus_Shutdown(t *testing.T) {
 
 	// Send shutdown event
 	event := message.StatusEvent{
-		Type:      message.StatusTypeShutdown,
+		Type:      channel2.StatusTypeShutdown,
 		WorldId:   2,
 		ChannelId: 1,
 		IpAddress: "192.168.1.200",
@@ -154,7 +155,7 @@ func TestHandleEventStatus_MultipleStarted(t *testing.T) {
 
 	// Register first channel
 	event1 := message.StatusEvent{
-		Type:        message.StatusTypeStarted,
+		Type:        channel2.StatusTypeStarted,
 		WorldId:     1,
 		ChannelId:   0,
 		IpAddress:   "192.168.1.1",
@@ -165,7 +166,7 @@ func TestHandleEventStatus_MultipleStarted(t *testing.T) {
 
 	// Register second channel
 	event2 := message.StatusEvent{
-		Type:        message.StatusTypeStarted,
+		Type:        channel2.StatusTypeStarted,
 		WorldId:     1,
 		ChannelId:   1,
 		IpAddress:   "192.168.1.2",
@@ -197,7 +198,7 @@ func TestHandleEventStatus_StartedThenShutdown(t *testing.T) {
 
 	// Start channel
 	startEvent := message.StatusEvent{
-		Type:        message.StatusTypeStarted,
+		Type:        channel2.StatusTypeStarted,
 		WorldId:     3,
 		ChannelId:   0,
 		IpAddress:   "192.168.1.50",
@@ -215,7 +216,7 @@ func TestHandleEventStatus_StartedThenShutdown(t *testing.T) {
 
 	// Shutdown channel
 	shutdownEvent := message.StatusEvent{
-		Type:      message.StatusTypeShutdown,
+		Type:      channel2.StatusTypeShutdown,
 		WorldId:   3,
 		ChannelId: 0,
 		IpAddress: "192.168.1.50",
@@ -240,7 +241,7 @@ func TestHandleEventStatus_ShutdownNonExistent(t *testing.T) {
 	// Try to shutdown a channel that doesn't exist
 	// This should not panic
 	event := message.StatusEvent{
-		Type:      message.StatusTypeShutdown,
+		Type:      channel2.StatusTypeShutdown,
 		WorldId:   99,
 		ChannelId: 99,
 		IpAddress: "192.168.1.1",

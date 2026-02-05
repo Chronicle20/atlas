@@ -5,6 +5,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
@@ -66,7 +68,7 @@ func (b *Builder) AddAwardItem(characterId uint32, templateId uint32, quantity u
 }
 
 // AddAwardMesos adds a meso award step
-func (b *Builder) AddAwardMesos(characterId uint32, worldId byte, channelId byte, amount int32, actorId uint32) *Builder {
+func (b *Builder) AddAwardMesos(characterId uint32, worldId world.Id, channelId channel.Id, amount int32, actorId uint32) *Builder {
 	b.stepCounter++
 	b.steps = append(b.steps, saga.Step{
 		Id:     stepId(b.stepCounter),
@@ -85,7 +87,7 @@ func (b *Builder) AddAwardMesos(characterId uint32, worldId byte, channelId byte
 }
 
 // AddAwardExperience adds an experience award step
-func (b *Builder) AddAwardExperience(characterId uint32, worldId byte, channelId byte, amount int32) *Builder {
+func (b *Builder) AddAwardExperience(characterId uint32, worldId world.Id, channelId channel.Id, amount int32) *Builder {
 	b.stepCounter++
 	b.steps = append(b.steps, saga.Step{
 		Id:     stepId(b.stepCounter),
@@ -107,7 +109,7 @@ func (b *Builder) AddAwardExperience(characterId uint32, worldId byte, channelId
 }
 
 // AddAwardFame adds a fame award step
-func (b *Builder) AddAwardFame(characterId uint32, worldId byte, channelId byte, amount int16, actorId uint32) *Builder {
+func (b *Builder) AddAwardFame(characterId uint32, worldId world.Id, channelId channel.Id, amount int16, actorId uint32) *Builder {
 	b.stepCounter++
 	b.steps = append(b.steps, saga.Step{
 		Id:     stepId(b.stepCounter),

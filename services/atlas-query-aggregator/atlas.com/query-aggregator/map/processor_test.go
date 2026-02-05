@@ -3,20 +3,26 @@ package _map
 import (
 	"atlas-query-aggregator/map/mock"
 	"errors"
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
 	"testing"
 )
 
 func TestProcessorMock_GetPlayerCountInMap_Success(t *testing.T) {
 	mockProcessor := &mock.ProcessorImpl{
-		GetPlayerCountInMapFunc: func(worldId byte, channelId byte, mapId uint32) (int, error) {
-			if mapId == 100000000 {
+		GetPlayerCountInMapFunc: func(f field.Model) (int, error) {
+			if f.MapId() == 100000000 {
 				return 50, nil
 			}
 			return 0, nil
 		},
 	}
 
-	count, err := mockProcessor.GetPlayerCountInMap(0, 0, 100000000)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(100000000)).SetInstance(uuid.Nil).Build()
+	count, err := mockProcessor.GetPlayerCountInMap(f)
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	}
@@ -28,12 +34,13 @@ func TestProcessorMock_GetPlayerCountInMap_Success(t *testing.T) {
 
 func TestProcessorMock_GetPlayerCountInMap_EmptyMap(t *testing.T) {
 	mockProcessor := &mock.ProcessorImpl{
-		GetPlayerCountInMapFunc: func(worldId byte, channelId byte, mapId uint32) (int, error) {
+		GetPlayerCountInMapFunc: func(f field.Model) (int, error) {
 			return 0, nil
 		},
 	}
 
-	count, err := mockProcessor.GetPlayerCountInMap(0, 0, 999999)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(999999)).SetInstance(uuid.Nil).Build()
+	count, err := mockProcessor.GetPlayerCountInMap(f)
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	}
@@ -45,12 +52,13 @@ func TestProcessorMock_GetPlayerCountInMap_EmptyMap(t *testing.T) {
 
 func TestProcessorMock_GetPlayerCountInMap_Error(t *testing.T) {
 	mockProcessor := &mock.ProcessorImpl{
-		GetPlayerCountInMapFunc: func(worldId byte, channelId byte, mapId uint32) (int, error) {
+		GetPlayerCountInMapFunc: func(f field.Model) (int, error) {
 			return 0, errors.New("map service unavailable")
 		},
 	}
 
-	_, err := mockProcessor.GetPlayerCountInMap(0, 0, 100000000)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(100000000)).SetInstance(uuid.Nil).Build()
+	_, err := mockProcessor.GetPlayerCountInMap(f)
 	if err == nil {
 		t.Error("Expected error, got nil")
 	}
@@ -62,14 +70,15 @@ func TestProcessorMock_GetPlayerCountInMap_Error(t *testing.T) {
 
 func TestProcessorMock_GetPlayerCountInMap_DifferentChannels(t *testing.T) {
 	mockProcessor := &mock.ProcessorImpl{
-		GetPlayerCountInMapFunc: func(worldId byte, channelId byte, mapId uint32) (int, error) {
+		GetPlayerCountInMapFunc: func(f field.Model) (int, error) {
 			// Different player counts per channel
-			return int(channelId+1) * 10, nil
+			return int(f.ChannelId()+1) * 10, nil
 		},
 	}
 
 	// Test channel 0
-	count, err := mockProcessor.GetPlayerCountInMap(0, 0, 100000000)
+	f0 := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(100000000)).SetInstance(uuid.Nil).Build()
+	count, err := mockProcessor.GetPlayerCountInMap(f0)
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	}
@@ -78,7 +87,8 @@ func TestProcessorMock_GetPlayerCountInMap_DifferentChannels(t *testing.T) {
 	}
 
 	// Test channel 1
-	count, err = mockProcessor.GetPlayerCountInMap(0, 1, 100000000)
+	f1 := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(100000000)).SetInstance(uuid.Nil).Build()
+	count, err = mockProcessor.GetPlayerCountInMap(f1)
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	}
@@ -91,7 +101,8 @@ func TestProcessorMock_DefaultBehavior(t *testing.T) {
 	mockProcessor := &mock.ProcessorImpl{}
 
 	// Test default GetPlayerCountInMap returns 0
-	count, err := mockProcessor.GetPlayerCountInMap(0, 0, 100000000)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(100000000)).SetInstance(uuid.Nil).Build()
+	count, err := mockProcessor.GetPlayerCountInMap(f)
 	if err != nil {
 		t.Errorf("Expected no error from default GetPlayerCountInMap, got %v", err)
 	}

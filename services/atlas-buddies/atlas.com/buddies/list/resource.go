@@ -7,6 +7,7 @@ import (
 	list3 "atlas-buddies/kafka/producer/list"
 	"atlas-buddies/rest"
 	"errors"
+	"github.com/Chronicle20/atlas-constants/character"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
@@ -64,7 +65,7 @@ func handleGetBuddyList(db *gorm.DB) rest.GetHandler {
 func handleCreateBuddyList(d *rest.HandlerDependency, _ *rest.HandlerContext, i RestModel) http.HandlerFunc {
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			err := producer.ProviderImpl(d.Logger())(d.Context())(list2.EnvCommandTopic)(list3.CreateCommandProvider(characterId, i.Capacity))
+			err := producer.ProviderImpl(d.Logger())(d.Context())(list2.EnvCommandTopic)(list3.CreateCommandProvider(character.Id(characterId), i.Capacity))
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return

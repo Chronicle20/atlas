@@ -48,9 +48,9 @@ const (
 
 type StatusEvent[E any] struct {
 	TransactionId uuid.UUID `json:"transactionId"`
+	WorldId       world.Id  `json:"worldId"`
 	CharacterId   uint32    `json:"characterId"`
 	Type          string    `json:"type"`
-	WorldId       world.Id  `json:"worldId"`
 	Body          E         `json:"body"`
 }
 

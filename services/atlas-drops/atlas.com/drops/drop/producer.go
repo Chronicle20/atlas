@@ -18,6 +18,7 @@ func createdEventStatusProvider(drop Model) model.Provider[[]kafka.Message] {
 		WorldId:       drop.WorldId(),
 		ChannelId:     drop.ChannelId(),
 		MapId:         drop.MapId(),
+		Instance:      drop.Instance(),
 		DropId:        drop.Id(),
 		Type:          messageDropKafka.StatusEventTypeCreated,
 		Body: messageDropKafka.StatusEventCreatedBody{
@@ -39,13 +40,14 @@ func createdEventStatusProvider(drop Model) model.Provider[[]kafka.Message] {
 	return producer.SingleMessageProvider(key, value)
 }
 
-func expiredEventStatusProvider(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, dropId uint32) model.Provider[[]kafka.Message] {
+func expiredEventStatusProvider(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, instance uuid.UUID, dropId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(dropId))
 	value := &messageDropKafka.StatusEvent[messageDropKafka.StatusEventExpiredBody]{
 		TransactionId: transactionId,
 		WorldId:       worldId,
 		ChannelId:     channelId,
 		MapId:         mapId,
+		Instance:      instance,
 		DropId:        dropId,
 		Type:          messageDropKafka.StatusEventTypeExpired,
 		Body:          messageDropKafka.StatusEventExpiredBody{},
@@ -53,13 +55,14 @@ func expiredEventStatusProvider(transactionId uuid.UUID, worldId world.Id, chann
 	return producer.SingleMessageProvider(key, value)
 }
 
-func pickedUpEventStatusProvider(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, dropId uint32, characterId uint32, itemId uint32, equipmentId uint32, quantity uint32, meso uint32, petSlot int8) model.Provider[[]kafka.Message] {
+func pickedUpEventStatusProvider(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, instance uuid.UUID, dropId uint32, characterId uint32, itemId uint32, equipmentId uint32, quantity uint32, meso uint32, petSlot int8) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(dropId))
 	value := &messageDropKafka.StatusEvent[messageDropKafka.StatusEventPickedUpBody]{
 		TransactionId: transactionId,
 		WorldId:       worldId,
 		ChannelId:     channelId,
 		MapId:         mapId,
+		Instance:      instance,
 		DropId:        dropId,
 		Type:          messageDropKafka.StatusEventTypePickedUp,
 		Body: messageDropKafka.StatusEventPickedUpBody{
@@ -74,13 +77,14 @@ func pickedUpEventStatusProvider(transactionId uuid.UUID, worldId world.Id, chan
 	return producer.SingleMessageProvider(key, value)
 }
 
-func reservedEventStatusProvider(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, dropId uint32, characterId uint32, itemId uint32, equipmentId uint32, quantity uint32, meso uint32) model.Provider[[]kafka.Message] {
+func reservedEventStatusProvider(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, instance uuid.UUID, dropId uint32, characterId uint32, itemId uint32, equipmentId uint32, quantity uint32, meso uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(dropId))
 	value := &messageDropKafka.StatusEvent[messageDropKafka.StatusEventReservedBody]{
 		TransactionId: transactionId,
 		WorldId:       worldId,
 		ChannelId:     channelId,
 		MapId:         mapId,
+		Instance:      instance,
 		DropId:        dropId,
 		Type:          messageDropKafka.StatusEventTypeReserved,
 		Body: messageDropKafka.StatusEventReservedBody{
@@ -94,13 +98,14 @@ func reservedEventStatusProvider(transactionId uuid.UUID, worldId world.Id, chan
 	return producer.SingleMessageProvider(key, value)
 }
 
-func reservationFailureEventStatusProvider(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, dropId uint32, characterId uint32) model.Provider[[]kafka.Message] {
+func reservationFailureEventStatusProvider(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, instance uuid.UUID, dropId uint32, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(dropId))
 	value := &messageDropKafka.StatusEvent[messageDropKafka.StatusEventReservationFailureBody]{
 		TransactionId: transactionId,
 		WorldId:       worldId,
 		ChannelId:     channelId,
 		MapId:         mapId,
+		Instance:      instance,
 		DropId:        dropId,
 		Type:          messageDropKafka.StatusEventTypeReservationFailure,
 		Body: messageDropKafka.StatusEventReservationFailureBody{

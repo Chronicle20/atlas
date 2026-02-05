@@ -16,6 +16,7 @@ func SpawnDropCommandProvider(
 	worldId world.Id,
 	channelId channel.Id,
 	mapId _map.Id,
+	instance uuid.UUID,
 	itemId uint32,
 	quantity uint32,
 	mesos uint32,
@@ -36,6 +37,7 @@ func SpawnDropCommandProvider(
 		WorldId:       worldId,
 		ChannelId:     channelId,
 		MapId:         mapId,
+		Instance:      instance,
 		Type:          CommandTypeSpawn,
 		Body: CommandSpawnBody{
 			ItemId:       itemId,

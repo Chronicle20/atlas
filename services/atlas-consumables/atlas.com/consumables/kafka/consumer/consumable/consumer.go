@@ -5,7 +5,7 @@ import (
 	consumer2 "atlas-consumables/kafka/consumer"
 	consumable2 "atlas-consumables/kafka/message/consumable"
 	"context"
-	"github.com/Chronicle20/atlas-constants/item"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -36,7 +36,7 @@ func handleRequestItemConsume(l logrus.FieldLogger, ctx context.Context, c consu
 	if c.Type != consumable2.CommandRequestItemConsume {
 		return
 	}
-	err := consumable.NewProcessor(l, ctx).RequestItemConsume(byte(c.WorldId), byte(c.ChannelId), c.CharacterId, c.Body.Source, item.Id(c.Body.ItemId), c.Body.Quantity)
+	err := consumable.NewProcessor(l, ctx).RequestItemConsume(byte(c.WorldId), byte(c.ChannelId), uint32(c.CharacterId), int16(c.Body.Source), c.Body.ItemId, c.Body.Quantity)
 	if err != nil {
 		l.WithError(err).Errorf("Character [%d] unable to consume item in slot [%d] as expected.", c.CharacterId, c.Body.Source)
 	}
@@ -46,7 +46,7 @@ func handleRequestScroll(l logrus.FieldLogger, ctx context.Context, c consumable
 	if c.Type != consumable2.CommandRequestScroll {
 		return
 	}
-	err := consumable.NewProcessor(l, ctx).RequestScroll(c.CharacterId, c.Body.ScrollSlot, c.Body.EquipSlot, c.Body.WhiteScroll, c.Body.LegendarySpirit)
+	err := consumable.NewProcessor(l, ctx).RequestScroll(uint32(c.CharacterId), int16(c.Body.ScrollSlot), int16(c.Body.EquipSlot), c.Body.WhiteScroll, c.Body.LegendarySpirit)
 	if err != nil {
 		l.WithError(err).Errorf("Character [%d] unable to use scroll in slot [%d] as expected.", c.CharacterId, c.Body.ScrollSlot)
 	}
@@ -56,7 +56,7 @@ func handleApplyConsumableEffect(l logrus.FieldLogger, ctx context.Context, c co
 	if c.Type != consumable2.CommandApplyConsumableEffect {
 		return
 	}
-	err := consumable.NewProcessor(l, ctx).ApplyConsumableEffect(c.TransactionId, byte(c.WorldId), byte(c.ChannelId), c.CharacterId, item.Id(c.Body.ItemId))
+	err := consumable.NewProcessor(l, ctx).ApplyConsumableEffect(c.TransactionId, byte(c.WorldId), byte(c.ChannelId), uint32(c.CharacterId), c.Body.ItemId)
 	if err != nil {
 		l.WithError(err).Errorf("Character [%d] unable to apply consumable effect [%d] as expected.", c.CharacterId, c.Body.ItemId)
 	}

@@ -4,12 +4,13 @@ import (
 	"atlas-storage/asset"
 	"strconv"
 
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/jtumidanski/api2go/jsonapi"
 )
 
 type RestModel struct {
 	Id        string                `json:"-"`
-	WorldId   byte                  `json:"world_id"`
+	WorldId   world.Id              `json:"world_id"`
 	AccountId uint32                `json:"account_id"`
 	Capacity  uint32                `json:"capacity"`
 	Mesos     uint32                `json:"mesos"`
@@ -113,10 +114,10 @@ func Transform(m Model) (RestModel, error) {
 
 // InputRestModel for creating/updating storage
 type InputRestModel struct {
-	WorldId   byte   `json:"world_id"`
-	AccountId uint32 `json:"account_id"`
-	Capacity  uint32 `json:"capacity,omitempty"`
-	Mesos     uint32 `json:"mesos,omitempty"`
+	WorldId   world.Id `json:"world_id"`
+	AccountId uint32   `json:"account_id"`
+	Capacity  uint32   `json:"capacity,omitempty"`
+	Mesos     uint32   `json:"mesos,omitempty"`
 }
 
 func (r InputRestModel) GetName() string {

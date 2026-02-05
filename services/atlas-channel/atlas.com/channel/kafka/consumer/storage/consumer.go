@@ -161,7 +161,7 @@ func handleStorageCompartmentAcceptedEvent(sc server.Model, wp writer.Producer) 
 			return
 		}
 
-		if e.WorldId != byte(sc.WorldId()) {
+		if e.WorldId != sc.WorldId() {
 			return
 		}
 
@@ -180,7 +180,7 @@ func handleStorageCompartmentAcceptedEvent(sc server.Model, wp writer.Producer) 
 		if err != nil {
 			l.WithError(err).Debugf("Projection not found for character [%d], falling back to storage data", e.CharacterId)
 			// Fallback to storage data
-			storageData, err := storageProc.GetStorageData(e.AccountId, e.WorldId)
+			storageData, err := storageProc.GetStorageData(e.AccountId, byte(e.WorldId))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to fetch storage data for account [%d] after ACCEPTED event.", e.AccountId)
 				return
@@ -220,7 +220,7 @@ func handleStorageCompartmentReleasedEvent(sc server.Model, wp writer.Producer) 
 			return
 		}
 
-		if e.WorldId != byte(sc.WorldId()) {
+		if e.WorldId != sc.WorldId() {
 			return
 		}
 
@@ -239,7 +239,7 @@ func handleStorageCompartmentReleasedEvent(sc server.Model, wp writer.Producer) 
 		if err != nil {
 			l.WithError(err).Debugf("Projection not found for character [%d], falling back to storage data", e.CharacterId)
 			// Fallback to storage data
-			storageData, err := storageProc.GetStorageData(e.AccountId, e.WorldId)
+			storageData, err := storageProc.GetStorageData(e.AccountId, byte(e.WorldId))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to fetch storage data for account [%d] after RELEASED event.", e.AccountId)
 				return

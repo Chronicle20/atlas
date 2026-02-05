@@ -2,13 +2,15 @@ package session
 
 import (
 	"atlas-login/kafka/message/session"
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 )
 
-func StatusEventProvider(sessionId uuid.UUID, accountId uint32, characterId uint32, worldId byte, channelId byte, eventType string) model.Provider[[]kafka.Message] {
+func StatusEventProvider(sessionId uuid.UUID, accountId uint32, characterId uint32, worldId world.Id, channelId channel.Id, eventType string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &session.StatusEvent{
 		SessionId:   sessionId,

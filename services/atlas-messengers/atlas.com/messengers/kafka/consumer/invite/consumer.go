@@ -5,6 +5,7 @@ import (
 	messageInvite "atlas-messengers/kafka/message/invite"
 	"atlas-messengers/messenger"
 	"context"
+	"github.com/Chronicle20/atlas-constants/invite"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -30,14 +31,14 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 }
 
 func handleAcceptedStatusEvent(l logrus.FieldLogger, ctx context.Context, e messageInvite.StatusEvent[messageInvite.AcceptedEventBody]) {
-	if e.Type != messageInvite.EventInviteStatusTypeAccepted {
+	if e.Type != invite.StatusTypeAccepted {
 		return
 	}
-	if e.InviteType != messageInvite.InviteTypeMessenger {
+	if e.InviteType != invite.TypeMessenger {
 		return
 	}
 
-	_, err := messenger.Join(l)(ctx)(e.TransactionID, e.ReferenceId, e.Body.TargetId)
+	_, err := messenger.Join(l)(ctx)(e.TransactionId, uint32(e.ReferenceId), uint32(e.Body.TargetId))
 	if err != nil {
 		l.WithError(err).Errorf("Character [%d] unable to join messenger [%d].", e.Body.TargetId, e.ReferenceId)
 	}

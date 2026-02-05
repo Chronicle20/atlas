@@ -1,10 +1,12 @@
 package reactor
 
 import (
+	"time"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
-	"time"
+	"github.com/google/uuid"
 )
 
 type Model struct {
@@ -12,6 +14,7 @@ type Model struct {
 	worldId        world.Id
 	channelId      channel.Id
 	mapId          _map.Id
+	instance       uuid.UUID
 	classification uint32
 	name           string
 	state          int8
@@ -37,6 +40,10 @@ func (m Model) ChannelId() channel.Id {
 
 func (m Model) MapId() _map.Id {
 	return m.mapId
+}
+
+func (m Model) Instance() uuid.UUID {
+	return m.instance
 }
 
 func (m Model) Classification() uint32 {

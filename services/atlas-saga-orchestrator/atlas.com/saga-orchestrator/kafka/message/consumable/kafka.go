@@ -1,6 +1,12 @@
 package consumable
 
-import "github.com/google/uuid"
+import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/character"
+	"github.com/Chronicle20/atlas-constants/item"
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
+)
 
 const (
 	EnvCommandTopic = "COMMAND_TOPIC_CONSUMABLE"
@@ -14,28 +20,28 @@ const (
 
 // Command represents a Kafka command for consumable operations
 type Command[E any] struct {
-	TransactionId uuid.UUID `json:"transactionId"`
-	WorldId       byte      `json:"worldId"`
-	ChannelId     byte      `json:"channelId"`
-	CharacterId   uint32    `json:"characterId"`
-	Type          string    `json:"type"`
-	Body          E         `json:"body"`
+	TransactionId uuid.UUID    `json:"transactionId"`
+	WorldId       world.Id     `json:"worldId"`
+	ChannelId     channel.Id   `json:"channelId"`
+	CharacterId   character.Id `json:"characterId"`
+	Type          string       `json:"type"`
+	Body          E            `json:"body"`
 }
 
 // ApplyConsumableEffectBody is the body for applying consumable effects without consuming from inventory
 type ApplyConsumableEffectBody struct {
-	ItemId uint32 `json:"itemId"`
+	ItemId item.Id `json:"itemId"`
 }
 
 // StatusEvent represents a consumable status event
 type StatusEvent[E any] struct {
-	CharacterId uint32 `json:"characterId"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	CharacterId character.Id `json:"characterId"`
+	Type        string       `json:"type"`
+	Body        E            `json:"body"`
 }
 
 // EffectAppliedStatusEventBody represents the body of an effect applied event
 type EffectAppliedStatusEventBody struct {
-	ItemId        uint32    `json:"itemId"`
+	ItemId        item.Id   `json:"itemId"`
 	TransactionId uuid.UUID `json:"transactionId,omitempty"`
 }

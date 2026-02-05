@@ -1,18 +1,22 @@
 package guild
 
 import (
+	"context"
+
 	"atlas-saga-orchestrator/kafka/message/guild"
 	"atlas-saga-orchestrator/kafka/producer"
-	"context"
+
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {
-	RequestName(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32) error
-	RequestEmblem(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32) error
-	RequestDisband(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32) error
-	RequestCapacityIncrease(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32) error
+	RequestName(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, characterId uint32) error
+	RequestEmblem(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, characterId uint32) error
+	RequestDisband(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, characterId uint32) error
+	RequestCapacityIncrease(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, characterId uint32) error
 }
 
 type ProcessorImpl struct {
@@ -27,22 +31,22 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
-func (p *ProcessorImpl) RequestName(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32) error {
+func (p *ProcessorImpl) RequestName(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, characterId uint32) error {
 	p.l.Debugf("Requesting character [%d] input guild name for creation.", characterId)
 	return producer.ProviderImpl(p.l)(p.ctx)(guild.EnvCommandTopic)(RequestNameProvider(transactionId, worldId, channelId, characterId))
 }
 
-func (p *ProcessorImpl) RequestEmblem(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32) error {
+func (p *ProcessorImpl) RequestEmblem(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, characterId uint32) error {
 	p.l.Debugf("Requesting character [%d] input new guild emblem.", characterId)
 	return producer.ProviderImpl(p.l)(p.ctx)(guild.EnvCommandTopic)(RequestEmblemProvider(transactionId, worldId, channelId, characterId))
 }
 
-func (p *ProcessorImpl) RequestDisband(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32) error {
+func (p *ProcessorImpl) RequestDisband(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, characterId uint32) error {
 	p.l.Debugf("Character [%d] attempting to disband guild.", characterId)
 	return producer.ProviderImpl(p.l)(p.ctx)(guild.EnvCommandTopic)(RequestDisbandProvider(transactionId, worldId, channelId, characterId))
 }
 
-func (p *ProcessorImpl) RequestCapacityIncrease(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32) error {
+func (p *ProcessorImpl) RequestCapacityIncrease(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, characterId uint32) error {
 	p.l.Debugf("Character [%d] attempting to increase guild capacity.", characterId)
 	return producer.ProviderImpl(p.l)(p.ctx)(guild.EnvCommandTopic)(RequestCapacityIncreaseProvider(transactionId, worldId, channelId, characterId))
 }

@@ -9,9 +9,18 @@ import (
 	"os"
 	"testing"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 )
+
+// createTestField creates a field.Model for testing
+func createTestField(mapId uint32) field.Model {
+	return field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(mapId)).Build()
+}
 
 // jsonAPIResponse wraps data in JSON:API format
 type jsonAPIResponse struct {
@@ -91,7 +100,8 @@ func TestEnter_PortalNotFound(t *testing.T) {
 	ctx := test.CreateTestContext()
 
 	// Call Enter - should log error and return without panic
-	portal.Enter(logger)(ctx)(1, 1, 100000000, 99, 12345)
+	f := createTestField(100000000)
+	portal.Enter(logger)(ctx)(f, 99, 12345)
 
 	// Verify error was logged
 	found := false
@@ -124,7 +134,8 @@ func TestEnter_PortalWithScript(t *testing.T) {
 	// Call Enter - should not panic, should handle script portal
 	// Note: EnableActions makes a Kafka call which won't work in test,
 	// but the function should not panic
-	portal.Enter(logger)(ctx)(1, 1, 100000000, 5, 12345)
+	f := createTestField(100000000)
+	portal.Enter(logger)(ctx)(f, 5, 12345)
 
 	// Test passes if no panic
 }
@@ -147,7 +158,8 @@ func TestEnter_PortalWithTargetMap(t *testing.T) {
 	// Call Enter - should attempt to warp to target map
 	// Note: WarpById makes a Kafka call which won't work in test,
 	// but the function should not panic
-	portal.Enter(logger)(ctx)(1, 1, 100000000, 1, 12345)
+	f := createTestField(100000000)
+	portal.Enter(logger)(ctx)(f, 1, 12345)
 
 	// Test passes if no panic
 }
@@ -169,7 +181,8 @@ func TestEnter_PortalWithInvalidTarget_FallbackToPortal0(t *testing.T) {
 	ctx := test.CreateTestContext()
 
 	// Call Enter - should fallback to portal 0
-	portal.Enter(logger)(ctx)(1, 1, 100000000, 1, 12345)
+	f := createTestField(100000000)
+	portal.Enter(logger)(ctx)(f, 1, 12345)
 
 	// Check for warning log about fallback
 	for _, entry := range hook.Entries {
@@ -195,7 +208,8 @@ func TestEnter_PortalNoScriptNoTarget(t *testing.T) {
 	ctx := test.CreateTestContext()
 
 	// Call Enter - should enable actions and return
-	portal.Enter(logger)(ctx)(1, 1, 100000000, 3, 12345)
+	f := createTestField(100000000)
+	portal.Enter(logger)(ctx)(f, 3, 12345)
 
 	// Test passes if no panic
 }

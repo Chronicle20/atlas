@@ -3,6 +3,7 @@ package npc
 import (
 	"github.com/Chronicle20/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/stat"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 )
@@ -85,8 +86,9 @@ type StatusEvent[E any] struct {
 	Body        E        `json:"body"`
 }
 
-// TODO this should transmit stats
 type StatusEventStatChangedBody struct {
-	ChannelId       channel.Id `json:"channelId"`
-	ExclRequestSent bool       `json:"exclRequestSent"`
+	ChannelId       channel.Id             `json:"channelId"`
+	ExclRequestSent bool                   `json:"exclRequestSent"`
+	Updates         []stat.Type            `json:"updates"`
+	Values          map[string]interface{} `json:"values,omitempty"`
 }

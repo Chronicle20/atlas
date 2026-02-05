@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
@@ -24,7 +25,7 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 }
 
 func handleGetWorldRates(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseWorldId(d.Logger(), func(worldId byte) http.HandlerFunc {
+	return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			rates := NewProcessor(d.Logger(), d.Context()).GetWorldRates(worldId)
 			rm, err := model.Map(Transform)(model.FixedProvider(rates))()
@@ -43,7 +44,7 @@ func handleGetWorldRates(d *rest.HandlerDependency, c *rest.HandlerContext) http
 }
 
 func handleUpdateWorldRate(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
-	return rest.ParseWorldId(d.Logger(), func(worldId byte) http.HandlerFunc {
+	return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			rateType := Type(input.RateType)
 			if !isValidRateType(rateType) {

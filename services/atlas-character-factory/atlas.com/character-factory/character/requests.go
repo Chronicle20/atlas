@@ -2,8 +2,9 @@ package character
 
 import (
 	"atlas-character-factory/rest"
-	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/Chronicle20/atlas-constants/job"
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas-rest/requests"
 )
 
 const (
@@ -14,7 +15,7 @@ func getBaseRequest() string {
 	return requests.RootUrl("CHARACTERS")
 }
 
-func requestCreate(accountId uint32, worldId byte, name string, gender byte, mapId uint32, jobId job.Id, face uint32, hair uint32, hairColor uint32, skinColor byte) requests.Request[RestModel] {
+func requestCreate(accountId uint32, worldId world.Id, name string, gender byte, mapId uint32, jobId job.Id, face uint32, hair uint32, hairColor uint32, skinColor byte) requests.Request[RestModel] {
 	i := RestModel{
 		AccountId:    accountId,
 		WorldId:      worldId,

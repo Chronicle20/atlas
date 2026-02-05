@@ -7,6 +7,7 @@ import (
 	"atlas-drops/kafka/producer"
 	"context"
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas-constants/map"
@@ -52,12 +53,12 @@ type Processor interface {
 	// GetById gets a drop by ID
 	GetById(dropId uint32) (Model, error)
 	// GetForMap gets all drops for a map
-	GetForMap(worldId world.Id, channelId channel.Id, mapId _map.Id) ([]Model, error)
+	GetForMap(f field.Model) ([]Model, error)
 
 	// ByIdProvider provides a drop by ID
 	ByIdProvider(dropId uint32) model.Provider[Model]
 	// ForMapProvider provides all drops for a map
-	ForMapProvider(worldId world.Id, channelId channel.Id, mapId _map.Id) model.Provider[[]Model]
+	ForMapProvider(f field.Model) model.Provider[[]Model]
 }
 
 // ProcessorImpl implements the Processor interface
@@ -142,10 +143,10 @@ func (p *ProcessorImpl) Reserve(msgBuf *message.Buffer) func(transactionId uuid.
 		d, err := GetRegistry().ReserveDrop(dropId, characterId, petSlot)
 		if err == nil {
 			p.l.Debugf("Reserving [%d] for [%d].", dropId, characterId)
-			_ = msgBuf.Put(drop.EnvEventTopicDropStatus, reservedEventStatusProvider(transactionId, worldId, channelId, mapId, dropId, characterId, d.ItemId(), d.EquipmentId(), d.Quantity(), d.Meso()))
+			_ = msgBuf.Put(drop.EnvEventTopicDropStatus, reservedEventStatusProvider(transactionId, worldId, channelId, mapId, d.Instance(), dropId, characterId, d.ItemId(), d.EquipmentId(), d.Quantity(), d.Meso()))
 		} else {
 			p.l.Debugf("Failed reserving [%d] for [%d].", dropId, characterId)
-			_ = msgBuf.Put(drop.EnvEventTopicDropStatus, reservationFailureEventStatusProvider(transactionId, worldId, channelId, mapId, dropId, characterId))
+			_ = msgBuf.Put(drop.EnvEventTopicDropStatus, reservationFailureEventStatusProvider(transactionId, worldId, channelId, mapId, d.Instance(), dropId, characterId))
 		}
 		return d, err
 	}
@@ -166,8 +167,9 @@ func (p *ProcessorImpl) ReserveAndEmit(transactionId uuid.UUID, worldId world.Id
 // CancelReservation cancels a drop reservation
 func (p *ProcessorImpl) CancelReservation(msgBuf *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, dropId uint32, characterId uint32) error {
 	return func(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, dropId uint32, characterId uint32) error {
+		d, _ := GetRegistry().GetDrop(dropId)
 		GetRegistry().CancelDropReservation(dropId, characterId)
-		_ = msgBuf.Put(drop.EnvEventTopicDropStatus, reservationFailureEventStatusProvider(transactionId, worldId, channelId, mapId, dropId, characterId))
+		_ = msgBuf.Put(drop.EnvEventTopicDropStatus, reservationFailureEventStatusProvider(transactionId, worldId, channelId, mapId, d.Instance(), dropId, characterId))
 		return nil
 	}
 }
@@ -187,7 +189,7 @@ func (p *ProcessorImpl) Gather(msgBuf *message.Buffer) func(transactionId uuid.U
 		d, err := GetRegistry().RemoveDrop(dropId)
 		if d.Id() == 0 || err == nil {
 			p.l.Debugf("Gathering [%d] for [%d].", dropId, characterId)
-			_ = msgBuf.Put(drop.EnvEventTopicDropStatus, pickedUpEventStatusProvider(transactionId, worldId, channelId, mapId, dropId, characterId, d.ItemId(), d.EquipmentId(), d.Quantity(), d.Meso(), d.PetSlot()))
+			_ = msgBuf.Put(drop.EnvEventTopicDropStatus, pickedUpEventStatusProvider(transactionId, worldId, channelId, mapId, d.Instance(), dropId, characterId, d.ItemId(), d.EquipmentId(), d.Quantity(), d.Meso(), d.PetSlot()))
 		}
 		return d, err
 	}
@@ -222,7 +224,7 @@ func (p *ProcessorImpl) Expire(msgBuf *message.Buffer) model.Operator[Model] {
 			}
 		}
 
-		_ = msgBuf.Put(drop.EnvEventTopicDropStatus, expiredEventStatusProvider(m.TransactionId(), m.WorldId(), m.ChannelId(), m.MapId(), m.Id()))
+		_ = msgBuf.Put(drop.EnvEventTopicDropStatus, expiredEventStatusProvider(m.TransactionId(), m.WorldId(), m.ChannelId(), m.MapId(), m.Instance(), m.Id()))
 		return nil
 	}
 }
@@ -241,8 +243,8 @@ func (p *ProcessorImpl) GetById(dropId uint32) (Model, error) {
 }
 
 // GetForMap gets all drops for a map
-func (p *ProcessorImpl) GetForMap(worldId world.Id, channelId channel.Id, mapId _map.Id) ([]Model, error) {
-	return model.SliceMap[Model, Model](func(m Model) (Model, error) { return m, nil })(p.ForMapProvider(worldId, channelId, mapId))(model.ParallelMap())()
+func (p *ProcessorImpl) GetForMap(f field.Model) ([]Model, error) {
+	return model.SliceMap[Model, Model](func(m Model) (Model, error) { return m, nil })(p.ForMapProvider(f))(model.ParallelMap())()
 }
 
 // ByIdProvider provides a drop by ID
@@ -253,9 +255,9 @@ func (p *ProcessorImpl) ByIdProvider(dropId uint32) model.Provider[Model] {
 }
 
 // ForMapProvider provides all drops for a map
-func (p *ProcessorImpl) ForMapProvider(worldId world.Id, channelId channel.Id, mapId _map.Id) model.Provider[[]Model] {
+func (p *ProcessorImpl) ForMapProvider(f field.Model) model.Provider[[]Model] {
 	return func() ([]Model, error) {
-		return GetRegistry().GetDropsForMap(p.t, worldId, channelId, mapId)
+		return GetRegistry().GetDropsForMap(p.t, f)
 	}
 }
 

@@ -23,6 +23,7 @@ func ChangeMapProvider(transactionId uuid.UUID, characterId uint32, field field.
 		Body: character2.ChangeMapBody{
 			ChannelId: field.ChannelId(),
 			MapId:     field.MapId(),
+			Instance:  field.Instance(),
 			PortalId:  portalId,
 		},
 	}
@@ -195,16 +196,16 @@ func ResetStatsProvider(transactionId uuid.UUID, worldId world.Id, characterId u
 	return producer.SingleMessageProvider(key, value)
 }
 
-func RequestCreateCharacterProvider(transactionId uuid.UUID, accountId uint32, worldId byte, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id) model.Provider[[]kafka.Message] {
+func RequestCreateCharacterProvider(transactionId uuid.UUID, accountId uint32, worldId world.Id, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(accountId))
 	value := &character2.Command[character2.CreateCharacterCommandBody]{
 		TransactionId: transactionId,
-		WorldId:       world.Id(worldId),
+		WorldId:       worldId,
 		CharacterId:   0, // Character ID is not known yet for creation
 		Type:          character2.CommandCreateCharacter,
 		Body: character2.CreateCharacterCommandBody{
 			AccountId:    accountId,
-			WorldId:      world.Id(worldId),
+			WorldId:      worldId,
 			Name:         name,
 			Level:        level,
 			Strength:     strength,

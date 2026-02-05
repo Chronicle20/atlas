@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	channelConstant "github.com/Chronicle20/atlas-constants/channel"
 	"github.com/google/uuid"
 )
 
@@ -329,7 +330,7 @@ func createTestChannels(t *testing.T, count int) []channel.Model {
 		ch, err := channel.NewModelBuilder().
 			SetId(uuid.New()).
 			SetWorldId(1).
-			SetChannelId(byte(i)).
+			SetChannelId(channelConstant.Id(i)).
 			SetIpAddress("192.168.1.1").
 			SetPort(8080 + i).
 			SetMaxCapacity(100).

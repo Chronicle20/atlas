@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
@@ -53,16 +54,18 @@ func TestByCharacterIdProvider_WithSkills(t *testing.T) {
 	processor, cleanup := setupProcessor(t)
 	defer cleanup()
 
+	transactionId := uuid.New()
+	worldId := world.Id(0)
 	characterId := uint32(12345)
 	expiration := time.Now().Add(24 * time.Hour)
 	mb := message.NewBuffer()
 
 	// Create some skills
-	_, err := processor.Create(mb)(characterId)(1001001)(10)(20)(expiration)
+	_, err := processor.Create(mb)(transactionId, worldId, characterId, 1001001, 10, 20, expiration)
 	if err != nil {
 		t.Fatalf("Create() unexpected error: %v", err)
 	}
-	_, err = processor.Create(mb)(characterId)(1001002)(5)(15)(expiration)
+	_, err = processor.Create(mb)(transactionId, worldId, characterId, 1001002, 5, 15, expiration)
 	if err != nil {
 		t.Fatalf("Create() unexpected error: %v", err)
 	}
@@ -90,12 +93,14 @@ func TestByIdProvider_Found(t *testing.T) {
 	processor, cleanup := setupProcessor(t)
 	defer cleanup()
 
+	transactionId := uuid.New()
+	worldId := world.Id(0)
 	characterId := uint32(12345)
 	skillId := uint32(1001001)
 	expiration := time.Now().Add(24 * time.Hour)
 	mb := message.NewBuffer()
 
-	_, err := processor.Create(mb)(characterId)(skillId)(10)(20)(expiration)
+	_, err := processor.Create(mb)(transactionId, worldId, characterId, skillId, 10, 20, expiration)
 	if err != nil {
 		t.Fatalf("Create() unexpected error: %v", err)
 	}
@@ -119,6 +124,8 @@ func TestCreate_Success(t *testing.T) {
 	processor, cleanup := setupProcessor(t)
 	defer cleanup()
 
+	transactionId := uuid.New()
+	worldId := world.Id(0)
 	characterId := uint32(12345)
 	skillId := uint32(1001001)
 	level := byte(10)
@@ -126,7 +133,7 @@ func TestCreate_Success(t *testing.T) {
 	expiration := time.Now().Add(24 * time.Hour)
 	mb := message.NewBuffer()
 
-	s, err := processor.Create(mb)(characterId)(skillId)(level)(masterLevel)(expiration)
+	s, err := processor.Create(mb)(transactionId, worldId, characterId, skillId, level, masterLevel, expiration)
 	if err != nil {
 		t.Fatalf("Create() unexpected error: %v", err)
 	}
@@ -151,19 +158,21 @@ func TestCreate_AlreadyExists(t *testing.T) {
 	processor, cleanup := setupProcessor(t)
 	defer cleanup()
 
+	transactionId := uuid.New()
+	worldId := world.Id(0)
 	characterId := uint32(12345)
 	skillId := uint32(1001001)
 	expiration := time.Now().Add(24 * time.Hour)
 	mb := message.NewBuffer()
 
 	// First creation should succeed
-	_, err := processor.Create(mb)(characterId)(skillId)(10)(20)(expiration)
+	_, err := processor.Create(mb)(transactionId, worldId, characterId, skillId, 10, 20, expiration)
 	if err != nil {
 		t.Fatalf("First Create() unexpected error: %v", err)
 	}
 
 	// Second creation should fail
-	_, err = processor.Create(mb)(characterId)(skillId)(15)(25)(expiration)
+	_, err = processor.Create(mb)(transactionId, worldId, characterId, skillId, 15, 25, expiration)
 	if err == nil {
 		t.Error("Second Create() expected error for duplicate skill")
 	}
@@ -173,20 +182,22 @@ func TestUpdate_Success(t *testing.T) {
 	processor, cleanup := setupProcessor(t)
 	defer cleanup()
 
+	transactionId := uuid.New()
+	worldId := world.Id(0)
 	characterId := uint32(12345)
 	skillId := uint32(1001001)
 	expiration := time.Now().Add(24 * time.Hour)
 	mb := message.NewBuffer()
 
 	// Create initial skill
-	_, err := processor.Create(mb)(characterId)(skillId)(10)(20)(expiration)
+	_, err := processor.Create(mb)(transactionId, worldId, characterId, skillId, 10, 20, expiration)
 	if err != nil {
 		t.Fatalf("Create() unexpected error: %v", err)
 	}
 
 	// Update the skill
 	newExpiration := time.Now().Add(48 * time.Hour)
-	s, err := processor.Update(mb)(characterId)(skillId)(15)(25)(newExpiration)
+	s, err := processor.Update(mb)(transactionId, worldId, characterId, skillId, 15, 25, newExpiration)
 	if err != nil {
 		t.Fatalf("Update() unexpected error: %v", err)
 	}
@@ -202,12 +213,14 @@ func TestUpdate_NotFound(t *testing.T) {
 	processor, cleanup := setupProcessor(t)
 	defer cleanup()
 
+	transactionId := uuid.New()
+	worldId := world.Id(0)
 	characterId := uint32(12345)
 	skillId := uint32(999999)
 	expiration := time.Now().Add(24 * time.Hour)
 	mb := message.NewBuffer()
 
-	_, err := processor.Update(mb)(characterId)(skillId)(10)(20)(expiration)
+	_, err := processor.Update(mb)(transactionId, worldId, characterId, skillId, 10, 20, expiration)
 	if err == nil {
 		t.Error("Update() expected error for non-existent skill")
 	}
@@ -217,13 +230,15 @@ func TestDelete(t *testing.T) {
 	processor, cleanup := setupProcessor(t)
 	defer cleanup()
 
+	transactionId := uuid.New()
+	worldId := world.Id(0)
 	characterId := uint32(12345)
 	expiration := time.Now().Add(24 * time.Hour)
 	mb := message.NewBuffer()
 
 	// Create some skills
-	_, _ = processor.Create(mb)(characterId)(1001001)(10)(20)(expiration)
-	_, _ = processor.Create(mb)(characterId)(1001002)(5)(15)(expiration)
+	_, _ = processor.Create(mb)(transactionId, worldId, characterId, 1001001, 10, 20, expiration)
+	_, _ = processor.Create(mb)(transactionId, worldId, characterId, 1001002, 5, 15, expiration)
 
 	// Verify skills exist
 	skills, _ := processor.ByCharacterIdProvider(characterId)()
@@ -256,11 +271,13 @@ func TestTenantIsolation(t *testing.T) {
 	expiration := time.Now().Add(24 * time.Hour)
 
 	// Create skill with tenant 1
+	transactionId := uuid.New()
+	worldId := world.Id(0)
 	tenant1Id := uuid.New()
 	ctx1 := test.CreateTestContextWithTenant(tenant1Id)
 	processor1 := skill.NewProcessor(logger, ctx1, db)
 	mb1 := message.NewBuffer()
-	_, err := processor1.Create(mb1)(characterId)(skillId1)(10)(20)(expiration)
+	_, err := processor1.Create(mb1)(transactionId, worldId, characterId, skillId1, 10, 20, expiration)
 	if err != nil {
 		t.Fatalf("Tenant 1 Create() unexpected error: %v", err)
 	}
@@ -278,7 +295,7 @@ func TestTenantIsolation(t *testing.T) {
 
 	// Tenant 2 creates a different skill
 	mb2 := message.NewBuffer()
-	_, err = processor2.Create(mb2)(characterId)(skillId2)(5)(10)(expiration)
+	_, err = processor2.Create(mb2)(transactionId, worldId, characterId, skillId2, 5, 10, expiration)
 	if err != nil {
 		t.Fatalf("Tenant 2 Create() unexpected error: %v", err)
 	}
@@ -325,6 +342,8 @@ func TestMultipleSkillsForCharacter(t *testing.T) {
 	processor, cleanup := setupProcessor(t)
 	defer cleanup()
 
+	transactionId := uuid.New()
+	worldId := world.Id(0)
 	characterId := uint32(12345)
 	expiration := time.Now().Add(24 * time.Hour)
 	mb := message.NewBuffer()
@@ -334,7 +353,7 @@ func TestMultipleSkillsForCharacter(t *testing.T) {
 	for i, skillId := range skillIds {
 		level := byte(i + 1)
 		masterLevel := byte((i + 1) * 5)
-		_, err := processor.Create(mb)(characterId)(skillId)(level)(masterLevel)(expiration)
+		_, err := processor.Create(mb)(transactionId, worldId, characterId, skillId, level, masterLevel, expiration)
 		if err != nil {
 			t.Fatalf("Create() for skill %d unexpected error: %v", skillId, err)
 		}
@@ -354,6 +373,8 @@ func TestDifferentCharacters(t *testing.T) {
 	processor, cleanup := setupProcessor(t)
 	defer cleanup()
 
+	transactionId := uuid.New()
+	worldId := world.Id(0)
 	expiration := time.Now().Add(24 * time.Hour)
 	mb := message.NewBuffer()
 
@@ -363,15 +384,15 @@ func TestDifferentCharacters(t *testing.T) {
 	char1 := uint32(12345)
 	char2 := uint32(67890)
 
-	_, err := processor.Create(mb)(char1)(1001001)(10)(20)(expiration)
+	_, err := processor.Create(mb)(transactionId, worldId, char1, 1001001, 10, 20, expiration)
 	if err != nil {
 		t.Fatalf("Create for char1 skill 1: %v", err)
 	}
-	_, err = processor.Create(mb)(char1)(1001002)(15)(25)(expiration)
+	_, err = processor.Create(mb)(transactionId, worldId, char1, 1001002, 15, 25, expiration)
 	if err != nil {
 		t.Fatalf("Create for char1 skill 2: %v", err)
 	}
-	_, err = processor.Create(mb)(char2)(2001001)(5)(10)(expiration)
+	_, err = processor.Create(mb)(transactionId, worldId, char2, 2001001, 5, 10, expiration)
 	if err != nil {
 		t.Fatalf("Create for char2 skill: %v", err)
 	}

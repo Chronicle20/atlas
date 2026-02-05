@@ -5,6 +5,7 @@ import (
 	consumer2 "atlas-invites/kafka/consumer"
 	invite2 "atlas-invites/kafka/message/invite"
 	"context"
+	"github.com/Chronicle20/atlas-constants/invite"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -31,23 +32,23 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 	}
 }
 
-func handleCreateCommand(l logrus.FieldLogger, ctx context.Context, c invite2.CommandEvent[invite2.CreateCommandBody]) {
-	if c.Type != invite2.CommandInviteTypeCreate {
+func handleCreateCommand(l logrus.FieldLogger, ctx context.Context, c invite2.Command[invite2.CreateCommandBody]) {
+	if c.Type != invite.CommandTypeCreate {
 		return
 	}
-	_, _ = invite3.NewProcessor(l, ctx).CreateAndEmit(c.Body.ReferenceId, c.WorldId, c.InviteType, c.Body.OriginatorId, c.Body.TargetId, c.TransactionId)
+	_, _ = invite3.NewProcessor(l, ctx).CreateAndEmit(uint32(c.Body.ReferenceId), byte(c.WorldId), string(c.InviteType), uint32(c.Body.OriginatorId), uint32(c.Body.TargetId), c.TransactionId)
 }
 
-func handleAcceptCommand(l logrus.FieldLogger, ctx context.Context, c invite2.CommandEvent[invite2.AcceptCommandBody]) {
-	if c.Type != invite2.CommandInviteTypeAccept {
+func handleAcceptCommand(l logrus.FieldLogger, ctx context.Context, c invite2.Command[invite2.AcceptCommandBody]) {
+	if c.Type != invite.CommandTypeAccept {
 		return
 	}
-	_, _ = invite3.NewProcessor(l, ctx).AcceptAndEmit(c.Body.ReferenceId, c.WorldId, c.InviteType, c.Body.TargetId, c.TransactionId)
+	_, _ = invite3.NewProcessor(l, ctx).AcceptAndEmit(uint32(c.Body.ReferenceId), byte(c.WorldId), string(c.InviteType), uint32(c.Body.TargetId), c.TransactionId)
 }
 
-func handleRejectCommand(l logrus.FieldLogger, ctx context.Context, c invite2.CommandEvent[invite2.RejectCommandBody]) {
-	if c.Type != invite2.CommandInviteTypeReject {
+func handleRejectCommand(l logrus.FieldLogger, ctx context.Context, c invite2.Command[invite2.RejectCommandBody]) {
+	if c.Type != invite.CommandTypeReject {
 		return
 	}
-	_, _ = invite3.NewProcessor(l, ctx).RejectAndEmit(c.Body.OriginatorId, c.WorldId, c.InviteType, c.Body.TargetId, c.TransactionId)
+	_, _ = invite3.NewProcessor(l, ctx).RejectAndEmit(uint32(c.Body.OriginatorId), byte(c.WorldId), string(c.InviteType), uint32(c.Body.TargetId), c.TransactionId)
 }

@@ -4,12 +4,14 @@ import (
 	"github.com/Chronicle20/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
 )
 
 type Model struct {
 	worldId            world.Id
 	channelId          channel.Id
 	mapId              _map.Id
+	instance           uuid.UUID
 	uniqueId           uint32
 	maxHp              uint32
 	hp                 uint32
@@ -65,6 +67,10 @@ func (m Model) ChannelId() channel.Id {
 
 func (m Model) MapId() _map.Id {
 	return m.mapId
+}
+
+func (m Model) Instance() uuid.UUID {
+	return m.instance
 }
 
 func (m Model) MP() uint32 {

@@ -3,6 +3,8 @@ package saga
 import (
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 )
 
@@ -38,19 +40,19 @@ type ItemDetail struct {
 
 // AwardMesosPayload represents payload for awarding mesos
 type AwardMesosPayload struct {
-	CharacterId uint32 `json:"characterId"`
-	WorldId     byte   `json:"worldId"`
-	ChannelId   byte   `json:"channelId"`
-	ActorId     uint32 `json:"actorId"`
-	ActorType   string `json:"actorType"`
-	Amount      int32  `json:"amount"`
+	CharacterId uint32     `json:"characterId"`
+	WorldId     world.Id   `json:"worldId"`
+	ChannelId   channel.Id `json:"channelId"`
+	ActorId     uint32     `json:"actorId"`
+	ActorType   string     `json:"actorType"`
+	Amount      int32      `json:"amount"`
 }
 
 // AwardExperiencePayload represents payload for awarding experience
 type AwardExperiencePayload struct {
 	CharacterId   uint32                   `json:"characterId"`
-	WorldId       byte                     `json:"worldId"`
-	ChannelId     byte                     `json:"channelId"`
+	WorldId       world.Id                 `json:"worldId"`
+	ChannelId     channel.Id               `json:"channelId"`
 	Distributions []ExperienceDistribution `json:"distributions"`
 }
 
@@ -63,12 +65,12 @@ type ExperienceDistribution struct {
 
 // AwardFamePayload represents payload for awarding fame
 type AwardFamePayload struct {
-	CharacterId uint32 `json:"characterId"`
-	WorldId     byte   `json:"worldId"`
-	ChannelId   byte   `json:"channelId"`
-	ActorId     uint32 `json:"actorId"`
-	ActorType   string `json:"actorType"`
-	Amount      int16  `json:"amount"`
+	CharacterId uint32     `json:"characterId"`
+	WorldId     world.Id   `json:"worldId"`
+	ChannelId   channel.Id `json:"channelId"`
+	ActorId     uint32     `json:"actorId"`
+	ActorType   string     `json:"actorType"`
+	Amount      int16      `json:"amount"`
 }
 
 // CreateSkillPayload represents payload for creating/granting a skill

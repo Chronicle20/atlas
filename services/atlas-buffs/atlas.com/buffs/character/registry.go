@@ -4,8 +4,10 @@ import (
 	"atlas-buffs/buff"
 	"atlas-buffs/buff/stat"
 	"errors"
-	"github.com/Chronicle20/atlas-tenant"
 	"sync"
+
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas-tenant"
 )
 
 var ErrNotFound = errors.New("not found")
@@ -49,7 +51,7 @@ func (r *Registry) getOrCreateTenantMaps(t tenant.Model) (map[uint32]Model, *syn
 	return cm, cml
 }
 
-func (r *Registry) Apply(t tenant.Model, worldId byte, characterId uint32, sourceId int32, duration int32, changes []stat.Model) (buff.Model, error) {
+func (r *Registry) Apply(t tenant.Model, worldId world.Id, characterId uint32, sourceId int32, duration int32, changes []stat.Model) (buff.Model, error) {
 	b, err := buff.NewBuff(sourceId, duration, changes)
 	if err != nil {
 		return buff.Model{}, err

@@ -967,7 +967,7 @@ func TestHandleCreateCharacter(t *testing.T) {
 			_, ctx := setupContext()
 
 			// Configure mock
-			charP.RequestCreateCharacterFunc = func(transactionId uuid.UUID, accountId uint32, worldId byte, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id) error {
+			charP.RequestCreateCharacterFunc = func(transactionId uuid.UUID, accountId uint32, worldId world.Id, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id) error {
 				// Verify parameters
 				assert.Equal(t, tt.payload.AccountId, accountId)
 				assert.Equal(t, tt.payload.Name, name)

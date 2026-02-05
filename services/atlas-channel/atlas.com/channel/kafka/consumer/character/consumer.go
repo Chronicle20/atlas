@@ -11,8 +11,10 @@ import (
 	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	_map2 "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/stat"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
@@ -71,7 +73,7 @@ func handleStatusEventStatChanged(sc server.Model, wp writer.Producer) func(l lo
 
 		var hpChange bool
 		for _, u := range e.Body.Updates {
-			if u == writer.StatHp || u == writer.StatMaxHp {
+			if u == stat.TypeHP || u == stat.TypeMaxHP {
 				hpChange = true
 			}
 		}
@@ -86,69 +88,69 @@ func handleStatusEventStatChanged(sc server.Model, wp writer.Producer) func(l lo
 	}
 }
 
-func statChanged(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(c character.Model, exclRequestSent bool, updates []string) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(c character.Model, exclRequestSent bool, updates []string) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(c character.Model, exclRequestSent bool, updates []string) model.Operator[session.Model] {
-			return func(c character.Model, exclRequestSent bool, updates []string) model.Operator[session.Model] {
+func statChanged(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(c character.Model, exclRequestSent bool, updates []stat.Type) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(c character.Model, exclRequestSent bool, updates []stat.Type) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(c character.Model, exclRequestSent bool, updates []stat.Type) model.Operator[session.Model] {
+			return func(c character.Model, exclRequestSent bool, updates []stat.Type) model.Operator[session.Model] {
 				return func(s session.Model) error {
 					var su = make([]model2.StatUpdate, 0)
 					for _, update := range updates {
 						value := int64(0)
-						if update == writer.StatSkin {
+						if update == stat.TypeSkin {
 							value = int64(c.SkinColor())
-						} else if update == writer.StatFace {
+						} else if update == stat.TypeFace {
 							value = int64(c.Face())
-						} else if update == writer.StatHair {
+						} else if update == stat.TypeHair {
 							value = int64(c.Hair())
-						} else if update == writer.StatPetSn1 {
+						} else if update == stat.TypePetSn1 {
 							if len(c.Pets()) > 0 {
 								value = int64(c.Pets()[0].Id())
 							} else {
 								value = int64(0)
 							}
-						} else if update == writer.StatLevel {
+						} else if update == stat.TypeLevel {
 							value = int64(c.Level())
-						} else if update == writer.StatJob {
+						} else if update == stat.TypeJob {
 							value = int64(c.JobId())
-						} else if update == writer.StatStrength {
+						} else if update == stat.TypeStrength {
 							value = int64(c.Strength())
-						} else if update == writer.StatDexterity {
+						} else if update == stat.TypeDexterity {
 							value = int64(c.Dexterity())
-						} else if update == writer.StatIntelligence {
+						} else if update == stat.TypeIntelligence {
 							value = int64(c.Intelligence())
-						} else if update == writer.StatLuck {
+						} else if update == stat.TypeLuck {
 							value = int64(c.Luck())
-						} else if update == writer.StatHp {
+						} else if update == stat.TypeHP {
 							value = int64(c.Hp())
-						} else if update == writer.StatMaxHp {
+						} else if update == stat.TypeMaxHP {
 							value = int64(c.MaxHp())
-						} else if update == writer.StatMp {
+						} else if update == stat.TypeMP {
 							value = int64(c.Mp())
-						} else if update == writer.StatMaxMp {
+						} else if update == stat.TypeMaxMP {
 							value = int64(c.MaxMp())
-						} else if update == writer.StatAvailableAp {
+						} else if update == stat.TypeAvailableAP {
 							value = int64(c.Ap())
-						} else if update == writer.StatAvailableSp {
+						} else if update == stat.TypeAvailableSP {
 							value = int64(c.Sp()[0])
-						} else if update == writer.StatExperience {
+						} else if update == stat.TypeExperience {
 							value = int64(c.Experience())
-						} else if update == writer.StatFame {
+						} else if update == stat.TypeFame {
 							value = int64(c.Fame())
-						} else if update == writer.StatMeso {
+						} else if update == stat.TypeMeso {
 							value = int64(c.Meso())
-						} else if update == writer.StatPetSn2 {
+						} else if update == stat.TypePetSn2 {
 							if len(c.Pets()) > 1 {
 								value = int64(c.Pets()[1].Id())
 							} else {
 								value = int64(0)
 							}
-						} else if update == writer.StatPetSn3 {
+						} else if update == stat.TypePetSn3 {
 							if len(c.Pets()) > 2 {
 								value = int64(c.Pets()[2].Id())
 							} else {
 								value = int64(0)
 							}
-						} else if update == writer.StatGachaponExperience {
+						} else if update == stat.TypeGachaponExperience {
 							value = int64(c.GachaponExperience())
 						}
 						su = append(su, model2.NewStatUpdate(update, value))

@@ -3,13 +3,15 @@ package channel
 import (
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 )
 
 type Model struct {
 	id              uuid.UUID
-	worldId         byte
-	channelId       byte
+	worldId         world.Id
+	channelId       channel.Id
 	ipAddress       string
 	port            int
 	currentCapacity uint32
@@ -25,11 +27,11 @@ func (m Model) Id() uuid.UUID {
 	return m.id
 }
 
-func (m Model) WorldId() byte {
+func (m Model) WorldId() world.Id {
 	return m.worldId
 }
 
-func (m Model) ChannelId() byte {
+func (m Model) ChannelId() channel.Id {
 	return m.channelId
 }
 

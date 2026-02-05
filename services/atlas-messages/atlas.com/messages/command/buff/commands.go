@@ -155,7 +155,8 @@ func BuffCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(wo
 			if target == "me" {
 				idProvider = model.ToSliceProvider(model.FixedProvider(c.Id()))
 			} else if target == "map" {
-				idProvider = mp.CharacterIdsInMapProvider(worldId, channelId, c.MapId())
+				f := field.NewBuilder(world.Id(worldId), channel.Id(channelId), _map2.Id(c.MapId())).Build()
+				idProvider = mp.CharacterIdsInFieldProvider(f)
 			} else {
 				idProvider = model.ToSliceProvider(cp.IdByNameProvider(target))
 			}

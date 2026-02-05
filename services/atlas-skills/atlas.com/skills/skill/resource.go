@@ -2,8 +2,10 @@ package skill
 
 import (
 	"atlas-skills/rest"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -47,7 +49,7 @@ func handleRequestCreateSkill(db *gorm.DB) rest.InputHandler[RestModel] {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext, i RestModel) http.HandlerFunc {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				err := NewProcessor(d.Logger(), d.Context(), db).RequestCreate(characterId, i.Id, i.Level, i.MasterLevel, i.Expiration)
+				err := NewProcessor(d.Logger(), d.Context(), db).RequestCreate(uuid.New(), world.Id(0), characterId, i.Id, i.Level, i.MasterLevel, i.Expiration)
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					return
@@ -85,7 +87,7 @@ func handleRequestUpdateSkill(db *gorm.DB) rest.InputHandler[RestModel] {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return rest.ParseSkillId(d.Logger(), func(skillId uint32) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
-					err := NewProcessor(d.Logger(), d.Context(), db).RequestUpdate(characterId, skillId, i.Level, i.MasterLevel, i.Expiration)
+					err := NewProcessor(d.Logger(), d.Context(), db).RequestUpdate(uuid.New(), world.Id(0), characterId, skillId, i.Level, i.MasterLevel, i.Expiration)
 					if err != nil {
 						w.WriteHeader(http.StatusInternalServerError)
 						return

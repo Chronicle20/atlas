@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	channelConstant "github.com/Chronicle20/atlas-constants/channel"
+	worldConstant "github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
@@ -254,7 +256,7 @@ func TestMapDistinctWorldId(t *testing.T) {
 	channels := channel.GetChannelRegistry().ChannelServers(tenant)
 
 	// Count distinct world IDs
-	worldIds := make(map[byte]bool)
+	worldIds := make(map[worldConstant.Id]bool)
 	for _, ch := range channels {
 		worldIds[ch.WorldId()] = true
 	}
@@ -299,7 +301,7 @@ func TestProcessorWithMultipleChannels(t *testing.T) {
 	}
 
 	// Verify each channel is present
-	foundChannels := make(map[byte]bool)
+	foundChannels := make(map[channelConstant.Id]bool)
 	for _, ch := range decorated.Channels() {
 		foundChannels[ch.ChannelId()] = true
 	}
@@ -315,7 +317,7 @@ func TestProcessorWithMultipleChannels(t *testing.T) {
 	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, 0, 2)
 }
 
-func createTestChannelInRegistry(t *testing.T, tenantId uuid.UUID, worldId, channelId byte) {
+func createTestChannelInRegistry(t *testing.T, tenantId uuid.UUID, worldId worldConstant.Id, channelId channelConstant.Id) {
 	t.Helper()
 	ch, err := channel.NewModelBuilder().
 		SetId(uuid.New()).

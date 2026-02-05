@@ -3,6 +3,7 @@ package drop
 import (
 	"errors"
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	tenant "github.com/Chronicle20/atlas-tenant"
@@ -47,6 +48,7 @@ type mapKey struct {
 	worldId   world.Id
 	channelId channel.Id
 	mapId     _map.Id
+	instance  uuid.UUID
 }
 
 func getNextUniqueId() uint32 {
@@ -65,6 +67,7 @@ func (d *dropRegistry) CreateDrop(mb *ModelBuilder) (Model, error) {
 		worldId:   mb.WorldId(),
 		channelId: mb.ChannelId(),
 		mapId:     mb.MapId(),
+		instance:  mb.Instance(),
 	}
 
 	d.lock.Lock()
@@ -204,6 +207,7 @@ func (d *dropRegistry) RemoveDrop(dropId uint32) (Model, error) {
 		worldId:   drop.WorldId(),
 		channelId: drop.ChannelId(),
 		mapId:     drop.MapId(),
+		instance:  drop.Instance(),
 	}
 
 	d.lockMap(mk)
@@ -229,12 +233,13 @@ func (d *dropRegistry) GetDrop(dropId uint32) (Model, error) {
 	return drop, nil
 }
 
-func (d *dropRegistry) GetDropsForMap(tenant tenant.Model, worldId world.Id, channelId channel.Id, mapId _map.Id) ([]Model, error) {
+func (d *dropRegistry) GetDropsForMap(tenant tenant.Model, f field.Model) ([]Model, error) {
 	mk := mapKey{
 		tenantId:  tenant.Id(),
-		worldId:   worldId,
-		channelId: channelId,
-		mapId:     mapId,
+		worldId:   f.WorldId(),
+		channelId: f.ChannelId(),
+		mapId:     f.MapId(),
+		instance:  f.Instance(),
 	}
 	drops := make([]Model, 0)
 	d.lockMap(mk)

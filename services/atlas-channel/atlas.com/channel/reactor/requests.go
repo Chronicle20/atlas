@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	Resource = "worlds/%d/channels/%d/maps/%d/reactors"
+	Resource = "worlds/%d/channels/%d/maps/%d/instances/%s/reactors"
 )
 
 func getBaseRequest() string {
@@ -16,5 +16,5 @@ func getBaseRequest() string {
 }
 
 func requestInMap(f field.Model) requests.Request[[]RestModel] {
-	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+Resource, f.WorldId(), f.ChannelId(), f.MapId()))
+	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+Resource, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String()))
 }

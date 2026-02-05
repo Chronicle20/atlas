@@ -6,6 +6,7 @@ import (
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -141,5 +142,20 @@ func ParseCharacterId(l logrus.FieldLogger, next CharacterIdHandler) http.Handle
 			return
 		}
 		next(uint32(characterId))(w, r)
+	}
+}
+
+type InstanceIdHandler func(instanceId uuid.UUID) http.HandlerFunc
+
+func ParseInstanceId(l logrus.FieldLogger, next InstanceIdHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		instanceId, err := uuid.Parse(vars["instanceId"])
+		if err != nil {
+			l.WithError(err).Errorf("Error parsing instanceId as UUID")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(instanceId)(w, r)
 	}
 }

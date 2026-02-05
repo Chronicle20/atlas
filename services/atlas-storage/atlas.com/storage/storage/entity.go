@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -34,7 +35,7 @@ func Migration(db *gorm.DB) error {
 func Make(e Entity) Model {
 	return NewModelBuilder().
 		SetId(e.Id).
-		SetWorldId(e.WorldId).
+		SetWorldId(world.Id(e.WorldId)).
 		SetAccountId(e.AccountId).
 		SetCapacity(e.Capacity).
 		SetMesos(e.Mesos).

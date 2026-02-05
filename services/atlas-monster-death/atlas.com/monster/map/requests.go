@@ -9,8 +9,9 @@ import (
 )
 
 const (
-	mapResource           = "worlds/%d/channels/%d/maps/%d"
-	mapCharactersResource = mapResource + "/characters/"
+	mapResource                   = "worlds/%d/channels/%d/maps/%d"
+	mapInstanceResource           = mapResource + "/instances/%s"
+	mapInstanceCharactersResource = mapInstanceResource + "/characters/"
 )
 
 func getBaseRequest() string {
@@ -18,5 +19,5 @@ func getBaseRequest() string {
 }
 
 func requestCharactersInField(f field.Model) requests.Request[[]RestModel] {
-	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+mapCharactersResource+"?instance=%s", f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String()))
+	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+mapInstanceCharactersResource, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String()))
 }

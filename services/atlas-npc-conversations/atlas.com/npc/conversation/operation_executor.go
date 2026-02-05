@@ -585,7 +585,7 @@ func (e *OperationExecutorImpl) executeLocalOperation(field field.Model, charact
 
 		// Parse comma-separated map IDs
 		mapIdStrs := strings.Split(mapIdsStr, ",")
-		mapIds := make([]uint32, 0, len(mapIdStrs))
+		mapIds := make([]_map.Id, 0, len(mapIdStrs))
 		for _, mapIdStr := range mapIdStrs {
 			trimmed := strings.TrimSpace(mapIdStr)
 			if trimmed == "" {
@@ -596,7 +596,7 @@ func (e *OperationExecutorImpl) executeLocalOperation(field field.Model, charact
 				e.l.WithError(err).Errorf("Invalid map ID '%s' in mapIds parameter", trimmed)
 				return fmt.Errorf("invalid map ID '%s': %w", trimmed, err)
 			}
-			mapIds = append(mapIds, uint32(mapId))
+			mapIds = append(mapIds, _map.Id(mapId))
 		}
 
 		if len(mapIds) == 0 {
@@ -604,8 +604,8 @@ func (e *OperationExecutorImpl) executeLocalOperation(field field.Model, charact
 		}
 
 		// Get world and channel from field
-		worldId := byte(field.WorldId())
-		channelId := byte(field.ChannelId())
+		worldId := field.WorldId()
+		channelId := field.ChannelId()
 
 		// Fetch player counts for all maps in parallel
 		counts, err := e.mapP.GetPlayerCountsInMaps(worldId, channelId, mapIds)

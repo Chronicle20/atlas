@@ -1,13 +1,15 @@
 package _map
 
 import (
-	"github.com/jtumidanski/api2go/jsonapi"
 	"strconv"
+
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/jtumidanski/api2go/jsonapi"
 )
 
 type RestModel struct {
-	Id          uint32 `json:"-"`
-	ReturnMapId uint32 `json:"returnMapId"`
+	Id          uint32  `json:"-"`
+	ReturnMapId _map.Id `json:"returnMapId"`
 }
 
 func (r RestModel) GetName() string {

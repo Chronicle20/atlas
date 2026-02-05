@@ -3,20 +3,21 @@ package mock
 import (
 	"atlas-login/character"
 
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 )
 
 // MockProcessor is a mock implementation of character.Processor for testing
 type MockProcessor struct {
-	IsValidNameFunc              func(name string) (bool, error)
-	ByAccountAndWorldProviderFunc func(decorators ...model.Decorator[character.Model]) func(accountId uint32, worldId byte) model.Provider[[]character.Model]
-	GetForWorldFunc              func(decorators ...model.Decorator[character.Model]) func(accountId uint32, worldId byte) ([]character.Model, error)
-	ByNameProviderFunc           func(decorators ...model.Decorator[character.Model]) func(name string) model.Provider[[]character.Model]
-	GetByNameFunc                func(decorators ...model.Decorator[character.Model]) func(name string) ([]character.Model, error)
-	ByIdProviderFunc             func(decorators ...model.Decorator[character.Model]) func(id uint32) model.Provider[character.Model]
-	GetByIdFunc                  func(decorators ...model.Decorator[character.Model]) func(id uint32) (character.Model, error)
-	InventoryDecoratorFunc       func() model.Decorator[character.Model]
-	DeleteByIdFunc               func(characterId uint32) error
+	IsValidNameFunc               func(name string) (bool, error)
+	ByAccountAndWorldProviderFunc func(decorators ...model.Decorator[character.Model]) func(accountId uint32, worldId world.Id) model.Provider[[]character.Model]
+	GetForWorldFunc               func(decorators ...model.Decorator[character.Model]) func(accountId uint32, worldId world.Id) ([]character.Model, error)
+	ByNameProviderFunc            func(decorators ...model.Decorator[character.Model]) func(name string) model.Provider[[]character.Model]
+	GetByNameFunc                 func(decorators ...model.Decorator[character.Model]) func(name string) ([]character.Model, error)
+	ByIdProviderFunc              func(decorators ...model.Decorator[character.Model]) func(id uint32) model.Provider[character.Model]
+	GetByIdFunc                   func(decorators ...model.Decorator[character.Model]) func(id uint32) (character.Model, error)
+	InventoryDecoratorFunc        func() model.Decorator[character.Model]
+	DeleteByIdFunc                func(characterId uint32) error
 }
 
 // IsValidName implements character.Processor
@@ -28,11 +29,11 @@ func (m *MockProcessor) IsValidName(name string) (bool, error) {
 }
 
 // ByAccountAndWorldProvider implements character.Processor
-func (m *MockProcessor) ByAccountAndWorldProvider(decorators ...model.Decorator[character.Model]) func(accountId uint32, worldId byte) model.Provider[[]character.Model] {
+func (m *MockProcessor) ByAccountAndWorldProvider(decorators ...model.Decorator[character.Model]) func(accountId uint32, worldId world.Id) model.Provider[[]character.Model] {
 	if m.ByAccountAndWorldProviderFunc != nil {
 		return m.ByAccountAndWorldProviderFunc(decorators...)
 	}
-	return func(accountId uint32, worldId byte) model.Provider[[]character.Model] {
+	return func(accountId uint32, worldId world.Id) model.Provider[[]character.Model] {
 		return func() ([]character.Model, error) {
 			return []character.Model{}, nil
 		}
@@ -40,11 +41,11 @@ func (m *MockProcessor) ByAccountAndWorldProvider(decorators ...model.Decorator[
 }
 
 // GetForWorld implements character.Processor
-func (m *MockProcessor) GetForWorld(decorators ...model.Decorator[character.Model]) func(accountId uint32, worldId byte) ([]character.Model, error) {
+func (m *MockProcessor) GetForWorld(decorators ...model.Decorator[character.Model]) func(accountId uint32, worldId world.Id) ([]character.Model, error) {
 	if m.GetForWorldFunc != nil {
 		return m.GetForWorldFunc(decorators...)
 	}
-	return func(accountId uint32, worldId byte) ([]character.Model, error) {
+	return func(accountId uint32, worldId world.Id) ([]character.Model, error) {
 		return []character.Model{}, nil
 	}
 }

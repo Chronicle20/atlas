@@ -2,6 +2,8 @@ package monster
 
 import (
 	"context"
+
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/sirupsen/logrus"
 )
 
@@ -18,10 +20,10 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 	return p
 }
 
-func (p *Processor) CreateMonster(worldId byte, channelId byte, mapId uint32, monsterId uint32, x int16, y int16, fh uint16, team int32) error {
-	_, err := requestCreate(worldId, channelId, mapId, monsterId, x, y, fh, team)(p.l, p.ctx)
+func (p *Processor) CreateMonster(f field.Model, monsterId uint32, x int16, y int16, fh uint16, team int32) error {
+	_, err := requestCreate(f, monsterId, x, y, fh, team)(p.l, p.ctx)
 	if err != nil {
-		p.l.WithError(err).Errorf("Creating monster for map %d", mapId)
+		p.l.WithError(err).Errorf("Creating monster for map %s.", f.Id())
 	}
 	return err
 }

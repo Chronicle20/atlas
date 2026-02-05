@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-script-core/condition"
 	"github.com/Chronicle20/atlas-script-core/operation"
 	"github.com/sirupsen/logrus"
@@ -15,7 +16,7 @@ import (
 // jsonPortalScript represents the JSON structure of a portal script
 type jsonPortalScript struct {
 	PortalId    string     `json:"portalId"`
-	MapId       uint32     `json:"mapId"`
+	MapId       _map.Id    `json:"mapId"`
 	Description string     `json:"description"`
 	Rules       []jsonRule `json:"rules"`
 }
@@ -45,18 +46,18 @@ type jsonOperation struct {
 
 // Loader loads portal scripts from the filesystem
 type Loader struct {
-	l         logrus.FieldLogger
+	l          logrus.FieldLogger
 	scriptsDir string
-	cache     map[string]PortalScript
-	cacheMu   sync.RWMutex
+	cache      map[string]PortalScript
+	cacheMu    sync.RWMutex
 }
 
 // NewLoader creates a new script loader
 func NewLoader(l logrus.FieldLogger, scriptsDir string) *Loader {
 	return &Loader{
-		l:         l,
+		l:          l,
 		scriptsDir: scriptsDir,
-		cache:     make(map[string]PortalScript),
+		cache:      make(map[string]PortalScript),
 	}
 }
 

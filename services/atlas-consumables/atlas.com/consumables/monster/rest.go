@@ -1,10 +1,18 @@
 package monster
 
+import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
+)
+
 type RestModel struct {
 	Id                 string        `json:"-"`
-	WorldId            byte          `json:"worldId"`
-	ChannelId          byte          `json:"channelId"`
-	MapId              int           `json:"mapId"`
+	WorldId            world.Id      `json:"worldId"`
+	ChannelId          channel.Id    `json:"channelId"`
+	MapId              _map.Id       `json:"mapId"`
+	Instance           uuid.UUID     `json:"instance"`
 	MonsterId          uint32        `json:"monsterId"`
 	ControlCharacterId int           `json:"controlCharacterId"`
 	X                  int16         `json:"x"`

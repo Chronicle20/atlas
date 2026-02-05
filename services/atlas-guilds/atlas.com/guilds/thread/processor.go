@@ -7,6 +7,8 @@ import (
 	"atlas-guilds/kafka/producer"
 	"atlas-guilds/thread/reply"
 	"context"
+
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -20,16 +22,16 @@ type Processor interface {
 	ByIdProvider(guildId uint32, threadId uint32) model.Provider[Model]
 	GetById(guildId uint32, threadId uint32) (Model, error)
 
-	Create(mb *message.Buffer) func(worldId byte) func(guildId uint32) func(posterId uint32) func(title string) func(message string) func(emoticonId uint32) func(notice bool) (Model, error)
-	CreateAndEmit(worldId byte, guildId uint32, posterId uint32, title string, message string, emoticonId uint32, notice bool) (Model, error)
-	Update(mb *message.Buffer) func(worldId byte) func(guildId uint32) func(threadId uint32) func(posterId uint32) func(title string) func(message string) func(emoticonId uint32) func(notice bool) (Model, error)
-	UpdateAndEmit(worldId byte, guildId uint32, threadId uint32, posterId uint32, title string, message string, emoticonId uint32, notice bool) (Model, error)
-	Delete(mb *message.Buffer) func(worldId byte) func(guildId uint32) func(threadId uint32) func(actorId uint32) error
-	DeleteAndEmit(worldId byte, guildId uint32, threadId uint32, actorId uint32) error
-	Reply(mb *message.Buffer) func(worldId byte) func(guildId uint32) func(threadId uint32) func(posterId uint32) func(message string) (Model, error)
-	ReplyAndEmit(worldId byte, guildId uint32, threadId uint32, posterId uint32, message string) (Model, error)
-	DeleteReply(mb *message.Buffer) func(worldId byte) func(guildId uint32) func(threadId uint32) func(actorId uint32) func(replyId uint32) (Model, error)
-	DeleteReplyAndEmit(worldId byte, guildId uint32, threadId uint32, actorId uint32, replyId uint32) (Model, error)
+	Create(mb *message.Buffer) func(worldId world.Id) func(guildId uint32) func(posterId uint32) func(title string) func(message string) func(emoticonId uint32) func(notice bool) (Model, error)
+	CreateAndEmit(worldId world.Id, guildId uint32, posterId uint32, title string, message string, emoticonId uint32, notice bool) (Model, error)
+	Update(mb *message.Buffer) func(worldId world.Id) func(guildId uint32) func(threadId uint32) func(posterId uint32) func(title string) func(message string) func(emoticonId uint32) func(notice bool) (Model, error)
+	UpdateAndEmit(worldId world.Id, guildId uint32, threadId uint32, posterId uint32, title string, message string, emoticonId uint32, notice bool) (Model, error)
+	Delete(mb *message.Buffer) func(worldId world.Id) func(guildId uint32) func(threadId uint32) func(actorId uint32) error
+	DeleteAndEmit(worldId world.Id, guildId uint32, threadId uint32, actorId uint32) error
+	Reply(mb *message.Buffer) func(worldId world.Id) func(guildId uint32) func(threadId uint32) func(posterId uint32) func(message string) (Model, error)
+	ReplyAndEmit(worldId world.Id, guildId uint32, threadId uint32, posterId uint32, message string) (Model, error)
+	DeleteReply(mb *message.Buffer) func(worldId world.Id) func(guildId uint32) func(threadId uint32) func(actorId uint32) func(replyId uint32) (Model, error)
+	DeleteReplyAndEmit(worldId world.Id, guildId uint32, threadId uint32, actorId uint32, replyId uint32) (Model, error)
 }
 
 type ProcessorImpl struct {
@@ -73,8 +75,8 @@ func (p *ProcessorImpl) GetById(guildId uint32, threadId uint32) (Model, error) 
 	return p.ByIdProvider(guildId, threadId)()
 }
 
-func (p *ProcessorImpl) Create(mb *message.Buffer) func(worldId byte) func(guildId uint32) func(posterId uint32) func(title string) func(message string) func(emoticonId uint32) func(notice bool) (Model, error) {
-	return func(worldId byte) func(guildId uint32) func(posterId uint32) func(title string) func(message string) func(emoticonId uint32) func(notice bool) (Model, error) {
+func (p *ProcessorImpl) Create(mb *message.Buffer) func(worldId world.Id) func(guildId uint32) func(posterId uint32) func(title string) func(message string) func(emoticonId uint32) func(notice bool) (Model, error) {
+	return func(worldId world.Id) func(guildId uint32) func(posterId uint32) func(title string) func(message string) func(emoticonId uint32) func(notice bool) (Model, error) {
 		return func(guildId uint32) func(posterId uint32) func(title string) func(message string) func(emoticonId uint32) func(notice bool) (Model, error) {
 			return func(posterId uint32) func(title string) func(message string) func(emoticonId uint32) func(notice bool) (Model, error) {
 				return func(title string) func(message string) func(emoticonId uint32) func(notice bool) (Model, error) {
@@ -102,7 +104,7 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(worldId byte) func(guild
 	}
 }
 
-func (p *ProcessorImpl) CreateAndEmit(worldId byte, guildId uint32, posterId uint32, title string, msg string, emoticonId uint32, notice bool) (Model, error) {
+func (p *ProcessorImpl) CreateAndEmit(worldId world.Id, guildId uint32, posterId uint32, title string, msg string, emoticonId uint32, notice bool) (Model, error) {
 	var m Model
 	err := message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
 		var err error
@@ -112,8 +114,8 @@ func (p *ProcessorImpl) CreateAndEmit(worldId byte, guildId uint32, posterId uin
 	return m, err
 }
 
-func (p *ProcessorImpl) Update(mb *message.Buffer) func(worldId byte) func(guildId uint32) func(threadId uint32) func(posterId uint32) func(title string) func(message string) func(emoticonId uint32) func(notice bool) (Model, error) {
-	return func(worldId byte) func(guildId uint32) func(threadId uint32) func(posterId uint32) func(title string) func(message string) func(emoticonId uint32) func(notice bool) (Model, error) {
+func (p *ProcessorImpl) Update(mb *message.Buffer) func(worldId world.Id) func(guildId uint32) func(threadId uint32) func(posterId uint32) func(title string) func(message string) func(emoticonId uint32) func(notice bool) (Model, error) {
+	return func(worldId world.Id) func(guildId uint32) func(threadId uint32) func(posterId uint32) func(title string) func(message string) func(emoticonId uint32) func(notice bool) (Model, error) {
 		return func(guildId uint32) func(threadId uint32) func(posterId uint32) func(title string) func(message string) func(emoticonId uint32) func(notice bool) (Model, error) {
 			return func(threadId uint32) func(posterId uint32) func(title string) func(message string) func(emoticonId uint32) func(notice bool) (Model, error) {
 				return func(posterId uint32) func(title string) func(message string) func(emoticonId uint32) func(notice bool) (Model, error) {
@@ -156,7 +158,7 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(worldId byte) func(guild
 	}
 }
 
-func (p *ProcessorImpl) UpdateAndEmit(worldId byte, guildId uint32, threadId uint32, posterId uint32, title string, msg string, emoticonId uint32, notice bool) (Model, error) {
+func (p *ProcessorImpl) UpdateAndEmit(worldId world.Id, guildId uint32, threadId uint32, posterId uint32, title string, msg string, emoticonId uint32, notice bool) (Model, error) {
 	var m Model
 	err := message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
 		var err error
@@ -166,8 +168,8 @@ func (p *ProcessorImpl) UpdateAndEmit(worldId byte, guildId uint32, threadId uin
 	return m, err
 }
 
-func (p *ProcessorImpl) Delete(mb *message.Buffer) func(worldId byte) func(guildId uint32) func(threadId uint32) func(actorId uint32) error {
-	return func(worldId byte) func(guildId uint32) func(threadId uint32) func(actorId uint32) error {
+func (p *ProcessorImpl) Delete(mb *message.Buffer) func(worldId world.Id) func(guildId uint32) func(threadId uint32) func(actorId uint32) error {
+	return func(worldId world.Id) func(guildId uint32) func(threadId uint32) func(actorId uint32) error {
 		return func(guildId uint32) func(threadId uint32) func(actorId uint32) error {
 			return func(threadId uint32) func(actorId uint32) error {
 				return func(actorId uint32) error {
@@ -210,14 +212,14 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(worldId byte) func(guild
 	}
 }
 
-func (p *ProcessorImpl) DeleteAndEmit(worldId byte, guildId uint32, threadId uint32, actorId uint32) error {
+func (p *ProcessorImpl) DeleteAndEmit(worldId world.Id, guildId uint32, threadId uint32, actorId uint32) error {
 	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
 		return p.Delete(mb)(worldId)(guildId)(threadId)(actorId)
 	})
 }
 
-func (p *ProcessorImpl) Reply(mb *message.Buffer) func(worldId byte) func(guildId uint32) func(threadId uint32) func(posterId uint32) func(message string) (Model, error) {
-	return func(worldId byte) func(guildId uint32) func(threadId uint32) func(posterId uint32) func(message string) (Model, error) {
+func (p *ProcessorImpl) Reply(mb *message.Buffer) func(worldId world.Id) func(guildId uint32) func(threadId uint32) func(posterId uint32) func(message string) (Model, error) {
+	return func(worldId world.Id) func(guildId uint32) func(threadId uint32) func(posterId uint32) func(message string) (Model, error) {
 		return func(guildId uint32) func(threadId uint32) func(posterId uint32) func(message string) (Model, error) {
 			return func(threadId uint32) func(posterId uint32) func(message string) (Model, error) {
 				return func(posterId uint32) func(message string) (Model, error) {
@@ -259,7 +261,7 @@ func (p *ProcessorImpl) Reply(mb *message.Buffer) func(worldId byte) func(guildI
 	}
 }
 
-func (p *ProcessorImpl) ReplyAndEmit(worldId byte, guildId uint32, threadId uint32, posterId uint32, msg string) (Model, error) {
+func (p *ProcessorImpl) ReplyAndEmit(worldId world.Id, guildId uint32, threadId uint32, posterId uint32, msg string) (Model, error) {
 	var m Model
 	err := message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
 		var err error
@@ -269,8 +271,8 @@ func (p *ProcessorImpl) ReplyAndEmit(worldId byte, guildId uint32, threadId uint
 	return m, err
 }
 
-func (p *ProcessorImpl) DeleteReply(mb *message.Buffer) func(worldId byte) func(guildId uint32) func(threadId uint32) func(actorId uint32) func(replyId uint32) (Model, error) {
-	return func(worldId byte) func(guildId uint32) func(threadId uint32) func(actorId uint32) func(replyId uint32) (Model, error) {
+func (p *ProcessorImpl) DeleteReply(mb *message.Buffer) func(worldId world.Id) func(guildId uint32) func(threadId uint32) func(actorId uint32) func(replyId uint32) (Model, error) {
+	return func(worldId world.Id) func(guildId uint32) func(threadId uint32) func(actorId uint32) func(replyId uint32) (Model, error) {
 		return func(guildId uint32) func(threadId uint32) func(actorId uint32) func(replyId uint32) (Model, error) {
 			return func(threadId uint32) func(actorId uint32) func(replyId uint32) (Model, error) {
 				return func(actorId uint32) func(replyId uint32) (Model, error) {
@@ -311,7 +313,7 @@ func (p *ProcessorImpl) DeleteReply(mb *message.Buffer) func(worldId byte) func(
 	}
 }
 
-func (p *ProcessorImpl) DeleteReplyAndEmit(worldId byte, guildId uint32, threadId uint32, actorId uint32, replyId uint32) (Model, error) {
+func (p *ProcessorImpl) DeleteReplyAndEmit(worldId world.Id, guildId uint32, threadId uint32, actorId uint32, replyId uint32) (Model, error) {
 	var m Model
 	err := message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
 		var err error

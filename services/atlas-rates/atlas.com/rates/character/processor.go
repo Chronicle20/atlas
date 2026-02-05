@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
@@ -16,16 +18,16 @@ import (
 type BonusExpTier = equipment.BonusExpTier
 
 type Processor interface {
-	GetRates(worldId, channelId byte, characterId uint32) (rate.Computed, []rate.Factor, error)
-	AddFactor(worldId, channelId byte, characterId uint32, source string, rateType rate.Type, multiplier float64) error
+	GetRates(ch channel.Model, characterId uint32) (rate.Computed, []rate.Factor, error)
+	AddFactor(ch channel.Model, characterId uint32, source string, rateType rate.Type, multiplier float64) error
 	RemoveFactor(characterId uint32, source string, rateType rate.Type) error
 	RemoveFactorsBySource(characterId uint32, source string) error
-	UpdateWorldRate(worldId byte, rateType rate.Type, multiplier float64)
-	AddBuffFactor(worldId, channelId byte, characterId uint32, buffSourceId int32, rateType rate.Type, multiplier float64) error
+	UpdateWorldRate(worldId world.Id, rateType rate.Type, multiplier float64)
+	AddBuffFactor(ch channel.Model, characterId uint32, buffSourceId int32, rateType rate.Type, multiplier float64) error
 	RemoveBuffFactor(characterId uint32, buffSourceId int32, rateType rate.Type) error
 	RemoveAllBuffFactors(characterId uint32, buffSourceId int32) error
 	// Item rate factor methods (simple, non-time-based)
-	AddItemFactor(worldId, channelId byte, characterId uint32, templateId uint32, rateType rate.Type, multiplier float64) error
+	AddItemFactor(ch channel.Model, characterId uint32, templateId uint32, rateType rate.Type, multiplier float64) error
 	RemoveItemFactor(characterId uint32, templateId uint32, rateType rate.Type) error
 	RemoveAllItemFactors(characterId uint32, templateId uint32) error
 	// Time-based item tracking methods
@@ -53,14 +55,14 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 // GetRates retrieves computed rates and factors for a character
 // This includes time-based item factors calculated dynamically
 // If the character hasn't been initialized yet, this will lazily initialize them
-func (p *ProcessorImpl) GetRates(worldId, channelId byte, characterId uint32) (rate.Computed, []rate.Factor, error) {
+func (p *ProcessorImpl) GetRates(ch channel.Model, characterId uint32) (rate.Computed, []rate.Factor, error) {
 	// Lazy initialization - ensure character's item tracking is set up
 	// This handles the case where atlas-rates restarts while characters are online
 	if !IsInitialized(p.t, characterId) {
-		InitializeCharacterRates(p.l, p.ctx, characterId, worldId, channelId)
+		InitializeCharacterRates(p.l, p.ctx, characterId, ch)
 	}
 
-	m := GetRegistry().GetOrCreate(p.t, worldId, channelId, characterId)
+	m := GetRegistry().GetOrCreate(p.t, ch, characterId)
 
 	// Get base factors from registry
 	baseFactors := m.Factors()
@@ -78,9 +80,9 @@ func (p *ProcessorImpl) GetRates(worldId, channelId byte, characterId uint32) (r
 }
 
 // AddFactor adds or updates a rate factor for a character
-func (p *ProcessorImpl) AddFactor(worldId, channelId byte, characterId uint32, source string, rateType rate.Type, multiplier float64) error {
+func (p *ProcessorImpl) AddFactor(ch channel.Model, characterId uint32, source string, rateType rate.Type, multiplier float64) error {
 	f := rate.NewFactor(source, rateType, multiplier)
-	m := GetRegistry().AddFactor(p.t, worldId, channelId, characterId, f)
+	m := GetRegistry().AddFactor(p.t, ch, characterId, f)
 	p.l.Debugf("Added factor [%s] for character [%d]: %s = %.2f", source, characterId, rateType, multiplier)
 	p.l.Debugf("Character [%d] now has rates: exp=%.2f, meso=%.2f, drop=%.2f, quest=%.2f",
 		characterId, m.ComputedRates().ExpRate(), m.ComputedRates().MesoRate(),
@@ -115,15 +117,15 @@ func (p *ProcessorImpl) RemoveFactorsBySource(characterId uint32, source string)
 }
 
 // UpdateWorldRate updates the world rate for all characters in a world
-func (p *ProcessorImpl) UpdateWorldRate(worldId byte, rateType rate.Type, multiplier float64) {
+func (p *ProcessorImpl) UpdateWorldRate(worldId world.Id, rateType rate.Type, multiplier float64) {
 	GetRegistry().UpdateWorldRate(p.t, worldId, rateType, multiplier)
 	p.l.Infof("Updated world [%d] rate [%s] to %.2f", worldId, rateType, multiplier)
 }
 
 // AddBuffFactor adds a rate factor from a buff
-func (p *ProcessorImpl) AddBuffFactor(worldId, channelId byte, characterId uint32, buffSourceId int32, rateType rate.Type, multiplier float64) error {
+func (p *ProcessorImpl) AddBuffFactor(ch channel.Model, characterId uint32, buffSourceId int32, rateType rate.Type, multiplier float64) error {
 	source := fmt.Sprintf("buff:%d", buffSourceId)
-	return p.AddFactor(worldId, channelId, characterId, source, rateType, multiplier)
+	return p.AddFactor(ch, characterId, source, rateType, multiplier)
 }
 
 // RemoveBuffFactor removes a specific buff rate factor
@@ -139,9 +141,9 @@ func (p *ProcessorImpl) RemoveAllBuffFactors(characterId uint32, buffSourceId in
 }
 
 // AddItemFactor adds a rate factor from an item (equipment or cash coupon)
-func (p *ProcessorImpl) AddItemFactor(worldId, channelId byte, characterId uint32, templateId uint32, rateType rate.Type, multiplier float64) error {
+func (p *ProcessorImpl) AddItemFactor(ch channel.Model, characterId uint32, templateId uint32, rateType rate.Type, multiplier float64) error {
 	source := fmt.Sprintf("item:%d", templateId)
-	return p.AddFactor(worldId, channelId, characterId, source, rateType, multiplier)
+	return p.AddFactor(ch, characterId, source, rateType, multiplier)
 }
 
 // RemoveItemFactor removes a specific item rate factor

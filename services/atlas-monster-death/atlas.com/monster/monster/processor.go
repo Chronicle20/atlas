@@ -33,7 +33,7 @@ func CreateDrops(l logrus.FieldLogger) func(ctx context.Context) func(f field.Mo
 			l.Debugf("After quest filtering, [%d] drops remain.", len(ds))
 
 			// Get rates for the killer
-			r := rates.GetForCharacter(l)(ctx)(f.WorldId(), f.ChannelId(), killerId)
+			r := rates.GetForCharacter(l)(ctx)(f.Channel(), killerId)
 			l.Debugf("Character [%d] rates: itemDrop=%.2f, meso=%.2f", killerId, r.ItemDropRate(), r.MesoRate())
 
 			ds = getSuccessfulDrops(ds, r.ItemDropRate())
@@ -115,7 +115,7 @@ func DistributeExperience(l logrus.FieldLogger) func(ctx context.Context) func(f
 					l.WithError(err).Errorf("Unable to locate character %d whose for distributing experience from monster death.", k)
 				} else {
 					// Get rates for the character and apply exp rate
-					r := rates.GetForCharacter(l)(ctx)(f.WorldId(), f.ChannelId(), c.Id())
+					r := rates.GetForCharacter(l)(ctx)(f.Channel(), c.Id())
 					exp = exp * r.ExpRate()
 					l.Debugf("Character [%d] exp rate: %.2f, adjusted exp: %.2f", c.Id(), r.ExpRate(), exp)
 
@@ -228,7 +228,7 @@ func distributeCharacterExperience(l logrus.FieldLogger) func(ctx context.Contex
 			characterExperience *= experience
 			bonusExperience := partyBonusMod * characterExperience
 
-			_ = character.AwardExperience(l)(ctx)(f.WorldId(), f.ChannelId(), characterId, whiteExperienceGain, uint32(characterExperience), uint32(bonusExperience))
+			_ = character.AwardExperience(l)(ctx)(f.Channel(), characterId, whiteExperienceGain, uint32(characterExperience), uint32(bonusExperience))
 		}
 	}
 }

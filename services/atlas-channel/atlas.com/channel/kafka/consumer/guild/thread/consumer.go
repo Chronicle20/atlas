@@ -52,7 +52,7 @@ func handleThreadCreated(sc server.Model, wp writer.Producer) message.Handler[th
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.ActorId, refreshThread(l)(ctx)(wp)(e.GuildId, e.ThreadId))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.ActorId, refreshThread(l)(ctx)(wp)(e.GuildId, e.ThreadId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to display the requested thread [%d] to character [%d].", e.ThreadId, e.ActorId)
 		}
@@ -69,7 +69,7 @@ func handleThreadUpdated(sc server.Model, wp writer.Producer) message.Handler[th
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.ActorId, refreshThread(l)(ctx)(wp)(e.GuildId, e.ThreadId))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.ActorId, refreshThread(l)(ctx)(wp)(e.GuildId, e.ThreadId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to display the requested thread [%d] to character [%d].", e.ThreadId, e.ActorId)
 		}
@@ -86,7 +86,7 @@ func handleThreadReplyAdded(sc server.Model, wp writer.Producer) message.Handler
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.ActorId, refreshThread(l)(ctx)(wp)(e.GuildId, e.ThreadId))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.ActorId, refreshThread(l)(ctx)(wp)(e.GuildId, e.ThreadId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to display the requested thread [%d] to character [%d].", e.ThreadId, e.ActorId)
 		}
@@ -103,7 +103,7 @@ func handleThreadReplyDeleted(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.ActorId, refreshThread(l)(ctx)(wp)(e.GuildId, e.ThreadId))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.ActorId, refreshThread(l)(ctx)(wp)(e.GuildId, e.ThreadId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to display the requested thread [%d] to character [%d].", e.ThreadId, e.ActorId)
 		}

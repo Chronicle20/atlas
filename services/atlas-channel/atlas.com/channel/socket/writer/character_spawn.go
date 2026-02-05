@@ -8,6 +8,7 @@ import (
 	"atlas-channel/guild"
 	"atlas-channel/pet"
 	"atlas-channel/socket/model"
+
 	"github.com/Chronicle20/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
@@ -44,7 +45,7 @@ func CharacterSpawnBody(l logrus.FieldLogger, t tenant.Model) func(c character.M
 			}
 			cts.EncodeForeign(l, t, options)(w)
 
-			w.WriteShort(c.JobId())
+			w.WriteShort(uint16(c.JobId()))
 
 			WriteCharacterLook(t)(w, c, false)
 

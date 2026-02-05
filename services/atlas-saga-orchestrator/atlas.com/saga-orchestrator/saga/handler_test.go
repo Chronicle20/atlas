@@ -8,6 +8,9 @@ import (
 	"atlas-saga-orchestrator/validation"
 	mock3 "atlas-saga-orchestrator/validation/mock"
 	"errors"
+	"testing"
+	"time"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-constants/job"
@@ -18,8 +21,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 // TestHandleValidateCharacterState tests the handleValidateCharacterState function
@@ -570,10 +571,10 @@ func TestHandleAwardLevel(t *testing.T) {
 			_, ctx := setupContext()
 
 			// Configure mock
-			charP.AwardLevelAndEmitFunc = func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount byte) error {
+			charP.AwardLevelAndEmitFunc = func(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount byte) error {
 				// Verify parameters
 				assert.Equal(t, tt.payload.CharacterId, characterId)
-				assert.Equal(t, tt.payload.WorldId, worldId)
+				assert.Equal(t, tt.payload.WorldId, ch.WorldId())
 				assert.Equal(t, tt.payload.Amount, amount)
 
 				return tt.mockError
@@ -661,10 +662,10 @@ func TestHandleAwardExperience(t *testing.T) {
 			_, ctx := setupContext()
 
 			// Configure mock
-			charP.AwardExperienceAndEmitFunc = func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, distributions []character2.ExperienceDistributions) error {
+			charP.AwardExperienceAndEmitFunc = func(transactionId uuid.UUID, ch channel.Model, characterId uint32, distributions []character2.ExperienceDistributions) error {
 				// Verify parameters
 				assert.Equal(t, tt.payload.CharacterId, characterId)
-				assert.Equal(t, tt.payload.WorldId, worldId)
+				assert.Equal(t, tt.payload.WorldId, ch.WorldId())
 
 				// Verify distributions were transformed correctly
 				expectedDist := TransformExperienceDistributions(tt.payload.Distributions)
@@ -747,10 +748,10 @@ func TestHandleAwardMesos(t *testing.T) {
 			_, ctx := setupContext()
 
 			// Configure mock
-			charP.AwardMesosAndEmitFunc = func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error {
+			charP.AwardMesosAndEmitFunc = func(transactionId uuid.UUID, ch channel.Model, characterId uint32, actorId uint32, actorType string, amount int32) error {
 				// Verify parameters
 				assert.Equal(t, tt.payload.CharacterId, characterId)
-				assert.Equal(t, tt.payload.WorldId, worldId)
+				assert.Equal(t, tt.payload.WorldId, ch.WorldId())
 				assert.Equal(t, tt.payload.ActorId, actorId)
 				assert.Equal(t, tt.payload.ActorType, actorType)
 				assert.Equal(t, tt.payload.Amount, amount)

@@ -84,34 +84,34 @@ func (r *Registry) ChannelServers(t tenant.Model) []Model {
 	return results
 }
 
-func (r *Registry) ChannelServer(t tenant.Model, worldId world.Id, channelId channel.Id) (Model, error) {
+func (r *Registry) ChannelServer(t tenant.Model, ch channel.Model) (Model, error) {
 	td := r.getTenantData(t)
 	td.lock.RLock()
 	defer td.lock.RUnlock()
 
 	var ok bool
 	var result Model
-	if _, ok = td.channels[worldId]; !ok {
+	if _, ok = td.channels[ch.WorldId()]; !ok {
 		return result, ErrChannelNotFound
 	}
-	if result, ok = td.channels[worldId][channelId]; !ok {
+	if result, ok = td.channels[ch.WorldId()][ch.Id()]; !ok {
 		return result, ErrChannelNotFound
 	}
 	return result, nil
 }
 
-func (r *Registry) RemoveByWorldAndChannel(t tenant.Model, worldId world.Id, channelId channel.Id) error {
+func (r *Registry) RemoveByWorldAndChannel(t tenant.Model, ch channel.Model) error {
 	td := r.getTenantData(t)
 	td.lock.Lock()
 	defer td.lock.Unlock()
 
-	if _, ok := td.channels[worldId]; !ok {
+	if _, ok := td.channels[ch.WorldId()]; !ok {
 		return ErrChannelNotFound
 	}
-	if _, ok := td.channels[worldId][channelId]; !ok {
+	if _, ok := td.channels[ch.WorldId()][ch.Id()]; !ok {
 		return ErrChannelNotFound
 	}
-	delete(td.channels[worldId], channelId)
+	delete(td.channels[ch.WorldId()], ch.Id())
 	return nil
 }
 

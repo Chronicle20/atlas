@@ -70,7 +70,7 @@ func handleCreatedStatusEvent(sc server.Model, wp writer.Producer) message.Handl
 		}
 
 		if eventHandler != nil {
-			session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(uint32(e.Body.TargetId), eventHandler)
+			session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(uint32(e.Body.TargetId), eventHandler)
 		}
 	}
 }
@@ -144,7 +144,7 @@ func handleRejectedStatusEvent(sc server.Model, wp writer.Producer) message.Hand
 		}
 
 		if eventHandler != nil {
-			session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(uint32(e.Body.OriginatorId), eventHandler)
+			session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(uint32(e.Body.OriginatorId), eventHandler)
 		}
 	}
 }

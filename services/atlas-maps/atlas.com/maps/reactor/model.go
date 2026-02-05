@@ -3,13 +3,16 @@ package reactor
 import (
 	"errors"
 	"time"
+
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 )
 
 type Model struct {
 	id             uint32
-	worldId        byte
-	channelId      byte
-	mapId          uint32
+	f              field.Model
 	classification uint32
 	name           string
 	state          int8
@@ -25,16 +28,20 @@ func (m Model) Id() uint32 {
 	return m.id
 }
 
-func (m Model) WorldId() byte {
-	return m.worldId
+func (m Model) Field() field.Model {
+	return m.f
 }
 
-func (m Model) ChannelId() byte {
-	return m.channelId
+func (m Model) WorldId() world.Id {
+	return m.f.WorldId()
 }
 
-func (m Model) MapId() uint32 {
-	return m.mapId
+func (m Model) ChannelId() channel.Id {
+	return m.f.ChannelId()
+}
+
+func (m Model) MapId() _map.Id {
+	return m.f.MapId()
 }
 
 func (m Model) Classification() uint32 {
@@ -75,9 +82,7 @@ func (m Model) UpdateTime() time.Time {
 
 type ModelBuilder struct {
 	id             uint32
-	worldId        byte
-	channelId      byte
-	mapId          uint32
+	f              field.Model
 	classification uint32
 	name           string
 	state          int8
@@ -89,11 +94,9 @@ type ModelBuilder struct {
 	updateTime     time.Time
 }
 
-func NewModelBuilder(worldId byte, channelId byte, mapId uint32, classification uint32, name string) *ModelBuilder {
+func NewModelBuilder(f field.Model, classification uint32, name string) *ModelBuilder {
 	return &ModelBuilder{
-		worldId:        worldId,
-		channelId:      channelId,
-		mapId:          mapId,
+		f:              f,
 		classification: classification,
 		name:           name,
 		updateTime:     time.Now(),
@@ -103,9 +106,7 @@ func NewModelBuilder(worldId byte, channelId byte, mapId uint32, classification 
 func NewFromModel(m Model) *ModelBuilder {
 	return &ModelBuilder{
 		id:             m.Id(),
-		worldId:        m.WorldId(),
-		channelId:      m.ChannelId(),
-		mapId:          m.MapId(),
+		f:              m.Field(),
 		classification: m.Classification(),
 		name:           m.Name(),
 		state:          m.State(),
@@ -128,9 +129,7 @@ func (b *ModelBuilder) Build() (Model, error) {
 
 	return Model{
 		id:             b.id,
-		worldId:        b.worldId,
-		channelId:      b.channelId,
-		mapId:          b.mapId,
+		f:              b.f,
 		classification: b.classification,
 		name:           b.name,
 		state:          b.state,

@@ -18,6 +18,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"testing"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
 	inventory2 "github.com/Chronicle20/atlas-constants/inventory"
@@ -33,7 +35,6 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"testing"
 )
 
 func testLogger() logrus.FieldLogger {
@@ -303,7 +304,7 @@ func TestProcessor_GetByOwner(t *testing.T) {
 func TestProcessor_Move(t *testing.T) {
 	mfh := position.NewModel(99, 0, 95, 100, 95)
 	pp := &pm.Processor{}
-	pp.GetBelowFn = func(mapId uint32, x int16, y int16) model.Provider[position.Model] {
+	pp.GetBelowFn = func(mapId _map.Id, x int16, y int16) model.Provider[position.Model] {
 		return model.FixedProvider(mfh)
 	}
 
@@ -353,7 +354,7 @@ func TestProcessor_SpawnSingleLead(t *testing.T) {
 	}
 	mfh := position.NewModel(99, 0, 95, 100, 95)
 	pp := &pm.Processor{}
-	pp.GetBelowFn = func(mapId uint32, x int16, y int16) model.Provider[position.Model] {
+	pp.GetBelowFn = func(mapId _map.Id, x int16, y int16) model.Provider[position.Model] {
 		return model.FixedProvider(mfh)
 	}
 	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t)).With(pet.WithCharacterProcessor(cp), pet.WithPositionProcessor(pp))
@@ -400,7 +401,7 @@ func TestProcessor_SpawnMigrateLead(t *testing.T) {
 	}
 	mfh := position.NewModel(99, 0, 95, 100, 95)
 	pp := &pm.Processor{}
-	pp.GetBelowFn = func(mapId uint32, x int16, y int16) model.Provider[position.Model] {
+	pp.GetBelowFn = func(mapId _map.Id, x int16, y int16) model.Provider[position.Model] {
 		return model.FixedProvider(mfh)
 	}
 
@@ -456,7 +457,7 @@ func TestProcessor_SpawnMissingMulti(t *testing.T) {
 	}
 	mfh := position.NewModel(99, 0, 95, 100, 95)
 	pp := &pm.Processor{}
-	pp.GetBelowFn = func(mapId uint32, x int16, y int16) model.Provider[position.Model] {
+	pp.GetBelowFn = func(mapId _map.Id, x int16, y int16) model.Provider[position.Model] {
 		return model.FixedProvider(mfh)
 	}
 	sp := &sm.Processor{}
@@ -494,7 +495,7 @@ func TestProcessor_SpawnNonLead(t *testing.T) {
 	}
 	mfh := position.NewModel(99, 0, 95, 100, 95)
 	pp := &pm.Processor{}
-	pp.GetBelowFn = func(mapId uint32, x int16, y int16) model.Provider[position.Model] {
+	pp.GetBelowFn = func(mapId _map.Id, x int16, y int16) model.Provider[position.Model] {
 		return model.FixedProvider(mfh)
 	}
 	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t)).With(pet.WithCharacterProcessor(cp), pet.WithPositionProcessor(pp))

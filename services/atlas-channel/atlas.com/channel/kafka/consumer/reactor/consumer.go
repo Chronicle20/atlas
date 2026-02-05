@@ -11,6 +11,7 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	_map2 "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -55,7 +56,8 @@ func handleCreated(sc server.Model, wp writer.Producer) message.Handler[reactor2
 			return
 		}
 
-		r := reactor.NewModelBuilder(e.WorldId, e.ChannelId, e.MapId, e.Body.Classification, e.Body.Name).
+		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
+		r := reactor.NewModelBuilder(f, e.Body.Classification, e.Body.Name).
 			SetId(e.ReactorId).
 			SetState(e.Body.State).
 			SetEventState(e.Body.EventState).
@@ -98,7 +100,8 @@ func handleHit(sc server.Model, wp writer.Producer) message.Handler[reactor2.Sta
 			return
 		}
 
-		r := reactor.NewModelBuilder(e.WorldId, e.ChannelId, e.MapId, e.Body.Classification, "").
+		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
+		r := reactor.NewModelBuilder(f, e.Body.Classification, "").
 			SetId(e.ReactorId).
 			SetState(e.Body.State).
 			SetPosition(e.Body.X, e.Body.Y).

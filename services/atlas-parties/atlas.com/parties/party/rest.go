@@ -5,7 +5,11 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/job"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 )
@@ -78,6 +82,7 @@ func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
 				WorldId:   0,
 				ChannelId: 0,
 				MapId:     0,
+				Instance:  uuid.Nil,
 				Online:    false,
 			})
 		}
@@ -86,14 +91,15 @@ func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
 }
 
 type MemberRestModel struct {
-	Id        uint32 `json:"-"`
-	Name      string `json:"name"`
-	Level     byte   `json:"level"`
-	JobId     job.Id `json:"jobId"`
-	WorldId   byte   `json:"worldId"`
-	ChannelId byte   `json:"channelId"`
-	MapId     uint32 `json:"mapId"`
-	Online    bool   `json:"online"`
+	Id        uint32     `json:"-"`
+	Name      string     `json:"name"`
+	Level     byte       `json:"level"`
+	JobId     job.Id     `json:"jobId"`
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
+	MapId     _map.Id    `json:"mapId"`
+	Instance  uuid.UUID  `json:"instance"`
+	Online    bool       `json:"online"`
 }
 
 func (r MemberRestModel) GetName() string {
@@ -151,6 +157,7 @@ func TransformMember(l logrus.FieldLogger) func(ctx context.Context) func(member
 				WorldId:   c.WorldId(),
 				ChannelId: c.ChannelId(),
 				MapId:     c.MapId(),
+				Instance:  c.Instance(),
 				Online:    c.Online(),
 			}, nil
 		}

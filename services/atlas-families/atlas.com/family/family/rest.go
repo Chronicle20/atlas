@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 )
 
@@ -18,7 +19,7 @@ type RestFamilyMember struct {
 	Rep         uint32   `json:"rep"`
 	DailyRep    uint32   `json:"dailyRep"`
 	Level       uint16   `json:"level"`
-	World       byte     `json:"world"`
+	World       world.Id `json:"world"`
 	CreatedAt   string   `json:"createdAt"`
 	UpdatedAt   string   `json:"updatedAt"`
 }
@@ -159,10 +160,10 @@ func TransformFamilyTree(members []FamilyMember) (RestFamilyTree, error) {
 
 // AddJuniorRequest represents the request body for adding a junior
 type AddJuniorRequest struct {
-	WorldId     byte   `json:"worldId" validate:"required"`
-	SeniorLevel uint16 `json:"seniorLevel" validate:"required"`
-	JuniorId    uint32 `json:"juniorId" validate:"required"`
-	JuniorLevel uint16 `json:"juniorLevel" validate:"required"`
+	WorldId     world.Id `json:"worldId" validate:"required"`
+	SeniorLevel uint16   `json:"seniorLevel" validate:"required"`
+	JuniorId    uint32   `json:"juniorId" validate:"required"`
+	JuniorLevel uint16   `json:"juniorLevel" validate:"required"`
 }
 
 // BreakLinkRequest represents the request body for breaking a family link

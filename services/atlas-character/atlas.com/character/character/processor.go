@@ -12,6 +12,11 @@ import (
 	skill2 "atlas-character/skill"
 	"context"
 	"errors"
+	"math"
+	"math/rand"
+	"regexp"
+	"time"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-constants/job"
@@ -24,10 +29,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"math"
-	"math/rand"
-	"regexp"
-	"time"
 )
 
 var blockedNameErr = errors.New("blocked name")
@@ -528,7 +529,7 @@ func (p *ProcessorImpl) ChangeSkin(mb *message.Buffer) func(transactionId uuid.U
 	}
 }
 
-type ExperienceModel struct{
+type ExperienceModel struct {
 	experienceType string
 	amount         uint32
 	attr1          uint32
@@ -995,7 +996,8 @@ func (p *ProcessorImpl) getMaxMpGrowth(c Model) (uint16, error) {
 
 	// Use effective intelligence (includes buffs, equipment) with fallback to base
 	intelligence := c.Intelligence()
-	effectiveStats, err := effective_stats.RequestByCharacter(byte(c.WorldId()), 0, c.Id())(p.l, p.ctx)
+	ch := channel.NewModel(c.WorldId(), 0)
+	effectiveStats, err := effective_stats.RequestByCharacter(ch, c.Id())(p.l, p.ctx)
 	if err == nil {
 		intelligence = uint16(effectiveStats.Intelligence)
 	} else {
@@ -1036,7 +1038,7 @@ func (p *ProcessorImpl) ChangeHP(mb *message.Buffer) func(transactionId uuid.UUI
 
 			// Use effective MaxHP if available, fall back to base MaxHP
 			maxHP := c.MaxHP()
-			effectiveStats, err := effective_stats.RequestByCharacter(byte(c.WorldId()), byte(channel.Id()), c.Id())(p.l, p.ctx)
+			effectiveStats, err := effective_stats.RequestByCharacter(channel, c.Id())(p.l, p.ctx)
 			if err == nil {
 				maxHP = uint16(effectiveStats.MaxHP)
 			} else {
@@ -1080,7 +1082,7 @@ func (p *ProcessorImpl) SetHP(mb *message.Buffer) func(transactionId uuid.UUID, 
 
 			// Use effective MaxHP if available, fall back to base MaxHP
 			maxHP := c.MaxHP()
-			effectiveStats, err := effective_stats.RequestByCharacter(byte(c.WorldId()), byte(channel.Id()), c.Id())(p.l, p.ctx)
+			effectiveStats, err := effective_stats.RequestByCharacter(channel, c.Id())(p.l, p.ctx)
 			if err == nil {
 				maxHP = uint16(effectiveStats.MaxHP)
 			} else {
@@ -1127,7 +1129,7 @@ func (p *ProcessorImpl) ChangeMP(mb *message.Buffer) func(transactionId uuid.UUI
 
 			// Use effective MaxMP if available, fall back to base MaxMP
 			maxMP := c.MaxMP()
-			effectiveStats, err := effective_stats.RequestByCharacter(byte(c.WorldId()), byte(channel.Id()), c.Id())(p.l, p.ctx)
+			effectiveStats, err := effective_stats.RequestByCharacter(channel, c.Id())(p.l, p.ctx)
 			if err == nil {
 				maxMP = uint16(effectiveStats.MaxMP)
 			} else {
@@ -1779,4 +1781,3 @@ func (p *ProcessorImpl) ResetStats(mb *message.Buffer) func(transactionId uuid.U
 		return nil
 	}
 }
-

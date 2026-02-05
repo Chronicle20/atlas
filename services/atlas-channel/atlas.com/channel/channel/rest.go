@@ -8,14 +8,14 @@ import (
 )
 
 type RestModel struct {
-	Id              uuid.UUID `json:"-"`
+	Id              uuid.UUID  `json:"-"`
 	WorldId         world.Id   `json:"worldId"`
 	ChannelId       channel.Id `json:"channelId"`
-	IpAddress       string    `json:"ipAddress"`
-	Port            int       `json:"port"`
-	CurrentCapacity int       `json:"currentCapacity"`
-	MaxCapacity     int       `json:"maxCapacity"`
-	CreatedAt       time.Time `json:"createdAt"`
+	IpAddress       string     `json:"ipAddress"`
+	Port            int        `json:"port"`
+	CurrentCapacity uint32     `json:"currentCapacity"`
+	MaxCapacity     uint32     `json:"maxCapacity"`
+	CreatedAt       time.Time  `json:"createdAt"`
 }
 
 func (r RestModel) GetName() string {

@@ -2,6 +2,8 @@ package writer
 
 import (
 	"atlas-login/character"
+
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -49,11 +51,11 @@ func CharacterViewAllErrorBody(l logrus.FieldLogger) func() BodyProducer {
 	}
 }
 
-func CharacterViewAllCharacterBody(l logrus.FieldLogger, tenant tenant.Model) func(worldId byte, characters []character.Model) BodyProducer {
-	return func(worldId byte, characters []character.Model) BodyProducer {
+func CharacterViewAllCharacterBody(l logrus.FieldLogger, tenant tenant.Model) func(worldId world.Id, characters []character.Model) BodyProducer {
+	return func(worldId world.Id, characters []character.Model) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(getCode(l)(CharacterViewAll, string(CharacterViewAllCodeNormal), "codes", options))
-			w.WriteByte(worldId)
+			w.WriteByte(byte(worldId))
 			w.WriteByte(byte(len(characters)))
 			for _, c := range characters {
 				WriteCharacter(tenant)(w, c, true)

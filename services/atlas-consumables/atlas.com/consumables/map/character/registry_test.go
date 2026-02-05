@@ -4,6 +4,10 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 )
@@ -13,12 +17,10 @@ func testTenant() tenant.Model {
 	return t
 }
 
-func testMapKey(worldId byte, channelId byte, mapId uint32) MapKey {
+func testMapKey(worldId world.Id, channelId channel.Id, mapId _map.Id) MapKey {
 	return MapKey{
-		Tenant:    testTenant(),
-		WorldId:   worldId,
-		ChannelId: channelId,
-		MapId:     mapId,
+		Tenant: testTenant(),
+		Field:  field.NewBuilder(worldId, channelId, mapId).Build(),
 	}
 }
 
@@ -37,14 +39,14 @@ func TestRegistry_AddCharacter_And_GetMap(t *testing.T) {
 		t.Fatal("expected to find character in registry")
 	}
 
-	if result.WorldId != mk.WorldId {
-		t.Errorf("expected WorldId %d, got %d", mk.WorldId, result.WorldId)
+	if result.Field.WorldId() != mk.Field.WorldId() {
+		t.Errorf("expected WorldId %d, got %d", mk.Field.WorldId(), result.Field.WorldId())
 	}
-	if result.ChannelId != mk.ChannelId {
-		t.Errorf("expected ChannelId %d, got %d", mk.ChannelId, result.ChannelId)
+	if result.Field.ChannelId() != mk.Field.ChannelId() {
+		t.Errorf("expected ChannelId %d, got %d", mk.Field.ChannelId(), result.Field.ChannelId())
 	}
-	if result.MapId != mk.MapId {
-		t.Errorf("expected MapId %d, got %d", mk.MapId, result.MapId)
+	if result.Field.MapId() != mk.Field.MapId() {
+		t.Errorf("expected MapId %d, got %d", mk.Field.MapId(), result.Field.MapId())
 	}
 
 	// Clean up after test
@@ -108,14 +110,14 @@ func TestRegistry_AddCharacter_OverwritesExisting(t *testing.T) {
 		t.Fatal("expected to find character")
 	}
 
-	if result.WorldId != mk2.WorldId {
-		t.Errorf("expected WorldId %d, got %d", mk2.WorldId, result.WorldId)
+	if result.Field.WorldId() != mk2.Field.WorldId() {
+		t.Errorf("expected WorldId %d, got %d", mk2.Field.WorldId(), result.Field.WorldId())
 	}
-	if result.ChannelId != mk2.ChannelId {
-		t.Errorf("expected ChannelId %d, got %d", mk2.ChannelId, result.ChannelId)
+	if result.Field.ChannelId() != mk2.Field.ChannelId() {
+		t.Errorf("expected ChannelId %d, got %d", mk2.Field.ChannelId(), result.Field.ChannelId())
 	}
-	if result.MapId != mk2.MapId {
-		t.Errorf("expected MapId %d, got %d", mk2.MapId, result.MapId)
+	if result.Field.MapId() != mk2.Field.MapId() {
+		t.Errorf("expected MapId %d, got %d", mk2.Field.MapId(), result.Field.MapId())
 	}
 
 	// Clean up
@@ -135,7 +137,7 @@ func TestRegistry_ConcurrentAccess(t *testing.T) {
 		go func(goroutineId int) {
 			defer wg.Done()
 			characterId := baseCharacterId + uint32(goroutineId)
-			mk := testMapKey(byte(goroutineId%256), byte(goroutineId%20), uint32(100000000+goroutineId))
+			mk := testMapKey(world.Id(goroutineId%256), channel.Id(goroutineId%20), _map.Id(100000000+goroutineId))
 
 			for j := 0; j < numOperations; j++ {
 				// Add

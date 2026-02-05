@@ -3,16 +3,17 @@ package mock
 import (
 	"atlas-login/world"
 
+	world2 "github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 )
 
 // MockProcessor is a mock implementation of world.Processor for testing
 type MockProcessor struct {
-	GetAllFunc              func() ([]world.Model, error)
-	AllProviderFunc         func() model.Provider[[]world.Model]
-	GetByIdFunc             func(worldId byte) (world.Model, error)
-	ByIdModelProviderFunc   func(worldId byte) model.Provider[world.Model]
-	GetCapacityStatusFunc   func(worldId byte) world.Status
+	GetAllFunc            func() ([]world.Model, error)
+	AllProviderFunc       func() model.Provider[[]world.Model]
+	GetByIdFunc           func(worldId world2.Id) (world.Model, error)
+	ByIdModelProviderFunc func(worldId world2.Id) model.Provider[world.Model]
+	GetCapacityStatusFunc func(worldId world2.Id) world.Status
 }
 
 // GetAll implements world.Processor
@@ -34,7 +35,7 @@ func (m *MockProcessor) AllProvider() model.Provider[[]world.Model] {
 }
 
 // GetById implements world.Processor
-func (m *MockProcessor) GetById(worldId byte) (world.Model, error) {
+func (m *MockProcessor) GetById(worldId world2.Id) (world.Model, error) {
 	if m.GetByIdFunc != nil {
 		return m.GetByIdFunc(worldId)
 	}
@@ -42,7 +43,7 @@ func (m *MockProcessor) GetById(worldId byte) (world.Model, error) {
 }
 
 // ByIdModelProvider implements world.Processor
-func (m *MockProcessor) ByIdModelProvider(worldId byte) model.Provider[world.Model] {
+func (m *MockProcessor) ByIdModelProvider(worldId world2.Id) model.Provider[world.Model] {
 	if m.ByIdModelProviderFunc != nil {
 		return m.ByIdModelProviderFunc(worldId)
 	}
@@ -52,7 +53,7 @@ func (m *MockProcessor) ByIdModelProvider(worldId byte) model.Provider[world.Mod
 }
 
 // GetCapacityStatus implements world.Processor
-func (m *MockProcessor) GetCapacityStatus(worldId byte) world.Status {
+func (m *MockProcessor) GetCapacityStatus(worldId world2.Id) world.Status {
 	if m.GetCapacityStatusFunc != nil {
 		return m.GetCapacityStatusFunc(worldId)
 	}

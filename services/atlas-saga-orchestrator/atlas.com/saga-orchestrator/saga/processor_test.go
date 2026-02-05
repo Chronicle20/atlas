@@ -10,6 +10,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"testing"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas-constants/map"
@@ -19,7 +21,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func setupContext() (tenant.Model, context.Context) {
@@ -280,14 +281,14 @@ func TestCharacterCreationSagaCompensation(t *testing.T) {
 				return nil
 			}
 
-			charP.AwardLevelAndEmitFunc = func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount byte) error {
+			charP.AwardLevelAndEmitFunc = func(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount byte) error {
 				if tt.failureAtStep == 1 {
 					return errors.New("level award failed")
 				}
 				return nil
 			}
 
-			charP.AwardMesosAndEmitFunc = func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error {
+			charP.AwardMesosAndEmitFunc = func(transactionId uuid.UUID, ch channel.Model, characterId uint32, actorId uint32, actorType string, amount int32) error {
 				if tt.failureAtStep == 2 {
 					return errors.New("mesos award failed")
 				}

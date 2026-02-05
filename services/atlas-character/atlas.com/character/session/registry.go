@@ -2,12 +2,12 @@ package session
 
 import (
 	"errors"
-	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/world"
-	"github.com/Chronicle20/atlas-tenant"
-	"github.com/google/uuid"
 	"sync"
 	"time"
+
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 )
 
 type Registry struct {
@@ -28,7 +28,7 @@ func GetRegistry() *Registry {
 	return registry
 }
 
-func (r *Registry) Add(t tenant.Model, characterId uint32, worldId world.Id, channelId channel.Id, state State) error {
+func (r *Registry) Add(t tenant.Model, characterId uint32, ch channel.Model, state State) error {
 	r.mutex.Lock()
 	if _, ok := r.lockRegistry[t.Id()]; !ok {
 		r.lockRegistry[t.Id()] = &sync.RWMutex{}
@@ -47,15 +47,15 @@ func (r *Registry) Add(t tenant.Model, characterId uint32, worldId world.Id, cha
 	r.sessionRegistry[t.Id()][characterId] = Model{
 		tenant:      t,
 		characterId: characterId,
-		worldId:     worldId,
-		channelId:   channelId,
+		worldId:     ch.WorldId(),
+		channelId:   ch.Id(),
 		state:       state,
 		age:         time.Now(),
 	}
 	return nil
 }
 
-func (r *Registry) Set(t tenant.Model, characterId uint32, worldId world.Id, channelId channel.Id, state State) error {
+func (r *Registry) Set(t tenant.Model, characterId uint32, ch channel.Model, state State) error {
 	r.mutex.Lock()
 	if _, ok := r.lockRegistry[t.Id()]; !ok {
 		r.lockRegistry[t.Id()] = &sync.RWMutex{}
@@ -69,8 +69,8 @@ func (r *Registry) Set(t tenant.Model, characterId uint32, worldId world.Id, cha
 	r.sessionRegistry[t.Id()][characterId] = Model{
 		tenant:      t,
 		characterId: characterId,
-		worldId:     worldId,
-		channelId:   channelId,
+		worldId:     ch.WorldId(),
+		channelId:   ch.Id(),
 		state:       state,
 		age:         time.Now(),
 	}

@@ -52,7 +52,7 @@ func handleStatusEventApplied(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
+		session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
 			bs := make([]buff.Model, 0)
 			changes := make([]stat.Model, 0)
 			for _, cm := range e.Body.Changes {
@@ -88,7 +88,7 @@ func handleStatusEventExpired(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
+		session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
 			ebs := make([]buff.Model, 0)
 			changes := make([]stat.Model, 0)
 			for _, cm := range e.Body.Changes {

@@ -67,7 +67,7 @@ func handleStatusEventCharacterEnter(sc server.Model, wp writer.Producer) func(l
 
 		l.Debugf("Character [%d] has entered map [%d] instance [%s] in worldId [%d] channelId [%d].", e.Body.CharacterId, e.MapId, e.Instance, e.WorldId, e.ChannelId)
 		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
-		session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, enterMap(l, ctx, wp)(f))
+		session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, enterMap(l, ctx, wp)(f))
 	}
 }
 
@@ -94,7 +94,7 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 			// spawn new character for others
 			for k := range cms {
 				if k != s.CharacterId() {
-					err = session.NewProcessor(l, ctx).IfPresentByCharacterId(s.WorldId(), s.ChannelId())(k, spawnCharacterForSession(l)(ctx)(wp)(cms[s.CharacterId()], g, true))
+					err = session.NewProcessor(l, ctx).IfPresentByCharacterId(s.Field().Channel())(k, spawnCharacterForSession(l)(ctx)(wp)(cms[s.CharacterId()], g, true))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to spawn character [%d] for [%d]", s.CharacterId(), k)
 					}
@@ -131,7 +131,7 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 				for k := range cms {
 					for _, p := range cms[s.CharacterId()].Pets() {
 						if p.Slot() >= 0 {
-							err = session.NewProcessor(l, ctx).IfPresentByCharacterId(s.WorldId(), s.ChannelId())(k, session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(l)(t)(p)))
+							err = session.NewProcessor(l, ctx).IfPresentByCharacterId(s.Field().Channel())(k, session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(l)(t)(p)))
 							if err != nil {
 								l.WithError(err).Errorf("Unable to spawn character [%d] pet for [%d]", s.CharacterId(), k)
 							}
@@ -187,9 +187,9 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 			}()
 
 			go func() {
-				imf := party.OtherMemberInMap(s.WorldId(), s.ChannelId(), s.MapId(), s.CharacterId())
+				imf := party.OtherMemberInMap(s.Field(), s.CharacterId())
 				oip := party.MemberToMemberIdMapper(party.FilteredMemberProvider(imf)(party.NewProcessor(l, ctx).ByMemberIdProvider(s.CharacterId())))
-				err = session.NewProcessor(l, ctx).ForEachByCharacterId(s.WorldId(), s.ChannelId())(oip, session.Announce(l)(ctx)(wp)(writer.PartyMemberHP)(writer.PartyMemberHPBody(s.CharacterId(), cms[s.CharacterId()].Hp(), cms[s.CharacterId()].MaxHp())))
+				err = session.NewProcessor(l, ctx).ForEachByCharacterId(s.Field().Channel())(oip, session.Announce(l)(ctx)(wp)(writer.PartyMemberHP)(writer.PartyMemberHPBody(s.CharacterId(), cms[s.CharacterId()].Hp(), cms[s.CharacterId()].MaxHp())))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce character [%d] health to party members.", s.CharacterId())
 				}

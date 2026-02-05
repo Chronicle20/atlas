@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 )
@@ -21,13 +22,13 @@ const (
 
 // ShowStorageCommand is received from the saga-orchestrator to display storage UI
 type ShowStorageCommand struct {
-	TransactionId uuid.UUID `json:"transactionId"`
-	WorldId       byte      `json:"worldId"`
-	ChannelId     byte      `json:"channelId"`
-	CharacterId   uint32    `json:"characterId"`
-	NpcId         uint32    `json:"npcId"`
-	AccountId     uint32    `json:"accountId"`
-	Type          string    `json:"type"`
+	TransactionId uuid.UUID  `json:"transactionId"`
+	WorldId       world.Id   `json:"worldId"`
+	ChannelId     channel.Id `json:"channelId"`
+	CharacterId   uint32     `json:"characterId"`
+	NpcId         uint32     `json:"npcId"`
+	AccountId     uint32     `json:"accountId"`
+	Type          string     `json:"type"`
 }
 
 // CloseStorageCommand is sent when a character closes storage
@@ -39,7 +40,7 @@ type CloseStorageCommand struct {
 // Command represents a storage command sent to the storage service
 type Command[E any] struct {
 	TransactionId uuid.UUID `json:"transactionId"`
-	WorldId       byte      `json:"worldId"`
+	WorldId       world.Id  `json:"worldId"`
 	AccountId     uint32    `json:"accountId"`
 	Type          string    `json:"type"`
 	Body          E         `json:"body"`
@@ -81,7 +82,7 @@ const (
 // StatusEvent represents a storage status event
 type StatusEvent[E any] struct {
 	TransactionId uuid.UUID `json:"transactionId"`
-	WorldId       byte      `json:"worldId"`
+	WorldId       world.Id  `json:"worldId"`
 	AccountId     uint32    `json:"accountId"`
 	Type          string    `json:"type"`
 	Body          E         `json:"body"`
@@ -129,11 +130,11 @@ type CompartmentReleasedEventBody struct {
 
 // ProjectionCreatedEventBody contains the data for a projection created event
 type ProjectionCreatedEventBody struct {
-	CharacterId uint32 `json:"characterId"`
-	AccountId   uint32 `json:"accountId"`
-	WorldId     byte   `json:"worldId"`
-	ChannelId   byte   `json:"channelId"`
-	NpcId       uint32 `json:"npcId"`
+	CharacterId uint32     `json:"characterId"`
+	AccountId   uint32     `json:"accountId"`
+	WorldId     world.Id   `json:"worldId"`
+	ChannelId   channel.Id `json:"channelId"`
+	NpcId       uint32     `json:"npcId"`
 }
 
 // ProjectionDestroyedEventBody contains the data for a projection destroyed event

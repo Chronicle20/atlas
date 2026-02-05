@@ -12,16 +12,17 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/world"
 	kafkaProducer "github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
 // CheckAndExpire checks all items for a character and emits expire commands for expired items
-func CheckAndExpire(l logrus.FieldLogger) func(pp producer.Provider) func(ctx context.Context) func(characterId, accountId uint32, worldId byte) {
-	return func(pp producer.Provider) func(ctx context.Context) func(characterId, accountId uint32, worldId byte) {
-		return func(ctx context.Context) func(characterId, accountId uint32, worldId byte) {
-			return func(characterId, accountId uint32, worldId byte) {
+func CheckAndExpire(l logrus.FieldLogger) func(pp producer.Provider) func(ctx context.Context) func(characterId, accountId uint32, worldId world.Id) {
+	return func(pp producer.Provider) func(ctx context.Context) func(characterId, accountId uint32, worldId world.Id) {
+		return func(ctx context.Context) func(characterId, accountId uint32, worldId world.Id) {
+			return func(characterId, accountId uint32, worldId world.Id) {
 				now := time.Now()
 				l.Infof("Checking expiration for character [%d], account [%d], world [%d].", characterId, accountId, worldId)
 
@@ -69,7 +70,7 @@ func checkInventory(l logrus.FieldLogger, pp producer.Provider, ctx context.Cont
 	}
 }
 
-func checkStorage(l logrus.FieldLogger, pp producer.Provider, ctx context.Context, accountId uint32, worldId byte, now time.Time) {
+func checkStorage(l logrus.FieldLogger, pp producer.Provider, ctx context.Context, accountId uint32, worldId world.Id, now time.Time) {
 	assets, err := storage.GetAssets(l)(ctx)(accountId, worldId)
 	if err != nil {
 		l.WithError(err).Warnf("Failed to get storage assets for account [%d], world [%d].", accountId, worldId)
@@ -109,7 +110,7 @@ func checkCashshop(l logrus.FieldLogger, pp producer.Provider, ctx context.Conte
 	}
 }
 
-func emitStorageExpireCommand(l logrus.FieldLogger, pp producer.Provider, ctx context.Context, accountId uint32, worldId byte, assetId uint32, templateId uint32, slot int16, replaceItemId uint32, replaceMessage string) {
+func emitStorageExpireCommand(l logrus.FieldLogger, pp producer.Provider, ctx context.Context, accountId uint32, worldId world.Id, assetId uint32, templateId uint32, slot int16, replaceItemId uint32, replaceMessage string) {
 	cmd := asset.StorageExpireCommand{
 		TransactionId: uuid.New(),
 		WorldId:       worldId,

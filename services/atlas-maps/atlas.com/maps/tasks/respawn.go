@@ -6,6 +6,7 @@ import (
 	"atlas-maps/map/monster"
 	"atlas-maps/reactor"
 	"context"
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -40,7 +41,7 @@ func (r *Respawn) Run() {
 		}()
 		go func(mk character.MapKey) {
 			rp := reactor.NewProcessor(r.l, tctx, producer.ProviderImpl(r.l)(tctx))
-			_ = rp.SpawnAndEmit(transactionId, mk.WorldId, mk.ChannelId, mk.MapId, mk.Instance)
+			_ = rp.SpawnAndEmit(transactionId, mk.Field)
 		}(mk)
 	}
 }

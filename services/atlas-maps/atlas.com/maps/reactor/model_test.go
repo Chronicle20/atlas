@@ -3,14 +3,14 @@ package reactor
 import (
 	"testing"
 	"time"
+
+	"github.com/Chronicle20/atlas-constants/field"
 )
 
 func TestModel_Accessors(t *testing.T) {
 	m := Model{
 		id:             1,
-		worldId:        2,
-		channelId:      3,
-		mapId:          100000000,
+		f:              field.NewBuilder(2, 3, 100000000).Build(),
 		classification: 1001,
 		name:           "test-reactor",
 		state:          1,
@@ -61,16 +61,17 @@ func TestModel_Accessors(t *testing.T) {
 }
 
 func TestNewModelBuilder(t *testing.T) {
-	builder := NewModelBuilder(1, 2, 100000000, 1001, "test-reactor")
+	f := field.NewBuilder(1, 2, 100000000).Build()
+	builder := NewModelBuilder(f, 1001, "test-reactor")
 
-	if builder.worldId != 1 {
-		t.Errorf("Expected worldId 1, got %d", builder.worldId)
+	if builder.f.WorldId() != 1 {
+		t.Errorf("Expected worldId 1, got %d", builder.f.WorldId())
 	}
-	if builder.channelId != 2 {
-		t.Errorf("Expected channelId 2, got %d", builder.channelId)
+	if builder.f.ChannelId() != 2 {
+		t.Errorf("Expected channelId 2, got %d", builder.f.ChannelId())
 	}
-	if builder.mapId != 100000000 {
-		t.Errorf("Expected mapId 100000000, got %d", builder.mapId)
+	if builder.f.MapId() != 100000000 {
+		t.Errorf("Expected mapId 100000000, got %d", builder.f.MapId())
 	}
 	if builder.classification != 1001 {
 		t.Errorf("Expected classification 1001, got %d", builder.classification)
@@ -84,7 +85,8 @@ func TestNewModelBuilder(t *testing.T) {
 }
 
 func TestModelBuilder_Build_Success(t *testing.T) {
-	builder := NewModelBuilder(1, 2, 100000000, 1001, "test-reactor")
+	f := field.NewBuilder(1, 2, 100000000).Build()
+	builder := NewModelBuilder(f, 1001, "test-reactor")
 	builder.SetId(123)
 	builder.SetState(1)
 	builder.SetPosition(100, 200)
@@ -136,7 +138,8 @@ func TestModelBuilder_Build_Success(t *testing.T) {
 }
 
 func TestModelBuilder_Build_EmptyName_Error(t *testing.T) {
-	builder := NewModelBuilder(1, 2, 100000000, 1001, "")
+	f := field.NewBuilder(1, 2, 100000000).Build()
+	builder := NewModelBuilder(f, 1001, "")
 
 	_, err := builder.Build()
 	if err == nil {
@@ -148,7 +151,8 @@ func TestModelBuilder_Build_EmptyName_Error(t *testing.T) {
 }
 
 func TestModelBuilder_Build_ZeroClassification_Error(t *testing.T) {
-	builder := NewModelBuilder(1, 2, 100000000, 0, "test-reactor")
+	f := field.NewBuilder(1, 2, 100000000).Build()
+	builder := NewModelBuilder(f, 0, "test-reactor")
 
 	_, err := builder.Build()
 	if err == nil {
@@ -163,9 +167,7 @@ func TestNewFromModel(t *testing.T) {
 	originalTime := time.Now()
 	original := Model{
 		id:             123,
-		worldId:        1,
-		channelId:      2,
-		mapId:          100000000,
+		f:              field.NewBuilder(1, 2, 100000000).Build(),
 		classification: 1001,
 		name:           "test-reactor",
 		state:          1,
@@ -182,14 +184,14 @@ func TestNewFromModel(t *testing.T) {
 	if builder.id != original.Id() {
 		t.Errorf("Expected id %d, got %d", original.Id(), builder.id)
 	}
-	if builder.worldId != original.WorldId() {
-		t.Errorf("Expected worldId %d, got %d", original.WorldId(), builder.worldId)
+	if builder.f.WorldId() != original.WorldId() {
+		t.Errorf("Expected worldId %d, got %d", original.WorldId(), builder.f.WorldId())
 	}
-	if builder.channelId != original.ChannelId() {
-		t.Errorf("Expected channelId %d, got %d", original.ChannelId(), builder.channelId)
+	if builder.f.ChannelId() != original.ChannelId() {
+		t.Errorf("Expected channelId %d, got %d", original.ChannelId(), builder.f.ChannelId())
 	}
-	if builder.mapId != original.MapId() {
-		t.Errorf("Expected mapId %d, got %d", original.MapId(), builder.mapId)
+	if builder.f.MapId() != original.MapId() {
+		t.Errorf("Expected mapId %d, got %d", original.MapId(), builder.f.MapId())
 	}
 	if builder.classification != original.Classification() {
 		t.Errorf("Expected classification %d, got %d", original.Classification(), builder.classification)
@@ -221,7 +223,8 @@ func TestNewFromModel(t *testing.T) {
 }
 
 func TestModelBuilder_SetMethods(t *testing.T) {
-	builder := NewModelBuilder(1, 2, 100000000, 1001, "test-reactor")
+	f := field.NewBuilder(1, 2, 100000000).Build()
+	builder := NewModelBuilder(f, 1001, "test-reactor")
 
 	// Test chaining
 	result := builder.SetId(123).SetState(1).SetPosition(100, 200).SetDelay(1000).SetDirection(1).SetEventState(2)
@@ -254,7 +257,8 @@ func TestModelBuilder_SetMethods(t *testing.T) {
 }
 
 func TestModelBuilder_UpdateTime(t *testing.T) {
-	builder := NewModelBuilder(1, 2, 100000000, 1001, "test-reactor")
+	f := field.NewBuilder(1, 2, 100000000).Build()
+	builder := NewModelBuilder(f, 1001, "test-reactor")
 	originalTime := builder.updateTime
 
 	// Wait a tiny bit to ensure time changes
@@ -268,7 +272,8 @@ func TestModelBuilder_UpdateTime(t *testing.T) {
 }
 
 func TestModelBuilder_Classification(t *testing.T) {
-	builder := NewModelBuilder(1, 2, 100000000, 1001, "test-reactor")
+	f := field.NewBuilder(1, 2, 100000000).Build()
+	builder := NewModelBuilder(f, 1001, "test-reactor")
 
 	if builder.Classification() != 1001 {
 		t.Errorf("Expected Classification 1001, got %d", builder.Classification())

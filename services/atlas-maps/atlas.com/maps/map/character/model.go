@@ -1,17 +1,11 @@
 package character
 
 import (
-	"github.com/Chronicle20/atlas-constants/channel"
-	_map "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-tenant"
-	"github.com/google/uuid"
 )
 
 type MapKey struct {
-	Tenant    tenant.Model
-	WorldId   world.Id
-	ChannelId channel.Id
-	MapId     _map.Id
-	Instance  uuid.UUID
+	Tenant tenant.Model
+	Field  field.Model
 }

@@ -8,9 +8,8 @@ import (
 	"math/rand"
 	"strconv"
 
-	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
@@ -24,24 +23,7 @@ const (
 // Processor provides reactor drop spawning functionality
 type Processor interface {
 	// SpawnReactorDrops fetches reactor drop configuration, rolls chances, and spawns drops
-	SpawnReactorDrops(
-		transactionId uuid.UUID,
-		characterId uint32,
-		worldId world.Id,
-		channelId channel.Id,
-		mapId _map.Id,
-		instance uuid.UUID,
-		reactorId uint32,
-		classification string,
-		x int16,
-		y int16,
-		dropType string,
-		mesoEnabled bool,
-		mesoChance uint32,
-		mesoMin uint32,
-		mesoMax uint32,
-		minItems uint32,
-	) error
+	SpawnReactorDrops(transactionId uuid.UUID, characterId uint32, field field.Model, reactorId uint32, classification string, x int16, y int16, dropType string, mesoEnabled bool, mesoChance uint32, mesoMin uint32, mesoMax uint32, minItems uint32) error
 }
 
 type ProcessorImpl struct {
@@ -56,26 +38,9 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
-func (p *ProcessorImpl) SpawnReactorDrops(
-	transactionId uuid.UUID,
-	characterId uint32,
-	worldId world.Id,
-	channelId channel.Id,
-	mapId _map.Id,
-	instance uuid.UUID,
-	reactorId uint32,
-	classification string,
-	x int16,
-	y int16,
-	dropType string,
-	mesoEnabled bool,
-	mesoChance uint32,
-	mesoMin uint32,
-	mesoMax uint32,
-	minItems uint32,
-) error {
+func (p *ProcessorImpl) SpawnReactorDrops(transactionId uuid.UUID, characterId uint32, field field.Model, reactorId uint32, classification string, x int16, y int16, dropType string, mesoEnabled bool, mesoChance uint32, mesoMin uint32, mesoMax uint32, minItems uint32) error {
 	// Fetch rates for the character
-	r := rates.GetForCharacter(p.l)(p.ctx)(worldId, channelId, characterId)
+	r := rates.GetForCharacter(p.l)(p.ctx)(field.Channel(), characterId)
 
 	// Fetch reactor drops from atlas-drop-information using classification
 	drops, err := p.fetchReactorDrops(classification)
@@ -117,14 +82,11 @@ func (p *ProcessorImpl) SpawnReactorDrops(
 		dropX := p.calculateDropX(x, dropIndex)
 
 		// Calculate proper drop position using foothold data
-		finalX, finalY := p.calculateDropPosition(mapId, dropX, y, x, y)
+		finalX, finalY := p.calculateDropPosition(field.MapId(), dropX, y, x, y)
 
 		err := p.spawnItemDrop(
 			transactionId,
-			worldId,
-			channelId,
-			mapId,
-			instance,
+			field,
 			item.ItemId(),
 			1, // quantity is always 1 for reactor drops
 			dropTypeByte,
@@ -152,14 +114,11 @@ func (p *ProcessorImpl) SpawnReactorDrops(
 		mesoAmount := uint32(float64(baseMeso) * r.MesoRate())
 
 		// Calculate proper drop position using foothold data
-		finalX, finalY := p.calculateDropPosition(mapId, dropX, y, x, y)
+		finalX, finalY := p.calculateDropPosition(field.MapId(), dropX, y, x, y)
 
 		err := p.spawnMesoDrop(
 			transactionId,
-			worldId,
-			channelId,
-			mapId,
-			instance,
+			field,
 			mesoAmount,
 			dropTypeByte,
 			finalX,
@@ -310,31 +269,11 @@ func (p *ProcessorImpl) calculateDropPosition(mapId _map.Id, initialX, initialY,
 }
 
 // spawnItemDrop sends a Kafka command to spawn an item drop
-func (p *ProcessorImpl) spawnItemDrop(
-	transactionId uuid.UUID,
-	worldId world.Id,
-	channelId channel.Id,
-	mapId _map.Id,
-	instance uuid.UUID,
-	itemId uint32,
-	quantity uint32,
-	dropType byte,
-	x int16,
-	y int16,
-	ownerId uint32,
-	ownerPartyId uint32,
-	dropperId uint32,
-	dropperX int16,
-	dropperY int16,
-	mod byte,
-) error {
+func (p *ProcessorImpl) spawnItemDrop(transactionId uuid.UUID, field field.Model, itemId uint32, quantity uint32, dropType byte, x int16, y int16, ownerId uint32, ownerPartyId uint32, dropperId uint32, dropperX int16, dropperY int16, mod byte) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(
 		SpawnDropCommandProvider(
 			transactionId,
-			worldId,
-			channelId,
-			mapId,
-			instance,
+			field,
 			itemId,
 			quantity,
 			0, // mesos = 0 for item drops
@@ -353,30 +292,11 @@ func (p *ProcessorImpl) spawnItemDrop(
 }
 
 // spawnMesoDrop sends a Kafka command to spawn a meso drop
-func (p *ProcessorImpl) spawnMesoDrop(
-	transactionId uuid.UUID,
-	worldId world.Id,
-	channelId channel.Id,
-	mapId _map.Id,
-	instance uuid.UUID,
-	mesos uint32,
-	dropType byte,
-	x int16,
-	y int16,
-	ownerId uint32,
-	ownerPartyId uint32,
-	dropperId uint32,
-	dropperX int16,
-	dropperY int16,
-	mod byte,
-) error {
+func (p *ProcessorImpl) spawnMesoDrop(transactionId uuid.UUID, field field.Model, mesos uint32, dropType byte, x int16, y int16, ownerId uint32, ownerPartyId uint32, dropperId uint32, dropperX int16, dropperY int16, mod byte) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(
 		SpawnDropCommandProvider(
 			transactionId,
-			worldId,
-			channelId,
-			mapId,
-			instance,
+			field,
 			0, // itemId = 0 for meso drops
 			0, // quantity = 0 for meso drops
 			mesos,
@@ -390,6 +310,5 @@ func (p *ProcessorImpl) spawnMesoDrop(
 			dropperY,
 			false, // playerDrop = false for reactor drops
 			mod,
-		),
-	)
+		))
 }

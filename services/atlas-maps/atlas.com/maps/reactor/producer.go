@@ -2,23 +2,22 @@ package reactor
 
 import (
 	reactorKafka "atlas-maps/kafka/message/reactor"
-	"github.com/Chronicle20/atlas-constants/channel"
-	_map "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-constants/world"
+
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 )
 
-func createCommandProvider(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, instance uuid.UUID, classification uint32, name string, state int8, x int16, y int16, delay uint32, direction byte) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(mapId))
+func createCommandProvider(transactionId uuid.UUID, field field.Model, classification uint32, name string, state int8, x int16, y int16, delay uint32, direction byte) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(field.MapId()))
 	value := &reactorKafka.Command[reactorKafka.CreateCommandBody]{
 		TransactionId: transactionId,
-		WorldId:       worldId,
-		ChannelId:     channelId,
-		MapId:         mapId,
-		Instance:      instance,
+		WorldId:       field.WorldId(),
+		ChannelId:     field.ChannelId(),
+		MapId:         field.MapId(),
+		Instance:      field.Instance(),
 		Type:          reactorKafka.CommandTypeCreate,
 		Body: reactorKafka.CreateCommandBody{
 			Classification: classification,

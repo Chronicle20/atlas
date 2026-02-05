@@ -89,9 +89,9 @@ func handleRetrieveAsset(l logrus.FieldLogger, ctx context.Context, s session.Mo
 	if withdrawFee > 0 {
 		l.Debugf("Storage withdrawal fee for NPC [%d]: %d mesos", s.StorageNpcId(), withdrawFee)
 		steps = append(steps, saga.Step[any]{
-			StepId:  "charge_withdrawal_fee",
-			Status:  saga.Pending,
-			Action:  saga.AwardMesos,
+			StepId: "charge_withdrawal_fee",
+			Status: saga.Pending,
+			Action: saga.AwardMesos,
 			Payload: saga.AwardMesosPayload{
 				WorldId:     s.WorldId(),
 				CharacterId: s.CharacterId(),
@@ -107,13 +107,13 @@ func handleRetrieveAsset(l logrus.FieldLogger, ctx context.Context, s session.Mo
 
 	// Step 2: High-level withdrawal step (will be expanded by saga-orchestrator)
 	steps = append(steps, saga.Step[any]{
-		StepId:  "withdraw_from_storage",
-		Status:  saga.Pending,
-		Action:  saga.WithdrawFromStorage,
+		StepId: "withdraw_from_storage",
+		Status: saga.Pending,
+		Action: saga.WithdrawFromStorage,
 		Payload: saga.WithdrawFromStoragePayload{
 			TransactionId: transactionId,
 			CharacterId:   s.CharacterId(),
-			WorldId:       byte(s.WorldId()),
+			WorldId:       s.WorldId(),
 			AccountId:     s.AccountId(),
 			SourceSlot:    int16(slot),
 			InventoryType: byte(it),
@@ -167,9 +167,9 @@ func handleStoreAsset(l logrus.FieldLogger, ctx context.Context, s session.Model
 	if depositFee > 0 {
 		l.Debugf("Storage deposit fee for NPC [%d]: %d mesos", s.StorageNpcId(), depositFee)
 		steps = append(steps, saga.Step[any]{
-			StepId:  "charge_deposit_fee",
-			Status:  saga.Pending,
-			Action:  saga.AwardMesos,
+			StepId: "charge_deposit_fee",
+			Status: saga.Pending,
+			Action: saga.AwardMesos,
 			Payload: saga.AwardMesosPayload{
 				WorldId:     s.WorldId(),
 				CharacterId: s.CharacterId(),
@@ -185,13 +185,13 @@ func handleStoreAsset(l logrus.FieldLogger, ctx context.Context, s session.Model
 
 	// Step 2: High-level transfer step (will be expanded by saga-orchestrator)
 	steps = append(steps, saga.Step[any]{
-		StepId:  "transfer_to_storage",
-		Status:  saga.Pending,
-		Action:  saga.TransferToStorage,
+		StepId: "transfer_to_storage",
+		Status: saga.Pending,
+		Action: saga.TransferToStorage,
 		Payload: saga.TransferToStoragePayload{
 			TransactionId:       transactionId,
 			CharacterId:         s.CharacterId(),
-			WorldId:             byte(s.WorldId()),
+			WorldId:             s.WorldId(),
 			AccountId:           s.AccountId(),
 			SourceSlot:          slot,
 			SourceInventoryType: byte(it),
@@ -221,7 +221,7 @@ func handleStoreAsset(l logrus.FieldLogger, ctx context.Context, s session.Model
 func handleArrangeAsset(l logrus.FieldLogger, ctx context.Context, s session.Model) {
 	l.Debugf("Character [%d] would like to arrange their storage.", s.CharacterId())
 
-	err := storage.NewProcessor(l, ctx).Arrange(byte(s.WorldId()), s.AccountId())
+	err := storage.NewProcessor(l, ctx).Arrange(s.WorldId(), s.AccountId())
 	if err != nil {
 		l.WithError(err).Errorf("Unable to arrange storage for account [%d].", s.AccountId())
 	}
@@ -242,9 +242,9 @@ func handleMeso(l logrus.FieldLogger, ctx context.Context, s session.Model, r *r
 
 		// Step 1: Deduct mesos from character (negative amount)
 		step1 := saga.Step[any]{
-			StepId:  "deduct_character_mesos",
-			Status:  saga.Pending,
-			Action:  saga.AwardMesos,
+			StepId: "deduct_character_mesos",
+			Status: saga.Pending,
+			Action: saga.AwardMesos,
 			Payload: saga.AwardMesosPayload{
 				WorldId:     s.WorldId(),
 				CharacterId: s.CharacterId(),
@@ -259,13 +259,13 @@ func handleMeso(l logrus.FieldLogger, ctx context.Context, s session.Model, r *r
 
 		// Step 2: Add mesos to storage
 		step2 := saga.Step[any]{
-			StepId:  "add_storage_mesos",
-			Status:  saga.Pending,
-			Action:  saga.UpdateStorageMesos,
+			StepId: "add_storage_mesos",
+			Status: saga.Pending,
+			Action: saga.UpdateStorageMesos,
 			Payload: saga.UpdateStorageMesosPayload{
 				CharacterId: s.CharacterId(),
 				AccountId:   s.AccountId(),
-				WorldId:     byte(s.WorldId()),
+				WorldId:     s.WorldId(),
 				Operation:   "ADD",
 				Mesos:       mesos,
 			},
@@ -292,13 +292,13 @@ func handleMeso(l logrus.FieldLogger, ctx context.Context, s session.Model, r *r
 
 		// Step 1: Deduct mesos from storage
 		step1 := saga.Step[any]{
-			StepId:  "subtract_storage_mesos",
-			Status:  saga.Pending,
-			Action:  saga.UpdateStorageMesos,
+			StepId: "subtract_storage_mesos",
+			Status: saga.Pending,
+			Action: saga.UpdateStorageMesos,
 			Payload: saga.UpdateStorageMesosPayload{
 				CharacterId: s.CharacterId(),
 				AccountId:   s.AccountId(),
-				WorldId:     byte(s.WorldId()),
+				WorldId:     s.WorldId(),
 				Operation:   "SUBTRACT",
 				Mesos:       mesos,
 			},
@@ -308,9 +308,9 @@ func handleMeso(l logrus.FieldLogger, ctx context.Context, s session.Model, r *r
 
 		// Step 2: Add mesos to character
 		step2 := saga.Step[any]{
-			StepId:  "add_character_mesos",
-			Status:  saga.Pending,
-			Action:  saga.AwardMesos,
+			StepId: "add_character_mesos",
+			Status: saga.Pending,
+			Action: saga.AwardMesos,
 			Payload: saga.AwardMesosPayload{
 				WorldId:     s.WorldId(),
 				CharacterId: s.CharacterId(),

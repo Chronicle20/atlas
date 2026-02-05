@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
@@ -31,7 +32,8 @@ func TestRegistry_Add(t *testing.T) {
 	characterId := uint32(1000)
 	expr := uint32(5)
 
-	m := r.add(ten, characterId, worldId, channelId, mapId, expr)
+	f := field.NewBuilder(worldId, channelId, mapId).Build()
+	m := r.add(ten, characterId, f, expr)
 
 	assert.Equal(t, ten, m.Tenant())
 	assert.Equal(t, characterId, m.CharacterId())
@@ -47,7 +49,8 @@ func TestRegistry_Add_SetsExpiration(t *testing.T) {
 	ten := setupTestTenant(t)
 
 	before := time.Now()
-	m := r.add(ten, 1000, world.Id(0), channel.Id(1), _map.Id(100000000), 5)
+	f := field.NewBuilder(0, 1, 100000000).Build()
+	m := r.add(ten, 1000, f, 5)
 	after := time.Now()
 
 	// Expiration should be approximately 5 seconds after creation
@@ -64,12 +67,13 @@ func TestRegistry_Add_ReplacesExisting(t *testing.T) {
 	ten := setupTestTenant(t)
 
 	characterId := uint32(1000)
+	f := field.NewBuilder(0, 1, 100000000).Build()
 
 	// Add first expression
-	r.add(ten, characterId, world.Id(0), channel.Id(1), _map.Id(100000000), 5)
+	r.add(ten, characterId, f, 5)
 
 	// Add second expression for same character (should replace)
-	m := r.add(ten, characterId, world.Id(0), channel.Id(1), _map.Id(100000000), 10)
+	m := r.add(ten, characterId, f, 10)
 
 	// Verify the new expression replaced the old one
 	assert.Equal(t, uint32(10), m.Expression())
@@ -86,7 +90,8 @@ func TestRegistry_Get(t *testing.T) {
 	ten := setupTestTenant(t)
 
 	characterId := uint32(1000)
-	r.add(ten, characterId, world.Id(0), channel.Id(1), _map.Id(100000000), 5)
+	f := field.NewBuilder(0, 1, 100000000).Build()
+	r.add(ten, characterId, f, 5)
 
 	m, found := r.get(ten, characterId)
 
@@ -122,7 +127,8 @@ func TestRegistry_Clear(t *testing.T) {
 	ten := setupTestTenant(t)
 
 	characterId := uint32(1000)
-	r.add(ten, characterId, world.Id(0), channel.Id(1), _map.Id(100000000), 5)
+	f := field.NewBuilder(0, 1, 100000000).Build()
+	r.add(ten, characterId, f, 5)
 
 	// Verify expression exists
 	_, found := r.get(ten, characterId)
@@ -160,7 +166,8 @@ func TestRegistry_PopExpired(t *testing.T) {
 	ten := setupTestTenant(t)
 
 	// Add an expression with immediate expiration (we'll manually set it)
-	r.add(ten, 1000, world.Id(0), channel.Id(1), _map.Id(100000000), 5)
+	f := field.NewBuilder(0, 1, 100000000).Build()
+	r.add(ten, 1000, f, 5)
 
 	// Manually set the expression to be expired by modifying the internal state
 	r.lock.Lock()
@@ -170,9 +177,7 @@ func TestRegistry_PopExpired(t *testing.T) {
 		expired := Model{
 			tenant:      m.tenant,
 			characterId: m.characterId,
-			worldId:     m.worldId,
-			channelId:   m.channelId,
-			mapId:       m.mapId,
+			field:       m.field,
 			expression:  m.expression,
 			expiration:  time.Now().Add(-1 * time.Second), // Already expired
 		}
@@ -198,7 +203,8 @@ func TestRegistry_PopExpired_LeavesNonExpired(t *testing.T) {
 	ten := setupTestTenant(t)
 
 	// Add a non-expired expression (default 5 second expiration)
-	r.add(ten, 1000, world.Id(0), channel.Id(1), _map.Id(100000000), 5)
+	f := field.NewBuilder(0, 1, 100000000).Build()
+	r.add(ten, 1000, f, 5)
 
 	// Pop expired should return nothing
 	expired := r.popExpired()
@@ -216,8 +222,9 @@ func TestRegistry_PopExpired_MixedExpiration(t *testing.T) {
 	ten := setupTestTenant(t)
 
 	// Add two expressions
-	r.add(ten, 1000, world.Id(0), channel.Id(1), _map.Id(100000000), 5)
-	r.add(ten, 2000, world.Id(0), channel.Id(1), _map.Id(100000000), 10)
+	f := field.NewBuilder(0, 1, 100000000).Build()
+	r.add(ten, 1000, f, 5)
+	r.add(ten, 2000, f, 10)
 
 	// Manually expire only one
 	r.lock.Lock()
@@ -226,9 +233,7 @@ func TestRegistry_PopExpired_MixedExpiration(t *testing.T) {
 		expired := Model{
 			tenant:      m.tenant,
 			characterId: m.characterId,
-			worldId:     m.worldId,
-			channelId:   m.channelId,
-			mapId:       m.mapId,
+			field:       m.field,
 			expression:  m.expression,
 			expiration:  time.Now().Add(-1 * time.Second),
 		}
@@ -260,9 +265,10 @@ func TestRegistry_TenantIsolation(t *testing.T) {
 	ten2, _ := tenant.Create(uuid.New(), "EMS", 83, 1)
 
 	characterId := uint32(1000)
+	f := field.NewBuilder(0, 1, 100000000).Build()
 
 	// Add expression in tenant1
-	r.add(ten1, characterId, world.Id(0), channel.Id(1), _map.Id(100000000), 5)
+	r.add(ten1, characterId, f, 5)
 
 	// Verify expression exists in tenant1
 	m1, found1 := r.get(ten1, characterId)
@@ -282,10 +288,11 @@ func TestRegistry_TenantIsolation_SameCharacterId(t *testing.T) {
 	ten2, _ := tenant.Create(uuid.New(), "EMS", 83, 1)
 
 	characterId := uint32(1000)
+	f := field.NewBuilder(0, 1, 100000000).Build()
 
 	// Add different expressions for same character ID in different tenants
-	r.add(ten1, characterId, world.Id(0), channel.Id(1), _map.Id(100000000), 5)
-	r.add(ten2, characterId, world.Id(0), channel.Id(1), _map.Id(100000000), 10)
+	r.add(ten1, characterId, f, 5)
+	r.add(ten2, characterId, f, 10)
 
 	// Verify tenant1 has expression 5
 	m1, found1 := r.get(ten1, characterId)
@@ -311,7 +318,8 @@ func TestRegistry_ConcurrentAdd(t *testing.T) {
 		go func(idx int) {
 			defer wg.Done()
 			characterId := uint32(1000 + idx)
-			r.add(ten, characterId, world.Id(0), channel.Id(1), _map.Id(100000000), uint32(idx))
+			f := field.NewBuilder(0, 1, 100000000).Build()
+			r.add(ten, characterId, f, uint32(idx))
 		}(i)
 	}
 
@@ -338,7 +346,8 @@ func TestRegistry_ConcurrentAddAndClear(t *testing.T) {
 		go func(idx int) {
 			defer wg.Done()
 			characterId := uint32(1000 + idx)
-			r.add(ten, characterId, world.Id(0), channel.Id(1), _map.Id(100000000), uint32(idx))
+			f := field.NewBuilder(0, 1, 100000000).Build()
+			r.add(ten, characterId, f, uint32(idx))
 		}(i)
 	}
 
@@ -385,7 +394,8 @@ func TestRegistry_ConcurrentMultipleTenants(t *testing.T) {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
-			r.add(ten1, uint32(1000+idx), world.Id(0), channel.Id(1), _map.Id(100000000), uint32(idx))
+			f := field.NewBuilder(0, 1, 100000000).Build()
+			r.add(ten1, uint32(1000+idx), f, uint32(idx))
 		}(i)
 	}
 
@@ -394,7 +404,8 @@ func TestRegistry_ConcurrentMultipleTenants(t *testing.T) {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
-			r.add(ten2, uint32(1000+idx), world.Id(0), channel.Id(1), _map.Id(100000000), uint32(idx+100))
+			f := field.NewBuilder(0, 1, 100000000).Build()
+			r.add(ten2, uint32(1000+idx), f, uint32(idx+100))
 		}(i)
 	}
 
@@ -421,8 +432,9 @@ func TestRegistry_ResetForTesting(t *testing.T) {
 	ten := setupTestTenant(t)
 
 	// Add some expressions
-	r.add(ten, 1000, world.Id(0), channel.Id(1), _map.Id(100000000), 5)
-	r.add(ten, 2000, world.Id(0), channel.Id(1), _map.Id(100000000), 10)
+	f := field.NewBuilder(0, 1, 100000000).Build()
+	r.add(ten, 1000, f, 5)
+	r.add(ten, 2000, f, 10)
 
 	// Verify they exist
 	_, found1 := r.get(ten, 1000)

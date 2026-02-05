@@ -6,6 +6,8 @@ import (
 	"atlas-login/socket/writer"
 	"atlas-login/world"
 	"context"
+
+	world2 "github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -42,7 +44,7 @@ func CharacterViewAllHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wr
 			return
 		}
 
-		var wcs = make(map[byte][]character.Model)
+		var wcs = make(map[world2.Id][]character.Model)
 		var count int
 		for _, w := range ws {
 			var cs []character.Model

@@ -7,10 +7,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
-	_map "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -45,7 +42,7 @@ func handleMonsterKilledEvent(db *gorm.DB) message.Handler[monster.StatusEvent[m
 			return
 		}
 
-		f := field.NewBuilder(world.Id(e.WorldId), channel.Id(e.ChannelId), _map.Id(e.MapId)).Build()
+		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
 
 		// Process monster kill for each character that dealt damage
 		for _, entry := range e.Body.DamageEntries {

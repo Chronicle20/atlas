@@ -5,6 +5,8 @@ import (
 	"atlas-rates/rest"
 	"net/http"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -21,10 +23,11 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 }
 
 func handleGetRates(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseWorldChannel(d.Logger(), func(worldId byte, channelId byte) http.HandlerFunc {
+	return rest.ParseWorldChannel(d.Logger(), func(worldId world.Id, channelId channel.Id) http.HandlerFunc {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				computed, factors, err := NewProcessor(d.Logger(), d.Context()).GetRates(worldId, channelId, characterId)
+				ch := channel.NewModel(worldId, channelId)
+				computed, factors, err := NewProcessor(d.Logger(), d.Context()).GetRates(ch, characterId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to get rates for character [%d].", characterId)
 					w.WriteHeader(http.StatusInternalServerError)

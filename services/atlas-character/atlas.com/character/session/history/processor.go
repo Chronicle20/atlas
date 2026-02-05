@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -13,7 +12,7 @@ import (
 
 type Processor interface {
 	// StartSession creates a new session record when a character logs in
-	StartSession(characterId uint32, worldId world.Id, channelId channel.Id) (Model, error)
+	StartSession(characterId uint32, ch channel.Model) (Model, error)
 
 	// EndSession closes the active session for a character
 	EndSession(characterId uint32) error
@@ -50,18 +49,18 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
-func (p *ProcessorImpl) StartSession(characterId uint32, worldId world.Id, channelId channel.Id) (Model, error) {
+func (p *ProcessorImpl) StartSession(characterId uint32, ch channel.Model) (Model, error) {
 	// First, close any existing active session (safety check)
 	_ = closeSession(p.db, p.t.Id(), characterId)
 
 	// Create new session
-	m, err := createSession(p.db, p.t.Id(), characterId, worldId, channelId)
+	m, err := createSession(p.db, p.t.Id(), characterId, ch)
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to create session for character [%d].", characterId)
 		return Model{}, err
 	}
 
-	p.l.Debugf("Started session [%d] for character [%d] on world [%d] channel [%d].", m.Id(), characterId, worldId, channelId)
+	p.l.Debugf("Started session [%d] for character [%d] on world [%d] channel [%d].", m.Id(), characterId, ch.WorldId(), ch.Id())
 	return m, nil
 }
 

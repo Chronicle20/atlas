@@ -65,7 +65,7 @@ func (p *Processor) ForNPC(f field.Model, characterId uint32, objectId uint32, u
 			return
 		}
 		op := session.Announce(p.l)(p.ctx)(p.wp)(writer.NPCAction)(writer.NPCActionMoveBody(p.l, p.t)(objectId, unk, unk2, movement))
-		err = p.sp.IfPresentByCharacterId(f.WorldId(), f.ChannelId())(characterId, op)
+		err = p.sp.IfPresentByCharacterId(f.Channel())(characterId, op)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to move npc [%d] for character [%d].", n.Template(), characterId)
 		}
@@ -114,7 +114,7 @@ func (p *Processor) ForMonster(f field.Model, characterId uint32, objectId uint3
 	}
 	go func() {
 		op := session.Announce(p.l)(p.ctx)(p.wp)(writer.MoveMonsterAck)(writer.MoveMonsterAckBody(p.l, p.t)(objectId, moveId, uint16(mo.MP()), false, 0, 0))
-		err = p.sp.IfPresentByCharacterId(f.WorldId(), f.ChannelId())(characterId, op)
+		err = p.sp.IfPresentByCharacterId(f.Channel())(characterId, op)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to ack monster [%d] movement for character [%d].", objectId, characterId)
 		}

@@ -47,10 +47,10 @@ func (p *ProcessorImpl) Enter(mb *message.Buffer) func(transactionId uuid.UUID, 
 	return func(transactionId uuid.UUID, f field.Model, characterId uint32) error {
 		p.cp.Enter(transactionId, f, characterId)
 		go func() {
-			_ = monster2.NewProcessor(p.l, p.ctx).SpawnMonsters(transactionId)(f.WorldId())(f.ChannelId())(f.MapId())
+			_ = monster2.NewProcessor(p.l, p.ctx).SpawnMonsters(transactionId, f)
 		}()
 		go func() {
-			_ = reactor.NewProcessor(p.l, p.ctx, p.p).SpawnAndEmit(transactionId, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance())
+			_ = reactor.NewProcessor(p.l, p.ctx, p.p).SpawnAndEmit(transactionId, f)
 		}()
 		return mb.Put(mapKafka.EnvEventTopicMapStatus, enterMapProvider(transactionId, f, characterId))
 	}

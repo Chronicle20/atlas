@@ -55,7 +55,7 @@ func handleQuestStarted(sc server.Model, wp writer.Producer) message.Handler[que
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, announceQuestStarted(l)(ctx)(wp)(e.Body.QuestId, e.Body.Progress))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, announceQuestStarted(l)(ctx)(wp)(e.Body.QuestId, e.Body.Progress))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce quest [%d] started for character [%d].", e.Body.QuestId, e.CharacterId)
 		}
@@ -82,7 +82,7 @@ func handleQuestCompleted(sc server.Model, wp writer.Producer) message.Handler[q
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, announceQuestCompleted(l)(ctx)(wp)(e.Body.QuestId, e.Body.CompletedAt, e.Body.Items))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, announceQuestCompleted(l)(ctx)(wp)(e.Body.QuestId, e.Body.CompletedAt, e.Body.Items))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce quest [%d] completed for character [%d].", e.Body.QuestId, e.CharacterId)
 		}
@@ -126,7 +126,7 @@ func handleQuestForfeited(sc server.Model, wp writer.Producer) message.Handler[q
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, announceQuestForfeited(l)(ctx)(wp)(e.Body.QuestId))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, announceQuestForfeited(l)(ctx)(wp)(e.Body.QuestId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce quest [%d] forfeited for character [%d].", e.Body.QuestId, e.CharacterId)
 		}
@@ -153,7 +153,7 @@ func handleQuestProgressUpdated(sc server.Model, wp writer.Producer) message.Han
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, announceQuestProgressUpdated(l)(ctx)(wp)(e.Body.QuestId, e.Body.Progress))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, announceQuestProgressUpdated(l)(ctx)(wp)(e.Body.QuestId, e.Body.Progress))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce quest [%d] progress updated for character [%d].", e.Body.QuestId, e.CharacterId)
 		}

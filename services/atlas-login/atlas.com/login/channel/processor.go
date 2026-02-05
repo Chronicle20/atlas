@@ -3,18 +3,21 @@ package channel
 import (
 	"context"
 	"errors"
+	"math/rand"
+
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
-	"math/rand"
 )
 
 type Processor interface {
-	ByIdModelProvider(worldId byte, channelId byte) model.Provider[Model]
-	GetById(worldId byte, channelId byte) (Model, error)
-	ByWorldModelProvider(worldId byte) model.Provider[[]Model]
-	GetForWorld(worldId byte) ([]Model, error)
-	GetRandomInWorld(worldId byte) (Model, error)
+	ByIdModelProvider(ch channel.Model) model.Provider[Model]
+	GetById(ch channel.Model) (Model, error)
+	ByWorldModelProvider(worldId world.Id) model.Provider[[]Model]
+	GetForWorld(worldId world.Id) ([]Model, error)
+	GetRandomInWorld(worldId world.Id) (Model, error)
 }
 
 type ProcessorImpl struct {
@@ -30,23 +33,23 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return p
 }
 
-func (p *ProcessorImpl) ByIdModelProvider(worldId byte, channelId byte) model.Provider[Model] {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestChannel(worldId, channelId), Extract)
+func (p *ProcessorImpl) ByIdModelProvider(ch channel.Model) model.Provider[Model] {
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestChannel(ch), Extract)
 }
 
-func (p *ProcessorImpl) GetById(worldId byte, channelId byte) (Model, error) {
-	return p.ByIdModelProvider(worldId, channelId)()
+func (p *ProcessorImpl) GetById(ch channel.Model) (Model, error) {
+	return p.ByIdModelProvider(ch)()
 }
 
-func (p *ProcessorImpl) ByWorldModelProvider(worldId byte) model.Provider[[]Model] {
+func (p *ProcessorImpl) ByWorldModelProvider(worldId world.Id) model.Provider[[]Model] {
 	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestChannelsForWorld(worldId), Extract, model.Filters[Model]())
 }
 
-func (p *ProcessorImpl) GetForWorld(worldId byte) ([]Model, error) {
+func (p *ProcessorImpl) GetForWorld(worldId world.Id) ([]Model, error) {
 	return p.ByWorldModelProvider(worldId)()
 }
 
-func (p *ProcessorImpl) GetRandomInWorld(worldId byte) (Model, error) {
+func (p *ProcessorImpl) GetRandomInWorld(worldId world.Id) (Model, error) {
 	cs, err := p.GetForWorld(worldId)
 	if err != nil {
 		return Model{}, err

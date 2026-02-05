@@ -5,6 +5,7 @@ import (
 	consumer2 "atlas-drops/kafka/consumer"
 	messageDropKafka "atlas-drops/kafka/message/drop"
 	"context"
+
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
@@ -76,22 +77,22 @@ func handleRequestReservation(l logrus.FieldLogger, ctx context.Context, c messa
 	if c.Type != messageDropKafka.CommandTypeRequestReservation {
 		return
 	}
-	p := drop.NewProcessor(l, ctx)
-	_, _ = p.ReserveAndEmit(c.TransactionId, c.WorldId, c.ChannelId, c.MapId, c.Body.DropId, c.Body.CharacterId, c.Body.PetSlot)
+	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
+	_, _ = drop.NewProcessor(l, ctx).ReserveAndEmit(c.TransactionId, f, c.Body.DropId, c.Body.CharacterId, c.Body.PetSlot)
 }
 
 func handleCancelReservation(l logrus.FieldLogger, ctx context.Context, c messageDropKafka.Command[messageDropKafka.CommandCancelReservationBody]) {
 	if c.Type != messageDropKafka.CommandTypeCancelReservation {
 		return
 	}
-	p := drop.NewProcessor(l, ctx)
-	_ = p.CancelReservationAndEmit(c.TransactionId, c.WorldId, c.ChannelId, c.MapId, c.Body.DropId, c.Body.CharacterId)
+	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
+	_ = drop.NewProcessor(l, ctx).CancelReservationAndEmit(c.TransactionId, f, c.Body.DropId, c.Body.CharacterId)
 }
 
 func handleRequestPickUp(l logrus.FieldLogger, ctx context.Context, c messageDropKafka.Command[messageDropKafka.CommandRequestPickUpBody]) {
 	if c.Type != messageDropKafka.CommandTypeRequestPickUp {
 		return
 	}
-	p := drop.NewProcessor(l, ctx)
-	_, _ = p.GatherAndEmit(c.TransactionId, c.WorldId, c.ChannelId, c.MapId, c.Body.DropId, c.Body.CharacterId)
+	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
+	_, _ = drop.NewProcessor(l, ctx).GatherAndEmit(c.TransactionId, f, c.Body.DropId, c.Body.CharacterId)
 }

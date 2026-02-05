@@ -3,6 +3,7 @@ package field
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
@@ -28,12 +29,20 @@ func (m Model) ChannelId() channel.Id {
 	return m.channelId
 }
 
+func (m Model) Channel() channel.Model {
+	return channel.NewModel(m.WorldId(), m.ChannelId())
+}
+
 func (m Model) MapId() _map.Id {
 	return m.mapId
 }
 
 func (m Model) Instance() uuid.UUID {
 	return m.instance
+}
+
+func (m Model) Clone() *Builder {
+	return NewBuilder(m.worldId, m.channelId, m.mapId).SetInstance(m.instance)
 }
 
 // DataTransferObject is a serializable representation of a field.Model.
@@ -158,6 +167,21 @@ func NewBuilder(worldId world.Id, channelId channel.Id, mapId _map.Id) *Builder 
 		mapId:     mapId,
 		instance:  uuid.Nil,
 	}
+}
+
+func (m *Builder) SetWorldId(worldId world.Id) *Builder {
+	m.worldId = worldId
+	return m
+}
+
+func (m *Builder) SetChannelId(channelId channel.Id) *Builder {
+	m.channelId = channelId
+	return m
+}
+
+func (m *Builder) SetMapId(mapId _map.Id) *Builder {
+	m.mapId = mapId
+	return m
 }
 
 func (m *Builder) SetInstance(instance uuid.UUID) *Builder {

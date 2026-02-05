@@ -4,18 +4,17 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 // createSession creates a new session record for a character login
-func createSession(db *gorm.DB, tenantId uuid.UUID, characterId uint32, worldId world.Id, channelId channel.Id) (Model, error) {
+func createSession(db *gorm.DB, tenantId uuid.UUID, characterId uint32, ch channel.Model) (Model, error) {
 	e := &entity{
 		TenantId:    tenantId,
 		CharacterId: characterId,
-		WorldId:     worldId,
-		ChannelId:   channelId,
+		WorldId:     ch.WorldId(),
+		ChannelId:   ch.Id(),
 		LoginTime:   time.Now(),
 		LogoutTime:  nil,
 	}

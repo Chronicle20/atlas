@@ -5,15 +5,17 @@ import (
 	"atlas-login/equipment"
 	slot2 "atlas-login/equipment/slot"
 	"atlas-login/pet"
+
 	"github.com/Chronicle20/atlas-constants/inventory/slot"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 )
 
 const CharacterList = "CharacterList"
 
-func CharacterListBody(tenant tenant.Model) func(characters []character.Model, worldId byte, status int, pic string, availableCharacterSlots int16, characterSlots int16) BodyProducer {
-	return func(characters []character.Model, worldId byte, status int, pic string, availableCharacterSlots int16, characterSlots int16) BodyProducer {
+func CharacterListBody(tenant tenant.Model) func(characters []character.Model, worldId world.Id, status int, pic string, availableCharacterSlots int16, characterSlots int16) BodyProducer {
+	return func(characters []character.Model, worldId world.Id, status int, pic string, availableCharacterSlots int16, characterSlots int16) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(byte(status))
 
@@ -231,7 +233,7 @@ func WriteCharacterStatistics(tenant tenant.Model) func(w *response.Writer, char
 			}
 		}
 		w.WriteByte(character.Level())
-		w.WriteShort(character.JobId())
+		w.WriteShort(uint16(character.JobId()))
 		w.WriteShort(character.Strength())
 		w.WriteShort(character.Dexterity())
 		w.WriteShort(character.Intelligence())
@@ -253,7 +255,7 @@ func WriteCharacterStatistics(tenant tenant.Model) func(w *response.Writer, char
 		if (tenant.Region() == "GMS" && tenant.MajorVersion() > 28) || tenant.Region() == "JMS" {
 			w.WriteInt(character.GachaponExperience())
 		}
-		w.WriteInt(character.MapId())
+		w.WriteInt(uint32(character.MapId()))
 		w.WriteByte(character.SpawnPoint())
 
 		if tenant.Region() == "GMS" {

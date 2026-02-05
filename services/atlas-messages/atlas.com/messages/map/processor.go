@@ -8,7 +8,6 @@ import (
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
 	_map2 "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
@@ -16,7 +15,7 @@ import (
 
 type Processor interface {
 	Exists(mapId _map2.Id) bool
-	CharacterIdsInMapStringProvider(worldId world.Id, channelId channel.Id, mapStr string) model.Provider[[]uint32]
+	CharacterIdsInMapStringProvider(ch channel.Model, mapStr string) model.Provider[[]uint32]
 	CharacterIdsInFieldProvider(f field.Model) model.Provider[[]uint32]
 }
 
@@ -44,12 +43,12 @@ func (p *ProcessorImpl) Exists(mapId _map2.Id) bool {
 	return true
 }
 
-func (p *ProcessorImpl) CharacterIdsInMapStringProvider(worldId world.Id, channelId channel.Id, mapStr string) model.Provider[[]uint32] {
+func (p *ProcessorImpl) CharacterIdsInMapStringProvider(ch channel.Model, mapStr string) model.Provider[[]uint32] {
 	mapId, err := strconv.ParseUint(mapStr, 10, 32)
 	if err != nil {
 		return model.ErrorProvider[[]uint32](err)
 	}
-	f := field.NewBuilder(worldId, channelId, _map2.Id(mapId)).Build()
+	f := field.NewBuilder(ch.WorldId(), ch.Id(), _map2.Id(mapId)).Build()
 	return p.CharacterIdsInFieldProvider(f)
 }
 

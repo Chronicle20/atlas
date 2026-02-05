@@ -4,11 +4,12 @@ import (
 	"atlas-expressions/kafka/message/expression"
 	"atlas-expressions/kafka/producer"
 	"context"
+	"time"
+
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
-	"time"
 )
 
 const RevertTaskName = "expression_revert_task"
@@ -30,7 +31,7 @@ func (e *RevertTask) Run() {
 	for _, exp := range GetRegistry().popExpired() {
 		tctx := tenant.WithContext(sctx, exp.Tenant())
 		transactionId := uuid.New() // Generate a new transaction ID for each expired expression
-		_ = producer.ProviderImpl(e.l)(tctx)(expression.EnvExpressionEvent)(expressionEventProvider(transactionId, exp.CharacterId(), exp.WorldId(), exp.ChannelId(), exp.MapId(), exp.Instance(), 0))
+		_ = producer.ProviderImpl(e.l)(tctx)(expression.EnvExpressionEvent)(expressionEventProvider(transactionId, exp.CharacterId(), exp.Field(), 0))
 	}
 }
 

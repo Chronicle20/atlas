@@ -4,8 +4,8 @@ import (
 	"atlas-channel/rest"
 	"context"
 	"fmt"
+
 	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
@@ -20,8 +20,8 @@ func getBaseRequest() string {
 	return requests.RootUrl("CHANNELS")
 }
 
-func requestChannel(worldId world.Id, channelId channel.Id) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ChannelResource, worldId, channelId))
+func requestChannel(ch channel.Model) requests.Request[RestModel] {
+	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ChannelResource, ch.WorldId(), ch.Id()))
 }
 
 func registerChannel(l logrus.FieldLogger) func(ctx context.Context) func(c Model) error {

@@ -4,7 +4,6 @@ import (
 	monster2 "atlas-maps/data/map/monster"
 	"atlas-maps/map/character"
 	"context"
-	"fmt"
 	"math"
 	"sync"
 	"testing"
@@ -199,10 +198,9 @@ func TestSpawnPointCooldownMechanism(t *testing.T) {
 	registry := make(map[character.MapKey][]*CooldownSpawnPoint)
 	mutexes := make(map[character.MapKey]*sync.RWMutex)
 
+	f := field.NewBuilder(1, 1, 100000000).Build()
 	mapKey := character.MapKey{
-		WorldId:   world.Id(1),
-		ChannelId: channel.Id(1),
-		MapId:     _map.Id(100000000),
+		Field: f,
 	}
 
 	// Initialize spawn points
@@ -249,10 +247,9 @@ func TestThreadSafety(t *testing.T) {
 	registry := make(map[character.MapKey][]*CooldownSpawnPoint)
 	mutexes := make(map[character.MapKey]*sync.RWMutex)
 
+	f := field.NewBuilder(1, 1, 100000000).Build()
 	mapKey := character.MapKey{
-		WorldId:   world.Id(1),
-		ChannelId: channel.Id(1),
-		MapId:     _map.Id(100000000),
+		Field: f,
 	}
 
 	// Initialize spawn points
@@ -321,12 +318,17 @@ func TestConcurrentSpawningAcrossMultipleMaps(t *testing.T) {
 	registry.Reset()
 
 	// Create multiple map keys for different maps
+	f1 := field.NewBuilder(1, 1, 100000000).Build()
+	f2 := field.NewBuilder(1, 1, 100000001).Build()
+	f3 := field.NewBuilder(1, 2, 100000000).Build()
+	f4 := field.NewBuilder(2, 1, 100000000).Build()
+	f5 := field.NewBuilder(1, 1, 100000002).Build()
 	mapKeys := []character.MapKey{
-		{WorldId: world.Id(1), ChannelId: channel.Id(1), MapId: _map.Id(100000000)},
-		{WorldId: world.Id(1), ChannelId: channel.Id(1), MapId: _map.Id(100000001)},
-		{WorldId: world.Id(1), ChannelId: channel.Id(2), MapId: _map.Id(100000000)},
-		{WorldId: world.Id(2), ChannelId: channel.Id(1), MapId: _map.Id(100000000)},
-		{WorldId: world.Id(1), ChannelId: channel.Id(1), MapId: _map.Id(100000002)},
+		{Field: f1},
+		{Field: f2},
+		{Field: f3},
+		{Field: f4},
+		{Field: f5},
 	}
 
 	now := time.Now()
@@ -338,7 +340,7 @@ func TestConcurrentSpawningAcrossMultipleMaps(t *testing.T) {
 			{SpawnPoint: monster2.SpawnPoint{Id: uint32(i*10 + 2)}, NextSpawnAt: now},
 			{SpawnPoint: monster2.SpawnPoint{Id: uint32(i*10 + 3)}, NextSpawnAt: now},
 		}
-		
+
 		// Manually initialize the registry for this map
 		registry.registryMu.Lock()
 		registry.spawnPointRegistry[mapKey] = spawnPoints
@@ -445,10 +447,14 @@ func TestMapKeyIsolation(t *testing.T) {
 	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 
 	// Create different map keys
-	mapKey1 := character.MapKey{Tenant: te, WorldId: world.Id(1), ChannelId: channel.Id(1), MapId: _map.Id(100000000)}
-	mapKey2 := character.MapKey{Tenant: te, WorldId: world.Id(1), ChannelId: channel.Id(1), MapId: _map.Id(100000001)}
-	mapKey3 := character.MapKey{Tenant: te, WorldId: world.Id(1), ChannelId: channel.Id(2), MapId: _map.Id(100000000)}
-	mapKey4 := character.MapKey{Tenant: te, WorldId: world.Id(2), ChannelId: channel.Id(1), MapId: _map.Id(100000000)}
+	f1 := field.NewBuilder(1, 1, 100000000).Build()
+	f2 := field.NewBuilder(1, 1, 100000001).Build()
+	f3 := field.NewBuilder(1, 2, 100000000).Build()
+	f4 := field.NewBuilder(2, 1, 100000000).Build()
+	mapKey1 := character.MapKey{Tenant: te, Field: f1}
+	mapKey2 := character.MapKey{Tenant: te, Field: f2}
+	mapKey3 := character.MapKey{Tenant: te, Field: f3}
+	mapKey4 := character.MapKey{Tenant: te, Field: f4}
 
 	now := time.Now()
 
@@ -515,7 +521,7 @@ func TestMapKeyIsolation(t *testing.T) {
 	registry.registryMu.RLock()
 	mutex1 := registry.spawnPointMu[mapKey1]
 	registry.registryMu.RUnlock()
-	
+
 	mutex1.Lock()
 	spawnPoints1[0].NextSpawnAt = now.Add(10 * time.Second)
 	mutex1.Unlock()
@@ -549,11 +555,10 @@ func TestMultiMapConcurrentAccess(t *testing.T) {
 	numMaps := 5
 	mapKeys := make([]character.MapKey, numMaps)
 	for i := 0; i < numMaps; i++ {
+		f := field.NewBuilder(1, 1, _map.Id(100000000+i)).Build()
 		mapKeys[i] = character.MapKey{
-			Tenant:    te,
-			WorldId:   world.Id(1),
-			ChannelId: channel.Id(1),
-			MapId:     _map.Id(100000000 + i),
+			Tenant: te,
+			Field:  f,
 		}
 	}
 
@@ -644,11 +649,10 @@ func TestCooldownEnforcementPreventsImmediateRespawn(t *testing.T) {
 	// Create test tenant
 	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 
+	f := field.NewBuilder(1, 1, 100000000).Build()
 	mapKey := character.MapKey{
-		Tenant:    te,
-		WorldId:   world.Id(1),
-		ChannelId: channel.Id(1),
-		MapId:     _map.Id(100000000),
+		Tenant: te,
+		Field:  f,
 	}
 
 	now := time.Now()
@@ -767,11 +771,10 @@ func TestCooldownTimingAccuracy(t *testing.T) {
 	// Create test tenant
 	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 
+	f := field.NewBuilder(1, 1, 100000000).Build()
 	mapKey := character.MapKey{
-		Tenant:    te,
-		WorldId:   world.Id(1),
-		ChannelId: channel.Id(1),
-		MapId:     _map.Id(100000000),
+		Tenant: te,
+		Field:  f,
 	}
 
 	now := time.Now()
@@ -836,11 +839,10 @@ func TestSequentialSpawnAttempts(t *testing.T) {
 	// Create test tenant
 	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 
+	f := field.NewBuilder(1, 1, 100000000).Build()
 	mapKey := character.MapKey{
-		Tenant:    te,
-		WorldId:   world.Id(1),
-		ChannelId: channel.Id(1),
-		MapId:     _map.Id(100000000),
+		Tenant: te,
+		Field:  f,
 	}
 
 	baseTime := time.Now()
@@ -916,11 +918,10 @@ func TestRapidSpawnAttempts(t *testing.T) {
 	// Create test tenant
 	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 
+	f := field.NewBuilder(1, 1, 100000000).Build()
 	mapKey := character.MapKey{
-		Tenant:    te,
-		WorldId:   world.Id(1),
-		ChannelId: channel.Id(1),
-		MapId:     _map.Id(100000000),
+		Tenant: te,
+		Field:  f,
 	}
 
 	now := time.Now()
@@ -970,7 +971,7 @@ func TestRapidSpawnAttempts(t *testing.T) {
 
 // Helper function to convert MapKey to string for testing
 func mapKeyToString(mk character.MapKey) string {
-	return fmt.Sprintf("W%d-C%d-M%d", mk.WorldId, mk.ChannelId, mk.MapId)
+	return string(mk.Field.Id())
 }
 
 // Helper function to compare slices
@@ -994,7 +995,7 @@ type mockCharacterProcessor struct {
 func (m *mockCharacterProcessor) GetCharactersInMap(transactionId uuid.UUID, f field.Model) ([]uint32, error) {
 	// Check all stored map keys to find a match by world/channel/map/instance (ignoring tenant)
 	for storedMapKey, characters := range m.charactersInMap {
-		if storedMapKey.WorldId == f.WorldId() && storedMapKey.ChannelId == f.ChannelId() && storedMapKey.MapId == f.MapId() && storedMapKey.Instance == f.Instance() {
+		if storedMapKey.Field.WorldId() == f.WorldId() && storedMapKey.Field.ChannelId() == f.ChannelId() && storedMapKey.Field.MapId() == f.MapId() && storedMapKey.Field.Instance() == f.Instance() {
 			return characters, nil
 		}
 	}
@@ -1022,9 +1023,7 @@ type mockMonsterProcessor struct {
 }
 
 type MockCreatedMonster struct {
-	WorldId   world.Id
-	ChannelId channel.Id
-	MapId     _map.Id
+	Field     field.Model
 	MonsterId uint32
 	X         int16
 	Y         int16
@@ -1032,24 +1031,22 @@ type MockCreatedMonster struct {
 	Team      int32
 }
 
-func (m *mockMonsterProcessor) CountInMap(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id) (int, error) {
+func (m *mockMonsterProcessor) CountInMap(transactionId uuid.UUID, f field.Model) (int, error) {
 	// Check all stored map keys to find a match by world/channel/map (ignoring tenant)
 	for storedMapKey, count := range m.monstersInMap {
-		if storedMapKey.WorldId == worldId && storedMapKey.ChannelId == channelId && storedMapKey.MapId == mapId {
+		if storedMapKey.Field.WorldId() == f.WorldId() && storedMapKey.Field.ChannelId() == f.ChannelId() && storedMapKey.Field.MapId() == f.MapId() && storedMapKey.Field.Instance() == f.Instance() {
 			return count, nil
 		}
 	}
 	return 0, nil
 }
 
-func (m *mockMonsterProcessor) CreateMonster(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, monsterId uint32, x int16, y int16, fh uint16, team int32) {
+func (m *mockMonsterProcessor) CreateMonster(transactionId uuid.UUID, f field.Model, monsterId uint32, x int16, y int16, fh uint16, team int32) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	m.createdMonsters = append(m.createdMonsters, MockCreatedMonster{
-		WorldId:   worldId,
-		ChannelId: channelId,
-		MapId:     mapId,
+		Field:     f,
 		MonsterId: monsterId,
 		X:         x,
 		Y:         y,
@@ -1079,23 +1076,23 @@ type mockDataProcessor struct {
 	mockSpawnPoints []monster2.SpawnPoint
 }
 
-func (m *mockDataProcessor) SpawnPointProvider(mapId uint32) model.Provider[[]monster2.SpawnPoint] {
+func (m *mockDataProcessor) SpawnPointProvider(mapId _map.Id) model.Provider[[]monster2.SpawnPoint] {
 	return func() ([]monster2.SpawnPoint, error) {
 		return m.mockSpawnPoints, nil
 	}
 }
 
-func (m *mockDataProcessor) SpawnableSpawnPointProvider(mapId uint32) model.Provider[[]monster2.SpawnPoint] {
+func (m *mockDataProcessor) SpawnableSpawnPointProvider(mapId _map.Id) model.Provider[[]monster2.SpawnPoint] {
 	return func() ([]monster2.SpawnPoint, error) {
 		return m.mockSpawnPoints, nil
 	}
 }
 
-func (m *mockDataProcessor) GetSpawnPoints(mapId uint32) ([]monster2.SpawnPoint, error) {
+func (m *mockDataProcessor) GetSpawnPoints(mapId _map.Id) ([]monster2.SpawnPoint, error) {
 	return m.mockSpawnPoints, nil
 }
 
-func (m *mockDataProcessor) GetSpawnableSpawnPoints(mapId uint32) ([]monster2.SpawnPoint, error) {
+func (m *mockDataProcessor) GetSpawnableSpawnPoints(mapId _map.Id) ([]monster2.SpawnPoint, error) {
 	return m.mockSpawnPoints, nil
 }
 
@@ -1187,18 +1184,17 @@ func TestSpawnMonsters_CooldownValidation(t *testing.T) {
 	worldId := world.Id(1)
 	channelId := channel.Id(1)
 	mapId := _map.Id(100000000)
+	f := field.NewBuilder(worldId, channelId, mapId).Build()
 
 	mapKey := character.MapKey{
-		Tenant:    te,
-		WorldId:   worldId,
-		ChannelId: channelId,
-		MapId:     mapId,
+		Tenant: te,
+		Field:  f,
 	}
 
 	// Setup mock data: 2 characters in the map, 0 monsters currently
 	mockCharProc.charactersInMap[mapKey] = []uint32{1001, 1002}
 	mockMonsterProc.monstersInMap[mapKey] = 0
-	
+
 	// Calculate expected spawns using the same logic as getMonsterMax
 	characterCount := 2
 	spawnPointCount := len(mockSpawnPoints)
@@ -1207,15 +1203,15 @@ func TestSpawnMonsters_CooldownValidation(t *testing.T) {
 
 	// Execute SpawnMonsters
 	transactionId := uuid.New()
-	
+
 	// Catch any panics
 	defer func() {
 		if r := recover(); r != nil {
 			t.Errorf("SpawnMonsters panicked: %v", r)
 		}
 	}()
-	
-	spawnErr := processor.SpawnMonsters(transactionId)(worldId)(channelId)(mapId)
+
+	spawnErr := processor.SpawnMonsters(transactionId, f)
 
 	// Verify no error occurred
 	if spawnErr != nil {
@@ -1238,7 +1234,7 @@ func TestSpawnMonsters_CooldownValidation(t *testing.T) {
 	// Verify cooldown updates
 	now := time.Now()
 	updatedCount := 0
-	
+
 	for _, csp := range registrySpawnPoints {
 		// Check if cooldown was updated (NextSpawnAt should be approximately now + 3-5 seconds)
 		// Since spawning happened a bit ago, the cooldown should be in the future but not too far
@@ -1260,14 +1256,14 @@ func TestSpawnMonsters_CooldownValidation(t *testing.T) {
 
 	// Verify created monsters have correct parameters
 	for _, monster := range createdMonsters {
-		if monster.WorldId != worldId {
-			t.Errorf("Created monster should have WorldId %d, got %d", worldId, monster.WorldId)
+		if monster.Field.WorldId() != worldId {
+			t.Errorf("Created monster should have WorldId %d, got %d", worldId, monster.Field.WorldId())
 		}
-		if monster.ChannelId != channelId {
-			t.Errorf("Created monster should have ChannelId %d, got %d", channelId, monster.ChannelId)
+		if monster.Field.ChannelId() != channelId {
+			t.Errorf("Created monster should have ChannelId %d, got %d", channelId, monster.Field.ChannelId())
 		}
-		if monster.MapId != mapId {
-			t.Errorf("Created monster should have MapId %d, got %d", mapId, monster.MapId)
+		if monster.Field.MapId() != mapId {
+			t.Errorf("Created monster should have MapId %d, got %d", mapId, monster.Field.MapId())
 		}
 
 		// Verify monster was created from one of our spawn points
@@ -1336,12 +1332,11 @@ func TestSpawnMonsters_NoCharacters(t *testing.T) {
 	worldId := world.Id(1)
 	channelId := channel.Id(1)
 	mapId := _map.Id(100000000)
+	f := field.NewBuilder(worldId, channelId, mapId).Build()
 
 	mapKey := character.MapKey{
-		Tenant:    te,
-		WorldId:   worldId,
-		ChannelId: channelId,
-		MapId:     mapId,
+		Tenant: te,
+		Field:  f,
 	}
 
 	// Setup mock data: NO characters in the map
@@ -1351,7 +1346,7 @@ func TestSpawnMonsters_NoCharacters(t *testing.T) {
 
 	// Execute SpawnMonsters
 	transactionId := uuid.New()
-	err := processor.SpawnMonsters(transactionId)(worldId)(channelId)(mapId)
+	err := processor.SpawnMonsters(transactionId, f)
 
 	// Verify no error occurred
 	if err != nil {
@@ -1437,12 +1432,11 @@ func TestSpawnMonsters_AllSpawnPointsOnCooldown(t *testing.T) {
 	worldId := world.Id(1)
 	channelId := channel.Id(1)
 	mapId := _map.Id(100000000)
+	f := field.NewBuilder(worldId, channelId, mapId).Build()
 
 	mapKey := character.MapKey{
-		Tenant:    te,
-		WorldId:   worldId,
-		ChannelId: channelId,
-		MapId:     mapId,
+		Tenant: te,
+		Field:  f,
 	}
 
 	// Setup mock data: characters in the map
@@ -1453,7 +1447,7 @@ func TestSpawnMonsters_AllSpawnPointsOnCooldown(t *testing.T) {
 	// Pre-initialize the registry with all spawn points on cooldown
 	now := time.Now()
 	futureTime := now.Add(5 * time.Second)
-	
+
 	registry.registryMu.Lock()
 	registry.spawnPointRegistry[mapKey] = []*CooldownSpawnPoint{
 		{SpawnPoint: mockSpawnPoints[0], NextSpawnAt: futureTime}, // On cooldown
@@ -1471,7 +1465,7 @@ func TestSpawnMonsters_AllSpawnPointsOnCooldown(t *testing.T) {
 
 	// Execute SpawnMonsters
 	transactionId := uuid.New()
-	err := processor.SpawnMonsters(transactionId)(worldId)(channelId)(mapId)
+	err := processor.SpawnMonsters(transactionId, f)
 
 	// Verify no error occurred
 	if err != nil {

@@ -7,14 +7,13 @@ import (
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/sirupsen/logrus"
 )
 
 // Processor provides operations for querying map player counts
 type Processor interface {
 	GetPlayerCountInField(f field.Model) (int, error)
-	GetPlayerCountsInMaps(worldId world.Id, channelId channel.Id, mapIds []_map.Id) (map[_map.Id]int, error)
+	GetPlayerCountsInMaps(ch channel.Model, mapIds []_map.Id) (map[_map.Id]int, error)
 }
 
 type ProcessorImpl struct {
@@ -47,7 +46,7 @@ func (p *ProcessorImpl) GetPlayerCountInField(f field.Model) (int, error) {
 // Returns a map of mapId -> playerCount
 // Uses graceful degradation - returns 0 for maps that fail to query
 // Note: Uses uuid.Nil for instance when querying arbitrary maps
-func (p *ProcessorImpl) GetPlayerCountsInMaps(worldId world.Id, channelId channel.Id, mapIds []_map.Id) (map[_map.Id]int, error) {
+func (p *ProcessorImpl) GetPlayerCountsInMaps(ch channel.Model, mapIds []_map.Id) (map[_map.Id]int, error) {
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	counts := make(map[_map.Id]int)
@@ -56,7 +55,7 @@ func (p *ProcessorImpl) GetPlayerCountsInMaps(worldId world.Id, channelId channe
 		wg.Add(1)
 		go func(id _map.Id) {
 			defer wg.Done()
-			f := field.NewBuilder(worldId, channelId, id).Build()
+			f := field.NewBuilder(ch.WorldId(), ch.Id(), id).Build()
 			count, _ := p.GetPlayerCountInField(f)
 			mu.Lock()
 			counts[id] = count

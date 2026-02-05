@@ -318,7 +318,7 @@ func (p *ProcessorImpl) Move(petId uint32, f field.Model, ownerId uint32, x int1
 		return errors.New("pet not owned by character")
 	}
 
-	fh, err := p.pp.GetBelow(uint32(f.MapId()), x, y)()
+	fh, err := p.pp.GetBelow(f.MapId(), x, y)()
 	if err != nil {
 		return err
 	}

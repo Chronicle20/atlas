@@ -2,7 +2,6 @@ package rest
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"net/http"
 
@@ -121,21 +120,5 @@ func ParsePortalId(l logrus.FieldLogger, next PortalIdHandler) http.HandlerFunc 
 			return
 		}
 		next(portalId)(w, r)
-	}
-}
-
-type MapIdHandler func(mapId uint32) http.HandlerFunc
-
-func ParseMapId(l logrus.FieldLogger, next MapIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		mapIdStr := mux.Vars(r)["mapId"]
-		var mapId uint32
-		_, err := fmt.Sscanf(mapIdStr, "%d", &mapId)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to properly parse mapId from path.")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(mapId)(w, r)
 	}
 }

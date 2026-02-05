@@ -10,6 +10,7 @@ import (
 	"atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
+
 	"github.com/Chronicle20/atlas-constants/skill"
 	model2 "github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-socket/request"
@@ -71,7 +72,7 @@ func CharacterUseSkillHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 			return
 		}
 
-		session.NewProcessor(l, ctx).IfPresentByCharacterId(s.WorldId(), s.ChannelId())(s.CharacterId(), announceSkillUse(l)(ctx)(wp)(sui.SkillId(), c.Level(), sui.SkillLevel()))
+		session.NewProcessor(l, ctx).IfPresentByCharacterId(s.Field().Channel())(s.CharacterId(), announceSkillUse(l)(ctx)(wp)(sui.SkillId(), c.Level(), sui.SkillLevel()))
 
 		_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), announceForeignSkillUse(l)(ctx)(wp)(s.CharacterId(), sui.SkillId(), c.Level(), sui.SkillLevel()))
 

@@ -6,29 +6,33 @@ import (
 	consumer2 "atlas-reactor-actions/kafka/consumer"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
 // commandEvent represents a Kafka command message
 type commandEvent[E any] struct {
-	WorldId       byte   `json:"worldId"`
-	ChannelId     byte   `json:"channelId"`
-	MapId         uint32 `json:"mapId"`
-	ReactorId     uint32 `json:"reactorId"`
-	Classification string `json:"classification"`
-	ReactorName   string `json:"reactorName"`
-	ReactorState  int8   `json:"reactorState"`
-	X             int16  `json:"x"`
-	Y             int16  `json:"y"`
-	Type          string `json:"type"`
-	Body          E      `json:"body"`
+	WorldId        world.Id   `json:"worldId"`
+	ChannelId      channel.Id `json:"channelId"`
+	MapId          _map.Id    `json:"mapId"`
+	Instance       uuid.UUID  `json:"instance"`
+	ReactorId      uint32     `json:"reactorId"`
+	Classification string     `json:"classification"`
+	ReactorName    string     `json:"reactorName"`
+	ReactorState   int8       `json:"reactorState"`
+	X              int16      `json:"x"`
+	Y              int16      `json:"y"`
+	Type           string     `json:"type"`
+	Body           E          `json:"body"`
 }
 
 // hitBody represents the body of a hit reactor command
@@ -152,17 +156,15 @@ func handleTriggerCommand(l logrus.FieldLogger, ctx context.Context, db *gorm.DB
 }
 
 // executeOperations executes the operations from a matched rule
-func executeOperations(l logrus.FieldLogger, ctx context.Context, command commandEvent[interface{}], characterId uint32, result ProcessResult) {
+func executeOperations(l logrus.FieldLogger, ctx context.Context, c commandEvent[interface{}], characterId uint32, result ProcessResult) {
 	// Build reactor context
 	rc := ReactorContext{
-		WorldId:        world.Id(command.WorldId),
-		ChannelId:      channel.Id(command.ChannelId),
-		MapId:          command.MapId,
-		ReactorId:      command.ReactorId,
-		Classification: command.Classification,
-		ReactorName:    command.ReactorName,
-		X:              command.X,
-		Y:              command.Y,
+		Field:          field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build(),
+		ReactorId:      c.ReactorId,
+		Classification: c.Classification,
+		ReactorName:    c.ReactorName,
+		X:              c.X,
+		Y:              c.Y,
 	}
 
 	// Create executor
@@ -170,6 +172,6 @@ func executeOperations(l logrus.FieldLogger, ctx context.Context, command comman
 
 	// Execute all operations
 	if err := executor.ExecuteOperations(rc, characterId, result.Operations); err != nil {
-		l.WithError(err).Errorf("Failed to execute operations for reactor [%s]", command.Classification)
+		l.WithError(err).Errorf("Failed to execute operations for reactor [%s]", c.Classification)
 	}
 }

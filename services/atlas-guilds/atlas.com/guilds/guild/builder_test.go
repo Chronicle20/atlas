@@ -3,6 +3,7 @@ package guild
 import (
 	"testing"
 
+	world2 "github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -11,7 +12,7 @@ import (
 func TestBuilderValidation(t *testing.T) {
 	validTenantId := uuid.New()
 	validId := uint32(1)
-	validWorldId := byte(0)
+	validWorldId := world2.Id(0)
 	validName := "TestGuild"
 	validLeaderId := uint32(100)
 

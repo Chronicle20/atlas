@@ -2,10 +2,11 @@ package channel
 
 import (
 	"errors"
+	"time"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
-	"time"
 )
 
 var (
@@ -18,8 +19,8 @@ type modelBuilder struct {
 	channelId       channel.Id
 	ipAddress       string
 	port            int
-	currentCapacity int
-	maxCapacity     int
+	currentCapacity uint32
+	maxCapacity     uint32
 	createdAt       time.Time
 }
 
@@ -77,12 +78,12 @@ func (b *modelBuilder) SetCreatedAt(createdAt time.Time) *modelBuilder {
 	return b
 }
 
-func (b *modelBuilder) SetCurrentCapacity(currentCapacity int) *modelBuilder {
+func (b *modelBuilder) SetCurrentCapacity(currentCapacity uint32) *modelBuilder {
 	b.currentCapacity = currentCapacity
 	return b
 }
 
-func (b *modelBuilder) SetMaxCapacity(maxCapacity int) *modelBuilder {
+func (b *modelBuilder) SetMaxCapacity(maxCapacity uint32) *modelBuilder {
 	b.maxCapacity = maxCapacity
 	return b
 }

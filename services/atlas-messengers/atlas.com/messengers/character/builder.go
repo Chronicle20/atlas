@@ -2,6 +2,7 @@ package character
 
 import (
 	"errors"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
@@ -70,8 +71,7 @@ func (b *builder) Build() (Model, error) {
 		tenantId:    b.tenantId,
 		id:          b.id,
 		name:        b.name,
-		worldId:     b.worldId,
-		channelId:   b.channelId,
+		ch:          channel.NewModel(b.worldId, b.channelId),
 		messengerId: b.messengerId,
 		online:      b.online,
 	}, nil

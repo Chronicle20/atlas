@@ -3,9 +3,7 @@ package monster
 import (
 	"errors"
 
-	"github.com/Chronicle20/atlas-constants/channel"
-	_map "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas-constants/field"
 )
 
 var (
@@ -13,9 +11,7 @@ var (
 )
 
 type modelBuilder struct {
-	worldId            world.Id
-	channelId          channel.Id
-	mapId              _map.Id
+	field              field.Model
 	uniqueId           uint32
 	maxHp              uint32
 	hp                 uint32
@@ -30,11 +26,9 @@ type modelBuilder struct {
 }
 
 // NewModelBuilder creates a new builder instance with required fields
-func NewModelBuilder(uniqueId uint32, worldId world.Id, channelId channel.Id, mapId _map.Id, monsterId uint32) *modelBuilder {
+func NewModelBuilder(uniqueId uint32, field field.Model, monsterId uint32) *modelBuilder {
 	return &modelBuilder{
-		worldId:   worldId,
-		channelId: channelId,
-		mapId:     mapId,
+		field:     field,
 		uniqueId:  uniqueId,
 		monsterId: monsterId,
 	}
@@ -43,10 +37,7 @@ func NewModelBuilder(uniqueId uint32, worldId world.Id, channelId channel.Id, ma
 // CloneModel creates a builder initialized with the Model's values
 func CloneModel(m Model) *modelBuilder {
 	return &modelBuilder{
-		worldId:            m.worldId,
-		channelId:          m.channelId,
-		mapId:              m.mapId,
-		uniqueId:           m.uniqueId,
+		field:              m.field,
 		maxHp:              m.maxHp,
 		hp:                 m.hp,
 		mp:                 m.mp,
@@ -111,9 +102,7 @@ func (b *modelBuilder) Build() (Model, error) {
 		return Model{}, ErrInvalidUniqueId
 	}
 	return Model{
-		worldId:            b.worldId,
-		channelId:          b.channelId,
-		mapId:              b.mapId,
+		field:              b.field,
 		uniqueId:           b.uniqueId,
 		maxHp:              b.maxHp,
 		hp:                 b.hp,

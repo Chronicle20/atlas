@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
@@ -15,10 +16,7 @@ import (
 type ModelBuilder struct {
 	tenant      tenant.Model
 	characterId uint32
-	worldId     world.Id
-	channelId   channel.Id
-	mapId       _map.Id
-	instance    uuid.UUID
+	field       field.Model
 	expression  uint32
 	expiration  time.Time
 }
@@ -35,10 +33,7 @@ func CloneModelBuilder(m Model) *ModelBuilder {
 	return &ModelBuilder{
 		tenant:      m.Tenant(),
 		characterId: m.CharacterId(),
-		worldId:     m.WorldId(),
-		channelId:   m.ChannelId(),
-		mapId:       m.MapId(),
-		instance:    m.Instance(),
+		field:       m.Field(),
 		expression:  m.Expression(),
 		expiration:  m.Expiration(),
 	}
@@ -52,25 +47,25 @@ func (b *ModelBuilder) SetCharacterId(characterId uint32) *ModelBuilder {
 
 // SetWorldId sets the world ID.
 func (b *ModelBuilder) SetWorldId(worldId world.Id) *ModelBuilder {
-	b.worldId = worldId
+	b.field = b.field.Clone().SetWorldId(worldId).Build()
 	return b
 }
 
 // SetChannelId sets the channel ID.
 func (b *ModelBuilder) SetChannelId(channelId channel.Id) *ModelBuilder {
-	b.channelId = channelId
+	b.field = b.field.Clone().SetChannelId(channelId).Build()
 	return b
 }
 
 // SetMapId sets the map ID.
 func (b *ModelBuilder) SetMapId(mapId _map.Id) *ModelBuilder {
-	b.mapId = mapId
+	b.field = b.field.Clone().SetMapId(mapId).Build()
 	return b
 }
 
 // SetInstance sets the instance UUID.
 func (b *ModelBuilder) SetInstance(instance uuid.UUID) *ModelBuilder {
-	b.instance = instance
+	b.field = b.field.Clone().SetInstance(instance).Build()
 	return b
 }
 
@@ -87,11 +82,8 @@ func (b *ModelBuilder) SetExpiration(expiration time.Time) *ModelBuilder {
 }
 
 // SetLocation sets worldId, channelId, mapId, and instance together.
-func (b *ModelBuilder) SetLocation(worldId world.Id, channelId channel.Id, mapId _map.Id, instance uuid.UUID) *ModelBuilder {
-	b.worldId = worldId
-	b.channelId = channelId
-	b.mapId = mapId
-	b.instance = instance
+func (b *ModelBuilder) SetLocation(field field.Model) *ModelBuilder {
+	b.field = field
 	return b
 }
 
@@ -109,10 +101,7 @@ func (b *ModelBuilder) Build() (Model, error) {
 	return Model{
 		tenant:      b.tenant,
 		characterId: b.characterId,
-		worldId:     b.worldId,
-		channelId:   b.channelId,
-		mapId:       b.mapId,
-		instance:    b.instance,
+		field:       b.field,
 		expression:  b.expression,
 		expiration:  b.expiration,
 	}, nil
@@ -140,22 +129,22 @@ func (b *ModelBuilder) CharacterId() uint32 {
 
 // WorldId returns the worldId from the builder.
 func (b *ModelBuilder) WorldId() world.Id {
-	return b.worldId
+	return b.field.WorldId()
 }
 
 // ChannelId returns the channelId from the builder.
 func (b *ModelBuilder) ChannelId() channel.Id {
-	return b.channelId
+	return b.field.ChannelId()
 }
 
 // MapId returns the mapId from the builder.
 func (b *ModelBuilder) MapId() _map.Id {
-	return b.mapId
+	return b.field.MapId()
 }
 
 // Instance returns the instance from the builder.
 func (b *ModelBuilder) Instance() uuid.UUID {
-	return b.instance
+	return b.field.Instance()
 }
 
 // Expression returns the expression from the builder.

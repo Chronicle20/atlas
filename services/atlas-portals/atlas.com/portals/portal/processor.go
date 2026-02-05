@@ -54,7 +54,7 @@ func Enter(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, p
 
 			// Check if the portal is blocked for this character
 			t := tenant.MustFromContext(ctx)
-			if blocked.GetCache().IsBlocked(t.Id(), characterId, uint32(f.MapId()), portalId) {
+			if blocked.GetCache().IsBlocked(t.Id(), characterId, f.MapId(), portalId) {
 				l.Debugf("Portal [%d] in map [%d] is blocked for character [%d]. Enabling actions and returning.", portalId, f.MapId(), characterId)
 				character.EnableActions(l)(ctx)(f, characterId)
 				return

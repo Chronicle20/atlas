@@ -4,9 +4,8 @@ import (
 	party2 "atlas-channel/kafka/message/party"
 	"atlas-channel/kafka/producer"
 	"context"
-	"github.com/Chronicle20/atlas-constants/channel"
-	_map "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-constants/world"
+
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
@@ -77,14 +76,14 @@ func MemberToMemberIdMapper(mp model.Provider[[]MemberModel]) model.Provider[[]u
 	return model.SliceMap(model.Always(MemberModel.Id))(mp)(model.ParallelMap())
 }
 
-func MemberInMap(worldId world.Id, channelId channel.Id, mapId _map.Id) model.Filter[MemberModel] {
+func MemberInMap(field field.Model) model.Filter[MemberModel] {
 	return func(m MemberModel) bool {
-		return m.online && m.worldId == worldId && m.channelId == channelId && m.mapId == mapId
+		return m.online && m.WorldId() == field.WorldId() && m.ChannelId() == field.ChannelId() && m.MapId() == field.MapId() && m.Instance() == field.Instance()
 	}
 }
 
-func OtherMemberInMap(worldId world.Id, channelId channel.Id, mapId _map.Id, characterId uint32) model.Filter[MemberModel] {
+func OtherMemberInMap(field field.Model, characterId uint32) model.Filter[MemberModel] {
 	return func(m MemberModel) bool {
-		return m.online && m.worldId == worldId && m.channelId == channelId && m.mapId == mapId && m.id != characterId
+		return m.online && m.WorldId() == field.WorldId() && m.ChannelId() == field.ChannelId() && m.MapId() == field.MapId() && m.Instance() == field.Instance() && m.id != characterId
 	}
 }

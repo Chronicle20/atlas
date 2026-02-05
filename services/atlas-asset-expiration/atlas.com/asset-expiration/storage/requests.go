@@ -4,6 +4,7 @@ import (
 	"atlas-asset-expiration/rest"
 	"fmt"
 
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 
@@ -16,10 +17,10 @@ func getBaseRequest() string {
 	return requests.RootUrl("STORAGE")
 }
 
-func requestStorage(accountId uint32, worldId byte) requests.Request[RestModel] {
+func requestStorage(accountId uint32, worldId world.Id) requests.Request[RestModel] {
 	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+Resource, accountId, worldId))
 }
 
-func requestAssets(accountId uint32, worldId byte) requests.Request[[]AssetRestModel] {
+func requestAssets(accountId uint32, worldId world.Id) requests.Request[[]AssetRestModel] {
 	return rest.MakeGetRequest[[]AssetRestModel](fmt.Sprintf(getBaseRequest()+Assets, accountId, worldId))
 }

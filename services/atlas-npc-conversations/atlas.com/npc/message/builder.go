@@ -3,6 +3,8 @@ package message
 import (
 	"fmt"
 	"strings"
+
+	_map "github.com/Chronicle20/atlas-constants/map"
 )
 
 type builder struct {
@@ -72,7 +74,7 @@ func (b *builder) NormalText() *builder {
 	return b
 }
 
-func (b *builder) ShowMap(mapId uint32) *builder {
+func (b *builder) ShowMap(mapId _map.Id) *builder {
 	b.b.WriteString(fmt.Sprintf("#m%d#", mapId))
 	return b
 }

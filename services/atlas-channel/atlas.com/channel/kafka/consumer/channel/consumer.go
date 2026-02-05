@@ -6,6 +6,7 @@ import (
 	channel2 "atlas-channel/kafka/message/channel"
 	"atlas-channel/server"
 	"context"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -41,7 +42,7 @@ func handleCommandStatus(sc server.Model, ipAddress string, port int) message.Ha
 		st := sc.Tenant()
 		mt := tenant.MustFromContext(ctx)
 		if mt.Id() == st.Id() {
-			err := channel.NewProcessor(l, ctx).Register(sc.WorldId(), sc.ChannelId(), ipAddress, port)
+			err := channel.NewProcessor(l, ctx).Register(sc.Channel(), ipAddress, port)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to respond to world service status command. World service will not know about this channel.")
 			}

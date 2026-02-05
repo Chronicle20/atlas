@@ -62,14 +62,14 @@ func handleMesosUpdatedEvent(sc server.Model, wp writer.Producer) message.Handle
 			return
 		}
 
-		if e.WorldId != byte(sc.WorldId()) {
+		if e.WorldId != sc.WorldId() {
 			return
 		}
 
 		l.Debugf("Received MesosUpdated event for account [%d]. Old: [%d], New: [%d]", e.AccountId, e.Body.OldMesos, e.Body.NewMesos)
 
 		// Find the session by account and send the meso update
-		err := session.NewProcessor(l, ctx).IfPresentByAccountId(sc.WorldId(), sc.ChannelId())(e.AccountId,
+		err := session.NewProcessor(l, ctx).IfPresentByAccountId(sc.Channel())(e.AccountId,
 			session.Announce(l)(ctx)(wp)(writer.StorageOperation)(
 				writer.StorageOperationUpdateMesoBody(l)(0, e.Body.NewMesos)))
 		if err != nil {
@@ -89,14 +89,14 @@ func handleArrangedEvent(sc server.Model, wp writer.Producer) message.Handler[st
 			return
 		}
 
-		if e.WorldId != byte(sc.WorldId()) {
+		if e.WorldId != sc.WorldId() {
 			return
 		}
 
 		l.Debugf("Received Arranged event for account [%d].", e.AccountId)
 
 		// Fetch the updated storage data and resend to client
-		err := session.NewProcessor(l, ctx).IfPresentByAccountId(sc.WorldId(), sc.ChannelId())(e.AccountId, func(s session.Model) error {
+		err := session.NewProcessor(l, ctx).IfPresentByAccountId(sc.Channel())(e.AccountId, func(s session.Model) error {
 			storageData, err := storage.NewProcessor(l, ctx).GetStorageData(e.AccountId, e.WorldId)
 			if err != nil {
 				return err
@@ -123,7 +123,7 @@ func handleStorageErrorEvent(sc server.Model, wp writer.Producer) message.Handle
 			return
 		}
 
-		if e.WorldId != byte(sc.WorldId()) {
+		if e.WorldId != sc.WorldId() {
 			return
 		}
 
@@ -142,7 +142,7 @@ func handleStorageErrorEvent(sc server.Model, wp writer.Producer) message.Handle
 			writerBody = writer.StorageOperationErrorMessageBody(l)(e.Body.Message)
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByAccountId(sc.WorldId(), sc.ChannelId())(e.AccountId,
+		err := session.NewProcessor(l, ctx).IfPresentByAccountId(sc.Channel())(e.AccountId,
 			session.Announce(l)(ctx)(wp)(writer.StorageOperation)(writerBody))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to send error to account [%d].", e.AccountId)
@@ -180,13 +180,13 @@ func handleStorageCompartmentAcceptedEvent(sc server.Model, wp writer.Producer) 
 		if err != nil {
 			l.WithError(err).Debugf("Projection not found for character [%d], falling back to storage data", e.CharacterId)
 			// Fallback to storage data
-			storageData, err := storageProc.GetStorageData(e.AccountId, byte(e.WorldId))
+			storageData, err := storageProc.GetStorageData(e.AccountId, e.WorldId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to fetch storage data for account [%d] after ACCEPTED event.", e.AccountId)
 				return
 			}
 
-			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId,
+			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId,
 				session.Announce(l)(ctx)(wp)(writer.StorageOperation)(
 					writer.StorageOperationUpdateAssetsForCompartmentBody(l, sc.Tenant())(writer.StorageOperationModeStoreAssets, byte(storageData.Capacity), inventoryType, storageData.Assets)))
 			if err != nil {
@@ -200,7 +200,7 @@ func handleStorageCompartmentAcceptedEvent(sc server.Model, wp writer.Producer) 
 		assets := projData.Compartments[compartmentName]
 
 		// Send updated storage assets for the affected compartment only
-		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId,
+		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId,
 			session.Announce(l)(ctx)(wp)(writer.StorageOperation)(
 				writer.StorageOperationUpdateAssetsForCompartmentBody(l, sc.Tenant())(writer.StorageOperationModeStoreAssets, projData.Capacity, inventoryType, assets)))
 		if err != nil {
@@ -239,13 +239,13 @@ func handleStorageCompartmentReleasedEvent(sc server.Model, wp writer.Producer) 
 		if err != nil {
 			l.WithError(err).Debugf("Projection not found for character [%d], falling back to storage data", e.CharacterId)
 			// Fallback to storage data
-			storageData, err := storageProc.GetStorageData(e.AccountId, byte(e.WorldId))
+			storageData, err := storageProc.GetStorageData(e.AccountId, e.WorldId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to fetch storage data for account [%d] after RELEASED event.", e.AccountId)
 				return
 			}
 
-			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId,
+			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId,
 				session.Announce(l)(ctx)(wp)(writer.StorageOperation)(
 					writer.StorageOperationUpdateAssetsForCompartmentBody(l, sc.Tenant())(writer.StorageOperationModeRetrieveAssets, byte(storageData.Capacity), inventoryType, storageData.Assets)))
 			if err != nil {
@@ -259,7 +259,7 @@ func handleStorageCompartmentReleasedEvent(sc server.Model, wp writer.Producer) 
 		assets := projData.Compartments[compartmentName]
 
 		// Send updated storage assets for the affected compartment only
-		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId,
+		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId,
 			session.Announce(l)(ctx)(wp)(writer.StorageOperation)(
 				writer.StorageOperationUpdateAssetsForCompartmentBody(l, sc.Tenant())(writer.StorageOperationModeRetrieveAssets, projData.Capacity, inventoryType, assets)))
 		if err != nil {
@@ -279,7 +279,7 @@ func handleProjectionCreatedEvent(sc server.Model, wp writer.Producer) message.H
 			return
 		}
 
-		if e.Body.WorldId != byte(sc.WorldId()) {
+		if e.Body.WorldId != sc.WorldId() {
 			return
 		}
 
@@ -300,7 +300,7 @@ func handleProjectionCreatedEvent(sc server.Model, wp writer.Producer) message.H
 
 		// Send storage UI to the character and set the storage NPC ID on the session
 		sessionProc := session.NewProcessor(l, ctx)
-		err = sessionProc.IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, func(s session.Model) error {
+		err = sessionProc.IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, func(s session.Model) error {
 			// Store the NPC ID for fee lookup during storage operations
 			sessionProc.SetStorageNpcId(s.SessionId(), e.Body.NpcId)
 

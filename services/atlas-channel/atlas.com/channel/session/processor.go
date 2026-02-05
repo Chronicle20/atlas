@@ -7,6 +7,8 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 	"errors"
+	"net"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
@@ -16,7 +18,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
-	"net"
 )
 
 type Processor struct {
@@ -65,30 +66,30 @@ func (p *Processor) IfPresentById(sessionId uuid.UUID, f model.Operator[Model]) 
 	_ = f(s)
 }
 
-func (p *Processor) IfPresentByIdInWorld(sessionId uuid.UUID, worldId world.Id, channelId channel.Id, f model.Operator[Model]) {
+func (p *Processor) IfPresentByIdInWorld(sessionId uuid.UUID, ch channel.Model, f model.Operator[Model]) {
 	s, err := p.ByIdModelProvider(sessionId)()
 	if err != nil {
 		return
 	}
-	if s.WorldId() != worldId {
+	if s.WorldId() != ch.WorldId() {
 		return
 	}
-	if s.ChannelId() != channelId {
+	if s.ChannelId() != ch.Id() {
 		return
 	}
 	_ = f(s)
 }
 
-func (p *Processor) ByCharacterIdModelProvider(worldId world.Id, channelId channel.Id) func(characterId uint32) model.Provider[Model] {
+func (p *Processor) ByCharacterIdModelProvider(ch channel.Model) func(characterId uint32) model.Provider[Model] {
 	return func(characterId uint32) model.Provider[Model] {
-		return model.FirstProvider[Model](p.AllInTenantProvider, model.Filters(CharacterIdFilter(characterId), WorldIdFilter(worldId), ChannelIdFilter(channelId)))
+		return model.FirstProvider[Model](p.AllInTenantProvider, model.Filters(CharacterIdFilter(characterId), WorldIdFilter(ch.WorldId()), ChannelIdFilter(ch.Id())))
 	}
 }
 
 // IfPresentByCharacterId executes an Operator if a session exists for the characterId
-func (p *Processor) IfPresentByCharacterId(worldId world.Id, channelId channel.Id) func(characterId uint32, f model.Operator[Model]) error {
+func (p *Processor) IfPresentByCharacterId(ch channel.Model) func(characterId uint32, f model.Operator[Model]) error {
 	return func(characterId uint32, f model.Operator[Model]) error {
-		s, err := p.ByCharacterIdModelProvider(worldId, channelId)(characterId)()
+		s, err := p.ByCharacterIdModelProvider(ch)(characterId)()
 		if err != nil {
 			return nil
 		}
@@ -120,16 +121,16 @@ func ChannelIdFilter(channelId channel.Id) model.Filter[Model] {
 	}
 }
 
-func (p *Processor) ByAccountIdModelProvider(worldId world.Id, channelId channel.Id) func(accountId uint32) model.Provider[Model] {
+func (p *Processor) ByAccountIdModelProvider(ch channel.Model) func(accountId uint32) model.Provider[Model] {
 	return func(accountId uint32) model.Provider[Model] {
-		return model.FirstProvider[Model](p.AllInTenantProvider, model.Filters(AccountIdFilter(accountId), WorldIdFilter(worldId), ChannelIdFilter(channelId)))
+		return model.FirstProvider[Model](p.AllInTenantProvider, model.Filters(AccountIdFilter(accountId), WorldIdFilter(ch.WorldId()), ChannelIdFilter(ch.Id())))
 	}
 }
 
 // IfPresentByAccountId executes an Operator if a session exists for the accountId
-func (p *Processor) IfPresentByAccountId(worldId world.Id, channelId channel.Id) func(accountId uint32, f model.Operator[Model]) error {
+func (p *Processor) IfPresentByAccountId(ch channel.Model) func(accountId uint32, f model.Operator[Model]) error {
 	return func(accountId uint32, f model.Operator[Model]) error {
-		s, err := p.ByAccountIdModelProvider(worldId, channelId)(accountId)()
+		s, err := p.ByAccountIdModelProvider(ch)(accountId)()
 		if err != nil {
 			return nil
 		}
@@ -138,15 +139,15 @@ func (p *Processor) IfPresentByAccountId(worldId world.Id, channelId channel.Id)
 }
 
 // GetByCharacterId gets a session (if one exists) for the given characterId
-func (p *Processor) GetByCharacterId(worldId world.Id, channelId channel.Id) func(characterId uint32) (Model, error) {
+func (p *Processor) GetByCharacterId(ch channel.Model) func(characterId uint32) (Model, error) {
 	return func(characterId uint32) (Model, error) {
-		return p.ByCharacterIdModelProvider(worldId, channelId)(characterId)()
+		return p.ByCharacterIdModelProvider(ch)(characterId)()
 	}
 }
 
-func (p *Processor) ForEachByCharacterId(worldId world.Id, channelId channel.Id) func(provider model.Provider[[]uint32], f model.Operator[Model]) error {
+func (p *Processor) ForEachByCharacterId(ch channel.Model) func(provider model.Provider[[]uint32], f model.Operator[Model]) error {
 	return func(provider model.Provider[[]uint32], f model.Operator[Model]) error {
-		return model.ForEachSlice(model.SliceMap[uint32, Model](p.GetByCharacterId(worldId, channelId))(provider)(), f, model.ParallelExecute())
+		return model.ForEachSlice(model.SliceMap[uint32, Model](p.GetByCharacterId(ch))(provider)(), f, model.ParallelExecute())
 	}
 }
 
@@ -236,7 +237,7 @@ func (p *Processor) UpdateLastRequest(id uuid.UUID) Model {
 }
 
 func (p *Processor) SessionCreated(s Model) error {
-	return p.kp(session2.EnvEventTopicSessionStatus)(CreatedStatusEventProvider(s.SessionId(), s.AccountId(), s.CharacterId(), s.WorldId(), s.ChannelId()))
+	return p.kp(session2.EnvEventTopicSessionStatus)(CreatedStatusEventProvider(s.SessionId(), s.AccountId(), s.CharacterId(), s.Field().Channel()))
 }
 
 func Teardown(l logrus.FieldLogger) func() {
@@ -251,13 +252,13 @@ func Teardown(l logrus.FieldLogger) func() {
 	}
 }
 
-func (p *Processor) Create(worldId world.Id, channelId channel.Id, locale byte) func(sessionId uuid.UUID, conn net.Conn) {
+func (p *Processor) Create(ch channel.Model, locale byte) func(sessionId uuid.UUID, conn net.Conn) {
 	return func(sessionId uuid.UUID, conn net.Conn) {
 		fl := p.l.WithField("session", sessionId)
 		fl.Debugf("Creating session.")
 		s := NewSession(sessionId, p.t, locale, conn)
-		s = s.setWorldId(worldId)
-		s = s.setChannelId(channelId)
+		s = s.setWorldId(ch.WorldId())
+		s = s.setChannelId(ch.Id())
 		getRegistry().Add(p.t.Id(), s)
 
 		err := s.WriteHello(p.t.MajorVersion(), p.t.MinorVersion())
@@ -299,7 +300,7 @@ func (p *Processor) Destroy(s Model) error {
 	getRegistry().Remove(p.t.Id(), s.SessionId())
 	s.Disconnect()
 	p.sp.Destroy(s.SessionId(), s.AccountId())
-	return p.kp(session2.EnvEventTopicSessionStatus)(DestroyedStatusEventProvider(s.SessionId(), s.AccountId(), s.CharacterId(), s.WorldId(), s.ChannelId()))
+	return p.kp(session2.EnvEventTopicSessionStatus)(DestroyedStatusEventProvider(s.SessionId(), s.AccountId(), s.CharacterId(), s.Field().Channel()))
 }
 
 func (p *Processor) SetStorageNpcId(id uuid.UUID, npcId uint32) Model {

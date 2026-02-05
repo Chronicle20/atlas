@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
@@ -11,10 +12,7 @@ import (
 
 type Model struct {
 	id             uint32
-	worldId        world.Id
-	channelId      channel.Id
-	mapId          _map.Id
-	instance       uuid.UUID
+	field          field.Model
 	classification uint32
 	name           string
 	state          int8
@@ -30,20 +28,24 @@ func (m Model) Id() uint32 {
 	return m.id
 }
 
+func (m Model) Field() field.Model {
+	return m.field
+}
+
 func (m Model) WorldId() world.Id {
-	return m.worldId
+	return m.Field().WorldId()
 }
 
 func (m Model) ChannelId() channel.Id {
-	return m.channelId
+	return m.Field().ChannelId()
 }
 
 func (m Model) MapId() _map.Id {
-	return m.mapId
+	return m.Field().MapId()
 }
 
 func (m Model) Instance() uuid.UUID {
-	return m.instance
+	return m.Field().Instance()
 }
 
 func (m Model) Classification() uint32 {

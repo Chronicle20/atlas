@@ -603,12 +603,8 @@ func (e *OperationExecutorImpl) executeLocalOperation(field field.Model, charact
 			return errors.New("no valid map IDs provided in mapIds parameter")
 		}
 
-		// Get world and channel from field
-		worldId := field.WorldId()
-		channelId := field.ChannelId()
-
 		// Fetch player counts for all maps in parallel
-		counts, err := e.mapP.GetPlayerCountsInMaps(worldId, channelId, mapIds)
+		counts, err := e.mapP.GetPlayerCountsInMaps(field.Channel(), mapIds)
 		if err != nil {
 			// Log warning but don't fail - graceful degradation
 			e.l.WithError(err).Warnf("Failed to fetch player counts for maps, using 0 for all")
@@ -1346,7 +1342,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 			CharacterId: characterId,
 			WorldId:     f.WorldId(),
 			ChannelId:   f.ChannelId(),
-			MapId:       uint32(mapIdInt),
+			MapId:       _map.Id(mapIdInt),
 			MonsterId:   uint32(monsterIdInt),
 			X:           int16(xInt),
 			Y:           int16(yInt),
@@ -1464,7 +1460,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 		payload := saga.StartQuestPayload{
 			CharacterId: characterId,
-			WorldId:     byte(f.WorldId()),
+			WorldId:     f.WorldId(),
 			QuestId:     uint32(questIdInt),
 			NpcId:       uint32(npcIdInt),
 		}
@@ -1800,7 +1796,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		}
 
 		// Duration is optional, defaults to 0 (7000ms will be used by channel)
-		var durationInt int = 0
+		var durationInt = 0
 		if durationValue, exists := operation.Params()["duration"]; exists {
 			durationInt, err = e.evaluateContextValueAsInt(characterId, "duration", durationValue)
 			if err != nil {
@@ -1810,8 +1806,8 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 		payload := saga.ShowGuideHintPayload{
 			CharacterId: characterId,
-			WorldId:     byte(f.WorldId()),
-			ChannelId:   byte(f.ChannelId()),
+			WorldId:     f.WorldId(),
+			ChannelId:   f.ChannelId(),
 			HintId:      uint32(hintIdInt),
 			Duration:    uint32(durationInt),
 		}
@@ -1835,8 +1831,8 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 		payload := saga.ShowIntroPayload{
 			CharacterId: characterId,
-			WorldId:     byte(f.WorldId()),
-			ChannelId:   byte(f.ChannelId()),
+			WorldId:     f.WorldId(),
+			ChannelId:   f.ChannelId(),
 			Path:        path,
 		}
 
@@ -1859,8 +1855,8 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 		payload := saga.SetHPPayload{
 			CharacterId: characterId,
-			WorldId:     byte(f.WorldId()),
-			ChannelId:   byte(f.ChannelId()),
+			WorldId:     f.WorldId(),
+			ChannelId:   f.ChannelId(),
 			Amount:      uint16(amountInt),
 		}
 
@@ -1872,8 +1868,8 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		// Resets a character's stats (used during job advancement)
 		payload := saga.ResetStatsPayload{
 			CharacterId: characterId,
-			WorldId:     byte(f.WorldId()),
-			ChannelId:   byte(f.ChannelId()),
+			WorldId:     f.WorldId(),
+			ChannelId:   f.ChannelId(),
 		}
 
 		return stepId, saga.Pending, saga.ResetStats, payload, nil

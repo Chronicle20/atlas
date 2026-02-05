@@ -11,7 +11,6 @@ import (
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/sirupsen/logrus"
 )
 
@@ -32,9 +31,9 @@ var commandSyntaxList = []string{
 	"@buff <target> #<skillId> [duration] - Apply a buff by ID",
 }
 
-func HelpCommandProducer(_ logrus.FieldLogger) func(_ context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
-	return func(_ context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
-		return func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
+func HelpCommandProducer(_ logrus.FieldLogger) func(_ context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
+	return func(_ context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
+		return func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
 			re := regexp.MustCompile(`^@help$`)
 			match := re.FindStringSubmatch(m)
 			if len(match) != 1 {
@@ -49,7 +48,7 @@ func HelpCommandProducer(_ logrus.FieldLogger) func(_ context.Context) func(worl
 				return func(ctx context.Context) error {
 					mp := message.NewProcessor(l, ctx)
 
-					f := field.NewBuilder(world.Id(worldId), channel.Id(channelId), _map.Id(c.MapId())).Build()
+					f := field.NewBuilder(ch.WorldId(), ch.Id(), _map.Id(c.MapId())).Build()
 					helpText := strings.Join(commandSyntaxList, "\r\n")
 					return mp.IssuePinkText(f, 0, helpText, []uint32{c.Id()})
 				}

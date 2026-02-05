@@ -1,17 +1,18 @@
 package model
 
 import (
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
 type Recommendation struct {
-	worldId byte
+	worldId world.Id
 	reason  string
 }
 
-func (r Recommendation) WorldId() byte {
+func (r Recommendation) WorldId() world.Id {
 	return r.worldId
 }
 
@@ -19,7 +20,7 @@ func (r Recommendation) Reason() string {
 	return r.reason
 }
 
-func NewWorldRecommendation(worldId byte, reason string) Recommendation {
+func NewWorldRecommendation(worldId world.Id, reason string) Recommendation {
 	return Recommendation{worldId, reason}
 }
 

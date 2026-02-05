@@ -7,7 +7,6 @@ import (
 	"errors"
 
 	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
@@ -19,8 +18,8 @@ type Processor interface {
 	GetByCharacter(characterId uint32) ([]Model, error)
 	ByIdProvider(noteId uint32) model.Provider[Model]
 	GetById(noteId uint32) (Model, error)
-	SendNote(worldId world.Id, channelId channel.Id, senderId uint32, receiverId uint32, message string, flag byte) error
-	DiscardNotes(worldId world.Id, channelId channel.Id, characterId uint32, noteIds []uint32) error
+	SendNote(ch channel.Model, senderId uint32, receiverId uint32, message string, flag byte) error
+	DiscardNotes(ch channel.Model, characterId uint32, noteIds []uint32) error
 }
 
 // ProcessorImpl implements the Processor interface
@@ -53,15 +52,15 @@ func (p *ProcessorImpl) GetById(noteId uint32) (Model, error) {
 	return p.ByIdProvider(noteId)()
 }
 
-func (p *ProcessorImpl) SendNote(worldId world.Id, channelId channel.Id, senderId uint32, receiverId uint32, message string, flag byte) error {
+func (p *ProcessorImpl) SendNote(ch channel.Model, senderId uint32, receiverId uint32, message string, flag byte) error {
 	p.l.Debugf("Character [%d] attempting to send note to [%d].", senderId, receiverId)
-	return producer.ProviderImpl(p.l)(p.ctx)(note2.EnvCommandTopic)(CreateCommandProvider(worldId, channelId, senderId, receiverId, message, flag))
+	return producer.ProviderImpl(p.l)(p.ctx)(note2.EnvCommandTopic)(CreateCommandProvider(ch, senderId, receiverId, message, flag))
 }
 
-func (p *ProcessorImpl) DiscardNotes(worldId world.Id, channelId channel.Id, characterId uint32, noteIds []uint32) error {
+func (p *ProcessorImpl) DiscardNotes(ch channel.Model, characterId uint32, noteIds []uint32) error {
 	if len(noteIds) == 0 {
 		return errors.New("no note IDs provided")
 	}
 	p.l.Debugf("Character [%d] attempting to discard [%d] notes.", characterId, len(noteIds))
-	return producer.ProviderImpl(p.l)(p.ctx)(note2.EnvCommandTopic)(DiscardCommandProvider(worldId, channelId, characterId, noteIds))
+	return producer.ProviderImpl(p.l)(p.ctx)(note2.EnvCommandTopic)(DiscardCommandProvider(ch, characterId, noteIds))
 }

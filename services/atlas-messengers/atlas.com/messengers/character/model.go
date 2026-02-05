@@ -2,8 +2,8 @@ package character
 
 import (
 	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/world"
 	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 )
 
@@ -11,8 +11,7 @@ type Model struct {
 	tenantId    uuid.UUID
 	id          uint32
 	name        string
-	worldId     world.Id
-	channelId   channel.Id
+	ch          channel.Model
 	messengerId uint32
 	online      bool
 }
@@ -22,8 +21,7 @@ func (m Model) LeaveMessenger() Model {
 		tenantId:    m.tenantId,
 		id:          m.id,
 		name:        m.name,
-		worldId:     m.worldId,
-		channelId:   m.channelId,
+		ch:          m.ch,
 		messengerId: 0,
 		online:      m.online,
 	}
@@ -34,8 +32,7 @@ func (m Model) JoinMessenger(messengerId uint32) Model {
 		tenantId:    m.tenantId,
 		id:          m.id,
 		name:        m.name,
-		worldId:     m.worldId,
-		channelId:   m.channelId,
+		ch:          m.ch,
 		messengerId: messengerId,
 		online:      m.online,
 	}
@@ -46,8 +43,7 @@ func (m Model) ChangeChannel(channelId channel.Id) Model {
 		tenantId:    m.tenantId,
 		id:          m.id,
 		name:        m.name,
-		worldId:     m.worldId,
-		channelId:   channelId,
+		ch:          m.ch.Clone().SetId(channelId).Build(),
 		messengerId: m.messengerId,
 		online:      m.online,
 	}
@@ -58,8 +54,7 @@ func (m Model) Logout() Model {
 		tenantId:    m.tenantId,
 		id:          m.id,
 		name:        m.name,
-		worldId:     m.worldId,
-		channelId:   m.channelId,
+		ch:          m.ch,
 		messengerId: m.messengerId,
 		online:      false,
 	}
@@ -70,8 +65,7 @@ func (m Model) Login() Model {
 		tenantId:    m.tenantId,
 		id:          m.id,
 		name:        m.name,
-		worldId:     m.worldId,
-		channelId:   m.channelId,
+		ch:          m.ch,
 		messengerId: m.messengerId,
 		online:      true,
 	}
@@ -86,11 +80,15 @@ func (m Model) Name() string {
 }
 
 func (m Model) WorldId() world.Id {
-	return m.worldId
+	return m.Channel().WorldId()
 }
 
 func (m Model) ChannelId() channel.Id {
-	return m.channelId
+	return m.Channel().Id()
+}
+
+func (m Model) Channel() channel.Model {
+	return m.ch
 }
 
 func (m Model) Online() bool {

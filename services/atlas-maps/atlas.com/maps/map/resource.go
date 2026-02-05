@@ -28,13 +28,13 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 }
 
 func handleGetCharactersInMap(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseWorldId(d.Logger(), func(worldId byte) http.HandlerFunc {
-		return rest.ParseChannelId(d.Logger(), func(channelId byte) http.HandlerFunc {
-			return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
+	return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
+		return rest.ParseChannelId(d.Logger(), func(channelId channel.Id) http.HandlerFunc {
+			return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
 				return rest.ParseInstanceId(d.Logger(), func(instanceId uuid.UUID) http.HandlerFunc {
 					return func(w http.ResponseWriter, r *http.Request) {
 						transactionId := uuid.New()
-						f := field.NewBuilder(world.Id(worldId), channel.Id(channelId), _map.Id(mapId)).SetInstance(instanceId).Build()
+						f := field.NewBuilder(worldId, channelId, mapId).SetInstance(instanceId).Build()
 						mp := NewProcessor(d.Logger(), d.Context(), nil)
 						ids, err := mp.GetCharactersInMap(transactionId, f)
 						if err != nil {

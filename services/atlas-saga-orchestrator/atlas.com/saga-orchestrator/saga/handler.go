@@ -30,7 +30,6 @@ import (
 	"github.com/Chronicle20/atlas-constants/asset"
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -724,10 +723,11 @@ func (h *HandlerImpl) handleAwardExperience(s Saga, st Step[any]) error {
 	}
 
 	// Apply questExpRate to QUEST experience distributions
-	distributions := applyQuestExpRate(h.l, h.ctx, payload.WorldId, payload.ChannelId, payload.CharacterId, payload.Distributions)
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	distributions := applyQuestExpRate(h.l, h.ctx, ch, payload.CharacterId, payload.Distributions)
 
 	eds := TransformExperienceDistributions(distributions)
-	err := h.charP.AwardExperienceAndEmit(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.ChannelId, eds)
+	err := h.charP.AwardExperienceAndEmit(s.TransactionId(), ch, payload.CharacterId, eds)
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to award experience.")
@@ -744,7 +744,8 @@ func (h *HandlerImpl) handleAwardLevel(s Saga, st Step[any]) error {
 		return errors.New("invalid payload")
 	}
 
-	err := h.charP.AwardLevelAndEmit(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.ChannelId, payload.Amount)
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	err := h.charP.AwardLevelAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.Amount)
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to award level.")
@@ -761,7 +762,8 @@ func (h *HandlerImpl) handleAwardMesos(s Saga, st Step[any]) error {
 		return errors.New("invalid payload")
 	}
 
-	err := h.charP.AwardMesosAndEmit(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.ChannelId, payload.ActorId, payload.ActorType, payload.Amount)
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	err := h.charP.AwardMesosAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.ActorId, payload.ActorType, payload.Amount)
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to award mesos.")
@@ -863,7 +865,8 @@ func (h *HandlerImpl) handleChangeJob(s Saga, st Step[any]) error {
 		return errors.New("invalid payload")
 	}
 
-	err := h.charP.ChangeJobAndEmit(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.ChannelId, payload.JobId)
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	err := h.charP.ChangeJobAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.JobId)
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to change job.")
@@ -880,7 +883,8 @@ func (h *HandlerImpl) handleChangeHair(s Saga, st Step[any]) error {
 		return errors.New("invalid payload")
 	}
 
-	err := h.charP.ChangeHairAndEmit(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.ChannelId, payload.StyleId)
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	err := h.charP.ChangeHairAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.StyleId)
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to change hair.")
@@ -897,7 +901,8 @@ func (h *HandlerImpl) handleChangeFace(s Saga, st Step[any]) error {
 		return errors.New("invalid payload")
 	}
 
-	err := h.charP.ChangeFaceAndEmit(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.ChannelId, payload.StyleId)
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	err := h.charP.ChangeFaceAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.StyleId)
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to change face.")
@@ -914,7 +919,8 @@ func (h *HandlerImpl) handleChangeSkin(s Saga, st Step[any]) error {
 		return errors.New("invalid payload")
 	}
 
-	err := h.charP.ChangeSkinAndEmit(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.ChannelId, payload.StyleId)
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	err := h.charP.ChangeSkinAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.StyleId)
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to change skin.")
@@ -1005,7 +1011,7 @@ func TransformExperienceDistributions(source []ExperienceDistributions) []charac
 }
 
 // applyQuestExpRate applies the questExpRate multiplier to QUEST experience distributions
-func applyQuestExpRate(l logrus.FieldLogger, ctx context.Context, worldId world.Id, channelId channel.Id, characterId uint32, distributions []ExperienceDistributions) []ExperienceDistributions {
+func applyQuestExpRate(l logrus.FieldLogger, ctx context.Context, ch channel.Model, characterId uint32, distributions []ExperienceDistributions) []ExperienceDistributions {
 	// Check if there are any QUEST distributions that need rate adjustment
 	hasQuestExp := false
 	for _, d := range distributions {
@@ -1020,7 +1026,7 @@ func applyQuestExpRate(l logrus.FieldLogger, ctx context.Context, worldId world.
 	}
 
 	// Query rates for the character
-	r := rates.GetForCharacter(l)(ctx)(worldId, channelId, characterId)
+	r := rates.GetForCharacter(l)(ctx)(ch, characterId)
 
 	// Apply questExpRate to QUEST distributions
 	result := make([]ExperienceDistributions, len(distributions))
@@ -1071,7 +1077,8 @@ func (h *HandlerImpl) handleRequestGuildName(s Saga, st Step[any]) error {
 	}
 
 	// Call the guild processor
-	err := h.guildP.RequestName(s.TransactionId(), payload.WorldId, payload.ChannelId, payload.CharacterId)
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	err := h.guildP.RequestName(s.TransactionId(), ch, payload.CharacterId)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to request guild name.")
 		return err
@@ -1089,7 +1096,8 @@ func (h *HandlerImpl) handleRequestGuildEmblem(s Saga, st Step[any]) error {
 	}
 
 	// Call the guild processor
-	err := h.guildP.RequestEmblem(s.TransactionId(), payload.WorldId, payload.ChannelId, payload.CharacterId)
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	err := h.guildP.RequestEmblem(s.TransactionId(), ch, payload.CharacterId)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to request guild emblem.")
 		return err
@@ -1107,7 +1115,8 @@ func (h *HandlerImpl) handleRequestGuildDisband(s Saga, st Step[any]) error {
 	}
 
 	// Call the guild processor
-	err := h.guildP.RequestDisband(s.TransactionId(), payload.WorldId, payload.ChannelId, payload.CharacterId)
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	err := h.guildP.RequestDisband(s.TransactionId(), ch, payload.CharacterId)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to request guild disband.")
 		return err
@@ -1125,7 +1134,8 @@ func (h *HandlerImpl) handleRequestGuildCapacityIncrease(s Saga, st Step[any]) e
 	}
 
 	// Call the guild processor
-	err := h.guildP.RequestCapacityIncrease(s.TransactionId(), payload.WorldId, payload.ChannelId, payload.CharacterId)
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	err := h.guildP.RequestCapacityIncrease(s.TransactionId(), ch, payload.CharacterId)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to request guild capacity increase.")
 		return err
@@ -1251,13 +1261,11 @@ func (h *HandlerImpl) handleSpawnReactorDrops(s Saga, st Step[any]) error {
 		return errors.New("invalid payload")
 	}
 
+	f := field.NewBuilder(payload.WorldId, payload.ChannelId, payload.MapId).SetInstance(payload.Instance).Build()
 	err := h.reactorDropP.SpawnReactorDrops(
 		s.TransactionId(),
 		payload.CharacterId,
-		payload.WorldId,
-		payload.ChannelId,
-		payload.MapId,
-		payload.Instance,
+		f,
 		payload.ReactorId,
 		payload.Classification,
 		payload.X,
@@ -1338,7 +1346,8 @@ func (h *HandlerImpl) handleApplyConsumableEffect(s Saga, st Step[any]) error {
 		return errors.New("invalid payload")
 	}
 
-	err := h.consumableP.ApplyConsumableEffect(s.TransactionId(), payload.WorldId, payload.ChannelId, payload.CharacterId, payload.ItemId)
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	err := h.consumableP.ApplyConsumableEffect(s.TransactionId(), ch, payload.CharacterId, payload.ItemId)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to apply consumable effect.")
 		return err
@@ -1355,7 +1364,8 @@ func (h *HandlerImpl) handleSendMessage(s Saga, st Step[any]) error {
 		return errors.New("invalid payload")
 	}
 
-	err := h.systemMessageP.SendMessage(s.TransactionId(), payload.WorldId, payload.ChannelId, payload.CharacterId, payload.MessageType, payload.Message)
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	err := h.systemMessageP.SendMessage(s.TransactionId(), ch, payload.CharacterId, payload.MessageType, payload.Message)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to send message.")
 		return err
@@ -1416,7 +1426,8 @@ func (h *HandlerImpl) handleAwardFame(s Saga, st Step[any]) error {
 		return errors.New("invalid payload")
 	}
 
-	err := h.charP.AwardFameAndEmit(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.ChannelId, payload.Amount)
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	err := h.charP.AwardFameAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.Amount)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to award fame.")
 		return err
@@ -1433,7 +1444,8 @@ func (h *HandlerImpl) handleShowStorage(s Saga, st Step[any]) error {
 		return errors.New("invalid payload")
 	}
 
-	err := h.storageP.ShowStorageAndEmit(s.TransactionId(), payload.WorldId, payload.ChannelId, payload.CharacterId, payload.NpcId, payload.AccountId)
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	err := h.storageP.ShowStorageAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.NpcId, payload.AccountId)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to show storage.")
 		return err
@@ -1628,7 +1640,8 @@ func (h *HandlerImpl) handlePlayPortalSound(s Saga, st Step[any]) error {
 		return errors.New("invalid payload")
 	}
 
-	err := h.systemMessageP.PlayPortalSound(s.TransactionId(), payload.WorldId, payload.ChannelId, payload.CharacterId)
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	err := h.systemMessageP.PlayPortalSound(s.TransactionId(), ch, payload.CharacterId)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to play portal sound.")
 		return err
@@ -1649,7 +1662,8 @@ func (h *HandlerImpl) handleShowInfo(s Saga, st Step[any]) error {
 		return errors.New("invalid payload")
 	}
 
-	err := h.systemMessageP.ShowInfo(s.TransactionId(), payload.WorldId, payload.ChannelId, payload.CharacterId, payload.Path)
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	err := h.systemMessageP.ShowInfo(s.TransactionId(), ch, payload.CharacterId, payload.Path)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to show info.")
 		return err
@@ -1670,7 +1684,8 @@ func (h *HandlerImpl) handleShowInfoText(s Saga, st Step[any]) error {
 		return errors.New("invalid payload")
 	}
 
-	err := h.systemMessageP.ShowInfoText(s.TransactionId(), payload.WorldId, payload.ChannelId, payload.CharacterId, payload.Text)
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	err := h.systemMessageP.ShowInfoText(s.TransactionId(), ch, payload.CharacterId, payload.Text)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to show info text.")
 		return err
@@ -1691,7 +1706,8 @@ func (h *HandlerImpl) handleUpdateAreaInfo(s Saga, st Step[any]) error {
 		return errors.New("invalid payload")
 	}
 
-	err := h.systemMessageP.UpdateAreaInfo(s.TransactionId(), payload.WorldId, payload.ChannelId, payload.CharacterId, payload.Area, payload.Info)
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	err := h.systemMessageP.UpdateAreaInfo(s.TransactionId(), ch, payload.CharacterId, payload.Area, payload.Info)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to update area info.")
 		return err
@@ -1712,7 +1728,8 @@ func (h *HandlerImpl) handleShowHint(s Saga, st Step[any]) error {
 		return errors.New("invalid payload")
 	}
 
-	err := h.systemMessageP.ShowHint(s.TransactionId(), payload.WorldId, payload.ChannelId, payload.CharacterId, payload.Hint, payload.Width, payload.Height)
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	err := h.systemMessageP.ShowHint(s.TransactionId(), ch, payload.CharacterId, payload.Hint, payload.Width, payload.Height)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to show hint.")
 		return err
@@ -1733,7 +1750,8 @@ func (h *HandlerImpl) handleShowGuideHint(s Saga, st Step[any]) error {
 		return errors.New("invalid payload")
 	}
 
-	err := h.systemMessageP.ShowGuideHint(s.TransactionId(), payload.WorldId, payload.ChannelId, payload.CharacterId, payload.HintId, payload.Duration)
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	err := h.systemMessageP.ShowGuideHint(s.TransactionId(), ch, payload.CharacterId, payload.HintId, payload.Duration)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to show guide hint.")
 		return err
@@ -1754,7 +1772,8 @@ func (h *HandlerImpl) handleShowIntro(s Saga, st Step[any]) error {
 		return errors.New("invalid payload")
 	}
 
-	err := h.systemMessageP.ShowIntro(s.TransactionId(), payload.WorldId, payload.ChannelId, payload.CharacterId, payload.Path)
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	err := h.systemMessageP.ShowIntro(s.TransactionId(), ch, payload.CharacterId, payload.Path)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to show intro.")
 		return err
@@ -1775,7 +1794,8 @@ func (h *HandlerImpl) handleSetHP(s Saga, st Step[any]) error {
 		return errors.New("invalid payload")
 	}
 
-	err := h.charP.SetHPAndEmit(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.ChannelId, payload.Amount)
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	err := h.charP.SetHPAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.Amount)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to set HP.")
 		return err
@@ -1836,7 +1856,8 @@ func (h *HandlerImpl) handleDeductExperience(s Saga, st Step[any]) error {
 		return errors.New("invalid payload")
 	}
 
-	err := h.charP.DeductExperienceAndEmit(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.ChannelId, payload.Amount)
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	err := h.charP.DeductExperienceAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.Amount)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to deduct experience.")
 		return err
@@ -1854,7 +1875,8 @@ func (h *HandlerImpl) handleCancelAllBuffs(s Saga, st Step[any]) error {
 		return errors.New("invalid payload")
 	}
 
-	err := h.buffP.CancelAllAndEmit(payload.WorldId, payload.ChannelId, payload.MapId, payload.Instance, payload.CharacterId)
+	f := field.NewBuilder(payload.WorldId, payload.ChannelId, payload.MapId).SetInstance(payload.Instance).Build()
+	err := h.buffP.CancelAllAndEmit(f, payload.CharacterId)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to cancel all buffs.")
 		return err
@@ -1875,7 +1897,8 @@ func (h *HandlerImpl) handleResetStats(s Saga, st Step[any]) error {
 		return errors.New("invalid payload")
 	}
 
-	err := h.charP.ResetStatsAndEmit(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.ChannelId)
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	err := h.charP.ResetStatsAndEmit(s.TransactionId(), ch, payload.CharacterId)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to reset stats.")
 		return err

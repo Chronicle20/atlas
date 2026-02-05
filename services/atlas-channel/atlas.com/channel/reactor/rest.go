@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
@@ -46,10 +47,7 @@ func (r *RestModel) SetID(strId string) error {
 func Extract(rm RestModel) (Model, error) {
 	return Model{
 		id:             rm.Id,
-		worldId:        rm.WorldId,
-		channelId:      rm.ChannelId,
-		mapId:          rm.MapId,
-		instance:       rm.Instance,
+		field:          field.NewBuilder(rm.WorldId, rm.ChannelId, rm.MapId).SetInstance(rm.Instance).Build(),
 		classification: rm.Classification,
 		name:           rm.Name,
 		state:          rm.State,

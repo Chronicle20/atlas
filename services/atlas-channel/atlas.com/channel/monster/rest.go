@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
@@ -55,10 +56,7 @@ func Extract(m RestModel) (Model, error) {
 
 	return Model{
 		uniqueId:           uint32(id),
-		worldId:            m.WorldId,
-		channelId:          m.ChannelId,
-		mapId:              m.MapId,
-		instance:           m.Instance,
+		field:              field.NewBuilder(m.WorldId, m.ChannelId, m.MapId).SetInstance(m.Instance).Build(),
 		maxHp:              m.MaxHp,
 		hp:                 m.Hp,
 		mp:                 m.Mp,

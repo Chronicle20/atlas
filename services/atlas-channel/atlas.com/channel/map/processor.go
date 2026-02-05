@@ -3,6 +3,7 @@ package _map
 import (
 	"atlas-channel/session"
 	"context"
+
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -34,12 +35,12 @@ func (p *Processor) GetCharacterIdsInMap(f field.Model) ([]uint32, error) {
 
 func (p *Processor) ForSessionsInSessionsMap(f func(oid uint32) model.Operator[session.Model]) model.Operator[session.Model] {
 	return func(s session.Model) error {
-		return p.sp.ForEachByCharacterId(s.WorldId(), s.ChannelId())(p.CharacterIdsInMapModelProvider(s.Field()), f(s.CharacterId()))
+		return p.sp.ForEachByCharacterId(s.Field().Channel())(p.CharacterIdsInMapModelProvider(s.Field()), f(s.CharacterId()))
 	}
 }
 
 func (p *Processor) ForSessionsInMap(f field.Model, o model.Operator[session.Model]) error {
-	return p.sp.ForEachByCharacterId(f.WorldId(), f.ChannelId())(p.CharacterIdsInMapModelProvider(f), o)
+	return p.sp.ForEachByCharacterId(f.Channel())(p.CharacterIdsInMapModelProvider(f), o)
 }
 
 func NotCharacterIdFilter(referenceCharacterId uint32) func(characterId uint32) bool {
@@ -54,5 +55,5 @@ func (p *Processor) OtherCharacterIdsInMapModelProvider(f field.Model, reference
 
 func (p *Processor) ForOtherSessionsInMap(f field.Model, referenceCharacterId uint32, o model.Operator[session.Model]) error {
 	mp := p.OtherCharacterIdsInMapModelProvider(f, referenceCharacterId)
-	return p.sp.ForEachByCharacterId(f.WorldId(), f.ChannelId())(mp, o)
+	return p.sp.ForEachByCharacterId(f.Channel())(mp, o)
 }

@@ -6,6 +6,8 @@ import (
 	character2 "atlas-pets/kafka/message/character"
 	"atlas-pets/pet"
 	"context"
+
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -55,7 +57,8 @@ func handleStatusEventLogin(db *gorm.DB) message.Handler[character2.StatusEvent[
 	return func(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventLoginBody]) {
 		if e.Type == character2.StatusEventTypeLogin {
 			l.Debugf("Character [%d] has logged in. worldId [%d] channelId [%d] mapId [%d].", e.CharacterId, e.WorldId, e.Body.ChannelId, e.Body.MapId)
-			character.NewProcessor(l, ctx).Enter(e.WorldId, e.Body.ChannelId, e.Body.MapId, e.CharacterId)
+			f := field.NewBuilder(e.WorldId, e.Body.ChannelId, e.Body.MapId).SetInstance(e.Body.Instance).Build()
+			character.NewProcessor(l, ctx).Enter(f, e.CharacterId)
 			_ = pet.NewProcessor(l, ctx, db).ClearPositions(e.CharacterId)
 		}
 	}
@@ -65,7 +68,8 @@ func handleStatusEventLogout(db *gorm.DB) message.Handler[character2.StatusEvent
 	return func(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventLogoutBody]) {
 		if e.Type == character2.StatusEventTypeLogout {
 			l.Debugf("Character [%d] has logged out. worldId [%d] channelId [%d] mapId [%d].", e.CharacterId, e.WorldId, e.Body.ChannelId, e.Body.MapId)
-			character.NewProcessor(l, ctx).Exit(e.WorldId, e.Body.ChannelId, e.Body.MapId, e.CharacterId)
+			f := field.NewBuilder(e.WorldId, e.Body.ChannelId, e.Body.MapId).SetInstance(e.Body.Instance).Build()
+			character.NewProcessor(l, ctx).Exit(f, e.CharacterId)
 			_ = pet.NewProcessor(l, ctx, db).ClearPositions(e.CharacterId)
 		}
 	}
@@ -75,7 +79,8 @@ func handleStatusEventMapChanged(db *gorm.DB) message.Handler[character2.StatusE
 	return func(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventMapChangedBody]) {
 		if e.Type == character2.StatusEventTypeMapChanged {
 			l.Debugf("Character [%d] has changed maps. worldId [%d] channelId [%d] oldMapId [%d] newMapId [%d].", e.CharacterId, e.WorldId, e.Body.ChannelId, e.Body.OldMapId, e.Body.TargetMapId)
-			character.NewProcessor(l, ctx).TransitionMap(e.WorldId, e.Body.ChannelId, e.Body.TargetMapId, e.CharacterId, e.Body.OldMapId)
+			f := field.NewBuilder(e.WorldId, e.Body.ChannelId, e.Body.TargetMapId).SetInstance(e.Body.TargetInstance).Build()
+			character.NewProcessor(l, ctx).TransitionMap(f, e.CharacterId, e.Body.OldMapId)
 			_ = pet.NewProcessor(l, ctx, db).ClearPositions(e.CharacterId)
 		}
 	}
@@ -85,7 +90,8 @@ func handleStatusEventChannelChanged(db *gorm.DB) message.Handler[character2.Sta
 	return func(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.ChangeChannelEventLoginBody]) {
 		if e.Type == character2.StatusEventTypeChannelChanged {
 			l.Debugf("Character [%d] has changed channels. worldId [%d] channelId [%d] oldChannelId [%d].", e.CharacterId, e.WorldId, e.Body.ChannelId, e.Body.OldChannelId)
-			character.NewProcessor(l, ctx).TransitionChannel(e.WorldId, e.Body.ChannelId, e.Body.OldChannelId, e.CharacterId, e.Body.MapId)
+			f := field.NewBuilder(e.WorldId, e.Body.ChannelId, e.Body.MapId).SetInstance(e.Body.Instance).Build()
+			character.NewProcessor(l, ctx).TransitionChannel(f, e.CharacterId, e.Body.OldChannelId)
 			_ = pet.NewProcessor(l, ctx, db).ClearPositions(e.CharacterId)
 		}
 	}

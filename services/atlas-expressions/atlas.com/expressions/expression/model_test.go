@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
@@ -25,9 +26,7 @@ func createTestModel(ten tenant.Model) Model {
 	return Model{
 		tenant:      ten,
 		characterId: 1000,
-		worldId:     world.Id(0),
-		channelId:   channel.Id(1),
-		mapId:       _map.Id(100000000),
+		field:       field.NewBuilder(0, 1, 100000000).Build(),
 		expression:  5,
 		expiration:  time.Now().Add(5 * time.Second),
 	}
@@ -81,9 +80,7 @@ func TestModel_Expiration(t *testing.T) {
 	m := Model{
 		tenant:      ten,
 		characterId: 1000,
-		worldId:     world.Id(0),
-		channelId:   channel.Id(1),
-		mapId:       _map.Id(100000000),
+		field:       field.NewBuilder(0, 1, 100000000).Build(),
 		expression:  5,
 		expiration:  now.Add(5 * time.Second),
 	}
@@ -101,9 +98,7 @@ func TestModel_AllAccessors(t *testing.T) {
 	m := Model{
 		tenant:      ten,
 		characterId: 2000,
-		worldId:     world.Id(1),
-		channelId:   channel.Id(2),
-		mapId:       _map.Id(200000000),
+		field:       field.NewBuilder(0, 2, 200000000).Build(),
 		expression:  10,
 		expiration:  expiration,
 	}

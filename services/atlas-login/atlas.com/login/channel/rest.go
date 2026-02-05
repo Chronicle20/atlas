@@ -1,19 +1,22 @@
 package channel
 
 import (
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
 )
 
 type RestModel struct {
-	Id              uuid.UUID `json:"-"`
-	WorldId         byte      `json:"worldId"`
-	ChannelId       byte      `json:"channelId"`
-	IpAddress       string    `json:"ipAddress"`
-	Port            int       `json:"port"`
-	CurrentCapacity uint32    `json:"currentCapacity"`
-	MaxCapacity     uint32    `json:"maxCapacity"`
-	CreatedAt       time.Time `json:"createdAt"`
+	Id              uuid.UUID  `json:"-"`
+	WorldId         world.Id   `json:"worldId"`
+	ChannelId       channel.Id `json:"channelId"`
+	IpAddress       string     `json:"ipAddress"`
+	Port            int        `json:"port"`
+	CurrentCapacity uint32     `json:"currentCapacity"`
+	MaxCapacity     uint32     `json:"maxCapacity"`
+	CreatedAt       time.Time  `json:"createdAt"`
 }
 
 func (r RestModel) GetName() string {

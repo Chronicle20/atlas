@@ -25,8 +25,8 @@ type Processor interface {
 	UpdateMesos(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, accountId uint32, mesos uint32, operation string) error
 	DepositRollbackAndEmit(transactionId uuid.UUID, worldId world.Id, accountId uint32, assetId asset.Id) error
 	DepositRollback(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, accountId uint32, assetId asset.Id) error
-	ShowStorageAndEmit(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32, accountId uint32) error
-	ShowStorage(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32, accountId uint32) error
+	ShowStorageAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, npcId uint32, accountId uint32) error
+	ShowStorage(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, npcId uint32, accountId uint32) error
 	AcceptAndEmit(transactionId uuid.UUID, worldId world.Id, accountId uint32, characterId uint32, slot int16, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, quantity asset.Quantity) error
 	Accept(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, accountId uint32, characterId uint32, slot int16, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, quantity asset.Quantity) error
 	ReleaseAndEmit(transactionId uuid.UUID, worldId world.Id, accountId uint32, characterId uint32, assetId asset.Id, quantity asset.Quantity) error
@@ -95,15 +95,15 @@ func (p *ProcessorImpl) DepositRollback(mb *message.Buffer) func(transactionId u
 	}
 }
 
-func (p *ProcessorImpl) ShowStorageAndEmit(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32, accountId uint32) error {
+func (p *ProcessorImpl) ShowStorageAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, npcId uint32, accountId uint32) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
-		return p.ShowStorage(mb)(transactionId, worldId, channelId, characterId, npcId, accountId)
+		return p.ShowStorage(mb)(transactionId, ch, characterId, npcId, accountId)
 	})
 }
 
-func (p *ProcessorImpl) ShowStorage(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32, accountId uint32) error {
-	return func(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, characterId uint32, npcId uint32, accountId uint32) error {
-		return mb.Put(storage2.EnvCommandTopic, ShowStorageCommandProvider(transactionId, worldId, channelId, characterId, npcId, accountId))
+func (p *ProcessorImpl) ShowStorage(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, npcId uint32, accountId uint32) error {
+	return func(transactionId uuid.UUID, ch channel.Model, characterId uint32, npcId uint32, accountId uint32) error {
+		return mb.Put(storage2.EnvCommandTopic, ShowStorageCommandProvider(transactionId, ch, characterId, npcId, accountId))
 	}
 }
 

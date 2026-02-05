@@ -4,13 +4,15 @@ import (
 	"atlas-saga-orchestrator/rest"
 	"context"
 	"fmt"
+
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
 )
 
 const (
-	storageAssetsResource       = "storage/accounts/%d/assets?worldId=%d"
-	projectionAssetResource     = "storage/projections/%d/compartments/%d/assets/%d"
+	storageAssetsResource   = "storage/accounts/%d/assets?worldId=%d"
+	projectionAssetResource = "storage/projections/%d/compartments/%d/assets/%d"
 )
 
 func getBaseRequest() string {
@@ -18,8 +20,8 @@ func getBaseRequest() string {
 }
 
 // RequestAssets retrieves all assets from storage for an account and world
-func RequestAssets(l logrus.FieldLogger, ctx context.Context) func(accountId uint32, worldId byte) ([]AssetRestModel, error) {
-	return func(accountId uint32, worldId byte) ([]AssetRestModel, error) {
+func RequestAssets(l logrus.FieldLogger, ctx context.Context) func(accountId uint32, worldId world.Id) ([]AssetRestModel, error) {
+	return func(accountId uint32, worldId world.Id) ([]AssetRestModel, error) {
 		url := fmt.Sprintf(getBaseRequest()+storageAssetsResource, accountId, worldId)
 		return rest.MakeGetRequest[[]AssetRestModel](url)(l, ctx)
 	}

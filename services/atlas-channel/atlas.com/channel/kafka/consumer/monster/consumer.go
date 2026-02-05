@@ -12,6 +12,7 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	_map2 "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -128,12 +129,13 @@ func handleStatusEventDamaged(sc server.Model, wp writer.Producer) message.Handl
 
 		p, err := party.NewProcessor(l, ctx).GetByMemberId(e.Body.ActorId)
 		if err == nil {
-			mimf := party.MemberInMap(sc.WorldId(), sc.ChannelId(), _map2.Id(e.MapId))
+			f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
+			mimf := party.MemberInMap(f)
 			mp := party.FilteredMemberProvider(mimf)(model.FixedProvider(p))
 			idProvider = party.MemberToMemberIdMapper(mp)
 		}
 
-		err = session.NewProcessor(l, ctx).ForEachByCharacterId(sc.WorldId(), sc.ChannelId())(idProvider, session.Announce(l)(ctx)(wp)(writer.MonsterHealth)(writer.MonsterHealthBody(m)))
+		err = session.NewProcessor(l, ctx).ForEachByCharacterId(sc.Channel())(idProvider, session.Announce(l)(ctx)(wp)(writer.MonsterHealth)(writer.MonsterHealthBody(m)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce monster [%d] health.", e.UniqueId)
 		}
@@ -177,7 +179,8 @@ func handleStatusEventStartControl(sc server.Model, wp writer.Producer) message.
 			return
 		}
 
-		m := monster.NewModelBuilder(e.UniqueId, world.Id(e.WorldId), channel.Id(e.ChannelId), _map2.Id(e.MapId), e.MonsterId).
+		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
+		m := monster.NewModelBuilder(e.UniqueId, f, e.MonsterId).
 			SetControlCharacterId(e.Body.ActorId).
 			SetX(e.Body.X).SetY(e.Body.Y).
 			SetStance(e.Body.Stance).
@@ -185,7 +188,7 @@ func handleStatusEventStartControl(sc server.Model, wp writer.Producer) message.
 			SetTeam(e.Body.Team).
 			MustBuild()
 		sf := session.Announce(l)(ctx)(wp)(writer.ControlMonster)(writer.StartControlMonsterBody(l, tenant.MustFromContext(ctx))(m, false))
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.ActorId, sf)
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.ActorId, sf)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to start control of monster [%d] for character [%d].", e.UniqueId, e.Body.ActorId)
 		}
@@ -202,10 +205,11 @@ func handleStatusEventStopControl(sc server.Model, wp writer.Producer) message.H
 			return
 		}
 
-		m := monster.NewModelBuilder(e.UniqueId, world.Id(e.WorldId), channel.Id(e.ChannelId), _map2.Id(e.MapId), e.MonsterId).
+		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
+		m := monster.NewModelBuilder(e.UniqueId, f, e.MonsterId).
 			MustBuild()
 		sf := session.Announce(l)(ctx)(wp)(writer.ControlMonster)(writer.StopControlMonsterBody(l, tenant.MustFromContext(ctx))(m))
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.ActorId, sf)
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.ActorId, sf)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to stop control of monster [%d] for character [%d].", e.UniqueId, e.Body.ActorId)
 		}

@@ -78,7 +78,7 @@ func handleSendMessage(sc server.Model, wp writer.Producer) message.Handler[syst
 			bodyProducer = writer.WorldMessagePinkTextBody(l, sc.Tenant())("", "", cmd.Body.Message)
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(cmd.CharacterId,
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(cmd.CharacterId,
 			session.Announce(l)(ctx)(wp)(writer.WorldMessage)(bodyProducer))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to send message to character [%d].", cmd.CharacterId)
@@ -101,7 +101,7 @@ func handlePlayPortalSound(sc server.Model, wp writer.Producer) message.Handler[
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(cmd.CharacterId,
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(cmd.CharacterId,
 			session.Announce(l)(ctx)(wp)(writer.CharacterEffect)(writer.CharacterPlayPortalSoundEffectEffectBody(l)()))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to play portal sound for character [%d].", cmd.CharacterId)
@@ -124,7 +124,7 @@ func handleShowInfo(sc server.Model, wp writer.Producer) message.Handler[system_
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(cmd.CharacterId,
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(cmd.CharacterId,
 			session.Announce(l)(ctx)(wp)(writer.CharacterEffect)(writer.CharacterShowInfoEffectBody(l)(cmd.Body.Path)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to show info for character [%d].", cmd.CharacterId)
@@ -147,7 +147,7 @@ func handleShowInfoText(sc server.Model, wp writer.Producer) message.Handler[sys
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(cmd.CharacterId,
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(cmd.CharacterId,
 			session.Announce(l)(ctx)(wp)(writer.CharacterStatusMessage)(writer.CharacterStatusMessageOperationSystemMessageBody(l)(cmd.Body.Text)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to show info text for character [%d].", cmd.CharacterId)
@@ -170,7 +170,7 @@ func handleUpdateAreaInfo(sc server.Model, wp writer.Producer) message.Handler[s
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(cmd.CharacterId,
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(cmd.CharacterId,
 			session.Announce(l)(ctx)(wp)(writer.CharacterStatusMessage)(writer.CharacterStatusMessageOperationQuestRecordExBody(l)(cmd.Body.Area, cmd.Body.Info)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to update area info for character [%d].", cmd.CharacterId)
@@ -193,7 +193,7 @@ func handleShowHint(sc server.Model, wp writer.Producer) message.Handler[system_
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(cmd.CharacterId,
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(cmd.CharacterId,
 			session.Announce(l)(ctx)(wp)(writer.CharacterHint)(writer.CharacterHintBody(cmd.Body.Hint, cmd.Body.Width, cmd.Body.Height, false, 0, 0)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to show hint for character [%d].", cmd.CharacterId)
@@ -222,7 +222,7 @@ func handleShowGuideHint(sc server.Model, wp writer.Producer) message.Handler[sy
 			duration = 7000
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(cmd.CharacterId,
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(cmd.CharacterId,
 			session.Announce(l)(ctx)(wp)(writer.GuideTalk)(writer.GuideTalkIdxBody(l)(cmd.Body.HintId, duration)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to show guide hint for character [%d].", cmd.CharacterId)
@@ -245,7 +245,7 @@ func handleShowIntro(sc server.Model, wp writer.Producer) message.Handler[system
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(cmd.CharacterId,
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(cmd.CharacterId,
 			session.Announce(l)(ctx)(wp)(writer.CharacterEffect)(writer.CharacterShowIntroEffectBody(l)(cmd.Body.Path)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to show intro for character [%d].", cmd.CharacterId)

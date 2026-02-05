@@ -3,13 +3,15 @@ package guild
 import (
 	"atlas-guilds/guild/member"
 	"atlas-guilds/guild/title"
+
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 )
 
 type Model struct {
 	tenantId            uuid.UUID
 	id                  uint32
-	worldId             byte
+	worldId             world.Id
 	name                string
 	notice              string
 	points              uint32
@@ -27,7 +29,7 @@ func (m Model) Id() uint32 {
 	return m.id
 }
 
-func (m Model) WorldId() byte {
+func (m Model) WorldId() world.Id {
 	return m.worldId
 }
 

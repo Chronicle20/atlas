@@ -6,13 +6,14 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/jtumidanski/api2go/jsonapi"
 )
 
 // StorageRestModel represents the storage REST response from atlas-storage
 type StorageRestModel struct {
 	Id        string           `json:"-"`
-	WorldId   byte             `json:"world_id"`
+	WorldId   world.Id         `json:"world_id"`
 	AccountId uint32           `json:"account_id"`
 	Capacity  uint32           `json:"capacity"`
 	Mesos     uint32           `json:"mesos"`
@@ -265,15 +266,15 @@ func (r *AssetRestModel) UnmarshalJSON(data []byte) error {
 
 // ProjectionRestModel represents a storage projection REST response from atlas-storage
 type ProjectionRestModel struct {
-	Id           string                           `json:"-"`
-	CharacterId  uint32                           `json:"characterId"`
-	AccountId    uint32                           `json:"accountId"`
-	WorldId      byte                             `json:"worldId"`
-	StorageId    string                           `json:"storageId"`
-	Capacity     uint32                           `json:"capacity"`
-	Mesos        uint32                           `json:"mesos"`
-	NpcId        uint32                           `json:"npcId"`
-	Compartments map[string]json.RawMessage       `json:"compartments"`
+	Id           string                     `json:"-"`
+	CharacterId  uint32                     `json:"characterId"`
+	AccountId    uint32                     `json:"accountId"`
+	WorldId      world.Id                   `json:"worldId"`
+	StorageId    string                     `json:"storageId"`
+	Capacity     uint32                     `json:"capacity"`
+	Mesos        uint32                     `json:"mesos"`
+	NpcId        uint32                     `json:"npcId"`
+	Compartments map[string]json.RawMessage `json:"compartments"`
 }
 
 func (r ProjectionRestModel) GetName() string {

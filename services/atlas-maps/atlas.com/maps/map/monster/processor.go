@@ -30,17 +30,14 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
-	_map "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {
-	SpawnMonsters(transactionId uuid.UUID) func(worldId world.Id) func(channelId channel.Id) func(mapId _map.Id) error
+	SpawnMonsters(transactionId uuid.UUID, field field.Model) error
 }
 
 // ProcessorImpl implements the Processor interface with spawn point cooldown functionality.
@@ -96,106 +93,96 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 // - Supports concurrent spawning across different maps
 //
 // The method maintains existing spawn rate calculations while adding cooldown enforcement.
-func (p *ProcessorImpl) SpawnMonsters(transactionId uuid.UUID) func(worldId world.Id) func(channelId channel.Id) func(mapId _map.Id) error {
-	return func(worldId world.Id) func(channelId channel.Id) func(mapId _map.Id) error {
-		return func(channelId channel.Id) func(mapId _map.Id) error {
-			return func(mapId _map.Id) error {
-				p.l.Debugf("Executing spawn mechanism for Tenant [%s] World [%d] Channel [%d] Map [%d].", p.t.String(), worldId, channelId, mapId)
+func (p *ProcessorImpl) SpawnMonsters(transactionId uuid.UUID, field field.Model) error {
+	p.l.Debugf("Executing spawn mechanism for Tenant [%s] Field [%s].", p.t.String(), field.Id())
 
-				// Create MapKey for registry access (non-instanced maps use uuid.Nil)
-				mapKey := character.MapKey{
-					Tenant:    p.t,
-					WorldId:   worldId,
-					ChannelId: channelId,
-					MapId:     mapId,
-					Instance:  uuid.Nil,
-				}
+	// Create MapKey for registry access (non-instanced maps use uuid.Nil)
+	mapKey := character.MapKey{
+		Tenant: p.t,
+		Field:  field,
+	}
 
-				// Get spawn points from singleton registry with initialization if needed
-				registry := GetRegistry()
-				spawnPoints, mutex, err := registry.GetOrInitializeSpawnPoints(mapKey, p.dp, p.l)
-				if err != nil {
-					p.l.WithError(err).Errorf("Failed to get spawn points for world [%d] channel [%d] map [%d].", worldId, channelId, mapId)
-					return err
-				}
+	// Get spawn points from singleton registry with initialization if needed
+	registry := GetRegistry()
+	spawnPoints, mutex, err := registry.GetOrInitializeSpawnPoints(mapKey, p.dp, p.l)
+	if err != nil {
+		p.l.WithError(err).Errorf("Failed to get spawn points for field [%s].", field.Id())
+		return err
+	}
 
-				f := field.NewBuilder(worldId, channelId, mapId).Build()
-				cs, err := p.cp.GetCharactersInMap(transactionId, f)
-				if err != nil {
-					p.l.WithError(err).Errorf("Unable to retrieve characters in map. Aborting spawning for world [%d] channel [%d] map [%d].", worldId, channelId, mapId)
-					return err
-				}
+	cs, err := p.cp.GetCharactersInMap(transactionId, field)
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to retrieve characters in map. Aborting spawning for field [%s].", field.Id())
+		return err
+	}
 
-				c := len(cs)
-				if c <= 0 {
-					return nil
-				}
+	c := len(cs)
+	if c <= 0 {
+		return nil
+	}
 
-				// Lock for reading spawn points
-				mutex.RLock()
+	// Lock for reading spawn points
+	mutex.RLock()
 
-				// Filter spawn points by cooldown expiry
-				now := time.Now()
-				var eligibleSpawnPoints []monster2.SpawnPoint
-				var eligibleIndices []int
-				for i, csp := range spawnPoints {
-					if csp.NextSpawnAt.Before(now) || csp.NextSpawnAt.Equal(now) {
-						eligibleSpawnPoints = append(eligibleSpawnPoints, csp.SpawnPoint)
-						eligibleIndices = append(eligibleIndices, i)
-					}
-				}
-
-				mutex.RUnlock()
-
-				if len(eligibleSpawnPoints) == 0 {
-					p.l.Debugf("No eligible spawn points available (all on cooldown) for world [%d] channel [%d] map [%d].", worldId, channelId, mapId)
-					return nil
-				}
-
-				monstersInMap, err := p.mp.CountInMap(transactionId, worldId, channelId, mapId)
-				if err != nil {
-					p.l.WithError(err).Warnf("Assuming no monsters in map.")
-				}
-
-				monstersMax := p.getMonsterMax(c, len(spawnPoints))
-
-				toSpawn := monstersMax - monstersInMap
-				if toSpawn <= 0 {
-					return nil
-				}
-
-				// Shuffle eligible spawn points
-				shuffledIndices := p.shuffleIndices(eligibleIndices)
-
-				// Spawn monsters from eligible spawn points
-				spawned := 0
-				for _, idx := range shuffledIndices {
-					if spawned >= toSpawn {
-						break
-					}
-
-					originalIdx := eligibleIndices[idx]
-					sp := spawnPoints[originalIdx].SpawnPoint
-
-					// Update cooldown before spawning
-					mutex.Lock()
-					spawnPoints[originalIdx].NextSpawnAt = now.Add(5 * time.Second)
-					mutex.Unlock()
-
-					spawned++
-					p.l.Debugf("Spawning monster at spawn point [%d] with template [%d] at position (%d, %d)", sp.Id, sp.Template, sp.X, sp.Y)
-
-					go func(sp monster2.SpawnPoint) {
-						p.mp.CreateMonster(transactionId, worldId, channelId, mapId, sp.Template, sp.X, sp.Y, sp.Fh, sp.Team)
-					}(sp)
-				}
-
-				p.l.Debugf("Spawned %d monsters out of %d needed for world [%d] channel [%d] map [%d]. %d spawn points were on cooldown.",
-					spawned, toSpawn, worldId, channelId, mapId, len(spawnPoints)-len(eligibleSpawnPoints))
-				return nil
-			}
+	// Filter spawn points by cooldown expiry
+	now := time.Now()
+	var eligibleSpawnPoints []monster2.SpawnPoint
+	var eligibleIndices []int
+	for i, csp := range spawnPoints {
+		if csp.NextSpawnAt.Before(now) || csp.NextSpawnAt.Equal(now) {
+			eligibleSpawnPoints = append(eligibleSpawnPoints, csp.SpawnPoint)
+			eligibleIndices = append(eligibleIndices, i)
 		}
 	}
+
+	mutex.RUnlock()
+
+	if len(eligibleSpawnPoints) == 0 {
+		p.l.Debugf("No eligible spawn points available (all on cooldown) for field [%s].", field.Id())
+		return nil
+	}
+
+	monstersInMap, err := p.mp.CountInMap(transactionId, field)
+	if err != nil {
+		p.l.WithError(err).Warnf("Assuming no monsters in map.")
+	}
+
+	monstersMax := p.getMonsterMax(c, len(spawnPoints))
+
+	toSpawn := monstersMax - monstersInMap
+	if toSpawn <= 0 {
+		return nil
+	}
+
+	// Shuffle eligible spawn points
+	shuffledIndices := p.shuffleIndices(eligibleIndices)
+
+	// Spawn monsters from eligible spawn points
+	spawned := 0
+	for _, idx := range shuffledIndices {
+		if spawned >= toSpawn {
+			break
+		}
+
+		originalIdx := eligibleIndices[idx]
+		sp := spawnPoints[originalIdx].SpawnPoint
+
+		// Update cooldown before spawning
+		mutex.Lock()
+		spawnPoints[originalIdx].NextSpawnAt = now.Add(5 * time.Second)
+		mutex.Unlock()
+
+		spawned++
+		p.l.Debugf("Spawning monster at spawn point [%d] with template [%d] at position (%d, %d)", sp.Id, sp.Template, sp.X, sp.Y)
+
+		go func(sp monster2.SpawnPoint) {
+			p.mp.CreateMonster(transactionId, field, sp.Template, sp.X, sp.Y, sp.Fh, sp.Team)
+		}(sp)
+	}
+
+	p.l.Debugf("Spawned %d monsters out of %d needed for field [%s]. %d spawn points were on cooldown.",
+		spawned, toSpawn, field.Id(), len(spawnPoints)-len(eligibleSpawnPoints))
+	return nil
 }
 
 func (p *ProcessorImpl) shuffle(vals []monster2.SpawnPoint) []monster2.SpawnPoint {

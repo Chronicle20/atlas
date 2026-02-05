@@ -102,7 +102,7 @@ const (
 
 type StatusEvent[E any] struct {
 	TransactionId uuid.UUID `json:"transactionId"`
-	WorldId       byte      `json:"worldId"`
+	WorldId       world.Id  `json:"worldId"`
 	GuildId       uint32    `json:"guildId"`
 	Type          string    `json:"type"`
 	Body          E         `json:"body"`

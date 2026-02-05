@@ -3,6 +3,8 @@ package world
 import (
 	"atlas-login/channel"
 	"context"
+
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
@@ -11,9 +13,9 @@ import (
 type Processor interface {
 	GetAll() ([]Model, error)
 	AllProvider() model.Provider[[]Model]
-	GetById(worldId byte) (Model, error)
-	ByIdModelProvider(worldId byte) model.Provider[Model]
-	GetCapacityStatus(worldId byte) Status
+	GetById(worldId world.Id) (Model, error)
+	ByIdModelProvider(worldId world.Id) model.Provider[Model]
+	GetCapacityStatus(worldId world.Id) Status
 }
 
 type ProcessorImpl struct {
@@ -39,15 +41,15 @@ func (p *ProcessorImpl) GetAll() ([]Model, error) {
 	return p.AllProvider()()
 }
 
-func (p *ProcessorImpl) ByIdModelProvider(worldId byte) model.Provider[Model] {
+func (p *ProcessorImpl) ByIdModelProvider(worldId world.Id) model.Provider[Model] {
 	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestWorld(worldId), Extract)
 }
 
-func (p *ProcessorImpl) GetById(worldId byte) (Model, error) {
+func (p *ProcessorImpl) GetById(worldId world.Id) (Model, error) {
 	return p.ByIdModelProvider(worldId)()
 }
 
-func (p *ProcessorImpl) GetCapacityStatus(worldId byte) Status {
+func (p *ProcessorImpl) GetCapacityStatus(worldId world.Id) Status {
 	w, err := p.GetById(worldId)
 	if err != nil {
 		return StatusFull

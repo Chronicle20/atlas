@@ -1,5 +1,7 @@
 package rate
 
+import "github.com/Chronicle20/atlas-constants/world"
+
 const (
 	EnvEventTopicWorldRate = "EVENT_TOPIC_WORLD_RATE"
 
@@ -17,7 +19,7 @@ const (
 
 type WorldRateEvent struct {
 	Type       string   `json:"type"`
-	WorldId    byte     `json:"worldId"`
+	WorldId    world.Id `json:"worldId"`
 	RateType   RateType `json:"rateType"`
 	Multiplier float64  `json:"multiplier"`
 }

@@ -2,11 +2,13 @@ package channel
 
 import (
 	"context"
+	"time"
+
+	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
-	"time"
 )
 
 const ExpirationTask = "expire"
@@ -35,7 +37,8 @@ func (t *Timeout) Run() {
 		tctx := tenant.WithContext(sctx, te)
 		return model.ForEachSlice(model.FixedProvider(GetChannelRegistry().ChannelServers(te)), func(c Model) error {
 			if c.CreatedAt().Add(time.Second * 15).Before(time.Now()) {
-				return NewProcessor(t.l, tctx).Unregister(c.WorldId(), c.ChannelId())
+				ch := channel.NewModel(c.WorldId(), c.ChannelId())
+				return NewProcessor(t.l, tctx).Unregister(ch)
 			}
 			return nil
 		})

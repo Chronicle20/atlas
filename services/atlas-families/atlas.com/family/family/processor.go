@@ -8,6 +8,7 @@ import (
 	familymsg "atlas-family/kafka/message/family"
 	"atlas-family/kafka/producer"
 
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -18,7 +19,7 @@ import (
 // Processor interface defines the core business logic operations
 type Processor interface {
 	WithTransaction(db *gorm.DB) Processor
-	AddJunior(buf *message.Buffer) func(worldId byte, seniorId uint32, seniorLevel uint16, juniorId uint32, juniorLevel uint16) model.Provider[FamilyMember]
+	AddJunior(buf *message.Buffer) func(worldId world.Id, seniorId uint32, seniorLevel uint16, juniorId uint32, juniorLevel uint16) model.Provider[FamilyMember]
 	RemoveMember(buf *message.Buffer) func(characterId uint32, reason string) model.Provider[[]FamilyMember]
 	BreakLink(buf *message.Buffer) func(characterId uint32, reason string) model.Provider[[]FamilyMember]
 	AwardRep(buf *message.Buffer) func(characterId uint32, amount uint32, source string) model.Provider[FamilyMember]
@@ -26,7 +27,7 @@ type Processor interface {
 	ResetDailyRep(buf *message.Buffer) model.Provider[BatchResetResult]
 
 	// AndEmit variants for Kafka message emission
-	AddJuniorAndEmit(transactionId uuid.UUID, worldId byte, seniorId uint32, seniorLevel uint16, juniorId uint32, juniorLevel uint16) model.Provider[FamilyMember]
+	AddJuniorAndEmit(transactionId uuid.UUID, worldId world.Id, seniorId uint32, seniorLevel uint16, juniorId uint32, juniorLevel uint16) model.Provider[FamilyMember]
 	RemoveMemberAndEmit(transactionId uuid.UUID, characterId uint32, reason string) model.Provider[[]FamilyMember]
 	BreakLinkAndEmit(transactionId uuid.UUID, characterId uint32, reason string) model.Provider[[]FamilyMember]
 	AwardRepAndEmit(transactionId uuid.UUID, characterId uint32, amount uint32, source string) model.Provider[FamilyMember]
@@ -79,8 +80,8 @@ func (p *ProcessorImpl) WithTransaction(db *gorm.DB) Processor {
 }
 
 // AddJunior adds a junior to a senior's family
-func (p *ProcessorImpl) AddJunior(buf *message.Buffer) func(worldId byte, seniorId uint32, seniorLevel uint16, juniorId uint32, juniorLevel uint16) model.Provider[FamilyMember] {
-	return func(worldId byte, seniorId uint32, seniorLevel uint16, juniorId uint32, juniorLevel uint16) model.Provider[FamilyMember] {
+func (p *ProcessorImpl) AddJunior(buf *message.Buffer) func(worldId world.Id, seniorId uint32, seniorLevel uint16, juniorId uint32, juniorLevel uint16) model.Provider[FamilyMember] {
+	return func(worldId world.Id, seniorId uint32, seniorLevel uint16, juniorId uint32, juniorLevel uint16) model.Provider[FamilyMember] {
 		return func() (FamilyMember, error) {
 			p.log.WithFields(logrus.Fields{
 				"seniorId": seniorId,
@@ -541,7 +542,7 @@ func (p *ProcessorImpl) ResetDailyRep(buf *message.Buffer) model.Provider[BatchR
 // AndEmit variants - combine business logic with event emission
 
 // AddJuniorAndEmit adds a junior and emits appropriate events
-func (p *ProcessorImpl) AddJuniorAndEmit(transactionId uuid.UUID, worldId byte, seniorId uint32, seniorLevel uint16, juniorId uint32, juniorLevel uint16) model.Provider[FamilyMember] {
+func (p *ProcessorImpl) AddJuniorAndEmit(transactionId uuid.UUID, worldId world.Id, seniorId uint32, seniorLevel uint16, juniorId uint32, juniorLevel uint16) model.Provider[FamilyMember] {
 	return func() (FamilyMember, error) {
 		return message.EmitWithResult[FamilyMember, struct{}](p.producer)(func(buf *message.Buffer) func(struct{}) (FamilyMember, error) {
 			return func(struct{}) (FamilyMember, error) {

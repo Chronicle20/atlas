@@ -7,13 +7,15 @@ import (
 	"atlas-data/map/reactor"
 	"atlas-data/point"
 	"atlas-data/rest"
+	"net/http"
+	"strconv"
+
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"net/http"
-	"strconv"
 )
 
 func InitResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteInitializer {
@@ -58,7 +60,7 @@ func handleGetMapsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 
 func handleGetMapRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-		return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
+		return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				s := NewStorage(d.Logger(), db)
 				res, err := s.GetById(d.Context())(strconv.Itoa(int(mapId)))
@@ -78,7 +80,7 @@ func handleGetMapRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 
 func handleGetMapPortalsByNameRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-		return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
+		return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				vars := mux.Vars(r)
 				portalName := vars["name"]
@@ -101,7 +103,7 @@ func handleGetMapPortalsByNameRequest(db *gorm.DB) func(d *rest.HandlerDependenc
 
 func handleGetMapPortalsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-		return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
+		return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				s := NewStorage(d.Logger(), db)
 				res, err := GetPortals(s)(d.Context())(mapId)
@@ -121,7 +123,7 @@ func handleGetMapPortalsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *
 
 func handleGetMapPortalRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-		return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
+		return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
 			return rest.ParsePortalId(d.Logger(), func(portalId uint32) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
 					s := NewStorage(d.Logger(), db)
@@ -143,7 +145,7 @@ func handleGetMapPortalRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *r
 
 func handleGetMapReactorsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-		return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
+		return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				s := NewStorage(d.Logger(), db)
 				res, err := GetReactors(s)(d.Context())(mapId)
@@ -163,7 +165,7 @@ func handleGetMapReactorsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 
 func handleGetMapNPCsByObjectIdRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-		return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
+		return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				vars := mux.Vars(r)
 				objectId, err := strconv.Atoi(vars["objectId"])
@@ -191,7 +193,7 @@ func handleGetMapNPCsByObjectIdRequest(db *gorm.DB) func(d *rest.HandlerDependen
 
 func handleGetMapNPCsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-		return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
+		return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				s := NewStorage(d.Logger(), db)
 				res, err := GetNpcs(s)(d.Context())(mapId)
@@ -211,7 +213,7 @@ func handleGetMapNPCsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *res
 
 func handleGetMapNPCRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-		return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
+		return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
 			return rest.ParseNPC(d.Logger(), func(npcId uint32) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
 					s := NewStorage(d.Logger(), db)
@@ -233,7 +235,7 @@ func handleGetMapNPCRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest
 
 func handleGetMapMonstersRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-		return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
+		return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				s := NewStorage(d.Logger(), db)
 				res, err := GetMonsters(s)(d.Context())(mapId)
@@ -253,7 +255,7 @@ func handleGetMapMonstersRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 
 func handleGetMapDropPositionRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext, input DropPositionRestModel) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext, input DropPositionRestModel) http.HandlerFunc {
-		return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
+		return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				s := NewStorage(d.Logger(), db)
 				res, err := calcDropPos(s)(d.Context())(mapId, point.RestModel{X: input.InitialX, Y: input.InitialY}, point.RestModel{X: input.FallbackX, Y: input.FallbackY})
@@ -273,7 +275,7 @@ func handleGetMapDropPositionRequest(db *gorm.DB) func(d *rest.HandlerDependency
 
 func handleGetMapFootholdBelowRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext, i PositionRestModel) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext, i PositionRestModel) http.HandlerFunc {
-		return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
+		return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				s := NewStorage(d.Logger(), db)
 				m, err := s.GetById(d.Context())(strconv.Itoa(int(mapId)))

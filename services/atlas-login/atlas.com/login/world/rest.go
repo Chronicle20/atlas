@@ -2,9 +2,11 @@ package world
 
 import (
 	"atlas-login/channel"
+	"strconv"
+
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/jtumidanski/api2go/jsonapi"
-	"strconv"
 )
 
 type RestModel struct {
@@ -113,7 +115,7 @@ func Extract(r RestModel) (Model, error) {
 	}
 
 	return NewBuilder().
-		SetId(byte(id)).
+		SetId(world.Id(id)).
 		SetName(r.Name).
 		SetState(State(r.State)).
 		SetMessage(r.Message).

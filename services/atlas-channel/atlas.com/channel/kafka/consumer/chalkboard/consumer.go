@@ -79,7 +79,7 @@ func handleClearCommand(sc server.Model, wp writer.Producer) message.Handler[cha
 		if err != nil {
 			l.WithError(err).Errorf("Unable to show chalkboard clear by character [%d].", e.CharacterId)
 		}
-		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, enableActions(l)(ctx)(wp))
+		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, enableActions(l)(ctx)(wp))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to enable actions for character [%d].", e.CharacterId)
 		}

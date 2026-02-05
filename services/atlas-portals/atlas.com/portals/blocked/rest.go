@@ -2,14 +2,16 @@ package blocked
 
 import (
 	"fmt"
+
+	_map "github.com/Chronicle20/atlas-constants/map"
 )
 
 // RestModel represents a blocked portal in JSON:API format
 type RestModel struct {
-	Id          string `json:"-"`
-	CharacterId uint32 `json:"characterId"`
-	MapId       uint32 `json:"mapId"`
-	PortalId    uint32 `json:"portalId"`
+	Id          string  `json:"-"`
+	CharacterId uint32  `json:"characterId"`
+	MapId       _map.Id `json:"mapId"`
+	PortalId    uint32  `json:"portalId"`
 }
 
 // GetName returns the resource type name for JSON:API

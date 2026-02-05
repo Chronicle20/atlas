@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	inventory2 "github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas-constants/map"
@@ -693,7 +694,8 @@ func (c Condition) EvaluateWithContext(ctx ValidationContext) ConditionResult {
 
 	case MapCapacityCondition:
 		// Get player count for the specified map using worldId/channelId from condition
-		actualValue = ctx.GetPlayerCountInMap(c.worldId, c.channelId, _map.Id(c.referenceId))
+		f := field.NewBuilder(c.worldId, c.channelId, _map.Id(c.referenceId)).Build()
+		actualValue = ctx.GetPlayerCountInMap(f)
 		description = fmt.Sprintf("Map %d Player Count %s %d (world:%d channel:%d)", c.referenceId, c.operator, c.value, c.worldId, c.channelId)
 
 	case GuildIdCondition:

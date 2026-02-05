@@ -9,7 +9,6 @@ import (
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/character"
 	"github.com/Chronicle20/atlas-constants/item"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
@@ -17,7 +16,7 @@ import (
 // Processor is the interface for consumable operations
 type Processor interface {
 	// ApplyConsumableEffect sends a command to apply item effects to a character without consuming from inventory
-	ApplyConsumableEffect(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, characterId character.Id, itemId item.Id) error
+	ApplyConsumableEffect(transactionId uuid.UUID, ch channel.Model, characterId character.Id, itemId item.Id) error
 }
 
 // ProcessorImpl is the implementation of the Processor interface
@@ -35,6 +34,6 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 }
 
 // ApplyConsumableEffect sends a Kafka command to atlas-consumables to apply item effects
-func (p *ProcessorImpl) ApplyConsumableEffect(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, characterId character.Id, itemId item.Id) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvCommandTopic)(ApplyConsumableEffectCommandProvider(transactionId, worldId, channelId, characterId, itemId))
+func (p *ProcessorImpl) ApplyConsumableEffect(transactionId uuid.UUID, ch channel.Model, characterId character.Id, itemId item.Id) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvCommandTopic)(ApplyConsumableEffectCommandProvider(transactionId, ch, characterId, itemId))
 }

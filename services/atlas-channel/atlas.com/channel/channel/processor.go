@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/google/uuid"
@@ -13,9 +12,9 @@ import (
 
 // Processor interface defines the operations for channel processing
 type Processor interface {
-	Register(worldId world.Id, channelId channel.Id, ipAddress string, port int) error
-	ByIdModelProvider(worldId world.Id, channelId channel.Id) model.Provider[Model]
-	GetById(worldId world.Id, channelId channel.Id) (Model, error)
+	Register(ch channel.Model, ipAddress string, port int) error
+	ByIdModelProvider(ch channel.Model) model.Provider[Model]
+	GetById(ch channel.Model) (Model, error)
 }
 
 // ProcessorImpl implements the Processor interface
@@ -32,11 +31,11 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return p
 }
 
-func (p *ProcessorImpl) Register(worldId world.Id, channelId channel.Id, ipAddress string, port int) error {
+func (p *ProcessorImpl) Register(ch channel.Model, ipAddress string, port int) error {
 	return registerChannel(p.l)(p.ctx)(NewBuilder().
 		SetId(uuid.New()).
-		SetWorldId(worldId).
-		SetChannelId(channelId).
+		SetWorldId(ch.WorldId()).
+		SetChannelId(ch.Id()).
 		SetIpAddress(ipAddress).
 		SetPort(port).
 		SetCurrentCapacity(0).
@@ -44,10 +43,10 @@ func (p *ProcessorImpl) Register(worldId world.Id, channelId channel.Id, ipAddre
 		MustBuild())
 }
 
-func (p *ProcessorImpl) ByIdModelProvider(worldId world.Id, channelId channel.Id) model.Provider[Model] {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestChannel(worldId, channelId), Extract)
+func (p *ProcessorImpl) ByIdModelProvider(ch channel.Model) model.Provider[Model] {
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestChannel(ch), Extract)
 }
 
-func (p *ProcessorImpl) GetById(worldId world.Id, channelId channel.Id) (Model, error) {
-	return p.ByIdModelProvider(worldId, channelId)()
+func (p *ProcessorImpl) GetById(ch channel.Model) (Model, error) {
+	return p.ByIdModelProvider(ch)()
 }

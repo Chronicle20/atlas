@@ -2,24 +2,26 @@ package quest
 
 import (
 	"strconv"
+
+	_map "github.com/Chronicle20/atlas-constants/map"
 )
 
 // RestModel represents the full quest definition from atlas-data
 type RestModel struct {
-	Id                uint32               `json:"-"`
-	Name              string               `json:"name"`
-	Parent            string               `json:"parent,omitempty"`
-	Area              uint32               `json:"area"`
-	Order             uint32               `json:"order,omitempty"`
-	AutoStart         bool                 `json:"autoStart"`
-	AutoPreComplete   bool                 `json:"autoPreComplete"`
-	AutoComplete      bool                 `json:"autoComplete"`
-	TimeLimit         uint32               `json:"timeLimit,omitempty"`
-	TimeLimit2        uint32               `json:"timeLimit2,omitempty"`
-	SelectedMob       bool                 `json:"selectedMob,omitempty"`
-	Summary           string               `json:"summary,omitempty"`
-	DemandSummary     string               `json:"demandSummary,omitempty"`
-	RewardSummary     string               `json:"rewardSummary,omitempty"`
+	Id                uint32                `json:"-"`
+	Name              string                `json:"name"`
+	Parent            string                `json:"parent,omitempty"`
+	Area              _map.Id               `json:"area"`
+	Order             uint32                `json:"order,omitempty"`
+	AutoStart         bool                  `json:"autoStart"`
+	AutoPreComplete   bool                  `json:"autoPreComplete"`
+	AutoComplete      bool                  `json:"autoComplete"`
+	TimeLimit         uint32                `json:"timeLimit,omitempty"`
+	TimeLimit2        uint32                `json:"timeLimit2,omitempty"`
+	SelectedMob       bool                  `json:"selectedMob,omitempty"`
+	Summary           string                `json:"summary,omitempty"`
+	DemandSummary     string                `json:"demandSummary,omitempty"`
+	RewardSummary     string                `json:"rewardSummary,omitempty"`
 	StartRequirements RequirementsRestModel `json:"startRequirements"`
 	EndRequirements   RequirementsRestModel `json:"endRequirements"`
 	StartActions      ActionsRestModel      `json:"startActions"`

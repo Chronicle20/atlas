@@ -791,10 +791,8 @@ func TestLockMap_CreatesLockIfNotExists(t *testing.T) {
 	ten := createTestTenant(t)
 
 	mk := mapKey{
-		tenantId:  ten.Id(),
-		worldId:   1,
-		channelId: 1,
-		mapId:     999999999,
+		tenantId: ten.Id(),
+		field:    field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(999999999)).Build(),
 	}
 
 	// Verify lock doesn't exist
@@ -825,10 +823,8 @@ func TestUnlockMap_DoesNotPanicOnMissingLock(t *testing.T) {
 	ten := createTestTenant(t)
 
 	mk := mapKey{
-		tenantId:  ten.Id(),
-		worldId:   1,
-		channelId: 1,
-		mapId:     888888888,
+		tenantId: ten.Id(),
+		field:    field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(888888888)).Build(),
 	}
 
 	// Should not panic even if lock doesn't exist

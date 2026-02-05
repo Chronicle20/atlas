@@ -64,7 +64,7 @@ func handleAssetCreatedEvent(sc server.Model, wp writer.Producer) message.Handle
 			return
 		}
 
-		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
 			inventoryType, ok := inventory.TypeFromItemId(item.Id(e.TemplateId))
 			if !ok {
 				l.Errorf("Unable to identify inventory type by item [%d].", e.TemplateId)
@@ -98,7 +98,7 @@ func handleAssetUpdatedEvent(sc server.Model, wp writer.Producer) message.Handle
 			return
 		}
 
-		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
 			inventoryType, ok := inventory.TypeFromItemId(item.Id(e.TemplateId))
 			if !ok {
 				l.Errorf("Unable to identify inventory type by item [%d].", e.TemplateId)
@@ -111,7 +111,7 @@ func handleAssetUpdatedEvent(sc server.Model, wp writer.Producer) message.Handle
 				SetReferenceData(getReferenceData(e.Body.ReferenceData)).
 				MustBuild()
 			so := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryRefreshAsset(sc.Tenant())(inventoryType, a))
-			err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, so)
+			err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, so)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to update [%d] in slot [%d] for character [%d].", e.TemplateId, e.Slot, e.CharacterId)
 			}
@@ -612,7 +612,7 @@ func handleAssetQuantityUpdatedEvent(sc server.Model, wp writer.Producer) messag
 		}
 
 		so := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryChangeBody(false, writer.InventoryQuantityUpdateBodyWriter(inventoryType, e.Slot, e.Body.Quantity)))
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, so)
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, so)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to update [%d] in slot [%d] for character [%d].", e.TemplateId, e.Slot, e.CharacterId)
 		}
@@ -630,7 +630,7 @@ func handleAssetMoveEvent(sc server.Model, wp writer.Producer) message.Handler[a
 			return
 		}
 
-		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, moveInCompartment(l)(ctx)(wp)(e))
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, moveInCompartment(l)(ctx)(wp)(e))
 	}
 }
 
@@ -683,7 +683,7 @@ func moveInCompartment(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 						}
 
 						for _, mm := range m.Members() {
-							_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(s.WorldId(), s.ChannelId())(mm.Id(), func(os session.Model) error {
+							_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(s.Field().Channel())(mm.Id(), func(os session.Model) error {
 								return session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationUpdateBody(l, ctx)(um.Slot(), c, s.ChannelId()))(os)
 							})
 						}
@@ -731,7 +731,7 @@ func handleAssetDeletedEvent(sc server.Model, wp writer.Producer) message.Handle
 		}
 
 		af := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryChangeBody(false, writer.InventoryRemoveBodyWriter(inventoryType, e.Slot)))
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, af)
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, af)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to remove [%d] in slot [%d] for character [%d].", e.TemplateId, e.Slot, e.CharacterId)
 		}
@@ -750,7 +750,7 @@ func handleAssetAcceptedEvent(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
 			inventoryType, ok := inventory.TypeFromItemId(item.Id(e.TemplateId))
 			if !ok {
 				l.Errorf("Unable to identify inventory type by item [%d].", e.TemplateId)
@@ -799,7 +799,7 @@ func handleAssetReleasedEvent(sc server.Model, wp writer.Producer) message.Handl
 		}
 
 		af := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryChangeBody(false, writer.InventoryRemoveBodyWriter(inventoryType, e.Slot)))
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, af)
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, af)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to remove released asset [%d] in slot [%d] for character [%d].", e.TemplateId, e.Slot, e.CharacterId)
 		}
@@ -818,7 +818,7 @@ func handleAssetExpiredEvent(sc server.Model, wp writer.Producer) message.Handle
 			return
 		}
 
-		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
 			// Send appropriate expiration notification based on item type
 			if e.Body.ReplaceMessage != "" {
 				// Item was replaced - send replacement message

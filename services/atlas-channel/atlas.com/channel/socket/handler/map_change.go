@@ -36,7 +36,7 @@ func MapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Pro
 
 		if cs {
 			l.Debugf("Character [%d] returning from cash shop.", s.CharacterId())
-			c, err := channel.NewProcessor(l, ctx).GetById(s.WorldId(), s.ChannelId())
+			c, err := channel.NewProcessor(l, ctx).GetById(s.Field().Channel())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to retrieve channel information being returned in to.")
 				// TODO send server notice.
@@ -79,7 +79,7 @@ func MapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Pro
 		}
 		if c.Hp() == 0 {
 			l.Debugf("Character [%d] attempting to revive.", s.CharacterId())
-			err = respawn.NewProcessor(l, ctx).Respawn(s.WorldId(), s.ChannelId(), s.CharacterId(), s.MapId())
+			err = respawn.NewProcessor(l, ctx).Respawn(s.Field().Channel(), s.CharacterId(), s.MapId())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to process respawn for character [%d].", s.CharacterId())
 			}

@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
@@ -12,8 +13,7 @@ import (
 
 type Model struct {
 	tenant    tenant.Model
-	worldId   world.Id
-	channelId channel.Id
+	ch        channel.Model
 	ipAddress string
 	port      int
 }
@@ -22,12 +22,16 @@ func (m Model) Tenant() tenant.Model {
 	return m.tenant
 }
 
+func (m Model) Channel() channel.Model {
+	return m.ch
+}
+
 func (m Model) WorldId() world.Id {
-	return m.worldId
+	return m.Channel().WorldId()
 }
 
 func (m Model) ChannelId() channel.Id {
-	return m.channelId
+	return m.Channel().Id()
 }
 
 func (m Model) IpAddress() string {
@@ -39,14 +43,14 @@ func (m Model) Port() int {
 }
 
 func (m Model) String() string {
-	return fmt.Sprintf("Tenant [%s] World [%d] Channel [%d]", m.tenant.String(), m.worldId, m.channelId)
+	return fmt.Sprintf("Tenant [%s] World [%d] Channel [%d]", m.tenant.String(), m.Channel().WorldId(), m.Channel().Id())
 }
 
 func (m Model) Is(t tenant.Model, worldId world.Id, channelId channel.Id) bool {
 	if !m.IsWorld(t, worldId) {
 		return false
 	}
-	if channelId != m.channelId {
+	if channelId != m.Channel().Id() {
 		return false
 	}
 	return true
@@ -57,7 +61,7 @@ func (m Model) IsWorld(t tenant.Model, worldId world.Id) bool {
 	if !is {
 		return false
 	}
-	if worldId != m.worldId {
+	if worldId != m.Channel().WorldId() {
 		return false
 	}
 	return true

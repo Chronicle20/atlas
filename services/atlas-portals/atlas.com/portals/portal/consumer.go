@@ -48,7 +48,7 @@ func handleBlockCommand(l logrus.FieldLogger, ctx context.Context, command comma
 	}
 	t := tenant.MustFromContext(ctx)
 	l.Debugf("Received command to block portal [%d] in map [%d] for character [%d].", command.PortalId, command.MapId, command.Body.CharacterId)
-	blocked.GetCache().Block(t.Id(), command.Body.CharacterId, uint32(command.MapId), command.PortalId)
+	blocked.GetCache().Block(t.Id(), command.Body.CharacterId, command.MapId, command.PortalId)
 }
 
 func handleUnblockCommand(l logrus.FieldLogger, ctx context.Context, command commandEvent[unblockBody]) {
@@ -57,5 +57,5 @@ func handleUnblockCommand(l logrus.FieldLogger, ctx context.Context, command com
 	}
 	t := tenant.MustFromContext(ctx)
 	l.Debugf("Received command to unblock portal [%d] in map [%d] for character [%d].", command.PortalId, command.MapId, command.Body.CharacterId)
-	blocked.GetCache().Unblock(t.Id(), command.Body.CharacterId, uint32(command.MapId), command.PortalId)
+	blocked.GetCache().Unblock(t.Id(), command.Body.CharacterId, command.MapId, command.PortalId)
 }

@@ -5,6 +5,8 @@ import (
 	note2 "atlas-notes/kafka/message/note"
 	"atlas-notes/note"
 	"context"
+
+	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -51,6 +53,7 @@ func handleNoteDiscard(db *gorm.DB) message.Handler[note2.Command[note2.CommandD
 		}
 
 		// Call the processor to discard the notes
-		_ = note.NewProcessor(l, ctx, db).DiscardAndEmit(c.WorldId, c.ChannelId, c.CharacterId, c.Body.NoteIds)
+		ch := channel.NewModel(c.WorldId, c.ChannelId)
+		_ = note.NewProcessor(l, ctx, db).DiscardAndEmit(ch, c.CharacterId, c.Body.NoteIds)
 	}
 }

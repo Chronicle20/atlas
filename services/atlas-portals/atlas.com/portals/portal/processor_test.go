@@ -18,8 +18,8 @@ import (
 )
 
 // createTestField creates a field.Model for testing
-func createTestField(mapId uint32) field.Model {
-	return field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(mapId)).Build()
+func createTestField(mapId _map.Id) field.Model {
+	return field.NewBuilder(world.Id(1), channel.Id(1), mapId).Build()
 }
 
 // jsonAPIResponse wraps data in JSON:API format
@@ -35,7 +35,7 @@ type jsonAPIResource struct {
 }
 
 // createPortalResource creates a JSON:API resource for a portal
-func createPortalResource(id string, name string, target string, targetMapId uint32, scriptName string) jsonAPIResource {
+func createPortalResource(id string, name string, target string, targetMapId _map.Id, scriptName string) jsonAPIResource {
 	return jsonAPIResource{
 		Type: "portals",
 		ID:   id,
@@ -170,9 +170,9 @@ func TestEnter_PortalWithInvalidTarget_FallbackToPortal0(t *testing.T) {
 	fallbackPortal := createPortalResource("0", "default", "", 999999999, "")
 
 	_, cleanup := setupMockDataServer(t, map[string]interface{}{
-		"/api/data/maps/100000000/portals/1":               jsonAPIResponse{Data: sourcePortal},
+		"/api/data/maps/100000000/portals/1":                jsonAPIResponse{Data: sourcePortal},
 		"/api/data/maps/200000000/portals?name=nonexistent": jsonAPIResponse{Data: []jsonAPIResource{}}, // Empty - not found
-		"/api/data/maps/200000000/portals/0":               jsonAPIResponse{Data: fallbackPortal},
+		"/api/data/maps/200000000/portals/0":                jsonAPIResponse{Data: fallbackPortal},
 	})
 	defer cleanup()
 

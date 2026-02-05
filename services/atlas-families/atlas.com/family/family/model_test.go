@@ -3,6 +3,7 @@ package family
 import (
 	"testing"
 
+	world2 "github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 )
 
@@ -11,7 +12,7 @@ func TestFamilyMember_Accessors(t *testing.T) {
 	characterId := uint32(12345)
 	tenantId := uuid.New()
 	level := uint16(50)
-	world := byte(1)
+	world := world2.Id(1)
 	seniorId := uint32(99999)
 	juniorIds := []uint32{11111, 22222}
 	rep := uint32(1000)
@@ -70,7 +71,7 @@ func TestFamilyMember_BusinessLogic(t *testing.T) {
 	characterId := uint32(12345)
 	tenantId := uuid.New()
 	level := uint16(50)
-	world := byte(1)
+	world := world2.Id(1)
 
 	member, err := NewBuilder(characterId, tenantId, level, world).Build()
 	if err != nil {
@@ -151,12 +152,12 @@ func TestValidateLevelDifference(t *testing.T) {
 
 func TestValidateLocation(t *testing.T) {
 	tests := []struct {
-		name            string
-		seniorWorld     byte
-		seniorMap       uint32
-		juniorWorld     byte
-		juniorMap       uint32
-		expectedResult  bool
+		name           string
+		seniorWorld    byte
+		seniorMap      uint32
+		juniorWorld    byte
+		juniorMap      uint32
+		expectedResult bool
 	}{
 		{"Same location", 1, 100, 1, 100, true},
 		{"Different world", 1, 100, 2, 100, false},
@@ -177,10 +178,10 @@ func TestValidateLocation(t *testing.T) {
 
 func TestValidateDailyRepCap(t *testing.T) {
 	tests := []struct {
-		name           string
+		name            string
 		currentDailyRep uint32
-		additionalRep  uint32
-		expectedResult bool
+		additionalRep   uint32
+		expectedResult  bool
 	}{
 		{"Under cap", 1000, 500, true},
 		{"Exactly at cap", 5000, 0, true},
@@ -205,7 +206,7 @@ func TestFamilyMember_Immutability(t *testing.T) {
 	characterId := uint32(12345)
 	tenantId := uuid.New()
 	level := uint16(50)
-	world := byte(1)
+	world := world2.Id(1)
 	originalJuniors := []uint32{11111, 22222}
 
 	member, err := NewBuilder(characterId, tenantId, level, world).
@@ -239,7 +240,7 @@ func TestBuilder_Validation(t *testing.T) {
 	characterId := uint32(12345)
 	tenantId := uuid.New()
 	level := uint16(50)
-	world := byte(1)
+	world := world2.Id(1)
 
 	t.Run("Valid builder", func(t *testing.T) {
 		_, err := NewBuilder(characterId, tenantId, level, world).Build()

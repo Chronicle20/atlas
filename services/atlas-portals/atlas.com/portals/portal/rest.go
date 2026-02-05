@@ -7,14 +7,14 @@ import (
 )
 
 type RestModel struct {
-	Id          string `json:"-"`
-	Name        string `json:"name"`
-	Target      string `json:"target"`
-	Type        uint8  `json:"type"`
-	X           int16  `json:"x"`
-	Y           int16  `json:"y"`
-	TargetMapId uint32 `json:"targetMapId"`
-	ScriptName  string `json:"scriptName"`
+	Id          string  `json:"-"`
+	Name        string  `json:"name"`
+	Target      string  `json:"target"`
+	Type        uint8   `json:"type"`
+	X           int16   `json:"x"`
+	Y           int16   `json:"y"`
+	TargetMapId _map.Id `json:"targetMapId"`
+	ScriptName  string  `json:"scriptName"`
 }
 
 func (r RestModel) GetName() string {
@@ -43,7 +43,7 @@ func Extract(rm RestModel) (Model, error) {
 		portalType:  rm.Type,
 		x:           rm.X,
 		y:           rm.Y,
-		targetMapId: _map.Id(rm.TargetMapId),
+		targetMapId: rm.TargetMapId,
 		scriptName:  rm.ScriptName,
 	}, nil
 }

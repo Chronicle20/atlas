@@ -7,6 +7,7 @@ import (
 	"atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
+
 	channel2 "github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
@@ -23,7 +24,7 @@ func ChannelChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer
 		// TODO verify alive
 		// TODO verify not in mini dungeon
 
-		c, err := channel.NewProcessor(l, ctx).GetById(s.WorldId(), channelId)
+		c, err := channel.NewProcessor(l, ctx).GetById(channel2.NewModel(s.WorldId(), channelId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve channel information being logged in to.")
 			// TODO send server notice.

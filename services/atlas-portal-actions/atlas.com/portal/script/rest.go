@@ -3,6 +3,7 @@ package script
 import (
 	"fmt"
 
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-script-core/condition"
 	"github.com/Chronicle20/atlas-script-core/operation"
 	"github.com/google/uuid"
@@ -15,10 +16,10 @@ const (
 
 // RestModel represents the REST model for portal scripts
 type RestModel struct {
-	Id          uuid.UUID      `json:"-"`
-	PortalId    string         `json:"portalId"`
-	MapId       uint32         `json:"mapId"`
-	Description string         `json:"description,omitempty"`
+	Id          uuid.UUID       `json:"-"`
+	PortalId    string          `json:"portalId"`
+	MapId       _map.Id         `json:"mapId"`
+	Description string          `json:"description,omitempty"`
 	Rules       []RestRuleModel `json:"rules"`
 }
 

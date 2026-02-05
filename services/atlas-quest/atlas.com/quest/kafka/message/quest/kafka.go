@@ -89,7 +89,7 @@ const (
 // StatusEvent represents a quest status event message
 type StatusEvent[E any] struct {
 	TransactionId uuid.UUID `json:"transactionId"`
-	WorldId       byte      `json:"worldId"`
+	WorldId       world.Id  `json:"worldId"`
 	CharacterId   uint32    `json:"characterId"`
 	Type          string    `json:"type"`
 	Body          E         `json:"body"`

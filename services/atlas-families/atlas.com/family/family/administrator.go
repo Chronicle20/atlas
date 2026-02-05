@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -27,8 +28,8 @@ var (
 )
 
 // CreateMember creates a new family member with proper validation
-func CreateMember(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, tenantId uuid.UUID, level uint16, world byte) model.Provider[Entity] {
-	return func(characterId uint32, tenantId uuid.UUID, level uint16, world byte) model.Provider[Entity] {
+func CreateMember(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, tenantId uuid.UUID, level uint16, world world.Id) model.Provider[Entity] {
+	return func(characterId uint32, tenantId uuid.UUID, level uint16, world world.Id) model.Provider[Entity] {
 		log.WithFields(logrus.Fields{
 			"characterId": characterId,
 			"tenantId":    tenantId,

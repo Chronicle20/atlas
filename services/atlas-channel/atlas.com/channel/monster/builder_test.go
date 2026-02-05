@@ -3,17 +3,21 @@ package monster_test
 import (
 	"atlas-channel/monster"
 	"testing"
+
+	"github.com/Chronicle20/atlas-constants/field"
 )
 
 func TestNewModelBuilder(t *testing.T) {
-	builder := monster.NewModelBuilder(1, 0, 0, 100000, 100100)
+	f := field.NewBuilder(0, 0, 100000).Build()
+	builder := monster.NewModelBuilder(1, f, 100100)
 	if builder == nil {
 		t.Fatal("Expected builder to be initialized")
 	}
 }
 
 func TestBuild_AllFieldsSet(t *testing.T) {
-	model, err := monster.NewModelBuilder(1, 0, 1, 100000, 100100).
+	f := field.NewBuilder(0, 1, 100000).Build()
+	model, err := monster.NewModelBuilder(1, f, 100100).
 		SetMaxHP(1000).
 		SetX(100).
 		SetY(200).
@@ -37,7 +41,8 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 }
 
 func TestBuild_MissingUniqueId(t *testing.T) {
-	_, err := monster.NewModelBuilder(0, 0, 0, 100000, 100100).
+	f := field.NewBuilder(0, 0, 100000).Build()
+	_, err := monster.NewModelBuilder(0, f, 100100).
 		Build()
 
 	if err != monster.ErrInvalidUniqueId {
@@ -52,7 +57,8 @@ func TestMustBuild_Success(t *testing.T) {
 		}
 	}()
 
-	model := monster.NewModelBuilder(1, 0, 0, 100000, 100100).MustBuild()
+	f := field.NewBuilder(0, 0, 100000).Build()
+	model := monster.NewModelBuilder(1, f, 100100).MustBuild()
 
 	if model.UniqueId() != 1 {
 		t.Errorf("model.UniqueId() = %d, want 1", model.UniqueId())
@@ -66,11 +72,13 @@ func TestMustBuild_Panics(t *testing.T) {
 		}
 	}()
 
-	monster.NewModelBuilder(0, 0, 0, 100000, 100100).MustBuild() // Zero unique ID, should panic
+	f := field.NewBuilder(0, 0, 100000).Build()
+	monster.NewModelBuilder(0, f, 100100).MustBuild() // Zero unique ID, should panic
 }
 
 func TestCloneModel(t *testing.T) {
-	original, _ := monster.NewModelBuilder(1, 0, 1, 100000, 100100).
+	f := field.NewBuilder(0, 1, 100000).Build()
+	original, _ := monster.NewModelBuilder(1, f, 100100).
 		SetMaxHP(1000).
 		SetX(100).
 		Build()

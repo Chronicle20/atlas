@@ -7,6 +7,7 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -51,7 +52,7 @@ func handleNoteCreated(sc server.Model, wp writer.Producer) message.Handler[note
 		l.Debugf("Processing note created event for character [%d], note ID [%d]", e.CharacterId, e.Body.NoteId)
 
 		// Get the session for the character
-		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, processNoteCreated(l)(ctx)(wp)(e.Body))
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, processNoteCreated(l)(ctx)(wp)(e.Body))
 	}
 }
 

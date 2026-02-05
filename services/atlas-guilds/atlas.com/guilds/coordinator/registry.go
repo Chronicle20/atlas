@@ -2,12 +2,12 @@ package coordinator
 
 import (
 	"errors"
-	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/world"
-	"github.com/Chronicle20/atlas-tenant"
-	"github.com/google/uuid"
 	"sync"
 	"time"
+
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 )
 
 type Registry struct {
@@ -28,7 +28,7 @@ func GetRegistry() *Registry {
 	return registry
 }
 
-func (r *Registry) Initiate(t tenant.Model, worldId world.Id, channelId channel.Id, name string, leaderId uint32, members []uint32) error {
+func (r *Registry) Initiate(t tenant.Model, ch channel.Model, name string, leaderId uint32, members []uint32) error {
 	r.lock.Lock()
 	if _, ok := r.characterReg[t]; !ok {
 		r.characterReg[t] = make(map[uint32]uuid.UUID)
@@ -47,8 +47,7 @@ func (r *Registry) Initiate(t tenant.Model, worldId world.Id, channelId channel.
 
 	r.agreementReg[agreementId] = Model{
 		tenant:    t,
-		worldId:   byte(worldId),
-		channelId: byte(channelId),
+		channel:   ch,
 		leaderId:  leaderId,
 		name:      name,
 		requests:  members,
@@ -67,14 +66,14 @@ func (r *Registry) Respond(t tenant.Model, characterId uint32, agree bool) (Mode
 		g = g.Agree(characterId)
 		r.lock.Unlock()
 		return g, nil
-	} else {
-		delete(r.agreementReg, agreementId)
-		for _, m := range g.requests {
-			r.characterReg[t][m] = uuid.Nil
-		}
-		r.lock.Unlock()
-		return g, nil
 	}
+
+	delete(r.agreementReg, agreementId)
+	for _, m := range g.requests {
+		r.characterReg[t][m] = uuid.Nil
+	}
+	r.lock.Unlock()
+	return g, nil
 }
 
 func (r *Registry) GetExpired(timeout time.Duration) ([]Model, error) {

@@ -32,13 +32,14 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 }
 
 func handleEventStatus(l logrus.FieldLogger, ctx context.Context, e channel2.StatusEvent) {
+	ch := channel3.NewModel(e.WorldId, e.ChannelId)
 	switch e.Type {
 	case channel3.StatusTypeStarted:
 		l.Debugf("Registering channel [%d] for world [%d] at [%s:%d] with capacity [%d/%d].", e.ChannelId, e.WorldId, e.IpAddress, e.Port, e.CurrentCapacity, e.MaxCapacity)
-		_, _ = channel.NewProcessor(l, ctx).Register(e.WorldId, e.ChannelId, e.IpAddress, e.Port, e.CurrentCapacity, e.MaxCapacity)
+		_, _ = channel.NewProcessor(l, ctx).Register(ch, e.IpAddress, e.Port, e.CurrentCapacity, e.MaxCapacity)
 	case channel3.StatusTypeShutdown:
 		l.Debugf("Unregistering channel [%d] for world [%d] at [%s:%d].", e.ChannelId, e.WorldId, e.IpAddress, e.Port)
-		_ = channel.NewProcessor(l, ctx).Unregister(e.WorldId, e.ChannelId)
+		_ = channel.NewProcessor(l, ctx).Unregister(ch)
 	default:
 		l.Errorf("Unhandled event status [%s].", e.Type)
 	}

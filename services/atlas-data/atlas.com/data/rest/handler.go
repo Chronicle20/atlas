@@ -2,13 +2,15 @@ package rest
 
 import (
 	"context"
+	"io"
+	"net/http"
+	"strconv"
+
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
-	"io"
-	"net/http"
-	"strconv"
 )
 
 type HandlerDependency struct {
@@ -98,7 +100,7 @@ func ParseEquipmentId(l logrus.FieldLogger, next EquipmentIdHandler) http.Handle
 	}
 }
 
-type MapIdHandler func(mapId uint32) http.HandlerFunc
+type MapIdHandler func(mapId _map.Id) http.HandlerFunc
 
 func ParseMapId(l logrus.FieldLogger, next MapIdHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -109,7 +111,7 @@ func ParseMapId(l logrus.FieldLogger, next MapIdHandler) http.HandlerFunc {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		next(uint32(mapId))(w, r)
+		next(_map.Id(mapId))(w, r)
 	}
 }
 

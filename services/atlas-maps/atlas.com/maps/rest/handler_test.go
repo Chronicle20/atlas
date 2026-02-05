@@ -5,6 +5,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus/hooks/test"
 )
@@ -15,7 +18,7 @@ func TestParseWorldId_Valid(t *testing.T) {
 	tests := []struct {
 		name     string
 		worldId  string
-		expected byte
+		expected world.Id
 	}{
 		{"zero", "0", 0},
 		{"one", "1", 1},
@@ -25,8 +28,8 @@ func TestParseWorldId_Valid(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var capturedWorldId byte
-			handler := ParseWorldId(l, func(worldId byte) http.HandlerFunc {
+			var capturedWorldId world.Id
+			handler := ParseWorldId(l, func(worldId world.Id) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
 					capturedWorldId = worldId
 					w.WriteHeader(http.StatusOK)
@@ -65,7 +68,7 @@ func TestParseWorldId_Invalid(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			handlerCalled := false
-			handler := ParseWorldId(l, func(worldId byte) http.HandlerFunc {
+			handler := ParseWorldId(l, func(worldId world.Id) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
 					handlerCalled = true
 					w.WriteHeader(http.StatusOK)
@@ -92,7 +95,7 @@ func TestParseWorldId_MissingVar(t *testing.T) {
 	l, _ := test.NewNullLogger()
 
 	handlerCalled := false
-	handler := ParseWorldId(l, func(worldId byte) http.HandlerFunc {
+	handler := ParseWorldId(l, func(worldId world.Id) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			handlerCalled = true
 			w.WriteHeader(http.StatusOK)
@@ -119,7 +122,7 @@ func TestParseChannelId_Valid(t *testing.T) {
 	tests := []struct {
 		name      string
 		channelId string
-		expected  byte
+		expected  channel.Id
 	}{
 		{"zero", "0", 0},
 		{"one", "1", 1},
@@ -129,8 +132,8 @@ func TestParseChannelId_Valid(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var capturedChannelId byte
-			handler := ParseChannelId(l, func(channelId byte) http.HandlerFunc {
+			var capturedChannelId channel.Id
+			handler := ParseChannelId(l, func(channelId channel.Id) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
 					capturedChannelId = channelId
 					w.WriteHeader(http.StatusOK)
@@ -168,7 +171,7 @@ func TestParseChannelId_Invalid(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			handlerCalled := false
-			handler := ParseChannelId(l, func(channelId byte) http.HandlerFunc {
+			handler := ParseChannelId(l, func(channelId channel.Id) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
 					handlerCalled = true
 					w.WriteHeader(http.StatusOK)
@@ -195,7 +198,7 @@ func TestParseChannelId_MissingVar(t *testing.T) {
 	l, _ := test.NewNullLogger()
 
 	handlerCalled := false
-	handler := ParseChannelId(l, func(channelId byte) http.HandlerFunc {
+	handler := ParseChannelId(l, func(channelId channel.Id) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			handlerCalled = true
 			w.WriteHeader(http.StatusOK)
@@ -221,7 +224,7 @@ func TestParseMapId_Valid(t *testing.T) {
 	tests := []struct {
 		name     string
 		mapId    string
-		expected uint32
+		expected _map.Id
 	}{
 		{"zero", "0", 0},
 		{"typical map id", "100000000", 100000000},
@@ -231,8 +234,8 @@ func TestParseMapId_Valid(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var capturedMapId uint32
-			handler := ParseMapId(l, func(mapId uint32) http.HandlerFunc {
+			var capturedMapId _map.Id
+			handler := ParseMapId(l, func(mapId _map.Id) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
 					capturedMapId = mapId
 					w.WriteHeader(http.StatusOK)
@@ -270,7 +273,7 @@ func TestParseMapId_Invalid(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			handlerCalled := false
-			handler := ParseMapId(l, func(mapId uint32) http.HandlerFunc {
+			handler := ParseMapId(l, func(mapId _map.Id) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
 					handlerCalled = true
 					w.WriteHeader(http.StatusOK)
@@ -297,7 +300,7 @@ func TestParseMapId_MissingVar(t *testing.T) {
 	l, _ := test.NewNullLogger()
 
 	handlerCalled := false
-	handler := ParseMapId(l, func(mapId uint32) http.HandlerFunc {
+	handler := ParseMapId(l, func(mapId _map.Id) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			handlerCalled = true
 			w.WriteHeader(http.StatusOK)

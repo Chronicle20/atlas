@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+
+	_map "github.com/Chronicle20/atlas-constants/map"
 )
 
 // MockRoute defines a single route handler for the mock server
@@ -112,7 +114,7 @@ func NewJSONAPINotFoundResponse() string {
 }
 
 // CreateCharacterResponse creates a mock character JSON:API response
-func CreateCharacterResponse(id uint32, name string, level byte, jobId uint16, mapId uint32) string {
+func CreateCharacterResponse(id uint32, name string, level byte, jobId uint16, mapId _map.Id) string {
 	return `{
 		"data": {
 			"type": "characters",
@@ -142,7 +144,7 @@ func CreateCharacterResponse(id uint32, name string, level byte, jobId uint16, m
 				"face": 20000,
 				"ap": 0,
 				"sp": "0,0,0,0,0,0,0,0,0,0",
-				"mapId": ` + uintToString(mapId) + `,
+				"mapId": ` + uintToString(uint32(mapId)) + `,
 				"spawnPoint": 0,
 				"gm": 0,
 				"x": 0,

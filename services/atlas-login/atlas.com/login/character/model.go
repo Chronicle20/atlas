@@ -6,23 +6,27 @@ import (
 	"atlas-login/inventory/compartment"
 	"atlas-login/inventory/compartment/asset"
 	"atlas-login/pet"
-	"github.com/Chronicle20/atlas-constants/inventory/slot"
-	"github.com/google/uuid"
 	"strconv"
 	"strings"
+
+	"github.com/Chronicle20/atlas-constants/inventory/slot"
+	"github.com/Chronicle20/atlas-constants/job"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
 )
 
 type Model struct {
 	id                 uint32
 	accountId          uint32
-	worldId            byte
+	worldId            world.Id
 	name               string
 	gender             byte
 	skinColor          byte
 	face               uint32
 	hair               uint32
 	level              byte
-	jobId              uint16
+	jobId              job.Id
 	strength           uint16
 	dexterity          uint16
 	intelligence       uint16
@@ -37,7 +41,7 @@ type Model struct {
 	experience         uint32
 	fame               int16
 	gachaponExperience uint32
-	mapId              uint32
+	mapId              _map.Id
 	spawnPoint         uint32
 	gm                 int
 	meso               uint32
@@ -94,7 +98,7 @@ func (m Model) Level() byte {
 	return m.level
 }
 
-func (m Model) JobId() uint16 {
+func (m Model) JobId() job.Id {
 	return m.jobId
 }
 
@@ -181,7 +185,7 @@ func (m Model) RemainingSp() uint16 {
 
 func (m Model) skillBook() uint16 {
 	if m.jobId >= 2210 && m.jobId <= 2218 {
-		return m.jobId - 2209
+		return uint16(m.jobId - 2209)
 	}
 	return 0
 }
@@ -198,7 +202,7 @@ func (m Model) GachaponExperience() uint32 {
 	return m.gachaponExperience
 }
 
-func (m Model) MapId() uint32 {
+func (m Model) MapId() _map.Id {
 	return m.mapId
 }
 
@@ -214,7 +218,7 @@ func (m Model) Pets() []pet.Model {
 	return m.pets
 }
 
-func (m Model) WorldId() byte {
+func (m Model) WorldId() world.Id {
 	return m.worldId
 }
 
@@ -323,14 +327,14 @@ func (m Model) ToBuilder() *Builder {
 type Builder struct {
 	id                 uint32
 	accountId          uint32
-	worldId            byte
+	worldId            world.Id
 	name               string
 	gender             byte
 	skinColor          byte
 	face               uint32
 	hair               uint32
 	level              byte
-	jobId              uint16
+	jobId              job.Id
 	strength           uint16
 	dexterity          uint16
 	intelligence       uint16
@@ -345,7 +349,7 @@ type Builder struct {
 	experience         uint32
 	fame               int16
 	gachaponExperience uint32
-	mapId              uint32
+	mapId              _map.Id
 	spawnPoint         uint32
 	gm                 int
 	meso               uint32
@@ -361,14 +365,14 @@ func NewBuilder() *Builder {
 
 func (b *Builder) SetId(v uint32) *Builder           { b.id = v; return b }
 func (b *Builder) SetAccountId(v uint32) *Builder    { b.accountId = v; return b }
-func (b *Builder) SetWorldId(v byte) *Builder        { b.worldId = v; return b }
+func (b *Builder) SetWorldId(v world.Id) *Builder    { b.worldId = v; return b }
 func (b *Builder) SetName(v string) *Builder         { b.name = v; return b }
 func (b *Builder) SetGender(v byte) *Builder         { b.gender = v; return b }
 func (b *Builder) SetSkinColor(v byte) *Builder      { b.skinColor = v; return b }
 func (b *Builder) SetFace(v uint32) *Builder         { b.face = v; return b }
 func (b *Builder) SetHair(v uint32) *Builder         { b.hair = v; return b }
 func (b *Builder) SetLevel(v byte) *Builder          { b.level = v; return b }
-func (b *Builder) SetJobId(v uint16) *Builder        { b.jobId = v; return b }
+func (b *Builder) SetJobId(v job.Id) *Builder        { b.jobId = v; return b }
 func (b *Builder) SetStrength(v uint16) *Builder     { b.strength = v; return b }
 func (b *Builder) SetDexterity(v uint16) *Builder    { b.dexterity = v; return b }
 func (b *Builder) SetIntelligence(v uint16) *Builder { b.intelligence = v; return b }
@@ -386,7 +390,7 @@ func (b *Builder) SetGachaponExperience(v uint32) *Builder {
 	b.gachaponExperience = v
 	return b
 }
-func (b *Builder) SetMapId(v uint32) *Builder              { b.mapId = v; return b }
+func (b *Builder) SetMapId(v _map.Id) *Builder             { b.mapId = v; return b }
 func (b *Builder) SetSpawnPoint(v uint32) *Builder         { b.spawnPoint = v; return b }
 func (b *Builder) SetGm(v int) *Builder                    { b.gm = v; return b }
 func (b *Builder) SetMeso(v uint32) *Builder               { b.meso = v; return b }

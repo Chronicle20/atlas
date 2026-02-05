@@ -1,6 +1,11 @@
 package session
 
 import (
+	"math/rand"
+	"net"
+	"sync"
+	"time"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
@@ -8,20 +13,13 @@ import (
 	"github.com/Chronicle20/atlas-socket/crypto"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
-	"math/rand"
-	"net"
-	"sync"
-	"time"
 )
 
 type Model struct {
 	id           uuid.UUID
 	accountId    uint32
 	characterId  uint32
-	worldId      world.Id
-	channelId    channel.Id
-	mapId        _map.Id
-	instance     uuid.UUID
+	field        field.Model
 	gm           bool
 	storageNpcId uint32
 	con          net.Conn
@@ -68,10 +66,7 @@ func CloneSession(s Model) Model {
 	return Model{
 		id:           s.id,
 		accountId:    s.accountId,
-		worldId:      s.worldId,
-		channelId:    s.channelId,
-		mapId:        s.mapId,
-		instance:     s.instance,
+		field:        s.field,
 		characterId:  s.characterId,
 		storageNpcId: s.storageNpcId,
 		con:          s.con,
@@ -144,50 +139,46 @@ func (s *Model) GetRemoteAddress() net.Addr {
 
 func (s *Model) setWorldId(worldId world.Id) Model {
 	ns := CloneSession(*s)
-	ns.worldId = worldId
+	ns.field = ns.Field().Clone().SetWorldId(worldId).Build()
 	return ns
 }
 
 func (s *Model) setChannelId(channelId channel.Id) Model {
 	ns := CloneSession(*s)
-	ns.channelId = channelId
+	ns.field = ns.Field().Clone().SetChannelId(channelId).Build()
 	return ns
 }
 
 func (s *Model) setMapId(id _map.Id) Model {
 	ns := CloneSession(*s)
-	ns.mapId = id
+	ns.field = ns.Field().Clone().SetMapId(id).Build()
 	return ns
 }
 
 func (s *Model) setInstance(instance uuid.UUID) Model {
 	ns := CloneSession(*s)
-	ns.instance = instance
+	ns.field = ns.Field().Clone().SetInstance(instance).Build()
 	return ns
 }
 
 func (s *Model) WorldId() world.Id {
-	return s.worldId
+	return s.Field().WorldId()
 }
 
 func (s *Model) ChannelId() channel.Id {
-	return s.channelId
+	return s.Field().ChannelId()
 }
 
 func (s *Model) MapId() _map.Id {
-	return s.mapId
+	return s.Field().MapId()
 }
 
 func (s *Model) Instance() uuid.UUID {
-	return s.instance
-}
-
-func (s *Model) Map() _map.Model {
-	return _map.NewModel(s.worldId)(s.channelId)(s.mapId)
+	return s.Field().Instance()
 }
 
 func (s *Model) Field() field.Model {
-	return field.NewBuilder(s.worldId, s.channelId, s.mapId).SetInstance(s.instance).Build()
+	return s.field
 }
 
 func (s *Model) updateLastRequest() Model {

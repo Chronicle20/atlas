@@ -2,15 +2,15 @@ package character
 
 import (
 	"context"
+
 	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 )
 
-func CreateCharacter(ctx context.Context) func(worldId world.Id, channelId channel.Id, characterId uint32, name string) Model {
-	return func(worldId world.Id, channelId channel.Id, characterId uint32, name string) Model {
+func CreateCharacter(ctx context.Context) func(ch channel.Model, characterId uint32, name string) Model {
+	return func(ch channel.Model, characterId uint32, name string) Model {
 		t := tenant.MustFromContext(ctx)
-		return GetRegistry().Create(t, worldId, channelId, characterId, name)
+		return GetRegistry().Create(t, ch, characterId, name)
 	}
 }
 

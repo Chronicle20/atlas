@@ -5,6 +5,8 @@ import (
 	"errors"
 	"sync"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 )
 
@@ -65,7 +67,7 @@ func (r *Registry) Get(t tenant.Model, characterId uint32) (Model, error) {
 }
 
 // GetOrCreate retrieves a character's effective stats model, creating one if it doesn't exist
-func (r *Registry) GetOrCreate(t tenant.Model, worldId, channelId byte, characterId uint32) Model {
+func (r *Registry) GetOrCreate(t tenant.Model, ch channel.Model, characterId uint32) Model {
 	cm, cml := r.getOrCreateTenantMaps(t)
 
 	cml.Lock()
@@ -75,7 +77,7 @@ func (r *Registry) GetOrCreate(t tenant.Model, worldId, channelId byte, characte
 		return m
 	}
 
-	m := NewModel(t, worldId, channelId, characterId)
+	m := NewModel(t, ch, characterId)
 	cm[characterId] = m
 	return m
 }
@@ -91,7 +93,7 @@ func (r *Registry) Update(t tenant.Model, m Model) {
 }
 
 // AddBonus adds or updates a stat bonus for a character
-func (r *Registry) AddBonus(t tenant.Model, worldId, channelId byte, characterId uint32, b stat.Bonus) Model {
+func (r *Registry) AddBonus(t tenant.Model, ch channel.Model, characterId uint32, b stat.Bonus) Model {
 	cm, cml := r.getOrCreateTenantMaps(t)
 
 	cml.Lock()
@@ -100,7 +102,7 @@ func (r *Registry) AddBonus(t tenant.Model, worldId, channelId byte, characterId
 	var m Model
 	var ok bool
 	if m, ok = cm[characterId]; !ok {
-		m = NewModel(t, worldId, channelId, characterId)
+		m = NewModel(t, ch, characterId)
 	}
 
 	m = m.WithBonus(b).Recompute()
@@ -109,7 +111,7 @@ func (r *Registry) AddBonus(t tenant.Model, worldId, channelId byte, characterId
 }
 
 // AddBonuses adds or updates multiple stat bonuses for a character
-func (r *Registry) AddBonuses(t tenant.Model, worldId, channelId byte, characterId uint32, bonuses []stat.Bonus) Model {
+func (r *Registry) AddBonuses(t tenant.Model, ch channel.Model, characterId uint32, bonuses []stat.Bonus) Model {
 	cm, cml := r.getOrCreateTenantMaps(t)
 
 	cml.Lock()
@@ -118,7 +120,7 @@ func (r *Registry) AddBonuses(t tenant.Model, worldId, channelId byte, character
 	var m Model
 	var ok bool
 	if m, ok = cm[characterId]; !ok {
-		m = NewModel(t, worldId, channelId, characterId)
+		m = NewModel(t, ch, characterId)
 	}
 
 	m = m.WithBonuses(bonuses).Recompute()
@@ -161,7 +163,7 @@ func (r *Registry) RemoveBonusesBySource(t tenant.Model, characterId uint32, sou
 }
 
 // SetBaseStats sets the base stats for a character and recomputes effective stats
-func (r *Registry) SetBaseStats(t tenant.Model, worldId, channelId byte, characterId uint32, base stat.Base) Model {
+func (r *Registry) SetBaseStats(t tenant.Model, ch channel.Model, characterId uint32, base stat.Base) Model {
 	cm, cml := r.getOrCreateTenantMaps(t)
 
 	cml.Lock()
@@ -170,7 +172,7 @@ func (r *Registry) SetBaseStats(t tenant.Model, worldId, channelId byte, charact
 	var m Model
 	var ok bool
 	if m, ok = cm[characterId]; !ok {
-		m = NewModel(t, worldId, channelId, characterId)
+		m = NewModel(t, ch, characterId)
 	}
 
 	m = m.WithBaseStats(base).Recompute()
@@ -223,7 +225,7 @@ func (r *Registry) GetAll(t tenant.Model) []Model {
 }
 
 // GetAllForWorld returns all characters in a specific world
-func (r *Registry) GetAllForWorld(t tenant.Model, worldId byte) []Model {
+func (r *Registry) GetAllForWorld(t tenant.Model, worldId world.Id) []Model {
 	cm, cml := r.getOrCreateTenantMaps(t)
 
 	cml.RLock()
@@ -231,7 +233,7 @@ func (r *Registry) GetAllForWorld(t tenant.Model, worldId byte) []Model {
 
 	result := make([]Model, 0)
 	for _, m := range cm {
-		if m.worldId == worldId {
+		if m.WorldId() == worldId {
 			result = append(result, m)
 		}
 	}

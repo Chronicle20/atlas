@@ -3,10 +3,12 @@ package character
 import (
 	"atlas-npc/character/skill"
 	"atlas-npc/inventory"
-	"github.com/Chronicle20/atlas-constants/job"
-	"github.com/Chronicle20/atlas-constants/world"
 	"strconv"
 	"strings"
+
+	"github.com/Chronicle20/atlas-constants/job"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 )
 
 type Model struct {
@@ -19,7 +21,7 @@ type Model struct {
 	face               uint32
 	hair               uint32
 	level              byte
-	jobId              uint16
+	jobId              job.Id
 	strength           uint16
 	dexterity          uint16
 	intelligence       uint16
@@ -34,7 +36,7 @@ type Model struct {
 	experience         uint32
 	fame               int16
 	gachaponExperience uint32
-	mapId              uint32
+	mapId              _map.Id
 	spawnPoint         uint32
 	gm                 int
 	x                  int16
@@ -93,7 +95,7 @@ func (m Model) Level() byte {
 	return m.level
 }
 
-func (m Model) JobId() uint16 {
+func (m Model) JobId() job.Id {
 	return m.jobId
 }
 
@@ -180,7 +182,7 @@ func (m Model) RemainingSp() uint16 {
 
 func (m Model) skillBook() uint16 {
 	if m.jobId >= 2210 && m.jobId <= 2218 {
-		return m.jobId - 2209
+		return uint16(m.jobId - 2209)
 	}
 	return 0
 }
@@ -197,7 +199,7 @@ func (m Model) GachaponExperience() uint32 {
 	return m.gachaponExperience
 }
 
-func (m Model) MapId() uint32 {
+func (m Model) MapId() _map.Id {
 	return m.mapId
 }
 
@@ -299,7 +301,7 @@ type ModelBuilder struct {
 	face               uint32
 	hair               uint32
 	level              byte
-	jobId              uint16
+	jobId              job.Id
 	strength           uint16
 	dexterity          uint16
 	intelligence       uint16
@@ -314,7 +316,7 @@ type ModelBuilder struct {
 	experience         uint32
 	fame               int16
 	gachaponExperience uint32
-	mapId              uint32
+	mapId              _map.Id
 	spawnPoint         uint32
 	gm                 int
 	x                  int16
@@ -338,7 +340,7 @@ func (b *ModelBuilder) SetSkinColor(v byte) *ModelBuilder      { b.skinColor = v
 func (b *ModelBuilder) SetFace(v uint32) *ModelBuilder         { b.face = v; return b }
 func (b *ModelBuilder) SetHair(v uint32) *ModelBuilder         { b.hair = v; return b }
 func (b *ModelBuilder) SetLevel(v byte) *ModelBuilder          { b.level = v; return b }
-func (b *ModelBuilder) SetJobId(v uint16) *ModelBuilder        { b.jobId = v; return b }
+func (b *ModelBuilder) SetJobId(v job.Id) *ModelBuilder        { b.jobId = v; return b }
 func (b *ModelBuilder) SetStrength(v uint16) *ModelBuilder     { b.strength = v; return b }
 func (b *ModelBuilder) SetDexterity(v uint16) *ModelBuilder    { b.dexterity = v; return b }
 func (b *ModelBuilder) SetIntelligence(v uint16) *ModelBuilder { b.intelligence = v; return b }
@@ -356,7 +358,7 @@ func (b *ModelBuilder) SetGachaponExperience(v uint32) *ModelBuilder {
 	b.gachaponExperience = v
 	return b
 }
-func (b *ModelBuilder) SetMapId(v uint32) *ModelBuilder              { b.mapId = v; return b }
+func (b *ModelBuilder) SetMapId(v _map.Id) *ModelBuilder             { b.mapId = v; return b }
 func (b *ModelBuilder) SetSpawnPoint(v uint32) *ModelBuilder         { b.spawnPoint = v; return b }
 func (b *ModelBuilder) SetGm(v int) *ModelBuilder                    { b.gm = v; return b }
 func (b *ModelBuilder) SetMeso(v uint32) *ModelBuilder               { b.meso = v; return b }

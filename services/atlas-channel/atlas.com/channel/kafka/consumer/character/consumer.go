@@ -13,6 +13,7 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	_map2 "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/stat"
 	"github.com/Chronicle20/atlas-constants/world"
@@ -66,7 +67,7 @@ func handleStatusEventStatChanged(sc server.Model, wp writer.Producer) func(l lo
 			return
 		}
 
-		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, statChanged(l)(ctx)(wp)(c, e.Body.ExclRequestSent, e.Body.Updates))
+		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, statChanged(l)(ctx)(wp)(c, e.Body.ExclRequestSent, e.Body.Updates))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to issue stat changed to character [%d].", e.CharacterId)
 		}
@@ -78,9 +79,11 @@ func handleStatusEventStatChanged(sc server.Model, wp writer.Producer) func(l lo
 			}
 		}
 		if hpChange {
-			imf := party.OtherMemberInMap(sc.WorldId(), sc.ChannelId(), _map2.Id(c.MapId()), c.Id())
+			// TODO - field migration this seems like a bug not using instance
+			f := field.NewBuilder(e.WorldId, e.Body.ChannelId, c.MapId()).Build()
+			imf := party.OtherMemberInMap(f, c.Id())
 			oip := party.MemberToMemberIdMapper(party.FilteredMemberProvider(imf)(party.NewProcessor(l, ctx).ByMemberIdProvider(e.CharacterId)))
-			err = session.NewProcessor(l, ctx).ForEachByCharacterId(sc.WorldId(), sc.ChannelId())(oip, session.Announce(l)(ctx)(wp)(writer.PartyMemberHP)(writer.PartyMemberHPBody(c.Id(), c.Hp(), c.MaxHp())))
+			err = session.NewProcessor(l, ctx).ForEachByCharacterId(sc.Channel())(oip, session.Announce(l)(ctx)(wp)(writer.PartyMemberHP)(writer.PartyMemberHPBody(c.Id(), c.Hp(), c.MaxHp())))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce character [%d] health to party members.", c.Id())
 			}
@@ -178,7 +181,7 @@ func handleStatusEventMapChanged(sc server.Model, wp writer.Producer) func(l log
 			return
 		}
 
-		session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(event.CharacterId, warpCharacter(l)(ctx)(wp)(event))
+		session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(event.CharacterId, warpCharacter(l)(ctx)(wp)(event))
 	}
 }
 
@@ -218,7 +221,7 @@ func handleStatusEventExperienceChanged(sc server.Model, wp writer.Producer) mes
 			return
 		}
 
-		session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, announceExperienceGain(l)(ctx)(wp)(e.Body.Distributions))
+		session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, announceExperienceGain(l)(ctx)(wp)(e.Body.Distributions))
 	}
 }
 
@@ -301,11 +304,11 @@ func handleStatusEventFameChanged(sc server.Model, wp writer.Producer) message.H
 				return
 			}
 
-			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, receiveFame(l)(ctx)(wp)(ac.Name(), e.Body.Amount))
+			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, receiveFame(l)(ctx)(wp)(ac.Name(), e.Body.Amount))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to notify character [%d] they received fame [%d] from [%s].", e.CharacterId, e.Body.Amount, ac.Name())
 			}
-			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.ActorId, giveFame(l)(ctx)(wp)(c.Name(), e.Body.Amount, c.Fame()))
+			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.ActorId, giveFame(l)(ctx)(wp)(c.Name(), e.Body.Amount, c.Fame()))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to notify character [%d] they received fame [%d] from [%s].", e.Body.ActorId, e.Body.Amount, c.Name())
 			}
@@ -343,7 +346,7 @@ func handleStatusEventMesoChanged(sc server.Model, wp writer.Producer) message.H
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, mesoChanged(l)(ctx)(wp)(e.Body.Amount))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, mesoChanged(l)(ctx)(wp)(e.Body.Amount))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to notify character [%d] they received meso [%d].", e.CharacterId, e.Body.Amount)
 		}
@@ -370,7 +373,7 @@ func handleStatusEventLevelChanged(sc server.Model, wp writer.Producer) message.
 			return
 		}
 
-		session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
+		session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
 			_ = session.Announce(l)(ctx)(wp)(writer.CharacterEffect)(writer.CharacterLevelUpEffectBody(l)())(s)
 			_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.CharacterEffectForeign)(writer.CharacterLevelUpEffectForeignBody(l)(s.CharacterId())))
 			return nil

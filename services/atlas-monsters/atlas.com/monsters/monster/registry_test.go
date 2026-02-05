@@ -30,7 +30,7 @@ func TestSunnyDay(t *testing.T) {
 	mp := uint32(50)
 
 	m := r.CreateMonster(ten, f, monsterId, x, y, fh, stance, team, hp, mp)
-	if !valid(worldId, channelId, mapId, monsterId, x, y, fh, stance, team, hp, mp)(m) {
+	if !valid(f, monsterId, x, y, fh, stance, team, hp, mp)(m) {
 		t.Fatal("Monster created with incorrect properties.")
 	}
 	if m.UniqueId() != 1000000000 {
@@ -59,11 +59,11 @@ func TestSunnyDay(t *testing.T) {
 	}
 
 	m2 := r.CreateMonster(ten, f, monsterId, 50, y, fh, stance, team, hp, mp)
-	if !valid(worldId, channelId, mapId, monsterId, 50, y, fh, stance, team, hp, mp)(m2) {
+	if !valid(f, monsterId, 50, y, fh, stance, team, hp, mp)(m2) {
 		t.Fatal("Monster created with incorrect properties.")
 	}
 	m3 := r.CreateMonster(ten, f, monsterId, 100, y, fh, stance, team, hp, mp)
-	if !valid(worldId, channelId, mapId, monsterId, 100, y, fh, stance, team, hp, mp)(m3) {
+	if !valid(f, monsterId, 100, y, fh, stance, team, hp, mp)(m3) {
 		t.Fatal("Monster created with incorrect properties.")
 	}
 
@@ -130,7 +130,7 @@ func TestIdReuse(t *testing.T) {
 	mp := uint32(50)
 
 	m := r.CreateMonster(tenant1, f, monsterId, x, y, fh, stance, team, hp, mp)
-	if !valid(worldId, channelId, mapId, monsterId, x, y, fh, stance, team, hp, mp)(m) {
+	if !valid(f, monsterId, x, y, fh, stance, team, hp, mp)(m) {
 		t.Fatal("Monster created with incorrect properties.")
 	}
 	if m.UniqueId() != 1000000000 {
@@ -138,7 +138,7 @@ func TestIdReuse(t *testing.T) {
 	}
 
 	m2 := r.CreateMonster(tenant2, f, monsterId, x, y, fh, stance, team, hp, mp)
-	if !valid(worldId, channelId, mapId, monsterId, x, y, fh, stance, team, hp, mp)(m2) {
+	if !valid(f, monsterId, x, y, fh, stance, team, hp, mp)(m2) {
 		t.Fatal("Monster created with incorrect properties.")
 	}
 	if m2.UniqueId() != 1000000000 {
@@ -146,7 +146,7 @@ func TestIdReuse(t *testing.T) {
 	}
 
 	m3 := r.CreateMonster(tenant1, f, monsterId, x, y, fh, stance, team, hp, mp)
-	if !valid(worldId, channelId, mapId, monsterId, x, y, fh, stance, team, hp, mp)(m3) {
+	if !valid(f, monsterId, x, y, fh, stance, team, hp, mp)(m3) {
 		t.Fatal("Monster created with incorrect properties.")
 	}
 	if m3.UniqueId() != 1000000001 {
@@ -154,15 +154,18 @@ func TestIdReuse(t *testing.T) {
 	}
 }
 
-func valid(worldId world.Id, channelId channel.Id, mapId _map.Id, monsterId uint32, x int16, y int16, fh int16, stance byte, team int8, hp uint32, mp uint32) func(m Model) bool {
+func valid(f field.Model, monsterId uint32, x int16, y int16, fh int16, stance byte, team int8, hp uint32, mp uint32) func(m Model) bool {
 	return func(m Model) bool {
-		if m.WorldId() != worldId {
+		if m.WorldId() != f.WorldId() {
 			return false
 		}
-		if m.ChannelId() != channelId {
+		if m.ChannelId() != f.ChannelId() {
 			return false
 		}
-		if m.MapId() != mapId {
+		if m.MapId() != f.MapId() {
+			return false
+		}
+		if m.Instance() != f.Instance() {
 			return false
 		}
 		if m.MonsterId() != monsterId {

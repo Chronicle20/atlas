@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 
@@ -17,6 +16,6 @@ func getBaseRequest() string {
 	return requests.RootUrl("RATES")
 }
 
-func requestRates(worldId world.Id, channelId channel.Id, characterId uint32) requests.Request[DataContainer] {
-	return rest.MakeGetRequest[DataContainer](fmt.Sprintf(getBaseRequest()+ratesPath, worldId, channelId, characterId))
+func requestRates(ch channel.Model, characterId uint32) requests.Request[DataContainer] {
+	return rest.MakeGetRequest[DataContainer](fmt.Sprintf(getBaseRequest()+ratesPath, ch.WorldId(), ch.Id(), characterId))
 }

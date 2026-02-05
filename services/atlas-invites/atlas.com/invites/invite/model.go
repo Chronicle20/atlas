@@ -1,8 +1,10 @@
 package invite
 
 import (
-	"github.com/Chronicle20/atlas-tenant"
 	"time"
+
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas-tenant"
 )
 
 type Model struct {
@@ -12,7 +14,7 @@ type Model struct {
 	referenceId  uint32
 	originatorId uint32
 	targetId     uint32
-	worldId      byte
+	worldId      world.Id
 	age          time.Time
 }
 
@@ -51,6 +53,6 @@ func (m Model) Type() string {
 	return m.inviteType
 }
 
-func (m Model) WorldId() byte {
+func (m Model) WorldId() world.Id {
 	return m.worldId
 }

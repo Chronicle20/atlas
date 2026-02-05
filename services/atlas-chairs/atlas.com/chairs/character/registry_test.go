@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
@@ -18,10 +19,8 @@ func sampleTenant() tenant.Model {
 
 func sampleMapKey(t tenant.Model, worldId world.Id, channelId channel.Id, mapId _map.Id) MapKey {
 	return MapKey{
-		Tenant:    t,
-		WorldId:   worldId,
-		ChannelId: channelId,
-		MapId:     mapId,
+		Tenant: t,
+		Field:  field.NewBuilder(worldId, channelId, mapId).Build(),
 	}
 }
 

@@ -3,13 +3,14 @@ package family
 import (
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 )
 
 // Command represents a generic command wrapper for family operations
 type Command[E any] struct {
 	TransactionId uuid.UUID `json:"transactionId"`
-	WorldId       byte      `json:"worldId"`
+	WorldId       world.Id  `json:"worldId"`
 	CharacterId   uint32    `json:"characterId"`
 	Type          string    `json:"type"`
 	Body          E         `json:"body"`
@@ -17,10 +18,10 @@ type Command[E any] struct {
 
 // Event represents a generic event wrapper for family operations
 type Event[E any] struct {
-	WorldId     byte   `json:"worldId"`
-	CharacterId uint32 `json:"characterId"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	WorldId     world.Id `json:"worldId"`
+	CharacterId uint32   `json:"characterId"`
+	Type        string   `json:"type"`
+	Body        E        `json:"body"`
 }
 
 // Command Body Types
@@ -199,7 +200,7 @@ const (
 // Helper functions for creating typed commands and events
 
 // NewAddJuniorCommand creates a new AddJunior command
-func NewAddJuniorCommand(transactionId uuid.UUID, worldId byte, characterId uint32, juniorId uint32, seniorLevel uint16, juniorLevel uint16) Command[AddJuniorCommandBody] {
+func NewAddJuniorCommand(transactionId uuid.UUID, worldId world.Id, characterId uint32, juniorId uint32, seniorLevel uint16, juniorLevel uint16) Command[AddJuniorCommandBody] {
 	return Command[AddJuniorCommandBody]{
 		TransactionId: transactionId,
 		WorldId:       worldId,
@@ -214,7 +215,7 @@ func NewAddJuniorCommand(transactionId uuid.UUID, worldId byte, characterId uint
 }
 
 // NewRemoveMemberCommand creates a new RemoveMember command
-func NewRemoveMemberCommand(transactionId uuid.UUID, worldId byte, characterId uint32, targetId uint32, reason string) Command[RemoveMemberCommandBody] {
+func NewRemoveMemberCommand(transactionId uuid.UUID, worldId world.Id, characterId uint32, targetId uint32, reason string) Command[RemoveMemberCommandBody] {
 	return Command[RemoveMemberCommandBody]{
 		TransactionId: transactionId,
 		WorldId:       worldId,
@@ -228,7 +229,7 @@ func NewRemoveMemberCommand(transactionId uuid.UUID, worldId byte, characterId u
 }
 
 // NewBreakLinkCommand creates a new BreakLink command
-func NewBreakLinkCommand(transactionId uuid.UUID, worldId byte, characterId uint32, reason string) Command[BreakLinkCommandBody] {
+func NewBreakLinkCommand(transactionId uuid.UUID, worldId world.Id, characterId uint32, reason string) Command[BreakLinkCommandBody] {
 	return Command[BreakLinkCommandBody]{
 		TransactionId: transactionId,
 		WorldId:       worldId,
@@ -241,7 +242,7 @@ func NewBreakLinkCommand(transactionId uuid.UUID, worldId byte, characterId uint
 }
 
 // NewDeductRepCommand creates a new DeductRep command
-func NewDeductRepCommand(transactionId uuid.UUID, worldId byte, characterId uint32, amount uint32, reason string) Command[DeductRepCommandBody] {
+func NewDeductRepCommand(transactionId uuid.UUID, worldId world.Id, characterId uint32, amount uint32, reason string) Command[DeductRepCommandBody] {
 	return Command[DeductRepCommandBody]{
 		TransactionId: transactionId,
 		WorldId:       worldId,
@@ -255,7 +256,7 @@ func NewDeductRepCommand(transactionId uuid.UUID, worldId byte, characterId uint
 }
 
 // NewLinkCreatedEvent creates a new LinkCreated event
-func NewLinkCreatedEvent(worldId byte, characterId uint32, seniorId uint32, juniorId uint32) Event[LinkCreatedEventBody] {
+func NewLinkCreatedEvent(worldId world.Id, characterId uint32, seniorId uint32, juniorId uint32) Event[LinkCreatedEventBody] {
 	return Event[LinkCreatedEventBody]{
 		WorldId:     worldId,
 		CharacterId: characterId,
@@ -269,7 +270,7 @@ func NewLinkCreatedEvent(worldId byte, characterId uint32, seniorId uint32, juni
 }
 
 // NewLinkBrokenEvent creates a new LinkBroken event
-func NewLinkBrokenEvent(worldId byte, characterId uint32, seniorId uint32, juniorId uint32, reason string) Event[LinkBrokenEventBody] {
+func NewLinkBrokenEvent(worldId world.Id, characterId uint32, seniorId uint32, juniorId uint32, reason string) Event[LinkBrokenEventBody] {
 	return Event[LinkBrokenEventBody]{
 		WorldId:     worldId,
 		CharacterId: characterId,
@@ -284,7 +285,7 @@ func NewLinkBrokenEvent(worldId byte, characterId uint32, seniorId uint32, junio
 }
 
 // NewRepGainedEvent creates a new RepGained event
-func NewRepGainedEvent(worldId byte, characterId uint32, repGained uint32, dailyRep uint32, source string) Event[RepGainedEventBody] {
+func NewRepGainedEvent(worldId world.Id, characterId uint32, repGained uint32, dailyRep uint32, source string) Event[RepGainedEventBody] {
 	return Event[RepGainedEventBody]{
 		WorldId:     worldId,
 		CharacterId: characterId,
@@ -299,7 +300,7 @@ func NewRepGainedEvent(worldId byte, characterId uint32, repGained uint32, daily
 }
 
 // NewRepRedeemedEvent creates a new RepRedeemed event
-func NewRepRedeemedEvent(worldId byte, characterId uint32, repRedeemed uint32, reason string) Event[RepRedeemedEventBody] {
+func NewRepRedeemedEvent(worldId world.Id, characterId uint32, repRedeemed uint32, reason string) Event[RepRedeemedEventBody] {
 	return Event[RepRedeemedEventBody]{
 		WorldId:     worldId,
 		CharacterId: characterId,
@@ -313,7 +314,7 @@ func NewRepRedeemedEvent(worldId byte, characterId uint32, repRedeemed uint32, r
 }
 
 // NewRepErrorEvent creates a new RepError event
-func NewRepErrorEvent(worldId byte, characterId uint32, errorCode string, errorMessage string, amount uint32) Event[RepErrorEventBody] {
+func NewRepErrorEvent(worldId world.Id, characterId uint32, errorCode string, errorMessage string, amount uint32) Event[RepErrorEventBody] {
 	return Event[RepErrorEventBody]{
 		WorldId:     worldId,
 		CharacterId: characterId,
@@ -328,7 +329,7 @@ func NewRepErrorEvent(worldId byte, characterId uint32, errorCode string, errorM
 }
 
 // NewLinkErrorEvent creates a new LinkError event
-func NewLinkErrorEvent(worldId byte, characterId uint32, seniorId uint32, juniorId uint32, errorCode string, errorMessage string) Event[LinkErrorEventBody] {
+func NewLinkErrorEvent(worldId world.Id, characterId uint32, seniorId uint32, juniorId uint32, errorCode string, errorMessage string) Event[LinkErrorEventBody] {
 	return Event[LinkErrorEventBody]{
 		WorldId:     worldId,
 		CharacterId: characterId,

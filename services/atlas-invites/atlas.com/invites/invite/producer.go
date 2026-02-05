@@ -2,6 +2,7 @@ package invite
 
 import (
 	invite2 "atlas-invites/kafka/message/invite"
+
 	"github.com/Chronicle20/atlas-constants/character"
 	"github.com/Chronicle20/atlas-constants/invite"
 	"github.com/Chronicle20/atlas-constants/world"
@@ -11,10 +12,10 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func createdStatusEventProvider(referenceId uint32, worldId byte, inviteType string, originatorId uint32, targetId uint32, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+func createdStatusEventProvider(referenceId uint32, worldId world.Id, inviteType string, originatorId uint32, targetId uint32, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(referenceId))
 	value := &invite2.StatusEvent[invite2.CreatedEventBody]{
-		WorldId:       world.Id(worldId),
+		WorldId:       worldId,
 		InviteType:    invite.Type(inviteType),
 		ReferenceId:   invite.Id(referenceId),
 		Type:          invite.StatusTypeCreated,
@@ -27,10 +28,10 @@ func createdStatusEventProvider(referenceId uint32, worldId byte, inviteType str
 	return producer.SingleMessageProvider(key, value)
 }
 
-func acceptedStatusEventProvider(referenceId uint32, worldId byte, inviteType string, originatorId uint32, targetId uint32, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+func acceptedStatusEventProvider(referenceId uint32, worldId world.Id, inviteType string, originatorId uint32, targetId uint32, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(referenceId))
 	value := &invite2.StatusEvent[invite2.AcceptedEventBody]{
-		WorldId:       world.Id(worldId),
+		WorldId:       worldId,
 		InviteType:    invite.Type(inviteType),
 		ReferenceId:   invite.Id(referenceId),
 		Type:          invite.StatusTypeAccepted,
@@ -43,10 +44,10 @@ func acceptedStatusEventProvider(referenceId uint32, worldId byte, inviteType st
 	return producer.SingleMessageProvider(key, value)
 }
 
-func rejectedStatusEventProvider(referenceId uint32, worldId byte, inviteType string, originatorId uint32, targetId uint32, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+func rejectedStatusEventProvider(referenceId uint32, worldId world.Id, inviteType string, originatorId uint32, targetId uint32, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(referenceId))
 	value := &invite2.StatusEvent[invite2.RejectedEventBody]{
-		WorldId:       world.Id(worldId),
+		WorldId:       worldId,
 		InviteType:    invite.Type(inviteType),
 		ReferenceId:   invite.Id(referenceId),
 		Type:          invite.StatusTypeRejected,

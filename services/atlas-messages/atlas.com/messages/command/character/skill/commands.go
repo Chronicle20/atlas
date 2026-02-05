@@ -7,19 +7,21 @@ import (
 	"atlas-messages/saga"
 	skill3 "atlas-messages/skill"
 	"context"
-	"github.com/Chronicle20/atlas-model/model"
-	"github.com/sirupsen/logrus"
 	"regexp"
 	"strconv"
 	"time"
+
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-model/model"
+	"github.com/sirupsen/logrus"
 )
 
-func MaxSkillCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
-	return func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
+func MaxSkillCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
+	return func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
 		cp := character.NewProcessor(l, ctx)
 		sdp := skill.NewProcessor(l, ctx)
 		sagaProcessor := saga.NewProcessor(l, ctx)
-		return func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
+		return func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
 			re := regexp.MustCompile(`@skill\s+max\s+(\d+)`)
 			match := re.FindStringSubmatch(m)
 			if len(match) == 0 {
@@ -94,12 +96,12 @@ func MaxSkillCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fun
 	}
 }
 
-func ResetSkillCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
-	return func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
+func ResetSkillCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
+	return func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
 		cp := character.NewProcessor(l, ctx)
 		sdp := skill.NewProcessor(l, ctx)
 		sagaProcessor := saga.NewProcessor(l, ctx)
-		return func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
+		return func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
 			re := regexp.MustCompile(`@skill\s+reset\s+(\d+)`)
 			match := re.FindStringSubmatch(m)
 			if len(match) == 0 {

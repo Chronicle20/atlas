@@ -5,9 +5,8 @@ import (
 	expression2 "atlas-expressions/kafka/message/expression"
 	"atlas-expressions/kafka/producer"
 	"context"
-	"github.com/Chronicle20/atlas-constants/channel"
-	_map "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-constants/world"
+
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -16,9 +15,9 @@ import (
 // Processor interface defines the operations for managing expressions
 type Processor interface {
 	// Change changes the expression for a character
-	Change(mb *message.Buffer, transactionId uuid.UUID, characterId uint32, worldId world.Id, channelId channel.Id, mapId _map.Id, instance uuid.UUID, expression uint32) (Model, error)
+	Change(mb *message.Buffer, transactionId uuid.UUID, characterId uint32, field field.Model, expression uint32) (Model, error)
 	// ChangeAndEmit changes the expression for a character and emits an event
-	ChangeAndEmit(transactionId uuid.UUID, characterId uint32, worldId world.Id, channelId channel.Id, mapId _map.Id, instance uuid.UUID, expression uint32) (Model, error)
+	ChangeAndEmit(transactionId uuid.UUID, characterId uint32, field field.Model, expression uint32) (Model, error)
 	// Clear clears the expression for a character
 	Clear(mb *message.Buffer, transactionId uuid.UUID, characterId uint32) (Model, error)
 	// ClearAndEmit clears the expression for a character and emits an event
@@ -43,12 +42,12 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 }
 
 // Change changes the expression for a character
-func (p *ProcessorImpl) Change(mb *message.Buffer, transactionId uuid.UUID, characterId uint32, worldId world.Id, channelId channel.Id, mapId _map.Id, instance uuid.UUID, expression uint32) (Model, error) {
-	p.l.Debugf("Changing expression to [%d] for character [%d] in map [%d].", expression, characterId, mapId)
-	m := GetRegistry().add(p.t, characterId, worldId, channelId, mapId, instance, expression)
+func (p *ProcessorImpl) Change(mb *message.Buffer, transactionId uuid.UUID, characterId uint32, field field.Model, expression uint32) (Model, error) {
+	p.l.Debugf("Changing expression to [%d] for character [%d] in field [%s].", expression, characterId, field.Id())
+	m := GetRegistry().add(p.t, characterId, field, expression)
 
 	// Add message to buffer
-	err := mb.Put(expression2.EnvExpressionEvent, expressionEventProvider(transactionId, characterId, worldId, channelId, mapId, instance, expression))
+	err := mb.Put(expression2.EnvExpressionEvent, expressionEventProvider(transactionId, characterId, field, expression))
 	if err != nil {
 		return Model{}, err
 	}
@@ -57,20 +56,17 @@ func (p *ProcessorImpl) Change(mb *message.Buffer, transactionId uuid.UUID, char
 }
 
 // ChangeAndEmit changes the expression for a character and emits an event
-func (p *ProcessorImpl) ChangeAndEmit(transactionId uuid.UUID, characterId uint32, worldId world.Id, channelId channel.Id, mapId _map.Id, instance uuid.UUID, expression uint32) (Model, error) {
+func (p *ProcessorImpl) ChangeAndEmit(transactionId uuid.UUID, characterId uint32, field field.Model, expression uint32) (Model, error) {
 	return message.EmitWithResult[Model, changeInput](
 		producer.ProviderImpl(p.l)(p.ctx),
 	)(func(mb *message.Buffer) func(input changeInput) (Model, error) {
 		return func(input changeInput) (Model, error) {
-			return p.Change(mb, input.transactionId, input.characterId, input.worldId, input.channelId, input.mapId, input.instance, input.expression)
+			return p.Change(mb, input.transactionId, input.characterId, input.field, input.expression)
 		}
 	})(changeInput{
 		transactionId: transactionId,
 		characterId:   characterId,
-		worldId:       worldId,
-		channelId:     channelId,
-		mapId:         mapId,
-		instance:      instance,
+		field:         field,
 		expression:    expression,
 	})
 }
@@ -79,10 +75,7 @@ func (p *ProcessorImpl) ChangeAndEmit(transactionId uuid.UUID, characterId uint3
 type changeInput struct {
 	transactionId uuid.UUID
 	characterId   uint32
-	worldId       world.Id
-	channelId     channel.Id
-	mapId         _map.Id
-	instance      uuid.UUID
+	field         field.Model
 	expression    uint32
 }
 
@@ -112,9 +105,4 @@ func (p *ProcessorImpl) ClearAndEmit(transactionId uuid.UUID, characterId uint32
 type clearInput struct {
 	transactionId uuid.UUID
 	characterId   uint32
-}
-
-// EmitExpressionEvent emits an expression event for the given model
-func EmitExpressionEvent(l logrus.FieldLogger, ctx context.Context, transactionId uuid.UUID, m Model) error {
-	return producer.ProviderImpl(l)(ctx)(expression2.EnvExpressionEvent)(expressionEventProvider(transactionId, m.CharacterId(), m.WorldId(), m.ChannelId(), m.MapId(), m.Instance(), m.Expression()))
 }

@@ -3,6 +3,8 @@ package character
 import (
 	"atlas-login/rest"
 	"fmt"
+
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 
@@ -17,7 +19,7 @@ func getBaseRequest() string {
 	return requests.RootUrl("CHARACTERS")
 }
 
-func requestByAccountAndWorld(accountId uint32, worldId byte) requests.Request[[]RestModel] {
+func requestByAccountAndWorld(accountId uint32, worldId world.Id) requests.Request[[]RestModel] {
 	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+ByAccountAndWorld, accountId, worldId))
 }
 

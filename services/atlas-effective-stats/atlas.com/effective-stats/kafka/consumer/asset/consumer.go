@@ -9,6 +9,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -96,7 +97,8 @@ func handleItemEquipped(l logrus.FieldLogger, ctx context.Context, p character.P
 	if len(bonuses) > 0 {
 		// We need worldId and channelId - get them from the registry or use defaults
 		// For now, use 0 as we'll update the existing entry
-		if err := p.AddEquipmentBonuses(0, 0, e.CharacterId, e.AssetId, bonuses); err != nil {
+		ch := channel.NewModel(0, 0)
+		if err := p.AddEquipmentBonuses(ch, e.CharacterId, e.AssetId, bonuses); err != nil {
 			l.WithError(err).Errorf("Failed to add equipment bonuses for character [%d].", e.CharacterId)
 		}
 	}

@@ -3,13 +3,14 @@ package drop
 import (
 	"errors"
 
+	"time"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
-	"time"
 )
 
 const (
@@ -21,10 +22,7 @@ type Model struct {
 	tenant        tenant.Model
 	id            uint32
 	transactionId uuid.UUID
-	worldId       world.Id
-	channelId     channel.Id
-	mapId         _map.Id
-	instance      uuid.UUID
+	field         field.Model
 	itemId        uint32
 	equipmentId   uint32
 	quantity      uint32
@@ -111,20 +109,24 @@ func (m Model) Reserve(petSlot int8) Model {
 	return CloneModelBuilder(m).SetStatus(StatusReserved).SetPetSlot(petSlot).MustBuild()
 }
 
-func (m Model) MapId() _map.Id {
-	return m.mapId
-}
-
-func (m Model) Instance() uuid.UUID {
-	return m.instance
+func (m Model) Field() field.Model {
+	return m.field
 }
 
 func (m Model) WorldId() world.Id {
-	return m.worldId
+	return m.Field().WorldId()
 }
 
 func (m Model) ChannelId() channel.Id {
-	return m.channelId
+	return m.Field().ChannelId()
+}
+
+func (m Model) MapId() _map.Id {
+	return m.Field().MapId()
+}
+
+func (m Model) Instance() uuid.UUID {
+	return m.Field().Instance()
 }
 
 func (m Model) TransactionId() uuid.UUID {
@@ -151,10 +153,7 @@ type ModelBuilder struct {
 	tenant        tenant.Model
 	id            uint32
 	transactionId uuid.UUID
-	worldId       world.Id
-	channelId     channel.Id
-	mapId         _map.Id
-	instance      uuid.UUID
+	field         field.Model
 	itemId        uint32
 	equipmentId   uint32
 	quantity      uint32
@@ -177,10 +176,7 @@ func NewModelBuilder(tenant tenant.Model, f field.Model) *ModelBuilder {
 	return &ModelBuilder{
 		tenant:        tenant,
 		transactionId: uuid.New(),
-		worldId:       f.WorldId(),
-		channelId:     f.ChannelId(),
-		mapId:         f.MapId(),
-		instance:      f.Instance(),
+		field:         f,
 		dropTime:      time.Now(),
 		petSlot:       -1,
 	}
@@ -260,10 +256,7 @@ func (b *ModelBuilder) Clone(m Model) *ModelBuilder {
 	b.tenant = m.Tenant()
 	b.id = m.Id()
 	b.transactionId = m.TransactionId()
-	b.worldId = m.WorldId()
-	b.channelId = m.ChannelId()
-	b.mapId = m.MapId()
-	b.instance = m.Instance()
+	b.field = m.Field()
 	b.itemId = m.ItemId()
 	b.equipmentId = m.EquipmentId()
 	b.quantity = m.Quantity()
@@ -294,10 +287,7 @@ func (b *ModelBuilder) Build() (Model, error) {
 		tenant:        b.tenant,
 		id:            b.id,
 		transactionId: b.transactionId,
-		worldId:       b.worldId,
-		channelId:     b.channelId,
-		mapId:         b.mapId,
-		instance:      b.instance,
+		field:         b.field,
 		itemId:        b.itemId,
 		equipmentId:   b.equipmentId,
 		quantity:      b.quantity,
@@ -331,20 +321,8 @@ func (b *ModelBuilder) ItemId() uint32 {
 	return b.itemId
 }
 
-func (b *ModelBuilder) WorldId() world.Id {
-	return b.worldId
-}
-
-func (b *ModelBuilder) ChannelId() channel.Id {
-	return b.channelId
-}
-
-func (b *ModelBuilder) MapId() _map.Id {
-	return b.mapId
-}
-
-func (b *ModelBuilder) Instance() uuid.UUID {
-	return b.instance
+func (b *ModelBuilder) Field() field.Model {
+	return b.field
 }
 
 func (b *ModelBuilder) TransactionId() uuid.UUID {

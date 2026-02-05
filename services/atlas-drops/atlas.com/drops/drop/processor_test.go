@@ -104,7 +104,7 @@ func TestProcessor_Reserve_SuccessfulReservation(t *testing.T) {
 	characterId := uint32(12345)
 	petSlot := int8(-1)
 
-	reserved, err := p.Reserve(reserveBuf)(txId, 1, 1, 100000000, drop.Id(), characterId, petSlot)
+	reserved, err := p.Reserve(reserveBuf)(txId, f, drop.Id(), characterId, petSlot)
 	if err != nil {
 		t.Fatalf("Failed to reserve drop: %v", err)
 	}
@@ -135,10 +135,10 @@ func TestProcessor_Reserve_FailedReservation_BuffersFailureMessage(t *testing.T)
 
 	reserveBuf1 := message.NewBuffer()
 	txId := uuid.New()
-	_, _ = p.Reserve(reserveBuf1)(txId, 1, 1, 100000000, drop.Id(), uint32(11111), -1)
+	_, _ = p.Reserve(reserveBuf1)(txId, f, drop.Id(), uint32(11111), -1)
 
 	reserveBuf2 := message.NewBuffer()
-	_, err := p.Reserve(reserveBuf2)(txId, 1, 1, 100000000, drop.Id(), uint32(22222), -1)
+	_, err := p.Reserve(reserveBuf2)(txId, f, drop.Id(), uint32(22222), -1)
 	if err == nil {
 		t.Fatal("Expected error when reserving already reserved drop")
 	}
@@ -166,10 +166,10 @@ func TestProcessor_CancelReservation_BuffersMessage(t *testing.T) {
 	reserveBuf := message.NewBuffer()
 	txId := uuid.New()
 	characterId := uint32(12345)
-	_, _ = p.Reserve(reserveBuf)(txId, 1, 1, 100000000, drop.Id(), characterId, -1)
+	_, _ = p.Reserve(reserveBuf)(txId, f, drop.Id(), characterId, -1)
 
 	cancelBuf := message.NewBuffer()
-	err := p.CancelReservation(cancelBuf)(txId, 1, 1, 100000000, drop.Id(), characterId)
+	err := p.CancelReservation(cancelBuf)(txId, f, drop.Id(), characterId)
 	if err != nil {
 		t.Fatalf("Failed to cancel reservation: %v", err)
 	}
@@ -203,7 +203,7 @@ func TestProcessor_Gather_RemovesDropAndBuffersMessage(t *testing.T) {
 	txId := uuid.New()
 	characterId := uint32(12345)
 
-	gathered, err := p.Gather(gatherBuf)(txId, 1, 1, 100000000, drop.Id(), characterId)
+	gathered, err := p.Gather(gatherBuf)(txId, f, drop.Id(), characterId)
 	if err != nil {
 		t.Fatalf("Failed to gather drop: %v", err)
 	}
@@ -425,7 +425,7 @@ func TestProcessor_Reserve_WithPetSlot(t *testing.T) {
 	txId := uuid.New()
 	petSlot := int8(2)
 
-	reserved, err := p.Reserve(reserveBuf)(txId, 1, 1, 100000000, drop.Id(), uint32(12345), petSlot)
+	reserved, err := p.Reserve(reserveBuf)(txId, f, drop.Id(), uint32(12345), petSlot)
 	if err != nil {
 		t.Fatalf("Failed to reserve drop with pet slot: %v", err)
 	}
@@ -458,7 +458,7 @@ func TestProcessor_MultipleOperationsSequence(t *testing.T) {
 	reserveBuf := message.NewBuffer()
 	txId := uuid.New()
 	characterId := uint32(12345)
-	_, err = p.Reserve(reserveBuf)(txId, 1, 1, 100000000, drop.Id(), characterId, -1)
+	_, err = p.Reserve(reserveBuf)(txId, f, drop.Id(), characterId, -1)
 	if err != nil {
 		t.Fatalf("Step 2 failed - Reserve: %v", err)
 	}
@@ -469,7 +469,7 @@ func TestProcessor_MultipleOperationsSequence(t *testing.T) {
 	}
 
 	cancelBuf := message.NewBuffer()
-	err = p.CancelReservation(cancelBuf)(txId, 1, 1, 100000000, drop.Id(), characterId)
+	err = p.CancelReservation(cancelBuf)(txId, f, drop.Id(), characterId)
 	if err != nil {
 		t.Fatalf("Step 3 failed - CancelReservation: %v", err)
 	}
@@ -480,7 +480,7 @@ func TestProcessor_MultipleOperationsSequence(t *testing.T) {
 	}
 
 	gatherBuf := message.NewBuffer()
-	_, err = p.Gather(gatherBuf)(txId, 1, 1, 100000000, drop.Id(), characterId)
+	_, err = p.Gather(gatherBuf)(txId, f, drop.Id(), characterId)
 	if err != nil {
 		t.Fatalf("Step 4 failed - Gather: %v", err)
 	}
@@ -520,9 +520,9 @@ func TestCreatedEventStatusProvider_ReturnsValidMessages(t *testing.T) {
 
 func TestExpiredEventStatusProvider_ReturnsValidMessages(t *testing.T) {
 	txId := uuid.New()
-	instance := uuid.New()
 
-	provider := expiredEventStatusProvider(txId, 1, 2, 100000000, instance, 12345)
+	f := field.NewBuilder(1, 2, 100000000).Build()
+	provider := expiredEventStatusProvider(txId, f, 12345)
 	messages, err := provider()
 	if err != nil {
 		t.Fatalf("expiredEventStatusProvider failed: %v", err)
@@ -534,9 +534,9 @@ func TestExpiredEventStatusProvider_ReturnsValidMessages(t *testing.T) {
 
 func TestPickedUpEventStatusProvider_ReturnsValidMessages(t *testing.T) {
 	txId := uuid.New()
-	instance := uuid.New()
 
-	provider := pickedUpEventStatusProvider(txId, 1, 2, 100000000, instance, 12345, 99999, 1000000, 0, 10, 0, -1)
+	f := field.NewBuilder(1, 2, 100000000).Build()
+	provider := pickedUpEventStatusProvider(txId, f, 12345, 99999, 1000000, 0, 10, 0, -1)
 	messages, err := provider()
 	if err != nil {
 		t.Fatalf("pickedUpEventStatusProvider failed: %v", err)
@@ -548,9 +548,9 @@ func TestPickedUpEventStatusProvider_ReturnsValidMessages(t *testing.T) {
 
 func TestReservedEventStatusProvider_ReturnsValidMessages(t *testing.T) {
 	txId := uuid.New()
-	instance := uuid.New()
 
-	provider := reservedEventStatusProvider(txId, 1, 2, 100000000, instance, 12345, 99999, 1000000, 0, 10, 0)
+	f := field.NewBuilder(1, 2, 100000000).Build()
+	provider := reservedEventStatusProvider(txId, f, 12345, 99999, 1000000, 0, 10, 0)
 	messages, err := provider()
 	if err != nil {
 		t.Fatalf("reservedEventStatusProvider failed: %v", err)
@@ -562,9 +562,9 @@ func TestReservedEventStatusProvider_ReturnsValidMessages(t *testing.T) {
 
 func TestReservationFailureEventStatusProvider_ReturnsValidMessages(t *testing.T) {
 	txId := uuid.New()
-	instance := uuid.New()
 
-	provider := reservationFailureEventStatusProvider(txId, 1, 2, 100000000, instance, 12345, 99999)
+	f := field.NewBuilder(1, 2, 100000000).Build()
+	provider := reservationFailureEventStatusProvider(txId, f, 12345, 99999)
 	messages, err := provider()
 	if err != nil {
 		t.Fatalf("reservationFailureEventStatusProvider failed: %v", err)
@@ -583,7 +583,8 @@ func TestProcessor_Gather_NonExistentDrop(t *testing.T) {
 	gatherBuf := message.NewBuffer()
 	txId := uuid.New()
 
-	gathered, err := p.Gather(gatherBuf)(txId, 1, 1, 100000000, 999999, uint32(12345))
+	f := field.NewBuilder(1, 1, 100000000).Build()
+	gathered, err := p.Gather(gatherBuf)(txId, f, 999999, uint32(12345))
 	// RemoveDrop returns empty model for non-existent drop without error
 	if gathered.Id() != 0 {
 		t.Fatal("Expected zero-value model for non-existent drop")
@@ -643,7 +644,8 @@ func TestProcessor_Reserve_NonExistentDrop(t *testing.T) {
 	reserveBuf := message.NewBuffer()
 	txId := uuid.New()
 
-	_, err := p.Reserve(reserveBuf)(txId, 1, 1, 100000000, 999999, uint32(12345), -1)
+	f := field.NewBuilder(1, 1, 100000000).Build()
+	_, err := p.Reserve(reserveBuf)(txId, f, 999999, uint32(12345), -1)
 	if err == nil {
 		t.Fatal("Expected error when reserving non-existent drop")
 	}
@@ -665,7 +667,8 @@ func TestProcessor_CancelReservation_NonExistentDrop(t *testing.T) {
 	txId := uuid.New()
 
 	// This should not error - just silently ignore
-	err := p.CancelReservation(cancelBuf)(txId, 1, 1, 100000000, 999999, uint32(12345))
+	f := field.NewBuilder(1, 1, 100000000).Build()
+	err := p.CancelReservation(cancelBuf)(txId, f, 999999, uint32(12345))
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -696,7 +699,7 @@ func TestProcessor_Gather_WithMesoDrop(t *testing.T) {
 	gatherBuf := message.NewBuffer()
 	txId := uuid.New()
 
-	gathered, err := p.Gather(gatherBuf)(txId, 1, 1, 100000000, drop.Id(), uint32(12345))
+	gathered, err := p.Gather(gatherBuf)(txId, f, drop.Id(), uint32(12345))
 	if err != nil {
 		t.Fatalf("Failed to gather meso drop: %v", err)
 	}
@@ -768,7 +771,7 @@ func TestProcessor_Gather_WithItemDrop(t *testing.T) {
 	gatherBuf := message.NewBuffer()
 	txId := uuid.New()
 
-	gathered, err := p.Gather(gatherBuf)(txId, 1, 1, 100000000, drop.Id(), uint32(12345))
+	gathered, err := p.Gather(gatherBuf)(txId, f, drop.Id(), uint32(12345))
 	if err != nil {
 		t.Fatalf("Failed to gather item drop: %v", err)
 	}

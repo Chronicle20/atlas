@@ -1,6 +1,7 @@
 package medal
 
 import (
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"gorm.io/gorm"
 )
 
@@ -22,6 +23,6 @@ func (e Entity) TableName() string {
 func Make(e Entity) (Model, error) {
 	return Model{
 		id:    e.ID,
-		mapId: e.MapId,
+		mapId: _map.Id(e.MapId),
 	}, nil
 }

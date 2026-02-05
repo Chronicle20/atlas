@@ -38,7 +38,7 @@ func TestInMapProvider(t *testing.T) {
 	f := testField(0, 1, 100000000)
 
 	// Add characters directly to registry
-	key := MapKey{Tenant: st, WorldId: 0, ChannelId: 1, MapId: 100000000}
+	key := MapKey{Tenant: st, Field: field.NewBuilder(0, 1, 100000000).Build()}
 	getRegistry().AddCharacter(key, 100)
 	getRegistry().AddCharacter(key, 200)
 
@@ -63,7 +63,7 @@ func TestGetCharactersInMap(t *testing.T) {
 	f := testField(0, 1, 100000000)
 
 	// Add characters
-	key := MapKey{Tenant: st, WorldId: 0, ChannelId: 1, MapId: 100000000}
+	key := MapKey{Tenant: st, Field: field.NewBuilder(0, 1, 100000000).Build()}
 	getRegistry().AddCharacter(key, 100)
 
 	p := NewProcessor(l, tctx)

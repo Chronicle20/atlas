@@ -1,9 +1,11 @@
 package blocked
 
+import _map "github.com/Chronicle20/atlas-constants/map"
+
 // Model represents a blocked portal for a character
 type Model struct {
 	characterId uint32
-	mapId       uint32
+	mapId       _map.Id
 	portalId    uint32
 }
 
@@ -13,7 +15,7 @@ func (m Model) CharacterId() uint32 {
 }
 
 // MapId returns the map ID
-func (m Model) MapId() uint32 {
+func (m Model) MapId() _map.Id {
 	return m.mapId
 }
 
@@ -23,7 +25,7 @@ func (m Model) PortalId() uint32 {
 }
 
 // NewModel creates a new blocked portal model
-func NewModel(characterId uint32, mapId uint32, portalId uint32) Model {
+func NewModel(characterId uint32, mapId _map.Id, portalId uint32) Model {
 	return Model{
 		characterId: characterId,
 		mapId:       mapId,

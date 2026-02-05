@@ -3,11 +3,12 @@ package family
 import (
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 )
 
 // NewBuilder creates a new builder with required parameters
-func NewBuilder(characterId uint32, tenantId uuid.UUID, level uint16, world byte) *Builder {
+func NewBuilder(characterId uint32, tenantId uuid.UUID, level uint16, world world.Id) *Builder {
 	return &Builder{
 		characterId: characterId,
 		tenantId:    tenantId,
@@ -97,11 +98,10 @@ func (b *Builder) SetLevel(level uint16) *Builder {
 	return b
 }
 
-func (b *Builder) SetWorld(world byte) *Builder {
+func (b *Builder) SetWorld(world world.Id) *Builder {
 	b.world = world
 	return b
 }
-
 
 func (b *Builder) SetCreatedAt(createdAt time.Time) *Builder {
 	b.createdAt = createdAt

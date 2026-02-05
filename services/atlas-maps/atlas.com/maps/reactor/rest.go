@@ -1,20 +1,29 @@
 package reactor
 
-import "strconv"
+import (
+	"strconv"
+
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
+)
 
 type RestModel struct {
-	Id             uint32 `json:"-"`
-	WorldId        byte   `json:"worldId"`
-	ChannelId      byte   `json:"channelId"`
-	MapId          uint32 `json:"mapId"`
-	Classification uint32 `json:"classification"`
-	Name           string `json:"name"`
-	State          int8   `json:"state"`
-	EventState     byte   `json:"eventState"`
-	X              int16  `json:"x"`
-	Y              int16  `json:"y"`
-	Delay          uint32 `json:"delay"`
-	Direction      byte   `json:"direction"`
+	Id             uint32     `json:"-"`
+	WorldId        world.Id   `json:"worldId"`
+	ChannelId      channel.Id `json:"channelId"`
+	MapId          _map.Id    `json:"mapId"`
+	Instance       uuid.UUID  `json:"instance"`
+	Classification uint32     `json:"classification"`
+	Name           string     `json:"name"`
+	State          int8       `json:"state"`
+	EventState     byte       `json:"eventState"`
+	X              int16      `json:"x"`
+	Y              int16      `json:"y"`
+	Delay          uint32     `json:"delay"`
+	Direction      byte       `json:"direction"`
 }
 
 func (r RestModel) GetName() string {
@@ -38,9 +47,7 @@ func (r *RestModel) SetID(strId string) error {
 func Extract(rm RestModel) (Model, error) {
 	return Model{
 		id:             rm.Id,
-		worldId:        rm.WorldId,
-		channelId:      rm.ChannelId,
-		mapId:          rm.MapId,
+		f:              field.NewBuilder(rm.WorldId, rm.ChannelId, rm.MapId).SetInstance(rm.Instance).Build(),
 		classification: rm.Classification,
 		name:           rm.Name,
 		state:          rm.State,

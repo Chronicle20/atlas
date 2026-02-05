@@ -1,5 +1,10 @@
 package guild
 
+import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
+)
+
 const (
 	EnvCommandTopic                    = "COMMAND_TOPIC_GUILD"
 	CommandTypeRequestName             = "REQUEST_NAME"
@@ -15,21 +20,21 @@ type Command[E any] struct {
 }
 
 type RequestNameBody struct {
-	WorldId   byte `json:"worldId"`
-	ChannelId byte `json:"channelId"`
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
 }
 
 type RequestEmblemBody struct {
-	WorldId   byte `json:"worldId"`
-	ChannelId byte `json:"channelId"`
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
 }
 
 type RequestDisbandBody struct {
-	WorldId   byte `json:"worldId"`
-	ChannelId byte `json:"channelId"`
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
 }
 
 type RequestCapacityIncreaseBody struct {
-	WorldId   byte `json:"worldId"`
-	ChannelId byte `json:"channelId"`
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
 }

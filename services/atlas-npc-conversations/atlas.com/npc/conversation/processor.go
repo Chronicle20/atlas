@@ -34,12 +34,12 @@ type Processor interface {
 }
 
 type ProcessorImpl struct {
-	l                   logrus.FieldLogger
-	ctx                 context.Context
-	t                   tenant.Model
-	db                  *gorm.DB
-	evaluator           Evaluator
-	executor            OperationExecutor
+	l                       logrus.FieldLogger
+	ctx                     context.Context
+	t                       tenant.Model
+	db                      *gorm.DB
+	evaluator               Evaluator
+	executor                OperationExecutor
 	npcConversationProvider NpcConversationProvider
 }
 
@@ -498,17 +498,17 @@ func (p *ProcessorImpl) processDialogueState(ctx ConversationContext, state Stat
 	// Send the dialogue to the client
 	npcProcessor := npcSender.NewProcessor(p.l, p.ctx)
 	if dialogue.dialogueType == SendNext {
-		npcProcessor.SendNext(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText, configs...)
+		npcProcessor.SendNext(ctx.Field().Channel(), ctx.CharacterId(), ctx.NpcId())(processedText, configs...)
 	} else if dialogue.dialogueType == SendNextPrev {
-		npcProcessor.SendNextPrevious(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText, configs...)
+		npcProcessor.SendNextPrevious(ctx.Field().Channel(), ctx.CharacterId(), ctx.NpcId())(processedText, configs...)
 	} else if dialogue.dialogueType == SendPrev {
-		npcProcessor.SendPrevious(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText, configs...)
+		npcProcessor.SendPrevious(ctx.Field().Channel(), ctx.CharacterId(), ctx.NpcId())(processedText, configs...)
 	} else if dialogue.dialogueType == SendOk {
-		npcProcessor.SendOk(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText, configs...)
+		npcProcessor.SendOk(ctx.Field().Channel(), ctx.CharacterId(), ctx.NpcId())(processedText, configs...)
 	} else if dialogue.dialogueType == SendYesNo {
-		npcProcessor.SendYesNo(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText, configs...)
+		npcProcessor.SendYesNo(ctx.Field().Channel(), ctx.CharacterId(), ctx.NpcId())(processedText, configs...)
 	} else if dialogue.dialogueType == SendAcceptDecline {
-		npcProcessor.SendAcceptDecline(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(processedText, configs...)
+		npcProcessor.SendAcceptDecline(ctx.Field().Channel(), ctx.CharacterId(), ctx.NpcId())(processedText, configs...)
 	} else {
 		p.l.Warnf("Unhandled dialog type [%s].", dialogue.dialogueType)
 	}
@@ -743,7 +743,7 @@ func (p *ProcessorImpl) processListSelectionState(ctx ConversationContext, state
 		mb.OpenItem(i).BlueText().AddText(processedChoiceText).CloseItem().NewLine()
 	}
 
-	npcSender.NewProcessor(p.l, p.ctx).SendSimple(ctx.Field().WorldId(), ctx.Field().ChannelId(), ctx.CharacterId(), ctx.NpcId())(mb.String())
+	npcSender.NewProcessor(p.l, p.ctx).SendSimple(ctx.Field().Channel(), ctx.CharacterId(), ctx.NpcId())(mb.String())
 	return state.Id(), nil
 }
 
@@ -762,15 +762,7 @@ func (p *ProcessorImpl) processAskNumberState(ctx ConversationContext, state Sta
 	}
 
 	// Send the ask number request to the client
-	err = npcSender.NewProcessor(p.l, p.ctx).SendNumber(
-		ctx.Field().WorldId(),
-		ctx.Field().ChannelId(),
-		ctx.CharacterId(),
-		ctx.NpcId(),
-		processedText,
-		askNumber.DefaultValue(),
-		askNumber.MinValue(),
-		askNumber.MaxValue())
+	err = npcSender.NewProcessor(p.l, p.ctx).SendNumber(ctx.Field().Channel(), ctx.CharacterId(), ctx.NpcId(), processedText, askNumber.DefaultValue(), askNumber.MinValue(), askNumber.MaxValue())
 
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to send number request for state [%s] to character [%d]", state.Id(), ctx.CharacterId())
@@ -829,13 +821,7 @@ func (p *ProcessorImpl) processAskStyleState(ctx ConversationContext, state Stat
 	}
 
 	// Send the ask style request to the client
-	err = npcSender.NewProcessor(p.l, p.ctx).SendStyle(
-		ctx.Field().WorldId(),
-		ctx.Field().ChannelId(),
-		ctx.CharacterId(),
-		ctx.NpcId(),
-		processedText,
-		styles)
+	err = npcSender.NewProcessor(p.l, p.ctx).SendStyle(ctx.Field().Channel(), ctx.CharacterId(), ctx.NpcId(), processedText, styles)
 
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to send style request for state [%s] to character [%d]", state.Id(), ctx.CharacterId())

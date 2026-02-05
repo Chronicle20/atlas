@@ -52,7 +52,7 @@ func handleCreated(sc server.Model, wp writer.Producer) message.Handler[skill2.S
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, announceSkillUpdate(l)(ctx)(wp)(e.SkillId, e.Body.Level, e.Body.MasterLevel, e.Body.Expiration))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, announceSkillUpdate(l)(ctx)(wp)(e.SkillId, e.Body.Level, e.Body.MasterLevel, e.Body.Expiration))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to update character [%d] skill [%d].", e.CharacterId, e.SkillId)
 		}
@@ -70,7 +70,7 @@ func handleUpdated(sc server.Model, wp writer.Producer) message.Handler[skill2.S
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, announceSkillUpdate(l)(ctx)(wp)(e.SkillId, e.Body.Level, e.Body.MasterLevel, e.Body.Expiration))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, announceSkillUpdate(l)(ctx)(wp)(e.SkillId, e.Body.Level, e.Body.MasterLevel, e.Body.Expiration))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to update character [%d] skill [%d].", e.CharacterId, e.SkillId)
 		}
@@ -98,7 +98,7 @@ func handleCooldownApplied(sc server.Model, wp writer.Producer) message.Handler[
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, announceSkillCooldown(l)(ctx)(wp)(e.SkillId, e.Body.CooldownExpiresAt))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, announceSkillCooldown(l)(ctx)(wp)(e.SkillId, e.Body.CooldownExpiresAt))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to update character [%d] skill [%d].", e.CharacterId, e.SkillId)
 		}
@@ -126,7 +126,7 @@ func handleCooldownExpired(sc server.Model, wp writer.Producer) message.Handler[
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, announceSkillCooldownReset(l)(ctx)(wp)(e.SkillId))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, announceSkillCooldownReset(l)(ctx)(wp)(e.SkillId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to update character [%d] skill [%d].", e.CharacterId, e.SkillId)
 		}

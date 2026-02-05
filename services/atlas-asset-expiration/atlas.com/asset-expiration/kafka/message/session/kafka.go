@@ -1,6 +1,10 @@
 package session
 
-import "github.com/google/uuid"
+import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
+)
 
 const (
 	EnvEventTopicSessionStatus      = "EVENT_TOPIC_SESSION_STATUS"
@@ -11,11 +15,11 @@ const (
 )
 
 type StatusEvent struct {
-	SessionId   uuid.UUID `json:"sessionId"`
-	AccountId   uint32    `json:"accountId"`
-	CharacterId uint32    `json:"characterId"`
-	WorldId     byte      `json:"worldId"`
-	ChannelId   byte      `json:"channelId"`
-	Issuer      string    `json:"issuer"`
-	Type        string    `json:"type"`
+	SessionId   uuid.UUID  `json:"sessionId"`
+	AccountId   uint32     `json:"accountId"`
+	CharacterId uint32     `json:"characterId"`
+	WorldId     world.Id   `json:"worldId"`
+	ChannelId   channel.Id `json:"channelId"`
+	Issuer      string     `json:"issuer"`
+	Type        string     `json:"type"`
 }

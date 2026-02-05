@@ -26,6 +26,7 @@ import (
 	"math"
 	"math/rand"
 
+	"github.com/Chronicle20/atlas-constants/channel"
 	ts "github.com/Chronicle20/atlas-constants/character"
 	"github.com/Chronicle20/atlas-constants/field"
 	inventory2 "github.com/Chronicle20/atlas-constants/inventory"
@@ -148,7 +149,7 @@ func ApplyItemEffects(l logrus.FieldLogger, ctx context.Context, c character.Mod
 	}
 }
 
-func (p *Processor) RequestItemConsume(worldId byte, channelId byte, characterId uint32, slot int16, itemId item2.Id, quantity int16) error {
+func (p *Processor) RequestItemConsume(c channel.Model, characterId uint32, slot int16, itemId item2.Id, quantity int16) error {
 	transactionId := uuid.New()
 	p.l.Debugf("Creating OneTime topic consumer to await transaction [%s] completion or cancellation.", transactionId.String())
 	t, _ := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
@@ -169,7 +170,7 @@ func (p *Processor) RequestItemConsume(worldId byte, channelId byte, characterId
 	} else if item2.GetClassification(itemId) == item2.ClassificationPetConsumable {
 		itemConsumer = ConsumeCashPetFood(transactionId, characterId, slot, itemId, quantity)
 	} else if item2.GetClassification(itemId) == item2.ClassificationConsumableSummoningSack {
-		itemConsumer = ConsumeSummoningSack(transactionId, worldId, channelId, characterId, slot, itemId, quantity)
+		itemConsumer = ConsumeSummoningSack(transactionId, c, characterId, slot, itemId, quantity)
 	}
 
 	handler := compartment.Consume(itemConsumer)
@@ -258,7 +259,7 @@ func ConsumeTownScroll(transactionId uuid.UUID, characterId uint32, slot int16, 
 				if err != nil {
 					return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 				}
-				toMapId = _map2.Id(mm.ReturnMapId())
+				toMapId = mm.ReturnMapId()
 			}
 
 			err = cpp.ConsumeItem(characterId, inventory2.TypeValueUse, transactionId, slot)
@@ -348,7 +349,7 @@ func ConsumeCashPetFood(transactionId uuid.UUID, characterId uint32, slot int16,
 	}
 }
 
-func ConsumeSummoningSack(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32, slot int16, itemId item2.Id, quantity int16) ItemConsumer {
+func ConsumeSummoningSack(transactionId uuid.UUID, ch channel.Model, characterId uint32, slot int16, itemId item2.Id, quantity int16) ItemConsumer {
 	return func(l logrus.FieldLogger) func(ctx context.Context) error {
 		return func(ctx context.Context) error {
 			c, err := character.NewProcessor(l, ctx).GetById()(characterId)
@@ -370,7 +371,8 @@ func ConsumeSummoningSack(transactionId uuid.UUID, worldId byte, channelId byte,
 			for _, msm := range ci.MonsterSummons() {
 				roll := uint32(rand.Int31n(100))
 				if roll < msm.Probability() {
-					err = monster.NewProcessor(l, ctx).CreateMonster(worldId, channelId, c.MapId(), msm.TemplateId(), pos.X(), pos.Y(), 0, 0)
+					f := field.NewBuilder(ch.WorldId(), ch.Id(), c.MapId()).Build()
+					err = monster.NewProcessor(l, ctx).CreateMonster(f, msm.TemplateId(), pos.X(), pos.Y(), 0, 0)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to summon monster [%d] for character [%d] summoning bag.", msm.TemplateId(), characterId)
 					} else {
@@ -676,7 +678,7 @@ func (p *Processor) PassScroll(characterId uint32, legendarySpirit bool, whiteSc
 
 // ApplyConsumableEffect applies item effects to a character without consuming from inventory
 // This is used for NPC-initiated buffs (e.g., NPC blessings via cm.useItem())
-func (p *Processor) ApplyConsumableEffect(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32, itemId item2.Id) error {
+func (p *Processor) ApplyConsumableEffect(transactionId uuid.UUID, _ channel.Model, characterId uint32, itemId item2.Id) error {
 	cp := character.NewProcessor(p.l, p.ctx)
 
 	c, err := cp.GetById()(characterId)

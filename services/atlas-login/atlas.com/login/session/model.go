@@ -1,20 +1,22 @@
 package session
 
 import (
-	"github.com/Chronicle20/atlas-socket/crypto"
-	"github.com/Chronicle20/atlas-tenant"
-	"github.com/google/uuid"
 	"math/rand"
 	"net"
 	"sync"
 	"time"
+
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas-socket/crypto"
+	"github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 )
 
 type Model struct {
 	id          uuid.UUID
 	accountId   uint32
-	worldId     byte
-	channelId   byte
+	ch          channel.Model
 	con         net.Conn
 	send        crypto.AESOFB
 	sendLock    *sync.Mutex
@@ -59,8 +61,7 @@ func CloneSession(s Model) Model {
 	return Model{
 		id:          s.id,
 		accountId:   s.accountId,
-		worldId:     s.worldId,
-		channelId:   s.channelId,
+		ch:          s.ch,
 		con:         s.con,
 		send:        s.send,
 		sendLock:    s.sendLock,
@@ -117,24 +118,28 @@ func (s *Model) GetRemoteAddress() net.Addr {
 	return s.con.RemoteAddr()
 }
 
-func (s *Model) setWorldId(worldId byte) Model {
+func (s *Model) setWorldId(worldId world.Id) Model {
 	ns := CloneSession(*s)
-	ns.worldId = worldId
+	ns.ch = ns.ch.Clone().SetWorldId(worldId).Build()
 	return ns
 }
 
-func (s *Model) setChannelId(channelId byte) Model {
+func (s *Model) setChannelId(channelId channel.Id) Model {
 	ns := CloneSession(*s)
-	ns.channelId = channelId
+	ns.ch = ns.ch.Clone().SetId(channelId).Build()
 	return ns
 }
 
-func (s *Model) WorldId() byte {
-	return s.worldId
+func (s *Model) WorldId() world.Id {
+	return s.Channel().WorldId()
 }
 
-func (s *Model) ChannelId() byte {
-	return s.channelId
+func (s *Model) ChannelId() channel.Id {
+	return s.Channel().Id()
+}
+
+func (s *Model) Channel() channel.Model {
+	return s.ch
 }
 
 func (s *Model) updateLastRequest() Model {

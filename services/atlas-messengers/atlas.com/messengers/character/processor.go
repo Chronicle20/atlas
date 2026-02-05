@@ -5,31 +5,31 @@ import (
 	"atlas-messengers/kafka/producer"
 	"context"
 	"errors"
+
 	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/world"
-	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
-func Login(l logrus.FieldLogger) func(ctx context.Context) func(transactionID uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, characterId uint32) error {
-	return func(ctx context.Context) func(transactionID uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, characterId uint32) error {
-		return func(transactionID uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, characterId uint32) error {
+func Login(l logrus.FieldLogger) func(ctx context.Context) func(transactionID uuid.UUID, field field.Model, characterId uint32) error {
+	return func(ctx context.Context) func(transactionID uuid.UUID, field field.Model, characterId uint32) error {
+		return func(transactionID uuid.UUID, field field.Model, characterId uint32) error {
 			c, err := GetById(l)(ctx)(characterId)
 			if err != nil {
-				l.Debugf("Adding character [%d] from world [%d] to registry.", characterId, worldId)
+				l.Debugf("Adding character [%d] from world [%d] to registry.", characterId, field.WorldId())
 				fm, err := getForeignCharacterInfo(l)(ctx)(characterId)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to retrieve needed character information from foreign service.")
 					return err
 				}
-				c = CreateCharacter(ctx)(worldId, channelId, characterId, fm.Name())
+				c = CreateCharacter(ctx)(field.Channel(), characterId, fm.Name())
 			}
 
 			l.Debugf("Setting character [%d] to online in registry.", characterId)
-			fn := func(m Model) Model { return Model.ChangeChannel(m, channelId) }
+			fn := func(m Model) Model { return Model.ChangeChannel(m, field.ChannelId()) }
 			c = UpdateCharacter(ctx)(c.Id(), Model.Login, fn)
 
 			if c.MessengerId() != 0 {
@@ -130,7 +130,8 @@ func byIdProvider(l logrus.FieldLogger) func(ctx context.Context) func(character
 					if ferr != nil {
 						return Model{}, err
 					}
-					c = CreateCharacter(ctx)(fm.WorldId(), channel.Id(0), characterId, fm.Name())
+					ch := channel.NewBuilder(fm.WorldId(), 0).Build()
+					c = CreateCharacter(ctx)(ch, characterId, fm.Name())
 				}
 				return c, nil
 			}
@@ -170,8 +171,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *ProcessorImpl {
 }
 
 // Login processes a character login event.
-func (p *ProcessorImpl) Login(transactionID uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, characterId uint32) error {
-	return Login(p.l)(p.ctx)(transactionID, worldId, channelId, mapId, characterId)
+func (p *ProcessorImpl) Login(transactionID uuid.UUID, field field.Model, characterId uint32) error {
+	return Login(p.l)(p.ctx)(transactionID, field, characterId)
 }
 
 // Logout processes a character logout event.

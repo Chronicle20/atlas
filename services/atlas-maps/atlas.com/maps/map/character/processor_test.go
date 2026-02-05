@@ -38,7 +38,7 @@ func TestProcessorImpl_Enter(t *testing.T) {
 	p.Enter(transactionId, f, characterId)
 
 	// Verify character is in map
-	key := MapKey{Tenant: te, WorldId: worldId, ChannelId: channelId, MapId: mapId, Instance: instance}
+	key := MapKey{Tenant: te, Field: f}
 	characters := getRegistry().GetInMap(key)
 
 	if len(characters) != 1 {
@@ -70,7 +70,7 @@ func TestProcessorImpl_Enter_Multiple(t *testing.T) {
 	p.Enter(transactionId, f, characterId2)
 
 	// Verify both characters are in map
-	key := MapKey{Tenant: te, WorldId: worldId, ChannelId: channelId, MapId: mapId, Instance: instance}
+	key := MapKey{Tenant: te, Field: f}
 	characters := getRegistry().GetInMap(key)
 
 	if len(characters) != 2 {
@@ -115,7 +115,7 @@ func TestProcessorImpl_Enter_Duplicate(t *testing.T) {
 	p.Enter(transactionId, f, characterId)
 
 	// Verify character only appears once
-	key := MapKey{Tenant: te, WorldId: worldId, ChannelId: channelId, MapId: mapId, Instance: instance}
+	key := MapKey{Tenant: te, Field: f}
 	characters := getRegistry().GetInMap(key)
 
 	if len(characters) != 1 {
@@ -142,7 +142,7 @@ func TestProcessorImpl_Exit(t *testing.T) {
 	p.Enter(transactionId, f, characterId)
 
 	// Verify character is in map
-	key := MapKey{Tenant: te, WorldId: worldId, ChannelId: channelId, MapId: mapId, Instance: instance}
+	key := MapKey{Tenant: te, Field: f}
 	characters := getRegistry().GetInMap(key)
 	if len(characters) != 1 {
 		t.Fatalf("Expected 1 character after enter, got %d", len(characters))
@@ -177,7 +177,7 @@ func TestProcessorImpl_Exit_NotInMap(t *testing.T) {
 	p.Exit(transactionId, f, characterId)
 
 	// Verify map is empty
-	key := MapKey{Tenant: te, WorldId: worldId, ChannelId: channelId, MapId: mapId, Instance: instance}
+	key := MapKey{Tenant: te, Field: f}
 	characters := getRegistry().GetInMap(key)
 	if len(characters) != 0 {
 		t.Fatalf("Expected 0 characters, got %d", len(characters))
@@ -215,7 +215,7 @@ func TestProcessorImpl_GetCharactersInMap(t *testing.T) {
 	}
 
 	// Verify correct characters returned
-	key := MapKey{Tenant: te, WorldId: worldId, ChannelId: channelId, MapId: mapId, Instance: instance}
+	key := MapKey{Tenant: te, Field: f}
 	registryChars := getRegistry().GetInMap(key)
 	if len(registryChars) != len(characters) {
 		t.Errorf("Processor returned different count than registry: %d vs %d", len(characters), len(registryChars))
@@ -273,8 +273,8 @@ func TestProcessorImpl_GetMapsWithCharacters(t *testing.T) {
 	maps := p.GetMapsWithCharacters()
 
 	// Find our maps in the result
-	key1 := MapKey{Tenant: te, WorldId: worldId, ChannelId: channelId, MapId: mapId1, Instance: instance}
-	key2 := MapKey{Tenant: te, WorldId: worldId, ChannelId: channelId, MapId: mapId2, Instance: instance}
+	key1 := MapKey{Tenant: te, Field: f1}
+	key2 := MapKey{Tenant: te, Field: f2}
 
 	foundMap1, foundMap2 := false, false
 	for _, mk := range maps {
@@ -339,8 +339,8 @@ func TestProcessorImpl_TenantIsolation(t *testing.T) {
 	}
 
 	// Verify registry has separate entries
-	key1 := MapKey{Tenant: te1, WorldId: worldId, ChannelId: channelId, MapId: mapId, Instance: instance}
-	key2 := MapKey{Tenant: te2, WorldId: worldId, ChannelId: channelId, MapId: mapId, Instance: instance}
+	key1 := MapKey{Tenant: te1, Field: f}
+	key2 := MapKey{Tenant: te2, Field: f}
 
 	regChars1 := getRegistry().GetInMap(key1)
 	regChars2 := getRegistry().GetInMap(key2)
@@ -403,8 +403,8 @@ func TestProcessorImpl_InstanceIsolation(t *testing.T) {
 	}
 
 	// Verify registry has separate entries
-	key1 := MapKey{Tenant: te, WorldId: worldId, ChannelId: channelId, MapId: mapId, Instance: instance1}
-	key2 := MapKey{Tenant: te, WorldId: worldId, ChannelId: channelId, MapId: mapId, Instance: instance2}
+	key1 := MapKey{Tenant: te, Field: f1}
+	key2 := MapKey{Tenant: te, Field: f2}
 
 	regChars1 := getRegistry().GetInMap(key1)
 	regChars2 := getRegistry().GetInMap(key2)

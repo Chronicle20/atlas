@@ -5,6 +5,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 )
 
@@ -50,11 +53,11 @@ func (r ValidationFailedRestModel) GetID() string {
 
 // StartQuestInputRestModel is the input for starting a quest
 type StartQuestInputRestModel struct {
-	Id             string `json:"-"`
-	WorldId        byte   `json:"worldId"`
-	ChannelId      byte   `json:"channelId"`
-	MapId          uint32 `json:"mapId"`
-	SkipValidation bool   `json:"skipValidation"`
+	Id             string     `json:"-"`
+	WorldId        world.Id   `json:"worldId"`
+	ChannelId      channel.Id `json:"channelId"`
+	MapId          _map.Id    `json:"mapId"`
+	SkipValidation bool       `json:"skipValidation"`
 }
 
 func (r StartQuestInputRestModel) GetName() string {
@@ -72,11 +75,11 @@ func (r *StartQuestInputRestModel) SetID(id string) error {
 
 // CompleteQuestInputRestModel is the input for completing a quest
 type CompleteQuestInputRestModel struct {
-	Id             string `json:"-"`
-	WorldId        byte   `json:"worldId"`
-	ChannelId      byte   `json:"channelId"`
-	MapId          uint32 `json:"mapId"`
-	SkipValidation bool   `json:"skipValidation"`
+	Id             string     `json:"-"`
+	WorldId        world.Id   `json:"worldId"`
+	ChannelId      channel.Id `json:"channelId"`
+	MapId          _map.Id    `json:"mapId"`
+	SkipValidation bool       `json:"skipValidation"`
 }
 
 func (r CompleteQuestInputRestModel) GetName() string {

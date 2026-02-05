@@ -7,6 +7,7 @@ import (
 	"atlas-character/session"
 	"atlas-character/session/history"
 	"context"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
@@ -47,39 +48,40 @@ func handleStatusEvent(db *gorm.DB) message.Handler[session2.StatusEvent] {
 		t := tenant.MustFromContext(ctx)
 		hp := history.NewProcessor(l, ctx, db)
 
+		ch := channel.NewModel(e.WorldId, e.ChannelId)
 		if e.Type == session2.EventSessionStatusTypeCreated {
 			cs, err := session.GetRegistry().Get(t, e.CharacterId)
 			if err != nil || cs.State() == session.StateLoggedOut {
 				l.Debugf("Processing a session status event of [%s] which will trigger a login.", e.Type)
-				err = session.GetRegistry().Add(t, e.CharacterId, e.WorldId, e.ChannelId, session.StateLoggedIn)
+				err = session.GetRegistry().Add(t, e.CharacterId, ch, session.StateLoggedIn)
 				if err != nil {
 					l.WithError(err).Errorf("Character [%d] already logged in. Eating event.", e.CharacterId)
 					return
 				}
 
 				// Start session history tracking
-				_, err = hp.StartSession(e.CharacterId, e.WorldId, e.ChannelId)
+				_, err = hp.StartSession(e.CharacterId, ch)
 				if err != nil {
 					l.WithError(err).Warnf("Failed to start session history for character [%d].", e.CharacterId)
 				}
 
-				err = character.NewProcessor(l, ctx, db).LoginAndEmit(uuid.New(), e.CharacterId, channel.NewModel(e.WorldId, e.ChannelId))
+				err = character.NewProcessor(l, ctx, db).LoginAndEmit(uuid.New(), e.CharacterId, ch)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to login character [%d] as a result of session [%s] being created.", e.CharacterId, e.SessionId.String())
 				}
 				return
 			} else if cs.State() == session.StateTransition {
 				l.Debugf("Processing a session status event of [%s] which will trigger a change channel.", e.Type)
-				err = session.GetRegistry().Set(t, e.CharacterId, e.WorldId, e.ChannelId, session.StateLoggedIn)
+				err = session.GetRegistry().Set(t, e.CharacterId, ch, session.StateLoggedIn)
 
 				// End previous session and start new one for channel change
 				_ = hp.EndSession(e.CharacterId)
-				_, err = hp.StartSession(e.CharacterId, e.WorldId, e.ChannelId)
+				_, err = hp.StartSession(e.CharacterId, ch)
 				if err != nil {
 					l.WithError(err).Warnf("Failed to start session history for character [%d] on channel change.", e.CharacterId)
 				}
 
-				err = character.NewProcessor(l, ctx, db).ChangeChannelAndEmit(uuid.New(), e.CharacterId, channel.NewModel(e.WorldId, e.ChannelId), cs.ChannelId())
+				err = character.NewProcessor(l, ctx, db).ChangeChannelAndEmit(uuid.New(), e.CharacterId, ch, cs.ChannelId())
 				if err != nil {
 					l.WithError(err).Errorf("Unable to change character [%d] channel as a result of session [%s] being created.", e.CharacterId, e.SessionId.String())
 				}
@@ -94,7 +96,8 @@ func handleStatusEvent(db *gorm.DB) message.Handler[session2.StatusEvent] {
 			}
 			if cs.State() == session.StateLoggedIn {
 				l.Debugf("Processing a session status event of [%s] which will trigger a transition state. Either it will be culled (logout), or updated (change channel) later.", e.Type)
-				_ = session.GetRegistry().Set(t, cs.CharacterId(), cs.WorldId(), cs.ChannelId(), session.StateTransition)
+				och := channel.NewModel(cs.WorldId(), cs.ChannelId())
+				_ = session.GetRegistry().Set(t, cs.CharacterId(), och, session.StateTransition)
 			}
 			return
 		}

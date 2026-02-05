@@ -14,16 +14,17 @@ const (
 )
 
 type CommandEvent[E any] struct {
-	WorldId     byte   `json:"worldId"`
-	CharacterId uint32 `json:"characterId"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	WorldId     world.Id `json:"worldId"`
+	CharacterId uint32   `json:"characterId"`
+	Type        string   `json:"type"`
+	Body        E        `json:"body"`
 }
 
 type ChangeMapBody struct {
-	ChannelId byte   `json:"channelId"`
-	MapId     uint32 `json:"mapId"`
-	PortalId  uint32 `json:"portalId"`
+	ChannelId channel.Id `json:"channelId"`
+	MapId     _map.Id    `json:"mapId"`
+	Instance  uuid.UUID  `json:"instance"`
+	PortalId  uint32     `json:"portalId"`
 }
 
 type RequestChangeMesoBody struct {

@@ -43,7 +43,7 @@ func (p *ProcessorImpl) HandleGeneral(f field.Model, actorId uint32, message str
 		return err
 	}
 
-	e, found := command.Registry().Get(p.l, p.ctx, byte(f.WorldId()), byte(f.ChannelId()), c, message)
+	e, found := command.Registry().Get(p.l, p.ctx, f.Channel(), c, message)
 	if found {
 		err = e(p.l)(p.ctx)
 		if err != nil {
@@ -66,7 +66,7 @@ func (p *ProcessorImpl) HandleMulti(f field.Model, actorId uint32, message strin
 		return err
 	}
 
-	e, found := command.Registry().Get(p.l, p.ctx, byte(f.WorldId()), byte(f.ChannelId()), c, message)
+	e, found := command.Registry().Get(p.l, p.ctx, f.Channel(), c, message)
 	if found {
 		err = e(p.l)(p.ctx)
 		if err != nil {
@@ -89,7 +89,7 @@ func (p *ProcessorImpl) HandleWhisper(f field.Model, actorId uint32, message str
 		return err
 	}
 
-	e, found := command.Registry().Get(p.l, p.ctx, byte(f.WorldId()), byte(f.ChannelId()), c, message)
+	e, found := command.Registry().Get(p.l, p.ctx, f.Channel(), c, message)
 	if found {
 		err = e(p.l)(p.ctx)
 		if err != nil {

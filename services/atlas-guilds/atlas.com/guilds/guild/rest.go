@@ -3,13 +3,15 @@ package guild
 import (
 	"atlas-guilds/guild/member"
 	"atlas-guilds/guild/title"
-	"github.com/Chronicle20/atlas-model/model"
 	"strconv"
+
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas-model/model"
 )
 
 type RestModel struct {
 	Id                  uint32             `json:"-"`
-	WorldId             byte               `json:"worldId"`
+	WorldId             world.Id           `json:"worldId"`
 	Name                string             `json:"name"`
 	Notice              string             `json:"notice"`
 	Points              uint32             `json:"points"`

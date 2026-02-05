@@ -6,6 +6,7 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-tenant"
@@ -75,7 +76,7 @@ func produceFindResultBody(l logrus.FieldLogger) func(ctx context.Context) func(
 						return af(writer.CharacterChatWhisperFindResultInCashShopBody(resultMode, targetName))(s)
 					}
 
-					_, err = session.NewProcessor(l, ctx).GetByCharacterId(s.WorldId(), s.ChannelId())(tc.Id())
+					_, err = session.NewProcessor(l, ctx).GetByCharacterId(s.Field().Channel())(tc.Id())
 					if err == nil {
 						return af(writer.CharacterChatWhisperFindResultInMapBody(resultMode, tc, tc.MapId()))(s)
 					}

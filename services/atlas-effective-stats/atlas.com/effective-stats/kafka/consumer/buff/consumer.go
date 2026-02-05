@@ -7,6 +7,7 @@ import (
 	"atlas-effective-stats/stat"
 	"context"
 
+	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -61,7 +62,8 @@ func handleBuffApplied(l logrus.FieldLogger, ctx context.Context, e buff.StatusE
 	}
 
 	if len(bonuses) > 0 {
-		if err := p.AddBuffBonuses(e.WorldId, e.ChannelId, e.CharacterId, e.Body.SourceId, bonuses); err != nil {
+		ch := channel.NewModel(e.WorldId, e.ChannelId)
+		if err := p.AddBuffBonuses(ch, e.CharacterId, e.Body.SourceId, bonuses); err != nil {
 			l.WithError(err).Errorf("Unable to add buff bonuses for character [%d].", e.CharacterId)
 		}
 	}

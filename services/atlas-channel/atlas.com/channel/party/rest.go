@@ -1,11 +1,14 @@
 package party
 
 import (
+	"strconv"
+
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
-	"strconv"
 )
 
 type RestModel struct {
@@ -124,26 +127,25 @@ func Extract(rm RestModel) (Model, error) {
 
 func ExtractMember(rm MemberRestModel) (MemberModel, error) {
 	return MemberModel{
-		id:        rm.Id,
-		name:      rm.Name,
-		level:     rm.Level,
-		jobId:     rm.JobId,
-		worldId:   rm.WorldId,
-		channelId: rm.ChannelId,
-		mapId:     rm.MapId,
-		online:    rm.Online,
+		id:     rm.Id,
+		name:   rm.Name,
+		level:  rm.Level,
+		jobId:  rm.JobId,
+		field:  field.NewBuilder(rm.WorldId, rm.ChannelId, rm.MapId).SetInstance(rm.Instance).Build(),
+		online: rm.Online,
 	}, nil
 }
 
 type MemberRestModel struct {
-	Id        uint32 `json:"-"`
-	Name      string `json:"name"`
-	Level     byte   `json:"level"`
-	JobId     uint16 `json:"jobId"`
+	Id        uint32     `json:"-"`
+	Name      string     `json:"name"`
+	Level     byte       `json:"level"`
+	JobId     uint16     `json:"jobId"`
 	WorldId   world.Id   `json:"worldId"`
 	ChannelId channel.Id `json:"channelId"`
 	MapId     _map.Id    `json:"mapId"`
-	Online    bool   `json:"online"`
+	Instance  uuid.UUID  `json:"instance"`
+	Online    bool       `json:"online"`
 }
 
 func (r MemberRestModel) GetName() string {

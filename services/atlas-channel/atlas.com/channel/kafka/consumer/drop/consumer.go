@@ -106,7 +106,7 @@ func handleStatusEventPickedUp(sc server.Model, wp writer.Producer) message.Hand
 		l.Debugf("[%d] is picking up drop [%d].", e.Body.CharacterId, e.DropId)
 
 		go func() {
-			session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, func(s session.Model) error {
+			session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, func(s session.Model) error {
 				var bp writer.BodyProducer
 				if e.Body.Meso > 0 {
 					bp = writer.CharacterStatusMessageOperationDropPickUpMesoBody(l)(false, e.Body.Meso, 0)

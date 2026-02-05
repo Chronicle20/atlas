@@ -3,6 +3,8 @@ package monster
 import (
 	"atlas-consumables/rest"
 	"fmt"
+
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 
@@ -14,7 +16,7 @@ func getBaseRequest() string {
 	return requests.RootUrl("MONSTERS")
 }
 
-func requestCreate(worldId byte, channelId byte, mapId uint32, monsterId uint32, x int16, y int16, fh uint16, team int32) requests.Request[RestModel] {
+func requestCreate(f field.Model, monsterId uint32, x int16, y int16, fh uint16, team int32) requests.Request[RestModel] {
 	m := RestModel{
 		Id:        "0",
 		MonsterId: monsterId,
@@ -23,5 +25,6 @@ func requestCreate(worldId byte, channelId byte, mapId uint32, monsterId uint32,
 		Fh:        fh,
 		Team:      team,
 	}
-	return rest.MakePostRequest[RestModel](fmt.Sprintf(getBaseRequest()+mapMonstersResource, worldId, channelId, mapId), m)
+	// TODO - field migration
+	return rest.MakePostRequest[RestModel](fmt.Sprintf(getBaseRequest()+mapMonstersResource, f.WorldId(), f.ChannelId(), f.MapId()), m)
 }

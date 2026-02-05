@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 )
 
@@ -55,7 +56,7 @@ func (r *Registry) getOrCreateTenantLock(t tenant.Model) *sync.RWMutex {
 	return tl
 }
 
-func (r *Registry) Create(t tenant.Model, originatorId uint32, worldId byte, targetId uint32, inviteType string, referenceId uint32) Model {
+func (r *Registry) Create(t tenant.Model, originatorId uint32, worldId world.Id, targetId uint32, inviteType string, referenceId uint32) Model {
 	var inviteId uint32
 
 	// Get next invite ID while holding write lock

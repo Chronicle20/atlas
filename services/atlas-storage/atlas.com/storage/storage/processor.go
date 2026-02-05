@@ -15,10 +15,10 @@ import (
 	"sort"
 	"time"
 
-	atlasProducer "github.com/Chronicle20/atlas-kafka/producer"
 	assetConstants "github.com/Chronicle20/atlas-constants/asset"
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
+	atlasProducer "github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
@@ -884,16 +884,16 @@ func min(a, b uint32) uint32 {
 }
 
 // EmitProjectionCreatedEvent emits a PROJECTION_CREATED event to notify channel service
-func (p *Processor) EmitProjectionCreatedEvent(characterId uint32, accountId uint32, worldId world.Id, channelId channel.Id, npcId uint32) error {
+func (p *Processor) EmitProjectionCreatedEvent(characterId uint32, accountId uint32, ch channel.Model, npcId uint32) error {
 	event := &message.StatusEvent[message.ProjectionCreatedEventBody]{
-		WorldId:   worldId,
+		WorldId:   ch.WorldId(),
 		AccountId: accountId,
 		Type:      message.StatusEventTypeProjectionCreated,
 		Body: message.ProjectionCreatedEventBody{
 			CharacterId: characterId,
 			AccountId:   accountId,
-			WorldId:     worldId,
-			ChannelId:   channelId,
+			WorldId:     ch.WorldId(),
+			ChannelId:   ch.Id(),
 			NpcId:       npcId,
 		},
 	}

@@ -8,13 +8,14 @@ import (
 	"atlas-channel/inventory"
 	"atlas-channel/pet"
 	"atlas-channel/quest"
+	"strconv"
+	"strings"
+
 	"github.com/Chronicle20/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
-	"strconv"
-	"strings"
 )
 
 type Model struct {
@@ -27,7 +28,7 @@ type Model struct {
 	face               uint32
 	hair               uint32
 	level              byte
-	jobId              uint16
+	jobId              job.Id
 	strength           uint16
 	dexterity          uint16
 	intelligence       uint16
@@ -104,7 +105,7 @@ func (m Model) Level() byte {
 	return m.level
 }
 
-func (m Model) JobId() uint16 {
+func (m Model) JobId() job.Id {
 	return m.jobId
 }
 
@@ -191,7 +192,7 @@ func (m Model) RemainingSp() uint16 {
 
 func (m Model) skillBook() uint16 {
 	if m.jobId >= 2210 && m.jobId <= 2218 {
-		return m.jobId - 2209
+		return uint16(m.jobId - 2209)
 	}
 	return 0
 }
@@ -331,4 +332,3 @@ func (m Model) SetPets(ms []pet.Model) Model {
 func (m Model) SetQuests(ms []quest.Model) Model {
 	return CloneModel(m).SetQuests(ms).MustBuild()
 }
-

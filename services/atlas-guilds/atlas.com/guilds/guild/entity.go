@@ -3,6 +3,8 @@ package guild
 import (
 	"atlas-guilds/guild/member"
 	"atlas-guilds/guild/title"
+
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -55,7 +57,7 @@ func Make(e Entity) (Model, error) {
 	return Model{
 		tenantId:            e.TenantId,
 		id:                  e.Id,
-		worldId:             e.WorldId,
+		worldId:             world.Id(e.WorldId),
 		name:                e.Name,
 		notice:              e.Notice,
 		points:              e.Points,

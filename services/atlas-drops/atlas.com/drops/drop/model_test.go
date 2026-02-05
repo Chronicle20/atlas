@@ -21,14 +21,14 @@ func TestNewModelBuilder_DefaultValues(t *testing.T) {
 	if mbTenant.Id() != ten.Id() {
 		t.Fatal("Expected tenant to be set")
 	}
-	if mb.WorldId() != 1 {
-		t.Fatalf("Expected worldId 1, got %d", mb.WorldId())
+	if mb.Field().WorldId() != 1 {
+		t.Fatalf("Expected worldId 1, got %d", mb.Field().WorldId())
 	}
-	if mb.ChannelId() != 2 {
-		t.Fatalf("Expected channelId 2, got %d", mb.ChannelId())
+	if mb.Field().ChannelId() != 2 {
+		t.Fatalf("Expected channelId 2, got %d", mb.Field().ChannelId())
 	}
-	if mb.MapId() != 100000000 {
-		t.Fatalf("Expected mapId 100000000, got %d", mb.MapId())
+	if mb.Field().MapId() != 100000000 {
+		t.Fatalf("Expected mapId 100000000, got %d", mb.Field().MapId())
 	}
 	if mb.TransactionId() == uuid.Nil {
 		t.Fatal("Expected transactionId to be generated")
@@ -398,9 +398,7 @@ func TestModel_AllGetters(t *testing.T) {
 		tenant:        ten,
 		id:            123,
 		transactionId: txId,
-		worldId:       1,
-		channelId:     2,
-		mapId:         100000000,
+		field:         field.NewBuilder(1, 2, 100000000).Build(),
 		itemId:        1000000,
 		equipmentId:   99999,
 		quantity:      50,

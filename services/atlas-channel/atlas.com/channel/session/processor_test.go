@@ -5,6 +5,7 @@ import (
 	"atlas-channel/test"
 	"testing"
 
+	channel2 "github.com/Chronicle20/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -383,7 +384,8 @@ func TestByCharacterIdModelProvider_Found(t *testing.T) {
 	_ = p.SetCharacterId(sessionId, 12345)
 
 	// Look up by character ID
-	result, err := p.ByCharacterIdModelProvider(0, 0)(12345)()
+	ch := channel2.NewModel(0, 0)
+	result, err := p.ByCharacterIdModelProvider(ch)(12345)()
 
 	if err != nil {
 		t.Fatalf("ByCharacterIdModelProvider() unexpected error: %v", err)
@@ -400,7 +402,8 @@ func TestByCharacterIdModelProvider_NotFound(t *testing.T) {
 	ctx := test.CreateTestContext()
 
 	p := session.NewProcessor(logger, ctx)
-	_, err := p.ByCharacterIdModelProvider(0, 0)(99999)()
+	ch := channel2.NewModel(0, 0)
+	_, err := p.ByCharacterIdModelProvider(ch)(99999)()
 
 	if err == nil {
 		t.Error("ByCharacterIdModelProvider() expected error for non-existent character, got nil")
@@ -422,7 +425,8 @@ func TestIfPresentByCharacterId_Executes(t *testing.T) {
 	_ = p.SetCharacterId(sessionId, 12345)
 
 	called := false
-	err := p.IfPresentByCharacterId(0, 0)(12345, func(m session.Model) error {
+	ch := channel2.NewModel(0, 0)
+	err := p.IfPresentByCharacterId(ch)(12345, func(m session.Model) error {
 		called = true
 		return nil
 	})
@@ -444,7 +448,8 @@ func TestIfPresentByCharacterId_NoOp(t *testing.T) {
 	p := session.NewProcessor(logger, ctx)
 
 	called := false
-	err := p.IfPresentByCharacterId(0, 0)(99999, func(m session.Model) error {
+	ch := channel2.NewModel(0, 0)
+	err := p.IfPresentByCharacterId(ch)(99999, func(m session.Model) error {
 		called = true
 		return nil
 	})
@@ -471,7 +476,8 @@ func TestByAccountIdModelProvider_Found(t *testing.T) {
 	p := session.NewProcessor(logger, ctx)
 	_ = p.SetAccountId(sessionId, 54321)
 
-	result, err := p.ByAccountIdModelProvider(0, 0)(54321)()
+	ch := channel2.NewModel(0, 0)
+	result, err := p.ByAccountIdModelProvider(ch)(54321)()
 
 	if err != nil {
 		t.Fatalf("ByAccountIdModelProvider() unexpected error: %v", err)
@@ -496,7 +502,8 @@ func TestIfPresentByAccountId_Executes(t *testing.T) {
 	_ = p.SetAccountId(sessionId, 54321)
 
 	called := false
-	err := p.IfPresentByAccountId(0, 0)(54321, func(m session.Model) error {
+	ch := channel2.NewModel(0, 0)
+	err := p.IfPresentByAccountId(ch)(54321, func(m session.Model) error {
 		called = true
 		return nil
 	})
@@ -523,7 +530,8 @@ func TestGetByCharacterId(t *testing.T) {
 	p := session.NewProcessor(logger, ctx)
 	_ = p.SetCharacterId(sessionId, 11111)
 
-	result, err := p.GetByCharacterId(0, 0)(11111)
+	ch := channel2.NewModel(0, 0)
+	result, err := p.GetByCharacterId(ch)(11111)
 
 	if err != nil {
 		t.Fatalf("GetByCharacterId() unexpected error: %v", err)

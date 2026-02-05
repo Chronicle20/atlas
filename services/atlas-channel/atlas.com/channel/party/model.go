@@ -2,8 +2,10 @@ package party
 
 import (
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
 )
 
 type Model struct {
@@ -43,14 +45,12 @@ func (m Model) Members() []MemberModel {
 }
 
 type MemberModel struct {
-	id        uint32
-	name      string
-	level     byte
-	jobId     uint16
-	worldId   world.Id
-	channelId channel.Id
-	mapId     _map.Id
-	online    bool
+	id     uint32
+	name   string
+	level  byte
+	jobId  uint16
+	field  field.Model
+	online bool
 }
 
 func (m MemberModel) Id() uint32 {
@@ -73,10 +73,22 @@ func (m MemberModel) Online() bool {
 	return m.online
 }
 
+func (m MemberModel) Field() field.Model {
+	return m.field
+}
+
+func (m MemberModel) WorldId() world.Id {
+	return m.Field().WorldId()
+}
+
 func (m MemberModel) ChannelId() channel.Id {
-	return m.channelId
+	return m.Field().ChannelId()
 }
 
 func (m MemberModel) MapId() _map.Id {
-	return m.mapId
+	return m.Field().MapId()
+}
+
+func (m MemberModel) Instance() uuid.UUID {
+	return m.Field().Instance()
 }

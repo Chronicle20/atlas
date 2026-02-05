@@ -62,7 +62,7 @@ func handleSpawned(sc server.Model, wp writer.Producer) message.Handler[pet2.Sta
 			return
 		}
 
-		s, err := session.NewProcessor(l, ctx).GetByCharacterId(sc.WorldId(), sc.ChannelId())(e.OwnerId)
+		s, err := session.NewProcessor(l, ctx).GetByCharacterId(sc.Channel())(e.OwnerId)
 		if err != nil {
 			return
 		}
@@ -118,7 +118,7 @@ func handleDespawned(sc server.Model, wp writer.Producer) message.Handler[pet2.S
 			return
 		}
 
-		s, err := session.NewProcessor(l, ctx).GetByCharacterId(sc.WorldId(), sc.ChannelId())(e.OwnerId)
+		s, err := session.NewProcessor(l, ctx).GetByCharacterId(sc.Channel())(e.OwnerId)
 		if err != nil {
 			return
 		}
@@ -161,7 +161,7 @@ func handleCommandResponse(sc server.Model, wp writer.Producer) message.Handler[
 			return
 		}
 
-		s, err := session.NewProcessor(l, ctx).GetByCharacterId(sc.WorldId(), sc.ChannelId())(e.OwnerId)
+		s, err := session.NewProcessor(l, ctx).GetByCharacterId(sc.Channel())(e.OwnerId)
 		if err != nil {
 			return
 		}
@@ -218,7 +218,7 @@ func handleClosenessChanged(sc server.Model, wp writer.Producer) message.Handler
 			return
 		}
 
-		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.OwnerId, announcePetStatUpdate(l)(ctx)(wp)(e.PetId, e.OwnerId))
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.OwnerId, announcePetStatUpdate(l)(ctx)(wp)(e.PetId, e.OwnerId))
 	}
 }
 
@@ -233,7 +233,7 @@ func handleFullnessChanged(sc server.Model, wp writer.Producer) message.Handler[
 			return
 		}
 
-		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.OwnerId, func(s session.Model) error {
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.OwnerId, func(s session.Model) error {
 			// TODO this is an extra query
 			p, err := pet.NewProcessor(l, ctx).GetById(e.PetId)
 			if err != nil {
@@ -271,7 +271,7 @@ func handleLevelChanged(sc server.Model, wp writer.Producer) message.Handler[pet
 			return
 		}
 
-		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.OwnerId, func(s session.Model) error {
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.OwnerId, func(s session.Model) error {
 			// TODO this is an extra query
 			p, err := pet.NewProcessor(l, ctx).GetById(e.PetId)
 			if err != nil {
@@ -313,7 +313,7 @@ func handleSlotChanged(sc server.Model, wp writer.Producer) message.Handler[pet2
 			return
 		}
 
-		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.OwnerId, func(s session.Model) error {
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.OwnerId, func(s session.Model) error {
 			statType := stat.TypePetSn1
 			sn := int64(0)
 			if e.Body.NewSlot < 0 {
@@ -376,7 +376,7 @@ func handleExcludeChanged(sc server.Model, wp writer.Producer) message.Handler[p
 			return
 		}
 
-		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.OwnerId, func(s session.Model) error {
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.OwnerId, func(s session.Model) error {
 			p, err := pet.NewProcessor(l, ctx).GetById(e.PetId)
 			if err != nil {
 				return err

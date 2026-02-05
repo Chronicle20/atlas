@@ -14,6 +14,8 @@ import (
 	"atlas-guilds/party"
 	"context"
 	"errors"
+	"strings"
+
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
@@ -21,7 +23,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"strings"
 )
 
 const (
@@ -44,8 +45,8 @@ type Processor interface {
 
 	RequestCreate(mb *message.Buffer) func(characterId uint32) func(field field.Model) func(name string) func(transactionId uuid.UUID) error
 	RequestCreateAndEmit(characterId uint32, field field.Model, name string, transactionId uuid.UUID) error
-	Create(mb *message.Buffer) func(worldId byte) func(leaderId uint32) func(name string) (Model, error)
-	CreateAndEmit(worldId byte, leaderId uint32, name string) (Model, error)
+	Create(mb *message.Buffer) func(worldId world.Id) func(leaderId uint32) func(name string) (Model, error)
+	CreateAndEmit(worldId world.Id, leaderId uint32, name string) (Model, error)
 	CreationAgreementResponse(mb *message.Buffer) func(characterId uint32) func(agreed bool) func(transactionId uuid.UUID) error
 	CreationAgreementResponseAndEmit(characterId uint32, agreed bool, transactionId uuid.UUID) error
 	ChangeEmblem(mb *message.Buffer) func(guildId uint32) func(characterId uint32) func(logo uint16) func(logoColor byte) func(logoBackground uint16) func(logoBackgroundColor byte) func(transactionId uuid.UUID) error
@@ -206,7 +207,7 @@ func (p *ProcessorImpl) RequestCreate(mb *message.Buffer) func(characterId uint3
 						return errors.New("party member in guild")
 					}
 
-					err = coordinator.GetRegistry().Initiate(p.t, field.WorldId(), field.ChannelId(), name, characterId, members)
+					err = coordinator.GetRegistry().Initiate(p.t, field.Channel(), name, characterId, members)
 					if err != nil {
 						p.l.WithError(err).Errorf("Unable to initialize a guild creation coordinator.")
 						_ = mb.Put(guild2.EnvStatusEventTopic, statusEventErrorProvider(field.WorldId(), characterId, CreateError, transactionId))
@@ -237,8 +238,8 @@ func isValidName(name string) bool {
 	return name == "Stupid"
 }
 
-func (p *ProcessorImpl) Create(mb *message.Buffer) func(worldId byte) func(leaderId uint32) func(name string) (Model, error) {
-	return func(worldId byte) func(leaderId uint32) func(name string) (Model, error) {
+func (p *ProcessorImpl) Create(mb *message.Buffer) func(worldId world.Id) func(leaderId uint32) func(name string) (Model, error) {
+	return func(worldId world.Id) func(leaderId uint32) func(name string) (Model, error) {
 		return func(leaderId uint32) func(name string) (Model, error) {
 			return func(name string) (Model, error) {
 				var err error
@@ -251,7 +252,7 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(worldId byte) func(leade
 
 				var g Model
 				txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
-					g, err = p.WithTransaction(tx).GetByName(world.Id(worldId), name)
+					g, err = p.WithTransaction(tx).GetByName(worldId, name)
 					if g.Id() != 0 {
 						p.l.WithError(err).Errorf("Attempting to create a guild [%s] by name which already exists.", name)
 						return errors.New("already exists")
@@ -293,7 +294,7 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(worldId byte) func(leade
 	}
 }
 
-func (p *ProcessorImpl) CreateAndEmit(worldId byte, leaderId uint32, name string) (Model, error) {
+func (p *ProcessorImpl) CreateAndEmit(worldId world.Id, leaderId uint32, name string) (Model, error) {
 	var m Model
 	err := message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
 		var err error

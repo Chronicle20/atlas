@@ -5,6 +5,8 @@ import (
 	"errors"
 	"sync"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 )
 
@@ -65,7 +67,7 @@ func (r *Registry) Get(t tenant.Model, characterId uint32) (Model, error) {
 }
 
 // GetOrCreate retrieves a character's rate model, creating one if it doesn't exist
-func (r *Registry) GetOrCreate(t tenant.Model, worldId, channelId byte, characterId uint32) Model {
+func (r *Registry) GetOrCreate(t tenant.Model, ch channel.Model, characterId uint32) Model {
 	cm, cml := r.getOrCreateTenantMaps(t)
 
 	cml.Lock()
@@ -75,7 +77,7 @@ func (r *Registry) GetOrCreate(t tenant.Model, worldId, channelId byte, characte
 		return m
 	}
 
-	m := NewModel(t, worldId, channelId, characterId)
+	m := NewModel(t, ch, characterId)
 	cm[characterId] = m
 	return m
 }
@@ -91,7 +93,7 @@ func (r *Registry) Update(t tenant.Model, m Model) {
 }
 
 // AddFactor adds or updates a rate factor for a character
-func (r *Registry) AddFactor(t tenant.Model, worldId, channelId byte, characterId uint32, f rate.Factor) Model {
+func (r *Registry) AddFactor(t tenant.Model, ch channel.Model, characterId uint32, f rate.Factor) Model {
 	cm, cml := r.getOrCreateTenantMaps(t)
 
 	cml.Lock()
@@ -100,7 +102,7 @@ func (r *Registry) AddFactor(t tenant.Model, worldId, channelId byte, characterI
 	var m Model
 	var ok bool
 	if m, ok = cm[characterId]; !ok {
-		m = NewModel(t, worldId, channelId, characterId)
+		m = NewModel(t, ch, characterId)
 	}
 
 	m = m.WithFactor(f)
@@ -143,7 +145,7 @@ func (r *Registry) RemoveFactorsBySource(t tenant.Model, characterId uint32, sou
 }
 
 // GetAllForWorld returns all characters in a specific world
-func (r *Registry) GetAllForWorld(t tenant.Model, worldId byte) []Model {
+func (r *Registry) GetAllForWorld(t tenant.Model, worldId world.Id) []Model {
 	cm, cml := r.getOrCreateTenantMaps(t)
 
 	cml.RLock()
@@ -159,7 +161,7 @@ func (r *Registry) GetAllForWorld(t tenant.Model, worldId byte) []Model {
 }
 
 // UpdateWorldRate updates the world rate factor for all characters in that world
-func (r *Registry) UpdateWorldRate(t tenant.Model, worldId byte, rateType rate.Type, multiplier float64) {
+func (r *Registry) UpdateWorldRate(t tenant.Model, worldId world.Id, rateType rate.Type, multiplier float64) {
 	cm, cml := r.getOrCreateTenantMaps(t)
 
 	cml.Lock()

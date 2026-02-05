@@ -3,14 +3,16 @@ package character
 import (
 	"atlas-rates/rate"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 )
 
 // Model holds all rate factors for a character
 type Model struct {
 	tenant      tenant.Model
-	worldId     byte
-	channelId   byte
+	worldId     world.Id
+	channelId   channel.Id
 	characterId uint32
 	factors     []rate.Factor
 }
@@ -19,11 +21,11 @@ func (m Model) Tenant() tenant.Model {
 	return m.tenant
 }
 
-func (m Model) WorldId() byte {
+func (m Model) WorldId() world.Id {
 	return m.worldId
 }
 
-func (m Model) ChannelId() byte {
+func (m Model) ChannelId() channel.Id {
 	return m.channelId
 }
 
@@ -44,11 +46,11 @@ func (m Model) ComputedRates() rate.Computed {
 }
 
 // NewModel creates a new character rate model
-func NewModel(t tenant.Model, worldId, channelId byte, characterId uint32) Model {
+func NewModel(t tenant.Model, ch channel.Model, characterId uint32) Model {
 	return Model{
 		tenant:      t,
-		worldId:     worldId,
-		channelId:   channelId,
+		worldId:     ch.WorldId(),
+		channelId:   ch.Id(),
 		characterId: characterId,
 		factors:     make([]rate.Factor, 0),
 	}

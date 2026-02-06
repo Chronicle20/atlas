@@ -23,6 +23,14 @@ func MakePostRequest[A any](url string, i interface{}) requests.Request[A] {
 	}
 }
 
+func MakePutRequest[A any](url string, i interface{}) requests.Request[A] {
+	return func(l logrus.FieldLogger, ctx context.Context) (A, error) {
+		sd := requests.AddHeaderDecorator(requests.SpanHeaderDecorator(ctx))
+		td := requests.AddHeaderDecorator(requests.TenantHeaderDecorator(ctx))
+		return requests.MakePutRequest[A](url, i, sd, td)(l, ctx)
+	}
+}
+
 func MakePatchRequest[A any](url string, i interface{}) requests.Request[A] {
 	return func(l logrus.FieldLogger, ctx context.Context) (A, error) {
 		sd := requests.AddHeaderDecorator(requests.SpanHeaderDecorator(ctx))

@@ -1,34 +1,59 @@
 {
   "npcId": 1002002,
-  "startState": "welcome",
+  "startState": "selectOption",
   "states": [
     {
-      "id": "welcome",
+      "id": "selectOption",
       "type": "listSelection",
       "listSelection": {
         "title": "Have you heard of the beach with a spectacular view of the ocean called #bFlorina Beach#k, located near Lith Harbor? I can take you there right now for either #b1500 mesos#k, or if you have a #bVIP Ticket to Florina Beach#k with you, in which case you'll be there for free.",
         "choices": [
           {
-            "text": "I'll pay 1500 mesos.",
-            "nextState": "checkMesosAndWarp",
+            "text": "#b I'll pay 1500 mesos.",
+            "nextState": "checkMeso",
             "context": {
-              "paymentType": "mesos"
+              "selection": "0"
             }
           },
           {
-            "text": "I have a VIP Ticket to Florina Beach.",
-            "nextState": "confirmVipWarp",
+            "text": " I have a VIP Ticket to Florina Beach.",
+            "nextState": "confirmPayTicket",
             "context": {
-              "paymentType": "ticket"
+              "selection": "1"
             }
           },
           {
-            "text": "What is a VIP Ticket to Florina Beach?",
-            "nextState": "explainVipTicket1"
+            "text": " What is a VIP Ticket to Florina Beach#k?",
+            "nextState": "ticketInfo1",
+            "context": {
+              "selection": "2"
+            }
           },
           {
             "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmPayTicket",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "So you have a #bVIP Ticket to Florina Beach#k? You can always head over to Florina Beach with that. Alright then, but just be aware that you may be running into some monsters there too. Okay, would you like to head over to Florina Beach right now?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "checkTicket"
+          },
+          {
+            "text": "No",
             "nextState": "declineMessage"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
           }
         ]
       }
@@ -52,29 +77,7 @@
       }
     },
     {
-      "id": "confirmVipWarp",
-      "type": "dialogue",
-      "dialogue": {
-        "dialogueType": "sendYesNo",
-        "text": "So you have a #bVIP Ticket to Florina Beach#k? You can always head over to Florina Beach with that. Alright then, but just be aware that you may be running into some monsters there too. Okay, would you like to head over to Florina Beach right now?",
-        "choices": [
-          {
-            "text": "Yes",
-            "nextState": "checkTicketAndWarp"
-          },
-          {
-            "text": "No",
-            "nextState": "declineMessage"
-          },
-          {
-            "text": "Exit",
-            "nextState": "declineMessage"
-          }
-        ]
-      }
-    },
-    {
-      "id": "explainVipTicket1",
+      "id": "ticketInfo1",
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendNext",
@@ -82,7 +85,7 @@
         "choices": [
           {
             "text": "Next",
-            "nextState": "explainVipTicket2"
+            "nextState": "ticketInfo2"
           },
           {
             "text": "Exit",
@@ -92,7 +95,7 @@
       }
     },
     {
-      "id": "explainVipTicket2",
+      "id": "ticketInfo2",
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendNextPrev",
@@ -100,7 +103,7 @@
         "choices": [
           {
             "text": "Previous",
-            "nextState": "explainVipTicket1"
+            "nextState": "ticketInfo1"
           },
           {
             "text": "Next",
@@ -114,7 +117,7 @@
       }
     },
     {
-      "id": "checkMesosAndWarp",
+      "id": "checkMeso",
       "type": "genericAction",
       "genericAction": {
         "operations": [],
@@ -131,7 +134,7 @@
           },
           {
             "conditions": [],
-            "nextState": "warpWithMesoCost"
+            "nextState": "performPayWarp"
           }
         ]
       }
@@ -155,34 +158,7 @@
       }
     },
     {
-      "id": "warpWithMesoCost",
-      "type": "genericAction",
-      "genericAction": {
-        "operations": [
-          {
-            "type": "award_mesos",
-            "params": {
-              "amount": "-1500"
-            }
-          },
-          {
-            "type": "warp_to_map",
-            "params": {
-              "mapId": "110000000",
-              "portalId": "st00"
-            }
-          }
-        ],
-        "outcomes": [
-          {
-            "conditions": [],
-            "nextState": null
-          }
-        ]
-      }
-    },
-    {
-      "id": "checkTicketAndWarp",
+      "id": "checkTicket",
       "type": "genericAction",
       "genericAction": {
         "operations": [],
@@ -193,20 +169,20 @@
                 "type": "item",
                 "operator": "<",
                 "value": "1",
-                "itemId": "4031134"
+                "referenceId": "4031134"
               }
             ],
-            "nextState": "noVipTicket"
+            "nextState": "noTicket"
           },
           {
             "conditions": [],
-            "nextState": "warpFree"
+            "nextState": "performTicketWarp"
           }
         ]
       }
     },
     {
-      "id": "noVipTicket",
+      "id": "noTicket",
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendNext",
@@ -224,15 +200,54 @@
       }
     },
     {
-      "id": "warpFree",
+      "id": "performPayWarp",
       "type": "genericAction",
       "genericAction": {
         "operations": [
           {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-1500"
+            }
+          },
+          {
+            "type": "save_location",
+            "params": {
+              "locationType": "FLORINA"
+            }
+          },
+          {
             "type": "warp_to_map",
             "params": {
               "mapId": "110000000",
-              "portalId": "st00"
+              "portalName": "st00"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "performTicketWarp",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "save_location",
+            "params": {
+              "locationType": "FLORINA"
+            }
+          },
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "110000000",
+              "portalName": "st00"
             }
           }
         ],

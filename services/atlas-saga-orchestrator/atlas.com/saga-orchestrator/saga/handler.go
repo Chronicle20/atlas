@@ -19,6 +19,7 @@ import (
 	"atlas-saga-orchestrator/pet"
 	portalBlocking "atlas-saga-orchestrator/portal"
 	"atlas-saga-orchestrator/quest"
+	"atlas-saga-orchestrator/saved_location"
 	"atlas-saga-orchestrator/rates"
 	reactorDrop "atlas-saga-orchestrator/reactor/drop"
 	"atlas-saga-orchestrator/skill"
@@ -58,6 +59,7 @@ type Handler interface {
 	WithStorageProcessor(storage.Processor) Handler
 	WithBuffProcessor(buff.Processor) Handler
 	WithTransportProcessor(transport.Processor) Handler
+	WithSavedLocationProcessor(saved_location.Processor) Handler
 
 	GetHandler(action Action) (ActionHandler, bool)
 
@@ -121,6 +123,8 @@ type Handler interface {
 	handleCancelConsumableEffect(s Saga, st Step[any]) error
 	handleResetStats(s Saga, st Step[any]) error
 	handleStartInstanceTransport(s Saga, st Step[any]) error
+	handleSaveLocation(s Saga, st Step[any]) error
+	handleWarpToSavedLocation(s Saga, st Step[any]) error
 }
 
 type HandlerImpl struct {
@@ -147,6 +151,7 @@ type HandlerImpl struct {
 	storageP        storage.Processor
 	buffP           buff.Processor
 	transportP      transport.Processor
+	savedLocationP  saved_location.Processor
 }
 
 func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
@@ -173,6 +178,7 @@ func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
 		storageP:        storage.NewProcessor(l, ctx),
 		buffP:           buff.NewProcessor(l, ctx),
 		transportP:      transport.NewProcessor(l, ctx),
+		savedLocationP:  saved_location.NewProcessor(l, ctx),
 	}
 }
 
@@ -539,6 +545,34 @@ func (h *HandlerImpl) WithTransportProcessor(transportP transport.Processor) Han
 		storageP:       h.storageP,
 		buffP:          h.buffP,
 		transportP:     transportP,
+		savedLocationP: h.savedLocationP,
+	}
+}
+
+func (h *HandlerImpl) WithSavedLocationProcessor(savedLocationP saved_location.Processor) Handler {
+	return &HandlerImpl{
+		l:              h.l,
+		ctx:            h.ctx,
+		t:              h.t,
+		charP:          h.charP,
+		compP:          h.compP,
+		skillP:         h.skillP,
+		validP:         h.validP,
+		guildP:         h.guildP,
+		inviteP:        h.inviteP,
+		buddyListP:     h.buddyListP,
+		petP:           h.petP,
+		footholdP:      h.footholdP,
+		monsterP:       h.monsterP,
+		consumableP:    h.consumableP,
+		portalP:        h.portalP,
+		cashshopP:      h.cashshopP,
+		systemMessageP: h.systemMessageP,
+		questP:         h.questP,
+		storageP:       h.storageP,
+		buffP:          h.buffP,
+		transportP:     h.transportP,
+		savedLocationP: savedLocationP,
 	}
 }
 
@@ -667,6 +701,10 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleResetStats, true
 	case StartInstanceTransport:
 		return h.handleStartInstanceTransport, true
+	case SaveLocation:
+		return h.handleSaveLocation, true
+	case WarpToSavedLocation:
+		return h.handleWarpToSavedLocation, true
 	}
 	return nil, false
 }
@@ -2027,6 +2065,60 @@ func (h *HandlerImpl) handleStartInstanceTransport(s Saga, st Step[any]) error {
 
 	// StartInstanceTransport is a synchronous REST call - mark as complete immediately
 	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
+// handleSaveLocation handles the SaveLocation action.
+// Calls REST PUT to atlas-character to save the character's current location.
+func (h *HandlerImpl) handleSaveLocation(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(SaveLocationPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.savedLocationP.Put(payload.CharacterId, payload.LocationType, payload.MapId, payload.PortalId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to save location.")
+		return err
+	}
+
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+	return nil
+}
+
+// handleWarpToSavedLocation handles the WarpToSavedLocation action.
+// Retrieves the saved location, warps the character, then deletes the saved location.
+func (h *HandlerImpl) handleWarpToSavedLocation(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(WarpToSavedLocationPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	// GET the saved location
+	location, err := h.savedLocationP.Get(payload.CharacterId, payload.LocationType)
+	if err != nil {
+		h.l.WithError(err).Warnf("No saved location [%s] for character [%d], warping to default.", payload.LocationType, payload.CharacterId)
+		// Fallback: warp to Henesys (100000000) portal 0
+		f := field.NewBuilder(payload.WorldId, payload.ChannelId, 100000000).Build()
+		warpErr := h.charP.WarpToPortalAndEmit(s.TransactionId(), payload.CharacterId, f, model.FixedProvider[uint32](0))
+		if warpErr != nil {
+			h.logActionError(s, st, warpErr, "Unable to warp to default location.")
+			return warpErr
+		}
+		return nil
+	}
+
+	// Warp to the saved location
+	f := field.NewBuilder(payload.WorldId, payload.ChannelId, location.MapId).Build()
+	err = h.charP.WarpToPortalAndEmit(s.TransactionId(), payload.CharacterId, f, model.FixedProvider(location.PortalId))
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to warp to saved location.")
+		return err
+	}
+
+	// DELETE the saved location
+	_ = h.savedLocationP.Delete(payload.CharacterId, payload.LocationType)
 
 	return nil
 }

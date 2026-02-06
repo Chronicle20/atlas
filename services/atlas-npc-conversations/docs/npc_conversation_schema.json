@@ -40,7 +40,8 @@
               "transportAction",
               "listSelection",
               "askNumber",
-              "askStyle"
+              "askStyle",
+              "askSlideMenu"
             ]
           },
           "dialogue": {
@@ -412,6 +413,60 @@
               "nextState": {
                 "type": "string",
                 "description": "ID of the next state to transition to after style is selected"
+              }
+            }
+          },
+          "askSlideMenu": {
+            "type": "object",
+            "description": "Ask slide menu state configuration - renders a slide menu UI (like dimensional mirror). MenuType 0 = default dimensional mirror style.",
+            "required": [
+              "choices"
+            ],
+            "properties": {
+              "title": {
+                "type": "string",
+                "description": "Optional title for the slide menu (can be empty)"
+              },
+              "menuType": {
+                "type": "integer",
+                "description": "Menu type determines UI style. 0 = dimensional mirror style",
+                "default": 0
+              },
+              "contextKey": {
+                "type": "string",
+                "description": "Key to store the selected option in context (defaults to 'selectedOption' if not specified)",
+                "default": "selectedOption"
+              },
+              "choices": {
+                "type": "array",
+                "description": "Available choices for the player",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "text",
+                    "nextState"
+                  ],
+                  "properties": {
+                    "text": {
+                      "type": "string",
+                      "description": "Text of the choice"
+                    },
+                    "nextState": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "ID of the next state to transition to, or null to end conversation"
+                    },
+                    "context": {
+                      "type": "object",
+                      "description": "Additional context data for the choice",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
               }
             }
           }

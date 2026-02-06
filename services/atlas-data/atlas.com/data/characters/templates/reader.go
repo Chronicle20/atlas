@@ -2,9 +2,10 @@ package templates
 
 import (
 	"atlas-data/xml"
+	"strconv"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
-	"strconv"
 )
 
 func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider[[]RestModel] {

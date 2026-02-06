@@ -2,8 +2,9 @@ package validation
 
 import (
 	"fmt"
-	"github.com/jtumidanski/api2go/jsonapi"
 	"strconv"
+
+	"github.com/jtumidanski/api2go/jsonapi"
 )
 
 const (
@@ -13,93 +14,99 @@ const (
 // RestModel represents the REST model for validation requests and responses
 //
 // Example request for level validation:
-//   {
-//     "conditions": [
-//       {
-//         "type": "level",
-//         "operator": ">=",
-//         "value": 30
-//       }
-//     ]
-//   }
+//
+//	{
+//	  "conditions": [
+//	    {
+//	      "type": "level",
+//	      "operator": ">=",
+//	      "value": 30
+//	    }
+//	  ]
+//	}
 //
 // Example request for quest status validation:
-//   {
-//     "conditions": [
-//       {
-//         "type": "questStatus",
-//         "operator": "=",
-//         "value": 2,
-//         "referenceId": 1001
-//       }
-//     ]
-//   }
+//
+//	{
+//	  "conditions": [
+//	    {
+//	      "type": "questStatus",
+//	      "operator": "=",
+//	      "value": 2,
+//	      "referenceId": 1001
+//	    }
+//	  ]
+//	}
 //
 // Example request for quest progress validation:
-//   {
-//     "conditions": [
-//       {
-//         "type": "questProgress",
-//         "operator": ">=",
-//         "value": 5,
-//         "referenceId": 1001,
-//         "step": "collect_items"
-//       }
-//     ]
-//   }
+//
+//	{
+//	  "conditions": [
+//	    {
+//	      "type": "questProgress",
+//	      "operator": ">=",
+//	      "value": 5,
+//	      "referenceId": 1001,
+//	      "step": "collect_items"
+//	    }
+//	  ]
+//	}
 //
 // Example request for guild validation:
-//   {
-//     "conditions": [
-//       {
-//         "type": "guildId",
-//         "operator": "=",
-//         "value": 123
-//       },
-//       {
-//         "type": "guildRank",
-//         "operator": "<=",
-//         "value": 2
-//       }
-//     ]
-//   }
+//
+//	{
+//	  "conditions": [
+//	    {
+//	      "type": "guildId",
+//	      "operator": "=",
+//	      "value": 123
+//	    },
+//	    {
+//	      "type": "guildRank",
+//	      "operator": "<=",
+//	      "value": 2
+//	    }
+//	  ]
+//	}
 //
 // Example request for marriage gifts validation:
-//   {
-//     "conditions": [
-//       {
-//         "type": "hasUnclaimedMarriageGifts",
-//         "operator": "=",
-//         "value": 1
-//       }
-//     ]
-//   }
+//
+//	{
+//	  "conditions": [
+//	    {
+//	      "type": "hasUnclaimedMarriageGifts",
+//	      "operator": "=",
+//	      "value": 1
+//	    }
+//	  ]
+//	}
 //
 // Example request for character stats validation:
-//   {
-//     "conditions": [
-//       {
-//         "type": "reborns",
-//         "operator": ">=",
-//         "value": 3
-//       },
-//       {
-//         "type": "dojoPoints",
-//         "operator": ">",
-//         "value": 1000
-//       },
-//       {
-//         "type": "vanquisherKills",
-//         "operator": ">=",
-//         "value": 50
-//       },
-//       {
-//         "type": "gmLevel",
-//         "operator": ">=",
-//         "value": 1
-//       }
-//     ]
-//   }
+//
+//	{
+//	  "conditions": [
+//	    {
+//	      "type": "reborns",
+//	      "operator": ">=",
+//	      "value": 3
+//	    },
+//	    {
+//	      "type": "dojoPoints",
+//	      "operator": ">",
+//	      "value": 1000
+//	    },
+//	    {
+//	      "type": "vanquisherKills",
+//	      "operator": ">=",
+//	      "value": 50
+//	    },
+//	    {
+//	      "type": "gmLevel",
+//	      "operator": ">=",
+//	      "value": 1
+//	    }
+//	  ]
+//	}
 type RestModel struct {
 	Id         uint32            `json:"-"`
 	Conditions []ConditionInput  `json:"conditions,omitempty"`
@@ -145,17 +152,17 @@ func (r RestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
 }
 
 // SetToOneReferenceID sets a to-one reference ID
-func (r *RestModel) SetToOneReferenceID(name, ID string) error {
+func (r *RestModel) SetToOneReferenceID(_, _ string) error {
 	return nil
 }
 
 // SetToManyReferenceIDs sets to-many reference IDs
-func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
+func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error {
 	return nil
 }
 
 // SetReferencedStructs sets referenced structs
-func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonapi.Data) error {
+func (r *RestModel) SetReferencedStructs(_ map[string]map[string]jsonapi.Data) error {
 	return nil
 }
 

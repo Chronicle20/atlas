@@ -4,9 +4,10 @@ import (
 	"atlas-login/session"
 	"atlas-login/socket/writer"
 	"context"
+	"math/rand"
+
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
-	"math/rand"
 )
 
 const CreateSecurityHandle = "CreateSecurityHandle"

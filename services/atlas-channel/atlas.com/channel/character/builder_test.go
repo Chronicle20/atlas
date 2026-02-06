@@ -2,6 +2,7 @@ package character_test
 
 import (
 	"atlas-channel/character"
+	"errors"
 	"testing"
 )
 
@@ -53,7 +54,7 @@ func TestBuild_MissingId(t *testing.T) {
 		SetName("TestCharacter").
 		Build()
 
-	if err != character.ErrInvalidId {
+	if !errors.Is(err, character.ErrInvalidId) {
 		t.Errorf("Build() error = %v, want ErrInvalidId", err)
 	}
 }
@@ -64,7 +65,7 @@ func TestBuild_ZeroId(t *testing.T) {
 		SetAccountId(100).
 		Build()
 
-	if err != character.ErrInvalidId {
+	if !errors.Is(err, character.ErrInvalidId) {
 		t.Errorf("Build() error = %v, want ErrInvalidId", err)
 	}
 }

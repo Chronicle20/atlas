@@ -2,9 +2,10 @@ package route
 
 import (
 	"errors"
+	"time"
+
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/google/uuid"
-	"time"
 )
 
 var (

@@ -2,16 +2,17 @@ package mock
 
 import (
 	"atlas-saga-orchestrator/data/portal"
+
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
 )
 
 // ProcessorMock is a mock implementation of the portal.Processor interface
 type ProcessorMock struct {
-	InMapProviderFunc            func(mapId _map.Id) model.Provider[[]portal.Model]
-	RandomSpawnPointProviderFunc func(mapId _map.Id) model.Provider[portal.Model]
+	InMapProviderFunc              func(mapId _map.Id) model.Provider[[]portal.Model]
+	RandomSpawnPointProviderFunc   func(mapId _map.Id) model.Provider[portal.Model]
 	RandomSpawnPointIdProviderFunc func(mapId _map.Id) model.Provider[uint32]
-	ByNameIdProviderFunc         func(mapId _map.Id, name string) model.Provider[uint32]
+	ByNameIdProviderFunc           func(mapId _map.Id, name string) model.Provider[uint32]
 }
 
 // InMapProvider is a mock implementation of the portal.Processor.InMapProvider method

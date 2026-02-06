@@ -12,6 +12,7 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 	"errors"
+
 	inventory2 "github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/stat"
 	"github.com/Chronicle20/atlas-kafka/consumer"

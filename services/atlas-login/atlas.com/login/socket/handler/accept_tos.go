@@ -6,6 +6,7 @@ import (
 	"atlas-login/session"
 	"atlas-login/socket/writer"
 	"context"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-tenant"

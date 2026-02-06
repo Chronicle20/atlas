@@ -54,7 +54,7 @@ func (r *RequestModel) SetID(id string) error {
 
 // ResponseModel represents the validation response from query-aggregator
 type ResponseModel struct {
-	Id      uint32           `json:"-"`
+	Id      uint32            `json:"-"`
 	Results []ConditionResult `json:"results"`
 }
 
@@ -66,7 +66,7 @@ func (r ResponseModel) GetID() string {
 	return ""
 }
 
-func (r *ResponseModel) SetID(id string) error {
+func (r *ResponseModel) SetID(_ string) error {
 	return nil
 }
 

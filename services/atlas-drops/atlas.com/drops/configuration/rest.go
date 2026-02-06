@@ -3,6 +3,7 @@ package configuration
 import (
 	"atlas-drops/configuration/task"
 	"errors"
+
 	"github.com/google/uuid"
 )
 

@@ -2,6 +2,7 @@ package character
 
 import (
 	"atlas-rates/rate"
+	"errors"
 	"sync"
 	"testing"
 
@@ -35,7 +36,7 @@ func TestRegistryGet_NotFound(t *testing.T) {
 	ten := createTestTenantForRegistry()
 
 	_, err := GetRegistry().Get(ten, 12345)
-	if err != ErrNotFound {
+	if !errors.Is(err, ErrNotFound) {
 		t.Errorf("Get() error = %v, want ErrNotFound", err)
 	}
 }
@@ -156,7 +157,7 @@ func TestRegistryRemoveFactor_NotFound(t *testing.T) {
 	ten := createTestTenantForRegistry()
 
 	_, err := GetRegistry().RemoveFactor(ten, 99999, "world", rate.TypeExp)
-	if err != ErrNotFound {
+	if !errors.Is(err, ErrNotFound) {
 		t.Errorf("RemoveFactor() error = %v, want ErrNotFound", err)
 	}
 }
@@ -252,7 +253,7 @@ func TestRegistryDelete(t *testing.T) {
 	GetRegistry().Delete(ten, 12345)
 
 	_, err := GetRegistry().Get(ten, 12345)
-	if err != ErrNotFound {
+	if !errors.Is(err, ErrNotFound) {
 		t.Errorf("Get() after Delete() error = %v, want ErrNotFound", err)
 	}
 }

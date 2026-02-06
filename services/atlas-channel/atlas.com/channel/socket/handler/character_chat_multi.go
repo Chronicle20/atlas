@@ -5,9 +5,10 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+	"strconv"
+
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
-	"strconv"
 )
 
 const CharacterChatMultiHandle = "CharacterChatMultiHandle"

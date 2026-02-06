@@ -1,9 +1,10 @@
 package fame
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-	"time"
 )
 
 func Migration(db *gorm.DB) error {
@@ -19,7 +20,7 @@ type Entity struct {
 	CreatedAt   time.Time `gorm:"not null"`
 }
 
-func (e *Entity) BeforeCreate(tx *gorm.DB) error {
+func (e *Entity) BeforeCreate(_ *gorm.DB) error {
 	if e.Id == uuid.Nil {
 		e.Id = uuid.New()
 	}

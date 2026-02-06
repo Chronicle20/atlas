@@ -11,9 +11,10 @@ import (
 	"atlas-npc-conversations/logger"
 	"atlas-npc-conversations/service"
 	"atlas-npc-conversations/tracing"
+	"os"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
-	"os"
 )
 
 const serviceName = "atlas-npc-conversations"

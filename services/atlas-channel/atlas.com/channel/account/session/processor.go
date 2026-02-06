@@ -4,6 +4,7 @@ import (
 	session2 "atlas-channel/kafka/message/account/session"
 	"atlas-channel/kafka/producer"
 	"context"
+
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )

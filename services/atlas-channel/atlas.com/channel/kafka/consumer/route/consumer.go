@@ -8,13 +8,12 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
-	_map2 "github.com/Chronicle20/atlas-constants/map"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -24,8 +23,8 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("route_status_event")(route2.EnvEventTopicStatus)(consumerGroupId), 
-				consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), 
+			rf(consumer2.NewConfig(l)("route_status_event")(route2.EnvEventTopicStatus)(consumerGroupId),
+				consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser),
 				consumer.SetStartOffset(kafka.LastOffset))
 		}
 	}
@@ -52,14 +51,13 @@ func handleStatusEventArrived(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		t := tenant.MustFromContext(ctx)
-		mapId := _map2.Id(e.Body.MapId)
+		mapId := e.Body.MapId
 
 		l.Debugf("Transport route [%s] has arrived at map [%d].", e.RouteId, mapId)
 
 		// Broadcast to all characters in the map
 		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(mapId, uuid.Nil),
-			session.Announce(l)(ctx)(wp)(writer.FieldTransportState)(writer.FieldTransportStateBody(l, t)(writer.TransportStateEnter1, false)))
+			session.Announce(l)(ctx)(wp)(writer.FieldTransportState)(writer.FieldTransportStateBody(l)(writer.TransportStateEnter1, false)))
 
 		if err != nil {
 			l.WithError(err).Errorf("Unable to broadcast transport arrival to characters in map [%d].", mapId)
@@ -74,14 +72,13 @@ func handleStatusEventDeparted(sc server.Model, wp writer.Producer) message.Hand
 			return
 		}
 
-		t := tenant.MustFromContext(ctx)
-		mapId := _map2.Id(e.Body.MapId)
+		mapId := e.Body.MapId
 
 		l.Debugf("Transport route [%s] has departed from map [%d].", e.RouteId, mapId)
 
 		// Broadcast to all characters in the map
 		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(mapId, uuid.Nil),
-			session.Announce(l)(ctx)(wp)(writer.FieldTransportState)(writer.FieldTransportStateBody(l, t)(writer.TransportStateMove1, false)))
+			session.Announce(l)(ctx)(wp)(writer.FieldTransportState)(writer.FieldTransportStateBody(l)(writer.TransportStateMove1, false)))
 
 		if err != nil {
 			l.WithError(err).Errorf("Unable to broadcast transport departure to characters in map [%d].", mapId)

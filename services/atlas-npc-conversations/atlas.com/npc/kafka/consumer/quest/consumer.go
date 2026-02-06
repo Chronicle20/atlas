@@ -6,10 +6,8 @@ import (
 	consumer2 "atlas-npc-conversations/kafka/consumer"
 	questMsg "atlas-npc-conversations/kafka/message/quest"
 	"context"
-	"github.com/Chronicle20/atlas-constants/channel"
+
 	"github.com/Chronicle20/atlas-constants/field"
-	_map "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -52,7 +50,7 @@ func handleStartQuestConversationCommand(db *gorm.DB) message.Handler[questMsg.C
 		}
 
 		// Build the field model
-		f := field.NewBuilder(world.Id(c.Body.WorldId), channel.Id(c.Body.ChannelId), _map.Id(c.Body.MapId)).Build()
+		f := field.NewBuilder(c.Body.WorldId, c.Body.ChannelId, c.Body.MapId).Build()
 
 		// Start the quest conversation with the appropriate state machine
 		err = conversation.NewProcessor(l, ctx, db).StartQuest(f, c.QuestId, c.NpcId, c.CharacterId, &stateMachine)

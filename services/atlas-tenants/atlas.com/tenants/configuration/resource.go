@@ -3,13 +3,14 @@ package configuration
 import (
 	"atlas-tenants/rest"
 	"errors"
+	"net/http"
+
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"net/http"
 )
 
 // GetAllRoutesHandler handles GET /tenants/{tenantId}/configurations/routes

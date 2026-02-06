@@ -5,8 +5,9 @@ import (
 	"atlas-query-aggregator/service"
 	"atlas-query-aggregator/tracing"
 	"atlas-query-aggregator/validation"
-	"github.com/Chronicle20/atlas-rest/server"
 	"os"
+
+	"github.com/Chronicle20/atlas-rest/server"
 )
 
 const serviceName = "atlas-query-aggregator"

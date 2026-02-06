@@ -2,6 +2,7 @@ package commodities_test
 
 import (
 	"atlas-channel/npc/shops/commodities"
+	"errors"
 	"testing"
 
 	"github.com/google/uuid"
@@ -70,7 +71,7 @@ func TestBuild_MissingId(t *testing.T) {
 		SetMesoPrice(500).
 		Build()
 
-	if err != commodities.ErrInvalidId {
+	if !errors.Is(err, commodities.ErrInvalidId) {
 		t.Errorf("Build() error = %v, want ErrInvalidId", err)
 	}
 }
@@ -81,7 +82,7 @@ func TestBuild_ZeroId(t *testing.T) {
 		SetTemplateId(1000).
 		Build()
 
-	if err != commodities.ErrInvalidId {
+	if !errors.Is(err, commodities.ErrInvalidId) {
 		t.Errorf("Build() error = %v, want ErrInvalidId", err)
 	}
 }

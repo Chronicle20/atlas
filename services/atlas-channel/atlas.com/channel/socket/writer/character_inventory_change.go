@@ -2,6 +2,7 @@ package writer
 
 import (
 	"atlas-channel/asset"
+
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-socket/response"

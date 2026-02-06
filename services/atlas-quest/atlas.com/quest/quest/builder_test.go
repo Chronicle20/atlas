@@ -3,6 +3,7 @@ package quest_test
 import (
 	"atlas-quest/quest"
 	"atlas-quest/quest/progress"
+	"errors"
 	"testing"
 	"time"
 
@@ -292,7 +293,7 @@ func TestBuildWithValidation_MissingTenantId(t *testing.T) {
 	if err == nil {
 		t.Fatal("BuildWithValidation() expected error for missing TenantId")
 	}
-	if err != quest.ErrMissingTenantId {
+	if !errors.Is(err, quest.ErrMissingTenantId) {
 		t.Errorf("error = %v, want ErrMissingTenantId", err)
 	}
 }
@@ -306,7 +307,7 @@ func TestBuildWithValidation_MissingCharacterId(t *testing.T) {
 	if err == nil {
 		t.Fatal("BuildWithValidation() expected error for missing CharacterId")
 	}
-	if err != quest.ErrMissingCharacterId {
+	if !errors.Is(err, quest.ErrMissingCharacterId) {
 		t.Errorf("error = %v, want ErrMissingCharacterId", err)
 	}
 }
@@ -320,7 +321,7 @@ func TestBuildWithValidation_MissingQuestId(t *testing.T) {
 	if err == nil {
 		t.Fatal("BuildWithValidation() expected error for missing QuestId")
 	}
-	if err != quest.ErrMissingQuestId {
+	if !errors.Is(err, quest.ErrMissingQuestId) {
 		t.Errorf("error = %v, want ErrMissingQuestId", err)
 	}
 }

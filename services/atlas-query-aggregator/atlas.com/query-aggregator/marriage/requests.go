@@ -3,11 +3,12 @@ package marriage
 import (
 	"atlas-query-aggregator/rest"
 	"fmt"
+
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 
 const (
-	Resource = "marriage"
+	Resource      = "marriage"
 	ByCharacterId = Resource + "/character/%d"
 )
 

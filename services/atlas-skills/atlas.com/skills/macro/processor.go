@@ -6,6 +6,7 @@ import (
 	macro2 "atlas-skills/kafka/message/macro"
 	"atlas-skills/kafka/producer"
 	"context"
+
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"

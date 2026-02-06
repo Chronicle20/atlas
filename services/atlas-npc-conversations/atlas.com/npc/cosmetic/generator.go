@@ -2,6 +2,7 @@ package cosmetic
 
 import (
 	"context"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -96,9 +97,9 @@ func (g *GeneratorImpl) GenerateFaceStyles(
 
 // GenerateFaceColors generates color variants for the character's current face
 // Face colors work differently than hair colors:
-// - Hair: base * 10 + color (e.g., 30067 = base 3006, color 7)
-// - Face: genderOffset + baseStyle + (colorIndex * 100)
-//   e.g., 20401 = male (20000) + base 1 + color 4 (400)
+//   - Hair: base * 10 + color (e.g., 30067 = base 3006, color 7)
+//   - Face: genderOffset + baseStyle + (colorIndex * 100)
+//     e.g., 20401 = male (20000) + base 1 + color 4 (400)
 //
 // The colorOffsets parameter specifies which color offsets to generate
 // Common values: 0 (base), 100 (color 1), 200, 300, 400, 500, 600, 700

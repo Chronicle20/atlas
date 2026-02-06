@@ -4,13 +4,14 @@ import (
 	"atlas-character/character"
 	"atlas-character/session/history"
 	"context"
+	"time"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
-	"time"
 )
 
 const TimeoutTask = "timeout"

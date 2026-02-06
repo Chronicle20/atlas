@@ -3,6 +3,7 @@ package character
 import (
 	"atlas-fame/rest"
 	"fmt"
+
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 

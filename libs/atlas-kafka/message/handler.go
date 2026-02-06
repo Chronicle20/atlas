@@ -3,6 +3,7 @@ package message
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"

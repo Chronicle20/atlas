@@ -2,6 +2,7 @@ package inventory
 
 import (
 	"atlas-cashshop/cashshop/inventory/compartment"
+
 	"github.com/Chronicle20/atlas-model/model"
 )
 

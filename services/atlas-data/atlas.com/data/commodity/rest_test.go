@@ -2,14 +2,15 @@ package commodity
 
 import (
 	"atlas-data/xml"
-	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-rest/server"
-	"github.com/jtumidanski/api2go/jsonapi"
-	"github.com/sirupsen/logrus/hooks/test"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
 	"testing"
+
+	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/jtumidanski/api2go/jsonapi"
+	"github.com/sirupsen/logrus/hooks/test"
 )
 
 type Server struct {

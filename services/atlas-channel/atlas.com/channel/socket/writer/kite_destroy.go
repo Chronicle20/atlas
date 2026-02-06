@@ -2,6 +2,7 @@ package writer
 
 import (
 	"atlas-channel/kite"
+
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 )

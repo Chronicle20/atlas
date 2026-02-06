@@ -7,6 +7,7 @@ import (
 	"atlas-cashshop/kafka/producer"
 	inventory2 "atlas-cashshop/kafka/producer/cashshop/inventory"
 	"context"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -126,7 +127,7 @@ func (p *ProcessorImpl) createDefaultCompartments(accountId uint32) (Model, erro
 // Create creates a new inventory with default compartments
 func (p *ProcessorImpl) Create(mb *message.Buffer) func(accountId uint32) (Model, error) {
 	return func(accountId uint32) (Model, error) {
-		p.l.Debugf("Initializing cash shop inventory for account [%d] with capacity [%d].", accountId)
+		p.l.Debugf("Initializing cash shop inventory for account [%d] with capacity [%d].", accountId, compartment.DefaultCapacity)
 
 		// Create default compartments
 		inventory, err := p.createDefaultCompartments(accountId)

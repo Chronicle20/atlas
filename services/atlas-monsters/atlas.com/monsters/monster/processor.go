@@ -279,7 +279,7 @@ func (p *ProcessorImpl) DestroyInField(f field.Model) error {
 
 // Helper functions
 
-func zeroValue(id uint32) int {
+func zeroValue(_ uint32) int {
 	return 0
 }
 

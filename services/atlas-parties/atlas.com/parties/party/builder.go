@@ -2,6 +2,7 @@ package party
 
 import (
 	"errors"
+
 	"github.com/google/uuid"
 )
 

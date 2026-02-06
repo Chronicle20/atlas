@@ -2,6 +2,7 @@ package guild
 
 import (
 	"atlas-guilds/database"
+
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"

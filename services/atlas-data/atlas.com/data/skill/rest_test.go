@@ -3,16 +3,17 @@ package skill
 import (
 	"atlas-data/xml"
 	"context"
+	"net/http"
+	"net/http/httptest"
+	"reflect"
+	"testing"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus/hooks/test"
-	"net/http"
-	"net/http/httptest"
-	"reflect"
-	"testing"
 )
 
 type Server struct {

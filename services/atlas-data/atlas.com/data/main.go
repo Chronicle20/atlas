@@ -24,9 +24,10 @@ import (
 	"atlas-data/setup"
 	"atlas-data/skill"
 	"atlas-data/tracing"
+	"os"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
-	"os"
 )
 
 const serviceName = "atlas-data"

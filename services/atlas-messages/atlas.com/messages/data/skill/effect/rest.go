@@ -2,6 +2,7 @@ package effect
 
 import (
 	"atlas-messages/data/skill/effect/statup"
+
 	"github.com/Chronicle20/atlas-model/model"
 )
 

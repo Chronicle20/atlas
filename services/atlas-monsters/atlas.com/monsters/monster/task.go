@@ -1,8 +1,9 @@
 package monster
 
 import (
-	"github.com/sirupsen/logrus"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 type RegistryAudit struct {

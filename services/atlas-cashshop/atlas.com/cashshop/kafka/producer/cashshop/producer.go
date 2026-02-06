@@ -2,6 +2,7 @@ package cashshop
 
 import (
 	"atlas-cashshop/kafka/message/cashshop"
+
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"

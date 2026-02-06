@@ -2,12 +2,13 @@ package compartment
 
 import (
 	"atlas-saga-orchestrator/kafka/message/compartment"
+	"time"
+
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
-	"time"
 )
 
 func RequestCreateAssetCommandProvider(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time) model.Provider[[]kafka.Message] {

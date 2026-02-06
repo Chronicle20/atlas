@@ -3,6 +3,7 @@ package character
 import (
 	"atlas-cashshop/character/inventory"
 	"context"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	tenant "github.com/Chronicle20/atlas-tenant"

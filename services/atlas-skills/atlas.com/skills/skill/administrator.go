@@ -1,11 +1,12 @@
 package skill
 
 import (
+	"time"
+
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-	"time"
 )
 
 type EntityUpdateFunction func() ([]string, func(e *Entity))

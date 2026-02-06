@@ -2,8 +2,9 @@ package asset
 
 import (
 	"atlas-cashshop/cashshop/item"
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // Model represents a cash shop inventory asset

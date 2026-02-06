@@ -2,11 +2,12 @@ package requests
 
 import (
 	"context"
+	"net/http"
+	"strconv"
+
 	"github.com/Chronicle20/atlas-tenant"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
-	"net/http"
-	"strconv"
 )
 
 type HeaderDecorator func(header http.Header)

@@ -3,6 +3,7 @@ package npc
 import (
 	"atlas-channel/rest"
 	"fmt"
+
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-rest/requests"
 )

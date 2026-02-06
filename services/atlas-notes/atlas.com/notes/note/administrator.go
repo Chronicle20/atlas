@@ -2,6 +2,7 @@ package note
 
 import (
 	"atlas-notes/database"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )

@@ -3,12 +3,13 @@ package pet
 import (
 	"atlas-query-aggregator/rest"
 	"fmt"
+
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 
 const (
-	Resource        = "pets"
-	ByCharacterId   = "/characters/%d/" + Resource
+	Resource      = "pets"
+	ByCharacterId = "/characters/%d/" + Resource
 )
 
 func getBaseRequest() string {

@@ -20,7 +20,7 @@ import (
 // Minimal mock for invite processor (not core to party leave logic)
 type mockInviteProcessor struct{}
 
-func (m *mockInviteProcessor) Create(actorId uint32, worldId world.Id, partyId uint32, targetId uint32) error {
+func (m *mockInviteProcessor) Create(_ uint32, _ world.Id, _ uint32, _ uint32) error {
 	return nil
 }
 
@@ -74,7 +74,7 @@ func setupTestWithProducer() (*ProcessorImpl, tenant.Model) {
 // Helper to create a real character in the character registry
 func createRealCharacter(ten tenant.Model, id uint32, partyId uint32) character.Model {
 	registry := character.GetRegistry()
-	
+
 	// Create base character
 	f := field.NewBuilder(1, 1, 100000).Build()
 	char := registry.Create(ten, f, id, "TestChar", 50, job.Id(100), 0)

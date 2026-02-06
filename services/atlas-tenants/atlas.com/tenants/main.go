@@ -7,9 +7,10 @@ import (
 	"atlas-tenants/service"
 	"atlas-tenants/tenant"
 	"atlas-tenants/tracing"
+	"os"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
-	"os"
 )
 
 const serviceName = "atlas-tenants"

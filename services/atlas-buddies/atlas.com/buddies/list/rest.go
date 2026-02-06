@@ -2,6 +2,7 @@ package list
 
 import (
 	"atlas-buddies/buddy"
+
 	"github.com/google/uuid"
 )
 

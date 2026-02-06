@@ -5,15 +5,16 @@ import (
 	"atlas-cashshop/cashshop/inventory/compartment"
 	"atlas-cashshop/cashshop/item"
 	"atlas-cashshop/logger"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
-	"net/http"
-	"net/http/httptest"
-	"testing"
-	"time"
 )
 
 // testLogger creates a logger for testing

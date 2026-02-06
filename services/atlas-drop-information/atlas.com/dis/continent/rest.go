@@ -2,8 +2,9 @@ package continent
 
 import (
 	"atlas-drops-information/continent/drop"
-	"github.com/jtumidanski/api2go/jsonapi"
 	"strconv"
+
+	"github.com/jtumidanski/api2go/jsonapi"
 )
 
 type RestModel struct {

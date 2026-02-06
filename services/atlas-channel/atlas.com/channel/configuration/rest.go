@@ -3,6 +3,7 @@ package configuration
 import (
 	"atlas-channel/configuration/task"
 	"errors"
+
 	"github.com/google/uuid"
 )
 

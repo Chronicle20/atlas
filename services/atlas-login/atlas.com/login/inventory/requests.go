@@ -3,6 +3,7 @@ package inventory
 import (
 	"atlas-login/rest"
 	"fmt"
+
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 

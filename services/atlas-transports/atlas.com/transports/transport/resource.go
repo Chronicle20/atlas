@@ -2,6 +2,9 @@ package transport
 
 import (
 	"atlas-transports/rest"
+	"net/http"
+	"strconv"
+
 	map2 "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
@@ -9,8 +12,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
-	"net/http"
-	"strconv"
 )
 
 // InitResource registers the transport routes with the router
@@ -70,11 +71,11 @@ func GetAllRoutesHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http
 			} else {
 				// Transform single route to REST model and wrap in array
 				restModel, transformErr := Transform(route)
-			if transformErr != nil {
-				d.Logger().WithError(transformErr).Errorf("Error transforming route for start map %d", mapId)
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
+				if transformErr != nil {
+					d.Logger().WithError(transformErr).Errorf("Error transforming route for start map %d", mapId)
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
 				rm = []RestModel{restModel}
 			}
 		} else {

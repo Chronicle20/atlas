@@ -8,6 +8,7 @@ import (
 	"atlas-cashshop/kafka/producer"
 	cashshop2 "atlas-cashshop/kafka/producer/cashshop"
 	"context"
+
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"

@@ -64,7 +64,7 @@ func checkInventory(l logrus.FieldLogger, pp producer.Provider, ctx context.Cont
 				assetId, _ := strconv.ParseUint(a.Id, 10, 32)
 
 				// Emit expire command to compartment topic
-				emitCompartmentExpireCommand(l, pp, ctx, characterId, uint32(assetId), a.TemplateId, byte(comp.Type), a.Slot, replaceInfo.ReplaceItemId, replaceInfo.ReplaceMessage)
+				emitCompartmentExpireCommand(l, pp, characterId, uint32(assetId), a.TemplateId, comp.Type, a.Slot, replaceInfo.ReplaceItemId, replaceInfo.ReplaceMessage)
 			}
 		}
 	}
@@ -85,7 +85,7 @@ func checkStorage(l logrus.FieldLogger, pp producer.Provider, ctx context.Contex
 			replaceInfo := data.GetReplaceInfo(l)(ctx)(a.TemplateId)
 
 			// Emit expire command to storage topic
-			emitStorageExpireCommand(l, pp, ctx, accountId, worldId, a.GetAssetId(), a.TemplateId, a.Slot, replaceInfo.ReplaceItemId, replaceInfo.ReplaceMessage)
+			emitStorageExpireCommand(l, pp, accountId, worldId, a.GetAssetId(), a.TemplateId, a.Slot, replaceInfo.ReplaceItemId, replaceInfo.ReplaceMessage)
 		}
 	}
 }
@@ -105,12 +105,12 @@ func checkCashshop(l logrus.FieldLogger, pp producer.Provider, ctx context.Conte
 			replaceInfo := data.GetReplaceInfo(l)(ctx)(item.TemplateId)
 
 			// Emit expire command to cashshop topic
-			emitCashShopExpireCommand(l, pp, ctx, accountId, item.GetItemId(), item.TemplateId, replaceInfo.ReplaceItemId, replaceInfo.ReplaceMessage)
+			emitCashShopExpireCommand(l, pp, accountId, item.GetItemId(), item.TemplateId, replaceInfo.ReplaceItemId, replaceInfo.ReplaceMessage)
 		}
 	}
 }
 
-func emitStorageExpireCommand(l logrus.FieldLogger, pp producer.Provider, ctx context.Context, accountId uint32, worldId world.Id, assetId uint32, templateId uint32, slot int16, replaceItemId uint32, replaceMessage string) {
+func emitStorageExpireCommand(l logrus.FieldLogger, pp producer.Provider, accountId uint32, worldId world.Id, assetId uint32, templateId uint32, slot int16, replaceItemId uint32, replaceMessage string) {
 	cmd := asset.StorageExpireCommand{
 		TransactionId: uuid.New(),
 		WorldId:       worldId,
@@ -134,7 +134,7 @@ func emitStorageExpireCommand(l logrus.FieldLogger, pp producer.Provider, ctx co
 	}
 }
 
-func emitCashShopExpireCommand(l logrus.FieldLogger, pp producer.Provider, ctx context.Context, accountId uint32, assetId uint32, templateId uint32, replaceItemId uint32, replaceMessage string) {
+func emitCashShopExpireCommand(l logrus.FieldLogger, pp producer.Provider, accountId uint32, assetId uint32, templateId uint32, replaceItemId uint32, replaceMessage string) {
 	cmd := asset.CashShopExpireCommand{
 		CharacterId: 0,
 		Type:        asset.CommandTypeExpire,
@@ -157,7 +157,7 @@ func emitCashShopExpireCommand(l logrus.FieldLogger, pp producer.Provider, ctx c
 	}
 }
 
-func emitCompartmentExpireCommand(l logrus.FieldLogger, pp producer.Provider, ctx context.Context, characterId uint32, assetId uint32, templateId uint32, inventoryType byte, slot int16, replaceItemId uint32, replaceMessage string) {
+func emitCompartmentExpireCommand(l logrus.FieldLogger, pp producer.Provider, characterId uint32, assetId uint32, templateId uint32, inventoryType byte, slot int16, replaceItemId uint32, replaceMessage string) {
 	cmd := asset.CompartmentExpireCommand{
 		TransactionId: uuid.New(),
 		CharacterId:   characterId,

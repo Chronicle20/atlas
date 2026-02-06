@@ -2,6 +2,7 @@ package character
 
 import (
 	"atlas-character/database"
+
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"

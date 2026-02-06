@@ -5,6 +5,7 @@ import (
 	invite2 "atlas-buddies/kafka/message/invite"
 	"atlas-buddies/list"
 	"context"
+
 	"github.com/Chronicle20/atlas-constants/invite"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"

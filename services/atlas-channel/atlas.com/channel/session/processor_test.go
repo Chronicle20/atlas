@@ -13,7 +13,7 @@ import (
 )
 
 // testSetup creates common test fixtures
-func testSetup(t *testing.T) (*logrus.Logger, func()) {
+func testSetup() (*logrus.Logger, func()) {
 	logger, _ := logtest.NewNullLogger()
 	tenantId := test.DefaultTenantId
 
@@ -40,7 +40,7 @@ func createTestSession(sessionId uuid.UUID) session.Model {
 }
 
 func TestNewProcessor(t *testing.T) {
-	logger, cleanup := testSetup(t)
+	logger, cleanup := testSetup()
 	defer cleanup()
 
 	ctx := test.CreateTestContext()
@@ -52,7 +52,7 @@ func TestNewProcessor(t *testing.T) {
 }
 
 func TestByIdModelProvider_Found(t *testing.T) {
-	logger, cleanup := testSetup(t)
+	logger, cleanup := testSetup()
 	defer cleanup()
 
 	ctx := test.CreateTestContext()
@@ -77,7 +77,7 @@ func TestByIdModelProvider_Found(t *testing.T) {
 }
 
 func TestByIdModelProvider_NotFound(t *testing.T) {
-	logger, cleanup := testSetup(t)
+	logger, cleanup := testSetup()
 	defer cleanup()
 
 	ctx := test.CreateTestContext()
@@ -92,7 +92,7 @@ func TestByIdModelProvider_NotFound(t *testing.T) {
 }
 
 func TestIfPresentById_Executes(t *testing.T) {
-	logger, cleanup := testSetup(t)
+	logger, cleanup := testSetup()
 	defer cleanup()
 
 	ctx := test.CreateTestContext()
@@ -118,7 +118,7 @@ func TestIfPresentById_Executes(t *testing.T) {
 }
 
 func TestIfPresentById_NoOp(t *testing.T) {
-	logger, cleanup := testSetup(t)
+	logger, cleanup := testSetup()
 	defer cleanup()
 
 	ctx := test.CreateTestContext()
@@ -139,7 +139,7 @@ func TestIfPresentById_NoOp(t *testing.T) {
 }
 
 func TestSetAccountId(t *testing.T) {
-	logger, cleanup := testSetup(t)
+	logger, cleanup := testSetup()
 	defer cleanup()
 
 	ctx := test.CreateTestContext()
@@ -168,7 +168,7 @@ func TestSetAccountId(t *testing.T) {
 }
 
 func TestSetCharacterId(t *testing.T) {
-	logger, cleanup := testSetup(t)
+	logger, cleanup := testSetup()
 	defer cleanup()
 
 	ctx := test.CreateTestContext()
@@ -196,7 +196,7 @@ func TestSetCharacterId(t *testing.T) {
 }
 
 func TestSetMapId(t *testing.T) {
-	logger, cleanup := testSetup(t)
+	logger, cleanup := testSetup()
 	defer cleanup()
 
 	ctx := test.CreateTestContext()
@@ -225,7 +225,7 @@ func TestSetMapId(t *testing.T) {
 }
 
 func TestSetGm(t *testing.T) {
-	logger, cleanup := testSetup(t)
+	logger, cleanup := testSetup()
 	defer cleanup()
 
 	ctx := test.CreateTestContext()
@@ -246,7 +246,7 @@ func TestSetGm(t *testing.T) {
 }
 
 func TestSetStorageNpcId(t *testing.T) {
-	logger, cleanup := testSetup(t)
+	logger, cleanup := testSetup()
 	defer cleanup()
 
 	ctx := test.CreateTestContext()
@@ -265,7 +265,7 @@ func TestSetStorageNpcId(t *testing.T) {
 }
 
 func TestClearStorageNpcId(t *testing.T) {
-	logger, cleanup := testSetup(t)
+	logger, cleanup := testSetup()
 	defer cleanup()
 
 	ctx := test.CreateTestContext()
@@ -285,7 +285,7 @@ func TestClearStorageNpcId(t *testing.T) {
 }
 
 func TestAllInTenantProvider(t *testing.T) {
-	logger, cleanup := testSetup(t)
+	logger, cleanup := testSetup()
 	defer cleanup()
 
 	ctx := test.CreateTestContext()
@@ -369,7 +369,7 @@ func TestChannelIdFilter(t *testing.T) {
 }
 
 func TestByCharacterIdModelProvider_Found(t *testing.T) {
-	logger, cleanup := testSetup(t)
+	logger, cleanup := testSetup()
 	defer cleanup()
 
 	ctx := test.CreateTestContext()
@@ -396,7 +396,7 @@ func TestByCharacterIdModelProvider_Found(t *testing.T) {
 }
 
 func TestByCharacterIdModelProvider_NotFound(t *testing.T) {
-	logger, cleanup := testSetup(t)
+	logger, cleanup := testSetup()
 	defer cleanup()
 
 	ctx := test.CreateTestContext()
@@ -411,7 +411,7 @@ func TestByCharacterIdModelProvider_NotFound(t *testing.T) {
 }
 
 func TestIfPresentByCharacterId_Executes(t *testing.T) {
-	logger, cleanup := testSetup(t)
+	logger, cleanup := testSetup()
 	defer cleanup()
 
 	ctx := test.CreateTestContext()
@@ -440,7 +440,7 @@ func TestIfPresentByCharacterId_Executes(t *testing.T) {
 }
 
 func TestIfPresentByCharacterId_NoOp(t *testing.T) {
-	logger, cleanup := testSetup(t)
+	logger, cleanup := testSetup()
 	defer cleanup()
 
 	ctx := test.CreateTestContext()
@@ -463,7 +463,7 @@ func TestIfPresentByCharacterId_NoOp(t *testing.T) {
 }
 
 func TestByAccountIdModelProvider_Found(t *testing.T) {
-	logger, cleanup := testSetup(t)
+	logger, cleanup := testSetup()
 	defer cleanup()
 
 	ctx := test.CreateTestContext()
@@ -488,7 +488,7 @@ func TestByAccountIdModelProvider_Found(t *testing.T) {
 }
 
 func TestIfPresentByAccountId_Executes(t *testing.T) {
-	logger, cleanup := testSetup(t)
+	logger, cleanup := testSetup()
 	defer cleanup()
 
 	ctx := test.CreateTestContext()
@@ -517,7 +517,7 @@ func TestIfPresentByAccountId_Executes(t *testing.T) {
 }
 
 func TestGetByCharacterId(t *testing.T) {
-	logger, cleanup := testSetup(t)
+	logger, cleanup := testSetup()
 	defer cleanup()
 
 	ctx := test.CreateTestContext()
@@ -542,7 +542,7 @@ func TestGetByCharacterId(t *testing.T) {
 }
 
 func TestUpdateLastRequest(t *testing.T) {
-	logger, cleanup := testSetup(t)
+	logger, cleanup := testSetup()
 	defer cleanup()
 
 	ctx := test.CreateTestContext()
@@ -565,7 +565,7 @@ func TestUpdateLastRequest(t *testing.T) {
 }
 
 func TestSetAccountId_NonExistent(t *testing.T) {
-	logger, cleanup := testSetup(t)
+	logger, cleanup := testSetup()
 	defer cleanup()
 
 	ctx := test.CreateTestContext()
@@ -581,7 +581,7 @@ func TestSetAccountId_NonExistent(t *testing.T) {
 }
 
 func TestSetCharacterId_NonExistent(t *testing.T) {
-	logger, cleanup := testSetup(t)
+	logger, cleanup := testSetup()
 	defer cleanup()
 
 	ctx := test.CreateTestContext()
@@ -596,7 +596,7 @@ func TestSetCharacterId_NonExistent(t *testing.T) {
 }
 
 func TestSetMapId_NonExistent(t *testing.T) {
-	logger, cleanup := testSetup(t)
+	logger, cleanup := testSetup()
 	defer cleanup()
 
 	ctx := test.CreateTestContext()

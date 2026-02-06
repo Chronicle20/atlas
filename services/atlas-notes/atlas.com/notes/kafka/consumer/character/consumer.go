@@ -5,6 +5,7 @@ import (
 	character2 "atlas-notes/kafka/message/character"
 	"atlas-notes/note"
 	"context"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"

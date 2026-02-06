@@ -1,9 +1,10 @@
 package asset
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-	"time"
 )
 
 func create(db *gorm.DB, tenantId uuid.UUID, compartmentId uuid.UUID, templateId uint32, slot int16, expiration time.Time, referenceId uint32, referenceType ReferenceType) (Model[any], error) {

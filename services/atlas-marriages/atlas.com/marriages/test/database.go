@@ -1,10 +1,8 @@
 package test
 
 import (
-	"context"
 	"testing"
 
-	tenant "github.com/Chronicle20/atlas-tenant"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -25,11 +23,6 @@ func SetupTestDB(t *testing.T, migrations ...func(db *gorm.DB) error) *gorm.DB {
 	}
 
 	return db
-}
-
-// CreateTestContext creates a context with a test tenant for testing
-func CreateTestContext() context.Context {
-	return tenant.WithContext(context.Background(), CreateDefaultMockTenant())
 }
 
 // CleanupTestDB cleans up the test database

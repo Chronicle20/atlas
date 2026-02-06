@@ -2,9 +2,10 @@ package setup
 
 import (
 	"atlas-data/xml"
+	"strconv"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
-	"strconv"
 )
 
 func parseSetupId(name string) (uint32, error) {

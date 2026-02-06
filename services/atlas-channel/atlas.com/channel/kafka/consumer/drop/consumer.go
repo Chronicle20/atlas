@@ -10,9 +10,6 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
-	"github.com/Chronicle20/atlas-constants/channel"
-	_map2 "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -52,7 +49,7 @@ func handleStatusEventCreated(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
 			return
 		}
 
@@ -67,7 +64,7 @@ func handleStatusEventCreated(sc server.Model, wp writer.Producer) message.Handl
 			SetPlayerDrop(e.Body.PlayerDrop).
 			MustBuild()
 
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(_map2.Id(e.MapId), uuid.Nil), session.Announce(l)(ctx)(wp)(writer.DropSpawn)(writer.DropSpawnBody(l, tenant.MustFromContext(ctx))(d, writer.DropEnterTypeFresh, int16(e.Body.Mod))))
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, uuid.Nil), session.Announce(l)(ctx)(wp)(writer.DropSpawn)(writer.DropSpawnBody(l, tenant.MustFromContext(ctx))(d, writer.DropEnterTypeFresh, int16(e.Body.Mod))))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to spawn drop [%d] for characters in map [%d].", d.Id(), e.MapId)
 		}
@@ -80,11 +77,11 @@ func handleStatusEventExpired(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
 			return
 		}
 
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(_map2.Id(e.MapId), uuid.Nil), func(s session.Model) error {
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, uuid.Nil), func(s session.Model) error {
 			return session.Announce(l)(ctx)(wp)(writer.DropDestroy)(writer.DropDestroyBody(l, tenant.MustFromContext(ctx))(e.DropId, writer.DropDestroyTypeExpire, s.CharacterId(), -1))(s)
 		})
 		if err != nil {
@@ -99,7 +96,7 @@ func handleStatusEventPickedUp(sc server.Model, wp writer.Producer) message.Hand
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
 			return
 		}
 
@@ -130,7 +127,7 @@ func handleStatusEventPickedUp(sc server.Model, wp writer.Producer) message.Hand
 				dt = writer.DropDestroyTypePetPickUp
 			}
 
-			err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(_map2.Id(e.MapId), uuid.Nil), session.Announce(l)(ctx)(wp)(writer.DropDestroy)(writer.DropDestroyBody(l, tenant.MustFromContext(ctx))(e.DropId, dt, e.Body.CharacterId, e.Body.PetSlot)))
+			err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, uuid.Nil), session.Announce(l)(ctx)(wp)(writer.DropDestroy)(writer.DropDestroyBody(l, tenant.MustFromContext(ctx))(e.DropId, dt, e.Body.CharacterId, e.Body.PetSlot)))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to pick up drop [%d] for characters in map [%d].", e.DropId, e.MapId)
 			}

@@ -2,6 +2,7 @@ package tenant
 
 import (
 	"atlas-transports/rest"
+
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 

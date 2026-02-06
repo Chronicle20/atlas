@@ -5,6 +5,8 @@ import (
 	"atlas-pets/pet"
 	"atlas-pets/pet/exclude"
 	"context"
+	"testing"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-model/model"
@@ -15,7 +17,6 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"testing"
 )
 
 func testLogger() logrus.FieldLogger {

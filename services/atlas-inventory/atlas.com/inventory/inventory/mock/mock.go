@@ -3,19 +3,20 @@ package mock
 import (
 	"atlas-inventory/inventory"
 	"atlas-inventory/kafka/message"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type ProcessorImpl struct {
-	WithTransactionFn     func(db *gorm.DB) inventory.Processor
-	GetByCharacterIdFn    func(characterId uint32) (inventory.Model, error)
+	WithTransactionFn       func(db *gorm.DB) inventory.Processor
+	GetByCharacterIdFn      func(characterId uint32) (inventory.Model, error)
 	ByCharacterIdProviderFn func(characterId uint32) model.Provider[inventory.Model]
-	CreateAndEmitFn       func(transactionId uuid.UUID, characterId uint32) (inventory.Model, error)
-	CreateFn              func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) (inventory.Model, error)
-	DeleteAndEmitFn       func(transactionId uuid.UUID, characterId uint32) error
-	DeleteFn              func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) error
+	CreateAndEmitFn         func(transactionId uuid.UUID, characterId uint32) (inventory.Model, error)
+	CreateFn                func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) (inventory.Model, error)
+	DeleteAndEmitFn         func(transactionId uuid.UUID, characterId uint32) error
+	DeleteFn                func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) error
 }
 
 func (p *ProcessorImpl) WithTransaction(db *gorm.DB) inventory.Processor {

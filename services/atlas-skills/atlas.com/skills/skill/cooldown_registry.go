@@ -2,9 +2,10 @@ package skill
 
 import (
 	"errors"
-	"github.com/Chronicle20/atlas-tenant"
 	"sync"
 	"time"
+
+	"github.com/Chronicle20/atlas-tenant"
 )
 
 var ErrNotFound = errors.New("not found")

@@ -5,6 +5,8 @@ import (
 	"atlas-npc-conversations/rest"
 	"encoding/json"
 	"errors"
+	"net/http"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/google/uuid"
@@ -12,7 +14,6 @@ import (
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"net/http"
 )
 
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
@@ -152,7 +153,7 @@ func UpdateConversationHandler(d *rest.HandlerDependency, c *rest.HandlerContext
 }
 
 // DeleteConversationHandler handles DELETE /conversations/{conversationId}
-func DeleteConversationHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+func DeleteConversationHandler(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseConversationId(d.Logger(), func(conversationId uuid.UUID) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			// Delete conversation
@@ -203,7 +204,7 @@ type RestValidationResult struct {
 }
 
 // ValidateConversationHandler handles POST /conversations/validate
-func ValidateConversationHandler(d *rest.HandlerDependency, c *rest.HandlerContext, rm RestModel) http.HandlerFunc {
+func ValidateConversationHandler(d *rest.HandlerDependency, _ *rest.HandlerContext, rm RestModel) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Extract domain model from REST model
 		m, err := Extract(rm)
@@ -249,7 +250,7 @@ func ValidateConversationHandler(d *rest.HandlerDependency, c *rest.HandlerConte
 }
 
 // SeedConversationsHandler handles POST /npcs/conversations/seed
-func SeedConversationsHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+func SeedConversationsHandler(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		result, err := NewProcessor(d.Logger(), d.Context(), d.DB()).Seed()
 		if err != nil {

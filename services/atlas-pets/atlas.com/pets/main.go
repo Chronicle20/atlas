@@ -11,10 +11,11 @@ import (
 	"atlas-pets/service"
 	"atlas-pets/tasks"
 	"atlas-pets/tracing"
-	"github.com/Chronicle20/atlas-kafka/consumer"
-	"github.com/Chronicle20/atlas-rest/server"
 	"os"
 	"time"
+
+	"github.com/Chronicle20/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas-rest/server"
 )
 
 const serviceName = "atlas-pets"

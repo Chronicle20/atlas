@@ -6,12 +6,13 @@ import (
 	"atlas-data/xml"
 	"context"
 	"fmt"
-	"github.com/Chronicle20/atlas-model/model"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/Chronicle20/atlas-model/model"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 func NewStorage(l logrus.FieldLogger, db *gorm.DB) *document.Storage[string, RestModel] {

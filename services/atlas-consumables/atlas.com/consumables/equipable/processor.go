@@ -5,6 +5,7 @@ import (
 	"atlas-consumables/kafka/message/equipable"
 	"atlas-consumables/kafka/producer"
 	"context"
+
 	"github.com/sirupsen/logrus"
 )
 

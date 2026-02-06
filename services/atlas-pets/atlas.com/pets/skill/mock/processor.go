@@ -2,6 +2,7 @@ package mock
 
 import (
 	"atlas-pets/skill"
+
 	skill2 "github.com/Chronicle20/atlas-constants/skill"
 	"github.com/Chronicle20/atlas-model/model"
 )

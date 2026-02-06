@@ -1,10 +1,11 @@
 package channel
 
 import (
+	"time"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
-	"time"
 )
 
 type RestModel struct {

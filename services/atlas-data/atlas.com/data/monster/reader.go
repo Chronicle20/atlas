@@ -5,13 +5,14 @@ import (
 	"atlas-data/xml"
 	"context"
 	"fmt"
-	"github.com/Chronicle20/atlas-model/model"
-	tenant "github.com/Chronicle20/atlas-tenant"
-	"github.com/sirupsen/logrus"
 	"math"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/Chronicle20/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/sirupsen/logrus"
 )
 
 func parseMonsterId(filePath string) (uint32, error) {

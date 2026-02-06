@@ -5,6 +5,7 @@ import (
 	skill2 "atlas-skills/kafka/message/skill"
 	"atlas-skills/skill"
 	"context"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"

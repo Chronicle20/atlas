@@ -1,10 +1,11 @@
 package session
 
 import (
+	"time"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
 	tenant "github.com/Chronicle20/atlas-tenant"
-	"time"
 )
 
 type State uint8

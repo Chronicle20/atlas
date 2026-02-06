@@ -3,6 +3,7 @@ package character
 import (
 	"atlas-pets/rest"
 	"fmt"
+
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 

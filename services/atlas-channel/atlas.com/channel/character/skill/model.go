@@ -1,9 +1,10 @@
 package skill
 
 import (
+	"time"
+
 	"github.com/Chronicle20/atlas-constants/job"
 	"github.com/Chronicle20/atlas-constants/skill"
-	"time"
 )
 
 type Model struct {
@@ -31,7 +32,7 @@ func (m Model) Expiration() time.Time {
 }
 
 func (m Model) IsFourthJob() bool {
-	if j, ok := job.FromSkillId(skill.Id(m.id)); ok {
+	if j, ok := job.FromSkillId(m.id); ok {
 		return j.IsFourthJob()
 	}
 	return false

@@ -5,6 +5,8 @@ import (
 	"atlas-npc/rest"
 	"context"
 	"errors"
+	"net/http"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/google/uuid"
@@ -12,7 +14,6 @@ import (
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"net/http"
 )
 
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
@@ -145,7 +146,7 @@ func handleUpdateCommodity(d *rest.HandlerDependency, c *rest.HandlerContext, i 
 	})
 }
 
-func handleRemoveCommodity(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+func handleRemoveCommodity(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseNpcId(d.Logger(), func(npcId uint32) http.HandlerFunc {
 		return rest.ParseCommodityId(d.Logger(), func(commodityId uuid.UUID) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
@@ -163,7 +164,7 @@ func handleRemoveCommodity(d *rest.HandlerDependency, c *rest.HandlerContext) ht
 	})
 }
 
-func handleDeleteAllCommodities(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+func handleDeleteAllCommodities(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseNpcId(d.Logger(), func(npcId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			p := NewProcessor(d.Logger(), d.Context(), d.DB())
@@ -179,7 +180,7 @@ func handleDeleteAllCommodities(d *rest.HandlerDependency, c *rest.HandlerContex
 	})
 }
 
-func handleDeleteAllShops(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+func handleDeleteAllShops(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		p := NewProcessor(d.Logger(), d.Context(), d.DB())
 		err := p.DeleteAllShops()

@@ -2,6 +2,7 @@ package mock
 
 import (
 	"atlas-npc-conversations/conversation"
+
 	"github.com/Chronicle20/atlas-constants/field"
 )
 

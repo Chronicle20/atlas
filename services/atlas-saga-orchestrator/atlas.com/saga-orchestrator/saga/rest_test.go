@@ -1,8 +1,9 @@
 package saga
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestUnmarshalGenericPayload(t *testing.T) {

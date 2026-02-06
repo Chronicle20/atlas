@@ -1,11 +1,12 @@
 package writer
 
 import (
+	"strconv"
+	"strings"
+
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
-	"strconv"
-	"strings"
 )
 
 const ServerIP = "ServerIP"

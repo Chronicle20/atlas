@@ -5,6 +5,7 @@ import (
 	character2 "atlas-saga-orchestrator/kafka/message/character"
 	"atlas-saga-orchestrator/saga"
 	"context"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -77,14 +78,14 @@ func handleCharacterCreatedEvent(l logrus.FieldLogger, ctx context.Context, e ch
 	if e.Type != character2.StatusEventTypeCreated {
 		return
 	}
-	
+
 	l.WithFields(logrus.Fields{
 		"transaction_id": e.TransactionId.String(),
 		"character_id":   e.CharacterId,
 		"character_name": e.Body.Name,
 		"world_id":       e.WorldId,
 	}).Debug("Character created successfully, marking saga step as completed")
-	
+
 	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
 }
 
@@ -92,14 +93,14 @@ func handleCharacterCreationFailedEvent(l logrus.FieldLogger, ctx context.Contex
 	if e.Type != character2.StatusEventTypeCreationFailed {
 		return
 	}
-	
+
 	l.WithFields(logrus.Fields{
 		"transaction_id": e.TransactionId.String(),
 		"character_name": e.Body.Name,
 		"error_message":  e.Body.Message,
 		"world_id":       e.WorldId,
 	}).Error("Character creation failed, marking saga step as failed")
-	
+
 	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, false)
 }
 

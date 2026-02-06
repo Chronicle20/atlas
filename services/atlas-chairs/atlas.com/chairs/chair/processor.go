@@ -7,9 +7,10 @@ import (
 	"atlas-chairs/validation"
 	"context"
 	"errors"
+	"math"
+
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/sirupsen/logrus"
-	"math"
 )
 
 type Processor interface {

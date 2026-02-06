@@ -5,6 +5,7 @@ import (
 	consumer2 "atlas-chairs/kafka/consumer"
 	chair2 "atlas-chairs/kafka/message/chair"
 	"context"
+
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"

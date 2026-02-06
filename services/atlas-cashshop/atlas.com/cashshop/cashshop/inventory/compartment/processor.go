@@ -125,7 +125,7 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(accountId uint32) func(t
 	return func(accountId uint32) func(type_ CompartmentType) func(capacity uint32) (Model, error) {
 		return func(type_ CompartmentType) func(capacity uint32) (Model, error) {
 			return func(capacity uint32) (Model, error) {
-				p.l.Debugf("Creating compartment for account [%d] with type [%s] and capacity [%d].", accountId, type_, capacity)
+				p.l.Debugf("Creating compartment for account [%d] with type [%d] and capacity [%d].", accountId, type_, capacity)
 
 				// Create the compartment
 				model, err := createEntity(p.db, p.t, accountId, type_, capacity)

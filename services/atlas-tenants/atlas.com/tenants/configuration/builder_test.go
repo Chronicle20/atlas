@@ -3,6 +3,7 @@ package configuration_test
 import (
 	"atlas-tenants/configuration"
 	"encoding/json"
+	"errors"
 	"testing"
 
 	"github.com/google/uuid"
@@ -50,7 +51,7 @@ func TestBuild_MissingTenantId(t *testing.T) {
 		SetResourceData(json.RawMessage(`{}`)).
 		Build()
 
-	if err != configuration.ErrTenantIdRequired {
+	if !errors.Is(err, configuration.ErrTenantIdRequired) {
 		t.Errorf("Build() error = %v, want ErrTenantIdRequired", err)
 	}
 }
@@ -61,7 +62,7 @@ func TestBuild_MissingResourceName(t *testing.T) {
 		SetResourceData(json.RawMessage(`{}`)).
 		Build()
 
-	if err != configuration.ErrResourceNameRequired {
+	if !errors.Is(err, configuration.ErrResourceNameRequired) {
 		t.Errorf("Build() error = %v, want ErrResourceNameRequired", err)
 	}
 }

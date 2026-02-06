@@ -2,7 +2,6 @@ package writer
 
 import (
 	"github.com/Chronicle20/atlas-socket/response"
-	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -20,7 +19,7 @@ const (
 	TransportStateEnter3  = TransportState(6)
 )
 
-func FieldTransportStateBody(_ logrus.FieldLogger, t tenant.Model) func(state TransportState, overrideAppear bool) BodyProducer {
+func FieldTransportStateBody(_ logrus.FieldLogger) func(state TransportState, overrideAppear bool) BodyProducer {
 	return func(state TransportState, overrideAppear bool) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(byte(state))

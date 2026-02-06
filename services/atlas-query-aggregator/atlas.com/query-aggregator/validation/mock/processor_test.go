@@ -3,8 +3,9 @@ package mock
 import (
 	"atlas-query-aggregator/validation"
 	"errors"
-	"github.com/Chronicle20/atlas-model/model"
 	"testing"
+
+	"github.com/Chronicle20/atlas-model/model"
 )
 
 func TestProcessor_ValidateStructured(t *testing.T) {

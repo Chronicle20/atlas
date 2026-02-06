@@ -1,8 +1,9 @@
 package party
 
 import (
-	"github.com/google/uuid"
 	"testing"
+
+	"github.com/google/uuid"
 )
 
 func TestBuilder_Build_Success(t *testing.T) {

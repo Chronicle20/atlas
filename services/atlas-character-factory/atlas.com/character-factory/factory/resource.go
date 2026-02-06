@@ -3,12 +3,13 @@ package factory
 import (
 	"atlas-character-factory/rest"
 	"encoding/json"
+	"net/http"
+	"strings"
+
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
-	"net/http"
-	"strings"
 )
 
 const (
@@ -38,14 +39,14 @@ func categorizeError(err error) int {
 	}
 
 	errMsg := err.Error()
-	
+
 	// Validation errors (user input problems)
 	validationErrors := []string{
 		"character name must be between 1 and 12 characters and contain only valid characters",
 		"gender must be 0 or 1",
 		"must provide valid job index",
 		"chosen face is not valid for job",
-		"chosen hair is not valid for job", 
+		"chosen hair is not valid for job",
 		"chosen hair color is not valid for job",
 		"chosen skin color is not valid for job",
 		"chosen top is not valid for job",
@@ -53,25 +54,25 @@ func categorizeError(err error) int {
 		"chosen shoes is not valid for job",
 		"chosen weapon is not valid for job",
 	}
-	
+
 	for _, validationErr := range validationErrors {
 		if strings.Contains(errMsg, validationErr) {
 			return http.StatusBadRequest
 		}
 	}
-	
+
 	// Configuration/template errors (system issues)
 	if strings.Contains(errMsg, "unable to find template validation configuration") ||
 		strings.Contains(errMsg, "Unable to find template validation configuration") {
 		return http.StatusInternalServerError
 	}
-	
+
 	// Saga creation errors (internal service errors)
 	if strings.Contains(errMsg, "unable to emit character creation saga") ||
 		strings.Contains(errMsg, "Unable to emit character creation saga") {
 		return http.StatusInternalServerError
 	}
-	
+
 	// Default to internal server error for unknown errors
 	return http.StatusInternalServerError
 }
@@ -89,7 +90,7 @@ func handleCreateCharacter(d *rest.HandlerDependency, c *rest.HandlerContext, in
 		transactionId, err := processor.Create(d.Context(), input)
 		if err != nil {
 			d.Logger().WithError(err).Error("Error creating character from seed.")
-			
+
 			// Determine appropriate HTTP status code based on error type
 			statusCode := categorizeError(err)
 			writeErrorResponse(w, statusCode, err.Error())

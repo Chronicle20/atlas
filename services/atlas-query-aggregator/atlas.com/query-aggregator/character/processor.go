@@ -4,6 +4,7 @@ import (
 	"atlas-query-aggregator/guild"
 	"atlas-query-aggregator/inventory"
 	"context"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"

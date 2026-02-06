@@ -1,9 +1,10 @@
 package skill
 
 import (
+	"time"
+
 	"github.com/Chronicle20/atlas-constants/job"
 	"github.com/Chronicle20/atlas-constants/skill"
-	"time"
 )
 
 type Model struct {

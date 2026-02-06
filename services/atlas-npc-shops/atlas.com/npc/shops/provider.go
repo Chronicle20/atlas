@@ -2,6 +2,8 @@ package shops
 
 import (
 	"atlas-npc/database"
+	"errors"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -13,7 +15,7 @@ func getByNpcId(tenantId uuid.UUID, npcId uint32) database.EntityProvider[Entity
 		var result Entity
 		err := db.Where(&Entity{TenantId: tenantId, NpcId: npcId}).First(&result).Error
 		if err != nil {
-			if err == gorm.ErrRecordNotFound {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return model.ErrorProvider[Entity](ErrNotFound)
 			}
 			return model.ErrorProvider[Entity](err)

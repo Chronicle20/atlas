@@ -9,10 +9,11 @@ import (
 	"atlas-monsters/tasks"
 	"atlas-monsters/tracing"
 	"atlas-monsters/world"
-	"github.com/Chronicle20/atlas-kafka/consumer"
-	"github.com/Chronicle20/atlas-rest/server"
 	"os"
 	"time"
+
+	"github.com/Chronicle20/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas-rest/server"
 )
 
 const serviceName = "atlas-monsters"

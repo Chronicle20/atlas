@@ -84,15 +84,15 @@ func (r ForeignRestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
 	return result
 }
 
-func (r *ForeignRestModel) SetToOneReferenceID(name, ID string) error {
+func (r *ForeignRestModel) SetToOneReferenceID(_, _ string) error {
 	return nil
 }
 
-func (r *ForeignRestModel) SetToManyReferenceIDs(name string, IDs []string) error {
+func (r *ForeignRestModel) SetToManyReferenceIDs(_ string, _ []string) error {
 	return nil
 }
 
-func (r *ForeignRestModel) SetReferencedStructs(references map[string]map[string]jsonapi.Data) error {
+func (r *ForeignRestModel) SetReferencedStructs(_ map[string]map[string]jsonapi.Data) error {
 	return nil
 }
 

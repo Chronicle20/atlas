@@ -1,11 +1,12 @@
 package account
 
 import (
+	"testing"
+
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"testing"
 )
 
 func setupTestDatabase(t *testing.T) *gorm.DB {

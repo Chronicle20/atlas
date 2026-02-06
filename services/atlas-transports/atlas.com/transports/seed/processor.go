@@ -3,10 +3,11 @@ package seed
 import (
 	"atlas-transports/transport"
 	"context"
+	"time"
+
 	_map "github.com/Chronicle20/atlas-constants/map"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
-	"time"
 )
 
 // Processor defines the interface for seed operations

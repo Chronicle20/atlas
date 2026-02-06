@@ -2,6 +2,7 @@ package monster_test
 
 import (
 	"atlas-channel/monster"
+	"errors"
 	"testing"
 
 	"github.com/Chronicle20/atlas-constants/field"
@@ -45,7 +46,7 @@ func TestBuild_MissingUniqueId(t *testing.T) {
 	_, err := monster.NewModelBuilder(0, f, 100100).
 		Build()
 
-	if err != monster.ErrInvalidUniqueId {
+	if !errors.Is(err, monster.ErrInvalidUniqueId) {
 		t.Errorf("Build() error = %v, want ErrInvalidUniqueId", err)
 	}
 }

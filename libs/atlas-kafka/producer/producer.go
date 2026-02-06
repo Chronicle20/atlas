@@ -3,13 +3,14 @@ package producer
 import (
 	"context"
 	"encoding/binary"
+	"os"
+	"time"
+
 	"github.com/Chronicle20/atlas-kafka/retry"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
-	"os"
-	"time"
 )
 
 //goland:noinspection GoUnusedExportedFunction

@@ -2,12 +2,13 @@ package test
 
 import (
 	"context"
+	"os"
+	"testing"
+
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"os"
-	"testing"
 )
 
 // SetupTestDB creates a new SQLite in-memory database for testing

@@ -3,6 +3,7 @@ package pet
 import (
 	"atlas-consumables/rest"
 	"fmt"
+
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 

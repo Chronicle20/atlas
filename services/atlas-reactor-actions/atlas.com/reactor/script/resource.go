@@ -180,7 +180,7 @@ func UpdateScriptHandler(d *rest.HandlerDependency, c *rest.HandlerContext, rm R
 }
 
 // DeleteScriptHandler handles DELETE /reactor-actions/{scriptId}
-func DeleteScriptHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+func DeleteScriptHandler(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseScriptId(d.Logger(), func(scriptId uuid.UUID) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			// Delete script
@@ -198,7 +198,7 @@ func DeleteScriptHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http
 }
 
 // SeedScriptsHandler handles POST /reactor-actions/seed
-func SeedScriptsHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+func SeedScriptsHandler(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		result, err := NewProcessor(d.Logger(), d.Context(), d.DB()).Seed()
 		if err != nil {

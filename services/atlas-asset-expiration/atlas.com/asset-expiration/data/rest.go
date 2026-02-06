@@ -15,7 +15,7 @@ func (r EquipmentRestModel) GetID() string {
 	return ""
 }
 
-func (r *EquipmentRestModel) SetID(id string) error {
+func (r *EquipmentRestModel) SetID(_ string) error {
 	return nil
 }
 
@@ -34,7 +34,7 @@ func (r ConsumableRestModel) GetID() string {
 	return ""
 }
 
-func (r *ConsumableRestModel) SetID(id string) error {
+func (r *ConsumableRestModel) SetID(_ string) error {
 	return nil
 }
 
@@ -53,7 +53,7 @@ func (r SetupRestModel) GetID() string {
 	return ""
 }
 
-func (r *SetupRestModel) SetID(id string) error {
+func (r *SetupRestModel) SetID(_ string) error {
 	return nil
 }
 
@@ -72,7 +72,7 @@ func (r EtcRestModel) GetID() string {
 	return ""
 }
 
-func (r *EtcRestModel) SetID(id string) error {
+func (r *EtcRestModel) SetID(_ string) error {
 	return nil
 }
 

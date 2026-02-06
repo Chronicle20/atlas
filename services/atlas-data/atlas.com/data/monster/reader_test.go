@@ -3,11 +3,12 @@ package monster
 import (
 	"atlas-data/xml"
 	"context"
+	"strconv"
+	"testing"
+
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
-	"strconv"
-	"testing"
 )
 
 const testXML = `

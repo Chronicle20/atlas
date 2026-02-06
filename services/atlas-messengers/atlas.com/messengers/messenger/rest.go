@@ -3,11 +3,12 @@ package messenger
 import (
 	"atlas-messengers/character"
 	"context"
+	"strconv"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
-	"strconv"
 )
 
 type RestModel struct {

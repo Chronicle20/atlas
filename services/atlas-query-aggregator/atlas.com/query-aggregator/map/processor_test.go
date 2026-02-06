@@ -3,12 +3,13 @@ package _map
 import (
 	"atlas-query-aggregator/map/mock"
 	"errors"
+	"testing"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
-	"testing"
 )
 
 func TestProcessorMock_GetPlayerCountInMap_Success(t *testing.T) {

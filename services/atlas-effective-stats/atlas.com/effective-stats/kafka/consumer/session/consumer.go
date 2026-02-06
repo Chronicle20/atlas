@@ -27,17 +27,15 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 	return func(rf func(topic string, handler handler.Handler) (string, error)) {
 		var t string
 		t, _ = topic.EnvProvider(l)(message.EnvEventTopicSessionStatus)()
-		_, _ = rf(t, kafkaMessage.AdaptHandler(kafkaMessage.PersistentConfig(handleSessionStatus(l))))
+		_, _ = rf(t, kafkaMessage.AdaptHandler(kafkaMessage.PersistentConfig(handleSessionStatus)))
 	}
 }
 
-func handleSessionStatus(l logrus.FieldLogger) kafkaMessage.Handler[message.StatusEvent] {
-	return func(l logrus.FieldLogger, ctx context.Context, e message.StatusEvent) {
-		if e.Type == message.EventSessionStatusTypeCreated {
-			handleSessionCreated(l, ctx, e)
-		} else if e.Type == message.EventSessionStatusTypeDestroyed {
-			handleSessionDestroyed(l, ctx, e)
-		}
+func handleSessionStatus(l logrus.FieldLogger, ctx context.Context, e message.StatusEvent) {
+	if e.Type == message.EventSessionStatusTypeCreated {
+		handleSessionCreated(l, ctx, e)
+	} else if e.Type == message.EventSessionStatusTypeDestroyed {
+		handleSessionDestroyed(l, ctx, e)
 	}
 }
 

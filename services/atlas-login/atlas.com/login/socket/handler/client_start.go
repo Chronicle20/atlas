@@ -4,6 +4,7 @@ import (
 	"atlas-login/session"
 	"atlas-login/socket/writer"
 	"context"
+
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )

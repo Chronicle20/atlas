@@ -5,6 +5,7 @@ import (
 	buddylist2 "atlas-saga-orchestrator/kafka/message/buddylist"
 	"atlas-saga-orchestrator/saga"
 	"context"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"

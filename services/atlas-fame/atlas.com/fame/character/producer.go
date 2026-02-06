@@ -2,6 +2,7 @@ package character
 
 import (
 	messageCharacter "atlas-fame/kafka/message/character"
+
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
@@ -13,9 +14,9 @@ func requestChangeFameCommandProvider(transactionId uuid.UUID, characterId uint3
 	key := producer.CreateKey(int(characterId))
 	value := &messageCharacter.CommandEvent[messageCharacter.RequestChangeFameBody]{
 		TransactionId: transactionId,
-		CharacterId: characterId,
-		WorldId:     worldId,
-		Type:        messageCharacter.CommandRequestChangeFame,
+		CharacterId:   characterId,
+		WorldId:       worldId,
+		Type:          messageCharacter.CommandRequestChangeFame,
 		Body: messageCharacter.RequestChangeFameBody{
 			ActorId:   actorId,
 			ActorType: messageCharacter.CommandActorTypeCharacter,

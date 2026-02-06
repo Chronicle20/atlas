@@ -3,8 +3,9 @@ package guild
 import (
 	"atlas-channel/guild/member"
 	"atlas-channel/guild/title"
-	"github.com/Chronicle20/atlas-constants/world"
 	"sort"
+
+	"github.com/Chronicle20/atlas-constants/world"
 )
 
 type Model struct {

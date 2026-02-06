@@ -2,6 +2,7 @@ package effect
 
 import (
 	"atlas-channel/data/skill/effect/statup"
+
 	"github.com/Chronicle20/atlas-model/model"
 )
 
@@ -123,11 +124,6 @@ func Extract(rm RestModel) (Model, error) {
 		statups:              su,
 		monsterStatus:        rm.MonsterStatus,
 	}, nil
-}
-
-type monsterStatus struct {
-	Status string `json:"status"`
-	Value  uint32 `json:"value"`
 }
 
 type cardItemUp struct {

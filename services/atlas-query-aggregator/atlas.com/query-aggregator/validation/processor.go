@@ -9,6 +9,7 @@ import (
 	"atlas-query-aggregator/quest"
 	"context"
 	"fmt"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
 )
@@ -46,7 +47,6 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		petProcessor:       pet.NewProcessor(l, ctx),
 	}
 }
-
 
 // ValidateStructured validates a list of structured condition inputs against a character
 func (p *ProcessorImpl) ValidateStructured(resultDecorators ...model.Decorator[ValidationResult]) func(characterId uint32, conditionInputs []ConditionInput) (ValidationResult, error) {
@@ -158,7 +158,6 @@ func (p *ProcessorImpl) ValidateWithContext(decorators ...model.Decorator[Valida
 		})()
 	}
 }
-
 
 // GetValidationContextProvider returns a provider that can create validation contexts
 func (p *ProcessorImpl) GetValidationContextProvider() ValidationContextProvider {

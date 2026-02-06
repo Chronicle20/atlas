@@ -3,10 +3,11 @@ package tasks
 import (
 	"atlas-skills/skill"
 	"context"
+	"time"
+
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
-	"time"
 )
 
 type ExpirationTask struct {

@@ -227,7 +227,7 @@ func (p *ProcessorImpl) AddJunior(buf *message.Buffer) func(worldId world.Id, se
 }
 
 // RemoveMember removes a member from the family and handles cascade operations
-func (p *ProcessorImpl) RemoveMember(buf *message.Buffer) func(characterId uint32, reason string) model.Provider[[]FamilyMember] {
+func (p *ProcessorImpl) RemoveMember(_ *message.Buffer) func(characterId uint32, reason string) model.Provider[[]FamilyMember] {
 	return func(characterId uint32, reason string) model.Provider[[]FamilyMember] {
 		return func() ([]FamilyMember, error) {
 			p.log.WithFields(logrus.Fields{
@@ -542,7 +542,7 @@ func (p *ProcessorImpl) ResetDailyRep(buf *message.Buffer) model.Provider[BatchR
 // AndEmit variants - combine business logic with event emission
 
 // AddJuniorAndEmit adds a junior and emits appropriate events
-func (p *ProcessorImpl) AddJuniorAndEmit(transactionId uuid.UUID, worldId world.Id, seniorId uint32, seniorLevel uint16, juniorId uint32, juniorLevel uint16) model.Provider[FamilyMember] {
+func (p *ProcessorImpl) AddJuniorAndEmit(_ uuid.UUID, worldId world.Id, seniorId uint32, seniorLevel uint16, juniorId uint32, juniorLevel uint16) model.Provider[FamilyMember] {
 	return func() (FamilyMember, error) {
 		return message.EmitWithResult[FamilyMember, struct{}](p.producer)(func(buf *message.Buffer) func(struct{}) (FamilyMember, error) {
 			return func(struct{}) (FamilyMember, error) {
@@ -554,7 +554,7 @@ func (p *ProcessorImpl) AddJuniorAndEmit(transactionId uuid.UUID, worldId world.
 }
 
 // RemoveMemberAndEmit removes a member and emits appropriate events
-func (p *ProcessorImpl) RemoveMemberAndEmit(transactionId uuid.UUID, characterId uint32, reason string) model.Provider[[]FamilyMember] {
+func (p *ProcessorImpl) RemoveMemberAndEmit(_ uuid.UUID, characterId uint32, reason string) model.Provider[[]FamilyMember] {
 	return func() ([]FamilyMember, error) {
 		return message.EmitWithResult[[]FamilyMember, struct{}](p.producer)(func(buf *message.Buffer) func(struct{}) ([]FamilyMember, error) {
 			return func(struct{}) ([]FamilyMember, error) {
@@ -566,7 +566,7 @@ func (p *ProcessorImpl) RemoveMemberAndEmit(transactionId uuid.UUID, characterId
 }
 
 // BreakLinkAndEmit breaks a link and emits appropriate events
-func (p *ProcessorImpl) BreakLinkAndEmit(transactionId uuid.UUID, characterId uint32, reason string) model.Provider[[]FamilyMember] {
+func (p *ProcessorImpl) BreakLinkAndEmit(_ uuid.UUID, characterId uint32, reason string) model.Provider[[]FamilyMember] {
 	return func() ([]FamilyMember, error) {
 		return message.EmitWithResult[[]FamilyMember, struct{}](p.producer)(func(buf *message.Buffer) func(struct{}) ([]FamilyMember, error) {
 			return func(struct{}) ([]FamilyMember, error) {
@@ -578,7 +578,7 @@ func (p *ProcessorImpl) BreakLinkAndEmit(transactionId uuid.UUID, characterId ui
 }
 
 // AwardRepAndEmit awards reputation and emits appropriate events
-func (p *ProcessorImpl) AwardRepAndEmit(transactionId uuid.UUID, characterId uint32, amount uint32, source string) model.Provider[FamilyMember] {
+func (p *ProcessorImpl) AwardRepAndEmit(_ uuid.UUID, characterId uint32, amount uint32, source string) model.Provider[FamilyMember] {
 	return func() (FamilyMember, error) {
 		return message.EmitWithResult[FamilyMember, struct{}](p.producer)(func(buf *message.Buffer) func(struct{}) (FamilyMember, error) {
 			return func(struct{}) (FamilyMember, error) {
@@ -590,7 +590,7 @@ func (p *ProcessorImpl) AwardRepAndEmit(transactionId uuid.UUID, characterId uin
 }
 
 // DeductRepAndEmit deducts reputation and emits appropriate events
-func (p *ProcessorImpl) DeductRepAndEmit(transactionId uuid.UUID, characterId uint32, amount uint32, reason string) model.Provider[FamilyMember] {
+func (p *ProcessorImpl) DeductRepAndEmit(_ uuid.UUID, characterId uint32, amount uint32, reason string) model.Provider[FamilyMember] {
 	return func() (FamilyMember, error) {
 		return message.EmitWithResult[FamilyMember, struct{}](p.producer)(func(buf *message.Buffer) func(struct{}) (FamilyMember, error) {
 			return func(struct{}) (FamilyMember, error) {

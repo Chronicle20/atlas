@@ -8,6 +8,7 @@ import (
 	"atlas-channel/party"
 	"atlas-channel/socket/model"
 	"context"
+
 	"github.com/Chronicle20/atlas-constants/field"
 	skill2 "github.com/Chronicle20/atlas-constants/skill"
 	model2 "github.com/Chronicle20/atlas-model/model"

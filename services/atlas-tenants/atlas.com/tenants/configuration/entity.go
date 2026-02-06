@@ -2,6 +2,7 @@ package configuration
 
 import (
 	"encoding/json"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -9,9 +10,9 @@ import (
 // Entity represents a configuration in the database
 type Entity struct {
 	gorm.Model
-	ID           uuid.UUID      `gorm:"type:uuid;primaryKey"`
-	TenantID     uuid.UUID      `gorm:"type:uuid;not null"`
-	ResourceName string         `gorm:"not null"`
+	ID           uuid.UUID       `gorm:"type:uuid;primaryKey"`
+	TenantID     uuid.UUID       `gorm:"type:uuid;not null"`
+	ResourceName string          `gorm:"not null"`
 	ResourceData json.RawMessage `gorm:"type:jsonb;not null"`
 }
 

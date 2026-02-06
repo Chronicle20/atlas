@@ -2,8 +2,8 @@ package character_test
 
 import (
 	"atlas-character/character"
-	character2 "atlas-character/kafka/message/character"
 	"atlas-character/kafka/message"
+	character2 "atlas-character/kafka/message/character"
 	"context"
 	"testing"
 
@@ -77,7 +77,7 @@ func TestKafkaCreateCharacterIntegration(t *testing.T) {
 
 		_, _ = character.NewProcessor(l, ctx, db).CreateAndEmit(c.TransactionId, model)
 	}
-	
+
 	handler(logger, tctx, command)
 
 	// Verify the character was created by getting the characters for the account
@@ -86,14 +86,14 @@ func TestKafkaCreateCharacterIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to get characters for account: %v", err)
 	}
-	
+
 	// Should have exactly one character
 	if len(characters) != 1 {
 		t.Fatalf("Expected 1 character, got %d", len(characters))
 	}
-	
+
 	createdCharacter := characters[0]
-	
+
 	// Verify the character properties
 	if createdCharacter.Name() != "TestKafkaChar" {
 		t.Errorf("Expected name 'TestKafkaChar', got '%s'", createdCharacter.Name())
@@ -218,7 +218,7 @@ func TestKafkaCreateCharacterIntegrationWithInvalidName(t *testing.T) {
 
 		_, _ = character.NewProcessor(l, ctx, db).CreateAndEmit(c.TransactionId, model)
 	}
-	
+
 	handler(logger, tctx, command)
 
 	// Verify the character was NOT created in the database
@@ -227,7 +227,7 @@ func TestKafkaCreateCharacterIntegrationWithInvalidName(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to get characters for account: %v", err)
 	}
-	
+
 	// Should have no characters
 	if len(characters) != 0 {
 		t.Fatalf("Expected 0 characters, got %d", len(characters))
@@ -309,12 +309,12 @@ func TestKafkaCreateCharacterIntegrationWithDuplicateName(t *testing.T) {
 
 		_, _ = character.NewProcessor(l, ctx, db).CreateAndEmit(c.TransactionId, model)
 	}
-	
+
 	handler(logger, tctx, command)
 
 	// Verify only the first character exists and second was not created
 	processor = character.NewProcessor(logger, tctx, db)
-	
+
 	// Check first account - should have 1 character
 	characters1, err := processor.GetForAccountInWorld()(1000, world.Id(0))
 	if err != nil {
@@ -326,7 +326,7 @@ func TestKafkaCreateCharacterIntegrationWithDuplicateName(t *testing.T) {
 	if characters1[0].Name() != "DuplicateTest" {
 		t.Errorf("Expected character name 'DuplicateTest', got '%s'", characters1[0].Name())
 	}
-	
+
 	// Check second account - should have 0 characters
 	characters2, err := processor.GetForAccountInWorld()(2000, world.Id(0))
 	if err != nil {
@@ -409,7 +409,7 @@ func TestKafkaCreateCharacterIntegrationWithErrorEventEmission(t *testing.T) {
 
 			// Create a message buffer to capture error events
 			buf := message.NewBuffer()
-			
+
 			// Create and call the Kafka consumer handler directly
 			handler := func(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.CreateCharacterCommandBody]) {
 				if c.Type != character2.CommandCreateCharacter {
@@ -438,7 +438,7 @@ func TestKafkaCreateCharacterIntegrationWithErrorEventEmission(t *testing.T) {
 				// Use the Create function with buffer to populate error events manually
 				processor := character.NewProcessor(l, ctx, db)
 				_, err := processor.Create(buf)(c.TransactionId, model)
-				
+
 				// Manually emit creation failed event on error (simulating CreateAndEmit behavior)
 				if err != nil {
 					// This is expected for our test cases
@@ -459,7 +459,7 @@ func TestKafkaCreateCharacterIntegrationWithErrorEventEmission(t *testing.T) {
 					_ = buf.Put(character2.EnvEventTopicCharacterStatus, errorEventProvider)
 				}
 			}
-			
+
 			handler(logger, tctx, command)
 
 			// Verify no character was created in the database
@@ -468,7 +468,7 @@ func TestKafkaCreateCharacterIntegrationWithErrorEventEmission(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to get characters for account %d: %v", tc.commandBody.AccountId, err)
 			}
-			
+
 			if len(characters) != 0 {
 				t.Errorf("Expected 0 characters, got %d", len(characters))
 			}

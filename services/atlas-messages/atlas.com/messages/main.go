@@ -12,6 +12,7 @@ import (
 	"atlas-messages/logger"
 	"atlas-messages/service"
 	"atlas-messages/tracing"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 )
 

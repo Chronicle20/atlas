@@ -3,6 +3,7 @@ package inventory_test
 import (
 	"atlas-channel/compartment"
 	"atlas-channel/inventory"
+	"errors"
 	"testing"
 
 	inv "github.com/Chronicle20/atlas-constants/inventory"
@@ -45,7 +46,7 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 func TestBuild_MissingCharacterId(t *testing.T) {
 	_, err := inventory.NewModelBuilder(0).Build()
 
-	if err != inventory.ErrInvalidCharacterId {
+	if !errors.Is(err, inventory.ErrInvalidCharacterId) {
 		t.Errorf("Build() error = %v, want ErrInvalidCharacterId", err)
 	}
 }

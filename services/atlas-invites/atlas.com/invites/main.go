@@ -8,10 +8,11 @@ import (
 	"atlas-invites/service"
 	"atlas-invites/tasks"
 	"atlas-invites/tracing"
-	"github.com/Chronicle20/atlas-kafka/consumer"
-	"github.com/Chronicle20/atlas-rest/server"
 	"os"
 	"time"
+
+	"github.com/Chronicle20/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas-rest/server"
 )
 
 const serviceName = "atlas-invites"

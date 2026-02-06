@@ -3,6 +3,7 @@ package configuration
 import (
 	"atlas-tenants/database"
 	"encoding/json"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -14,15 +15,6 @@ func GetByTenantIdAndResourceNameProvider(tenantID uuid.UUID, resourceName strin
 		return database.Query[Entity](db, map[string]interface{}{
 			"tenant_id":     tenantID,
 			"resource_name": resourceName,
-		})
-	}
-}
-
-// GetByTenantIdProvider returns a provider for all configurations for a tenant
-func GetByTenantIdProvider(tenantID uuid.UUID) database.EntityProvider[[]Entity] {
-	return func(db *gorm.DB) model.Provider[[]Entity] {
-		return database.SliceQuery[Entity](db, map[string]interface{}{
-			"tenant_id": tenantID,
 		})
 	}
 }

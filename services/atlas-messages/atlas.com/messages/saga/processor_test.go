@@ -20,7 +20,7 @@ func TestNewProcessor(t *testing.T) {
 	}
 
 	// Verify it implements the Processor interface
-	var _ Processor = processor
+	var _ = processor
 }
 
 // TestProcessorInterface verifies the Processor interface contract

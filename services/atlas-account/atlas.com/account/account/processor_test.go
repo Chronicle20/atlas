@@ -3,6 +3,7 @@ package account
 import (
 	"atlas-account/kafka/message"
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/Chronicle20/atlas-tenant"
@@ -353,7 +354,7 @@ func TestDeleteNotFound(t *testing.T) {
 		t.Fatal("Expected error when deleting non-existent account")
 	}
 
-	if err != ErrAccountNotFound {
+	if !errors.Is(err, ErrAccountNotFound) {
 		t.Errorf("Expected ErrAccountNotFound, got: %v", err)
 	}
 }
@@ -385,7 +386,7 @@ func TestDeleteLoggedIn(t *testing.T) {
 		t.Fatal("Expected error when deleting logged-in account")
 	}
 
-	if err != ErrAccountLoggedIn {
+	if !errors.Is(err, ErrAccountLoggedIn) {
 		t.Errorf("Expected ErrAccountLoggedIn, got: %v", err)
 	}
 

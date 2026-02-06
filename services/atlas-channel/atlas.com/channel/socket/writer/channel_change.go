@@ -1,9 +1,10 @@
 package writer
 
 import (
-	"github.com/Chronicle20/atlas-socket/response"
 	"strconv"
 	"strings"
+
+	"github.com/Chronicle20/atlas-socket/response"
 )
 
 const ChannelChange = "ChannelChange"

@@ -3,11 +3,12 @@ package pet
 import (
 	"atlas-pets/character"
 	"context"
+	"time"
+
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
-	"time"
 )
 
 const HungerTask = "hunger"

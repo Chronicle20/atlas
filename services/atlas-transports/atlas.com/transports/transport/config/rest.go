@@ -2,9 +2,10 @@ package config
 
 import (
 	"atlas-transports/transport"
+	"time"
+
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/google/uuid"
-	"time"
 )
 
 // RouteRestModel is the JSON:API resource for routes

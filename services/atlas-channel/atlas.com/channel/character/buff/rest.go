@@ -2,8 +2,9 @@ package buff
 
 import (
 	"atlas-channel/character/buff/stat"
-	"github.com/Chronicle20/atlas-model/model"
 	"time"
+
+	"github.com/Chronicle20/atlas-model/model"
 )
 
 type RestModel struct {

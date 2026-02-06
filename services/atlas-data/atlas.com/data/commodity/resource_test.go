@@ -144,7 +144,7 @@ func setupTestCommodityData(t *testing.T, db *gorm.DB, tenantId uuid.UUID) {
 	}
 }
 
-func createRequestWithTenant(method, url string, body []byte, tenantId uuid.UUID) *http.Request {
+func createRequestWithTenant(method, url string, tenantId uuid.UUID) *http.Request {
 	req, err := http.NewRequest(method, url, nil)
 	if err != nil {
 		panic(err)
@@ -162,7 +162,7 @@ func createRequestWithTenant(method, url string, body []byte, tenantId uuid.UUID
 func testGetCommoditiesEndpoint(t *testing.T, testServer *httptest.Server, tenantId uuid.UUID) {
 	t.Run("GetAllCommodities", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/commodity/items", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -184,7 +184,7 @@ func testGetCommoditiesEndpoint(t *testing.T, testServer *httptest.Server, tenan
 func testGetCommodityEndpoint(t *testing.T, testServer *httptest.Server, tenantId uuid.UUID) {
 	t.Run("GetCommodityById", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/commodity/items/1", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -211,7 +211,7 @@ func testGetCommodityEndpoint(t *testing.T, testServer *httptest.Server, tenantI
 
 	t.Run("GetCommodityNotFound", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/commodity/items/9999999", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -225,7 +225,7 @@ func testGetCommodityEndpoint(t *testing.T, testServer *httptest.Server, tenantI
 func testErrorHandling(t *testing.T, testServer *httptest.Server, tenantId uuid.UUID) {
 	t.Run("InvalidItemId", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/commodity/items/invalid", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -254,7 +254,7 @@ func testTenantIsolation(t *testing.T, testServer *httptest.Server, originalTena
 		differentTenantId := uuid.New()
 
 		url := fmt.Sprintf("%s/data/commodity/items", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, differentTenantId)
+		req := createRequestWithTenant("GET", url, differentTenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -273,7 +273,7 @@ func testTenantIsolation(t *testing.T, testServer *httptest.Server, originalTena
 
 	t.Run("OriginalTenantHasData", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/commodity/items", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, originalTenantId)
+		req := createRequestWithTenant("GET", url, originalTenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -294,7 +294,7 @@ func testTenantIsolation(t *testing.T, testServer *httptest.Server, originalTena
 func testJSONAPICompliance(t *testing.T, testServer *httptest.Server, tenantId uuid.UUID) {
 	t.Run("SingleResourceStructure", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/commodity/items/1", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -315,7 +315,7 @@ func testJSONAPICompliance(t *testing.T, testServer *httptest.Server, tenantId u
 
 	t.Run("CollectionResourceStructure", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/commodity/items", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)

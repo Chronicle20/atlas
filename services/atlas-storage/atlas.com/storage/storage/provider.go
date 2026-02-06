@@ -53,7 +53,7 @@ func GetByAccountId(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID) func(
 		var models []Model
 		for _, e := range entities {
 			// Load assets for this storage
-			assets, err := asset.GetByStorageId(l, db, tenantId)(e.Id)
+			assets, err := asset.GetByStorageId(db, tenantId)(e.Id)
 			if err != nil {
 				l.WithError(err).Warnf("Failed to load assets for storage %s, returning empty assets", e.Id)
 				assets = []asset.Model[any]{}
@@ -71,33 +71,5 @@ func GetByAccountId(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID) func(
 		}
 
 		return models, nil
-	}
-}
-
-// GetById retrieves storage by ID
-func GetById(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID) func(id uuid.UUID) (Model, error) {
-	return func(id uuid.UUID) (Model, error) {
-		var e Entity
-		err := db.Where("tenant_id = ? AND id = ?", tenantId, id).First(&e).Error
-		if err != nil {
-			return Model{}, err
-		}
-
-		// Load assets for this storage
-		assets, err := asset.GetByStorageId(l, db, tenantId)(e.Id)
-		if err != nil {
-			l.WithError(err).Warnf("Failed to load assets for storage %s, returning empty assets", e.Id)
-			assets = []asset.Model[any]{}
-		}
-
-		// MustBuild since entities from database are trusted
-		return NewModelBuilder().
-			SetId(e.Id).
-			SetWorldId(world.Id(e.WorldId)).
-			SetAccountId(e.AccountId).
-			SetCapacity(e.Capacity).
-			SetMesos(e.Mesos).
-			SetAssets(assets).
-			MustBuild(), nil
 	}
 }

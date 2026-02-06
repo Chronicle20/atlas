@@ -3,11 +3,12 @@ package main
 import (
 	"atlas-fame/database"
 	"atlas-fame/fame"
-	character "atlas-fame/kafka/consumer/character"
+	"atlas-fame/kafka/consumer/character"
 	fame2 "atlas-fame/kafka/consumer/fame"
 	"atlas-fame/logger"
 	"atlas-fame/service"
 	"atlas-fame/tracing"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 )
 

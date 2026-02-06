@@ -6,15 +6,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// GetInventory retrieves cash shop inventory from atlas-cashshop
-func GetInventory(l logrus.FieldLogger) func(ctx context.Context) func(accountId uint32) (InventoryRestModel, error) {
-	return func(ctx context.Context) func(accountId uint32) (InventoryRestModel, error) {
-		return func(accountId uint32) (InventoryRestModel, error) {
-			return requestInventory(accountId)(l, ctx)
-		}
-	}
-}
-
 // GetCompartments retrieves all cash shop compartments from atlas-cashshop
 func GetCompartments(l logrus.FieldLogger) func(ctx context.Context) func(accountId uint32) ([]CompartmentRestModel, error) {
 	return func(ctx context.Context) func(accountId uint32) ([]CompartmentRestModel, error) {

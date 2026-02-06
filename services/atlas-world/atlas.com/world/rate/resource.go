@@ -43,7 +43,7 @@ func handleGetWorldRates(d *rest.HandlerDependency, c *rest.HandlerContext) http
 	})
 }
 
-func handleUpdateWorldRate(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
+func handleUpdateWorldRate(d *rest.HandlerDependency, _ *rest.HandlerContext, input RestModel) http.HandlerFunc {
 	return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			rateType := Type(input.RateType)

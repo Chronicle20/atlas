@@ -2,6 +2,7 @@ package validation
 
 import (
 	"context"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -36,7 +37,7 @@ func (p *ProcessorImpl) ValidateCharacterState(characterId uint32, conditions []
 	}
 
 	// Create and execute the HTTP request
-	resp, err := requestById(characterId, requestBody)(p.l, p.ctx)
+	resp, err := requestById(requestBody)(p.l, p.ctx)
 	if err != nil {
 		p.l.WithError(err).WithFields(logrus.Fields{
 			"character_id": characterId,

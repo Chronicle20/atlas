@@ -3,6 +3,8 @@ package character
 import (
 	"atlas-keys/key"
 	"atlas-keys/rest"
+	"net/http"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/google/uuid"
@@ -10,7 +12,6 @@ import (
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"net/http"
 )
 
 const (

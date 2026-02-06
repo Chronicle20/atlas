@@ -3,6 +3,7 @@ package inventory_test
 import (
 	"atlas-channel/cashshop/inventory"
 	"atlas-channel/cashshop/inventory/compartment"
+	"errors"
 	"testing"
 
 	"github.com/google/uuid"
@@ -40,7 +41,7 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 func TestBuild_MissingAccountId(t *testing.T) {
 	_, err := inventory.NewModelBuilder(0).Build()
 
-	if err != inventory.ErrInvalidAccountId {
+	if !errors.Is(err, inventory.ErrInvalidAccountId) {
 		t.Errorf("Build() error = %v, want ErrInvalidAccountId", err)
 	}
 }

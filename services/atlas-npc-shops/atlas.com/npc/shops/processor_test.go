@@ -6,10 +6,11 @@ import (
 	"atlas-npc/shops"
 	"atlas-npc/test"
 	"context"
+	"testing"
+
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"testing"
 )
 
 // mockConsumableCache is a mock implementation of the ConsumableCacheInterface
@@ -18,7 +19,7 @@ type mockConsumableCache struct {
 }
 
 // GetConsumables returns the rechargeable consumables for a tenant
-func (c *mockConsumableCache) GetConsumables(l logrus.FieldLogger, ctx context.Context, tenantId uuid.UUID) []consumable.Model {
+func (c *mockConsumableCache) GetConsumables(_ logrus.FieldLogger, _ context.Context, tenantId uuid.UUID) []consumable.Model {
 	if consumables, ok := c.consumables[tenantId]; ok {
 		return consumables
 	}
@@ -47,7 +48,7 @@ func TestShopsProcessor(t *testing.T) {
 
 	// Run tests
 	t.Run("TestGetByNpcId", func(t *testing.T) {
-		testGetByNpcId(t, processor, db)
+		testGetByNpcId(t, processor)
 	})
 
 	t.Run("TestAddCommodity", func(t *testing.T) {
@@ -75,7 +76,7 @@ func TestShopsProcessor(t *testing.T) {
 	})
 }
 
-func testGetByNpcId(t *testing.T, processor shops.Processor, db *gorm.DB) {
+func testGetByNpcId(t *testing.T, processor shops.Processor) {
 	// Test data
 	npcId := uint32(2001)
 	templateId := uint32(3001)

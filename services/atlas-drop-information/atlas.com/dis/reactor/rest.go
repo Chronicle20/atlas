@@ -63,7 +63,7 @@ func (r RestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
 }
 
 // SetToOneReferenceID to satisfy jsonapi.UnmarshalToOneRelations interface
-func (r *RestModel) SetToOneReferenceID(name, ID string) error {
+func (r *RestModel) SetToOneReferenceID(_, _ string) error {
 	return nil
 }
 

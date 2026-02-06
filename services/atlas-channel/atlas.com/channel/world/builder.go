@@ -2,6 +2,7 @@ package world
 
 import (
 	"atlas-channel/channel"
+
 	"github.com/Chronicle20/atlas-constants/world"
 )
 

@@ -1,8 +1,9 @@
 package asset
 
 import (
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type ReferenceType string
@@ -119,4 +120,3 @@ func (m Model[E]) ReferenceData() E {
 func (m Model[E]) CompartmentId() uuid.UUID {
 	return m.compartmentId
 }
-

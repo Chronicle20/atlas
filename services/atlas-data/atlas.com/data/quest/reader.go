@@ -2,9 +2,10 @@ package quest
 
 import (
 	"atlas-data/xml"
+	"strconv"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
-	"strconv"
 )
 
 // ReadQuestInfo reads quest info from QuestInfo.img.xml
@@ -174,7 +175,7 @@ func readRequirements(n *xml.Node) RequirementsRestModel {
 		for _, in := range itemNode.ChildNodes {
 			iReq := ItemRequirement{
 				Id:    uint32(in.GetIntegerWithDefault("id", 0)),
-				Count: int32(in.GetIntegerWithDefault("count", 0)),
+				Count: in.GetIntegerWithDefault("count", 0),
 			}
 			if iReq.Id > 0 {
 				req.Items = append(req.Items, iReq)
@@ -221,8 +222,8 @@ func readRequirements(n *xml.Node) RequirementsRestModel {
 func readActions(n *xml.Node) ActionsRestModel {
 	act := ActionsRestModel{
 		NpcId:      uint32(n.GetIntegerWithDefault("npc", 0)),
-		Exp:        int32(n.GetIntegerWithDefault("exp", 0)),
-		Money:      int32(n.GetIntegerWithDefault("money", 0)),
+		Exp:        n.GetIntegerWithDefault("exp", 0),
+		Money:      n.GetIntegerWithDefault("money", 0),
 		Fame:       int16(n.GetIntegerWithDefault("pop", 0)),
 		NextQuest:  uint32(n.GetIntegerWithDefault("nextQuest", 0)),
 		BuffItemId: uint32(n.GetIntegerWithDefault("buffItemID", 0)),
@@ -235,10 +236,10 @@ func readActions(n *xml.Node) ActionsRestModel {
 		for _, in := range itemNode.ChildNodes {
 			iReward := ItemReward{
 				Id:         uint32(in.GetIntegerWithDefault("id", 0)),
-				Count:      int32(in.GetIntegerWithDefault("count", 0)),
-				Job:        int32(in.GetIntegerWithDefault("job", 0)),
+				Count:      in.GetIntegerWithDefault("count", 0),
+				Job:        in.GetIntegerWithDefault("job", 0),
 				Gender:     int8(in.GetIntegerWithDefault("gender", -1)),
-				Prop:       int32(in.GetIntegerWithDefault("prop", -1)),
+				Prop:       in.GetIntegerWithDefault("prop", -1),
 				Period:     uint32(in.GetIntegerWithDefault("period", 0)),
 				DateExpire: in.GetString("dateExpire", ""),
 				Var:        uint32(in.GetIntegerWithDefault("var", 0)),
@@ -254,7 +255,7 @@ func readActions(n *xml.Node) ActionsRestModel {
 		for _, sn := range skillNode.ChildNodes {
 			sReward := SkillReward{
 				Id:          uint32(sn.GetIntegerWithDefault("id", 0)),
-				Level:       int32(sn.GetIntegerWithDefault("skillLevel", 0)),
+				Level:       sn.GetIntegerWithDefault("skillLevel", 0),
 				MasterLevel: uint32(sn.GetIntegerWithDefault("masterLevel", 0)),
 			}
 

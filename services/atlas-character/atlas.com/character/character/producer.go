@@ -2,6 +2,7 @@ package character
 
 import (
 	character2 "atlas-character/kafka/message/character"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-constants/job"

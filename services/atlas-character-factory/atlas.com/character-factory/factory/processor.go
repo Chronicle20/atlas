@@ -8,8 +8,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	_map "github.com/Chronicle20/atlas-constants/map"
 	"time"
+
+	_map "github.com/Chronicle20/atlas-constants/map"
 
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -286,7 +287,7 @@ func validFace(faces []uint32, face uint32) bool {
 	return validOption(faces, face)
 }
 
-func validJob(jobIndex uint32, subJobIndex uint32) bool {
+func validJob(_ uint32, _ uint32) bool {
 	return true
 }
 

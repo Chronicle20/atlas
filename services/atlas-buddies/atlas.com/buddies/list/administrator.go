@@ -4,6 +4,7 @@ import (
 	"atlas-buddies/buddy"
 	"errors"
 	"fmt"
+
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"gorm.io/gorm"

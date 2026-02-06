@@ -1,8 +1,9 @@
 package configuration
 
 import (
-	"gopkg.in/yaml.v3"
 	"io/ioutil"
+
+	"gopkg.in/yaml.v3"
 )
 
 func loadConfiguration() (*Configuration, error) {

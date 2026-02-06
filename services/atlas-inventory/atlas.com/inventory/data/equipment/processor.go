@@ -4,6 +4,7 @@ import (
 	"atlas-inventory/data/equipment/slot"
 	"atlas-inventory/data/equipment/statistics"
 	"context"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
 )
@@ -26,14 +27,6 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 }
 
 type DestinationProvider func(itemId uint32) model.Provider[int16]
-
-func FixedDestinationProvider(destination int16) DestinationProvider {
-	return func(itemId uint32) model.Provider[int16] {
-		return func() (int16, error) {
-			return destination, nil
-		}
-	}
-}
 
 func (p *Processor) DestinationSlotProvider(suggested int16) DestinationProvider {
 	return func(itemId uint32) model.Provider[int16] {

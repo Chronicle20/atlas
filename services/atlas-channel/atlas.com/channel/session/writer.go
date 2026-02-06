@@ -1,9 +1,10 @@
 package session
 
 import (
+	"strconv"
+
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
-	"strconv"
 )
 
 func WriteHello(l logrus.FieldLogger) func(majorVersion uint16, minorVersion uint16, sendIv []byte, recvIv []byte, locale byte) []byte {

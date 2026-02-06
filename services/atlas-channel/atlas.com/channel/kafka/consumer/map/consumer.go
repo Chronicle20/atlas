@@ -20,9 +20,9 @@ import (
 	"atlas-channel/socket/writer"
 	"atlas-channel/transport/route"
 	"context"
-	"github.com/Chronicle20/atlas-constants/channel"
+	"time"
+
 	"github.com/Chronicle20/atlas-constants/field"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -31,7 +31,6 @@ import (
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
-	"time"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -61,7 +60,7 @@ func handleStatusEventCharacterEnter(sc server.Model, wp writer.Producer) func(l
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
 			return
 		}
 
@@ -219,9 +218,9 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 					return
 				}
 				if hasShip {
-					_ = session.Announce(l)(ctx)(wp)(writer.FieldTransportState)(writer.FieldTransportStateBody(l, t)(writer.TransportStateEnter1, false))(s)
+					_ = session.Announce(l)(ctx)(wp)(writer.FieldTransportState)(writer.FieldTransportStateBody(l)(writer.TransportStateEnter1, false))(s)
 				} else {
-					_ = session.Announce(l)(ctx)(wp)(writer.FieldTransportState)(writer.FieldTransportStateBody(l, t)(writer.TransportStateMove1, false))(s)
+					_ = session.Announce(l)(ctx)(wp)(writer.FieldTransportState)(writer.FieldTransportStateBody(l)(writer.TransportStateMove1, false))(s)
 				}
 			}()
 			return nil
@@ -260,7 +259,7 @@ func handleStatusEventCharacterExit(sc server.Model, wp writer.Producer) func(l 
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
 			return
 		}
 
@@ -329,7 +328,7 @@ func spawnReactorsForSession(l logrus.FieldLogger) func(ctx context.Context) fun
 		return func(wp writer.Producer) func(s session.Model) model.Operator[reactor.Model] {
 			return func(s session.Model) model.Operator[reactor.Model] {
 				return func(r reactor.Model) error {
-					return session.Announce(l)(ctx)(wp)(writer.ReactorSpawn)(writer.ReactorSpawnBody(l, tenant.MustFromContext(ctx))(r))(s)
+					return session.Announce(l)(ctx)(wp)(writer.ReactorSpawn)(writer.ReactorSpawnBody()(r))(s)
 				}
 			}
 		}

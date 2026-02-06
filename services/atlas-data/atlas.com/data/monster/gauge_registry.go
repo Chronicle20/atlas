@@ -3,8 +3,9 @@ package monster
 import (
 	"atlas-data/document"
 	"atlas-data/xml"
-	"github.com/Chronicle20/atlas-tenant"
 	"sync"
+
+	"github.com/Chronicle20/atlas-tenant"
 )
 
 type Gauge struct {

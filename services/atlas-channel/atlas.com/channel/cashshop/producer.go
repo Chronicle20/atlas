@@ -113,17 +113,3 @@ func RequestCharacterSlotIncreaseByItemCommandProvider(characterId uint32, curre
 	}
 	return producer.SingleMessageProvider(key, value)
 }
-
-func MoveFromCashInventoryCommandProvider(characterId uint32, serialNumber uint64, inventoryType byte, slot int16) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(characterId))
-	value := &cashshop.Command[cashshop.MoveFromCashInventoryCommandBody]{
-		CharacterId: characterId,
-		Type:        cashshop.CommandTypeMoveFromCashInventory,
-		Body: cashshop.MoveFromCashInventoryCommandBody{
-			SerialNumber:  serialNumber,
-			InventoryType: inventoryType,
-			Slot:          slot,
-		},
-	}
-	return producer.SingleMessageProvider(key, value)
-}

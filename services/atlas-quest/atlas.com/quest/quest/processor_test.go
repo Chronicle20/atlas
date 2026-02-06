@@ -3,6 +3,7 @@ package quest_test
 import (
 	"atlas-quest/quest"
 	"atlas-quest/test"
+	"errors"
 	"testing"
 
 	"github.com/Chronicle20/atlas-constants/channel"
@@ -169,7 +170,7 @@ func TestStart_AlreadyStarted(t *testing.T) {
 
 	// Try to start again
 	_, _, err = processor.Start(uuid.Nil, characterId, questId, createTestField(), false)
-	if err != quest.ErrQuestAlreadyStarted {
+	if !errors.Is(err, quest.ErrQuestAlreadyStarted) {
 		t.Errorf("Second Start() error = %v, want ErrQuestAlreadyStarted", err)
 	}
 }
@@ -189,7 +190,7 @@ func TestStart_ValidationFailed(t *testing.T) {
 
 	_, failedConditions, err := processor.Start(uuid.Nil, characterId, questId, createTestField(), false)
 
-	if err != quest.ErrStartRequirementsNotMet {
+	if !errors.Is(err, quest.ErrStartRequirementsNotMet) {
 		t.Errorf("Start() error = %v, want ErrStartRequirementsNotMet", err)
 	}
 	if len(failedConditions) != 2 {
@@ -312,7 +313,7 @@ func TestComplete_ValidationFailed(t *testing.T) {
 	mockValidation.EndFailedConditions = []string{"missing_item"}
 
 	_, err := processor.Complete(uuid.Nil, characterId, questId, createTestField(), false)
-	if err != quest.ErrEndRequirementsNotMet {
+	if !errors.Is(err, quest.ErrEndRequirementsNotMet) {
 		t.Errorf("Complete() error = %v, want ErrEndRequirementsNotMet", err)
 	}
 }
@@ -693,7 +694,7 @@ func TestRepeatableQuest_RestartAfterInterval(t *testing.T) {
 
 	// Try to restart immediately - should fail (interval not elapsed)
 	_, _, err := processor.Start(uuid.Nil, characterId, questId, createTestField(), false)
-	if err != quest.ErrIntervalNotElapsed {
+	if !errors.Is(err, quest.ErrIntervalNotElapsed) {
 		t.Errorf("Start() error = %v, want ErrIntervalNotElapsed", err)
 	}
 }
@@ -715,7 +716,7 @@ func TestNonRepeatableQuest_CannotRestart(t *testing.T) {
 
 	// Try to restart - should fail
 	_, _, err := processor.Start(uuid.Nil, characterId, questId, createTestField(), false)
-	if err != quest.ErrQuestAlreadyCompleted {
+	if !errors.Is(err, quest.ErrQuestAlreadyCompleted) {
 		t.Errorf("Start() error = %v, want ErrQuestAlreadyCompleted", err)
 	}
 }

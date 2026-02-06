@@ -4,11 +4,12 @@ import (
 	invite2 "atlas-invites/kafka/message/invite"
 	"atlas-invites/kafka/producer"
 	"context"
+	"time"
+
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
-	"time"
 )
 
 const TimeoutTask = "timeout"

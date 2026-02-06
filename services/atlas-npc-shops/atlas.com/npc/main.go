@@ -10,9 +10,10 @@ import (
 	"atlas-npc/service"
 	"atlas-npc/shops"
 	"atlas-npc/tracing"
+	"os"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
-	"os"
 )
 
 const serviceName = "atlas-npc-shops"

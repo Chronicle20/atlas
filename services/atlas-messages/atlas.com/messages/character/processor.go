@@ -3,6 +3,7 @@ package character
 import (
 	"atlas-messages/skill"
 	"context"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"

@@ -5,6 +5,7 @@ import (
 	skill2 "atlas-channel/kafka/message/skill"
 	"atlas-channel/kafka/producer"
 	"context"
+
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-constants/skill"
 	"github.com/Chronicle20/atlas-model/model"
@@ -41,7 +42,7 @@ func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {
 	return p.ByCharacterIdProvider(characterId)()
 }
 
-func (p *ProcessorImpl) ApplyCooldown(f field.Model, skillId skill.Id, cooldown uint32) model.Operator[uint32] {
+func (p *ProcessorImpl) ApplyCooldown(_ field.Model, skillId skill.Id, cooldown uint32) model.Operator[uint32] {
 	return func(characterId uint32) error {
 		return producer.ProviderImpl(p.l)(p.ctx)(skill2.EnvCommandTopic)(skill3.SetCooldownCommandProvider(characterId, uint32(skillId), cooldown))
 	}

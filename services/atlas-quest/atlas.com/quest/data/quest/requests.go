@@ -3,11 +3,12 @@ package quest
 import (
 	"atlas-quest/data"
 	"fmt"
+
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 
 const (
-	questPath          = "data/quests/%d"
+	questPath           = "data/quests/%d"
 	autoStartQuestsPath = "data/quests/auto-start"
 )
 

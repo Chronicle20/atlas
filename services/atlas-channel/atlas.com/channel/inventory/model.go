@@ -2,6 +2,7 @@ package inventory
 
 import (
 	"atlas-channel/compartment"
+
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/google/uuid"
 )
@@ -55,4 +56,3 @@ func (m Model) Compartments() []compartment.Model {
 	}
 	return res
 }
-

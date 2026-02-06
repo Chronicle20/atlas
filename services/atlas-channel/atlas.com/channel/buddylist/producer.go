@@ -2,6 +2,7 @@ package buddylist
 
 import (
 	"atlas-channel/kafka/message/buddylist"
+
 	"github.com/Chronicle20/atlas-constants/character"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/producer"

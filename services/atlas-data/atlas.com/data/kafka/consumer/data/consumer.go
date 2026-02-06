@@ -4,6 +4,7 @@ import (
 	"atlas-data/data"
 	consumer2 "atlas-data/kafka/consumer"
 	"context"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"

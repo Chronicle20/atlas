@@ -8,6 +8,8 @@ import (
 	"context"
 	"time"
 
+	"testing"
+
 	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	tenant "github.com/Chronicle20/atlas-tenant"
@@ -15,7 +17,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestRouteRegistry_GetRouteByStartMap(t *testing.T) {
@@ -210,7 +211,7 @@ func createTestRoute(t *testing.T, name string, startMapId, stagingMapId _map.Id
 }
 
 // Helper to create a ProcessorImpl with mock character processor for testing
-func createTestProcessor(t *testing.T, tenantModel tenant.Model, charP character.Processor) *ProcessorImpl {
+func createTestProcessor(tenantModel tenant.Model, charP character.Processor) *ProcessorImpl {
 	l := logrus.New()
 	l.SetOutput(&bytes.Buffer{})
 	ctx := tenant.WithContext(context.Background(), tenantModel)
@@ -258,7 +259,7 @@ func TestWarpToRouteStartMapOnLogout_FromStagingMap(t *testing.T) {
 	}
 
 	// Create processor with mock
-	processor := createTestProcessor(t, tenantModel, mockCharP)
+	processor := createTestProcessor(tenantModel, mockCharP)
 
 	// Create a field representing character's current location (staging map)
 	currentField := field.NewBuilder(0, 0, stagingMapId).Build()
@@ -315,7 +316,7 @@ func TestWarpToRouteStartMapOnLogout_FromEnRouteMap(t *testing.T) {
 	}
 
 	// Create processor with mock
-	processor := createTestProcessor(t, tenantModel, mockCharP)
+	processor := createTestProcessor(tenantModel, mockCharP)
 
 	// Create a field representing character's current location (en-route map)
 	currentField := field.NewBuilder(0, 0, enRouteMapId).Build()
@@ -370,7 +371,7 @@ func TestWarpToRouteStartMapOnLogout_FromDestinationMap_NoWarp(t *testing.T) {
 	}
 
 	// Create processor with mock
-	processor := createTestProcessor(t, tenantModel, mockCharP)
+	processor := createTestProcessor(tenantModel, mockCharP)
 
 	// Create a field representing character's current location (destination map - NOT staging/en-route)
 	currentField := field.NewBuilder(0, 0, destinationMapId).Build()
@@ -420,7 +421,7 @@ func TestWarpToRouteStartMapOnLogout_FromUnrelatedMap_NoWarp(t *testing.T) {
 	}
 
 	// Create processor with mock
-	processor := createTestProcessor(t, tenantModel, mockCharP)
+	processor := createTestProcessor(tenantModel, mockCharP)
 
 	// Create a field representing character's current location (completely unrelated map)
 	unrelatedMapId := _map.Id(100000000)
@@ -446,16 +447,16 @@ func TestWarpToRouteStartMapOnLogout_MultipleRoutes_CorrectMatch(t *testing.T) {
 
 	// Create two test routes with different staging maps
 	route1 := createTestRoute(t, "Ferry 1",
-		_map.Id(101000300), // start
-		_map.Id(200090000), // staging
+		_map.Id(101000300),            // start
+		_map.Id(200090000),            // staging
 		[]_map.Id{_map.Id(200090100)}, // en-route
-		_map.Id(200000100)) // destination
+		_map.Id(200000100))            // destination
 
 	route2 := createTestRoute(t, "Ferry 2",
-		_map.Id(220000000), // start (different)
-		_map.Id(220090000), // staging (different)
+		_map.Id(220000000),            // start (different)
+		_map.Id(220090000),            // staging (different)
 		[]_map.Id{_map.Id(220090100)}, // en-route (different)
-		_map.Id(220000100)) // destination
+		_map.Id(220000100))            // destination
 
 	// Add to the global registry (used by AllRoutesProvider)
 	getRouteRegistry().AddTenant(tenantModel, []Model{route1, route2})
@@ -476,7 +477,7 @@ func TestWarpToRouteStartMapOnLogout_MultipleRoutes_CorrectMatch(t *testing.T) {
 	}
 
 	// Create processor with mock
-	processor := createTestProcessor(t, tenantModel, mockCharP)
+	processor := createTestProcessor(tenantModel, mockCharP)
 
 	// Test logout from route2's staging map
 	currentField := field.NewBuilder(0, 0, _map.Id(220090000)).Build()
@@ -519,7 +520,7 @@ func TestWarpToRouteStartMapOnLogout_NoRoutes_NoError(t *testing.T) {
 	}
 
 	// Create processor with mock
-	processor := createTestProcessor(t, tenantModel, mockCharP)
+	processor := createTestProcessor(tenantModel, mockCharP)
 
 	// Create a field representing character's current location
 	currentField := field.NewBuilder(0, 0, _map.Id(100000000)).Build()

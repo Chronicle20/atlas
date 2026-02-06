@@ -3,6 +3,7 @@ package equipment
 import (
 	"atlas-rates/rest"
 	"fmt"
+
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 

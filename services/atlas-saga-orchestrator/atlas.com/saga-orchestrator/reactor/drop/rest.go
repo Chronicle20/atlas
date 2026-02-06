@@ -55,7 +55,7 @@ func (r ReactorRestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
 	return result
 }
 
-func (r *ReactorRestModel) SetToOneReferenceID(name, ID string) error {
+func (r *ReactorRestModel) SetToOneReferenceID(_, _ string) error {
 	return nil
 }
 

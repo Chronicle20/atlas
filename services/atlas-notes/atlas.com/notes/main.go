@@ -8,9 +8,10 @@ import (
 	"atlas-notes/note"
 	"atlas-notes/service"
 	"atlas-notes/tracing"
+	"os"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
-	"os"
 )
 
 const serviceName = "atlas-notes"

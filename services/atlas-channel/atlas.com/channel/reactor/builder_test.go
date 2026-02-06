@@ -2,6 +2,7 @@ package reactor_test
 
 import (
 	"atlas-channel/reactor"
+	"errors"
 	"testing"
 
 	"github.com/Chronicle20/atlas-constants/channel"
@@ -48,7 +49,7 @@ func TestBuild_MissingId(t *testing.T) {
 	_, err := reactor.NewModelBuilder(f, 100, "testReactor").
 		Build()
 
-	if err != reactor.ErrInvalidId {
+	if !errors.Is(err, reactor.ErrInvalidId) {
 		t.Errorf("Build() error = %v, want ErrInvalidId", err)
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"atlas-transports/kafka/producer"
 	"context"
 	"errors"
+
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"

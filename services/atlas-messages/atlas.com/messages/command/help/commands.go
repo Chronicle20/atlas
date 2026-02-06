@@ -28,6 +28,7 @@ var commandSyntaxList = []string{
 	"@skill reset <skillId> - Reset a skill",
 	"@buff <target> <skillName> [duration] - Apply a buff by name",
 	"@buff <target> #<skillId> [duration] - Apply a buff by ID",
+	"@consume <target> <itemId> - Apply consumable item effects",
 }
 
 func HelpCommandProducer(_ logrus.FieldLogger) func(_ context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {

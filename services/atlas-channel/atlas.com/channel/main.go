@@ -23,6 +23,7 @@ import (
 	"atlas-channel/kafka/consumer/fame"
 	"atlas-channel/kafka/consumer/guild"
 	"atlas-channel/kafka/consumer/guild/thread"
+	instance_transport "atlas-channel/kafka/consumer/instance_transport"
 	"atlas-channel/kafka/consumer/invite"
 	"atlas-channel/kafka/consumer/map"
 	"atlas-channel/kafka/consumer/message"
@@ -127,6 +128,7 @@ func main() {
 	note3.InitConsumers(l)(cmf)(consumerGroupId)
 	quest.InitConsumers(l)(cmf)(consumerGroupId)
 	route.InitConsumers(l)(cmf)(consumerGroupId)
+	instance_transport.InitConsumers(l)(cmf)(consumerGroupId)
 	saga.InitConsumers(l)(cmf)(consumerGroupId)
 	storage3.InitConsumers(l)(cmf)(consumerGroupId)
 
@@ -203,6 +205,7 @@ func main() {
 				note3.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				quest.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				route.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				instance_transport.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				saga.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				storage3.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 
@@ -317,6 +320,7 @@ func produceWriters() []string {
 		writer.CharacterHint,
 		writer.ReactorHit,
 		writer.GuideTalk,
+		writer.ScriptProgress,
 	}
 }
 

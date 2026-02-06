@@ -25,10 +25,11 @@ type StartCommandBody struct {
 }
 
 const (
-	EnvEventTopic      = "EVENT_TOPIC_INSTANCE_TRANSPORT"
-	EventTypeStarted   = "STARTED"
-	EventTypeCompleted = "COMPLETED"
-	EventTypeCancelled = "CANCELLED"
+	EnvEventTopic           = "EVENT_TOPIC_INSTANCE_TRANSPORT"
+	EventTypeStarted        = "STARTED"
+	EventTypeTransitEntered = "TRANSIT_ENTERED"
+	EventTypeCompleted      = "COMPLETED"
+	EventTypeCancelled      = "CANCELLED"
 
 	CancelReasonMapExit = "MAP_EXIT"
 	CancelReasonLogout  = "LOGOUT"
@@ -46,6 +47,14 @@ type Event[E any] struct {
 type StartedEventBody struct {
 	RouteId    uuid.UUID `json:"routeId"`
 	InstanceId uuid.UUID `json:"instanceId"`
+}
+
+type TransitEnteredEventBody struct {
+	RouteId         uuid.UUID  `json:"routeId"`
+	InstanceId      uuid.UUID  `json:"instanceId"`
+	ChannelId       channel.Id `json:"channelId"`
+	DurationSeconds uint32     `json:"durationSeconds"`
+	Message         string     `json:"message"`
 }
 
 type CompletedEventBody struct {

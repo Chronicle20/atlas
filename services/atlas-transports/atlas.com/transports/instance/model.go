@@ -19,6 +19,7 @@ type RouteModel struct {
 	capacity         uint32
 	boardingWindow   time.Duration
 	travelDuration   time.Duration
+	transitMessage   string
 }
 
 func (m RouteModel) Id() uuid.UUID {
@@ -51,6 +52,10 @@ func (m RouteModel) BoardingWindow() time.Duration {
 
 func (m RouteModel) TravelDuration() time.Duration {
 	return m.travelDuration
+}
+
+func (m RouteModel) TransitMessage() string {
+	return m.transitMessage
 }
 
 func (m RouteModel) MaxLifetime() time.Duration {

@@ -27,7 +27,19 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 	return func(rf func(topic string, handler handler.Handler) (string, error)) {
 		var t string
 		t, _ = topic.EnvProvider(l)(_map2.EnvEventTopicMapStatus)()
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCharacterEnter)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCharacterExit)))
+	}
+}
+
+func handleCharacterEnter(l logrus.FieldLogger, ctx context.Context, e _map2.StatusEvent[_map2.CharacterEnter]) {
+	if e.Type != _map2.EventTopicMapStatusTypeCharacterEnter {
+		return
+	}
+
+	err := instance.NewProcessor(l, ctx).HandleMapEnterAndEmit(e.Body.CharacterId, e.MapId, e.Instance, e.WorldId, e.ChannelId)
+	if err != nil {
+		l.WithError(err).Errorf("Error handling map enter for character [%d].", e.Body.CharacterId)
 	}
 }
 

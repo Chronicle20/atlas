@@ -1360,6 +1360,10 @@
         "writer": "PetCashFoodResult"
       },
       {
+        "opCode": "0x7A",
+        "writer": "ScriptProgress"
+      },
+      {
         "opCode": "0x7C",
         "writer": "CharacterSkillMacro"
       },

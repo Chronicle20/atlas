@@ -22,6 +22,8 @@ type ProcessorMock struct {
 	GetRouteByTransitMapFunc         func(mapId _map.Id) (instance.RouteModel, error)
 	StartTransportFunc               func(mb *message.Buffer) func(characterId uint32, routeId uuid.UUID, f field.Model) error
 	StartTransportAndEmitFunc        func(characterId uint32, routeId uuid.UUID, f field.Model) error
+	HandleMapEnterFunc               func(mb *message.Buffer) func(characterId uint32, mapId _map.Id, instance uuid.UUID, worldId world.Id, channelId channel.Id) error
+	HandleMapEnterAndEmitFunc        func(characterId uint32, mapId _map.Id, instance uuid.UUID, worldId world.Id, channelId channel.Id) error
 	HandleMapExitFunc                func(mb *message.Buffer) func(characterId uint32, mapId _map.Id, instance uuid.UUID, worldId world.Id, channelId channel.Id) error
 	HandleMapExitAndEmitFunc         func(characterId uint32, mapId _map.Id, instance uuid.UUID, worldId world.Id, channelId channel.Id) error
 	HandleLogoutFunc                 func(mb *message.Buffer) func(characterId uint32, worldId world.Id, channelId channel.Id) error
@@ -91,6 +93,22 @@ func (m *ProcessorMock) StartTransport(mb *message.Buffer) func(characterId uint
 func (m *ProcessorMock) StartTransportAndEmit(characterId uint32, routeId uuid.UUID, f field.Model) error {
 	if m.StartTransportAndEmitFunc != nil {
 		return m.StartTransportAndEmitFunc(characterId, routeId, f)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) HandleMapEnter(mb *message.Buffer) func(characterId uint32, mapId _map.Id, instance uuid.UUID, worldId world.Id, channelId channel.Id) error {
+	if m.HandleMapEnterFunc != nil {
+		return m.HandleMapEnterFunc(mb)
+	}
+	return func(characterId uint32, mapId _map.Id, instance uuid.UUID, worldId world.Id, channelId channel.Id) error {
+		return nil
+	}
+}
+
+func (m *ProcessorMock) HandleMapEnterAndEmit(characterId uint32, mapId _map.Id, inst uuid.UUID, worldId world.Id, channelId channel.Id) error {
+	if m.HandleMapEnterAndEmitFunc != nil {
+		return m.HandleMapEnterAndEmitFunc(characterId, mapId, inst, worldId, channelId)
 	}
 	return nil
 }

@@ -240,6 +240,7 @@ type InstanceRouteRestModel struct {
 	Capacity              uint32 `json:"capacity"`
 	BoardingWindowSeconds uint32 `json:"boardingWindowSeconds"`
 	TravelDurationSeconds uint32 `json:"travelDurationSeconds"`
+	TransitMessage        string `json:"transitMessage,omitempty"`
 }
 
 // GetID returns the resource ID
@@ -299,6 +300,8 @@ func TransformInstanceRoute(data map[string]interface{}) (InstanceRouteRestModel
 		travelDurationSeconds = uint32(val)
 	}
 
+	transitMessage, _ := attributes["transitMessage"].(string)
+
 	return InstanceRouteRestModel{
 		Id:                    id,
 		Name:                  name,
@@ -308,6 +311,7 @@ func TransformInstanceRoute(data map[string]interface{}) (InstanceRouteRestModel
 		Capacity:              capacity,
 		BoardingWindowSeconds: boardingWindowSeconds,
 		TravelDurationSeconds: travelDurationSeconds,
+		TransitMessage:        transitMessage,
 	}, nil
 }
 
@@ -324,6 +328,7 @@ func ExtractInstanceRoute(r InstanceRouteRestModel) (map[string]interface{}, err
 			"capacity":              r.Capacity,
 			"boardingWindowSeconds": r.BoardingWindowSeconds,
 			"travelDurationSeconds": r.TravelDurationSeconds,
+			"transitMessage":        r.TransitMessage,
 		},
 	}, nil
 }

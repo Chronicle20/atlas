@@ -56,6 +56,23 @@ func startedEventProvider(worldId world.Id, characterId uint32, routeId uuid.UUI
 	return producer.SingleMessageProvider(key, value)
 }
 
+func transitEnteredEventProvider(worldId world.Id, channelId channel.Id, characterId uint32, routeId uuid.UUID, instanceId uuid.UUID, durationSeconds uint32, message string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &it.Event[it.TransitEnteredEventBody]{
+		WorldId:     worldId,
+		CharacterId: characterId,
+		Type:        it.EventTypeTransitEntered,
+		Body: it.TransitEnteredEventBody{
+			RouteId:         routeId,
+			InstanceId:      instanceId,
+			ChannelId:       channelId,
+			DurationSeconds: durationSeconds,
+			Message:         message,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func completedEventProvider(worldId world.Id, characterId uint32, routeId uuid.UUID, instanceId uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &it.Event[it.CompletedEventBody]{

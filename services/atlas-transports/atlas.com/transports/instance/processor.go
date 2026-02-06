@@ -28,6 +28,9 @@ type Processor interface {
 	StartTransport(mb *message.Buffer) func(characterId uint32, routeId uuid.UUID, f field.Model) error
 	StartTransportAndEmit(characterId uint32, routeId uuid.UUID, f field.Model) error
 
+	HandleMapEnter(mb *message.Buffer) func(characterId uint32, mapId _map.Id, instance uuid.UUID, worldId world.Id, channelId channel.Id) error
+	HandleMapEnterAndEmit(characterId uint32, mapId _map.Id, instance uuid.UUID, worldId world.Id, channelId channel.Id) error
+
 	HandleMapExit(mb *message.Buffer) func(characterId uint32, mapId _map.Id, instance uuid.UUID, worldId world.Id, channelId channel.Id) error
 	HandleMapExitAndEmit(characterId uint32, mapId _map.Id, instance uuid.UUID, worldId world.Id, channelId channel.Id) error
 
@@ -138,6 +141,45 @@ func (p *ProcessorImpl) StartTransport(mb *message.Buffer) func(characterId uint
 func (p *ProcessorImpl) StartTransportAndEmit(characterId uint32, routeId uuid.UUID, f field.Model) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
 		return p.StartTransport(mb)(characterId, routeId, f)
+	})
+}
+
+func (p *ProcessorImpl) HandleMapEnter(mb *message.Buffer) func(characterId uint32, mapId _map.Id, instance uuid.UUID, worldId world.Id, channelId channel.Id) error {
+	return func(characterId uint32, mapId _map.Id, instanceId uuid.UUID, worldId world.Id, channelId channel.Id) error {
+		// Check if this is a transit map
+		if !getRouteRegistry().IsTransitMap(p.t, mapId) {
+			return nil
+		}
+
+		// Check if character is in an instance transport
+		cr := getCharacterRegistry()
+		charInstanceId, ok := cr.GetInstanceForCharacter(characterId)
+		if !ok {
+			return nil
+		}
+
+		// Verify instance matches
+		if charInstanceId != instanceId {
+			return nil
+		}
+
+		// Get the route for duration and message
+		route, err := getRouteRegistry().GetRouteByTransitMap(p.t, mapId)
+		if err != nil {
+			return nil
+		}
+
+		p.l.Debugf("Character [%d] entered transit map [%d] for route [%s], emitting TRANSIT_ENTERED.", characterId, mapId, route.Name())
+
+		// Emit TRANSIT_ENTERED event with duration and message
+		durationSeconds := uint32(route.TravelDuration().Seconds())
+		return mb.Put(it.EnvEventTopic, transitEnteredEventProvider(worldId, channelId, characterId, route.Id(), charInstanceId, durationSeconds, route.TransitMessage()))
+	}
+}
+
+func (p *ProcessorImpl) HandleMapEnterAndEmit(characterId uint32, mapId _map.Id, instance uuid.UUID, worldId world.Id, channelId channel.Id) error {
+	return message.Emit(p.p)(func(mb *message.Buffer) error {
+		return p.HandleMapEnter(mb)(characterId, mapId, instance, worldId, channelId)
 	})
 }
 

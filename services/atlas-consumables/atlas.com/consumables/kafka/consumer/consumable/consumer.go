@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -30,6 +31,7 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestItemConsume)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestScroll)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleApplyConsumableEffect)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCancelConsumableEffect)))
 	}
 }
 
@@ -62,5 +64,16 @@ func handleApplyConsumableEffect(l logrus.FieldLogger, ctx context.Context, c co
 	err := consumable.NewProcessor(l, ctx).ApplyConsumableEffect(c.TransactionId, ch, uint32(c.CharacterId), c.Body.ItemId)
 	if err != nil {
 		l.WithError(err).Errorf("Character [%d] unable to apply consumable effect [%d] as expected.", c.CharacterId, c.Body.ItemId)
+	}
+}
+
+func handleCancelConsumableEffect(l logrus.FieldLogger, ctx context.Context, c consumable2.Command[consumable2.CancelConsumableEffectBody]) {
+	if c.Type != consumable2.CommandCancelConsumableEffect {
+		return
+	}
+	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
+	err := consumable.NewProcessor(l, ctx).CancelConsumableEffect(c.TransactionId, uint32(c.CharacterId), c.Body.ItemId, f)
+	if err != nil {
+		l.WithError(err).Errorf("Character [%d] unable to cancel consumable effect [%d] as expected.", c.CharacterId, c.Body.ItemId)
 	}
 }

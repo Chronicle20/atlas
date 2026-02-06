@@ -4,7 +4,7 @@
   "attributes": {
     "name": "kerning-train-to-subway",
     "startMapId": 103000310,
-    "transitMapId": 103000302,
+    "transitMapIds": [103000302],
     "destinationMapId": 103000100,
     "capacity": 1,
     "boardingWindowSeconds": 1,

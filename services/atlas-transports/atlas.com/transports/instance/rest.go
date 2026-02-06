@@ -13,7 +13,7 @@ type RouteRestModel struct {
 	ID               uuid.UUID     `json:"-"`
 	Name             string        `json:"name"`
 	StartMapId       _map.Id       `json:"startMapId"`
-	TransitMapId     _map.Id       `json:"transitMapId"`
+	TransitMapIds    []_map.Id     `json:"transitMapIds"`
 	DestinationMapId _map.Id       `json:"destinationMapId"`
 	Capacity         uint32        `json:"capacity"`
 	BoardingWindow   time.Duration `json:"boardingWindow"`
@@ -42,7 +42,7 @@ func TransformRoute(m RouteModel) (RouteRestModel, error) {
 		ID:               m.Id(),
 		Name:             m.Name(),
 		StartMapId:       m.StartMapId(),
-		TransitMapId:     m.TransitMapId(),
+		TransitMapIds:    m.TransitMapIds(),
 		DestinationMapId: m.DestinationMapId(),
 		Capacity:         m.Capacity(),
 		BoardingWindow:   m.BoardingWindow(),

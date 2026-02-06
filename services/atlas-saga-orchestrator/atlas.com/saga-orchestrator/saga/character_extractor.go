@@ -50,6 +50,8 @@ func ExtractCharacterId(step Step[any]) uint32 {
 		return p.CharacterId
 	case ApplyConsumableEffectPayload:
 		return uint32(p.CharacterId)
+	case CancelConsumableEffectPayload:
+		return uint32(p.CharacterId)
 	case SendMessagePayload:
 		return p.CharacterId
 	case DepositToStoragePayload:

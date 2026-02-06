@@ -64,6 +64,12 @@ func (e *OperationExecutor) ExecuteOperation(f field.Model, characterId uint32, 
 	case "start_instance_transport":
 		return e.executeStartInstanceTransport(f, characterId, op)
 
+	case "apply_consumable_effect":
+		return e.executeApplyConsumableEffect(f, characterId, op)
+
+	case "cancel_consumable_effect":
+		return e.executeCancelConsumableEffect(f, characterId, op)
+
 	default:
 		e.l.Warnf("Unknown operation type [%s] for character [%d]", op.Type(), characterId)
 		return nil
@@ -454,6 +460,74 @@ func (e *OperationExecutor) executeStartInstanceTransport(f field.Model, charact
 				WorldId:     f.WorldId(),
 				ChannelId:   f.ChannelId(),
 				RouteName:   routeName,
+			},
+		).Build()
+
+	return e.sagaP.Create(s)
+}
+
+// executeApplyConsumableEffect applies consumable effects (buffs) to the character
+func (e *OperationExecutor) executeApplyConsumableEffect(f field.Model, characterId uint32, op operation.Model) error {
+	params := op.Params()
+
+	itemIdStr, ok := params["itemId"]
+	if !ok {
+		return fmt.Errorf("apply_consumable_effect operation missing itemId parameter")
+	}
+
+	itemId, err := strconv.ParseUint(itemIdStr, 10, 32)
+	if err != nil {
+		return fmt.Errorf("invalid itemId [%s]: %w", itemIdStr, err)
+	}
+
+	e.l.Debugf("Applying consumable effect [%d] for character [%d]", itemId, characterId)
+
+	s := saga.NewBuilder().
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("portal-action-apply-effect").
+		AddStep(
+			fmt.Sprintf("apply-effect-%d-%d", characterId, itemId),
+			saga.Pending,
+			saga.ApplyConsumableEffect,
+			saga.ApplyConsumableEffectPayload{
+				CharacterId: characterId,
+				WorldId:     f.WorldId(),
+				ChannelId:   f.ChannelId(),
+				ItemId:      uint32(itemId),
+			},
+		).Build()
+
+	return e.sagaP.Create(s)
+}
+
+// executeCancelConsumableEffect cancels consumable effects (buffs) on the character
+func (e *OperationExecutor) executeCancelConsumableEffect(f field.Model, characterId uint32, op operation.Model) error {
+	params := op.Params()
+
+	itemIdStr, ok := params["itemId"]
+	if !ok {
+		return fmt.Errorf("cancel_consumable_effect operation missing itemId parameter")
+	}
+
+	itemId, err := strconv.ParseUint(itemIdStr, 10, 32)
+	if err != nil {
+		return fmt.Errorf("invalid itemId [%s]: %w", itemIdStr, err)
+	}
+
+	e.l.Debugf("Cancelling consumable effect [%d] for character [%d]", itemId, characterId)
+
+	s := saga.NewBuilder().
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("portal-action-cancel-effect").
+		AddStep(
+			fmt.Sprintf("cancel-effect-%d-%d", characterId, itemId),
+			saga.Pending,
+			saga.CancelConsumableEffect,
+			saga.CancelConsumableEffectPayload{
+				CharacterId: characterId,
+				WorldId:     f.WorldId(),
+				ChannelId:   f.ChannelId(),
+				ItemId:      uint32(itemId),
 			},
 		).Build()
 

@@ -229,7 +229,7 @@ type InstanceRouteRestModel struct {
 	Id                    string `json:"-"`
 	Name                  string `json:"name"`
 	StartMapId            uint32 `json:"startMapId"`
-	TransitMapId          uint32 `json:"transitMapId"`
+	TransitMapIds         []uint32 `json:"transitMapIds"`
 	DestinationMapId      uint32 `json:"destinationMapId"`
 	Capacity              uint32 `json:"capacity"`
 	BoardingWindowSeconds uint32 `json:"boardingWindowSeconds"`
@@ -269,9 +269,13 @@ func TransformInstanceRoute(data map[string]interface{}) (InstanceRouteRestModel
 		startMapId = uint32(val)
 	}
 
-	transitMapId := uint32(0)
-	if val, ok := attributes["transitMapId"].(float64); ok {
-		transitMapId = uint32(val)
+	var transitMapIds []uint32
+	if val, ok := attributes["transitMapIds"].([]interface{}); ok {
+		for _, v := range val {
+			if f, ok := v.(float64); ok {
+				transitMapIds = append(transitMapIds, uint32(f))
+			}
+		}
 	}
 
 	destinationMapId := uint32(0)
@@ -300,7 +304,7 @@ func TransformInstanceRoute(data map[string]interface{}) (InstanceRouteRestModel
 		Id:                    id,
 		Name:                  name,
 		StartMapId:            startMapId,
-		TransitMapId:          transitMapId,
+		TransitMapIds:         transitMapIds,
 		DestinationMapId:      destinationMapId,
 		Capacity:              capacity,
 		BoardingWindowSeconds: boardingWindowSeconds,
@@ -317,7 +321,7 @@ func ExtractInstanceRoute(r InstanceRouteRestModel) (map[string]interface{}, err
 		"attributes": map[string]interface{}{
 			"name":                  r.Name,
 			"startMapId":            r.StartMapId,
-			"transitMapId":          r.TransitMapId,
+			"transitMapIds":         r.TransitMapIds,
 			"destinationMapId":      r.DestinationMapId,
 			"capacity":              r.Capacity,
 			"boardingWindowSeconds": r.BoardingWindowSeconds,

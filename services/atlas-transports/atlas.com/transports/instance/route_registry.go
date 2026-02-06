@@ -69,7 +69,7 @@ func (r *RouteRegistry) GetRouteByTransitMap(t tenant.Model, mapId _map.Id) (Rou
 	defer r.mutex.RUnlock()
 	if tenantRoutes, ok := r.register[t.Id()]; ok {
 		for _, route := range tenantRoutes {
-			if route.TransitMapId() == mapId {
+			if route.HasTransitMap(mapId) {
 				return route, nil
 			}
 		}

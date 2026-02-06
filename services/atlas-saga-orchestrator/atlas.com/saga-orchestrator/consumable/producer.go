@@ -27,3 +27,19 @@ func ApplyConsumableEffectCommandProvider(transactionId uuid.UUID, ch channel.Mo
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+// CancelConsumableEffectCommandProvider creates a Kafka message for cancelling consumable effects
+func CancelConsumableEffectCommandProvider(transactionId uuid.UUID, ch channel.Model, characterId character.Id, itemId item.Id) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &consumable.Command[consumable.CancelConsumableEffectBody]{
+		TransactionId: transactionId,
+		WorldId:       ch.WorldId(),
+		ChannelId:     ch.Id(),
+		CharacterId:   characterId,
+		Type:          consumable.CommandCancelConsumableEffect,
+		Body: consumable.CancelConsumableEffectBody{
+			ItemId: itemId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

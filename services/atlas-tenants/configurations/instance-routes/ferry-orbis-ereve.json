@@ -4,7 +4,7 @@
   "attributes": {
     "name": "sky-ferry-orbis-to-ereve",
     "startMapId": 200000161,
-    "transitMapId": 200090020,
+    "transitMapIds": [200090020],
     "destinationMapId": 130000210,
     "capacity": 1,
     "boardingWindowSeconds": 1,

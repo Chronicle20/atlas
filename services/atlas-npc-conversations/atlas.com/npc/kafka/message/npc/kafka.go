@@ -19,6 +19,7 @@ const (
 	CommandTypeText             = "TEXT"
 	CommandTypeStyle            = "STYLE"
 	CommandTypeNumber           = "NUMBER"
+	CommandTypeSlideMenu        = "SLIDE_MENU"
 )
 
 type Command[E any] struct {
@@ -72,6 +73,10 @@ type CommandNumberBody struct {
 
 type CommandStyleBody struct {
 	Styles []uint32 `json:"styles"`
+}
+
+type CommandSlideMenuBody struct {
+	MenuType uint32 `json:"menuType"`
 }
 
 const (

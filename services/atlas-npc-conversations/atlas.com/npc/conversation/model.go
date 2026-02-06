@@ -37,22 +37,26 @@ const (
 	GenericActionType      StateType = "genericAction"
 	CraftActionType        StateType = "craftAction"
 	TransportActionType    StateType = "transportAction"
-	ListSelectionType      StateType = "listSelection"
-	AskNumberType          StateType = "askNumber"
-	AskStyleType           StateType = "askStyle"
+	ListSelectionType                StateType = "listSelection"
+	DimensionalMirrorSelectionType   StateType = "dimensionalMirrorSelection"
+	AskNumberType                    StateType = "askNumber"
+	AskStyleType                     StateType = "askStyle"
+	AskSlideMenuType                 StateType = "askSlideMenu"
 )
 
 // StateModel represents a state in a conversation
 type StateModel struct {
-	id              string
-	stateType       StateType
-	dialogue        *DialogueModel
-	genericAction   *GenericActionModel
-	craftAction     *CraftActionModel
-	transportAction *TransportActionModel
-	listSelection   *ListSelectionModel
-	askNumber       *AskNumberModel
-	askStyle        *AskStyleModel
+	id                         string
+	stateType                  StateType
+	dialogue                   *DialogueModel
+	genericAction              *GenericActionModel
+	craftAction                *CraftActionModel
+	transportAction            *TransportActionModel
+	listSelection              *ListSelectionModel
+	dimensionalMirrorSelection *DimensionalMirrorSelectionModel
+	askNumber                  *AskNumberModel
+	askStyle                   *AskStyleModel
+	askSlideMenu               *AskSlideMenuModel
 }
 
 // Id returns the state ID
@@ -90,6 +94,11 @@ func (s StateModel) ListSelection() *ListSelectionModel {
 	return s.listSelection
 }
 
+// DimensionalMirrorSelection returns the dimensional mirror selection model (if type is dimensionalMirrorSelection)
+func (s StateModel) DimensionalMirrorSelection() *DimensionalMirrorSelectionModel {
+	return s.dimensionalMirrorSelection
+}
+
 // AskNumber returns the ask number model (if type is askNumber)
 func (s StateModel) AskNumber() *AskNumberModel {
 	return s.askNumber
@@ -100,17 +109,24 @@ func (s StateModel) AskStyle() *AskStyleModel {
 	return s.askStyle
 }
 
+// AskSlideMenu returns the ask slide menu model (if type is askSlideMenu)
+func (s StateModel) AskSlideMenu() *AskSlideMenuModel {
+	return s.askSlideMenu
+}
+
 // StateBuilder is a builder for StateModel
 type StateBuilder struct {
-	id              string
-	stateType       StateType
-	dialogue        *DialogueModel
-	genericAction   *GenericActionModel
-	craftAction     *CraftActionModel
-	transportAction *TransportActionModel
-	listSelection   *ListSelectionModel
-	askNumber       *AskNumberModel
-	askStyle        *AskStyleModel
+	id                         string
+	stateType                  StateType
+	dialogue                   *DialogueModel
+	genericAction              *GenericActionModel
+	craftAction                *CraftActionModel
+	transportAction            *TransportActionModel
+	listSelection              *ListSelectionModel
+	dimensionalMirrorSelection *DimensionalMirrorSelectionModel
+	askNumber                  *AskNumberModel
+	askStyle                   *AskStyleModel
+	askSlideMenu               *AskSlideMenuModel
 }
 
 // NewStateBuilder creates a new StateBuilder
@@ -132,8 +148,10 @@ func (b *StateBuilder) SetDialogue(dialogue *DialogueModel) *StateBuilder {
 	b.craftAction = nil
 	b.transportAction = nil
 	b.listSelection = nil
+	b.dimensionalMirrorSelection = nil
 	b.askNumber = nil
 	b.askStyle = nil
+	b.askSlideMenu = nil
 	return b
 }
 
@@ -145,8 +163,10 @@ func (b *StateBuilder) SetGenericAction(genericAction *GenericActionModel) *Stat
 	b.craftAction = nil
 	b.transportAction = nil
 	b.listSelection = nil
+	b.dimensionalMirrorSelection = nil
 	b.askNumber = nil
 	b.askStyle = nil
+	b.askSlideMenu = nil
 	return b
 }
 
@@ -158,8 +178,10 @@ func (b *StateBuilder) SetCraftAction(craftAction *CraftActionModel) *StateBuild
 	b.craftAction = craftAction
 	b.transportAction = nil
 	b.listSelection = nil
+	b.dimensionalMirrorSelection = nil
 	b.askNumber = nil
 	b.askStyle = nil
+	b.askSlideMenu = nil
 	return b
 }
 
@@ -171,8 +193,10 @@ func (b *StateBuilder) SetTransportAction(transportAction *TransportActionModel)
 	b.craftAction = nil
 	b.transportAction = transportAction
 	b.listSelection = nil
+	b.dimensionalMirrorSelection = nil
 	b.askNumber = nil
 	b.askStyle = nil
+	b.askSlideMenu = nil
 	return b
 }
 
@@ -184,8 +208,25 @@ func (b *StateBuilder) SetListSelection(listSelection *ListSelectionModel) *Stat
 	b.craftAction = nil
 	b.transportAction = nil
 	b.listSelection = listSelection
+	b.dimensionalMirrorSelection = nil
 	b.askNumber = nil
 	b.askStyle = nil
+	b.askSlideMenu = nil
+	return b
+}
+
+// SetDimensionalMirrorSelection sets the dimensional mirror selection model
+func (b *StateBuilder) SetDimensionalMirrorSelection(dimensionalMirrorSelection *DimensionalMirrorSelectionModel) *StateBuilder {
+	b.stateType = DimensionalMirrorSelectionType
+	b.dialogue = nil
+	b.genericAction = nil
+	b.craftAction = nil
+	b.transportAction = nil
+	b.listSelection = nil
+	b.dimensionalMirrorSelection = dimensionalMirrorSelection
+	b.askNumber = nil
+	b.askStyle = nil
+	b.askSlideMenu = nil
 	return b
 }
 
@@ -197,8 +238,10 @@ func (b *StateBuilder) SetAskNumber(askNumber *AskNumberModel) *StateBuilder {
 	b.craftAction = nil
 	b.transportAction = nil
 	b.listSelection = nil
+	b.dimensionalMirrorSelection = nil
 	b.askNumber = askNumber
 	b.askStyle = nil
+	b.askSlideMenu = nil
 	return b
 }
 
@@ -210,8 +253,25 @@ func (b *StateBuilder) SetAskStyle(askStyle *AskStyleModel) *StateBuilder {
 	b.craftAction = nil
 	b.transportAction = nil
 	b.listSelection = nil
+	b.dimensionalMirrorSelection = nil
 	b.askNumber = nil
 	b.askStyle = askStyle
+	b.askSlideMenu = nil
+	return b
+}
+
+// SetAskSlideMenu sets the ask slide menu model
+func (b *StateBuilder) SetAskSlideMenu(askSlideMenu *AskSlideMenuModel) *StateBuilder {
+	b.stateType = AskSlideMenuType
+	b.dialogue = nil
+	b.genericAction = nil
+	b.craftAction = nil
+	b.transportAction = nil
+	b.listSelection = nil
+	b.dimensionalMirrorSelection = nil
+	b.askNumber = nil
+	b.askStyle = nil
+	b.askSlideMenu = askSlideMenu
 	return b
 }
 
@@ -242,6 +302,10 @@ func (b *StateBuilder) Build() (StateModel, error) {
 		if b.listSelection == nil {
 			return StateModel{}, errors.New("listSelection is required for listSelection state")
 		}
+	case DimensionalMirrorSelectionType:
+		if b.dimensionalMirrorSelection == nil {
+			return StateModel{}, errors.New("dimensionalMirrorSelection is required for dimensionalMirrorSelection state")
+		}
 	case AskNumberType:
 		if b.askNumber == nil {
 			return StateModel{}, errors.New("askNumber is required for askNumber state")
@@ -250,20 +314,26 @@ func (b *StateBuilder) Build() (StateModel, error) {
 		if b.askStyle == nil {
 			return StateModel{}, errors.New("askStyle is required for askStyle state")
 		}
+	case AskSlideMenuType:
+		if b.askSlideMenu == nil {
+			return StateModel{}, errors.New("askSlideMenu is required for askSlideMenu state")
+		}
 	default:
 		return StateModel{}, errors.New("invalid state type")
 	}
 
 	return StateModel{
-		id:              b.id,
-		stateType:       b.stateType,
-		dialogue:        b.dialogue,
-		genericAction:   b.genericAction,
-		craftAction:     b.craftAction,
-		transportAction: b.transportAction,
-		listSelection:   b.listSelection,
-		askNumber:       b.askNumber,
-		askStyle:        b.askStyle,
+		id:                         b.id,
+		stateType:                  b.stateType,
+		dialogue:                   b.dialogue,
+		genericAction:              b.genericAction,
+		craftAction:                b.craftAction,
+		transportAction:            b.transportAction,
+		listSelection:              b.listSelection,
+		dimensionalMirrorSelection: b.dimensionalMirrorSelection,
+		askNumber:                  b.askNumber,
+		askStyle:                   b.askStyle,
+		askSlideMenu:               b.askSlideMenu,
 	}, nil
 }
 
@@ -1255,6 +1325,60 @@ func (b *ListSelectionBuilder) Build() (*ListSelectionModel, error) {
 	}, nil
 }
 
+// DimensionalMirrorSelectionModel represents a dimensional mirror selection state
+type DimensionalMirrorSelectionModel struct {
+	choices []ChoiceModel
+}
+
+// Choices returns the dimensional mirror choices
+func (d DimensionalMirrorSelectionModel) Choices() []ChoiceModel {
+	return d.choices
+}
+
+// ChoiceFromSelection returns the choice for a given action and selection
+func (d DimensionalMirrorSelectionModel) ChoiceFromSelection(action byte, selection int32) (ChoiceModel, error) {
+	if action == 0 {
+		for _, choice := range d.choices {
+			if choice.Text() == "Exit" {
+				return choice, nil
+			}
+		}
+		return ChoiceModel{}, errors.New("invalid selection")
+	}
+
+	if selection < 0 || selection >= int32(len(d.choices)) {
+		return ChoiceModel{}, errors.New("invalid selection")
+	}
+	return d.choices[selection], nil
+}
+
+// DimensionalMirrorSelectionBuilder is a builder for DimensionalMirrorSelectionModel
+type DimensionalMirrorSelectionBuilder struct {
+	choices []ChoiceModel
+}
+
+// NewDimensionalMirrorSelectionBuilder creates a new DimensionalMirrorSelectionBuilder
+func NewDimensionalMirrorSelectionBuilder() *DimensionalMirrorSelectionBuilder {
+	return &DimensionalMirrorSelectionBuilder{choices: make([]ChoiceModel, 0)}
+}
+
+// AddChoice adds a choice to the dimensional mirror selection
+func (b *DimensionalMirrorSelectionBuilder) AddChoice(choice ChoiceModel) *DimensionalMirrorSelectionBuilder {
+	b.choices = append(b.choices, choice)
+	return b
+}
+
+// Build builds the DimensionalMirrorSelectionModel
+func (b *DimensionalMirrorSelectionBuilder) Build() (*DimensionalMirrorSelectionModel, error) {
+	if len(b.choices) == 0 {
+		return nil, errors.New("at least one choice is required")
+	}
+
+	return &DimensionalMirrorSelectionModel{
+		choices: b.choices,
+	}, nil
+}
+
 // AskNumberModel represents an ask number state
 type AskNumberModel struct {
 	text         string
@@ -1490,6 +1614,108 @@ func (b *AskStyleBuilder) Build() (*AskStyleModel, error) {
 		stylesContextKey: b.stylesContextKey,
 		contextKey:       b.contextKey,
 		nextState:        b.nextState,
+	}, nil
+}
+
+// AskSlideMenuModel represents an ask slide menu state
+type AskSlideMenuModel struct {
+	title      string
+	menuType   uint32
+	contextKey string
+	choices    []ChoiceModel
+}
+
+// Title returns the slide menu title
+func (a AskSlideMenuModel) Title() string {
+	return a.title
+}
+
+// MenuType returns the menu type
+func (a AskSlideMenuModel) MenuType() uint32 {
+	return a.menuType
+}
+
+// ContextKey returns the context key for storing the selection
+func (a AskSlideMenuModel) ContextKey() string {
+	return a.contextKey
+}
+
+// Choices returns the available choices
+func (a AskSlideMenuModel) Choices() []ChoiceModel {
+	return a.choices
+}
+
+// ChoiceFromSelection returns the choice for a given action and selection
+func (a AskSlideMenuModel) ChoiceFromSelection(action byte, selection int32) (ChoiceModel, error) {
+	if action == 0 {
+		for _, choice := range a.choices {
+			if choice.Text() == "Exit" {
+				return choice, nil
+			}
+		}
+		return ChoiceModel{}, errors.New("invalid selection")
+	}
+
+	if selection < 0 || selection >= int32(len(a.choices)) {
+		return ChoiceModel{}, errors.New("invalid selection")
+	}
+	return a.choices[selection], nil
+}
+
+// AskSlideMenuBuilder is a builder for AskSlideMenuModel
+type AskSlideMenuBuilder struct {
+	title      string
+	menuType   uint32
+	contextKey string
+	choices    []ChoiceModel
+}
+
+// NewAskSlideMenuBuilder creates a new AskSlideMenuBuilder
+func NewAskSlideMenuBuilder() *AskSlideMenuBuilder {
+	return &AskSlideMenuBuilder{
+		choices:    make([]ChoiceModel, 0),
+		contextKey: "selectedOption", // Default context key
+	}
+}
+
+// SetTitle sets the slide menu title
+func (b *AskSlideMenuBuilder) SetTitle(title string) *AskSlideMenuBuilder {
+	b.title = title
+	return b
+}
+
+// SetMenuType sets the menu type
+func (b *AskSlideMenuBuilder) SetMenuType(menuType uint32) *AskSlideMenuBuilder {
+	b.menuType = menuType
+	return b
+}
+
+// SetContextKey sets the context key for storing the selection
+func (b *AskSlideMenuBuilder) SetContextKey(contextKey string) *AskSlideMenuBuilder {
+	b.contextKey = contextKey
+	return b
+}
+
+// AddChoice adds a choice to the slide menu
+func (b *AskSlideMenuBuilder) AddChoice(choice ChoiceModel) *AskSlideMenuBuilder {
+	b.choices = append(b.choices, choice)
+	return b
+}
+
+// Build builds the AskSlideMenuModel
+func (b *AskSlideMenuBuilder) Build() (*AskSlideMenuModel, error) {
+	if len(b.choices) == 0 {
+		return nil, errors.New("at least one choice is required")
+	}
+	if b.contextKey == "" {
+		b.contextKey = "selectedOption" // Ensure default
+	}
+
+	return &AskSlideMenuModel{
+		title:      b.title,
+		menuType:   b.menuType,
+		contextKey: b.contextKey,
+		choices:    b.choices,
 	}, nil
 }
 

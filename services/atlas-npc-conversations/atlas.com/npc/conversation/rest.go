@@ -16,9 +16,11 @@ type RestStateModel struct {
 	GenericAction   *RestGenericActionModel    `json:"genericAction,omitempty"`   // Generic action model (if type is genericAction)
 	CraftAction     *RestCraftActionModel      `json:"craftAction,omitempty"`     // Craft action model (if type is craftAction)
 	TransportAction *RestTransportActionModel  `json:"transportAction,omitempty"` // Transport action model (if type is transportAction)
-	ListSelection   *RestListSelectionModel    `json:"listSelection,omitempty"`   // List selection model (if type is listSelection)
-	AskNumber       *RestAskNumberModel        `json:"askNumber,omitempty"`       // Ask number model (if type is askNumber)
-	AskStyle        *RestAskStyleModel         `json:"askStyle,omitempty"`        // Ask style model (if type is askStyle)
+	ListSelection              *RestListSelectionModel              `json:"listSelection,omitempty"`              // List selection model (if type is listSelection)
+	DimensionalMirrorSelection *RestDimensionalMirrorSelectionModel `json:"dimensionalMirrorSelection,omitempty"` // Dimensional mirror selection model (if type is dimensionalMirrorSelection)
+	AskNumber                  *RestAskNumberModel                  `json:"askNumber,omitempty"`                  // Ask number model (if type is askNumber)
+	AskStyle                   *RestAskStyleModel                   `json:"askStyle,omitempty"`                   // Ask style model (if type is askStyle)
+	AskSlideMenu               *RestAskSlideMenuModel               `json:"askSlideMenu,omitempty"`               // Ask slide menu model (if type is askSlideMenu)
 }
 
 // GetID returns the resource ID
@@ -142,6 +144,11 @@ type RestListSelectionModel struct {
 	Choices []RestChoiceModel `json:"choices,omitempty"` // Dialogue choices
 }
 
+// RestDimensionalMirrorSelectionModel represents the REST model for dimensional mirror selection states
+type RestDimensionalMirrorSelectionModel struct {
+	Choices []RestChoiceModel `json:"choices,omitempty"` // Destination choices
+}
+
 // RestAskNumberModel represents the REST model for ask number states
 type RestAskNumberModel struct {
 	Text         string `json:"text"`                 // Ask number text
@@ -159,6 +166,14 @@ type RestAskStyleModel struct {
 	StylesContextKey string   `json:"stylesContextKey,omitempty"` // Context key containing dynamic styles (optional if styles provided)
 	ContextKey       string   `json:"contextKey,omitempty"`       // Context key (defaults to "selectedStyle")
 	NextState        string   `json:"nextState,omitempty"`        // Next state ID
+}
+
+// RestAskSlideMenuModel represents the REST model for ask slide menu states
+type RestAskSlideMenuModel struct {
+	Title      string            `json:"title"`                 // Slide menu title
+	MenuType   uint32            `json:"menuType"`              // Menu type (determines UI style)
+	ContextKey string            `json:"contextKey,omitempty"`  // Context key (defaults to "selectedOption")
+	Choices    []RestChoiceModel `json:"choices,omitempty"`     // Menu choices
 }
 
 // RestOptionSetModel represents the REST model for option sets
@@ -272,6 +287,15 @@ func TransformState(m StateModel) (RestStateModel, error) {
 			}
 			restState.ListSelection = &restListSelection
 		}
+	case DimensionalMirrorSelectionType:
+		dimensionalMirrorSelection := m.DimensionalMirrorSelection()
+		if dimensionalMirrorSelection != nil {
+			restDimensionalMirrorSelection, err := TransformDimensionalMirrorSelection(*dimensionalMirrorSelection)
+			if err != nil {
+				return RestStateModel{}, err
+			}
+			restState.DimensionalMirrorSelection = &restDimensionalMirrorSelection
+		}
 	case AskNumberType:
 		askNumber := m.AskNumber()
 		if askNumber != nil {
@@ -283,6 +307,12 @@ func TransformState(m StateModel) (RestStateModel, error) {
 		if askStyle != nil {
 			restAskStyle := TransformAskStyle(*askStyle)
 			restState.AskStyle = &restAskStyle
+		}
+	case AskSlideMenuType:
+		askSlideMenu := m.AskSlideMenu()
+		if askSlideMenu != nil {
+			restAskSlideMenu := TransformAskSlideMenu(*askSlideMenu)
+			restState.AskSlideMenu = &restAskSlideMenu
 		}
 	}
 
@@ -397,6 +427,22 @@ func TransformListSelection(m ListSelectionModel) (RestListSelectionModel, error
 	}, nil
 }
 
+// TransformDimensionalMirrorSelection converts a DimensionalMirrorSelectionModel to a RestDimensionalMirrorSelectionModel
+func TransformDimensionalMirrorSelection(m DimensionalMirrorSelectionModel) (RestDimensionalMirrorSelectionModel, error) {
+	restChoices := make([]RestChoiceModel, 0, len(m.Choices()))
+	for _, choice := range m.Choices() {
+		restChoices = append(restChoices, RestChoiceModel{
+			Text:      choice.Text(),
+			NextState: choice.NextState(),
+			Context:   choice.Context(),
+		})
+	}
+
+	return RestDimensionalMirrorSelectionModel{
+		Choices: restChoices,
+	}, nil
+}
+
 // TransformAskNumber converts an AskNumberModel to a RestAskNumberModel
 func TransformAskNumber(m AskNumberModel) RestAskNumberModel {
 	return RestAskNumberModel{
@@ -417,6 +463,25 @@ func TransformAskStyle(m AskStyleModel) RestAskStyleModel {
 		StylesContextKey: m.StylesContextKey(),
 		ContextKey:       m.ContextKey(),
 		NextState:        m.NextState(),
+	}
+}
+
+// TransformAskSlideMenu converts an AskSlideMenuModel to a RestAskSlideMenuModel
+func TransformAskSlideMenu(m AskSlideMenuModel) RestAskSlideMenuModel {
+	restChoices := make([]RestChoiceModel, 0, len(m.Choices()))
+	for _, choice := range m.Choices() {
+		restChoices = append(restChoices, RestChoiceModel{
+			Text:      choice.Text(),
+			NextState: choice.NextState(),
+			Context:   choice.Context(),
+		})
+	}
+
+	return RestAskSlideMenuModel{
+		Title:      m.Title(),
+		MenuType:   m.MenuType(),
+		ContextKey: m.ContextKey(),
+		Choices:    restChoices,
 	}
 }
 
@@ -489,6 +554,15 @@ func ExtractState(r RestStateModel) (StateModel, error) {
 			return StateModel{}, err
 		}
 		stateBuilder.SetListSelection(listSelection)
+	case DimensionalMirrorSelectionType:
+		if r.DimensionalMirrorSelection == nil {
+			return StateModel{}, fmt.Errorf("dimensionalMirrorSelection is required for dimensionalMirrorSelection state")
+		}
+		dimensionalMirrorSelection, err := ExtractDimensionalMirrorSelection(*r.DimensionalMirrorSelection)
+		if err != nil {
+			return StateModel{}, err
+		}
+		stateBuilder.SetDimensionalMirrorSelection(dimensionalMirrorSelection)
 	case AskNumberType:
 		if r.AskNumber == nil {
 			return StateModel{}, fmt.Errorf("askNumber is required for askNumber state")
@@ -507,6 +581,15 @@ func ExtractState(r RestStateModel) (StateModel, error) {
 			return StateModel{}, err
 		}
 		stateBuilder.SetAskStyle(askStyle)
+	case AskSlideMenuType:
+		if r.AskSlideMenu == nil {
+			return StateModel{}, fmt.Errorf("askSlideMenu is required for askSlideMenu state")
+		}
+		askSlideMenu, err := ExtractAskSlideMenu(*r.AskSlideMenu)
+		if err != nil {
+			return StateModel{}, err
+		}
+		stateBuilder.SetAskSlideMenu(askSlideMenu)
 	default:
 		return StateModel{}, fmt.Errorf("invalid state type: %s", r.StateType)
 	}
@@ -665,6 +748,21 @@ func ExtractListSelection(r RestListSelectionModel) (*ListSelectionModel, error)
 	return b.Build()
 }
 
+// ExtractDimensionalMirrorSelection converts a RestDimensionalMirrorSelectionModel to a DimensionalMirrorSelectionModel
+func ExtractDimensionalMirrorSelection(r RestDimensionalMirrorSelectionModel) (*DimensionalMirrorSelectionModel, error) {
+	b := NewDimensionalMirrorSelectionBuilder()
+
+	for _, restChoice := range r.Choices {
+		choice, err := ExtractChoice(restChoice)
+		if err != nil {
+			return nil, err
+		}
+		b.AddChoice(choice)
+	}
+
+	return b.Build()
+}
+
 // ExtractAskNumber converts a RestAskNumberModel to an AskNumberModel
 func ExtractAskNumber(r RestAskNumberModel) (*AskNumberModel, error) {
 	b := NewAskNumberBuilder().
@@ -699,6 +797,27 @@ func ExtractAskStyle(r RestAskStyleModel) (*AskStyleModel, error) {
 
 	if r.ContextKey != "" {
 		b.SetContextKey(r.ContextKey)
+	}
+
+	return b.Build()
+}
+
+// ExtractAskSlideMenu converts a RestAskSlideMenuModel to an AskSlideMenuModel
+func ExtractAskSlideMenu(r RestAskSlideMenuModel) (*AskSlideMenuModel, error) {
+	b := NewAskSlideMenuBuilder().
+		SetTitle(r.Title).
+		SetMenuType(r.MenuType)
+
+	if r.ContextKey != "" {
+		b.SetContextKey(r.ContextKey)
+	}
+
+	for _, restChoice := range r.Choices {
+		choice, err := ExtractChoice(restChoice)
+		if err != nil {
+			return nil, err
+		}
+		b.AddChoice(choice)
 	}
 
 	return b.Build()

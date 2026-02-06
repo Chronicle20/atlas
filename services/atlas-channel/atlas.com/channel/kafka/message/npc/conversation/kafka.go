@@ -6,11 +6,12 @@ import (
 )
 
 const (
-	EnvCommandTopic   = "COMMAND_TOPIC_NPC_CONVERSATION"
-	CommandTypeSimple = "SIMPLE"
-	CommandTypeText   = "TEXT"
-	CommandTypeStyle  = "STYLE"
-	CommandTypeNumber = "NUMBER"
+	EnvCommandTopic      = "COMMAND_TOPIC_NPC_CONVERSATION"
+	CommandTypeSimple    = "SIMPLE"
+	CommandTypeText      = "TEXT"
+	CommandTypeStyle     = "STYLE"
+	CommandTypeNumber    = "NUMBER"
+	CommandTypeSlideMenu = "SLIDE_MENU"
 )
 
 type CommandEvent[E any] struct {
@@ -38,4 +39,8 @@ type CommandNumberBody struct {
 
 type CommandStyleBody struct {
 	Styles []uint32 `json:"styles"`
+}
+
+type CommandSlideMenuBody struct {
+	MenuType uint32 `json:"menuType"`
 }

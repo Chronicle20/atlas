@@ -17,6 +17,7 @@ type RouteBuilder struct {
 	capacity         uint32
 	boardingWindow   time.Duration
 	travelDuration   time.Duration
+	transitMessage   string
 }
 
 func NewRouteBuilder(name string) *RouteBuilder {
@@ -61,6 +62,11 @@ func (b *RouteBuilder) SetTravelDuration(travelDuration time.Duration) *RouteBui
 	return b
 }
 
+func (b *RouteBuilder) SetTransitMessage(transitMessage string) *RouteBuilder {
+	b.transitMessage = transitMessage
+	return b
+}
+
 func (b *RouteBuilder) Build() (RouteModel, error) {
 	if b.name == "" {
 		return RouteModel{}, errors.New("route name must not be empty")
@@ -84,5 +90,6 @@ func (b *RouteBuilder) Build() (RouteModel, error) {
 		capacity:         b.capacity,
 		boardingWindow:   b.boardingWindow,
 		travelDuration:   b.travelDuration,
+		transitMessage:   b.transitMessage,
 	}, nil
 }

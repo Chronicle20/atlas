@@ -23,6 +23,10 @@ type StatusEvent[E any] struct {
 	Body          E          `json:"body"`
 }
 
+type CharacterEnter struct {
+	CharacterId uint32 `json:"characterId"`
+}
+
 type CharacterExit struct {
 	CharacterId uint32 `json:"characterId"`
 }

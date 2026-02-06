@@ -17,6 +17,7 @@ type InstanceRouteRestModel struct {
 	Capacity              uint32    `json:"capacity"`
 	BoardingWindowSeconds uint32    `json:"boardingWindowSeconds"`
 	TravelDurationSeconds uint32    `json:"travelDurationSeconds"`
+	TransitMessage        string    `json:"transitMessage"`
 }
 
 func (r InstanceRouteRestModel) GetID() string {
@@ -45,5 +46,6 @@ func ExtractRoute(r InstanceRouteRestModel) (instance.RouteModel, error) {
 		SetCapacity(r.Capacity).
 		SetBoardingWindow(time.Duration(r.BoardingWindowSeconds) * time.Second).
 		SetTravelDuration(time.Duration(r.TravelDurationSeconds) * time.Second).
+		SetTransitMessage(r.TransitMessage).
 		Build()
 }

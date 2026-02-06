@@ -64,37 +64,37 @@ func GetPointType(arg bool) PointType {
 	return PointTypeCredit
 }
 
-func (p *ProcessorImpl) RequestInventoryIncreasePurchaseByType(characterId uint32, isPoints bool, currency uint32, inventoryType byte) error {
+func (p *ProcessorImpl) RequestInventoryIncreasePurchaseByType(characterId uint32, _ bool, currency uint32, inventoryType byte) error {
 	p.l.Debugf("Character [%d] purchasing inventory [%d] expansion using currency [%d].", characterId, inventoryType, currency)
 	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestInventoryIncreaseByTypeCommandProvider(characterId, currency, inventoryType))
 }
 
-func (p *ProcessorImpl) RequestInventoryIncreasePurchaseByItem(characterId uint32, isPoints bool, currency uint32, serialNumber uint32) error {
+func (p *ProcessorImpl) RequestInventoryIncreasePurchaseByItem(characterId uint32, _ bool, currency uint32, serialNumber uint32) error {
 	p.l.Debugf("Character [%d] purchasing inventory expansion via item [%d] using currency [%d]", characterId, serialNumber, currency)
 	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestInventoryIncreaseByItemCommandProvider(characterId, currency, serialNumber))
 }
 
-func (p *ProcessorImpl) RequestStorageIncreasePurchase(characterId uint32, isPoints bool, currency uint32) error {
+func (p *ProcessorImpl) RequestStorageIncreasePurchase(characterId uint32, _ bool, currency uint32) error {
 	p.l.Debugf("Character [%d] purchasing storage expansion using currency [%d].", characterId, currency)
 	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestStorageIncreaseCommandProvider(characterId, currency))
 }
 
-func (p *ProcessorImpl) RequestStorageIncreasePurchaseByItem(characterId uint32, isPoints bool, currency uint32, serialNumber uint32) error {
+func (p *ProcessorImpl) RequestStorageIncreasePurchaseByItem(characterId uint32, _ bool, currency uint32, serialNumber uint32) error {
 	p.l.Debugf("Character [%d] purchasing storage expansion via item [%d] using currency [%d]", characterId, serialNumber, currency)
 	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestStorageIncreaseByItemCommandProvider(characterId, currency, serialNumber))
 }
 
-func (p *ProcessorImpl) RequestCharacterSlotIncreasePurchaseByItem(characterId uint32, isPoints bool, currency uint32, serialNumber uint32) error {
+func (p *ProcessorImpl) RequestCharacterSlotIncreasePurchaseByItem(characterId uint32, _ bool, currency uint32, serialNumber uint32) error {
 	p.l.Debugf("Character [%d] purchasing character slot expansion via item [%d] using currency [%d]", characterId, serialNumber, currency)
 	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestCharacterSlotIncreaseByItemCommandProvider(characterId, currency, serialNumber))
 }
 
-func (p *ProcessorImpl) RequestPurchase(characterId uint32, serialNumber uint32, isPoints bool, currency uint32, zero uint32) error {
+func (p *ProcessorImpl) RequestPurchase(characterId uint32, serialNumber uint32, _ bool, currency uint32, zero uint32) error {
 	p.l.Debugf("Character [%d] purchasing [%d] with currency [%d], zero [%d]", characterId, serialNumber, currency, zero)
 	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestPurchaseCommandProvider(characterId, serialNumber, currency))
 }
 
-func (p *ProcessorImpl) MoveFromCashInventory(accountId uint32, characterId uint32, serialNumber uint64, inventoryType byte, slot int16) error {
+func (p *ProcessorImpl) MoveFromCashInventory(accountId uint32, characterId uint32, serialNumber uint64, inventoryType byte, _ int16) error {
 	p.l.Infof("Character [%d] moving cash item [%d] to inventory [%d].", characterId, serialNumber, inventoryType)
 
 	// Create saga transaction for withdrawing from cash shop
@@ -107,9 +107,9 @@ func (p *ProcessorImpl) MoveFromCashInventory(accountId uint32, characterId uint
 
 	// Create the high-level withdrawal step (will be expanded by saga-orchestrator)
 	step := saga.Step[any]{
-		StepId:  "withdraw_from_cash_shop",
-		Status:  saga.Pending,
-		Action:  saga.WithdrawFromCashShop,
+		StepId: "withdraw_from_cash_shop",
+		Status: saga.Pending,
+		Action: saga.WithdrawFromCashShop,
 		Payload: saga.WithdrawFromCashShopPayload{
 			TransactionId:   transactionId,
 			CharacterId:     characterId,
@@ -152,9 +152,9 @@ func (p *ProcessorImpl) MoveToCashInventory(accountId uint32, characterId uint32
 
 	// Create the high-level transfer step (will be expanded by saga-orchestrator)
 	step := saga.Step[any]{
-		StepId:  "transfer_to_cash_shop",
-		Status:  saga.Pending,
-		Action:  saga.TransferToCashShop,
+		StepId: "transfer_to_cash_shop",
+		Status: saga.Pending,
+		Action: saga.TransferToCashShop,
 		Payload: saga.TransferToCashShopPayload{
 			TransactionId:       transactionId,
 			CharacterId:         characterId,

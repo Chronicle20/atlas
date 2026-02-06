@@ -2,6 +2,7 @@ package compartment
 
 import (
 	"atlas-cashshop/asset"
+
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/google/uuid"
 )

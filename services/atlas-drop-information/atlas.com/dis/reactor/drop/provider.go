@@ -2,6 +2,7 @@ package drop
 
 import (
 	"atlas-drops-information/database"
+
 	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas-model/model"

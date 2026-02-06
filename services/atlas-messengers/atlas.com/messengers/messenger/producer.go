@@ -2,6 +2,7 @@ package messenger
 
 import (
 	"atlas-messengers/kafka/message/messenger"
+
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"

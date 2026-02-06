@@ -18,7 +18,7 @@ func GetByAssetId(l logrus.FieldLogger, db *gorm.DB) func(assetId uint32) (Model
 }
 
 // GetByAssetIds retrieves stackable data for multiple assets
-func GetByAssetIds(l logrus.FieldLogger, db *gorm.DB) func(assetIds []uint32) ([]Model, error) {
+func GetByAssetIds(db *gorm.DB) func(assetIds []uint32) ([]Model, error) {
 	return func(assetIds []uint32) ([]Model, error) {
 		if len(assetIds) == 0 {
 			return []Model{}, nil

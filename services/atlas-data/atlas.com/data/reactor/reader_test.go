@@ -2,9 +2,10 @@ package reactor
 
 import (
 	"atlas-data/xml"
+	"testing"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus/hooks/test"
-	"testing"
 )
 
 const testXML = `

@@ -16,11 +16,3 @@ func CharacterIdsInFieldProvider(l logrus.FieldLogger) func(ctx context.Context)
 		}
 	}
 }
-
-func GetCharacterIdsInField(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model) ([]uint32, error) {
-	return func(ctx context.Context) func(f field.Model) ([]uint32, error) {
-		return func(f field.Model) ([]uint32, error) {
-			return CharacterIdsInFieldProvider(l)(ctx)(f)()
-		}
-	}
-}

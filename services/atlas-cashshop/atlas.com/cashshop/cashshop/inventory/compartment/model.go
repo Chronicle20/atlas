@@ -2,6 +2,7 @@ package compartment
 
 import (
 	"atlas-cashshop/cashshop/inventory/asset"
+
 	"github.com/google/uuid"
 )
 

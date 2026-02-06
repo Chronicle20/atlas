@@ -128,7 +128,7 @@ func TestProcessor_Deposit_Equipable(t *testing.T) {
 
 	// Verify asset was created
 	te := tenant.MustFromContext(ctx)
-	a, err := asset.GetById(testLogger(), db, te.Id())(assetId)
+	a, err := asset.GetById(db, te.Id())(assetId)
 	if err != nil {
 		t.Fatalf("Failed to get asset: %v", err)
 	}
@@ -209,14 +209,14 @@ func TestProcessor_Withdraw_Full(t *testing.T) {
 		AssetId: assetConstants.Id(assetId),
 	}
 
-	err = p.Withdraw(worldId, accountId, withdrawBody)
+	err = p.Withdraw(withdrawBody)
 	if err != nil {
 		t.Fatalf("Failed to withdraw item: %v", err)
 	}
 
 	// Verify asset was deleted
 	te := tenant.MustFromContext(ctx)
-	_, err = asset.GetById(testLogger(), db, te.Id())(assetId)
+	_, err = asset.GetById(db, te.Id())(assetId)
 	if err == nil {
 		t.Fatalf("Asset should have been deleted")
 	}
@@ -255,7 +255,7 @@ func TestProcessor_Withdraw_Partial(t *testing.T) {
 		Quantity: 30,
 	}
 
-	err = p.Withdraw(worldId, accountId, withdrawBody)
+	err = p.Withdraw(withdrawBody)
 	if err != nil {
 		t.Fatalf("Failed to withdraw item: %v", err)
 	}
@@ -451,14 +451,14 @@ func TestProcessor_DepositRollback(t *testing.T) {
 		AssetId: assetConstants.Id(assetId),
 	}
 
-	err = p.DepositRollback(worldId, accountId, rollbackBody)
+	err = p.DepositRollback(rollbackBody)
 	if err != nil {
 		t.Fatalf("Failed to rollback deposit: %v", err)
 	}
 
 	// Verify asset was deleted
 	te := tenant.MustFromContext(ctx)
-	_, err = asset.GetById(testLogger(), db, te.Id())(assetId)
+	_, err = asset.GetById(db, te.Id())(assetId)
 	if err == nil {
 		t.Fatalf("Asset should have been deleted on rollback")
 	}
@@ -501,7 +501,7 @@ func TestProcessor_MultipleDeposits(t *testing.T) {
 	}
 
 	te := tenant.MustFromContext(ctx)
-	assets, err := asset.GetByStorageId(testLogger(), db, te.Id())(s.Id())
+	assets, err := asset.GetByStorageId(db, te.Id())(s.Id())
 	if err != nil {
 		t.Fatalf("Failed to get assets: %v", err)
 	}
@@ -558,7 +558,7 @@ func TestProcessor_DeleteByAccountId(t *testing.T) {
 	}
 
 	// Verify storage and assets exist before deletion
-	assets, err := asset.GetByStorageId(testLogger(), db, te.Id())(s.Id())
+	assets, err := asset.GetByStorageId(db, te.Id())(s.Id())
 	if err != nil {
 		t.Fatalf("Failed to get assets: %v", err)
 	}

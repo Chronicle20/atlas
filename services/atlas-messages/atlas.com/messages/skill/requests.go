@@ -3,6 +3,7 @@ package skill
 import (
 	"atlas-messages/rest"
 	"fmt"
+
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 

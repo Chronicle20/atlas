@@ -1,14 +1,15 @@
 package character
 
 import (
+	"strconv"
+	"strings"
+
 	"github.com/Chronicle20/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-	"strconv"
-	"strings"
 )
 
 type EntityUpdateFunction func() ([]string, func(e *entity))
@@ -71,14 +72,14 @@ func update(db *gorm.DB, tenantId uuid.UUID, characterId uint32, modifiers ...En
 	// Build a map of column->value updates instead of using a struct
 	// This avoids GORM including zero values from unset fields
 	updates := make(map[string]interface{})
-	
+
 	for _, modifier := range modifiers {
 		columns, updateFunc := modifier()
-		
+
 		// Create a temporary entity to capture the update
 		tempEntity := &entity{}
 		updateFunc(tempEntity)
-		
+
 		// Extract the specific field values that were set
 		for _, column := range columns {
 			switch column {
@@ -141,11 +142,11 @@ func update(db *gorm.DB, tenantId uuid.UUID, characterId uint32, modifiers ...En
 			}
 		}
 	}
-	
+
 	if len(updates) == 0 {
 		return nil
 	}
-	
+
 	return db.Model(&entity{TenantId: tenantId, ID: characterId}).Updates(updates).Error
 }
 

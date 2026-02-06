@@ -13,10 +13,11 @@ import (
 	"atlas-character/session/history"
 	"atlas-character/tasks"
 	"atlas-character/tracing"
-	"github.com/Chronicle20/atlas-kafka/consumer"
-	"github.com/Chronicle20/atlas-rest/server"
 	"os"
 	"time"
+
+	"github.com/Chronicle20/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas-rest/server"
 )
 import _ "net/http/pprof"
 

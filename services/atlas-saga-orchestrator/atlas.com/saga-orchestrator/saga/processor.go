@@ -977,7 +977,7 @@ func (p *ProcessorImpl) expandTransferToCashShop(st Step[any]) ([]Step[any], err
 				AccountId:       payload.AccountId,
 				CompartmentId:   cashComp.Id,
 				CompartmentType: payload.CompartmentType,
-				CashId:          int64(payload.CashId), // Preserve the CashId from the source item
+				CashId:          payload.CashId, // Preserve the CashId from the source item
 				TemplateId:      foundAsset.TemplateId,
 				ReferenceId:     foundAsset.ReferenceId,
 				ReferenceType:   foundAsset.ReferenceType,

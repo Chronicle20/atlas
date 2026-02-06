@@ -16,6 +16,8 @@ import (
 	"atlas-npc/kafka/producer"
 	"context"
 	"errors"
+	"math"
+
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/item"
 	skill2 "github.com/Chronicle20/atlas-constants/skill"
@@ -24,7 +26,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"math"
 )
 
 type Processor interface {
@@ -581,7 +582,7 @@ func (p *ProcessorImpl) Recharge(mb *message.Buffer) func(characterId uint32) fu
 			}
 			price := math.Ceil(cm.UnitPrice() * float64(uint32(slotMax)-rim.Quantity()))
 			if c.Meso() < uint32(price) {
-				p.l.Debugf("Character [%d] has [%d] meso. Needs [%d] meso to recharge item [%d] in slot [%d].", characterId, c.Meso(), price, rim.TemplateId(), slot)
+				p.l.Debugf("Character [%d] has [%d] meso. Needs [%f] meso to recharge item [%d] in slot [%d].", characterId, c.Meso(), price, rim.TemplateId(), slot)
 				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorNotEnoughMoney2))
 			}
 

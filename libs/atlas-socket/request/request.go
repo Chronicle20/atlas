@@ -2,9 +2,10 @@ package request
 
 import (
 	"fmt"
-	"golang.org/x/text/transform"
 	"io"
 	"strings"
+
+	"golang.org/x/text/transform"
 )
 import "golang.org/x/text/encoding/japanese"
 

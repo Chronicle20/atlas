@@ -1,9 +1,10 @@
 package logger
 
 import (
+	"os"
+
 	"github.com/sirupsen/logrus"
 	"go.elastic.co/ecslogrus"
-	"os"
 )
 
 func CreateLogger(serviceName string) *logrus.Logger {

@@ -1,8 +1,9 @@
 package consumable
 
 import (
-	"github.com/Chronicle20/atlas-model/model"
 	"strconv"
+
+	"github.com/Chronicle20/atlas-model/model"
 )
 
 type RestModel struct {

@@ -2,10 +2,11 @@ package configuration
 
 import (
 	"context"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 	"log"
 	"sync"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 )
 
 var once sync.Once

@@ -3,6 +3,7 @@ package npc
 import (
 	"atlas-npc-conversations/conversation"
 	"fmt"
+
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
 )
@@ -13,9 +14,9 @@ const (
 
 // RestModel represents the REST model for NPC conversations
 type RestModel struct {
-	Id         uuid.UUID                   `json:"-"`          // Conversation ID
-	NpcId      uint32                      `json:"npcId"`      // NPC ID
-	StartState string                      `json:"startState"` // Start state ID
+	Id         uuid.UUID                     `json:"-"`          // Conversation ID
+	NpcId      uint32                        `json:"npcId"`      // NPC ID
+	StartState string                        `json:"startState"` // Start state ID
 	States     []conversation.RestStateModel `json:"states"`     // Conversation states
 }
 
@@ -55,17 +56,17 @@ func (r RestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
 }
 
 // SetToOneReferenceID sets a to-one reference ID
-func (r *RestModel) SetToOneReferenceID(name, ID string) error {
+func (r *RestModel) SetToOneReferenceID(_, _ string) error {
 	return nil
 }
 
 // SetToManyReferenceIDs sets to-many reference IDs
-func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
+func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error {
 	return nil
 }
 
 // SetReferencedStructs sets referenced structs
-func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonapi.Data) error {
+func (r *RestModel) SetReferencedStructs(_ map[string]map[string]jsonapi.Data) error {
 	return nil
 }
 

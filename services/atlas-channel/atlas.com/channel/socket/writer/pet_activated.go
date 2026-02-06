@@ -3,6 +3,7 @@ package writer
 import (
 	"atlas-channel/pet"
 	model2 "atlas-channel/socket/model"
+
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"

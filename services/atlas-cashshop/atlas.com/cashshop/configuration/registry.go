@@ -2,11 +2,11 @@ package configuration
 
 import (
 	"atlas-cashshop/configuration/tenant"
-	"atlas-cashshop/configuration/tenant/cashshop/commodities"
 	"context"
+	"sync"
+
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-	"sync"
 )
 
 var (
@@ -47,25 +47,6 @@ func GetHourlyExpirations(l logrus.FieldLogger, ctx context.Context, tenantId uu
 
 	result := make(map[uint32]uint32)
 	for _, he := range cfg.CashShop.Commodities.HourlyExpirations {
-		result[he.TemplateId] = he.Hours
-	}
-	return result
-}
-
-func GetHourlyExpiration(l logrus.FieldLogger, ctx context.Context, tenantId uuid.UUID, templateId uint32) (uint32, bool) {
-	cfg, _ := GetTenantConfig(l, ctx, tenantId)
-
-	for _, he := range cfg.CashShop.Commodities.HourlyExpirations {
-		if he.TemplateId == templateId {
-			return he.Hours, true
-		}
-	}
-	return 0, false
-}
-
-func HourlyExpirationsFromSlice(expirations []commodities.HourlyExpiration) map[uint32]uint32 {
-	result := make(map[uint32]uint32)
-	for _, he := range expirations {
 		result[he.TemplateId] = he.Hours
 	}
 	return result

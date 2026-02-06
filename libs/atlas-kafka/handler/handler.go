@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 )

@@ -3,9 +3,10 @@ package requests
 import (
 	"context"
 	"errors"
+	"net/http"
+
 	"github.com/Chronicle20/atlas-rest/retry"
 	"github.com/sirupsen/logrus"
-	"net/http"
 )
 
 var ErrBadRequest = errors.New("bad request")

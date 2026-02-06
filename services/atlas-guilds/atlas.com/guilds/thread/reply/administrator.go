@@ -1,9 +1,10 @@
 package reply
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-	"time"
 )
 
 func create(db *gorm.DB, tenantId uuid.UUID, threadId uint32, posterId uint32, message string) (Model, error) {

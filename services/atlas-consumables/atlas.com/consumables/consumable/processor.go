@@ -162,15 +162,15 @@ func (p *Processor) RequestItemConsume(c channel.Model, characterId uint32, slot
 
 	var itemConsumer ItemConsumer
 	if item2.GetClassification(itemId) == item2.Classification(200) || item2.GetClassification(itemId) == item2.Classification(201) || item2.GetClassification(itemId) == item2.Classification(202) {
-		itemConsumer = ConsumeStandard(transactionId, characterId, slot, itemId, quantity)
+		itemConsumer = ConsumeStandard(transactionId, characterId, slot, itemId)
 	} else if item2.GetClassification(itemId) == item2.ClassificationConsumableTownWarp {
-		itemConsumer = ConsumeTownScroll(transactionId, characterId, slot, itemId, quantity)
+		itemConsumer = ConsumeTownScroll(transactionId, characterId, slot, itemId)
 	} else if item2.GetClassification(itemId) == item2.ClassificationConsumablePetFood {
-		itemConsumer = ConsumePetFood(transactionId, characterId, slot, itemId, quantity)
+		itemConsumer = ConsumePetFood(transactionId, characterId, slot, itemId)
 	} else if item2.GetClassification(itemId) == item2.ClassificationPetConsumable {
-		itemConsumer = ConsumeCashPetFood(transactionId, characterId, slot, itemId, quantity)
+		itemConsumer = ConsumeCashPetFood(transactionId, characterId, slot, itemId)
 	} else if item2.GetClassification(itemId) == item2.ClassificationConsumableSummoningSack {
-		itemConsumer = ConsumeSummoningSack(transactionId, c, characterId, slot, itemId, quantity)
+		itemConsumer = ConsumeSummoningSack(transactionId, c, characterId, slot, itemId)
 	}
 
 	handler := compartment.Consume(itemConsumer)
@@ -203,7 +203,7 @@ func (p *Processor) ConsumeError(characterId uint32, transactionId uuid.UUID, in
 	return err
 }
 
-func ConsumeStandard(transactionId uuid.UUID, characterId uint32, slot int16, itemId item2.Id, quantity int16) ItemConsumer {
+func ConsumeStandard(transactionId uuid.UUID, characterId uint32, slot int16, itemId item2.Id) ItemConsumer {
 	return func(l logrus.FieldLogger) func(ctx context.Context) error {
 		return func(ctx context.Context) error {
 			p := NewProcessor(l, ctx)
@@ -235,7 +235,7 @@ func ConsumeStandard(transactionId uuid.UUID, characterId uint32, slot int16, it
 	}
 }
 
-func ConsumeTownScroll(transactionId uuid.UUID, characterId uint32, slot int16, itemId item2.Id, quantity int16) ItemConsumer {
+func ConsumeTownScroll(transactionId uuid.UUID, characterId uint32, slot int16, itemId item2.Id) ItemConsumer {
 	return func(l logrus.FieldLogger) func(ctx context.Context) error {
 		return func(ctx context.Context) error {
 			p := NewProcessor(l, ctx)
@@ -277,7 +277,7 @@ func ConsumeTownScroll(transactionId uuid.UUID, characterId uint32, slot int16, 
 	}
 }
 
-func ConsumePetFood(transactionId uuid.UUID, characterId uint32, slot int16, itemId item2.Id, quantity int16) ItemConsumer {
+func ConsumePetFood(transactionId uuid.UUID, characterId uint32, slot int16, itemId item2.Id) ItemConsumer {
 	return func(l logrus.FieldLogger) func(ctx context.Context) error {
 		return func(ctx context.Context) error {
 			p := NewProcessor(l, ctx)
@@ -312,7 +312,7 @@ func ConsumePetFood(transactionId uuid.UUID, characterId uint32, slot int16, ite
 	}
 }
 
-func ConsumeCashPetFood(transactionId uuid.UUID, characterId uint32, slot int16, itemId item2.Id, quantity int16) ItemConsumer {
+func ConsumeCashPetFood(transactionId uuid.UUID, characterId uint32, slot int16, itemId item2.Id) ItemConsumer {
 	return func(l logrus.FieldLogger) func(ctx context.Context) error {
 		return func(ctx context.Context) error {
 			pp := pet.NewProcessor(l, ctx)
@@ -349,7 +349,7 @@ func ConsumeCashPetFood(transactionId uuid.UUID, characterId uint32, slot int16,
 	}
 }
 
-func ConsumeSummoningSack(transactionId uuid.UUID, ch channel.Model, characterId uint32, slot int16, itemId item2.Id, quantity int16) ItemConsumer {
+func ConsumeSummoningSack(transactionId uuid.UUID, ch channel.Model, characterId uint32, slot int16, itemId item2.Id) ItemConsumer {
 	return func(l logrus.FieldLogger) func(ctx context.Context) error {
 		return func(ctx context.Context) error {
 			c, err := character.NewProcessor(l, ctx).GetById()(characterId)
@@ -430,7 +430,7 @@ func (p *Processor) RequestScroll(characterId uint32, scrollSlot int16, equipSlo
 	if !ok || sm.Equipable == nil {
 		return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, scrollSlot, errors.New("failed to locate equipment being scrolled"))
 	}
-	ok = p.ValidateScrollUse(c, *scrollItem, *sm.Equipable)
+	ok = p.ValidateScrollUse(*scrollItem, *sm.Equipable)
 	if !ok {
 		return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, scrollSlot, errors.New("failed slot validation"))
 	}
@@ -454,7 +454,7 @@ func (p *Processor) RequestScroll(characterId uint32, scrollSlot int16, equipSlo
 	return nil
 }
 
-func (p *Processor) ValidateScrollUse(c character.Model, scrollItem asset.Model[any], equipItem asset.Model[asset.EquipableReferenceData]) bool {
+func (p *Processor) ValidateScrollUse(scrollItem asset.Model[any], equipItem asset.Model[asset.EquipableReferenceData]) bool {
 	ep := equipable2.NewProcessor(p.l, p.ctx)
 	if item2.IsScrollCleanSlate(item2.Id(scrollItem.TemplateId())) {
 		// If the scroll is a clean slate scroll, make sure we're not attempting to add mores lots than originally available.
@@ -504,7 +504,7 @@ func ConsumeScroll(transactionId uuid.UUID, characterId uint32, scrollItem *asse
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, scrollItem.Slot(), errors.New("equipment not found"))
 			}
 
-			ok = p.ValidateScrollUse(c, *scrollItem, *sm.Equipable)
+			ok = p.ValidateScrollUse(*scrollItem, *sm.Equipable)
 			if !ok {
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, scrollItem.Slot(), errors.New("failed slot validation"))
 			}

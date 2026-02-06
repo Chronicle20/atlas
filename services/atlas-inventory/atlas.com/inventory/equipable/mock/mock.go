@@ -2,6 +2,7 @@ package mock
 
 import (
 	"atlas-inventory/equipable"
+
 	"github.com/Chronicle20/atlas-model/model"
 )
 

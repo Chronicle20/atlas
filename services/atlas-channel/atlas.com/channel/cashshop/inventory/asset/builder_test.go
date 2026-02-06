@@ -3,6 +3,7 @@ package asset_test
 import (
 	"atlas-channel/cashshop/inventory/asset"
 	"atlas-channel/cashshop/item"
+	"errors"
 	"testing"
 
 	"github.com/google/uuid"
@@ -50,7 +51,7 @@ func TestBuild_MissingId(t *testing.T) {
 
 	_, err := asset.NewModelBuilder(uuid.Nil, compartmentId, testItem).Build()
 
-	if err != asset.ErrInvalidId {
+	if !errors.Is(err, asset.ErrInvalidId) {
 		t.Errorf("Build() error = %v, want ErrInvalidId", err)
 	}
 }
@@ -61,7 +62,7 @@ func TestBuild_MissingCompartmentId(t *testing.T) {
 
 	_, err := asset.NewModelBuilder(id, uuid.Nil, testItem).Build()
 
-	if err != asset.ErrInvalidCompartmentId {
+	if !errors.Is(err, asset.ErrInvalidCompartmentId) {
 		t.Errorf("Build() error = %v, want ErrInvalidCompartmentId", err)
 	}
 }

@@ -9,9 +9,7 @@ import (
 	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
-	"github.com/Chronicle20/atlas-constants/channel"
-	_map2 "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-constants/world"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -50,11 +48,11 @@ func handleSetCommand(sc server.Model, wp writer.Producer) message.Handler[chalk
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
 			return
 		}
 
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(_map2.Id(e.MapId), uuid.Nil), func(s session.Model) error {
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, uuid.Nil), func(s session.Model) error {
 			return session.Announce(l)(ctx)(wp)(writer.ChalkboardUse)(writer.ChalkboardUseBody(e.CharacterId, e.Body.Message))(s)
 		})
 		if err != nil {
@@ -69,11 +67,11 @@ func handleClearCommand(sc server.Model, wp writer.Producer) message.Handler[cha
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
 			return
 		}
 
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(_map2.Id(e.MapId), uuid.Nil), func(s session.Model) error {
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, uuid.Nil), func(s session.Model) error {
 			return session.Announce(l)(ctx)(wp)(writer.ChalkboardUse)(writer.ChalkboardClearBody(e.CharacterId))(s)
 		})
 		if err != nil {

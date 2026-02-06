@@ -2,10 +2,11 @@ package skill
 
 import (
 	skill2 "atlas-character/kafka/message/skill"
+	"time"
+
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
-	"time"
 )
 
 func createCommandProvider(characterId uint32, id uint32, level byte, masterLevel byte, expiration time.Time) model.Provider[[]kafka.Message] {

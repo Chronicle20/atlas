@@ -2,6 +2,7 @@ package macro_test
 
 import (
 	"atlas-skills/macro"
+	"errors"
 	"testing"
 
 	"github.com/Chronicle20/atlas-constants/skill"
@@ -52,7 +53,7 @@ func TestBuild_MissingName(t *testing.T) {
 		SetId(1).
 		Build()
 
-	if err != macro.ErrMissingName {
+	if !errors.Is(err, macro.ErrMissingName) {
 		t.Errorf("Build() error = %v, want ErrMissingName", err)
 	}
 }

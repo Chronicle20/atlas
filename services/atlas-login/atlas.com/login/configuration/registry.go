@@ -3,10 +3,11 @@ package configuration
 import (
 	"atlas-login/configuration/tenant"
 	"context"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 	"log"
 	"sync"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 )
 
 var once sync.Once
@@ -18,13 +19,6 @@ func GetServiceConfig() (*RestModel, error) {
 		log.Fatalf("Configuration not initialized.")
 	}
 	return serviceConfig, nil
-}
-
-func GetTenantConfigs() map[uuid.UUID]tenant.RestModel {
-	if tenantConfig == nil || len(tenantConfig) == 0 {
-		log.Fatalf("tenant not configured")
-	}
-	return tenantConfig
 }
 
 func GetTenantConfig(tenantId uuid.UUID) (tenant.RestModel, error) {

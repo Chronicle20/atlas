@@ -5,6 +5,7 @@ import (
 	character2 "atlas-npc/kafka/message/character"
 	"atlas-npc/shops"
 	"context"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"

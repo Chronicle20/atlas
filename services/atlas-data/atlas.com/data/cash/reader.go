@@ -2,10 +2,11 @@ package cash
 
 import (
 	"atlas-data/xml"
-	"github.com/Chronicle20/atlas-model/model"
-	"github.com/sirupsen/logrus"
 	"strconv"
 	"strings"
+
+	"github.com/Chronicle20/atlas-model/model"
+	"github.com/sirupsen/logrus"
 )
 
 func parseCashId(name string) (uint32, error) {

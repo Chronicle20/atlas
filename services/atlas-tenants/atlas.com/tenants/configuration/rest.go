@@ -2,7 +2,6 @@ package configuration
 
 import (
 	"encoding/json"
-	"gorm.io/gorm"
 )
 
 // RouteRestModel is the JSON:API resource for routes
@@ -147,35 +146,6 @@ func CreateSingleRouteJsonData(route map[string]interface{}) (json.RawMessage, e
 	return json.Marshal(data)
 }
 
-// ExtractRouteFromModel extracts a route from a Model
-func ExtractRouteFromModel(m Model, routeId string) (map[string]interface{}, error) {
-	var resourceData map[string]interface{}
-	if err := json.Unmarshal(m.ResourceData(), &resourceData); err != nil {
-		return nil, err
-	}
-
-	// Check if it's an array of resources
-	if resources, ok := resourceData["data"].([]interface{}); ok {
-		for _, resource := range resources {
-			if resourceMap, ok := resource.(map[string]interface{}); ok {
-				if id, ok := resourceMap["id"].(string); ok && (routeId == "" || id == routeId) {
-					return resourceMap, nil
-				}
-			}
-		}
-		return nil, gorm.ErrRecordNotFound
-	}
-
-	// Check if it's a single resource
-	if data, ok := resourceData["data"].(map[string]interface{}); ok {
-		if routeId == "" || (data["id"] != nil && data["id"].(string) == routeId) {
-			return data, nil
-		}
-	}
-
-	return nil, gorm.ErrRecordNotFound
-}
-
 // VesselRestModel is the JSON:API resource for vessels
 type VesselRestModel struct {
 	Id              string `json:"-"`
@@ -258,33 +228,4 @@ func CreateSingleVesselJsonData(vessel map[string]interface{}) (json.RawMessage,
 		"data": vessel,
 	}
 	return json.Marshal(data)
-}
-
-// ExtractVesselFromModel extracts a vessel from a Model
-func ExtractVesselFromModel(m Model, vesselId string) (map[string]interface{}, error) {
-	var resourceData map[string]interface{}
-	if err := json.Unmarshal(m.ResourceData(), &resourceData); err != nil {
-		return nil, err
-	}
-
-	// Check if it's an array of resources
-	if resources, ok := resourceData["data"].([]interface{}); ok {
-		for _, resource := range resources {
-			if resourceMap, ok := resource.(map[string]interface{}); ok {
-				if id, ok := resourceMap["id"].(string); ok && (vesselId == "" || id == vesselId) {
-					return resourceMap, nil
-				}
-			}
-		}
-		return nil, gorm.ErrRecordNotFound
-	}
-
-	// Check if it's a single resource
-	if data, ok := resourceData["data"].(map[string]interface{}); ok {
-		if vesselId == "" || (data["id"] != nil && data["id"].(string) == vesselId) {
-			return data, nil
-		}
-	}
-
-	return nil, gorm.ErrRecordNotFound
 }

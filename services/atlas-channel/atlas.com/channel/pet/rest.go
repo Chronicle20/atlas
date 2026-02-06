@@ -2,9 +2,10 @@ package pet
 
 import (
 	"atlas-channel/pet/exclude"
-	"github.com/Chronicle20/atlas-model/model"
 	"strconv"
 	"time"
+
+	"github.com/Chronicle20/atlas-model/model"
 )
 
 type RestModel struct {

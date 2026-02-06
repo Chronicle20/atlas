@@ -3,6 +3,7 @@ package guild
 import (
 	"atlas-query-aggregator/rest"
 	"fmt"
+
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 

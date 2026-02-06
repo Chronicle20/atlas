@@ -51,27 +51,3 @@ func byCharacterIdAndStateEntityProvider(tenantId uuid.UUID, characterId uint32,
 		return model.FixedProvider(results)
 	}
 }
-
-func GetById(db *gorm.DB) func(tenantId uuid.UUID, id uint32) (Model, error) {
-	return func(tenantId uuid.UUID, id uint32) (Model, error) {
-		return model.Map(Make)(byIdEntityProvider(tenantId, id)(db))()
-	}
-}
-
-func GetByCharacterId(db *gorm.DB) func(tenantId uuid.UUID, characterId uint32) ([]Model, error) {
-	return func(tenantId uuid.UUID, characterId uint32) ([]Model, error) {
-		return model.SliceMap(Make)(byCharacterIdEntityProvider(tenantId, characterId)(db))()()
-	}
-}
-
-func GetByCharacterIdAndQuestId(db *gorm.DB) func(tenantId uuid.UUID, characterId uint32, questId uint32) (Model, error) {
-	return func(tenantId uuid.UUID, characterId uint32, questId uint32) (Model, error) {
-		return model.Map(Make)(byCharacterIdAndQuestIdEntityProvider(tenantId, characterId, questId)(db))()
-	}
-}
-
-func GetByCharacterIdAndState(db *gorm.DB) func(tenantId uuid.UUID, characterId uint32, state State) ([]Model, error) {
-	return func(tenantId uuid.UUID, characterId uint32, state State) ([]Model, error) {
-		return model.SliceMap(Make)(byCharacterIdAndStateEntityProvider(tenantId, characterId, state)(db))()()
-	}
-}

@@ -6,11 +6,12 @@ import (
 	"atlas-login/socket/writer"
 	"atlas-login/world"
 	"context"
+	"sort"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
-	"sort"
 )
 
 const ServerListRequestHandle = "ServerListRequestHandle"

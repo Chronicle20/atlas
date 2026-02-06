@@ -1,9 +1,10 @@
 package skill
 
 import (
+	"time"
+
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
-	"time"
 )
 
 const (

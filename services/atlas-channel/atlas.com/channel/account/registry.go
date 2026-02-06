@@ -1,8 +1,9 @@
 package account
 
 import (
-	"github.com/Chronicle20/atlas-tenant"
 	"sync"
+
+	"github.com/Chronicle20/atlas-tenant"
 )
 
 type Key struct {

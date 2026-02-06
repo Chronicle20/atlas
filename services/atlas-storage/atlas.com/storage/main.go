@@ -13,10 +13,11 @@ import (
 	"atlas-storage/stackable"
 	"atlas-storage/storage"
 	"atlas-storage/tracing"
+	"os"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
 	"gorm.io/gorm"
-	"os"
 )
 
 const serviceName = "atlas-storage"

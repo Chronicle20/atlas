@@ -2,13 +2,14 @@ package note
 
 import (
 	"atlas-notes/rest"
+	"net/http"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"net/http"
 )
 
 func InitializeRoutes(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
@@ -178,7 +179,7 @@ func UpdateNoteHandler(d *rest.HandlerDependency, c *rest.HandlerContext, i Rest
 }
 
 // DeleteNoteHandler handles DELETE /api/notes/{noteId}
-func DeleteNoteHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+func DeleteNoteHandler(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseNoteId(d.Logger(), func(noteId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			err := NewProcessor(d.Logger(), d.Context(), d.DB()).DeleteAndEmit(noteId)
@@ -194,7 +195,7 @@ func DeleteNoteHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.H
 }
 
 // DeleteCharacterNotesHandler handles DELETE /api/characters/{characterId}/notes
-func DeleteCharacterNotesHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+func DeleteCharacterNotesHandler(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			err := NewProcessor(d.Logger(), d.Context(), d.DB()).DeleteAllAndEmit(characterId)

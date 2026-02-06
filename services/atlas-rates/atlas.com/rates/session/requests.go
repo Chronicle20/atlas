@@ -23,7 +23,3 @@ func RequestSessionsSince(characterId uint32, sinceUnix int64) requests.Request[
 }
 
 // RequestPlaytimeSince fetches computed playtime since the given Unix timestamp
-func RequestPlaytimeSince(characterId uint32, sinceUnix int64) requests.Request[PlaytimeRestModel] {
-	url := fmt.Sprintf(getBaseRequest()+PlaytimeResource+"?since=%d", characterId, sinceUnix)
-	return rest.MakeGetRequest[PlaytimeRestModel](url)
-}

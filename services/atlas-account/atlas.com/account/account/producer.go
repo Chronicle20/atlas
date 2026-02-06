@@ -2,11 +2,12 @@ package account
 
 import (
 	account2 "atlas-account/kafka/message/account"
+	"math/rand"
+
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
-	"math/rand"
 )
 
 func createCommandProvider(name string, password string) model.Provider[[]kafka.Message] {

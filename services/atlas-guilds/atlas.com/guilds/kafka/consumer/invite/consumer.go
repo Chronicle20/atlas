@@ -5,6 +5,7 @@ import (
 	consumer2 "atlas-guilds/kafka/consumer"
 	invite2 "atlas-guilds/kafka/message/invite"
 	"context"
+
 	"github.com/Chronicle20/atlas-constants/invite"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"

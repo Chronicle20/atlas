@@ -2,14 +2,15 @@ package rest
 
 import (
 	"context"
+	"io"
+	"net/http"
+	"strconv"
+
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"io"
-	"net/http"
-	"strconv"
 )
 
 type HandlerDependency struct {

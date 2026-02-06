@@ -1,11 +1,12 @@
 package character
 
 import (
+	"strconv"
+
 	"github.com/Chronicle20/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/jtumidanski/api2go/jsonapi"
-	"strconv"
 )
 
 type RestModel struct {
@@ -73,15 +74,15 @@ func (r RestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
 	return result
 }
 
-func (r *RestModel) SetToOneReferenceID(name, ID string) error {
+func (r *RestModel) SetToOneReferenceID(_, _ string) error {
 	return nil
 }
 
-func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
+func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error {
 	return nil
 }
 
-func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonapi.Data) error {
+func (r *RestModel) SetReferencedStructs(_ map[string]map[string]jsonapi.Data) error {
 	return nil
 }
 

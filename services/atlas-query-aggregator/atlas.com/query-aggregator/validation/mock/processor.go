@@ -2,6 +2,7 @@ package mock
 
 import (
 	"atlas-query-aggregator/validation"
+
 	"github.com/Chronicle20/atlas-model/model"
 )
 

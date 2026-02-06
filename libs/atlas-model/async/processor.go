@@ -3,8 +3,9 @@ package async
 import (
 	"context"
 	"errors"
-	"github.com/Chronicle20/atlas-model/model"
 	"time"
+
+	"github.com/Chronicle20/atlas-model/model"
 )
 
 var ErrAwaitTimeout = errors.New("timeout")

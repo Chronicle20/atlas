@@ -2,6 +2,7 @@ package channel_test
 
 import (
 	"atlas-world/channel"
+	"errors"
 	"testing"
 	"time"
 
@@ -66,7 +67,7 @@ func TestBuild_MissingId(t *testing.T) {
 		SetMaxCapacity(100).
 		Build()
 
-	if err != channel.ErrMissingId {
+	if !errors.Is(err, channel.ErrMissingId) {
 		t.Errorf("Build() error = %v, want ErrMissingId", err)
 	}
 }
@@ -79,7 +80,7 @@ func TestBuild_ZeroUUIDId(t *testing.T) {
 		SetMaxCapacity(100).
 		Build()
 
-	if err != channel.ErrMissingId {
+	if !errors.Is(err, channel.ErrMissingId) {
 		t.Errorf("Build() error = %v, want ErrMissingId", err)
 	}
 }
@@ -92,7 +93,7 @@ func TestBuild_EmptyIpAddress(t *testing.T) {
 		SetMaxCapacity(100).
 		Build()
 
-	if err != channel.ErrInvalidIpAddress {
+	if !errors.Is(err, channel.ErrInvalidIpAddress) {
 		t.Errorf("Build() error = %v, want ErrInvalidIpAddress", err)
 	}
 }
@@ -104,7 +105,7 @@ func TestBuild_MissingIpAddress(t *testing.T) {
 		SetMaxCapacity(100).
 		Build()
 
-	if err != channel.ErrInvalidIpAddress {
+	if !errors.Is(err, channel.ErrInvalidIpAddress) {
 		t.Errorf("Build() error = %v, want ErrInvalidIpAddress", err)
 	}
 }
@@ -117,7 +118,7 @@ func TestBuild_PortZero(t *testing.T) {
 		SetMaxCapacity(100).
 		Build()
 
-	if err != channel.ErrInvalidPort {
+	if !errors.Is(err, channel.ErrInvalidPort) {
 		t.Errorf("Build() error = %v, want ErrInvalidPort", err)
 	}
 }
@@ -130,7 +131,7 @@ func TestBuild_PortNegative(t *testing.T) {
 		SetMaxCapacity(100).
 		Build()
 
-	if err != channel.ErrInvalidPort {
+	if !errors.Is(err, channel.ErrInvalidPort) {
 		t.Errorf("Build() error = %v, want ErrInvalidPort", err)
 	}
 }
@@ -143,7 +144,7 @@ func TestBuild_PortTooHigh(t *testing.T) {
 		SetMaxCapacity(100).
 		Build()
 
-	if err != channel.ErrInvalidPort {
+	if !errors.Is(err, channel.ErrInvalidPort) {
 		t.Errorf("Build() error = %v, want ErrInvalidPort", err)
 	}
 }
@@ -182,7 +183,7 @@ func TestBuild_MaxCapacityZero(t *testing.T) {
 		SetMaxCapacity(0).
 		Build()
 
-	if err != channel.ErrInvalidCapacity {
+	if !errors.Is(err, channel.ErrInvalidCapacity) {
 		t.Errorf("Build() error = %v, want ErrInvalidCapacity", err)
 	}
 }

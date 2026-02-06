@@ -30,42 +30,38 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 	return func(rf func(topic string, handler handler.Handler) (string, error)) {
 		var t string
 		t, _ = topic.EnvProvider(l)(asset.EnvEventTopicStatus)()
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetMoved(l))))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetMoved)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetDeleted)))
 	}
 }
 
-func handleAssetMoved(l logrus.FieldLogger) message.Handler[asset.StatusEvent[asset.MovedStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e asset.StatusEvent[asset.MovedStatusEventBody]) {
-		if e.Type != asset.StatusEventTypeMoved {
-			return
-		}
+func handleAssetMoved(l logrus.FieldLogger, ctx context.Context, e asset.StatusEvent[asset.MovedStatusEventBody]) {
+	if e.Type != asset.StatusEventTypeMoved {
+		return
+	}
 
-		// Only handle equipable items
-		if !asset.IsEquipable(e.Body.ReferenceType) {
-			return
-		}
+	// Only handle equipable items
+	if !asset.IsEquipable(e.Body.ReferenceType) {
+		return
+	}
 
-		oldSlot := e.Body.OldSlot
-		newSlot := e.Slot
+	oldSlot := e.Body.OldSlot
+	newSlot := e.Slot
 
-		l.Debugf("Processing asset moved event for character [%d], asset [%d], template [%d], from slot [%d] to slot [%d].",
-			e.CharacterId, e.AssetId, e.TemplateId, oldSlot, newSlot)
+	l.Debugf("Processing asset moved event for character [%d], asset [%d], template [%d], from slot [%d] to slot [%d].",
+		e.CharacterId, e.AssetId, e.TemplateId, oldSlot, newSlot)
 
-		p := character.NewProcessor(l, ctx)
-
-		if asset.IsEquipAction(oldSlot, newSlot) {
-			// Item was equipped - need to add stat bonuses
-			// For now, we fetch the equipment stats from inventory service
-			handleItemEquipped(l, ctx, p, e)
-		} else if asset.IsUnequipAction(oldSlot, newSlot) {
-			// Item was unequipped - remove stat bonuses
-			handleItemUnequipped(l, ctx, p, e)
-		}
+	if asset.IsEquipAction(oldSlot, newSlot) {
+		// Item was equipped - need to add stat bonuses
+		// For now, we fetch the equipment stats from inventory service
+		handleItemEquipped(l, ctx, e)
+	} else if asset.IsUnequipAction(oldSlot, newSlot) {
+		// Item was unequipped - remove stat bonuses
+		handleItemUnequipped(l, ctx, e)
 	}
 }
 
-func handleItemEquipped(l logrus.FieldLogger, ctx context.Context, p character.Processor, e asset.StatusEvent[asset.MovedStatusEventBody]) {
+func handleItemEquipped(l logrus.FieldLogger, ctx context.Context, e asset.StatusEvent[asset.MovedStatusEventBody]) {
 	l.Debugf("Equipment [%d] equipped by character [%d], fetching stats.", e.AssetId, e.CharacterId)
 
 	// Fetch equipment stats from inventory service
@@ -98,17 +94,17 @@ func handleItemEquipped(l logrus.FieldLogger, ctx context.Context, p character.P
 		// We need worldId and channelId - get them from the registry or use defaults
 		// For now, use 0 as we'll update the existing entry
 		ch := channel.NewModel(0, 0)
-		if err := p.AddEquipmentBonuses(ch, e.CharacterId, e.AssetId, bonuses); err != nil {
+		if err := character.NewProcessor(l, ctx).AddEquipmentBonuses(ch, e.CharacterId, e.AssetId, bonuses); err != nil {
 			l.WithError(err).Errorf("Failed to add equipment bonuses for character [%d].", e.CharacterId)
 		}
 	}
 }
 
-func handleItemUnequipped(l logrus.FieldLogger, ctx context.Context, p character.Processor, e asset.StatusEvent[asset.MovedStatusEventBody]) {
+func handleItemUnequipped(l logrus.FieldLogger, ctx context.Context, e asset.StatusEvent[asset.MovedStatusEventBody]) {
 	l.Debugf("Equipment [%d] unequipped by character [%d].", e.AssetId, e.CharacterId)
 
 	// Remove all stat bonuses from this equipment
-	if err := p.RemoveEquipmentBonuses(e.CharacterId, e.AssetId); err != nil {
+	if err := character.NewProcessor(l, ctx).RemoveEquipmentBonuses(e.CharacterId, e.AssetId); err != nil {
 		l.WithError(err).Errorf("Failed to remove equipment bonuses for character [%d].", e.CharacterId)
 	}
 }

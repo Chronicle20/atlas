@@ -7,13 +7,14 @@ import (
 	"atlas-skills/kafka/producer"
 	"context"
 	"errors"
+	"time"
+
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"time"
 )
 
 // Processor defines the interface for skill processing operations

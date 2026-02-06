@@ -992,7 +992,7 @@ type mockCharacterProcessor struct {
 	charactersInMap map[character.MapKey][]uint32
 }
 
-func (m *mockCharacterProcessor) GetCharactersInMap(transactionId uuid.UUID, f field.Model) ([]uint32, error) {
+func (m *mockCharacterProcessor) GetCharactersInMap(_ uuid.UUID, f field.Model) ([]uint32, error) {
 	// Check all stored map keys to find a match by world/channel/map/instance (ignoring tenant)
 	for storedMapKey, characters := range m.charactersInMap {
 		if storedMapKey.Field.WorldId() == f.WorldId() && storedMapKey.Field.ChannelId() == f.ChannelId() && storedMapKey.Field.MapId() == f.MapId() && storedMapKey.Field.Instance() == f.Instance() {
@@ -1010,10 +1010,10 @@ func (m *mockCharacterProcessor) GetMapsWithCharacters() []character.MapKey {
 	return keys
 }
 
-func (m *mockCharacterProcessor) Enter(transactionId uuid.UUID, f field.Model, characterId uint32) {
+func (m *mockCharacterProcessor) Enter(_ uuid.UUID, _ field.Model, _ uint32) {
 }
 
-func (m *mockCharacterProcessor) Exit(transactionId uuid.UUID, f field.Model, characterId uint32) {
+func (m *mockCharacterProcessor) Exit(_ uuid.UUID, _ field.Model, _ uint32) {
 }
 
 type mockMonsterProcessor struct {
@@ -1031,7 +1031,7 @@ type MockCreatedMonster struct {
 	Team      int8
 }
 
-func (m *mockMonsterProcessor) CountInMap(transactionId uuid.UUID, f field.Model) (int, error) {
+func (m *mockMonsterProcessor) CountInMap(_ uuid.UUID, f field.Model) (int, error) {
 	// Check all stored map keys to find a match by world/channel/map (ignoring tenant)
 	for storedMapKey, count := range m.monstersInMap {
 		if storedMapKey.Field.WorldId() == f.WorldId() && storedMapKey.Field.ChannelId() == f.ChannelId() && storedMapKey.Field.MapId() == f.MapId() && storedMapKey.Field.Instance() == f.Instance() {
@@ -1041,7 +1041,7 @@ func (m *mockMonsterProcessor) CountInMap(transactionId uuid.UUID, f field.Model
 	return 0, nil
 }
 
-func (m *mockMonsterProcessor) CreateMonster(transactionId uuid.UUID, f field.Model, monsterId uint32, x int16, y int16, fh int16, team int8) {
+func (m *mockMonsterProcessor) CreateMonster(_ uuid.UUID, f field.Model, monsterId uint32, x int16, y int16, fh int16, team int8) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -1076,23 +1076,23 @@ type mockDataProcessor struct {
 	mockSpawnPoints []monster2.SpawnPoint
 }
 
-func (m *mockDataProcessor) SpawnPointProvider(mapId _map.Id) model.Provider[[]monster2.SpawnPoint] {
+func (m *mockDataProcessor) SpawnPointProvider(_ _map.Id) model.Provider[[]monster2.SpawnPoint] {
 	return func() ([]monster2.SpawnPoint, error) {
 		return m.mockSpawnPoints, nil
 	}
 }
 
-func (m *mockDataProcessor) SpawnableSpawnPointProvider(mapId _map.Id) model.Provider[[]monster2.SpawnPoint] {
+func (m *mockDataProcessor) SpawnableSpawnPointProvider(_ _map.Id) model.Provider[[]monster2.SpawnPoint] {
 	return func() ([]monster2.SpawnPoint, error) {
 		return m.mockSpawnPoints, nil
 	}
 }
 
-func (m *mockDataProcessor) GetSpawnPoints(mapId _map.Id) ([]monster2.SpawnPoint, error) {
+func (m *mockDataProcessor) GetSpawnPoints(_ _map.Id) ([]monster2.SpawnPoint, error) {
 	return m.mockSpawnPoints, nil
 }
 
-func (m *mockDataProcessor) GetSpawnableSpawnPoints(mapId _map.Id) ([]monster2.SpawnPoint, error) {
+func (m *mockDataProcessor) GetSpawnableSpawnPoints(_ _map.Id) ([]monster2.SpawnPoint, error) {
 	return m.mockSpawnPoints, nil
 }
 

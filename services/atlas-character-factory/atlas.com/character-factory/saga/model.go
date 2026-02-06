@@ -4,8 +4,9 @@ import (
 	"atlas-character-factory/validation"
 	"encoding/json"
 	"fmt"
-	_map "github.com/Chronicle20/atlas-constants/map"
 	"time"
+
+	_map "github.com/Chronicle20/atlas-constants/map"
 
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
@@ -164,9 +165,9 @@ type WarpToRandomPortalPayload struct {
 
 // WarpToPortalPayload represents the payload required to warp a character to a specific portal in a field.
 type WarpToPortalPayload struct {
-	CharacterId uint32   `json:"characterId"`         // CharacterId associated with the action
-	FieldId     field.Id `json:"fieldId"`             // FieldId references the unique identifier of the field associated with the warp action.
-	PortalId    uint32   `json:"portalId"`            // PortalId specifies the unique identifier of the portal for the warp action.
+	CharacterId uint32   `json:"characterId"`          // CharacterId associated with the action
+	FieldId     field.Id `json:"fieldId"`              // FieldId references the unique identifier of the field associated with the warp action.
+	PortalId    uint32   `json:"portalId"`             // PortalId specifies the unique identifier of the portal for the warp action.
 	PortalName  string   `json:"portalName,omitempty"` // PortalName specifies the name of the portal (resolved to ID if provided).
 }
 
@@ -294,23 +295,23 @@ type CharacterCreatePayload struct {
 	AccountId    uint32   `json:"accountId"` // AccountId associated with the action
 	WorldId      world.Id `json:"worldId"`   // WorldId associated with the action
 	Name         string   `json:"name"`      // Name of the character to create
-	Gender       byte    `json:"gender"`
-	Level        byte    `json:"level"`
-	Strength     uint16  `json:"strength"`
-	Dexterity    uint16  `json:"dexterity"`
-	Intelligence uint16  `json:"intelligence"`
-	Luck         uint16  `json:"luck"`
-	JobId        job.Id  `json:"jobId"` // JobId to create the character with
-	Hp           uint16  `json:"hp"`
-	Mp           uint16  `json:"mp"`
-	Face         uint32  `json:"face"`   // Face of the character
-	Hair         uint32  `json:"hair"`   // Hair of the character
-	Skin         uint32  `json:"skin"`   // Skin of the character
-	Top          uint32  `json:"top"`    // Top of the character
-	Bottom       uint32  `json:"bottom"` // Bottom of the character
-	Shoes        uint32  `json:"shoes"`  // Shoes of the character
-	Weapon       uint32  `json:"weapon"` // Weapon of the character
-	MapId        _map.Id `json:"mapId"`  // Starting map ID for the character
+	Gender       byte     `json:"gender"`
+	Level        byte     `json:"level"`
+	Strength     uint16   `json:"strength"`
+	Dexterity    uint16   `json:"dexterity"`
+	Intelligence uint16   `json:"intelligence"`
+	Luck         uint16   `json:"luck"`
+	JobId        job.Id   `json:"jobId"` // JobId to create the character with
+	Hp           uint16   `json:"hp"`
+	Mp           uint16   `json:"mp"`
+	Face         uint32   `json:"face"`   // Face of the character
+	Hair         uint32   `json:"hair"`   // Hair of the character
+	Skin         uint32   `json:"skin"`   // Skin of the character
+	Top          uint32   `json:"top"`    // Top of the character
+	Bottom       uint32   `json:"bottom"` // Bottom of the character
+	Shoes        uint32   `json:"shoes"`  // Shoes of the character
+	Weapon       uint32   `json:"weapon"` // Weapon of the character
+	MapId        _map.Id  `json:"mapId"`  // Starting map ID for the character
 }
 
 // CreateAndEquipAssetPayload represents the payload required to create and equip an asset to a character.

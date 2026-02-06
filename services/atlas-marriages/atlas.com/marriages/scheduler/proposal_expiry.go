@@ -6,6 +6,7 @@ import (
 
 	"atlas-marriages/marriage"
 	"atlas-marriages/retry"
+
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -43,7 +44,7 @@ func (s *ProposalExpiryScheduler) WithInterval(interval time.Duration) *Proposal
 // Start begins the background proposal expiry checking
 func (s *ProposalExpiryScheduler) Start() {
 	s.log.WithField("interval", s.interval).Info("Starting proposal expiry scheduler")
-	
+
 	go s.run()
 }
 
@@ -58,13 +59,13 @@ func (s *ProposalExpiryScheduler) Stop() {
 // run is the main loop for the scheduler
 func (s *ProposalExpiryScheduler) run() {
 	defer close(s.done)
-	
+
 	ticker := time.NewTicker(s.interval)
 	defer ticker.Stop()
-	
+
 	// Process immediately on start
 	s.processExpiredProposals()
-	
+
 	for {
 		select {
 		case <-ticker.C:
@@ -81,21 +82,21 @@ func (s *ProposalExpiryScheduler) run() {
 // processExpiredProposals processes expired proposals for all tenants
 func (s *ProposalExpiryScheduler) processExpiredProposals() {
 	s.log.Debug("Processing expired proposals for all tenants")
-	
+
 	// Get all tenants that have proposals
 	tenantIds, err := s.getTenantsWithProposals()
 	if err != nil {
 		s.log.WithError(err).Error("Failed to get tenants with proposals")
 		return
 	}
-	
+
 	if len(tenantIds) == 0 {
 		s.log.Debug("No tenants with proposals found")
 		return
 	}
-	
+
 	s.log.WithField("tenantCount", len(tenantIds)).Debug("Processing expired proposals for tenants")
-	
+
 	// Process each tenant
 	for _, tenantId := range tenantIds {
 		s.processExpiredProposalsForTenant(tenantId)
@@ -105,20 +106,20 @@ func (s *ProposalExpiryScheduler) processExpiredProposals() {
 // getTenantsWithProposals retrieves all tenant IDs that have pending proposals
 func (s *ProposalExpiryScheduler) getTenantsWithProposals() ([]uuid.UUID, error) {
 	var tenantIds []uuid.UUID
-	
+
 	retryConfig := retry.DefaultRetryConfig().
 		WithLogger(s.log.WithField("operation", "get-tenants-with-proposals")).
 		WithContext(s.ctx).
 		WithMaxRetries(2).
 		WithInitialDelay(500 * time.Millisecond)
-	
+
 	err := retry.ExecuteWithRetry(retryConfig, func() error {
 		return s.db.Model(&marriage.ProposalEntity{}).
 			Where("status = ?", marriage.ProposalStatusPending).
 			Distinct("tenant_id").
 			Pluck("tenant_id", &tenantIds).Error
 	})
-	
+
 	return tenantIds, err
 }
 
@@ -133,7 +134,7 @@ func (s *ProposalExpiryScheduler) processExpiredProposalsForTenant(tenantId uuid
 		WithMaxRetries(3).
 		WithInitialDelay(1 * time.Second).
 		WithMaxDelay(10 * time.Second)
-	
+
 	err := retry.ExecuteWithRetry(retryConfig, func() error {
 		// Create a tenant model
 		tenantModel, err := tenant.Create(tenantId, "background-scheduler", 1, 0)
@@ -144,17 +145,17 @@ func (s *ProposalExpiryScheduler) processExpiredProposalsForTenant(tenantId uuid
 			}).Error("Failed to create tenant model")
 			return err
 		}
-		
+
 		// Create a context with tenant information
 		tenantCtx := tenant.WithContext(s.ctx, tenantModel)
-		
+
 		// Create a processor with tenant context
 		processor := marriage.NewProcessor(s.log, tenantCtx, s.db)
-		
+
 		// Process expired proposals for this tenant
 		return processor.ProcessExpiredProposals()
 	})
-	
+
 	if err != nil {
 		s.log.WithFields(logrus.Fields{
 			"tenantId": tenantId,
@@ -162,6 +163,6 @@ func (s *ProposalExpiryScheduler) processExpiredProposalsForTenant(tenantId uuid
 		}).Error("Failed to process expired proposals for tenant after retries")
 		return
 	}
-	
+
 	s.log.WithField("tenantId", tenantId).Debug("Successfully processed expired proposals for tenant")
 }

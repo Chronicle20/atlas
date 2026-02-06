@@ -3,9 +3,10 @@ package monster
 import (
 	"errors"
 
+	"sync"
+
 	"github.com/Chronicle20/atlas-constants/field"
 	tenant "github.com/Chronicle20/atlas-tenant"
-	"sync"
 )
 
 type Registry struct {

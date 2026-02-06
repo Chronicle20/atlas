@@ -3,6 +3,9 @@ package character
 import (
 	"atlas-character/rest"
 	"errors"
+	"net/http"
+	"strconv"
+
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
@@ -12,8 +15,6 @@ import (
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"net/http"
-	"strconv"
 )
 
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
@@ -94,7 +95,7 @@ func handleGetCharactersForAccountInWorld(d *rest.HandlerDependency, c *rest.Han
 	}
 }
 
-func decoratorsFromInclude(r *http.Request, d *rest.HandlerDependency, _ *rest.HandlerContext) []model.Decorator[Model] {
+func decoratorsFromInclude(_ *http.Request, _ *rest.HandlerDependency, _ *rest.HandlerContext) []model.Decorator[Model] {
 	var decorators = make([]model.Decorator[Model], 0)
 	return decorators
 }
@@ -232,7 +233,7 @@ func handleDeleteCharacter(d *rest.HandlerDependency, _ *rest.HandlerContext) ht
 	})
 }
 
-func handleUpdateCharacter(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
+func handleUpdateCharacter(d *rest.HandlerDependency, _ *rest.HandlerContext, input RestModel) http.HandlerFunc {
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			transactionUuid := uuid.New()

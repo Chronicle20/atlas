@@ -12,9 +12,7 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
-	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -66,7 +64,7 @@ func handleError(sc server.Model, wp writer.Producer) message.Handler[guild2.Sta
 			return
 		}
 
-		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId) {
 			return
 		}
 
@@ -93,7 +91,7 @@ func handleTitlesUpdated(sc server.Model, wp writer.Producer) message.Handler[gu
 			return
 		}
 
-		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId) {
 			return
 		}
 
@@ -120,7 +118,7 @@ func handleMemberJoined(sc server.Model, wp writer.Producer) message.Handler[gui
 			return
 		}
 
-		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId) {
 			return
 		}
 
@@ -198,7 +196,7 @@ func handleMemberLeft(sc server.Model, wp writer.Producer) message.Handler[guild
 			return
 		}
 
-		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId) {
 			return
 		}
 
@@ -263,7 +261,7 @@ func handleCapacityUpdated(sc server.Model, wp writer.Producer) message.Handler[
 			return
 		}
 
-		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId) {
 			return
 		}
 
@@ -290,7 +288,7 @@ func handleNoticeUpdated(sc server.Model, wp writer.Producer) message.Handler[gu
 			return
 		}
 
-		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId) {
 			return
 		}
 
@@ -317,7 +315,7 @@ func handleMemberTitleUpdated(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId) {
 			return
 		}
 
@@ -357,7 +355,7 @@ func handleMemberStatusUpdated(sc server.Model, wp writer.Producer) message.Hand
 			return
 		}
 
-		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId) {
 			return
 		}
 
@@ -397,7 +395,7 @@ func handleEmblemUpdated(sc server.Model, wp writer.Producer) message.Handler[gu
 			return
 		}
 
-		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId) {
 			return
 		}
 
@@ -449,7 +447,7 @@ func handleRequestAgreement(sc server.Model, wp writer.Producer) message.Handler
 			return
 		}
 
-		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId) {
 			return
 		}
 
@@ -487,7 +485,7 @@ func handleDisbanded(sc server.Model, wp writer.Producer) message.Handler[guild2
 			return
 		}
 
-		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId) {
 			return
 		}
 
@@ -526,7 +524,7 @@ func handleCreated(sc server.Model, wp writer.Producer) message.Handler[guild2.S
 			return
 		}
 
-		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId) {
 			return
 		}
 
@@ -555,7 +553,7 @@ func handleRequestEmblem(sc server.Model, wp writer.Producer) message.Handler[gu
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), world.Id(c.Body.WorldId), channel.Id(c.Body.ChannelId)) {
+		if !sc.Is(tenant.MustFromContext(ctx), c.Body.WorldId, c.Body.ChannelId) {
 			return
 		}
 
@@ -580,7 +578,7 @@ func handleRequestName(sc server.Model, wp writer.Producer) message.Handler[guil
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), world.Id(c.Body.WorldId), channel.Id(c.Body.ChannelId)) {
+		if !sc.Is(tenant.MustFromContext(ctx), c.Body.WorldId, c.Body.ChannelId) {
 			return
 		}
 

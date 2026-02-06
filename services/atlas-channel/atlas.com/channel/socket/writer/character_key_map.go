@@ -2,6 +2,7 @@ package writer
 
 import (
 	"atlas-channel/character/key"
+
 	"github.com/Chronicle20/atlas-socket/response"
 )
 

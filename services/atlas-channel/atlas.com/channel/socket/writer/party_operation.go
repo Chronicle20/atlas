@@ -3,11 +3,12 @@ package writer
 import (
 	"atlas-channel/character"
 	"atlas-channel/party"
+	"strconv"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
-	"strconv"
 )
 
 const (

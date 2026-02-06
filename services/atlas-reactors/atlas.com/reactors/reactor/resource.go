@@ -80,7 +80,7 @@ func handleGetByIdInMap(d *rest.HandlerDependency, c *rest.HandlerContext) http.
 	})
 }
 
-func handleCreateInMap(d *rest.HandlerDependency, c *rest.HandlerContext, i RestModel) http.HandlerFunc {
+func handleCreateInMap(d *rest.HandlerDependency, _ *rest.HandlerContext, i RestModel) http.HandlerFunc {
 	return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
 		return rest.ParseChannelId(d.Logger(), func(channelId channel.Id) http.HandlerFunc {
 			return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {

@@ -3,9 +3,10 @@ package quest
 import (
 	"atlas-npc-conversations/conversation"
 	"fmt"
+	"strconv"
+
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
-	"strconv"
 )
 
 const (
@@ -14,11 +15,11 @@ const (
 
 // RestModel represents the REST model for quest conversations
 type RestModel struct {
-	Id                uuid.UUID            `json:"-"`                          // Conversation ID
-	QuestId           uint32               `json:"questId"`                    // Quest ID
-	NpcId             uint32               `json:"npcId,omitempty"`            // NPC ID (metadata)
-	QuestName         string               `json:"questName,omitempty"`        // Quest name (metadata)
-	StartStateMachine RestStateMachineModel `json:"startStateMachine"`          // State machine for quest acceptance
+	Id                uuid.UUID              `json:"-"`                         // Conversation ID
+	QuestId           uint32                 `json:"questId"`                   // Quest ID
+	NpcId             uint32                 `json:"npcId,omitempty"`           // NPC ID (metadata)
+	QuestName         string                 `json:"questName,omitempty"`       // Quest name (metadata)
+	StartStateMachine RestStateMachineModel  `json:"startStateMachine"`         // State machine for quest acceptance
 	EndStateMachine   *RestStateMachineModel `json:"endStateMachine,omitempty"` // State machine for quest completion (optional)
 }
 
@@ -58,17 +59,17 @@ func (r RestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
 }
 
 // SetToOneReferenceID sets a to-one reference ID
-func (r *RestModel) SetToOneReferenceID(name, ID string) error {
+func (r *RestModel) SetToOneReferenceID(_, _ string) error {
 	return nil
 }
 
 // SetToManyReferenceIDs sets to-many reference IDs
-func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
+func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error {
 	return nil
 }
 
 // SetReferencedStructs sets referenced structs
-func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonapi.Data) error {
+func (r *RestModel) SetReferencedStructs(_ map[string]map[string]jsonapi.Data) error {
 	return nil
 }
 
@@ -94,9 +95,9 @@ type RestStateModel struct {
 type RestDialogueModel struct {
 	DialogueType   string            `json:"dialogueType"`
 	Text           string            `json:"text"`
-	Speaker        string            `json:"speaker,omitempty"`         // Speaker type: "NPC" or "CHARACTER"
-	EndChat        *bool             `json:"endChat,omitempty"`         // Whether to show end chat button (defaults to true)
-	SecondaryNpcId uint32            `json:"secondaryNpcId,omitempty"`  // Optional secondary NPC template ID
+	Speaker        string            `json:"speaker,omitempty"`        // Speaker type: "NPC" or "CHARACTER"
+	EndChat        *bool             `json:"endChat,omitempty"`        // Whether to show end chat button (defaults to true)
+	SecondaryNpcId uint32            `json:"secondaryNpcId,omitempty"` // Optional secondary NPC template ID
 	Choices        []RestChoiceModel `json:"choices,omitempty"`
 }
 

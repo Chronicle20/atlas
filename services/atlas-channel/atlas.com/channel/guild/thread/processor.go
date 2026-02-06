@@ -4,6 +4,7 @@ import (
 	thread2 "atlas-channel/kafka/message/guild/thread"
 	"atlas-channel/kafka/producer"
 	"context"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"

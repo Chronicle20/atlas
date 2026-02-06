@@ -50,7 +50,7 @@ func TestCharacterTemplatesResourceIntegration(t *testing.T) {
 	})
 
 	t.Run("ErrorHandling", func(t *testing.T) {
-		testErrorHandling(t, testServer, tenantId)
+		testErrorHandling(t, testServer)
 	})
 
 	t.Run("TenantIsolation", func(t *testing.T) {
@@ -153,7 +153,7 @@ func setupTestTemplateData(t *testing.T, db *gorm.DB, tenantId uuid.UUID) {
 	}
 }
 
-func createRequestWithTenant(method, url string, body []byte, tenantId uuid.UUID) *http.Request {
+func createRequestWithTenant(method, url string, tenantId uuid.UUID) *http.Request {
 	req, err := http.NewRequest(method, url, nil)
 	if err != nil {
 		panic(err)
@@ -171,7 +171,7 @@ func createRequestWithTenant(method, url string, body []byte, tenantId uuid.UUID
 func testGetTemplatesEndpoint(t *testing.T, testServer *httptest.Server, tenantId uuid.UUID) {
 	t.Run("GetAllTemplates", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/characters/templates", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -203,7 +203,7 @@ func testGetTemplatesEndpoint(t *testing.T, testServer *httptest.Server, tenantI
 	})
 }
 
-func testErrorHandling(t *testing.T, testServer *httptest.Server, tenantId uuid.UUID) {
+func testErrorHandling(t *testing.T, testServer *httptest.Server) {
 	t.Run("MissingTenantHeader", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/characters/templates", testServer.URL)
 		req, _ := http.NewRequest("GET", url, nil)
@@ -223,7 +223,7 @@ func testTenantIsolation(t *testing.T, testServer *httptest.Server, originalTena
 		differentTenantId := uuid.New()
 
 		url := fmt.Sprintf("%s/data/characters/templates", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, differentTenantId)
+		req := createRequestWithTenant("GET", url, differentTenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -242,7 +242,7 @@ func testTenantIsolation(t *testing.T, testServer *httptest.Server, originalTena
 
 	t.Run("OriginalTenantHasData", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/characters/templates", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, originalTenantId)
+		req := createRequestWithTenant("GET", url, originalTenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -263,7 +263,7 @@ func testTenantIsolation(t *testing.T, testServer *httptest.Server, originalTena
 func testJSONAPICompliance(t *testing.T, testServer *httptest.Server, tenantId uuid.UUID) {
 	t.Run("CollectionResourceStructure", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/characters/templates", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)

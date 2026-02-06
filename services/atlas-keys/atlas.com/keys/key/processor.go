@@ -2,6 +2,7 @@ package key
 
 import (
 	"context"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -67,7 +68,7 @@ func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {
 }
 
 // Reset resets keys for a character
-func (p *ProcessorImpl) Reset(transactionId uuid.UUID, characterId uint32) error {
+func (p *ProcessorImpl) Reset(_ uuid.UUID, characterId uint32) error {
 	return p.db.Transaction(func(tx *gorm.DB) error {
 		err := deleteByCharacter(tx, p.t, characterId)
 		if err != nil {
@@ -86,7 +87,7 @@ func (p *ProcessorImpl) Reset(transactionId uuid.UUID, characterId uint32) error
 }
 
 // CreateDefault creates default keys for a character
-func (p *ProcessorImpl) CreateDefault(transactionId uuid.UUID, characterId uint32) error {
+func (p *ProcessorImpl) CreateDefault(_ uuid.UUID, characterId uint32) error {
 	return p.db.Transaction(func(tx *gorm.DB) error {
 		for i := 0; i < len(defaultKey); i++ {
 			_, err := create(tx, p.t, characterId, defaultKey[i], defaultType[i], defaultAction[i])
@@ -100,7 +101,7 @@ func (p *ProcessorImpl) CreateDefault(transactionId uuid.UUID, characterId uint3
 }
 
 // Delete deletes keys for a character
-func (p *ProcessorImpl) Delete(transactionId uuid.UUID, characterId uint32) error {
+func (p *ProcessorImpl) Delete(_ uuid.UUID, characterId uint32) error {
 	return p.db.Transaction(func(tx *gorm.DB) error {
 		err := deleteByCharacter(tx, p.t, characterId)
 		if err != nil {
@@ -112,7 +113,7 @@ func (p *ProcessorImpl) Delete(transactionId uuid.UUID, characterId uint32) erro
 }
 
 // ChangeKey changes a key binding
-func (p *ProcessorImpl) ChangeKey(transactionId uuid.UUID, characterId uint32, key int32, theType int8, action int32) error {
+func (p *ProcessorImpl) ChangeKey(_ uuid.UUID, characterId uint32, key int32, theType int8, action int32) error {
 	return p.db.Transaction(func(tx *gorm.DB) error {
 		_, err := byCharacterKeyEntityProvider(p.t.Id(), characterId, key)(tx)()
 		if err != nil {

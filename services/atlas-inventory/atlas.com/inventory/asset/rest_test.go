@@ -2,15 +2,16 @@ package asset_test
 
 import (
 	"atlas-inventory/asset"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
-	"net/http"
-	"net/http/httptest"
-	"testing"
 )
 
 type Server struct {

@@ -1,7 +1,5 @@
 package rates
 
-import "strconv"
-
 type RestModel struct {
 	Id           string  `json:"-"`
 	ExpRate      float64 `json:"expRate"`
@@ -30,22 +28,4 @@ func Extract(rm RestModel) (Model, error) {
 		itemDropRate: rm.ItemDropRate,
 		questExpRate: rm.QuestExpRate,
 	}, nil
-}
-
-// ExtractWithDefault returns default rates if extraction fails
-func ExtractWithDefault(rm RestModel) Model {
-	m, err := Extract(rm)
-	if err != nil {
-		return Default()
-	}
-	return m
-}
-
-// CharacterIdFromRestModel extracts characterId from the REST model ID
-func CharacterIdFromRestModel(rm RestModel) (uint32, error) {
-	id, err := strconv.ParseUint(rm.Id, 10, 32)
-	if err != nil {
-		return 0, err
-	}
-	return uint32(id), nil
 }

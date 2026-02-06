@@ -6,6 +6,7 @@ import (
 	"atlas-skills/macro"
 	"atlas-skills/skill"
 	"context"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"

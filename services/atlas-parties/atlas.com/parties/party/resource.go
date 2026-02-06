@@ -110,7 +110,7 @@ func handleGetParty(d *rest.HandlerDependency, c *rest.HandlerContext) http.Hand
 	})
 }
 
-func handleUpdateParty(d *rest.HandlerDependency, c *rest.HandlerContext, i RestModel) http.HandlerFunc {
+func handleUpdateParty(d *rest.HandlerDependency, _ *rest.HandlerContext, i RestModel) http.HandlerFunc {
 	return rest.ParsePartyId(d.Logger(), func(partyId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			p, err := NewProcessor(d.Logger(), d.Context()).GetById(partyId)
@@ -199,7 +199,7 @@ func handleGetPartyMember(d *rest.HandlerDependency, c *rest.HandlerContext) htt
 	})
 }
 
-func handleRemovePartyMember(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+func handleRemovePartyMember(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParsePartyId(d.Logger(), func(partyId uint32) http.HandlerFunc {
 		return rest.ParseMemberId(d.Logger(), func(memberId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {

@@ -145,7 +145,7 @@ func setupTestSkillData(t *testing.T, db *gorm.DB, tenantId uuid.UUID) {
 	}
 }
 
-func createRequestWithTenant(method, url string, body []byte, tenantId uuid.UUID) *http.Request {
+func createRequestWithTenant(method, url string, tenantId uuid.UUID) *http.Request {
 	req, err := http.NewRequest(method, url, nil)
 	if err != nil {
 		panic(err)
@@ -163,7 +163,7 @@ func createRequestWithTenant(method, url string, body []byte, tenantId uuid.UUID
 func testGetSkillEndpoint(t *testing.T, testServer *httptest.Server, tenantId uuid.UUID) {
 	t.Run("GetSkillById", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/skills/1001004", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -189,7 +189,7 @@ func testGetSkillEndpoint(t *testing.T, testServer *httptest.Server, tenantId uu
 
 	t.Run("GetSkillNotFound", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/skills/9999999", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -203,7 +203,7 @@ func testGetSkillEndpoint(t *testing.T, testServer *httptest.Server, tenantId uu
 func testErrorHandling(t *testing.T, testServer *httptest.Server, tenantId uuid.UUID) {
 	t.Run("InvalidSkillId", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/skills/invalid", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -232,7 +232,7 @@ func testTenantIsolation(t *testing.T, testServer *httptest.Server, originalTena
 		differentTenantId := uuid.New()
 
 		url := fmt.Sprintf("%s/data/skills/1001004", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, differentTenantId)
+		req := createRequestWithTenant("GET", url, differentTenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -245,7 +245,7 @@ func testTenantIsolation(t *testing.T, testServer *httptest.Server, originalTena
 
 	t.Run("OriginalTenantHasData", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/skills/1001004", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, originalTenantId)
+		req := createRequestWithTenant("GET", url, originalTenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -267,7 +267,7 @@ func testTenantIsolation(t *testing.T, testServer *httptest.Server, originalTena
 func testJSONAPICompliance(t *testing.T, testServer *httptest.Server, tenantId uuid.UUID) {
 	t.Run("SingleResourceStructure", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/skills/1001004", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)

@@ -104,7 +104,7 @@ func WhereAmICommandProducer(_ logrus.FieldLogger) func(_ context.Context) func(
 
 			return func(l logrus.FieldLogger) func(ctx context.Context) error {
 				return func(ctx context.Context) error {
-					f := field.NewBuilder(ch.WorldId(), ch.Id(), _map2.Id(character.MapId())).Build()
+					f := field.NewBuilder(ch.WorldId(), ch.Id(), character.MapId()).Build()
 					return message.NewProcessor(l, ctx).IssuePinkText(f, 0, "You are in map "+strconv.Itoa(int(character.MapId())), []uint32{character.Id()})
 				}
 			}, true
@@ -129,7 +129,7 @@ func RatesCommandProducer(_ logrus.FieldLogger) func(_ context.Context) func(ch 
 				return func(ctx context.Context) error {
 					rp := rate.NewProcessor(l, ctx)
 					mp := message.NewProcessor(l, ctx)
-					f := field.NewBuilder(ch.WorldId(), ch.Id(), _map2.Id(character.MapId())).Build()
+					f := field.NewBuilder(ch.WorldId(), ch.Id(), character.MapId()).Build()
 
 					r, err := rp.GetByCharacter(ch, character.Id())
 					if err != nil {

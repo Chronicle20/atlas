@@ -98,7 +98,7 @@ func TestHandleMapChangedEvent_UpdatesMapProgress(t *testing.T) {
 		WorldId:     1,
 		Body: character.StatusEventMapChangedBody{
 			ChannelId:   1,
-			TargetMapId: _map.Id(mapId),
+			TargetMapId: mapId,
 		},
 	}
 

@@ -6,6 +6,7 @@ import (
 	"atlas-cashshop/kafka/message/account"
 	"atlas-cashshop/wallet"
 	"context"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"

@@ -21,15 +21,16 @@ import (
 	"atlas-data/skill"
 	"context"
 	"fmt"
-	"github.com/Chronicle20/atlas-tenant"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 	"io"
 	"io/fs"
 	"mime/multipart"
 	"os"
 	"path/filepath"
 	"sync"
+
+	"github.com/Chronicle20/atlas-tenant"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 const (

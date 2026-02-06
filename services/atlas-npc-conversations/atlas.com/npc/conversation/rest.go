@@ -2,8 +2,9 @@ package conversation
 
 import (
 	"fmt"
-	"github.com/jtumidanski/api2go/jsonapi"
 	"strconv"
+
+	"github.com/jtumidanski/api2go/jsonapi"
 )
 
 // RestStateModel represents the REST model for conversation states
@@ -51,28 +52,28 @@ func (r RestStateModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
 }
 
 // SetToOneReferenceID sets a to-one reference ID
-func (r *RestStateModel) SetToOneReferenceID(name, ID string) error {
+func (r *RestStateModel) SetToOneReferenceID(_, _ string) error {
 	return nil
 }
 
 // SetToManyReferenceIDs sets to-many reference IDs
-func (r *RestStateModel) SetToManyReferenceIDs(name string, IDs []string) error {
+func (r *RestStateModel) SetToManyReferenceIDs(_ string, _ []string) error {
 	return nil
 }
 
 // SetReferencedStructs sets referenced structs
-func (r *RestStateModel) SetReferencedStructs(references map[string]map[string]jsonapi.Data) error {
+func (r *RestStateModel) SetReferencedStructs(_ map[string]map[string]jsonapi.Data) error {
 	return nil
 }
 
 // RestDialogueModel represents the REST model for dialogue states
 type RestDialogueModel struct {
-	DialogueType   string            `json:"dialogueType"`              // Dialogue type
-	Text           string            `json:"text"`                      // Dialogue text
-	Speaker        string            `json:"speaker,omitempty"`         // Speaker type: "NPC" or "CHARACTER"
-	EndChat        *bool             `json:"endChat,omitempty"`         // Whether to show end chat button (defaults to true)
-	SecondaryNpcId uint32            `json:"secondaryNpcId,omitempty"`  // Optional secondary NPC template ID
-	Choices        []RestChoiceModel `json:"choices,omitempty"`         // Dialogue choices
+	DialogueType   string            `json:"dialogueType"`             // Dialogue type
+	Text           string            `json:"text"`                     // Dialogue text
+	Speaker        string            `json:"speaker,omitempty"`        // Speaker type: "NPC" or "CHARACTER"
+	EndChat        *bool             `json:"endChat,omitempty"`        // Whether to show end chat button (defaults to true)
+	SecondaryNpcId uint32            `json:"secondaryNpcId,omitempty"` // Optional secondary NPC template ID
+	Choices        []RestChoiceModel `json:"choices,omitempty"`        // Dialogue choices
 }
 
 // RestChoiceModel represents the REST model for dialogue choices
@@ -186,17 +187,17 @@ func (r RestOptionSetModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
 }
 
 // SetToOneReferenceID sets a to-one reference ID
-func (r *RestOptionSetModel) SetToOneReferenceID(name, ID string) error {
+func (r *RestOptionSetModel) SetToOneReferenceID(_, _ string) error {
 	return nil
 }
 
 // SetToManyReferenceIDs sets to-many reference IDs
-func (r *RestOptionSetModel) SetToManyReferenceIDs(name string, IDs []string) error {
+func (r *RestOptionSetModel) SetToManyReferenceIDs(_ string, _ []string) error {
 	return nil
 }
 
 // SetReferencedStructs sets referenced structs
-func (r *RestOptionSetModel) SetReferencedStructs(references map[string]map[string]jsonapi.Data) error {
+func (r *RestOptionSetModel) SetReferencedStructs(_ map[string]map[string]jsonapi.Data) error {
 	return nil
 }
 

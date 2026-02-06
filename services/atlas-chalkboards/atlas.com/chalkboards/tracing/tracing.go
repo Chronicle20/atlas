@@ -2,11 +2,12 @@ package tracing
 
 import (
 	"fmt"
+	"io"
+	"os"
+
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 	"github.com/uber/jaeger-client-go/config"
-	"io"
-	"os"
 )
 
 func InitTracer(l logrus.FieldLogger) func(serviceName string) (io.Closer, error) {

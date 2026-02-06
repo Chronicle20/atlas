@@ -1,7 +1,7 @@
 package mock
 
 import (
-	drop "atlas-drops-information/monster/drop"
+	"atlas-drops-information/monster/drop"
 
 	"github.com/Chronicle20/atlas-model/model"
 )

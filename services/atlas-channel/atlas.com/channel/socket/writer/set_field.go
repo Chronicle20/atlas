@@ -19,12 +19,11 @@ import (
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 const SetField = "SetField"
 
-func WarpToMapBody(l logrus.FieldLogger, tenant tenant.Model) func(channelId channel.Id, mapId _map.Id, portalId uint32, hp uint16) BodyProducer {
+func WarpToMapBody(tenant tenant.Model) func(channelId channel.Id, mapId _map.Id, portalId uint32, hp uint16) BodyProducer {
 	return func(channelId channel.Id, mapId _map.Id, portalId uint32, hp uint16) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 83) || tenant.Region() == "JMS" {
@@ -57,7 +56,7 @@ func WarpToMapBody(l logrus.FieldLogger, tenant tenant.Model) func(channelId cha
 	}
 }
 
-func SetFieldBody(l logrus.FieldLogger, tenant tenant.Model) func(channelId channel.Id, c character.Model, bl buddylist.Model) BodyProducer {
+func SetFieldBody(tenant tenant.Model) func(channelId channel.Id, c character.Model, bl buddylist.Model) BodyProducer {
 	return func(channelId channel.Id, c character.Model, bl buddylist.Model) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 83) || tenant.Region() == "JMS" {
@@ -127,7 +126,7 @@ func WriteCharacterInfo(tenant tenant.Model) func(w *response.Writer) func(c cha
 			WriteInventoryInfo(tenant)(w, c)
 			WriteSkillInfo(tenant)(w, c)
 			WriteQuestInfo(tenant)(w, c)
-			WriteMiniGameInfo(tenant)(w, c)
+			WriteMiniGameInfo()(w, c)
 			WriteRingInfo(tenant)(w, c)
 			WriteTeleportInfo(tenant)(w, c)
 			if tenant.Region() == "JMS" {
@@ -135,10 +134,10 @@ func WriteCharacterInfo(tenant tenant.Model) func(w *response.Writer) func(c cha
 			}
 
 			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 28) || tenant.Region() == "JMS" {
-				WriteMonsterBookInfo(tenant)(w, c)
+				WriteMonsterBookInfo()(w, c)
 				if tenant.Region() == "GMS" {
-					WriteNewYearInfo(tenant)(w, c)
-					WriteAreaInfo(tenant)(w, c)
+					WriteNewYearInfo()(w, c)
+					WriteAreaInfo()(w, c)
 				} else if tenant.Region() == "JMS" {
 					w.WriteShort(0)
 				}
@@ -148,19 +147,19 @@ func WriteCharacterInfo(tenant tenant.Model) func(w *response.Writer) func(c cha
 	}
 }
 
-func WriteAreaInfo(tenant tenant.Model) func(w *response.Writer, c character.Model) {
+func WriteAreaInfo() func(w *response.Writer, c character.Model) {
 	return func(w *response.Writer, c character.Model) {
 		w.WriteShort(0)
 	}
 }
 
-func WriteNewYearInfo(tenant tenant.Model) func(w *response.Writer, c character.Model) {
+func WriteNewYearInfo() func(w *response.Writer, c character.Model) {
 	return func(w *response.Writer, c character.Model) {
 		w.WriteShort(0)
 	}
 }
 
-func WriteMonsterBookInfo(tenant tenant.Model) func(w *response.Writer, c character.Model) {
+func WriteMonsterBookInfo() func(w *response.Writer, c character.Model) {
 	return func(w *response.Writer, c character.Model) {
 		w.WriteInt(0) // cover id
 		w.WriteByte(0)
@@ -193,7 +192,7 @@ func WriteRingInfo(tenant tenant.Model) func(w *response.Writer, c character.Mod
 	}
 }
 
-func WriteMiniGameInfo(tenant tenant.Model) func(w *response.Writer, c character.Model) {
+func WriteMiniGameInfo() func(w *response.Writer, c character.Model) {
 	return func(w *response.Writer, c character.Model) {
 		w.WriteShort(0)
 	}
@@ -698,7 +697,7 @@ func WriteCharacterStatistics(tenant tenant.Model) func(w *response.Writer, char
 		w.WriteShort(character.Ap())
 
 		if character.HasSPTable() {
-			WriteRemainingSkillInfo(w, character)
+			WriteRemainingSkillInfo()
 		} else {
 			w.WriteShort(character.RemainingSp())
 		}
@@ -732,6 +731,6 @@ func WriteCharacterStatistics(tenant tenant.Model) func(w *response.Writer, char
 	}
 }
 
-func WriteRemainingSkillInfo(w *response.Writer, character character.Model) {
+func WriteRemainingSkillInfo() {
 
 }

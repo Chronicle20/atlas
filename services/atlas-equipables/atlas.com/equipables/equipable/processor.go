@@ -7,12 +7,13 @@ import (
 	equipable2 "atlas-equipables/kafka/message/equipable"
 	"atlas-equipables/kafka/producer"
 	"context"
+	"math"
+	"math/rand"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"math"
-	"math/rand"
 )
 
 type Processor struct {

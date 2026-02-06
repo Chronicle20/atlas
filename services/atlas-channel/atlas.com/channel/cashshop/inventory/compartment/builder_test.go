@@ -4,6 +4,7 @@ import (
 	"atlas-channel/cashshop/inventory/asset"
 	"atlas-channel/cashshop/inventory/compartment"
 	"atlas-channel/cashshop/item"
+	"errors"
 	"testing"
 
 	"github.com/google/uuid"
@@ -49,7 +50,7 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 func TestBuild_MissingId(t *testing.T) {
 	_, err := compartment.NewModelBuilder(uuid.Nil, 100, compartment.TypeExplorer, 50).Build()
 
-	if err != compartment.ErrInvalidId {
+	if !errors.Is(err, compartment.ErrInvalidId) {
 		t.Errorf("Build() error = %v, want ErrInvalidId", err)
 	}
 }
@@ -58,7 +59,7 @@ func TestBuild_MissingAccountId(t *testing.T) {
 	id := uuid.New()
 	_, err := compartment.NewModelBuilder(id, 0, compartment.TypeExplorer, 50).Build()
 
-	if err != compartment.ErrInvalidAccountId {
+	if !errors.Is(err, compartment.ErrInvalidAccountId) {
 		t.Errorf("Build() error = %v, want ErrInvalidAccountId", err)
 	}
 }

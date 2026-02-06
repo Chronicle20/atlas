@@ -3,11 +3,12 @@ package response
 import (
 	"bytes"
 	"encoding/binary"
+	"io"
+	"strings"
+
 	"github.com/sirupsen/logrus"
 	"golang.org/x/text/encoding/japanese"
 	"golang.org/x/text/transform"
-	"io"
-	"strings"
 )
 
 type Writer struct {

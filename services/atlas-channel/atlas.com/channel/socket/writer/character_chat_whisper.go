@@ -2,8 +2,9 @@ package writer
 
 import (
 	"atlas-channel/character"
-	"github.com/Chronicle20/atlas-constants/map"
+
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-socket/response"
 )
 

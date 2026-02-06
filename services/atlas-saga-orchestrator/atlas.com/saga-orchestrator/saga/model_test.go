@@ -2,10 +2,11 @@ package saga
 
 import (
 	"encoding/json"
-	"github.com/google/uuid"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 func TestSaga_Failing(t *testing.T) {
@@ -66,9 +67,9 @@ func TestSaga_Failing(t *testing.T) {
 
 func TestSaga_GetCurrentStep(t *testing.T) {
 	tests := []struct {
-		name          string
-		builder       func() *Builder
-		expectStep    bool
+		name           string
+		builder        func() *Builder
+		expectStep     bool
 		expectedStepId string
 	}{
 		{
@@ -79,7 +80,7 @@ func TestSaga_GetCurrentStep(t *testing.T) {
 					SetSagaType(InventoryTransaction).
 					SetInitiatedBy("test")
 			},
-			expectStep:    false,
+			expectStep:     false,
 			expectedStepId: "",
 		},
 		{
@@ -92,7 +93,7 @@ func TestSaga_GetCurrentStep(t *testing.T) {
 					AddStep("step1", Completed, AwardInventory, nil).
 					AddStep("step2", Completed, AwardInventory, nil)
 			},
-			expectStep:    false,
+			expectStep:     false,
 			expectedStepId: "",
 		},
 		{
@@ -106,7 +107,7 @@ func TestSaga_GetCurrentStep(t *testing.T) {
 					AddStep("step2", Pending, AwardInventory, nil).
 					AddStep("step3", Pending, AwardInventory, nil)
 			},
-			expectStep:    true,
+			expectStep:     true,
 			expectedStepId: "step2",
 		},
 	}

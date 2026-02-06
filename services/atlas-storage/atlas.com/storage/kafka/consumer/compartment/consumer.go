@@ -63,7 +63,7 @@ func handleReleaseCommand(db *gorm.DB) kafkaMessage.Handler[compartment.Command[
 
 		// Get the asset before release to know its inventory type
 		t := tenant.MustFromContext(ctx)
-		assetModel, err := asset.GetById(l, db, t.Id())(uint32(c.Body.AssetId))
+		assetModel, err := asset.GetById(db, t.Id())(uint32(c.Body.AssetId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to get asset [%d] before release", c.Body.AssetId)
 			return
@@ -91,7 +91,7 @@ func updateProjectionOnAccept(l logrus.FieldLogger, ctx context.Context, db *gor
 	t := tenant.MustFromContext(ctx)
 
 	// Get fresh assets from database for this storage
-	assets, err := asset.GetByStorageId(l, db, t.Id())(proj.StorageId())
+	assets, err := asset.GetByStorageId(db, t.Id())(proj.StorageId())
 	if err != nil {
 		l.WithError(err).Warnf("Failed to refresh assets for projection update")
 		return
@@ -134,7 +134,7 @@ func updateProjectionOnRelease(l logrus.FieldLogger, ctx context.Context, db *go
 	t := tenant.MustFromContext(ctx)
 
 	// Get fresh assets from database for this storage
-	assets, err := asset.GetByStorageId(l, db, t.Id())(proj.StorageId())
+	assets, err := asset.GetByStorageId(db, t.Id())(proj.StorageId())
 	if err != nil {
 		l.WithError(err).Warnf("Failed to refresh assets for projection update")
 		return

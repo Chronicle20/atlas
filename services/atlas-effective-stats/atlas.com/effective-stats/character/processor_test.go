@@ -3,6 +3,7 @@ package character
 import (
 	"atlas-effective-stats/stat"
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/Chronicle20/atlas-constants/channel"
@@ -328,7 +329,7 @@ func TestProcessor_RemoveCharacter(t *testing.T) {
 
 	// Character should no longer exist
 	_, err := GetRegistry().Get(ten, 12345)
-	if err != ErrNotFound {
+	if !errors.Is(err, ErrNotFound) {
 		t.Errorf("Get() error = %v, want ErrNotFound", err)
 	}
 }

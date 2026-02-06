@@ -3,6 +3,7 @@ package compartment
 import (
 	consumer2 "atlas-consumables/kafka/consumer"
 	"atlas-consumables/kafka/message/compartment"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"

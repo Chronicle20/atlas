@@ -3,6 +3,7 @@ package tenant
 import (
 	"atlas-tenants/database"
 	"errors"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )

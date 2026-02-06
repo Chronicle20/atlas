@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"atlas-marriages/kafka/message/marriage"
+
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
@@ -245,13 +246,13 @@ func CeremonyRescheduledEventProvider(ceremonyId uint32, marriageId uint32, char
 		CharacterId: characterId1,
 		Type:        marriage.EventCeremonyRescheduled,
 		Body: marriage.CeremonyRescheduledBody{
-			CeremonyId:      ceremonyId,
-			MarriageId:      marriageId,
-			CharacterId1:    characterId1,
-			CharacterId2:    characterId2,
-			RescheduledAt:   rescheduledAt,
-			NewScheduledAt:  newScheduledAt,
-			RescheduledBy:   rescheduledBy,
+			CeremonyId:     ceremonyId,
+			MarriageId:     marriageId,
+			CharacterId1:   characterId1,
+			CharacterId2:   characterId2,
+			RescheduledAt:  rescheduledAt,
+			NewScheduledAt: newScheduledAt,
+			RescheduledBy:  rescheduledBy,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

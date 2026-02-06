@@ -8,8 +8,8 @@ import (
 )
 
 type InventoryRestModel struct {
-	Id           string                `json:"-"`
-	AccountId    uint32                `json:"accountId"`
+	Id           string                 `json:"-"`
+	AccountId    uint32                 `json:"accountId"`
 	Compartments []CompartmentRestModel `json:"-"`
 }
 
@@ -55,7 +55,7 @@ func (r InventoryRestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
 	return result
 }
 
-func (r *InventoryRestModel) SetToOneReferenceID(name, ID string) error {
+func (r *InventoryRestModel) SetToOneReferenceID(_, _ string) error {
 	return nil
 }
 
@@ -136,7 +136,7 @@ func (r CompartmentRestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier
 	return result
 }
 
-func (r *CompartmentRestModel) SetToOneReferenceID(name, ID string) error {
+func (r *CompartmentRestModel) SetToOneReferenceID(_, _ string) error {
 	return nil
 }
 
@@ -216,7 +216,7 @@ func (r *AssetRestModel) SetToOneReferenceID(name, ID string) error {
 	return nil
 }
 
-func (r *AssetRestModel) SetToManyReferenceIDs(name string, IDs []string) error {
+func (r *AssetRestModel) SetToManyReferenceIDs(_ string, _ []string) error {
 	return nil
 }
 
@@ -257,11 +257,11 @@ func (r *ItemRestModel) SetID(id string) error {
 	return nil
 }
 
-func (r *ItemRestModel) SetToOneReferenceID(name, ID string) error {
+func (r *ItemRestModel) SetToOneReferenceID(_, _ string) error {
 	return nil
 }
 
-func (r *ItemRestModel) SetToManyReferenceIDs(name string, IDs []string) error {
+func (r *ItemRestModel) SetToManyReferenceIDs(_ string, _ []string) error {
 	return nil
 }
 

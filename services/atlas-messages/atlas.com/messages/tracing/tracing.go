@@ -2,6 +2,9 @@ package tracing
 
 import (
 	"context"
+	"os"
+	"time"
+
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
@@ -10,8 +13,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
-	"os"
-	"time"
 )
 
 func InitTracer(serviceName string) (*trace.TracerProvider, error) {

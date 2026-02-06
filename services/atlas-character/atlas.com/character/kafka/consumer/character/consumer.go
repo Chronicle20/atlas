@@ -5,6 +5,7 @@ import (
 	consumer2 "atlas-character/kafka/consumer"
 	character2 "atlas-character/kafka/message/character"
 	"context"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-kafka/consumer"

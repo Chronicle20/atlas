@@ -2,6 +2,7 @@ package pet
 
 import (
 	pet2 "atlas-saga-orchestrator/kafka/message/pet"
+
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"

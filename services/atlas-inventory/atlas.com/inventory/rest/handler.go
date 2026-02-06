@@ -2,10 +2,11 @@ package rest
 
 import (
 	"context"
-	"github.com/google/uuid"
 	"io"
 	"net/http"
 	"strconv"
+
+	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"

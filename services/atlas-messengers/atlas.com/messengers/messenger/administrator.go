@@ -2,6 +2,7 @@ package messenger
 
 import (
 	"context"
+
 	"github.com/Chronicle20/atlas-tenant"
 )
 

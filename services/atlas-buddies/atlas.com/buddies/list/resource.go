@@ -7,6 +7,8 @@ import (
 	list3 "atlas-buddies/kafka/producer/list"
 	"atlas-buddies/rest"
 	"errors"
+	"net/http"
+
 	"github.com/Chronicle20/atlas-constants/character"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
@@ -14,7 +16,6 @@ import (
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"net/http"
 )
 
 const (
@@ -101,4 +102,3 @@ func handleGetBuddiesInBuddyList(db *gorm.DB) rest.GetHandler {
 		})
 	}
 }
-

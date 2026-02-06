@@ -2,6 +2,7 @@ package drop
 
 import (
 	drop2 "atlas-character/kafka/message/drop"
+
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"

@@ -2,10 +2,11 @@ package producer
 
 import (
 	"context"
+	"testing"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus/hooks/test"
-	"testing"
 )
 
 type testEvent struct {
@@ -21,7 +22,7 @@ type MockWriter struct {
 }
 
 // WriteMessages simulates writing messages to Kafka
-func (mw *MockWriter) WriteMessages(ctx context.Context, msgs ...kafka.Message) error {
+func (mw *MockWriter) WriteMessages(_ context.Context, msgs ...kafka.Message) error {
 	// Append messages to writtenMessages for later inspection
 	mw.writtenMessages = append(mw.writtenMessages, msgs...)
 	return nil

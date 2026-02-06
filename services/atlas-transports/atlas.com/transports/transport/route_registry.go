@@ -1,11 +1,12 @@
 package transport
 
 import (
+	"fmt"
+	"sync"
+
 	_map "github.com/Chronicle20/atlas-constants/map"
 	tenant "github.com/Chronicle20/atlas-tenant"
-	"fmt"
 	"github.com/google/uuid"
-	"sync"
 )
 
 type RouteRegistry struct {

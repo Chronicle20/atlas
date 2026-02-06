@@ -811,7 +811,7 @@ func TestSagaEmissionToKafka(t *testing.T) {
 			logger.SetLevel(logrus.DebugLevel)
 
 			// Create mock context with tenant
-			ctx, _ := createMockContext(t, 1001)
+			ctx, _ := createMockContext(t)
 
 			// Create saga processor
 			sagaProcessor := saga.NewProcessor(logger, ctx)
@@ -935,7 +935,7 @@ func TestSagaProducerCreation(t *testing.T) {
 }
 
 // Helper function to create mock context with tenant information
-func createMockContext(t *testing.T, accountId uint32) (context.Context, uuid.UUID) {
+func createMockContext(t *testing.T) (context.Context, uuid.UUID) {
 	// Create a test tenant
 	tenantId := uuid.New()
 	testTenant, err := tenantModel.Create(tenantId, "GMS", 83, 1)
@@ -1040,7 +1040,7 @@ func TestCharacterCreationIntegrationWithOrchestrator(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create mock context with tenant
-			ctx, tenantId := createMockContext(t, tt.input.AccountId)
+			ctx, tenantId := createMockContext(t)
 
 			// Create logger
 			logger := logrus.New()
@@ -1185,7 +1185,7 @@ func TestCharacterCreationOrchestrationFlow(t *testing.T) {
 		if len(characterOnlyResult.Steps) != 1 {
 			t.Errorf("Expected 1 step in character creation saga, got %d", len(characterOnlyResult.Steps))
 		}
-		
+
 		step := characterOnlyResult.Steps[0]
 		if step.StepId != "create_character" {
 			t.Errorf("Expected step ID 'create_character', got '%s'", step.StepId)

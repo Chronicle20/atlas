@@ -2,11 +2,12 @@ package compartment
 
 import (
 	"errors"
+	"sync"
+	"time"
+
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
-	"sync"
-	"time"
 )
 
 type ReservationRequest struct {

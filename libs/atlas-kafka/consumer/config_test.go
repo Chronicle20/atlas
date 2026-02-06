@@ -1,9 +1,10 @@
 package consumer
 
 import (
-	"github.com/Chronicle20/atlas-model/model"
 	"testing"
 	"time"
+
+	"github.com/Chronicle20/atlas-model/model"
 )
 
 func TestConfig(t *testing.T) {

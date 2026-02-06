@@ -4,12 +4,13 @@ import (
 	"atlas-data/database"
 	"context"
 	"encoding/json"
+	"strconv"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"strconv"
 )
 
 type Identifier[I string] interface {

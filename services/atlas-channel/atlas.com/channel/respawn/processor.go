@@ -77,7 +77,7 @@ func (p *ProcessorImpl) Respawn(ch channel.Model, characterId uint32, currentMap
 	}
 
 	// Check for protective items
-	protectiveItem, protectiveInventoryType := p.findProtectiveItem(inv)
+	protectiveItem, _ := p.findProtectiveItem(inv)
 
 	// Calculate experience loss
 	expLoss := p.calculateExpLoss(c, mapData, protectiveItem != nil)
@@ -89,7 +89,7 @@ func (p *ProcessorImpl) Respawn(ch channel.Model, characterId uint32, currentMap
 	}
 
 	// Create respawn saga
-	return p.createRespawnSaga(ch, characterId, targetMapId, hasWheelOfFortune, protectiveItem, protectiveInventoryType, expLoss)
+	return p.createRespawnSaga(ch, characterId, targetMapId, hasWheelOfFortune, protectiveItem, expLoss)
 }
 
 // findProtectiveItem searches for a death protection item in the inventory
@@ -164,15 +164,7 @@ func (p *ProcessorImpl) calculateExpLoss(c character.Model, mapData map_.Model, 
 }
 
 // createRespawnSaga creates and submits the respawn saga
-func (p *ProcessorImpl) createRespawnSaga(
-	ch channel.Model,
-	characterId uint32,
-	targetMapId _map.Id,
-	useWheelOfFortune bool,
-	protectiveItemId *uint32,
-	protectiveInventoryType inventoryConst.Type,
-	expLoss uint32,
-) error {
+func (p *ProcessorImpl) createRespawnSaga(ch channel.Model, characterId uint32, targetMapId _map.Id, useWheelOfFortune bool, protectiveItemId *uint32, expLoss uint32) error {
 	transactionId := uuid.New()
 	now := time.Now()
 	steps := make([]saga.Step[any], 0)

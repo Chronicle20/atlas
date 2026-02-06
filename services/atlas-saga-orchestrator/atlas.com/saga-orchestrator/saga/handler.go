@@ -21,7 +21,7 @@ import (
 	reactorDrop "atlas-saga-orchestrator/reactor/drop"
 	"atlas-saga-orchestrator/skill"
 	"atlas-saga-orchestrator/storage"
-	system_message "atlas-saga-orchestrator/system_message"
+	"atlas-saga-orchestrator/system_message"
 	"atlas-saga-orchestrator/validation"
 	"context"
 	"errors"

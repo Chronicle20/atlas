@@ -2,6 +2,7 @@ package pet_test
 
 import (
 	"atlas-channel/pet"
+	"errors"
 	"testing"
 )
 
@@ -41,7 +42,7 @@ func TestBuild_MissingId(t *testing.T) {
 	_, err := pet.NewModelBuilder(0, 1234567890, 5000000, "Fluffy").
 		Build()
 
-	if err != pet.ErrInvalidId {
+	if !errors.Is(err, pet.ErrInvalidId) {
 		t.Errorf("Build() error = %v, want ErrInvalidId", err)
 	}
 }

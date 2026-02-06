@@ -8,8 +8,9 @@ import (
 	"atlas-expressions/service"
 	"atlas-expressions/tasks"
 	"atlas-expressions/tracing"
-	"github.com/Chronicle20/atlas-kafka/consumer"
 	"time"
+
+	"github.com/Chronicle20/atlas-kafka/consumer"
 )
 
 const serviceName = "atlas-expressions"

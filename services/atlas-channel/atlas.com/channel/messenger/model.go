@@ -2,6 +2,7 @@ package messenger
 
 import (
 	"errors"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
 )

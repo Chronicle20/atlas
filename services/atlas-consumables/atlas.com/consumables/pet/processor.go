@@ -5,10 +5,11 @@ import (
 	"atlas-consumables/kafka/producer"
 	"context"
 	"errors"
+	"sort"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
-	"sort"
 )
 
 type Processor struct {

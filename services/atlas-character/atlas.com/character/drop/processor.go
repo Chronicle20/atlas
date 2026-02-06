@@ -4,6 +4,7 @@ import (
 	drop2 "atlas-character/kafka/message/drop"
 	"atlas-character/kafka/producer"
 	"context"
+
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/sirupsen/logrus"
 )

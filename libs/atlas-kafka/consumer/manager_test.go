@@ -3,6 +3,9 @@ package consumer_test
 import (
 	"context"
 	"errors"
+	"sync"
+	"testing"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
@@ -14,8 +17,6 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
-	"sync"
-	"testing"
 )
 
 type MockReader struct {
@@ -57,10 +58,10 @@ func (ms *MockSpan) IsRecording() bool {
 	return true
 }
 
-func (ms *MockSpan) End(options ...trace.SpanEndOption) {
+func (ms *MockSpan) End(_ ...trace.SpanEndOption) {
 }
 
-func (ms *MockSpan) RecordError(err error, options ...trace.EventOption) {
+func (ms *MockSpan) RecordError(_ error, _ ...trace.EventOption) {
 	// You can record the error or count calls here
 }
 
@@ -69,7 +70,7 @@ type MockTracer struct {
 	StartedSpans []*MockSpan
 }
 
-func (mt *MockTracer) Start(ctx context.Context, name string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
+func (mt *MockTracer) Start(ctx context.Context, _ string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
 	spanContext := trace.NewSpanContext(trace.SpanContextConfig{
 		TraceID:    trace.TraceID{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10},
 		SpanID:     trace.SpanID{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08},
@@ -84,7 +85,7 @@ type MockTracerProvider struct {
 	tracer *MockTracer
 }
 
-func (m MockTracerProvider) Tracer(name string, options ...trace.TracerOption) trace.Tracer {
+func (m MockTracerProvider) Tracer(_ string, _ ...trace.TracerOption) trace.Tracer {
 	if m.tracer == nil {
 		m.tracer = &MockTracer{}
 	}

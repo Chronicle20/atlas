@@ -2,6 +2,7 @@ package party
 
 import (
 	party2 "atlas-channel/kafka/message/party"
+
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"

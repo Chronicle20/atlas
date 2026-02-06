@@ -2,6 +2,7 @@ package equipment
 
 import (
 	"atlas-consumables/equipment/slot"
+
 	slot2 "github.com/Chronicle20/atlas-constants/inventory/slot"
 )
 

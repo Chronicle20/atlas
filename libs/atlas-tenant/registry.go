@@ -1,8 +1,9 @@
 package tenant
 
 import (
-	"github.com/google/uuid"
 	"sync"
+
+	"github.com/google/uuid"
 )
 
 type Registry struct {

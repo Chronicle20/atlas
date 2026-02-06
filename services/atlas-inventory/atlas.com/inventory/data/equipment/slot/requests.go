@@ -3,6 +3,7 @@ package slot
 import (
 	"atlas-inventory/rest"
 	"fmt"
+
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 

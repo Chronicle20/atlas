@@ -165,7 +165,7 @@ func setupTestQuestData(t *testing.T, db *gorm.DB, tenantId uuid.UUID) {
 	}
 }
 
-func createRequestWithTenant(method, url string, body []byte, tenantId uuid.UUID) *http.Request {
+func createRequestWithTenant(method, url string, tenantId uuid.UUID) *http.Request {
 	req, err := http.NewRequest(method, url, nil)
 	if err != nil {
 		panic(err)
@@ -183,7 +183,7 @@ func createRequestWithTenant(method, url string, body []byte, tenantId uuid.UUID
 func testGetQuestsEndpoint(t *testing.T, testServer *httptest.Server, tenantId uuid.UUID) {
 	t.Run("GetAllQuests", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/quests", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -205,7 +205,7 @@ func testGetQuestsEndpoint(t *testing.T, testServer *httptest.Server, tenantId u
 func testGetQuestEndpoint(t *testing.T, testServer *httptest.Server, tenantId uuid.UUID) {
 	t.Run("GetQuestById", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/quests/1000", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -231,7 +231,7 @@ func testGetQuestEndpoint(t *testing.T, testServer *httptest.Server, tenantId uu
 
 	t.Run("GetQuestNotFound", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/quests/9999999", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -245,7 +245,7 @@ func testGetQuestEndpoint(t *testing.T, testServer *httptest.Server, tenantId uu
 func testGetAutoStartQuestsEndpoint(t *testing.T, testServer *httptest.Server, tenantId uuid.UUID) {
 	t.Run("GetAutoStartQuests", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/quests/auto-start", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -273,7 +273,7 @@ func testGetAutoStartQuestsEndpoint(t *testing.T, testServer *httptest.Server, t
 func testErrorHandling(t *testing.T, testServer *httptest.Server, tenantId uuid.UUID) {
 	t.Run("InvalidQuestId", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/quests/invalid", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -302,7 +302,7 @@ func testTenantIsolation(t *testing.T, testServer *httptest.Server, originalTena
 		differentTenantId := uuid.New()
 
 		url := fmt.Sprintf("%s/data/quests", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, differentTenantId)
+		req := createRequestWithTenant("GET", url, differentTenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -321,7 +321,7 @@ func testTenantIsolation(t *testing.T, testServer *httptest.Server, originalTena
 
 	t.Run("OriginalTenantHasData", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/quests", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, originalTenantId)
+		req := createRequestWithTenant("GET", url, originalTenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -342,7 +342,7 @@ func testTenantIsolation(t *testing.T, testServer *httptest.Server, originalTena
 func testJSONAPICompliance(t *testing.T, testServer *httptest.Server, tenantId uuid.UUID) {
 	t.Run("SingleResourceStructure", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/quests/1000", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -365,7 +365,7 @@ func testJSONAPICompliance(t *testing.T, testServer *httptest.Server, tenantId u
 
 	t.Run("CollectionResourceStructure", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/quests", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)

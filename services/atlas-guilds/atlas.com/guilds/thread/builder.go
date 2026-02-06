@@ -3,8 +3,9 @@ package thread
 import (
 	"atlas-guilds/thread/reply"
 	"errors"
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // Builder provides fluent construction of thread models

@@ -3,8 +3,9 @@ package asset
 import (
 	"atlas-messages/data/equipable"
 	"context"
-	"github.com/sirupsen/logrus"
 	"math"
+
+	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {

@@ -2,6 +2,7 @@ package invite
 
 import (
 	invite2 "atlas-messengers/kafka/message/invite"
+
 	"github.com/Chronicle20/atlas-constants/character"
 	"github.com/Chronicle20/atlas-constants/invite"
 	"github.com/Chronicle20/atlas-constants/world"

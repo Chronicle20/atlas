@@ -3,8 +3,9 @@ package commodities_test
 import (
 	"atlas-npc/commodities"
 	"atlas-npc/test"
-	"gorm.io/gorm"
 	"testing"
+
+	"gorm.io/gorm"
 )
 
 func TestCommoditiesProcessor(t *testing.T) {
@@ -18,7 +19,7 @@ func TestCommoditiesProcessor(t *testing.T) {
 	})
 
 	t.Run("TestGetByNpcId", func(t *testing.T) {
-		testGetByNpcId(t, processor, db)
+		testGetByNpcId(t, processor)
 	})
 
 	t.Run("TestUpdateCommodity", func(t *testing.T) {
@@ -30,11 +31,11 @@ func TestCommoditiesProcessor(t *testing.T) {
 	})
 
 	t.Run("TestExistsByNpcId", func(t *testing.T) {
-		testExistsByNpcId(t, processor, db)
+		testExistsByNpcId(t, processor)
 	})
 
 	t.Run("TestGetDistinctNpcIds", func(t *testing.T) {
-		testGetDistinctNpcIds(t, processor, db)
+		testGetDistinctNpcIds(t, processor)
 	})
 }
 
@@ -78,7 +79,7 @@ func testCreateCommodity(t *testing.T, processor commodities.Processor, db *gorm
 	}
 }
 
-func testGetByNpcId(t *testing.T, processor commodities.Processor, db *gorm.DB) {
+func testGetByNpcId(t *testing.T, processor commodities.Processor) {
 	// Test data
 	npcId := uint32(1002)
 	templateId := uint32(2002)
@@ -219,7 +220,7 @@ func testDeleteCommodity(t *testing.T, processor commodities.Processor, db *gorm
 	}
 }
 
-func testExistsByNpcId(t *testing.T, processor commodities.Processor, db *gorm.DB) {
+func testExistsByNpcId(t *testing.T, processor commodities.Processor) {
 	// Test data for a new NPC that doesn't have commodities yet
 	nonExistentNpcId := uint32(9999)
 
@@ -259,7 +260,7 @@ func testExistsByNpcId(t *testing.T, processor commodities.Processor, db *gorm.D
 	}
 }
 
-func testGetDistinctNpcIds(t *testing.T, processor commodities.Processor, db *gorm.DB) {
+func testGetDistinctNpcIds(t *testing.T, processor commodities.Processor) {
 	// Test data for multiple NPCs
 	npcId1 := uint32(2001)
 	npcId2 := uint32(2002)

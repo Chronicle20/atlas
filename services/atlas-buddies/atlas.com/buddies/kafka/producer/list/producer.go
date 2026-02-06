@@ -2,6 +2,7 @@ package list
 
 import (
 	list2 "atlas-buddies/kafka/message/list"
+
 	"github.com/Chronicle20/atlas-constants/character"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/producer"
@@ -82,11 +83,7 @@ func BuddyChannelChangeStatusEventProvider(characterId character.Id, worldId wor
 	return producer.SingleMessageProvider(key, value)
 }
 
-func BuddyCapacityChangeStatusEventProvider(characterId character.Id, worldId world.Id, capacity byte) model.Provider[[]kafka.Message] {
-	return BuddyCapacityChangeStatusEventWithTransactionProvider(characterId, worldId, capacity, uuid.Nil)
-}
-
-func BuddyCapacityChangeStatusEventWithTransactionProvider(characterId character.Id, worldId world.Id, capacity byte, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+func BuddyCapacityChangeStatusEventProvider(characterId character.Id, worldId world.Id, capacity byte, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &list2.StatusEvent[list2.BuddyCapacityChangeStatusEventBody]{
 		CharacterId: characterId,

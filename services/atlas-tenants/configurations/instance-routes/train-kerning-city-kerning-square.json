@@ -4,7 +4,7 @@
   "attributes": {
     "name": "kerning-train-to-square",
     "startMapId": 103000100,
-    "transitMapId": 103000301,
+    "transitMapIds": [103000301],
     "destinationMapId": 103000310,
     "capacity": 1,
     "boardingWindowSeconds": 1,

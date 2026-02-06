@@ -1,0 +1,14 @@
+{
+  "id": "temple-of-time-return-flight",
+  "type": "instance-routes",
+  "attributes": {
+    "name": "temple-of-time-return-flight",
+    "startMapId": 270000100,
+    "transitMapIds": [200090510, 200090500],
+    "destinationMapId": 240000110,
+    "capacity": 1,
+    "boardingWindowSeconds": 1,
+    "travelDurationSeconds": 900,
+    "transitMessage": "You are flying back to Leafre. Navigate left to reach the exit."
+  }
+}

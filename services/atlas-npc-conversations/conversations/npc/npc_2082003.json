@@ -10,7 +10,7 @@
         "choices": [
           {
             "text": "I want to become a dragon.",
-            "nextState": "transformAndWarp"
+            "nextState": "applyBuff"
           },
           {
             "text": "Exit",
@@ -20,7 +20,7 @@
       }
     },
     {
-      "id": "transformAndWarp",
+      "id": "applyBuff",
       "type": "genericAction",
       "genericAction": {
         "operations": [
@@ -29,20 +29,61 @@
             "params": {
               "itemId": "2210016"
             }
-          },
-          {
-            "type": "warp_to_map",
-            "params": {
-              "mapId": "200090500",
-              "portalId": "0"
-            }
           }
         ],
         "outcomes": [
           {
             "conditions": [],
-            "nextState": null
+            "nextState": "startTransport"
           }
+        ]
+      }
+    },
+    {
+      "id": "startTransport",
+      "type": "transportAction",
+      "transportAction": {
+        "routeName": "temple-of-time-flight",
+        "failureState": "transportFailed",
+        "capacityFullState": "transportCapacityFull",
+        "alreadyInTransitState": "transportAlreadyInTransit",
+        "routeNotFoundState": "transportFailed",
+        "serviceErrorState": "transportFailed"
+      }
+    },
+    {
+      "id": "transportFailed",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "I'm sorry, the flight service is currently unavailable. Please try again later.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "transportCapacityFull",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "There are too many dragons in the sky right now. Please wait a moment and try again.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "transportAlreadyInTransit",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "You seem to already be flying. Please wait until you arrive at your destination.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
         ]
       }
     }

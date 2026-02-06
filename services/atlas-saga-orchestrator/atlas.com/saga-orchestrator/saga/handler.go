@@ -118,6 +118,7 @@ type Handler interface {
 	handleUnblockPortal(s Saga, st Step[any]) error
 	handleDeductExperience(s Saga, st Step[any]) error
 	handleCancelAllBuffs(s Saga, st Step[any]) error
+	handleCancelConsumableEffect(s Saga, st Step[any]) error
 	handleResetStats(s Saga, st Step[any]) error
 	handleStartInstanceTransport(s Saga, st Step[any]) error
 }
@@ -660,6 +661,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleDeductExperience, true
 	case CancelAllBuffs:
 		return h.handleCancelAllBuffs, true
+	case CancelConsumableEffect:
+		return h.handleCancelConsumableEffect, true
 	case ResetStats:
 		return h.handleResetStats, true
 	case StartInstanceTransport:
@@ -1388,6 +1391,28 @@ func (h *HandlerImpl) handleApplyConsumableEffect(s Saga, st Step[any]) error {
 		h.logActionError(s, st, err, "Unable to apply consumable effect.")
 		return err
 	}
+
+	return nil
+}
+
+// handleCancelConsumableEffect handles the CancelConsumableEffect action
+// This cancels consumable item effects (buffs) on a character.
+// Fire-and-forget: the buff cancellation is sent and step is marked complete immediately.
+func (h *HandlerImpl) handleCancelConsumableEffect(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(CancelConsumableEffectPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	err := h.consumableP.CancelConsumableEffect(s.TransactionId(), ch, payload.CharacterId, payload.ItemId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to cancel consumable effect.")
+		return err
+	}
+
+	// Fire-and-forget: mark step complete immediately
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
 
 	return nil
 }

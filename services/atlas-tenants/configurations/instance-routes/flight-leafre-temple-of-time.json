@@ -3,11 +3,12 @@
   "type": "instance-routes",
   "attributes": {
     "name": "temple-of-time-flight",
-    "startMapId": 270000000,
-    "transitMapId": 200090500,
-    "destinationMapId": null,
+    "startMapId": 240000110,
+    "transitMapIds": [200090500, 200090510],
+    "destinationMapId": 270000100,
     "capacity": 1,
     "boardingWindowSeconds": 1,
-    "travelDurationSeconds": null
+    "travelDurationSeconds": 900,
+    "transitMessage": "You are flying towards the Temple of Time. Navigate right to reach the entrance."
   }
 }

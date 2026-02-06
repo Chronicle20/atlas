@@ -20,7 +20,7 @@ func newTestRegistry() *InstanceRegistry {
 func newTestRoute() RouteModel {
 	route, _ := NewRouteBuilder("test-route").
 		SetStartMapId(_map.Id(100000000)).
-		SetTransitMapId(_map.Id(100000100)).
+		SetTransitMapIds([]_map.Id{100000100}).
 		SetDestinationMapId(_map.Id(100000200)).
 		SetCapacity(3).
 		SetBoardingWindow(10 * time.Second).

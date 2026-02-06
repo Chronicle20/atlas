@@ -1,0 +1,33 @@
+{
+  "portalId": "templeenter",
+  "mapId": 200090510,
+  "description": "Temple of Time Flight - Exit transit to Temple of Time entrance",
+  "rules": [
+    {
+      "id": "exit_transit",
+      "conditions": [],
+      "onMatch": {
+        "allow": false,
+        "operations": [
+          {
+            "type": "cancel_consumable_effect",
+            "params": {
+              "itemId": "2210016"
+            }
+          },
+          {
+            "type": "play_portal_sound",
+            "params": {}
+          },
+          {
+            "type": "warp",
+            "params": {
+              "mapId": "270000100",
+              "portalName": "out00"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -48,13 +48,13 @@ func TestRouteRegistry_GetRoutes(t *testing.T) {
 	tm := newTestTenantModel(t)
 
 	route1, _ := NewRouteBuilder("route1").
-		SetTransitMapId(_map.Id(100)).
+		SetTransitMapIds([]_map.Id{100}).
 		SetCapacity(6).
 		SetBoardingWindow(10 * time.Second).
 		SetTravelDuration(30 * time.Second).
 		Build()
 	route2, _ := NewRouteBuilder("route2").
-		SetTransitMapId(_map.Id(200)).
+		SetTransitMapIds([]_map.Id{200}).
 		SetCapacity(6).
 		SetBoardingWindow(10 * time.Second).
 		SetTravelDuration(30 * time.Second).
@@ -81,7 +81,7 @@ func TestRouteRegistry_GetRouteByTransitMap(t *testing.T) {
 
 	reg.AddTenant(tm, []RouteModel{route})
 
-	got, err := reg.GetRouteByTransitMap(tm, route.TransitMapId())
+	got, err := reg.GetRouteByTransitMap(tm, route.TransitMapIds()[0])
 	assert.NoError(t, err)
 	assert.Equal(t, route.Id(), got.Id())
 }
@@ -101,7 +101,7 @@ func TestRouteRegistry_IsTransitMap(t *testing.T) {
 
 	reg.AddTenant(tm, []RouteModel{route})
 
-	assert.True(t, reg.IsTransitMap(tm, route.TransitMapId()))
+	assert.True(t, reg.IsTransitMap(tm, route.TransitMapIds()[0]))
 	assert.False(t, reg.IsTransitMap(tm, _map.Id(999999)))
 }
 

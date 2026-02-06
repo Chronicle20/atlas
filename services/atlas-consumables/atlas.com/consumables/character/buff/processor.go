@@ -29,3 +29,7 @@ func (p *Processor) Apply(f field.Model, fromId uint32, sourceId int32, duration
 		return producer.ProviderImpl(p.l)(p.ctx)(buff2.EnvCommandTopic)(applyCommandProvider(f, characterId, fromId, sourceId, duration, statups))
 	}
 }
+
+func (p *Processor) Cancel(f field.Model, characterId uint32, sourceId int32) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(buff2.EnvCommandTopic)(cancelCommandProvider(f, characterId, sourceId))
+}

@@ -11,7 +11,7 @@ type InstanceRouteRestModel struct {
 	Id                    string `json:"-"`
 	Name                  string `json:"name"`
 	StartMapId            _map.Id `json:"startMapId"`
-	TransitMapId          _map.Id `json:"transitMapId"`
+	TransitMapIds         []_map.Id `json:"transitMapIds"`
 	DestinationMapId      _map.Id `json:"destinationMapId"`
 	Capacity              uint32  `json:"capacity"`
 	BoardingWindowSeconds uint32  `json:"boardingWindowSeconds"`
@@ -35,7 +35,7 @@ func (r InstanceRouteRestModel) GetName() string {
 func ExtractRoute(r InstanceRouteRestModel) (instance.RouteModel, error) {
 	return instance.NewRouteBuilder(r.Name).
 		SetStartMapId(r.StartMapId).
-		SetTransitMapId(r.TransitMapId).
+		SetTransitMapIds(r.TransitMapIds).
 		SetDestinationMapId(r.DestinationMapId).
 		SetCapacity(r.Capacity).
 		SetBoardingWindow(time.Duration(r.BoardingWindowSeconds) * time.Second).

@@ -12,7 +12,7 @@ type RouteBuilder struct {
 	id               uuid.UUID
 	name             string
 	startMapId       _map.Id
-	transitMapId     _map.Id
+	transitMapIds    []_map.Id
 	destinationMapId _map.Id
 	capacity         uint32
 	boardingWindow   time.Duration
@@ -37,8 +37,8 @@ func (b *RouteBuilder) SetStartMapId(startMapId _map.Id) *RouteBuilder {
 	return b
 }
 
-func (b *RouteBuilder) SetTransitMapId(transitMapId _map.Id) *RouteBuilder {
-	b.transitMapId = transitMapId
+func (b *RouteBuilder) SetTransitMapIds(transitMapIds []_map.Id) *RouteBuilder {
+	b.transitMapIds = transitMapIds
 	return b
 }
 
@@ -80,12 +80,15 @@ func (b *RouteBuilder) Build() (RouteModel, error) {
 	if b.travelDuration < 0 {
 		return RouteModel{}, errors.New("travel duration must not be negative")
 	}
+	if len(b.transitMapIds) == 0 {
+		return RouteModel{}, errors.New("transit map ids must not be empty")
+	}
 
 	return RouteModel{
 		id:               b.id,
 		name:             b.name,
 		startMapId:       b.startMapId,
-		transitMapId:     b.transitMapId,
+		transitMapIds:    b.transitMapIds,
 		destinationMapId: b.destinationMapId,
 		capacity:         b.capacity,
 		boardingWindow:   b.boardingWindow,

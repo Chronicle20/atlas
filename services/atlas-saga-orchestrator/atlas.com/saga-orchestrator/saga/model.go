@@ -435,6 +435,9 @@ const (
 	ShowIntro        Action = "show_intro"        // Show intro/direction effect to character (e.g., tutorial animations)
 	BlockPortal      Action = "block_portal"       // Block a portal for a character (session-based)
 	UnblockPortal    Action = "unblock_portal"     // Unblock a portal for a character
+
+	// Transport actions
+	StartInstanceTransport Action = "start_instance_transport" // Start an instance-based transport for a character
 )
 
 // Step represents a single step within a saga.
@@ -958,6 +961,15 @@ type UnblockPortalPayload struct {
 	PortalId    uint32  `json:"portalId"`    // PortalId to unblock
 }
 
+// StartInstanceTransportPayload represents the payload required to start an instance-based transport.
+// This is a synchronous action that calls the atlas-transports REST API.
+type StartInstanceTransportPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to start transport for
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	RouteName   string     `json:"routeName"`   // Route name (resolved to UUID at runtime)
+}
+
 // DepositToStoragePayload represents the payload required to deposit an item to account storage.
 type DepositToStoragePayload struct {
 	CharacterId   uint32    `json:"characterId"`   // CharacterId initiating the deposit
@@ -1479,6 +1491,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case ReleaseFromCashShop:
 		var payload ReleaseFromCashShopPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case StartInstanceTransport:
+		var payload StartInstanceTransportPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

@@ -1874,6 +1874,30 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 		return stepId, saga.Pending, saga.ResetStats, payload, nil
 
+	case "start_instance_transport":
+		// Format: start_instance_transport
+		// Params: routeName (string, required) - the transport route name (e.g., "kerning-square-subway-in")
+		// Starts an instance-based transport for the character
+		// Used by transport ticket NPCs (e.g., NPC 1052007 for Kerning Square subway)
+		routeNameValue, exists := operation.Params()["routeName"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing routeName parameter for start_instance_transport operation")
+		}
+
+		routeName, err := e.evaluateContextValue(characterId, "routeName", routeNameValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		payload := saga.StartInstanceTransportPayload{
+			CharacterId: characterId,
+			WorldId:     f.WorldId(),
+			ChannelId:   f.ChannelId(),
+			RouteName:   routeName,
+		}
+
+		return stepId, saga.Pending, saga.StartInstanceTransport, payload, nil
+
 	default:
 		return "", "", "", nil, fmt.Errorf("unknown operation type: %s", operation.Type())
 	}

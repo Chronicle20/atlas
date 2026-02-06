@@ -33,24 +33,26 @@ type NpcConversationProvider interface {
 type StateType string
 
 const (
-	DialogueStateType StateType = "dialogue"
-	GenericActionType StateType = "genericAction"
-	CraftActionType   StateType = "craftAction"
-	ListSelectionType StateType = "listSelection"
-	AskNumberType     StateType = "askNumber"
-	AskStyleType      StateType = "askStyle"
+	DialogueStateType      StateType = "dialogue"
+	GenericActionType      StateType = "genericAction"
+	CraftActionType        StateType = "craftAction"
+	TransportActionType    StateType = "transportAction"
+	ListSelectionType      StateType = "listSelection"
+	AskNumberType          StateType = "askNumber"
+	AskStyleType           StateType = "askStyle"
 )
 
 // StateModel represents a state in a conversation
 type StateModel struct {
-	id            string
-	stateType     StateType
-	dialogue      *DialogueModel
-	genericAction *GenericActionModel
-	craftAction   *CraftActionModel
-	listSelection *ListSelectionModel
-	askNumber     *AskNumberModel
-	askStyle      *AskStyleModel
+	id              string
+	stateType       StateType
+	dialogue        *DialogueModel
+	genericAction   *GenericActionModel
+	craftAction     *CraftActionModel
+	transportAction *TransportActionModel
+	listSelection   *ListSelectionModel
+	askNumber       *AskNumberModel
+	askStyle        *AskStyleModel
 }
 
 // Id returns the state ID
@@ -78,6 +80,11 @@ func (s StateModel) CraftAction() *CraftActionModel {
 	return s.craftAction
 }
 
+// TransportAction returns the transport action model (if type is transportAction)
+func (s StateModel) TransportAction() *TransportActionModel {
+	return s.transportAction
+}
+
 // ListSelection returns the list selection model (if type is listSelection)
 func (s StateModel) ListSelection() *ListSelectionModel {
 	return s.listSelection
@@ -95,14 +102,15 @@ func (s StateModel) AskStyle() *AskStyleModel {
 
 // StateBuilder is a builder for StateModel
 type StateBuilder struct {
-	id            string
-	stateType     StateType
-	dialogue      *DialogueModel
-	genericAction *GenericActionModel
-	craftAction   *CraftActionModel
-	listSelection *ListSelectionModel
-	askNumber     *AskNumberModel
-	askStyle      *AskStyleModel
+	id              string
+	stateType       StateType
+	dialogue        *DialogueModel
+	genericAction   *GenericActionModel
+	craftAction     *CraftActionModel
+	transportAction *TransportActionModel
+	listSelection   *ListSelectionModel
+	askNumber       *AskNumberModel
+	askStyle        *AskStyleModel
 }
 
 // NewStateBuilder creates a new StateBuilder
@@ -122,6 +130,7 @@ func (b *StateBuilder) SetDialogue(dialogue *DialogueModel) *StateBuilder {
 	b.dialogue = dialogue
 	b.genericAction = nil
 	b.craftAction = nil
+	b.transportAction = nil
 	b.listSelection = nil
 	b.askNumber = nil
 	b.askStyle = nil
@@ -134,6 +143,7 @@ func (b *StateBuilder) SetGenericAction(genericAction *GenericActionModel) *Stat
 	b.dialogue = nil
 	b.genericAction = genericAction
 	b.craftAction = nil
+	b.transportAction = nil
 	b.listSelection = nil
 	b.askNumber = nil
 	b.askStyle = nil
@@ -146,6 +156,20 @@ func (b *StateBuilder) SetCraftAction(craftAction *CraftActionModel) *StateBuild
 	b.dialogue = nil
 	b.genericAction = nil
 	b.craftAction = craftAction
+	b.transportAction = nil
+	b.listSelection = nil
+	b.askNumber = nil
+	b.askStyle = nil
+	return b
+}
+
+// SetTransportAction sets the transport action model
+func (b *StateBuilder) SetTransportAction(transportAction *TransportActionModel) *StateBuilder {
+	b.stateType = TransportActionType
+	b.dialogue = nil
+	b.genericAction = nil
+	b.craftAction = nil
+	b.transportAction = transportAction
 	b.listSelection = nil
 	b.askNumber = nil
 	b.askStyle = nil
@@ -158,6 +182,7 @@ func (b *StateBuilder) SetListSelection(listSelection *ListSelectionModel) *Stat
 	b.dialogue = nil
 	b.genericAction = nil
 	b.craftAction = nil
+	b.transportAction = nil
 	b.listSelection = listSelection
 	b.askNumber = nil
 	b.askStyle = nil
@@ -170,6 +195,7 @@ func (b *StateBuilder) SetAskNumber(askNumber *AskNumberModel) *StateBuilder {
 	b.dialogue = nil
 	b.genericAction = nil
 	b.craftAction = nil
+	b.transportAction = nil
 	b.listSelection = nil
 	b.askNumber = askNumber
 	b.askStyle = nil
@@ -182,6 +208,7 @@ func (b *StateBuilder) SetAskStyle(askStyle *AskStyleModel) *StateBuilder {
 	b.dialogue = nil
 	b.genericAction = nil
 	b.craftAction = nil
+	b.transportAction = nil
 	b.listSelection = nil
 	b.askNumber = nil
 	b.askStyle = askStyle
@@ -207,6 +234,10 @@ func (b *StateBuilder) Build() (StateModel, error) {
 		if b.craftAction == nil {
 			return StateModel{}, errors.New("craftAction is required for craftAction state")
 		}
+	case TransportActionType:
+		if b.transportAction == nil {
+			return StateModel{}, errors.New("transportAction is required for transportAction state")
+		}
 	case ListSelectionType:
 		if b.listSelection == nil {
 			return StateModel{}, errors.New("listSelection is required for listSelection state")
@@ -224,14 +255,15 @@ func (b *StateBuilder) Build() (StateModel, error) {
 	}
 
 	return StateModel{
-		id:            b.id,
-		stateType:     b.stateType,
-		dialogue:      b.dialogue,
-		genericAction: b.genericAction,
-		craftAction:   b.craftAction,
-		listSelection: b.listSelection,
-		askNumber:     b.askNumber,
-		askStyle:      b.askStyle,
+		id:              b.id,
+		stateType:       b.stateType,
+		dialogue:        b.dialogue,
+		genericAction:   b.genericAction,
+		craftAction:     b.craftAction,
+		transportAction: b.transportAction,
+		listSelection:   b.listSelection,
+		askNumber:       b.askNumber,
+		askStyle:        b.askStyle,
 	}, nil
 }
 
@@ -1044,6 +1076,117 @@ func (b *CraftActionBuilder) Build() (*CraftActionModel, error) {
 		successState:          b.successState,
 		failureState:          b.failureState,
 		missingMaterialsState: b.missingMaterialsState,
+	}, nil
+}
+
+// TransportActionModel represents a transport action state
+// Used for instance-based transports that go through saga-orchestrator
+type TransportActionModel struct {
+	routeName             string // Route name to resolve to UUID at runtime
+	failureState          string // General failure state (fallback)
+	capacityFullState     string // State when transport is at capacity
+	alreadyInTransitState string // State when character is already in a transport
+	routeNotFoundState    string // State when route doesn't exist
+	serviceErrorState     string // State when transport service fails
+}
+
+// RouteName returns the transport route name
+func (t TransportActionModel) RouteName() string {
+	return t.routeName
+}
+
+// FailureState returns the general failure state ID
+func (t TransportActionModel) FailureState() string {
+	return t.failureState
+}
+
+// CapacityFullState returns the capacity full failure state ID
+func (t TransportActionModel) CapacityFullState() string {
+	return t.capacityFullState
+}
+
+// AlreadyInTransitState returns the already in transit failure state ID
+func (t TransportActionModel) AlreadyInTransitState() string {
+	return t.alreadyInTransitState
+}
+
+// RouteNotFoundState returns the route not found failure state ID
+func (t TransportActionModel) RouteNotFoundState() string {
+	return t.routeNotFoundState
+}
+
+// ServiceErrorState returns the service error failure state ID
+func (t TransportActionModel) ServiceErrorState() string {
+	return t.serviceErrorState
+}
+
+// TransportActionBuilder is a builder for TransportActionModel
+type TransportActionBuilder struct {
+	routeName             string
+	failureState          string
+	capacityFullState     string
+	alreadyInTransitState string
+	routeNotFoundState    string
+	serviceErrorState     string
+}
+
+// NewTransportActionBuilder creates a new TransportActionBuilder
+func NewTransportActionBuilder() *TransportActionBuilder {
+	return &TransportActionBuilder{}
+}
+
+// SetRouteName sets the transport route name
+func (b *TransportActionBuilder) SetRouteName(routeName string) *TransportActionBuilder {
+	b.routeName = routeName
+	return b
+}
+
+// SetFailureState sets the general failure state ID
+func (b *TransportActionBuilder) SetFailureState(failureState string) *TransportActionBuilder {
+	b.failureState = failureState
+	return b
+}
+
+// SetCapacityFullState sets the capacity full failure state ID
+func (b *TransportActionBuilder) SetCapacityFullState(capacityFullState string) *TransportActionBuilder {
+	b.capacityFullState = capacityFullState
+	return b
+}
+
+// SetAlreadyInTransitState sets the already in transit failure state ID
+func (b *TransportActionBuilder) SetAlreadyInTransitState(alreadyInTransitState string) *TransportActionBuilder {
+	b.alreadyInTransitState = alreadyInTransitState
+	return b
+}
+
+// SetRouteNotFoundState sets the route not found failure state ID
+func (b *TransportActionBuilder) SetRouteNotFoundState(routeNotFoundState string) *TransportActionBuilder {
+	b.routeNotFoundState = routeNotFoundState
+	return b
+}
+
+// SetServiceErrorState sets the service error failure state ID
+func (b *TransportActionBuilder) SetServiceErrorState(serviceErrorState string) *TransportActionBuilder {
+	b.serviceErrorState = serviceErrorState
+	return b
+}
+
+// Build builds the TransportActionModel
+func (b *TransportActionBuilder) Build() (*TransportActionModel, error) {
+	if b.routeName == "" {
+		return nil, errors.New("routeName is required")
+	}
+	if b.failureState == "" {
+		return nil, errors.New("failureState is required")
+	}
+
+	return &TransportActionModel{
+		routeName:             b.routeName,
+		failureState:          b.failureState,
+		capacityFullState:     b.capacityFullState,
+		alreadyInTransitState: b.alreadyInTransitState,
+		routeNotFoundState:    b.routeNotFoundState,
+		serviceErrorState:     b.serviceErrorState,
 	}, nil
 }
 

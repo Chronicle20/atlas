@@ -10,14 +10,15 @@ import (
 // RestStateModel represents the REST model for conversation states
 // This is shared between NPC conversations and quest state machines
 type RestStateModel struct {
-	Id            string                  `json:"id"`                      // State ID
-	StateType     string                  `json:"type"`                    // State type
-	Dialogue      *RestDialogueModel      `json:"dialogue,omitempty"`      // Dialogue model (if type is dialogue)
-	GenericAction *RestGenericActionModel `json:"genericAction,omitempty"` // Generic action model (if type is genericAction)
-	CraftAction   *RestCraftActionModel   `json:"craftAction,omitempty"`   // Craft action model (if type is craftAction)
-	ListSelection *RestListSelectionModel `json:"listSelection,omitempty"` // List selection model (if type is listSelection)
-	AskNumber     *RestAskNumberModel     `json:"askNumber,omitempty"`     // Ask number model (if type is askNumber)
-	AskStyle      *RestAskStyleModel      `json:"askStyle,omitempty"`      // Ask style model (if type is askStyle)
+	Id              string                     `json:"id"`                        // State ID
+	StateType       string                     `json:"type"`                      // State type
+	Dialogue        *RestDialogueModel         `json:"dialogue,omitempty"`        // Dialogue model (if type is dialogue)
+	GenericAction   *RestGenericActionModel    `json:"genericAction,omitempty"`   // Generic action model (if type is genericAction)
+	CraftAction     *RestCraftActionModel      `json:"craftAction,omitempty"`     // Craft action model (if type is craftAction)
+	TransportAction *RestTransportActionModel  `json:"transportAction,omitempty"` // Transport action model (if type is transportAction)
+	ListSelection   *RestListSelectionModel    `json:"listSelection,omitempty"`   // List selection model (if type is listSelection)
+	AskNumber       *RestAskNumberModel        `json:"askNumber,omitempty"`       // Ask number model (if type is askNumber)
+	AskStyle        *RestAskStyleModel         `json:"askStyle,omitempty"`        // Ask style model (if type is askStyle)
 }
 
 // GetID returns the resource ID
@@ -122,6 +123,17 @@ type RestCraftActionModel struct {
 	SuccessState          string   `json:"successState"`                   // Success state ID
 	FailureState          string   `json:"failureState"`                   // Failure state ID
 	MissingMaterialsState string   `json:"missingMaterialsState"`          // Missing materials state ID
+}
+
+// RestTransportActionModel represents the REST model for transport action states
+// Used for instance-based transports that go through saga-orchestrator
+type RestTransportActionModel struct {
+	RouteName             string `json:"routeName"`                       // Transport route name
+	FailureState          string `json:"failureState"`                    // General failure state ID
+	CapacityFullState     string `json:"capacityFullState,omitempty"`     // State when transport is at capacity
+	AlreadyInTransitState string `json:"alreadyInTransitState,omitempty"` // State when character is already in transit
+	RouteNotFoundState    string `json:"routeNotFoundState,omitempty"`    // State when route doesn't exist
+	ServiceErrorState     string `json:"serviceErrorState,omitempty"`     // State when transport service fails
 }
 
 // RestListSelectionModel represents the REST model for list selection states
@@ -245,6 +257,12 @@ func TransformState(m StateModel) (RestStateModel, error) {
 			}
 			restState.CraftAction = &restCraftAction
 		}
+	case TransportActionType:
+		transportAction := m.TransportAction()
+		if transportAction != nil {
+			restTransportAction := TransformTransportAction(*transportAction)
+			restState.TransportAction = &restTransportAction
+		}
 	case ListSelectionType:
 		listSelection := m.ListSelection()
 		if listSelection != nil {
@@ -350,6 +368,18 @@ func TransformCraftAction(m CraftActionModel) (RestCraftActionModel, error) {
 	}, nil
 }
 
+// TransformTransportAction converts a TransportActionModel to a RestTransportActionModel
+func TransformTransportAction(m TransportActionModel) RestTransportActionModel {
+	return RestTransportActionModel{
+		RouteName:             m.RouteName(),
+		FailureState:          m.FailureState(),
+		CapacityFullState:     m.CapacityFullState(),
+		AlreadyInTransitState: m.AlreadyInTransitState(),
+		RouteNotFoundState:    m.RouteNotFoundState(),
+		ServiceErrorState:     m.ServiceErrorState(),
+	}
+}
+
 // TransformListSelection converts a ListSelectionModel to a RestListSelectionModel
 func TransformListSelection(m ListSelectionModel) (RestListSelectionModel, error) {
 	restChoices := make([]RestChoiceModel, 0, len(m.Choices()))
@@ -441,6 +471,15 @@ func ExtractState(r RestStateModel) (StateModel, error) {
 			return StateModel{}, err
 		}
 		stateBuilder.SetCraftAction(craftAction)
+	case TransportActionType:
+		if r.TransportAction == nil {
+			return StateModel{}, fmt.Errorf("transportAction is required for transportAction state")
+		}
+		transportAction, err := ExtractTransportAction(*r.TransportAction)
+		if err != nil {
+			return StateModel{}, err
+		}
+		stateBuilder.SetTransportAction(transportAction)
 	case ListSelectionType:
 		if r.ListSelection == nil {
 			return StateModel{}, fmt.Errorf("listSelection is required for listSelection state")
@@ -595,6 +634,19 @@ func ExtractCraftAction(r RestCraftActionModel) (*CraftActionModel, error) {
 		SetMissingMaterialsState(r.MissingMaterialsState)
 
 	return craftActionBuilder.Build()
+}
+
+// ExtractTransportAction converts a RestTransportActionModel to a TransportActionModel
+func ExtractTransportAction(r RestTransportActionModel) (*TransportActionModel, error) {
+	transportActionBuilder := NewTransportActionBuilder().
+		SetRouteName(r.RouteName).
+		SetFailureState(r.FailureState).
+		SetCapacityFullState(r.CapacityFullState).
+		SetAlreadyInTransitState(r.AlreadyInTransitState).
+		SetRouteNotFoundState(r.RouteNotFoundState).
+		SetServiceErrorState(r.ServiceErrorState)
+
+	return transportActionBuilder.Build()
 }
 
 // ExtractListSelection converts a RestListSelectionModel to a ListSelectionModel

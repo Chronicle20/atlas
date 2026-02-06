@@ -456,6 +456,9 @@ func (p *ProcessorImpl) processState(ctx ConversationContext, state StateModel) 
 	case CraftActionType:
 		// Process craft action state
 		return p.processCraftActionState(ctx, state)
+	case TransportActionType:
+		// Process transport action state
+		return p.processTransportActionState(ctx, state)
 	case ListSelectionType:
 		// Process list selection state
 		return p.processListSelectionState(ctx, state)
@@ -710,6 +713,73 @@ func (p *ProcessorImpl) processCraftActionState(ctx ConversationContext, state S
 
 	// Return current state ID to keep conversation in "waiting" state
 	// When saga completes, the saga status consumer will resume the conversation
+	return state.Id(), nil
+}
+
+// processTransportActionState processes a transport action state
+// Creates a saga to start an instance transport and waits for completion
+func (p *ProcessorImpl) processTransportActionState(ctx ConversationContext, state StateModel) (string, error) {
+	transportAction := state.TransportAction()
+	if transportAction == nil {
+		return "", errors.New("transportAction is nil")
+	}
+
+	p.l.WithFields(logrus.Fields{
+		"route_name":   transportAction.RouteName(),
+		"character_id": ctx.CharacterId(),
+		"npc_id":       ctx.NpcId(),
+	}).Debug("Processing transport action state")
+
+	// Create a new saga ID
+	sagaId := uuid.New()
+
+	// Build the saga with a single start_instance_transport step
+	sagaBuilder := saga.NewBuilder().
+		SetTransactionId(sagaId).
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy(fmt.Sprintf("NPC_%d_transport", ctx.NpcId()))
+
+	// Add the transport step
+	transportPayload := saga.StartInstanceTransportPayload{
+		CharacterId: ctx.CharacterId(),
+		WorldId:     ctx.Field().WorldId(),
+		ChannelId:   ctx.Field().ChannelId(),
+		RouteName:   transportAction.RouteName(),
+	}
+	sagaBuilder.AddStep("start_instance_transport", saga.Pending, saga.StartInstanceTransport, transportPayload)
+
+	// Build and execute saga
+	s := sagaBuilder.Build()
+
+	// Send saga to orchestrator
+	err := saga.NewProcessor(p.l, p.ctx).Create(s)
+	if err != nil {
+		p.l.WithError(err).Errorf("Failed to create transport saga")
+		return transportAction.FailureState(), nil
+	}
+
+	// Store saga ID and transport action failure states in context for later resumption
+	ctx = ctx.SetPendingSagaId(sagaId)
+	ctx.Context()["transportAction_failureState"] = transportAction.FailureState()
+	ctx.Context()["transportAction_capacityFullState"] = transportAction.CapacityFullState()
+	ctx.Context()["transportAction_alreadyInTransitState"] = transportAction.AlreadyInTransitState()
+	ctx.Context()["transportAction_routeNotFoundState"] = transportAction.RouteNotFoundState()
+	ctx.Context()["transportAction_serviceErrorState"] = transportAction.ServiceErrorState()
+
+	// Update conversation context in registry
+	GetRegistry().UpdateContext(p.t, ctx.CharacterId(), ctx)
+
+	p.l.WithFields(logrus.Fields{
+		"transaction_id": sagaId.String(),
+		"character_id":   ctx.CharacterId(),
+		"npc_id":         ctx.NpcId(),
+		"route_name":     transportAction.RouteName(),
+	}).Debug("Transport saga created, conversation waiting for completion")
+
+	// Return current state ID to keep conversation in "waiting" state
+	// When saga completes/fails, the saga status consumer will resume the conversation
+	// On success, the character will be warped and conversation ends naturally
+	// On failure, we route to the appropriate error state
 	return state.Id(), nil
 }
 

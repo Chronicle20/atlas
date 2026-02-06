@@ -16,9 +16,8 @@ type RestStateModel struct {
 	GenericAction   *RestGenericActionModel    `json:"genericAction,omitempty"`   // Generic action model (if type is genericAction)
 	CraftAction     *RestCraftActionModel      `json:"craftAction,omitempty"`     // Craft action model (if type is craftAction)
 	TransportAction *RestTransportActionModel  `json:"transportAction,omitempty"` // Transport action model (if type is transportAction)
-	ListSelection              *RestListSelectionModel              `json:"listSelection,omitempty"`              // List selection model (if type is listSelection)
-	DimensionalMirrorSelection *RestDimensionalMirrorSelectionModel `json:"dimensionalMirrorSelection,omitempty"` // Dimensional mirror selection model (if type is dimensionalMirrorSelection)
-	AskNumber                  *RestAskNumberModel                  `json:"askNumber,omitempty"`                  // Ask number model (if type is askNumber)
+	ListSelection *RestListSelectionModel `json:"listSelection,omitempty"` // List selection model (if type is listSelection)
+	AskNumber     *RestAskNumberModel    `json:"askNumber,omitempty"`     // Ask number model (if type is askNumber)
 	AskStyle                   *RestAskStyleModel                   `json:"askStyle,omitempty"`                   // Ask style model (if type is askStyle)
 	AskSlideMenu               *RestAskSlideMenuModel               `json:"askSlideMenu,omitempty"`               // Ask slide menu model (if type is askSlideMenu)
 }
@@ -142,11 +141,6 @@ type RestTransportActionModel struct {
 type RestListSelectionModel struct {
 	Title   string            `json:"title"`             // List selection title
 	Choices []RestChoiceModel `json:"choices,omitempty"` // Dialogue choices
-}
-
-// RestDimensionalMirrorSelectionModel represents the REST model for dimensional mirror selection states
-type RestDimensionalMirrorSelectionModel struct {
-	Choices []RestChoiceModel `json:"choices,omitempty"` // Destination choices
 }
 
 // RestAskNumberModel represents the REST model for ask number states
@@ -287,15 +281,6 @@ func TransformState(m StateModel) (RestStateModel, error) {
 			}
 			restState.ListSelection = &restListSelection
 		}
-	case DimensionalMirrorSelectionType:
-		dimensionalMirrorSelection := m.DimensionalMirrorSelection()
-		if dimensionalMirrorSelection != nil {
-			restDimensionalMirrorSelection, err := TransformDimensionalMirrorSelection(*dimensionalMirrorSelection)
-			if err != nil {
-				return RestStateModel{}, err
-			}
-			restState.DimensionalMirrorSelection = &restDimensionalMirrorSelection
-		}
 	case AskNumberType:
 		askNumber := m.AskNumber()
 		if askNumber != nil {
@@ -427,22 +412,6 @@ func TransformListSelection(m ListSelectionModel) (RestListSelectionModel, error
 	}, nil
 }
 
-// TransformDimensionalMirrorSelection converts a DimensionalMirrorSelectionModel to a RestDimensionalMirrorSelectionModel
-func TransformDimensionalMirrorSelection(m DimensionalMirrorSelectionModel) (RestDimensionalMirrorSelectionModel, error) {
-	restChoices := make([]RestChoiceModel, 0, len(m.Choices()))
-	for _, choice := range m.Choices() {
-		restChoices = append(restChoices, RestChoiceModel{
-			Text:      choice.Text(),
-			NextState: choice.NextState(),
-			Context:   choice.Context(),
-		})
-	}
-
-	return RestDimensionalMirrorSelectionModel{
-		Choices: restChoices,
-	}, nil
-}
-
 // TransformAskNumber converts an AskNumberModel to a RestAskNumberModel
 func TransformAskNumber(m AskNumberModel) RestAskNumberModel {
 	return RestAskNumberModel{
@@ -554,15 +523,6 @@ func ExtractState(r RestStateModel) (StateModel, error) {
 			return StateModel{}, err
 		}
 		stateBuilder.SetListSelection(listSelection)
-	case DimensionalMirrorSelectionType:
-		if r.DimensionalMirrorSelection == nil {
-			return StateModel{}, fmt.Errorf("dimensionalMirrorSelection is required for dimensionalMirrorSelection state")
-		}
-		dimensionalMirrorSelection, err := ExtractDimensionalMirrorSelection(*r.DimensionalMirrorSelection)
-		if err != nil {
-			return StateModel{}, err
-		}
-		stateBuilder.SetDimensionalMirrorSelection(dimensionalMirrorSelection)
 	case AskNumberType:
 		if r.AskNumber == nil {
 			return StateModel{}, fmt.Errorf("askNumber is required for askNumber state")
@@ -736,21 +696,6 @@ func ExtractTransportAction(r RestTransportActionModel) (*TransportActionModel, 
 func ExtractListSelection(r RestListSelectionModel) (*ListSelectionModel, error) {
 	b := NewListSelectionBuilder().
 		SetTitle(r.Title)
-
-	for _, restChoice := range r.Choices {
-		choice, err := ExtractChoice(restChoice)
-		if err != nil {
-			return nil, err
-		}
-		b.AddChoice(choice)
-	}
-
-	return b.Build()
-}
-
-// ExtractDimensionalMirrorSelection converts a RestDimensionalMirrorSelectionModel to a DimensionalMirrorSelectionModel
-func ExtractDimensionalMirrorSelection(r RestDimensionalMirrorSelectionModel) (*DimensionalMirrorSelectionModel, error) {
-	b := NewDimensionalMirrorSelectionBuilder()
 
 	for _, restChoice := range r.Choices {
 		choice, err := ExtractChoice(restChoice)

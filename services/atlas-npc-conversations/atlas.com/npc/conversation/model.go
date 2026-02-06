@@ -37,26 +37,24 @@ const (
 	GenericActionType      StateType = "genericAction"
 	CraftActionType        StateType = "craftAction"
 	TransportActionType    StateType = "transportAction"
-	ListSelectionType                StateType = "listSelection"
-	DimensionalMirrorSelectionType   StateType = "dimensionalMirrorSelection"
-	AskNumberType                    StateType = "askNumber"
+	ListSelectionType StateType = "listSelection"
+	AskNumberType     StateType = "askNumber"
 	AskStyleType                     StateType = "askStyle"
 	AskSlideMenuType                 StateType = "askSlideMenu"
 )
 
 // StateModel represents a state in a conversation
 type StateModel struct {
-	id                         string
-	stateType                  StateType
-	dialogue                   *DialogueModel
-	genericAction              *GenericActionModel
-	craftAction                *CraftActionModel
-	transportAction            *TransportActionModel
-	listSelection              *ListSelectionModel
-	dimensionalMirrorSelection *DimensionalMirrorSelectionModel
-	askNumber                  *AskNumberModel
-	askStyle                   *AskStyleModel
-	askSlideMenu               *AskSlideMenuModel
+	id              string
+	stateType       StateType
+	dialogue        *DialogueModel
+	genericAction   *GenericActionModel
+	craftAction     *CraftActionModel
+	transportAction *TransportActionModel
+	listSelection   *ListSelectionModel
+	askNumber       *AskNumberModel
+	askStyle        *AskStyleModel
+	askSlideMenu    *AskSlideMenuModel
 }
 
 // Id returns the state ID
@@ -94,11 +92,6 @@ func (s StateModel) ListSelection() *ListSelectionModel {
 	return s.listSelection
 }
 
-// DimensionalMirrorSelection returns the dimensional mirror selection model (if type is dimensionalMirrorSelection)
-func (s StateModel) DimensionalMirrorSelection() *DimensionalMirrorSelectionModel {
-	return s.dimensionalMirrorSelection
-}
-
 // AskNumber returns the ask number model (if type is askNumber)
 func (s StateModel) AskNumber() *AskNumberModel {
 	return s.askNumber
@@ -116,17 +109,16 @@ func (s StateModel) AskSlideMenu() *AskSlideMenuModel {
 
 // StateBuilder is a builder for StateModel
 type StateBuilder struct {
-	id                         string
-	stateType                  StateType
-	dialogue                   *DialogueModel
-	genericAction              *GenericActionModel
-	craftAction                *CraftActionModel
-	transportAction            *TransportActionModel
-	listSelection              *ListSelectionModel
-	dimensionalMirrorSelection *DimensionalMirrorSelectionModel
-	askNumber                  *AskNumberModel
-	askStyle                   *AskStyleModel
-	askSlideMenu               *AskSlideMenuModel
+	id              string
+	stateType       StateType
+	dialogue        *DialogueModel
+	genericAction   *GenericActionModel
+	craftAction     *CraftActionModel
+	transportAction *TransportActionModel
+	listSelection   *ListSelectionModel
+	askNumber       *AskNumberModel
+	askStyle        *AskStyleModel
+	askSlideMenu    *AskSlideMenuModel
 }
 
 // NewStateBuilder creates a new StateBuilder
@@ -148,7 +140,6 @@ func (b *StateBuilder) SetDialogue(dialogue *DialogueModel) *StateBuilder {
 	b.craftAction = nil
 	b.transportAction = nil
 	b.listSelection = nil
-	b.dimensionalMirrorSelection = nil
 	b.askNumber = nil
 	b.askStyle = nil
 	b.askSlideMenu = nil
@@ -163,7 +154,6 @@ func (b *StateBuilder) SetGenericAction(genericAction *GenericActionModel) *Stat
 	b.craftAction = nil
 	b.transportAction = nil
 	b.listSelection = nil
-	b.dimensionalMirrorSelection = nil
 	b.askNumber = nil
 	b.askStyle = nil
 	b.askSlideMenu = nil
@@ -178,7 +168,6 @@ func (b *StateBuilder) SetCraftAction(craftAction *CraftActionModel) *StateBuild
 	b.craftAction = craftAction
 	b.transportAction = nil
 	b.listSelection = nil
-	b.dimensionalMirrorSelection = nil
 	b.askNumber = nil
 	b.askStyle = nil
 	b.askSlideMenu = nil
@@ -193,7 +182,6 @@ func (b *StateBuilder) SetTransportAction(transportAction *TransportActionModel)
 	b.craftAction = nil
 	b.transportAction = transportAction
 	b.listSelection = nil
-	b.dimensionalMirrorSelection = nil
 	b.askNumber = nil
 	b.askStyle = nil
 	b.askSlideMenu = nil
@@ -208,22 +196,6 @@ func (b *StateBuilder) SetListSelection(listSelection *ListSelectionModel) *Stat
 	b.craftAction = nil
 	b.transportAction = nil
 	b.listSelection = listSelection
-	b.dimensionalMirrorSelection = nil
-	b.askNumber = nil
-	b.askStyle = nil
-	b.askSlideMenu = nil
-	return b
-}
-
-// SetDimensionalMirrorSelection sets the dimensional mirror selection model
-func (b *StateBuilder) SetDimensionalMirrorSelection(dimensionalMirrorSelection *DimensionalMirrorSelectionModel) *StateBuilder {
-	b.stateType = DimensionalMirrorSelectionType
-	b.dialogue = nil
-	b.genericAction = nil
-	b.craftAction = nil
-	b.transportAction = nil
-	b.listSelection = nil
-	b.dimensionalMirrorSelection = dimensionalMirrorSelection
 	b.askNumber = nil
 	b.askStyle = nil
 	b.askSlideMenu = nil
@@ -238,7 +210,6 @@ func (b *StateBuilder) SetAskNumber(askNumber *AskNumberModel) *StateBuilder {
 	b.craftAction = nil
 	b.transportAction = nil
 	b.listSelection = nil
-	b.dimensionalMirrorSelection = nil
 	b.askNumber = askNumber
 	b.askStyle = nil
 	b.askSlideMenu = nil
@@ -253,7 +224,6 @@ func (b *StateBuilder) SetAskStyle(askStyle *AskStyleModel) *StateBuilder {
 	b.craftAction = nil
 	b.transportAction = nil
 	b.listSelection = nil
-	b.dimensionalMirrorSelection = nil
 	b.askNumber = nil
 	b.askStyle = askStyle
 	b.askSlideMenu = nil
@@ -268,7 +238,6 @@ func (b *StateBuilder) SetAskSlideMenu(askSlideMenu *AskSlideMenuModel) *StateBu
 	b.craftAction = nil
 	b.transportAction = nil
 	b.listSelection = nil
-	b.dimensionalMirrorSelection = nil
 	b.askNumber = nil
 	b.askStyle = nil
 	b.askSlideMenu = askSlideMenu
@@ -302,10 +271,6 @@ func (b *StateBuilder) Build() (StateModel, error) {
 		if b.listSelection == nil {
 			return StateModel{}, errors.New("listSelection is required for listSelection state")
 		}
-	case DimensionalMirrorSelectionType:
-		if b.dimensionalMirrorSelection == nil {
-			return StateModel{}, errors.New("dimensionalMirrorSelection is required for dimensionalMirrorSelection state")
-		}
 	case AskNumberType:
 		if b.askNumber == nil {
 			return StateModel{}, errors.New("askNumber is required for askNumber state")
@@ -323,17 +288,16 @@ func (b *StateBuilder) Build() (StateModel, error) {
 	}
 
 	return StateModel{
-		id:                         b.id,
-		stateType:                  b.stateType,
-		dialogue:                   b.dialogue,
-		genericAction:              b.genericAction,
-		craftAction:                b.craftAction,
-		transportAction:            b.transportAction,
-		listSelection:              b.listSelection,
-		dimensionalMirrorSelection: b.dimensionalMirrorSelection,
-		askNumber:                  b.askNumber,
-		askStyle:                   b.askStyle,
-		askSlideMenu:               b.askSlideMenu,
+		id:              b.id,
+		stateType:       b.stateType,
+		dialogue:        b.dialogue,
+		genericAction:   b.genericAction,
+		craftAction:     b.craftAction,
+		transportAction: b.transportAction,
+		listSelection:   b.listSelection,
+		askNumber:       b.askNumber,
+		askStyle:        b.askStyle,
+		askSlideMenu:    b.askSlideMenu,
 	}, nil
 }
 
@@ -1321,60 +1285,6 @@ func (b *ListSelectionBuilder) Build() (*ListSelectionModel, error) {
 
 	return &ListSelectionModel{
 		title:   b.title,
-		choices: b.choices,
-	}, nil
-}
-
-// DimensionalMirrorSelectionModel represents a dimensional mirror selection state
-type DimensionalMirrorSelectionModel struct {
-	choices []ChoiceModel
-}
-
-// Choices returns the dimensional mirror choices
-func (d DimensionalMirrorSelectionModel) Choices() []ChoiceModel {
-	return d.choices
-}
-
-// ChoiceFromSelection returns the choice for a given action and selection
-func (d DimensionalMirrorSelectionModel) ChoiceFromSelection(action byte, selection int32) (ChoiceModel, error) {
-	if action == 0 {
-		for _, choice := range d.choices {
-			if choice.Text() == "Exit" {
-				return choice, nil
-			}
-		}
-		return ChoiceModel{}, errors.New("invalid selection")
-	}
-
-	if selection < 0 || selection >= int32(len(d.choices)) {
-		return ChoiceModel{}, errors.New("invalid selection")
-	}
-	return d.choices[selection], nil
-}
-
-// DimensionalMirrorSelectionBuilder is a builder for DimensionalMirrorSelectionModel
-type DimensionalMirrorSelectionBuilder struct {
-	choices []ChoiceModel
-}
-
-// NewDimensionalMirrorSelectionBuilder creates a new DimensionalMirrorSelectionBuilder
-func NewDimensionalMirrorSelectionBuilder() *DimensionalMirrorSelectionBuilder {
-	return &DimensionalMirrorSelectionBuilder{choices: make([]ChoiceModel, 0)}
-}
-
-// AddChoice adds a choice to the dimensional mirror selection
-func (b *DimensionalMirrorSelectionBuilder) AddChoice(choice ChoiceModel) *DimensionalMirrorSelectionBuilder {
-	b.choices = append(b.choices, choice)
-	return b
-}
-
-// Build builds the DimensionalMirrorSelectionModel
-func (b *DimensionalMirrorSelectionBuilder) Build() (*DimensionalMirrorSelectionModel, error) {
-	if len(b.choices) == 0 {
-		return nil, errors.New("at least one choice is required")
-	}
-
-	return &DimensionalMirrorSelectionModel{
 		choices: b.choices,
 	}, nil
 }

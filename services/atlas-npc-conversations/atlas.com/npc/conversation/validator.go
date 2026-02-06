@@ -98,8 +98,6 @@ func (v *Validator) validateState(state StateModel, stateIds map[string]bool, re
 		v.validateTransportAction(state.Id(), state.TransportAction(), stateIds, result)
 	case ListSelectionType:
 		v.validateListSelection(state.Id(), state.ListSelection(), stateIds, result)
-	case DimensionalMirrorSelectionType:
-		v.validateDimensionalMirrorSelection(state.Id(), state.DimensionalMirrorSelection(), stateIds, result)
 	case AskNumberType:
 		v.validateAskNumber(state.Id(), state.AskNumber(), stateIds, result)
 	case AskStyleType:
@@ -297,30 +295,6 @@ func (v *Validator) validateListSelection(stateId string, listSelection *ListSel
 	}
 }
 
-// validateDimensionalMirrorSelection validates a dimensional mirror selection state
-func (v *Validator) validateDimensionalMirrorSelection(stateId string, selection *DimensionalMirrorSelectionModel, stateIds map[string]bool, result *ValidationResult) {
-	if selection == nil {
-		result.addError(stateId, "dimensionalMirrorSelection", "required", "Dimensional mirror selection is required for dimensionalMirrorSelection state")
-		return
-	}
-
-	if len(selection.Choices()) == 0 {
-		result.addError(stateId, "dimensionalMirrorSelection.choices", "required", "At least one choice is required")
-	}
-
-	// Validate each choice
-	for i, choice := range selection.Choices() {
-		if choice.Text() == "" {
-			result.addError(stateId, fmt.Sprintf("dimensionalMirrorSelection.choices[%d].text", i), "required", "Choice text is required")
-		}
-
-		// Validate nextState reference (null/empty is valid for ending conversation)
-		if choice.NextState() != "" && !stateIds[choice.NextState()] {
-			result.addError(stateId, fmt.Sprintf("dimensionalMirrorSelection.choices[%d].nextState", i), "invalid_reference", fmt.Sprintf("Next state '%s' does not exist", choice.NextState()))
-		}
-	}
-}
-
 // validateAskNumber validates an ask number state
 func (v *Validator) validateAskNumber(stateId string, askNumber *AskNumberModel, stateIds map[string]bool, result *ValidationResult) {
 	if askNumber == nil {
@@ -452,12 +426,6 @@ func (v *Validator) findReachableStates(m NpcConversation) map[string]bool {
 		case ListSelectionType:
 			if listSelection := state.ListSelection(); listSelection != nil {
 				for _, choice := range listSelection.Choices() {
-					visit(choice.NextState())
-				}
-			}
-		case DimensionalMirrorSelectionType:
-			if selection := state.DimensionalMirrorSelection(); selection != nil {
-				for _, choice := range selection.Choices() {
 					visit(choice.NextState())
 				}
 			}
@@ -594,12 +562,6 @@ func (v *Validator) getNextStates(state StateModel) []string {
 	case ListSelectionType:
 		if listSelection := state.ListSelection(); listSelection != nil {
 			for _, choice := range listSelection.Choices() {
-				nextStates = append(nextStates, choice.NextState())
-			}
-		}
-	case DimensionalMirrorSelectionType:
-		if selection := state.DimensionalMirrorSelection(); selection != nil {
-			for _, choice := range selection.Choices() {
 				nextStates = append(nextStates, choice.NextState())
 			}
 		}

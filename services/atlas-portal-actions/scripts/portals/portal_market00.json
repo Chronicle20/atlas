@@ -1,0 +1,25 @@
+{
+  "portalId": "market00",
+  "mapId": 910000000,
+  "description": "Free Market Entrance - Portal back to saved location",
+  "rules": [
+    {
+      "id": "exit_free_market",
+      "conditions": [],
+      "onMatch": {
+        "allow": true,
+        "operations": [
+          {
+            "type": "play_portal_sound"
+          },
+          {
+            "type": "warp_to_saved_location",
+            "params": {
+              "locationType": "FREE_MARKET"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

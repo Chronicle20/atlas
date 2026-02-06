@@ -439,6 +439,10 @@ const (
 	// Transport actions
 	StartInstanceTransport    Action = "start_instance_transport"    // Start an instance-based transport for a character
 	CancelConsumableEffect    Action = "cancel_consumable_effect"    // Cancel consumable item effects (buffs) on a character
+
+	// Saved location actions
+	SaveLocation            Action = "save_location"              // Save character's current location for later return
+	WarpToSavedLocation     Action = "warp_to_saved_location"     // Warp character to a previously saved location and delete it
 )
 
 // Step represents a single step within a saga.
@@ -1145,6 +1149,24 @@ type ReleaseFromCashShopPayload struct {
 	TemplateId      uint32    `json:"templateId"`      // Item template ID for client notification
 }
 
+// SaveLocationPayload represents the payload required to save a character's current location.
+type SaveLocationPayload struct {
+	CharacterId  uint32     `json:"characterId"`  // CharacterId to save location for
+	WorldId      world.Id   `json:"worldId"`      // WorldId associated with the action
+	ChannelId    channel.Id `json:"channelId"`    // ChannelId associated with the action
+	LocationType string     `json:"locationType"` // Location type key (e.g., "FREE_MARKET")
+	MapId        _map.Id    `json:"mapId"`        // Map ID to save
+	PortalId     uint32     `json:"portalId"`     // Portal ID to save
+}
+
+// WarpToSavedLocationPayload represents the payload required to warp a character to a saved location.
+type WarpToSavedLocationPayload struct {
+	CharacterId  uint32     `json:"characterId"`  // CharacterId to warp
+	WorldId      world.Id   `json:"worldId"`      // WorldId associated with the action
+	ChannelId    channel.Id `json:"channelId"`    // ChannelId associated with the action
+	LocationType string     `json:"locationType"` // Location type key to retrieve and delete
+}
+
 // Custom UnmarshalJSON for Step[T] to handle the generics
 func (s *Step[T]) UnmarshalJSON(data []byte) error {
 	// First unmarshal to get the action type
@@ -1513,6 +1535,18 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case CancelConsumableEffect:
 		var payload CancelConsumableEffectPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case SaveLocation:
+		var payload SaveLocationPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case WarpToSavedLocation:
+		var payload WarpToSavedLocationPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

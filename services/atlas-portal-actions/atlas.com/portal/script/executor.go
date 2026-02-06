@@ -6,12 +6,15 @@ import (
 	"strconv"
 	"time"
 
+	"atlas-portal-actions/action"
 	portalsaga "atlas-portal-actions/saga"
 
 	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-script-core/operation"
 	"github.com/Chronicle20/atlas-script-core/saga"
+	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -57,6 +60,9 @@ func (e *OperationExecutor) ExecuteOperation(f field.Model, characterId uint32, 
 
 	case "update_skill":
 		return e.executeUpdateSkill(characterId, op)
+
+	case "start_instance_transport":
+		return e.executeStartInstanceTransport(f, characterId, op)
 
 	default:
 		e.l.Warnf("Unknown operation type [%s] for character [%d]", op.Type(), characterId)
@@ -403,6 +409,51 @@ func (e *OperationExecutor) executeUpdateSkill(characterId uint32, op operation.
 				Level:       level,
 				MasterLevel: masterLevel,
 				Expiration:  expiration,
+			},
+		).Build()
+
+	return e.sagaP.Create(s)
+}
+
+// executeStartInstanceTransport starts an instance-based transport for the character
+func (e *OperationExecutor) executeStartInstanceTransport(f field.Model, characterId uint32, op operation.Model) error {
+	params := op.Params()
+
+	routeName, ok := params["routeName"]
+	if !ok {
+		return fmt.Errorf("start_instance_transport operation missing routeName parameter")
+	}
+
+	// Get optional failure message for when transport fails
+	failureMessage := params["failureMessage"]
+
+	e.l.Debugf("Starting instance transport [%s] for character [%d]", routeName, characterId)
+
+	// Generate saga ID upfront so we can track it
+	sagaId := uuid.New()
+
+	// Register pending action for saga failure handling
+	t := tenant.MustFromContext(e.ctx)
+	action.GetRegistry().Add(t.Id(), sagaId, action.PendingAction{
+		CharacterId:    characterId,
+		WorldId:        f.WorldId(),
+		ChannelId:      f.ChannelId(),
+		FailureMessage: failureMessage,
+	})
+
+	s := saga.NewBuilder().
+		SetTransactionId(sagaId).
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("portal-action-transport").
+		AddStep(
+			fmt.Sprintf("transport-%d-%s", characterId, routeName),
+			saga.Pending,
+			saga.StartInstanceTransport,
+			saga.StartInstanceTransportPayload{
+				CharacterId: characterId,
+				WorldId:     f.WorldId(),
+				ChannelId:   f.ChannelId(),
+				RouteName:   routeName,
 			},
 		).Build()
 

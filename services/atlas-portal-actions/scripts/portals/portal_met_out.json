@@ -1,0 +1,23 @@
+{
+  "portalId": "met_out",
+  "mapId": 910320000,
+  "description": "Abandoned Subway Station - Exit portal - Warp back to saved MIRROR location",
+  "rules": [
+    {
+      "id": "return_to_saved_location",
+      "conditions": [],
+      "onMatch": {
+        "allow": true,
+        "operations": [
+          { "type": "play_portal_sound" },
+          {
+            "type": "warp_to_saved_location",
+            "params": {
+              "locationType": "MIRROR"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

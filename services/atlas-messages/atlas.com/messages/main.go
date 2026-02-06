@@ -6,6 +6,7 @@ import (
 	"atlas-messages/command/character"
 	"atlas-messages/command/character/inventory"
 	"atlas-messages/command/character/skill"
+	"atlas-messages/command/consumable"
 	"atlas-messages/command/help"
 	"atlas-messages/command/map"
 	message2 "atlas-messages/kafka/consumer/message"
@@ -43,6 +44,7 @@ func main() {
 	command.Registry().Add(skill.MaxSkillCommandProducer)
 	command.Registry().Add(skill.ResetSkillCommandProducer)
 	command.Registry().Add(buff.BuffCommandProducer)
+	command.Registry().Add(consumable.ConsumeCommandProducer)
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	message2.InitConsumers(l)(cmf)(consumerGroupId)

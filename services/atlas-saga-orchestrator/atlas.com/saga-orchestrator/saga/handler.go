@@ -12,7 +12,9 @@ import (
 	"atlas-saga-orchestrator/guild"
 	"atlas-saga-orchestrator/invite"
 	character2 "atlas-saga-orchestrator/kafka/message/character"
+	saga2 "atlas-saga-orchestrator/kafka/message/saga"
 	storage2 "atlas-saga-orchestrator/kafka/message/storage"
+	"atlas-saga-orchestrator/kafka/producer"
 	"atlas-saga-orchestrator/monster"
 	"atlas-saga-orchestrator/pet"
 	portalBlocking "atlas-saga-orchestrator/portal"
@@ -22,6 +24,7 @@ import (
 	"atlas-saga-orchestrator/skill"
 	"atlas-saga-orchestrator/storage"
 	"atlas-saga-orchestrator/system_message"
+	"atlas-saga-orchestrator/transport"
 	"atlas-saga-orchestrator/validation"
 	"context"
 	"errors"
@@ -54,6 +57,7 @@ type Handler interface {
 	WithQuestProcessor(quest.Processor) Handler
 	WithStorageProcessor(storage.Processor) Handler
 	WithBuffProcessor(buff.Processor) Handler
+	WithTransportProcessor(transport.Processor) Handler
 
 	GetHandler(action Action) (ActionHandler, bool)
 
@@ -115,6 +119,7 @@ type Handler interface {
 	handleDeductExperience(s Saga, st Step[any]) error
 	handleCancelAllBuffs(s Saga, st Step[any]) error
 	handleResetStats(s Saga, st Step[any]) error
+	handleStartInstanceTransport(s Saga, st Step[any]) error
 }
 
 type HandlerImpl struct {
@@ -140,6 +145,7 @@ type HandlerImpl struct {
 	questP          quest.Processor
 	storageP        storage.Processor
 	buffP           buff.Processor
+	transportP      transport.Processor
 }
 
 func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
@@ -165,6 +171,7 @@ func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
 		questP:          quest.NewProcessor(l, ctx),
 		storageP:        storage.NewProcessor(l, ctx),
 		buffP:           buff.NewProcessor(l, ctx),
+		transportP:      transport.NewProcessor(l, ctx),
 	}
 }
 
@@ -504,6 +511,33 @@ func (h *HandlerImpl) WithBuffProcessor(buffP buff.Processor) Handler {
 		questP:         h.questP,
 		storageP:       h.storageP,
 		buffP:          buffP,
+		transportP:     h.transportP,
+	}
+}
+
+func (h *HandlerImpl) WithTransportProcessor(transportP transport.Processor) Handler {
+	return &HandlerImpl{
+		l:              h.l,
+		ctx:            h.ctx,
+		t:              h.t,
+		charP:          h.charP,
+		compP:          h.compP,
+		skillP:         h.skillP,
+		validP:         h.validP,
+		guildP:         h.guildP,
+		inviteP:        h.inviteP,
+		buddyListP:     h.buddyListP,
+		petP:           h.petP,
+		footholdP:      h.footholdP,
+		monsterP:       h.monsterP,
+		consumableP:    h.consumableP,
+		portalP:        h.portalP,
+		cashshopP:      h.cashshopP,
+		systemMessageP: h.systemMessageP,
+		questP:         h.questP,
+		storageP:       h.storageP,
+		buffP:          h.buffP,
+		transportP:     transportP,
 	}
 }
 
@@ -628,6 +662,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleCancelAllBuffs, true
 	case ResetStats:
 		return h.handleResetStats, true
+	case StartInstanceTransport:
+		return h.handleStartInstanceTransport, true
 	}
 	return nil, false
 }
@@ -1903,6 +1939,69 @@ func (h *HandlerImpl) handleResetStats(s Saga, st Step[any]) error {
 		h.logActionError(s, st, err, "Unable to reset stats.")
 		return err
 	}
+
+	return nil
+}
+
+// handleStartInstanceTransport handles the StartInstanceTransport action
+// This calls the atlas-transports REST API to start an instance-based transport.
+// On success, the step is marked complete immediately.
+// On failure, a failed status event is emitted with an appropriate error code.
+func (h *HandlerImpl) handleStartInstanceTransport(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(StartInstanceTransportPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"character_id":   payload.CharacterId,
+		"route_name":     payload.RouteName,
+		"world_id":       payload.WorldId,
+		"channel_id":     payload.ChannelId,
+	}).Debug("Starting instance transport")
+
+	// Call the transport processor
+	err := h.transportP.StartTransport(payload.RouteName, payload.CharacterId, payload.WorldId, payload.ChannelId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to start instance transport.")
+
+		// Extract error code from transport error
+		errorCode := transport.GetErrorCode(err)
+
+		h.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"character_id":   payload.CharacterId,
+			"route_name":     payload.RouteName,
+			"error_code":     errorCode,
+		}).Warn("Instance transport failed - emitting failure event")
+
+		// Remove saga from cache since this is a terminal failure
+		GetCache().Remove(h.t.Id(), s.TransactionId())
+
+		// Emit saga failed event with the transport-specific error code
+		emitErr := producer.ProviderImpl(h.l)(h.ctx)(saga2.EnvStatusEventTopic)(
+			FailedStatusEventProvider(
+				s.TransactionId(),
+				payload.CharacterId,
+				string(s.SagaType()),
+				errorCode,
+				err.Error(),
+				st.StepId(),
+			))
+		if emitErr != nil {
+			h.l.WithError(emitErr).WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId().String(),
+				"character_id":   payload.CharacterId,
+				"error_code":     errorCode,
+			}).Error("Failed to emit saga failed event for transport operation")
+		}
+
+		return err
+	}
+
+	// StartInstanceTransport is a synchronous REST call - mark as complete immediately
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
 
 	return nil
 }

@@ -29,20 +29,65 @@
     },
     {
       "id": "warpKerningSquare",
-      "type": "genericAction",
-      "genericAction": {
-        "operations": [
+      "type": "transportAction",
+      "transportAction": {
+        "routeName": "kerning-train-to-square",
+        "failureState": "transportFailed",
+        "capacityFullState": "transportCapacityFull",
+        "alreadyInTransitState": "transportAlreadyInTransit",
+        "routeNotFoundState": "transportFailed",
+        "serviceErrorState": "transportFailed"
+      }
+    },
+    {
+      "id": "transportFailed",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Sorry, the train service is currently unavailable. Please try again later.",
+        "choices": [
           {
-            "type": "warp_to_map",
-            "params": {
-              "mapId": "103000310",
-              "portalId": "0"
-            }
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
           }
-        ],
-        "outcomes": [
+        ]
+      }
+    },
+    {
+      "id": "transportCapacityFull",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Sorry, this train is currently full. Please wait for the next one.",
+        "choices": [
           {
-            "conditions": [],
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "transportAlreadyInTransit",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "You seem to already be on a transport. Please wait until you arrive at your destination.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
             "nextState": null
           }
         ]

@@ -1,0 +1,13 @@
+{
+  "type": "instance-routes",
+  "attributes": {
+    "name": "sky-ferry-victoria-to-ereve",
+    "handler": "MapleMap.java",
+    "startMapId": 101000400,
+    "transitMapId": 200090030,
+    "destinationMapId": 130000210,
+    "capacity": 1,
+    "boardingWindowSeconds": 1,
+    "travelDurationSeconds": 120
+  }
+}

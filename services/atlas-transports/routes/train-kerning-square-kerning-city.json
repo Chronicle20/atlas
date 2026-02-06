@@ -1,0 +1,14 @@
+{
+  "type": "instance-routes",
+  "attributes": {
+    "name": "kerning-train-to-subway",
+    "eventScript": "KerningTrain",
+    "startMapId": 103000310,
+    "transitMapId": 103000302,
+    "destinationMapId": 103000100,
+    "capacity": 1,
+    "boardingWindowSeconds": 1,
+    "travelDurationSeconds": 10,
+    "transitMessage": "The next stop is at Kerning Subway Station. The exit is to your left."
+  }
+}

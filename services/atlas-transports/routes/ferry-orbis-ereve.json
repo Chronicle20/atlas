@@ -1,0 +1,13 @@
+{
+  "type": "instance-routes",
+  "attributes": {
+    "name": "sky-ferry-orbis-to-ereve",
+    "handler": "MapleMap.java",
+    "startMapId": 200000161,
+    "transitMapId": 200090020,
+    "destinationMapId": 130000210,
+    "capacity": 1,
+    "boardingWindowSeconds": 1,
+    "travelDurationSeconds": 480
+  }
+}

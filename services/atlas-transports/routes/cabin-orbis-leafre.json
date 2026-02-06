@@ -1,12 +1,15 @@
 {
-  "name": "cabin-orbis-leafre",
-  "startMapId": 200000131,
-  "stagingMapId": 200000132,
-  "enRouteMapIds": [200090200],
-  "destinationMapId": 240000100,
-  "observationMapId": 200000131,
-  "boardingWindowDurationMinutes": 4,
-  "preDepartureDurationMinutes": 1,
-  "travelDurationMinutes": 5,
-  "cycleIntervalMinutes": 10
+  "type": "routes",
+  "attributes": {
+    "name": "cabin-orbis-leafre",
+    "startMapId": 200000131,
+    "stagingMapId": 200000132,
+    "enRouteMapIds": [200090200],
+    "destinationMapId": 240000100,
+    "observationMapId": 200000131,
+    "boardingWindowDurationMinutes": 4,
+    "preDepartureDurationMinutes": 1,
+    "travelDurationMinutes": 5,
+    "cycleIntervalMinutes": 10
+  }
 }

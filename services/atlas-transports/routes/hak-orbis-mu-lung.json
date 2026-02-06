@@ -1,0 +1,13 @@
+{
+  "type": "instance-routes",
+  "attributes": {
+    "name": "hak-to-mu-lung",
+    "eventScript": "Hak",
+    "startMapId": 200000141,
+    "transitMapId": 200090300,
+    "destinationMapId": 250000100,
+    "capacity": 1,
+    "boardingWindowSeconds": 1,
+    "travelDurationSeconds": 60
+  }
+}

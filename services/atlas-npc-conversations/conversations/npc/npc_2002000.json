@@ -1,0 +1,70 @@
+{
+  "npcId": 2002000,
+  "startState": "askLeave",
+  "states": [
+    {
+      "id": "askLeave",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Do you want to get out of Happyville?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "fetchSavedLocation"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "fetchSavedLocation",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:get_saved_location",
+            "params": {
+              "locationType": "HAPPYVILLE",
+              "defaultMapId": "101000000"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "performWarp"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performWarp",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "{context.returnMapId}",
+              "portalId": "{context.returnPortalId}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,378 @@
+{
+  "npcId": 9201135,
+  "startState": "checkMap",
+  "states": [
+    {
+      "id": "checkMap",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "mapId", "operator": "=", "value": "540000000" }
+            ],
+            "nextState": "selectDestinationSingapore"
+          },
+          {
+            "conditions": [
+              { "type": "mapId", "operator": "=", "value": "550000000" }
+            ],
+            "nextState": "fetchSavedLocationForList"
+          },
+          {
+            "conditions": [
+              { "type": "mapId", "operator": "=", "value": "551000000" }
+            ],
+            "nextState": "selectDestinationTrendZone"
+          },
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectDestinationSingapore",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Hey I'm #p9201135#, a tour guide on #rMalaysia#k. Since you're not registered in our special travel package with our partner #bMaple Travel Agency#k, the ride will be significantly more expensive. So, would you like to ride now?\n\n\t\r\n#b#m550000000# (42000mesos)",
+        "choices": [
+          {
+            "text": "#m550000000# (42000mesos)",
+            "nextState": "confirmSingapore",
+            "context": {
+              "destination": "550000000",
+              "cost": "42000",
+              "portalId": "0",
+              "startedTravel": "true"
+            }
+          },
+          {
+            "text": "Exit",
+            "nextState": "decline"
+          }
+        ]
+      }
+    },
+    {
+      "id": "fetchSavedLocationForList",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:get_saved_location",
+            "params": {
+              "locationType": "WORLDTOUR",
+              "defaultMapId": "541000000",
+              "mapIdContextKey": "returnMapId",
+              "portalIdContextKey": "returnPortalId"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "selectDestinationMalaysia"
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectDestinationMalaysia",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Hey I'm #p9201135#, your tour guide here in #rMalaysia#k. Where would you like to travel?\n\n\t\r\n#b#m551000000# (10000mesos)\t\r\n#m{context.returnMapId}#",
+        "choices": [
+          {
+            "text": "#m551000000# (10000mesos)",
+            "nextState": "confirmMalaysia",
+            "context": {
+              "destination": "551000000",
+              "cost": "10000",
+              "portalId": "2",
+              "startedTravel": "false"
+            }
+          },
+          {
+            "text": "#m{context.returnMapId}#",
+            "nextState": "freeReturn",
+            "context": {
+              "destination": "{context.returnMapId}",
+              "cost": "0",
+              "portalId": "4",
+              "startedTravel": "false"
+            }
+          },
+          {
+            "text": "Exit",
+            "nextState": "decline"
+          }
+        ]
+      }
+    },
+    {
+      "id": "selectDestinationTrendZone",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Hey I'm #p9201135#, your tour guide here in #rMalaysia#k. Where would you like to travel?\n\n\t\r\n#b#m550000000# (10000mesos)",
+        "choices": [
+          {
+            "text": "#m550000000# (10000mesos)",
+            "nextState": "confirmTrendZone",
+            "context": {
+              "destination": "550000000",
+              "cost": "10000",
+              "portalId": "4",
+              "startedTravel": "false"
+            }
+          },
+          {
+            "text": "Exit",
+            "nextState": "decline"
+          }
+        ]
+      }
+    },
+    {
+      "id": "decline",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "You know where to come if you need a ride!",
+        "choices": [
+          { "text": "Next", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "confirmSingapore",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Would you like to travel to #b#m550000000##k? To head over to #b#m550000000##k, it'll cost you #r42,000 mesos#k. Would you like to go right now?",
+        "choices": [
+          { "text": "Yes", "nextState": "checkMesoSingapore" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "confirmMalaysia",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Would you like to travel to #b#m551000000##k? To head over to #b#m551000000##k, it'll cost you #r10,000 mesos#k. Would you like to go right now?",
+        "choices": [
+          { "text": "Yes", "nextState": "checkMesoMalaysia" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "confirmTrendZone",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Would you like to travel to #b#m550000000##k? To head over to #b#m550000000##k, it'll cost you #r10,000 mesos#k. Would you like to go right now?",
+        "choices": [
+          { "text": "Yes", "nextState": "checkMesoTrendZone" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "freeReturn",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Had a great time in #rMalaysia#k? I hope so, have a safe travel back!",
+        "choices": [
+          { "text": "Next", "nextState": "performFreeReturn" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "checkMesoSingapore",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "meso", "operator": "<", "value": "42000" }
+            ],
+            "nextState": "insufficientMeso"
+          },
+          {
+            "conditions": [],
+            "nextState": "performPaidTravelSingapore"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMesoMalaysia",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "meso", "operator": "<", "value": "10000" }
+            ],
+            "nextState": "insufficientMeso"
+          },
+          {
+            "conditions": [],
+            "nextState": "performPaidTravelMalaysia"
+          }
+        ]
+      }
+    },
+    {
+      "id": "checkMesoTrendZone",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "meso", "operator": "<", "value": "10000" }
+            ],
+            "nextState": "insufficientMeso"
+          },
+          {
+            "conditions": [],
+            "nextState": "performPaidTravelTrendZone"
+          }
+        ]
+      }
+    },
+    {
+      "id": "insufficientMeso",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "You do not seem to have enough mesos.",
+        "choices": [
+          { "text": "Next", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "performPaidTravelSingapore",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-42000"
+            }
+          },
+          {
+            "type": "save_location",
+            "params": {
+              "locationType": "WORLDTOUR"
+            }
+          },
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "550000000",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "performPaidTravelMalaysia",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-10000"
+            }
+          },
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "551000000",
+              "portalId": "2"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "performPaidTravelTrendZone",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_mesos",
+            "params": {
+              "amount": "-10000"
+            }
+          },
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "550000000",
+              "portalId": "4"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "performFreeReturn",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_saved_location",
+            "params": {
+              "locationType": "WORLDTOUR"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

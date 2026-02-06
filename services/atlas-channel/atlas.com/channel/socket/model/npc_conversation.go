@@ -27,12 +27,12 @@ const (
 )
 
 type NpcConversation struct {
-	SpeakerTypeId           byte
-	SpeakerTemplateId       uint32
-	SecondaryNpcTemplateId  uint32
-	MsgType                 NpcConversationMessageType
-	Param                   byte
-	ConversationDetail      Encoder
+	SpeakerTypeId          byte
+	SpeakerTemplateId      uint32
+	SecondaryNpcTemplateId uint32
+	MsgType                NpcConversationMessageType
+	Param                  byte
+	ConversationDetail     Encoder
 }
 
 func NewNpcConversation(npcId uint32, msgType NpcConversationMessageType, speakerByte byte, secondaryNpcId uint32, conversationDetail Encoder) NpcConversation {
@@ -294,12 +294,14 @@ type AskSlideMenuConversationDetail struct {
 	Message  string
 }
 
-func (a *AskSlideMenuConversationDetail) Encode(_ logrus.FieldLogger, _ tenant.Model, _ map[string]interface{}) func(w *response.Writer) {
+func (a *AskSlideMenuConversationDetail) Encode(_ logrus.FieldLogger, t tenant.Model, _ map[string]interface{}) func(w *response.Writer) {
 	return func(w *response.Writer) {
-		if a.Unknown {
-			w.WriteInt(1)
-		} else {
-			w.WriteInt(0)
+		if t.Region() == "GMS" && t.MajorVersion() > 83 {
+			if a.Unknown {
+				w.WriteInt(1)
+			} else {
+				w.WriteInt(0)
+			}
 		}
 		w.WriteInt(a.MenuType)
 		w.WriteAsciiString(a.Message)

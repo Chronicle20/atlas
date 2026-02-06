@@ -70,6 +70,12 @@ func (e *OperationExecutor) ExecuteOperation(f field.Model, characterId uint32, 
 	case "cancel_consumable_effect":
 		return e.executeCancelConsumableEffect(f, characterId, op)
 
+	case "save_location":
+		return e.executeSaveLocation(f, characterId, portalId, op)
+
+	case "warp_to_saved_location":
+		return e.executeWarpToSavedLocation(f, characterId, op)
+
 	default:
 		e.l.Warnf("Unknown operation type [%s] for character [%d]", op.Type(), characterId)
 		return nil
@@ -494,6 +500,86 @@ func (e *OperationExecutor) executeApplyConsumableEffect(f field.Model, characte
 				WorldId:     f.WorldId(),
 				ChannelId:   f.ChannelId(),
 				ItemId:      uint32(itemId),
+			},
+		).Build()
+
+	return e.sagaP.Create(s)
+}
+
+// executeSaveLocation saves the character's current location for later retrieval
+func (e *OperationExecutor) executeSaveLocation(f field.Model, characterId uint32, portalId uint32, op operation.Model) error {
+	params := op.Params()
+
+	locationType, ok := params["locationType"]
+	if !ok {
+		return fmt.Errorf("save_location operation missing locationType parameter")
+	}
+
+	// Use current map by default, allow override via params
+	mapId := f.MapId()
+	if mapIdStr, hasMapId := params["mapId"]; hasMapId {
+		mId, err := strconv.ParseUint(mapIdStr, 10, 32)
+		if err != nil {
+			return fmt.Errorf("invalid mapId [%s]: %w", mapIdStr, err)
+		}
+		mapId = _map.Id(mId)
+	}
+
+	// Use current portal by default, allow override via params
+	pId := portalId
+	if portalIdStr, hasPortalId := params["portalId"]; hasPortalId {
+		parsed, err := strconv.ParseUint(portalIdStr, 10, 32)
+		if err != nil {
+			return fmt.Errorf("invalid portalId [%s]: %w", portalIdStr, err)
+		}
+		pId = uint32(parsed)
+	}
+
+	e.l.Debugf("Saving location [%s] for character [%d] (map=%d, portal=%d)", locationType, characterId, mapId, pId)
+
+	s := saga.NewBuilder().
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("portal-action-save-location").
+		AddStep(
+			fmt.Sprintf("save-location-%d-%s", characterId, locationType),
+			saga.Pending,
+			saga.SaveLocation,
+			saga.SaveLocationPayload{
+				CharacterId:  characterId,
+				WorldId:      f.WorldId(),
+				ChannelId:    f.ChannelId(),
+				LocationType: locationType,
+				MapId:        mapId,
+				PortalId:     pId,
+			},
+		).Build()
+
+	return e.sagaP.Create(s)
+}
+
+// executeWarpToSavedLocation warps the character back to a previously saved location
+func (e *OperationExecutor) executeWarpToSavedLocation(f field.Model, characterId uint32, op operation.Model) error {
+	params := op.Params()
+
+	locationType, ok := params["locationType"]
+	if !ok {
+		return fmt.Errorf("warp_to_saved_location operation missing locationType parameter")
+	}
+
+	e.l.Debugf("Warping character [%d] to saved location [%s]", characterId, locationType)
+
+	s := saga.NewBuilder().
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("portal-action-warp-saved-location").
+		AddStep(
+			fmt.Sprintf("warp-saved-%d-%s", characterId, locationType),
+			saga.Pending,
+			saga.WarpToSavedLocation,
+			saga.WarpToSavedLocationPayload{
+				CharacterId:  characterId,
+				WorldId:      f.WorldId(),
+				ChannelId:    f.ChannelId(),
+				LocationType: locationType,
 			},
 		).Build()
 

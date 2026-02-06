@@ -163,7 +163,11 @@
             "show_hint",
             "create_skill",
             "update_skill",
-            "start_instance_transport"
+            "start_instance_transport",
+            "save_location",
+            "warp_to_saved_location",
+            "apply_consumable_effect",
+            "cancel_consumable_effect"
           ]
         },
         "params": {
@@ -351,6 +355,90 @@
                   "failureMessage": {
                     "type": "string",
                     "description": "Custom message to display if transport fails (e.g., 'The wagon is full')"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "save_location" } }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": ["locationType"],
+                "properties": {
+                  "locationType": {
+                    "type": "string",
+                    "description": "Location type key (e.g., FREE_MARKET, EVENT)"
+                  },
+                  "mapId": {
+                    "type": "string",
+                    "description": "Map ID to save (defaults to character's current map)"
+                  },
+                  "portalId": {
+                    "type": "string",
+                    "description": "Portal ID to save (defaults to current portal)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "warp_to_saved_location" } }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": ["locationType"],
+                "properties": {
+                  "locationType": {
+                    "type": "string",
+                    "description": "Location type key to retrieve and warp to (e.g., FREE_MARKET, EVENT, MIRROR)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "apply_consumable_effect" } }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": ["itemId"],
+                "properties": {
+                  "itemId": {
+                    "type": "string",
+                    "description": "Consumable item ID whose effects should be applied"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "cancel_consumable_effect" } }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": ["itemId"],
+                "properties": {
+                  "itemId": {
+                    "type": "string",
+                    "description": "Consumable item ID whose effects should be cancelled"
                   }
                 }
               }

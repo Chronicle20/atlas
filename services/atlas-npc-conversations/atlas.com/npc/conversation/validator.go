@@ -102,6 +102,8 @@ func (v *Validator) validateState(state StateModel, stateIds map[string]bool, re
 		v.validateAskNumber(state.Id(), state.AskNumber(), stateIds, result)
 	case AskStyleType:
 		v.validateAskStyle(state.Id(), state.AskStyle(), stateIds, result)
+	case AskSlideMenuType:
+		v.validateAskSlideMenu(state.Id(), state.AskSlideMenu(), stateIds, result)
 	default:
 		result.addError(state.Id(), "type", "invalid", fmt.Sprintf("Invalid state type: %s", state.Type()))
 	}
@@ -347,6 +349,32 @@ func (v *Validator) validateAskStyle(stateId string, askStyle *AskStyleModel, st
 	}
 }
 
+// validateAskSlideMenu validates an ask slide menu state
+func (v *Validator) validateAskSlideMenu(stateId string, askSlideMenu *AskSlideMenuModel, stateIds map[string]bool, result *ValidationResult) {
+	if askSlideMenu == nil {
+		result.addError(stateId, "askSlideMenu", "required", "Ask slide menu is required for askSlideMenu state")
+		return
+	}
+
+	// Title is optional for slide menus (e.g., dimensional mirror style)
+
+	if len(askSlideMenu.Choices()) == 0 {
+		result.addError(stateId, "askSlideMenu.choices", "required", "At least one choice is required")
+	}
+
+	// Validate each choice
+	for i, choice := range askSlideMenu.Choices() {
+		if choice.Text() == "" {
+			result.addError(stateId, fmt.Sprintf("askSlideMenu.choices[%d].text", i), "required", "Choice text is required")
+		}
+
+		// Validate nextState reference (null/empty is valid for ending conversation)
+		if choice.NextState() != "" && !stateIds[choice.NextState()] {
+			result.addError(stateId, fmt.Sprintf("askSlideMenu.choices[%d].nextState", i), "invalid_reference", fmt.Sprintf("Next state '%s' does not exist", choice.NextState()))
+		}
+	}
+}
+
 // findReachableStates performs a graph traversal to find all reachable states
 func (v *Validator) findReachableStates(m NpcConversation) map[string]bool {
 	reachable := make(map[string]bool)
@@ -408,6 +436,12 @@ func (v *Validator) findReachableStates(m NpcConversation) map[string]bool {
 		case AskStyleType:
 			if askStyle := state.AskStyle(); askStyle != nil {
 				visit(askStyle.NextState())
+			}
+		case AskSlideMenuType:
+			if askSlideMenu := state.AskSlideMenu(); askSlideMenu != nil {
+				for _, choice := range askSlideMenu.Choices() {
+					visit(choice.NextState())
+				}
 			}
 		}
 	}
@@ -538,6 +572,12 @@ func (v *Validator) getNextStates(state StateModel) []string {
 	case AskStyleType:
 		if askStyle := state.AskStyle(); askStyle != nil {
 			nextStates = append(nextStates, askStyle.NextState())
+		}
+	case AskSlideMenuType:
+		if askSlideMenu := state.AskSlideMenu(); askSlideMenu != nil {
+			for _, choice := range askSlideMenu.Choices() {
+				nextStates = append(nextStates, choice.NextState())
+			}
 		}
 	}
 

@@ -8,6 +8,7 @@ import (
 	"atlas-character/kafka/consumer/drop"
 	session2 "atlas-character/kafka/consumer/session"
 	"atlas-character/logger"
+	"atlas-character/saved_location"
 	"atlas-character/service"
 	"atlas-character/session"
 	"atlas-character/session/history"
@@ -55,7 +56,7 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	db := database.Connect(l, database.SetMigrations(character.Migration, history.Migration))
+	db := database.Connect(l, database.SetMigrations(character.Migration, history.Migration, saved_location.Migration))
 
 	if service.GetMode() == service.Mixed {
 		cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
@@ -76,6 +77,7 @@ func main() {
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(character.InitResource(GetServer())(db)).
 		AddRouteInitializer(history.InitResource(GetServer())(db)).
+		AddRouteInitializer(saved_location.InitResource(GetServer())(db)).
 		Run()
 
 	go tasks.Register(l, tdm.Context())(session.NewTimeout(l, db, time.Millisecond*time.Duration(5000)))

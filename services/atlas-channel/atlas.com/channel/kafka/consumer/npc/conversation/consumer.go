@@ -37,6 +37,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSimpleConversationCommand(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleNumberConversationCommand(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStyleConversationCommand(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSlideMenuConversationCommand(sc, wp))))
 			}
 		}
 	}
@@ -93,6 +94,23 @@ func handleStyleConversationCommand(sc server.Model, wp writer.Producer) message
 	}
 }
 
+func handleSlideMenuConversationCommand(sc server.Model, wp writer.Producer) message.Handler[conversation2.CommandEvent[conversation2.CommandSlideMenuBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c conversation2.CommandEvent[conversation2.CommandSlideMenuBody]) {
+		if c.Type != conversation2.CommandTypeSlideMenu {
+			return
+		}
+
+		if !sc.Is(tenant.MustFromContext(ctx), c.WorldId, c.ChannelId) {
+			return
+		}
+
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(c.CharacterId, announceSlideMenuConversation(l)(ctx)(wp)(c.NpcId, c.Message, c.Body.MenuType, c.Speaker, c.EndChat, c.SecondaryNpcId))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to write slide menu conversation for character [%d].", c.CharacterId)
+		}
+	}
+}
+
 func announceSimpleConversation(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, talkType string, message string, speaker string, endChat bool, secondaryNpcId uint32) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, talkType string, message string, speaker string, endChat bool, secondaryNpcId uint32) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(npcId uint32, talkType string, message string, speaker string, endChat bool, secondaryNpcId uint32) model.Operator[session.Model] {
@@ -136,6 +154,20 @@ func announceStyleConversation(l logrus.FieldLogger) func(ctx context.Context) f
 				scm := &model2.AskAvatarConversationDetail{Message: message, Styles: styles}
 				speakerByte := computeSpeakerByte(speaker, endChat, secondaryNpcId)
 				ncm := model2.NewNpcConversation(npcId, getNPCTalkType(talkType), speakerByte, secondaryNpcId, scm)
+				return session.Announce(l)(ctx)(wp)(writer.NPCConversation)(writer.NPCConversationBody(l, t)(ncm))
+			}
+		}
+	}
+}
+
+func announceSlideMenuConversation(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, message string, menuType uint32, speaker string, endChat bool, secondaryNpcId uint32) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, message string, menuType uint32, speaker string, endChat bool, secondaryNpcId uint32) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(npcId uint32, message string, menuType uint32, speaker string, endChat bool, secondaryNpcId uint32) model.Operator[session.Model] {
+			return func(npcId uint32, message string, menuType uint32, speaker string, endChat bool, secondaryNpcId uint32) model.Operator[session.Model] {
+				t := tenant.MustFromContext(ctx)
+				scm := &model2.AskSlideMenuConversationDetail{Message: message, MenuType: menuType}
+				speakerByte := computeSpeakerByte(speaker, endChat, secondaryNpcId)
+				ncm := model2.NewNpcConversation(npcId, model2.NpcConversationMessageTypeAskSlideMenu, speakerByte, secondaryNpcId, scm)
 				return session.Announce(l)(ctx)(wp)(writer.NPCConversation)(writer.NPCConversationBody(l, t)(ncm))
 			}
 		}

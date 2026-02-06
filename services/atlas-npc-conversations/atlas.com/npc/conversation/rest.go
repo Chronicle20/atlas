@@ -16,9 +16,10 @@ type RestStateModel struct {
 	GenericAction   *RestGenericActionModel    `json:"genericAction,omitempty"`   // Generic action model (if type is genericAction)
 	CraftAction     *RestCraftActionModel      `json:"craftAction,omitempty"`     // Craft action model (if type is craftAction)
 	TransportAction *RestTransportActionModel  `json:"transportAction,omitempty"` // Transport action model (if type is transportAction)
-	ListSelection   *RestListSelectionModel    `json:"listSelection,omitempty"`   // List selection model (if type is listSelection)
-	AskNumber       *RestAskNumberModel        `json:"askNumber,omitempty"`       // Ask number model (if type is askNumber)
-	AskStyle        *RestAskStyleModel         `json:"askStyle,omitempty"`        // Ask style model (if type is askStyle)
+	ListSelection *RestListSelectionModel `json:"listSelection,omitempty"` // List selection model (if type is listSelection)
+	AskNumber     *RestAskNumberModel    `json:"askNumber,omitempty"`     // Ask number model (if type is askNumber)
+	AskStyle                   *RestAskStyleModel                   `json:"askStyle,omitempty"`                   // Ask style model (if type is askStyle)
+	AskSlideMenu               *RestAskSlideMenuModel               `json:"askSlideMenu,omitempty"`               // Ask slide menu model (if type is askSlideMenu)
 }
 
 // GetID returns the resource ID
@@ -161,6 +162,14 @@ type RestAskStyleModel struct {
 	NextState        string   `json:"nextState,omitempty"`        // Next state ID
 }
 
+// RestAskSlideMenuModel represents the REST model for ask slide menu states
+type RestAskSlideMenuModel struct {
+	Title      string            `json:"title"`                 // Slide menu title
+	MenuType   uint32            `json:"menuType"`              // Menu type (determines UI style)
+	ContextKey string            `json:"contextKey,omitempty"`  // Context key (defaults to "selectedOption")
+	Choices    []RestChoiceModel `json:"choices,omitempty"`     // Menu choices
+}
+
 // RestOptionSetModel represents the REST model for option sets
 type RestOptionSetModel struct {
 	Id      string            `json:"id"`      // Option set ID
@@ -283,6 +292,12 @@ func TransformState(m StateModel) (RestStateModel, error) {
 		if askStyle != nil {
 			restAskStyle := TransformAskStyle(*askStyle)
 			restState.AskStyle = &restAskStyle
+		}
+	case AskSlideMenuType:
+		askSlideMenu := m.AskSlideMenu()
+		if askSlideMenu != nil {
+			restAskSlideMenu := TransformAskSlideMenu(*askSlideMenu)
+			restState.AskSlideMenu = &restAskSlideMenu
 		}
 	}
 
@@ -420,6 +435,25 @@ func TransformAskStyle(m AskStyleModel) RestAskStyleModel {
 	}
 }
 
+// TransformAskSlideMenu converts an AskSlideMenuModel to a RestAskSlideMenuModel
+func TransformAskSlideMenu(m AskSlideMenuModel) RestAskSlideMenuModel {
+	restChoices := make([]RestChoiceModel, 0, len(m.Choices()))
+	for _, choice := range m.Choices() {
+		restChoices = append(restChoices, RestChoiceModel{
+			Text:      choice.Text(),
+			NextState: choice.NextState(),
+			Context:   choice.Context(),
+		})
+	}
+
+	return RestAskSlideMenuModel{
+		Title:      m.Title(),
+		MenuType:   m.MenuType(),
+		ContextKey: m.ContextKey(),
+		Choices:    restChoices,
+	}
+}
+
 // TransformOptionSet converts an OptionSetModel to a RestOptionSetModel
 func TransformOptionSet(m OptionSetModel) (RestOptionSetModel, error) {
 	restOptions := make([]RestOptionModel, 0, len(m.Options()))
@@ -507,6 +541,15 @@ func ExtractState(r RestStateModel) (StateModel, error) {
 			return StateModel{}, err
 		}
 		stateBuilder.SetAskStyle(askStyle)
+	case AskSlideMenuType:
+		if r.AskSlideMenu == nil {
+			return StateModel{}, fmt.Errorf("askSlideMenu is required for askSlideMenu state")
+		}
+		askSlideMenu, err := ExtractAskSlideMenu(*r.AskSlideMenu)
+		if err != nil {
+			return StateModel{}, err
+		}
+		stateBuilder.SetAskSlideMenu(askSlideMenu)
 	default:
 		return StateModel{}, fmt.Errorf("invalid state type: %s", r.StateType)
 	}
@@ -699,6 +742,27 @@ func ExtractAskStyle(r RestAskStyleModel) (*AskStyleModel, error) {
 
 	if r.ContextKey != "" {
 		b.SetContextKey(r.ContextKey)
+	}
+
+	return b.Build()
+}
+
+// ExtractAskSlideMenu converts a RestAskSlideMenuModel to an AskSlideMenuModel
+func ExtractAskSlideMenu(r RestAskSlideMenuModel) (*AskSlideMenuModel, error) {
+	b := NewAskSlideMenuBuilder().
+		SetTitle(r.Title).
+		SetMenuType(r.MenuType)
+
+	if r.ContextKey != "" {
+		b.SetContextKey(r.ContextKey)
+	}
+
+	for _, restChoice := range r.Choices {
+		choice, err := ExtractChoice(restChoice)
+		if err != nil {
+			return nil, err
+		}
+		b.AddChoice(choice)
 	}
 
 	return b.Build()

@@ -343,6 +343,19 @@ func (p *ProcessorImpl) Continue(npcId uint32, characterId uint32, action byte, 
 			nextStateId = askStyle.NextState()
 		}
 
+	case AskSlideMenuType:
+		// For ask slide menu states, the selection is the index of the option
+		askSlideMenu := state.AskSlideMenu()
+		if askSlideMenu == nil {
+			return errors.New("askSlideMenu is nil")
+		}
+
+		choice, _ := askSlideMenu.ChoiceFromSelection(action, selection)
+		nextStateId = choice.NextState()
+
+		// Store the choice context for later use
+		choiceContext = choice.Context()
+
 	default:
 		// For other state types, we shouldn't be here (they should have been processed already)
 		return fmt.Errorf("unexpected state type for Continue: %s", state.Type())
@@ -468,6 +481,9 @@ func (p *ProcessorImpl) processState(ctx ConversationContext, state StateModel) 
 	case AskStyleType:
 		// Process ask style state
 		return p.processAskStyleState(ctx, state)
+	case AskSlideMenuType:
+		// Process ask slide menu state
+		return p.processAskSlideMenuState(ctx, state)
 	default:
 		return "", errors.New("unknown state type")
 	}
@@ -895,6 +911,49 @@ func (p *ProcessorImpl) processAskStyleState(ctx ConversationContext, state Stat
 
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to send style request for state [%s] to character [%d]", state.Id(), ctx.CharacterId())
+		return "", err
+	}
+
+	// Return the current state ID to indicate that we're waiting for input
+	return state.Id(), nil
+}
+
+// processAskSlideMenuState processes an ask slide menu state
+func (p *ProcessorImpl) processAskSlideMenuState(ctx ConversationContext, state StateModel) (string, error) {
+	askSlideMenu := state.AskSlideMenu()
+	if askSlideMenu == nil {
+		return "", errors.New("askSlideMenu is nil")
+	}
+
+	// Replace context placeholders in the title
+	processedTitle, err := ReplaceContextPlaceholders(askSlideMenu.Title(), ctx.Context())
+	if err != nil {
+		p.l.WithError(err).Warnf("Failed to replace context placeholders in slide menu title for state [%s]. Using original title.", state.Id())
+		processedTitle = askSlideMenu.Title()
+	}
+
+	// Build the message with choices
+	mb := message.NewBuilder().AddText(processedTitle)
+	for i, choice := range askSlideMenu.Choices() {
+		if choice.NextState() == "" || choice.Text() == "Exit" {
+			continue
+		}
+
+		// Replace context placeholders in choice text
+		processedChoiceText, err := ReplaceContextPlaceholders(choice.Text(), ctx.Context())
+		if err != nil {
+			p.l.WithError(err).Warnf("Failed to replace context placeholders in choice text for state [%s]. Using original text.", state.Id())
+			processedChoiceText = choice.Text()
+		}
+
+		mb.DimensionalMirrorOption(i, processedChoiceText)
+	}
+
+	// Send the slide menu request to the client
+	err = npcSender.NewProcessor(p.l, p.ctx).SendSlideMenu(ctx.Field().Channel(), ctx.CharacterId(), ctx.NpcId(), mb.String(), askSlideMenu.MenuType())
+
+	if err != nil {
+		p.l.WithError(err).Errorf("Failed to send slide menu request for state [%s] to character [%d]", state.Id(), ctx.CharacterId())
 		return "", err
 	}
 

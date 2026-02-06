@@ -441,6 +441,8 @@ Use numeric values: `{"type": "questStatus", "operator": "=", "value": "2", "ref
 Verify in saga-orchestrator, but common operations:
 - `warp_to_map` - Teleport character (params: `mapId`, `portalId`)
 - `warp_to_random_portal` - Warp to random portal (params: `mapId`)
+- `warp_to_saved_location` - Warp to a saved location and delete it (params: `locationType`) - maps to `cm.getSavedLocation()` + `cm.warp()`
+- `save_location` - Save character's current location for later return (params: `locationType`, `mapId` optional, `portalId` optional)
 - `award_item` - Give item (params: `itemId`, `quantity`, `expiration` - optional, milliseconds from now)
 - `award_mesos` - Give mesos (params: `amount`, `actorId`, `actorType`)
 - `award_exp` - Give experience (params: `amount`, `type`, `attr1`)
@@ -471,6 +473,7 @@ Verify in saga-orchestrator, but common operations:
 - `local:select_random_weighted` - Weighted random selection (params: `items`, `weights`, `outputContextKey`)
 - `local:fetch_map_player_counts` - Fetch player counts (params: `mapIds`)
 - `local:calculate_lens_coupon` - Calculate one-time lens item ID from face (params: `selectedFaceContextKey`, `outputContextKey`)
+- `local:get_saved_location` - Fetch saved location into context (params: `locationType`, `defaultMapId`, `mapIdContextKey`, `portalIdContextKey`)
 - `local:log` - Log message (params: `message`)
 - `local:debug` - Debug log (params: `message`)
 
@@ -706,6 +709,95 @@ Generates face color variants based on which one-time cosmetic lens items (51521
 3. Use `askStyle` to let player select a color
 4. Use `local:calculate_lens_coupon` to determine which item to consume
 5. Consume the item and apply the face change
+
+#### Detailed: local:get_saved_location
+
+Fetches a saved location for a character and stores the map ID and portal ID in context. This is used by "return" NPCs that need to display the destination in dialogue before warping.
+
+**Parameters:**
+- `locationType` (string, required) - The saved location type (e.g., "FLORINA", "FREE_MARKET", "WORLDTOUR")
+- `defaultMapId` (string, optional) - Fallback map ID if no saved location exists
+- `mapIdContextKey` (string, optional) - Context key to store the map ID (defaults to "returnMapId")
+- `portalIdContextKey` (string, optional) - Context key to store the portal ID (defaults to "returnPortalId")
+
+**Behavior:**
+- Queries atlas-character for the saved location by type
+- If found, stores mapId and portalId in the specified context keys
+- If not found and `defaultMapId` is provided, uses the default (portalId = 0)
+- If not found and no default is provided, returns an error
+
+**JavaScript Mapping:**
+- `cm.getPlayer().peekSavedLocation("FLORINA")` → `local:get_saved_location` (peek into context)
+- `cm.getPlayer().getSavedLocation("FLORINA")` + `cm.warp(returnmap)` → `warp_to_saved_location` (pop and warp)
+
+**Example Usage:**
+
+```json
+{
+  "id": "fetchSavedLocation",
+  "type": "genericAction",
+  "genericAction": {
+    "operations": [
+      {
+        "type": "local:get_saved_location",
+        "params": {
+          "locationType": "FLORINA",
+          "defaultMapId": "104000000",
+          "mapIdContextKey": "returnMapId",
+          "portalIdContextKey": "returnPortalId"
+        }
+      }
+    ],
+    "outcomes": [
+      {
+        "conditions": [],
+        "nextState": "askLeave"
+      }
+    ]
+  }
+},
+{
+  "id": "askLeave",
+  "type": "dialogue",
+  "dialogue": {
+    "dialogueType": "sendNext",
+    "text": "Do you want to return to #b#m{context.returnMapId}##k?",
+    "choices": [
+      {"text": "Next", "nextState": "confirmWarp"},
+      {"text": "Exit", "nextState": null}
+    ]
+  }
+},
+{
+  "id": "confirmWarp",
+  "type": "genericAction",
+  "genericAction": {
+    "operations": [
+      {
+        "type": "warp_to_saved_location",
+        "params": {
+          "locationType": "FLORINA"
+        }
+      }
+    ],
+    "outcomes": [
+      {
+        "conditions": [],
+        "nextState": null
+      }
+    ]
+  }
+}
+```
+
+**Common Location Types:**
+- `FLORINA` - Return from Florina Beach
+- `FREE_MARKET` - Return from Free Market
+- `WORLDTOUR` - Return from World Tour destinations
+- `MIRROR` - Return from Mirror of Dimension
+- `ARIANT` - Return from Ariant Coliseum
+- `DOJO` - Return from Mu Lung Dojo
+- `BOATS` - Return from boat transit
 
 ---
 

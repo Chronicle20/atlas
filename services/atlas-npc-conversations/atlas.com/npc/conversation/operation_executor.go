@@ -5,6 +5,7 @@ import (
 	npcMap "atlas-npc-conversations/map"
 	"atlas-npc-conversations/pet"
 	"atlas-npc-conversations/saga"
+	savedlocation "atlas-npc-conversations/saved_location"
 	"atlas-npc-conversations/validation"
 	"context"
 	"errors"
@@ -33,14 +34,15 @@ type OperationExecutor interface {
 
 // OperationExecutorImpl is the implementation of the OperationExecutor interface
 type OperationExecutorImpl struct {
-	l           logrus.FieldLogger
-	ctx         context.Context
-	t           tenant.Model
-	sagaP       saga.Processor
-	petP        pet.Processor
-	cosmeticP   cosmetic.Processor
-	mapP        npcMap.Processor
-	validationP validation.Processor
+	l              logrus.FieldLogger
+	ctx            context.Context
+	t              tenant.Model
+	sagaP          saga.Processor
+	petP           pet.Processor
+	cosmeticP      cosmetic.Processor
+	mapP           npcMap.Processor
+	validationP    validation.Processor
+	savedLocationP savedlocation.Processor
 }
 
 // NewOperationExecutor creates a new operation executor
@@ -48,14 +50,15 @@ func NewOperationExecutor(l logrus.FieldLogger, ctx context.Context) OperationEx
 	t := tenant.MustFromContext(ctx)
 	appearanceProvider := cosmetic.NewRestAppearanceProvider(l, ctx)
 	return &OperationExecutorImpl{
-		l:           l,
-		ctx:         ctx,
-		t:           t,
-		sagaP:       saga.NewProcessor(l, ctx),
-		petP:        pet.NewProcessor(l, ctx),
-		cosmeticP:   cosmetic.NewProcessor(l, ctx, appearanceProvider),
-		mapP:        npcMap.NewProcessor(l, ctx),
-		validationP: validation.NewProcessor(l, ctx),
+		l:              l,
+		ctx:            ctx,
+		t:              t,
+		sagaP:          saga.NewProcessor(l, ctx),
+		petP:           pet.NewProcessor(l, ctx),
+		cosmeticP:      cosmetic.NewProcessor(l, ctx, appearanceProvider),
+		mapP:           npcMap.NewProcessor(l, ctx),
+		validationP:    validation.NewProcessor(l, ctx),
+		savedLocationP: savedlocation.NewProcessor(l, ctx),
 	}
 }
 
@@ -660,6 +663,82 @@ func (e *OperationExecutorImpl) executeLocalOperation(field field.Model, charact
 
 		e.l.Infof("Generated and stored %d one-time lens face colors in context key [%s] for character [%d]",
 			len(colors), outputKey, characterId)
+		return nil
+
+	case "get_saved_location":
+		// Format: local:get_saved_location
+		// Params: locationType (string, required), defaultMapId (string, optional), mapIdContextKey (string, optional), portalIdContextKey (string, optional)
+		// Fetches a saved location for the character and stores mapId and portalId in context
+		// If the saved location doesn't exist and defaultMapId is provided, uses that instead
+		// Returns an error if no saved location exists and no default is provided
+		locationTypeValue, exists := operation.Params()["locationType"]
+		if !exists {
+			return errors.New("missing locationType parameter for get_saved_location operation")
+		}
+
+		locationType, err := e.evaluateContextValue(characterId, "locationType", locationTypeValue)
+		if err != nil {
+			return err
+		}
+
+		// Get the map ID context key (default: "returnMapId")
+		mapIdContextKey := operation.Params()["mapIdContextKey"]
+		if mapIdContextKey == "" {
+			mapIdContextKey = "returnMapId"
+		}
+
+		// Get the portal ID context key (default: "returnPortalId")
+		portalIdContextKey := operation.Params()["portalIdContextKey"]
+		if portalIdContextKey == "" {
+			portalIdContextKey = "returnPortalId"
+		}
+
+		// Try to get the saved location
+		savedLoc, err := e.savedLocationP.GetSavedLocation(characterId, locationType)()
+		if err != nil {
+			// Check if we have a default map ID
+			if errors.Is(err, savedlocation.ErrNotFound) {
+				defaultMapIdValue, hasDefault := operation.Params()["defaultMapId"]
+				if !hasDefault {
+					return fmt.Errorf("no saved location '%s' found for character %d and no default provided", locationType, characterId)
+				}
+
+				// Use the default map ID
+				defaultMapId, err := e.evaluateContextValue(characterId, "defaultMapId", defaultMapIdValue)
+				if err != nil {
+					return err
+				}
+
+				err = e.setContextValue(characterId, mapIdContextKey, defaultMapId)
+				if err != nil {
+					return fmt.Errorf("failed to store default map ID in context: %w", err)
+				}
+
+				err = e.setContextValue(characterId, portalIdContextKey, "0")
+				if err != nil {
+					return fmt.Errorf("failed to store default portal ID in context: %w", err)
+				}
+
+				e.l.Infof("Saved location '%s' not found for character [%d], using default mapId=%s",
+					locationType, characterId, defaultMapId)
+				return nil
+			}
+			return fmt.Errorf("failed to get saved location '%s' for character %d: %w", locationType, characterId, err)
+		}
+
+		// Store the map ID and portal ID in context
+		err = e.setContextValue(characterId, mapIdContextKey, strconv.FormatUint(uint64(savedLoc.MapId()), 10))
+		if err != nil {
+			return fmt.Errorf("failed to store map ID in context: %w", err)
+		}
+
+		err = e.setContextValue(characterId, portalIdContextKey, strconv.FormatUint(uint64(savedLoc.PortalId()), 10))
+		if err != nil {
+			return fmt.Errorf("failed to store portal ID in context: %w", err)
+		}
+
+		e.l.Infof("Fetched saved location '%s' for character [%d]: mapId=%d, portalId=%d, stored in context keys [%s, %s]",
+			locationType, characterId, savedLoc.MapId(), savedLoc.PortalId(), mapIdContextKey, portalIdContextKey)
 		return nil
 
 	default:
@@ -1897,6 +1976,72 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		}
 
 		return stepId, saga.Pending, saga.StartInstanceTransport, payload, nil
+
+	case "save_location":
+		// Format: save_location
+		// Params: locationType (string, required), mapId (uint32, optional - defaults to current map), portalId (uint32, optional - defaults to 0)
+		// Saves the character's current location for later retrieval
+		locationTypeValue, exists := operation.Params()["locationType"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing locationType parameter for save_location operation")
+		}
+
+		locationType, err := e.evaluateContextValue(characterId, "locationType", locationTypeValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		// MapId is optional, defaults to character's current map
+		mapIdInt := int(f.MapId())
+		if mapIdValue, exists := operation.Params()["mapId"]; exists {
+			mapIdInt, err = e.evaluateContextValueAsInt(characterId, "mapId", mapIdValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
+		}
+
+		// PortalId is optional, defaults to 0
+		portalIdInt := 0
+		if portalIdValue, exists := operation.Params()["portalId"]; exists {
+			portalIdInt, err = e.evaluateContextValueAsInt(characterId, "portalId", portalIdValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
+		}
+
+		payload := saga.SaveLocationPayload{
+			CharacterId:  characterId,
+			WorldId:      f.WorldId(),
+			ChannelId:    f.ChannelId(),
+			LocationType: locationType,
+			MapId:        _map.Id(mapIdInt),
+			PortalId:     uint32(portalIdInt),
+		}
+
+		return stepId, saga.Pending, saga.SaveLocation, payload, nil
+
+	case "warp_to_saved_location":
+		// Format: warp_to_saved_location
+		// Params: locationType (string, required)
+		// Warps the character back to a previously saved location (pop semantics: get + warp + delete)
+		locationTypeValue, exists := operation.Params()["locationType"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing locationType parameter for warp_to_saved_location operation")
+		}
+
+		locationType, err := e.evaluateContextValue(characterId, "locationType", locationTypeValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		payload := saga.WarpToSavedLocationPayload{
+			CharacterId:  characterId,
+			WorldId:      f.WorldId(),
+			ChannelId:    f.ChannelId(),
+			LocationType: locationType,
+		}
+
+		return stepId, saga.Pending, saga.WarpToSavedLocation, payload, nil
 
 	default:
 		return "", "", "", nil, fmt.Errorf("unknown operation type: %s", operation.Type())

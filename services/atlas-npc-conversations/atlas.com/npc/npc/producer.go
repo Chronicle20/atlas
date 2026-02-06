@@ -79,3 +79,22 @@ func styleConversationProvider(ch channel.Model, characterId uint32, npcId uint3
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func slideMenuConversationProvider(ch channel.Model, characterId uint32, npcId uint32, message string, menuType uint32, speaker string, endChat bool, secondaryNpcId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &npc2.ConversationCommand[npc2.CommandSlideMenuBody]{
+		WorldId:        ch.WorldId(),
+		ChannelId:      ch.Id(),
+		CharacterId:    characterId,
+		NpcId:          npcId,
+		Speaker:        speaker,
+		EndChat:        endChat,
+		SecondaryNpcId: secondaryNpcId,
+		Message:        message,
+		Type:           npc2.CommandTypeSlideMenu,
+		Body: npc2.CommandSlideMenuBody{
+			MenuType: menuType,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

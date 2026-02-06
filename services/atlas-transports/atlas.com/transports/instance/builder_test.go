@@ -14,7 +14,7 @@ func TestRouteBuilder_Success(t *testing.T) {
 	route, err := NewRouteBuilder("kerning-square-train").
 		SetId(id).
 		SetStartMapId(_map.Id(103000000)).
-		SetTransitMapId(_map.Id(103000100)).
+		SetTransitMapIds([]_map.Id{103000100}).
 		SetDestinationMapId(_map.Id(103000200)).
 		SetCapacity(6).
 		SetBoardingWindow(10 * time.Second).
@@ -25,7 +25,7 @@ func TestRouteBuilder_Success(t *testing.T) {
 	assert.Equal(t, id, route.Id())
 	assert.Equal(t, "kerning-square-train", route.Name())
 	assert.Equal(t, _map.Id(103000000), route.StartMapId())
-	assert.Equal(t, _map.Id(103000100), route.TransitMapId())
+	assert.Equal(t, []_map.Id{103000100}, route.TransitMapIds())
 	assert.Equal(t, _map.Id(103000200), route.DestinationMapId())
 	assert.Equal(t, uint32(6), route.Capacity())
 	assert.Equal(t, 10*time.Second, route.BoardingWindow())
@@ -35,6 +35,7 @@ func TestRouteBuilder_Success(t *testing.T) {
 
 func TestRouteBuilder_EmptyName(t *testing.T) {
 	_, err := NewRouteBuilder("").
+		SetTransitMapIds([]_map.Id{100}).
 		SetCapacity(6).
 		SetBoardingWindow(10 * time.Second).
 		SetTravelDuration(30 * time.Second).
@@ -46,6 +47,7 @@ func TestRouteBuilder_EmptyName(t *testing.T) {
 
 func TestRouteBuilder_ZeroCapacity(t *testing.T) {
 	_, err := NewRouteBuilder("test").
+		SetTransitMapIds([]_map.Id{100}).
 		SetBoardingWindow(10 * time.Second).
 		SetTravelDuration(30 * time.Second).
 		Build()
@@ -56,6 +58,7 @@ func TestRouteBuilder_ZeroCapacity(t *testing.T) {
 
 func TestRouteBuilder_NoBoardingWindow(t *testing.T) {
 	_, err := NewRouteBuilder("test").
+		SetTransitMapIds([]_map.Id{100}).
 		SetCapacity(6).
 		SetTravelDuration(30 * time.Second).
 		Build()
@@ -66,6 +69,7 @@ func TestRouteBuilder_NoBoardingWindow(t *testing.T) {
 
 func TestRouteBuilder_ZeroTravelDuration(t *testing.T) {
 	route, err := NewRouteBuilder("test").
+		SetTransitMapIds([]_map.Id{100}).
 		SetCapacity(6).
 		SetBoardingWindow(10 * time.Second).
 		Build()
@@ -74,8 +78,21 @@ func TestRouteBuilder_ZeroTravelDuration(t *testing.T) {
 	assert.Equal(t, time.Duration(0), route.TravelDuration())
 }
 
+func TestRouteBuilder_EmptyTransitMapIds(t *testing.T) {
+	_, err := NewRouteBuilder("test").
+		SetTransitMapIds([]_map.Id{}).
+		SetCapacity(6).
+		SetBoardingWindow(10 * time.Second).
+		SetTravelDuration(30 * time.Second).
+		Build()
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "transit map ids")
+}
+
 func TestRouteBuilder_GeneratesId(t *testing.T) {
 	route, err := NewRouteBuilder("test").
+		SetTransitMapIds([]_map.Id{100}).
 		SetCapacity(6).
 		SetBoardingWindow(10 * time.Second).
 		SetTravelDuration(30 * time.Second).

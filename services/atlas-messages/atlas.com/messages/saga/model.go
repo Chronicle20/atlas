@@ -102,9 +102,10 @@ const (
 	WarpToRandomPortal Action = "warp_to_random_portal"
 	WarpToPortal       Action = "warp_to_portal"
 	DestroyAsset       Action = "destroy_asset"
-	ChangeJob          Action = "change_job"
-	CreateSkill        Action = "create_skill"
-	UpdateSkill        Action = "update_skill"
+	ChangeJob             Action = "change_job"
+	CreateSkill           Action = "create_skill"
+	UpdateSkill           Action = "update_skill"
+	ApplyConsumableEffect Action = "apply_consumable_effect"
 )
 
 // Step represents a single step within a saga.
@@ -210,6 +211,14 @@ type UpdateSkillPayload struct {
 	Expiration  time.Time `json:"expiration"`  // New skill expiration time
 }
 
+// ApplyConsumableEffectPayload represents the payload required to apply consumable item effects to a character.
+type ApplyConsumableEffectPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to apply item effects to
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	ItemId      uint32     `json:"itemId"`      // Consumable item ID whose effects should be applied
+}
+
 type ExperienceDistributions struct {
 	ExperienceType string `json:"experienceType"`
 	Amount         uint32 `json:"amount"`
@@ -295,6 +304,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case UpdateSkill:
 		var payload UpdateSkillPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case ApplyConsumableEffect:
+		var payload ApplyConsumableEffectPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

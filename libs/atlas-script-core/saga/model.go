@@ -132,7 +132,8 @@ const (
 	UnblockPortal   Action = "unblock_portal"
 
 	// Transport actions
-	StartInstanceTransport Action = "start_instance_transport"
+	StartInstanceTransport    Action = "start_instance_transport"
+	CancelConsumableEffect    Action = "cancel_consumable_effect"
 )
 
 // Step represents a single step within a saga.
@@ -348,6 +349,15 @@ type ApplyConsumableEffectPayload struct {
 	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
 	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
 	ItemId      uint32     `json:"itemId"`      // Consumable item ID whose effects should be applied
+}
+
+// CancelConsumableEffectPayload represents the payload required to cancel consumable item effects on a character.
+// This is used for portal-initiated buff cancellation (e.g., removing draco buff after transit).
+type CancelConsumableEffectPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to cancel item effects for
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	ItemId      uint32     `json:"itemId"`      // Consumable item ID whose effects should be cancelled
 }
 
 // SendMessagePayload represents the payload required to send a system message to a character.
@@ -694,6 +704,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case StartInstanceTransport:
 		var payload StartInstanceTransportPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case CancelConsumableEffect:
+		var payload CancelConsumableEffectPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

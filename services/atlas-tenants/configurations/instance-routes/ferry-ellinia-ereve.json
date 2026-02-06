@@ -4,7 +4,7 @@
   "attributes": {
     "name": "sky-ferry-victoria-to-ereve",
     "startMapId": 101000400,
-    "transitMapId": 200090030,
+    "transitMapIds": [200090030],
     "destinationMapId": 130000210,
     "capacity": 1,
     "boardingWindowSeconds": 1,

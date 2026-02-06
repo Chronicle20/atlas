@@ -14,7 +14,7 @@ type RouteModel struct {
 	id               uuid.UUID
 	name             string
 	startMapId       _map.Id
-	transitMapId     _map.Id
+	transitMapIds    []_map.Id
 	destinationMapId _map.Id
 	capacity         uint32
 	boardingWindow   time.Duration
@@ -34,8 +34,19 @@ func (m RouteModel) StartMapId() _map.Id {
 	return m.startMapId
 }
 
-func (m RouteModel) TransitMapId() _map.Id {
-	return m.transitMapId
+func (m RouteModel) TransitMapIds() []_map.Id {
+	result := make([]_map.Id, len(m.transitMapIds))
+	copy(result, m.transitMapIds)
+	return result
+}
+
+func (m RouteModel) HasTransitMap(mapId _map.Id) bool {
+	for _, id := range m.transitMapIds {
+		if id == mapId {
+			return true
+		}
+	}
+	return false
 }
 
 func (m RouteModel) DestinationMapId() _map.Id {

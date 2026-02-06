@@ -11,7 +11,8 @@ import (
 const (
 	EnvCommandTopic = "COMMAND_TOPIC_CONSUMABLE"
 
-	CommandApplyConsumableEffect = "APPLY_CONSUMABLE_EFFECT"
+	CommandApplyConsumableEffect  = "APPLY_CONSUMABLE_EFFECT"
+	CommandCancelConsumableEffect = "CANCEL_CONSUMABLE_EFFECT"
 
 	// Consumable status event constants
 	EnvEventTopicStatus             = "EVENT_TOPIC_CONSUMABLE_STATUS"
@@ -30,6 +31,11 @@ type Command[E any] struct {
 
 // ApplyConsumableEffectBody is the body for applying consumable effects without consuming from inventory
 type ApplyConsumableEffectBody struct {
+	ItemId item.Id `json:"itemId"`
+}
+
+// CancelConsumableEffectBody is the body for cancelling consumable effects on a character
+type CancelConsumableEffectBody struct {
 	ItemId item.Id `json:"itemId"`
 }
 

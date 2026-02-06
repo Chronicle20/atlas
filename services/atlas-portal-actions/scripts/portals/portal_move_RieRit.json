@@ -1,0 +1,15 @@
+{
+  "portalId": "move_RieRit",
+  "mapId": 200090070,
+  "description": "Whale transit map (Rien to Lith Harbor) - Block portal to prevent manual exit during transport",
+  "rules": [
+    {
+      "id": "always_deny",
+      "conditions": [],
+      "onMatch": {
+        "allow": false,
+        "operations": []
+      }
+    }
+  ]
+}

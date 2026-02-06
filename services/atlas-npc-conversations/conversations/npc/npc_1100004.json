@@ -10,11 +10,7 @@
         "choices": [
           {
             "text": "Orbis (1000 mesos)",
-            "nextState": "checkMeso",
-            "context": {
-              "destination": "200090021",
-              "cost": "1000"
-            }
+            "nextState": "checkMeso"
           },
           {
             "text": "Exit",
@@ -41,7 +37,7 @@
           },
           {
             "conditions": [],
-            "nextState": "performWarp"
+            "nextState": "deductMeso"
           }
         ]
       }
@@ -65,7 +61,7 @@
       }
     },
     {
-      "id": "performWarp",
+      "id": "deductMeso",
       "type": "genericAction",
       "genericAction": {
         "operations": [
@@ -74,20 +70,61 @@
             "params": {
               "amount": "-1000"
             }
-          },
-          {
-            "type": "warp_to_map",
-            "params": {
-              "mapId": "200090021",
-              "portalId": "0"
-            }
           }
         ],
         "outcomes": [
           {
             "conditions": [],
-            "nextState": null
+            "nextState": "startTransport"
           }
+        ]
+      }
+    },
+    {
+      "id": "startTransport",
+      "type": "transportAction",
+      "transportAction": {
+        "routeName": "sky-ferry-ereve-to-orbis",
+        "failureState": "transportFailed",
+        "capacityFullState": "transportCapacityFull",
+        "alreadyInTransitState": "transportAlreadyInTransit",
+        "routeNotFoundState": "transportFailed",
+        "serviceErrorState": "transportFailed"
+      }
+    },
+    {
+      "id": "transportFailed",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Sorry, the ferry service is currently unavailable. Please try again later.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "transportCapacityFull",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Sorry, the ferry is currently full. Please wait a moment and try again.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "transportAlreadyInTransit",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "You seem to already be on a transport. Please wait until you arrive at your destination.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
         ]
       }
     }

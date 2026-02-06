@@ -2,13 +2,13 @@
 
 ## Responsibility
 
-Manages transport route scheduling and state transitions for in-game transportation systems. The domain tracks route state based on time-of-day scheduling and coordinates character warping between maps during transport operations.
+Manages transport route scheduling and state transitions for in-game transportation systems. The domain supports two transport models: scheduled routes with time-of-day based state transitions, and instance-based routes with on-demand ephemeral transport instances.
 
 ## Core Models
 
 ### Model (transport/model.go)
 
-Represents a transport route with scheduling configuration.
+Represents a scheduled transport route with scheduling configuration.
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -53,7 +53,7 @@ Represents a single scheduled trip.
 
 ### RouteState (transport/state.go)
 
-Enumeration of route states.
+Enumeration of scheduled route states.
 
 | Value | Description |
 |-------|-------------|
@@ -63,8 +63,58 @@ Enumeration of route states.
 | locked_entry | Boarding closed, pre-departure phase |
 | in_transit | Characters are in the en-route map |
 
+### RouteModel (instance/model.go)
+
+Represents an instance-based transport route configuration.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uuid.UUID | Route identifier |
+| name | string | Route name |
+| startMapId | map.Id | Starting map ID |
+| transitMapId | map.Id | Transit map ID (instanced) |
+| destinationMapId | map.Id | Destination map ID |
+| capacity | uint32 | Maximum characters per instance |
+| boardingWindow | time.Duration | Duration boarding is open for each instance |
+| travelDuration | time.Duration | Duration of transit |
+
+### TransportInstance (instance/model.go)
+
+Represents an active ephemeral instance of an instance-based route.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| instanceId | uuid.UUID | Instance identifier (on-demand UUID) |
+| routeId | uuid.UUID | Associated route ID |
+| tenantId | uuid.UUID | Tenant identifier |
+| characters | []CharacterEntry | Characters in this instance |
+| state | InstanceState | Current instance state |
+| boardingUntil | time.Time | Boarding window expiry time |
+| arrivalAt | time.Time | Arrival time |
+| createdAt | time.Time | Creation time |
+
+### CharacterEntry (instance/model.go)
+
+Tracks a character and their field context within an instance.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| CharacterId | uint32 | Character identifier |
+| WorldId | world.Id | World identifier |
+| ChannelId | channel.Id | Channel identifier |
+
+### InstanceState (instance/state.go)
+
+Enumeration of instance transport states.
+
+| Value | Description |
+|-------|-------------|
+| Boarding | Characters can board the instance |
+| InTransit | Instance is in transit |
+
 ## Invariants
 
+### Scheduled Routes
 - Route name must not be empty
 - At least one en-route map ID is required
 - Boarding window duration must be positive
@@ -77,7 +127,15 @@ Enumeration of route states.
 - Boarding closed must be before departure
 - Departure must be before arrival
 
+### Instance Routes
+- Route name must not be empty
+- Capacity must be greater than zero
+- Boarding window must be positive
+- Travel duration must be positive
+
 ## State Transitions
+
+### Scheduled Routes
 
 Routes transition through states based on the current time of day relative to the trip schedule:
 
@@ -92,6 +150,23 @@ in_transit -> awaiting_return (when arrival time is reached)
 State transitions trigger character warping:
 - Transition to `awaiting_return`: Characters in en-route maps are warped to destination map
 - Transition to `in_transit`: Characters in staging map are warped to first en-route map
+
+### Instance Transports
+
+Instances transition through states based on per-instance timers:
+
+```
+Boarding -> InTransit (when boarding window expires)
+InTransit -> (released) (when arrival time is reached)
+```
+
+State transitions trigger character warping:
+- Arrival: Characters in instance are warped to destination map with `uuid.Nil` instance
+- Map exit during transport: Character is removed and transport is cancelled for that character
+- Logout during transport: Character is removed and transport is cancelled for that character
+- Login at transit map (crash recovery): Character is warped to route start map
+- Stuck timeout: Characters are force-warped to route start map and instance is released
+- Graceful shutdown: All characters are warped to route start map
 
 ## Processors
 
@@ -110,6 +185,33 @@ State transitions trigger character warping:
 | WarpToRouteStartMapOnLogout | Warps character to route start map on logout |
 | WarpToRouteStartMapOnLogoutAndEmit | Warps character and emits Kafka events |
 
+### instance.Processor (instance/processor.go)
+
+| Method | Description |
+|--------|-------------|
+| AddTenant | Adds instance routes for a tenant |
+| ClearTenant | Removes all instance routes for a tenant |
+| GetRoutes | Returns all instance routes for a tenant |
+| GetRoute | Returns an instance route by ID |
+| IsTransitMap | Checks if a map ID is an instance transit map |
+| GetRouteByTransitMap | Returns an instance route by transit map ID |
+| StartTransport | Starts an instance transport for a character |
+| StartTransportAndEmit | Starts transport and emits Kafka events |
+| HandleMapExit | Handles character exiting transit map (cancels transport) |
+| HandleMapExitAndEmit | Handles map exit and emits Kafka events |
+| HandleLogout | Handles character logout during transport |
+| HandleLogoutAndEmit | Handles logout and emits Kafka events |
+| HandleLogin | Handles character login at transit map (crash recovery) |
+| HandleLoginAndEmit | Handles login and emits Kafka events |
+| TickBoardingExpiration | Transitions expired boarding instances to InTransit |
+| TickBoardingExpirationAndEmit | Ticks boarding expiration and emits Kafka events |
+| TickArrival | Warps characters to destination on arrival |
+| TickArrivalAndEmit | Ticks arrival and emits Kafka events |
+| TickStuckTimeout | Force-cancels instances exceeding max lifetime |
+| TickStuckTimeoutAndEmit | Ticks stuck timeout and emits Kafka events |
+| GracefulShutdown | Warps all mid-transport characters to start maps |
+| GracefulShutdownAndEmit | Graceful shutdown and emits Kafka events |
+
 ### seed.Processor (seed/processor.go)
 
 | Method | Description |
@@ -123,6 +225,13 @@ State transitions trigger character warping:
 | GetRoutes | Returns all routes for a tenant from external configuration service |
 | GetVessels | Returns all vessels for a tenant from external configuration service |
 | LoadConfigurationsForTenant | Loads routes and vessels for a tenant |
+
+### instance config.Processor (instance/config/processor.go)
+
+| Method | Description |
+|--------|-------------|
+| GetInstanceRoutes | Returns all instance routes for a tenant from external configuration service |
+| LoadConfigurationsForTenant | Loads instance routes for a tenant |
 
 ### channel.Processor (channel/processor.go)
 

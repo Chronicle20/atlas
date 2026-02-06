@@ -41,8 +41,8 @@ Configuration resource lifecycle events.
 ```json
 {
   "tenantId": "uuid",
-  "type": "ROUTE_CREATED | ROUTE_UPDATED | ROUTE_DELETED | VESSEL_CREATED | VESSEL_UPDATED | VESSEL_DELETED",
-  "resourceType": "route | vessel",
+  "type": "ROUTE_CREATED | ROUTE_UPDATED | ROUTE_DELETED | VESSEL_CREATED | VESSEL_UPDATED | VESSEL_DELETED | INSTANCE_ROUTE_CREATED | INSTANCE_ROUTE_UPDATED | INSTANCE_ROUTE_DELETED",
+  "resourceType": "route | vessel | instance-route",
   "resourceId": "string"
 }
 ```
@@ -54,6 +54,9 @@ Configuration resource lifecycle events.
 - `VESSEL_CREATED`: Emitted when a vessel is created
 - `VESSEL_UPDATED`: Emitted when a vessel is updated
 - `VESSEL_DELETED`: Emitted when a vessel is deleted
+- `INSTANCE_ROUTE_CREATED`: Emitted when an instance route is created
+- `INSTANCE_ROUTE_UPDATED`: Emitted when an instance route is updated
+- `INSTANCE_ROUTE_DELETED`: Emitted when an instance route is deleted
 
 ## Transaction Semantics
 

@@ -229,3 +229,117 @@ func CreateSingleVesselJsonData(vessel map[string]interface{}) (json.RawMessage,
 	}
 	return json.Marshal(data)
 }
+
+// InstanceRouteRestModel is the JSON:API resource for instance routes
+type InstanceRouteRestModel struct {
+	Id                    string `json:"-"`
+	Name                  string `json:"name"`
+	StartMapId            uint32 `json:"startMapId"`
+	TransitMapId          uint32 `json:"transitMapId"`
+	DestinationMapId      uint32 `json:"destinationMapId"`
+	Capacity              uint32 `json:"capacity"`
+	BoardingWindowSeconds uint32 `json:"boardingWindowSeconds"`
+	TravelDurationSeconds uint32 `json:"travelDurationSeconds"`
+}
+
+// GetID returns the resource ID
+func (r InstanceRouteRestModel) GetID() string {
+	return r.Id
+}
+
+// SetID sets the resource ID
+func (r *InstanceRouteRestModel) SetID(id string) error {
+	r.Id = id
+	return nil
+}
+
+// GetName returns the resource name
+func (r InstanceRouteRestModel) GetName() string {
+	return "instance-routes"
+}
+
+// TransformInstanceRoute converts a map[string]interface{} to an InstanceRouteRestModel
+func TransformInstanceRoute(data map[string]interface{}) (InstanceRouteRestModel, error) {
+	id, _ := data["id"].(string)
+
+	attributes, ok := data["attributes"].(map[string]interface{})
+	if !ok {
+		attributes = make(map[string]interface{})
+	}
+
+	name, _ := attributes["name"].(string)
+
+	startMapId := uint32(0)
+	if val, ok := attributes["startMapId"].(float64); ok {
+		startMapId = uint32(val)
+	}
+
+	transitMapId := uint32(0)
+	if val, ok := attributes["transitMapId"].(float64); ok {
+		transitMapId = uint32(val)
+	}
+
+	destinationMapId := uint32(0)
+	if val, ok := attributes["destinationMapId"].(float64); ok {
+		destinationMapId = uint32(val)
+	}
+
+	capacity := uint32(0)
+	if val, ok := attributes["capacity"].(float64); ok {
+		capacity = uint32(val)
+	}
+
+	boardingWindowSeconds := uint32(0)
+	if val, ok := attributes["boardingWindowSeconds"].(float64); ok {
+		boardingWindowSeconds = uint32(val)
+	}
+
+	travelDurationSeconds := uint32(0)
+	if val, ok := attributes["travelDurationSeconds"].(float64); ok {
+		travelDurationSeconds = uint32(val)
+	}
+
+	return InstanceRouteRestModel{
+		Id:                    id,
+		Name:                  name,
+		StartMapId:            startMapId,
+		TransitMapId:          transitMapId,
+		DestinationMapId:      destinationMapId,
+		Capacity:              capacity,
+		BoardingWindowSeconds: boardingWindowSeconds,
+		TravelDurationSeconds: travelDurationSeconds,
+	}, nil
+}
+
+// ExtractInstanceRoute converts an InstanceRouteRestModel to a map[string]interface{}
+func ExtractInstanceRoute(r InstanceRouteRestModel) (map[string]interface{}, error) {
+	return map[string]interface{}{
+		"type": "instance-routes",
+		"id":   r.Id,
+		"attributes": map[string]interface{}{
+			"name":                  r.Name,
+			"startMapId":            r.StartMapId,
+			"transitMapId":          r.TransitMapId,
+			"destinationMapId":      r.DestinationMapId,
+			"capacity":              r.Capacity,
+			"boardingWindowSeconds": r.BoardingWindowSeconds,
+			"travelDurationSeconds": r.TravelDurationSeconds,
+		},
+	}, nil
+}
+
+// CreateInstanceRouteJsonData creates a JSON:API compliant data structure for instance routes
+func CreateInstanceRouteJsonData(routes []map[string]interface{}) (json.RawMessage, error) {
+	data := map[string]interface{}{
+		"data": routes,
+	}
+	return json.Marshal(data)
+}
+
+// CreateSingleInstanceRouteJsonData creates a JSON:API compliant data structure for a single instance route
+func CreateSingleInstanceRouteJsonData(route map[string]interface{}) (json.RawMessage, error) {
+	data := map[string]interface{}{
+		"data": route,
+	}
+	return json.Marshal(data)
+}

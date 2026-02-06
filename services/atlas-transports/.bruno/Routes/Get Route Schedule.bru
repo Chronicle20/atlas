@@ -1,11 +1,11 @@
 meta {
-  name: Get Route State
+  name: Get Route Schedule
   type: http
   seq: 4
 }
 
 get {
-  url: {{scheme}}://{{host}}:{{port}}/api/transports/routes/{{routeId}}/state
+  url: {{scheme}}://{{host}}:{{port}}/api/transports/routes/{{routeId}}/schedule
   body: none
   auth: inherit
 }

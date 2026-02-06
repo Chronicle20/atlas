@@ -437,7 +437,8 @@ const (
 	UnblockPortal    Action = "unblock_portal"     // Unblock a portal for a character
 
 	// Transport actions
-	StartInstanceTransport Action = "start_instance_transport" // Start an instance-based transport for a character
+	StartInstanceTransport    Action = "start_instance_transport"    // Start an instance-based transport for a character
+	CancelConsumableEffect    Action = "cancel_consumable_effect"    // Cancel consumable item effects (buffs) on a character
 )
 
 // Step represents a single step within a saga.
@@ -827,6 +828,15 @@ type ApplyConsumableEffectPayload struct {
 	WorldId     world.Id     `json:"worldId"`     // WorldId associated with the action
 	ChannelId   channel.Id   `json:"channelId"`   // ChannelId associated with the action
 	ItemId      item.Id      `json:"itemId"`      // Consumable item ID whose effects should be applied
+}
+
+// CancelConsumableEffectPayload represents the payload required to cancel consumable item effects on a character.
+// This is used for portal-initiated buff cancellation (e.g., removing draco buff after transit).
+type CancelConsumableEffectPayload struct {
+	CharacterId character.Id `json:"characterId"` // CharacterId to cancel item effects for
+	WorldId     world.Id     `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id   `json:"channelId"`   // ChannelId associated with the action
+	ItemId      item.Id      `json:"itemId"`      // Consumable item ID whose effects should be cancelled
 }
 
 // SendMessagePayload represents the payload required to send a system message to a character.
@@ -1497,6 +1507,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case StartInstanceTransport:
 		var payload StartInstanceTransportPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case CancelConsumableEffect:
+		var payload CancelConsumableEffectPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

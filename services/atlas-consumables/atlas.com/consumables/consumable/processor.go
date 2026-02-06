@@ -717,6 +717,20 @@ func (p *Processor) ApplyConsumableEffect(transactionId uuid.UUID, _ channel.Mod
 	return nil
 }
 
+// CancelConsumableEffect cancels the buff effects of a consumable item on a character.
+// This sends a cancel command to the buff service using sourceId = -int32(itemId).
+func (p *Processor) CancelConsumableEffect(_ uuid.UUID, characterId uint32, itemId item2.Id, f field.Model) error {
+	bp := buff.NewProcessor(p.l, p.ctx)
+	sourceId := -int32(itemId)
+	err := bp.Cancel(f, characterId, sourceId)
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to cancel consumable effect [%d] for character [%d]", itemId, characterId)
+		return err
+	}
+	p.l.Debugf("Successfully cancelled consumable [%d] effects for character [%d]", itemId, characterId)
+	return nil
+}
+
 func (p *Processor) FailScroll(characterId uint32, cursed bool, legendarySpirit bool, whiteScroll bool) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(ScrollEventProvider(ts.Id(characterId))(false, cursed, legendarySpirit, whiteScroll))
 }

@@ -13,9 +13,10 @@ import (
 const (
 	EnvCommandTopic = "COMMAND_TOPIC_CONSUMABLE"
 
-	CommandRequestItemConsume    = "REQUEST_ITEM_CONSUME"
-	CommandRequestScroll         = "REQUEST_SCROLL"
-	CommandApplyConsumableEffect = "APPLY_CONSUMABLE_EFFECT"
+	CommandRequestItemConsume     = "REQUEST_ITEM_CONSUME"
+	CommandRequestScroll          = "REQUEST_SCROLL"
+	CommandApplyConsumableEffect  = "APPLY_CONSUMABLE_EFFECT"
+	CommandCancelConsumableEffect = "CANCEL_CONSUMABLE_EFFECT"
 )
 
 type Command[E any] struct {
@@ -45,6 +46,12 @@ type RequestScrollBody struct {
 // ApplyConsumableEffectBody is the body for applying consumable effects without consuming from inventory
 // Used for NPC-initiated buffs (e.g., NPC blessings)
 type ApplyConsumableEffectBody struct {
+	ItemId item.Id `json:"itemId"`
+}
+
+// CancelConsumableEffectBody is the body for cancelling consumable effects on a character
+// Used for portal-initiated buff cancellation (e.g., removing draco buff after transit)
+type CancelConsumableEffectBody struct {
 	ItemId item.Id `json:"itemId"`
 }
 

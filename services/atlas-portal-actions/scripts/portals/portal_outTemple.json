@@ -1,0 +1,29 @@
+{
+  "portalId": "outTemple",
+  "mapId": 270000100,
+  "description": "Temple of Time - Return flight to Leafre via dragon transformation",
+  "rules": [
+    {
+      "id": "start_return_flight",
+      "conditions": [],
+      "onMatch": {
+        "allow": false,
+        "operations": [
+          {
+            "type": "apply_consumable_effect",
+            "params": {
+              "itemId": "2210016"
+            }
+          },
+          {
+            "type": "start_instance_transport",
+            "params": {
+              "routeName": "temple-of-time-return-flight",
+              "failureMessage": "The flight service is currently unavailable. Please try again later."
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

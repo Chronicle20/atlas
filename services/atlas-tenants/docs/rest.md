@@ -620,7 +620,7 @@ Retrieves all instance routes for a tenant.
       "attributes": {
         "name": "string",
         "startMapId": 0,
-        "transitMapId": 0,
+        "transitMapIds": [0],
         "destinationMapId": 0,
         "capacity": 0,
         "boardingWindowSeconds": 0,
@@ -657,7 +657,7 @@ Retrieves an instance route by ID.
     "attributes": {
       "name": "string",
       "startMapId": 0,
-      "transitMapId": 0,
+      "transitMapIds": [0],
       "destinationMapId": 0,
       "capacity": 0,
       "boardingWindowSeconds": 0,
@@ -689,7 +689,7 @@ Creates a new instance route.
     "attributes": {
       "name": "string",
       "startMapId": 0,
-      "transitMapId": 0,
+      "transitMapIds": [0],
       "destinationMapId": 0,
       "capacity": 0,
       "boardingWindowSeconds": 0,
@@ -709,7 +709,7 @@ Creates a new instance route.
     "attributes": {
       "name": "string",
       "startMapId": 0,
-      "transitMapId": 0,
+      "transitMapIds": [0],
       "destinationMapId": 0,
       "capacity": 0,
       "boardingWindowSeconds": 0,
@@ -743,7 +743,7 @@ Updates an existing instance route.
     "attributes": {
       "name": "string",
       "startMapId": 0,
-      "transitMapId": 0,
+      "transitMapIds": [0],
       "destinationMapId": 0,
       "capacity": 0,
       "boardingWindowSeconds": 0,
@@ -763,7 +763,7 @@ Updates an existing instance route.
     "attributes": {
       "name": "string",
       "startMapId": 0,
-      "transitMapId": 0,
+      "transitMapIds": [0],
       "destinationMapId": 0,
       "capacity": 0,
       "boardingWindowSeconds": 0,

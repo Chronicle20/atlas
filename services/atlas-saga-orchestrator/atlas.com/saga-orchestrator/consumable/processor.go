@@ -17,6 +17,8 @@ import (
 type Processor interface {
 	// ApplyConsumableEffect sends a command to apply item effects to a character without consuming from inventory
 	ApplyConsumableEffect(transactionId uuid.UUID, ch channel.Model, characterId character.Id, itemId item.Id) error
+	// CancelConsumableEffect sends a command to cancel item effects on a character
+	CancelConsumableEffect(transactionId uuid.UUID, ch channel.Model, characterId character.Id, itemId item.Id) error
 }
 
 // ProcessorImpl is the implementation of the Processor interface
@@ -36,4 +38,9 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 // ApplyConsumableEffect sends a Kafka command to atlas-consumables to apply item effects
 func (p *ProcessorImpl) ApplyConsumableEffect(transactionId uuid.UUID, ch channel.Model, characterId character.Id, itemId item.Id) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvCommandTopic)(ApplyConsumableEffectCommandProvider(transactionId, ch, characterId, itemId))
+}
+
+// CancelConsumableEffect sends a Kafka command to atlas-consumables to cancel item effects
+func (p *ProcessorImpl) CancelConsumableEffect(transactionId uuid.UUID, ch channel.Model, characterId character.Id, itemId item.Id) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvCommandTopic)(CancelConsumableEffectCommandProvider(transactionId, ch, characterId, itemId))
 }

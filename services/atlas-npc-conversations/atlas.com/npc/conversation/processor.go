@@ -251,6 +251,19 @@ func (p *ProcessorImpl) Continue(npcId uint32, characterId uint32, action byte, 
 		// Store the choice context for later use
 		choiceContext = choice.Context()
 
+	case DimensionalMirrorSelectionType:
+		// For dimensional mirror selection states, the selection is the index of the option
+		dimensionalMirrorSelection := state.DimensionalMirrorSelection()
+		if dimensionalMirrorSelection == nil {
+			return errors.New("dimensionalMirrorSelection is nil")
+		}
+
+		choice, _ := dimensionalMirrorSelection.ChoiceFromSelection(action, selection)
+		nextStateId = choice.NextState()
+
+		// Store the choice context for later use
+		choiceContext = choice.Context()
+
 	case AskNumberType:
 		// For ask number states, the selection contains the number entered by the player
 		askNumber := state.AskNumber()
@@ -342,6 +355,19 @@ func (p *ProcessorImpl) Continue(npcId uint32, characterId uint32, action byte, 
 			// Get the next state from the askStyle model
 			nextStateId = askStyle.NextState()
 		}
+
+	case AskSlideMenuType:
+		// For ask slide menu states, the selection is the index of the option
+		askSlideMenu := state.AskSlideMenu()
+		if askSlideMenu == nil {
+			return errors.New("askSlideMenu is nil")
+		}
+
+		choice, _ := askSlideMenu.ChoiceFromSelection(action, selection)
+		nextStateId = choice.NextState()
+
+		// Store the choice context for later use
+		choiceContext = choice.Context()
 
 	default:
 		// For other state types, we shouldn't be here (they should have been processed already)
@@ -462,12 +488,18 @@ func (p *ProcessorImpl) processState(ctx ConversationContext, state StateModel) 
 	case ListSelectionType:
 		// Process list selection state
 		return p.processListSelectionState(ctx, state)
+	case DimensionalMirrorSelectionType:
+		// Process dimensional mirror selection state
+		return p.processDimensionalMirrorSelectionState(ctx, state)
 	case AskNumberType:
 		// Process ask number state
 		return p.processAskNumberState(ctx, state)
 	case AskStyleType:
 		// Process ask style state
 		return p.processAskStyleState(ctx, state)
+	case AskSlideMenuType:
+		// Process ask slide menu state
+		return p.processAskSlideMenuState(ctx, state)
 	default:
 		return "", errors.New("unknown state type")
 	}
@@ -817,6 +849,33 @@ func (p *ProcessorImpl) processListSelectionState(ctx ConversationContext, state
 	return state.Id(), nil
 }
 
+// processDimensionalMirrorSelectionState processes a dimensional mirror selection state
+func (p *ProcessorImpl) processDimensionalMirrorSelectionState(ctx ConversationContext, state StateModel) (string, error) {
+	dimensionalMirrorSelection := state.DimensionalMirrorSelection()
+	if dimensionalMirrorSelection == nil {
+		return "", errors.New("dimensionalMirrorSelection is nil")
+	}
+
+	mb := message.NewBuilder()
+	for i, choice := range dimensionalMirrorSelection.Choices() {
+		if choice.NextState() == "" || choice.Text() == "Exit" {
+			continue
+		}
+
+		// Replace context placeholders in choice text
+		processedChoiceText, err := ReplaceContextPlaceholders(choice.Text(), ctx.Context())
+		if err != nil {
+			p.l.WithError(err).Warnf("Failed to replace context placeholders in choice text for state [%s]. Using original text.", state.Id())
+			processedChoiceText = choice.Text()
+		}
+
+		mb.DimensionalMirrorOption(i, processedChoiceText)
+	}
+
+	npcSender.NewProcessor(p.l, p.ctx).SendSimple(ctx.Field().Channel(), ctx.CharacterId(), ctx.NpcId())(mb.String())
+	return state.Id(), nil
+}
+
 // processAskNumberState processes an ask number state
 func (p *ProcessorImpl) processAskNumberState(ctx ConversationContext, state StateModel) (string, error) {
 	askNumber := state.AskNumber()
@@ -895,6 +954,49 @@ func (p *ProcessorImpl) processAskStyleState(ctx ConversationContext, state Stat
 
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to send style request for state [%s] to character [%d]", state.Id(), ctx.CharacterId())
+		return "", err
+	}
+
+	// Return the current state ID to indicate that we're waiting for input
+	return state.Id(), nil
+}
+
+// processAskSlideMenuState processes an ask slide menu state
+func (p *ProcessorImpl) processAskSlideMenuState(ctx ConversationContext, state StateModel) (string, error) {
+	askSlideMenu := state.AskSlideMenu()
+	if askSlideMenu == nil {
+		return "", errors.New("askSlideMenu is nil")
+	}
+
+	// Replace context placeholders in the title
+	processedTitle, err := ReplaceContextPlaceholders(askSlideMenu.Title(), ctx.Context())
+	if err != nil {
+		p.l.WithError(err).Warnf("Failed to replace context placeholders in slide menu title for state [%s]. Using original title.", state.Id())
+		processedTitle = askSlideMenu.Title()
+	}
+
+	// Build the message with choices
+	mb := message.NewBuilder().AddText(processedTitle)
+	for i, choice := range askSlideMenu.Choices() {
+		if choice.NextState() == "" || choice.Text() == "Exit" {
+			continue
+		}
+
+		// Replace context placeholders in choice text
+		processedChoiceText, err := ReplaceContextPlaceholders(choice.Text(), ctx.Context())
+		if err != nil {
+			p.l.WithError(err).Warnf("Failed to replace context placeholders in choice text for state [%s]. Using original text.", state.Id())
+			processedChoiceText = choice.Text()
+		}
+
+		mb.DimensionalMirrorOption(i, processedChoiceText)
+	}
+
+	// Send the slide menu request to the client
+	err = npcSender.NewProcessor(p.l, p.ctx).SendSlideMenu(ctx.Field().Channel(), ctx.CharacterId(), ctx.NpcId(), mb.String(), askSlideMenu.MenuType())
+
+	if err != nil {
+		p.l.WithError(err).Errorf("Failed to send slide menu request for state [%s] to character [%d]", state.Id(), ctx.CharacterId())
 		return "", err
 	}
 

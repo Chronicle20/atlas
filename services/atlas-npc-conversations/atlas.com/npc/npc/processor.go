@@ -36,6 +36,7 @@ type Processor interface {
 	SendAcceptDecline(ch channel.Model, characterId uint32, npcId uint32) TalkFunc
 	SendNumber(ch channel.Model, characterId uint32, npcId uint32, message string, def uint32, min uint32, max uint32) error
 	SendStyle(ch channel.Model, characterId uint32, npcId uint32, message string, styles []uint32) error
+	SendSlideMenu(ch channel.Model, characterId uint32, npcId uint32, message string, menuType uint32) error
 	SendNPCTalk(ch channel.Model, characterId uint32, npcId uint32, config *TalkConfig) func(message string, configurations ...TalkConfigurator)
 }
 
@@ -139,6 +140,10 @@ func (p *ProcessorImpl) SendNumber(ch channel.Model, characterId uint32, npcId u
 
 func (p *ProcessorImpl) SendStyle(ch channel.Model, characterId uint32, npcId uint32, message string, styles []uint32) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(npc2.EnvConversationCommandTopic)(styleConversationProvider(ch, characterId, npcId, message, styles, SpeakerNPC, true, 0))
+}
+
+func (p *ProcessorImpl) SendSlideMenu(ch channel.Model, characterId uint32, npcId uint32, message string, menuType uint32) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(npc2.EnvConversationCommandTopic)(slideMenuConversationProvider(ch, characterId, npcId, message, menuType, SpeakerNPC, true, 0))
 }
 
 func (p *ProcessorImpl) SendNPCTalk(ch channel.Model, characterId uint32, npcId uint32, config *TalkConfig) func(message string, configurations ...TalkConfigurator) {

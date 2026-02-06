@@ -39,6 +39,7 @@
               "craftAction",
               "transportAction",
               "listSelection",
+              "dimensionalMirrorSelection",
               "askNumber",
               "askStyle"
             ]
@@ -322,6 +323,46 @@
                     "text": {
                       "type": "string",
                       "description": "Text of the choice"
+                    },
+                    "nextState": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "ID of the next state to transition to, or null to end conversation"
+                    },
+                    "context": {
+                      "type": "object",
+                      "description": "Additional context data for the choice",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "dimensionalMirrorSelection": {
+            "type": "object",
+            "description": "Dimensional mirror selection state configuration. Renders the dimensional mirror UI with destination images using #index# format.",
+            "required": [
+              "choices"
+            ],
+            "properties": {
+              "choices": {
+                "type": "array",
+                "description": "Available destination choices for the player",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "text",
+                    "nextState"
+                  ],
+                  "properties": {
+                    "text": {
+                      "type": "string",
+                      "description": "Text of the destination choice"
                     },
                     "nextState": {
                       "type": [

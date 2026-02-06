@@ -98,10 +98,14 @@ func (v *Validator) validateState(state StateModel, stateIds map[string]bool, re
 		v.validateTransportAction(state.Id(), state.TransportAction(), stateIds, result)
 	case ListSelectionType:
 		v.validateListSelection(state.Id(), state.ListSelection(), stateIds, result)
+	case DimensionalMirrorSelectionType:
+		v.validateDimensionalMirrorSelection(state.Id(), state.DimensionalMirrorSelection(), stateIds, result)
 	case AskNumberType:
 		v.validateAskNumber(state.Id(), state.AskNumber(), stateIds, result)
 	case AskStyleType:
 		v.validateAskStyle(state.Id(), state.AskStyle(), stateIds, result)
+	case AskSlideMenuType:
+		v.validateAskSlideMenu(state.Id(), state.AskSlideMenu(), stateIds, result)
 	default:
 		result.addError(state.Id(), "type", "invalid", fmt.Sprintf("Invalid state type: %s", state.Type()))
 	}
@@ -293,6 +297,30 @@ func (v *Validator) validateListSelection(stateId string, listSelection *ListSel
 	}
 }
 
+// validateDimensionalMirrorSelection validates a dimensional mirror selection state
+func (v *Validator) validateDimensionalMirrorSelection(stateId string, selection *DimensionalMirrorSelectionModel, stateIds map[string]bool, result *ValidationResult) {
+	if selection == nil {
+		result.addError(stateId, "dimensionalMirrorSelection", "required", "Dimensional mirror selection is required for dimensionalMirrorSelection state")
+		return
+	}
+
+	if len(selection.Choices()) == 0 {
+		result.addError(stateId, "dimensionalMirrorSelection.choices", "required", "At least one choice is required")
+	}
+
+	// Validate each choice
+	for i, choice := range selection.Choices() {
+		if choice.Text() == "" {
+			result.addError(stateId, fmt.Sprintf("dimensionalMirrorSelection.choices[%d].text", i), "required", "Choice text is required")
+		}
+
+		// Validate nextState reference (null/empty is valid for ending conversation)
+		if choice.NextState() != "" && !stateIds[choice.NextState()] {
+			result.addError(stateId, fmt.Sprintf("dimensionalMirrorSelection.choices[%d].nextState", i), "invalid_reference", fmt.Sprintf("Next state '%s' does not exist", choice.NextState()))
+		}
+	}
+}
+
 // validateAskNumber validates an ask number state
 func (v *Validator) validateAskNumber(stateId string, askNumber *AskNumberModel, stateIds map[string]bool, result *ValidationResult) {
 	if askNumber == nil {
@@ -344,6 +372,32 @@ func (v *Validator) validateAskStyle(stateId string, askStyle *AskStyleModel, st
 	// Validate nextState reference
 	if askStyle.NextState() != "" && !stateIds[askStyle.NextState()] {
 		result.addError(stateId, "askStyle.nextState", "invalid_reference", fmt.Sprintf("Next state '%s' does not exist", askStyle.NextState()))
+	}
+}
+
+// validateAskSlideMenu validates an ask slide menu state
+func (v *Validator) validateAskSlideMenu(stateId string, askSlideMenu *AskSlideMenuModel, stateIds map[string]bool, result *ValidationResult) {
+	if askSlideMenu == nil {
+		result.addError(stateId, "askSlideMenu", "required", "Ask slide menu is required for askSlideMenu state")
+		return
+	}
+
+	// Title is optional for slide menus (e.g., dimensional mirror style)
+
+	if len(askSlideMenu.Choices()) == 0 {
+		result.addError(stateId, "askSlideMenu.choices", "required", "At least one choice is required")
+	}
+
+	// Validate each choice
+	for i, choice := range askSlideMenu.Choices() {
+		if choice.Text() == "" {
+			result.addError(stateId, fmt.Sprintf("askSlideMenu.choices[%d].text", i), "required", "Choice text is required")
+		}
+
+		// Validate nextState reference (null/empty is valid for ending conversation)
+		if choice.NextState() != "" && !stateIds[choice.NextState()] {
+			result.addError(stateId, fmt.Sprintf("askSlideMenu.choices[%d].nextState", i), "invalid_reference", fmt.Sprintf("Next state '%s' does not exist", choice.NextState()))
+		}
 	}
 }
 
@@ -401,6 +455,12 @@ func (v *Validator) findReachableStates(m NpcConversation) map[string]bool {
 					visit(choice.NextState())
 				}
 			}
+		case DimensionalMirrorSelectionType:
+			if selection := state.DimensionalMirrorSelection(); selection != nil {
+				for _, choice := range selection.Choices() {
+					visit(choice.NextState())
+				}
+			}
 		case AskNumberType:
 			if askNumber := state.AskNumber(); askNumber != nil {
 				visit(askNumber.NextState())
@@ -408,6 +468,12 @@ func (v *Validator) findReachableStates(m NpcConversation) map[string]bool {
 		case AskStyleType:
 			if askStyle := state.AskStyle(); askStyle != nil {
 				visit(askStyle.NextState())
+			}
+		case AskSlideMenuType:
+			if askSlideMenu := state.AskSlideMenu(); askSlideMenu != nil {
+				for _, choice := range askSlideMenu.Choices() {
+					visit(choice.NextState())
+				}
 			}
 		}
 	}
@@ -531,6 +597,12 @@ func (v *Validator) getNextStates(state StateModel) []string {
 				nextStates = append(nextStates, choice.NextState())
 			}
 		}
+	case DimensionalMirrorSelectionType:
+		if selection := state.DimensionalMirrorSelection(); selection != nil {
+			for _, choice := range selection.Choices() {
+				nextStates = append(nextStates, choice.NextState())
+			}
+		}
 	case AskNumberType:
 		if askNumber := state.AskNumber(); askNumber != nil {
 			nextStates = append(nextStates, askNumber.NextState())
@@ -538,6 +610,12 @@ func (v *Validator) getNextStates(state StateModel) []string {
 	case AskStyleType:
 		if askStyle := state.AskStyle(); askStyle != nil {
 			nextStates = append(nextStates, askStyle.NextState())
+		}
+	case AskSlideMenuType:
+		if askSlideMenu := state.AskSlideMenu(); askSlideMenu != nil {
+			for _, choice := range askSlideMenu.Choices() {
+				nextStates = append(nextStates, choice.NextState())
+			}
 		}
 	}
 

@@ -28,6 +28,7 @@ type ChangeMapBody struct {
 
 const (
 	EnvEventTopicStatus   = "EVENT_TOPIC_CHARACTER_STATUS"
+	StatusEventTypeLogin  = "LOGIN"
 	StatusEventTypeLogout = "LOGOUT"
 )
 
@@ -37,6 +38,12 @@ type StatusEvent[E any] struct {
 	CharacterId   uint32    `json:"characterId"`
 	Type          string    `json:"type"`
 	Body          E         `json:"body"`
+}
+
+type LoginStatusEventBody struct {
+	ChannelId channel.Id `json:"channelId"`
+	MapId     _map.Id    `json:"mapId"`
+	Instance  uuid.UUID  `json:"instance"`
 }
 
 type LogoutStatusEventBody struct {

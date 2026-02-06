@@ -1,6 +1,6 @@
 # Atlas Tenants Service
 
-A RESTful microservice that provides tenant management for the Atlas game platform. This service manages tenant information and tenant-specific configurations including routes and vessels.
+A RESTful microservice that provides tenant management for the Atlas game platform. This service manages tenant information and tenant-specific configurations including routes, vessels, and instance routes.
 
 ## External Dependencies
 

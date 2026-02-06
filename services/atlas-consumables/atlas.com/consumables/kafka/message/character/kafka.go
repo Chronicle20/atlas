@@ -35,6 +35,7 @@ type ChangeMPCommandBody struct {
 type ChangeMapBody struct {
 	ChannelId channel.Id `json:"channelId"`
 	MapId     _map.Id    `json:"mapId"`
+	Instance  uuid.UUID  `json:"instance"`
 	PortalId  uint32     `json:"portalId"`
 }
 

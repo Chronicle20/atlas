@@ -540,3 +540,191 @@ Deletes a vessel.
 
 **Error Conditions**:
 - 500: Internal server error
+
+---
+
+### GET /tenants/{tenantId}/configurations/instance-routes
+
+Retrieves all instance routes for a tenant.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+
+**Request Model**: None
+
+**Response Model**:
+```json
+{
+  "data": [
+    {
+      "type": "instance-routes",
+      "id": "string",
+      "attributes": {
+        "name": "string",
+        "startMapId": 0,
+        "transitMapId": 0,
+        "destinationMapId": 0,
+        "capacity": 0,
+        "boardingWindowSeconds": 0,
+        "travelDurationSeconds": 0
+      }
+    }
+  ]
+}
+```
+
+**Error Conditions**:
+- 500: Internal server error
+
+---
+
+### GET /tenants/{tenantId}/configurations/instance-routes/{instanceRouteId}
+
+Retrieves an instance route by ID.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+- `instanceRouteId` (path, string): Instance route identifier
+
+**Request Model**: None
+
+**Response Model**:
+```json
+{
+  "data": {
+    "type": "instance-routes",
+    "id": "string",
+    "attributes": {
+      "name": "string",
+      "startMapId": 0,
+      "transitMapId": 0,
+      "destinationMapId": 0,
+      "capacity": 0,
+      "boardingWindowSeconds": 0,
+      "travelDurationSeconds": 0
+    }
+  }
+}
+```
+
+**Error Conditions**:
+- 404: Instance route not found
+
+---
+
+### POST /tenants/{tenantId}/configurations/instance-routes
+
+Creates a new instance route.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+
+**Request Model**:
+```json
+{
+  "data": {
+    "type": "instance-routes",
+    "attributes": {
+      "name": "string",
+      "startMapId": 0,
+      "transitMapId": 0,
+      "destinationMapId": 0,
+      "capacity": 0,
+      "boardingWindowSeconds": 0,
+      "travelDurationSeconds": 0
+    }
+  }
+}
+```
+
+**Response Model**:
+```json
+{
+  "data": {
+    "type": "instance-routes",
+    "id": "string",
+    "attributes": {
+      "name": "string",
+      "startMapId": 0,
+      "transitMapId": 0,
+      "destinationMapId": 0,
+      "capacity": 0,
+      "boardingWindowSeconds": 0,
+      "travelDurationSeconds": 0
+    }
+  }
+}
+```
+
+**Error Conditions**:
+- 400: Invalid request body
+- 500: Internal server error
+
+---
+
+### PATCH /tenants/{tenantId}/configurations/instance-routes/{instanceRouteId}
+
+Updates an existing instance route.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+- `instanceRouteId` (path, string): Instance route identifier
+
+**Request Model**:
+```json
+{
+  "data": {
+    "type": "instance-routes",
+    "id": "string",
+    "attributes": {
+      "name": "string",
+      "startMapId": 0,
+      "transitMapId": 0,
+      "destinationMapId": 0,
+      "capacity": 0,
+      "boardingWindowSeconds": 0,
+      "travelDurationSeconds": 0
+    }
+  }
+}
+```
+
+**Response Model**:
+```json
+{
+  "data": {
+    "type": "instance-routes",
+    "id": "string",
+    "attributes": {
+      "name": "string",
+      "startMapId": 0,
+      "transitMapId": 0,
+      "destinationMapId": 0,
+      "capacity": 0,
+      "boardingWindowSeconds": 0,
+      "travelDurationSeconds": 0
+    }
+  }
+}
+```
+
+**Error Conditions**:
+- 400: Invalid request body
+- 500: Internal server error (includes instance route not found)
+
+---
+
+### DELETE /tenants/{tenantId}/configurations/instance-routes/{instanceRouteId}
+
+Deletes an instance route.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+- `instanceRouteId` (path, string): Instance route identifier
+
+**Request Model**: None
+
+**Response Model**: None (204 No Content)
+
+**Error Conditions**:
+- 500: Internal server error

@@ -203,15 +203,14 @@ func (p *ProcessorImpl) HandleMapEnter(mb *message.Buffer) func(characterId uint
 			return nil
 		}
 
-		// Only emit TRANSIT_ENTERED for the first transit map in the route
-		if route.TransitMapIds()[0] == mapId {
-			p.l.Debugf("Character [%d] entered first transit map [%d] for route [%s], emitting TRANSIT_ENTERED.", characterId, mapId, route.Name())
-			durationSeconds := uint32(route.TravelDuration().Seconds())
-			return mb.Put(it.EnvEventTopic, transitEnteredEventProvider(worldId, channelId, characterId, route.Id(), charInstanceId, durationSeconds, route.TransitMessage()))
+		// Emit TRANSIT_ENTERED with remaining time for any transit map entry
+		remaining := time.Until(inst.ArrivalAt())
+		if remaining < 0 {
+			remaining = 0
 		}
-
-		p.l.Debugf("Character [%d] continuing through transit map [%d] for route [%s].", characterId, mapId, route.Name())
-		return nil
+		remainingSeconds := uint32(remaining.Seconds())
+		p.l.Debugf("Character [%d] entered transit map [%d] for route [%s], emitting TRANSIT_ENTERED with [%d]s remaining.", characterId, mapId, route.Name(), remainingSeconds)
+		return mb.Put(it.EnvEventTopic, transitEnteredEventProvider(worldId, channelId, characterId, route.Id(), charInstanceId, remainingSeconds, route.TransitMessage()))
 	}
 }
 

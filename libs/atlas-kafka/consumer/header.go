@@ -3,6 +3,7 @@ package consumer
 import (
 	"context"
 	"encoding/binary"
+
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"

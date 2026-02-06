@@ -34,14 +34,14 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 			return func(rf func(topic string, handler handler.Handler) (string, error)) {
 				var t string
 				t, _ = topic.EnvProvider(l)(shops2.EnvStatusEventTopic)()
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleEnteredStatusEvent(l, sc, wp))))
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleErrorStatusEvent(l, sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleEnteredStatusEvent(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleErrorStatusEvent(sc, wp))))
 			}
 		}
 	}
 }
 
-func handleEnteredStatusEvent(l logrus.FieldLogger, sc server.Model, wp writer.Producer) message.Handler[shops2.StatusEvent[shops2.StatusEventEnteredBody]] {
+func handleEnteredStatusEvent(sc server.Model, wp writer.Producer) message.Handler[shops2.StatusEvent[shops2.StatusEventEnteredBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e shops2.StatusEvent[shops2.StatusEventEnteredBody]) {
 		if e.Type != shops2.StatusEventTypeEntered {
 			return
@@ -72,7 +72,7 @@ func handleEnteredStatusEvent(l logrus.FieldLogger, sc server.Model, wp writer.P
 	}
 }
 
-func handleErrorStatusEvent(l logrus.FieldLogger, sc server.Model, wp writer.Producer) message.Handler[shops2.StatusEvent[shops2.StatusEventErrorBody]] {
+func handleErrorStatusEvent(sc server.Model, wp writer.Producer) message.Handler[shops2.StatusEvent[shops2.StatusEventErrorBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e shops2.StatusEvent[shops2.StatusEventErrorBody]) {
 		if e.Type != shops2.StatusEventTypeError {
 			return

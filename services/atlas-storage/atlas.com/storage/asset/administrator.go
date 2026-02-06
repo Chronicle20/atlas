@@ -1,10 +1,11 @@
 package asset
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"time"
 )
 
 // Create creates a new asset in storage

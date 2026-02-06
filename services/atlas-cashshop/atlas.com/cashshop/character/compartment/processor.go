@@ -5,6 +5,7 @@ import (
 	"atlas-cashshop/kafka/message/character/compartment"
 	compartment2 "atlas-cashshop/kafka/producer/character/compartment"
 	"context"
+
 	inventory3 "github.com/Chronicle20/atlas-constants/inventory"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"

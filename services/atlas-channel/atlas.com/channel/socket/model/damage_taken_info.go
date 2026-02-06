@@ -50,7 +50,7 @@ type DamageTakenInfo struct {
 	expression        byte
 }
 
-func (d *DamageTakenInfo) Decode(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(r *request.Reader) {
+func (d *DamageTakenInfo) Decode(l logrus.FieldLogger, t tenant.Model, _ map[string]interface{}) func(r *request.Reader) {
 	return func(r *request.Reader) {
 		d.updateTime = r.ReadUint32()
 		d.nAttackIdx = DamageType(r.ReadInt8())

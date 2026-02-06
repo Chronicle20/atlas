@@ -84,7 +84,7 @@ func TestBuilder_Build_Validation(t *testing.T) {
 			errorMsg:    "boarding window duration must be positive",
 		},
 		{
-			name: "Zero pre-departure duration fails validation",
+			name: "Zero pre-departure duration is valid",
 			builder: func() *Builder {
 				return NewBuilder("Test Route").
 					SetEnRouteMapIds([]_map.Id{102}).
@@ -93,8 +93,7 @@ func TestBuilder_Build_Validation(t *testing.T) {
 					SetTravelDuration(10 * time.Minute).
 					SetCycleInterval(30 * time.Minute)
 			},
-			expectError: true,
-			errorMsg:    "pre-departure duration must be positive",
+			expectError: false,
 		},
 		{
 			name: "Zero travel duration fails validation",
@@ -141,8 +140,8 @@ func TestBuilder_Build_Validation(t *testing.T) {
 }
 
 func TestSharedVesselBuilder_Build_Validation(t *testing.T) {
-	validRouteA := uuid.New()
-	validRouteB := uuid.New()
+	validRouteA := "route-a"
+	validRouteB := "route-b"
 
 	tests := []struct {
 		name        string
@@ -162,7 +161,7 @@ func TestSharedVesselBuilder_Build_Validation(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name: "Nil route A ID fails validation",
+			name: "Empty route A ID fails validation",
 			builder: func() *SharedVesselBuilder {
 				return NewSharedVesselBuilder().
 					SetName("Test Vessel").
@@ -170,10 +169,10 @@ func TestSharedVesselBuilder_Build_Validation(t *testing.T) {
 					SetTurnaroundDelay(5 * time.Minute)
 			},
 			expectError: true,
-			errorMsg:    "route A ID must not be nil",
+			errorMsg:    "route A ID must not be empty",
 		},
 		{
-			name: "Nil route B ID fails validation",
+			name: "Empty route B ID fails validation",
 			builder: func() *SharedVesselBuilder {
 				return NewSharedVesselBuilder().
 					SetName("Test Vessel").
@@ -181,7 +180,7 @@ func TestSharedVesselBuilder_Build_Validation(t *testing.T) {
 					SetTurnaroundDelay(5 * time.Minute)
 			},
 			expectError: true,
-			errorMsg:    "route B ID must not be nil",
+			errorMsg:    "route B ID must not be empty",
 		},
 		{
 			name: "Zero turnaround delay fails validation",
@@ -296,7 +295,7 @@ func TestTripScheduleBuilder_Build_Validation(t *testing.T) {
 					SetArrival(now.Add(17 * time.Minute))
 			},
 			expectError: true,
-			errorMsg:    "boarding closed must be before departure",
+			errorMsg:    "departure must not be before boarding closed",
 		},
 		{
 			name: "Departure not before arrival fails validation",

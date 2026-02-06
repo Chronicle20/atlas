@@ -3,6 +3,8 @@ package _map
 import (
 	"atlas-drops/drop"
 	"atlas-drops/rest"
+	"net/http"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
@@ -13,7 +15,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
-	"net/http"
 )
 
 func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {

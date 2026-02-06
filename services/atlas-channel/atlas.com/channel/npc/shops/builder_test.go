@@ -3,6 +3,7 @@ package shops_test
 import (
 	"atlas-channel/npc/shops"
 	"atlas-channel/npc/shops/commodities"
+	"errors"
 	"testing"
 
 	"github.com/google/uuid"
@@ -43,7 +44,7 @@ func TestBuild_MissingNpcId(t *testing.T) {
 		SetCommodities([]commodities.Model{}).
 		Build()
 
-	if err != shops.ErrInvalidNpcId {
+	if !errors.Is(err, shops.ErrInvalidNpcId) {
 		t.Errorf("Build() error = %v, want ErrInvalidNpcId", err)
 	}
 }
@@ -53,7 +54,7 @@ func TestBuild_ZeroNpcId(t *testing.T) {
 		SetNpcId(0).
 		Build()
 
-	if err != shops.ErrInvalidNpcId {
+	if !errors.Is(err, shops.ErrInvalidNpcId) {
 		t.Errorf("Build() error = %v, want ErrInvalidNpcId", err)
 	}
 }

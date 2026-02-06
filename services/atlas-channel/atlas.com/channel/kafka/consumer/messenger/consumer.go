@@ -10,7 +10,6 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -48,7 +47,7 @@ func handleLeft(sc server.Model, wp writer.Producer) message.Handler[messenger2.
 			return
 		}
 
-		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId) {
 			return
 		}
 
@@ -99,7 +98,7 @@ func handleJoin(sc server.Model, wp writer.Producer) message.Handler[messenger2.
 			return
 		}
 
-		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId) {
 			return
 		}
 

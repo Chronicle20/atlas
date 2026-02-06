@@ -2,6 +2,7 @@ package drop_test
 
 import (
 	"atlas-channel/drop"
+	"errors"
 	"testing"
 )
 
@@ -42,7 +43,7 @@ func TestBuild_MissingId(t *testing.T) {
 		SetItem(1000, 10).
 		Build()
 
-	if err != drop.ErrInvalidId {
+	if !errors.Is(err, drop.ErrInvalidId) {
 		t.Errorf("Build() error = %v, want ErrInvalidId", err)
 	}
 }

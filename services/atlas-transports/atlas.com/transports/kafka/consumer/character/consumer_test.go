@@ -42,7 +42,7 @@ func TestHandleEventStatus_NonLogoutEventIgnored(t *testing.T) {
 	}
 
 	// Call the handler - should return immediately without processing
-	handleEventStatus(l, ctx, event)
+	handleLogoutEvent(l, ctx, event)
 
 	// Verify no errors were logged (handler should return early)
 	logOutput := logBuffer.String()
@@ -77,7 +77,7 @@ func TestHandleEventStatus_LogoutFromNonTransportMap(t *testing.T) {
 	}
 
 	// Call the handler - should process but find no matching route
-	handleEventStatus(l, ctx, event)
+	handleLogoutEvent(l, ctx, event)
 
 	// The handler should log the logout attempt
 	logOutput := logBuffer.String()
@@ -131,7 +131,7 @@ func TestHandleEventStatus_LogoutFromTransportMap(t *testing.T) {
 	}
 
 	// Call the handler - should process and attempt to warp character
-	handleEventStatus(l, ctx, event)
+	handleLogoutEvent(l, ctx, event)
 
 	// The handler should log the logout attempt
 	logOutput := logBuffer.String()
@@ -185,7 +185,7 @@ func TestHandleEventStatus_LogoutFromEnRouteMap(t *testing.T) {
 	}
 
 	// Call the handler - should process and attempt to warp character
-	handleEventStatus(l, ctx, event)
+	handleLogoutEvent(l, ctx, event)
 
 	// The handler should log the logout attempt
 	logOutput := logBuffer.String()
@@ -225,7 +225,7 @@ func TestHandleEventStatus_MultipleEventTypes(t *testing.T) {
 			}
 
 			// Should not panic and should return early
-			handleEventStatus(l, ctx, event)
+			handleLogoutEvent(l, ctx, event)
 
 			// Should not log anything for non-logout events
 			assert.Empty(t, logBuffer.String(), "Should not log for event type: %s", eventType)

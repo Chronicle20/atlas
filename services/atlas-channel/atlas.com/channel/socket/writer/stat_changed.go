@@ -2,10 +2,11 @@ package writer
 
 import (
 	"atlas-channel/socket/model"
+	"sort"
+
 	"github.com/Chronicle20/atlas-constants/stat"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
-	"sort"
 )
 
 const StatChanged = "StatChanged"

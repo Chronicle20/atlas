@@ -4,22 +4,13 @@
 
 ### GET /transports/routes
 
-Returns all routes for the tenant.
+Returns all scheduled routes for the tenant.
 
 **Parameters:**
 
 | Name | Location | Type | Required | Description |
 |------|----------|------|----------|-------------|
 | filter[startMapId] | query | uint32 | No | Filter routes by starting map ID |
-
-**Request Headers:**
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| TENANT_ID | string | Yes | Tenant identifier |
-| REGION | string | Yes | Region code |
-| MAJOR_VERSION | uint16 | Yes | Major version |
-| MINOR_VERSION | uint16 | Yes | Minor version |
 
 **Response Model:**
 
@@ -54,22 +45,13 @@ Resource type: `routes`
 
 ### GET /transports/routes/{routeId}
 
-Returns metadata about a single route.
+Returns a single scheduled route with its trip schedule.
 
 **Parameters:**
 
 | Name | Location | Type | Required | Description |
 |------|----------|------|----------|-------------|
 | routeId | path | uuid.UUID | Yes | Route identifier |
-
-**Request Headers:**
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| TENANT_ID | string | Yes | Tenant identifier |
-| REGION | string | Yes | Region code |
-| MAJOR_VERSION | uint16 | Yes | Major version |
-| MINOR_VERSION | uint16 | Yes | Minor version |
 
 **Response Model:**
 
@@ -101,33 +83,125 @@ Resource type: `routes`
 
 ---
 
-### POST /transports/routes/seed
+### GET /transports/instance-routes
 
-Seeds routes from JSON configuration files.
-
-**Request Headers:**
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| TENANT_ID | string | Yes | Tenant identifier |
-| REGION | string | Yes | Region code |
-| MAJOR_VERSION | uint16 | Yes | Major version |
-| MINOR_VERSION | uint16 | Yes | Minor version |
+Returns all instance routes for the tenant.
 
 **Response Model:**
 
+Resource type: `instance-routes`
+
 | Field | Type | Description |
 |-------|------|-------------|
-| deletedRoutes | int | Number of routes deleted |
-| createdRoutes | int | Number of routes created |
-| failedCount | int | Number of routes that failed to load |
-| errors | []string | Error messages |
+| id | uuid.UUID | Route identifier |
+| name | string | Route name |
+| startMapId | map.Id | Starting map ID |
+| transitMapId | map.Id | Transit map ID |
+| destinationMapId | map.Id | Destination map ID |
+| capacity | uint32 | Maximum characters per instance |
+| boardingWindow | time.Duration | Boarding window duration |
+| travelDuration | time.Duration | Travel duration |
 
 **Error Conditions:**
 
 | Status | Condition |
 |--------|-----------|
-| 500 | Internal server error during seeding |
+| 500 | Internal server error retrieving instance routes |
+
+---
+
+### GET /transports/instance-routes/{routeId}
+
+Returns a single instance route.
+
+**Parameters:**
+
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| routeId | path | uuid.UUID | Yes | Route identifier |
+
+**Response Model:**
+
+Resource type: `instance-routes`
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uuid.UUID | Route identifier |
+| name | string | Route name |
+| startMapId | map.Id | Starting map ID |
+| transitMapId | map.Id | Transit map ID |
+| destinationMapId | map.Id | Destination map ID |
+| capacity | uint32 | Maximum characters per instance |
+| boardingWindow | time.Duration | Boarding window duration |
+| travelDuration | time.Duration | Travel duration |
+
+**Error Conditions:**
+
+| Status | Condition |
+|--------|-----------|
+| 404 | Route not found |
+| 500 | Internal server error retrieving instance route |
+
+---
+
+### GET /transports/instance-routes/{routeId}/status
+
+Returns active instance statuses for a route.
+
+**Parameters:**
+
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| routeId | path | uuid.UUID | Yes | Route identifier |
+
+**Response Model:**
+
+Resource type: `instance-status`
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uuid.UUID | Instance identifier |
+| routeId | uuid.UUID | Route identifier |
+| state | string | Instance state (boarding, in_transit) |
+| characters | int | Number of characters in instance |
+| boardingUntil | string | Boarding window expiry (RFC3339) |
+| arrivalAt | string | Arrival time (RFC3339) |
+
+**Error Conditions:**
+
+| Status | Condition |
+|--------|-----------|
+| 500 | Internal server error retrieving instance status |
+
+---
+
+### POST /transports/instance-routes/{routeId}/start
+
+Starts an instance transport for a character on the specified route.
+
+**Parameters:**
+
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| routeId | path | uuid.UUID | Yes | Route identifier |
+
+**Request Model:**
+
+Resource type: `start-transport`
+
+| Field | Type | Description |
+|-------|------|-------------|
+| characterId | uint32 | Character identifier |
+| worldId | world.Id | World identifier |
+| channelId | channel.Id | Channel identifier |
+
+**Response:** 204 No Content on success.
+
+**Error Conditions:**
+
+| Status | Condition |
+|--------|-----------|
+| 400 | Invalid routeId, character already in transport, or route not found |
 
 ## Related Resource Types
 

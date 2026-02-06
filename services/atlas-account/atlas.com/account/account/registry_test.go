@@ -1,9 +1,10 @@
 package account
 
 import (
+	"testing"
+
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
-	"testing"
 )
 
 func TestCoordinator(t *testing.T) {

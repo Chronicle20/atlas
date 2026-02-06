@@ -3,7 +3,7 @@ package main
 import (
 	"atlas-family/database"
 	"atlas-family/family"
-	character "atlas-family/kafka/consumer/character"
+	"atlas-family/kafka/consumer/character"
 	family2 "atlas-family/kafka/consumer/family"
 	"atlas-family/logger"
 	"atlas-family/scheduler"

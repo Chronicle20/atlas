@@ -4,6 +4,7 @@ import (
 	"atlas-login/configuration/tenant"
 	"atlas-login/rest"
 	"fmt"
+
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/google/uuid"
 )

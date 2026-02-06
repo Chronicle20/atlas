@@ -1,0 +1,16 @@
+{
+  "id": "cabin-leafre-orbis",
+  "type": "routes",
+  "attributes": {
+    "name": "cabin-leafre-orbis",
+    "startMapId": 240000110,
+    "stagingMapId": 240000111,
+    "enRouteMapIds": [200090210],
+    "destinationMapId": 200000100,
+    "observationMapId": 240000110,
+    "boardingWindowDuration": 4,
+    "preDepartureDuration": 1,
+    "travelDuration": 5,
+    "cycleInterval": 10
+  }
+}

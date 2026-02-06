@@ -3,11 +3,12 @@ package drop
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
-	"gorm.io/gorm"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 const defaultMonsterDropsPath = "/drops/monsters"

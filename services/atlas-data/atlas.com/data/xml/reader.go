@@ -4,10 +4,11 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"github.com/Chronicle20/atlas-model/model"
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/Chronicle20/atlas-model/model"
 )
 
 // deprecated

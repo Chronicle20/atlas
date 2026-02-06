@@ -3,12 +3,13 @@ package model
 import (
 	"atlas-channel/tool"
 	"errors"
+	"sort"
+	"time"
+
 	"github.com/Chronicle20/atlas-constants/character"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
-	"sort"
-	"time"
 )
 
 type CharacterTemporaryStatType struct {

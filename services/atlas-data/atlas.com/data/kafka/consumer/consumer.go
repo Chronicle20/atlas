@@ -1,10 +1,11 @@
 package consumer
 
 import (
+	"os"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/sirupsen/logrus"
-	"os"
 )
 
 func NewConfig(l logrus.FieldLogger) func(name string) func(token string) func(groupId string) consumer.Config {

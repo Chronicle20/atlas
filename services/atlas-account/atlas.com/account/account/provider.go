@@ -2,6 +2,7 @@ package account
 
 import (
 	"atlas-account/database"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"gorm.io/gorm"

@@ -1,6 +1,7 @@
 package messenger
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/google/uuid"
@@ -58,7 +59,7 @@ func TestBuilderBuildExceedsMaxMembers(t *testing.T) {
 		AddMember(4, 3) // 4 > MaxMembers=3
 
 	_, err := b.Build()
-	if err != ErrAtCapacity {
+	if !errors.Is(err, ErrAtCapacity) {
 		t.Fatalf("expected ErrAtCapacity, got %v", err)
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"atlas-consumables/kafka/message/compartment"
 	"atlas-consumables/kafka/producer"
 	"context"
+
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/google/uuid"

@@ -1,0 +1,13 @@
+{
+  "id": "temple-of-time-flight",
+  "type": "instance-routes",
+  "attributes": {
+    "name": "temple-of-time-flight",
+    "startMapId": 270000000,
+    "transitMapId": 200090500,
+    "destinationMapId": null,
+    "capacity": 1,
+    "boardingWindowSeconds": 1,
+    "travelDurationSeconds": null
+  }
+}

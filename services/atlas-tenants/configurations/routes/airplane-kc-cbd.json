@@ -1,0 +1,16 @@
+{
+  "id": "airplane-kc-cbd",
+  "type": "routes",
+  "attributes": {
+    "name": "airplane-kc-cbd",
+    "startMapId": 103000000,
+    "stagingMapId": 540010100,
+    "enRouteMapIds": [540010101],
+    "destinationMapId": 540010000,
+    "observationMapId": 103000000,
+    "boardingWindowDuration": 4,
+    "preDepartureDuration": 1,
+    "travelDuration": 1,
+    "cycleInterval": 6
+  }
+}

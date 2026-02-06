@@ -17,12 +17,13 @@ Each converted conversation must include:
 
 ## 📦 State Types (from schema)
 
-| State Type       | Description                                                                 |
-|------------------|-----------------------------------------------------------------------------|
-| `dialogue`       | Presents a message to the user. Supports `sendOk`, `sendYesNo`, `sendNext`, `sendNextPrev`, `sendPrev`, and `sendAcceptDecline`. |
-| `genericAction`  | Executes logic or validation (e.g. meso check, job check, warp).            |
-| `craftAction`    | Defines crafting logic with required items and meso cost.                   |
-| `listSelection`  | Allows the user to choose from a dynamic list. Sets context values. **Use for menu-style selections (formerly `sendSimple` with `#L` tags).** |
+| State Type         | Description                                                                 |
+|--------------------|-----------------------------------------------------------------------------|
+| `dialogue`         | Presents a message to the user. Supports `sendOk`, `sendYesNo`, `sendNext`, `sendNextPrev`, `sendPrev`, and `sendAcceptDecline`. |
+| `genericAction`    | Executes logic or validation (e.g. meso check, job check, warp).            |
+| `craftAction`      | Defines crafting logic with required items and meso cost.                   |
+| `transportAction`  | Initiates an instance-based transport via saga-orchestrator. Used when the original script uses `cm.getEventManager(...)` + `em.startInstance(...)`. |
+| `listSelection`    | Allows the user to choose from a dynamic list. Sets context values. **Use for menu-style selections (formerly `sendSimple` with `#L` tags).** |
 
 ---
 
@@ -181,6 +182,40 @@ Used for defining item crafting.
 
 - Use only when crafting logic is explicitly required.
 - Prefer `optionSets` for dynamic crafting menus.
+
+---
+
+## 🚂 `transportAction` States
+
+Used for instance-based transports (trains, boats, genies, etc.) that go through saga-orchestrator. Converts the JavaScript pattern of `cm.getEventManager("...")` + `em.startInstance(cm.getPlayer())`.
+
+```json
+{
+  "id": "startTransport",
+  "type": "transportAction",
+  "transportAction": {
+    "routeName": "kerning-train-to-square",
+    "failureState": "transportFailed",
+    "capacityFullState": "transportCapacityFull",
+    "alreadyInTransitState": "transportAlreadyInTransit",
+    "routeNotFoundState": "transportFailed",
+    "serviceErrorState": "transportFailed"
+  }
+}
+```
+
+- `routeName` (required): Instance route name, resolved to UUID at runtime by saga-orchestrator
+- `failureState` (required): General fallback state for unhandled errors
+- `capacityFullState` (optional): State when the transport vehicle is full
+- `alreadyInTransitState` (optional): State when the character is already on another transport
+- `routeNotFoundState` (optional): State when the route name doesn't exist in config
+- `serviceErrorState` (optional): State when the transport service is unavailable
+
+On success, the transport system warps the character to the transit map automatically and the conversation ends. Failure states should be `dialogue` states with appropriate error messages from the original script.
+
+**When to use `transportAction` vs `warp_to_map`:**
+- `transportAction`: Script uses `cm.getEventManager(...)` + `em.startInstance(...)` — character boards a vehicle, travels through a transit map with a timer, then arrives
+- `warp_to_map`: Script uses `cm.warp(mapId, portal)` — instant teleportation
 
 ---
 

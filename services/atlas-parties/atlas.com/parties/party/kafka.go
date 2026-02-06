@@ -60,10 +60,6 @@ type changeLeaderBody struct {
 	LeaderId uint32 `json:"leaderId"`
 }
 
-type requestInviteBody struct {
-	CharacterId uint32 `json:"characterId"`
-}
-
 type statusEvent[E any] struct {
 	ActorId uint32   `json:"actorId"`
 	WorldId world.Id `json:"worldId"`

@@ -54,7 +54,7 @@ func (r StorageRestModel) GetReferencedIDs() []jsonapi.ReferenceID {
 	return result
 }
 
-func (r *StorageRestModel) SetToOneReferenceID(name, ID string) error {
+func (r *StorageRestModel) SetToOneReferenceID(_, _ string) error {
 	return nil
 }
 

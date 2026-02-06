@@ -2,6 +2,7 @@ package compartment_test
 
 import (
 	"atlas-channel/compartment"
+	"errors"
 	"testing"
 
 	"github.com/Chronicle20/atlas-constants/inventory"
@@ -51,7 +52,7 @@ func TestBuild_MissingId(t *testing.T) {
 	_, err := compartment.NewModelBuilder(uuid.Nil, 100, inventory.TypeValueEquip, 24).
 		Build()
 
-	if err != compartment.ErrMissingId {
+	if !errors.Is(err, compartment.ErrMissingId) {
 		t.Errorf("Build() error = %v, want ErrMissingId", err)
 	}
 }

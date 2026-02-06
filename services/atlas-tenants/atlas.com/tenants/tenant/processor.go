@@ -5,6 +5,7 @@ import (
 	"atlas-tenants/kafka/producer"
 	"context"
 	"errors"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"

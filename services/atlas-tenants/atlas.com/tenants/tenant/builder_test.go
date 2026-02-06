@@ -2,6 +2,7 @@ package tenant_test
 
 import (
 	"atlas-tenants/tenant"
+	"errors"
 	"testing"
 
 	"github.com/google/uuid"
@@ -52,7 +53,7 @@ func TestBuild_MissingName(t *testing.T) {
 		SetMinorVersion(1).
 		Build()
 
-	if err != tenant.ErrNameRequired {
+	if !errors.Is(err, tenant.ErrNameRequired) {
 		t.Errorf("Build() error = %v, want ErrNameRequired", err)
 	}
 }
@@ -64,7 +65,7 @@ func TestBuild_MissingRegion(t *testing.T) {
 		SetMinorVersion(1).
 		Build()
 
-	if err != tenant.ErrRegionRequired {
+	if !errors.Is(err, tenant.ErrRegionRequired) {
 		t.Errorf("Build() error = %v, want ErrRegionRequired", err)
 	}
 }

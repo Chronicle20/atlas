@@ -84,15 +84,15 @@ func (r RestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
 	return result
 }
 
-func (r *RestModel) SetToOneReferenceID(name, ID string) error {
+func (r *RestModel) SetToOneReferenceID(_, _ string) error {
 	return nil
 }
 
-func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
+func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error {
 	return nil
 }
 
-func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonapi.Data) error {
+func (r *RestModel) SetReferencedStructs(_ map[string]map[string]jsonapi.Data) error {
 	return nil
 }
 
@@ -100,7 +100,7 @@ func Extract(rm RestModel) (Model, error) {
 	return Model{
 		id:                 rm.Id,
 		accountId:          rm.AccountId,
-		worldId:            world.Id(rm.WorldId),
+		worldId:            rm.WorldId,
 		name:               rm.Name,
 		gender:             rm.Gender,
 		skinColor:          rm.SkinColor,

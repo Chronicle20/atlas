@@ -2,8 +2,9 @@ package asset
 
 import (
 	"errors"
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // ModelBuilder for constructing Model instances

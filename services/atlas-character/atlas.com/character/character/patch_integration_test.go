@@ -2,8 +2,8 @@ package character_test
 
 import (
 	"atlas-character/character"
-	character2 "atlas-character/kafka/message/character"
 	"atlas-character/kafka/message"
+	character2 "atlas-character/kafka/message/character"
 	"context"
 	"encoding/json"
 	"testing"
@@ -303,14 +303,14 @@ func TestPatchCharacterNotFound(t *testing.T) {
 	}
 
 	processor := character.NewProcessor(logger, tctx, db)
-	
+
 	// Test the update logic with message buffer
 	transactionId := uuid.New()
 	err := processor.Update(message.NewBuffer())(transactionId, 99999, updatePayload)
 	if err == nil {
 		t.Fatal("Expected error for non-existent character, got nil")
 	}
-	
+
 	// Should return a record not found error
 	if err.Error() != "record not found" {
 		t.Fatalf("Expected 'record not found' error, got: %v", err)
@@ -493,13 +493,13 @@ func TestPatchCharacterWithDuplicateName(t *testing.T) {
 		Build()
 
 	processor := character.NewProcessor(logger, tctx, db)
-	
+
 	// Create both characters
 	_, err := processor.Create(message.NewBuffer())(uuid.New(), firstCharacter)
 	if err != nil {
 		t.Fatalf("Failed to create first character: %v", err)
 	}
-	
+
 	createdSecondCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), secondCharacter)
 	if err != nil {
 		t.Fatalf("Failed to create second character: %v", err)

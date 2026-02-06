@@ -3,9 +3,10 @@ package tasks
 import (
 	"atlas-buffs/character"
 	"context"
+	"time"
+
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
-	"time"
 )
 
 type Expiration struct {

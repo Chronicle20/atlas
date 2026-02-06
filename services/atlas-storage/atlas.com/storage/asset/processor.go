@@ -5,6 +5,7 @@ import (
 	"atlas-storage/pet"
 	"atlas-storage/stackable"
 	"context"
+	"errors"
 
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
@@ -34,13 +35,13 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Proce
 // GetAssetById retrieves an asset by ID
 func (p *Processor) GetAssetById(assetId uint32) (Model[any], error) {
 	t := tenant.MustFromContext(p.ctx)
-	return GetById(p.l, p.db, t.Id())(assetId)
+	return GetById(p.db, t.Id())(assetId)
 }
 
 // GetAssetsByStorageId retrieves all assets for a storage
 func (p *Processor) GetAssetsByStorageId(storageId uuid.UUID) ([]Model[any], error) {
 	t := tenant.MustFromContext(p.ctx)
-	return GetByStorageId(p.l, p.db, t.Id())(storageId)
+	return GetByStorageId(p.db, t.Id())(storageId)
 }
 
 // StorageEntity is a minimal storage entity for cross-package queries
@@ -71,7 +72,7 @@ func (p *Processor) GetOrCreateStorageId(worldId world.Id, accountId uint32) (uu
 	}
 
 	// Storage not found, create it - convert to byte for database entity
-	if err == gorm.ErrRecordNotFound {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		storageEntity = StorageEntity{
 			TenantId:  t.Id(),
 			Id:        uuid.New(),
@@ -280,7 +281,7 @@ func (p *Processor) DecorateAll(assets []Model[any]) ([]Model[any], error) {
 
 // GetByStorageIdDecorated retrieves and decorates all assets for a storage
 func (p *Processor) GetByStorageIdDecorated(tenantId uuid.UUID, storageId uuid.UUID) ([]Model[any], error) {
-	assets, err := GetByStorageId(p.l, p.db, tenantId)(storageId)
+	assets, err := GetByStorageId(p.db, tenantId)(storageId)
 	if err != nil {
 		return nil, err
 	}

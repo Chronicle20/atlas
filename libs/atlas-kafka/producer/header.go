@@ -3,6 +3,7 @@ package producer
 import (
 	"context"
 	"encoding/binary"
+
 	"github.com/Chronicle20/atlas-tenant"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"

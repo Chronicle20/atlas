@@ -1,0 +1,10 @@
+{
+  "id": "subway-kc-nlc",
+  "type": "vessels",
+  "attributes": {
+    "name": "subway-kc-nlc",
+    "routeAID": "subway-kc-nlc",
+    "routeBID": "subway-nlc-kc",
+    "turnaroundDelay": 1
+  }
+}

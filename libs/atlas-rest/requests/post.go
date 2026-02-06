@@ -3,10 +3,11 @@ package requests
 import (
 	"bytes"
 	"context"
+	"net/http"
+
 	"github.com/Chronicle20/atlas-rest/retry"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
-	"net/http"
 )
 
 func createOrUpdate[A any](l logrus.FieldLogger, ctx context.Context) func(method string) func(url string, input interface{}, configurators ...Configurator) (A, error) {

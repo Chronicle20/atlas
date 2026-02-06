@@ -1,8 +1,9 @@
 package wishlist
 
 import (
-	"github.com/google/uuid"
 	"testing"
+
+	"github.com/google/uuid"
 )
 
 func TestTransform(t *testing.T) {

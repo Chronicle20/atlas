@@ -2,12 +2,13 @@ package validation
 
 import (
 	"atlas-query-aggregator/rest"
+	"net/http"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
-	"net/http"
 )
 
 // InitResource registers the routes with the router

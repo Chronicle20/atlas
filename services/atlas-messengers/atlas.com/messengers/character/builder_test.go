@@ -1,6 +1,7 @@
 package character
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/Chronicle20/atlas-constants/channel"
@@ -49,7 +50,7 @@ func TestBuilderBuildMissingId(t *testing.T) {
 		SetName("TestCharacter")
 
 	_, err := b.Build()
-	if err != ErrMissingId {
+	if !errors.Is(err, ErrMissingId) {
 		t.Fatalf("expected ErrMissingId, got %v", err)
 	}
 }
@@ -60,7 +61,7 @@ func TestBuilderBuildMissingName(t *testing.T) {
 		SetId(1)
 
 	_, err := b.Build()
-	if err != ErrMissingName {
+	if !errors.Is(err, ErrMissingName) {
 		t.Fatalf("expected ErrMissingName, got %v", err)
 	}
 }
@@ -71,7 +72,7 @@ func TestBuilderBuildMissingBoth(t *testing.T) {
 
 	_, err := b.Build()
 	// Should fail on ID check first
-	if err != ErrMissingId {
+	if !errors.Is(err, ErrMissingId) {
 		t.Fatalf("expected ErrMissingId (checked first), got %v", err)
 	}
 }
@@ -151,7 +152,7 @@ func TestBuilderEmptyName(t *testing.T) {
 		SetName("")
 
 	_, err := b.Build()
-	if err != ErrMissingName {
+	if !errors.Is(err, ErrMissingName) {
 		t.Fatalf("expected ErrMissingName for empty string, got %v", err)
 	}
 }

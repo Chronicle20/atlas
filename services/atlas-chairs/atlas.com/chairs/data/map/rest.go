@@ -1,8 +1,9 @@
 package _map
 
 import (
-	"github.com/jtumidanski/api2go/jsonapi"
 	"strconv"
+
+	"github.com/jtumidanski/api2go/jsonapi"
 )
 
 type RestModel struct {
@@ -27,15 +28,15 @@ func (r *RestModel) SetID(idStr string) error {
 	return nil
 }
 
-func (r *RestModel) SetToOneReferenceID(name string, ID string) error {
+func (r *RestModel) SetToOneReferenceID(_ string, _ string) error {
 	return nil
 }
 
-func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
+func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error {
 	return nil
 }
 
-func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonapi.Data) error {
+func (r *RestModel) SetReferencedStructs(_ map[string]map[string]jsonapi.Data) error {
 	return nil
 }
 

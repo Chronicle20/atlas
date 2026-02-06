@@ -22,7 +22,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 	}
 }
 
-func handleSeedDrops(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+func handleSeedDrops(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Extract tenant before spawning goroutine (request context will be cancelled after response)
 		t := tenant.MustFromContext(d.Context())

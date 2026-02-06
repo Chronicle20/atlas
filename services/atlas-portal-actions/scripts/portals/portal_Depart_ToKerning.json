@@ -1,0 +1,23 @@
+{
+  "portalId": "Depart_ToKerning",
+  "mapId": 103000310,
+  "description": "Kerning Square Station - Train departure to Kerning Subway Station",
+  "rules": [
+    {
+      "id": "board_train",
+      "conditions": [],
+      "onMatch": {
+        "allow": true,
+        "operations": [
+          {
+            "type": "start_instance_transport",
+            "params": {
+              "routeName": "kerning-train-to-subway",
+              "failureMessage": "The passenger wagon is already full. Try again a bit later."
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

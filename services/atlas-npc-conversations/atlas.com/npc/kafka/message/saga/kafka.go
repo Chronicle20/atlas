@@ -19,6 +19,7 @@ type StatusEventCompletedBody struct {
 }
 
 type StatusEventFailedBody struct {
+	ErrorCode  string `json:"errorCode"`
 	Reason     string `json:"reason"`
 	FailedStep string `json:"failedStep"`
 }

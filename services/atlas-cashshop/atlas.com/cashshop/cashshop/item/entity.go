@@ -1,9 +1,10 @@
 package item
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-	"time"
 )
 
 func Migration(db *gorm.DB) error {

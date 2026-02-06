@@ -7,6 +7,8 @@ import (
 	"atlas-account/kafka/producer"
 	"context"
 	"errors"
+	"time"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -14,7 +16,6 @@ import (
 	"go.opentelemetry.io/otel"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
-	"time"
 )
 
 const (

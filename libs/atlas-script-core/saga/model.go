@@ -130,6 +130,9 @@ const (
 	ShowHint        Action = "show_hint"
 	BlockPortal     Action = "block_portal"
 	UnblockPortal   Action = "unblock_portal"
+
+	// Transport actions
+	StartInstanceTransport Action = "start_instance_transport"
 )
 
 // Step represents a single step within a saga.
@@ -465,6 +468,15 @@ type SpawnReactorDropsPayload struct {
 	MinItems       uint32     `json:"minItems"`       // Minimum guaranteed drops (padded with meso)
 }
 
+// StartInstanceTransportPayload represents the payload required to start an instance-based transport.
+// This is a synchronous REST call to atlas-transports service that warps the character to a transit map.
+type StartInstanceTransportPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to start transport for
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	RouteName   string     `json:"routeName"`   // Route name (resolved to UUID at runtime by saga-orchestrator)
+}
+
 // Custom UnmarshalJSON for Step[T] to handle the generics
 func (s *Step[T]) UnmarshalJSON(data []byte) error {
 	type Alias Step[T] // Alias to avoid recursion
@@ -676,6 +688,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case SpawnReactorDrops:
 		var payload SpawnReactorDropsPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case StartInstanceTransport:
+		var payload StartInstanceTransportPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

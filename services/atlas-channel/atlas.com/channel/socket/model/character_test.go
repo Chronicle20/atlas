@@ -1,10 +1,11 @@
 package model
 
 import (
+	"testing"
+
 	"github.com/Chronicle20/atlas-constants/character"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
-	"testing"
 )
 
 func TestShiftGeneration(t *testing.T) {

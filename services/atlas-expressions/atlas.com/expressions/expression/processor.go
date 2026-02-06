@@ -80,7 +80,7 @@ type changeInput struct {
 }
 
 // Clear clears the expression for a character
-func (p *ProcessorImpl) Clear(mb *message.Buffer, transactionId uuid.UUID, characterId uint32) (Model, error) {
+func (p *ProcessorImpl) Clear(_ *message.Buffer, _ uuid.UUID, characterId uint32) (Model, error) {
 	p.l.Debugf("Clearing expression for character [%d].", characterId)
 	GetRegistry().clear(p.t, characterId)
 	// Return an empty model since we're clearing

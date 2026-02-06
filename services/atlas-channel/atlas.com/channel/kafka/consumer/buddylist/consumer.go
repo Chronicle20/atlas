@@ -8,7 +8,7 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
-	"github.com/Chronicle20/atlas-constants/world"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -50,7 +50,7 @@ func handleStatusEventBuddyAdded(sc server.Model, wp writer.Producer) message.Ha
 			return
 		}
 
-		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(c.WorldId)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), c.WorldId) {
 			return
 		}
 
@@ -67,7 +67,7 @@ func handleStatusEventBuddyRemoved(sc server.Model, wp writer.Producer) message.
 			return
 		}
 
-		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(c.WorldId)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), c.WorldId) {
 			return
 		}
 
@@ -106,7 +106,7 @@ func handleStatusEventBuddyUpdated(sc server.Model, wp writer.Producer) message.
 			return
 		}
 
-		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(c.WorldId)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), c.WorldId) {
 			return
 		}
 
@@ -134,7 +134,7 @@ func handleStatusEventBuddyChannelChange(sc server.Model, wp writer.Producer) me
 			return
 		}
 
-		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(c.WorldId)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), c.WorldId) {
 			return
 		}
 
@@ -161,7 +161,7 @@ func handleStatusEventBuddyCapacityChange(sc server.Model, wp writer.Producer) m
 			return
 		}
 
-		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(c.WorldId)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), c.WorldId) {
 			return
 		}
 
@@ -188,7 +188,7 @@ func handleStatusEventBuddyError(sc server.Model, wp writer.Producer) message.Ha
 			return
 		}
 
-		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(c.WorldId)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), c.WorldId) {
 			return
 		}
 

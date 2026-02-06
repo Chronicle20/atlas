@@ -1,0 +1,16 @@
+{
+  "id": "subway-nlc-kc",
+  "type": "routes",
+  "attributes": {
+    "name": "subway-nlc-kc",
+    "startMapId": 600010001,
+    "stagingMapId": 600010002,
+    "enRouteMapIds": [600010003],
+    "destinationMapId": 103000100,
+    "observationMapId": 600010001,
+    "boardingWindowDuration": 1,
+    "preDepartureDuration": 0,
+    "travelDuration": 4,
+    "cycleInterval": 5
+  }
+}

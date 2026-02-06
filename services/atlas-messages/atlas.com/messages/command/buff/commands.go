@@ -15,7 +15,6 @@ import (
 
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
-	_map2 "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
 )
@@ -97,7 +96,7 @@ func BuffCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(ch
 					return func(l logrus.FieldLogger) func(ctx context.Context) error {
 						return func(ctx context.Context) error {
 							msgProc := message.NewProcessor(l, ctx)
-							f := field.NewBuilder(ch.WorldId(), ch.Id(), _map2.Id(c.MapId())).Build()
+							f := field.NewBuilder(ch.WorldId(), ch.Id(), c.MapId()).Build()
 							return msgProc.IssuePinkText(f, 0, fmt.Sprintf("Unknown skill: %s", skillQuery), []uint32{c.Id()})
 						}
 					}, true
@@ -115,7 +114,7 @@ func BuffCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(ch
 					return func(l logrus.FieldLogger) func(ctx context.Context) error {
 						return func(ctx context.Context) error {
 							msgProc := message.NewProcessor(l, ctx)
-							f := field.NewBuilder(ch.WorldId(), ch.Id(), _map2.Id(c.MapId())).Build()
+							f := field.NewBuilder(ch.WorldId(), ch.Id(), c.MapId()).Build()
 							return msgProc.IssuePinkText(f, 0, fmt.Sprintf("No buff skills match: %s", skillQuery), []uint32{c.Id()})
 						}
 					}, true
@@ -126,7 +125,7 @@ func BuffCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(ch
 					return func(l logrus.FieldLogger) func(ctx context.Context) error {
 						return func(ctx context.Context) error {
 							msgProc := message.NewProcessor(l, ctx)
-							f := field.NewBuilder(ch.WorldId(), ch.Id(), _map2.Id(c.MapId())).Build()
+							f := field.NewBuilder(ch.WorldId(), ch.Id(), c.MapId()).Build()
 							_ = msgProc.IssuePinkText(f, 0, fmt.Sprintf("Multiple skills match \"%s\":", skillQuery), []uint32{c.Id()})
 							for _, s := range buffableSkills {
 								_ = msgProc.IssuePinkText(f, 0, fmt.Sprintf("  #%d - %s", s.Id(), s.Name()), []uint32{c.Id()})
@@ -144,7 +143,7 @@ func BuffCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(ch
 				return func(l logrus.FieldLogger) func(ctx context.Context) error {
 					return func(ctx context.Context) error {
 						msgProc := message.NewProcessor(l, ctx)
-						f := field.NewBuilder(ch.WorldId(), ch.Id(), _map2.Id(c.MapId())).Build()
+						f := field.NewBuilder(ch.WorldId(), ch.Id(), c.MapId()).Build()
 						return msgProc.IssuePinkText(f, 0, fmt.Sprintf("Skill %s has no buff effects.", foundSkill.Name()), []uint32{c.Id()})
 					}
 				}, true
@@ -154,7 +153,7 @@ func BuffCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(ch
 			if target == "me" {
 				idProvider = model.ToSliceProvider(model.FixedProvider(c.Id()))
 			} else if target == "map" {
-				f := field.NewBuilder(ch.WorldId(), ch.Id(), _map2.Id(c.MapId())).Build()
+				f := field.NewBuilder(ch.WorldId(), ch.Id(), c.MapId()).Build()
 				idProvider = mp.CharacterIdsInFieldProvider(f)
 			} else {
 				idProvider = model.ToSliceProvider(cp.IdByNameProvider(target))
@@ -164,7 +163,7 @@ func BuffCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(ch
 				return func(ctx context.Context) error {
 					bp := buff.NewProcessor(l, ctx)
 					msgProc := message.NewProcessor(l, ctx)
-					f := field.NewBuilder(ch.WorldId(), ch.Id(), _map2.Id(c.MapId())).Build()
+					f := field.NewBuilder(ch.WorldId(), ch.Id(), c.MapId()).Build()
 
 					ids, err := idProvider()
 					if err != nil {

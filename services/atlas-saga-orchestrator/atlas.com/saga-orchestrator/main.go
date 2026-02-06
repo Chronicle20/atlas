@@ -19,9 +19,10 @@ import (
 	"atlas-saga-orchestrator/saga"
 	"atlas-saga-orchestrator/service"
 	"atlas-saga-orchestrator/tracing"
+	"os"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
-	"os"
 )
 
 const serviceName = "atlas-saga-orchestrator"

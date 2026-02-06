@@ -5,6 +5,8 @@ import (
 	consumer2 "atlas-account/kafka/consumer"
 	account2 "atlas-account/kafka/message/account"
 	"context"
+	"strings"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -12,7 +14,6 @@ import (
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"strings"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {

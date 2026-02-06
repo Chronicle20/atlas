@@ -10,7 +10,6 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas-constants/invite"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -48,7 +47,7 @@ func handleCreatedStatusEvent(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId) {
 			return
 		}
 
@@ -122,7 +121,7 @@ func handleRejectedStatusEvent(sc server.Model, wp writer.Producer) message.Hand
 			return
 		}
 
-		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId) {
 			return
 		}
 

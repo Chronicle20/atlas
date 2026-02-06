@@ -1,8 +1,9 @@
 package portal
 
 import (
-	_map "github.com/Chronicle20/atlas-constants/map"
 	"strconv"
+
+	_map "github.com/Chronicle20/atlas-constants/map"
 )
 
 type RestModel struct {

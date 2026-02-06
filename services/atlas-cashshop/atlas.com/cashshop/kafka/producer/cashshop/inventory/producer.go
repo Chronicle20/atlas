@@ -2,6 +2,7 @@ package inventory
 
 import (
 	inventory2 "atlas-cashshop/kafka/message/cashshop/inventory"
+
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"

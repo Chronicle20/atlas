@@ -4,6 +4,7 @@ import (
 	"atlas-channel/character"
 	"atlas-channel/socket/model"
 	"context"
+
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 )

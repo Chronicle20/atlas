@@ -53,7 +53,7 @@ func Extract(rm RestModel) (Model, error) {
 	}
 	return Model{
 		id:                  rm.Id,
-		worldId:             world.Id(rm.WorldId),
+		worldId:             rm.WorldId,
 		name:                rm.Name,
 		notice:              rm.Notice,
 		points:              rm.Points,

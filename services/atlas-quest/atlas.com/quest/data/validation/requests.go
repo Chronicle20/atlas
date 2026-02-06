@@ -2,6 +2,7 @@ package validation
 
 import (
 	"atlas-quest/data"
+
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 

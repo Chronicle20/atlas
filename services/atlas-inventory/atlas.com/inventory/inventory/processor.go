@@ -8,6 +8,7 @@ import (
 	"atlas-inventory/kafka/producer"
 	"context"
 	"errors"
+
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"

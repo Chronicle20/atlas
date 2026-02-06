@@ -12,9 +12,6 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
-	"github.com/Chronicle20/atlas-constants/channel"
-	_map2 "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -57,7 +54,7 @@ func handleGeneralChat(sc server.Model, wp writer.Producer) message.Handler[mess
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
 			return
 		}
 
@@ -67,7 +64,7 @@ func handleGeneralChat(sc server.Model, wp writer.Producer) message.Handler[mess
 			return
 		}
 
-		err = _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(_map2.Id(e.MapId), uuid.Nil), showGeneralChatForSession(l)(ctx)(wp)(e, c.Gm()))
+		err = _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, uuid.Nil), showGeneralChatForSession(l)(ctx)(wp)(e, c.Gm()))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to send message from character [%d] to map [%d].", e.ActorId, e.MapId)
 		}
@@ -90,7 +87,7 @@ func handleMultiChat(sc server.Model, wp writer.Producer) message.Handler[messag
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
 			return
 		}
 
@@ -125,7 +122,7 @@ func handleWhisperChat(sc server.Model, wp writer.Producer) message.Handler[mess
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
 			return
 		}
 
@@ -160,7 +157,7 @@ func handleMessengerChat(sc server.Model, wp writer.Producer) message.Handler[me
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
 			return
 		}
 
@@ -180,7 +177,7 @@ func handlePetChat(sc server.Model, wp writer.Producer) message.Handler[message3
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
 			return
 		}
 
@@ -200,7 +197,7 @@ func handlePinkChat(sc server.Model, wp writer.Producer) message.Handler[message
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
 			return
 		}
 
@@ -213,7 +210,7 @@ func handlePinkChat(sc server.Model, wp writer.Producer) message.Handler[message
 
 		// TODO retrieve medal name
 		for _, cid := range e.Body.Recipients {
-			bp := session.Announce(l)(ctx)(wp)(writer.WorldMessage)(writer.WorldMessagePinkTextBody(l, sc.Tenant())("", characterName, e.Message))
+			bp := session.Announce(l)(ctx)(wp)(writer.WorldMessage)(writer.WorldMessagePinkTextBody(l)("", characterName, e.Message))
 			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(cid, bp)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to send message of type [%s] to character [%d].", e.Type, cid)

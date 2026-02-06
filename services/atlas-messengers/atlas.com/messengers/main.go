@@ -8,9 +8,10 @@ import (
 	"atlas-messengers/messenger"
 	"atlas-messengers/service"
 	"atlas-messengers/tracing"
+	"os"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
-	"os"
 )
 
 const serviceName = "atlas-messengers"

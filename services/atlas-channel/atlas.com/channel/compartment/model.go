@@ -2,6 +2,7 @@ package compartment
 
 import (
 	"atlas-channel/asset"
+
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/google/uuid"
 )
@@ -60,4 +61,3 @@ func (m Model) FindByReferenceId(referenceId uint32) (*asset.Model[any], bool) {
 	}
 	return nil, false
 }
-

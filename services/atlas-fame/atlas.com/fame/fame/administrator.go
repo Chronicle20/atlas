@@ -1,10 +1,11 @@
 package fame
 
 import (
+	"time"
+
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-	"time"
 )
 
 func create(db *gorm.DB, t tenant.Model, characterId uint32, targetId uint32, amount int8) (Model, error) {

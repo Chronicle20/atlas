@@ -46,6 +46,7 @@ func changeMapProvider(f field.Model, characterId uint32, portalId uint32) model
 		Body: character2.ChangeMapBody{
 			ChannelId: f.ChannelId(),
 			MapId:     f.MapId(),
+			Instance:  f.Instance(),
 			PortalId:  portalId,
 		},
 	}

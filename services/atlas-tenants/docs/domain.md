@@ -40,15 +40,21 @@ Represents a game server tenant with identification, region, and version informa
 
 ### Responsibility
 
-Manages tenant-specific configuration resources including routes and vessels.
+Manages tenant-specific configuration resources including routes, vessels, and instance routes. Supports seeding configuration data from JSON files on the filesystem.
 
 ### Core Models
 
 **Model**
 - `id` (uuid.UUID): Unique identifier
 - `tenantID` (uuid.UUID): Associated tenant ID
-- `resourceName` (string): Type of resource (routes, vessels)
+- `resourceName` (string): Type of resource (routes, vessels, instance-routes)
 - `resourceData` (json.RawMessage): JSON data for the resource
+
+**SeedResult**
+- `deletedCount` (int): Number of existing resources deleted
+- `createdCount` (int): Number of resources created
+- `failedCount` (int): Number of resources that failed to create
+- `errors` ([]string): Error messages for failed operations
 
 ### Invariants
 
@@ -80,3 +86,20 @@ Manages tenant-specific configuration resources including routes and vessels.
 - `GetAllVessels`: Retrieves all vessels for a tenant
 - `VesselByIdProvider`: Returns a provider for a vessel by ID
 - `AllVesselsProvider`: Returns a provider for all vessels for a tenant
+
+**Processor (Instance Route Operations)**
+- `CreateInstanceRoute`: Creates a new instance route configuration
+- `CreateInstanceRouteAndEmit`: Creates a new instance route configuration and emits a Kafka event
+- `UpdateInstanceRoute`: Updates an existing instance route configuration
+- `UpdateInstanceRouteAndEmit`: Updates an existing instance route configuration and emits a Kafka event
+- `DeleteInstanceRoute`: Deletes an instance route configuration
+- `DeleteInstanceRouteAndEmit`: Deletes an instance route configuration and emits a Kafka event
+- `GetInstanceRouteById`: Retrieves an instance route by ID
+- `GetAllInstanceRoutes`: Retrieves all instance routes for a tenant
+- `InstanceRouteByIdProvider`: Returns a provider for an instance route by ID
+- `AllInstanceRoutesProvider`: Returns a provider for all instance routes for a tenant
+
+**Processor (Seed Operations)**
+- `SeedRoutes`: Deletes all existing routes for a tenant and loads them from seed files
+- `SeedInstanceRoutes`: Deletes all existing instance routes for a tenant and loads them from seed files
+- `SeedVessels`: Deletes all existing vessels for a tenant and loads them from seed files

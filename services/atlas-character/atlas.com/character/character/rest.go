@@ -1,10 +1,11 @@
 package character
 
 import (
+	"strconv"
+
 	"github.com/Chronicle20/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
-	"strconv"
 )
 
 type RestModel struct {
@@ -58,7 +59,7 @@ func (r *RestModel) SetID(strId string) error {
 	return nil
 }
 
-func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
+func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error {
 	return nil
 }
 

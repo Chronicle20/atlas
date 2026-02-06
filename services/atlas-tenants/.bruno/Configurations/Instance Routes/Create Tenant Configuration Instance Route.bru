@@ -1,0 +1,34 @@
+meta {
+  name: Create Tenant Configuration Instance Route
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{scheme}}://{{host}}:{{port}}/api/tenants/{{tenantId}}/configurations/instance-routes
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "data": {
+      "type": "instance-routes",
+      "id": "24bb11dd-44aa-48c2-998e-a1f1644b9130",
+      "attributes": {
+        "name": "kerning-square-to-train",
+        "startMapId": 103000100,
+        "transitMapId": 103000302,
+        "destinationMapId": 103000310,
+        "capacity": 10,
+        "boardingWindowSeconds": 1,
+        "travelDurationSeconds": 10,
+        "transitMessage": "The next stop is at Kerning Square Station. The exit is to your left."
+      }
+    }
+  }
+}
+
+vars:pre-request {
+  tenantId: 083839c6-c47c-42a6-9585-76492795d123
+}

@@ -25,7 +25,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
-func (p *ProcessorImpl) CountInMap(transactionId uuid.UUID, field field.Model) (int, error) {
+func (p *ProcessorImpl) CountInMap(_ uuid.UUID, field field.Model) (int, error) {
 	data, err := requestInMap(field)(p.l, p.ctx)
 	if err != nil {
 		return 0, err
@@ -33,7 +33,7 @@ func (p *ProcessorImpl) CountInMap(transactionId uuid.UUID, field field.Model) (
 	return len(data), nil
 }
 
-func (p *ProcessorImpl) CreateMonster(transactionId uuid.UUID, field field.Model, monsterId uint32, x int16, y int16, fh int16, team int8) {
+func (p *ProcessorImpl) CreateMonster(_ uuid.UUID, field field.Model, monsterId uint32, x int16, y int16, fh int16, team int8) {
 	_, err := requestCreate(field, monsterId, x, y, fh, team)(p.l, p.ctx)
 	if err != nil {
 		p.l.WithError(err).Errorf("Creating monster for field [%s].", field.Id())

@@ -17,6 +17,10 @@ import (
 	"atlas-login/tasks"
 	"atlas-login/tracing"
 	"fmt"
+	"os"
+	"strconv"
+	"time"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	socket2 "github.com/Chronicle20/atlas-socket"
 	"github.com/Chronicle20/atlas-socket/request"
@@ -24,9 +28,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
-	"os"
-	"strconv"
-	"time"
 )
 
 const serviceName = "atlas-login"

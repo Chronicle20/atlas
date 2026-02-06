@@ -2,14 +2,15 @@ package guild
 
 import (
 	"atlas-guilds/rest"
+	"net/http"
+	"strconv"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"net/http"
-	"strconv"
 )
 
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
@@ -74,7 +75,7 @@ func handleGetGuild(db *gorm.DB) rest.GetHandler {
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
-				
+
 				// Marshal response
 				query := r.URL.Query()
 				queryParams := jsonapi.ParseQueryFields(&query)

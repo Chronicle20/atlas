@@ -2,13 +2,14 @@ package mock
 
 import (
 	"atlas-query-aggregator/marriage"
+
 	"github.com/Chronicle20/atlas-model/model"
 )
 
 // ProcessorImpl is a mock implementation of the marriage.Processor interface
 type ProcessorImpl struct {
-	GetMarriageGiftsFunc     func(characterId uint32) model.Provider[marriage.Model]
-	HasUnclaimedGiftsFunc    func(characterId uint32) model.Provider[bool]
+	GetMarriageGiftsFunc      func(characterId uint32) model.Provider[marriage.Model]
+	HasUnclaimedGiftsFunc     func(characterId uint32) model.Provider[bool]
 	GetUnclaimedGiftCountFunc func(characterId uint32) model.Provider[int]
 }
 

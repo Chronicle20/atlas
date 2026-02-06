@@ -1,8 +1,9 @@
 package route
 
 import (
-	_map "github.com/Chronicle20/atlas-constants/map"
 	"time"
+
+	_map "github.com/Chronicle20/atlas-constants/map"
 
 	"github.com/google/uuid"
 )

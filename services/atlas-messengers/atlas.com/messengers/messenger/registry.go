@@ -1,8 +1,9 @@
 package messenger
 
 import (
-	"github.com/Chronicle20/atlas-tenant"
 	"sync"
+
+	"github.com/Chronicle20/atlas-tenant"
 )
 
 type Registry struct {

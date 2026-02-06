@@ -3,15 +3,16 @@ package _map
 import (
 	npc2 "atlas-data/npc"
 	"context"
-	"github.com/Chronicle20/atlas-rest/server"
-	tenant "github.com/Chronicle20/atlas-tenant"
-	"github.com/jtumidanski/api2go/jsonapi"
-	"github.com/sirupsen/logrus/hooks/test"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
 	"strconv"
 	"testing"
+
+	"github.com/Chronicle20/atlas-rest/server"
+	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/jtumidanski/api2go/jsonapi"
+	"github.com/sirupsen/logrus/hooks/test"
 )
 
 type Server struct {

@@ -5,6 +5,7 @@ import (
 	consumer2 "atlas-character/kafka/consumer"
 	drop2 "atlas-character/kafka/message/drop"
 	"context"
+
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"

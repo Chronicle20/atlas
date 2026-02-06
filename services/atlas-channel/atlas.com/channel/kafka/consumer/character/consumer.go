@@ -12,11 +12,8 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
-	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
-	_map2 "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/stat"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -177,7 +174,7 @@ func handleStatusEventMapChanged(sc server.Model, wp writer.Producer) func(l log
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), world.Id(event.WorldId), channel.Id(event.Body.ChannelId)) {
+		if !sc.Is(tenant.MustFromContext(ctx), event.WorldId, event.Body.ChannelId) {
 			return
 		}
 
@@ -197,9 +194,9 @@ func warpCharacter(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 						return err
 					}
 
-					s = session.NewProcessor(l, ctx).SetMapId(s.SessionId(), _map2.Id(event.Body.TargetMapId))
+					s = session.NewProcessor(l, ctx).SetMapId(s.SessionId(), event.Body.TargetMapId)
 
-					err = session.Announce(l)(ctx)(wp)(writer.SetField)(writer.WarpToMapBody(l, t)(s.ChannelId(), _map2.Id(event.Body.TargetMapId), event.Body.TargetPortalId, c.Hp()))(s)
+					err = session.Announce(l)(ctx)(wp)(writer.SetField)(writer.WarpToMapBody(t)(s.ChannelId(), event.Body.TargetMapId, event.Body.TargetPortalId, c.Hp()))(s)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to show set field response for character [%d]", c.Id())
 						return err
@@ -217,7 +214,7 @@ func handleStatusEventExperienceChanged(sc server.Model, wp writer.Producer) mes
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.Body.ChannelId)) {
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.Body.ChannelId) {
 			return
 		}
 
@@ -369,7 +366,7 @@ func handleStatusEventLevelChanged(sc server.Model, wp writer.Producer) message.
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.Body.ChannelId)) {
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.Body.ChannelId) {
 			return
 		}
 

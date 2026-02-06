@@ -2,8 +2,9 @@ package templates
 
 import (
 	"atlas-data/xml"
-	"github.com/sirupsen/logrus/hooks/test"
 	"testing"
+
+	"github.com/sirupsen/logrus/hooks/test"
 )
 
 const testXML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -144,10 +145,6 @@ const testXML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
         </imgdir>
     </imgdir>
 </imgdir>`
-
-func Identity[M any](m M) M {
-	return m
-}
 
 func TestRead(t *testing.T) {
 	l, _ := test.NewNullLogger()

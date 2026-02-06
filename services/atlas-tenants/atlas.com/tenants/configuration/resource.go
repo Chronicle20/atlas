@@ -2,14 +2,16 @@ package configuration
 
 import (
 	"atlas-tenants/rest"
+	"encoding/json"
 	"errors"
+	"net/http"
+
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"net/http"
 )
 
 // GetAllRoutesHandler handles GET /tenants/{tenantId}/configurations/routes
@@ -384,6 +386,254 @@ func DeleteVesselHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 	}
 }
 
+// GetAllInstanceRoutesHandler handles GET /tenants/{tenantId}/configurations/instance-routes
+func GetAllInstanceRoutesHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				processor := NewProcessor(d.Logger(), d.Context(), db)
+
+				routes, err := processor.GetAllInstanceRoutes(tenantId)
+				if err != nil {
+					if errors.Is(err, gorm.ErrRecordNotFound) {
+						d.Logger().Info("No instance routes found for tenant, returning empty array")
+						routes = []map[string]interface{}{}
+					} else {
+						d.Logger().WithError(err).Error("Failed to get instance routes")
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+				}
+
+				restModels := make([]InstanceRouteRestModel, 0, len(routes))
+				for _, route := range routes {
+					rm, err := TransformInstanceRoute(route)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to transform instance route")
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+					restModels = append(restModels, rm)
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[[]InstanceRouteRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(restModels)
+			}
+		})
+	}
+}
+
+// GetInstanceRouteByIdHandler handles GET /tenants/{tenantId}/configurations/instance-routes/{instanceRouteId}
+func GetInstanceRouteByIdHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return rest.ParseInstanceRouteId(d.Logger(), func(instanceRouteId string) http.HandlerFunc {
+				return func(w http.ResponseWriter, r *http.Request) {
+					processor := NewProcessor(d.Logger(), d.Context(), db)
+
+					route, err := processor.GetInstanceRouteById(tenantId, instanceRouteId)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to get instance route")
+						w.WriteHeader(http.StatusNotFound)
+						return
+					}
+
+					rm, err := TransformInstanceRoute(route)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to transform instance route")
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+
+					query := r.URL.Query()
+					queryParams := jsonapi.ParseQueryFields(&query)
+					server.MarshalResponse[InstanceRouteRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+				}
+			})
+		})
+	}
+}
+
+// CreateInstanceRouteHandler handles POST /tenants/{tenantId}/configurations/instance-routes
+func CreateInstanceRouteHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext, model InstanceRouteRestModel) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, model InstanceRouteRestModel) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				route, err := ExtractInstanceRoute(model)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to extract instance route data")
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+
+				processor := NewProcessor(d.Logger(), d.Context(), db)
+				_, err = processor.CreateInstanceRouteAndEmit(tenantId, route)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to create instance route")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				routeId := ""
+				if id, ok := route["id"].(string); ok {
+					routeId = id
+				}
+
+				createdRoute, err := processor.GetInstanceRouteById(tenantId, routeId)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to get created instance route")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				rm, err := TransformInstanceRoute(createdRoute)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to transform instance route")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				w.WriteHeader(http.StatusCreated)
+				server.MarshalResponse[InstanceRouteRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+			}
+		})
+	}
+}
+
+// UpdateInstanceRouteHandler handles PATCH /tenants/{tenantId}/configurations/instance-routes/{instanceRouteId}
+func UpdateInstanceRouteHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext, model InstanceRouteRestModel) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, model InstanceRouteRestModel) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return rest.ParseInstanceRouteId(d.Logger(), func(instanceRouteId string) http.HandlerFunc {
+				return func(w http.ResponseWriter, r *http.Request) {
+					route, err := ExtractInstanceRoute(model)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to extract instance route data")
+						w.WriteHeader(http.StatusBadRequest)
+						return
+					}
+
+					processor := NewProcessor(d.Logger(), d.Context(), db)
+					_, err = processor.UpdateInstanceRouteAndEmit(tenantId, instanceRouteId, route)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to update instance route")
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+
+					updatedRoute, err := processor.GetInstanceRouteById(tenantId, instanceRouteId)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to get updated instance route")
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+
+					rm, err := TransformInstanceRoute(updatedRoute)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to transform instance route")
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+
+					query := r.URL.Query()
+					queryParams := jsonapi.ParseQueryFields(&query)
+					server.MarshalResponse[InstanceRouteRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+				}
+			})
+		})
+	}
+}
+
+// DeleteInstanceRouteHandler handles DELETE /tenants/{tenantId}/configurations/instance-routes/{instanceRouteId}
+func DeleteInstanceRouteHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return rest.ParseInstanceRouteId(d.Logger(), func(instanceRouteId string) http.HandlerFunc {
+				return func(w http.ResponseWriter, r *http.Request) {
+					processor := NewProcessor(d.Logger(), d.Context(), db)
+					err := processor.DeleteInstanceRouteAndEmit(tenantId, instanceRouteId)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to delete instance route")
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+
+					w.WriteHeader(http.StatusNoContent)
+				}
+			})
+		})
+	}
+}
+
+// SeedRoutesHandler handles POST /tenants/{tenantId}/configurations/routes/seed
+func SeedRoutesHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				processor := NewProcessor(d.Logger(), d.Context(), db)
+				result, err := processor.SeedRoutes(tenantId)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to seed routes")
+					w.WriteHeader(http.StatusInternalServerError)
+					json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+					return
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				json.NewEncoder(w).Encode(result)
+			}
+		})
+	}
+}
+
+// SeedInstanceRoutesHandler handles POST /tenants/{tenantId}/configurations/instance-routes/seed
+func SeedInstanceRoutesHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				processor := NewProcessor(d.Logger(), d.Context(), db)
+				result, err := processor.SeedInstanceRoutes(tenantId)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to seed instance routes")
+					w.WriteHeader(http.StatusInternalServerError)
+					json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+					return
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				json.NewEncoder(w).Encode(result)
+			}
+		})
+	}
+}
+
+// SeedVesselsHandler handles POST /tenants/{tenantId}/configurations/vessels/seed
+func SeedVesselsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				processor := NewProcessor(d.Logger(), d.Context(), db)
+				result, err := processor.SeedVessels(tenantId)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to seed vessels")
+					w.WriteHeader(http.StatusInternalServerError)
+					json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+					return
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				json.NewEncoder(w).Encode(result)
+			}
+		})
+	}
+}
+
 // RegisterRoutes registers the configuration routes
 func RegisterRoutes(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteInitializer {
 	return func(si jsonapi.ServerInformation) server.RouteInitializer {
@@ -391,8 +641,10 @@ func RegisterRoutes(db *gorm.DB) func(si jsonapi.ServerInformation) server.Route
 			registerHandler := rest.RegisterHandler(l)(si)
 			registerRouteInputHandler := rest.RegisterInputHandler[RouteRestModel](l)(si)
 			registerVesselInputHandler := rest.RegisterInputHandler[VesselRestModel](l)(si)
+			registerInstanceRouteInputHandler := rest.RegisterInputHandler[InstanceRouteRestModel](l)(si)
 
 			// Route endpoints
+			r.HandleFunc("/tenants/{tenantId}/configurations/routes/seed", registerHandler("seed_routes", SeedRoutesHandler(db))).Methods(http.MethodPost)
 			r.HandleFunc("/tenants/{tenantId}/configurations/routes", registerHandler("get_all_routes", GetAllRoutesHandler(db))).Methods(http.MethodGet)
 			r.HandleFunc("/tenants/{tenantId}/configurations/routes/{routeId}", registerHandler("get_route_by_id", GetRouteByIdHandler(db))).Methods(http.MethodGet)
 			r.HandleFunc("/tenants/{tenantId}/configurations/routes", registerRouteInputHandler("create_route", CreateRouteHandler(db))).Methods(http.MethodPost)
@@ -400,11 +652,20 @@ func RegisterRoutes(db *gorm.DB) func(si jsonapi.ServerInformation) server.Route
 			r.HandleFunc("/tenants/{tenantId}/configurations/routes/{routeId}", registerHandler("delete_route", DeleteRouteHandler(db))).Methods(http.MethodDelete)
 
 			// Vessel endpoints
+			r.HandleFunc("/tenants/{tenantId}/configurations/vessels/seed", registerHandler("seed_vessels", SeedVesselsHandler(db))).Methods(http.MethodPost)
 			r.HandleFunc("/tenants/{tenantId}/configurations/vessels", registerHandler("get_all_vessels", GetAllVesselsHandler(db))).Methods(http.MethodGet)
 			r.HandleFunc("/tenants/{tenantId}/configurations/vessels/{vesselId}", registerHandler("get_vessel_by_id", GetVesselByIdHandler(db))).Methods(http.MethodGet)
 			r.HandleFunc("/tenants/{tenantId}/configurations/vessels", registerVesselInputHandler("create_vessel", CreateVesselHandler(db))).Methods(http.MethodPost)
 			r.HandleFunc("/tenants/{tenantId}/configurations/vessels/{vesselId}", registerVesselInputHandler("update_vessel", UpdateVesselHandler(db))).Methods(http.MethodPatch)
 			r.HandleFunc("/tenants/{tenantId}/configurations/vessels/{vesselId}", registerHandler("delete_vessel", DeleteVesselHandler(db))).Methods(http.MethodDelete)
+
+			// Instance route endpoints
+			r.HandleFunc("/tenants/{tenantId}/configurations/instance-routes/seed", registerHandler("seed_instance_routes", SeedInstanceRoutesHandler(db))).Methods(http.MethodPost)
+			r.HandleFunc("/tenants/{tenantId}/configurations/instance-routes", registerHandler("get_all_instance_routes", GetAllInstanceRoutesHandler(db))).Methods(http.MethodGet)
+			r.HandleFunc("/tenants/{tenantId}/configurations/instance-routes/{instanceRouteId}", registerHandler("get_instance_route_by_id", GetInstanceRouteByIdHandler(db))).Methods(http.MethodGet)
+			r.HandleFunc("/tenants/{tenantId}/configurations/instance-routes", registerInstanceRouteInputHandler("create_instance_route", CreateInstanceRouteHandler(db))).Methods(http.MethodPost)
+			r.HandleFunc("/tenants/{tenantId}/configurations/instance-routes/{instanceRouteId}", registerInstanceRouteInputHandler("update_instance_route", UpdateInstanceRouteHandler(db))).Methods(http.MethodPatch)
+			r.HandleFunc("/tenants/{tenantId}/configurations/instance-routes/{instanceRouteId}", registerHandler("delete_instance_route", DeleteInstanceRouteHandler(db))).Methods(http.MethodDelete)
 		}
 	}
 }

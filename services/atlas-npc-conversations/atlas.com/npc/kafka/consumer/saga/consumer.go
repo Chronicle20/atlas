@@ -5,6 +5,7 @@ import (
 	consumer2 "atlas-npc-conversations/kafka/consumer"
 	"atlas-npc-conversations/kafka/message/saga"
 	"context"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -56,7 +57,22 @@ func handleStatusEventCompleted(l logrus.FieldLogger, db *gorm.DB) message.Handl
 			"current_state": conversationCtx.CurrentState(),
 		}).Info("Resuming conversation after saga completion")
 
-		// Get the success state from context
+		// Check if this is a transport action (no success state needed - player is warped)
+		if _, isTransport := conversationCtx.Context()["transportAction_failureState"]; isTransport {
+			l.WithField("character_id", conversationCtx.CharacterId()).Debug("Transport action completed - player was warped, ending conversation")
+			// Clean up transport context values and end conversation
+			delete(conversationCtx.Context(), "transportAction_failureState")
+			delete(conversationCtx.Context(), "transportAction_capacityFullState")
+			delete(conversationCtx.Context(), "transportAction_alreadyInTransitState")
+			delete(conversationCtx.Context(), "transportAction_routeNotFoundState")
+			delete(conversationCtx.Context(), "transportAction_serviceErrorState")
+			conversationCtx = conversationCtx.ClearPendingSaga()
+			conversation.GetRegistry().UpdateContext(t, conversationCtx.CharacterId(), conversationCtx)
+			_ = conversation.NewProcessor(l, ctx, db).End(conversationCtx.CharacterId())
+			return
+		}
+
+		// Get the success state from context (craft actions)
 		successState, exists := conversationCtx.Context()["craftAction_successState"]
 		if !exists || successState == "" {
 			l.WithField("character_id", conversationCtx.CharacterId()).Error("No success state stored in conversation context")
@@ -69,7 +85,7 @@ func handleStatusEventCompleted(l logrus.FieldLogger, db *gorm.DB) message.Handl
 		conversationCtx = conversationCtx.ClearPendingSaga()
 		conversationCtx = conversationCtx.SetCurrentState(successState)
 
-		// Clean up temporary context values
+		// Clean up temporary context values (craft action)
 		delete(conversationCtx.Context(), "craftAction_successState")
 		delete(conversationCtx.Context(), "craftAction_failureState")
 		delete(conversationCtx.Context(), "craftAction_missingMaterialsState")
@@ -95,6 +111,7 @@ func handleStatusEventFailed(l logrus.FieldLogger, db *gorm.DB) message.Handler[
 
 		l.WithFields(logrus.Fields{
 			"transaction_id": e.TransactionId.String(),
+			"error_code":     e.Body.ErrorCode,
 			"reason":         e.Body.Reason,
 			"failed_step":    e.Body.FailedStep,
 		}).Debug("Received saga failure event")
@@ -113,24 +130,12 @@ func handleStatusEventFailed(l logrus.FieldLogger, db *gorm.DB) message.Handler[
 			"character_id":  conversationCtx.CharacterId(),
 			"npc_id":        conversationCtx.NpcId(),
 			"current_state": conversationCtx.CurrentState(),
+			"error_code":    e.Body.ErrorCode,
 			"reason":        e.Body.Reason,
 		}).Info("Resuming conversation after saga failure")
 
-		// Determine which failure state to use based on the failure reason
-		var failureState string
-		if e.Body.Reason == "Validation failed" {
-			// Use missingMaterialsState for validation failures
-			if state, exists := conversationCtx.Context()["craftAction_missingMaterialsState"]; exists && state != "" {
-				failureState = state
-			}
-		}
-
-		// Fall back to general failureState if missingMaterialsState not set or not a validation failure
-		if failureState == "" {
-			if state, exists := conversationCtx.Context()["craftAction_failureState"]; exists && state != "" {
-				failureState = state
-			}
-		}
+		// Determine which failure state to use based on error code and reason
+		failureState := resolveFailureState(conversationCtx, e.Body.ErrorCode, e.Body.Reason)
 
 		if failureState == "" {
 			l.WithField("character_id", conversationCtx.CharacterId()).Error("No failure state stored in conversation context")
@@ -143,10 +148,18 @@ func handleStatusEventFailed(l logrus.FieldLogger, db *gorm.DB) message.Handler[
 		conversationCtx = conversationCtx.ClearPendingSaga()
 		conversationCtx = conversationCtx.SetCurrentState(failureState)
 
-		// Clean up temporary context values
+		// Clean up temporary context values (craft action)
 		delete(conversationCtx.Context(), "craftAction_successState")
 		delete(conversationCtx.Context(), "craftAction_failureState")
 		delete(conversationCtx.Context(), "craftAction_missingMaterialsState")
+
+		// Clean up temporary context values (transport action)
+		delete(conversationCtx.Context(), "transportAction_successState")
+		delete(conversationCtx.Context(), "transportAction_failureState")
+		delete(conversationCtx.Context(), "transportAction_capacityFullState")
+		delete(conversationCtx.Context(), "transportAction_alreadyInTransitState")
+		delete(conversationCtx.Context(), "transportAction_routeNotFoundState")
+		delete(conversationCtx.Context(), "transportAction_serviceErrorState")
 
 		// Update the context in registry
 		conversation.GetRegistry().UpdateContext(t, conversationCtx.CharacterId(), conversationCtx)
@@ -159,4 +172,48 @@ func handleStatusEventFailed(l logrus.FieldLogger, db *gorm.DB) message.Handler[
 			_ = processor.End(conversationCtx.CharacterId())
 		}
 	}
+}
+
+// resolveFailureState determines which failure state to use based on error code and reason
+func resolveFailureState(ctx conversation.ConversationContext, errorCode string, reason string) string {
+	// Check for transport-specific error codes first
+	switch errorCode {
+	case "TRANSPORT_CAPACITY_FULL":
+		if state, exists := ctx.Context()["transportAction_capacityFullState"]; exists && state != "" {
+			return state
+		}
+	case "TRANSPORT_ALREADY_IN_TRANSIT":
+		if state, exists := ctx.Context()["transportAction_alreadyInTransitState"]; exists && state != "" {
+			return state
+		}
+	case "TRANSPORT_ROUTE_NOT_FOUND":
+		if state, exists := ctx.Context()["transportAction_routeNotFoundState"]; exists && state != "" {
+			return state
+		}
+	case "TRANSPORT_SERVICE_ERROR":
+		if state, exists := ctx.Context()["transportAction_serviceErrorState"]; exists && state != "" {
+			return state
+		}
+	}
+
+	// Check for transport general failure state
+	if errorCode != "" && len(errorCode) > 10 && errorCode[:10] == "TRANSPORT_" {
+		if state, exists := ctx.Context()["transportAction_failureState"]; exists && state != "" {
+			return state
+		}
+	}
+
+	// Check for craft action validation failures
+	if reason == "Validation failed" {
+		if state, exists := ctx.Context()["craftAction_missingMaterialsState"]; exists && state != "" {
+			return state
+		}
+	}
+
+	// Fall back to general craft action failure state
+	if state, exists := ctx.Context()["craftAction_failureState"]; exists && state != "" {
+		return state
+	}
+
+	return ""
 }

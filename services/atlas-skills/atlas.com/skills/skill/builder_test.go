@@ -2,6 +2,7 @@ package skill_test
 
 import (
 	"atlas-skills/skill"
+	"errors"
 	"testing"
 	"time"
 )
@@ -50,7 +51,7 @@ func TestBuild_MissingId(t *testing.T) {
 		SetLevel(5).
 		Build()
 
-	if err != skill.ErrMissingId {
+	if !errors.Is(err, skill.ErrMissingId) {
 		t.Errorf("Build() error = %v, want ErrMissingId", err)
 	}
 }

@@ -11,9 +11,10 @@ import (
 	"atlas-skills/skill"
 	"atlas-skills/tasks"
 	"atlas-skills/tracing"
+	"os"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
-	"os"
 )
 
 const serviceName = "atlas-skills"

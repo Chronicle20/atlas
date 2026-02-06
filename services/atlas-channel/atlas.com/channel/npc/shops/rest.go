@@ -3,8 +3,9 @@ package shops
 import (
 	"atlas-channel/npc/shops/commodities"
 	"fmt"
-	"github.com/jtumidanski/api2go/jsonapi"
 	"strconv"
+
+	"github.com/jtumidanski/api2go/jsonapi"
 )
 
 // RestModel is a JSON API representation of the Model
@@ -63,7 +64,7 @@ func (r RestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
 }
 
 // SetToOneReferenceID to satisfy jsonapi.UnmarshalToOneRelations interface
-func (r *RestModel) SetToOneReferenceID(name, ID string) error {
+func (r *RestModel) SetToOneReferenceID(_, _ string) error {
 	return nil
 }
 

@@ -2,14 +2,15 @@ package main
 
 import (
 	"context"
-	"github.com/Chronicle20/atlas-rest/server"
-	"github.com/gorilla/mux"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
+
+	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 )
 
 func main() {

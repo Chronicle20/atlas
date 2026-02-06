@@ -3,6 +3,7 @@ package world_test
 import (
 	"atlas-world/channel"
 	"atlas-world/world"
+	"errors"
 	"testing"
 	"time"
 
@@ -65,7 +66,7 @@ func TestBuild_MissingName(t *testing.T) {
 		SetId(1).
 		Build()
 
-	if err != world.ErrMissingName {
+	if !errors.Is(err, world.ErrMissingName) {
 		t.Errorf("Build() error = %v, want ErrMissingName", err)
 	}
 }
@@ -76,7 +77,7 @@ func TestBuild_EmptyName(t *testing.T) {
 		SetName("").
 		Build()
 
-	if err != world.ErrMissingName {
+	if !errors.Is(err, world.ErrMissingName) {
 		t.Errorf("Build() error = %v, want ErrMissingName", err)
 	}
 }

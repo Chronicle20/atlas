@@ -8,6 +8,7 @@ import (
 	"atlas-cashshop/kafka/producer"
 	itemProducer "atlas-cashshop/kafka/producer/item"
 	"context"
+
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas-model/model"
@@ -163,7 +164,7 @@ func (p *ProcessorImpl) CreateWithCashIdAndEmit(cashId int64, templateId uint32,
 	return message.EmitWithResult[Model, uint32](p.p)(model.Flip(model.Flip(model.Flip(model.Flip(p.CreateWithCashId)(cashId))(templateId))(commodityId))(quantity))(purchasedBy)
 }
 
-func (p *ProcessorImpl) Delete(mb *message.Buffer) func(itemId uint32) error {
+func (p *ProcessorImpl) Delete(_ *message.Buffer) func(itemId uint32) error {
 	return func(itemId uint32) error {
 		return deleteById(p.db, p.t.Id(), itemId)
 	}

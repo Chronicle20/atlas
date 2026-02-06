@@ -5,6 +5,7 @@ import (
 	shop2 "atlas-npc/kafka/message/shops"
 	"atlas-npc/shops"
 	"context"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"

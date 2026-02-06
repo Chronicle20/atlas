@@ -9,8 +9,9 @@ import (
 	"atlas-configurations/templates"
 	"atlas-configurations/tenants"
 	"atlas-configurations/tracing"
-	"github.com/Chronicle20/atlas-rest/server"
 	"os"
+
+	"github.com/Chronicle20/atlas-rest/server"
 )
 
 const serviceName = "atlas-configurations"

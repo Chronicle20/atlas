@@ -2,11 +2,12 @@ package character
 
 import (
 	"atlas-character/skill"
+	"strconv"
+	"strings"
+
 	"github.com/Chronicle20/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
-	"strconv"
-	"strings"
 )
 
 type Model struct {
@@ -82,7 +83,7 @@ func (m Model) Level() byte {
 }
 
 func (m Model) MaxClassLevel() byte {
-	if job.IsCygnus(job.Id(m.jobId)) {
+	if job.IsCygnus(m.jobId) {
 		return 120
 	} else {
 		return 200
@@ -102,7 +103,7 @@ func (m Model) Id() uint32 {
 }
 
 func (m Model) IsBeginner() bool {
-	return job.IsBeginner(job.Id(m.JobId()))
+	return job.IsBeginner(m.JobId())
 }
 
 func (m Model) AP() uint16 {

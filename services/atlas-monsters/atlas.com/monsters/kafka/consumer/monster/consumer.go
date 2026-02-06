@@ -4,6 +4,7 @@ import (
 	consumer2 "atlas-monsters/kafka/consumer"
 	"atlas-monsters/monster"
 	"context"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"

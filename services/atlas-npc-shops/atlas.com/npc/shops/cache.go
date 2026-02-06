@@ -3,10 +3,11 @@ package shops
 import (
 	"atlas-npc/data/consumable"
 	"context"
+	"sync"
+
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"sync"
 )
 
 // ConsumableCacheInterface defines the interface for the consumable cache

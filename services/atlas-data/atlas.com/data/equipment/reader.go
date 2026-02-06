@@ -3,11 +3,12 @@ package equipment
 import (
 	"atlas-data/xml"
 	"fmt"
-	"github.com/Chronicle20/atlas-model/model"
-	"github.com/sirupsen/logrus"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/Chronicle20/atlas-model/model"
+	"github.com/sirupsen/logrus"
 )
 
 func parseItemId(filePath string) (uint32, error) {

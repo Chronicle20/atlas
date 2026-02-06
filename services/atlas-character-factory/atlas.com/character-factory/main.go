@@ -8,10 +8,11 @@ import (
 	"atlas-character-factory/logger"
 	"atlas-character-factory/service"
 	"atlas-character-factory/tracing"
+	"os"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/google/uuid"
-	"os"
 )
 
 const serviceName = "atlas-character-factory"

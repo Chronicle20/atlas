@@ -15,7 +15,7 @@ type MockAppearanceProvider struct {
 	err        error
 }
 
-func (m *MockAppearanceProvider) GetCharacterAppearance(ctx context.Context, characterId uint32) (CharacterAppearance, error) {
+func (m *MockAppearanceProvider) GetCharacterAppearance(_ context.Context, _ uint32) (CharacterAppearance, error) {
 	if m.err != nil {
 		return CharacterAppearance{}, m.err
 	}

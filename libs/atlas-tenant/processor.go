@@ -3,6 +3,7 @@ package tenant
 import (
 	"context"
 	"errors"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 )

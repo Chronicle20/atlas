@@ -1,0 +1,15 @@
+meta {
+  name: Get Instance Route Status
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/transports/instance-routes/{{routeId}}/status
+  body: none
+  auth: inherit
+}
+
+vars:pre-request {
+  routeId: 24bb11dd-44aa-48c2-998e-a1f1644b9130
+}

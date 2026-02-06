@@ -135,7 +135,7 @@ func setupTestEtcData(t *testing.T, db *gorm.DB, tenantId uuid.UUID) {
 	}
 }
 
-func createRequestWithTenant(method, url string, body []byte, tenantId uuid.UUID) *http.Request {
+func createRequestWithTenant(method, url string, tenantId uuid.UUID) *http.Request {
 	req, err := http.NewRequest(method, url, nil)
 	if err != nil {
 		panic(err)
@@ -153,7 +153,7 @@ func createRequestWithTenant(method, url string, body []byte, tenantId uuid.UUID
 func testGetEtcsEndpoint(t *testing.T, testServer *httptest.Server, tenantId uuid.UUID) {
 	t.Run("GetAllEtcs", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/etcs", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -175,7 +175,7 @@ func testGetEtcsEndpoint(t *testing.T, testServer *httptest.Server, tenantId uui
 func testGetEtcEndpoint(t *testing.T, testServer *httptest.Server, tenantId uuid.UUID) {
 	t.Run("GetEtcById", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/etcs/4000000", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -201,7 +201,7 @@ func testGetEtcEndpoint(t *testing.T, testServer *httptest.Server, tenantId uuid
 
 	t.Run("GetEtcNotFound", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/etcs/9999999", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -215,7 +215,7 @@ func testGetEtcEndpoint(t *testing.T, testServer *httptest.Server, tenantId uuid
 func testErrorHandling(t *testing.T, testServer *httptest.Server, tenantId uuid.UUID) {
 	t.Run("InvalidItemId", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/etcs/invalid", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -244,7 +244,7 @@ func testTenantIsolation(t *testing.T, testServer *httptest.Server, originalTena
 		differentTenantId := uuid.New()
 
 		url := fmt.Sprintf("%s/data/etcs", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, differentTenantId)
+		req := createRequestWithTenant("GET", url, differentTenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -263,7 +263,7 @@ func testTenantIsolation(t *testing.T, testServer *httptest.Server, originalTena
 
 	t.Run("OriginalTenantHasData", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/etcs", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, originalTenantId)
+		req := createRequestWithTenant("GET", url, originalTenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -284,7 +284,7 @@ func testTenantIsolation(t *testing.T, testServer *httptest.Server, originalTena
 func testJSONAPICompliance(t *testing.T, testServer *httptest.Server, tenantId uuid.UUID) {
 	t.Run("SingleResourceStructure", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/etcs/4000000", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -305,7 +305,7 @@ func testJSONAPICompliance(t *testing.T, testServer *httptest.Server, tenantId u
 
 	t.Run("CollectionResourceStructure", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/etcs", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)

@@ -109,7 +109,7 @@ func TestAsset_GetById(t *testing.T) {
 		t.Fatalf("Failed to create asset: %v", err)
 	}
 
-	retrieved, err := asset.GetById(testLogger(), db, te.Id())(created.Id())
+	retrieved, err := asset.GetById(db, te.Id())(created.Id())
 	if err != nil {
 		t.Fatalf("Failed to get asset by ID: %v", err)
 	}
@@ -144,7 +144,7 @@ func TestAsset_GetByStorageId(t *testing.T) {
 		}
 	}
 
-	assets, err := asset.GetByStorageId(testLogger(), db, te.Id())(s.Id())
+	assets, err := asset.GetByStorageId(db, te.Id())(s.Id())
 	if err != nil {
 		t.Fatalf("Failed to get assets by storage ID: %v", err)
 	}
@@ -186,7 +186,7 @@ func TestAsset_Delete(t *testing.T) {
 		t.Fatalf("Failed to delete asset: %v", err)
 	}
 
-	_, err = asset.GetById(testLogger(), db, te.Id())(a.Id())
+	_, err = asset.GetById(db, te.Id())(a.Id())
 	if err == nil {
 		t.Fatalf("Asset should have been deleted")
 	}
@@ -219,7 +219,7 @@ func TestAsset_DeleteByStorageId(t *testing.T) {
 		t.Fatalf("Failed to delete assets by storage ID: %v", err)
 	}
 
-	assets, err := asset.GetByStorageId(testLogger(), db, te.Id())(s.Id())
+	assets, err := asset.GetByStorageId(db, te.Id())(s.Id())
 	if err != nil {
 		t.Fatalf("Failed to get assets: %v", err)
 	}
@@ -254,7 +254,7 @@ func TestAsset_UpdateSlot(t *testing.T) {
 		t.Fatalf("Failed to update slot: %v", err)
 	}
 
-	updated, err := asset.GetById(testLogger(), db, te.Id())(a.Id())
+	updated, err := asset.GetById(db, te.Id())(a.Id())
 	if err != nil {
 		t.Fatalf("Failed to get asset: %v", err)
 	}

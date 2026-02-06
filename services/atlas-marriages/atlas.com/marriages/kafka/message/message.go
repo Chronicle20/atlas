@@ -2,6 +2,7 @@ package message
 
 import (
 	"atlas-marriages/kafka/producer"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 )
@@ -69,21 +70,21 @@ func EmitWithResult[M any, B any](p producer.Provider) func(func(*Buffer) func(B
 func EmitMultiple(p producer.Provider) func(...func(*Buffer) error) error {
 	return func(operations ...func(*Buffer) error) error {
 		buf := NewBuffer()
-		
+
 		// Execute all operations and accumulate messages in the buffer
 		for _, operation := range operations {
 			if err := operation(buf); err != nil {
 				return err
 			}
 		}
-		
+
 		// Emit all buffered messages in a single transaction
 		for t, ms := range buf.GetAll() {
 			if err := p(t)(model.FixedProvider(ms)); err != nil {
 				return err
 			}
 		}
-		
+
 		return nil
 	}
 }
@@ -129,4 +130,3 @@ func (bb *BufferBuilder) EmitAll(p producer.Provider) error {
 	}
 	return nil
 }
-

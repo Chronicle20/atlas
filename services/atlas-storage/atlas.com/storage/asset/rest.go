@@ -250,12 +250,3 @@ func TransformWithStackable(m Model[any], quantity uint32, ownerId uint32, flag 
 	rm.Flag = &flag
 	return rm
 }
-
-// TransformAll converts multiple Models to RestModels (legacy format)
-func TransformAll(models []Model[any]) []RestModel {
-	result := make([]RestModel, 0, len(models))
-	for _, m := range models {
-		result = append(result, Transform(m))
-	}
-	return result
-}

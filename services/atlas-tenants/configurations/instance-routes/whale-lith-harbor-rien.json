@@ -1,0 +1,13 @@
+{
+  "id": "whale-lith-harbor-to-rien",
+  "type": "instance-routes",
+  "attributes": {
+    "name": "whale-lith-harbor-to-rien",
+    "startMapId": 104000000,
+    "transitMapId": 200090060,
+    "destinationMapId": 140020300,
+    "capacity": 1,
+    "boardingWindowSeconds": 1,
+    "travelDurationSeconds": 60
+  }
+}

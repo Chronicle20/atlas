@@ -3,6 +3,7 @@ package configuration
 import (
 	"atlas-login/configuration/task"
 	"errors"
+
 	"github.com/google/uuid"
 )
 

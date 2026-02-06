@@ -7,9 +7,10 @@ import (
 	"atlas-chalkboards/logger"
 	"atlas-chalkboards/service"
 	"atlas-chalkboards/tracing"
+	"os"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
-	"os"
 )
 
 const serviceName = "atlas-chalkboards"
@@ -51,7 +52,7 @@ func main() {
 	chalkboard2.InitConsumers(l)(cmf)(consumerGroupId)
 	character.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	chalkboard2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
-	
+
 	// CreateRoute and run server
 	server.New(l).
 		WithContext(tdm.Context()).

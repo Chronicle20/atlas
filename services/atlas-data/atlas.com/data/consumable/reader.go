@@ -2,10 +2,11 @@ package consumable
 
 import (
 	"atlas-data/xml"
+	"strconv"
+
 	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
-	"strconv"
 )
 
 func parseConsumableId(name string) (uint32, error) {

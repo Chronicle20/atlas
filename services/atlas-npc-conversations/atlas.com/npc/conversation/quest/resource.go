@@ -180,7 +180,7 @@ func UpdateConversationHandler(d *rest.HandlerDependency, c *rest.HandlerContext
 }
 
 // DeleteConversationHandler handles DELETE /quests/conversations/{conversationId}
-func DeleteConversationHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+func DeleteConversationHandler(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseConversationId(d.Logger(), func(conversationId uuid.UUID) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			// Delete conversation
@@ -198,7 +198,7 @@ func DeleteConversationHandler(d *rest.HandlerDependency, c *rest.HandlerContext
 }
 
 // SeedConversationsHandler handles POST /quests/conversations/seed
-func SeedConversationsHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+func SeedConversationsHandler(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		result, err := NewProcessor(d.Logger(), d.Context(), d.DB()).Seed()
 		if err != nil {

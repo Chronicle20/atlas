@@ -1,7 +1,7 @@
 package character
 
 import (
-	character "atlas-npc/kafka/message/character"
+	"atlas-npc/kafka/message/character"
 	"atlas-npc/test"
 	"testing"
 

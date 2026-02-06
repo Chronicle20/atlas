@@ -9,9 +9,7 @@ import (
 	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
-	"github.com/Chronicle20/atlas-constants/channel"
-	_map2 "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-constants/world"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -51,12 +49,12 @@ func handleStatusEventUsed(sc server.Model, wp writer.Producer) message.Handler[
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
 			return
 		}
 
 		if e.ChairType == chair2.TypePortable {
-			err := _map.NewProcessor(l, ctx).ForOtherSessionsInMap(sc.Field(_map2.Id(e.MapId), uuid.Nil), e.Body.CharacterId, showChairForeign(l)(ctx)(wp)(e.Body.CharacterId, e.ChairId))
+			err := _map.NewProcessor(l, ctx).ForOtherSessionsInMap(sc.Field(e.MapId, uuid.Nil), e.Body.CharacterId, showChairForeign(l)(ctx)(wp)(e.Body.CharacterId, e.ChairId))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to show [%d] using chair [%d] to those in map [%d].", e.Body.CharacterId, e.ChairId, e.MapId)
 			}
@@ -103,7 +101,7 @@ func handleStatusEventError(sc server.Model, wp writer.Producer) message.Handler
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
 			return
 		}
 
@@ -136,7 +134,7 @@ func handleStatusEventCancelled(sc server.Model, wp writer.Producer) message.Han
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
 			return
 		}
 
@@ -145,7 +143,7 @@ func handleStatusEventCancelled(sc server.Model, wp writer.Producer) message.Han
 			l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.CharacterSitResult, e.Body.CharacterId)
 		}
 
-		err = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(sc.Field(_map2.Id(e.MapId), uuid.Nil), e.Body.CharacterId, cancelChairForeign(l)(ctx)(wp)(e.Body.CharacterId))
+		err = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(sc.Field(e.MapId, uuid.Nil), e.Body.CharacterId, cancelChairForeign(l)(ctx)(wp)(e.Body.CharacterId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to write foreign character [%d] sit result completely to [%d].", e.Body.CharacterId, e.MapId)
 		}

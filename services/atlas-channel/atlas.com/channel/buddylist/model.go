@@ -2,6 +2,7 @@ package buddylist
 
 import (
 	"atlas-channel/buddylist/buddy"
+
 	"github.com/google/uuid"
 )
 

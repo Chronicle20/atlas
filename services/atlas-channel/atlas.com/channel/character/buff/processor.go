@@ -5,6 +5,7 @@ import (
 	buff2 "atlas-channel/kafka/message/buff"
 	"atlas-channel/kafka/producer"
 	"context"
+
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"

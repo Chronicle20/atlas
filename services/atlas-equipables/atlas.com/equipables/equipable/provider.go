@@ -2,6 +2,7 @@ package equipable
 
 import (
 	"atlas-equipables/database"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"

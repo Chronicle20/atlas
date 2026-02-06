@@ -3,6 +3,7 @@ package pet
 import (
 	"atlas-npc-conversations/rest"
 	"fmt"
+
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 

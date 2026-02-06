@@ -2,6 +2,7 @@ package member
 
 import (
 	"errors"
+
 	"github.com/google/uuid"
 )
 

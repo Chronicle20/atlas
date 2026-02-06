@@ -6,6 +6,7 @@ import (
 	thread2 "atlas-guilds/kafka/message/thread"
 	"atlas-guilds/thread"
 	"context"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"

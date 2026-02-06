@@ -1,9 +1,10 @@
 package requests
 
 import (
-	"github.com/jtumidanski/api2go/jsonapi"
 	"io"
 	"net/http"
+
+	"github.com/jtumidanski/api2go/jsonapi"
 )
 
 func processResponse[A any](r *http.Response) (A, error) {

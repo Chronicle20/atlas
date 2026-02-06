@@ -1,10 +1,11 @@
 package messenger
 
 import (
+	"strconv"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/jtumidanski/api2go/jsonapi"
-	"strconv"
 )
 
 type RestModel struct {
@@ -129,12 +130,12 @@ func ExtractMember(rm MemberRestModel) (MemberModel, error) {
 }
 
 type MemberRestModel struct {
-	Id        uint32 `json:"-"`
-	Name      string `json:"name"`
+	Id        uint32     `json:"-"`
+	Name      string     `json:"name"`
 	WorldId   world.Id   `json:"worldId"`
 	ChannelId channel.Id `json:"channelId"`
-	Online    bool   `json:"online"`
-	Slot      byte   `json:"slot"`
+	Online    bool       `json:"online"`
+	Slot      byte       `json:"slot"`
 }
 
 func (r MemberRestModel) GetName() string {

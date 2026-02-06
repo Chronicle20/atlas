@@ -2,6 +2,8 @@ package shops
 
 import (
 	"atlas-npc/database"
+	"errors"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -30,7 +32,7 @@ func updateShop(tenantId uuid.UUID, npcId uint32, recharger bool) database.Entit
 		var entity Entity
 		err := db.Where(&Entity{TenantId: tenantId, NpcId: npcId}).First(&entity).Error
 		if err != nil {
-			if err == gorm.ErrRecordNotFound {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return createShop(tenantId, npcId, recharger)(db)
 			}
 			return model.ErrorProvider[Entity](err)

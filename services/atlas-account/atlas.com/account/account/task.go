@@ -2,10 +2,11 @@ package account
 
 import (
 	"context"
+	"time"
+
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
-	"time"
 )
 
 const TimeoutTask = "timeout"

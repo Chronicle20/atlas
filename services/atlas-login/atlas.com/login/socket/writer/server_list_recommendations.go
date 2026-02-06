@@ -3,6 +3,7 @@ package writer
 import (
 	"atlas-login/socket/model"
 	"context"
+
 	"github.com/Chronicle20/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"

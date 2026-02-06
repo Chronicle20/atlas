@@ -2,8 +2,9 @@ package compartment
 
 import (
 	"fmt"
-	"github.com/Chronicle20/atlas-constants/inventory"
 	"sync"
+
+	"github.com/Chronicle20/atlas-constants/inventory"
 )
 
 type lockRegistry struct {

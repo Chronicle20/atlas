@@ -4,10 +4,11 @@ import (
 	skill2 "atlas-character/kafka/message/skill"
 	"atlas-character/kafka/producer"
 	"context"
+	"time"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
-	"time"
 )
 
 type Processor interface {

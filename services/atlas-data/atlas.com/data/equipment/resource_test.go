@@ -153,7 +153,7 @@ func setupTestEquipmentData(t *testing.T, db *gorm.DB, tenantId uuid.UUID) {
 	}
 }
 
-func createRequestWithTenant(method, url string, body []byte, tenantId uuid.UUID) *http.Request {
+func createRequestWithTenant(method, url string, tenantId uuid.UUID) *http.Request {
 	req, err := http.NewRequest(method, url, nil)
 	if err != nil {
 		panic(err)
@@ -171,7 +171,7 @@ func createRequestWithTenant(method, url string, body []byte, tenantId uuid.UUID
 func testGetSingleEquipmentEndpoint(t *testing.T, testServer *httptest.Server, tenantId uuid.UUID) {
 	t.Run("GetEquipmentById", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/equipment/1302000", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -197,7 +197,7 @@ func testGetSingleEquipmentEndpoint(t *testing.T, testServer *httptest.Server, t
 
 	t.Run("GetEquipmentNotFound", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/equipment/9999999", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -212,7 +212,7 @@ func testGetSingleEquipmentEndpoint(t *testing.T, testServer *httptest.Server, t
 func testGetEquipmentSlotsEndpoint(t *testing.T, testServer *httptest.Server, tenantId uuid.UUID) {
 	t.Run("GetEquipmentSlots", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/equipment/1302000/slots", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -235,7 +235,7 @@ func testGetEquipmentSlotsEndpoint(t *testing.T, testServer *httptest.Server, te
 
 	t.Run("GetEquipmentSlotsNotFound", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/equipment/9999999/slots", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -250,7 +250,7 @@ func testGetEquipmentSlotsEndpoint(t *testing.T, testServer *httptest.Server, te
 func testErrorHandling(t *testing.T, testServer *httptest.Server, tenantId uuid.UUID) {
 	t.Run("InvalidItemId", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/equipment/invalid", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -280,7 +280,7 @@ func testTenantIsolation(t *testing.T, testServer *httptest.Server, originalTena
 
 		// For single-item endpoint, different tenant should get 500 (not found)
 		url := fmt.Sprintf("%s/data/equipment/1302000", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, differentTenantId)
+		req := createRequestWithTenant("GET", url, differentTenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -293,7 +293,7 @@ func testTenantIsolation(t *testing.T, testServer *httptest.Server, originalTena
 
 	t.Run("OriginalTenantHasData", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/equipment/1302000", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, originalTenantId)
+		req := createRequestWithTenant("GET", url, originalTenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -315,7 +315,7 @@ func testTenantIsolation(t *testing.T, testServer *httptest.Server, originalTena
 func testJSONAPICompliance(t *testing.T, testServer *httptest.Server, tenantId uuid.UUID) {
 	t.Run("SingleResourceStructure", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/equipment/1302000", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -338,7 +338,7 @@ func testJSONAPICompliance(t *testing.T, testServer *httptest.Server, tenantId u
 
 	t.Run("SlotsCollectionStructure", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/equipment/1302000/slots", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)

@@ -5,6 +5,7 @@ import (
 	"atlas-npc/data/etc"
 	"atlas-npc/data/setup"
 	"context"
+
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-model/model"

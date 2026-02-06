@@ -6,7 +6,6 @@ import (
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -36,13 +35,13 @@ const (
 	WorldMessageUnk8             = WorldMessageMode("UNKNOWN_8") // present in v95+
 )
 
-func WorldMessageNoticeBody(l logrus.FieldLogger, t tenant.Model) func(message string) BodyProducer {
+func WorldMessageNoticeBody(l logrus.FieldLogger) func(message string) BodyProducer {
 	return func(message string) BodyProducer {
 		return WorldMessageBody(l)(WorldMessageNotice, []string{message}, 0, false, "", NoOpOperator)
 	}
 }
 
-func WorldMessagePopUpBody(l logrus.FieldLogger, t tenant.Model) func(message string) BodyProducer {
+func WorldMessagePopUpBody(l logrus.FieldLogger) func(message string) BodyProducer {
 	return func(message string) BodyProducer {
 		return WorldMessageBody(l)(WorldMessagePopUp, []string{message}, 0, false, "", NoOpOperator)
 	}
@@ -63,67 +62,67 @@ func decorateMegaphoneMessage(medal string, characterName string, message string
 	return fmt.Sprintf("%s : %s", name, message)
 }
 
-func WorldMessageMegaphoneBody(l logrus.FieldLogger, t tenant.Model) func(medal string, characterName string, message string) BodyProducer {
+func WorldMessageMegaphoneBody(l logrus.FieldLogger) func(medal string, characterName string, message string) BodyProducer {
 	return func(medal string, characterName string, message string) BodyProducer {
 		actualMessage := decorateMegaphoneMessage(medal, characterName, message)
 		return WorldMessageBody(l)(WorldMessageMegaphone, []string{actualMessage}, 0, false, "", NoOpOperator)
 	}
 }
 
-func WorldMessageSuperMegaphoneBody(l logrus.FieldLogger, t tenant.Model) func(medal string, characterName string, message string, channelId channel.Id, whispersOn bool) BodyProducer {
+func WorldMessageSuperMegaphoneBody(l logrus.FieldLogger) func(medal string, characterName string, message string, channelId channel.Id, whispersOn bool) BodyProducer {
 	return func(medal string, characterName string, message string, channelId channel.Id, whispersOn bool) BodyProducer {
 		actualMessage := decorateMegaphoneMessage(medal, characterName, message)
 		return WorldMessageBody(l)(WorldMessageSuperMegaphone, []string{actualMessage}, channelId, whispersOn, "", NoOpOperator)
 	}
 }
 
-func WorldMessageTopScrollBody(l logrus.FieldLogger, t tenant.Model) func(message string) BodyProducer {
+func WorldMessageTopScrollBody(l logrus.FieldLogger) func(message string) BodyProducer {
 	return func(message string) BodyProducer {
 		return WorldMessageBody(l)(WorldMessageTopScroll, []string{message}, 0, false, "", NoOpOperator)
 	}
 }
 
-func WorldMessageClearTopScrollBody(l logrus.FieldLogger, t tenant.Model) func() BodyProducer {
+func WorldMessageClearTopScrollBody(l logrus.FieldLogger) func() BodyProducer {
 	return func() BodyProducer {
 		return WorldMessageBody(l)(WorldMessageTopScroll, []string{""}, 0, false, "", NoOpOperator)
 	}
 }
 
-func WorldMessagePinkTextBody(l logrus.FieldLogger, t tenant.Model) func(medal string, characterName string, message string) BodyProducer {
+func WorldMessagePinkTextBody(l logrus.FieldLogger) func(medal string, characterName string, message string) BodyProducer {
 	return func(medal string, characterName string, message string) BodyProducer {
 		actualMessage := decorateMegaphoneMessage(medal, characterName, message)
 		return WorldMessageBody(l)(WorldMessagePinkText, []string{actualMessage}, 0, false, "", NoOpOperator)
 	}
 }
 
-func WorldMessageBlueTextBody(l logrus.FieldLogger, t tenant.Model) func(medal string, characterName string, message string) BodyProducer {
+func WorldMessageBlueTextBody(l logrus.FieldLogger) func(medal string, characterName string, message string) BodyProducer {
 	return func(medal string, characterName string, message string) BodyProducer {
 		actualMessage := decorateMegaphoneMessage(medal, characterName, message)
 		return WorldMessageBody(l)(WorldMessageBlueText, []string{actualMessage}, 0, false, "", NoOpOperator)
 	}
 }
 
-func WorldMessageNPCBody(l logrus.FieldLogger, t tenant.Model) func(message string, npcId uint32) BodyProducer {
+func WorldMessageNPCBody(l logrus.FieldLogger) func(message string, npcId uint32) BodyProducer {
 	return func(message string, npcId uint32) BodyProducer {
 		return WorldMessageBody(l)(WorldMessageBlueText, []string{message}, 0, false, "", NPCIdOperator(l)(npcId))
 	}
 }
 
-func WorldMessageItemMegaphoneBody(l logrus.FieldLogger, t tenant.Model) func(medal string, characterName string, message string, channelId channel.Id, operator model.Operator[*response.Writer], whispersOn bool) BodyProducer {
+func WorldMessageItemMegaphoneBody(l logrus.FieldLogger) func(medal string, characterName string, message string, channelId channel.Id, operator model.Operator[*response.Writer], whispersOn bool) BodyProducer {
 	return func(medal string, characterName string, message string, channelId channel.Id, operator model.Operator[*response.Writer], whispersOn bool) BodyProducer {
 		actualMessage := decorateMegaphoneMessage(medal, characterName, message)
 		return WorldMessageBody(l)(WorldMessageItemMegaphone, []string{actualMessage}, channelId, whispersOn, "", operator)
 	}
 }
 
-func WorldMessageYellowMegaphoneBody(l logrus.FieldLogger, t tenant.Model) func(medal string, characterName string, message string, channelId channel.Id) BodyProducer {
+func WorldMessageYellowMegaphoneBody(l logrus.FieldLogger) func(medal string, characterName string, message string, channelId channel.Id) BodyProducer {
 	return func(medal string, characterName string, message string, channelId channel.Id) BodyProducer {
 		actualMessage := decorateMegaphoneMessage(medal, characterName, message)
 		return WorldMessageBody(l)(WorldMessageYellowMegaphone, []string{actualMessage}, channelId, false, "", NoOpOperator)
 	}
 }
 
-func WorldMessageMultiMegaphoneBody(l logrus.FieldLogger, t tenant.Model) func(medal string, characterName string, messages []string, channelId channel.Id, whispersOn bool) BodyProducer {
+func WorldMessageMultiMegaphoneBody(l logrus.FieldLogger) func(medal string, characterName string, messages []string, channelId channel.Id, whispersOn bool) BodyProducer {
 	return func(medal string, characterName string, messages []string, channelId channel.Id, whispersOn bool) BodyProducer {
 		actualMessages := make([]string, 0)
 		for _, m := range messages {
@@ -133,14 +132,14 @@ func WorldMessageMultiMegaphoneBody(l logrus.FieldLogger, t tenant.Model) func(m
 	}
 }
 
-func WorldMessageGachaponMegaphoneBody(l logrus.FieldLogger, t tenant.Model) func(medal string, characterName string, channelId channel.Id, townName string, operator model.Operator[*response.Writer]) BodyProducer {
+func WorldMessageGachaponMegaphoneBody(l logrus.FieldLogger) func(medal string, characterName string, channelId channel.Id, townName string, operator model.Operator[*response.Writer]) BodyProducer {
 	return func(medal string, characterName string, channelId channel.Id, townName string, operator model.Operator[*response.Writer]) BodyProducer {
 		actualMessage := decorateNameForMessage(medal, characterName)
 		return WorldMessageBody(l)(WorldMessageGachapon, []string{actualMessage}, channelId, false, townName, operator)
 	}
 }
 
-func NoOpOperator(w *response.Writer) error {
+func NoOpOperator(_ *response.Writer) error {
 	return nil
 }
 

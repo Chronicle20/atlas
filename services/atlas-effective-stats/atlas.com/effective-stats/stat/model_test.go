@@ -160,7 +160,7 @@ func TestComputedGetStat(t *testing.T) {
 func TestComputedGetStat_InvalidType(t *testing.T) {
 	computed := NewComputed(100, 80, 60, 50, 10000, 5000, 150, 200, 100, 150, 50, 30, 110, 120)
 
-	if got := computed.GetStat(Type("invalid")); got != 0 {
+	if got := computed.GetStat("invalid"); got != 0 {
 		t.Errorf("GetStat(invalid) = %v, want 0", got)
 	}
 }

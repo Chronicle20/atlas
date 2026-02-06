@@ -1,9 +1,10 @@
 package skill
 
 import (
-	"github.com/Chronicle20/atlas-constants/skill"
 	"strconv"
 	"time"
+
+	"github.com/Chronicle20/atlas-constants/skill"
 )
 
 type RestModel struct {

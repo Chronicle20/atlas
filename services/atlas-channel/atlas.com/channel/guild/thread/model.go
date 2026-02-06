@@ -2,8 +2,9 @@ package thread
 
 import (
 	"atlas-channel/guild/thread/reply"
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Model struct {

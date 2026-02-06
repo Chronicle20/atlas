@@ -91,7 +91,7 @@ func TestMockProcessor_GetById_Error(t *testing.T) {
 	if err == nil {
 		t.Error("GetById() expected error, got nil")
 	}
-	if err != expectedErr {
+	if !errors.Is(err, expectedErr) {
 		t.Errorf("GetById() error = %v, want %v", err, expectedErr)
 	}
 }

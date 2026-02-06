@@ -473,7 +473,7 @@ func (p *ProcessorImpl) LeaveAndEmit(guildId uint32, characterId uint32, force b
 	})
 }
 
-func (p *ProcessorImpl) RequestInvite(mb *message.Buffer) func(guildId uint32) func(characterId uint32) func(targetId uint32) error {
+func (p *ProcessorImpl) RequestInvite(_ *message.Buffer) func(guildId uint32) func(characterId uint32) func(targetId uint32) error {
 	return func(guildId uint32) func(characterId uint32) func(targetId uint32) error {
 		return func(characterId uint32) func(targetId uint32) error {
 			return func(targetId uint32) error {

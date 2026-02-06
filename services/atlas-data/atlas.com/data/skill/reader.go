@@ -7,6 +7,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
+	"path/filepath"
+	"strconv"
+	"strings"
+
 	"github.com/Chronicle20/atlas-constants/character"
 	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-constants/monster"
@@ -14,10 +19,6 @@ import (
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
-	"math"
-	"path/filepath"
-	"strconv"
-	"strings"
 )
 
 func parseJobId(filePath string) (uint32, error) {

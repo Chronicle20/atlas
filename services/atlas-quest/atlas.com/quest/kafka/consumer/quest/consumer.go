@@ -10,10 +10,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
-	_map "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -53,7 +50,7 @@ func handleStartQuestCommand(db *gorm.DB) message.Handler[quest2.Command[quest2.
 		// Use Force flag to determine whether to skip validation
 		// When Force=true, skip requirement checks
 		// When Force=false (default), validate start requirements before starting
-		f := field.NewBuilder(world.Id(c.WorldId), channel.Id(c.ChannelId), _map.Id(c.MapId)).Build()
+		f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).Build()
 		_, _, err := quest.NewProcessor(l, ctx, db).Start(c.TransactionId, c.CharacterId, c.Body.QuestId, f, c.Body.Force)
 		if err != nil {
 			l.WithError(err).Errorf("Error starting quest [%d] for character [%d].", c.Body.QuestId, c.CharacterId)
@@ -70,7 +67,7 @@ func handleCompleteQuestCommand(db *gorm.DB) message.Handler[quest2.Command[ques
 		// Use Force flag to determine whether to skip validation
 		// When Force=true, skip requirement checks (forceCompleteQuest behavior)
 		// When Force=false, validate end requirements before completing
-		f := field.NewBuilder(world.Id(c.WorldId), channel.Id(c.ChannelId), _map.Id(c.MapId)).Build()
+		f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).Build()
 		nextQuestId, err := processor.Complete(c.TransactionId, c.CharacterId, c.Body.QuestId, f, c.Body.Force)
 		if err != nil {
 			l.WithError(err).Errorf("Error completing quest [%d] for character [%d].", c.Body.QuestId, c.CharacterId)

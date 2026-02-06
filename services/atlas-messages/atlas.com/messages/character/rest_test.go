@@ -2,8 +2,6 @@ package character
 
 import (
 	"testing"
-
-	"github.com/Chronicle20/atlas-constants/world"
 )
 
 // TestRestModel_GetName tests the GetName method
@@ -208,7 +206,7 @@ func TestExtract(t *testing.T) {
 	if model.AccountId() != rm.AccountId {
 		t.Errorf("AccountId mismatch: expected %d, got %d", rm.AccountId, model.AccountId())
 	}
-	if model.WorldId() != world.Id(rm.WorldId) {
+	if model.WorldId() != rm.WorldId {
 		t.Errorf("WorldId mismatch: expected %d, got %d", rm.WorldId, model.WorldId())
 	}
 	if model.Name() != rm.Name {

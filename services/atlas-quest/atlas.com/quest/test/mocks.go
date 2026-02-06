@@ -84,7 +84,7 @@ func NewMockValidationProcessor() *MockValidationProcessor {
 }
 
 // ValidateStartRequirements implements validation.Processor
-func (m *MockValidationProcessor) ValidateStartRequirements(characterId uint32, questDef dataquest.RestModel) (bool, []string, error) {
+func (m *MockValidationProcessor) ValidateStartRequirements(_ uint32, _ dataquest.RestModel) (bool, []string, error) {
 	if m.StartError != nil {
 		return false, nil, m.StartError
 	}
@@ -92,7 +92,7 @@ func (m *MockValidationProcessor) ValidateStartRequirements(characterId uint32, 
 }
 
 // ValidateEndRequirements implements validation.Processor
-func (m *MockValidationProcessor) ValidateEndRequirements(characterId uint32, questDef dataquest.RestModel) (bool, []string, error) {
+func (m *MockValidationProcessor) ValidateEndRequirements(_ uint32, _ dataquest.RestModel) (bool, []string, error) {
 	if m.EndError != nil {
 		return false, nil, m.EndError
 	}
@@ -206,22 +206,22 @@ func NewMockEventEmitter() *MockEventEmitter {
 	}
 }
 
-func (m *MockEventEmitter) EmitQuestStarted(transactionId uuid.UUID, characterId uint32, worldId world.Id, questId uint32, progress string) error {
+func (m *MockEventEmitter) EmitQuestStarted(_ uuid.UUID, characterId uint32, worldId world.Id, questId uint32, _ string) error {
 	m.StartedEvents = append(m.StartedEvents, QuestEvent{CharacterId: characterId, WorldId: worldId, QuestId: questId})
 	return nil
 }
 
-func (m *MockEventEmitter) EmitQuestCompleted(transactionId uuid.UUID, characterId uint32, worldId world.Id, questId uint32, completedAt time.Time, items []questmessage.ItemReward) error {
+func (m *MockEventEmitter) EmitQuestCompleted(_ uuid.UUID, characterId uint32, worldId world.Id, questId uint32, _ time.Time, items []questmessage.ItemReward) error {
 	m.CompletedEvents = append(m.CompletedEvents, QuestEvent{CharacterId: characterId, WorldId: worldId, QuestId: questId, Items: items})
 	return nil
 }
 
-func (m *MockEventEmitter) EmitQuestForfeited(transactionId uuid.UUID, characterId uint32, worldId world.Id, questId uint32) error {
+func (m *MockEventEmitter) EmitQuestForfeited(_ uuid.UUID, characterId uint32, worldId world.Id, questId uint32) error {
 	m.ForfeitedEvents = append(m.ForfeitedEvents, QuestEvent{CharacterId: characterId, WorldId: worldId, QuestId: questId})
 	return nil
 }
 
-func (m *MockEventEmitter) EmitProgressUpdated(transactionId uuid.UUID, characterId uint32, worldId world.Id, questId uint32, infoNumber uint32, progress string) error {
+func (m *MockEventEmitter) EmitProgressUpdated(_ uuid.UUID, characterId uint32, worldId world.Id, questId uint32, infoNumber uint32, progress string) error {
 	m.ProgressEvents = append(m.ProgressEvents, ProgressEvent{CharacterId: characterId, WorldId: worldId, QuestId: questId, InfoNumber: infoNumber, Progress: progress})
 	return nil
 }

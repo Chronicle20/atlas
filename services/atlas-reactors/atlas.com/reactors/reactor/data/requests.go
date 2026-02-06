@@ -3,6 +3,7 @@ package data
 import (
 	"atlas-reactors/rest"
 	"fmt"
+
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 

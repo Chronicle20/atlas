@@ -8,10 +8,11 @@ import (
 	"atlas-messengers/kafka/producer"
 	"context"
 	"errors"
+	"sync"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-	"sync"
 )
 
 const StartMessengerId = uint32(1000000000)

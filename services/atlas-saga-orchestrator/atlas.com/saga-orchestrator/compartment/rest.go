@@ -86,7 +86,7 @@ func (r CompartmentRestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier
 	return result
 }
 
-func (r *CompartmentRestModel) SetToOneReferenceID(name, ID string) error {
+func (r *CompartmentRestModel) SetToOneReferenceID(_, _ string) error {
 	return nil
 }
 

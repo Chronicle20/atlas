@@ -5,13 +5,14 @@ import (
 	"atlas-npc/data/consumable"
 	"atlas-npc/shops"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
-	"net/http"
-	"net/http/httptest"
-	"testing"
 )
 
 // The mockConsumableCache is defined in processor_test.go

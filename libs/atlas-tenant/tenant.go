@@ -3,6 +3,7 @@ package tenant
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/google/uuid"
 )
 
@@ -30,7 +31,6 @@ func (m *Model) MinorVersion() uint16 {
 }
 
 func (m *Model) MarshalJSON() ([]byte, error) {
-	type alias Model
 	return json.Marshal(&struct {
 		Id           uuid.UUID `json:"id"`
 		Region       string    `json:"region"`

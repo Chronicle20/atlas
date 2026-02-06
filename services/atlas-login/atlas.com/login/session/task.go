@@ -3,11 +3,12 @@ package session
 import (
 	"atlas-login/configuration"
 	"context"
+	"time"
+
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
-	"time"
 )
 
 const TimeoutTask = "timeout"

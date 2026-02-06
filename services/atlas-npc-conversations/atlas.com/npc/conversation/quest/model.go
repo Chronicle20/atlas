@@ -3,16 +3,17 @@ package quest
 import (
 	"atlas-npc-conversations/conversation"
 	"errors"
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // Model represents a quest conversation with dual state machines
 type Model struct {
 	id                uuid.UUID
 	questId           uint32
-	npcId             uint32      // Metadata: NPC that gives this quest
-	questName         string      // Metadata: Human-readable quest name
+	npcId             uint32 // Metadata: NPC that gives this quest
+	questName         string // Metadata: Human-readable quest name
 	startStateMachine StateMachine
 	endStateMachine   *StateMachine // Optional: nil if quest only has start dialogue
 	createdAt         time.Time

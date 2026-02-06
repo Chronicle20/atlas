@@ -7,6 +7,7 @@ import (
 	"atlas-consumables/logger"
 	"atlas-consumables/service"
 	"atlas-consumables/tracing"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 )
 

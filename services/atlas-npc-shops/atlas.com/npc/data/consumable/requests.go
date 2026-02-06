@@ -3,6 +3,7 @@ package consumable
 import (
 	"atlas-npc/rest"
 	"fmt"
+
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 

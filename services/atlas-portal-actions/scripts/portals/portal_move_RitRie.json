@@ -1,0 +1,15 @@
+{
+  "portalId": "move_RitRie",
+  "mapId": 200090060,
+  "description": "Whale transit map (Lith Harbor to Rien) - Block portal to prevent manual exit during transport",
+  "rules": [
+    {
+      "id": "always_deny",
+      "conditions": [],
+      "onMatch": {
+        "allow": false,
+        "operations": []
+      }
+    }
+  ]
+}

@@ -400,7 +400,7 @@
                 "properties": {
                   "locationType": {
                     "type": "string",
-                    "description": "Location type key to retrieve and warp to (e.g., FREE_MARKET, EVENT)"
+                    "description": "Location type key to retrieve and warp to (e.g., FREE_MARKET, EVENT, MIRROR)"
                   }
                 }
               }

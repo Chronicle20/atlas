@@ -1,0 +1,55 @@
+{
+  "npcId": 1022101,
+  "startState": "askWarp",
+  "states": [
+    {
+      "id": "askWarp",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Santa told me to go to here, only he didn't told me when...  I hope I'm here on the right time! Oh! By the way, I'm Rooney, I can take you to #bHappyVille#k. Are you ready to go?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "performWarp"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "performWarp",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "save_location",
+            "params": {
+              "locationType": "HAPPYVILLE"
+            }
+          },
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "209000000",
+              "portalId": "0"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

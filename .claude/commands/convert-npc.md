@@ -109,6 +109,11 @@ Identify and understand:
 Common operations in `genericAction` states:
 - **warp_to_map**: Warp to specific map and portal
   - Params: `mapId` (string), `portalId` (string)
+- **warp_to_saved_location**: Warp to a saved location and delete it (pop semantics)
+  - Params: `locationType` (string) - e.g., "FLORINA", "FREE_MARKET", "WORLDTOUR"
+  - **JavaScript mapping**: `cm.getSavedLocation("FLORINA")` + `cm.warp(returnmap)` → `warp_to_saved_location`
+- **save_location**: Save character's current location for later return
+  - Params: `locationType` (string), `mapId` (string, optional), `portalId` (string, optional)
 - **award_item**: Award an item
   - Params: `itemId` (string), `quantity` (string)
 - **award_mesos**: Award mesos
@@ -161,6 +166,11 @@ Common operations in `genericAction` states:
 - **local:fetch_map_player_counts**: Fetch player counts for multiple maps
   - Params: `mapIds` (comma-separated map IDs, supports context references)
   - Stores results in context with keys: `playerCount_{mapId}`
+- **local:get_saved_location**: Fetch saved location into context for display in dialogue
+  - Params: `locationType` (string), `defaultMapId` (string, optional), `mapIdContextKey` (string, optional), `portalIdContextKey` (string, optional)
+  - Stores mapId in `returnMapId` (or specified key) and portalId in `returnPortalId` (or specified key)
+  - **JavaScript mapping**: `cm.getPlayer().peekSavedLocation("FLORINA")` → `local:get_saved_location`
+  - Use with `#m{context.returnMapId}#` in dialogue text to display map name
 - **local:log**: Log an informational message
   - Params: `message` (string, supports context references)
 - **local:debug**: Log a debug message

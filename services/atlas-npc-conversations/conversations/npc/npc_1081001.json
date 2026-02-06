@@ -1,0 +1,108 @@
+{
+  "npcId": 1081001,
+  "startState": "fetchSavedLocation",
+  "states": [
+    {
+      "id": "fetchSavedLocation",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "local:get_saved_location",
+            "params": {
+              "locationType": "FLORINA",
+              "defaultMapId": "104000000",
+              "mapIdContextKey": "returnMapId",
+              "portalIdContextKey": "returnPortalId"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "askLeave"
+          }
+        ]
+      }
+    },
+    {
+      "id": "askLeave",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "So you want to leave #b#m110000000##k? If you want, I can take you back to #b#m{context.returnMapId}##k.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "confirmLeave"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirmLeave",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Are you sure you want to return to #b#m{context.returnMapId}##k? Alright, we'll have to get going fast. Do you want to head back to #m{context.returnMapId}# now?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "performWarp"
+          },
+          {
+            "text": "No",
+            "nextState": "businessHere"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "businessHere",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "You must have some business to take care of here. It's not a bad idea to take some rest at #m{context.returnMapId}# Look at me; I love it here so much that I wound up living here. Hahaha anyway, talk to me when you feel like going back.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "performWarp",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": {
+              "mapId": "{context.returnMapId}",
+              "portalId": "{context.returnPortalId}"
+            }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

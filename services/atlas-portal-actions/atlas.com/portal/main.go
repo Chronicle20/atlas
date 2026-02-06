@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"atlas-portal-actions/database"
+	saga "atlas-portal-actions/kafka/consumer/saga"
 	"atlas-portal-actions/logger"
 	"atlas-portal-actions/script"
 	"atlas-portal-actions/service"
@@ -53,9 +54,11 @@ func main() {
 	// Initialize Kafka consumers
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	script.InitConsumers(l)(cmf)(consumerGroupId)
+	saga.InitConsumers(l)(cmf)(consumerGroupId)
 
 	// Initialize Kafka handlers
 	script.InitHandlers(l, db)(consumer.GetManager().RegisterHandler)
+	saga.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
 	// Initialize REST server
 	server.New(l).

@@ -162,7 +162,8 @@
             "show_info",
             "show_hint",
             "create_skill",
-            "update_skill"
+            "update_skill",
+            "start_instance_transport"
           ]
         },
         "params": {
@@ -327,6 +328,29 @@
                   "expiration": {
                     "type": "string",
                     "description": "Expiration time in milliseconds (-1 for no expiration)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "start_instance_transport" } }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": ["routeName"],
+                "properties": {
+                  "routeName": {
+                    "type": "string",
+                    "description": "The transport route name (resolved to UUID by saga-orchestrator)"
+                  },
+                  "failureMessage": {
+                    "type": "string",
+                    "description": "Custom message to display if transport fails (e.g., 'The wagon is full')"
                   }
                 }
               }

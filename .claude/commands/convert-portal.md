@@ -42,11 +42,18 @@ Portal scripts are **simpler than NPC conversations**. They:
 | `block_portal` | `pi.blockPortal()` | - |
 | `show_hint` | `pi.showInstruction(msg, width, height)` | `hint`, `width`, `height` |
 | `show_info` | `pi.showInfo(path)` | `path` (e.g., "UI/tutorial.img/25") |
+| `start_instance_transport` | `pi.getEventManager().startInstance()` | `routeName`, `failureMessage` (optional) |
+
+### Instance Transport Pattern
+Scripts using `getEventManager("SomeTrain").startInstance(pi.getPlayer())` are **instance transport portals**.
+These are supported via the `start_instance_transport` operation:
+- Find the corresponding route name in `services/atlas-tenants/configurations/instance-routes/`
+- Use `routeName` param with the route's name (e.g., `"kerning-train-to-subway"`)
+- Use `failureMessage` param for the error message shown when transport is full
 
 ### NOT YET SUPPORTED (Skip These Scripts)
 The following patterns require additional design work:
 - Event instance checks (`getEventInstance()`, `eim.getProperty()`, `isEventCleared()`)
-- Event manager checks (`getEventManager()`)
 - Saved location warps (`getSavedLocation()`)
 - Area info updates (`containsAreaInfo()`, `updateAreaInfo()`)
 
@@ -71,6 +78,7 @@ Identify the key patterns:
 - `pi.blockPortal()` → `block_portal` operation
 - `pi.showInstruction(msg, width, height)` → `show_hint` operation (params: `hint`, `width`, `height`)
 - `pi.showInfo(path)` → `show_info` operation (params: `path`)
+- `pi.getEventManager("X").startInstance()` → `start_instance_transport` operation (params: `routeName`, `failureMessage`)
 
 ### 2. Convert to Rules Format
 
@@ -151,11 +159,13 @@ The script to convert: **$ARGUMENTS**
 2. If a file path is provided, read the script file
 3. **Check for unsupported features** - If the script uses any of:
    - `getEventInstance()`, `eim.getProperty()`, `isEventCleared()`, `gridCheck()`
-   - `getEventManager()`
+   - `getEventManager()` with methods other than `startInstance()` (instance transports ARE supported)
    - `getSavedLocation()`
    - `containsAreaInfo()`, `updateAreaInfo()`
 
    Then **STOP** and report: "Script uses unsupported features: [list features]. Skipping conversion."
+
+   **Note:** Scripts using `getEventManager("X").startInstance()` for trains/transports ARE supported - see Instance Transport Pattern.
 
 4. Analyze the script:
    - Identify all condition checks
@@ -258,6 +268,61 @@ function enter(pi) {
   ]
 }
 ```
+
+## Example: Instance Transport Portal
+
+**Input: Depart_ToKerning.js**
+```javascript
+function enter(pi) {
+    var em = pi.getEventManager("KerningTrain");
+    if (!em.startInstance(pi.getPlayer())) {
+        pi.message("The passenger wagon is already full. Try again a bit later.");
+        return false;
+    }
+
+    pi.playPortalSound();
+    return true;
+}
+```
+
+**Conversion Steps:**
+1. Recognize `getEventManager("KerningTrain").startInstance()` as instance transport
+2. Find the route in `services/atlas-tenants/configurations/instance-routes/` (e.g., `kerning-train-to-subway`)
+3. Extract the failure message from `pi.message()`
+4. Note: `playPortalSound()` is NOT needed - transport handles feedback
+
+**Output: portal_Depart_ToKerning.json**
+```json
+{
+  "portalId": "Depart_ToKerning",
+  "mapId": 103000310,
+  "description": "Kerning Square Station - Train departure to Kerning Subway Station",
+  "rules": [
+    {
+      "id": "board_train",
+      "conditions": [],
+      "onMatch": {
+        "allow": true,
+        "operations": [
+          {
+            "type": "start_instance_transport",
+            "params": {
+              "routeName": "kerning-train-to-subway",
+              "failureMessage": "The passenger wagon is already full. Try again a bit later."
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+**How Instance Transport Works:**
+- The `start_instance_transport` operation creates a saga to board the transport
+- On success: Character is warped to the transit map automatically
+- On failure: The `failureMessage` is sent to the character, and they stay in place
+- No `warp` or `play_portal_sound` operations needed - transport saga handles everything
 
 ## Example: Unsupported Script (Skip)
 

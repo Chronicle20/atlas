@@ -85,6 +85,20 @@ Identify and understand:
 - **craftAction**: Define crafting with materials, quantities, meso cost
 - **listSelection**: Dynamic choice lists that populate context
   - MUST include Exit choice
+- **transportAction**: Initiate an instance-based transport via saga-orchestrator
+  - Used when original script calls `cm.getEventManager("...")` + `em.startInstance(cm.getPlayer())` for trains, boats, genies, etc.
+  - Creates a saga to start the transport; on success the character is warped to the transit map automatically (conversation ends)
+  - On failure, routes to specific error states based on the reason
+  - **Required fields**: `routeName`, `failureState`
+  - **Optional fields**: `capacityFullState`, `alreadyInTransitState`, `routeNotFoundState`, `serviceErrorState`
+  - `routeName`: The instance route name (e.g., `"kerning-train-to-square"`), resolved to UUID at runtime
+  - `failureState`: General fallback failure state
+  - `capacityFullState`: State when transport vehicle is full (maps to original "full" messages)
+  - `alreadyInTransitState`: State when character is already on another transport
+  - `routeNotFoundState`: State when route name doesn't exist in config
+  - `serviceErrorState`: State when transport service is unavailable
+  - **JavaScript mapping**: `cm.getEventManager("Trains")` / `em.startInstance(player)` → `transportAction`
+  - Failure states should be `dialogue` states with appropriate error messages matching the original script
 - **askStyle**: Present cosmetic style selection interface (hair/face/skin)
   - Used for hair salons, face shops, skin color NPCs
   - Requires pre-populated styles in context (via local:generate_* operations)
@@ -532,5 +546,86 @@ How would you like to proceed?
 
 Please choose an option or provide guidance.
 ```
+
+**Example 6 - Converting event manager transport to transportAction:**
+```javascript
+// Original script uses event manager for train/boat transport
+var em = cm.getEventManager("KerningTrain");
+if (!em.startInstance(cm.getPlayer())) {
+    cm.sendOk("The passenger wagon is already full. Try again a bit later.");
+}
+cm.dispose();
+```
+❌ WRONG - Using warp_to_map (skips transit entirely):
+```json
+{
+  "id": "warpToDestination",
+  "type": "genericAction",
+  "genericAction": {
+    "operations": [
+      {"type": "warp_to_map", "params": {"mapId": "103000310", "portalId": "0"}}
+    ],
+    "outcomes": [{"conditions": [], "nextState": null}]
+  }
+}
+```
+
+✅ CORRECT - Use transportAction state type:
+```json
+{
+  "id": "startTransport",
+  "type": "transportAction",
+  "transportAction": {
+    "routeName": "kerning-train-to-square",
+    "failureState": "transportFailed",
+    "capacityFullState": "transportCapacityFull",
+    "alreadyInTransitState": "transportAlreadyInTransit",
+    "routeNotFoundState": "transportFailed",
+    "serviceErrorState": "transportFailed"
+  }
+},
+{
+  "id": "transportFailed",
+  "type": "dialogue",
+  "dialogue": {
+    "dialogueType": "sendOk",
+    "text": "Sorry, the train service is currently unavailable. Please try again later.",
+    "choices": [
+      {"text": "Ok", "nextState": null},
+      {"text": "Exit", "nextState": null}
+    ]
+  }
+},
+{
+  "id": "transportCapacityFull",
+  "type": "dialogue",
+  "dialogue": {
+    "dialogueType": "sendOk",
+    "text": "The passenger wagon is already full. Try again a bit later.",
+    "choices": [
+      {"text": "Ok", "nextState": null},
+      {"text": "Exit", "nextState": null}
+    ]
+  }
+},
+{
+  "id": "transportAlreadyInTransit",
+  "type": "dialogue",
+  "dialogue": {
+    "dialogueType": "sendOk",
+    "text": "You seem to already be on a transport. Please wait until you arrive at your destination.",
+    "choices": [
+      {"text": "Ok", "nextState": null},
+      {"text": "Exit", "nextState": null}
+    ]
+  }
+}
+```
+
+**When to use transportAction vs warp_to_map:**
+- `transportAction`: When the original script uses `cm.getEventManager(...)` + `em.startInstance(...)` — the character boards a vehicle, travels through a transit map with a timer, then arrives at destination
+- `warp_to_map`: When the original script uses `cm.warp(mapId, portal)` — instant teleportation with no transit
+
+**Route names** must match configured instance routes in `atlas-tenants`. If you encounter a transport NPC and aren't sure what route name to use, check existing route configurations or ask the user.
 
 Begin conversion now.

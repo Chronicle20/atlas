@@ -251,19 +251,6 @@ func (p *ProcessorImpl) Continue(npcId uint32, characterId uint32, action byte, 
 		// Store the choice context for later use
 		choiceContext = choice.Context()
 
-	case DimensionalMirrorSelectionType:
-		// For dimensional mirror selection states, the selection is the index of the option
-		dimensionalMirrorSelection := state.DimensionalMirrorSelection()
-		if dimensionalMirrorSelection == nil {
-			return errors.New("dimensionalMirrorSelection is nil")
-		}
-
-		choice, _ := dimensionalMirrorSelection.ChoiceFromSelection(action, selection)
-		nextStateId = choice.NextState()
-
-		// Store the choice context for later use
-		choiceContext = choice.Context()
-
 	case AskNumberType:
 		// For ask number states, the selection contains the number entered by the player
 		askNumber := state.AskNumber()
@@ -488,9 +475,6 @@ func (p *ProcessorImpl) processState(ctx ConversationContext, state StateModel) 
 	case ListSelectionType:
 		// Process list selection state
 		return p.processListSelectionState(ctx, state)
-	case DimensionalMirrorSelectionType:
-		// Process dimensional mirror selection state
-		return p.processDimensionalMirrorSelectionState(ctx, state)
 	case AskNumberType:
 		// Process ask number state
 		return p.processAskNumberState(ctx, state)
@@ -843,33 +827,6 @@ func (p *ProcessorImpl) processListSelectionState(ctx ConversationContext, state
 		}
 
 		mb.OpenItem(i).BlueText().AddText(processedChoiceText).CloseItem().NewLine()
-	}
-
-	npcSender.NewProcessor(p.l, p.ctx).SendSimple(ctx.Field().Channel(), ctx.CharacterId(), ctx.NpcId())(mb.String())
-	return state.Id(), nil
-}
-
-// processDimensionalMirrorSelectionState processes a dimensional mirror selection state
-func (p *ProcessorImpl) processDimensionalMirrorSelectionState(ctx ConversationContext, state StateModel) (string, error) {
-	dimensionalMirrorSelection := state.DimensionalMirrorSelection()
-	if dimensionalMirrorSelection == nil {
-		return "", errors.New("dimensionalMirrorSelection is nil")
-	}
-
-	mb := message.NewBuilder()
-	for i, choice := range dimensionalMirrorSelection.Choices() {
-		if choice.NextState() == "" || choice.Text() == "Exit" {
-			continue
-		}
-
-		// Replace context placeholders in choice text
-		processedChoiceText, err := ReplaceContextPlaceholders(choice.Text(), ctx.Context())
-		if err != nil {
-			p.l.WithError(err).Warnf("Failed to replace context placeholders in choice text for state [%s]. Using original text.", state.Id())
-			processedChoiceText = choice.Text()
-		}
-
-		mb.DimensionalMirrorOption(i, processedChoiceText)
 	}
 
 	npcSender.NewProcessor(p.l, p.ctx).SendSimple(ctx.Field().Channel(), ctx.CharacterId(), ctx.NpcId())(mb.String())

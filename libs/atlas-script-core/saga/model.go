@@ -132,8 +132,12 @@ const (
 	UnblockPortal   Action = "unblock_portal"
 
 	// Transport actions
-	StartInstanceTransport    Action = "start_instance_transport"
-	CancelConsumableEffect    Action = "cancel_consumable_effect"
+	StartInstanceTransport Action = "start_instance_transport"
+	CancelConsumableEffect Action = "cancel_consumable_effect"
+
+	// Saved location actions
+	SaveLocation        Action = "save_location"
+	WarpToSavedLocation Action = "warp_to_saved_location"
 )
 
 // Step represents a single step within a saga.
@@ -487,6 +491,26 @@ type StartInstanceTransportPayload struct {
 	RouteName   string     `json:"routeName"`   // Route name (resolved to UUID at runtime by saga-orchestrator)
 }
 
+// SaveLocationPayload represents the payload required to save a character's current location.
+// Used by portals to remember where a character came from before warping to a special area (e.g., Free Market).
+type SaveLocationPayload struct {
+	CharacterId  uint32     `json:"characterId"`  // CharacterId associated with the action
+	WorldId      world.Id   `json:"worldId"`      // WorldId associated with the action
+	ChannelId    channel.Id `json:"channelId"`    // ChannelId associated with the action
+	LocationType string     `json:"locationType"` // Location type key (e.g., "FREE_MARKET", "EVENT")
+	MapId        _map.Id    `json:"mapId"`        // MapId to save
+	PortalId     uint32     `json:"portalId"`     // PortalId to save
+}
+
+// WarpToSavedLocationPayload represents the payload required to warp a character back to a saved location.
+// Retrieves the saved location, warps the character, then deletes the saved location (pop semantics).
+type WarpToSavedLocationPayload struct {
+	CharacterId  uint32     `json:"characterId"`  // CharacterId associated with the action
+	WorldId      world.Id   `json:"worldId"`      // WorldId associated with the action
+	ChannelId    channel.Id `json:"channelId"`    // ChannelId associated with the action
+	LocationType string     `json:"locationType"` // Location type key (e.g., "FREE_MARKET", "EVENT")
+}
+
 // Custom UnmarshalJSON for Step[T] to handle the generics
 func (s *Step[T]) UnmarshalJSON(data []byte) error {
 	type Alias Step[T] // Alias to avoid recursion
@@ -710,6 +734,18 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case CancelConsumableEffect:
 		var payload CancelConsumableEffectPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case SaveLocation:
+		var payload SaveLocationPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case WarpToSavedLocation:
+		var payload WarpToSavedLocationPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

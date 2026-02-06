@@ -48,6 +48,10 @@ type (
 	ShowInfoPayload        = scriptsaga.ShowInfoPayload
 	ShowInfoTextPayload    = scriptsaga.ShowInfoTextPayload
 	ShowHintPayload        = scriptsaga.ShowHintPayload
+
+	// Saved location payload types
+	SaveLocationPayload        = scriptsaga.SaveLocationPayload
+	WarpToSavedLocationPayload = scriptsaga.WarpToSavedLocationPayload
 )
 
 // ShowGuideHintPayload represents the payload required to show a pre-defined guide hint by ID.
@@ -158,6 +162,10 @@ const (
 
 	// Transport actions
 	StartInstanceTransport Action = "start_instance_transport"
+
+	// Saved location actions
+	SaveLocation        = scriptsaga.SaveLocation
+	WarpToSavedLocation = scriptsaga.WarpToSavedLocation
 )
 
 // ValidateCharacterStatePayload uses the NPC service's validation.ConditionInput

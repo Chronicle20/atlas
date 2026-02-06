@@ -1898,6 +1898,72 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 		return stepId, saga.Pending, saga.StartInstanceTransport, payload, nil
 
+	case "save_location":
+		// Format: save_location
+		// Params: locationType (string, required), mapId (uint32, optional - defaults to current map), portalId (uint32, optional - defaults to 0)
+		// Saves the character's current location for later retrieval
+		locationTypeValue, exists := operation.Params()["locationType"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing locationType parameter for save_location operation")
+		}
+
+		locationType, err := e.evaluateContextValue(characterId, "locationType", locationTypeValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		// MapId is optional, defaults to character's current map
+		mapIdInt := int(f.MapId())
+		if mapIdValue, exists := operation.Params()["mapId"]; exists {
+			mapIdInt, err = e.evaluateContextValueAsInt(characterId, "mapId", mapIdValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
+		}
+
+		// PortalId is optional, defaults to 0
+		portalIdInt := 0
+		if portalIdValue, exists := operation.Params()["portalId"]; exists {
+			portalIdInt, err = e.evaluateContextValueAsInt(characterId, "portalId", portalIdValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
+		}
+
+		payload := saga.SaveLocationPayload{
+			CharacterId:  characterId,
+			WorldId:      f.WorldId(),
+			ChannelId:    f.ChannelId(),
+			LocationType: locationType,
+			MapId:        _map.Id(mapIdInt),
+			PortalId:     uint32(portalIdInt),
+		}
+
+		return stepId, saga.Pending, saga.SaveLocation, payload, nil
+
+	case "warp_to_saved_location":
+		// Format: warp_to_saved_location
+		// Params: locationType (string, required)
+		// Warps the character back to a previously saved location (pop semantics: get + warp + delete)
+		locationTypeValue, exists := operation.Params()["locationType"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing locationType parameter for warp_to_saved_location operation")
+		}
+
+		locationType, err := e.evaluateContextValue(characterId, "locationType", locationTypeValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		payload := saga.WarpToSavedLocationPayload{
+			CharacterId:  characterId,
+			WorldId:      f.WorldId(),
+			ChannelId:    f.ChannelId(),
+			LocationType: locationType,
+		}
+
+		return stepId, saga.Pending, saga.WarpToSavedLocation, payload, nil
+
 	default:
 		return "", "", "", nil, fmt.Errorf("unknown operation type: %s", operation.Type())
 	}

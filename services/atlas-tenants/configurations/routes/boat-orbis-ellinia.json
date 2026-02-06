@@ -1,0 +1,16 @@
+{
+  "id": "boat-orbis-ellinia",
+  "type": "routes",
+  "attributes": {
+    "name": "boat-orbis-ellinia",
+    "startMapId": 200000111,
+    "stagingMapId": 200000112,
+    "enRouteMapIds": [200090000, 200090001],
+    "destinationMapId": 101000300,
+    "observationMapId": 200000111,
+    "boardingWindowDuration": 4,
+    "preDepartureDuration": 1,
+    "travelDuration": 10,
+    "cycleInterval": 15
+  }
+}

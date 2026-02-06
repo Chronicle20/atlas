@@ -1,0 +1,10 @@
+{
+  "id": "cabin-leafre-orbis",
+  "type": "vessels",
+  "attributes": {
+    "name": "cabin-leafre-orbis",
+    "routeAID": "cabin-leafre-orbis",
+    "routeBID": "cabin-orbis-leafre",
+    "turnaroundDelay": 5
+  }
+}

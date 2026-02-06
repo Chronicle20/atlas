@@ -10,7 +10,7 @@ None.
 
 Tenant lifecycle events.
 
-### configuration.status
+### EVENT_TOPIC_CONFIGURATION_STATUS
 
 Configuration resource lifecycle events.
 
@@ -36,7 +36,7 @@ Configuration resource lifecycle events.
 - `UPDATED`: Emitted when a tenant is updated
 - `DELETED`: Emitted when a tenant is deleted
 
-### ConfigurationStatusEvent (configuration.status)
+### ConfigurationStatusEvent (EVENT_TOPIC_CONFIGURATION_STATUS)
 
 ```json
 {

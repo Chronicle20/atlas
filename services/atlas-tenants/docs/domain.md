@@ -40,7 +40,7 @@ Represents a game server tenant with identification, region, and version informa
 
 ### Responsibility
 
-Manages tenant-specific configuration resources including routes, vessels, and instance routes.
+Manages tenant-specific configuration resources including routes, vessels, and instance routes. Supports seeding configuration data from JSON files on the filesystem.
 
 ### Core Models
 
@@ -49,6 +49,12 @@ Manages tenant-specific configuration resources including routes, vessels, and i
 - `tenantID` (uuid.UUID): Associated tenant ID
 - `resourceName` (string): Type of resource (routes, vessels, instance-routes)
 - `resourceData` (json.RawMessage): JSON data for the resource
+
+**SeedResult**
+- `deletedCount` (int): Number of existing resources deleted
+- `createdCount` (int): Number of resources created
+- `failedCount` (int): Number of resources that failed to create
+- `errors` ([]string): Error messages for failed operations
 
 ### Invariants
 
@@ -92,3 +98,8 @@ Manages tenant-specific configuration resources including routes, vessels, and i
 - `GetAllInstanceRoutes`: Retrieves all instance routes for a tenant
 - `InstanceRouteByIdProvider`: Returns a provider for an instance route by ID
 - `AllInstanceRoutesProvider`: Returns a provider for all instance routes for a tenant
+
+**Processor (Seed Operations)**
+- `SeedRoutes`: Deletes all existing routes for a tenant and loads them from seed files
+- `SeedInstanceRoutes`: Deletes all existing instance routes for a tenant and loads them from seed files
+- `SeedVessels`: Deletes all existing vessels for a tenant and loads them from seed files

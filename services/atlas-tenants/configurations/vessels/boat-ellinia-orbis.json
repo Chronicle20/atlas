@@ -1,0 +1,10 @@
+{
+  "id": "boat-ellinia-orbis",
+  "type": "vessels",
+  "attributes": {
+    "name": "boat-ellinia-orbis",
+    "routeAID": "boat-ellinia-orbis",
+    "routeBID": "boat-orbis-ellinia",
+    "turnaroundDelay": 5
+  }
+}

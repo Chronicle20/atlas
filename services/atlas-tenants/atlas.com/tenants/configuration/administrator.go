@@ -81,3 +81,12 @@ func DeleteConfiguration(db *gorm.DB, tenantID uuid.UUID, resourceName string, r
 
 	return errors.New("resource not found")
 }
+
+// DeleteConfigurationByResourceName deletes all configuration rows for a tenant and resource name
+func DeleteConfigurationByResourceName(db *gorm.DB, tenantID uuid.UUID, resourceName string) (int64, error) {
+	result := db.Where("tenant_id = ? AND resource_name = ?", tenantID, resourceName).Delete(&Entity{})
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return result.RowsAffected, nil
+}

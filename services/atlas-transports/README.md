@@ -36,3 +36,4 @@ Scheduled routes transition through states (awaiting return, open entry, locked 
 - [Domain Model](docs/domain.md)
 - [Kafka Integration](docs/kafka.md)
 - [REST API](docs/rest.md)
+- [Storage](docs/storage.md)

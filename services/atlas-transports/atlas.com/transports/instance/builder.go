@@ -77,8 +77,8 @@ func (b *RouteBuilder) Build() (RouteModel, error) {
 	if b.boardingWindow <= 0 {
 		return RouteModel{}, errors.New("boarding window must be positive")
 	}
-	if b.travelDuration <= 0 {
-		return RouteModel{}, errors.New("travel duration must be positive")
+	if b.travelDuration < 0 {
+		return RouteModel{}, errors.New("travel duration must not be negative")
 	}
 
 	return RouteModel{

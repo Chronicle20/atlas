@@ -2,8 +2,6 @@ package transport
 
 import (
 	"time"
-
-	"github.com/google/uuid"
 )
 
 var timeNow = time.Now
@@ -27,14 +25,14 @@ func (s *Scheduler) ComputeSchedule() ([]TripScheduleModel, error) {
 
 	var schedules []TripScheduleModel
 
-	sharedRouteIds := make(map[uuid.UUID]bool)
+	sharedRouteNames := make(map[string]bool)
 	for _, vessel := range s.sharedVessels {
-		sharedRouteIds[vessel.RouteAID()] = true
-		sharedRouteIds[vessel.RouteBID()] = true
+		sharedRouteNames[vessel.RouteAID()] = true
+		sharedRouteNames[vessel.RouteBID()] = true
 	}
 
 	for _, route := range s.routes {
-		if _, isShared := sharedRouteIds[route.Id()]; isShared {
+		if _, isShared := sharedRouteNames[route.Name()]; isShared {
 			continue
 		}
 		routeSchedules, err := s.computeRouteSchedule(route, startOfDay, endOfDay)
@@ -88,15 +86,18 @@ func (s *Scheduler) computeSharedVesselSchedule(vessel SharedVesselModel, startO
 	var schedules []TripScheduleModel
 
 	var routeA, routeB Model
+	var foundA, foundB bool
 	for _, route := range s.routes {
-		if route.Id() == vessel.RouteAID() {
+		if route.Name() == vessel.RouteAID() {
 			routeA = route
-		} else if route.Id() == vessel.RouteBID() {
+			foundA = true
+		} else if route.Name() == vessel.RouteBID() {
 			routeB = route
+			foundB = true
 		}
 	}
 
-	if routeA.Id() == uuid.Nil || routeB.Id() == uuid.Nil {
+	if !foundA || !foundB {
 		return schedules, nil
 	}
 

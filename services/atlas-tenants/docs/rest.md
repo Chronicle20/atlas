@@ -59,6 +59,7 @@ Retrieves a tenant by ID.
 ```
 
 **Error Conditions**:
+- 400: Invalid tenant ID format
 - 404: Tenant not found
 
 ---
@@ -146,7 +147,7 @@ Updates an existing tenant.
 ```
 
 **Error Conditions**:
-- 400: Invalid request body
+- 400: Invalid request body or tenant ID format
 - 500: Internal server error (includes tenant not found)
 
 ---
@@ -163,6 +164,7 @@ Deletes a tenant.
 **Response Model**: None (204 No Content)
 
 **Error Conditions**:
+- 400: Invalid tenant ID format
 - 500: Internal server error (includes tenant not found)
 
 ---
@@ -182,7 +184,7 @@ Retrieves all routes for a tenant.
   "data": [
     {
       "type": "routes",
-      "id": "uuid",
+      "id": "string",
       "attributes": {
         "name": "string",
         "startMapId": 0,
@@ -201,6 +203,7 @@ Retrieves all routes for a tenant.
 ```
 
 **Error Conditions**:
+- 400: Invalid tenant ID format
 - 500: Internal server error
 
 ---
@@ -220,7 +223,7 @@ Retrieves a route by ID.
 {
   "data": {
     "type": "routes",
-    "id": "uuid",
+    "id": "string",
     "attributes": {
       "name": "string",
       "startMapId": 0,
@@ -238,6 +241,7 @@ Retrieves a route by ID.
 ```
 
 **Error Conditions**:
+- 400: Invalid tenant ID format or missing route ID
 - 404: Route not found
 
 ---
@@ -275,7 +279,7 @@ Creates a new route.
 {
   "data": {
     "type": "routes",
-    "id": "uuid",
+    "id": "string",
     "attributes": {
       "name": "string",
       "startMapId": 0,
@@ -293,7 +297,7 @@ Creates a new route.
 ```
 
 **Error Conditions**:
-- 400: Invalid request body
+- 400: Invalid request body or tenant ID format
 - 500: Internal server error
 
 ---
@@ -311,7 +315,7 @@ Updates an existing route.
 {
   "data": {
     "type": "routes",
-    "id": "uuid",
+    "id": "string",
     "attributes": {
       "name": "string",
       "startMapId": 0,
@@ -333,7 +337,7 @@ Updates an existing route.
 {
   "data": {
     "type": "routes",
-    "id": "uuid",
+    "id": "string",
     "attributes": {
       "name": "string",
       "startMapId": 0,
@@ -351,7 +355,7 @@ Updates an existing route.
 ```
 
 **Error Conditions**:
-- 400: Invalid request body
+- 400: Invalid request body, tenant ID format, or missing route ID
 - 500: Internal server error (includes route not found)
 
 ---
@@ -369,6 +373,32 @@ Deletes a route.
 **Response Model**: None (204 No Content)
 
 **Error Conditions**:
+- 400: Invalid tenant ID format or missing route ID
+- 500: Internal server error
+
+---
+
+### POST /tenants/{tenantId}/configurations/routes/seed
+
+Deletes all existing routes for a tenant and loads them from seed files.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+
+**Request Model**: None
+
+**Response Model**:
+```json
+{
+  "deletedCount": 0,
+  "createdCount": 0,
+  "failedCount": 0,
+  "errors": ["string"]
+}
+```
+
+**Error Conditions**:
+- 400: Invalid tenant ID format
 - 500: Internal server error
 
 ---
@@ -388,11 +418,11 @@ Retrieves all vessels for a tenant.
   "data": [
     {
       "type": "vessels",
-      "id": "uuid",
+      "id": "string",
       "attributes": {
         "name": "string",
-        "routeAID": "uuid",
-        "routeBID": "uuid",
+        "routeAID": "string",
+        "routeBID": "string",
         "turnaroundDelay": 0
       }
     }
@@ -401,6 +431,7 @@ Retrieves all vessels for a tenant.
 ```
 
 **Error Conditions**:
+- 400: Invalid tenant ID format
 - 500: Internal server error
 
 ---
@@ -420,11 +451,11 @@ Retrieves a vessel by ID.
 {
   "data": {
     "type": "vessels",
-    "id": "uuid",
+    "id": "string",
     "attributes": {
       "name": "string",
-      "routeAID": "uuid",
-      "routeBID": "uuid",
+      "routeAID": "string",
+      "routeBID": "string",
       "turnaroundDelay": 0
     }
   }
@@ -432,6 +463,7 @@ Retrieves a vessel by ID.
 ```
 
 **Error Conditions**:
+- 400: Invalid tenant ID format or missing vessel ID
 - 404: Vessel not found
 
 ---
@@ -450,8 +482,8 @@ Creates a new vessel.
     "type": "vessels",
     "attributes": {
       "name": "string",
-      "routeAID": "uuid",
-      "routeBID": "uuid",
+      "routeAID": "string",
+      "routeBID": "string",
       "turnaroundDelay": 0
     }
   }
@@ -463,11 +495,11 @@ Creates a new vessel.
 {
   "data": {
     "type": "vessels",
-    "id": "uuid",
+    "id": "string",
     "attributes": {
       "name": "string",
-      "routeAID": "uuid",
-      "routeBID": "uuid",
+      "routeAID": "string",
+      "routeBID": "string",
       "turnaroundDelay": 0
     }
   }
@@ -475,7 +507,7 @@ Creates a new vessel.
 ```
 
 **Error Conditions**:
-- 400: Invalid request body
+- 400: Invalid request body or tenant ID format
 - 500: Internal server error
 
 ---
@@ -493,11 +525,11 @@ Updates an existing vessel.
 {
   "data": {
     "type": "vessels",
-    "id": "uuid",
+    "id": "string",
     "attributes": {
       "name": "string",
-      "routeAID": "uuid",
-      "routeBID": "uuid",
+      "routeAID": "string",
+      "routeBID": "string",
       "turnaroundDelay": 0
     }
   }
@@ -509,11 +541,11 @@ Updates an existing vessel.
 {
   "data": {
     "type": "vessels",
-    "id": "uuid",
+    "id": "string",
     "attributes": {
       "name": "string",
-      "routeAID": "uuid",
-      "routeBID": "uuid",
+      "routeAID": "string",
+      "routeBID": "string",
       "turnaroundDelay": 0
     }
   }
@@ -521,7 +553,7 @@ Updates an existing vessel.
 ```
 
 **Error Conditions**:
-- 400: Invalid request body
+- 400: Invalid request body, tenant ID format, or missing vessel ID
 - 500: Internal server error (includes vessel not found)
 
 ---
@@ -539,6 +571,32 @@ Deletes a vessel.
 **Response Model**: None (204 No Content)
 
 **Error Conditions**:
+- 400: Invalid tenant ID format or missing vessel ID
+- 500: Internal server error
+
+---
+
+### POST /tenants/{tenantId}/configurations/vessels/seed
+
+Deletes all existing vessels for a tenant and loads them from seed files.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+
+**Request Model**: None
+
+**Response Model**:
+```json
+{
+  "deletedCount": 0,
+  "createdCount": 0,
+  "failedCount": 0,
+  "errors": ["string"]
+}
+```
+
+**Error Conditions**:
+- 400: Invalid tenant ID format
 - 500: Internal server error
 
 ---
@@ -566,7 +624,8 @@ Retrieves all instance routes for a tenant.
         "destinationMapId": 0,
         "capacity": 0,
         "boardingWindowSeconds": 0,
-        "travelDurationSeconds": 0
+        "travelDurationSeconds": 0,
+        "transitMessage": "string"
       }
     }
   ]
@@ -574,6 +633,7 @@ Retrieves all instance routes for a tenant.
 ```
 
 **Error Conditions**:
+- 400: Invalid tenant ID format
 - 500: Internal server error
 
 ---
@@ -601,13 +661,15 @@ Retrieves an instance route by ID.
       "destinationMapId": 0,
       "capacity": 0,
       "boardingWindowSeconds": 0,
-      "travelDurationSeconds": 0
+      "travelDurationSeconds": 0,
+      "transitMessage": "string"
     }
   }
 }
 ```
 
 **Error Conditions**:
+- 400: Invalid tenant ID format or missing instance route ID
 - 404: Instance route not found
 
 ---
@@ -631,7 +693,8 @@ Creates a new instance route.
       "destinationMapId": 0,
       "capacity": 0,
       "boardingWindowSeconds": 0,
-      "travelDurationSeconds": 0
+      "travelDurationSeconds": 0,
+      "transitMessage": "string"
     }
   }
 }
@@ -650,14 +713,15 @@ Creates a new instance route.
       "destinationMapId": 0,
       "capacity": 0,
       "boardingWindowSeconds": 0,
-      "travelDurationSeconds": 0
+      "travelDurationSeconds": 0,
+      "transitMessage": "string"
     }
   }
 }
 ```
 
 **Error Conditions**:
-- 400: Invalid request body
+- 400: Invalid request body or tenant ID format
 - 500: Internal server error
 
 ---
@@ -683,7 +747,8 @@ Updates an existing instance route.
       "destinationMapId": 0,
       "capacity": 0,
       "boardingWindowSeconds": 0,
-      "travelDurationSeconds": 0
+      "travelDurationSeconds": 0,
+      "transitMessage": "string"
     }
   }
 }
@@ -702,14 +767,15 @@ Updates an existing instance route.
       "destinationMapId": 0,
       "capacity": 0,
       "boardingWindowSeconds": 0,
-      "travelDurationSeconds": 0
+      "travelDurationSeconds": 0,
+      "transitMessage": "string"
     }
   }
 }
 ```
 
 **Error Conditions**:
-- 400: Invalid request body
+- 400: Invalid request body, tenant ID format, or missing instance route ID
 - 500: Internal server error (includes instance route not found)
 
 ---
@@ -727,4 +793,30 @@ Deletes an instance route.
 **Response Model**: None (204 No Content)
 
 **Error Conditions**:
+- 400: Invalid tenant ID format or missing instance route ID
+- 500: Internal server error
+
+---
+
+### POST /tenants/{tenantId}/configurations/instance-routes/seed
+
+Deletes all existing instance routes for a tenant and loads them from seed files.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+
+**Request Model**: None
+
+**Response Model**:
+```json
+{
+  "deletedCount": 0,
+  "createdCount": 0,
+  "failedCount": 0,
+  "errors": ["string"]
+}
+```
+
+**Error Conditions**:
+- 400: Invalid tenant ID format
 - 500: Internal server error

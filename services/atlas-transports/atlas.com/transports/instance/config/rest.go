@@ -5,31 +5,26 @@ import (
 	"time"
 
 	_map "github.com/Chronicle20/atlas-constants/map"
-	"github.com/google/uuid"
 )
 
 type InstanceRouteRestModel struct {
-	Id                    uuid.UUID `json:"-"`
-	Name                  string    `json:"name"`
-	StartMapId            _map.Id   `json:"startMapId"`
-	TransitMapId          _map.Id   `json:"transitMapId"`
-	DestinationMapId      _map.Id   `json:"destinationMapId"`
-	Capacity              uint32    `json:"capacity"`
-	BoardingWindowSeconds uint32    `json:"boardingWindowSeconds"`
-	TravelDurationSeconds uint32    `json:"travelDurationSeconds"`
-	TransitMessage        string    `json:"transitMessage"`
+	Id                    string `json:"-"`
+	Name                  string `json:"name"`
+	StartMapId            _map.Id `json:"startMapId"`
+	TransitMapId          _map.Id `json:"transitMapId"`
+	DestinationMapId      _map.Id `json:"destinationMapId"`
+	Capacity              uint32  `json:"capacity"`
+	BoardingWindowSeconds uint32  `json:"boardingWindowSeconds"`
+	TravelDurationSeconds uint32  `json:"travelDurationSeconds"`
+	TransitMessage        string  `json:"transitMessage"`
 }
 
 func (r InstanceRouteRestModel) GetID() string {
-	return r.Id.String()
+	return r.Id
 }
 
 func (r *InstanceRouteRestModel) SetID(idStr string) error {
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		return err
-	}
-	r.Id = id
+	r.Id = idStr
 	return nil
 }
 
@@ -39,7 +34,6 @@ func (r InstanceRouteRestModel) GetName() string {
 
 func ExtractRoute(r InstanceRouteRestModel) (instance.RouteModel, error) {
 	return instance.NewRouteBuilder(r.Name).
-		SetId(r.Id).
 		SetStartMapId(r.StartMapId).
 		SetTransitMapId(r.TransitMapId).
 		SetDestinationMapId(r.DestinationMapId).

@@ -1,0 +1,13 @@
+{
+  "type": "instance-routes",
+  "attributes": {
+    "name": "hak-to-orbis",
+    "eventScript": "Hak",
+    "startMapId": 250000100,
+    "transitMapId": 200090310,
+    "destinationMapId": 200000141,
+    "capacity": 1,
+    "boardingWindowSeconds": 1,
+    "travelDurationSeconds": 60
+  }
+}

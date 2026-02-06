@@ -140,6 +140,12 @@ func ApplyItemEffects(l logrus.FieldLogger, ctx context.Context, c character.Mod
 			Amount: val,
 		})
 	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeMorph); ok && val > 0 {
+		statups = append(statups, stat.Model{
+			Type:   ts.TemporaryStatTypeMorph,
+			Amount: val,
+		})
+	}
 	if val, ok := ci.GetSpec(consumable3.SpecTypeTime); ok && val > 0 {
 		duration = val / 1000
 	}

@@ -64,14 +64,14 @@ func TestRouteBuilder_NoBoardingWindow(t *testing.T) {
 	assert.Contains(t, err.Error(), "boarding window")
 }
 
-func TestRouteBuilder_NoTravelDuration(t *testing.T) {
-	_, err := NewRouteBuilder("test").
+func TestRouteBuilder_ZeroTravelDuration(t *testing.T) {
+	route, err := NewRouteBuilder("test").
 		SetCapacity(6).
 		SetBoardingWindow(10 * time.Second).
 		Build()
 
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "travel duration")
+	assert.NoError(t, err)
+	assert.Equal(t, time.Duration(0), route.TravelDuration())
 }
 
 func TestRouteBuilder_GeneratesId(t *testing.T) {

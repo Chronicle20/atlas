@@ -1,0 +1,10 @@
+{
+  "id": "airplane-cbd-kc",
+  "type": "vessels",
+  "attributes": {
+    "name": "airplane-cbd-kc",
+    "routeAID": "airplane-cbd-kc",
+    "routeBID": "airplane-kc-cbd",
+    "turnaroundDelay": 5
+  }
+}

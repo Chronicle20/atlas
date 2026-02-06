@@ -1,0 +1,15 @@
+meta {
+  name: Seed Tenant Configuration Routes
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{scheme}}://{{host}}:{{port}}/api/tenants/{{tenantId}}/configurations/routes/seed
+  body: json
+  auth: inherit
+}
+
+vars:pre-request {
+  tenantId: 083839c6-c47c-42a6-9585-76492795d123
+}

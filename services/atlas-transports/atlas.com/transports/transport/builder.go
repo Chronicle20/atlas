@@ -134,8 +134,8 @@ func (b *Builder) Build() (Model, error) {
 	if b.boardingWindowDuration <= 0 {
 		return Model{}, errors.New("boarding window duration must be positive")
 	}
-	if b.preDepartureDuration <= 0 {
-		return Model{}, errors.New("pre-departure duration must be positive")
+	if b.preDepartureDuration < 0 {
+		return Model{}, errors.New("pre-departure duration must not be negative")
 	}
 	if b.travelDuration <= 0 {
 		return Model{}, errors.New("travel duration must be positive")
@@ -163,22 +163,20 @@ func (b *Builder) Build() (Model, error) {
 
 // SharedVesselBuilder is a builder for SharedVesselModel
 type SharedVesselBuilder struct {
-	id              uuid.UUID
+	id              string
 	name            string
-	routeAID        uuid.UUID
-	routeBID        uuid.UUID
+	routeAID        string
+	routeBID        string
 	turnaroundDelay time.Duration
 }
 
 // NewSharedVesselBuilder creates a new builder for SharedVesselModel
 func NewSharedVesselBuilder() *SharedVesselBuilder {
-	return &SharedVesselBuilder{
-		id: uuid.New(),
-	}
+	return &SharedVesselBuilder{}
 }
 
 // SetId sets the shared vessel ID
-func (b *SharedVesselBuilder) SetId(id uuid.UUID) *SharedVesselBuilder {
+func (b *SharedVesselBuilder) SetId(id string) *SharedVesselBuilder {
 	b.id = id
 	return b
 }
@@ -189,13 +187,13 @@ func (b *SharedVesselBuilder) SetName(name string) *SharedVesselBuilder {
 }
 
 // SetRouteAID sets the ID of route A
-func (b *SharedVesselBuilder) SetRouteAID(routeAID uuid.UUID) *SharedVesselBuilder {
+func (b *SharedVesselBuilder) SetRouteAID(routeAID string) *SharedVesselBuilder {
 	b.routeAID = routeAID
 	return b
 }
 
 // SetRouteBID sets the ID of route B
-func (b *SharedVesselBuilder) SetRouteBID(routeBID uuid.UUID) *SharedVesselBuilder {
+func (b *SharedVesselBuilder) SetRouteBID(routeBID string) *SharedVesselBuilder {
 	b.routeBID = routeBID
 	return b
 }
@@ -208,11 +206,11 @@ func (b *SharedVesselBuilder) SetTurnaroundDelay(turnaroundDelay time.Duration) 
 
 // Build builds the SharedVesselModel with validation
 func (b *SharedVesselBuilder) Build() (SharedVesselModel, error) {
-	if b.routeAID == uuid.Nil {
-		return SharedVesselModel{}, errors.New("route A ID must not be nil")
+	if b.routeAID == "" {
+		return SharedVesselModel{}, errors.New("route A ID must not be empty")
 	}
-	if b.routeBID == uuid.Nil {
-		return SharedVesselModel{}, errors.New("route B ID must not be nil")
+	if b.routeBID == "" {
+		return SharedVesselModel{}, errors.New("route B ID must not be empty")
 	}
 	if b.turnaroundDelay <= 0 {
 		return SharedVesselModel{}, errors.New("turnaround delay must be positive")
@@ -288,8 +286,8 @@ func (b *TripScheduleBuilder) Build() (TripScheduleModel, error) {
 	if !b.boardingOpen.Before(b.boardingClosed) {
 		return TripScheduleModel{}, errors.New("boarding open must be before boarding closed")
 	}
-	if !b.boardingClosed.Before(b.departure) {
-		return TripScheduleModel{}, errors.New("boarding closed must be before departure")
+	if b.departure.Before(b.boardingClosed) {
+		return TripScheduleModel{}, errors.New("departure must not be before boarding closed")
 	}
 	if !b.departure.Before(b.arrival) {
 		return TripScheduleModel{}, errors.New("departure must be before arrival")

@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
@@ -80,6 +81,14 @@ type Processor interface {
 	VesselByIdProvider(tenantID uuid.UUID, vesselID string) model.Provider[map[string]interface{}]
 	// AllVesselsProvider returns a provider for all vessels for a tenant
 	AllVesselsProvider(tenantID uuid.UUID) model.Provider[[]map[string]interface{}]
+
+	// Seed operations
+	// SeedRoutes clears existing routes for a tenant and loads them from seed files
+	SeedRoutes(tenantID uuid.UUID) (SeedResult, error)
+	// SeedInstanceRoutes clears existing instance routes for a tenant and loads them from seed files
+	SeedInstanceRoutes(tenantID uuid.UUID) (SeedResult, error)
+	// SeedVessels clears existing vessels for a tenant and loads them from seed files
+	SeedVessels(tenantID uuid.UUID) (SeedResult, error)
 }
 
 // ProcessorImpl implements the Processor interface
@@ -780,4 +789,118 @@ func (p *ProcessorImpl) InstanceRouteByIdProvider(tenantID uuid.UUID, routeID st
 // AllInstanceRoutesProvider returns a provider for all instance routes for a tenant
 func (p *ProcessorImpl) AllInstanceRoutesProvider(tenantID uuid.UUID) model.Provider[[]map[string]interface{}] {
 	return GetAllInstanceRoutesProvider(tenantID)(p.db)
+}
+
+// SeedRoutes clears existing routes for a tenant and loads them from seed files
+func (p *ProcessorImpl) SeedRoutes(tenantID uuid.UUID) (SeedResult, error) {
+	p.l.Infof("Seeding routes for tenant [%s]", tenantID)
+
+	result := SeedResult{}
+
+	// Delete all existing routes for this tenant
+	deletedCount, err := DeleteConfigurationByResourceName(p.db, tenantID, "routes")
+	if err != nil {
+		return result, fmt.Errorf("failed to clear existing routes: %w", err)
+	}
+	result.DeletedCount = int(deletedCount)
+
+	// Load route files from the filesystem
+	routes, loadErrors := LoadRouteFiles()
+	for _, err := range loadErrors {
+		result.Errors = append(result.Errors, err.Error())
+		result.FailedCount++
+	}
+
+	// Create each route
+	for _, route := range routes {
+		id, _ := route["id"].(string)
+		_, err := p.CreateRouteAndEmit(tenantID, route)
+		if err != nil {
+			result.Errors = append(result.Errors, fmt.Sprintf("%s: failed to create: %v", id, err))
+			result.FailedCount++
+			continue
+		}
+		result.CreatedCount++
+	}
+
+	p.l.Infof("Route seed complete for tenant [%s]: deleted=%d, created=%d, failed=%d",
+		tenantID, result.DeletedCount, result.CreatedCount, result.FailedCount)
+
+	return result, nil
+}
+
+// SeedInstanceRoutes clears existing instance routes for a tenant and loads them from seed files
+func (p *ProcessorImpl) SeedInstanceRoutes(tenantID uuid.UUID) (SeedResult, error) {
+	p.l.Infof("Seeding instance routes for tenant [%s]", tenantID)
+
+	result := SeedResult{}
+
+	// Delete all existing instance routes for this tenant
+	deletedCount, err := DeleteConfigurationByResourceName(p.db, tenantID, "instance-routes")
+	if err != nil {
+		return result, fmt.Errorf("failed to clear existing instance routes: %w", err)
+	}
+	result.DeletedCount = int(deletedCount)
+
+	// Load instance route files from the filesystem
+	routes, loadErrors := LoadInstanceRouteFiles()
+	for _, err := range loadErrors {
+		result.Errors = append(result.Errors, err.Error())
+		result.FailedCount++
+	}
+
+	// Create each instance route
+	for _, route := range routes {
+		id, _ := route["id"].(string)
+		_, err := p.CreateInstanceRouteAndEmit(tenantID, route)
+		if err != nil {
+			result.Errors = append(result.Errors, fmt.Sprintf("%s: failed to create: %v", id, err))
+			result.FailedCount++
+			continue
+		}
+		result.CreatedCount++
+	}
+
+	p.l.Infof("Instance route seed complete for tenant [%s]: deleted=%d, created=%d, failed=%d",
+		tenantID, result.DeletedCount, result.CreatedCount, result.FailedCount)
+
+	return result, nil
+}
+
+// SeedVessels clears existing vessels for a tenant and loads them from seed files
+func (p *ProcessorImpl) SeedVessels(tenantID uuid.UUID) (SeedResult, error) {
+	p.l.Infof("Seeding vessels for tenant [%s]", tenantID)
+
+	result := SeedResult{}
+
+	// Delete all existing vessels for this tenant
+	deletedCount, err := DeleteConfigurationByResourceName(p.db, tenantID, "vessels")
+	if err != nil {
+		return result, fmt.Errorf("failed to clear existing vessels: %w", err)
+	}
+	result.DeletedCount = int(deletedCount)
+
+	// Load vessel files from the filesystem
+	vessels, loadErrors := LoadVesselFiles()
+	for _, err := range loadErrors {
+		result.Errors = append(result.Errors, err.Error())
+		result.FailedCount++
+	}
+
+	// Create each vessel
+	for _, vessel := range vessels {
+		id, _ := vessel["id"].(string)
+		_, err := p.CreateVesselAndEmit(tenantID, vessel)
+		if err != nil {
+			result.Errors = append(result.Errors, fmt.Sprintf("%s: failed to create: %v", id, err))
+			result.FailedCount++
+			continue
+		}
+		result.CreatedCount++
+	}
+
+	p.l.Infof("Vessel seed complete for tenant [%s]: deleted=%d, created=%d, failed=%d",
+		tenantID, result.DeletedCount, result.CreatedCount, result.FailedCount)
+
+	return result, nil
 }

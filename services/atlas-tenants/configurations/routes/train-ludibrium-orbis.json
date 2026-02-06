@@ -1,0 +1,16 @@
+{
+  "id": "train-ludibrium-orbis",
+  "type": "routes",
+  "attributes": {
+    "name": "train-ludibrium-orbis",
+    "startMapId": 220000110,
+    "stagingMapId": 220000111,
+    "enRouteMapIds": [200090110],
+    "destinationMapId": 200000100,
+    "observationMapId": 220000110,
+    "boardingWindowDuration": 4,
+    "preDepartureDuration": 1,
+    "travelDuration": 5,
+    "cycleInterval": 10
+  }
+}

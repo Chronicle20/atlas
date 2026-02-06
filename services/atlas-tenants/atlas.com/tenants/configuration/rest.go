@@ -140,10 +140,7 @@ func CreateRouteJsonData(routes []map[string]interface{}) (json.RawMessage, erro
 
 // CreateSingleRouteJsonData creates a JSON:API compliant data structure for a single route
 func CreateSingleRouteJsonData(route map[string]interface{}) (json.RawMessage, error) {
-	data := map[string]interface{}{
-		"data": route,
-	}
-	return json.Marshal(data)
+	return CreateRouteJsonData([]map[string]interface{}{route})
 }
 
 // VesselRestModel is the JSON:API resource for vessels
@@ -224,10 +221,7 @@ func CreateVesselJsonData(vessels []map[string]interface{}) (json.RawMessage, er
 
 // CreateSingleVesselJsonData creates a JSON:API compliant data structure for a single vessel
 func CreateSingleVesselJsonData(vessel map[string]interface{}) (json.RawMessage, error) {
-	data := map[string]interface{}{
-		"data": vessel,
-	}
-	return json.Marshal(data)
+	return CreateVesselJsonData([]map[string]interface{}{vessel})
 }
 
 // InstanceRouteRestModel is the JSON:API resource for instance routes
@@ -343,8 +337,5 @@ func CreateInstanceRouteJsonData(routes []map[string]interface{}) (json.RawMessa
 
 // CreateSingleInstanceRouteJsonData creates a JSON:API compliant data structure for a single instance route
 func CreateSingleInstanceRouteJsonData(route map[string]interface{}) (json.RawMessage, error) {
-	data := map[string]interface{}{
-		"data": route,
-	}
-	return json.Marshal(data)
+	return CreateInstanceRouteJsonData([]map[string]interface{}{route})
 }

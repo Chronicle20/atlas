@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	EventTopicConfigurationStatus = "configuration.status"
+	EventTopicConfigurationStatus = "EVENT_TOPIC_CONFIGURATION_STATUS"
 	EventTypeRouteCreated         = "ROUTE_CREATED"
 	EventTypeRouteUpdated         = "ROUTE_UPDATED"
 	EventTypeRouteDeleted         = "ROUTE_DELETED"

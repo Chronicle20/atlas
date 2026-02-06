@@ -37,7 +37,7 @@ Character status events for handling logout and login scenarios.
 
 **Consumer Group:** Transport Service
 
-**Handler:** On logout, removes character from any active instance transport and warps character to route start map if in a scheduled transport staging or en-route map. On login, warps character to route start map if logged in at an instance transit map (crash recovery).
+**Headers:** SpanHeaderParser, TenantHeaderParser
 
 ### EVENT_TOPIC_CHANNEL_STATUS
 
@@ -45,7 +45,7 @@ Channel status events for tracking active channels.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| type | string | Event type |
+| type | string | Event type (channel.StatusType) |
 | worldId | world.Id | World identifier |
 | channelId | channel.Id | Channel identifier |
 | ipAddress | string | Channel IP address |
@@ -58,7 +58,44 @@ Channel status events for tracking active channels.
 
 **Consumer Group:** Transport Service
 
-**Handler:** Registers or unregisters channels in the channel registry based on event type.
+**Headers:** SpanHeaderParser, TenantHeaderParser
+
+### EVENT_TOPIC_MAP_STATUS
+
+Map status events for handling character enter and exit on transit maps.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| transactionId | uuid.UUID | Transaction identifier |
+| worldId | world.Id | World identifier |
+| channelId | channel.Id | Channel identifier |
+| mapId | map.Id | Map identifier |
+| instance | uuid.UUID | Instance identifier |
+| type | string | Event type |
+| body | object | Event body |
+
+**Event Types:**
+
+- `CHARACTER_ENTER`: Character entered a map
+- `CHARACTER_EXIT`: Character exited a map
+
+**CHARACTER_ENTER Body:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| characterId | uint32 | Character identifier |
+
+**CHARACTER_EXIT Body:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| characterId | uint32 | Character identifier |
+
+**Consumer Group:** Transport Service
+
+**Consumer Start Offset:** Latest (LastOffset)
+
+**Headers:** SpanHeaderParser, TenantHeaderParser
 
 ### COMMAND_TOPIC_INSTANCE_TRANSPORT
 
@@ -85,37 +122,27 @@ Instance transport commands for starting instance-based transports.
 
 **Consumer Group:** Transport Service
 
-**Handler:** Creates or joins an instance transport, warps character to transit map, and emits STARTED event.
+**Headers:** SpanHeaderParser, TenantHeaderParser
 
-### EVENT_TOPIC_MAP_STATUS
+### EVENT_TOPIC_CONFIGURATION_STATUS
 
-Map status events for handling character exits from instance transit maps.
+Configuration change events for reloading route and vessel configurations.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| transactionId | uuid.UUID | Transaction identifier |
-| worldId | world.Id | World identifier |
-| channelId | channel.Id | Channel identifier |
-| mapId | map.Id | Map identifier |
-| instance | uuid.UUID | Instance identifier |
+| tenantId | uuid.UUID | Tenant identifier |
 | type | string | Event type |
-| body | object | Event body |
+| resourceType | string | Resource type that changed |
+| resourceId | string | Resource identifier |
 
-**Event Types:**
+**Resource Types Handled:**
 
-- `CHARACTER_EXIT`: Character exited a map
-
-**CHARACTER_EXIT Body:**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| characterId | uint32 | Character identifier |
+- `route`, `vessel`: Triggers reload of scheduled routes for the tenant
+- `instance-route`: Triggers reload of instance routes for the tenant
 
 **Consumer Group:** Transport Service
 
-**Consumer Start Offset:** Latest (LastOffset)
-
-**Handler:** If character is in an instance transport and exits their transit map instance, removes character from the instance and emits CANCELLED event.
+**Headers:** SpanHeaderParser, TenantHeaderParser
 
 ## Topics Produced
 
@@ -163,6 +190,7 @@ Instance transport lifecycle events.
 **Event Types:**
 
 - `STARTED`: Character has started an instance transport
+- `TRANSIT_ENTERED`: Character has entered the transit map
 - `COMPLETED`: Character has arrived at destination
 - `CANCELLED`: Character's transport was cancelled
 
@@ -172,6 +200,16 @@ Instance transport lifecycle events.
 |-------|------|-------------|
 | routeId | uuid.UUID | Route identifier |
 | instanceId | uuid.UUID | Instance identifier |
+
+**TRANSIT_ENTERED Body:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| routeId | uuid.UUID | Route identifier |
+| instanceId | uuid.UUID | Instance identifier |
+| channelId | channel.Id | Channel identifier |
+| durationSeconds | uint32 | Transit duration in seconds |
+| message | string | Transit message |
 
 **COMPLETED Body:**
 
@@ -226,13 +264,13 @@ Generic transport status event.
 
 Generic character command.
 
-### StatusEvent (kafka/message/channel/kafka.go)
-
-Channel status event.
-
 ### StatusEvent[E] (kafka/message/character/kafka.go)
 
 Generic character status event.
+
+### StatusEvent (kafka/message/channel/kafka.go)
+
+Channel status event.
 
 ### Command[E] (kafka/message/instance_transport/kafka.go)
 
@@ -245,6 +283,10 @@ Generic instance transport event.
 ### StatusEvent[E] (kafka/message/map/kafka.go)
 
 Generic map status event.
+
+### StatusEvent (kafka/message/configuration/kafka.go)
+
+Configuration status event.
 
 ## Transaction Semantics
 

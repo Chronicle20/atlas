@@ -1,0 +1,16 @@
+{
+  "id": "genie-ariant-orbis",
+  "type": "routes",
+  "attributes": {
+    "name": "genie-ariant-orbis",
+    "startMapId": 260000100,
+    "stagingMapId": 260000110,
+    "enRouteMapIds": [200090410],
+    "destinationMapId": 200000100,
+    "observationMapId": 260000100,
+    "boardingWindowDuration": 4,
+    "preDepartureDuration": 1,
+    "travelDuration": 5,
+    "cycleInterval": 10
+  }
+}

@@ -5,10 +5,10 @@ import (
 	instanceConfig "atlas-transports/instance/config"
 	"atlas-transports/kafka/consumer/channel"
 	"atlas-transports/kafka/consumer/character"
+	"atlas-transports/kafka/consumer/configuration"
 	"atlas-transports/kafka/consumer/instance_transport"
 	_map "atlas-transports/kafka/consumer/map"
 	"atlas-transports/logger"
-	"atlas-transports/seed"
 	"atlas-transports/service"
 	tenant2 "atlas-transports/tenant"
 	"atlas-transports/tracing"
@@ -59,10 +59,12 @@ func main() {
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	channel.InitConsumers(l)(cmf)(consumerGroupId)
 	character.InitConsumers(l)(cmf)(consumerGroupId)
+	configuration.InitConsumers(l)(cmf)(consumerGroupId)
 	instance_transport.InitConsumers(l)(cmf)(consumerGroupId)
 	_map.InitConsumers(l)(cmf)(consumerGroupId)
 	channel.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	character.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	configuration.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	instance_transport.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	_map.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
@@ -129,7 +131,6 @@ func main() {
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(transport.InitResource(GetServer())).
 		AddRouteInitializer(instance.InitResource(GetServer())).
-		AddRouteInitializer(seed.InitResource(GetServer())).
 		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

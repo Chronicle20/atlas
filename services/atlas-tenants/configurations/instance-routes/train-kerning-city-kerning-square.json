@@ -1,0 +1,14 @@
+{
+  "id": "kerning-train-to-square",
+  "type": "instance-routes",
+  "attributes": {
+    "name": "kerning-train-to-square",
+    "startMapId": 103000100,
+    "transitMapId": 103000301,
+    "destinationMapId": 103000310,
+    "capacity": 1,
+    "boardingWindowSeconds": 1,
+    "travelDurationSeconds": 10,
+    "transitMessage": "The next stop is at Kerning Square Station. The exit is to your left."
+  }
+}

@@ -32,11 +32,11 @@ Represents a shared vessel operating on two routes alternately.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| id | uuid.UUID | Vessel identifier |
+| id | string | Vessel identifier |
 | name | string | Vessel name |
-| routeAID | uuid.UUID | First route ID |
-| routeBID | uuid.UUID | Second route ID |
-| turnaroundDelay | time.Duration | Delay between route arrivals |
+| routeAID | string | Route A name |
+| routeBID | string | Route B name |
+| turnaroundDelay | time.Duration | Delay between arrival and next departure |
 
 ### TripScheduleModel (transport/model.go)
 
@@ -77,6 +77,7 @@ Represents an instance-based transport route configuration.
 | capacity | uint32 | Maximum characters per instance |
 | boardingWindow | time.Duration | Duration boarding is open for each instance |
 | travelDuration | time.Duration | Duration of transit |
+| transitMessage | string | Message displayed during transit |
 
 ### TransportInstance (instance/model.go)
 
@@ -92,6 +93,8 @@ Represents an active ephemeral instance of an instance-based route.
 | boardingUntil | time.Time | Boarding window expiry time |
 | arrivalAt | time.Time | Arrival time |
 | createdAt | time.Time | Creation time |
+
+`MaxLifetime()` returns `2 * (boardingWindow + travelDuration)`.
 
 ### CharacterEntry (instance/model.go)
 
@@ -118,20 +121,21 @@ Enumeration of instance transport states.
 - Route name must not be empty
 - At least one en-route map ID is required
 - Boarding window duration must be positive
-- Pre-departure duration must be positive
+- Pre-departure duration must not be negative
 - Travel duration must be positive
 - Cycle interval must be positive
-- Route A ID and Route B ID must not be nil for shared vessels
+- Route A ID and Route B ID must not be empty for shared vessels
 - Turnaround delay must be positive for shared vessels
+- Route ID must not be nil for trip schedules
 - Boarding open must be before boarding closed
-- Boarding closed must be before departure
+- Departure must not be before boarding closed
 - Departure must be before arrival
 
 ### Instance Routes
 - Route name must not be empty
 - Capacity must be greater than zero
 - Boarding window must be positive
-- Travel duration must be positive
+- Travel duration must not be negative
 
 ## State Transitions
 
@@ -148,8 +152,9 @@ in_transit -> awaiting_return (when arrival time is reached)
 ```
 
 State transitions trigger character warping:
-- Transition to `awaiting_return`: Characters in en-route maps are warped to destination map
-- Transition to `in_transit`: Characters in staging map are warped to first en-route map
+- Transition to `awaiting_return` from `in_transit`: Characters in en-route maps are warped to destination map
+- Transition to `open_entry`: Emits ARRIVED event on the observation map
+- Transition to `in_transit`: Characters in staging map are warped to first en-route map; emits DEPARTED event on the observation map
 
 ### Instance Transports
 
@@ -165,7 +170,7 @@ State transitions trigger character warping:
 - Map exit during transport: Character is removed and transport is cancelled for that character
 - Logout during transport: Character is removed and transport is cancelled for that character
 - Login at transit map (crash recovery): Character is warped to route start map
-- Stuck timeout: Characters are force-warped to route start map and instance is released
+- Stuck timeout (exceeds MaxLifetime): Characters are force-warped to route start map and instance is released
 - Graceful shutdown: All characters are warped to route start map
 
 ## Processors
@@ -175,14 +180,14 @@ State transitions trigger character warping:
 | Method | Description |
 |--------|-------------|
 | AddTenant | Adds routes with computed schedules for a tenant |
-| ClearTenant | Removes all routes for a tenant |
+| ClearTenant | Removes all routes for a tenant, returns count |
 | ByIdProvider | Returns a provider for a route by ID |
 | ByStartMapProvider | Returns a provider for a route by start map ID |
 | GetByStartMap | Returns a route by its start map ID |
 | AllRoutesProvider | Returns a provider for all routes |
 | UpdateRoutes | Updates state for all routes |
 | UpdateRouteAndEmit | Updates route state and emits Kafka events |
-| WarpToRouteStartMapOnLogout | Warps character to route start map on logout |
+| WarpToRouteStartMapOnLogout | Warps character to route start map if in staging or en-route map |
 | WarpToRouteStartMapOnLogoutAndEmit | Warps character and emits Kafka events |
 
 ### instance.Processor (instance/processor.go)
@@ -190,13 +195,15 @@ State transitions trigger character warping:
 | Method | Description |
 |--------|-------------|
 | AddTenant | Adds instance routes for a tenant |
-| ClearTenant | Removes all instance routes for a tenant |
+| ClearTenant | Removes all instance routes for a tenant, returns count |
 | GetRoutes | Returns all instance routes for a tenant |
 | GetRoute | Returns an instance route by ID |
 | IsTransitMap | Checks if a map ID is an instance transit map |
 | GetRouteByTransitMap | Returns an instance route by transit map ID |
 | StartTransport | Starts an instance transport for a character |
 | StartTransportAndEmit | Starts transport and emits Kafka events |
+| HandleMapEnter | Handles character entering transit map (emits TRANSIT_ENTERED) |
+| HandleMapEnterAndEmit | Handles map enter and emits Kafka events |
 | HandleMapExit | Handles character exiting transit map (cancels transport) |
 | HandleMapExitAndEmit | Handles map exit and emits Kafka events |
 | HandleLogout | Handles character logout during transport |
@@ -212,25 +219,19 @@ State transitions trigger character warping:
 | GracefulShutdown | Warps all mid-transport characters to start maps |
 | GracefulShutdownAndEmit | Graceful shutdown and emits Kafka events |
 
-### seed.Processor (seed/processor.go)
-
-| Method | Description |
-|--------|-------------|
-| Seed | Loads route configurations from JSON files and seeds into registry |
-
 ### config.Processor (transport/config/processor.go)
 
 | Method | Description |
 |--------|-------------|
-| GetRoutes | Returns all routes for a tenant from external configuration service |
-| GetVessels | Returns all vessels for a tenant from external configuration service |
+| GetRoutes | Returns all routes for a tenant from configuration service |
+| GetVessels | Returns all vessels for a tenant from configuration service |
 | LoadConfigurationsForTenant | Loads routes and vessels for a tenant |
 
 ### instance config.Processor (instance/config/processor.go)
 
 | Method | Description |
 |--------|-------------|
-| GetInstanceRoutes | Returns all instance routes for a tenant from external configuration service |
+| GetInstanceRoutes | Returns all instance routes for a tenant from configuration service |
 | LoadConfigurationsForTenant | Loads instance routes for a tenant |
 
 ### channel.Processor (channel/processor.go)

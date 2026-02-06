@@ -24,6 +24,9 @@ A RESTful microservice that provides tenant management for the Atlas game platfo
 
 - `JAEGER_HOST_PORT` - Jaeger agent host and port for distributed tracing
 - `LOG_LEVEL` - Logging level (Panic / Fatal / Error / Warn / Info / Debug / Trace)
+- `ROUTES_SEED_PATH` - Filesystem path to route seed JSON files (default: `/configurations/routes`)
+- `INSTANCE_ROUTES_SEED_PATH` - Filesystem path to instance route seed JSON files (default: `/configurations/instance-routes`)
+- `VESSELS_SEED_PATH` - Filesystem path to vessel seed JSON files (default: `/configurations/vessels`)
 
 ## Documentation
 

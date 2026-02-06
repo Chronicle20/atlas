@@ -12,15 +12,6 @@ Returns all scheduled routes for the tenant.
 |------|----------|------|----------|-------------|
 | filter[startMapId] | query | uint32 | No | Filter routes by starting map ID |
 
-**Request Headers:**
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| TENANT_ID | string | Yes | Tenant identifier |
-| REGION | string | Yes | Region code |
-| MAJOR_VERSION | uint16 | Yes | Major version |
-| MINOR_VERSION | uint16 | Yes | Minor version |
-
 **Response Model:**
 
 Resource type: `routes`
@@ -54,22 +45,13 @@ Resource type: `routes`
 
 ### GET /transports/routes/{routeId}
 
-Returns metadata about a single scheduled route.
+Returns a single scheduled route with its trip schedule.
 
 **Parameters:**
 
 | Name | Location | Type | Required | Description |
 |------|----------|------|----------|-------------|
 | routeId | path | uuid.UUID | Yes | Route identifier |
-
-**Request Headers:**
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| TENANT_ID | string | Yes | Tenant identifier |
-| REGION | string | Yes | Region code |
-| MAJOR_VERSION | uint16 | Yes | Major version |
-| MINOR_VERSION | uint16 | Yes | Minor version |
 
 **Response Model:**
 
@@ -101,48 +83,9 @@ Resource type: `routes`
 
 ---
 
-### POST /transports/routes/seed
-
-Seeds routes from JSON configuration files.
-
-**Request Headers:**
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| TENANT_ID | string | Yes | Tenant identifier |
-| REGION | string | Yes | Region code |
-| MAJOR_VERSION | uint16 | Yes | Major version |
-| MINOR_VERSION | uint16 | Yes | Minor version |
-
-**Response Model:**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| deletedRoutes | int | Number of routes deleted |
-| createdRoutes | int | Number of routes created |
-| failedCount | int | Number of routes that failed to load |
-| errors | []string | Error messages |
-
-**Error Conditions:**
-
-| Status | Condition |
-|--------|-----------|
-| 500 | Internal server error during seeding |
-
----
-
 ### GET /transports/instance-routes
 
 Returns all instance routes for the tenant.
-
-**Request Headers:**
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| TENANT_ID | string | Yes | Tenant identifier |
-| REGION | string | Yes | Region code |
-| MAJOR_VERSION | uint16 | Yes | Major version |
-| MINOR_VERSION | uint16 | Yes | Minor version |
 
 **Response Model:**
 
@@ -176,15 +119,6 @@ Returns a single instance route.
 | Name | Location | Type | Required | Description |
 |------|----------|------|----------|-------------|
 | routeId | path | uuid.UUID | Yes | Route identifier |
-
-**Request Headers:**
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| TENANT_ID | string | Yes | Tenant identifier |
-| REGION | string | Yes | Region code |
-| MAJOR_VERSION | uint16 | Yes | Major version |
-| MINOR_VERSION | uint16 | Yes | Minor version |
 
 **Response Model:**
 
@@ -220,15 +154,6 @@ Returns active instance statuses for a route.
 |------|----------|------|----------|-------------|
 | routeId | path | uuid.UUID | Yes | Route identifier |
 
-**Request Headers:**
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| TENANT_ID | string | Yes | Tenant identifier |
-| REGION | string | Yes | Region code |
-| MAJOR_VERSION | uint16 | Yes | Major version |
-| MINOR_VERSION | uint16 | Yes | Minor version |
-
 **Response Model:**
 
 Resource type: `instance-status`
@@ -259,15 +184,6 @@ Starts an instance transport for a character on the specified route.
 | Name | Location | Type | Required | Description |
 |------|----------|------|----------|-------------|
 | routeId | path | uuid.UUID | Yes | Route identifier |
-
-**Request Headers:**
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| TENANT_ID | string | Yes | Tenant identifier |
-| REGION | string | Yes | Region code |
-| MAJOR_VERSION | uint16 | Yes | Major version |
-| MINOR_VERSION | uint16 | Yes | Minor version |
 
 **Request Model:**
 

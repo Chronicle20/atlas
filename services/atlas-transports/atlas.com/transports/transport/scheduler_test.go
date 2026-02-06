@@ -72,8 +72,8 @@ func TestScheduler_ComputeSchedule_SharedVesselOverridesRouteSchedule(t *testing
 
 	sharedVessel, err := NewSharedVesselBuilder().
 		SetName("shared1").
-		SetRouteAID(routeA.Id()).
-		SetRouteBID(routeB.Id()).
+		SetRouteAID(routeA.Name()).
+		SetRouteBID(routeB.Name()).
 		SetTurnaroundDelay(5 * time.Minute).
 		Build()
 	require.NoError(t, err)

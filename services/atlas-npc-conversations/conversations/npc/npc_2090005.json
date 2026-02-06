@@ -52,7 +52,7 @@
       "listSelection": {
         "title": "Hello there. How's the traveling so far? I understand that walking on two legs is much harder to cover ground compared to someone like me that can navigate the skies. I've been transporting other travelers like you to other regions in no time, and... are you interested? If so, then select the town you'd like yo head to.",
         "choices": [
-          { "text": "Orbis(1500 mesos)", "nextState": "confirmTrip", "context": { "destination": "200000100", "cost": "1500", "destinationName": "Orbis" } },
+          { "text": "Orbis(1500 mesos)", "nextState": "confirmOrbisTrip" },
           { "text": "Herb Town(500 mesos)", "nextState": "confirmTrip", "context": { "destination": "251000000", "cost": "500", "destinationName": "Herb Town" } },
           { "text": "Exit", "nextState": null }
         ]
@@ -64,9 +64,133 @@
       "listSelection": {
         "title": "Hello there. How's the traveling so far? I've been transporting other travelers like you to other regions in no time, and... are you interested? If so, then select the town you'd like to head to.",
         "choices": [
-          { "text": "Mu Lung(1500 mesos)", "nextState": "confirmTrip", "context": { "destination": "250000100", "cost": "1500", "destinationName": "Mu Lung" } },
+          { "text": "Mu Lung(1500 mesos)", "nextState": "confirmMuLungTrip" },
           { "text": "Exit", "nextState": null }
         ]
+      }
+    },
+    {
+      "id": "confirmOrbisTrip",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Will you move to #bOrbis#k now? If you have #b1500 mesos#k, I'll take you there right now.",
+        "choices": [
+          { "text": "Yes", "nextState": "checkOrbisMeso" },
+          { "text": "No", "nextState": "decline" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "checkOrbisMeso",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "meso", "operator": "<", "value": "1500" }
+            ],
+            "nextState": "insufficientMeso"
+          },
+          {
+            "conditions": [],
+            "nextState": "deductOrbisMeso"
+          }
+        ]
+      }
+    },
+    {
+      "id": "deductOrbisMeso",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_mesos",
+            "params": { "amount": "-1500" }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "startOrbisTransport"
+          }
+        ]
+      }
+    },
+    {
+      "id": "startOrbisTransport",
+      "type": "transportAction",
+      "transportAction": {
+        "routeName": "hak-to-orbis",
+        "failureState": "transportFailed",
+        "capacityFullState": "transportCapacityFull",
+        "alreadyInTransitState": "transportAlreadyInTransit",
+        "routeNotFoundState": "transportFailed",
+        "serviceErrorState": "transportFailed"
+      }
+    },
+    {
+      "id": "confirmMuLungTrip",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Will you move to #bMu Lung#k now? If you have #b1500 mesos#k, I'll take you there right now.",
+        "choices": [
+          { "text": "Yes", "nextState": "checkMuLungMeso" },
+          { "text": "No", "nextState": "decline" },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "checkMuLungMeso",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "meso", "operator": "<", "value": "1500" }
+            ],
+            "nextState": "insufficientMeso"
+          },
+          {
+            "conditions": [],
+            "nextState": "deductMuLungMeso"
+          }
+        ]
+      }
+    },
+    {
+      "id": "deductMuLungMeso",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "award_mesos",
+            "params": { "amount": "-1500" }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "startMuLungTransport"
+          }
+        ]
+      }
+    },
+    {
+      "id": "startMuLungTransport",
+      "type": "transportAction",
+      "transportAction": {
+        "routeName": "hak-to-mu-lung",
+        "failureState": "transportFailed",
+        "capacityFullState": "transportCapacityFull",
+        "alreadyInTransitState": "transportAlreadyInTransit",
+        "routeNotFoundState": "transportFailed",
+        "serviceErrorState": "transportFailed"
       }
     },
     {
@@ -127,16 +251,11 @@
         "operations": [
           {
             "type": "award_mesos",
-            "params": {
-              "amount": "-{context.cost}"
-            }
+            "params": { "amount": "-{context.cost}" }
           },
           {
             "type": "warp_to_map",
-            "params": {
-              "mapId": "{context.destination}",
-              "portalId": "0"
-            }
+            "params": { "mapId": "{context.destination}", "portalId": "0" }
           }
         ],
         "outcomes": [
@@ -167,6 +286,42 @@
         "text": "Are you sure you have enough mesos?",
         "choices": [
           { "text": "Next", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "transportFailed",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Sorry, I'm unable to fly right now. Please try again later.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "transportCapacityFull",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Sorry, I'm currently carrying another passenger. Please wait a moment and try again.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "transportAlreadyInTransit",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "You seem to already be on a transport. Please wait until you arrive at your destination.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
           { "text": "Exit", "nextState": null }
         ]
       }

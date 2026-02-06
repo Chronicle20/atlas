@@ -1,11 +1,12 @@
 package transport
 
 import (
+	"time"
+
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
-	"time"
 )
 
 // RestModel is the JSON:API resource for a transport route
@@ -83,7 +84,7 @@ func (r RestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
 }
 
 // SetToOneReferenceID sets a to-one relationship
-func (r *RestModel) SetToOneReferenceID(name, ID string) error {
+func (r *RestModel) SetToOneReferenceID(_, _ string) error {
 	return nil
 }
 

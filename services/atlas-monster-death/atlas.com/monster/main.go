@@ -5,6 +5,7 @@ import (
 	"atlas-monster-death/logger"
 	"atlas-monster-death/service"
 	"atlas-monster-death/tracing"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 )
 

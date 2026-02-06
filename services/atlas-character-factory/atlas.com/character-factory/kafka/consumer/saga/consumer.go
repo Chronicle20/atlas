@@ -8,6 +8,7 @@ import (
 	"atlas-character-factory/kafka/producer"
 	"atlas-character-factory/kafka/producer/seed"
 	"context"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"

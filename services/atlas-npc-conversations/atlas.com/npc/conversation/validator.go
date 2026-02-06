@@ -94,6 +94,8 @@ func (v *Validator) validateState(state StateModel, stateIds map[string]bool, re
 		v.validateGenericAction(state.Id(), state.GenericAction(), stateIds, result)
 	case CraftActionType:
 		v.validateCraftAction(state.Id(), state.CraftAction(), stateIds, result)
+	case TransportActionType:
+		v.validateTransportAction(state.Id(), state.TransportAction(), stateIds, result)
 	case ListSelectionType:
 		v.validateListSelection(state.Id(), state.ListSelection(), stateIds, result)
 	case AskNumberType:
@@ -227,6 +229,42 @@ func (v *Validator) validateCraftAction(stateId string, action *CraftActionModel
 	}
 }
 
+// validateTransportAction validates a transport action state
+func (v *Validator) validateTransportAction(stateId string, action *TransportActionModel, stateIds map[string]bool, result *ValidationResult) {
+	if action == nil {
+		result.addError(stateId, "transportAction", "required", "Transport action is required for transportAction state")
+		return
+	}
+
+	if action.RouteName() == "" {
+		result.addError(stateId, "transportAction.routeName", "required", "Route name is required")
+	}
+
+	// Validate failure state reference (required)
+	if action.FailureState() == "" {
+		result.addError(stateId, "transportAction.failureState", "required", "Failure state is required")
+	} else if !stateIds[action.FailureState()] {
+		result.addError(stateId, "transportAction.failureState", "invalid_reference", fmt.Sprintf("Failure state '%s' does not exist", action.FailureState()))
+	}
+
+	// Validate optional state references (only if specified)
+	if action.CapacityFullState() != "" && !stateIds[action.CapacityFullState()] {
+		result.addError(stateId, "transportAction.capacityFullState", "invalid_reference", fmt.Sprintf("Capacity full state '%s' does not exist", action.CapacityFullState()))
+	}
+
+	if action.AlreadyInTransitState() != "" && !stateIds[action.AlreadyInTransitState()] {
+		result.addError(stateId, "transportAction.alreadyInTransitState", "invalid_reference", fmt.Sprintf("Already in transit state '%s' does not exist", action.AlreadyInTransitState()))
+	}
+
+	if action.RouteNotFoundState() != "" && !stateIds[action.RouteNotFoundState()] {
+		result.addError(stateId, "transportAction.routeNotFoundState", "invalid_reference", fmt.Sprintf("Route not found state '%s' does not exist", action.RouteNotFoundState()))
+	}
+
+	if action.ServiceErrorState() != "" && !stateIds[action.ServiceErrorState()] {
+		result.addError(stateId, "transportAction.serviceErrorState", "invalid_reference", fmt.Sprintf("Service error state '%s' does not exist", action.ServiceErrorState()))
+	}
+}
+
 // validateListSelection validates a list selection state
 func (v *Validator) validateListSelection(stateId string, listSelection *ListSelectionModel, stateIds map[string]bool, result *ValidationResult) {
 	if listSelection == nil {
@@ -347,6 +385,15 @@ func (v *Validator) findReachableStates(m NpcConversation) map[string]bool {
 				visit(action.SuccessState())
 				visit(action.FailureState())
 				visit(action.MissingMaterialsState())
+			}
+		case TransportActionType:
+			if action := state.TransportAction(); action != nil {
+				// Transport actions only have failure states (success = player warped)
+				visit(action.FailureState())
+				visit(action.CapacityFullState())
+				visit(action.AlreadyInTransitState())
+				visit(action.RouteNotFoundState())
+				visit(action.ServiceErrorState())
 			}
 		case ListSelectionType:
 			if listSelection := state.ListSelection(); listSelection != nil {
@@ -472,6 +519,11 @@ func (v *Validator) getNextStates(state StateModel) []string {
 	case CraftActionType:
 		if action := state.CraftAction(); action != nil {
 			nextStates = append(nextStates, action.SuccessState(), action.FailureState(), action.MissingMaterialsState())
+		}
+	case TransportActionType:
+		if action := state.TransportAction(); action != nil {
+			// Transport actions only have failure states (success = player warped)
+			nextStates = append(nextStates, action.FailureState(), action.CapacityFullState(), action.AlreadyInTransitState(), action.RouteNotFoundState(), action.ServiceErrorState())
 		}
 	case ListSelectionType:
 		if listSelection := state.ListSelection(); listSelection != nil {

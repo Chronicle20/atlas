@@ -5,6 +5,7 @@ import (
 	cashshop2 "atlas-buddies/kafka/message/cashshop"
 	"atlas-buddies/list"
 	"context"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"

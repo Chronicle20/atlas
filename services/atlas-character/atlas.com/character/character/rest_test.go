@@ -6,10 +6,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/jtumidanski/api2go/jsonapi"
-	_map "github.com/Chronicle20/atlas-constants/map"
 )
 
 type Server struct {

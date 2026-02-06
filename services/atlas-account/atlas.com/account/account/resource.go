@@ -5,13 +5,14 @@ import (
 	"atlas-account/kafka/producer"
 	"atlas-account/rest"
 	"errors"
+	"net/http"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"net/http"
 )
 
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
@@ -62,7 +63,7 @@ func handleUpdateAccount(d *rest.HandlerDependency, c *rest.HandlerContext, inpu
 	})
 }
 
-func handleCreateAccount(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
+func handleCreateAccount(d *rest.HandlerDependency, _ *rest.HandlerContext, input RestModel) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		_ = producer.ProviderImpl(d.Logger())(d.Context())(account2.EnvCommandTopic)(createCommandProvider(input.Name, input.Password))
 		w.WriteHeader(http.StatusAccepted)
@@ -138,7 +139,7 @@ func handleGetAccountById(d *rest.HandlerDependency, c *rest.HandlerContext) htt
 	})
 }
 
-func handleDeleteAccount(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+func handleDeleteAccount(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseAccountId(d.Logger(), func(accountId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			err := NewProcessor(d.Logger(), d.Context(), d.DB()).DeleteAndEmit(accountId)
@@ -160,7 +161,7 @@ func handleDeleteAccount(d *rest.HandlerDependency, c *rest.HandlerContext) http
 	})
 }
 
-func handleDeleteAccountSession(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+func handleDeleteAccountSession(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseAccountId(d.Logger(), func(accountId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			_ = producer.ProviderImpl(d.Logger())(d.Context())(account2.EnvCommandSessionTopic)(logoutCommandProvider(accountId))

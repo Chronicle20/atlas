@@ -3,6 +3,7 @@ package cosmetic
 import (
 	"context"
 	"fmt"
+
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
 )

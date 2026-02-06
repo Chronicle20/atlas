@@ -10,13 +10,13 @@ import (
 	"atlas-query-aggregator/inventory"
 	"atlas-query-aggregator/marriage"
 	"atlas-query-aggregator/quest"
-	inventory_type "github.com/Chronicle20/atlas-constants/inventory"
-	"github.com/google/uuid"
 	"strings"
 	"testing"
 	"time"
-)
 
+	inventory_type "github.com/Chronicle20/atlas-constants/inventory"
+	"github.com/google/uuid"
+)
 
 func TestCondition_Evaluate(t *testing.T) {
 	// Create test inventory with items
@@ -60,7 +60,7 @@ func TestCondition_Evaluate(t *testing.T) {
 				conditionType: ItemCondition,
 				operator:      Equals,
 				value:         10,
-				referenceId:        2000001,
+				referenceId:   2000001,
 			},
 			wantPassed:   true,
 			wantContains: "Item 2000001 quantity = 10",
@@ -71,7 +71,7 @@ func TestCondition_Evaluate(t *testing.T) {
 				conditionType: ItemCondition,
 				operator:      Equals,
 				value:         15,
-				referenceId:        2000001,
+				referenceId:   2000001,
 			},
 			wantPassed:   false,
 			wantContains: "Item 2000001 quantity = 15",
@@ -82,7 +82,7 @@ func TestCondition_Evaluate(t *testing.T) {
 				conditionType: ItemCondition,
 				operator:      GreaterThan,
 				value:         5,
-				referenceId:        2000001,
+				referenceId:   2000001,
 			},
 			wantPassed:   true,
 			wantContains: "Item 2000001 quantity > 5",
@@ -93,7 +93,7 @@ func TestCondition_Evaluate(t *testing.T) {
 				conditionType: ItemCondition,
 				operator:      GreaterThan,
 				value:         15,
-				referenceId:        2000001,
+				referenceId:   2000001,
 			},
 			wantPassed:   false,
 			wantContains: "Item 2000001 quantity > 15",
@@ -104,7 +104,7 @@ func TestCondition_Evaluate(t *testing.T) {
 				conditionType: ItemCondition,
 				operator:      LessThan,
 				value:         15,
-				referenceId:        2000001,
+				referenceId:   2000001,
 			},
 			wantPassed:   true,
 			wantContains: "Item 2000001 quantity < 15",
@@ -115,7 +115,7 @@ func TestCondition_Evaluate(t *testing.T) {
 				conditionType: ItemCondition,
 				operator:      LessThan,
 				value:         5,
-				referenceId:        2000001,
+				referenceId:   2000001,
 			},
 			wantPassed:   false,
 			wantContains: "Item 2000001 quantity < 5",
@@ -126,7 +126,7 @@ func TestCondition_Evaluate(t *testing.T) {
 				conditionType: ItemCondition,
 				operator:      GreaterEqual,
 				value:         10,
-				referenceId:        2000001,
+				referenceId:   2000001,
 			},
 			wantPassed:   true,
 			wantContains: "Item 2000001 quantity >= 10",
@@ -137,7 +137,7 @@ func TestCondition_Evaluate(t *testing.T) {
 				conditionType: ItemCondition,
 				operator:      GreaterEqual,
 				value:         5,
-				referenceId:        2000001,
+				referenceId:   2000001,
 			},
 			wantPassed:   true,
 			wantContains: "Item 2000001 quantity >= 5",
@@ -148,7 +148,7 @@ func TestCondition_Evaluate(t *testing.T) {
 				conditionType: ItemCondition,
 				operator:      GreaterEqual,
 				value:         15,
-				referenceId:        2000001,
+				referenceId:   2000001,
 			},
 			wantPassed:   false,
 			wantContains: "Item 2000001 quantity >= 15",
@@ -159,7 +159,7 @@ func TestCondition_Evaluate(t *testing.T) {
 				conditionType: ItemCondition,
 				operator:      LessEqual,
 				value:         10,
-				referenceId:        2000001,
+				referenceId:   2000001,
 			},
 			wantPassed:   true,
 			wantContains: "Item 2000001 quantity <= 10",
@@ -170,7 +170,7 @@ func TestCondition_Evaluate(t *testing.T) {
 				conditionType: ItemCondition,
 				operator:      LessEqual,
 				value:         15,
-				referenceId:        2000001,
+				referenceId:   2000001,
 			},
 			wantPassed:   true,
 			wantContains: "Item 2000001 quantity <= 15",
@@ -181,7 +181,7 @@ func TestCondition_Evaluate(t *testing.T) {
 				conditionType: ItemCondition,
 				operator:      LessEqual,
 				value:         5,
-				referenceId:        2000001,
+				referenceId:   2000001,
 			},
 			wantPassed:   false,
 			wantContains: "Item 2000001 quantity <= 5",
@@ -192,7 +192,7 @@ func TestCondition_Evaluate(t *testing.T) {
 				conditionType: ItemCondition,
 				operator:      Equals,
 				value:         10,
-				referenceId:        9999999, // Non-existent item
+				referenceId:   9999999, // Non-existent item
 			},
 			wantPassed:   false,
 			wantContains: "Invalid item ID: 9999999",
@@ -1427,18 +1427,18 @@ func TestCondition_Evaluate_WithGuild(t *testing.T) {
 
 	// Create a guild for the character
 	guildRestModel := guild.RestModel{
-		Id:       1001,
-		WorldId:  1,
-		Name:     "TestGuild",
-		Notice:   "Test guild notice",
-		Points:   1000,
-		Capacity: 100,
-		Logo:     1,
-		LogoColor: 1,
-		LogoBackground: 1,
+		Id:                  1001,
+		WorldId:             1,
+		Name:                "TestGuild",
+		Notice:              "Test guild notice",
+		Points:              1000,
+		Capacity:            100,
+		Logo:                1,
+		LogoColor:           1,
+		LogoBackground:      1,
 		LogoBackgroundColor: 1,
-		LeaderId: 123,
-		Members:  []member.RestModel{
+		LeaderId:            123,
+		Members: []member.RestModel{
 			{
 				CharacterId:   123,
 				Name:          "TestMember",
@@ -1449,7 +1449,7 @@ func TestCondition_Evaluate_WithGuild(t *testing.T) {
 				AllianceTitle: 0,
 			},
 		},
-		Titles:   []title.RestModel{},
+		Titles: []title.RestModel{},
 	}
 	guildModel, _ := guild.Extract(guildRestModel)
 
@@ -1671,9 +1671,9 @@ func TestCondition_ErrorHandling(t *testing.T) {
 // TestConditionBuilder_ErrorHandling tests error scenarios for condition builder
 func TestConditionBuilder_ErrorHandling(t *testing.T) {
 	tests := []struct {
-		name        string
-		input       ConditionInput
-		wantError   bool
+		name          string
+		input         ConditionInput
+		wantError     bool
 		errorContains string
 	}{
 		// Test invalid condition type

@@ -2,8 +2,9 @@ package skill
 
 import (
 	"atlas-messages/data/skill/effect"
-	"github.com/Chronicle20/atlas-model/model"
 	"strconv"
+
+	"github.com/Chronicle20/atlas-model/model"
 )
 
 type RestModel struct {

@@ -2,6 +2,7 @@ package validation
 
 import (
 	"atlas-chairs/rest"
+
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 

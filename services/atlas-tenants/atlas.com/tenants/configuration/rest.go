@@ -2,7 +2,6 @@ package configuration
 
 import (
 	"encoding/json"
-	"gorm.io/gorm"
 )
 
 // RouteRestModel is the JSON:API resource for routes
@@ -141,39 +140,7 @@ func CreateRouteJsonData(routes []map[string]interface{}) (json.RawMessage, erro
 
 // CreateSingleRouteJsonData creates a JSON:API compliant data structure for a single route
 func CreateSingleRouteJsonData(route map[string]interface{}) (json.RawMessage, error) {
-	data := map[string]interface{}{
-		"data": route,
-	}
-	return json.Marshal(data)
-}
-
-// ExtractRouteFromModel extracts a route from a Model
-func ExtractRouteFromModel(m Model, routeId string) (map[string]interface{}, error) {
-	var resourceData map[string]interface{}
-	if err := json.Unmarshal(m.ResourceData(), &resourceData); err != nil {
-		return nil, err
-	}
-
-	// Check if it's an array of resources
-	if resources, ok := resourceData["data"].([]interface{}); ok {
-		for _, resource := range resources {
-			if resourceMap, ok := resource.(map[string]interface{}); ok {
-				if id, ok := resourceMap["id"].(string); ok && (routeId == "" || id == routeId) {
-					return resourceMap, nil
-				}
-			}
-		}
-		return nil, gorm.ErrRecordNotFound
-	}
-
-	// Check if it's a single resource
-	if data, ok := resourceData["data"].(map[string]interface{}); ok {
-		if routeId == "" || (data["id"] != nil && data["id"].(string) == routeId) {
-			return data, nil
-		}
-	}
-
-	return nil, gorm.ErrRecordNotFound
+	return CreateRouteJsonData([]map[string]interface{}{route})
 }
 
 // VesselRestModel is the JSON:API resource for vessels
@@ -254,37 +221,121 @@ func CreateVesselJsonData(vessels []map[string]interface{}) (json.RawMessage, er
 
 // CreateSingleVesselJsonData creates a JSON:API compliant data structure for a single vessel
 func CreateSingleVesselJsonData(vessel map[string]interface{}) (json.RawMessage, error) {
+	return CreateVesselJsonData([]map[string]interface{}{vessel})
+}
+
+// InstanceRouteRestModel is the JSON:API resource for instance routes
+type InstanceRouteRestModel struct {
+	Id                    string `json:"-"`
+	Name                  string `json:"name"`
+	StartMapId            uint32 `json:"startMapId"`
+	TransitMapId          uint32 `json:"transitMapId"`
+	DestinationMapId      uint32 `json:"destinationMapId"`
+	Capacity              uint32 `json:"capacity"`
+	BoardingWindowSeconds uint32 `json:"boardingWindowSeconds"`
+	TravelDurationSeconds uint32 `json:"travelDurationSeconds"`
+	TransitMessage        string `json:"transitMessage,omitempty"`
+}
+
+// GetID returns the resource ID
+func (r InstanceRouteRestModel) GetID() string {
+	return r.Id
+}
+
+// SetID sets the resource ID
+func (r *InstanceRouteRestModel) SetID(id string) error {
+	r.Id = id
+	return nil
+}
+
+// GetName returns the resource name
+func (r InstanceRouteRestModel) GetName() string {
+	return "instance-routes"
+}
+
+// TransformInstanceRoute converts a map[string]interface{} to an InstanceRouteRestModel
+func TransformInstanceRoute(data map[string]interface{}) (InstanceRouteRestModel, error) {
+	id, _ := data["id"].(string)
+
+	attributes, ok := data["attributes"].(map[string]interface{})
+	if !ok {
+		attributes = make(map[string]interface{})
+	}
+
+	name, _ := attributes["name"].(string)
+
+	startMapId := uint32(0)
+	if val, ok := attributes["startMapId"].(float64); ok {
+		startMapId = uint32(val)
+	}
+
+	transitMapId := uint32(0)
+	if val, ok := attributes["transitMapId"].(float64); ok {
+		transitMapId = uint32(val)
+	}
+
+	destinationMapId := uint32(0)
+	if val, ok := attributes["destinationMapId"].(float64); ok {
+		destinationMapId = uint32(val)
+	}
+
+	capacity := uint32(0)
+	if val, ok := attributes["capacity"].(float64); ok {
+		capacity = uint32(val)
+	}
+
+	boardingWindowSeconds := uint32(0)
+	if val, ok := attributes["boardingWindowSeconds"].(float64); ok {
+		boardingWindowSeconds = uint32(val)
+	}
+
+	travelDurationSeconds := uint32(0)
+	if val, ok := attributes["travelDurationSeconds"].(float64); ok {
+		travelDurationSeconds = uint32(val)
+	}
+
+	transitMessage, _ := attributes["transitMessage"].(string)
+
+	return InstanceRouteRestModel{
+		Id:                    id,
+		Name:                  name,
+		StartMapId:            startMapId,
+		TransitMapId:          transitMapId,
+		DestinationMapId:      destinationMapId,
+		Capacity:              capacity,
+		BoardingWindowSeconds: boardingWindowSeconds,
+		TravelDurationSeconds: travelDurationSeconds,
+		TransitMessage:        transitMessage,
+	}, nil
+}
+
+// ExtractInstanceRoute converts an InstanceRouteRestModel to a map[string]interface{}
+func ExtractInstanceRoute(r InstanceRouteRestModel) (map[string]interface{}, error) {
+	return map[string]interface{}{
+		"type": "instance-routes",
+		"id":   r.Id,
+		"attributes": map[string]interface{}{
+			"name":                  r.Name,
+			"startMapId":            r.StartMapId,
+			"transitMapId":          r.TransitMapId,
+			"destinationMapId":      r.DestinationMapId,
+			"capacity":              r.Capacity,
+			"boardingWindowSeconds": r.BoardingWindowSeconds,
+			"travelDurationSeconds": r.TravelDurationSeconds,
+			"transitMessage":        r.TransitMessage,
+		},
+	}, nil
+}
+
+// CreateInstanceRouteJsonData creates a JSON:API compliant data structure for instance routes
+func CreateInstanceRouteJsonData(routes []map[string]interface{}) (json.RawMessage, error) {
 	data := map[string]interface{}{
-		"data": vessel,
+		"data": routes,
 	}
 	return json.Marshal(data)
 }
 
-// ExtractVesselFromModel extracts a vessel from a Model
-func ExtractVesselFromModel(m Model, vesselId string) (map[string]interface{}, error) {
-	var resourceData map[string]interface{}
-	if err := json.Unmarshal(m.ResourceData(), &resourceData); err != nil {
-		return nil, err
-	}
-
-	// Check if it's an array of resources
-	if resources, ok := resourceData["data"].([]interface{}); ok {
-		for _, resource := range resources {
-			if resourceMap, ok := resource.(map[string]interface{}); ok {
-				if id, ok := resourceMap["id"].(string); ok && (vesselId == "" || id == vesselId) {
-					return resourceMap, nil
-				}
-			}
-		}
-		return nil, gorm.ErrRecordNotFound
-	}
-
-	// Check if it's a single resource
-	if data, ok := resourceData["data"].(map[string]interface{}); ok {
-		if vesselId == "" || (data["id"] != nil && data["id"].(string) == vesselId) {
-			return data, nil
-		}
-	}
-
-	return nil, gorm.ErrRecordNotFound
+// CreateSingleInstanceRouteJsonData creates a JSON:API compliant data structure for a single instance route
+func CreateSingleInstanceRouteJsonData(route map[string]interface{}) (json.RawMessage, error) {
+	return CreateInstanceRouteJsonData([]map[string]interface{}{route})
 }

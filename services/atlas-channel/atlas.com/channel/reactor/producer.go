@@ -2,6 +2,7 @@ package reactor
 
 import (
 	reactor2 "atlas-channel/kafka/message/reactor"
+
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"

@@ -19,7 +19,7 @@ func (e Entity) TableName() string {
 	return "storages"
 }
 
-func (e *Entity) BeforeCreate(tx *gorm.DB) error {
+func (e *Entity) BeforeCreate(_ *gorm.DB) error {
 	if e.Id == uuid.Nil {
 		e.Id = uuid.New()
 	}

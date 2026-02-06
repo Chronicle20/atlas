@@ -3,6 +3,9 @@ package consumer
 import (
 	"context"
 	"errors"
+	"io"
+	"sync"
+
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/retry"
 	"github.com/Chronicle20/atlas-model/model"
@@ -11,8 +14,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
-	"io"
-	"sync"
 )
 
 type KafkaReader interface {

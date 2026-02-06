@@ -5,6 +5,7 @@ import (
 	"atlas-pets/kafka/message/asset"
 	"atlas-pets/pet"
 	"context"
+
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-kafka/consumer"

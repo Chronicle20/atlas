@@ -2,8 +2,9 @@ package pet
 
 import (
 	"atlas-pets/pet/exclude"
-	"github.com/Chronicle20/atlas-model/model"
 	"time"
+
+	"github.com/Chronicle20/atlas-model/model"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"

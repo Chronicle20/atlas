@@ -3,8 +3,9 @@ package data
 import (
 	"atlas-reactors/reactor/data/point"
 	"atlas-reactors/reactor/data/state"
-	"github.com/Chronicle20/atlas-model/model"
 	"strconv"
+
+	"github.com/Chronicle20/atlas-model/model"
 )
 
 type RestModel struct {

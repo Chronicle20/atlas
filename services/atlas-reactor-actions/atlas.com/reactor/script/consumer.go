@@ -35,18 +35,6 @@ type commandEvent[E any] struct {
 	Body           E          `json:"body"`
 }
 
-// hitBody represents the body of a hit reactor command
-type hitBody struct {
-	CharacterId uint32 `json:"characterId"`
-	SkillId     uint32 `json:"skillId"`
-	IsSkill     bool   `json:"isSkill"`
-}
-
-// triggerBody represents the body of a trigger reactor command
-type triggerBody struct {
-	CharacterId uint32 `json:"characterId"`
-}
-
 // InitConsumers initializes Kafka consumers for reactor actions
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(groupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(groupId string) {

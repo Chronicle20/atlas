@@ -2,9 +2,10 @@ package etc
 
 import (
 	"atlas-data/xml"
+	"strconv"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
-	"strconv"
 )
 
 func parseEtcId(name string) (uint32, error) {

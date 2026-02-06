@@ -1,0 +1,28 @@
+meta {
+  name: Start Instance Route For Character
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{scheme}}://{{host}}:{{port}}/api/transports/instance-routes/{{routeId}}/start
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "data": {
+      "type": "start-transport",
+      "attributes": {
+        "worldId": 0,
+        "channelId": 1,
+        "characterId": 2
+      }
+    }
+  }
+}
+
+vars:pre-request {
+  routeId: c3b1b58b-df73-4ff2-88ab-68a37fd4d9e8
+}

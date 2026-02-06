@@ -1,6 +1,6 @@
 # Atlas Tenants Service
 
-A RESTful microservice that provides tenant management for the Atlas game platform. This service manages tenant information and tenant-specific configurations including routes and vessels.
+A RESTful microservice that provides tenant management for the Atlas game platform. This service manages tenant information and tenant-specific configurations including routes, vessels, and instance routes.
 
 ## External Dependencies
 
@@ -24,6 +24,9 @@ A RESTful microservice that provides tenant management for the Atlas game platfo
 
 - `JAEGER_HOST_PORT` - Jaeger agent host and port for distributed tracing
 - `LOG_LEVEL` - Logging level (Panic / Fatal / Error / Warn / Info / Debug / Trace)
+- `ROUTES_SEED_PATH` - Filesystem path to route seed JSON files (default: `/configurations/routes`)
+- `INSTANCE_ROUTES_SEED_PATH` - Filesystem path to instance route seed JSON files (default: `/configurations/instance-routes`)
+- `VESSELS_SEED_PATH` - Filesystem path to vessel seed JSON files (default: `/configurations/vessels`)
 
 ## Documentation
 

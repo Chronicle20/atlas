@@ -3,6 +3,7 @@ package config
 import (
 	"atlas-transports/transport"
 	"context"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/Chronicle20/atlas-tenant"

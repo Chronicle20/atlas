@@ -1,8 +1,9 @@
 package transport
 
 import (
-	_map "github.com/Chronicle20/atlas-constants/map"
 	"time"
+
+	_map "github.com/Chronicle20/atlas-constants/map"
 
 	"github.com/google/uuid"
 )
@@ -215,23 +216,24 @@ func (m Model) Schedule() []TripScheduleModel {
 
 // SharedVesselModel is the domain model for a shared vessel
 type SharedVesselModel struct {
-	id              uuid.UUID
+	id              string
 	name            string
-	routeAID        uuid.UUID
-	routeBID        uuid.UUID
+	routeAID        string
+	routeBID        string
 	turnaroundDelay time.Duration
 }
 
 // NewSharedVesselModel creates a new shared vessel model
 func NewSharedVesselModel(
-	id uuid.UUID,
+	id string,
 	name string,
-	routeAID uuid.UUID,
-	routeBID uuid.UUID,
+	routeAID string,
+	routeBID string,
 	turnaroundDelay time.Duration,
 ) SharedVesselModel {
 	return SharedVesselModel{
 		id:              id,
+		name:            name,
 		routeAID:        routeAID,
 		routeBID:        routeBID,
 		turnaroundDelay: turnaroundDelay,
@@ -239,17 +241,17 @@ func NewSharedVesselModel(
 }
 
 // Id returns the shared vessel ID
-func (m SharedVesselModel) Id() uuid.UUID {
+func (m SharedVesselModel) Id() string {
 	return m.id
 }
 
 // RouteAID returns the ID of route A
-func (m SharedVesselModel) RouteAID() uuid.UUID {
+func (m SharedVesselModel) RouteAID() string {
 	return m.routeAID
 }
 
 // RouteBID returns the ID of route B
-func (m SharedVesselModel) RouteBID() uuid.UUID {
+func (m SharedVesselModel) RouteBID() string {
 	return m.routeBID
 }
 

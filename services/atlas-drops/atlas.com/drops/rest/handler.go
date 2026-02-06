@@ -2,6 +2,10 @@ package rest
 
 import (
 	"context"
+	"io"
+	"net/http"
+	"strconv"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
@@ -10,9 +14,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
-	"io"
-	"net/http"
-	"strconv"
 )
 
 type HandlerDependency struct {

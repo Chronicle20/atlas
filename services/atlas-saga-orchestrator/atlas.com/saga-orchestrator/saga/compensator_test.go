@@ -2,6 +2,8 @@ package saga
 
 import (
 	"context"
+	"testing"
+
 	"github.com/Chronicle20/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	tenant "github.com/Chronicle20/atlas-tenant"
@@ -9,7 +11,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 // TestCompensateCreateCharacter tests the compensateCreateCharacter function

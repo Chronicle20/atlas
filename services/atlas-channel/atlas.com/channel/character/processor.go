@@ -142,7 +142,7 @@ type DistributePacket struct {
 	Value uint32
 }
 
-func (p *ProcessorImpl) RequestDistributeAp(f field.Model, characterId uint32, updateTime uint32, distributes []DistributePacket) error {
+func (p *ProcessorImpl) RequestDistributeAp(f field.Model, characterId uint32, _ uint32, distributes []DistributePacket) error {
 	var distributions = make([]character2.DistributePair, 0)
 	for _, d := range distributes {
 		a, err := abilityFromFlag(d.Flag)
@@ -189,6 +189,6 @@ func (p *ProcessorImpl) ChangeMP(f field.Model, characterId uint32, amount int16
 	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(ChangeMPCommandProvider(f, characterId, amount))
 }
 
-func (p *ProcessorImpl) RequestDistributeSp(f field.Model, characterId uint32, updateTime uint32, skillId uint32, amount int8) error {
+func (p *ProcessorImpl) RequestDistributeSp(f field.Model, characterId uint32, _ uint32, skillId uint32, amount int8) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(RequestDistributeSpCommandProvider(f, characterId, skillId, amount))
 }

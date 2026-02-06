@@ -2,11 +2,12 @@ package item
 
 import (
 	"atlas-cashshop/database"
+	"math/rand"
+	"time"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-	"math/rand"
-	"time"
 )
 
 func generateUniqueCashId(tenantId uuid.UUID, db *gorm.DB) (int64, error) {

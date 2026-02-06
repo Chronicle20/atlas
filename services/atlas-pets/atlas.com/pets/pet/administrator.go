@@ -3,6 +3,7 @@ package pet
 import (
 	"atlas-pets/pet/exclude"
 	"errors"
+
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"gorm.io/gorm"
 )
@@ -108,12 +109,6 @@ func updateFullness(db *gorm.DB) func(t tenant.Model, petId uint32, fullness byt
 func deleteById(t tenant.Model, id uint32) func(db *gorm.DB) error {
 	return func(db *gorm.DB) error {
 		return db.Where(&Entity{TenantId: t.Id(), Id: id}).Delete(&Entity{}).Error
-	}
-}
-
-func deleteForCharacter(t tenant.Model, ownerId uint32) func(db *gorm.DB) error {
-	return func(db *gorm.DB) error {
-		return db.Where(&Entity{TenantId: t.Id(), OwnerId: ownerId}).Delete(&Entity{}).Error
 	}
 }
 

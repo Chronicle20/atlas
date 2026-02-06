@@ -5,7 +5,11 @@ meta {
 }
 
 get {
-  url: {{scheme}}://{{host}}:{{port}}/api/data/maps/10000
+  url: {{scheme}}://{{host}}:{{port}}/api/data/maps/{{mapId}}
   body: none
   auth: none
+}
+
+vars:pre-request {
+  mapId: 103000310
 }

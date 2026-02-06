@@ -11,10 +11,7 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
-	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
-	_map2 "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -56,7 +53,7 @@ func handleStatusEventCreated(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
 			return
 		}
 
@@ -66,7 +63,7 @@ func handleStatusEventCreated(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		err = _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(_map2.Id(e.MapId), e.Instance), spawnForSession(l)(ctx)(wp)(m))
+		err = _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), spawnForSession(l)(ctx)(wp)(m))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to spawn monster [%d] for characters in map [%d].", m.UniqueId(), e.MapId)
 		}
@@ -89,11 +86,11 @@ func handleStatusEventDestroyed(sc server.Model, wp writer.Producer) message.Han
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
 			return
 		}
 
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(_map2.Id(e.MapId), e.Instance), destroyForSession(l)(ctx)(wp)(e.UniqueId))
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), destroyForSession(l)(ctx)(wp)(e.UniqueId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to destroy monster [%d] for characters in map [%d].", e.UniqueId, e.MapId)
 		}
@@ -116,7 +113,7 @@ func handleStatusEventDamaged(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
 			return
 		}
 
@@ -148,11 +145,11 @@ func handleStatusEventKilled(sc server.Model, wp writer.Producer) message.Handle
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
 			return
 		}
 
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(_map2.Id(e.MapId), e.Instance), killForSession(l)(ctx)(wp)(e.UniqueId))
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), killForSession(l)(ctx)(wp)(e.UniqueId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to kill monster [%d] for characters in map [%d].", e.UniqueId, e.MapId)
 		}
@@ -175,7 +172,7 @@ func handleStatusEventStartControl(sc server.Model, wp writer.Producer) message.
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
 			return
 		}
 
@@ -201,7 +198,7 @@ func handleStatusEventStopControl(sc server.Model, wp writer.Producer) message.H
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
 			return
 		}
 

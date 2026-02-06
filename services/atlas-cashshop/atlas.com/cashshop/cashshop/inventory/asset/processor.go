@@ -6,6 +6,7 @@ import (
 	"atlas-cashshop/kafka/message"
 	"atlas-cashshop/kafka/producer"
 	"context"
+
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -79,7 +80,7 @@ func (p *ProcessorImpl) DecorateItem(m Model) Model {
 }
 
 // Create creates a new asset
-func (p *ProcessorImpl) Create(mb *message.Buffer) func(compartmentId uuid.UUID) func(itemId uint32) (Model, error) {
+func (p *ProcessorImpl) Create(_ *message.Buffer) func(compartmentId uuid.UUID) func(itemId uint32) (Model, error) {
 	return func(compartmentId uuid.UUID) func(itemId uint32) (Model, error) {
 		return func(itemId uint32) (Model, error) {
 			var result Model
@@ -116,7 +117,7 @@ func (p *ProcessorImpl) CreateAndEmit(compartmentId uuid.UUID, itemId uint32) (M
 	return message.EmitWithResult[Model, uint32](p.p)(model.Flip(p.Create)(compartmentId))(itemId)
 }
 
-func (p *ProcessorImpl) Release(mb *message.Buffer) func(cashItemId uint32) error {
+func (p *ProcessorImpl) Release(_ *message.Buffer) func(cashItemId uint32) error {
 	return func(cashItemId uint32) error {
 		p.l.Debugf("Deleting asset with item Id [%d].", cashItemId)
 		p.db.Debug()

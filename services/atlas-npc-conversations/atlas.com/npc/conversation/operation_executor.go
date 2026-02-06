@@ -437,7 +437,7 @@ func (e *OperationExecutorImpl) executeLocalOperation(field field.Model, charact
 			return fmt.Errorf("failed to store selected style in context: %w", err)
 		}
 
-		e.l.Infof("Selected random cosmetic %d from %d options for character [%d], stored in context key [%s]",
+		e.l.Infof("Selected random cosmetic %s from %d options for character [%d], stored in context key [%s]",
 			selectedStyle, len(styles), characterId, outputContextKey)
 		return nil
 
@@ -775,7 +775,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		}
 
 		// Actor ID is optional
-		var actorIdInt int = 0
+		var actorIdInt = 0
 		actorIdValue, exists := operation.Params()["actorId"]
 		if exists {
 			actorIdInt, err = e.evaluateContextValueAsInt(characterId, "actorId", actorIdValue)
@@ -830,7 +830,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		}
 
 		// Attr1 is optional with default 0
-		var attr1Int int = 0
+		var attr1Int = 0
 		attr1Value, exists := operation.Params()["attr1"]
 		if exists {
 			attr1Int, err = e.evaluateContextValueAsInt(characterId, "attr1", attr1Value)
@@ -880,7 +880,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 	case "warp_to_map":
 		// Format: warp_to_map
 		// Context: mapId (uint32), portalId (uint32) OR portalName (string)
-		var mapIdInt int = 0
+		var mapIdInt = 0
 		mapIdValue, exists := operation.Params()["mapId"]
 		if exists {
 			var err error
@@ -890,7 +890,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 			}
 		}
 
-		var portalIdInt int = 0
+		var portalIdInt = 0
 		portalIdValue, exists := operation.Params()["portalId"]
 		if exists {
 			var err error
@@ -924,7 +924,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 	case "warp_to_random_portal":
 		// Format: warp_to_random_portal
 		// Context: mapId (uint32)
-		var mapIdInt int = 0
+		var mapIdInt = 0
 		mapIdValue, exists := operation.Params()["mapId"]
 		if exists {
 			var err error
@@ -1002,7 +1002,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		}
 
 		// Level is optional with default 1
-		var levelInt int = 1
+		var levelInt = 1
 		levelValue, exists := operation.Params()["level"]
 		if exists {
 			levelInt, err = e.evaluateContextValueAsInt(characterId, "level", levelValue)
@@ -1012,7 +1012,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		}
 
 		// Master level is optional with default 1
-		var masterLevelInt int = 1
+		var masterLevelInt = 1
 		masterLevelValue, exists := operation.Params()["masterLevel"]
 		if exists {
 			masterLevelInt, err = e.evaluateContextValueAsInt(characterId, "masterLevel", masterLevelValue)
@@ -1046,7 +1046,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		}
 
 		// Level is optional with default 1
-		var levelInt int = 1
+		var levelInt = 1
 		levelValue, exists := operation.Params()["level"]
 		if exists {
 			levelInt, err = e.evaluateContextValueAsInt(characterId, "level", levelValue)
@@ -1056,7 +1056,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		}
 
 		// Master level is optional with default 1
-		var masterLevelInt int = 1
+		var masterLevelInt = 1
 		masterLevelValue, exists := operation.Params()["masterLevel"]
 		if exists {
 			masterLevelInt, err = e.evaluateContextValueAsInt(characterId, "masterLevel", masterLevelValue)
@@ -1752,7 +1752,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		}
 
 		// Width is optional, defaults to 0 (auto-calculated by channel)
-		var widthInt int = 0
+		var widthInt = 0
 		if widthValue, exists := operation.Params()["width"]; exists {
 			widthInt, err = e.evaluateContextValueAsInt(characterId, "width", widthValue)
 			if err != nil {
@@ -1761,7 +1761,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		}
 
 		// Height is optional, defaults to 0 (auto-calculated by channel)
-		var heightInt int = 0
+		var heightInt = 0
 		if heightValue, exists := operation.Params()["height"]; exists {
 			heightInt, err = e.evaluateContextValueAsInt(characterId, "height", heightValue)
 			if err != nil {
@@ -1873,6 +1873,30 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		}
 
 		return stepId, saga.Pending, saga.ResetStats, payload, nil
+
+	case "start_instance_transport":
+		// Format: start_instance_transport
+		// Params: routeName (string, required) - the transport route name (e.g., "kerning-square-subway-in")
+		// Starts an instance-based transport for the character
+		// Used by transport ticket NPCs (e.g., NPC 1052007 for Kerning Square subway)
+		routeNameValue, exists := operation.Params()["routeName"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing routeName parameter for start_instance_transport operation")
+		}
+
+		routeName, err := e.evaluateContextValue(characterId, "routeName", routeNameValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		payload := saga.StartInstanceTransportPayload{
+			CharacterId: characterId,
+			WorldId:     f.WorldId(),
+			ChannelId:   f.ChannelId(),
+			RouteName:   routeName,
+		}
+
+		return stepId, saga.Pending, saga.StartInstanceTransport, payload, nil
 
 	default:
 		return "", "", "", nil, fmt.Errorf("unknown operation type: %s", operation.Type())

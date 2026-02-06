@@ -1,8 +1,9 @@
 package cosmetic
 
 import (
-	"github.com/jtumidanski/api2go/jsonapi"
 	"strconv"
+
+	"github.com/jtumidanski/api2go/jsonapi"
 )
 
 // RestCharacterModel represents the REST API response for character data
@@ -44,15 +45,15 @@ func (r RestCharacterModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
 	return []jsonapi.MarshalIdentifier{}
 }
 
-func (r *RestCharacterModel) SetToOneReferenceID(name, ID string) error {
+func (r *RestCharacterModel) SetToOneReferenceID(_, _ string) error {
 	return nil
 }
 
-func (r *RestCharacterModel) SetToManyReferenceIDs(name string, IDs []string) error {
+func (r *RestCharacterModel) SetToManyReferenceIDs(_ string, _ []string) error {
 	return nil
 }
 
-func (r *RestCharacterModel) SetReferencedStructs(references map[string]map[string]jsonapi.Data) error {
+func (r *RestCharacterModel) SetReferencedStructs(_ map[string]map[string]jsonapi.Data) error {
 	return nil
 }
 

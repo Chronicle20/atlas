@@ -11,9 +11,10 @@ import (
 	"atlas-saga-orchestrator/validation"
 	"context"
 	"fmt"
+	"strings"
+
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
-	"strings"
 )
 
 type Compensator interface {

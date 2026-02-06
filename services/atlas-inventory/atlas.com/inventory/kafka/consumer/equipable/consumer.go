@@ -5,6 +5,7 @@ import (
 	"atlas-inventory/compartment"
 	consumer2 "atlas-inventory/kafka/consumer"
 	equipable2 "atlas-inventory/kafka/message/equipable"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"

@@ -2,8 +2,9 @@ package setup
 
 import (
 	"atlas-data/xml"
-	"github.com/sirupsen/logrus/hooks/test"
 	"testing"
+
+	"github.com/sirupsen/logrus/hooks/test"
 )
 
 func Identity[M any](m M) M {

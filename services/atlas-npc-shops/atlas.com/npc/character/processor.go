@@ -5,6 +5,7 @@ import (
 	character2 "atlas-npc/kafka/message/character"
 	"atlas-npc/kafka/producer"
 	"context"
+
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"

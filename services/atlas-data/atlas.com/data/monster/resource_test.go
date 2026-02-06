@@ -169,7 +169,7 @@ func setupTestMonsterData(t *testing.T, db *gorm.DB, tenantId uuid.UUID) {
 	}
 }
 
-func createRequestWithTenant(method, url string, body []byte, tenantId uuid.UUID) *http.Request {
+func createRequestWithTenant(method, url string, tenantId uuid.UUID) *http.Request {
 	req, err := http.NewRequest(method, url, nil)
 	if err != nil {
 		panic(err)
@@ -187,7 +187,7 @@ func createRequestWithTenant(method, url string, body []byte, tenantId uuid.UUID
 func testGetMonsterEndpoint(t *testing.T, testServer *httptest.Server, tenantId uuid.UUID) {
 	t.Run("GetMonsterById", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/monsters/100100", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -214,7 +214,7 @@ func testGetMonsterEndpoint(t *testing.T, testServer *httptest.Server, tenantId 
 
 	t.Run("GetBossMonster", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/monsters/8500001", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -235,7 +235,7 @@ func testGetMonsterEndpoint(t *testing.T, testServer *httptest.Server, tenantId 
 
 	t.Run("GetMonsterNotFound", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/monsters/9999999", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -252,7 +252,7 @@ func testGetMonsterLoseItemsEndpoint(t *testing.T, testServer *httptest.Server, 
 
 	t.Run("GetMonsterWithNoLoseItems", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/monsters/100101/loseItems", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -272,7 +272,7 @@ func testGetMonsterLoseItemsEndpoint(t *testing.T, testServer *httptest.Server, 
 
 	t.Run("GetLoseItemsNotFound", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/monsters/9999999/loseItems", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -286,7 +286,7 @@ func testGetMonsterLoseItemsEndpoint(t *testing.T, testServer *httptest.Server, 
 func testErrorHandling(t *testing.T, testServer *httptest.Server, tenantId uuid.UUID) {
 	t.Run("InvalidMonsterId", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/monsters/invalid", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -315,7 +315,7 @@ func testTenantIsolation(t *testing.T, testServer *httptest.Server, originalTena
 		differentTenantId := uuid.New()
 
 		url := fmt.Sprintf("%s/data/monsters/100100", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, differentTenantId)
+		req := createRequestWithTenant("GET", url, differentTenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -328,7 +328,7 @@ func testTenantIsolation(t *testing.T, testServer *httptest.Server, originalTena
 
 	t.Run("OriginalTenantHasData", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/monsters/100100", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, originalTenantId)
+		req := createRequestWithTenant("GET", url, originalTenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -350,7 +350,7 @@ func testTenantIsolation(t *testing.T, testServer *httptest.Server, originalTena
 func testJSONAPICompliance(t *testing.T, testServer *httptest.Server, tenantId uuid.UUID) {
 	t.Run("SingleResourceStructure", func(t *testing.T) {
 		url := fmt.Sprintf("%s/data/monsters/100100", testServer.URL)
-		req := createRequestWithTenant("GET", url, nil, tenantId)
+		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)

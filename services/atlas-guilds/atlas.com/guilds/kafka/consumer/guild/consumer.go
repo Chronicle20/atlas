@@ -5,10 +5,8 @@ import (
 	consumer2 "atlas-guilds/kafka/consumer"
 	guild2 "atlas-guilds/kafka/message/guild"
 	"context"
-	"github.com/Chronicle20/atlas-constants/channel"
+
 	"github.com/Chronicle20/atlas-constants/field"
-	"github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -51,7 +49,7 @@ func handleCommandRequestCreate(db *gorm.DB) message.Handler[guild2.Command[guil
 			return
 		}
 
-		f := field.NewBuilder(world.Id(c.Body.WorldId), channel.Id(c.Body.ChannelId), _map.Id(c.Body.MapId)).Build()
+		f := field.NewBuilder(c.Body.WorldId, c.Body.ChannelId, c.Body.MapId).Build()
 		_ = guild.NewProcessor(l, ctx, db).RequestCreateAndEmit(c.CharacterId, f, c.Body.Name, c.TransactionId)
 	}
 }

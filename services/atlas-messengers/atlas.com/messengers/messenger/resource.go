@@ -4,14 +4,15 @@ import (
 	"atlas-messengers/kafka/message/messenger"
 	"atlas-messengers/kafka/producer"
 	"atlas-messengers/rest"
+	"net/http"
+	"strconv"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
-	"net/http"
-	"strconv"
 )
 
 func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
@@ -150,7 +151,7 @@ func handleGetMessengerMember(d *rest.HandlerDependency, c *rest.HandlerContext)
 	})
 }
 
-func handleRemoveMessengerMember(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+func handleRemoveMessengerMember(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseMessengerId(d.Logger(), func(messengerId uint32) http.HandlerFunc {
 		return rest.ParseMemberId(d.Logger(), func(memberId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {

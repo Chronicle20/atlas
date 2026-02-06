@@ -1,8 +1,9 @@
 package wallet
 
 import (
-	"github.com/google/uuid"
 	"testing"
+
+	"github.com/google/uuid"
 )
 
 func TestModelAccessors(t *testing.T) {

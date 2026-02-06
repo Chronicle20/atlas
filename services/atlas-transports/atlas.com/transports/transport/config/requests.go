@@ -3,6 +3,7 @@ package config
 import (
 	"atlas-transports/rest"
 	"fmt"
+
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 

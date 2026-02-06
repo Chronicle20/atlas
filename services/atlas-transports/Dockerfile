@@ -53,6 +53,5 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /
 
 COPY --from=build-env /server /
-COPY services/atlas-transports/routes /routes
 
 CMD ["/server"]

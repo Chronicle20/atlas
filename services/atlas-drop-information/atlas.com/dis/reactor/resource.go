@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -61,9 +60,4 @@ func handleGetReactorDrops(d *rest.HandlerDependency, c *rest.HandlerContext) ht
 			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 		}
 	})
-}
-
-// TransformDrops is a helper to transform a slice of drop models
-func TransformDrops(drops []drop.Model) ([]drop.RestModel, error) {
-	return model.SliceMap(drop.Transform)(model.FixedProvider(drops))(model.ParallelMap())()
 }

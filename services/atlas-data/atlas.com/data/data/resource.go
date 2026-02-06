@@ -3,13 +3,14 @@ package data
 import (
 	"atlas-data/document"
 	"atlas-data/rest"
+	"net/http"
+
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"net/http"
 )
 
 func InitResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteInitializer {
@@ -43,7 +44,7 @@ func uploadData(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerCont
 				return
 			}
 			defer file.Close()
-			
+
 			err = document.DeleteAll(d.Context())(db)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)

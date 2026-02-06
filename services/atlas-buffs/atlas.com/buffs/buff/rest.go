@@ -2,8 +2,9 @@ package buff
 
 import (
 	"atlas-buffs/buff/stat"
-	"github.com/Chronicle20/atlas-model/model"
 	"time"
+
+	"github.com/Chronicle20/atlas-model/model"
 )
 
 type RestModel struct {

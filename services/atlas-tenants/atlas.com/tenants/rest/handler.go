@@ -2,13 +2,14 @@ package rest
 
 import (
 	"context"
+	"io"
+	"net/http"
+
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
-	"io"
-	"net/http"
 )
 
 type HandlerDependency struct {
@@ -118,5 +119,19 @@ func ParseVesselId(l logrus.FieldLogger, next VesselIdHandler) http.HandlerFunc 
 			return
 		}
 		next(vesselId)(w, r)
+	}
+}
+
+type InstanceRouteIdHandler func(instanceRouteId string) http.HandlerFunc
+
+func ParseInstanceRouteId(l logrus.FieldLogger, next InstanceRouteIdHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		instanceRouteId, ok := mux.Vars(r)["instanceRouteId"]
+		if !ok {
+			l.Errorf("Instance route ID not provided in path.")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(instanceRouteId)(w, r)
 	}
 }

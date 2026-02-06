@@ -2,6 +2,7 @@ package item_test
 
 import (
 	"atlas-channel/cashshop/item"
+	"errors"
 	"testing"
 	"time"
 )
@@ -57,7 +58,7 @@ func TestBuild_MissingId(t *testing.T) {
 		SetTemplateId(5000000).
 		Build()
 
-	if err != item.ErrInvalidId {
+	if !errors.Is(err, item.ErrInvalidId) {
 		t.Errorf("Build() error = %v, want ErrInvalidId", err)
 	}
 }
@@ -68,7 +69,7 @@ func TestBuild_ZeroId(t *testing.T) {
 		SetTemplateId(5000000).
 		Build()
 
-	if err != item.ErrInvalidId {
+	if !errors.Is(err, item.ErrInvalidId) {
 		t.Errorf("Build() error = %v, want ErrInvalidId", err)
 	}
 }

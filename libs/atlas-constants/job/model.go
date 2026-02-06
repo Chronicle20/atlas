@@ -1,8 +1,9 @@
 package job
 
 import (
-	"github.com/Chronicle20/atlas-constants/skill"
 	"math"
+
+	"github.com/Chronicle20/atlas-constants/skill"
 )
 
 type Job struct {

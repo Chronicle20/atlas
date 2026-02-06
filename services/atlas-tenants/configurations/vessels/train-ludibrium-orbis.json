@@ -1,0 +1,10 @@
+{
+  "id": "train-ludibrium-orbis",
+  "type": "vessels",
+  "attributes": {
+    "name": "train-ludibrium-orbis",
+    "routeAID": "train-ludibrium-orbis",
+    "routeBID": "train-orbis-ludibrium",
+    "turnaroundDelay": 5
+  }
+}

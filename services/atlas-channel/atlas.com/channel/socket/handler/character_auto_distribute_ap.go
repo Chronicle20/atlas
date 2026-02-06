@@ -5,6 +5,7 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
@@ -26,7 +27,7 @@ func CharacterAutoDistributeApHandleFunc(l logrus.FieldLogger, ctx context.Conte
 			})
 		}
 
-		l.Debugf("Reading Auto Distribute AP packet for character [%d]. UpdateTime [%d], nValue [%d].", updateTime, nValue)
+		l.Debugf("Reading Auto Distribute AP packet for character [%d]. UpdateTime [%d], nValue [%d].", s.CharacterId(), updateTime, nValue)
 		_ = character.NewProcessor(l, ctx).RequestDistributeAp(s.Field(), s.CharacterId(), updateTime, distributes)
 	}
 }

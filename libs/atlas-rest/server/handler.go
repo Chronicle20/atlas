@@ -3,13 +3,14 @@ package server
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"strconv"
+
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
-	"net/http"
-	"strconv"
 )
 
 type SpanHandler func(logrus.FieldLogger, context.Context) http.HandlerFunc

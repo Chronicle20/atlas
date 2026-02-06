@@ -2,6 +2,7 @@ package producer
 
 import (
 	"context"
+
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/sirupsen/logrus"

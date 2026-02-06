@@ -12,6 +12,7 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 	"errors"
+
 	skill3 "github.com/Chronicle20/atlas-constants/skill"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"

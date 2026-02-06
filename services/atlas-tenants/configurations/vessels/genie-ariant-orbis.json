@@ -1,0 +1,10 @@
+{
+  "id": "genie-ariant-orbis",
+  "type": "vessels",
+  "attributes": {
+    "name": "genie-ariant-orbis",
+    "routeAID": "genie-ariant-orbis",
+    "routeBID": "genie-orbis-ariant",
+    "turnaroundDelay": 5
+  }
+}

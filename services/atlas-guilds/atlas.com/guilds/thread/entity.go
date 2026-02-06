@@ -2,10 +2,11 @@ package thread
 
 import (
 	"atlas-guilds/thread/reply"
+	"time"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-	"time"
 )
 
 func Migration(db *gorm.DB) error {

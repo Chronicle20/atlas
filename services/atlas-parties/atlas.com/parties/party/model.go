@@ -1,8 +1,9 @@
 package party
 
 import (
-	"github.com/google/uuid"
 	"math/rand"
+
+	"github.com/google/uuid"
 )
 
 type Model struct {

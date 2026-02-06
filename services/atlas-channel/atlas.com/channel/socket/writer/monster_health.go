@@ -2,8 +2,9 @@ package writer
 
 import (
 	"atlas-channel/monster"
-	"github.com/Chronicle20/atlas-socket/response"
 	"math"
+
+	"github.com/Chronicle20/atlas-socket/response"
 )
 
 const MonsterHealth = "MonsterHealth"

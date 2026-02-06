@@ -5,6 +5,7 @@ import (
 	consumer2 "atlas-chalkboards/kafka/consumer"
 	chalkboard2 "atlas-chalkboards/kafka/message/chalkboard"
 	"context"
+
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"

@@ -6,6 +6,7 @@ import (
 	"atlas-maps/kafka/producer"
 	_map "atlas-maps/map"
 	"context"
+
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"

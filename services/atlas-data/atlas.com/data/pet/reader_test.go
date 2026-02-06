@@ -2,8 +2,9 @@ package pet
 
 import (
 	"atlas-data/xml"
-	"github.com/sirupsen/logrus/hooks/test"
 	"testing"
+
+	"github.com/sirupsen/logrus/hooks/test"
 )
 
 const testXML = `

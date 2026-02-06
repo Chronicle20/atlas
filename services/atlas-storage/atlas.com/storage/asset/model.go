@@ -1,8 +1,9 @@
 package asset
 
 import (
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // ReferenceType constants for different item types

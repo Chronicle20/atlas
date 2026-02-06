@@ -11,7 +11,6 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -54,7 +53,7 @@ func handleCreated(sc server.Model, wp writer.Producer) message.Handler[party2.S
 			return
 		}
 
-		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId) {
 			return
 		}
 
@@ -87,7 +86,7 @@ func handleLeft(sc server.Model, wp writer.Producer) message.Handler[party2.Stat
 			return
 		}
 
-		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId) {
 			return
 		}
 
@@ -138,7 +137,7 @@ func handleExpel(sc server.Model, wp writer.Producer) message.Handler[party2.Sta
 			return
 		}
 
-		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId) {
 			return
 		}
 
@@ -189,7 +188,7 @@ func handleDisband(sc server.Model, wp writer.Producer) message.Handler[party2.S
 			return
 		}
 
-		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId) {
 			return
 		}
 
@@ -234,7 +233,7 @@ func handleJoin(sc server.Model, wp writer.Producer) message.Handler[party2.Stat
 			return
 		}
 
-		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId) {
 			return
 		}
 
@@ -278,7 +277,7 @@ func handleChangeLeader(sc server.Model, wp writer.Producer) message.Handler[par
 			return
 		}
 
-		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId) {
 			return
 		}
 
@@ -323,7 +322,7 @@ func handleError(sc server.Model, wp writer.Producer) message.Handler[party2.Sta
 			return
 		}
 
-		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId) {
 			return
 		}
 

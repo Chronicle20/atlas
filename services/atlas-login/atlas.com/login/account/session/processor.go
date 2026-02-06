@@ -5,6 +5,7 @@ import (
 	"atlas-login/kafka/producer"
 	session2 "atlas-login/kafka/producer/account/session"
 	"context"
+
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )

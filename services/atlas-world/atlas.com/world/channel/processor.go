@@ -7,6 +7,7 @@ import (
 	"atlas-world/kafka/producer"
 	channel3 "atlas-world/kafka/producer/channel"
 	"context"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
@@ -75,7 +76,7 @@ func (p *ProcessorImpl) ByIdProvider(ch channel.Model) model.Provider[Model] {
 
 // Register registers a new channel server
 func (p *ProcessorImpl) Register(ch channel.Model, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) (Model, error) {
-	p.l.Debugf("Registering world [%d] channel [%d] for tenant [%s].", ch, p.t.String())
+	p.l.Debugf("Registering world [%d] channel [%d] for tenant [%s].", ch.WorldId(), ch.Id(), p.t.String())
 	m, err := NewModelBuilder().
 		SetId(uuid.New()).
 		SetWorldId(ch.WorldId()).

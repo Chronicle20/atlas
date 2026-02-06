@@ -3,9 +3,10 @@ package npc
 import (
 	"encoding/json"
 
+	"time"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-	"time"
 )
 
 // Entity represents a conversation tree stored in the database

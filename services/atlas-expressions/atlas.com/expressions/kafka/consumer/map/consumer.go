@@ -5,6 +5,7 @@ import (
 	consumer2 "atlas-expressions/kafka/consumer"
 	mapMsg "atlas-expressions/kafka/message/map"
 	"context"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"

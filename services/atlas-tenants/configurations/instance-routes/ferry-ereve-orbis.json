@@ -1,0 +1,13 @@
+{
+  "id": "sky-ferry-ereve-to-orbis",
+  "type": "instance-routes",
+  "attributes": {
+    "name": "sky-ferry-ereve-to-orbis",
+    "startMapId": 130000210,
+    "transitMapId": 200090021,
+    "destinationMapId": 200000161,
+    "capacity": 1,
+    "boardingWindowSeconds": 1,
+    "travelDurationSeconds": 480
+  }
+}

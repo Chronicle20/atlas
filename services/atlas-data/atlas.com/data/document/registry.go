@@ -2,8 +2,9 @@ package document
 
 import (
 	"errors"
-	"github.com/Chronicle20/atlas-tenant"
 	"sync"
+
+	"github.com/Chronicle20/atlas-tenant"
 )
 
 type Registry[I string, M Identifier[I]] struct {

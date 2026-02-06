@@ -3,11 +3,12 @@ package database
 import (
 	"atlas-character/retry"
 	"fmt"
+	"os"
+	"strconv"
+
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"os"
-	"strconv"
 )
 
 type DSNBuilder struct {

@@ -4,28 +4,21 @@ import (
 	consumer2 "atlas-pets/kafka/consumer/pet"
 	"atlas-pets/pet"
 	"atlas-pets/pet/exclude"
-	"context"
+	"testing"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-model/model"
-	tenant "github.com/Chronicle20/atlas-tenant"
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"testing"
 )
 
 func testLogger() logrus.FieldLogger {
 	l, _ := test.NewNullLogger()
 	return l
-}
-
-func testContext() context.Context {
-	t, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
-	return tenant.WithContext(context.Background(), t)
 }
 
 func testDatabase(t *testing.T) *gorm.DB {

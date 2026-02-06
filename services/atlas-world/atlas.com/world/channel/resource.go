@@ -48,7 +48,7 @@ func handleGetChannelServers(d *rest.HandlerDependency, c *rest.HandlerContext) 
 	})
 }
 
-func handleRegisterChannelServer(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
+func handleRegisterChannelServer(d *rest.HandlerDependency, _ *rest.HandlerContext, input RestModel) http.HandlerFunc {
 	return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			ch := channel.NewModel(worldId, input.ChannelId)

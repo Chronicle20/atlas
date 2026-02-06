@@ -2,6 +2,7 @@ package slot
 
 import (
 	"atlas-cashshop/asset"
+
 	"github.com/Chronicle20/atlas-constants/inventory/slot"
 )
 

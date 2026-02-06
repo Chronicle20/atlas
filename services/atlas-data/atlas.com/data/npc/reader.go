@@ -4,12 +4,13 @@ import (
 	"atlas-data/xml"
 	"context"
 	"fmt"
-	"github.com/Chronicle20/atlas-model/model"
-	tenant "github.com/Chronicle20/atlas-tenant"
-	"github.com/sirupsen/logrus"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/Chronicle20/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/sirupsen/logrus"
 )
 
 func parseNpcId(filePath string) (uint32, error) {

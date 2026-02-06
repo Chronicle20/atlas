@@ -221,9 +221,9 @@ func distributeCharacterExperience(l logrus.FieldLogger) func(ctx context.Contex
 	return func(ctx context.Context) func(f field.Model, characterId uint32, level byte, experience float64, partyBonusMod float64, totalPartyLevel byte, hightestPartyDamage bool, whiteExperienceGain bool, hasPartySharers bool) {
 		return func(f field.Model, characterId uint32, level byte, experience float64, partyBonusMod float64, totalPartyLevel byte, hightestPartyDamage bool, whiteExperienceGain bool, hasPartySharers bool) {
 			expSplitCommonMod := 0.8
-			characterExperience := (float64(expSplitCommonMod) * float64(level)) / float64(totalPartyLevel)
+			characterExperience := (expSplitCommonMod * float64(level)) / float64(totalPartyLevel)
 			if hightestPartyDamage {
-				characterExperience += float64(0.2)
+				characterExperience += 0.2
 			}
 			characterExperience *= experience
 			bonusExperience := partyBonusMod * characterExperience

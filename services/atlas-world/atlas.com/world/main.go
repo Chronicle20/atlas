@@ -11,13 +11,14 @@ import (
 	"atlas-world/tracing"
 	"atlas-world/world"
 	"context"
+	"os"
+	"time"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
-	"os"
-	"time"
 )
 
 const serviceName = "atlas-world"

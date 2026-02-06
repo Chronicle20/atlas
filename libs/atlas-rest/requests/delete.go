@@ -2,9 +2,10 @@ package requests
 
 import (
 	"context"
+	"net/http"
+
 	"github.com/Chronicle20/atlas-rest/retry"
 	"github.com/sirupsen/logrus"
-	"net/http"
 )
 
 type EmptyBodyRequest func(l logrus.FieldLogger, ctx context.Context) error

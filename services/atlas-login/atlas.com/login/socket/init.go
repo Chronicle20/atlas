@@ -4,11 +4,12 @@ import (
 	"atlas-login/session"
 	"context"
 	"errors"
+	"net"
+	"sync"
+
 	"github.com/Chronicle20/atlas-socket"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
-	"net"
-	"sync"
 )
 
 func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) func(hp socket.HandlerProducer, rw socket.OpReadWriter, port int) {

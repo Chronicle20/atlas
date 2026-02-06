@@ -1,0 +1,11 @@
+meta {
+  name: Get Instance Routes
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/transports/instance-routes
+  body: none
+  auth: inherit
+}

@@ -2,10 +2,11 @@ package account
 
 import (
 	"errors"
-	"github.com/Chronicle20/atlas-tenant"
-	"github.com/google/uuid"
 	"sync"
 	"time"
+
+	"github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 )
 
 var instance *Registry

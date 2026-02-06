@@ -13,8 +13,9 @@ import (
 	"atlas-inventory/service"
 	"atlas-inventory/stackable"
 	"atlas-inventory/tracing"
-	"github.com/Chronicle20/atlas-kafka/consumer"
 	"os"
+
+	"github.com/Chronicle20/atlas-kafka/consumer"
 
 	"github.com/Chronicle20/atlas-rest/server"
 )

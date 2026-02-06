@@ -2,8 +2,9 @@ package tenant
 
 import (
 	"encoding/json"
-	"github.com/google/uuid"
 	"testing"
+
+	"github.com/google/uuid"
 )
 
 func TestSerialization(t *testing.T) {

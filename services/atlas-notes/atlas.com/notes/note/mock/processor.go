@@ -3,6 +3,7 @@ package mock
 import (
 	"atlas-notes/kafka/message"
 	"atlas-notes/note"
+
 	"github.com/Chronicle20/atlas-model/model"
 )
 

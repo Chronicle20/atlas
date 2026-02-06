@@ -8,8 +8,6 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
-	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -58,7 +56,7 @@ func handleSendMessage(sc server.Model, wp writer.Producer) message.Handler[syst
 			return
 		}
 
-		if !sc.Is(t, world.Id(cmd.WorldId), channel.Id(cmd.ChannelId)) {
+		if !sc.Is(t, cmd.WorldId, cmd.ChannelId) {
 			return
 		}
 
@@ -66,16 +64,16 @@ func handleSendMessage(sc server.Model, wp writer.Producer) message.Handler[syst
 		var bodyProducer writer.BodyProducer
 		switch cmd.Body.MessageType {
 		case "NOTICE":
-			bodyProducer = writer.WorldMessageNoticeBody(l, sc.Tenant())(cmd.Body.Message)
+			bodyProducer = writer.WorldMessageNoticeBody(l)(cmd.Body.Message)
 		case "POP_UP":
-			bodyProducer = writer.WorldMessagePopUpBody(l, sc.Tenant())(cmd.Body.Message)
+			bodyProducer = writer.WorldMessagePopUpBody(l)(cmd.Body.Message)
 		case "PINK_TEXT":
-			bodyProducer = writer.WorldMessagePinkTextBody(l, sc.Tenant())("", "", cmd.Body.Message)
+			bodyProducer = writer.WorldMessagePinkTextBody(l)("", "", cmd.Body.Message)
 		case "BLUE_TEXT":
-			bodyProducer = writer.WorldMessageBlueTextBody(l, sc.Tenant())("", "", cmd.Body.Message)
+			bodyProducer = writer.WorldMessageBlueTextBody(l)("", "", cmd.Body.Message)
 		default:
 			l.Warnf("Unknown message type: %s, defaulting to PINK_TEXT", cmd.Body.MessageType)
-			bodyProducer = writer.WorldMessagePinkTextBody(l, sc.Tenant())("", "", cmd.Body.Message)
+			bodyProducer = writer.WorldMessagePinkTextBody(l)("", "", cmd.Body.Message)
 		}
 
 		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(cmd.CharacterId,
@@ -97,7 +95,7 @@ func handlePlayPortalSound(sc server.Model, wp writer.Producer) message.Handler[
 			return
 		}
 
-		if !sc.Is(t, world.Id(cmd.WorldId), channel.Id(cmd.ChannelId)) {
+		if !sc.Is(t, cmd.WorldId, cmd.ChannelId) {
 			return
 		}
 
@@ -120,7 +118,7 @@ func handleShowInfo(sc server.Model, wp writer.Producer) message.Handler[system_
 			return
 		}
 
-		if !sc.Is(t, world.Id(cmd.WorldId), channel.Id(cmd.ChannelId)) {
+		if !sc.Is(t, cmd.WorldId, cmd.ChannelId) {
 			return
 		}
 
@@ -143,7 +141,7 @@ func handleShowInfoText(sc server.Model, wp writer.Producer) message.Handler[sys
 			return
 		}
 
-		if !sc.Is(t, world.Id(cmd.WorldId), channel.Id(cmd.ChannelId)) {
+		if !sc.Is(t, cmd.WorldId, cmd.ChannelId) {
 			return
 		}
 
@@ -166,7 +164,7 @@ func handleUpdateAreaInfo(sc server.Model, wp writer.Producer) message.Handler[s
 			return
 		}
 
-		if !sc.Is(t, world.Id(cmd.WorldId), channel.Id(cmd.ChannelId)) {
+		if !sc.Is(t, cmd.WorldId, cmd.ChannelId) {
 			return
 		}
 
@@ -241,7 +239,7 @@ func handleShowIntro(sc server.Model, wp writer.Producer) message.Handler[system
 			return
 		}
 
-		if !sc.Is(t, world.Id(cmd.WorldId), channel.Id(cmd.ChannelId)) {
+		if !sc.Is(t, cmd.WorldId, cmd.ChannelId) {
 			return
 		}
 

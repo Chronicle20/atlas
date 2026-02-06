@@ -88,7 +88,7 @@ func handleDepositRollbackCommand(db *gorm.DB) kafkaMessage.Handler[message.Comm
 			return
 		}
 
-		err := storage.NewProcessor(l, ctx, db).DepositRollback(c.WorldId, c.AccountId, c.Body)
+		err := storage.NewProcessor(l, ctx, db).DepositRollback(c.Body)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to rollback deposit for asset [%d] account [%d] world [%d].", c.Body.AssetId, c.AccountId, c.WorldId)
 		}

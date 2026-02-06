@@ -1,10 +1,11 @@
 package model
 
 import (
+	"math"
+
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
-	"math"
 )
 
 type MonsterAppearType int8

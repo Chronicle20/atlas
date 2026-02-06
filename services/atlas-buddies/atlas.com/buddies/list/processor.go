@@ -11,6 +11,7 @@ import (
 	list3 "atlas-buddies/kafka/producer/list"
 	"context"
 	"errors"
+
 	character2 "github.com/Chronicle20/atlas-constants/character"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
@@ -600,7 +601,7 @@ func (p *ProcessorImpl) IncreaseCapacityWithTransaction(mb *message.Buffer) func
 			}
 
 			// Emit success event with transaction ID
-			_ = mb.Put(list2.EnvStatusEventTopic, list3.BuddyCapacityChangeStatusEventWithTransactionProvider(character2.Id(characterId), worldId, newCapacity, transactionId))
+			_ = mb.Put(list2.EnvStatusEventTopic, list3.BuddyCapacityChangeStatusEventProvider(character2.Id(characterId), worldId, newCapacity, transactionId))
 			p.l.Debugf("Successfully increased buddy list capacity for character [%d] to [%d]. Transaction: %s", characterId, newCapacity, transactionId.String())
 			return nil
 		})

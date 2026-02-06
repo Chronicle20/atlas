@@ -2,6 +2,7 @@ package inventory
 
 import (
 	"atlas-cashshop/character/compartment"
+
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -60,7 +61,7 @@ func (r RestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
 	return result
 }
 
-func (r *RestModel) SetToOneReferenceID(name, ID string) error {
+func (r *RestModel) SetToOneReferenceID(_, _ string) error {
 	return nil
 }
 

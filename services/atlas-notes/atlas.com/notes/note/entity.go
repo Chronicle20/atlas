@@ -1,9 +1,10 @@
 package note
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-	"time"
 )
 
 // Entity represents a note in the database

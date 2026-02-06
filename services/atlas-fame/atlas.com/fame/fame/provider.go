@@ -2,10 +2,11 @@ package fame
 
 import (
 	"atlas-fame/database"
+	"time"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-	"time"
 )
 
 func byCharacterIdLastMonthEntityProvider(tenantId uuid.UUID, characterId uint32) database.EntityProvider[[]Entity] {

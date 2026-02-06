@@ -3,8 +3,9 @@ package npc
 import (
 	"atlas-npc-conversations/conversation"
 	"errors"
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // Model represents a conversation tree for an NPC

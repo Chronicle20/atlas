@@ -6,6 +6,7 @@ import (
 	consumer2 "atlas-buffs/kafka/consumer"
 	character2 "atlas-buffs/kafka/message/character"
 	"context"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"

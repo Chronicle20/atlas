@@ -2,6 +2,7 @@ package channel_test
 
 import (
 	"atlas-channel/channel"
+	"errors"
 	"testing"
 
 	channelId "github.com/Chronicle20/atlas-constants/channel"
@@ -47,7 +48,7 @@ func TestBuild_MissingId(t *testing.T) {
 		SetWorldId(world.Id(0)).
 		Build()
 
-	if err != channel.ErrInvalidId {
+	if !errors.Is(err, channel.ErrInvalidId) {
 		t.Errorf("Build() error = %v, want ErrInvalidId", err)
 	}
 }

@@ -2,9 +2,10 @@ package transport
 
 import (
 	"atlas-query-aggregator/rest"
+	"fmt"
+
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-rest/requests"
-	"fmt"
 )
 
 // getBaseRequest returns the base URL for transport requests

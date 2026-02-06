@@ -10,11 +10,7 @@
         "choices": [
           {
             "text": "Lith Harbor (800 mesos)",
-            "nextState": "checkMeso",
-            "context": {
-              "destination": "200090070",
-              "cost": "800"
-            }
+            "nextState": "checkMeso"
           },
           {
             "text": "Exit",
@@ -41,7 +37,7 @@
           },
           {
             "conditions": [],
-            "nextState": "performWarp"
+            "nextState": "deductMeso"
           }
         ]
       }
@@ -65,7 +61,7 @@
       }
     },
     {
-      "id": "performWarp",
+      "id": "deductMeso",
       "type": "genericAction",
       "genericAction": {
         "operations": [
@@ -74,18 +70,77 @@
             "params": {
               "amount": "-800"
             }
-          },
-          {
-            "type": "warp_to_map",
-            "params": {
-              "mapId": "200090070",
-              "portalId": "0"
-            }
           }
         ],
         "outcomes": [
           {
             "conditions": [],
+            "nextState": "startTransport"
+          }
+        ]
+      }
+    },
+    {
+      "id": "startTransport",
+      "type": "transportAction",
+      "transportAction": {
+        "routeName": "whale-rien-to-lith-harbor",
+        "failureState": "transportFailed",
+        "capacityFullState": "transportCapacityFull",
+        "alreadyInTransitState": "transportAlreadyInTransit",
+        "routeNotFoundState": "transportFailed",
+        "serviceErrorState": "transportFailed"
+      }
+    },
+    {
+      "id": "transportFailed",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Sorry, the whale service is currently unavailable. Please try again later.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "transportCapacityFull",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Sorry, the whale is currently carrying another passenger. Please wait a moment and try again.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "transportAlreadyInTransit",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "You seem to already be on a transport. Please wait until you arrive at your destination.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
             "nextState": null
           }
         ]

@@ -5,10 +5,11 @@ import (
 	skill2 "atlas-saga-orchestrator/kafka/message/skill"
 	"atlas-saga-orchestrator/kafka/producer"
 	"context"
+	"time"
+
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-	"time"
 )
 
 type Processor interface {

@@ -67,11 +67,11 @@ func (m *MockProcessor) QuestModelDecorator(c character.Model) character.Model {
 	return c
 }
 
-func (m *MockProcessor) GetEquipableInSlot(characterId uint32, slot int16) model.Provider[asset.Model[any]] {
+func (m *MockProcessor) GetEquipableInSlot(_ uint32, _ int16) model.Provider[asset.Model[any]] {
 	return model.ErrorProvider[asset.Model[any]](errors.New("not implemented in mock"))
 }
 
-func (m *MockProcessor) GetItemInSlot(characterId uint32, inventoryType inventory2.Type, slot int16) model.Provider[asset.Model[any]] {
+func (m *MockProcessor) GetItemInSlot(_ uint32, _ inventory2.Type, _ int16) model.Provider[asset.Model[any]] {
 	return model.ErrorProvider[asset.Model[any]](errors.New("not implemented in mock"))
 }
 
@@ -99,22 +99,22 @@ func (m *MockProcessor) GetByName(name string) (character.Model, error) {
 	return c, nil
 }
 
-func (m *MockProcessor) RequestDistributeAp(f field.Model, characterId uint32, updateTime uint32, distributes []character.DistributePacket) error {
+func (m *MockProcessor) RequestDistributeAp(_ field.Model, _ uint32, _ uint32, _ []character.DistributePacket) error {
 	return nil
 }
 
-func (m *MockProcessor) RequestDropMeso(f field.Model, characterId uint32, amount uint32) error {
+func (m *MockProcessor) RequestDropMeso(_ field.Model, _ uint32, _ uint32) error {
 	return nil
 }
 
-func (m *MockProcessor) ChangeHP(f field.Model, characterId uint32, amount int16) error {
+func (m *MockProcessor) ChangeHP(_ field.Model, _ uint32, _ int16) error {
 	return nil
 }
 
-func (m *MockProcessor) ChangeMP(f field.Model, characterId uint32, amount int16) error {
+func (m *MockProcessor) ChangeMP(_ field.Model, _ uint32, _ int16) error {
 	return nil
 }
 
-func (m *MockProcessor) RequestDistributeSp(f field.Model, characterId uint32, updateTime uint32, skillId uint32, amount int8) error {
+func (m *MockProcessor) RequestDistributeSp(_ field.Model, _ uint32, _ uint32, _ uint32, _ int8) error {
 	return nil
 }

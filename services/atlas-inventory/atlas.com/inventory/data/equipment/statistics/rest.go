@@ -1,8 +1,9 @@
 package statistics
 
 import (
-	"github.com/jtumidanski/api2go/jsonapi"
 	"strconv"
+
+	"github.com/jtumidanski/api2go/jsonapi"
 )
 
 type RestModel struct {
@@ -68,7 +69,7 @@ func (r RestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
 	}
 	return rfs
 }
-func (r *RestModel) SetToOneReferenceID(name string, ID string) error {
+func (r *RestModel) SetToOneReferenceID(_ string, _ string) error {
 	return nil
 }
 

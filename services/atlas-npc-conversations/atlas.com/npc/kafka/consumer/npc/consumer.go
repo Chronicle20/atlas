@@ -5,10 +5,8 @@ import (
 	consumer2 "atlas-npc-conversations/kafka/consumer"
 	npc2 "atlas-npc-conversations/kafka/message/npc"
 	"context"
-	"github.com/Chronicle20/atlas-constants/channel"
+
 	"github.com/Chronicle20/atlas-constants/field"
-	"github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -41,7 +39,7 @@ func handleStartConversationCommand(db *gorm.DB) message.Handler[npc2.Command[np
 		if c.Type != npc2.CommandTypeStartConversation {
 			return
 		}
-		_ = conversation.NewProcessor(l, ctx, db).Start(field.NewBuilder(world.Id(c.Body.WorldId), channel.Id(c.Body.ChannelId), _map.Id(c.Body.MapId)).Build(), c.NpcId, c.CharacterId, c.Body.AccountId)
+		_ = conversation.NewProcessor(l, ctx, db).Start(field.NewBuilder(c.Body.WorldId, c.Body.ChannelId, c.Body.MapId).Build(), c.NpcId, c.CharacterId, c.Body.AccountId)
 	}
 }
 

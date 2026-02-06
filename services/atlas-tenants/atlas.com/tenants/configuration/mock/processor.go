@@ -25,6 +25,23 @@ type ProcessorMock struct {
 	RouteByIdProviderFunc  func(tenantID uuid.UUID, routeID string) model.Provider[map[string]interface{}]
 	AllRoutesProviderFunc  func(tenantID uuid.UUID) model.Provider[[]map[string]interface{}]
 
+	// Instance route operations
+	CreateInstanceRouteFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(route map[string]interface{}) (configuration.Model, error)
+	CreateInstanceRouteAndEmitFunc func(tenantID uuid.UUID, route map[string]interface{}) (configuration.Model, error)
+	UpdateInstanceRouteFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(routeID string) func(route map[string]interface{}) (configuration.Model, error)
+	UpdateInstanceRouteAndEmitFunc func(tenantID uuid.UUID, routeID string, route map[string]interface{}) (configuration.Model, error)
+	DeleteInstanceRouteFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(routeID string) error
+	DeleteInstanceRouteAndEmitFunc func(tenantID uuid.UUID, routeID string) error
+	GetInstanceRouteByIdFunc       func(tenantID uuid.UUID, routeID string) (map[string]interface{}, error)
+	GetAllInstanceRoutesFunc       func(tenantID uuid.UUID) ([]map[string]interface{}, error)
+	InstanceRouteByIdProviderFunc  func(tenantID uuid.UUID, routeID string) model.Provider[map[string]interface{}]
+	AllInstanceRoutesProviderFunc  func(tenantID uuid.UUID) model.Provider[[]map[string]interface{}]
+
+	// Seed operations
+	SeedRoutesFunc         func(tenantID uuid.UUID) (configuration.SeedResult, error)
+	SeedInstanceRoutesFunc func(tenantID uuid.UUID) (configuration.SeedResult, error)
+	SeedVesselsFunc        func(tenantID uuid.UUID) (configuration.SeedResult, error)
+
 	// Vessel operations
 	CreateVesselFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(vessel map[string]interface{}) (configuration.Model, error)
 	CreateVesselAndEmitFunc func(tenantID uuid.UUID, vessel map[string]interface{}) (configuration.Model, error)
@@ -232,4 +249,126 @@ func (m *ProcessorMock) AllVesselsProvider(tenantID uuid.UUID) model.Provider[[]
 	return func() ([]map[string]interface{}, error) {
 		return []map[string]interface{}{}, nil
 	}
+}
+
+// CreateInstanceRoute is a mock implementation
+func (m *ProcessorMock) CreateInstanceRoute(mb *message.Buffer) func(tenantID uuid.UUID) func(route map[string]interface{}) (configuration.Model, error) {
+	if m.CreateInstanceRouteFunc != nil {
+		return m.CreateInstanceRouteFunc(mb)
+	}
+	return func(tenantID uuid.UUID) func(route map[string]interface{}) (configuration.Model, error) {
+		return func(route map[string]interface{}) (configuration.Model, error) {
+			return configuration.Model{}, nil
+		}
+	}
+}
+
+// CreateInstanceRouteAndEmit is a mock implementation
+func (m *ProcessorMock) CreateInstanceRouteAndEmit(tenantID uuid.UUID, route map[string]interface{}) (configuration.Model, error) {
+	if m.CreateInstanceRouteAndEmitFunc != nil {
+		return m.CreateInstanceRouteAndEmitFunc(tenantID, route)
+	}
+	return configuration.Model{}, nil
+}
+
+// UpdateInstanceRoute is a mock implementation
+func (m *ProcessorMock) UpdateInstanceRoute(mb *message.Buffer) func(tenantID uuid.UUID) func(routeID string) func(route map[string]interface{}) (configuration.Model, error) {
+	if m.UpdateInstanceRouteFunc != nil {
+		return m.UpdateInstanceRouteFunc(mb)
+	}
+	return func(tenantID uuid.UUID) func(routeID string) func(route map[string]interface{}) (configuration.Model, error) {
+		return func(routeID string) func(route map[string]interface{}) (configuration.Model, error) {
+			return func(route map[string]interface{}) (configuration.Model, error) {
+				return configuration.Model{}, nil
+			}
+		}
+	}
+}
+
+// UpdateInstanceRouteAndEmit is a mock implementation
+func (m *ProcessorMock) UpdateInstanceRouteAndEmit(tenantID uuid.UUID, routeID string, route map[string]interface{}) (configuration.Model, error) {
+	if m.UpdateInstanceRouteAndEmitFunc != nil {
+		return m.UpdateInstanceRouteAndEmitFunc(tenantID, routeID, route)
+	}
+	return configuration.Model{}, nil
+}
+
+// DeleteInstanceRoute is a mock implementation
+func (m *ProcessorMock) DeleteInstanceRoute(mb *message.Buffer) func(tenantID uuid.UUID) func(routeID string) error {
+	if m.DeleteInstanceRouteFunc != nil {
+		return m.DeleteInstanceRouteFunc(mb)
+	}
+	return func(tenantID uuid.UUID) func(routeID string) error {
+		return func(routeID string) error {
+			return nil
+		}
+	}
+}
+
+// DeleteInstanceRouteAndEmit is a mock implementation
+func (m *ProcessorMock) DeleteInstanceRouteAndEmit(tenantID uuid.UUID, routeID string) error {
+	if m.DeleteInstanceRouteAndEmitFunc != nil {
+		return m.DeleteInstanceRouteAndEmitFunc(tenantID, routeID)
+	}
+	return nil
+}
+
+// GetInstanceRouteById is a mock implementation
+func (m *ProcessorMock) GetInstanceRouteById(tenantID uuid.UUID, routeID string) (map[string]interface{}, error) {
+	if m.GetInstanceRouteByIdFunc != nil {
+		return m.GetInstanceRouteByIdFunc(tenantID, routeID)
+	}
+	return map[string]interface{}{}, nil
+}
+
+// GetAllInstanceRoutes is a mock implementation
+func (m *ProcessorMock) GetAllInstanceRoutes(tenantID uuid.UUID) ([]map[string]interface{}, error) {
+	if m.GetAllInstanceRoutesFunc != nil {
+		return m.GetAllInstanceRoutesFunc(tenantID)
+	}
+	return []map[string]interface{}{}, nil
+}
+
+// InstanceRouteByIdProvider is a mock implementation
+func (m *ProcessorMock) InstanceRouteByIdProvider(tenantID uuid.UUID, routeID string) model.Provider[map[string]interface{}] {
+	if m.InstanceRouteByIdProviderFunc != nil {
+		return m.InstanceRouteByIdProviderFunc(tenantID, routeID)
+	}
+	return func() (map[string]interface{}, error) {
+		return map[string]interface{}{}, nil
+	}
+}
+
+// AllInstanceRoutesProvider is a mock implementation
+func (m *ProcessorMock) AllInstanceRoutesProvider(tenantID uuid.UUID) model.Provider[[]map[string]interface{}] {
+	if m.AllInstanceRoutesProviderFunc != nil {
+		return m.AllInstanceRoutesProviderFunc(tenantID)
+	}
+	return func() ([]map[string]interface{}, error) {
+		return []map[string]interface{}{}, nil
+	}
+}
+
+// SeedRoutes is a mock implementation
+func (m *ProcessorMock) SeedRoutes(tenantID uuid.UUID) (configuration.SeedResult, error) {
+	if m.SeedRoutesFunc != nil {
+		return m.SeedRoutesFunc(tenantID)
+	}
+	return configuration.SeedResult{}, nil
+}
+
+// SeedInstanceRoutes is a mock implementation
+func (m *ProcessorMock) SeedInstanceRoutes(tenantID uuid.UUID) (configuration.SeedResult, error) {
+	if m.SeedInstanceRoutesFunc != nil {
+		return m.SeedInstanceRoutesFunc(tenantID)
+	}
+	return configuration.SeedResult{}, nil
+}
+
+// SeedVessels is a mock implementation
+func (m *ProcessorMock) SeedVessels(tenantID uuid.UUID) (configuration.SeedResult, error) {
+	if m.SeedVesselsFunc != nil {
+		return m.SeedVesselsFunc(tenantID)
+	}
+	return configuration.SeedResult{}, nil
 }

@@ -6,6 +6,8 @@ import (
 	skill3 "atlas-channel/data/skill"
 	"atlas-channel/socket/model"
 	"context"
+	"math"
+
 	"github.com/Chronicle20/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-constants/job"
@@ -13,7 +15,6 @@ import (
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
-	"math"
 )
 
 func WriteCommonAttackBody(l logrus.FieldLogger) func(ctx context.Context) func(c character.Model, ai model.AttackInfo) func(w *response.Writer) {

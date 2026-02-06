@@ -3,8 +3,9 @@ package monster
 import (
 	"atlas-data/document"
 	"atlas-data/xml"
-	"github.com/Chronicle20/atlas-tenant"
 	"sync"
+
+	"github.com/Chronicle20/atlas-tenant"
 )
 
 type Gauge struct {
@@ -35,12 +36,16 @@ func InitGauge(t tenant.Model, path string) error {
 	if err != nil {
 		return err
 	}
-	d, err := exml.ChildByName("MobGage/Mob")
+	mobGage, err := exml.ChildByName("MobGage")
+	if err != nil {
+		return err
+	}
+	mob, err := mobGage.ChildByName("Mob")
 	if err != nil {
 		return err
 	}
 
-	for _, mxml := range d.CanvasNodes {
+	for _, mxml := range mob.CanvasNodes {
 		_, err = GetMonsterGaugeRegistry().Add(t, Gauge{id: mxml.Name, exists: true})
 		if err != nil {
 			return err

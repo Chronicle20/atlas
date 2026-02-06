@@ -1,10 +1,11 @@
 package model
 
 import (
+	"time"
+
 	"github.com/Chronicle20/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
-	"time"
 )
 
 // Note represents a note for a character

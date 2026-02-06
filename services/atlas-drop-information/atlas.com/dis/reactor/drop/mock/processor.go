@@ -1,14 +1,14 @@
 package mock
 
 import (
-	drop "atlas-drops-information/reactor/drop"
+	"atlas-drops-information/reactor/drop"
 
 	"github.com/Chronicle20/atlas-model/model"
 )
 
 // ProcessorMock is a mock implementation of the drop.Processor interface
 type ProcessorMock struct {
-	GetAllFunc       func() model.Provider[[]drop.Model]
+	GetAllFunc        func() model.Provider[[]drop.Model]
 	GetForReactorFunc func(reactorId uint32) model.Provider[[]drop.Model]
 }
 

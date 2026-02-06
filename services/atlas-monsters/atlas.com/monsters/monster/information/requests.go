@@ -3,6 +3,7 @@ package information
 import (
 	"atlas-monsters/rest"
 	"fmt"
+
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 

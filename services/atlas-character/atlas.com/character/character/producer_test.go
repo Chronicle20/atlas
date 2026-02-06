@@ -2,14 +2,14 @@ package character_test
 
 import (
 	"atlas-character/character"
-	character2 "atlas-character/kafka/message/character"
 	"atlas-character/kafka/message"
+	character2 "atlas-character/kafka/message/character"
 	"context"
 	"encoding/json"
 	"testing"
 
-	"github.com/Chronicle20/atlas-constants/world"
 	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 )
@@ -19,7 +19,7 @@ import (
 func TestNameChangedEventViaUpdate(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), testTenant())
 	db := testDatabase(t)
-	
+
 	// Create a character first
 	input := character.NewModelBuilder().
 		SetAccountId(1000).
@@ -32,40 +32,40 @@ func TestNameChangedEventViaUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}
-	
+
 	// Update the name and capture the message buffer
 	updateInput := character.RestModel{
 		Name: "NewName",
 	}
-	
+
 	transactionId := uuid.New()
 	mb := message.NewBuffer()
 	err = processor.Update(mb)(transactionId, created.Id(), updateInput)
 	if err != nil {
 		t.Fatalf("Failed to update character name: %v", err)
 	}
-	
+
 	// Verify the message was added to the buffer
 	messages := mb.GetAll()
 	if len(messages) != 1 {
 		t.Fatalf("Expected 1 topic in buffer, got %d", len(messages))
 	}
-	
+
 	statusMessages, exists := messages[character2.EnvEventTopicCharacterStatus]
 	if !exists {
 		t.Fatal("Expected character status event topic in buffer")
 	}
-	
+
 	if len(statusMessages) != 1 {
 		t.Fatalf("Expected 1 message in character status topic, got %d", len(statusMessages))
 	}
-	
+
 	// Verify the message content
 	var event character2.StatusEvent[character2.StatusEventNameChangedBody]
 	if err := json.Unmarshal(statusMessages[0].Value, &event); err != nil {
 		t.Fatalf("Failed to unmarshal message: %v", err)
 	}
-	
+
 	if event.TransactionId != transactionId {
 		t.Errorf("Expected TransactionId %s, got %s", transactionId, event.TransactionId)
 	}
@@ -89,7 +89,7 @@ func TestNameChangedEventViaUpdate(t *testing.T) {
 func TestHairChangedEventViaUpdate(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), testTenant())
 	db := testDatabase(t)
-	
+
 	// Create a character first
 	input := character.NewModelBuilder().
 		SetAccountId(1000).
@@ -103,36 +103,36 @@ func TestHairChangedEventViaUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}
-	
+
 	// Update the hair and capture the message buffer
 	updateInput := character.RestModel{
 		Hair: 30100,
 	}
-	
+
 	transactionId := uuid.New()
 	mb := message.NewBuffer()
 	err = processor.Update(mb)(transactionId, created.Id(), updateInput)
 	if err != nil {
 		t.Fatalf("Failed to update character hair: %v", err)
 	}
-	
+
 	// Verify the message was added to the buffer
 	messages := mb.GetAll()
 	statusMessages, exists := messages[character2.EnvEventTopicCharacterStatus]
 	if !exists {
 		t.Fatal("Expected character status event topic in buffer")
 	}
-	
+
 	if len(statusMessages) != 1 {
 		t.Fatalf("Expected 1 message in character status topic, got %d", len(statusMessages))
 	}
-	
+
 	// Verify the message content
 	var event character2.StatusEvent[character2.StatusEventHairChangedBody]
 	if err := json.Unmarshal(statusMessages[0].Value, &event); err != nil {
 		t.Fatalf("Failed to unmarshal message: %v", err)
 	}
-	
+
 	if event.Type != character2.StatusEventTypeHairChanged {
 		t.Errorf("Expected Type %s, got %s", character2.StatusEventTypeHairChanged, event.Type)
 	}
@@ -147,7 +147,7 @@ func TestHairChangedEventViaUpdate(t *testing.T) {
 func TestFaceChangedEventViaUpdate(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), testTenant())
 	db := testDatabase(t)
-	
+
 	// Create a character first
 	input := character.NewModelBuilder().
 		SetAccountId(1000).
@@ -161,36 +161,36 @@ func TestFaceChangedEventViaUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}
-	
+
 	// Update the face and capture the message buffer
 	updateInput := character.RestModel{
 		Face: 20100,
 	}
-	
+
 	transactionId := uuid.New()
 	mb := message.NewBuffer()
 	err = processor.Update(mb)(transactionId, created.Id(), updateInput)
 	if err != nil {
 		t.Fatalf("Failed to update character face: %v", err)
 	}
-	
+
 	// Verify the message was added to the buffer
 	messages := mb.GetAll()
 	statusMessages, exists := messages[character2.EnvEventTopicCharacterStatus]
 	if !exists {
 		t.Fatal("Expected character status event topic in buffer")
 	}
-	
+
 	if len(statusMessages) != 1 {
 		t.Fatalf("Expected 1 message in character status topic, got %d", len(statusMessages))
 	}
-	
+
 	// Verify the message content
 	var event character2.StatusEvent[character2.StatusEventFaceChangedBody]
 	if err := json.Unmarshal(statusMessages[0].Value, &event); err != nil {
 		t.Fatalf("Failed to unmarshal message: %v", err)
 	}
-	
+
 	if event.Type != character2.StatusEventTypeFaceChanged {
 		t.Errorf("Expected Type %s, got %s", character2.StatusEventTypeFaceChanged, event.Type)
 	}
@@ -205,7 +205,7 @@ func TestFaceChangedEventViaUpdate(t *testing.T) {
 func TestGenderChangedEventViaUpdate(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), testTenant())
 	db := testDatabase(t)
-	
+
 	// Create a character first
 	input := character.NewModelBuilder().
 		SetAccountId(1000).
@@ -219,36 +219,36 @@ func TestGenderChangedEventViaUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}
-	
+
 	// Update the gender and capture the message buffer
 	updateInput := character.RestModel{
 		Gender: 1,
 	}
-	
+
 	transactionId := uuid.New()
 	mb := message.NewBuffer()
 	err = processor.Update(mb)(transactionId, created.Id(), updateInput)
 	if err != nil {
 		t.Fatalf("Failed to update character gender: %v", err)
 	}
-	
+
 	// Verify the message was added to the buffer
 	messages := mb.GetAll()
 	statusMessages, exists := messages[character2.EnvEventTopicCharacterStatus]
 	if !exists {
 		t.Fatal("Expected character status event topic in buffer")
 	}
-	
+
 	if len(statusMessages) != 1 {
 		t.Fatalf("Expected 1 message in character status topic, got %d", len(statusMessages))
 	}
-	
+
 	// Verify the message content
 	var event character2.StatusEvent[character2.StatusEventGenderChangedBody]
 	if err := json.Unmarshal(statusMessages[0].Value, &event); err != nil {
 		t.Fatalf("Failed to unmarshal message: %v", err)
 	}
-	
+
 	if event.Type != character2.StatusEventTypeGenderChanged {
 		t.Errorf("Expected Type %s, got %s", character2.StatusEventTypeGenderChanged, event.Type)
 	}
@@ -263,7 +263,7 @@ func TestGenderChangedEventViaUpdate(t *testing.T) {
 func TestSkinColorChangedEventViaUpdate(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), testTenant())
 	db := testDatabase(t)
-	
+
 	// Create a character first
 	input := character.NewModelBuilder().
 		SetAccountId(1000).
@@ -277,36 +277,36 @@ func TestSkinColorChangedEventViaUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}
-	
+
 	// Update the skin color and capture the message buffer
 	updateInput := character.RestModel{
 		SkinColor: 5,
 	}
-	
+
 	transactionId := uuid.New()
 	mb := message.NewBuffer()
 	err = processor.Update(mb)(transactionId, created.Id(), updateInput)
 	if err != nil {
 		t.Fatalf("Failed to update character skin color: %v", err)
 	}
-	
+
 	// Verify the message was added to the buffer
 	messages := mb.GetAll()
 	statusMessages, exists := messages[character2.EnvEventTopicCharacterStatus]
 	if !exists {
 		t.Fatal("Expected character status event topic in buffer")
 	}
-	
+
 	if len(statusMessages) != 1 {
 		t.Fatalf("Expected 1 message in character status topic, got %d", len(statusMessages))
 	}
-	
+
 	// Verify the message content
 	var event character2.StatusEvent[character2.StatusEventSkinColorChangedBody]
 	if err := json.Unmarshal(statusMessages[0].Value, &event); err != nil {
 		t.Fatalf("Failed to unmarshal message: %v", err)
 	}
-	
+
 	if event.Type != character2.StatusEventTypeSkinColorChanged {
 		t.Errorf("Expected Type %s, got %s", character2.StatusEventTypeSkinColorChanged, event.Type)
 	}
@@ -321,7 +321,7 @@ func TestSkinColorChangedEventViaUpdate(t *testing.T) {
 func TestGmChangedEventViaUpdate(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), testTenant())
 	db := testDatabase(t)
-	
+
 	// Create a character first
 	input := character.NewModelBuilder().
 		SetAccountId(1000).
@@ -335,36 +335,36 @@ func TestGmChangedEventViaUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}
-	
+
 	// Update the GM status and capture the message buffer
 	updateInput := character.RestModel{
 		Gm: 1,
 	}
-	
+
 	transactionId := uuid.New()
 	mb := message.NewBuffer()
 	err = processor.Update(mb)(transactionId, created.Id(), updateInput)
 	if err != nil {
 		t.Fatalf("Failed to update character GM status: %v", err)
 	}
-	
+
 	// Verify the message was added to the buffer
 	messages := mb.GetAll()
 	statusMessages, exists := messages[character2.EnvEventTopicCharacterStatus]
 	if !exists {
 		t.Fatal("Expected character status event topic in buffer")
 	}
-	
+
 	if len(statusMessages) != 1 {
 		t.Fatalf("Expected 1 message in character status topic, got %d", len(statusMessages))
 	}
-	
+
 	// Verify the message content
 	var event character2.StatusEvent[character2.StatusEventGmChangedBody]
 	if err := json.Unmarshal(statusMessages[0].Value, &event); err != nil {
 		t.Fatalf("Failed to unmarshal message: %v", err)
 	}
-	
+
 	if event.Type != character2.StatusEventTypeGmChanged {
 		t.Errorf("Expected Type %s, got %s", character2.StatusEventTypeGmChanged, event.Type)
 	}
@@ -379,7 +379,7 @@ func TestGmChangedEventViaUpdate(t *testing.T) {
 func TestMultipleFieldChangesProduceMultipleEvents(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), testTenant())
 	db := testDatabase(t)
-	
+
 	// Create a character first
 	input := character.NewModelBuilder().
 		SetAccountId(1000).
@@ -397,7 +397,7 @@ func TestMultipleFieldChangesProduceMultipleEvents(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}
-	
+
 	// Update multiple fields and capture the message buffer
 	updateInput := character.RestModel{
 		Name:      "NewMultiTest",
@@ -407,26 +407,26 @@ func TestMultipleFieldChangesProduceMultipleEvents(t *testing.T) {
 		SkinColor: 5,
 		Gm:        1,
 	}
-	
+
 	transactionId := uuid.New()
 	mb := message.NewBuffer()
 	err = processor.Update(mb)(transactionId, created.Id(), updateInput)
 	if err != nil {
 		t.Fatalf("Failed to update character: %v", err)
 	}
-	
+
 	// Verify multiple messages were added to the buffer
 	messages := mb.GetAll()
 	statusMessages, exists := messages[character2.EnvEventTopicCharacterStatus]
 	if !exists {
 		t.Fatal("Expected character status event topic in buffer")
 	}
-	
+
 	// Should have 6 messages - one for each field change
 	if len(statusMessages) != 6 {
 		t.Fatalf("Expected 6 messages in character status topic, got %d", len(statusMessages))
 	}
-	
+
 	// Verify we have all the expected event types
 	eventTypes := make(map[string]bool)
 	for _, msg := range statusMessages {
@@ -437,7 +437,7 @@ func TestMultipleFieldChangesProduceMultipleEvents(t *testing.T) {
 		eventType := baseEvent["type"].(string)
 		eventTypes[eventType] = true
 	}
-	
+
 	expectedTypes := []string{
 		character2.StatusEventTypeNameChanged,
 		character2.StatusEventTypeHairChanged,
@@ -446,7 +446,7 @@ func TestMultipleFieldChangesProduceMultipleEvents(t *testing.T) {
 		character2.StatusEventTypeSkinColorChanged,
 		character2.StatusEventTypeGmChanged,
 	}
-	
+
 	for _, expectedType := range expectedTypes {
 		if !eventTypes[expectedType] {
 			t.Errorf("Missing expected event type: %s", expectedType)
@@ -457,7 +457,7 @@ func TestMultipleFieldChangesProduceMultipleEvents(t *testing.T) {
 func TestMapChangedEventViaUpdate(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), testTenant())
 	db := testDatabase(t)
-	
+
 	// Create a character first
 	input := character.NewModelBuilder().
 		SetAccountId(1000).
@@ -471,36 +471,36 @@ func TestMapChangedEventViaUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}
-	
+
 	// Update the map and capture the message buffer
 	updateInput := character.RestModel{
 		MapId: _map.Id(110000000),
 	}
-	
+
 	transactionId := uuid.New()
 	mb := message.NewBuffer()
 	err = processor.Update(mb)(transactionId, created.Id(), updateInput)
 	if err != nil {
 		t.Fatalf("Failed to update character map: %v", err)
 	}
-	
+
 	// Verify the message was added to the buffer
 	messages := mb.GetAll()
 	statusMessages, exists := messages[character2.EnvEventTopicCharacterStatus]
 	if !exists {
 		t.Fatal("Expected character status event topic in buffer")
 	}
-	
+
 	if len(statusMessages) != 1 {
 		t.Fatalf("Expected 1 message in character status topic, got %d", len(statusMessages))
 	}
-	
+
 	// Verify the message content - should be MAP_CHANGED event
 	var event character2.StatusEvent[character2.StatusEventMapChangedBody]
 	if err := json.Unmarshal(statusMessages[0].Value, &event); err != nil {
 		t.Fatalf("Failed to unmarshal message: %v", err)
 	}
-	
+
 	if event.Type != character2.StatusEventTypeMapChanged {
 		t.Errorf("Expected Type %s, got %s", character2.StatusEventTypeMapChanged, event.Type)
 	}
@@ -515,7 +515,7 @@ func TestMapChangedEventViaUpdate(t *testing.T) {
 func TestProducerFunctionsHandleEmptyStringValues(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), testTenant())
 	db := testDatabase(t)
-	
+
 	// Create a character first
 	input := character.NewModelBuilder().
 		SetAccountId(1000).
@@ -528,19 +528,19 @@ func TestProducerFunctionsHandleEmptyStringValues(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}
-	
+
 	// Update with empty name (should not trigger event)
 	updateInput := character.RestModel{
 		Name: "",
 	}
-	
+
 	transactionId := uuid.New()
 	mb := message.NewBuffer()
 	err = processor.Update(mb)(transactionId, created.Id(), updateInput)
 	if err != nil {
 		t.Fatalf("Failed to update character: %v", err)
 	}
-	
+
 	// Verify no messages were added to the buffer
 	messages := mb.GetAll()
 	if len(messages) != 0 {

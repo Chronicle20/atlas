@@ -2,6 +2,7 @@ package messenger
 
 import (
 	"errors"
+
 	"github.com/google/uuid"
 )
 

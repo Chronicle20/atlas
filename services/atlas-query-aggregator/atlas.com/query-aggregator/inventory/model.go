@@ -2,6 +2,7 @@ package inventory
 
 import (
 	"atlas-query-aggregator/compartment"
+
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"

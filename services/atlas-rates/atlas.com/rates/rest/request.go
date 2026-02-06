@@ -2,6 +2,7 @@ package rest
 
 import (
 	"context"
+
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
 )

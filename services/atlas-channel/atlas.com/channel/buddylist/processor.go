@@ -4,6 +4,7 @@ import (
 	buddylist2 "atlas-channel/kafka/message/buddylist"
 	"atlas-channel/kafka/producer"
 	"context"
+
 	"github.com/Chronicle20/atlas-constants/character"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-rest/requests"

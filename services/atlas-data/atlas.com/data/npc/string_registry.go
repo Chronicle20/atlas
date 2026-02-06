@@ -3,9 +3,10 @@ package npc
 import (
 	"atlas-data/document"
 	"atlas-data/xml"
-	"github.com/Chronicle20/atlas-tenant"
 	"strconv"
 	"sync"
+
+	"github.com/Chronicle20/atlas-tenant"
 )
 
 type NpcString struct {

@@ -2,6 +2,7 @@ package asset_test
 
 import (
 	"atlas-channel/asset"
+	"errors"
 	"testing"
 	"time"
 
@@ -51,7 +52,7 @@ func TestBuild_MissingId(t *testing.T) {
 	_, err := asset.NewModelBuilder[asset.EquipableReferenceData](0, uuid.New(), 1000, 100, asset.ReferenceTypeEquipable).
 		Build()
 
-	if err != asset.ErrInvalidId {
+	if !errors.Is(err, asset.ErrInvalidId) {
 		t.Errorf("Build() error = %v, want ErrInvalidId", err)
 	}
 }

@@ -2,6 +2,7 @@ package asset
 
 import (
 	"atlas-cashshop/cashshop/item"
+
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
 )
@@ -72,7 +73,7 @@ func (r *RestModel) SetToOneReferenceID(name, ID string) error {
 }
 
 // SetToManyReferenceIDs sets to-many reference IDs
-func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
+func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error {
 	return nil
 }
 

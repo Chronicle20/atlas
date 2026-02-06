@@ -10,10 +10,7 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
-	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
-	_map2 "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -52,7 +49,7 @@ func handleCreated(sc server.Model, wp writer.Producer) message.Handler[reactor2
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
 			return
 		}
 
@@ -66,7 +63,7 @@ func handleCreated(sc server.Model, wp writer.Producer) message.Handler[reactor2
 			SetDirection(e.Body.Direction).
 			MustBuild()
 
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(_map2.Id(e.MapId), e.Instance), session.Announce(l)(ctx)(wp)(writer.ReactorSpawn)(writer.ReactorSpawnBody(l, tenant.MustFromContext(ctx))(r)))
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), session.Announce(l)(ctx)(wp)(writer.ReactorSpawn)(writer.ReactorSpawnBody()(r)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to spawn reactor [%d] for characters in map [%d].", r.Id(), e.MapId)
 		}
@@ -79,11 +76,11 @@ func handleDestroyed(sc server.Model, wp writer.Producer) message.Handler[reacto
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
 			return
 		}
 
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(_map2.Id(e.MapId), e.Instance), session.Announce(l)(ctx)(wp)(writer.ReactorDestroy)(writer.ReactorDestroyBody(l, tenant.MustFromContext(ctx))(e.ReactorId, e.Body.State, e.Body.X, e.Body.Y)))
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), session.Announce(l)(ctx)(wp)(writer.ReactorDestroy)(writer.ReactorDestroyBody()(e.ReactorId, e.Body.State, e.Body.X, e.Body.Y)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to destroy reactor [%d] for characters in map [%d].", e.ReactorId, e.MapId)
 		}
@@ -96,7 +93,7 @@ func handleHit(sc server.Model, wp writer.Producer) message.Handler[reactor2.Sta
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
 			return
 		}
 
@@ -108,7 +105,7 @@ func handleHit(sc server.Model, wp writer.Producer) message.Handler[reactor2.Sta
 			SetDirection(e.Body.Direction).
 			MustBuild()
 
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(_map2.Id(e.MapId), e.Instance), session.Announce(l)(ctx)(wp)(writer.ReactorHit)(writer.ReactorHitBody(l, tenant.MustFromContext(ctx))(r)))
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), session.Announce(l)(ctx)(wp)(writer.ReactorHit)(writer.ReactorHitBody()(r)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to send reactor hit [%d] to characters in map [%d].", r.Id(), e.MapId)
 		}

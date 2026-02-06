@@ -1,35 +1,36 @@
 package factory
 
 import (
+	"strconv"
+
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
-	"strconv"
 )
 
 type RestModel struct {
-	Id           uint32  `json:"-"`
-	AccountId    uint32  `json:"accountId"`
+	Id           uint32   `json:"-"`
+	AccountId    uint32   `json:"accountId"`
 	WorldId      world.Id `json:"worldId"`
-	Name         string  `json:"name"`
-	Gender       byte    `json:"gender"`
-	JobIndex     uint32  `json:"jobIndex"`
-	SubJobIndex  uint32  `json:"subJobIndex"`
-	Face         uint32  `json:"face"`
-	Hair         uint32  `json:"hair"`
-	HairColor    uint32  `json:"hairColor"`
-	SkinColor    byte    `json:"skinColor"`
-	Top          uint32  `json:"top"`
-	Bottom       uint32  `json:"bottom"`
-	Shoes        uint32  `json:"shoes"`
-	Weapon       uint32  `json:"weapon"`
-	Level        byte    `json:"level"`
-	Strength     uint16  `json:"strength"`
-	Dexterity    uint16  `json:"dexterity"`
-	Intelligence uint16  `json:"intelligence"`
-	Luck         uint16  `json:"luck"`
-	Hp           uint16  `json:"hp"`
-	Mp           uint16  `json:"mp"`
-	MapId        _map.Id `json:"mapId"`
+	Name         string   `json:"name"`
+	Gender       byte     `json:"gender"`
+	JobIndex     uint32   `json:"jobIndex"`
+	SubJobIndex  uint32   `json:"subJobIndex"`
+	Face         uint32   `json:"face"`
+	Hair         uint32   `json:"hair"`
+	HairColor    uint32   `json:"hairColor"`
+	SkinColor    byte     `json:"skinColor"`
+	Top          uint32   `json:"top"`
+	Bottom       uint32   `json:"bottom"`
+	Shoes        uint32   `json:"shoes"`
+	Weapon       uint32   `json:"weapon"`
+	Level        byte     `json:"level"`
+	Strength     uint16   `json:"strength"`
+	Dexterity    uint16   `json:"dexterity"`
+	Intelligence uint16   `json:"intelligence"`
+	Luck         uint16   `json:"luck"`
+	Hp           uint16   `json:"hp"`
+	Mp           uint16   `json:"mp"`
+	MapId        _map.Id  `json:"mapId"`
 }
 
 func (r RestModel) GetName() string {

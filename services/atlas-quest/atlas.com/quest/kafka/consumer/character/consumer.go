@@ -6,10 +6,8 @@ import (
 	"atlas-quest/quest"
 	"context"
 
-	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -63,7 +61,7 @@ func handleMapChangedEvent(db *gorm.DB) message.Handler[character.StatusEvent[ch
 		}
 
 		targetMapId := uint32(e.Body.TargetMapId)
-		f := field.NewBuilder(world.Id(e.WorldId), channel.Id(e.Body.ChannelId), _map.Id(targetMapId)).Build()
+		f := field.NewBuilder(e.WorldId, e.Body.ChannelId, _map.Id(targetMapId)).Build()
 		processor := quest.NewProcessor(l, ctx, db)
 
 		// Check for auto-start quests on this map

@@ -1,11 +1,12 @@
 package compartment
 
 import (
+	"time"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
-	"time"
 )
 
 const (

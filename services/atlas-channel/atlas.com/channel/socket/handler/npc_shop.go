@@ -5,6 +5,7 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
@@ -17,7 +18,7 @@ const (
 	NPCShopOperationLeave    = "LEAVE"
 )
 
-func NPCShopHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+func NPCShopHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	sp := shops.NewProcessor(l, ctx)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		op := r.ReadByte()

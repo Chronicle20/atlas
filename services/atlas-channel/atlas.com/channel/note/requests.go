@@ -3,11 +3,12 @@ package note
 import (
 	"atlas-channel/rest"
 	"fmt"
+
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 
 const (
-	Resource = "characters/%d/notes"
+	Resource     = "characters/%d/notes"
 	NoteResource = "notes/%d"
 )
 

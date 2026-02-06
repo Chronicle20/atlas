@@ -11,7 +11,6 @@ import (
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-constants/job"
-	_map2 "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
@@ -46,7 +45,7 @@ func AwardExperienceCommandProducer(l logrus.FieldLogger) func(ctx context.Conte
 			if match[1] == "me" {
 				idProvider = model.ToSliceProvider(model.FixedProvider(c.Id()))
 			} else if match[1] == "map" {
-				f := field.NewBuilder(ch.WorldId(), ch.Id(), _map2.Id(c.MapId())).Build()
+				f := field.NewBuilder(ch.WorldId(), ch.Id(), c.MapId()).Build()
 				idProvider = mp.CharacterIdsInFieldProvider(f)
 			} else {
 				idProvider = model.ToSliceProvider(cp.IdByNameProvider(match[1]))
@@ -124,7 +123,7 @@ func AwardLevelCommandProducer(l logrus.FieldLogger) func(ctx context.Context) f
 			if match[1] == "me" {
 				idProvider = model.ToSliceProvider(model.FixedProvider(c.Id()))
 			} else if match[1] == "map" {
-				f := field.NewBuilder(ch.WorldId(), ch.Id(), _map2.Id(c.MapId())).Build()
+				f := field.NewBuilder(ch.WorldId(), ch.Id(), c.MapId()).Build()
 				idProvider = mp.CharacterIdsInFieldProvider(f)
 			} else {
 				idProvider = model.ToSliceProvider(cp.IdByNameProvider(match[1]))
@@ -268,7 +267,7 @@ func AwardMesoCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fu
 			if match[1] == "me" {
 				idProvider = model.ToSliceProvider(model.FixedProvider(c.Id()))
 			} else if match[1] == "map" {
-				f := field.NewBuilder(ch.WorldId(), ch.Id(), _map2.Id(c.MapId())).Build()
+				f := field.NewBuilder(ch.WorldId(), ch.Id(), c.MapId()).Build()
 				idProvider = mp.CharacterIdsInFieldProvider(f)
 			} else {
 				idProvider = model.ToSliceProvider(cp.IdByNameProvider(match[1]))

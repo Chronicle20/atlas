@@ -2,6 +2,7 @@ package title
 
 import (
 	"errors"
+
 	"github.com/google/uuid"
 )
 

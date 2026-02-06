@@ -3,12 +3,13 @@ package writer
 import (
 	"atlas-channel/character/skill"
 	"atlas-channel/npc/shops/commodities"
+	"math"
+
 	"github.com/Chronicle20/atlas-constants/item"
 	skill2 "github.com/Chronicle20/atlas-constants/skill"
 	"github.com/Chronicle20/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
-	"math"
 )
 
 const NPCShop = "NPCShop"

@@ -2,8 +2,9 @@ package saga
 
 import (
 	"encoding/json"
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // RestModel is the JSON:API resource for sagas
@@ -72,12 +73,12 @@ type PayloadUnmarshaler func(interface{}) (any, error)
 
 // payloadUnmarshalers maps action types to their payload unmarshalers
 var payloadUnmarshalers = map[Action]PayloadUnmarshaler{
-	AwardInventory:     unmarshalAwardInventoryPayload,
-	AwardExperience:    unmarshalAwardExperiencePayload,
-	AwardLevel:         unmarshalAwardLevelPayload,
-	AwardMesos:         unmarshalAwardMesosPayload,
-	WarpToRandomPortal: unmarshalWarpToRandomPortalPayload,
-	WarpToPortal:       unmarshalWarpToPortalPayload,
+	AwardInventory:       unmarshalAwardInventoryPayload,
+	AwardExperience:      unmarshalAwardExperiencePayload,
+	AwardLevel:           unmarshalAwardLevelPayload,
+	AwardMesos:           unmarshalAwardMesosPayload,
+	WarpToRandomPortal:   unmarshalWarpToRandomPortalPayload,
+	WarpToPortal:         unmarshalWarpToPortalPayload,
 	DestroyAsset:         unmarshalDestroyAssetPayload,
 	DestroyAssetFromSlot: unmarshalDestroyAssetFromSlotPayload,
 }

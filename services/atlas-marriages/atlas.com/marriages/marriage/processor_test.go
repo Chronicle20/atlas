@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"atlas-marriages/character"
+
 	kafkaProducer "github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
@@ -117,7 +118,7 @@ func (m *MockProducer) ClearMessages() {
 	m.messagesProduced = make([]kafka.Message, 0)
 }
 
-func (m *MockProducer) Provider(token string) kafkaProducer.MessageProducer {
+func (m *MockProducer) Provider(_ string) kafkaProducer.MessageProducer {
 	return func(provider model.Provider[[]kafka.Message]) error {
 		if m.shouldError {
 			return errors.New(m.errorMessage)
@@ -139,15 +140,6 @@ type MockDatabaseProcessor struct {
 	marriages map[uint32]Entity
 	errors    map[string]error
 	nextID    uint32
-}
-
-func NewMockDatabaseProcessor() *MockDatabaseProcessor {
-	return &MockDatabaseProcessor{
-		proposals: make(map[uint32]ProposalEntity),
-		marriages: make(map[uint32]Entity),
-		errors:    make(map[string]error),
-		nextID:    1,
-	}
 }
 
 func (m *MockDatabaseProcessor) AddError(operation string, err error) {
@@ -1041,7 +1033,7 @@ func TestProcessor_ContextTenantExtraction(t *testing.T) {
 
 	// Test with context that doesn't have tenant - this should panic during processor creation
 	emptyCtx := context.Background()
-	
+
 	// This should panic when trying to create the processor (because character processor needs tenant context)
 	func() {
 		defer func() {
@@ -1049,7 +1041,7 @@ func TestProcessor_ContextTenantExtraction(t *testing.T) {
 				t.Error("Expected panic when tenant is not in context during processor creation")
 			}
 		}()
-		
+
 		// This will panic because NewProcessor -> character.NewProcessor -> tenant.MustFromContext
 		_ = NewProcessor(log, emptyCtx, db)
 	}()
@@ -1162,18 +1154,18 @@ func TestProcessor_ConcurrentAccess(t *testing.T) {
 
 	// Test sequential operations to ensure database is working first
 	processor := NewProcessor(log, ctx, db).WithCharacterProcessor(mockCharacterProcessor).WithProducer(mockProducer)
-	
+
 	// Create first proposal
 	_, err1 := processor.Propose(1, 2)()
-	
-	// Create second proposal  
+
+	// Create second proposal
 	_, err2 := processor.Propose(3, 4)()
 
 	// Both should succeed independently
 	if err1 != nil && err2 != nil {
 		t.Errorf("Both sequential proposals failed: %v, %v", err1, err2)
 	}
-	
+
 	// This simulates concurrent access by testing that proposals don't interfere with each other
 	// The original concurrent test was causing database initialization race conditions
 }
@@ -1199,7 +1191,7 @@ func TestProcessor_WithMockedProducer(t *testing.T) {
 
 	t.Run("successful proposal with message tracking", func(t *testing.T) {
 		transactionId := uuid.New()
-		
+
 		// Clear any previous messages
 		mockProducer.ClearMessages()
 
@@ -1255,8 +1247,8 @@ func TestProcessor_WithMockedCharacterService(t *testing.T) {
 	// Create mock character processor
 	mockCharacterProcessor := NewMockCharacterProcessor()
 	mockCharacterProcessor.AddCharacter(1, "Character1", 15)
-	mockCharacterProcessor.AddCharacter(2, "Character2", 5)  // Below level requirement
-	
+	mockCharacterProcessor.AddCharacter(2, "Character2", 5) // Below level requirement
+
 	// Simulate service errors for specific characters
 	mockCharacterProcessor.AddCharacterError(999, errors.New("character service unavailable"))
 
@@ -1463,7 +1455,6 @@ func TestProcessor_LevelRequirementEnforcement(t *testing.T) {
 	})
 }
 
-
 // TestProcessor_ExpireProposal tests the proposal expiry functionality
 func TestProcessor_ExpireProposal(t *testing.T) {
 	db := setupTestDB(t)
@@ -1564,25 +1555,25 @@ func TestProcessor_ProcessExpiredProposals(t *testing.T) {
 	t.Run("process_multiple_expired_proposals", func(t *testing.T) {
 		// Clear any existing data
 		db.Exec("DELETE FROM proposal_entities")
-		
+
 		// Create proposals with valid time relationships (proposed in past, expires in past but after proposed)
-		baseTime := time.Now().Add(-2 * time.Hour) // Base time 2 hours ago
+		baseTime := time.Now().Add(-2 * time.Hour)    // Base time 2 hours ago
 		expiredTime := baseTime.Add(30 * time.Minute) // Expired 1.5 hours ago (but after proposed time)
-		
+
 		var proposalIds []uint32
 		for i := uint32(1); i <= 5; i++ {
 			// Create proposal entity directly with valid time relationship
 			proposalEntity := ProposalEntity{
-				ProposerId:  i,
-				TargetId:    i + 5,
-				Status:      ProposalStatusPending,
-				ProposedAt:  baseTime,
-				ExpiresAt:   expiredTime, // Expires after proposal but before now
-				TenantId:    tenantId,
-				CreatedAt:   baseTime,
-				UpdatedAt:   baseTime,
+				ProposerId: i,
+				TargetId:   i + 5,
+				Status:     ProposalStatusPending,
+				ProposedAt: baseTime,
+				ExpiresAt:  expiredTime, // Expires after proposal but before now
+				TenantId:   tenantId,
+				CreatedAt:  baseTime,
+				UpdatedAt:  baseTime,
 			}
-			
+
 			err := db.Create(&proposalEntity).Error
 			if err != nil {
 				t.Fatalf("Failed to create proposal entity %d: %v", i, err)
@@ -1613,20 +1604,20 @@ func TestProcessor_ProcessExpiredProposals(t *testing.T) {
 	t.Run("process_no_expired_proposals", func(t *testing.T) {
 		// Clear the table from previous test
 		db.Exec("DELETE FROM proposal_entities")
-		
+
 		// Create a proposal that's not expired with future expiry time
 		futureTime := time.Now().Add(1 * time.Hour)
 		proposalEntity := ProposalEntity{
-			ProposerId:  11,
-			TargetId:    12,
-			Status:      ProposalStatusPending,
-			ProposedAt:  time.Now(),
-			ExpiresAt:   futureTime, // Expires in the future
-			TenantId:    tenantId,
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
+			ProposerId: 11,
+			TargetId:   12,
+			Status:     ProposalStatusPending,
+			ProposedAt: time.Now(),
+			ExpiresAt:  futureTime, // Expires in the future
+			TenantId:   tenantId,
+			CreatedAt:  time.Now(),
+			UpdatedAt:  time.Now(),
 		}
-		
+
 		err := db.Create(&proposalEntity).Error
 		if err != nil {
 			t.Fatalf("Failed to create proposal entity: %v", err)
@@ -1634,7 +1625,7 @@ func TestProcessor_ProcessExpiredProposals(t *testing.T) {
 
 		// Verify no proposals need expiry processing
 		var expiredEntities []ProposalEntity
-		err = db.Where("tenant_id = ? AND status = ? AND expires_at < ?", 
+		err = db.Where("tenant_id = ? AND status = ? AND expires_at < ?",
 			tenantId, ProposalStatusPending, time.Now()).Find(&expiredEntities).Error
 		if err != nil {
 			t.Fatalf("Failed to find expired proposals: %v", err)
@@ -1655,7 +1646,7 @@ func TestGetExpiredProposalsProvider(t *testing.T) {
 	t.Run("find_expired_proposals", func(t *testing.T) {
 		// Clear the table first
 		db.Exec("DELETE FROM proposal_entities")
-		
+
 		// Create some proposal entities directly in the database
 		now := time.Now()
 		expiredTime := now.Add(-1 * time.Hour)
@@ -1663,46 +1654,46 @@ func TestGetExpiredProposalsProvider(t *testing.T) {
 
 		// Create expired proposals
 		expiredProposal1 := ProposalEntity{
-			ProposerId:  1,
-			TargetId:    2,
-			Status:      ProposalStatusPending,
-			ProposedAt:  expiredTime.Add(-1 * time.Hour),
-			ExpiresAt:   expiredTime,
-			TenantId:    tenantId,
-			CreatedAt:   expiredTime.Add(-1 * time.Hour),
-			UpdatedAt:   expiredTime.Add(-1 * time.Hour),
+			ProposerId: 1,
+			TargetId:   2,
+			Status:     ProposalStatusPending,
+			ProposedAt: expiredTime.Add(-1 * time.Hour),
+			ExpiresAt:  expiredTime,
+			TenantId:   tenantId,
+			CreatedAt:  expiredTime.Add(-1 * time.Hour),
+			UpdatedAt:  expiredTime.Add(-1 * time.Hour),
 		}
 
 		expiredProposal2 := ProposalEntity{
-			ProposerId:  3,
-			TargetId:    4,
-			Status:      ProposalStatusPending,
-			ExpiresAt:   expiredTime.Add(-30 * time.Minute),
-			TenantId:    tenantId,
-			CreatedAt:   expiredTime.Add(-1 * time.Hour),
-			UpdatedAt:   expiredTime.Add(-1 * time.Hour),
+			ProposerId: 3,
+			TargetId:   4,
+			Status:     ProposalStatusPending,
+			ExpiresAt:  expiredTime.Add(-30 * time.Minute),
+			TenantId:   tenantId,
+			CreatedAt:  expiredTime.Add(-1 * time.Hour),
+			UpdatedAt:  expiredTime.Add(-1 * time.Hour),
 		}
 
 		// Create non-expired proposal
 		activeProposal := ProposalEntity{
-			ProposerId:  5,
-			TargetId:    6,
-			Status:      ProposalStatusPending,
-			ExpiresAt:   futureTime,
-			TenantId:    tenantId,
-			CreatedAt:   now,
-			UpdatedAt:   now,
+			ProposerId: 5,
+			TargetId:   6,
+			Status:     ProposalStatusPending,
+			ExpiresAt:  futureTime,
+			TenantId:   tenantId,
+			CreatedAt:  now,
+			UpdatedAt:  now,
 		}
 
 		// Create already-expired proposal (status already expired)
 		alreadyExpiredProposal := ProposalEntity{
-			ProposerId:  7,
-			TargetId:    8,
-			Status:      ProposalStatusExpired,
-			ExpiresAt:   expiredTime,
-			TenantId:    tenantId,
-			CreatedAt:   expiredTime.Add(-1 * time.Hour),
-			UpdatedAt:   now,
+			ProposerId: 7,
+			TargetId:   8,
+			Status:     ProposalStatusExpired,
+			ExpiresAt:  expiredTime,
+			TenantId:   tenantId,
+			CreatedAt:  expiredTime.Add(-1 * time.Hour),
+			UpdatedAt:  now,
 		}
 
 		db.Create(&expiredProposal1)
@@ -1733,7 +1724,7 @@ func TestGetExpiredProposalsProvider(t *testing.T) {
 	t.Run("no_expired_proposals", func(t *testing.T) {
 		// Use a different tenant ID to ensure isolation
 		differentTenantId := uuid.New()
-		
+
 		// Clear the table
 		db.Exec("DELETE FROM proposal_entities")
 
@@ -1741,14 +1732,14 @@ func TestGetExpiredProposalsProvider(t *testing.T) {
 		now := time.Now()
 		futureTime := now.Add(1 * time.Hour)
 		activeProposal := ProposalEntity{
-			ProposerId:  1,
-			TargetId:    2,
-			Status:      ProposalStatusPending,
-			ProposedAt:  now,        // Add missing ProposedAt field
-			ExpiresAt:   futureTime,
-			TenantId:    differentTenantId, // Use different tenant
-			CreatedAt:   now,
-			UpdatedAt:   now,
+			ProposerId: 1,
+			TargetId:   2,
+			Status:     ProposalStatusPending,
+			ProposedAt: now, // Add missing ProposedAt field
+			ExpiresAt:  futureTime,
+			TenantId:   differentTenantId, // Use different tenant
+			CreatedAt:  now,
+			UpdatedAt:  now,
 		}
 		db.Create(&activeProposal)
 
@@ -1774,7 +1765,7 @@ func TestProcessor_Divorce(t *testing.T) {
 
 	// Create a mock character processor
 	mockCharacterProcessor := NewMockCharacterProcessor()
-	
+
 	// Add test characters
 	mockCharacterProcessor.AddCharacter(1, "TestChar1", 20) // Level 20
 	mockCharacterProcessor.AddCharacter(2, "TestChar2", 25) // Level 25
@@ -1885,7 +1876,7 @@ func TestProcessor_CharacterDeletion(t *testing.T) {
 
 	// Create a mock character processor
 	mockCharacterProcessor := NewMockCharacterProcessor()
-	
+
 	// Add test characters
 	mockCharacterProcessor.AddCharacter(1, "TestChar1", 20) // Level 20
 	mockCharacterProcessor.AddCharacter(2, "TestChar2", 25) // Level 25
@@ -1972,35 +1963,35 @@ func TestProcessor_AcceptProposalAndEmit(t *testing.T) {
 	tenantId := uuid.New()
 	ctx := setupTestContext(tenantId)
 	log := logrus.New()
-	
+
 	// Create mock character processor
 	mockCharacterProcessor := NewMockCharacterProcessor()
 	mockCharacterProcessor.AddCharacter(1, "Character1", 15)
 	mockCharacterProcessor.AddCharacter(2, "Character2", 15)
-	
+
 	// Create mock producer
 	mockProducer := NewMockProducer()
-	
+
 	processor := NewProcessor(log, ctx, db).
 		WithCharacterProcessor(mockCharacterProcessor).
 		WithProducer(mockProducer.Provider)
-	
+
 	// First create a proposal
 	proposal, err := processor.Propose(1, 2)()
 	if err != nil {
 		t.Fatalf("Failed to create proposal: %v", err)
 	}
-	
+
 	// Accept the proposal with emission
 	marriage, err := processor.AcceptProposalAndEmit(uuid.New(), proposal.Id())
 	if err != nil {
 		t.Fatalf("Failed to accept proposal and emit: %v", err)
 	}
-	
+
 	if marriage.Status() != StatusEngaged {
 		t.Errorf("Expected marriage status to be %v, got %v", StatusEngaged, marriage.Status())
 	}
-	
+
 	// Verify messages were produced
 	if len(mockProducer.messagesProduced) == 0 {
 		t.Error("Expected messages to be produced")
@@ -2012,35 +2003,35 @@ func TestProcessor_DeclineProposalAndEmit(t *testing.T) {
 	tenantId := uuid.New()
 	ctx := setupTestContext(tenantId)
 	log := logrus.New()
-	
+
 	// Create mock character processor
 	mockCharacterProcessor := NewMockCharacterProcessor()
 	mockCharacterProcessor.AddCharacter(1, "Character1", 15)
 	mockCharacterProcessor.AddCharacter(2, "Character2", 15)
-	
+
 	// Create mock producer
 	mockProducer := NewMockProducer()
-	
+
 	processor := NewProcessor(log, ctx, db).
 		WithCharacterProcessor(mockCharacterProcessor).
 		WithProducer(mockProducer.Provider)
-	
+
 	// First create a proposal
 	proposal, err := processor.Propose(1, 2)()
 	if err != nil {
 		t.Fatalf("Failed to create proposal: %v", err)
 	}
-	
+
 	// Decline the proposal with emission
 	declined, err := processor.DeclineProposalAndEmit(uuid.New(), proposal.Id())
 	if err != nil {
 		t.Fatalf("Failed to decline proposal and emit: %v", err)
 	}
-	
+
 	if declined.Status() != ProposalStatusRejected {
 		t.Errorf("Expected proposal status to be %v, got %v", ProposalStatusRejected, declined.Status())
 	}
-	
+
 	// Verify messages were produced
 	if len(mockProducer.messagesProduced) == 0 {
 		t.Error("Expected messages to be produced")
@@ -2052,35 +2043,35 @@ func TestProcessor_CancelProposalAndEmit(t *testing.T) {
 	tenantId := uuid.New()
 	ctx := setupTestContext(tenantId)
 	log := logrus.New()
-	
+
 	// Create mock character processor
 	mockCharacterProcessor := NewMockCharacterProcessor()
 	mockCharacterProcessor.AddCharacter(1, "Character1", 15)
 	mockCharacterProcessor.AddCharacter(2, "Character2", 15)
-	
+
 	// Create mock producer
 	mockProducer := NewMockProducer()
-	
+
 	processor := NewProcessor(log, ctx, db).
 		WithCharacterProcessor(mockCharacterProcessor).
 		WithProducer(mockProducer.Provider)
-	
+
 	// First create a proposal
 	proposal, err := processor.Propose(1, 2)()
 	if err != nil {
 		t.Fatalf("Failed to create proposal: %v", err)
 	}
-	
+
 	// Cancel the proposal with emission
 	cancelled, err := processor.CancelProposalAndEmit(uuid.New(), proposal.Id())
 	if err != nil {
 		t.Fatalf("Failed to cancel proposal and emit: %v", err)
 	}
-	
+
 	if cancelled.Status() != ProposalStatusCancelled {
 		t.Errorf("Expected proposal status to be %v, got %v", ProposalStatusCancelled, cancelled.Status())
 	}
-	
+
 	// Verify messages were produced
 	if len(mockProducer.messagesProduced) == 0 {
 		t.Error("Expected messages to be produced")
@@ -2092,47 +2083,47 @@ func TestProcessor_DivorceAndEmit(t *testing.T) {
 	tenantId := uuid.New()
 	ctx := setupTestContext(tenantId)
 	log := logrus.New()
-	
+
 	// Create mock character processor
 	mockCharacterProcessor := NewMockCharacterProcessor()
 	mockCharacterProcessor.AddCharacter(1, "Character1", 15)
 	mockCharacterProcessor.AddCharacter(2, "Character2", 15)
-	
+
 	// Create mock producer
 	mockProducer := NewMockProducer()
-	
+
 	processor := NewProcessor(log, ctx, db).
 		WithCharacterProcessor(mockCharacterProcessor).
 		WithProducer(mockProducer.Provider)
-	
+
 	// Create marriage
 	proposal, err := processor.Propose(1, 2)()
 	if err != nil {
 		t.Fatalf("Failed to create proposal: %v", err)
 	}
-	
+
 	accepted, err := processor.AcceptProposal(proposal.Id())()
 	if err != nil {
 		t.Fatalf("Failed to accept proposal: %v", err)
 	}
-	
+
 	marriageEntity := accepted.ToEntity()
 	marriageEntity.Status = StatusMarried
 	marriageEntity.MarriedAt = &time.Time{}
 	now := time.Now()
 	marriageEntity.MarriedAt = &now
 	db.Save(&marriageEntity)
-	
+
 	// Divorce with emission
 	divorced, err := processor.DivorceAndEmit(uuid.New(), accepted.Id(), 1)
 	if err != nil {
 		t.Fatalf("Failed to divorce and emit: %v", err)
 	}
-	
+
 	if divorced.Status() != StatusDivorced {
 		t.Errorf("Expected marriage status to be %v, got %v", StatusDivorced, divorced.Status())
 	}
-	
+
 	// Verify messages were produced
 	if len(mockProducer.messagesProduced) == 0 {
 		t.Error("Expected messages to be produced")
@@ -2144,43 +2135,43 @@ func TestProcessor_HandleCharacterDeletionAndEmit(t *testing.T) {
 	tenantId := uuid.New()
 	ctx := setupTestContext(tenantId)
 	log := logrus.New()
-	
+
 	// Create mock character processor
 	mockCharacterProcessor := NewMockCharacterProcessor()
 	mockCharacterProcessor.AddCharacter(1, "Character1", 15)
 	mockCharacterProcessor.AddCharacter(2, "Character2", 15)
-	
+
 	// Create mock producer
 	mockProducer := NewMockProducer()
-	
+
 	processor := NewProcessor(log, ctx, db).
 		WithCharacterProcessor(mockCharacterProcessor).
 		WithProducer(mockProducer.Provider)
-	
+
 	// Create marriage
 	proposal, err := processor.Propose(1, 2)()
 	if err != nil {
 		t.Fatalf("Failed to create proposal: %v", err)
 	}
-	
+
 	accepted, err := processor.AcceptProposal(proposal.Id())()
 	if err != nil {
 		t.Fatalf("Failed to accept proposal: %v", err)
 	}
-	
+
 	marriageEntity := accepted.ToEntity()
 	marriageEntity.Status = StatusMarried
 	marriageEntity.MarriedAt = &time.Time{}
 	now := time.Now()
 	marriageEntity.MarriedAt = &now
 	db.Save(&marriageEntity)
-	
+
 	// Handle character deletion with emission
 	err = processor.HandleCharacterDeletionAndEmit(uuid.New(), 1)
 	if err != nil {
 		t.Fatalf("Failed to handle character deletion and emit: %v", err)
 	}
-	
+
 	// Verify messages were produced
 	if len(mockProducer.messagesProduced) == 0 {
 		t.Error("Expected messages to be produced")
@@ -2192,38 +2183,37 @@ func TestProcessor_ExpireProposalAndEmit(t *testing.T) {
 	tenantId := uuid.New()
 	ctx := setupTestContext(tenantId)
 	log := logrus.New()
-	
+
 	// Create mock character processor
 	mockCharacterProcessor := NewMockCharacterProcessor()
 	mockCharacterProcessor.AddCharacter(1, "Character1", 15)
 	mockCharacterProcessor.AddCharacter(2, "Character2", 15)
-	
+
 	// Create mock producer
 	mockProducer := NewMockProducer()
-	
+
 	processor := NewProcessor(log, ctx, db).
 		WithCharacterProcessor(mockCharacterProcessor).
 		WithProducer(mockProducer.Provider)
-	
+
 	// Create a proposal
 	proposal, err := processor.Propose(1, 2)()
 	if err != nil {
 		t.Fatalf("Failed to create proposal: %v", err)
 	}
-	
+
 	// Expire the proposal with emission
 	expired, err := processor.ExpireProposalAndEmit(uuid.New(), proposal.Id())
 	if err != nil {
 		t.Fatalf("Failed to expire proposal and emit: %v", err)
 	}
-	
+
 	if expired.Status() != ProposalStatusExpired {
 		t.Errorf("Expected proposal status to be %v, got %v", ProposalStatusExpired, expired.Status())
 	}
-	
+
 	// Verify messages were produced
 	if len(mockProducer.messagesProduced) == 0 {
 		t.Error("Expected messages to be produced")
 	}
 }
-

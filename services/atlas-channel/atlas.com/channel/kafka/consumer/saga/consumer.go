@@ -34,7 +34,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 			return func(rf func(topic string, handler handler.Handler) (string, error)) {
 				var t string
 				t, _ = topic.EnvProvider(l)(saga.EnvStatusEventTopic)()
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCompletedEvent(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCompletedEvent(sc))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleFailedEvent(sc, wp))))
 			}
 		}
@@ -42,7 +42,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 }
 
 // handleCompletedEvent handles saga completion events
-func handleCompletedEvent(sc server.Model, wp writer.Producer) message.Handler[saga.StatusEvent[saga.StatusEventCompletedBody]] {
+func handleCompletedEvent(sc server.Model) message.Handler[saga.StatusEvent[saga.StatusEventCompletedBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e saga.StatusEvent[saga.StatusEventCompletedBody]) {
 		if e.Type != saga.StatusEventTypeCompleted {
 			return

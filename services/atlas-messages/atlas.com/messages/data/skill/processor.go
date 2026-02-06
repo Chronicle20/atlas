@@ -4,6 +4,7 @@ import (
 	"atlas-messages/data/skill/effect"
 	"context"
 	"errors"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"

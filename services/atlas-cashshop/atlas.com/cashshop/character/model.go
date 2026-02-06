@@ -139,7 +139,7 @@ func (m Model) Ap() uint16 {
 }
 
 func (m Model) HasSPTable() bool {
-	switch job.Id(m.jobId) {
+	switch m.jobId {
 	case job.EvanId:
 		return true
 	case job.EvanStage1Id:

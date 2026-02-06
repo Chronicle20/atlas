@@ -2,6 +2,7 @@ package templates
 
 import (
 	"encoding/json"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )

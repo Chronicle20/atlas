@@ -4,16 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/Chronicle20/atlas-socket/crypto"
-	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 	"io"
 	"net"
 	"os"
 	"sync"
 	"time"
+
+	"github.com/Chronicle20/atlas-socket/crypto"
+	"github.com/Chronicle20/atlas-socket/request"
+	"github.com/Chronicle20/atlas-socket/response"
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 )
 
 type OpReader interface {

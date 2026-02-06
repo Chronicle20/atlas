@@ -14,15 +14,15 @@ import (
 	questMock "atlas-query-aggregator/quest/mock"
 	"context"
 	"errors"
+	"strings"
+	"testing"
+	"time"
+
 	inventory_type "github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-	"strings"
-	"testing"
-	"time"
 )
-
 
 // TestValidateConditions tests the condition validation logic directly
 // Helper function to create a test guild for processor tests
@@ -424,7 +424,7 @@ func TestProcessorValidateStructured(t *testing.T) {
 				// Mock the GuildDecorator to add a guild with a different leader
 				m.GuildDecoratorFunc = func(m character.Model) character.Model {
 					// Create a guild with a different leader
-					testGuild := createTestGuild(1, m.Id() + 1)
+					testGuild := createTestGuild(1, m.Id()+1)
 					return character.NewModelBuilder().
 						SetId(m.Id()).
 						SetGuild(testGuild).
@@ -498,16 +498,16 @@ func TestValidateWithContextMockingExternalServices(t *testing.T) {
 	logger := logrus.New()
 
 	tests := []struct {
-		name                  string
-		characterId           uint32
-		conditions            []ConditionInput
-		setupCharacterMock    func(*mock.ProcessorImpl)
-		setupQuestMock        func(*questMock.ProcessorImpl)
-		setupMarriageMock     func(*marriageMock.ProcessorImpl)
-		wantPassed            bool
-		wantDetailsCount      int
-		wantError             bool
-		wantErrorContains     string
+		name               string
+		characterId        uint32
+		conditions         []ConditionInput
+		setupCharacterMock func(*mock.ProcessorImpl)
+		setupQuestMock     func(*questMock.ProcessorImpl)
+		setupMarriageMock  func(*marriageMock.ProcessorImpl)
+		wantPassed         bool
+		wantDetailsCount   int
+		wantError          bool
+		wantErrorContains  string
 	}{
 		{
 			name:        "Quest Status validation - success",
@@ -720,8 +720,8 @@ func TestValidateWithContextMockingExternalServices(t *testing.T) {
 						return 0, nil
 					}
 				},
-			logger,
-			context.Background(),
+				logger,
+				context.Background(),
 			)
 
 			// Get validation context
@@ -768,4 +768,3 @@ func TestValidateWithContextMockingExternalServices(t *testing.T) {
 		})
 	}
 }
-

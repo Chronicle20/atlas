@@ -2,10 +2,11 @@ package consumable
 
 import (
 	"atlas-data/xml"
-	"github.com/Chronicle20/atlas-model/model"
-	"github.com/sirupsen/logrus/hooks/test"
 	"strconv"
 	"testing"
+
+	"github.com/Chronicle20/atlas-model/model"
+	"github.com/sirupsen/logrus/hooks/test"
 )
 
 const testXML = `

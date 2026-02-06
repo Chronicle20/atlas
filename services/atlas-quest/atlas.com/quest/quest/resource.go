@@ -7,10 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
-	_map "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/google/uuid"
@@ -136,7 +133,7 @@ func handleStartQuest(d *rest.HandlerDependency, c *rest.HandlerContext, i Start
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return rest.ParseQuestId(d.Logger(), func(questId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				f := field.NewBuilder(world.Id(i.WorldId), channel.Id(i.ChannelId), _map.Id(i.MapId)).Build()
+				f := field.NewBuilder(i.WorldId, i.ChannelId, i.MapId).Build()
 				// REST endpoints use uuid.Nil since they're not saga-initiated
 				q, failedConditions, err := NewProcessor(d.Logger(), d.Context(), d.DB()).Start(uuid.Nil, characterId, questId, f, i.SkipValidation)
 				if errors.Is(err, ErrStartRequirementsNotMet) {
@@ -181,7 +178,7 @@ func handleCompleteQuest(d *rest.HandlerDependency, c *rest.HandlerContext, i Co
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return rest.ParseQuestId(d.Logger(), func(questId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				f := field.NewBuilder(world.Id(i.WorldId), channel.Id(i.ChannelId), _map.Id(i.MapId)).Build()
+				f := field.NewBuilder(i.WorldId, i.ChannelId, i.MapId).Build()
 				// REST endpoints use uuid.Nil since they're not saga-initiated
 				nextQuestId, err := NewProcessor(d.Logger(), d.Context(), d.DB()).Complete(uuid.Nil, characterId, questId, f, i.SkipValidation)
 				if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -273,7 +270,7 @@ func handleGetQuestProgress(db *gorm.DB) rest.GetHandler {
 	}
 }
 
-func handleUpdateQuestProgress(d *rest.HandlerDependency, c *rest.HandlerContext, i progress.RestModel) http.HandlerFunc {
+func handleUpdateQuestProgress(d *rest.HandlerDependency, _ *rest.HandlerContext, i progress.RestModel) http.HandlerFunc {
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return rest.ParseQuestId(d.Logger(), func(questId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {

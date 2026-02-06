@@ -1,9 +1,10 @@
 package pet
 
 import (
+	"strconv"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/jtumidanski/api2go/jsonapi"
-	"strconv"
 )
 
 type RestModel struct {
@@ -60,7 +61,7 @@ func (r RestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
 	return result
 }
 
-func (r *RestModel) SetToOneReferenceID(name, ID string) error {
+func (r *RestModel) SetToOneReferenceID(_, _ string) error {
 	return nil
 }
 

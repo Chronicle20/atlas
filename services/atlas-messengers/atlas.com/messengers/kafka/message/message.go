@@ -2,6 +2,7 @@ package message
 
 import (
 	"atlas-messengers/kafka/producer"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 )

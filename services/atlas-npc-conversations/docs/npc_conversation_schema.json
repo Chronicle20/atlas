@@ -37,6 +37,7 @@
               "dialogue",
               "genericAction",
               "craftAction",
+              "transportAction",
               "listSelection",
               "askNumber",
               "askStyle"
@@ -259,6 +260,40 @@
               "missingMaterialsState": {
                 "type": "string",
                 "description": "ID of the state to transition to when materials are missing"
+              }
+            }
+          },
+          "transportAction": {
+            "type": "object",
+            "description": "Transport action state configuration. Used for instance-based transports that go through saga-orchestrator. Creates a saga to start the transport and routes to specific failure states based on error codes.",
+            "required": [
+              "routeName",
+              "failureState"
+            ],
+            "properties": {
+              "routeName": {
+                "type": "string",
+                "description": "Transport route name (resolved to UUID at runtime by saga-orchestrator)"
+              },
+              "failureState": {
+                "type": "string",
+                "description": "General failure state ID (fallback for unhandled errors)"
+              },
+              "capacityFullState": {
+                "type": "string",
+                "description": "State to transition to when transport is at capacity"
+              },
+              "alreadyInTransitState": {
+                "type": "string",
+                "description": "State to transition to when character is already on another transport"
+              },
+              "routeNotFoundState": {
+                "type": "string",
+                "description": "State to transition to when the route name doesn't exist"
+              },
+              "serviceErrorState": {
+                "type": "string",
+                "description": "State to transition to when the transport service is unavailable"
               }
             }
           },

@@ -4,6 +4,8 @@ import (
 	"atlas-monsters/monster"
 	"atlas-monsters/rest"
 
+	"net/http"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
@@ -14,7 +16,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
-	"net/http"
 )
 
 const (
@@ -61,7 +62,7 @@ func handleGetMonstersInMap(d *rest.HandlerDependency, c *rest.HandlerContext) h
 	})
 }
 
-func handleDeleteMonstersInMap(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+func handleDeleteMonstersInMap(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
 		return rest.ParseChannelId(d.Logger(), func(channelId channel.Id) http.HandlerFunc {
 			return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {

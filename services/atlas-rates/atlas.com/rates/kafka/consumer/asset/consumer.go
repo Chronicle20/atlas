@@ -189,18 +189,16 @@ func handleAssetMoved(l logrus.FieldLogger, ctx context.Context, e asset.StatusE
 	l.Debugf("Processing asset moved event for character [%d], template [%d], from slot [%d] to slot [%d], createdAt [%v].",
 		e.CharacterId, e.TemplateId, oldSlot, newSlot, createdAt)
 
-	p := character.NewProcessor(l, ctx)
-
 	if asset.IsEquipAction(oldSlot, newSlot) {
 		// Item was equipped - check for bonusExp
-		handleItemEquipped(l, ctx, p, e.CharacterId, e.TemplateId, createdAt)
+		handleItemEquipped(l, ctx, e.CharacterId, e.TemplateId, createdAt)
 	} else if asset.IsUnequipAction(oldSlot, newSlot) {
 		// Item was unequipped - remove any rate factors
-		handleItemUnequipped(l, ctx, p, e.CharacterId, e.TemplateId)
+		handleItemUnequipped(l, ctx, e.CharacterId, e.TemplateId)
 	}
 }
 
-func handleItemEquipped(l logrus.FieldLogger, ctx context.Context, p character.Processor, characterId uint32, templateId uint32, _ time.Time) {
+func handleItemEquipped(l logrus.FieldLogger, ctx context.Context, characterId uint32, templateId uint32, _ time.Time) {
 	// Check if this equipment has bonusExp
 	equipData, err := equipment.GetById(l)(ctx)(templateId)
 	if err != nil {
@@ -228,24 +226,23 @@ func handleItemEquipped(l logrus.FieldLogger, ctx context.Context, p character.P
 	l.Infof("Tracking bonusExp equipment: item [%d] with %d tiers, equippedSince [%v] for character [%d].",
 		templateId, len(tiers), equippedSince, characterId)
 
-	if err := p.TrackBonusExpItem(characterId, templateId, tiers, &equippedSince); err != nil {
+	if err := character.NewProcessor(l, ctx).TrackBonusExpItem(characterId, templateId, tiers, &equippedSince); err != nil {
 		l.WithError(err).Errorf("Unable to track bonusExp equipment for character [%d].", characterId)
 	}
 }
 
-func handleItemUnequipped(l logrus.FieldLogger, ctx context.Context, p character.Processor, characterId uint32, templateId uint32) {
+func handleItemUnequipped(l logrus.FieldLogger, ctx context.Context, characterId uint32, templateId uint32) {
 	l.Debugf("Removing any rate factors for unequipped item [%d] from character [%d].", templateId, characterId)
 
 	// Untrack time-based item (bonusExp equipment)
-	if err := p.UntrackItem(characterId, templateId); err != nil {
+	if err := character.NewProcessor(l, ctx).UntrackItem(characterId, templateId); err != nil {
 		l.WithError(err).Debugf("Unable to untrack item for character [%d], item [%d].",
 			characterId, templateId)
 	}
 
 	// Also remove any static factors (for backwards compatibility)
-	if err := p.RemoveAllItemFactors(characterId, templateId); err != nil {
+	if err := character.NewProcessor(l, ctx).RemoveAllItemFactors(characterId, templateId); err != nil {
 		l.WithError(err).Debugf("Unable to remove item factors for character [%d], item [%d] (may not have had any).",
 			characterId, templateId)
 	}
 }
-

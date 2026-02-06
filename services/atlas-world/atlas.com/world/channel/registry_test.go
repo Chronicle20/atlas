@@ -3,6 +3,7 @@ package channel_test
 import (
 	"atlas-world/channel"
 	"atlas-world/test"
+	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -153,7 +154,7 @@ func TestChannelServer_NotFound_World(t *testing.T) {
 
 	_, err := registry.ChannelServer(tenant, channelConstant.NewModel(99, 0))
 
-	if err != channel.ErrChannelNotFound {
+	if !errors.Is(err, channel.ErrChannelNotFound) {
 		t.Errorf("ChannelServer() error = %v, want ErrChannelNotFound", err)
 	}
 }
@@ -167,7 +168,7 @@ func TestChannelServer_NotFound_Channel(t *testing.T) {
 
 	_, err := registry.ChannelServer(tenant, channelConstant.NewModel(1, 99))
 
-	if err != channel.ErrChannelNotFound {
+	if !errors.Is(err, channel.ErrChannelNotFound) {
 		t.Errorf("ChannelServer() error = %v, want ErrChannelNotFound", err)
 	}
 }
@@ -187,7 +188,7 @@ func TestRemoveByWorldAndChannel_Success(t *testing.T) {
 
 	// Verify channel is removed
 	_, err = registry.ChannelServer(tenant, channelConstant.NewModel(1, 0))
-	if err != channel.ErrChannelNotFound {
+	if !errors.Is(err, channel.ErrChannelNotFound) {
 		t.Error("Channel should have been removed")
 	}
 }
@@ -198,7 +199,7 @@ func TestRemoveByWorldAndChannel_NotFound_World(t *testing.T) {
 
 	err := registry.RemoveByWorldAndChannel(tenant, channelConstant.NewModel(99, 0))
 
-	if err != channel.ErrChannelNotFound {
+	if !errors.Is(err, channel.ErrChannelNotFound) {
 		t.Errorf("RemoveByWorldAndChannel() error = %v, want ErrChannelNotFound", err)
 	}
 }
@@ -212,7 +213,7 @@ func TestRemoveByWorldAndChannel_NotFound_Channel(t *testing.T) {
 
 	err := registry.RemoveByWorldAndChannel(tenant, channelConstant.NewModel(1, 99))
 
-	if err != channel.ErrChannelNotFound {
+	if !errors.Is(err, channel.ErrChannelNotFound) {
 		t.Errorf("RemoveByWorldAndChannel() error = %v, want ErrChannelNotFound", err)
 	}
 }

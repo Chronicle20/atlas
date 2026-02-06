@@ -5,6 +5,7 @@ import (
 	messageInvite "atlas-messengers/kafka/message/invite"
 	"atlas-messengers/messenger"
 	"context"
+
 	"github.com/Chronicle20/atlas-constants/invite"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"

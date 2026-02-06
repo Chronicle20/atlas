@@ -152,7 +152,7 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 					sp.SessionCreated(s)
 
 					l.Debugf("Writing SetField for character [%d].", c.Id())
-					err = session.Announce(l)(ctx)(wp)(writer.SetField)(writer.SetFieldBody(l, t)(s.ChannelId(), c, bl))(s)
+					err = session.Announce(l)(ctx)(wp)(writer.SetField)(writer.SetFieldBody(t)(s.ChannelId(), c, bl))(s)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to show set field response for character [%d]", c.Id())
 					}
@@ -224,7 +224,7 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 						if err != nil {
 							return
 						}
-						err = session.Announce(l)(ctx)(wp)(writer.WorldMessage)(writer.WorldMessageTopScrollBody(l, t)(w.Message()))(s)
+						err = session.Announce(l)(ctx)(wp)(writer.WorldMessage)(writer.WorldMessageTopScrollBody(l)(w.Message()))(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to write character [%d] buddy list.", c.Id())
 						}

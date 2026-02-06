@@ -2,6 +2,7 @@ package slot
 
 import (
 	"atlas-login/inventory/compartment/asset"
+
 	"github.com/Chronicle20/atlas-constants/inventory/slot"
 )
 

@@ -2,14 +2,14 @@ package config
 
 import (
 	"atlas-transports/transport"
-	_map "github.com/Chronicle20/atlas-constants/map"
-	"github.com/google/uuid"
 	"time"
+
+	_map "github.com/Chronicle20/atlas-constants/map"
 )
 
 // RouteRestModel is the JSON:API resource for routes
 type RouteRestModel struct {
-	Id                     uuid.UUID     `json:"-"`
+	Id                     string        `json:"-"`
 	Name                   string        `json:"name"`
 	StartMapId             _map.Id       `json:"startMapId"`
 	StagingMapId           _map.Id       `json:"stagingMapId"`
@@ -24,16 +24,12 @@ type RouteRestModel struct {
 
 // GetID returns the resource ID
 func (r RouteRestModel) GetID() string {
-	return r.Id.String()
+	return r.Id
 }
 
 // SetID sets the resource ID
 func (r *RouteRestModel) SetID(idStr string) error {
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		return err
-	}
-	r.Id = id
+	r.Id = idStr
 	return nil
 }
 
@@ -45,7 +41,6 @@ func (r RouteRestModel) GetName() string {
 // ExtractRoute converts a RouteRestModel to a transport.Model
 func ExtractRoute(r RouteRestModel) (transport.Model, error) {
 	builder := transport.NewBuilder(r.Name).
-		SetId(r.Id).
 		SetStartMapId(r.StartMapId).
 		SetStagingMapId(r.StagingMapId).
 		SetDestinationMapId(r.DestinationMapId).
@@ -64,25 +59,21 @@ func ExtractRoute(r RouteRestModel) (transport.Model, error) {
 
 // VesselRestModel is the JSON:API resource for vessels
 type VesselRestModel struct {
-	Id              uuid.UUID     `json:"-"`
+	Id              string        `json:"-"`
 	Name            string        `json:"name"`
-	RouteAID        uuid.UUID     `json:"routeAID"`
-	RouteBID        uuid.UUID     `json:"routeBID"`
+	RouteAID        string        `json:"routeAID"`
+	RouteBID        string        `json:"routeBID"`
 	TurnaroundDelay time.Duration `json:"turnaroundDelay"`
 }
 
 // GetID returns the resource ID
 func (v VesselRestModel) GetID() string {
-	return v.Id.String()
+	return v.Id
 }
 
 // SetID sets the resource ID
 func (v *VesselRestModel) SetID(idStr string) error {
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		return err
-	}
-	v.Id = id
+	v.Id = idStr
 	return nil
 }
 

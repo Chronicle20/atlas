@@ -132,13 +132,13 @@ func (p *Processor) DepositAndEmit(transactionId uuid.UUID, worldId world.Id, ac
 }
 
 // Withdraw withdraws an item from storage
-func (p *Processor) Withdraw(worldId world.Id, accountId uint32, body message.WithdrawBody) error {
+func (p *Processor) Withdraw(body message.WithdrawBody) error {
 	t := tenant.MustFromContext(p.ctx)
 	assetId := uint32(body.AssetId)
 	quantity := uint32(body.Quantity)
 
 	// Get asset
-	a, err := asset.GetById(p.l, p.db, t.Id())(assetId)
+	a, err := asset.GetById(p.db, t.Id())(assetId)
 	if err != nil {
 		return err
 	}
@@ -171,12 +171,12 @@ func (p *Processor) WithdrawAndEmit(transactionId uuid.UUID, worldId world.Id, a
 	assetId := uint32(body.AssetId)
 
 	// Get asset info before withdrawal for the event
-	a, err := asset.GetById(p.l, p.db, t.Id())(assetId)
+	a, err := asset.GetById(p.db, t.Id())(assetId)
 	if err != nil {
 		return err
 	}
 
-	err = p.Withdraw(worldId, accountId, body)
+	err = p.Withdraw(body)
 	if err != nil {
 		return err
 	}
@@ -248,12 +248,12 @@ func (p *Processor) UpdateMesosAndEmit(transactionId uuid.UUID, worldId world.Id
 }
 
 // DepositRollback rolls back a deposit operation
-func (p *Processor) DepositRollback(worldId world.Id, accountId uint32, body message.DepositRollbackBody) error {
+func (p *Processor) DepositRollback(body message.DepositRollbackBody) error {
 	t := tenant.MustFromContext(p.ctx)
 	assetId := uint32(body.AssetId)
 
 	// Get asset to check if stackable
-	a, err := asset.GetById(p.l, p.db, t.Id())(assetId)
+	a, err := asset.GetById(p.db, t.Id())(assetId)
 	if err != nil {
 		return err
 	}
@@ -287,7 +287,7 @@ func (p *Processor) Accept(worldId world.Id, accountId uint32, body compartment.
 		slot = body.Slot
 	} else {
 		// Find next available slot within this inventory type (0-indexed per compartment)
-		compartmentAssets, err := asset.GetByStorageIdAndInventoryType(p.l, p.db, t.Id())(s.Id(), inventoryType)
+		compartmentAssets, err := asset.GetByStorageIdAndInventoryType(p.db, t.Id())(s.Id(), inventoryType)
 		if err != nil {
 			return 0, 0, err
 		}
@@ -326,7 +326,7 @@ func (p *Processor) Accept(worldId world.Id, accountId uint32, body compartment.
 		}
 
 		// Try to find existing stack to merge with
-		existingAssets, err := asset.GetByStorageIdAndTemplateId(p.l, p.db, t.Id())(s.Id(), body.TemplateId)
+		existingAssets, err := asset.GetByStorageIdAndTemplateId(p.db, t.Id())(s.Id(), body.TemplateId)
 		if err == nil && len(existingAssets) > 0 {
 			// Get slotMax for this template
 			slotMax, err := p.getSlotMax(body.TemplateId, refType)
@@ -426,13 +426,13 @@ func (p *Processor) AcceptAndEmit(worldId world.Id, accountId uint32, characterI
 }
 
 // Release releases an item from storage as part of a transfer saga
-func (p *Processor) Release(worldId world.Id, accountId uint32, body compartment.ReleaseCommandBody) error {
+func (p *Processor) Release(body compartment.ReleaseCommandBody) error {
 	t := tenant.MustFromContext(p.ctx)
 	assetId := uint32(body.AssetId)
 	quantity := uint32(body.Quantity)
 
 	// Get asset
-	a, err := asset.GetById(p.l, p.db, t.Id())(assetId)
+	a, err := asset.GetById(p.db, t.Id())(assetId)
 	if err != nil {
 		return err
 	}
@@ -471,7 +471,7 @@ func (p *Processor) ReleaseAndEmit(worldId world.Id, accountId uint32, character
 	assetId := uint32(body.AssetId)
 
 	// Get asset info before releasing to capture inventory type
-	a, err := asset.GetById(p.l, p.db, t.Id())(assetId)
+	a, err := asset.GetById(p.db, t.Id())(assetId)
 	if err != nil {
 		_ = p.emitCompartmentErrorEvent(worldId, accountId, characterId, body.TransactionId, "RELEASE_FAILED", err.Error())
 		return err
@@ -479,7 +479,7 @@ func (p *Processor) ReleaseAndEmit(worldId world.Id, accountId uint32, character
 
 	inventoryType := a.InventoryType()
 
-	err = p.Release(worldId, accountId, body)
+	err = p.Release(body)
 	if err != nil {
 		// Emit error event
 		_ = p.emitCompartmentErrorEvent(worldId, accountId, characterId, body.TransactionId, "RELEASE_FAILED", err.Error())
@@ -630,7 +630,7 @@ func (p *Processor) MergeAndSort(worldId world.Id, accountId uint32) error {
 	}
 
 	// Get all assets
-	assets, err := asset.GetByStorageId(p.l, p.db, t.Id())(s.Id())
+	assets, err := asset.GetByStorageId(p.db, t.Id())(s.Id())
 	if err != nil {
 		return err
 	}
@@ -656,7 +656,7 @@ func (p *Processor) MergeAndSort(worldId world.Id, accountId uint32) error {
 		return p.sortAssets(t.Id(), assets)
 	}
 
-	stackables, err := stackable.GetByAssetIds(p.l, p.db)(stackableIds)
+	stackables, err := stackable.GetByAssetIds(p.db)(stackableIds)
 	if err != nil {
 		return err
 	}
@@ -906,7 +906,7 @@ func (p *Processor) ExpireAndEmit(transactionId uuid.UUID, worldId world.Id, acc
 	t := tenant.MustFromContext(p.ctx)
 
 	// Get the asset before deleting to capture its info
-	a, err := asset.GetById(p.l, p.db, t.Id())(assetId)
+	a, err := asset.GetById(p.db, t.Id())(assetId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to find asset [%d] for expiration.", assetId)
 		return err
@@ -925,7 +925,7 @@ func (p *Processor) ExpireAndEmit(transactionId uuid.UUID, worldId world.Id, acc
 	}
 
 	// Emit EXPIRED event
-	_ = p.emitExpiredEvent(transactionId, worldId, accountId, a, isCash, replaceItemId, replaceMessage)
+	_ = p.emitExpiredEvent(transactionId, worldId, accountId, isCash, replaceItemId, replaceMessage)
 
 	// If there's a replacement item, create it
 	if replaceItemId > 0 {
@@ -939,7 +939,7 @@ func (p *Processor) ExpireAndEmit(transactionId uuid.UUID, worldId world.Id, acc
 		}
 
 		// Find next available slot
-		assets, err := asset.GetByStorageId(p.l, p.db, t.Id())(s.Id())
+		assets, err := asset.GetByStorageId(p.db, t.Id())(s.Id())
 		if err != nil {
 			p.l.WithError(err).Warnf("Failed to get assets for slot calculation.")
 			return nil
@@ -964,7 +964,7 @@ func (p *Processor) ExpireAndEmit(transactionId uuid.UUID, worldId world.Id, acc
 	return nil
 }
 
-func (p *Processor) emitExpiredEvent(transactionId uuid.UUID, worldId world.Id, accountId uint32, a asset.Model[any], isCash bool, replaceItemId uint32, replaceMessage string) error {
+func (p *Processor) emitExpiredEvent(transactionId uuid.UUID, worldId world.Id, accountId uint32, isCash bool, replaceItemId uint32, replaceMessage string) error {
 	event := &message.StatusEvent[message.ExpiredStatusEventBody]{
 		TransactionId: transactionId,
 		WorldId:       worldId,
@@ -995,7 +995,7 @@ func (p *Processor) DeleteByAccountId(accountId uint32) error {
 
 	for _, s := range storages {
 		// Delete all assets in this storage
-		assets, err := asset.GetByStorageId(p.l, p.db, t.Id())(s.Id())
+		assets, err := asset.GetByStorageId(p.db, t.Id())(s.Id())
 		if err != nil {
 			p.l.WithError(err).Warnf("Failed to get assets for storage [%s].", s.Id())
 		} else {

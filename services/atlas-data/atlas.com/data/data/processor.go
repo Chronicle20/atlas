@@ -21,15 +21,16 @@ import (
 	"atlas-data/skill"
 	"context"
 	"fmt"
-	"github.com/Chronicle20/atlas-tenant"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 	"io"
 	"io/fs"
 	"mime/multipart"
 	"os"
 	"path/filepath"
 	"sync"
+
+	"github.com/Chronicle20/atlas-tenant"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 const (
@@ -161,14 +162,26 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 				l.Infof("Starting worker [%s] at [%s].", name, path)
 				var err error
 				if name == WorkerMap {
-					_ = _map.InitString(t, filepath.Join(path, "String.wz", "Map.img.xml"))
-					_ = npc.InitString(t, filepath.Join(path, "String.wz", "Npc.img.xml"))
+					if err = _map.InitString(t, filepath.Join(path, "String.wz", "Map.img.xml")); err != nil {
+						l.WithError(err).Errorf("Failed to initialize map string registry.")
+						return err
+					}
+					if err = npc.InitString(t, filepath.Join(path, "String.wz", "Npc.img.xml")); err != nil {
+						l.WithError(err).Errorf("Failed to initialize NPC string registry for map worker.")
+						return err
+					}
 					err = RegisterAllData(l)(ctx)(path, filepath.Join("Map.wz", "Map"), _map.RegisterMap(db))()
 					_ = _map.GetMapStringRegistry().Clear(t)
-					_ = npc.GetNpcStringRegistry().Clear(t)
+					// Note: Don't clear NPC registry here - WorkerNPC may run concurrently and needs it
 				} else if name == WorkerMonster {
-					_ = monster.InitString(t, filepath.Join(path, "String.wz", "Mob.img.xml"))
-					_ = monster.InitGauge(t, filepath.Join(path, "UI.wz", "UIWindow.img.xml"))
+					if err = monster.InitString(t, filepath.Join(path, "String.wz", "Mob.img.xml")); err != nil {
+						l.WithError(err).Errorf("Failed to initialize monster string registry.")
+						return err
+					}
+					if err = monster.InitGauge(t, filepath.Join(path, "UI.wz", "UIWindow.img.xml")); err != nil {
+						l.WithError(err).Errorf("Failed to initialize monster gauge registry.")
+						return err
+					}
 					err = RegisterAllData(l)(ctx)(path, "Mob.wz", monster.RegisterMonster(db))()
 					_ = monster.GetMonsterStringRegistry().Clear(t)
 					_ = monster.GetMonsterGaugeRegistry().Clear(t)
@@ -177,7 +190,10 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 				} else if name == WorkerReactor {
 					err = RegisterAllData(l)(ctx)(path, "Reactor.wz", reactor.RegisterReactor(db))()
 				} else if name == WorkerSkill {
-					_ = skill.InitString(t, filepath.Join(path, "String.wz", "Skill.img.xml"))
+					if err = skill.InitString(t, filepath.Join(path, "String.wz", "Skill.img.xml")); err != nil {
+						l.WithError(err).Errorf("Failed to initialize skill string registry.")
+						return err
+					}
 					err = RegisterAllData(l)(ctx)(path, "Skill.wz", skill.RegisterSkill(db))()
 					_ = skill.GetSkillStringRegistry().Clear(t)
 				} else if name == WorkerPet {
@@ -197,9 +213,12 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 				} else if name == WorkerQuest {
 					err = quest.RegisterQuest(db)(l)(ctx)(filepath.Join(path, "Quest.wz"))
 				} else if name == WorkerNPC {
-					_ = npc.InitString(t, filepath.Join(path, "String.wz", "Npc.img.xml"))
+					if err = npc.InitString(t, filepath.Join(path, "String.wz", "Npc.img.xml")); err != nil {
+						l.WithError(err).Errorf("Failed to initialize NPC string registry for NPC worker.")
+						return err
+					}
 					err = RegisterAllData(l)(ctx)(path, "Npc.wz", npc.RegisterNpc(db))()
-					_ = npc.GetNpcStringRegistry().Clear(t)
+					// Note: Don't clear NPC registry - WorkerMap may run concurrently and needs it
 				} else if name == WorkerFace {
 					err = RegisterAllData(l)(ctx)(path, filepath.Join("Character.wz", "Face"), face.RegisterFace(db))()
 				} else if name == WorkerHair {

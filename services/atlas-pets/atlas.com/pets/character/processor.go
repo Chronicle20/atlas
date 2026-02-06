@@ -62,7 +62,7 @@ func (p *ProcessorImpl) Enter(field field.Model, characterId uint32) {
 	getRegistry().AddCharacter(characterId, MapKey{Tenant: p.t, Field: field})
 }
 
-func (p *ProcessorImpl) Exit(field field.Model, characterId uint32) {
+func (p *ProcessorImpl) Exit(_ field.Model, characterId uint32) {
 	getRegistry().RemoveCharacter(characterId)
 }
 

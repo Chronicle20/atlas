@@ -3,12 +3,13 @@ package guild
 import (
 	"atlas-guilds/coordinator"
 	"context"
+	"time"
+
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
-	"time"
 )
 
 const TimeoutTask = "timeout"

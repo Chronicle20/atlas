@@ -11,8 +11,6 @@ import (
 	"context"
 	"sort"
 
-	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -188,7 +186,7 @@ func handleStorageCompartmentAcceptedEvent(sc server.Model, wp writer.Producer) 
 
 			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId,
 				session.Announce(l)(ctx)(wp)(writer.StorageOperation)(
-					writer.StorageOperationUpdateAssetsForCompartmentBody(l, sc.Tenant())(writer.StorageOperationModeStoreAssets, byte(storageData.Capacity), inventoryType, storageData.Assets)))
+					writer.StorageOperationUpdateAssetsForCompartmentBody(l, sc.Tenant())(writer.StorageOperationModeStoreAssets, storageData.Capacity, inventoryType, storageData.Assets)))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to send storage update to character [%d].", e.CharacterId)
 			}
@@ -247,7 +245,7 @@ func handleStorageCompartmentReleasedEvent(sc server.Model, wp writer.Producer) 
 
 			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId,
 				session.Announce(l)(ctx)(wp)(writer.StorageOperation)(
-					writer.StorageOperationUpdateAssetsForCompartmentBody(l, sc.Tenant())(writer.StorageOperationModeRetrieveAssets, byte(storageData.Capacity), inventoryType, storageData.Assets)))
+					writer.StorageOperationUpdateAssetsForCompartmentBody(l, sc.Tenant())(writer.StorageOperationModeRetrieveAssets, storageData.Capacity, inventoryType, storageData.Assets)))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to send storage update to character [%d].", e.CharacterId)
 			}
@@ -283,7 +281,7 @@ func handleProjectionCreatedEvent(sc server.Model, wp writer.Producer) message.H
 			return
 		}
 
-		if !sc.Is(t, world.Id(e.Body.WorldId), channel.Id(e.Body.ChannelId)) {
+		if !sc.Is(t, e.Body.WorldId, e.Body.ChannelId) {
 			return
 		}
 

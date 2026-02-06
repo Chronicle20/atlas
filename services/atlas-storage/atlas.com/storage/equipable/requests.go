@@ -3,6 +3,7 @@ package equipable
 import (
 	"atlas-storage/rest"
 	"fmt"
+
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 

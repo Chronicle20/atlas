@@ -1,9 +1,10 @@
 package consumer
 
 import (
+	"time"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
-	"time"
 )
 
 //goland:noinspection GoUnusedExportedFunction

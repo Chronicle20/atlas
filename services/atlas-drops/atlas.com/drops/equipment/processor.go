@@ -3,6 +3,7 @@ package equipment
 import (
 	"atlas-drops/kafka/message"
 	"context"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -44,7 +45,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 }
 
 // Create creates a new equipment item
-func (p *ProcessorImpl) Create(mb *message.Buffer) func(itemId uint32) model.Provider[Model] {
+func (p *ProcessorImpl) Create(_ *message.Buffer) func(itemId uint32) model.Provider[Model] {
 	return func(itemId uint32) model.Provider[Model] {
 		ro, err := requestCreate(itemId)(p.l, p.ctx)
 		if err != nil {
@@ -63,7 +64,7 @@ func (p *ProcessorImpl) CreateAndEmit(itemId uint32) model.Provider[Model] {
 }
 
 // Delete deletes an equipment item
-func (p *ProcessorImpl) Delete(mb *message.Buffer) func(equipmentId uint32) error {
+func (p *ProcessorImpl) Delete(_ *message.Buffer) func(equipmentId uint32) error {
 	return func(equipmentId uint32) error {
 		err := deleteById(equipmentId)(p.l, p.ctx)
 		// No Kafka message to emit for equipment deletion

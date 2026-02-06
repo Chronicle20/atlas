@@ -278,7 +278,7 @@ func TestParameterTransformation(t *testing.T) {
 		return uint32(uint642)
 	}
 
-	var rf rt = Compose(f, tf)
+	var rf = Compose(f, tf)
 	r, err := rf(5)()
 	if err != nil {
 		t.Errorf("Expected result, got err %s", err)
@@ -721,7 +721,7 @@ func TestMemoizeError(t *testing.T) {
 func TestMemoizeConcurrentAccess(t *testing.T) {
 	// Test that Memoize is thread-safe when accessed concurrently from multiple goroutines
 	executionCount := int64(0)
-	
+
 	// Create a provider that tracks execution count atomically
 	expensiveProvider := func() (uint32, error) {
 		atomic.AddInt64(&executionCount, 1)
@@ -3012,7 +3012,7 @@ func TestRaceConditionThreadSafety(t *testing.T) {
 			wg.Add(1)
 			go func(idx int) {
 				defer wg.Done()
-				
+
 				// Add some randomness to timing to increase race condition likelihood
 				if idx%2 == 0 {
 					time.Sleep(time.Microsecond * time.Duration(idx%10))
@@ -3051,7 +3051,7 @@ func TestRaceConditionThreadSafety(t *testing.T) {
 		baseProvider := FixedProvider(data)
 
 		var transformCount, filterCount int64
-		
+
 		// Create a complex chain: SliceMap -> Filter -> SliceMap
 		chainedProvider := SliceMap[uint32, uint32](func(val uint32) (uint32, error) {
 			atomic.AddInt64(&transformCount, 1)
@@ -3250,10 +3250,10 @@ func TestRaceConditionThreadSafety(t *testing.T) {
 			wg.Add(1)
 			go func(idx int) {
 				defer wg.Done()
-				
+
 				// Each run has different error conditions
 				errorTrigger := uint32(10 + idx*5)
-				
+
 				err := ForEachSlice(provider, func(val uint32) error {
 					if val == errorTrigger {
 						return fmt.Errorf("intentional error at %d in run %d", val, idx)
@@ -3302,18 +3302,18 @@ func TestRaceConditionThreadSafety(t *testing.T) {
 			wg.Add(1)
 			go func(goroutineId int) {
 				defer wg.Done()
-				
+
 				// Wait for start signal to maximize concurrency
 				<-startSignal
 
 				err := ForEachSlice(provider, func(val uint32) error {
 					atomic.AddInt64(&operationCount, 1)
-					
+
 					// Add some variability in execution time
 					if val%3 == 0 {
 						time.Sleep(time.Nanosecond * time.Duration(val%10))
 					}
-					
+
 					return nil
 				}, ParallelExecute())
 
@@ -3578,7 +3578,7 @@ func TestConcurrentProviderExecution(t *testing.T) {
 	t.Run("ConcurrentProviderWithErrorHandling", func(t *testing.T) {
 		// Test concurrent execution where some providers fail and others succeed
 		successData := []uint32{1, 2, 3, 4, 5}
-		
+
 		successProvider := FixedProvider(successData)
 		errorProvider := ErrorProvider[[]uint32](fmt.Errorf("intentional test error"))
 
@@ -3795,7 +3795,7 @@ func TestParallelExecutionRaceConditions(t *testing.T) {
 			go func(idx int) {
 				defer wg.Done()
 				result, err := chain1()
-				
+
 				// Update shared counters safely
 				if err == nil {
 					atomic.AddInt64(&totalProcessed, int64(len(result)))
@@ -3810,7 +3810,7 @@ func TestParallelExecutionRaceConditions(t *testing.T) {
 				} else {
 					atomic.AddInt64(&processingErrors, 1)
 				}
-				
+
 				results1[idx] = result
 				errors[0][idx] = err
 			}(i)
@@ -3818,13 +3818,13 @@ func TestParallelExecutionRaceConditions(t *testing.T) {
 			go func(idx int) {
 				defer wg.Done()
 				result, err := chain2()
-				
+
 				if err == nil {
 					atomic.AddInt64(&totalProcessed, int64(len(result)))
 				} else {
 					atomic.AddInt64(&processingErrors, 1)
 				}
-				
+
 				results2[idx] = result
 				errors[1][idx] = err
 			}(i)
@@ -3832,13 +3832,13 @@ func TestParallelExecutionRaceConditions(t *testing.T) {
 			go func(idx int) {
 				defer wg.Done()
 				result, err := chain3()
-				
+
 				if err == nil {
 					atomic.AddInt64(&totalProcessed, int64(len(result)))
 				} else {
 					atomic.AddInt64(&processingErrors, 1)
 				}
-				
+
 				results3[idx] = result
 				errors[2][idx] = err
 			}(i)
@@ -3898,8 +3898,8 @@ func TestParallelExecutionRaceConditions(t *testing.T) {
 		t.Logf("Max value computed: %d", maxValue)
 
 		// Verify we actually processed a reasonable amount of data
-		expectedMinProcessed := int64(highConcurrency * (dataSize*2 + (dataSize/3))) // chain1 + chain2 + chain3
-		if totalProcessed < expectedMinProcessed/2 { // Allow some variance
+		expectedMinProcessed := int64(highConcurrency * (dataSize*2 + (dataSize / 3))) // chain1 + chain2 + chain3
+		if totalProcessed < expectedMinProcessed/2 {                                   // Allow some variance
 			t.Errorf("Expected at least %d items processed, got %d", expectedMinProcessed/2, totalProcessed)
 		}
 	})
@@ -3907,10 +3907,10 @@ func TestParallelExecutionRaceConditions(t *testing.T) {
 	t.Run("RaceConditionsWithSharedMutableState", func(t *testing.T) {
 		// Test race conditions when providers access shared mutable state
 		// This test is designed to fail if proper synchronization is not in place
-		
+
 		const iterations = 100
 		const concurrency = 50
-		
+
 		// Shared mutable state that could cause race conditions
 		var sharedCounter int64
 		var sharedMap sync.Map
@@ -3921,17 +3921,17 @@ func TestParallelExecutionRaceConditions(t *testing.T) {
 		racyProvider := func() ([]uint32, error) {
 			// Increment counter (this is safe with atomic)
 			newCount := atomic.AddInt64(&sharedCounter, 1)
-			
+
 			// Store in shared map
 			sharedMap.Store(fmt.Sprintf("key_%d", newCount), newCount)
-			
+
 			// Append to shared slice (potentially racy without proper locking)
 			sliceMutex.Lock()
 			sharedSlice = append(sharedSlice, uint32(newCount))
 			currentSlice := make([]uint32, len(sharedSlice))
 			copy(currentSlice, sharedSlice)
 			sliceMutex.Unlock()
-			
+
 			return currentSlice, nil
 		}
 
@@ -3995,7 +3995,7 @@ func TestParallelExecutionRaceConditions(t *testing.T) {
 		sliceMutex.RLock()
 		finalSliceLen := len(sharedSlice)
 		sliceMutex.RUnlock()
-		
+
 		if finalSliceLen != concurrency {
 			t.Errorf("Expected slice length %d, got %d", concurrency, finalSliceLen)
 		}
@@ -4091,33 +4091,33 @@ func BenchmarkExecuteForEachMap(b *testing.B) {
 func TestProviderChainErrorPropagation(t *testing.T) {
 	// Test that errors propagate correctly through complex provider chains
 	// This test focuses on multi-level chaining scenarios that can occur in production
-	
+
 	t.Run("DeepProviderChainWithEarlyError", func(t *testing.T) {
 		// Test error propagation when error occurs early in a deep chain
 		expectedError := errors.New("early chain error")
-		
+
 		// Create an error provider that fails immediately
 		errorProvider := ErrorProvider[[]uint32](expectedError)
-		
+
 		// Build a deep chain: errorProvider -> SliceMap -> Map -> Filter -> First
 		transform := func(val uint32) (uint32, error) {
 			return val * 2, nil
 		}
-		
+
 		filter := func(val uint32) bool {
 			return val > 5
 		}
-		
+
 		// Chain multiple operations
 		chain := func() (uint32, error) {
 			sliceMapped := SliceMap[uint32, uint32](transform)(errorProvider)()
 			filtered := FilteredProvider(sliceMapped, []Filter[uint32]{filter})
 			return First(filtered, []Filter[uint32]{})
 		}
-		
+
 		// Execute and verify error propagates to the top
 		result, err := chain()
-		
+
 		// Should receive the original error from the beginning of the chain
 		if err == nil {
 			t.Errorf("Expected error, got result %d", result)
@@ -4125,20 +4125,20 @@ func TestProviderChainErrorPropagation(t *testing.T) {
 		if err.Error() != expectedError.Error() {
 			t.Errorf("Expected error '%s', got '%s'", expectedError.Error(), err.Error())
 		}
-		
+
 		// Result should be zero value
 		if result != 0 {
 			t.Errorf("Expected zero value result when error occurs, got %d", result)
 		}
 	})
-	
+
 	t.Run("ProviderChainWithMiddleError", func(t *testing.T) {
 		// Test error propagation when error occurs in the middle of chain
 		transformError := errors.New("middle chain transform error")
-		
+
 		// Initial provider that succeeds
 		provider := FixedProvider([]uint32{1, 2, 3, 4, 5})
-		
+
 		// Transform function that fails for certain values
 		failingTransform := func(val uint32) (uint32, error) {
 			if val == 3 {
@@ -4146,15 +4146,15 @@ func TestProviderChainErrorPropagation(t *testing.T) {
 			}
 			return val * 2, nil
 		}
-		
+
 		// Build chain with error in the middle
 		chain := func() ([]uint32, error) {
 			return SliceMap[uint32, uint32](failingTransform)(provider)()()
 		}
-		
+
 		// Execute and verify error propagation
 		result, err := chain()
-		
+
 		// Should receive the transform error
 		if err == nil {
 			t.Errorf("Expected error, got result %v", result)
@@ -4162,20 +4162,20 @@ func TestProviderChainErrorPropagation(t *testing.T) {
 		if err.Error() != transformError.Error() {
 			t.Errorf("Expected error '%s', got '%s'", transformError.Error(), err.Error())
 		}
-		
+
 		// Result should be nil
 		if result != nil {
 			t.Errorf("Expected nil result when error occurs, got %v", result)
 		}
 	})
-	
+
 	t.Run("ParallelProviderChainErrorPropagation", func(t *testing.T) {
 		// Test error propagation in parallel execution chains
 		parallelError := errors.New("parallel chain error")
-		
+
 		// Provider that succeeds
 		provider := FixedProvider([]uint32{1, 2, 3, 4, 5})
-		
+
 		// Transform that fails for specific value
 		parallelTransform := func(val uint32) (uint32, error) {
 			if val == 4 {
@@ -4183,15 +4183,15 @@ func TestProviderChainErrorPropagation(t *testing.T) {
 			}
 			return val * 3, nil
 		}
-		
+
 		// Build parallel chain
 		chain := func() ([]uint32, error) {
 			return SliceMap[uint32, uint32](parallelTransform)(provider)(ParallelMap())()
 		}
-		
+
 		// Execute and verify error propagation in parallel context
 		result, err := chain()
-		
+
 		// Should receive the parallel transform error
 		if err == nil {
 			t.Errorf("Expected error, got result %v", result)
@@ -4199,34 +4199,34 @@ func TestProviderChainErrorPropagation(t *testing.T) {
 		if err.Error() != parallelError.Error() {
 			t.Errorf("Expected error '%s', got '%s'", parallelError.Error(), err.Error())
 		}
-		
+
 		// Result should be nil
 		if result != nil {
 			t.Errorf("Expected nil result when parallel error occurs, got %v", result)
 		}
 	})
-	
+
 	t.Run("ChainedOperationErrorAggregation", func(t *testing.T) {
 		// Test that only the first error in a chain is propagated
 		firstError := errors.New("first error in chain")
 		secondError := errors.New("second error in chain")
-		
+
 		// Provider that fails with first error
 		errorProvider := ErrorProvider[uint32](firstError)
-		
+
 		// Transform that would fail with second error (but shouldn't be reached)
 		failingTransform := func(val uint32) (uint32, error) {
 			return 0, secondError
 		}
-		
+
 		// Build chain where both operations would fail
 		chain := func() (uint32, error) {
 			return Map[uint32, uint32](failingTransform)(errorProvider)()
 		}
-		
+
 		// Execute and verify only first error is propagated
 		result, err := chain()
-		
+
 		// Should receive only the first error (short-circuiting)
 		if err == nil {
 			t.Errorf("Expected error, got result %d", result)
@@ -4234,41 +4234,41 @@ func TestProviderChainErrorPropagation(t *testing.T) {
 		if err.Error() != firstError.Error() {
 			t.Errorf("Expected first error '%s', got '%s'", firstError.Error(), err.Error())
 		}
-		
+
 		// Result should be zero value
 		if result != 0 {
 			t.Errorf("Expected zero value result when error occurs, got %d", result)
 		}
 	})
-	
+
 	t.Run("NestedProviderChainErrorPropagation", func(t *testing.T) {
 		// Test error propagation through nested provider operations
 		nestedError := errors.New("nested provider error")
-		
+
 		// Create nested structure: provider -> merge -> fold -> collect
 		provider1 := FixedProvider([]uint32{1, 2, 3})
 		provider2 := ErrorProvider[[]uint32](nestedError)
-		
+
 		// Merge two providers (one fails)
 		mergedProvider := MergeSliceProvider(provider1, provider2)
-		
+
 		// Fold operation on the merged result
 		initialValue := func() (uint32, error) {
 			return 0, nil
 		}
-		
+
 		folder := func(acc uint32, val uint32) (uint32, error) {
 			return acc + val, nil
 		}
-		
+
 		// Build nested chain
 		chain := func() (uint32, error) {
 			return Fold(mergedProvider, initialValue, folder)()
 		}
-		
+
 		// Execute and verify error propagation through nested structure
 		result, err := chain()
-		
+
 		// Should receive the nested error
 		if err == nil {
 			t.Errorf("Expected error, got result %d", result)
@@ -4276,23 +4276,23 @@ func TestProviderChainErrorPropagation(t *testing.T) {
 		if err.Error() != nestedError.Error() {
 			t.Errorf("Expected error '%s', got '%s'", nestedError.Error(), err.Error())
 		}
-		
+
 		// Result should be zero value
 		if result != 0 {
 			t.Errorf("Expected zero value result when nested error occurs, got %d", result)
 		}
 	})
-	
+
 	t.Run("LongChainPerformanceWithErrors", func(t *testing.T) {
 		// Test that error propagation is efficient in long chains
 		chainError := errors.New("chain performance error")
-		
+
 		// Create a very long chain to test performance
 		provider := ErrorProvider[uint32](chainError)
-		
+
 		// Build an intentionally long chain of operations
 		longChain := provider
-		
+
 		// Chain multiple Map operations (should short-circuit on first error)
 		for i := 0; i < 10; i++ {
 			transform := func(val uint32) (uint32, error) {
@@ -4302,12 +4302,12 @@ func TestProviderChainErrorPropagation(t *testing.T) {
 			}
 			longChain = Map[uint32, uint32](transform)(longChain)
 		}
-		
+
 		// Execute and verify quick error propagation
 		start := time.Now()
 		result, err := longChain()
 		duration := time.Since(start)
-		
+
 		// Should receive the original error quickly
 		if err == nil {
 			t.Errorf("Expected error, got result %d", result)
@@ -4315,12 +4315,12 @@ func TestProviderChainErrorPropagation(t *testing.T) {
 		if err.Error() != chainError.Error() {
 			t.Errorf("Expected error '%s', got '%s'", chainError.Error(), err.Error())
 		}
-		
+
 		// Should be very fast (under 1ms) due to short-circuiting
 		if duration > time.Millisecond {
 			t.Errorf("Error propagation took too long: %v (expected < 1ms)", duration)
 		}
-		
+
 		// Result should be zero value
 		if result != 0 {
 			t.Errorf("Expected zero value result when error occurs, got %d", result)
@@ -4331,12 +4331,12 @@ func TestProviderChainErrorPropagation(t *testing.T) {
 func TestPartialFailureRecovery(t *testing.T) {
 	// Test behavior when some operations succeed and others fail
 	// This test focuses on scenarios where the system needs to handle mixed results gracefully
-	
+
 	t.Run("SliceOperationWithPartialFailures", func(t *testing.T) {
 		// Test SliceMap with some elements succeeding and others failing
 		provider := FixedProvider([]uint32{1, 2, 3, 4, 5, 6})
 		partialFailureError := errors.New("partial failure error")
-		
+
 		// Transform that fails for even numbers
 		selectiveTransform := func(val uint32) (string, error) {
 			if val%2 == 0 {
@@ -4344,10 +4344,10 @@ func TestPartialFailureRecovery(t *testing.T) {
 			}
 			return fmt.Sprintf("success_%d", val), nil
 		}
-		
+
 		// Execute transformation
 		result, err := SliceMap[uint32, string](selectiveTransform)(provider)()()
-		
+
 		// Should fail because some elements failed
 		if err == nil {
 			t.Errorf("Expected error due to partial failures, got result %v", result)
@@ -4355,22 +4355,22 @@ func TestPartialFailureRecovery(t *testing.T) {
 		if err.Error() != partialFailureError.Error() {
 			t.Errorf("Expected error '%s', got '%s'", partialFailureError.Error(), err.Error())
 		}
-		
+
 		// Result should be nil due to failure
 		if result != nil {
 			t.Errorf("Expected nil result when partial failure occurs, got %v", result)
 		}
 	})
-	
+
 	t.Run("FilteredProviderWithPartialSuccesses", func(t *testing.T) {
 		// Test filtering where some elements pass and others would cause errors
 		provider := FixedProvider([]uint32{1, 2, 3, 4, 5, 6, 7, 8})
-		
+
 		// Filter that only allows odd numbers (preventing errors on even numbers)
 		oddFilter := func(val uint32) bool {
 			return val%2 == 1
 		}
-		
+
 		// Transform that would fail on even numbers (but they should be filtered out)
 		safeTransform := func(val uint32) (uint32, error) {
 			if val%2 == 0 {
@@ -4378,28 +4378,28 @@ func TestPartialFailureRecovery(t *testing.T) {
 			}
 			return val * 10, nil
 		}
-		
+
 		// Apply filter first, then transform
 		filteredProvider := FilteredProvider(provider, []Filter[uint32]{oddFilter})
 		result, err := SliceMap[uint32, uint32](safeTransform)(filteredProvider)()()
-		
+
 		// Should succeed because filter prevented errors
 		if err != nil {
 			t.Errorf("Expected no error due to filtering, got error: %v", err)
 		}
-		
+
 		// Should have only odd numbers transformed (1, 3, 5, 7) -> (10, 30, 50, 70)
 		expected := []uint32{10, 30, 50, 70}
 		if !reflect.DeepEqual(result, expected) {
 			t.Errorf("Expected result %v, got %v", expected, result)
 		}
 	})
-	
+
 	t.Run("ParallelExecutionWithMixedResults", func(t *testing.T) {
 		// Test parallel execution where some workers succeed and others fail
 		provider := FixedProvider([]uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10})
 		mixedError := errors.New("mixed results error")
-		
+
 		// Transform that fails for multiples of 3
 		mixedTransform := func(val uint32) (uint32, error) {
 			if val%3 == 0 {
@@ -4407,10 +4407,10 @@ func TestPartialFailureRecovery(t *testing.T) {
 			}
 			return val * val, nil
 		}
-		
+
 		// Execute in parallel
 		result, err := SliceMap[uint32, uint32](mixedTransform)(provider)(ParallelMap())()
-		
+
 		// Should fail because some parallel operations failed
 		if err == nil {
 			t.Errorf("Expected error due to parallel failures, got result %v", result)
@@ -4418,23 +4418,23 @@ func TestPartialFailureRecovery(t *testing.T) {
 		if err.Error() != mixedError.Error() {
 			t.Errorf("Expected error '%s', got '%s'", mixedError.Error(), err.Error())
 		}
-		
+
 		// Result should be nil due to parallel failure
 		if result != nil {
 			t.Errorf("Expected nil result when parallel failure occurs, got %v", result)
 		}
 	})
-	
+
 	t.Run("ChainedProvidersWithSelectiveFailure", func(t *testing.T) {
 		// Test chained providers where one succeeds and another fails
 		successProvider := FixedProvider([]uint32{1, 2, 3})
 		chainError := errors.New("chain failure error")
-		
+
 		// First transform succeeds
 		firstTransform := func(val uint32) (uint32, error) {
 			return val * 2, nil
 		}
-		
+
 		// Second transform fails for values > 4
 		secondTransform := func(val uint32) (uint32, error) {
 			if val > 4 {
@@ -4442,7 +4442,7 @@ func TestPartialFailureRecovery(t *testing.T) {
 			}
 			return val + 10, nil
 		}
-		
+
 		// Chain the transformations
 		chain := func() ([]uint32, error) {
 			intermediate, err := SliceMap[uint32, uint32](firstTransform)(successProvider)()()
@@ -4452,10 +4452,10 @@ func TestPartialFailureRecovery(t *testing.T) {
 			intermediateProvider := FixedProvider(intermediate)
 			return SliceMap[uint32, uint32](secondTransform)(intermediateProvider)()()
 		}
-		
+
 		// Execute chain
 		result, err := chain()
-		
+
 		// Should fail because second transform fails on value 6 (3*2=6 > 4)
 		if err == nil {
 			t.Errorf("Expected error due to chain failure, got result %v", result)
@@ -4463,38 +4463,38 @@ func TestPartialFailureRecovery(t *testing.T) {
 		if err.Error() != chainError.Error() {
 			t.Errorf("Expected error '%s', got '%s'", chainError.Error(), err.Error())
 		}
-		
+
 		// Result should be nil due to chain failure
 		if result != nil {
 			t.Errorf("Expected nil result when chain failure occurs, got %v", result)
 		}
 	})
-	
+
 	t.Run("MergedProvidersWithPartialFailure", func(t *testing.T) {
 		// Test merging providers where some succeed and others fail
 		successProvider1 := FixedProvider([]uint32{1, 2, 3})
 		successProvider2 := FixedProvider([]uint32{4, 5, 6})
 		mergeError := errors.New("merge failure error")
 		failureProvider := ErrorProvider[[]uint32](mergeError)
-		
+
 		// Merge successful providers
 		successfulMerge := MergeSliceProvider(successProvider1, successProvider2)
 		result1, err1 := successfulMerge()
-		
+
 		// Should succeed
 		if err1 != nil {
 			t.Errorf("Expected no error in successful merge, got: %v", err1)
 		}
-		
+
 		expected1 := []uint32{1, 2, 3, 4, 5, 6}
 		if !reflect.DeepEqual(result1, expected1) {
 			t.Errorf("Expected merged result %v, got %v", expected1, result1)
 		}
-		
+
 		// Merge with failure
 		failureMerge := MergeSliceProvider(successProvider1, failureProvider)
 		result2, err2 := failureMerge()
-		
+
 		// Should fail due to one provider failing
 		if err2 == nil {
 			t.Errorf("Expected error due to merge failure, got result %v", result2)
@@ -4502,23 +4502,23 @@ func TestPartialFailureRecovery(t *testing.T) {
 		if err2.Error() != mergeError.Error() {
 			t.Errorf("Expected error '%s', got '%s'", mergeError.Error(), err2.Error())
 		}
-		
+
 		// Result should be nil due to merge failure
 		if result2 != nil {
 			t.Errorf("Expected nil result when merge failure occurs, got %v", result2)
 		}
 	})
-	
+
 	t.Run("FoldOperationWithPartialFailure", func(t *testing.T) {
 		// Test fold operation that fails partway through
 		provider := FixedProvider([]uint32{1, 2, 3, 4, 5})
 		foldError := errors.New("fold operation error")
-		
+
 		// Initial value function
 		initialValue := func() (uint32, error) {
 			return 0, nil
 		}
-		
+
 		// Folder that fails when accumulator reaches certain threshold
 		selectiveFolder := func(acc uint32, val uint32) (uint32, error) {
 			newAcc := acc + val
@@ -4527,10 +4527,10 @@ func TestPartialFailureRecovery(t *testing.T) {
 			}
 			return newAcc, nil
 		}
-		
+
 		// Execute fold operation
 		result, err := Fold(provider, initialValue, selectiveFolder)()
-		
+
 		// Should fail when threshold is exceeded
 		if err == nil {
 			t.Errorf("Expected error due to fold failure, got result %d", result)
@@ -4538,19 +4538,19 @@ func TestPartialFailureRecovery(t *testing.T) {
 		if err.Error() != foldError.Error() {
 			t.Errorf("Expected error '%s', got '%s'", foldError.Error(), err.Error())
 		}
-		
+
 		// Result should be zero due to failure
 		if result != 0 {
 			t.Errorf("Expected zero result when fold failure occurs, got %d", result)
 		}
 	})
-	
+
 	t.Run("ForEachWithPartialExecution", func(t *testing.T) {
 		// Test ForEach operation where some iterations succeed before failure
 		provider := FixedProvider([]uint32{1, 2, 3, 4, 5, 6})
 		executedCount := int32(0)
 		forEachError := errors.New("for each partial error")
-		
+
 		// Operation that succeeds for first few elements then fails
 		partialOperation := func(val uint32) error {
 			atomic.AddInt32(&executedCount, 1)
@@ -4561,10 +4561,10 @@ func TestPartialFailureRecovery(t *testing.T) {
 			time.Sleep(time.Microsecond)
 			return nil
 		}
-		
+
 		// Execute for each
 		err := ForEachSlice(provider, partialOperation)
-		
+
 		// Should fail when encountering error
 		if err == nil {
 			t.Errorf("Expected error due to partial execution failure")
@@ -4572,7 +4572,7 @@ func TestPartialFailureRecovery(t *testing.T) {
 		if err.Error() != forEachError.Error() {
 			t.Errorf("Expected error '%s', got '%s'", forEachError.Error(), err.Error())
 		}
-		
+
 		// Should have executed at least some operations (1, 2, 3, then fail on 4)
 		execCount := atomic.LoadInt32(&executedCount)
 		if execCount < 3 {
@@ -4582,12 +4582,12 @@ func TestPartialFailureRecovery(t *testing.T) {
 			t.Errorf("Expected no more than 6 executions, got %d", execCount)
 		}
 	})
-	
+
 	t.Run("NestedPartialFailureRecovery", func(t *testing.T) {
 		// Test nested operations where outer succeeds but inner fails
 		outerProvider := FixedProvider([][]uint32{{1, 2}, {3, 4}, {5, 6}})
 		innerError := errors.New("inner operation error")
-		
+
 		// Outer operation processes each inner array
 		outerTransform := func(innerSlice []uint32) ([]uint32, error) {
 			// Inner operation that fails on value 4
@@ -4597,7 +4597,7 @@ func TestPartialFailureRecovery(t *testing.T) {
 				}
 				return val * 100, nil
 			}
-			
+
 			// Process inner slice
 			result := make([]uint32, len(innerSlice))
 			for i, val := range innerSlice {
@@ -4609,10 +4609,10 @@ func TestPartialFailureRecovery(t *testing.T) {
 			}
 			return result, nil
 		}
-		
+
 		// Execute nested operation
 		result, err := SliceMap[[]uint32, []uint32](outerTransform)(outerProvider)()()
-		
+
 		// Should fail due to inner operation failure
 		if err == nil {
 			t.Errorf("Expected error due to nested failure, got result %v", result)
@@ -4620,7 +4620,7 @@ func TestPartialFailureRecovery(t *testing.T) {
 		if err.Error() != innerError.Error() {
 			t.Errorf("Expected error '%s', got '%s'", innerError.Error(), err.Error())
 		}
-		
+
 		// Result should be nil due to nested failure
 		if result != nil {
 			t.Errorf("Expected nil result when nested failure occurs, got %v", result)
@@ -4850,7 +4850,7 @@ func TestErrorAggregationParallelOperations(t *testing.T) {
 		}
 
 		failureCount := int64(0)
-		
+
 		// Operation that fails on multiple values
 		operation := func(val uint32) error {
 			if val == 2 || val == 5 || val == 7 {
@@ -4901,14 +4901,14 @@ func TestContextCancellation(t *testing.T) {
 
 		var processedCount int64
 		var cancelledCount int64
-		
+
 		// Operation that fails on specific value to trigger cancellation
 		operation := func(u uint32) error {
 			// Fail on value 50 to trigger context cancellation
 			if u == 50 {
 				return errors.New("operation failed on value 50")
 			}
-			
+
 			// Simulate work and check for cancellation in select statement
 			// The select will check the internal context created by ExecuteForEachSlice
 			select {
@@ -4921,7 +4921,7 @@ func TestContextCancellation(t *testing.T) {
 
 		// Execute in parallel mode to trigger internal context usage
 		err := ExecuteForEachSlice(operation, ParallelExecute())(slice)
-		
+
 		// Should get error from the failing operation
 		if err == nil {
 			t.Errorf("Expected error from failing operation")
@@ -4936,7 +4936,7 @@ func TestContextCancellation(t *testing.T) {
 
 		// Due to parallel execution and cancellation, not all should be processed
 		if processed >= int64(len(slice)) {
-			t.Errorf("Expected less than %d operations to be processed due to cancellation, got %d", 
+			t.Errorf("Expected less than %d operations to be processed due to cancellation, got %d",
 				len(slice), processed)
 		}
 	})
@@ -4954,21 +4954,21 @@ func TestContextCancellation(t *testing.T) {
 
 		// Execute in sequential mode (default)
 		err := ExecuteForEachSlice(operation)(slice)
-		
+
 		if err != nil {
 			t.Errorf("Expected no error in sequential mode, got %s", err)
 		}
 
 		// All items should be processed in sequential mode
 		if atomic.LoadInt64(&processedCount) != int64(len(slice)) {
-			t.Errorf("Expected all %d items to be processed in sequential mode, got %d", 
+			t.Errorf("Expected all %d items to be processed in sequential mode, got %d",
 				len(slice), atomic.LoadInt64(&processedCount))
 		}
 	})
 
 	t.Run("Context cancellation behavior in parallel vs sequential", func(t *testing.T) {
 		slice := []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
-		
+
 		// Test parallel execution with early error
 		var parallelProcessed int64
 		parallelOp := func(u uint32) error {
@@ -4979,12 +4979,12 @@ func TestContextCancellation(t *testing.T) {
 			atomic.AddInt64(&parallelProcessed, 1)
 			return nil
 		}
-		
+
 		parallelErr := ExecuteForEachSlice(parallelOp, ParallelExecute())(slice)
 		if parallelErr == nil {
 			t.Errorf("Expected error in parallel execution")
 		}
-		
+
 		// Test sequential execution with same operation
 		var sequentialProcessed int64
 		sequentialOp := func(u uint32) error {
@@ -4994,18 +4994,18 @@ func TestContextCancellation(t *testing.T) {
 			atomic.AddInt64(&sequentialProcessed, 1)
 			return nil
 		}
-		
+
 		sequentialErr := ExecuteForEachSlice(sequentialOp)(slice)
 		if sequentialErr == nil {
 			t.Errorf("Expected error in sequential execution")
 		}
-		
-		t.Logf("Parallel processed: %d, Sequential processed: %d", 
+
+		t.Logf("Parallel processed: %d, Sequential processed: %d",
 			atomic.LoadInt64(&parallelProcessed), atomic.LoadInt64(&sequentialProcessed))
-		
+
 		// Sequential should process exactly 2 items (before hitting error at item 3)
 		if atomic.LoadInt64(&sequentialProcessed) != 2 {
-			t.Errorf("Expected 2 items processed in sequential, got %d", 
+			t.Errorf("Expected 2 items processed in sequential, got %d",
 				atomic.LoadInt64(&sequentialProcessed))
 		}
 	})
@@ -5016,44 +5016,44 @@ func TestContextCancellation(t *testing.T) {
 		for i := 0; i < 50; i++ {
 			slice[i] = uint32(i)
 		}
-		
+
 		var mutex sync.Mutex
 		processOrder := make([]uint32, 0)
-		
+
 		operation := func(u uint32) error {
 			// Add delay to see context cancellation effect
 			time.Sleep(time.Duration(u%5) * time.Millisecond)
-			
+
 			mutex.Lock()
 			processOrder = append(processOrder, u)
 			mutex.Unlock()
-			
+
 			// Fail on specific value to trigger cancellation
 			if u == 25 {
 				return fmt.Errorf("intentional error on value %d", u)
 			}
-			
+
 			return nil
 		}
-		
+
 		err := ExecuteForEachSlice(operation, ParallelExecute())(slice)
-		
+
 		if err == nil {
 			t.Errorf("Expected error from operation")
 		}
-		
+
 		mutex.Lock()
 		processedCount := len(processOrder)
 		mutex.Unlock()
-		
+
 		t.Logf("Processed %d out of %d items before cancellation", processedCount, len(slice))
-		
+
 		// Should have processed less than total due to cancellation
 		if processedCount >= len(slice) {
-			t.Errorf("Expected fewer than %d items to be processed, got %d", 
+			t.Errorf("Expected fewer than %d items to be processed, got %d",
 				len(slice), processedCount)
 		}
-		
+
 		// Should have processed at least some items
 		if processedCount == 0 {
 			t.Errorf("Expected some items to be processed before cancellation")
@@ -5112,7 +5112,7 @@ func TestContextTimeout(t *testing.T) {
 		// Test the race between context timeout and operation completion
 		slice := []uint32{1, 2, 3}
 		var results sync.Map
-		
+
 		// Create context with medium timeout
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Millisecond)
 		defer cancel()
@@ -5120,7 +5120,7 @@ func TestContextTimeout(t *testing.T) {
 		operation := func(u uint32) error {
 			// Variable operation duration to create race conditions
 			duration := time.Duration(u*5) * time.Millisecond
-			
+
 			select {
 			case <-ctx.Done():
 				results.Store(u, "timeout")
@@ -5215,11 +5215,11 @@ func TestContextTimeout(t *testing.T) {
 
 		// Both should have processed very few or no items due to timeout
 		if atomic.LoadInt64(&seqProcessed) > 1 {
-			t.Errorf("Expected at most 1 item processed in sequential due to timeout, got %d", 
+			t.Errorf("Expected at most 1 item processed in sequential due to timeout, got %d",
 				atomic.LoadInt64(&seqProcessed))
 		}
 		if atomic.LoadInt64(&parProcessed) > 0 {
-			t.Errorf("Expected no items processed in parallel due to timeout, got %d", 
+			t.Errorf("Expected no items processed in parallel due to timeout, got %d",
 				atomic.LoadInt64(&parProcessed))
 		}
 	})
@@ -5227,7 +5227,7 @@ func TestContextTimeout(t *testing.T) {
 	t.Run("Context deadline exceeded error handling", func(t *testing.T) {
 		// Test specific handling of context.DeadlineExceeded errors
 		slice := []uint32{1, 2, 3, 4, 5}
-		
+
 		// Create context with very short timeout
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
 		defer cancel()
@@ -5235,7 +5235,7 @@ func TestContextTimeout(t *testing.T) {
 		operation := func(u uint32) error {
 			// Ensure context is already expired
 			time.Sleep(2 * time.Millisecond)
-			
+
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
@@ -5301,7 +5301,7 @@ func TestContextTimeout(t *testing.T) {
 
 		// All started operations should have cleaned up
 		if cleaned != started {
-			t.Errorf("Expected all %d started operations to clean up, only %d cleaned up", 
+			t.Errorf("Expected all %d started operations to clean up, only %d cleaned up",
 				started, cleaned)
 		}
 
@@ -5317,10 +5317,10 @@ func TestContextPropagationProviderChains(t *testing.T) {
 		// Test that context values are accessible through chained Map operations
 		const testKey = "test-key"
 		const testValue = "test-value"
-		
+
 		// Create a context with a value
 		ctx := context.WithValue(context.Background(), testKey, testValue)
-		
+
 		// Create transformers that depend on context values
 		var capturedValues []string
 		transform1 := func(val uint32) (string, error) {
@@ -5329,58 +5329,58 @@ func TestContextPropagationProviderChains(t *testing.T) {
 			capturedValues = append(capturedValues, "transform1")
 			return fmt.Sprintf("t1-%d", val), nil
 		}
-		
+
 		transform2 := func(val string) (string, error) {
 			capturedValues = append(capturedValues, "transform2")
 			return fmt.Sprintf("t2-%s", val), nil
 		}
-		
+
 		// Create chained providers
 		baseProvider := FixedProvider(uint32(42))
 		chain := Map(transform2)(Map(transform1)(baseProvider))
-		
+
 		// Execute the chain - in a context-aware system, transformers would access ctx
 		result, err := chain()
-		
+
 		if err != nil {
 			t.Errorf("Expected no error, got: %v", err)
 		}
-		
+
 		expectedResult := "t2-t1-42"
 		if result != expectedResult {
 			t.Errorf("Expected result %s, got %s", expectedResult, result)
 		}
-		
+
 		// Verify both transformers were called in order
 		expectedCalls := []string{"transform1", "transform2"}
 		if len(capturedValues) != len(expectedCalls) {
 			t.Errorf("Expected %d transform calls, got %d", len(expectedCalls), len(capturedValues))
 		}
-		
+
 		for i, expected := range expectedCalls {
 			if i < len(capturedValues) && capturedValues[i] != expected {
 				t.Errorf("Expected call %d to be %s, got %s", i, expected, capturedValues[i])
 			}
 		}
-		
+
 		// Note: In a full implementation, transformers would access ctx to verify context propagation
 		_ = ctx // Use ctx to avoid unused variable warning
 	})
-	
+
 	t.Run("Context cancellation propagates through SliceMap chain", func(t *testing.T) {
 		// Test that context cancellation affects chained SliceMap operations
 		ctx, cancel := context.WithCancel(context.Background())
-		
+
 		// Create a slice to process
 		input := []uint32{1, 2, 3, 4, 5}
-		
+
 		var stage1Started, stage2Started int64
 		var stage1Cancelled, stage2Cancelled int64
-		
+
 		// First stage transformer that simulates work and checks cancellation
 		transform1 := func(val uint32) (uint32, error) {
 			atomic.AddInt64(&stage1Started, 1)
-			
+
 			// Simulate some work
 			for i := 0; i < 5; i++ {
 				select {
@@ -5393,11 +5393,11 @@ func TestContextPropagationProviderChains(t *testing.T) {
 			}
 			return val * 2, nil
 		}
-		
+
 		// Second stage transformer
 		transform2 := func(val uint32) (uint32, error) {
 			atomic.AddInt64(&stage2Started, 1)
-			
+
 			select {
 			case <-ctx.Done():
 				atomic.AddInt64(&stage2Cancelled, 1)
@@ -5406,58 +5406,58 @@ func TestContextPropagationProviderChains(t *testing.T) {
 				return val + 10, nil
 			}
 		}
-		
+
 		// Create chained SliceMap operations
 		baseProvider := FixedProvider(input)
 		stage1 := SliceMap(transform1)(baseProvider)(ParallelMap())
 		chain := SliceMap(transform2)(stage1)(ParallelMap())
-		
+
 		// Start execution and cancel after a short delay
 		go func() {
 			time.Sleep(5 * time.Millisecond)
 			cancel()
 		}()
-		
+
 		// Execute the chain
 		_, err := chain()
-		
+
 		// Should get cancellation error
 		if err == nil || !errors.Is(err, context.Canceled) {
 			t.Errorf("Expected context.Canceled error, got: %v", err)
 		}
-		
+
 		// At least one stage should have started
 		totalStarted := atomic.LoadInt64(&stage1Started) + atomic.LoadInt64(&stage2Started)
 		if totalStarted == 0 {
 			t.Errorf("Expected at least one operation to start")
 		}
-		
+
 		// Some operations should have been cancelled
 		totalCancelled := atomic.LoadInt64(&stage1Cancelled) + atomic.LoadInt64(&stage2Cancelled)
 		if totalCancelled == 0 {
 			t.Errorf("Expected at least one operation to be cancelled")
 		}
-		
-		t.Logf("Stage1: started=%d, cancelled=%d; Stage2: started=%d, cancelled=%d", 
+
+		t.Logf("Stage1: started=%d, cancelled=%d; Stage2: started=%d, cancelled=%d",
 			atomic.LoadInt64(&stage1Started), atomic.LoadInt64(&stage1Cancelled),
 			atomic.LoadInt64(&stage2Started), atomic.LoadInt64(&stage2Cancelled))
 	})
-	
+
 	t.Run("Context deadline propagates through mixed provider chains", func(t *testing.T) {
 		// Test context deadline propagation through Map and SliceMap combinations
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		defer cancel()
-		
+
 		var operationCount int64
 		var timeoutCount int64
-		
+
 		// Transform that simulates variable duration work
 		slowTransform := func(val uint32) (uint32, error) {
 			atomic.AddInt64(&operationCount, 1)
-			
+
 			// Variable duration based on value to create deadline race conditions
 			duration := time.Duration(val*3) * time.Millisecond
-			
+
 			select {
 			case <-time.After(duration):
 				return val * 2, nil
@@ -5466,13 +5466,13 @@ func TestContextPropagationProviderChains(t *testing.T) {
 				return 0, ctx.Err()
 			}
 		}
-		
+
 		// Single value transform for Map
 		singleTransform := func(slice []uint32) (uint32, error) {
 			if len(slice) == 0 {
 				return 0, errors.New("empty slice")
 			}
-			
+
 			select {
 			case <-ctx.Done():
 				return 0, ctx.Err()
@@ -5480,51 +5480,51 @@ func TestContextPropagationProviderChains(t *testing.T) {
 				return slice[0], nil
 			}
 		}
-		
+
 		// Create complex chain: SliceMap -> Map
 		input := []uint32{1, 2, 3, 4, 5, 6, 7, 8}
 		baseProvider := FixedProvider(input)
 		sliceMapStage := SliceMap(slowTransform)(baseProvider)(ParallelMap())
 		mapStage := Map(singleTransform)(sliceMapStage)
-		
+
 		// Execute the chain
 		_, err := mapStage()
-		
+
 		// Should get a timeout-related error
 		if err == nil {
 			t.Errorf("Expected timeout error, got no error")
 		} else if !errors.Is(err, context.DeadlineExceeded) && !errors.Is(err, context.Canceled) {
 			t.Errorf("Expected timeout or cancellation error, got: %v", err)
 		}
-		
+
 		operations := atomic.LoadInt64(&operationCount)
 		timeouts := atomic.LoadInt64(&timeoutCount)
-		
+
 		t.Logf("Operations started: %d, Timeouts: %d", operations, timeouts)
-		
+
 		// Some operations should have started
 		if operations == 0 {
 			t.Errorf("Expected at least some operations to start")
 		}
-		
+
 		// Should have hit timeout for some operations due to parallel execution
 		if timeouts == 0 && operations >= int64(len(input)) {
 			// Only expect timeouts if we had enough operations running
 			t.Errorf("Expected at least some operations to timeout with deadline of 10ms")
 		}
 	})
-	
+
 	t.Run("Context cancellation in nested provider chains", func(t *testing.T) {
 		// Test deeply nested provider chains with cancellation
 		ctx, cancel := context.WithCancel(context.Background())
-		
+
 		var depth1Calls, depth2Calls, depth3Calls int64
 		var depth1Cancelled, depth2Cancelled, depth3Cancelled int64
-		
+
 		// Create three levels of transforms with longer delays to ensure cancellation
 		depth1Transform := func(val uint32) (uint32, error) {
 			atomic.AddInt64(&depth1Calls, 1)
-			
+
 			// Longer delay to increase chance of cancellation
 			for i := 0; i < 10; i++ {
 				select {
@@ -5537,10 +5537,10 @@ func TestContextPropagationProviderChains(t *testing.T) {
 			}
 			return val + 1, nil
 		}
-		
+
 		depth2Transform := func(val uint32) (uint32, error) {
 			atomic.AddInt64(&depth2Calls, 1)
-			
+
 			// Check cancellation with delay
 			for i := 0; i < 5; i++ {
 				select {
@@ -5553,10 +5553,10 @@ func TestContextPropagationProviderChains(t *testing.T) {
 			}
 			return val * 2, nil
 		}
-		
+
 		depth3Transform := func(slice []uint32) ([]uint32, error) {
 			atomic.AddInt64(&depth3Calls, 1)
-			
+
 			select {
 			case <-ctx.Done():
 				atomic.AddInt64(&depth3Cancelled, 1)
@@ -5570,48 +5570,48 @@ func TestContextPropagationProviderChains(t *testing.T) {
 				return result, nil
 			}
 		}
-		
+
 		// Create deeply nested chain with larger input to increase processing time
 		input := []uint32{1, 2, 3, 4, 5, 6, 7, 8}
 		baseProvider := FixedProvider(input)
-		
+
 		// Chain: SliceMap -> SliceMap -> Map
 		level1 := SliceMap(depth1Transform)(baseProvider)(ParallelMap())
 		level2 := SliceMap(depth2Transform)(level1)(ParallelMap())
 		level3 := Map(depth3Transform)(level2)
-		
+
 		// Start execution and cancel after very short delay
 		go func() {
 			time.Sleep(3 * time.Millisecond)
 			cancel()
 		}()
-		
+
 		// Execute the nested chain
 		_, err := level3()
-		
+
 		// Should get cancellation error
 		if err == nil || !errors.Is(err, context.Canceled) {
 			t.Errorf("Expected context.Canceled error, got: %v", err)
 		}
-		
+
 		// Log call counts for debugging
-		t.Logf("Depth1: calls=%d, cancelled=%d", 
+		t.Logf("Depth1: calls=%d, cancelled=%d",
 			atomic.LoadInt64(&depth1Calls), atomic.LoadInt64(&depth1Cancelled))
-		t.Logf("Depth2: calls=%d, cancelled=%d", 
+		t.Logf("Depth2: calls=%d, cancelled=%d",
 			atomic.LoadInt64(&depth2Calls), atomic.LoadInt64(&depth2Cancelled))
-		t.Logf("Depth3: calls=%d, cancelled=%d", 
+		t.Logf("Depth3: calls=%d, cancelled=%d",
 			atomic.LoadInt64(&depth3Calls), atomic.LoadInt64(&depth3Cancelled))
-		
+
 		// At least some operations should have been called
 		totalCalls := atomic.LoadInt64(&depth1Calls) + atomic.LoadInt64(&depth2Calls) + atomic.LoadInt64(&depth3Calls)
 		if totalCalls == 0 {
 			t.Errorf("Expected at least some operations to be called in nested chain")
 		}
-		
+
 		// Some operations should have been cancelled (relaxed assertion)
 		totalCancelled := atomic.LoadInt64(&depth1Cancelled) + atomic.LoadInt64(&depth2Cancelled) + atomic.LoadInt64(&depth3Cancelled)
 		t.Logf("Total calls: %d, Total cancelled: %d", totalCalls, totalCancelled)
-		
+
 		// The test passes if we get cancellation error - the specific cancellation counts
 		// may vary due to timing, but the error propagation is what we're testing
 	})
@@ -5641,7 +5641,7 @@ func TestInvalidContextHandling(t *testing.T) {
 	t.Run("Already expired context behavior", func(t *testing.T) {
 		// Test behavior with context that expires immediately
 		ctx, cancel := context.WithTimeout(context.Background(), 0) // Expires immediately
-		cancel() // Ensure it's cancelled
+		cancel()                                                    // Ensure it's cancelled
 
 		slice := []uint32{1, 2, 3, 4, 5}
 		operationCount := int64(0)
@@ -7984,7 +7984,7 @@ func TestGoroutineCleanup(t *testing.T) {
 
 	t.Run("ParallelMap with successful execution", func(t *testing.T) {
 		// Get baseline goroutine count
-		runtime.GC() // Force GC to clean up any lingering goroutines
+		runtime.GC()                      // Force GC to clean up any lingering goroutines
 		time.Sleep(10 * time.Millisecond) // Brief pause for cleanup
 		initialGoroutines := runtime.NumGoroutine()
 
@@ -8031,7 +8031,7 @@ func TestGoroutineCleanup(t *testing.T) {
 		provider := FixedProvider(data)
 		transformer := func(n uint32) (uint32, error) {
 			time.Sleep(2 * time.Millisecond) // Delay to ensure goroutines are active
-			if n == 10 { // Error on a specific value
+			if n == 10 {                     // Error on a specific value
 				return 0, fmt.Errorf("test error") // Return error instead of panic
 			}
 			return n * 2, nil
@@ -8221,7 +8221,7 @@ func TestCollapseProvider(t *testing.T) {
 		})
 
 		_, err := collapsed(42)
-		if err != testError {
+		if !errors.Is(err, testError) {
 			t.Errorf("Expected test error, got: %v", err)
 		}
 	})
@@ -8251,7 +8251,7 @@ func TestLiftToProvider(t *testing.T) {
 
 		provider := lifted(456)
 		_, err := provider()
-		if err != testError {
+		if !errors.Is(err, testError) {
 			t.Errorf("Expected function error, got: %v", err)
 		}
 	})
@@ -8455,7 +8455,7 @@ func TestFor(t *testing.T) {
 		}
 
 		err := For(provider, operator)
-		if err != testError {
+		if !errors.Is(err, testError) {
 			t.Errorf("Expected provider error, got: %v", err)
 		}
 	})
@@ -8468,7 +8468,7 @@ func TestFor(t *testing.T) {
 		}
 
 		err := For(provider, operator)
-		if err != operatorError {
+		if !errors.Is(err, operatorError) {
 			t.Errorf("Expected operator error, got: %v", err)
 		}
 	})

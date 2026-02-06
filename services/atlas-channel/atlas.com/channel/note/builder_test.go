@@ -2,6 +2,7 @@ package note_test
 
 import (
 	"atlas-channel/note"
+	"errors"
 	"testing"
 	"time"
 )
@@ -43,7 +44,7 @@ func TestBuild_MissingId(t *testing.T) {
 		SetCharacterId(100).
 		Build()
 
-	if err != note.ErrInvalidId {
+	if !errors.Is(err, note.ErrInvalidId) {
 		t.Errorf("Build() error = %v, want ErrInvalidId", err)
 	}
 }

@@ -1,8 +1,9 @@
 package saga
 
 import (
-	"github.com/google/uuid"
 	"sync"
+
+	"github.com/google/uuid"
 )
 
 // Cache is an interface for a saga cache

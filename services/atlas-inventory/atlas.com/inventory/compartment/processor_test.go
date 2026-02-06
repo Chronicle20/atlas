@@ -8,6 +8,9 @@ import (
 	"atlas-inventory/kafka/message"
 	"atlas-inventory/stackable"
 	"context"
+	"testing"
+	"time"
+
 	"github.com/Chronicle20/atlas-constants/inventory"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -15,8 +18,6 @@ import (
 	"github.com/sirupsen/logrus/hooks/test"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"testing"
-	"time"
 )
 
 func testDatabase(t *testing.T) *gorm.DB {

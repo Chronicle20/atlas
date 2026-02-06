@@ -95,6 +95,15 @@ type StartQuestPayload struct {
 	NpcId       uint32   `json:"npcId"`
 }
 
+// StartInstanceTransportPayload represents the payload required to start an instance-based transport.
+// This is a synchronous REST call to atlas-transports service.
+type StartInstanceTransportPayload struct {
+	CharacterId uint32     `json:"characterId"`
+	WorldId     world.Id   `json:"worldId"`
+	ChannelId   channel.Id `json:"channelId"`
+	RouteName   string     `json:"routeName"` // Route name (resolved to UUID at runtime by saga-orchestrator)
+}
+
 // Re-export constants from atlas-script-core/saga
 const (
 	// Saga types
@@ -146,6 +155,9 @@ const (
 	ShowIntro     Action = "show_intro"
 	SetHP         Action = "set_hp"
 	ResetStats    Action = "reset_stats"
+
+	// Transport actions
+	StartInstanceTransport Action = "start_instance_transport"
 )
 
 // ValidateCharacterStatePayload uses the NPC service's validation.ConditionInput

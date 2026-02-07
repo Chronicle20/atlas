@@ -844,7 +844,6 @@ func (p *ProcessorImpl) processGachaponActionState(ctx ConversationContext, stat
 	selectPayload := saga.SelectGachaponRewardPayload{
 		CharacterId: ctx.CharacterId(),
 		WorldId:     ctx.Field().WorldId(),
-		ChannelId:   ctx.Field().ChannelId(),
 		GachaponId:  gachaponAction.GachaponId(),
 	}
 	sagaBuilder.AddStep("select_gachapon_reward", saga.Pending, saga.SelectGachaponReward, selectPayload)

@@ -56,7 +56,6 @@ This document tracks planned features and improvements for the Atlas MapleStory 
 - [ ] NPC producer NpcId population (`npc/producer.go:30,45`)
 - [ ] NPC shop commodities model incomplete (`npc/shops/commodities/model.go:69`)
 - [ ] Cash shop open loop issue (`socket/writer/cash_shop_open.go:79`)
-- [ ] Storage slots in cash shop operation (`socket/writer/cash_shop_operation.go:92`)
 - [ ] Cash shop operation padded string (`socket/writer/cash_shop_operation.go:117,119,120`)
 - [ ] Guild operation byte value (`socket/writer/guild_operation.go:93`)
 - [ ] Buddy operation shop flag (`socket/writer/buddy_operation.go:118`)

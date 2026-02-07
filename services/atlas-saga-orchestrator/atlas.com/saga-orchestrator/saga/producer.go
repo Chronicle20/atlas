@@ -1,6 +1,7 @@
 package saga
 
 import (
+	"atlas-saga-orchestrator/kafka/message/gachapon"
 	"atlas-saga-orchestrator/kafka/message/saga"
 
 	"github.com/Chronicle20/atlas-kafka/producer"
@@ -31,6 +32,21 @@ func FailedStatusEventProvider(transactionId uuid.UUID, characterId uint32, saga
 			SagaType:    sagaType,
 			ErrorCode:   errorCode,
 		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func GachaponRewardWonEventProvider(payload EmitGachaponWinPayload) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(payload.CharacterId))
+	value := &gachapon.RewardWonEvent{
+		CharacterId:   payload.CharacterId,
+		CharacterName: payload.CharacterName,
+		WorldId:       byte(payload.WorldId),
+		ItemId:        payload.ItemId,
+		Quantity:      payload.Quantity,
+		Tier:          payload.Tier,
+		GachaponId:    payload.GachaponId,
+		GachaponName:  payload.GachaponName,
 	}
 	return producer.SingleMessageProvider(key, value)
 }

@@ -27,6 +27,7 @@ use (
 	./services/atlas-equipables/atlas.com/equipables
 	./services/atlas-expressions/atlas.com/expressions
 	./services/atlas-fame/atlas.com/fame
+	./services/atlas-gachapons/atlas.com/gachapons
 	./services/atlas-families/atlas.com/family
 	./services/atlas-guilds/atlas.com/guilds
 	./services/atlas-inventory/atlas.com/inventory

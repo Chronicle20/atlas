@@ -166,6 +166,14 @@
       "docker_context": "."
     },
     {
+      "name": "atlas-gachapons",
+      "type": "go-service",
+      "path": "services/atlas-gachapons",
+      "module_path": "services/atlas-gachapons/atlas.com/gachapons",
+      "docker_image": "ghcr.io/chronicle20/atlas-gachapons/atlas-gachapons",
+      "docker_context": "."
+    },
+    {
       "name": "atlas-guilds",
       "type": "go-service",
       "path": "services/atlas-guilds",

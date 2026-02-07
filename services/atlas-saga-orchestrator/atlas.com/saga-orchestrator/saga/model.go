@@ -28,6 +28,7 @@ const (
 	CharacterCreation    Type = "character_creation"
 	StorageOperation     Type = "storage_operation"
 	CharacterRespawn     Type = "character_respawn"
+	GachaponTransaction  Type = "gachapon_transaction"
 )
 
 // Saga represents the entire saga transaction.
@@ -443,6 +444,10 @@ const (
 	// Saved location actions
 	SaveLocation            Action = "save_location"              // Save character's current location for later return
 	WarpToSavedLocation     Action = "warp_to_saved_location"     // Warp character to a previously saved location and delete it
+
+	// Gachapon actions
+	SelectGachaponReward    Action = "select_gachapon_reward"     // Select a random reward from a gachapon machine
+	EmitGachaponWin         Action = "emit_gachapon_win"          // Emit gachapon win event for announcements (uncommon/rare only)
 )
 
 // Step represents a single step within a saga.
@@ -1167,6 +1172,28 @@ type WarpToSavedLocationPayload struct {
 	LocationType string     `json:"locationType"` // Location type key to retrieve and delete
 }
 
+// SelectGachaponRewardPayload represents the payload required to select a random reward from a gachapon.
+type SelectGachaponRewardPayload struct {
+	CharacterId   uint32     `json:"characterId"`   // CharacterId associated with the action
+	CharacterName string     `json:"characterName"` // Character name for announcement
+	WorldId       world.Id   `json:"worldId"`       // WorldId associated with the action
+	ChannelId     channel.Id `json:"channelId"`     // ChannelId associated with the action
+	GachaponId    string     `json:"gachaponId"`    // Gachapon machine ID to select from
+}
+
+// EmitGachaponWinPayload represents the payload required to emit a gachapon win event.
+type EmitGachaponWinPayload struct {
+	CharacterId   uint32     `json:"characterId"`   // CharacterId who won
+	CharacterName string     `json:"characterName"` // Character name for announcement
+	WorldId       world.Id   `json:"worldId"`       // WorldId for broadcasting
+	ChannelId     channel.Id `json:"channelId"`     // ChannelId for broadcasting
+	ItemId        uint32     `json:"itemId"`        // Won item ID
+	Quantity      uint32     `json:"quantity"`       // Won item quantity
+	Tier          string     `json:"tier"`          // Reward tier (uncommon, rare)
+	GachaponId    string     `json:"gachaponId"`    // Gachapon machine ID
+	GachaponName  string     `json:"gachaponName"`  // Gachapon display name
+}
+
 // Custom UnmarshalJSON for Step[T] to handle the generics
 func (s *Step[T]) UnmarshalJSON(data []byte) error {
 	// First unmarshal to get the action type
@@ -1547,6 +1574,18 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case WarpToSavedLocation:
 		var payload WarpToSavedLocationPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case SelectGachaponReward:
+		var payload SelectGachaponRewardPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case EmitGachaponWin:
+		var payload EmitGachaponWinPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

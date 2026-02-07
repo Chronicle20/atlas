@@ -21,6 +21,7 @@ import (
 	"atlas-channel/kafka/consumer/drop"
 	"atlas-channel/kafka/consumer/expression"
 	"atlas-channel/kafka/consumer/fame"
+	"atlas-channel/kafka/consumer/gachapon"
 	"atlas-channel/kafka/consumer/guild"
 	"atlas-channel/kafka/consumer/guild/thread"
 	instance_transport "atlas-channel/kafka/consumer/instance_transport"
@@ -131,6 +132,7 @@ func main() {
 	instance_transport.InitConsumers(l)(cmf)(consumerGroupId)
 	saga.InitConsumers(l)(cmf)(consumerGroupId)
 	storage3.InitConsumers(l)(cmf)(consumerGroupId)
+	gachapon.InitConsumers(l)(cmf)(consumerGroupId)
 
 	sctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(tdm.Context(), "startup")
 
@@ -208,6 +210,7 @@ func main() {
 				instance_transport.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				saga.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				storage3.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				gachapon.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 
 				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(tenantConfig.Socket.Handlers, validatorMap, handlerMap)
 				socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, sc, ten.IPAddress, c.Port)

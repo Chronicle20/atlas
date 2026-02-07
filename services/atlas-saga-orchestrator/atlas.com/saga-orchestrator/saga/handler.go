@@ -9,8 +9,10 @@ import (
 	"atlas-saga-orchestrator/consumable"
 	"atlas-saga-orchestrator/data/foothold"
 	"atlas-saga-orchestrator/data/portal"
+	"atlas-saga-orchestrator/gachapon"
 	"atlas-saga-orchestrator/guild"
 	"atlas-saga-orchestrator/invite"
+	gachapon2 "atlas-saga-orchestrator/kafka/message/gachapon"
 	character2 "atlas-saga-orchestrator/kafka/message/character"
 	saga2 "atlas-saga-orchestrator/kafka/message/saga"
 	storage2 "atlas-saga-orchestrator/kafka/message/storage"
@@ -60,6 +62,7 @@ type Handler interface {
 	WithBuffProcessor(buff.Processor) Handler
 	WithTransportProcessor(transport.Processor) Handler
 	WithSavedLocationProcessor(saved_location.Processor) Handler
+	WithGachaponProcessor(gachapon.Processor) Handler
 
 	GetHandler(action Action) (ActionHandler, bool)
 
@@ -125,6 +128,8 @@ type Handler interface {
 	handleStartInstanceTransport(s Saga, st Step[any]) error
 	handleSaveLocation(s Saga, st Step[any]) error
 	handleWarpToSavedLocation(s Saga, st Step[any]) error
+	handleSelectGachaponReward(s Saga, st Step[any]) error
+	handleEmitGachaponWin(s Saga, st Step[any]) error
 }
 
 type HandlerImpl struct {
@@ -152,6 +157,7 @@ type HandlerImpl struct {
 	buffP           buff.Processor
 	transportP      transport.Processor
 	savedLocationP  saved_location.Processor
+	gachaponP       gachapon.Processor
 }
 
 func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
@@ -179,6 +185,7 @@ func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
 		buffP:           buff.NewProcessor(l, ctx),
 		transportP:      transport.NewProcessor(l, ctx),
 		savedLocationP:  saved_location.NewProcessor(l, ctx),
+		gachaponP:       gachapon.NewProcessor(l, ctx),
 	}
 }
 
@@ -573,6 +580,35 @@ func (h *HandlerImpl) WithSavedLocationProcessor(savedLocationP saved_location.P
 		buffP:          h.buffP,
 		transportP:     h.transportP,
 		savedLocationP: savedLocationP,
+		gachaponP:      h.gachaponP,
+	}
+}
+
+func (h *HandlerImpl) WithGachaponProcessor(gachaponP gachapon.Processor) Handler {
+	return &HandlerImpl{
+		l:              h.l,
+		ctx:            h.ctx,
+		t:              h.t,
+		charP:          h.charP,
+		compP:          h.compP,
+		skillP:         h.skillP,
+		validP:         h.validP,
+		guildP:         h.guildP,
+		inviteP:        h.inviteP,
+		buddyListP:     h.buddyListP,
+		petP:           h.petP,
+		footholdP:      h.footholdP,
+		monsterP:       h.monsterP,
+		consumableP:    h.consumableP,
+		portalP:        h.portalP,
+		cashshopP:      h.cashshopP,
+		systemMessageP: h.systemMessageP,
+		questP:         h.questP,
+		storageP:       h.storageP,
+		buffP:          h.buffP,
+		transportP:     h.transportP,
+		savedLocationP: h.savedLocationP,
+		gachaponP:      gachaponP,
 	}
 }
 
@@ -705,6 +741,10 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleSaveLocation, true
 	case WarpToSavedLocation:
 		return h.handleWarpToSavedLocation, true
+	case SelectGachaponReward:
+		return h.handleSelectGachaponReward, true
+	case EmitGachaponWin:
+		return h.handleEmitGachaponWin, true
 	}
 	return nil, false
 }
@@ -2119,6 +2159,132 @@ func (h *HandlerImpl) handleWarpToSavedLocation(s Saga, st Step[any]) error {
 
 	// DELETE the saved location
 	_ = h.savedLocationP.Delete(payload.CharacterId, payload.LocationType)
+
+	return nil
+}
+
+func (h *HandlerImpl) handleSelectGachaponReward(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(SelectGachaponRewardPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"character_id":   payload.CharacterId,
+		"gachapon_id":    payload.GachaponId,
+	}).Debug("Selecting gachapon reward")
+
+	reward, err := h.gachaponP.SelectReward(payload.GachaponId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to select gachapon reward.")
+		return err
+	}
+
+	// Look up gachapon name for announcements
+	g, err := h.gachaponP.GetGachapon(payload.GachaponId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to get gachapon info.")
+		return err
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"character_id":   payload.CharacterId,
+		"gachapon_id":    payload.GachaponId,
+		"item_id":        reward.ItemId,
+		"quantity":       reward.Quantity,
+		"tier":           reward.Tier,
+	}).Infof("Gachapon reward selected.")
+
+	// Dynamically add AwardInventory step for the won item
+	awardStep := NewStep[any](
+		fmt.Sprintf("award_gachapon_%s", st.StepId()),
+		Pending,
+		AwardAsset,
+		AwardItemActionPayload{
+			CharacterId: payload.CharacterId,
+			Item: ItemPayload{
+				TemplateId: reward.ItemId,
+				Quantity:   reward.Quantity,
+			},
+		},
+	)
+
+	currentIndex := -1
+	for i, step := range s.Steps() {
+		if step.StepId() == st.StepId() {
+			currentIndex = i
+			break
+		}
+	}
+
+	updatedSaga, err := s.WithStepAfterIndex(currentIndex, awardStep)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to add award step to saga.")
+		return err
+	}
+
+	// If uncommon or rare, also add EmitGachaponWin step
+	if reward.Tier == "uncommon" || reward.Tier == "rare" {
+		emitStep := NewStep[any](
+			fmt.Sprintf("emit_gachapon_%s", st.StepId()),
+			Pending,
+			EmitGachaponWin,
+			EmitGachaponWinPayload{
+				CharacterId:   payload.CharacterId,
+				CharacterName: payload.CharacterName,
+				WorldId:       payload.WorldId,
+				ChannelId:     payload.ChannelId,
+				ItemId:        reward.ItemId,
+				Quantity:      reward.Quantity,
+				Tier:          reward.Tier,
+				GachaponId:    payload.GachaponId,
+				GachaponName:  g.Name,
+			},
+		)
+
+		updatedSaga, err = updatedSaga.WithStepAfterIndex(currentIndex+1, emitStep)
+		if err != nil {
+			h.logActionError(s, st, err, "Unable to add emit step to saga.")
+			return err
+		}
+	}
+
+	// Update the saga in cache with the new steps
+	GetCache().Put(h.t.Id(), updatedSaga)
+
+	// Mark current step as complete
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
+func (h *HandlerImpl) handleEmitGachaponWin(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(EmitGachaponWinPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id":  s.TransactionId().String(),
+		"character_id":    payload.CharacterId,
+		"character_name":  payload.CharacterName,
+		"item_id":         payload.ItemId,
+		"tier":            payload.Tier,
+		"gachapon_id":     payload.GachaponId,
+		"gachapon_name":   payload.GachaponName,
+	}).Infof("Emitting gachapon win event.")
+
+	err := producer.ProviderImpl(h.l)(h.ctx)(gachapon2.EnvEventTopicGachaponRewardWon)(
+		GachaponRewardWonEventProvider(payload))
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to emit gachapon win event.")
+		return err
+	}
+
+	// This is fire-and-forget - mark as complete immediately
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
 
 	return nil
 }

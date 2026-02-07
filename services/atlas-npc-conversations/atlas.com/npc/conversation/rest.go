@@ -16,6 +16,7 @@ type RestStateModel struct {
 	GenericAction   *RestGenericActionModel    `json:"genericAction,omitempty"`   // Generic action model (if type is genericAction)
 	CraftAction     *RestCraftActionModel      `json:"craftAction,omitempty"`     // Craft action model (if type is craftAction)
 	TransportAction *RestTransportActionModel  `json:"transportAction,omitempty"` // Transport action model (if type is transportAction)
+	GachaponAction  *RestGachaponActionModel  `json:"gachaponAction,omitempty"`  // Gachapon action model (if type is gachaponAction)
 	ListSelection *RestListSelectionModel `json:"listSelection,omitempty"` // List selection model (if type is listSelection)
 	AskNumber     *RestAskNumberModel    `json:"askNumber,omitempty"`     // Ask number model (if type is askNumber)
 	AskStyle                   *RestAskStyleModel                   `json:"askStyle,omitempty"`                   // Ask style model (if type is askStyle)
@@ -135,6 +136,12 @@ type RestTransportActionModel struct {
 	AlreadyInTransitState string `json:"alreadyInTransitState,omitempty"` // State when character is already in transit
 	RouteNotFoundState    string `json:"routeNotFoundState,omitempty"`    // State when route doesn't exist
 	ServiceErrorState     string `json:"serviceErrorState,omitempty"`     // State when transport service fails
+}
+
+type RestGachaponActionModel struct {
+	GachaponId   string `json:"gachaponId"`   // Gachapon machine ID
+	TicketItemId uint32 `json:"ticketItemId"` // Ticket item ID to consume
+	FailureState string `json:"failureState"` // General failure state
 }
 
 // RestListSelectionModel represents the REST model for list selection states
@@ -271,6 +278,12 @@ func TransformState(m StateModel) (RestStateModel, error) {
 		if transportAction != nil {
 			restTransportAction := TransformTransportAction(*transportAction)
 			restState.TransportAction = &restTransportAction
+		}
+	case GachaponActionType:
+		gachaponAction := m.GachaponAction()
+		if gachaponAction != nil {
+			restGachaponAction := TransformGachaponAction(*gachaponAction)
+			restState.GachaponAction = &restGachaponAction
 		}
 	case ListSelectionType:
 		listSelection := m.ListSelection()
@@ -514,6 +527,15 @@ func ExtractState(r RestStateModel) (StateModel, error) {
 			return StateModel{}, err
 		}
 		stateBuilder.SetTransportAction(transportAction)
+	case GachaponActionType:
+		if r.GachaponAction == nil {
+			return StateModel{}, fmt.Errorf("gachaponAction is required for gachaponAction state")
+		}
+		gachaponAction, err := ExtractGachaponAction(*r.GachaponAction)
+		if err != nil {
+			return StateModel{}, err
+		}
+		stateBuilder.SetGachaponAction(gachaponAction)
 	case ListSelectionType:
 		if r.ListSelection == nil {
 			return StateModel{}, fmt.Errorf("listSelection is required for listSelection state")
@@ -690,6 +712,22 @@ func ExtractTransportAction(r RestTransportActionModel) (*TransportActionModel, 
 		SetServiceErrorState(r.ServiceErrorState)
 
 	return transportActionBuilder.Build()
+}
+
+func TransformGachaponAction(m GachaponActionModel) RestGachaponActionModel {
+	return RestGachaponActionModel{
+		GachaponId:   m.GachaponId(),
+		TicketItemId: m.TicketItemId(),
+		FailureState: m.FailureState(),
+	}
+}
+
+func ExtractGachaponAction(r RestGachaponActionModel) (*GachaponActionModel, error) {
+	return NewGachaponActionBuilder().
+		SetGachaponId(r.GachaponId).
+		SetTicketItemId(r.TicketItemId).
+		SetFailureState(r.FailureState).
+		Build()
 }
 
 // ExtractListSelection converts a RestListSelectionModel to a ListSelectionModel

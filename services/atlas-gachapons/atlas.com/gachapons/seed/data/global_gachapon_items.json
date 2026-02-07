@@ -1,0 +1,23 @@
+[
+  {"itemId": 5220000, "quantity": 1, "tier": "rare"},
+  {"itemId": 5221000, "quantity": 1, "tier": "rare"},
+  {"itemId": 5200000, "quantity": 1, "tier": "uncommon"},
+  {"itemId": 5200001, "quantity": 1, "tier": "uncommon"},
+  {"itemId": 5200002, "quantity": 1, "tier": "uncommon"},
+  {"itemId": 2022179, "quantity": 10, "tier": "common"},
+  {"itemId": 2022245, "quantity": 10, "tier": "common"},
+  {"itemId": 2022282, "quantity": 10, "tier": "common"},
+  {"itemId": 2040000, "quantity": 1, "tier": "uncommon"},
+  {"itemId": 2040001, "quantity": 1, "tier": "uncommon"},
+  {"itemId": 2040002, "quantity": 1, "tier": "uncommon"},
+  {"itemId": 2040100, "quantity": 1, "tier": "uncommon"},
+  {"itemId": 2040200, "quantity": 1, "tier": "uncommon"},
+  {"itemId": 2040300, "quantity": 1, "tier": "uncommon"},
+  {"itemId": 2040400, "quantity": 1, "tier": "uncommon"},
+  {"itemId": 2040500, "quantity": 1, "tier": "uncommon"},
+  {"itemId": 2044000, "quantity": 1, "tier": "rare"},
+  {"itemId": 2044100, "quantity": 1, "tier": "rare"},
+  {"itemId": 2044200, "quantity": 1, "tier": "rare"},
+  {"itemId": 2044300, "quantity": 1, "tier": "rare"},
+  {"itemId": 2044400, "quantity": 1, "tier": "rare"}
+]

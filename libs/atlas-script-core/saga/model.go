@@ -18,9 +18,10 @@ type Type string
 
 // Constants for different saga types
 const (
-	InventoryTransaction Type = "inventory_transaction"
-	QuestReward          Type = "quest_reward"
-	TradeTransaction     Type = "trade_transaction"
+	InventoryTransaction   Type = "inventory_transaction"
+	QuestReward            Type = "quest_reward"
+	TradeTransaction       Type = "trade_transaction"
+	GachaponTransaction    Type = "gachapon_transaction"
 )
 
 // Saga represents the entire saga transaction.
@@ -138,6 +139,10 @@ const (
 	// Saved location actions
 	SaveLocation        Action = "save_location"
 	WarpToSavedLocation Action = "warp_to_saved_location"
+
+	// Gachapon actions
+	SelectGachaponReward Action = "select_gachapon_reward"
+	EmitGachaponWin      Action = "emit_gachapon_win"
 )
 
 // Step represents a single step within a saga.
@@ -750,11 +755,48 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}
 		s.Payload = any(payload).(T)
+	case SelectGachaponReward:
+		var payload SelectGachaponRewardPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case EmitGachaponWin:
+		var payload EmitGachaponWinPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
 	default:
 		return fmt.Errorf("unknown action: %s", s.Action)
 	}
 
 	return nil
+}
+
+// SelectGachaponRewardPayload represents the payload required to select a random reward from a gachapon.
+// The saga orchestrator will call atlas-gachapons to select a reward, then store the result
+// in the saga context for subsequent AwardInventory and EmitGachaponWin steps.
+type SelectGachaponRewardPayload struct {
+	CharacterId   uint32     `json:"characterId"`   // CharacterId associated with the action
+	CharacterName string     `json:"characterName"` // Character name for announcement
+	WorldId       world.Id   `json:"worldId"`       // WorldId associated with the action
+	ChannelId     channel.Id `json:"channelId"`     // ChannelId associated with the action
+	GachaponId    string     `json:"gachaponId"`    // Gachapon machine ID to select from
+}
+
+// EmitGachaponWinPayload represents the payload required to emit a gachapon win event.
+// Only emitted for uncommon and rare tier wins.
+type EmitGachaponWinPayload struct {
+	CharacterId   uint32     `json:"characterId"`   // CharacterId who won
+	CharacterName string     `json:"characterName"` // Character name for announcement
+	WorldId       world.Id   `json:"worldId"`       // WorldId for broadcasting
+	ChannelId     channel.Id `json:"channelId"`     // ChannelId for broadcasting
+	ItemId        uint32     `json:"itemId"`        // Won item ID
+	Quantity      uint32     `json:"quantity"`       // Won item quantity
+	Tier          string     `json:"tier"`          // Reward tier (uncommon, rare)
+	GachaponId    string     `json:"gachaponId"`    // Gachapon machine ID
+	GachaponName  string     `json:"gachaponName"`  // Gachapon display name
 }
 
 // Processor is the interface for saga operations

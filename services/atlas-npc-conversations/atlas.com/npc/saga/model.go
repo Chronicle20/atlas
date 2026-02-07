@@ -52,6 +52,9 @@ type (
 	// Saved location payload types
 	SaveLocationPayload        = scriptsaga.SaveLocationPayload
 	WarpToSavedLocationPayload = scriptsaga.WarpToSavedLocationPayload
+
+	// Gachapon payload types
+	SelectGachaponRewardPayload = scriptsaga.SelectGachaponRewardPayload
 )
 
 // ShowGuideHintPayload represents the payload required to show a pre-defined guide hint by ID.
@@ -114,6 +117,7 @@ const (
 	InventoryTransaction = scriptsaga.InventoryTransaction
 	QuestReward          = scriptsaga.QuestReward
 	TradeTransaction     = scriptsaga.TradeTransaction
+	GachaponTransaction  = scriptsaga.GachaponTransaction
 
 	// Status constants
 	Pending   = scriptsaga.Pending
@@ -162,6 +166,9 @@ const (
 
 	// Transport actions
 	StartInstanceTransport Action = "start_instance_transport"
+
+	// Gachapon actions
+	SelectGachaponReward = scriptsaga.SelectGachaponReward
 
 	// Saved location actions
 	SaveLocation        = scriptsaga.SaveLocation

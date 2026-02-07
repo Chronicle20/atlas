@@ -81,15 +81,15 @@ const (
 
 )
 
-func CashShopCashInventoryBody(l logrus.FieldLogger) func(a account.Model, characterId uint32, assets []asset.Model) BodyProducer {
-	return func(a account.Model, characterId uint32, assets []asset.Model) BodyProducer {
+func CashShopCashInventoryBody(l logrus.FieldLogger) func(a account.Model, characterId uint32, assets []asset.Model, storageSlots uint16) BodyProducer {
+	return func(a account.Model, characterId uint32, assets []asset.Model, storageSlots uint16) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(getCashShopOperation(l)(options, CashShopOperationLoadInventorySuccess))
 			w.WriteShort(uint16(len(assets)))
 			for _, i := range assets {
 				_ = WriteCashInventoryItem(a.Id(), characterId, i)(w)
 			}
-			w.WriteShort(0) // TODO storage slots
+			w.WriteShort(storageSlots)
 			w.WriteInt16(a.CharacterSlots())
 			return w.Bytes()
 		}

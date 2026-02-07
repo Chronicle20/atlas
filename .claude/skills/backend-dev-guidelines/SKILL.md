@@ -162,6 +162,7 @@ See [Testing Conventions](resources/testing-guide.md) for comprehensive testing 
 | Multi-Tenancy Context | [resources/patterns-multitenancy-context.md](resources/patterns-multitenancy-context.md) |
 | Testing Conventions | [resources/testing-guide.md](resources/testing-guide.md) |
 | **Cross-Service Implementation** | **[resources/cross-service-implementation.md](resources/cross-service-implementation.md)** |
+| **Service Scaffolding** | **[resources/scaffolding-checklist.md](resources/scaffolding-checklist.md)** |
 | AI Code Guidance | [resources/ai-guidance.md](resources/ai-guidance.md) |
 | Anti-Patterns | [resources/anti-patterns.md](resources/anti-patterns.md) |
 

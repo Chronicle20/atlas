@@ -3,6 +3,7 @@ package character
 import (
 	"atlas-channel/asset"
 	"atlas-channel/character/skill"
+	"atlas-channel/compartment"
 	"atlas-channel/inventory"
 	character2 "atlas-channel/kafka/message/character"
 	"atlas-channel/kafka/producer"
@@ -42,6 +43,7 @@ type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 	ip  inventory.Processor
+	cp  compartment.Processor
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
@@ -49,6 +51,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		l:   l,
 		ctx: ctx,
 		ip:  inventory.NewProcessor(l, ctx),
+		cp:  compartment.NewProcessor(l, ctx),
 	}
 	return p
 }
@@ -100,31 +103,23 @@ func (p *ProcessorImpl) QuestModelDecorator(m Model) Model {
 }
 
 func (p *ProcessorImpl) GetEquipableInSlot(characterId uint32, slot int16) model.Provider[asset.Model[any]] {
-	// TODO this needs to be more performant
-	c, err := p.GetById(p.InventoryDecorator)(characterId)
+	cm, err := p.cp.GetByType(characterId, inventory2.TypeValueEquip)
 	if err != nil {
 		return model.ErrorProvider[asset.Model[any]](err)
 	}
-	for _, e := range c.Inventory().Equipable().Assets() {
-		if e.Slot() == slot {
-			return model.FixedProvider(e)
-		}
+	if a, ok := cm.FindBySlot(slot); ok {
+		return model.FixedProvider(*a)
 	}
 	return model.ErrorProvider[asset.Model[any]](errors.New("equipable not found"))
 }
 
 func (p *ProcessorImpl) GetItemInSlot(characterId uint32, inventoryType inventory2.Type, slot int16) model.Provider[asset.Model[any]] {
-	// TODO this needs to be more performant
-	c, err := p.GetById(p.InventoryDecorator)(characterId)
+	cm, err := p.cp.GetByType(characterId, inventoryType)
 	if err != nil {
 		return model.ErrorProvider[asset.Model[any]](err)
 	}
-
-	cm := c.Inventory().CompartmentByType(inventoryType)
-	for _, e := range cm.Assets() {
-		if e.Slot() == slot {
-			return model.FixedProvider(e)
-		}
+	if a, ok := cm.FindBySlot(slot); ok {
+		return model.FixedProvider(*a)
 	}
 	return model.ErrorProvider[asset.Model[any]](errors.New("item not found"))
 }

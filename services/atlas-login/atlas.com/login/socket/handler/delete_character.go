@@ -34,7 +34,8 @@ func DeleteCharacterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 		l.Debugf("Handling delete character [%d] for account [%d]. verifyPic [%t]. verifyDob [%t]", characterId, s.AccountId(), verifyPic, dob != 0)
 
 		if verifyPic {
-			a, err := account.NewProcessor(l, ctx).GetById(s.AccountId())
+			ap := account.NewProcessor(l, ctx)
+			a, err := ap.GetById(s.AccountId())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to retrieve account performing deletion.")
 				err = deleteCharacterResponseFunc(s, writer.DeleteCharacterErrorBody(l, t)(characterId, writer.DeleteCharacterCodeUnknownError))
@@ -46,12 +47,20 @@ func DeleteCharacterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 
 			if a.PIC() != pic {
 				l.Debugf("Failing character deletion due to PIC being incorrect.")
+				_, limitReached, _ := ap.RecordPicAttempt(s.AccountId(), false)
+				if limitReached {
+					l.Warnf("Account [%d] has exceeded PIC attempt limit. Terminating session.", s.AccountId())
+					_ = session.NewProcessor(l, ctx).Destroy(s)
+					return
+				}
 				err = deleteCharacterResponseFunc(s, writer.DeleteCharacterErrorBody(l, t)(characterId, writer.DeleteCharacterCodeSecondaryPinMismatch))
 				if err != nil {
 					l.WithError(err).Errorf("Failed to write delete character response body.")
 				}
 				return
 			}
+
+			ap.RecordPicAttempt(s.AccountId(), true)
 		}
 
 		_, err := cp.GetById()(characterId)

@@ -6,6 +6,7 @@ import (
 	"atlas-account/rest"
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
@@ -20,6 +21,8 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 		return func(router *mux.Router, l logrus.FieldLogger) {
 			register := rest.RegisterHandler(l)(db)(si)
 			registerInput := rest.RegisterInputHandler[RestModel](l)(db)(si)
+			registerPinAttemptInput := rest.RegisterInputHandler[PinAttemptInputRestModel](l)(db)(si)
+		registerPicAttemptInput := rest.RegisterInputHandler[PicAttemptInputRestModel](l)(db)(si)
 
 			r := router.PathPrefix("/accounts").Subrouter()
 			r.HandleFunc("/", registerInput("create_account", handleCreateAccount)).Methods(http.MethodPost)
@@ -28,6 +31,8 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r.HandleFunc("/{accountId}", register("get_account", handleGetAccountById)).Methods(http.MethodGet)
 			r.HandleFunc("/{accountId}", registerInput("update_account", handleUpdateAccount)).Methods(http.MethodPatch)
 			r.HandleFunc("/{accountId}", register("delete_account", handleDeleteAccount)).Methods(http.MethodDelete)
+			r.HandleFunc("/{accountId}/pin-attempts", registerPinAttemptInput("record_pin_attempt", handleRecordPinAttempt)).Methods(http.MethodPost)
+			r.HandleFunc("/{accountId}/pic-attempts", registerPicAttemptInput("record_pic_attempt", handleRecordPicAttempt)).Methods(http.MethodPost)
 			r.HandleFunc("/{accountId}/session", register("delete_account_session", handleDeleteAccountSession)).Methods(http.MethodDelete)
 		}
 	}
@@ -157,6 +162,52 @@ func handleDeleteAccount(d *rest.HandlerDependency, _ *rest.HandlerContext) http
 				return
 			}
 			w.WriteHeader(http.StatusNoContent)
+		}
+	})
+}
+
+func handleRecordPinAttempt(d *rest.HandlerDependency, c *rest.HandlerContext, input PinAttemptInputRestModel) http.HandlerFunc {
+	return rest.ParseAccountId(d.Logger(), func(accountId uint32) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			attempts, limitReached, err := NewProcessor(d.Logger(), d.Context(), d.DB()).RecordPinAttemptAndEmit(accountId, input.Success)
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Unable to record PIN attempt for account [%d].", accountId)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			res := PinAttemptOutputRestModel{
+				Id:           strconv.Itoa(int(accountId)),
+				Attempts:     attempts,
+				LimitReached: limitReached,
+			}
+
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[PinAttemptOutputRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+		}
+	})
+}
+
+func handleRecordPicAttempt(d *rest.HandlerDependency, c *rest.HandlerContext, input PicAttemptInputRestModel) http.HandlerFunc {
+	return rest.ParseAccountId(d.Logger(), func(accountId uint32) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			attempts, limitReached, err := NewProcessor(d.Logger(), d.Context(), d.DB()).RecordPicAttemptAndEmit(accountId, input.Success)
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Unable to record PIC attempt for account [%d].", accountId)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			res := PicAttemptOutputRestModel{
+				Id:           strconv.Itoa(int(accountId)),
+				Attempts:     attempts,
+				LimitReached: limitReached,
+			}
+
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[PicAttemptOutputRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 		}
 	})
 }

@@ -12,8 +12,10 @@ type Model struct {
 	name      string
 	password  string
 	pin       string
-	pic       string
-	state  State
+	pic         string
+	pinAttempts int
+	picAttempts int
+	state       State
 	gender byte
 	tos    bool
 	updatedAt time.Time
@@ -53,6 +55,14 @@ func (a Model) Pin() string {
 
 func (a Model) Pic() string {
 	return a.pic
+}
+
+func (a Model) PinAttempts() int {
+	return a.pinAttempts
+}
+
+func (a Model) PicAttempts() int {
+	return a.picAttempts
 }
 
 func (a Model) Gender() byte {

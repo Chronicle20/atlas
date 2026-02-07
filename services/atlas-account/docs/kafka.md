@@ -13,6 +13,7 @@
 |---------------------------|-------------|
 | EVENT_TOPIC_ACCOUNT_STATUS | Account status events |
 | EVENT_TOPIC_ACCOUNT_SESSION_STATUS | Session status events |
+| COMMAND_TOPIC_BAN | Ban commands (issued when PIN or PIC attempt limit exceeded) |
 
 ## Message Types
 
@@ -74,6 +75,7 @@ Consumed from COMMAND_TOPIC_ACCOUNT_SESSION. Generic envelope with typed body.
 | AccountName | string |
 | Password | string |
 | IPAddress | string |
+| HWID | string |
 
 ##### ProgressStateSessionCommandBody
 
@@ -93,6 +95,33 @@ Empty body.
 | INTERNAL | Internal service |
 | LOGIN | Login service |
 | CHANNEL | Channel service |
+
+#### Ban Command[E]
+
+Produced to COMMAND_TOPIC_BAN. Generic envelope with typed body.
+
+| Field | Type |
+|-------|------|
+| Type | string |
+| Body | varies |
+
+##### Ban Command Types
+
+| Type | Body Type | Description |
+|------|-----------|-------------|
+| CREATE | CreateCommandBody | Ban creation |
+
+##### CreateCommandBody (Ban)
+
+| Field | Type |
+|-------|------|
+| BanType | byte |
+| Value | string |
+| Reason | string |
+| ReasonCode | byte |
+| Permanent | bool |
+| ExpiresAt | int64 |
+| IssuedBy | string |
 
 ### Events
 
@@ -123,6 +152,7 @@ Produced to EVENT_TOPIC_ACCOUNT_SESSION_STATUS. Generic envelope with typed body
 |-------|------|
 | SessionId | uuid.UUID |
 | AccountId | uint32 |
+| AccountName | string |
 | Type | string |
 | Body | varies |
 
@@ -137,7 +167,10 @@ Produced to EVENT_TOPIC_ACCOUNT_SESSION_STATUS. Generic envelope with typed body
 
 ##### CreatedSessionStatusEventBody
 
-Empty body.
+| Field | Type |
+|-------|------|
+| IPAddress | string |
+| HWID | string |
 
 ##### StateChangedSessionStatusEventBody
 
@@ -153,6 +186,8 @@ Empty body.
 | Code | string |
 | Reason | byte |
 | Until | uint64 |
+| IPAddress | string |
+| HWID | string |
 
 ## Transaction Semantics
 

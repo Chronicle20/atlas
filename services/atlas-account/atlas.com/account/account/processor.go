@@ -5,9 +5,11 @@ import (
 	"atlas-account/configuration"
 	"atlas-account/kafka/message"
 	account2 "atlas-account/kafka/message/account"
+	ban2 "atlas-account/kafka/message/ban"
 	"atlas-account/kafka/producer"
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/Chronicle20/atlas-model/model"
@@ -54,6 +56,10 @@ type Processor interface {
 	ByNameProvider(name string) model.Provider[Model]
 	ByTenantProvider() ([]Model, error)
 	LoggedInTenantProvider() ([]Model, error)
+	RecordPinAttemptAndEmit(accountId uint32, success bool) (int, bool, error)
+	RecordPinAttempt(mb *message.Buffer) func(accountId uint32, success bool) (int, bool, error)
+	RecordPicAttemptAndEmit(accountId uint32, success bool) (int, bool, error)
+	RecordPicAttempt(mb *message.Buffer) func(accountId uint32, success bool) (int, bool, error)
 }
 
 type ProcessorImpl struct {
@@ -186,6 +192,14 @@ func (p *ProcessorImpl) Update(accountId uint32, input Model) (Model, error) {
 	if a.tos != input.tos && input.tos != false {
 		p.l.Debugf("Updating TOS [%t] of account [%d].", input.tos, accountId)
 		modifiers = append(modifiers, updateTos(input.tos))
+	}
+	if a.pinAttempts != input.pinAttempts {
+		p.l.Debugf("Updating PinAttempts [%d] of account [%d].", input.pinAttempts, accountId)
+		modifiers = append(modifiers, updatePinAttempts(input.pinAttempts))
+	}
+	if a.picAttempts != input.picAttempts {
+		p.l.Debugf("Updating PicAttempts [%d] of account [%d].", input.picAttempts, accountId)
+		modifiers = append(modifiers, updatePicAttempts(input.picAttempts))
 	}
 	if a.gender != input.gender {
 		p.l.Debugf("Updating Gender [%d] of account [%d].", input.gender, accountId)
@@ -422,6 +436,158 @@ func (p *ProcessorImpl) ProgressState(mb *message.Buffer) func(sessionId uuid.UU
 			return mb.Put(account2.EnvEventSessionStatusTopic, stateChangedStatusProvider(sessionId, a.Id(), a.Name(), uint8(StateTransition), params))
 		}
 		return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, 0, "", SystemError, "", ""))
+	}
+}
+
+func (p *ProcessorImpl) RecordPinAttemptAndEmit(accountId uint32, success bool) (int, bool, error) {
+	var attempts int
+	var limitReached bool
+	err := message.Emit(p.p)(func(buf *message.Buffer) error {
+		var innerErr error
+		attempts, limitReached, innerErr = p.RecordPinAttempt(buf)(accountId, success)
+		return innerErr
+	})
+	return attempts, limitReached, err
+}
+
+func (p *ProcessorImpl) RecordPinAttempt(mb *message.Buffer) func(accountId uint32, success bool) (int, bool, error) {
+	return func(accountId uint32, success bool) (int, bool, error) {
+		a, err := p.GetById(accountId)
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to locate account [%d] for PIN attempt recording.", accountId)
+			return 0, false, err
+		}
+
+		if success {
+			if a.PinAttempts() > 0 {
+				p.l.Debugf("Resetting PIN attempts for account [%d] after successful PIN entry.", accountId)
+				err = update(p.db)(updatePinAttempts(0))(p.t, accountId)
+				if err != nil {
+					p.l.WithError(err).Errorf("Unable to reset PIN attempts for account [%d].", accountId)
+					return 0, false, err
+				}
+			}
+			return 0, false, nil
+		}
+
+		newAttempts := a.PinAttempts() + 1
+		p.l.Debugf("Recording failed PIN attempt [%d] for account [%d].", newAttempts, accountId)
+
+		c, err := configuration.Get()
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to read configuration for PIN attempt limit.")
+			return newAttempts, false, err
+		}
+
+		limitReached := newAttempts >= c.MaxPinAttempts
+		if limitReached {
+			p.l.Warnf("Account [%d] has reached the PIN attempt limit [%d]. Issuing temporary ban.", accountId, c.MaxPinAttempts)
+
+			duration, err := time.ParseDuration(c.PinBanDuration)
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to parse PIN ban duration [%s]. Defaulting to 15 minutes.", c.PinBanDuration)
+				duration = 15 * time.Minute
+			}
+			expiresAt := time.Now().Add(duration).UnixMilli()
+			reason := fmt.Sprintf("Exceeded maximum PIN attempts (%d)", c.MaxPinAttempts)
+
+			err = mb.Put(ban2.EnvCommandTopic, createBanCommandProvider(accountId, reason, expiresAt))
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to emit ban command for account [%d].", accountId)
+				return newAttempts, true, err
+			}
+
+			// Reset counter after issuing ban
+			err = update(p.db)(updatePinAttempts(0))(p.t, accountId)
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to reset PIN attempts after ban for account [%d].", accountId)
+				return 0, true, err
+			}
+			return 0, true, nil
+		}
+
+		err = update(p.db)(updatePinAttempts(newAttempts))(p.t, accountId)
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to update PIN attempts for account [%d].", accountId)
+			return newAttempts, false, err
+		}
+		return newAttempts, false, nil
+	}
+}
+
+func (p *ProcessorImpl) RecordPicAttemptAndEmit(accountId uint32, success bool) (int, bool, error) {
+	var attempts int
+	var limitReached bool
+	err := message.Emit(p.p)(func(buf *message.Buffer) error {
+		var innerErr error
+		attempts, limitReached, innerErr = p.RecordPicAttempt(buf)(accountId, success)
+		return innerErr
+	})
+	return attempts, limitReached, err
+}
+
+func (p *ProcessorImpl) RecordPicAttempt(mb *message.Buffer) func(accountId uint32, success bool) (int, bool, error) {
+	return func(accountId uint32, success bool) (int, bool, error) {
+		a, err := p.GetById(accountId)
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to locate account [%d] for PIC attempt recording.", accountId)
+			return 0, false, err
+		}
+
+		if success {
+			if a.PicAttempts() > 0 {
+				p.l.Debugf("Resetting PIC attempts for account [%d] after successful PIC entry.", accountId)
+				err = update(p.db)(updatePicAttempts(0))(p.t, accountId)
+				if err != nil {
+					p.l.WithError(err).Errorf("Unable to reset PIC attempts for account [%d].", accountId)
+					return 0, false, err
+				}
+			}
+			return 0, false, nil
+		}
+
+		newAttempts := a.PicAttempts() + 1
+		p.l.Debugf("Recording failed PIC attempt [%d] for account [%d].", newAttempts, accountId)
+
+		c, err := configuration.Get()
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to read configuration for PIC attempt limit.")
+			return newAttempts, false, err
+		}
+
+		limitReached := newAttempts >= c.MaxPicAttempts
+		if limitReached {
+			p.l.Warnf("Account [%d] has reached the PIC attempt limit [%d]. Issuing temporary ban.", accountId, c.MaxPicAttempts)
+
+			duration, err := time.ParseDuration(c.PicBanDuration)
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to parse PIC ban duration [%s]. Defaulting to 15 minutes.", c.PicBanDuration)
+				duration = 15 * time.Minute
+			}
+			expiresAt := time.Now().Add(duration).UnixMilli()
+			reason := fmt.Sprintf("Exceeded maximum PIC attempts (%d)", c.MaxPicAttempts)
+
+			err = mb.Put(ban2.EnvCommandTopic, createBanCommandProvider(accountId, reason, expiresAt))
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to emit ban command for account [%d].", accountId)
+				return newAttempts, true, err
+			}
+
+			// Reset counter after issuing ban
+			err = update(p.db)(updatePicAttempts(0))(p.t, accountId)
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to reset PIC attempts after ban for account [%d].", accountId)
+				return 0, true, err
+			}
+			return 0, true, nil
+		}
+
+		err = update(p.db)(updatePicAttempts(newAttempts))(p.t, accountId)
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to update PIC attempts for account [%d].", accountId)
+			return newAttempts, false, err
+		}
+		return newAttempts, false, nil
 	}
 }
 

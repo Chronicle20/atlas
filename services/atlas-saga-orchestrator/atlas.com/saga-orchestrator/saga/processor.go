@@ -44,6 +44,7 @@ type Processor interface {
 	MarkEarliestPendingStep(transactionId uuid.UUID, status Status) error
 	MarkEarliestPendingStepCompleted(transactionId uuid.UUID) error
 	StepCompleted(transactionId uuid.UUID, success bool) error
+	StepCompletedWithResult(transactionId uuid.UUID, success bool, result map[string]any) error
 	AddStep(transactionId uuid.UUID, step Step[any]) error
 	AddStepAfterCurrent(transactionId uuid.UUID, step Step[any]) error
 	Step(transactionId uuid.UUID) error
@@ -294,6 +295,10 @@ func (p *ProcessorImpl) SafeSetStepStatus(s *Saga, stepIndex int, status Status,
 }
 
 func (p *ProcessorImpl) StepCompleted(transactionId uuid.UUID, success bool) error {
+	return p.StepCompletedWithResult(transactionId, success, nil)
+}
+
+func (p *ProcessorImpl) StepCompletedWithResult(transactionId uuid.UUID, success bool, result map[string]any) error {
 	s, err := p.GetById(transactionId)
 	if err != nil {
 		return nil
@@ -310,7 +315,7 @@ func (p *ProcessorImpl) StepCompleted(transactionId uuid.UUID, success bool) err
 			status = Completed
 		}
 
-		err = p.MarkEarliestPendingStep(transactionId, status)
+		err = p.MarkEarliestPendingStepWithResult(transactionId, status, result)
 		if err != nil {
 			return err
 		}
@@ -413,6 +418,81 @@ func (p *ProcessorImpl) MarkEarliestPendingStep(transactionId uuid.UUID, status 
 			"tenant_id":      p.t.Id().String(),
 		}).WithError(err).Error("Failed to set step status")
 		return err
+	}
+
+	// Validate state consistency before updating cache
+	if err := s.ValidateStateConsistency(); err != nil {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"saga_type":      s.SagaType(),
+			"tenant_id":      p.t.Id().String(),
+		}).WithError(err).Error("State consistency validation failed after marking step")
+		return err
+	}
+
+	// Update the saga in the cache
+	GetCache().Put(p.t.Id(), s)
+
+	step, _ := s.StepAt(earliestPendingIndex)
+	p.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"saga_type":      s.SagaType(),
+		"step_id":        step.StepId(),
+		"tenant_id":      p.t.Id().String(),
+	}).Debugf("Marked earliest pending step as [%s].", status)
+
+	return nil
+}
+
+// MarkEarliestPendingStepWithResult marks the earliest pending step and attaches a result
+func (p *ProcessorImpl) MarkEarliestPendingStepWithResult(transactionId uuid.UUID, status Status, result map[string]any) error {
+	s, err := p.GetById(transactionId)
+	if err != nil {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": transactionId.String(),
+			"tenant_id":      p.t.Id().String(),
+		}).Debugf("Unable to locate saga for marking earliest pending step as [%s].", status)
+		return err
+	}
+
+	// Find the earliest pending step (first one with status "pending")
+	earliestPendingIndex := s.FindEarliestPendingStepIndex()
+
+	// If no pending step was found, return an error
+	if earliestPendingIndex == -1 {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"saga_type":      s.SagaType(),
+			"tenant_id":      p.t.Id().String(),
+		}).Debugf("No pending steps found to mark as [%s].", status)
+		return errors.New("no pending steps found")
+	}
+
+	// Mark the step with validation
+	s, err = s.WithStepStatus(earliestPendingIndex, status)
+	if err != nil {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"saga_type":      s.SagaType(),
+			"step_index":     earliestPendingIndex,
+			"status":         status,
+			"tenant_id":      p.t.Id().String(),
+		}).WithError(err).Error("Failed to set step status")
+		return err
+	}
+
+	// Attach result if provided
+	if result != nil {
+		s, err = s.WithStepResult(earliestPendingIndex, result)
+		if err != nil {
+			p.l.WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId().String(),
+				"saga_type":      s.SagaType(),
+				"step_index":     earliestPendingIndex,
+				"tenant_id":      p.t.Id().String(),
+			}).WithError(err).Error("Failed to set step result")
+			return err
+		}
 	}
 
 	// Validate state consistency before updating cache

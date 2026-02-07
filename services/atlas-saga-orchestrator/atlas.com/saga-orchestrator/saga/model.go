@@ -288,6 +288,34 @@ func (s Saga) WithStepStatus(index int, status Status) (Saga, error) {
 		payload:   s.steps[index].payload,
 		createdAt: s.steps[index].createdAt,
 		updatedAt: time.Now(),
+		result:    s.steps[index].result,
+	}
+
+	return Saga{
+		transactionId: s.transactionId,
+		sagaType:      s.sagaType,
+		initiatedBy:   s.initiatedBy,
+		steps:         newSteps,
+	}, nil
+}
+
+// WithStepResult returns a new Saga with the specified step's result updated
+func (s Saga) WithStepResult(index int, result map[string]any) (Saga, error) {
+	if index < 0 || index >= len(s.steps) {
+		return Saga{}, fmt.Errorf("invalid step index: %d", index)
+	}
+
+	newSteps := make([]Step[any], len(s.steps))
+	copy(newSteps, s.steps)
+
+	newSteps[index] = Step[any]{
+		stepId:    s.steps[index].stepId,
+		status:    s.steps[index].status,
+		action:    s.steps[index].action,
+		payload:   s.steps[index].payload,
+		createdAt: s.steps[index].createdAt,
+		updatedAt: s.steps[index].updatedAt,
+		result:    result,
 	}
 
 	return Saga{
@@ -458,6 +486,7 @@ type Step[T any] struct {
 	payload   T
 	createdAt time.Time
 	updatedAt time.Time
+	result    map[string]any
 }
 
 // StepId returns the step ID
@@ -478,15 +507,19 @@ func (s Step[T]) CreatedAt() time.Time { return s.createdAt }
 // UpdatedAt returns the step update time
 func (s Step[T]) UpdatedAt() time.Time { return s.updatedAt }
 
+// Result returns the step result data (nil if unset)
+func (s Step[T]) Result() map[string]any { return s.result }
+
 // MarshalJSON implements json.Marshaler for Step
 func (s Step[T]) MarshalJSON() ([]byte, error) {
 	type alias struct {
-		StepId    string    `json:"stepId"`
-		Status    Status    `json:"status"`
-		Action    Action    `json:"action"`
-		Payload   T         `json:"payload"`
-		CreatedAt time.Time `json:"createdAt"`
-		UpdatedAt time.Time `json:"updatedAt"`
+		StepId    string         `json:"stepId"`
+		Status    Status         `json:"status"`
+		Action    Action         `json:"action"`
+		Payload   T              `json:"payload"`
+		CreatedAt time.Time      `json:"createdAt"`
+		UpdatedAt time.Time      `json:"updatedAt"`
+		Result    map[string]any `json:"result,omitempty"`
 	}
 	return json.Marshal(alias{
 		StepId:    s.stepId,
@@ -495,6 +528,7 @@ func (s Step[T]) MarshalJSON() ([]byte, error) {
 		Payload:   s.payload,
 		CreatedAt: s.createdAt,
 		UpdatedAt: s.updatedAt,
+		Result:    s.result,
 	})
 }
 
@@ -1200,6 +1234,7 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		CreatedAt time.Time       `json:"createdAt"`
 		UpdatedAt time.Time       `json:"updatedAt"`
 		Payload   json.RawMessage `json:"payload"`
+		Result    map[string]any  `json:"result,omitempty"`
 	}
 
 	if err := json.Unmarshal(data, &actionOnly); err != nil {
@@ -1211,6 +1246,7 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 	s.action = actionOnly.Action
 	s.createdAt = actionOnly.CreatedAt
 	s.updatedAt = actionOnly.UpdatedAt
+	s.result = actionOnly.Result
 
 	// Now handle the Payload field based on the Action type
 	switch s.action {

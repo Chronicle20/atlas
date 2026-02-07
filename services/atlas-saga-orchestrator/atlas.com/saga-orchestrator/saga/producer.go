@@ -36,7 +36,7 @@ func FailedStatusEventProvider(transactionId uuid.UUID, characterId uint32, saga
 	return producer.SingleMessageProvider(key, value)
 }
 
-func GachaponRewardWonEventProvider(payload EmitGachaponWinPayload) model.Provider[[]kafka.Message] {
+func GachaponRewardWonEventProvider(payload EmitGachaponWinPayload, assetId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(payload.CharacterId))
 	value := &gachapon.RewardWonEvent{
 		CharacterId:  payload.CharacterId,
@@ -46,6 +46,7 @@ func GachaponRewardWonEventProvider(payload EmitGachaponWinPayload) model.Provid
 		Tier:         payload.Tier,
 		GachaponId:   payload.GachaponId,
 		GachaponName: payload.GachaponName,
+		AssetId:      assetId,
 	}
 	return producer.SingleMessageProvider(key, value)
 }

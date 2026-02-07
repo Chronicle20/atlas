@@ -69,9 +69,9 @@ func handleRewardWon(sc server.Model, wp writer.Producer) message.Handler[gachap
 			return
 		}
 
-		a, found := comp.FindFirstByItemId(event.ItemId)
+		a, found := comp.FindById(event.AssetId)
 		if !found {
-			l.Errorf("Unable to find asset with template [%d] for character [%d].", event.ItemId, event.CharacterId)
+			l.Errorf("Unable to find asset [%d] for character [%d].", event.AssetId, event.CharacterId)
 			return
 		}
 

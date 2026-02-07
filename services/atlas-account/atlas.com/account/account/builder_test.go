@@ -68,7 +68,6 @@ func TestBuilderAllSetters(t *testing.T) {
 		SetPic("5678").
 		SetState(StateLoggedIn).
 		SetGender(1).
-		SetBanned(true).
 		SetTOS(true).
 		Build()
 
@@ -92,10 +91,6 @@ func TestBuilderAllSetters(t *testing.T) {
 		t.Errorf("State mismatch. Expected %v, got %v", StateLoggedIn, m.State())
 	}
 
-	if m.Banned() != true {
-		t.Errorf("Banned mismatch. Expected true, got %v", m.Banned())
-	}
-
 	if m.TOS() != true {
 		t.Errorf("TOS mismatch. Expected true, got %v", m.TOS())
 	}
@@ -114,10 +109,6 @@ func TestBuilderDefaults(t *testing.T) {
 
 	if m.Gender() != 0 {
 		t.Errorf("Default gender should be 0, got %v", m.Gender())
-	}
-
-	if m.Banned() != false {
-		t.Errorf("Default banned should be false, got %v", m.Banned())
 	}
 
 	if m.TOS() != false {

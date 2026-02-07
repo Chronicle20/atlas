@@ -22,6 +22,14 @@
       "docker_context": "."
     },
     {
+      "name": "atlas-ban",
+      "type": "go-service",
+      "path": "services/atlas-ban",
+      "module_path": "services/atlas-ban/atlas.com/ban",
+      "docker_image": "ghcr.io/chronicle20/atlas-ban/atlas-ban",
+      "docker_context": "."
+    },
+    {
       "name": "atlas-buddies",
       "type": "go-service",
       "path": "services/atlas-buddies",

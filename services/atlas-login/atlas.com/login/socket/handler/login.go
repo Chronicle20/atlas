@@ -5,6 +5,8 @@ import (
 	"atlas-login/session"
 	"atlas-login/socket/writer"
 	"context"
+	"encoding/hex"
+	"net"
 
 	"github.com/Chronicle20/atlas-socket/request"
 	tenant "github.com/Chronicle20/atlas-tenant"
@@ -62,7 +64,20 @@ func LoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Produc
 		p := ReadLoginRequest(r)
 		l.Debugf("Reading [%s] message. body={name=%s, gameRoomClient=%d, gameStartMode=%d}", LoginHandle, p.Name(), p.GameRoomClient(), p.GameStartMode())
 
-		err := as.NewProcessor(l, ctx).Create(s.SessionId(), s.AccountId(), p.Name(), p.Password(), "")
+		ipAddress := ""
+		if addr := s.GetRemoteAddress(); addr != nil {
+			if tcpAddr, ok := addr.(*net.TCPAddr); ok {
+				ipAddress = tcpAddr.IP.String()
+			} else {
+				host, _, err := net.SplitHostPort(addr.String())
+				if err == nil {
+					ipAddress = host
+				}
+			}
+		}
+		hwid := hex.EncodeToString(p.hwid)
+
+		err := as.NewProcessor(l, ctx).Create(s.SessionId(), s.AccountId(), p.Name(), p.Password(), ipAddress, hwid)
 		if err != nil {
 			authLoginFailedFunc := session.Announce(l)(wp)(writer.AuthLoginFailed)
 			err = authLoginFailedFunc(s, writer.AuthLoginFailedBody(l, t)(writer.SystemError1))

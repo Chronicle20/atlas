@@ -14,10 +14,9 @@ type Builder struct {
 	password  string
 	pin       string
 	pic       string
-	state     State
-	gender    byte
-	banned    bool
-	tos       bool
+	state  State
+	gender byte
+	tos    bool
 	updatedAt time.Time
 }
 
@@ -25,10 +24,9 @@ func NewBuilder(tenantId uuid.UUID, name string) *Builder {
 	return &Builder{
 		tenantId: tenantId,
 		name:     name,
-		state:    StateNotLoggedIn,
-		gender:   0,
-		banned:   false,
-		tos:      false,
+		state:  StateNotLoggedIn,
+		gender: 0,
+		tos:    false,
 	}
 }
 
@@ -62,11 +60,6 @@ func (b *Builder) SetGender(gender byte) *Builder {
 	return b
 }
 
-func (b *Builder) SetBanned(banned bool) *Builder {
-	b.banned = banned
-	return b
-}
-
 func (b *Builder) SetTOS(tos bool) *Builder {
 	b.tos = tos
 	return b
@@ -89,10 +82,9 @@ func (b *Builder) Build() (Model, error) {
 		password:  b.password,
 		pin:       b.pin,
 		pic:       b.pic,
-		state:     b.state,
-		gender:    b.gender,
-		banned:    b.banned,
-		tos:       b.tos,
+		state:  b.state,
+		gender: b.gender,
+		tos:    b.tos,
 		updatedAt: b.updatedAt,
 	}, nil
 }

@@ -75,7 +75,7 @@ func handleCreateAccountSessionCommand(db *gorm.DB) func(l logrus.FieldLogger, c
 		}
 
 		l.Debugf("Received create account command account [%d] from [%s].", c.AccountId, c.Issuer)
-		_ = account.NewProcessor(l, ctx, db).AttemptLoginAndEmit(c.SessionId, c.Body.AccountName, c.Body.Password)
+		_ = account.NewProcessor(l, ctx, db).AttemptLoginAndEmit(c.SessionId, c.Body.AccountName, c.Body.Password, c.Body.IPAddress, c.Body.HWID)
 	}
 }
 

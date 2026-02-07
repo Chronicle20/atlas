@@ -9,7 +9,7 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func CreateCommandProvider(sessionId uuid.UUID, accountId uint32, accountName string, password string, ipAddress string) model.Provider[[]kafka.Message] {
+func CreateCommandProvider(sessionId uuid.UUID, accountId uint32, accountName string, password string, ipAddress string, hwid string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(accountId))
 	value := &session.Command[session.CreateCommandBody]{
 		SessionId: sessionId,
@@ -20,6 +20,7 @@ func CreateCommandProvider(sessionId uuid.UUID, accountId uint32, accountName st
 			AccountName: accountName,
 			Password:    password,
 			IPAddress:   ipAddress,
+			HWID:        hwid,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

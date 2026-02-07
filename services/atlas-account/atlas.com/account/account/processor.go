@@ -1,6 +1,7 @@
 package account
 
 import (
+	"atlas-account/ban"
 	"atlas-account/configuration"
 	"atlas-account/kafka/message"
 	account2 "atlas-account/kafka/message/account"
@@ -42,8 +43,8 @@ type Processor interface {
 	Login(mb *message.Buffer) func(sessionId uuid.UUID) func(accountId uint32) func(issuer string) error
 	LogoutAndEmit(sessionId uuid.UUID, accountId uint32, issuer string) error
 	Logout(mb *message.Buffer) func(sessionId uuid.UUID) func(accountId uint32) func(issuer string) error
-	AttemptLoginAndEmit(sessionId uuid.UUID, name string, password string) error
-	AttemptLogin(mb *message.Buffer) func(sessionId uuid.UUID, name string, password string) error
+	AttemptLoginAndEmit(sessionId uuid.UUID, name string, password string, ipAddress string, hwid string) error
+	AttemptLogin(mb *message.Buffer) func(sessionId uuid.UUID, name string, password string, ipAddress string, hwid string) error
 	ProgressStateAndEmit(sessionId uuid.UUID, issuer string, accountId uint32, state State, params interface{}) error
 	ProgressState(mb *message.Buffer) func(sessionId uuid.UUID, issuer string, accountId uint32, state State, params interface{}) error
 	GetById(accountId uint32) (Model, error)
@@ -318,59 +319,61 @@ func teardownTenant(l logrus.FieldLogger) func(db *gorm.DB) model.Operator[conte
 	}
 }
 
-func (p *ProcessorImpl) AttemptLoginAndEmit(sessionId uuid.UUID, name string, password string) error {
+func (p *ProcessorImpl) AttemptLoginAndEmit(sessionId uuid.UUID, name string, password string, ipAddress string, hwid string) error {
 	return message.Emit(p.p)(func(buf *message.Buffer) error {
-		return p.AttemptLogin(buf)(sessionId, name, password)
+		return p.AttemptLogin(buf)(sessionId, name, password, ipAddress, hwid)
 	})
 }
 
-func (p *ProcessorImpl) AttemptLogin(mb *message.Buffer) func(sessionId uuid.UUID, name string, password string) error {
-	return func(sessionId uuid.UUID, name string, password string) error {
+func (p *ProcessorImpl) AttemptLogin(mb *message.Buffer) func(sessionId uuid.UUID, name string, password string, ipAddress string, hwid string) error {
+	return func(sessionId uuid.UUID, name string, password string, ipAddress string, hwid string) error {
 		p.l.Debugf("Attemting login for [%s].", name)
 		if checkLoginAttempts(sessionId) > 4 {
 			p.l.Warnf("Session [%s] has attempted to log into (or create) an account too many times.", sessionId.String())
-			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, 0, TooManyAttempts))
+			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, 0, "", TooManyAttempts, ipAddress, hwid))
 		}
 
 		c, err := configuration.Get()
 		if err != nil {
 			p.l.WithError(err).Errorf("Error reading needed configuration.")
-			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, 0, SystemError))
+			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, 0, "", SystemError, ipAddress, hwid))
 		}
 
 		a, err := p.GetOrCreate(mb)(name, password, c.AutomaticRegister)
 		if err != nil && !c.AutomaticRegister {
-			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, 0, NotRegistered))
+			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, 0, "", NotRegistered, ipAddress, hwid))
 		}
 		if err != nil {
-			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, 0, SystemError))
+			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, 0, "", SystemError, ipAddress, hwid))
 		}
 
-		if a.Banned() {
-			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), DeletedOrBlocked))
+		checkResult, err := ban.CheckBan(p.l, p.ctx, ipAddress, hwid, a.Id())
+		if err != nil {
+			p.l.WithError(err).Warnf("Unable to check ban status for account [%d]. Proceeding with fail-open strategy.", a.Id())
+		} else if checkResult.Banned {
+			p.l.Infof("Account [%d] is banned. type=[%d] reason=[%s].", a.Id(), checkResult.BanType, checkResult.Reason)
+			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), a.Name(), DeletedOrBlocked, ipAddress, hwid))
 		}
-
-		// TODO implement ip, mac, and temporary banning practices
 
 		if a.State() != StateNotLoggedIn {
-			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), AlreadyLoggedIn))
+			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), a.Name(), AlreadyLoggedIn, ipAddress, hwid))
 		}
 		if a.Password()[0] != uint8('$') || a.Password()[1] != uint8('2') || bcrypt.CompareHashAndPassword([]byte(a.Password()), []byte(password)) != nil {
-			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), IncorrectPassword))
+			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), a.Name(), IncorrectPassword, ipAddress, hwid))
 		}
 
 		err = p.Login(mb)(sessionId)(a.Id())(ServiceLogin)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to record login.")
-			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), SystemError))
+			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), a.Name(), SystemError, ipAddress, hwid))
 		}
 
 		p.l.Debugf("Login successful for [%s].", name)
 
 		if !a.TOS() && p.t.Region() != "JMS" {
-			return mb.Put(account2.EnvEventSessionStatusTopic, requestLicenseAgreementStatusProvider(sessionId, a.Id()))
+			return mb.Put(account2.EnvEventSessionStatusTopic, requestLicenseAgreementStatusProvider(sessionId, a.Id(), a.Name()))
 		}
-		return mb.Put(account2.EnvEventSessionStatusTopic, createdStatusProvider(sessionId, a.Id()))
+		return mb.Put(account2.EnvEventSessionStatusTopic, createdStatusProvider(sessionId, a.Id(), a.Name(), ipAddress, hwid))
 	}
 }
 
@@ -385,7 +388,7 @@ func (p *ProcessorImpl) ProgressState(mb *message.Buffer) func(sessionId uuid.UU
 		a, err := p.GetById(accountId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to locate account a session is being created for.")
-			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), NotRegistered))
+			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), "", NotRegistered, "", ""))
 		}
 
 		p.l.Debugf("Received request to progress state for account [%d] to state [%d] from state [%d].", accountId, state, a.State())
@@ -393,32 +396,32 @@ func (p *ProcessorImpl) ProgressState(mb *message.Buffer) func(sessionId uuid.UU
 			p.l.Debugf("Has state [%d] for [%s] via session [%s].", v.State, k.Service, k.SessionId.String())
 		}
 		if a.State() == StateNotLoggedIn {
-			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), SystemError))
+			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), a.Name(), SystemError, "", ""))
 		}
 		if state == StateNotLoggedIn {
 			err = p.Logout(mb)(sessionId)(accountId)(issuer)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to logout account.")
-				return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), SystemError))
+				return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), a.Name(), SystemError, "", ""))
 			}
-			return mb.Put(account2.EnvEventSessionStatusTopic, stateChangedStatusProvider(sessionId, a.Id(), uint8(StateNotLoggedIn), params))
+			return mb.Put(account2.EnvEventSessionStatusTopic, stateChangedStatusProvider(sessionId, a.Id(), a.Name(), uint8(StateNotLoggedIn), params))
 		}
 		if state == StateLoggedIn {
 			err = p.Login(mb)(sessionId)(accountId)(issuer)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to login account.")
-				return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), SystemError))
+				return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), a.Name(), SystemError, "", ""))
 			}
-			return mb.Put(account2.EnvEventSessionStatusTopic, stateChangedStatusProvider(sessionId, a.Id(), uint8(StateLoggedIn), params))
+			return mb.Put(account2.EnvEventSessionStatusTopic, stateChangedStatusProvider(sessionId, a.Id(), a.Name(), uint8(StateLoggedIn), params))
 		}
 		if state == StateTransition {
 			err = Get().Transition(AccountKey{Tenant: p.t, AccountId: accountId}, ServiceKey{SessionId: sessionId, Service: Service(issuer)})
 			if err == nil {
 				p.l.Debugf("State transition triggered a transition.")
 			}
-			return mb.Put(account2.EnvEventSessionStatusTopic, stateChangedStatusProvider(sessionId, a.Id(), uint8(StateTransition), params))
+			return mb.Put(account2.EnvEventSessionStatusTopic, stateChangedStatusProvider(sessionId, a.Id(), a.Name(), uint8(StateTransition), params))
 		}
-		return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, 0, SystemError))
+		return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, 0, "", SystemError, "", ""))
 	}
 }
 

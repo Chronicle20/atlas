@@ -185,6 +185,14 @@ data:
           proxy_pass http://atlas-equipables.atlas.svc.cluster.local:8080;
         }
 
+        location ~ ^/api/gachapons(/.*)?$ {
+          proxy_pass http://atlas-gachapons.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/global-items(/.*)?$ {
+          proxy_pass http://atlas-gachapons.atlas.svc.cluster.local:8080;
+        }
+
         location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/characters(/.*)?$ {
           proxy_pass http://atlas-maps.atlas.svc.cluster.local:8080;
         }

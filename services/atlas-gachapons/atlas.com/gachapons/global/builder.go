@@ -37,6 +37,9 @@ func (b *Builder) Build() (Model, error) {
 	if b.tenantId == uuid.Nil {
 		return Model{}, errors.New("tenantId cannot be nil")
 	}
+	if !isValidTier(b.tier) {
+		return Model{}, errors.New("tier must be one of: common, uncommon, rare")
+	}
 	return Model{
 		tenantId: b.tenantId,
 		id:       b.id,
@@ -44,4 +47,8 @@ func (b *Builder) Build() (Model, error) {
 		quantity: b.quantity,
 		tier:     b.tier,
 	}, nil
+}
+
+func isValidTier(tier string) bool {
+	return tier == "common" || tier == "uncommon" || tier == "rare"
 }

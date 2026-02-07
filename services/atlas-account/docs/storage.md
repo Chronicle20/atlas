@@ -12,6 +12,8 @@
 | password | string | NOT NULL |
 | pin | string | |
 | pic | string | |
+| pin_attempts | int | NOT NULL, DEFAULT 0 |
+| pic_attempts | int | NOT NULL, DEFAULT 0 |
 | gender | byte | NOT NULL, DEFAULT 0 |
 | tos | bool | NOT NULL, DEFAULT false |
 | last_login | int64 | |

@@ -90,12 +90,36 @@ func updateGender(gender byte) EntityUpdateFunction {
 	}
 }
 
+func updatePinAttempts(pinAttempts int) EntityUpdateFunction {
+	return func() ([]string, func(e *Entity)) {
+		var cs = []string{"pin_attempts"}
+
+		uf := func(e *Entity) {
+			e.PinAttempts = pinAttempts
+		}
+		return cs, uf
+	}
+}
+
+func updatePicAttempts(picAttempts int) EntityUpdateFunction {
+	return func() ([]string, func(e *Entity)) {
+		var cs = []string{"pic_attempts"}
+
+		uf := func(e *Entity) {
+			e.PicAttempts = picAttempts
+		}
+		return cs, uf
+	}
+}
+
 func Make(a Entity) (Model, error) {
 	return NewBuilder(a.TenantId, a.Name).
 		SetId(a.ID).
 		SetPassword(a.Password).
 		SetPin(a.PIN).
 		SetPic(a.PIC).
+		SetPinAttempts(a.PinAttempts).
+		SetPicAttempts(a.PicAttempts).
 		SetGender(a.Gender).
 		SetTOS(a.TOS).
 		SetUpdatedAt(a.UpdatedAt).

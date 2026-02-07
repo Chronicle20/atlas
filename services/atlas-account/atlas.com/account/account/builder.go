@@ -13,8 +13,10 @@ type Builder struct {
 	name      string
 	password  string
 	pin       string
-	pic       string
-	state  State
+	pic         string
+	pinAttempts int
+	picAttempts int
+	state       State
 	gender byte
 	tos    bool
 	updatedAt time.Time
@@ -50,6 +52,16 @@ func (b *Builder) SetPic(pic string) *Builder {
 	return b
 }
 
+func (b *Builder) SetPinAttempts(pinAttempts int) *Builder {
+	b.pinAttempts = pinAttempts
+	return b
+}
+
+func (b *Builder) SetPicAttempts(picAttempts int) *Builder {
+	b.picAttempts = picAttempts
+	return b
+}
+
 func (b *Builder) SetState(state State) *Builder {
 	b.state = state
 	return b
@@ -81,8 +93,10 @@ func (b *Builder) Build() (Model, error) {
 		name:      b.name,
 		password:  b.password,
 		pin:       b.pin,
-		pic:       b.pic,
-		state:  b.state,
+		pic:         b.pic,
+		pinAttempts: b.pinAttempts,
+		picAttempts: b.picAttempts,
+		state:       b.state,
 		gender: b.gender,
 		tos:    b.tos,
 		updatedAt: b.updatedAt,

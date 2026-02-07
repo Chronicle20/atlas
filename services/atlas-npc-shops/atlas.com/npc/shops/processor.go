@@ -80,7 +80,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		t:     tenant.MustFromContext(ctx),
 		cp:    commodities.NewProcessor(l, ctx, db),
 		charP: character.NewProcessor(l, ctx),
-		compP: compartment.NewProcessor(l, ctx),
+		compP: compartment.NewProcessor(),
 		invP:  inventory2.NewProcessor(l, ctx),
 		kp:    producer.ProviderImpl(l)(ctx),
 	}
@@ -394,8 +394,6 @@ func (p *ProcessorImpl) Buy(mb *message.Buffer) func(characterId uint32) func(sl
 				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
 			}
 
-			// TODO: this needs better transaction handling.
-
 			c, err := p.charP.GetById(p.charP.InventoryDecorator)(characterId)
 			if err != nil {
 				p.l.WithError(err).Errorf("Cannot locate character [%d].", characterId)
@@ -419,8 +417,12 @@ func (p *ProcessorImpl) Buy(mb *message.Buffer) func(characterId uint32) func(sl
 					p.l.WithError(err).Errorf("Cannot locate free slot for character [%d].", characterId)
 					return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorInventoryFull))
 				}
-				_ = p.charP.RequestChangeMeso(c.WorldId(), c.Id(), c.Id(), "SHOP", -int32(totalCost))
-				_ = p.compP.RequestCreateItem(c.Id(), itemTemplateId, quantity)
+				if err = p.charP.RequestChangeMeso(mb)(c.WorldId(), c.Id(), c.Id(), "SHOP", -int32(totalCost)); err != nil {
+					return err
+				}
+				if err = p.compP.RequestCreateItem(mb)(c.Id(), itemTemplateId, quantity); err != nil {
+					return err
+				}
 				p.l.Debugf("Character [%d] bought item [%d].", characterId, itemTemplateId)
 				return nil
 			}
@@ -447,8 +449,6 @@ func (p *ProcessorImpl) Sell(mb *message.Buffer) func(characterId uint32) func(s
 				p.l.Errorf("Character [%d] is not in a shop.", characterId)
 				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
 			}
-
-			// TODO: this needs better transaction handling.
 
 			c, err := p.charP.GetById(p.charP.InventoryDecorator)(characterId)
 			if err != nil {
@@ -510,8 +510,12 @@ func (p *ProcessorImpl) Sell(mb *message.Buffer) func(characterId uint32) func(s
 			}
 			price = price * quantity
 
-			_ = p.charP.RequestChangeMeso(c.WorldId(), c.Id(), c.Id(), "SHOP", int32(price))
-			_ = p.compP.RequestDestroyItem(characterId, it, slot, quantity)
+			if err = p.charP.RequestChangeMeso(mb)(c.WorldId(), c.Id(), c.Id(), "SHOP", int32(price)); err != nil {
+				return err
+			}
+			if err = p.compP.RequestDestroyItem(mb)(characterId, it, slot, quantity); err != nil {
+				return err
+			}
 
 			p.l.Debugf("Character [%d] sold [%d] item [%d] from slot [%d].", characterId, quantity, itemTemplateId, slot)
 			return nil
@@ -586,19 +590,12 @@ func (p *ProcessorImpl) Recharge(mb *message.Buffer) func(characterId uint32) fu
 				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorNotEnoughMoney2))
 			}
 
-			// Decrement character's meso
-			err = p.charP.RequestChangeMeso(c.WorldId(), c.Id(), c.Id(), "SHOP", -int32(price))
-			if err != nil {
-				p.l.WithError(err).Errorf("Unable to decrement meso for character [%d].", characterId)
-				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
+			if err = p.charP.RequestChangeMeso(mb)(c.WorldId(), c.Id(), c.Id(), "SHOP", -int32(price)); err != nil {
+				return err
 			}
-
-			// Recharge the item
 			quantityToAdd := uint32(slotMax) - rim.Quantity()
-			err = p.compP.RequestRechargeItem(characterId, inventory.TypeValueUse, int16(slot), quantityToAdd)
-			if err != nil {
-				p.l.WithError(err).Errorf("Unable to recharge item for character [%d].", characterId)
-				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
+			if err = p.compP.RequestRechargeItem(mb)(characterId, inventory.TypeValueUse, int16(slot), quantityToAdd); err != nil {
+				return err
 			}
 
 			p.l.Debugf("Character [%d] recharged item [%d] in slot [%d] with [%d] quantity.", characterId, rim.TemplateId(), slot, quantityToAdd)

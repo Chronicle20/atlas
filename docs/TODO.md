@@ -31,7 +31,6 @@ This document tracks planned features and improvements for the Atlas MapleStory 
 - [ ] Ensure character is alive before setting chalkboard (`chalkboard/processor.go:54`)
 
 ### Channel Service
-- [ ] Cash Item Usage should verify inventory contains item being used (`character_cash_item_use.go:30`)
 - [ ] Handle v83 trailing updateTime for cash item use (`character_cash_item_use.go:50`)
 - [ ] Timing issue with loading pre-existing chalkboards
 - [ ] Timing issue with loading pre-existing chairs

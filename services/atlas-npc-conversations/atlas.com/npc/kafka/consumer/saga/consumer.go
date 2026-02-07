@@ -72,6 +72,16 @@ func handleStatusEventCompleted(l logrus.FieldLogger, db *gorm.DB) message.Handl
 			return
 		}
 
+		// Check if this is a gachapon action (item awarded, end conversation)
+		if _, isGachapon := conversationCtx.Context()["gachaponAction_failureState"]; isGachapon {
+			l.WithField("character_id", conversationCtx.CharacterId()).Debug("Gachapon action completed - item awarded, ending conversation")
+			delete(conversationCtx.Context(), "gachaponAction_failureState")
+			conversationCtx = conversationCtx.ClearPendingSaga()
+			conversation.GetRegistry().UpdateContext(t, conversationCtx.CharacterId(), conversationCtx)
+			_ = conversation.NewProcessor(l, ctx, db).End(conversationCtx.CharacterId())
+			return
+		}
+
 		// Get the success state from context (craft actions)
 		successState, exists := conversationCtx.Context()["craftAction_successState"]
 		if !exists || successState == "" {
@@ -161,6 +171,9 @@ func handleStatusEventFailed(l logrus.FieldLogger, db *gorm.DB) message.Handler[
 		delete(conversationCtx.Context(), "transportAction_routeNotFoundState")
 		delete(conversationCtx.Context(), "transportAction_serviceErrorState")
 
+		// Clean up temporary context values (gachapon action)
+		delete(conversationCtx.Context(), "gachaponAction_failureState")
+
 		// Update the context in registry
 		conversation.GetRegistry().UpdateContext(t, conversationCtx.CharacterId(), conversationCtx)
 
@@ -212,6 +225,11 @@ func resolveFailureState(ctx conversation.ConversationContext, errorCode string,
 
 	// Fall back to general craft action failure state
 	if state, exists := ctx.Context()["craftAction_failureState"]; exists && state != "" {
+		return state
+	}
+
+	// Fall back to gachapon action failure state
+	if state, exists := ctx.Context()["gachaponAction_failureState"]; exists && state != "" {
 		return state
 	}
 

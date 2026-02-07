@@ -96,6 +96,8 @@ func (v *Validator) validateState(state StateModel, stateIds map[string]bool, re
 		v.validateCraftAction(state.Id(), state.CraftAction(), stateIds, result)
 	case TransportActionType:
 		v.validateTransportAction(state.Id(), state.TransportAction(), stateIds, result)
+	case GachaponActionType:
+		v.validateGachaponAction(state.Id(), state.GachaponAction(), stateIds, result)
 	case ListSelectionType:
 		v.validateListSelection(state.Id(), state.ListSelection(), stateIds, result)
 	case AskNumberType:
@@ -267,6 +269,29 @@ func (v *Validator) validateTransportAction(stateId string, action *TransportAct
 	}
 }
 
+// validateGachaponAction validates a gachapon action state
+func (v *Validator) validateGachaponAction(stateId string, action *GachaponActionModel, stateIds map[string]bool, result *ValidationResult) {
+	if action == nil {
+		result.addError(stateId, "gachaponAction", "required", "Gachapon action is required for gachaponAction state")
+		return
+	}
+
+	if action.GachaponId() == "" {
+		result.addError(stateId, "gachaponAction.gachaponId", "required", "Gachapon ID is required")
+	}
+
+	if action.TicketItemId() == 0 {
+		result.addError(stateId, "gachaponAction.ticketItemId", "required", "Ticket item ID is required")
+	}
+
+	// Validate failure state reference (required)
+	if action.FailureState() == "" {
+		result.addError(stateId, "gachaponAction.failureState", "required", "Failure state is required")
+	} else if !stateIds[action.FailureState()] {
+		result.addError(stateId, "gachaponAction.failureState", "invalid_reference", fmt.Sprintf("Failure state '%s' does not exist", action.FailureState()))
+	}
+}
+
 // validateListSelection validates a list selection state
 func (v *Validator) validateListSelection(stateId string, listSelection *ListSelectionModel, stateIds map[string]bool, result *ValidationResult) {
 	if listSelection == nil {
@@ -423,6 +448,10 @@ func (v *Validator) findReachableStates(m NpcConversation) map[string]bool {
 				visit(action.RouteNotFoundState())
 				visit(action.ServiceErrorState())
 			}
+		case GachaponActionType:
+			if action := state.GachaponAction(); action != nil {
+				visit(action.FailureState())
+			}
 		case ListSelectionType:
 			if listSelection := state.ListSelection(); listSelection != nil {
 				for _, choice := range listSelection.Choices() {
@@ -558,6 +587,10 @@ func (v *Validator) getNextStates(state StateModel) []string {
 		if action := state.TransportAction(); action != nil {
 			// Transport actions only have failure states (success = player warped)
 			nextStates = append(nextStates, action.FailureState(), action.CapacityFullState(), action.AlreadyInTransitState(), action.RouteNotFoundState(), action.ServiceErrorState())
+		}
+	case GachaponActionType:
+		if action := state.GachaponAction(); action != nil {
+			nextStates = append(nextStates, action.FailureState())
 		}
 	case ListSelectionType:
 		if listSelection := state.ListSelection(); listSelection != nil {

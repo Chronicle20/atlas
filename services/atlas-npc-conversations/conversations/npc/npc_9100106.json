@@ -1,0 +1,130 @@
+{
+  "npcId": 9100106,
+  "startState": "start",
+  "states": [
+    {
+      "id": "start",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Welcome to the Showa Town Gachapon. Would you like to use your #bGachapon Ticket#k?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "doGachapon"
+          },
+          {
+            "text": "No",
+            "nextState": "infoMenu"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "doGachapon",
+      "type": "gachaponAction",
+      "gachaponAction": {
+        "gachaponId": "showa",
+        "ticketItemId": 5220000,
+        "failureState": "gachaponFailed"
+      }
+    },
+    {
+      "id": "gachaponFailed",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "You'll need a #bGachapon Ticket#k to use the Gachapon. Gachapon Tickets are available in the #rCash Shop#k and can be purchased using NX or Maple Points.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "infoMenu",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Welcome to the Showa Town Gachapon. How may I help you?",
+        "choices": [
+          {
+            "text": "What is Gachapon?",
+            "nextState": "whatIsGachapon"
+          },
+          {
+            "text": "Where can you buy Gachapon tickets?",
+            "nextState": "whereTickets"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "whatIsGachapon",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Play Gachapon to earn rare scrolls, equipment, chairs, mastery books, and other cool items! All you need is a #bGachapon Ticket#k to be the winner of a random mix of items.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "gachaponItems"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "gachaponItems",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "You'll find a variety of items from the Showa Town Gachapon, but you'll most likely find items and scrolls related to Showa Town.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "whereTickets",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Gachapon Tickets are available in the #rCash Shop#k and can be purchased using NX or Maple Points. Click on the red SHOP at the lower right hand corner of the screen to visit the #rCash Shop#k where you can purchase tickets.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

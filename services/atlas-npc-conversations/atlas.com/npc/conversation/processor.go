@@ -472,6 +472,9 @@ func (p *ProcessorImpl) processState(ctx ConversationContext, state StateModel) 
 	case TransportActionType:
 		// Process transport action state
 		return p.processTransportActionState(ctx, state)
+	case GachaponActionType:
+		// Process gachapon action state
+		return p.processGachaponActionState(ctx, state)
 	case ListSelectionType:
 		// Process list selection state
 		return p.processListSelectionState(ctx, state)
@@ -796,6 +799,68 @@ func (p *ProcessorImpl) processTransportActionState(ctx ConversationContext, sta
 	// When saga completes/fails, the saga status consumer will resume the conversation
 	// On success, the character will be warped and conversation ends naturally
 	// On failure, we route to the appropriate error state
+	return state.Id(), nil
+}
+
+// processGachaponActionState processes a gachapon action state
+// Creates a saga to destroy the ticket and select a gachapon reward
+func (p *ProcessorImpl) processGachaponActionState(ctx ConversationContext, state StateModel) (string, error) {
+	gachaponAction := state.GachaponAction()
+	if gachaponAction == nil {
+		return "", errors.New("gachaponAction is nil")
+	}
+
+	p.l.WithFields(logrus.Fields{
+		"gachapon_id":    gachaponAction.GachaponId(),
+		"ticket_item_id": gachaponAction.TicketItemId(),
+		"character_id":   ctx.CharacterId(),
+		"npc_id":         ctx.NpcId(),
+	}).Debug("Processing gachapon action state")
+
+	sagaId := uuid.New()
+
+	sagaBuilder := saga.NewBuilder().
+		SetTransactionId(sagaId).
+		SetSagaType(saga.GachaponTransaction).
+		SetInitiatedBy(fmt.Sprintf("NPC_%d_gachapon", ctx.NpcId()))
+
+	// Step 1: Destroy the gachapon ticket
+	destroyPayload := saga.DestroyAssetPayload{
+		CharacterId: ctx.CharacterId(),
+		TemplateId:  gachaponAction.TicketItemId(),
+		Quantity:    1,
+	}
+	sagaBuilder.AddStep("destroy_ticket", saga.Pending, saga.DestroyAsset, destroyPayload)
+
+	// Step 2: Select gachapon reward (this dynamically injects AwardAsset + EmitGachaponWin)
+	selectPayload := saga.SelectGachaponRewardPayload{
+		CharacterId: ctx.CharacterId(),
+		WorldId:     ctx.Field().WorldId(),
+		ChannelId:   ctx.Field().ChannelId(),
+		GachaponId:  gachaponAction.GachaponId(),
+	}
+	sagaBuilder.AddStep("select_gachapon_reward", saga.Pending, saga.SelectGachaponReward, selectPayload)
+
+	s := sagaBuilder.Build()
+
+	err := saga.NewProcessor(p.l, p.ctx).Create(s)
+	if err != nil {
+		p.l.WithError(err).Errorf("Failed to create gachapon saga")
+		return gachaponAction.FailureState(), nil
+	}
+
+	ctx = ctx.SetPendingSagaId(sagaId)
+	ctx.Context()["gachaponAction_failureState"] = gachaponAction.FailureState()
+
+	GetRegistry().UpdateContext(p.t, ctx.CharacterId(), ctx)
+
+	p.l.WithFields(logrus.Fields{
+		"transaction_id": sagaId.String(),
+		"character_id":   ctx.CharacterId(),
+		"npc_id":         ctx.NpcId(),
+		"gachapon_id":    gachaponAction.GachaponId(),
+	}).Debug("Gachapon saga created, conversation waiting for completion")
+
 	return state.Id(), nil
 }
 

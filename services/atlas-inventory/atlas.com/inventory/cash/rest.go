@@ -66,3 +66,11 @@ type InputRestModel struct {
 func (r InputRestModel) GetName() string {
 	return "items"
 }
+
+func (r InputRestModel) GetID() string {
+	return "0"
+}
+
+func (r *InputRestModel) SetID(_ string) error {
+	return nil
+}

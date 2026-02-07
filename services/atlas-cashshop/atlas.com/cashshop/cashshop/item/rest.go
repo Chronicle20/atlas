@@ -26,6 +26,9 @@ func (r RestModel) GetID() string {
 }
 
 func (r *RestModel) SetID(strId string) error {
+	if strId == "" {
+		return nil
+	}
 	id, err := strconv.Atoi(strId)
 	if err != nil {
 		return err

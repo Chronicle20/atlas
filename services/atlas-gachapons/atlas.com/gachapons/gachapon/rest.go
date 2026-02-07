@@ -1,7 +1,5 @@
 package gachapon
 
-import "strconv"
-
 type RestModel struct {
 	Id             string   `json:"-"`
 	Name           string   `json:"name"`
@@ -35,10 +33,6 @@ func Transform(m Model) (RestModel, error) {
 	}, nil
 }
 
-func Extract(rm RestModel) (string, error) {
-	return rm.Id, nil
-}
-
 type JSONModel struct {
 	Id             string   `json:"id"`
 	Name           string   `json:"name"`
@@ -47,5 +41,3 @@ type JSONModel struct {
 	UncommonWeight uint32   `json:"uncommonWeight"`
 	RareWeight     uint32   `json:"rareWeight"`
 }
-
-var _ = strconv.Itoa // keep import for Extract

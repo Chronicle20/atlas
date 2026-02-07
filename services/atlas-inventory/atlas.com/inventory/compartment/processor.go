@@ -950,6 +950,40 @@ func (p *Processor) CreateAsset(mb *message.Buffer) func(transactionId uuid.UUID
 			if err != nil {
 				return err
 			}
+
+			// Attempt to merge into an existing stack for non-equip, non-rechargeable stackable items
+			if inventoryType != inventory.TypeValueEquip && quantity > 0 && rechargeable == 0 {
+				slotMax, smErr := p.assetProcessor.GetSlotMax(templateId)
+				if smErr == nil {
+					assets, aErr := p.assetProcessor.WithTransaction(tx).GetByCompartmentId(c.Id())
+					if aErr == nil {
+						for _, existing := range assets {
+							if existing.TemplateId() == templateId && existing.HasQuantity() && existing.Quantity() < slotMax {
+								newQuantity := existing.Quantity() + quantity
+								if newQuantity <= slotMax {
+									// Entire quantity fits in existing stack
+									p.l.Debugf("Character [%d] merging [%d] of item [%d] into existing asset [%d].", characterId, quantity, templateId, existing.Id())
+									return p.assetProcessor.WithTransaction(tx).UpdateQuantity(mb)(transactionId, characterId, c.Id(), existing, newQuantity)
+								}
+								// Fill existing to max and create new asset with remainder
+								remainingQuantity := newQuantity - slotMax
+								p.l.Debugf("Character [%d] filling asset [%d] to max [%d] and creating new asset with [%d].", characterId, existing.Id(), slotMax, remainingQuantity)
+								err = p.assetProcessor.WithTransaction(tx).UpdateQuantity(mb)(transactionId, characterId, c.Id(), existing, slotMax)
+								if err != nil {
+									return err
+								}
+								nfs, nfsErr := c.NextFreeSlot()
+								if nfsErr != nil {
+									return nfsErr
+								}
+								a, err = p.assetProcessor.WithTransaction(tx).Create(mb)(transactionId, characterId, c.Id(), templateId, nfs, remainingQuantity, expiration, ownerId, flag, rechargeable)
+								return err
+							}
+						}
+					}
+				}
+			}
+
 			nfs, err := c.NextFreeSlot()
 			if err != nil {
 				return err

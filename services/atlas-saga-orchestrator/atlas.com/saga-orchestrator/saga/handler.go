@@ -2264,17 +2264,41 @@ func (h *HandlerImpl) handleEmitGachaponWin(s Saga, st Step[any]) error {
 		return errors.New("invalid payload")
 	}
 
+	// Find the AssetId from a completed AwardAsset step's result
+	var assetId uint32
+	for _, step := range s.Steps() {
+		if (step.Action() == AwardAsset || step.Action() == AwardInventory) && step.Status() == Completed && step.Result() != nil {
+			if id, ok := step.Result()["assetId"]; ok {
+				switch v := id.(type) {
+				case uint32:
+					assetId = v
+				case float64:
+					assetId = uint32(v)
+				}
+			}
+			break
+		}
+	}
+
+	if assetId == 0 {
+		h.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"character_id":   payload.CharacterId,
+		}).Warn("Unable to find AssetId from previous AwardAsset step result.")
+	}
+
 	h.l.WithFields(logrus.Fields{
 		"transaction_id": s.TransactionId().String(),
 		"character_id":   payload.CharacterId,
 		"item_id":        payload.ItemId,
+		"asset_id":       assetId,
 		"tier":           payload.Tier,
 		"gachapon_id":    payload.GachaponId,
 		"gachapon_name":  payload.GachaponName,
 	}).Infof("Emitting gachapon win event.")
 
 	err := producer.ProviderImpl(h.l)(h.ctx)(gachapon2.EnvEventTopicGachaponRewardWon)(
-		GachaponRewardWonEventProvider(payload))
+		GachaponRewardWonEventProvider(payload, assetId))
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to emit gachapon win event.")
 		return err

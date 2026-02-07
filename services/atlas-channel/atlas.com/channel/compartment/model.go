@@ -44,6 +44,15 @@ func (m Model) FindBySlot(slot int16) (*asset.Model[any], bool) {
 	return nil, false
 }
 
+func (m Model) FindById(id uint32) (*asset.Model[any], bool) {
+	for _, a := range m.Assets() {
+		if a.Id() == id {
+			return &a, true
+		}
+	}
+	return nil, false
+}
+
 func (m Model) FindFirstByItemId(templateId uint32) (*asset.Model[any], bool) {
 	for _, a := range m.Assets() {
 		if a.TemplateId() == templateId {

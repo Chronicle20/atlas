@@ -12,4 +12,5 @@ type RewardWonEvent struct {
 	Tier         string `json:"tier"`
 	GachaponId   string `json:"gachaponId"`
 	GachaponName string `json:"gachaponName"`
+	AssetId      uint32 `json:"assetId"`
 }

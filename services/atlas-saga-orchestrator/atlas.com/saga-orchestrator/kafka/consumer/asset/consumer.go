@@ -45,6 +45,8 @@ func handleAssetCreatedEvent(l logrus.FieldLogger, ctx context.Context, e asset2
 
 	sagaProcessor := saga.NewProcessor(l, ctx)
 
+	assetResult := map[string]any{"assetId": e.AssetId}
+
 	// Get the saga to check if this is a CreateAndEquipAsset step
 	s, err := sagaProcessor.GetById(e.TransactionId)
 	if err != nil {
@@ -52,7 +54,7 @@ func handleAssetCreatedEvent(l logrus.FieldLogger, ctx context.Context, e asset2
 			"transaction_id": e.TransactionId.String(),
 			"character_id":   e.CharacterId,
 		}).Debug("Unable to locate saga for asset created event.")
-		_ = sagaProcessor.StepCompleted(e.TransactionId, true)
+		_ = sagaProcessor.StepCompletedWithResult(e.TransactionId, true, assetResult)
 		return
 	}
 
@@ -137,7 +139,7 @@ func handleAssetCreatedEvent(l logrus.FieldLogger, ctx context.Context, e asset2
 	}
 
 	// Complete the current step (either regular creation or CreateAndEquipAsset)
-	_ = sagaProcessor.StepCompleted(e.TransactionId, true)
+	_ = sagaProcessor.StepCompletedWithResult(e.TransactionId, true, assetResult)
 }
 
 func handleAssetDeletedEvent(l logrus.FieldLogger, ctx context.Context, e asset2.StatusEvent[asset2.DeletedStatusEventBody]) {
@@ -151,7 +153,7 @@ func handleAssetQuantityUpdatedEvent(l logrus.FieldLogger, ctx context.Context, 
 	if e.Type != asset2.StatusEventTypeQuantityChanged {
 		return
 	}
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
+	_ = saga.NewProcessor(l, ctx).StepCompletedWithResult(e.TransactionId, true, map[string]any{"assetId": e.AssetId})
 }
 
 func handleAssetMovedEvent(l logrus.FieldLogger, ctx context.Context, e asset2.StatusEvent[asset2.MovedStatusEventBody]) {

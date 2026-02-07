@@ -29,6 +29,18 @@ func requestDelete(l logrus.FieldLogger, ctx context.Context) func(id uint32) er
 	}
 }
 
+func requestUpdateQuantity(l logrus.FieldLogger, ctx context.Context) func(id uint32, quantity uint32) error {
+	return func(id uint32, quantity uint32) error {
+		input := RestModel{
+			Id:       id,
+			Quantity: quantity,
+		}
+		url := fmt.Sprintf(getBaseRequest()+itemResource, id)
+		_, err := rest.MakePatchRequest[RestModel](url, input)(l, ctx)
+		return err
+	}
+}
+
 func requestCreate(l logrus.FieldLogger, ctx context.Context) func(templateId uint32, commodityId uint32, quantity uint32, purchasedBy uint32) (Model, error) {
 	return func(templateId uint32, commodityId uint32, quantity uint32, purchasedBy uint32) (Model, error) {
 		input := InputRestModel{

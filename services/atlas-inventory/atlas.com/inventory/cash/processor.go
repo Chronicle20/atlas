@@ -28,8 +28,7 @@ func (p *Processor) ByEquipmentIdModelProvider(id uint32) model.Provider[Model] 
 }
 
 func (p *Processor) UpdateQuantity(itemId uint32, quantity uint32) error {
-	//TODO
-	return nil
+	return requestUpdateQuantity(p.l, p.ctx)(itemId, quantity)
 }
 
 func (p *Processor) Delete(itemId uint32) error {

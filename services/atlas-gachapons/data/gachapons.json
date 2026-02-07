@@ -3,64 +3,96 @@
     "id": "henesys",
     "name": "Henesys Gachapon",
     "npcIds": [9100100],
-    "commonWeight": 70,
-    "uncommonWeight": 25,
-    "rareWeight": 5
+    "commonWeight": 90,
+    "uncommonWeight": 8,
+    "rareWeight": 2
   },
   {
     "id": "ellinia",
     "name": "Ellinia Gachapon",
     "npcIds": [9100101],
-    "commonWeight": 65,
-    "uncommonWeight": 30,
-    "rareWeight": 5
+    "commonWeight": 90,
+    "uncommonWeight": 8,
+    "rareWeight": 2
   },
   {
     "id": "perion",
     "name": "Perion Gachapon",
     "npcIds": [9100102],
-    "commonWeight": 70,
-    "uncommonWeight": 25,
-    "rareWeight": 5
+    "commonWeight": 90,
+    "uncommonWeight": 8,
+    "rareWeight": 2
   },
   {
     "id": "kerning",
     "name": "Kerning City Gachapon",
     "npcIds": [9100103],
-    "commonWeight": 70,
-    "uncommonWeight": 25,
-    "rareWeight": 5
+    "commonWeight": 90,
+    "uncommonWeight": 8,
+    "rareWeight": 2
   },
   {
     "id": "sleepywood",
     "name": "Sleepywood Gachapon",
     "npcIds": [9100104],
-    "commonWeight": 60,
-    "uncommonWeight": 30,
-    "rareWeight": 10
+    "commonWeight": 90,
+    "uncommonWeight": 8,
+    "rareWeight": 2
   },
   {
     "id": "mushroom-shrine",
     "name": "Mushroom Shrine Gachapon",
     "npcIds": [9100105],
-    "commonWeight": 65,
-    "uncommonWeight": 25,
-    "rareWeight": 10
+    "commonWeight": 90,
+    "uncommonWeight": 8,
+    "rareWeight": 2
   },
   {
-    "id": "showa",
-    "name": "Showa Town Gachapon",
+    "id": "showa-male",
+    "name": "Showa Spa Male Gachapon",
     "npcIds": [9100106],
-    "commonWeight": 65,
-    "uncommonWeight": 25,
-    "rareWeight": 10
+    "commonWeight": 90,
+    "uncommonWeight": 8,
+    "rareWeight": 2
+  },
+  {
+    "id": "showa-female",
+    "name": "Showa Spa Female Gachapon",
+    "npcIds": [9100107],
+    "commonWeight": 90,
+    "uncommonWeight": 8,
+    "rareWeight": 2
+  },
+  {
+    "id": "ludibrium",
+    "name": "Ludibrium Gachapon",
+    "npcIds": [9100108],
+    "commonWeight": 90,
+    "uncommonWeight": 8,
+    "rareWeight": 2
   },
   {
     "id": "nlc",
-    "name": "NLC Gachapon",
+    "name": "New Leaf City Gachapon",
+    "npcIds": [9100109],
+    "commonWeight": 90,
+    "uncommonWeight": 8,
+    "rareWeight": 2
+  },
+  {
+    "id": "el-nath",
+    "name": "El Nath Gachapon",
+    "npcIds": [9100110],
+    "commonWeight": 90,
+    "uncommonWeight": 8,
+    "rareWeight": 2
+  },
+  {
+    "id": "nautilus",
+    "name": "Nautilus Harbor Gachapon",
     "npcIds": [9100117],
-    "commonWeight": 60,
-    "uncommonWeight": 30,
-    "rareWeight": 10
+    "commonWeight": 90,
+    "uncommonWeight": 8,
+    "rareWeight": 2
   }
 ]

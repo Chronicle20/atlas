@@ -202,7 +202,6 @@ Location: `socket/handler/character_damage.go:24-33`
 - [ ] Stale TODO comment in condition evaluator (`conversation/processor.go:590`)
 
 ### NPC Shops Service
-- [ ] Better transaction handling (`shops/processor.go:397,451`)
 - [ ] **Implement TokenItem purchasing** (`shops/processor.go:428`)
 
 ### Pets Service
@@ -224,6 +223,13 @@ Location: `socket/handler/character_damage.go:24-33`
 - [ ] BladeRecruit job ID handling (`job/model.go:92`)
 - [ ] Translated name for FairytaleLandBeanstalkClimb2 (`map/constants.go:1641`)
 - [ ] Define HiddenStreet Nett's Pyramid battle room maps (926010100-926023500) (`map/model.go:434`)
+
+---
+
+## Architectural
+
+### Cross-Topic Kafka Atomicity
+- [ ] Operations that produce to multiple Kafka topics (e.g., meso change + item create) are not atomic — if the first topic produce succeeds but the second fails, state becomes inconsistent. Consider Kafka transactional producers, an outbox pattern, or consolidating related commands onto a single topic.
 
 ---
 

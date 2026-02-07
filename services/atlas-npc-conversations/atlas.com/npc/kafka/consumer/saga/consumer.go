@@ -4,6 +4,7 @@ import (
 	"atlas-npc-conversations/conversation"
 	consumer2 "atlas-npc-conversations/kafka/consumer"
 	"atlas-npc-conversations/kafka/message/saga"
+	npcSender "atlas-npc-conversations/npc"
 	"context"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -79,6 +80,7 @@ func handleStatusEventCompleted(l logrus.FieldLogger, db *gorm.DB) message.Handl
 			conversationCtx = conversationCtx.ClearPendingSaga()
 			conversation.GetRegistry().UpdateContext(t, conversationCtx.CharacterId(), conversationCtx)
 			_ = conversation.NewProcessor(l, ctx, db).End(conversationCtx.CharacterId())
+			npcSender.NewProcessor(l, ctx).Dispose(conversationCtx.Field().Channel(), conversationCtx.CharacterId())
 			return
 		}
 

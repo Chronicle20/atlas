@@ -21,7 +21,8 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r := router.PathPrefix("/cash-shop/items").Subrouter()
 			r.HandleFunc("", registerInput("create_item", handleCreateItem(db))).Methods(http.MethodPost)
 			r.HandleFunc("/{itemId}", registerGet("get_item", handleGetItem(db))).Methods(http.MethodGet)
-			r.HandleFunc("/{itemId}", registerGet("delete_item", handleDeleteItem(db))).Methods(http.MethodDelete)
+			r.HandleFunc("/{itemId}", registerInput("update_item", handleUpdateItem(db))).Methods(http.MethodPatch)
+		r.HandleFunc("/{itemId}", registerGet("delete_item", handleDeleteItem(db))).Methods(http.MethodDelete)
 		}
 	}
 }
@@ -83,6 +84,22 @@ func handleCreateItem(db *gorm.DB) rest.InputHandler[RestModel] {
 			queryParams := jsonapi.ParseQueryFields(&query)
 			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(restModel)
 		}
+	}
+}
+
+func handleUpdateItem(db *gorm.DB) rest.InputHandler[RestModel] {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
+		return rest.ParseCashItemId(d.Logger(), func(itemId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				err := NewProcessor(d.Logger(), d.Context(), db).UpdateQuantity(itemId, input.Quantity)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Unable to update item [%d].", itemId)
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+				w.WriteHeader(http.StatusNoContent)
+			}
+		})
 	}
 }
 

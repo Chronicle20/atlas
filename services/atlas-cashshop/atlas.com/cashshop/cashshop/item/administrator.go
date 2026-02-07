@@ -58,6 +58,10 @@ func deleteById(db *gorm.DB, tenantId uuid.UUID, id uint32) error {
 	return db.Where("tenant_id = ? AND id = ?", tenantId, id).Delete(&Entity{}).Error
 }
 
+func updateQuantity(db *gorm.DB, tenantId uuid.UUID, id uint32, quantity uint32) error {
+	return db.Model(&Entity{}).Where("tenant_id = ? AND id = ?", tenantId, id).Update("quantity", quantity).Error
+}
+
 // findOrCreateByCashId finds an existing item by cashId, or creates a new one if not found
 // This is used for preserving cashId during transfers between inventory and cash shop
 func findOrCreateByCashId(tenantId uuid.UUID, cashId int64, templateId uint32, commodityId uint32, quantity uint32, purchasedBy uint32, period uint32, hourlyConfig map[uint32]uint32) database.EntityProvider[Entity] {

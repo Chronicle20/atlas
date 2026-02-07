@@ -23,6 +23,7 @@ type Processor interface {
 	CreateAndEmit(templateId uint32, commodityId uint32, quantity uint32, purchasedBy uint32) (Model, error)
 	CreateWithCashId(mb *message.Buffer) func(cashId int64) func(templateId uint32) func(commodityId uint32) func(quantity uint32) func(purchasedBy uint32) (Model, error)
 	CreateWithCashIdAndEmit(cashId int64, templateId uint32, commodityId uint32, quantity uint32, purchasedBy uint32) (Model, error)
+	UpdateQuantity(itemId uint32, quantity uint32) error
 	Delete(mb *message.Buffer) func(itemId uint32) error
 	DeleteAndEmit(itemId uint32) error
 	Expire(mb *message.Buffer) func(itemId uint32) func(replaceItemId uint32) func(replaceMessage string) error
@@ -162,6 +163,10 @@ func (p *ProcessorImpl) CreateWithCashId(mb *message.Buffer) func(cashId int64) 
 
 func (p *ProcessorImpl) CreateWithCashIdAndEmit(cashId int64, templateId uint32, commodityId uint32, quantity uint32, purchasedBy uint32) (Model, error) {
 	return message.EmitWithResult[Model, uint32](p.p)(model.Flip(model.Flip(model.Flip(model.Flip(p.CreateWithCashId)(cashId))(templateId))(commodityId))(quantity))(purchasedBy)
+}
+
+func (p *ProcessorImpl) UpdateQuantity(itemId uint32, quantity uint32) error {
+	return updateQuantity(p.db, p.t.Id(), itemId, quantity)
 }
 
 func (p *ProcessorImpl) Delete(_ *message.Buffer) func(itemId uint32) error {

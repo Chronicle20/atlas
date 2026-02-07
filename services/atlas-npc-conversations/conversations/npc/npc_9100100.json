@@ -1,13 +1,37 @@
 {
   "npcId": 9100100,
-  "startState": "start",
+  "startState": "checkTicket",
   "states": [
     {
-      "id": "start",
+      "id": "checkTicket",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "5220000"
+              }
+            ],
+            "nextState": "askUseTicket"
+          },
+          {
+            "conditions": [],
+            "nextState": "infoMenu"
+          }
+        ]
+      }
+    },
+    {
+      "id": "askUseTicket",
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendYesNo",
-        "text": "Welcome to the Henesys Gachapon. Would you like to use your #bGachapon Ticket#k?",
+        "text": "You may use the Henesys Gachapon. Would you like to use your Gachapon ticket?",
         "choices": [
           {
             "text": "Yes",
@@ -15,7 +39,7 @@
           },
           {
             "text": "No",
-            "nextState": "infoMenu"
+            "nextState": null
           },
           {
             "text": "Exit",
@@ -38,7 +62,7 @@
       "type": "dialogue",
       "dialogue": {
         "dialogueType": "sendOk",
-        "text": "You'll need a #bGachapon Ticket#k to use the Gachapon. Gachapon Tickets are available in the #rCash Shop#k and can be purchased using NX or Maple Points.",
+        "text": "Please have at least one slot in your #rEQUIP, USE, SET-UP, #kand #rETC#k inventories free.",
         "choices": [
           {
             "text": "Ok",
@@ -81,25 +105,7 @@
         "choices": [
           {
             "text": "Next",
-            "nextState": "gachaponItems"
-          },
-          {
-            "text": "Exit",
-            "nextState": null
-          }
-        ]
-      }
-    },
-    {
-      "id": "gachaponItems",
-      "type": "dialogue",
-      "dialogue": {
-        "dialogueType": "sendOk",
-        "text": "You'll find a variety of items from the Henesys Gachapon, but you'll most likely find items and scrolls related to Henesys.",
-        "choices": [
-          {
-            "text": "Ok",
-            "nextState": null
+            "nextState": "gachaponDetailsFromInfo"
           },
           {
             "text": "Exit",
@@ -112,11 +118,55 @@
       "id": "whereTickets",
       "type": "dialogue",
       "dialogue": {
-        "dialogueType": "sendOk",
+        "dialogueType": "sendNext",
         "text": "Gachapon Tickets are available in the #rCash Shop#k and can be purchased using NX or Maple Points. Click on the red SHOP at the lower right hand corner of the screen to visit the #rCash Shop#k where you can purchase tickets.",
         "choices": [
           {
-            "text": "Ok",
+            "text": "Next",
+            "nextState": "gachaponDetailsFromTickets"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "gachaponDetailsFromInfo",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "You'll find a variety of items from the Henesys Gachapon, but you'll most likely find items and scrolls related to Henesys.",
+        "choices": [
+          {
+            "text": "Previous",
+            "nextState": "whatIsGachapon"
+          },
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "gachaponDetailsFromTickets",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "You'll find a variety of items from the Henesys Gachapon, but you'll most likely find items and scrolls related to Henesys.",
+        "choices": [
+          {
+            "text": "Previous",
+            "nextState": "whereTickets"
+          },
+          {
+            "text": "Next",
             "nextState": null
           },
           {

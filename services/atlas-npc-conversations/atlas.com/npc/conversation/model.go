@@ -2043,6 +2043,12 @@ func (b *ConversationContextBuilder) AddContextValue(key, value string) *Convers
 	return b
 }
 
+// SetPendingSagaId sets the pending saga ID
+func (b *ConversationContextBuilder) SetPendingSagaId(sagaId uuid.UUID) *ConversationContextBuilder {
+	b.pendingSagaId = &sagaId
+	return b
+}
+
 // SetConversationType sets the conversation type
 func (b *ConversationContextBuilder) SetConversationType(conversationType ConversationType) *ConversationContextBuilder {
 	b.conversationType = conversationType

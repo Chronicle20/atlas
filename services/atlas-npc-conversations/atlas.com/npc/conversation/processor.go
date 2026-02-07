@@ -427,13 +427,21 @@ func (p *ProcessorImpl) ProcessState(ctx ConversationContext) (bool, error) {
 
 	// If there's a next state, update the context and store it
 	if nextStateId != "" {
+		// If the next state is the same as the current state, the sub-processor
+		// already updated the registry (e.g., saga-waiting states). Don't overwrite.
+		if nextStateId == stateId {
+			return false, nil
+		}
+
 		// Update the context with the next state
 		builder := NewConversationContextBuilder().
 			SetField(ctx.Field()).
 			SetCharacterId(ctx.CharacterId()).
 			SetNpcId(ctx.NpcId()).
 			SetCurrentState(nextStateId).
-			SetConversation(ctx.Conversation())
+			SetConversation(ctx.Conversation()).
+			SetConversationType(ctx.ConversationType()).
+			SetSourceId(ctx.SourceId())
 
 		// Preserve existing context
 		existingContext := ctx.Context()

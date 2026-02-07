@@ -97,7 +97,6 @@ func Make(a Entity) (Model, error) {
 		SetPin(a.PIN).
 		SetPic(a.PIC).
 		SetGender(a.Gender).
-		SetBanned(false).
 		SetTOS(a.TOS).
 		SetUpdatedAt(a.UpdatedAt).
 		Build()

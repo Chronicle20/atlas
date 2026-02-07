@@ -45,6 +45,7 @@ type CreateSessionCommandBody struct {
 	AccountName string `json:"accountName"`
 	Password    string `json:"password"`
 	IPAddress   string `json:"ipAddress"`
+	HWID        string `json:"hwid"`
 }
 
 type ProgressStateSessionCommandBody struct {
@@ -76,13 +77,16 @@ type StatusEvent struct {
 }
 
 type SessionStatusEvent[E any] struct {
-	SessionId uuid.UUID `json:"sessionId"`
-	AccountId uint32    `json:"accountId"`
-	Type      string    `json:"type"`
-	Body      E         `json:"body"`
+	SessionId   uuid.UUID `json:"sessionId"`
+	AccountId   uint32    `json:"accountId"`
+	AccountName string    `json:"accountName"`
+	Type        string    `json:"type"`
+	Body        E         `json:"body"`
 }
 
 type CreatedSessionStatusEventBody struct {
+	IPAddress string `json:"ipAddress"`
+	HWID      string `json:"hwid"`
 }
 
 type StateChangedSessionStatusEventBody struct {
@@ -91,7 +95,9 @@ type StateChangedSessionStatusEventBody struct {
 }
 
 type ErrorSessionStatusEventBody struct {
-	Code   string `json:"code"`
-	Reason byte   `json:"reason"`
-	Until  uint64 `json:"until"`
+	Code      string `json:"code"`
+	Reason    byte   `json:"reason"`
+	Until     uint64 `json:"until"`
+	IPAddress string `json:"ipAddress"`
+	HWID      string `json:"hwid"`
 }

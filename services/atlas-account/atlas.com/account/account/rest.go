@@ -29,7 +29,6 @@ type RestModel struct {
 	LoggedIn       byte   `json:"loggedIn"`
 	LastLogin      uint64 `json:"lastLogin"`
 	Gender         byte   `json:"gender"`
-	Banned         bool   `json:"banned"`
 	TOS            bool   `json:"tos"`
 	Language       string `json:"language"`
 	Country        string `json:"country"`
@@ -63,7 +62,6 @@ func Transform(m Model) (RestModel, error) {
 		LoggedIn:       byte(m.State()),
 		LastLogin:      0,
 		Gender:         m.Gender(),
-		Banned:         m.Banned(),
 		TOS:            m.TOS(),
 		Language:       "en",
 		Country:        "us",
@@ -80,7 +78,6 @@ func Extract(rm RestModel) (Model, error) {
 		SetPic(rm.Pic).
 		SetState(State(rm.LoggedIn)).
 		SetGender(rm.Gender).
-		SetBanned(rm.Banned).
 		SetTOS(rm.TOS).
 		Build()
 }

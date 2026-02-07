@@ -9,6 +9,7 @@ use (
 	./libs/atlas-socket
 	./libs/atlas-tenant
 	./services/atlas-account/atlas.com/account
+	./services/atlas-ban/atlas.com/ban
 	./services/atlas-asset-expiration/atlas.com/asset-expiration
 	./services/atlas-buddies/atlas.com/buddies
 	./services/atlas-buffs/atlas.com/buffs

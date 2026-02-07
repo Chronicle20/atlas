@@ -778,25 +778,21 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 // The saga orchestrator will call atlas-gachapons to select a reward, then store the result
 // in the saga context for subsequent AwardInventory and EmitGachaponWin steps.
 type SelectGachaponRewardPayload struct {
-	CharacterId   uint32     `json:"characterId"`   // CharacterId associated with the action
-	CharacterName string     `json:"characterName"` // Character name for announcement
-	WorldId       world.Id   `json:"worldId"`       // WorldId associated with the action
-	ChannelId     channel.Id `json:"channelId"`     // ChannelId associated with the action
-	GachaponId    string     `json:"gachaponId"`    // Gachapon machine ID to select from
+	CharacterId uint32   `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id `json:"worldId"`     // WorldId associated with the action
+	GachaponId  string   `json:"gachaponId"`  // Gachapon machine ID to select from
 }
 
 // EmitGachaponWinPayload represents the payload required to emit a gachapon win event.
 // Only emitted for uncommon and rare tier wins.
 type EmitGachaponWinPayload struct {
-	CharacterId   uint32     `json:"characterId"`   // CharacterId who won
-	CharacterName string     `json:"characterName"` // Character name for announcement
-	WorldId       world.Id   `json:"worldId"`       // WorldId for broadcasting
-	ChannelId     channel.Id `json:"channelId"`     // ChannelId for broadcasting
-	ItemId        uint32     `json:"itemId"`        // Won item ID
-	Quantity      uint32     `json:"quantity"`       // Won item quantity
-	Tier          string     `json:"tier"`          // Reward tier (uncommon, rare)
-	GachaponId    string     `json:"gachaponId"`    // Gachapon machine ID
-	GachaponName  string     `json:"gachaponName"`  // Gachapon display name
+	CharacterId  uint32   `json:"characterId"`  // CharacterId who won
+	WorldId      world.Id `json:"worldId"`      // WorldId for broadcasting
+	ItemId       uint32   `json:"itemId"`       // Won item ID
+	Quantity     uint32   `json:"quantity"`     // Won item quantity
+	Tier         string   `json:"tier"`         // Reward tier (uncommon, rare)
+	GachaponId   string   `json:"gachaponId"`   // Gachapon machine ID
+	GachaponName string   `json:"gachaponName"` // Gachapon display name
 }
 
 // Processor is the interface for saga operations

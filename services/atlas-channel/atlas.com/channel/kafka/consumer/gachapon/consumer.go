@@ -1,6 +1,8 @@
 package gachapon
 
 import (
+	"atlas-channel/character"
+	"atlas-channel/compartment"
 	consumer2 "atlas-channel/kafka/consumer"
 	gachapon2 "atlas-channel/kafka/message/gachapon"
 	"atlas-channel/server"
@@ -8,6 +10,8 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/Chronicle20/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
@@ -47,21 +51,44 @@ func handleRewardWon(sc server.Model, wp writer.Producer) message.Handler[gachap
 			return
 		}
 
+		c, err := character.NewProcessor(l, ctx).GetById()(event.CharacterId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to retrieve character [%d] for gachapon broadcast.", event.CharacterId)
+			return
+		}
+
+		inventoryType, ok := inventory.TypeFromItemId(item.Id(event.ItemId))
+		if !ok {
+			l.Errorf("Unable to identify inventory type for item [%d].", event.ItemId)
+			return
+		}
+
+		comp, err := compartment.NewProcessor(l, ctx).GetByType(event.CharacterId, inventoryType)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to retrieve compartment for character [%d] inventory type [%d].", event.CharacterId, inventoryType)
+			return
+		}
+
+		a, found := comp.FindFirstByItemId(event.ItemId)
+		if !found {
+			l.Errorf("Unable to find asset with template [%d] for character [%d].", event.ItemId, event.CharacterId)
+			return
+		}
+
+		itemOperator := func(w *response.Writer) error {
+			return writer.WriteAssetInfo(t)(true)(w)(*a)
+		}
+
 		l.WithFields(logrus.Fields{
-			"character_name": event.CharacterName,
+			"character_name": c.Name(),
 			"item_id":        event.ItemId,
 			"tier":           event.Tier,
 			"gachapon_name":  event.GachaponName,
 		}).Infof("Broadcasting gachapon reward won.")
 
-		itemOperator := func(w *response.Writer) error {
-			w.WriteInt(event.ItemId)
-			return nil
-		}
+		bodyProducer := writer.WorldMessageGachaponMegaphoneBody(l)("", c.Name(), sc.ChannelId(), event.GachaponName, itemOperator)
 
-		bodyProducer := writer.WorldMessageGachaponMegaphoneBody(l)("", event.CharacterName, sc.ChannelId(), event.GachaponName, itemOperator)
-
-		sessions, err := session.NewProcessor(l, ctx).AllInTenantProvider()
+		sessions, err := session.NewProcessor(l, ctx).AllInChannelProvider(sc.WorldId(), sc.ChannelId())
 		if err != nil {
 			l.WithError(err).Error("Unable to get sessions for gachapon broadcast.")
 			return

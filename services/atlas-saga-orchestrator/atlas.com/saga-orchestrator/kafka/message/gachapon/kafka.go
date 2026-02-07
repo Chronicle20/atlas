@@ -5,12 +5,11 @@ const (
 )
 
 type RewardWonEvent struct {
-	CharacterId   uint32 `json:"characterId"`
-	CharacterName string `json:"characterName"`
-	WorldId       byte   `json:"worldId"`
-	ItemId        uint32 `json:"itemId"`
-	Quantity      uint32 `json:"quantity"`
-	Tier          string `json:"tier"`
-	GachaponId    string `json:"gachaponId"`
-	GachaponName  string `json:"gachaponName"`
+	CharacterId  uint32 `json:"characterId"`
+	WorldId      byte   `json:"worldId"`
+	ItemId       uint32 `json:"itemId"`
+	Quantity     uint32 `json:"quantity"`
+	Tier         string `json:"tier"`
+	GachaponId   string `json:"gachaponId"`
+	GachaponName string `json:"gachaponName"`
 }

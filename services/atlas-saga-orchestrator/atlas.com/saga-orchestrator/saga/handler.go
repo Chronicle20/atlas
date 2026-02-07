@@ -2232,15 +2232,13 @@ func (h *HandlerImpl) handleSelectGachaponReward(s Saga, st Step[any]) error {
 			Pending,
 			EmitGachaponWin,
 			EmitGachaponWinPayload{
-				CharacterId:   payload.CharacterId,
-				CharacterName: payload.CharacterName,
-				WorldId:       payload.WorldId,
-				ChannelId:     payload.ChannelId,
-				ItemId:        reward.ItemId,
-				Quantity:      reward.Quantity,
-				Tier:          reward.Tier,
-				GachaponId:    payload.GachaponId,
-				GachaponName:  g.Name,
+				CharacterId:  payload.CharacterId,
+				WorldId:      payload.WorldId,
+				ItemId:       reward.ItemId,
+				Quantity:     reward.Quantity,
+				Tier:         reward.Tier,
+				GachaponId:   payload.GachaponId,
+				GachaponName: g.Name,
 			},
 		)
 
@@ -2267,13 +2265,12 @@ func (h *HandlerImpl) handleEmitGachaponWin(s Saga, st Step[any]) error {
 	}
 
 	h.l.WithFields(logrus.Fields{
-		"transaction_id":  s.TransactionId().String(),
-		"character_id":    payload.CharacterId,
-		"character_name":  payload.CharacterName,
-		"item_id":         payload.ItemId,
-		"tier":            payload.Tier,
-		"gachapon_id":     payload.GachaponId,
-		"gachapon_name":   payload.GachaponName,
+		"transaction_id": s.TransactionId().String(),
+		"character_id":   payload.CharacterId,
+		"item_id":        payload.ItemId,
+		"tier":           payload.Tier,
+		"gachapon_id":    payload.GachaponId,
+		"gachapon_name":  payload.GachaponName,
 	}).Infof("Emitting gachapon win event.")
 
 	err := producer.ProviderImpl(h.l)(h.ctx)(gachapon2.EnvEventTopicGachaponRewardWon)(

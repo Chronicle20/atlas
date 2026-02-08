@@ -14,7 +14,7 @@ func Try(fn RepeatableFunc, retries int) error {
 	for {
 		cont, err := fn(attempt)
 		if !cont || err == nil {
-			return nil
+			return err
 		}
 		attempt++
 		if attempt > retries {

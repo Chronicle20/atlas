@@ -58,7 +58,7 @@ func handleStatusEventApplied(sc server.Model, wp writer.Producer) message.Handl
 			for _, cm := range e.Body.Changes {
 				changes = append(changes, stat.NewStat(cm.Type, cm.Amount))
 			}
-			bs = append(bs, buff.NewBuff(e.Body.SourceId, e.Body.Duration, changes, e.Body.CreatedAt, e.Body.ExpiresAt))
+			bs = append(bs, buff.NewBuff(e.Body.SourceId, e.Body.Level, e.Body.Duration, changes, e.Body.CreatedAt, e.Body.ExpiresAt))
 
 			err := session.Announce(l)(ctx)(wp)(writer.CharacterBuffGive)(writer.CharacterBuffGiveBody(l)(ctx)(bs))(s)
 			if err != nil {
@@ -94,7 +94,7 @@ func handleStatusEventExpired(sc server.Model, wp writer.Producer) message.Handl
 			for _, cm := range e.Body.Changes {
 				changes = append(changes, stat.NewStat(cm.Type, cm.Amount))
 			}
-			ebs = append(ebs, buff.NewBuff(e.Body.SourceId, e.Body.Duration, changes, e.Body.CreatedAt, e.Body.ExpiresAt))
+			ebs = append(ebs, buff.NewBuff(e.Body.SourceId, e.Body.Level, e.Body.Duration, changes, e.Body.CreatedAt, e.Body.ExpiresAt))
 
 			err := session.Announce(l)(ctx)(wp)(writer.CharacterBuffCancel)(writer.CharacterBuffCancelBody(l)(ctx)(ebs))(s)
 			if err != nil {

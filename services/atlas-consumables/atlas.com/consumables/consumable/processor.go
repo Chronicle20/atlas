@@ -151,7 +151,7 @@ func ApplyItemEffects(l logrus.FieldLogger, ctx context.Context, c character.Mod
 	}
 
 	if len(statups) > 0 {
-		_ = bp.Apply(f, characterId, -int32(itemId), duration, statups)(characterId)
+		_ = bp.Apply(f, characterId, -int32(itemId), byte(0), duration, statups)(characterId)
 	}
 }
 

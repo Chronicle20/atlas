@@ -10,6 +10,7 @@ import (
 type RestModel struct {
 	Id        string           `json:"-"`
 	SourceId  int32            `json:"sourceId"`
+	Level     byte             `json:"level"`
 	Duration  int32            `json:"duration"`
 	Changes   []stat.RestModel `json:"changes"`
 	CreatedAt time.Time        `json:"createdAt"`
@@ -38,6 +39,7 @@ func Transform(m Model) (RestModel, error) {
 	return RestModel{
 		Id:        m.id.String(),
 		SourceId:  m.sourceId,
+		Level:     m.level,
 		Duration:  m.duration,
 		Changes:   cs,
 		CreatedAt: m.createdAt,

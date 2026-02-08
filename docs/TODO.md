@@ -107,7 +107,6 @@ Location: `socket/handler/character_damage.go:24-33`
 - [ ] Proper temp stat encoding for GMS v12 (`socket/model/monster.go:206`)
 - [ ] Complete skill ID list for skill_usage_info (`socket/model/skill_usage_info.go:65,123,166`)
 - [ ] Battle Mage attack info handling (`socket/model/attack_info.go:96,139`)
-- [ ] Character model TODOs (`socket/model/character.go:213,222`)
 - [ ] Look up actual buff values if riding mount (`socket/model/character.go:482`)
 - [ ] Document GMS v83/v95 constants (`socket/writer/character_attack_common.go:42,51,59`)
 - [ ] Wild Hunter swallow (`socket/writer/character_attack_common.go:118`)

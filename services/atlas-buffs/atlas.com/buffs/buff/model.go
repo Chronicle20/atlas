@@ -11,6 +11,7 @@ import (
 type Model struct {
 	id        uuid.UUID
 	sourceId  int32
+	level     byte
 	duration  int32
 	changes   []stat.Model
 	createdAt time.Time
@@ -19,6 +20,10 @@ type Model struct {
 
 func (m Model) SourceId() int32 {
 	return m.sourceId
+}
+
+func (m Model) Level() byte {
+	return m.level
 }
 
 func (m Model) Expired() bool {
@@ -46,7 +51,7 @@ var (
 	ErrEmptyChanges    = errors.New("changes cannot be empty")
 )
 
-func NewBuff(sourceId int32, duration int32, changes []stat.Model) (Model, error) {
+func NewBuff(sourceId int32, level byte, duration int32, changes []stat.Model) (Model, error) {
 	if duration <= 0 {
 		return Model{}, ErrInvalidDuration
 	}
@@ -56,6 +61,7 @@ func NewBuff(sourceId int32, duration int32, changes []stat.Model) (Model, error
 	return Model{
 		id:        uuid.New(),
 		sourceId:  sourceId,
+		level:     level,
 		duration:  duration,
 		changes:   changes,
 		createdAt: time.Now(),

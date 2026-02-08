@@ -16,7 +16,7 @@ import (
 type Processor interface {
 	ByCharacterIdProvider(characterId uint32) model.Provider[[]Model]
 	GetByCharacterId(characterId uint32) ([]Model, error)
-	Apply(f field.Model, fromId uint32, sourceId int32, duration int32, statups []statup.Model) model.Operator[uint32]
+	Apply(f field.Model, fromId uint32, sourceId int32, level byte, duration int32, statups []statup.Model) model.Operator[uint32]
 	Cancel(f field.Model, characterId uint32, sourceId int32) error
 }
 
@@ -42,10 +42,10 @@ func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {
 	return p.ByCharacterIdProvider(characterId)()
 }
 
-func (p *ProcessorImpl) Apply(f field.Model, fromId uint32, sourceId int32, duration int32, statups []statup.Model) model.Operator[uint32] {
+func (p *ProcessorImpl) Apply(f field.Model, fromId uint32, sourceId int32, level byte, duration int32, statups []statup.Model) model.Operator[uint32] {
 	return func(characterId uint32) error {
 		p.l.Debugf("Character [%d] applying effect from source [%d].", characterId, sourceId)
-		return producer.ProviderImpl(p.l)(p.ctx)(buff2.EnvCommandTopic)(ApplyCommandProvider(f, characterId, fromId, sourceId, duration, statups))
+		return producer.ProviderImpl(p.l)(p.ctx)(buff2.EnvCommandTopic)(ApplyCommandProvider(f, characterId, fromId, sourceId, level, duration, statups))
 	}
 }
 

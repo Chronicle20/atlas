@@ -26,6 +26,7 @@ type Command[E any] struct {
 type ApplyCommandBody struct {
 	FromId   uint32       `json:"fromId"`
 	SourceId int32        `json:"sourceId"`
+	Level    byte         `json:"level"`
 	Duration int32        `json:"duration"`
 	Changes  []StatChange `json:"changes"`
 }

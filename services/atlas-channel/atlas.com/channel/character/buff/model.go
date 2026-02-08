@@ -7,6 +7,7 @@ import (
 
 type Model struct {
 	sourceId  int32
+	level     byte
 	duration  int32
 	changes   []stat.Model
 	createdAt time.Time
@@ -15,6 +16,10 @@ type Model struct {
 
 func (m Model) SourceId() int32 {
 	return m.sourceId
+}
+
+func (m Model) Level() byte {
+	return m.level
 }
 
 func (m Model) Changes() []stat.Model {
@@ -33,9 +38,10 @@ func (m Model) ExpiresAt() time.Time {
 	return m.expiresAt
 }
 
-func NewBuff(sourceId int32, duration int32, changes []stat.Model, createdAt time.Time, expiresAt time.Time) Model {
+func NewBuff(sourceId int32, level byte, duration int32, changes []stat.Model, createdAt time.Time, expiresAt time.Time) Model {
 	return Model{
 		sourceId:  sourceId,
+		level:     level,
 		duration:  duration,
 		changes:   changes,
 		createdAt: createdAt,

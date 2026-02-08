@@ -984,7 +984,7 @@ func (p *ProcessorImpl) getMaxMpGrowth(c Model) (uint16, error) {
 		job.BanditId, job.ChiefBanditId, job.ShadowerId,
 		job.NightWalkerStage1Id, job.NightWalkerStage2Id, job.NightWalkerStage3Id, job.NightWalkerStage4Id) {
 		resMax += 10
-	} else if job.IsA(
+	} else if job.IsA(c.JobId(),
 		job.PirateId,
 		job.BrawlerId, job.MarauderId, job.BuccaneerId,
 		job.GunslingerId, job.OutlawId, job.CorsairId,
@@ -1243,6 +1243,7 @@ func (p *ProcessorImpl) ProcessLevelChange(mb *message.Buffer) func(transactionI
 			}
 
 			effectiveLevel := c.Level() - amount
+			hpMPParams := p.resolveHPMPGainParams(c)
 
 			for i := range amount {
 				effectiveLevel = effectiveLevel + i + 1
@@ -1264,8 +1265,7 @@ func (p *ProcessorImpl) ProcessLevelChange(mb *message.Buffer) func(transactionI
 				}
 
 				addedSP += computeOnLevelAddedSP(c.JobId(), effectiveLevel)
-				// TODO could potentially pre-compute HP and MP so you don't incur loop cost
-				aHP, aMP := p.computeOnLevelAddedHPandMP(c)
+				aHP, aMP := rollHPMPGain(hpMPParams)
 				addedHP += aHP
 				addedMP += aMP
 			}
@@ -1344,19 +1344,23 @@ func computeOnLevelAddedSP(jobId job.Id, effectiveLevel byte) uint32 {
 	return 3
 }
 
-func (p *ProcessorImpl) computeOnLevelAddedHPandMP(c Model) (uint16, uint16) {
-	var addedHP uint16
-	var addedMP uint16
+type hpMPGainParams struct {
+	hpLower uint16
+	hpUpper uint16
+	mpLower uint16
+	mpUpper uint16
+	hpBonus int16
+	mpBonus int16
+}
+
+func (p *ProcessorImpl) resolveHPMPGainParams(c Model) hpMPGainParams {
+	var params hpMPGainParams
 	var improvingHPSkillId skill.Id
 	var improvingMPSkillId skill.Id
 
-	randBoundFunc := func(lower uint16, upper uint16) uint16 {
-		return uint16(rand.Float32()*float32(upper-lower+1)) + lower
-	}
-
 	if job.IsBeginner(c.JobId()) {
-		addedHP = randBoundFunc(12, 16)
-		addedMP = randBoundFunc(10, 12)
+		params.hpLower, params.hpUpper = 12, 16
+		params.mpLower, params.mpUpper = 10, 12
 	} else if job.IsA(c.JobId(),
 		job.WarriorId,
 		job.FighterId, job.CrusaderId, job.HeroId,
@@ -1373,8 +1377,8 @@ func (p *ProcessorImpl) computeOnLevelAddedHPandMP(c Model) (uint16, uint16) {
 		} else if job.IsA(c.JobId(), job.DawnWarriorStage3Id, job.DawnWarriorStage4Id) {
 			improvingMPSkillId = skill.DawnWarriorStage3ImprovedMpRecoveryId
 		}
-		addedHP = randBoundFunc(24, 28)
-		addedMP = randBoundFunc(4, 6)
+		params.hpLower, params.hpUpper = 24, 28
+		params.mpLower, params.mpUpper = 4, 6
 	} else if job.IsA(c.JobId(),
 		job.MagicianId,
 		job.FirePoisonWizardId, job.FirePoisonMagicianId, job.FirePoisonArchMagicianId,
@@ -1386,8 +1390,8 @@ func (p *ProcessorImpl) computeOnLevelAddedHPandMP(c Model) (uint16, uint16) {
 		} else {
 			improvingMPSkillId = skill.MagicianImprovedMaxMpIncreaseId
 		}
-		addedHP = randBoundFunc(10, 14)
-		addedMP = randBoundFunc(22, 24)
+		params.hpLower, params.hpUpper = 10, 14
+		params.mpLower, params.mpUpper = 22, 24
 	} else if job.IsA(c.JobId(),
 		job.BowmanId,
 		job.HunterId, job.RangerId, job.BowmasterId,
@@ -1397,12 +1401,12 @@ func (p *ProcessorImpl) computeOnLevelAddedHPandMP(c Model) (uint16, uint16) {
 		job.AssassinId, job.HermitId, job.NightLordId,
 		job.BanditId, job.ChiefBanditId, job.ShadowerId,
 		job.NightWalkerStage1Id, job.NightWalkerStage2Id, job.NightWalkerStage3Id, job.NightWalkerStage4Id) {
-		addedHP = randBoundFunc(20, 24)
-		addedMP = randBoundFunc(14, 16)
+		params.hpLower, params.hpUpper = 20, 24
+		params.mpLower, params.mpUpper = 14, 16
 	} else if job.IsA(c.JobId(), job.GmId, job.SuperGmId) {
-		addedHP = 30000
-		addedMP = 30000
-	} else if job.IsA(
+		params.hpLower, params.hpUpper = 30000, 30000
+		params.mpLower, params.mpUpper = 30000, 30000
+	} else if job.IsA(c.JobId(),
 		job.PirateId,
 		job.BrawlerId, job.MarauderId, job.BuccaneerId,
 		job.GunslingerId, job.OutlawId, job.CorsairId,
@@ -1412,27 +1416,36 @@ func (p *ProcessorImpl) computeOnLevelAddedHPandMP(c Model) (uint16, uint16) {
 		} else {
 			improvingHPSkillId = skill.BrawlerImproveMaxHpId
 		}
-		addedHP = randBoundFunc(22, 28)
-		addedMP = randBoundFunc(18, 23)
+		params.hpLower, params.hpUpper = 22, 28
+		params.mpLower, params.mpUpper = 18, 23
 	} else if job.IsA(c.JobId(), job.AranStage1Id, job.AranStage2Id, job.AranStage3Id, job.AranStage4Id) {
-		addedHP = randBoundFunc(44, 48)
-		addedMP = randBoundFunc(4, 8)
+		params.hpLower, params.hpUpper = 44, 48
+		params.mpLower, params.mpUpper = 4, 8
 	}
 
 	if improvingHPSkillId > 0 {
 		var improvingHPSkillLevel = c.GetSkillLevel(uint32(improvingHPSkillId))
 		se, err := p.sdp.GetEffect(uint32(improvingHPSkillId), improvingHPSkillLevel)
 		if err == nil {
-			addedHP = uint16(int16(addedHP) + se.X())
+			params.hpBonus = se.X()
 		}
 	}
 	if improvingMPSkillId > 0 {
 		var improvingMPSkillLevel = c.GetSkillLevel(uint32(improvingMPSkillId))
 		se, err := p.sdp.GetEffect(uint32(improvingMPSkillId), improvingMPSkillLevel)
 		if err == nil {
-			addedMP = uint16(int16(addedMP) + se.X())
+			params.mpBonus = se.X()
 		}
 	}
+	return params
+}
+
+func rollHPMPGain(params hpMPGainParams) (uint16, uint16) {
+	randBound := func(lower uint16, upper uint16) uint16 {
+		return uint16(rand.Float32()*float32(upper-lower+1)) + lower
+	}
+	addedHP := uint16(int16(randBound(params.hpLower, params.hpUpper)) + params.hpBonus)
+	addedMP := uint16(int16(randBound(params.mpLower, params.mpUpper)) + params.mpBonus)
 	return addedHP, addedMP
 }
 

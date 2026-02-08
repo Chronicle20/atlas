@@ -55,7 +55,7 @@ This document tracks planned features and improvements for the Atlas MapleStory 
 - [ ] Cash shop inventory item padded string and unknown fields (`socket/writer/cash_shop_operation.go:117,119,120`)
 - [ ] Guild operation byte value (`socket/writer/guild_operation.go:94`)
 - [ ] Buddy operation shop flag (`socket/writer/buddy_operation.go:118`)
-- [ ] Set field usage validation (`socket/writer/set_field.go:260`)
+- [ ] Set field usage validation (`socket/writer/set_field.go:259`)
 - [ ] Multiple services have different cash shop message implementations (`kafka/message/cashshop/kafka.go:72`)
 - [ ] Field migration bug not using instance (`kafka/consumer/character/consumer.go:79`)
 
@@ -123,16 +123,15 @@ Location: `socket/handler/character_damage.go:24-33`
 - [ ] Load gifts in cash shop (`socket/writer/cash_shop_operation.go:131`)
 
 #### Set Field Writer
-- [ ] Retrieve owner name from id (`socket/writer/set_field.go:417,629`)
-- [ ] Create flags bitmask (`socket/writer/set_field.go:418`)
-- [ ] Multiple incomplete string writes (`socket/writer/set_field.go:445,511,532,550,630`)
+- [ ] Retrieve owner name from id (`socket/writer/set_field.go:416,593`)
+- [ ] Create flags bitmask (`socket/writer/set_field.go:417`)
+- [ ] Multiple incomplete string writes (`socket/writer/set_field.go:444,495,511,524,594`)
 
 ### Character Service
 - [ ] Blocked name checking disabled (`processor.go:206`)
 - [ ] Determine appropriate drop type and mod (`processor.go:741`)
-- [ ] Define AP auto-assign range for Beginner/Noblesse/Legend (`processor.go:1251`)
-- [ ] Pre-compute HP and MP to avoid loop cost (`processor.go:1267`)
-- [ ] Award job change AP (Cygnus only?) (`processor.go:1464`)
+- [ ] Define AP auto-assign range for Beginner/Noblesse/Legend (`processor.go:1252`)
+- [ ] Award job change AP (Cygnus only?) (`processor.go:1477`)
 
 ### Character Factory Service
 - [ ] BladeRecruit job ID handling (`job/model.go:13`)
@@ -141,7 +140,6 @@ Location: `socket/handler/character_damage.go:24-33`
 - [ ] Consume Vega scroll (`consumable/processor.go:523`)
 - [ ] Handle spikes/cursed property (`consumable/processor.go:526`)
 - [ ] Improve HP/MP structure (`consumable/processor.go:642`)
-- [ ] Equipable producer owner name (`equipable/producer.go:36`)
 - [ ] Field migration for monster requests (`monster/requests.go:28`)
 
 ### Data Service
@@ -164,14 +162,9 @@ Location: `socket/handler/character_damage.go:24-33`
 - [ ] Second query for party information (`party/rest.go:92`)
 
 ### Inventory Service
-- [ ] Equipable model incomplete (`equipable/model.go:111`)
-- [ ] Asset owner ID handling (`asset/processor.go:309`)
-- [ ] Cash Shop integration for assets (`asset/processor.go:386,392,431,437`)
-- [ ] Determine if creating Equip or Cash Equip (`asset/processor.go:595`)
-- [ ] Asset owner validation for stacking (`compartment/processor.go:583`)
-- [ ] Migrate TransactionId usage (5 locations in `kafka/consumer/compartment/consumer.go:116,131,146,212,227`)
+- [ ] Asset owner validation for stacking (`compartment/processor.go:579`)
+- [ ] Migrate TransactionId usage (5 locations in `kafka/consumer/compartment/consumer.go:118,133,148,214,266`)
 - [ ] TransactionId removal from producers (`compartment/producer.go:63,124,138,153`)
-- [ ] Add required fields to drop event (`kafka/consumer/drop/consumer.go:46,51`)
 
 ### Invite Service
 - [ ] Character deletion should remove pending invites
@@ -180,7 +173,7 @@ Location: `socket/handler/character_damage.go:24-33`
 ### Login Service
 
 #### Error Response Handling
-- [ ] Character view all selected PIC errors (`character_view_all_selected_pic.go:35,54,60,67,73`)
+- [ ] Character view all selected PIC errors (`character_view_all_selected_pic.go:35,73,79`)
 - [ ] Register PIC errors (`register_pic.go:37,42`)
 - [ ] Accept TOS error (`accept_tos.go:31`)
 - [ ] Character view all selected PIC register errors (`character_view_all_selected_pic_register.go:35,54,61,67`)
@@ -188,10 +181,9 @@ Location: `socket/handler/character_damage.go:24-33`
 
 #### Other Login TODOs
 - [ ] Blocked name checking disabled (`character/processor.go:56`)
-- [ ] Terminate on too many PIN attempts (`after_login.go:99`)
 - [ ] Clarify gender defaulting logic (`create_character.go:56`)
-- [ ] Verify character is not engaged before deletion (`delete_character.go:86`)
-- [ ] Verify character is not part of a family before deletion (`delete_character.go:87`)
+- [ ] Verify character is not engaged before deletion (`delete_character.go:95`)
+- [ ] Verify character is not part of a family before deletion (`delete_character.go:96`)
 
 ### Monster Death Service
 - [ ] Determine drop type (`monster/processor.go:22`)
@@ -202,7 +194,7 @@ Location: `socket/handler/character_damage.go:24-33`
 - [ ] Stale TODO comment in condition evaluator (`conversation/processor.go:590`)
 
 ### NPC Shops Service
-- [ ] **Implement TokenItem purchasing** (`shops/processor.go:428`)
+- [ ] **Implement TokenItem purchasing** (`shops/processor.go:430`)
 
 ### Pets Service
 - [ ] Generate cashId if cashId == 0 (`pet/processor.go:199`)
@@ -236,10 +228,22 @@ Location: `socket/handler/character_damage.go:24-33`
 ## Notes
 
 ### Summary Statistics
-- **Total inline TODOs found**: ~196 across the codebase
+- **Total inline TODOs found**: ~170 across the codebase
 - **Most concentrated areas**:
   - Channel Service: ~95 TODOs (socket handlers, writers, models)
-  - Inventory Service: ~18 TODOs (asset processing, compartments, Kafka)
   - Login Service: ~20 TODOs (error handling, character operations)
   - Data Service: ~10 TODOs (skill reader, map reader)
-  - Character Service: ~5 TODOs (stat calculations, job changes)
+  - Inventory Service: ~9 TODOs (compartments, Kafka, TransactionId migration)
+  - Character Service: ~4 TODOs (stat calculations, job changes)
+  - Reactor Actions: 6 TODOs (saga actions for reactor operations)
+  - Guilds: 6 TODOs (validation, error handling)
+
+### Changes Since Last Review (2026-02-08)
+- **Removed 7 stale references** that no longer exist in code:
+  - `equipable/model.go:111` (inventory) - file doesn't exist
+  - `asset/processor.go:309,386,392,431,437,595` (inventory) - TODOs removed
+  - `kafka/consumer/drop/consumer.go:46,51` (inventory) - TODOs removed
+  - `equipable/producer.go:36` (consumables) - TODO removed
+  - `after_login.go:99` (login) - PIN termination implemented
+  - Pre-compute HP/MP TODO (character) - removed from code
+- **Updated line numbers** across inventory, login, character, and set_field writer

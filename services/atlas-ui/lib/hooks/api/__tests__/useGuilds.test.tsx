@@ -12,9 +12,6 @@ import {
   useGuildSearch,
   useGuildsWithSpace,
   useGuildRankings,
-  useCreateGuild,
-  useUpdateGuild,
-  useDeleteGuild,
   guildKeys,
 } from '../useGuilds';
 import type { Guild, GuildAttributes, GuildMember } from '@/types/models/guild';
@@ -29,9 +26,6 @@ jest.mock('@/services/api/guilds.service', () => ({
     search: jest.fn(),
     getWithSpace: jest.fn(),
     getRankings: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
     exists: jest.fn(),
     getMemberCount: jest.fn(),
   },
@@ -210,154 +204,6 @@ describe('useGuilds', () => {
       expect(result.current.isLoading).toBe(false);
       expect(result.current.data).toBeUndefined();
       expect(guildsService.getById).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('Mutation Hooks', () => {
-    it('should create guild successfully', async () => {
-      const newGuildAttributes: GuildAttributes = {
-        worldId: 1,
-        name: 'New Guild',
-        notice: 'Welcome!',
-        points: 0,
-        capacity: 50,
-        logo: 1,
-        logoColor: 0,
-        logoBackground: 0,
-        logoBackgroundColor: 0,
-        leaderId: 1,
-        members: [],
-        titles: [],
-      };
-      
-      const createdGuild: Guild = {
-        id: 'guild-2',
-        attributes: newGuildAttributes,
-      };
-
-      (guildsService.create as jest.Mock).mockResolvedValue(createdGuild);
-
-      const { result } = renderHook(() => useCreateGuild(), {
-        wrapper: createWrapper(),
-      });
-
-      result.current.mutate({ tenant: mockTenant, attributes: newGuildAttributes });
-
-      await waitFor(() => {
-        expect(result.current.isSuccess).toBe(true);
-        expect(result.current.data).toEqual(createdGuild);
-      });
-
-      expect(guildsService.create).toHaveBeenCalledWith(mockTenant, newGuildAttributes);
-    });
-
-    it('should update guild successfully', async () => {
-      const updates: Partial<GuildAttributes> = { name: 'Updated Guild' };
-      const updatedGuild: Guild = {
-        ...mockGuild,
-        attributes: { ...mockGuild.attributes, ...updates },
-      };
-
-      (guildsService.update as jest.Mock).mockResolvedValue(updatedGuild);
-
-      const { result } = renderHook(() => useUpdateGuild(), {
-        wrapper: createWrapper(),
-      });
-
-      result.current.mutate({ tenant: mockTenant, guildId: 'guild-1', updates });
-
-      await waitFor(() => {
-        expect(result.current.isSuccess).toBe(true);
-        expect(result.current.data).toEqual(updatedGuild);
-      });
-
-      expect(guildsService.update).toHaveBeenCalledWith(mockTenant, 'guild-1', updates);
-    });
-
-    it('should delete guild successfully', async () => {
-      (guildsService.delete as jest.Mock).mockResolvedValue(undefined);
-
-      const { result } = renderHook(() => useDeleteGuild(), {
-        wrapper: createWrapper(),
-      });
-
-      result.current.mutate({ tenant: mockTenant, guildId: 'guild-1' });
-
-      await waitFor(() => {
-        expect(result.current.isSuccess).toBe(true);
-      });
-
-      expect(guildsService.delete).toHaveBeenCalledWith(mockTenant, 'guild-1');
-    });
-
-    it('should handle create guild error', async () => {
-      const error = new Error('Failed to create guild');
-      (guildsService.create as jest.Mock).mockRejectedValue(error);
-
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-
-      const { result } = renderHook(() => useCreateGuild(), {
-        wrapper: createWrapper(),
-      });
-
-      result.current.mutate({ 
-        tenant: mockTenant, 
-        attributes: mockGuild.attributes 
-      });
-
-      await waitFor(() => {
-        expect(result.current.isError).toBe(true);
-        expect(result.current.error).toEqual(error);
-      });
-
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to create guild:', error);
-      consoleSpy.mockRestore();
-    });
-
-    it('should handle update guild error', async () => {
-      const error = new Error('Failed to update guild');
-      (guildsService.update as jest.Mock).mockRejectedValue(error);
-
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-
-      const { result } = renderHook(() => useUpdateGuild(), {
-        wrapper: createWrapper(),
-      });
-
-      result.current.mutate({ 
-        tenant: mockTenant, 
-        guildId: 'guild-1', 
-        updates: { name: 'Updated' } 
-      });
-
-      await waitFor(() => {
-        expect(result.current.isError).toBe(true);
-        expect(result.current.error).toEqual(error);
-      });
-
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to update guild:', error);
-      consoleSpy.mockRestore();
-    });
-
-    it('should handle delete guild error', async () => {
-      const error = new Error('Failed to delete guild');
-      (guildsService.delete as jest.Mock).mockRejectedValue(error);
-
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-
-      const { result } = renderHook(() => useDeleteGuild(), {
-        wrapper: createWrapper(),
-      });
-
-      result.current.mutate({ tenant: mockTenant, guildId: 'guild-1' });
-
-      await waitFor(() => {
-        expect(result.current.isError).toBe(true);
-        expect(result.current.error).toEqual(error);
-      });
-
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to delete guild:', error);
-      consoleSpy.mockRestore();
     });
   });
 

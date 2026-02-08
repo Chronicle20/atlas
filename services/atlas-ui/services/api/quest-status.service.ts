@@ -164,6 +164,22 @@ class QuestStatusService extends BaseService {
     }
 
     /**
+     * Forfeit a quest for a character
+     */
+    async forfeitQuest(
+        tenant: Tenant,
+        characterId: string,
+        questId: string,
+        options?: ServiceOptions
+    ): Promise<void> {
+        const { api } = await import('@/lib/api/client');
+        api.setTenant(tenant);
+
+        const url = `${this.basePath}/${characterId}/quests/${questId}/forfeit`;
+        await api.post<void>(url, {}, options);
+    }
+
+    /**
      * Get quest statistics for a character
      */
     async getQuestStats(

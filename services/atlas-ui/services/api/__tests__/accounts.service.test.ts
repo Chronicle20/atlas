@@ -51,10 +51,11 @@ describe('AccountsService', () => {
     name: 'testuser',
     pin: '1234',
     pic: '5678',
+    pinAttempts: 0,
+    picAttempts: 0,
     loggedIn: 0,
     lastLogin: 1640995200,
     gender: 0,
-    banned: false,
     tos: true,
     language: 'en',
     country: 'US',
@@ -74,7 +75,6 @@ describe('AccountsService', () => {
         ...mockAccountAttributes,
         name: 'anotheruser',
         loggedIn: 1,
-        banned: true,
       },
     },
   ];
@@ -164,7 +164,8 @@ describe('AccountsService', () => {
           lastLogin: '1640995200',
           gender: '0',
           characterSlots: '3',
-          banned: 'false', // String that should be converted to boolean
+          pinAttempts: '0',
+          picAttempts: '0',
           tos: 'true',
         },
       };
@@ -175,7 +176,8 @@ describe('AccountsService', () => {
       expect(typeof result.attributes.lastLogin).toBe('number');
       expect(typeof result.attributes.gender).toBe('number');
       expect(typeof result.attributes.characterSlots).toBe('number');
-      expect(typeof result.attributes.banned).toBe('boolean');
+      expect(typeof result.attributes.pinAttempts).toBe('number');
+      expect(typeof result.attributes.picAttempts).toBe('number');
       expect(typeof result.attributes.tos).toBe('boolean');
     });
 
@@ -205,7 +207,6 @@ describe('AccountsService', () => {
 
       await accountsService.getAllAccounts(mockTenant, {
         name: 'testuser',
-        banned: false,
         loggedIn: true,
         language: 'en',
         country: 'US',
@@ -216,7 +217,6 @@ describe('AccountsService', () => {
         expect.objectContaining({
           filters: expect.objectContaining({
             name: 'testuser',
-            banned: false,
             loggedIn: true,
             language: 'en',
             country: 'US',
@@ -297,25 +297,6 @@ describe('AccountsService', () => {
     });
   });
 
-  describe('getBannedAccounts', () => {
-    it('should fetch only banned accounts', async () => {
-      const bannedAccount = { ...mockAccount, attributes: { ...mockAccount.attributes, banned: true } };
-      mockApi.getList.mockResolvedValue([bannedAccount]);
-
-      const result = await accountsService.getBannedAccounts(mockTenant);
-
-      expect(mockApi.getList).toHaveBeenCalledWith(
-        expect.stringContaining('/api/accounts?'),
-        expect.objectContaining({
-          filters: expect.objectContaining({
-            banned: true,
-          }),
-        })
-      );
-      expect(result).toEqual([bannedAccount]);
-    });
-  });
-
   describe('terminateAccountSession', () => {
     it('should terminate account session', async () => {
       mockApi.delete.mockResolvedValue(undefined);
@@ -331,7 +312,7 @@ describe('AccountsService', () => {
     it('should calculate account statistics', async () => {
       const accountsWithStats = [
         { ...mockAccount, attributes: { ...mockAccount.attributes, loggedIn: 1, characterSlots: 3 } },
-        { ...mockAccount, id: 'account-2', attributes: { ...mockAccount.attributes, banned: true, characterSlots: 5 } },
+        { ...mockAccount, id: 'account-2', attributes: { ...mockAccount.attributes, characterSlots: 5 } },
         { ...mockAccount, id: 'account-3', attributes: { ...mockAccount.attributes, loggedIn: 0, characterSlots: 2 } },
       ];
       mockApi.getList.mockResolvedValue(accountsWithStats);
@@ -341,7 +322,6 @@ describe('AccountsService', () => {
       expect(stats).toEqual({
         total: 3,
         loggedIn: 1,
-        banned: 1,
         totalCharacterSlots: 10,
         averageCharacterSlots: 10 / 3,
       });
@@ -355,7 +335,6 @@ describe('AccountsService', () => {
       expect(stats).toEqual({
         total: 0,
         loggedIn: 0,
-        banned: 0,
         totalCharacterSlots: 0,
         averageCharacterSlots: 0,
       });

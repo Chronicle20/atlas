@@ -29,6 +29,8 @@ export interface CharacterAttributes {
     fame: number;
     hair: number;
     face: number;
+    ap: number;
+    sp: string;
     mapId: number;
     spawnPoint: number;
     gm: number;

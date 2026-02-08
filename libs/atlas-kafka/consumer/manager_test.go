@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/producer"
@@ -90,6 +92,68 @@ func (m MockTracerProvider) Tracer(_ string, _ ...trace.TracerOption) trace.Trac
 		m.tracer = &MockTracer{}
 	}
 	return m.tracer
+}
+
+type ChannelMockReader struct {
+	msgCh chan kafka.Message
+}
+
+func (r *ChannelMockReader) ReadMessage(ctx context.Context) (kafka.Message, error) {
+	select {
+	case m := <-r.msgCh:
+		return m, nil
+	case <-ctx.Done():
+		return kafka.Message{}, context.Canceled
+	}
+}
+
+func (r *ChannelMockReader) Close() error {
+	return nil
+}
+
+func TestGracefulShutdown(t *testing.T) {
+	consumer.ResetInstance()
+
+	l, _ := test.NewNullLogger()
+	wg := &sync.WaitGroup{}
+
+	otel.SetTracerProvider(&MockTracerProvider{})
+
+	msgCh := make(chan kafka.Message, 1)
+	msgCh <- kafka.Message{Value: []byte("test")}
+
+	rp := consumer.ConfigReaderProducer(func(config kafka.ReaderConfig) consumer.KafkaReader {
+		return &ChannelMockReader{msgCh: msgCh}
+	})
+
+	var handlerCompleted atomic.Bool
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	cm := consumer.GetManager(rp)
+	c := consumer.NewConfig([]string{""}, "test-consumer", "test-topic", "test-group")
+	cm.AddConsumer(l, ctx, wg)(c)
+
+	handlerStarted := make(chan struct{})
+	_, _ = cm.RegisterHandler("test-topic", func(l logrus.FieldLogger, ctx context.Context, msg kafka.Message) (bool, error) {
+		close(handlerStarted)
+		time.Sleep(200 * time.Millisecond)
+		handlerCompleted.Store(true)
+		return true, nil
+	})
+
+	// Wait for handler to begin executing
+	<-handlerStarted
+
+	// Cancel context to trigger shutdown
+	cancel()
+
+	// Wait for consumer to finish — this should block until handler completes
+	wg.Wait()
+
+	if !handlerCompleted.Load() {
+		t.Fatal("Expected handler to complete before shutdown finished")
+	}
 }
 
 func TestSpanPropagation(t *testing.T) {

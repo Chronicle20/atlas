@@ -16,22 +16,29 @@ APP_PASSWORD="${APP_PASSWORD:?set APP_PASSWORD}"
 # ---- Databases (edit this list for now) ----
 DBS=(
   atlas-accounts
+  atlas-ban
   atlas-buddies
   atlas-cashshop
   atlas-characters
   atlas-configurations
   atlas-data
   atlas-drops
-  atlas-equipables
+  atlas-families
   atlas-fame
+  atlas-gachapons
   atlas-guilds
   atlas-inventory
   atlas-keys
+  atlas-marriages
   atlas-notes
   atlas-npc-conversations
   atlas-npc-shops
   atlas-pets
+  atlas-portal-actions
+  atlas-quest
+  atlas-reactor-actions
   atlas-skills
+  atlas-storage
   atlas-tenants
 )
 

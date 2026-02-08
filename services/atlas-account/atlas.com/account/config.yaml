@@ -1,2 +1,10 @@
 # Automatically register players when they login with a nonexistent username.
 automaticRegister: true
+# Maximum failed PIN attempts before triggering a temporary ban.
+maxPinAttempts: 5
+# Duration of the temporary ban issued when PIN attempt limit is exceeded.
+pinBanDuration: 15m
+# Maximum failed PIC attempts before triggering a temporary ban.
+maxPicAttempts: 5
+# Duration of the temporary ban issued when PIC attempt limit is exceeded.
+picBanDuration: 15m

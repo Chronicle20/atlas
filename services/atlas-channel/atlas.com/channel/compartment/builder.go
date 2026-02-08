@@ -17,7 +17,7 @@ type modelBuilder struct {
 	characterId   uint32
 	inventoryType inventory.Type
 	capacity      uint32
-	assets        []asset.Model[any]
+	assets        []asset.Model
 }
 
 // NewModelBuilder creates a new builder instance with required fields
@@ -27,7 +27,7 @@ func NewModelBuilder(id uuid.UUID, characterId uint32, it inventory.Type, capaci
 		characterId:   characterId,
 		inventoryType: it,
 		capacity:      capacity,
-		assets:        make([]asset.Model[any], 0),
+		assets:        make([]asset.Model, 0),
 	}
 }
 
@@ -54,13 +54,13 @@ func (b *modelBuilder) SetCapacity(capacity uint32) *modelBuilder {
 }
 
 // AddAsset appends an asset to the assets slice
-func (b *modelBuilder) AddAsset(a asset.Model[any]) *modelBuilder {
+func (b *modelBuilder) AddAsset(a asset.Model) *modelBuilder {
 	b.assets = append(b.assets, a)
 	return b
 }
 
 // SetAssets replaces the assets slice
-func (b *modelBuilder) SetAssets(as []asset.Model[any]) *modelBuilder {
+func (b *modelBuilder) SetAssets(as []asset.Model) *modelBuilder {
 	b.assets = as
 	return b
 }

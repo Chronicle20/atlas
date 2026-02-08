@@ -1,6 +1,7 @@
 package compartment
 
 import (
+	asset2 "atlas-saga-orchestrator/kafka/message/asset"
 	"atlas-saga-orchestrator/kafka/message/compartment"
 	"atlas-saga-orchestrator/kafka/producer"
 	"context"
@@ -33,7 +34,7 @@ type Processor interface {
 	RequestEquipAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
 	RequestUnequipAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
 	RequestCreateAndEquipAsset(transactionId uuid.UUID, payload CreateAndEquipAssetPayload) error
-	RequestAcceptAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, quantity uint32) error
+	RequestAcceptAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, templateId uint32, assetData asset2.AssetData) error
 	RequestReleaseAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, assetId uint32, quantity uint32) error
 }
 
@@ -99,14 +100,11 @@ func (p *ProcessorImpl) RequestUnequipAsset(transactionId uuid.UUID, characterId
 }
 
 func (p *ProcessorImpl) RequestCreateAndEquipAsset(transactionId uuid.UUID, payload CreateAndEquipAssetPayload) error {
-	// This method internally uses the same award_asset semantics as RequestCreateItem
-	// The subsequent equip_asset step will be dynamically created by the compartment consumer
-	// when it receives the StatusEventTypeCreated event
 	return p.RequestCreateItem(transactionId, payload.CharacterId, payload.Item.TemplateId, payload.Item.Quantity, payload.Item.Expiration)
 }
 
-func (p *ProcessorImpl) RequestAcceptAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, quantity uint32) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestAcceptAssetCommandProvider(transactionId, characterId, inventoryType, templateId, referenceId, referenceType, referenceData, quantity))
+func (p *ProcessorImpl) RequestAcceptAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, templateId uint32, assetData asset2.AssetData) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestAcceptAssetCommandProvider(transactionId, characterId, inventoryType, templateId, assetData))
 }
 
 func (p *ProcessorImpl) RequestReleaseAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, assetId uint32, quantity uint32) error {

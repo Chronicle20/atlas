@@ -35,7 +35,7 @@ func InventoryCapacityIncreasedStatusEventProvider(characterId uint32, inventory
 	return producer.SingleMessageProvider(key, value)
 }
 
-func PurchaseStatusEventProvider(characterId uint32, templateId, price uint32, compartmentId uuid.UUID, assetId uuid.UUID, itemId uint32) model.Provider[[]kafka.Message] {
+func PurchaseStatusEventProvider(characterId uint32, templateId, price uint32, compartmentId uuid.UUID, assetId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &cashshop.StatusEvent[cashshop.PurchaseEventBody]{
 		CharacterId: characterId,
@@ -45,7 +45,6 @@ func PurchaseStatusEventProvider(characterId uint32, templateId, price uint32, c
 			Price:         price,
 			CompartmentId: compartmentId,
 			AssetId:       assetId,
-			ItemId:        itemId,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

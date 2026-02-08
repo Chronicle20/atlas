@@ -72,6 +72,10 @@ func ExtractCharacterId(step Step[any]) uint32 {
 		return p.CharacterId
 	case ReleaseFromStoragePayload:
 		return p.CharacterId
+	case SelectGachaponRewardPayload:
+		return p.CharacterId
+	case EmitGachaponWinPayload:
+		return p.CharacterId
 	default:
 		return 0
 	}

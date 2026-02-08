@@ -111,7 +111,7 @@ JSON:API resource representing a saga.
 
 ### POST /api/sagas
 
-Creates a new saga.
+Creates a new saga. If `transactionId` is omitted or nil, a UUID is auto-generated.
 
 #### Parameters
 
@@ -147,6 +147,8 @@ JSON:API resource representing a saga.
   }
 }
 ```
+
+The `payload` field is action-specific. The service unmarshals the payload based on the `action` field using registered unmarshalers. Actions without a registered unmarshaler pass the payload through as-is.
 
 #### Response Model
 
@@ -201,3 +203,62 @@ All endpoints require tenant identification headers:
 | REGION | Region code (e.g., GMS) |
 | MAJOR_VERSION | Major version number |
 | MINOR_VERSION | Minor version number |
+
+## REST Models
+
+### RestModel (Saga)
+
+| Field | Type | JSON Key | Description |
+|-------|------|----------|-------------|
+| TransactionID | uuid.UUID | transactionId | Unique ID for the transaction |
+| SagaType | Type | sagaType | Type of saga |
+| InitiatedBy | string | initiatedBy | Who initiated the saga |
+| Steps | []StepRestModel | steps | Ordered list of steps |
+
+### StepRestModel
+
+| Field | Type | JSON Key | Description |
+|-------|------|----------|-------------|
+| StepID | string | stepId | Unique ID for the step within the saga |
+| Status | Status | status | Step status (pending, completed, failed) |
+| Action | Action | action | Action to perform |
+| Payload | interface{} | payload | Action-specific data |
+| CreatedAt | string | createdAt | Creation timestamp (RFC3339) |
+| UpdatedAt | string | updatedAt | Last update timestamp (RFC3339) |
+
+### Payload Unmarshalers
+
+The following actions have registered payload unmarshalers for the POST endpoint. Payloads for these actions are deserialized into their typed structs during extraction:
+
+| Action | Payload Type |
+|--------|-------------|
+| award_inventory | AwardItemActionPayload |
+| award_experience | AwardExperiencePayload |
+| award_level | AwardLevelPayload |
+| award_mesos | AwardMesosPayload |
+| warp_to_random_portal | WarpToRandomPortalPayload |
+| warp_to_portal | WarpToPortalPayload |
+| destroy_asset | DestroyAssetPayload |
+| destroy_asset_from_slot | DestroyAssetFromSlotPayload |
+
+Actions not listed above pass the raw payload through without typed deserialization.
+
+## Saga Types
+
+| Type | Value |
+|------|-------|
+| InventoryTransaction | inventory_transaction |
+| QuestReward | quest_reward |
+| TradeTransaction | trade_transaction |
+| CharacterCreation | character_creation |
+| StorageOperation | storage_operation |
+| CharacterRespawn | character_respawn |
+| GachaponTransaction | gachapon_transaction |
+
+## Step Statuses
+
+| Status | Value |
+|--------|-------|
+| Pending | pending |
+| Completed | completed |
+| Failed | failed |

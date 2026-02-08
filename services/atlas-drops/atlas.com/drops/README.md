@@ -4,13 +4,14 @@ In-memory drop state management service for the Atlas game world.
 
 ## Overview
 
-This service manages transient drop state (items, meso, equipment dropped in the game world). Drops are stored in-memory with TTL-based expiration, making database persistence unnecessary for this short-lived game state.
+This service manages transient drop state (items, meso, and equipment dropped in the game world). Drops are stored in-memory with TTL-based expiration, making database persistence unnecessary for this short-lived game state. Equipment stats are carried inline on the drop model itself.
 
 ### Key Characteristics
 
 - **In-memory storage**: Drops are stored in a singleton registry with thread-safe access
 - **TTL expiration**: Drops automatically expire after a configurable time period
 - **Multi-tenant**: Drops are isolated by tenant ID
+- **Instance-aware**: Drops are scoped to a specific field (world + channel + map + instance)
 - **Stateless deployment**: Service can be restarted without data migration (drops are ephemeral)
 
 ## REST API
@@ -28,15 +29,16 @@ Returns a single drop by its unique identifier.
 ### Get Drops in Map
 
 ```
-GET /worlds/{worldId}/channels/{channelId}/maps/{mapId}/drops
+GET /worlds/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/drops
 ```
 
-Returns all drops currently on a specific map.
+Returns all drops currently on a specific map instance.
 
 **Path Parameters:**
 - `worldId` - World identifier
 - `channelId` - Channel identifier
 - `mapId` - Map identifier
+- `instanceId` - Instance UUID (use nil UUID for non-instanced maps)
 
 **Response:** JSON:API formatted array of drop resources
 
@@ -48,11 +50,11 @@ Returns all drops currently on a specific map.
 
 | Command Type | Description |
 |--------------|-------------|
-| `SPAWN` | Create a new drop from a monster |
-| `SPAWN_FROM_CHARACTER` | Create a new drop from a character (with existing equipment ID) |
+| `SPAWN` | Create a new drop with inline equipment stats |
+| `SPAWN_FROM_CHARACTER` | Create a new drop from a character with inline equipment stats |
 | `REQUEST_RESERVATION` | Request to reserve a drop for pickup |
 | `CANCEL_RESERVATION` | Cancel an existing reservation |
-| `REQUEST_PICK_UP` | Request to pick up a reserved drop |
+| `REQUEST_PICK_UP` | Request to pick up a drop |
 
 ### Status Event Topic (Produced)
 
@@ -62,17 +64,9 @@ Returns all drops currently on a specific map.
 |------------|-------------|
 | `CREATED` | Drop was spawned in the world |
 | `RESERVED` | Drop was successfully reserved for a character |
-| `RESERVATION_FAILURE` | Reservation request failed (already reserved) |
+| `RESERVATION_FAILURE` | Reservation request failed (already reserved or cancelled) |
 | `PICKED_UP` | Drop was successfully picked up |
 | `EXPIRED` | Drop expired due to TTL |
-
-## Cross-Service Dependencies
-
-### Equipment Service (EQUIPABLES)
-
-When spawning equipment-type drops via the `SPAWN` command, this service makes REST calls to the equipment service to create the equipment record. The equipment ID is then associated with the drop.
-
-When drops expire, equipment records are deleted via REST call.
 
 ## Domain Model
 
@@ -86,9 +80,9 @@ When drops expire, equipment records are deleted via REST call.
 ### Drop Lifecycle
 
 ```
-SPAWN → AVAILABLE → RESERVED → PICKED_UP
-                 ↘          ↗
-                   EXPIRED
+SPAWN -> AVAILABLE -> RESERVED -> PICKED_UP
+                   \            /
+                     EXPIRED
 ```
 
 ## Architecture Notes

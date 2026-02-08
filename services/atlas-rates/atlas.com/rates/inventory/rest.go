@@ -176,15 +176,15 @@ func (r *CompartmentRestModel) SetReferencedStructs(references map[string]map[st
 	return nil
 }
 
-// AssetRestModel represents an asset from atlas-inventory
+// AssetRestModel represents an asset from atlas-inventory (flattened)
 type AssetRestModel struct {
-	Id            string                 `json:"-"`
-	TemplateId    uint32                 `json:"templateId"`
-	Slot          int16                  `json:"slot"`
-	ReferenceId   uint32                 `json:"referenceId"`
-	ReferenceType string                 `json:"referenceType"`
-	ReferenceData map[string]interface{} `json:"referenceData"`
-	Expiration    time.Time              `json:"expiration"`
+	Id            string     `json:"-"`
+	TemplateId    uint32     `json:"templateId"`
+	Slot          int16      `json:"slot"`
+	Expiration    time.Time  `json:"expiration"`
+	CreatedAt     time.Time  `json:"createdAt"`
+	EquippedSince *time.Time `json:"equippedSince"`
+	CashId        int64      `json:"cashId,string"`
 }
 
 func (r AssetRestModel) GetName() string {
@@ -208,17 +208,9 @@ func (r *AssetRestModel) SetToManyReferenceIDs(_ string, _ []string) error {
 	return nil
 }
 
-// GetCreatedAt extracts the createdAt timestamp from ReferenceData if present
+// GetCreatedAt returns the creation timestamp
 func (r AssetRestModel) GetCreatedAt() time.Time {
-	if r.ReferenceData == nil {
-		return time.Time{}
-	}
-	if createdAtStr, ok := r.ReferenceData["createdAt"].(string); ok {
-		if t, err := time.Parse(time.RFC3339, createdAtStr); err == nil {
-			return t
-		}
-	}
-	return time.Time{}
+	return r.CreatedAt
 }
 
 // IsEquipmentSlot returns true if the slot is an equipment slot (negative)
@@ -226,26 +218,17 @@ func (r AssetRestModel) IsEquipmentSlot() bool {
 	return r.Slot < 0
 }
 
-// IsEquipable returns true if the asset is an equipable item
+// IsEquipable returns true if the asset is in an equipment slot
 func (r AssetRestModel) IsEquipable() bool {
-	return r.ReferenceType == "EQUIPABLE" || r.ReferenceType == "equipable"
+	return r.Slot < 0
 }
 
 // IsCash returns true if the asset is a cash item
 func (r AssetRestModel) IsCash() bool {
-	return r.ReferenceType == "CASH" || r.ReferenceType == "cash"
+	return r.CashId > 0
 }
 
-// GetEquippedSince extracts the equippedSince timestamp from ReferenceData if present
-// Returns nil if not equipped or not an equipable
+// GetEquippedSince returns the equipped since timestamp
 func (r AssetRestModel) GetEquippedSince() *time.Time {
-	if r.ReferenceData == nil {
-		return nil
-	}
-	if equippedSinceStr, ok := r.ReferenceData["equippedSince"].(string); ok {
-		if t, err := time.Parse(time.RFC3339, equippedSinceStr); err == nil {
-			return &t
-		}
-	}
-	return nil
+	return r.EquippedSince
 }

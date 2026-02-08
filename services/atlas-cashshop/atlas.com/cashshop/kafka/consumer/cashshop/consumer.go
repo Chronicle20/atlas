@@ -2,7 +2,7 @@ package cashshop
 
 import (
 	cashshop3 "atlas-cashshop/cashshop"
-	item2 "atlas-cashshop/cashshop/item"
+	"atlas-cashshop/cashshop/inventory/asset"
 	consumer2 "atlas-cashshop/kafka/consumer"
 	"atlas-cashshop/kafka/message/cashshop"
 	"atlas-cashshop/kafka/producer"
@@ -106,13 +106,13 @@ func handleCommandExpire(db *gorm.DB) message.Handler[cashshop.Command[cashshop.
 		l.Debugf("Received EXPIRE command for account [%d], asset [%d], template [%d].",
 			c.Body.AccountId, c.Body.AssetId, c.Body.TemplateId)
 
-		err := item2.NewProcessor(l, ctx, db).ExpireAndEmit(
+		err := asset.NewProcessor(l, ctx, db).ExpireAndEmit(
 			c.Body.AssetId,
 			c.Body.ReplaceItemId,
 			c.Body.ReplaceMessage,
 		)
 		if err != nil {
-			l.WithError(err).Errorf("Failed to expire cashshop item [%d] for account [%d].", c.Body.AssetId, c.Body.AccountId)
+			l.WithError(err).Errorf("Failed to expire cashshop asset [%d] for account [%d].", c.Body.AssetId, c.Body.AccountId)
 		}
 	}
 }

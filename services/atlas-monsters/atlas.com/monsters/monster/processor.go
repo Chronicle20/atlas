@@ -102,7 +102,7 @@ func (p *ProcessorImpl) Create(f field.Model, input RestModel) (Model, error) {
 		return Model{}, err
 	}
 
-	m := GetMonsterRegistry().CreateMonster(p.t, f, input.MonsterId, input.X, input.Y, input.Fh, 5, input.Team, ma.HP(), ma.MP())
+	m := GetMonsterRegistry().CreateMonster(p.t, f, input.MonsterId, input.X, input.Y, input.Fh, 5, input.Team, ma.Hp(), ma.Mp())
 
 	cid, err := p.getControllerCandidate(f, _map.CharacterIdsInFieldProvider(p.l)(p.ctx)(f))
 	if err == nil {

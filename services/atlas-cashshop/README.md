@@ -4,13 +4,15 @@ Cash shop management service for game accounts and characters.
 
 ## Overview
 
-Manages cash shop functionality including wallets, wishlists, inventories, compartments, assets, and items. Handles currency balances (credit, points, prepaid), character wishlists, and cash item storage organized by character type (Explorer, Cygnus, Legend).
+Manages cash shop functionality including wallets, wishlists, and cash inventories. Currency balances (credit, points, prepaid) are tracked per account. Character wishlists reference commodities by serial number. Cash inventories are organized by character type (Explorer, Cygnus, Legend) into compartments, each containing flattened assets that hold all item data directly. Purchases, inventory capacity increases, and asset lifecycle (creation, release, expiration) are coordinated through Kafka commands and events.
 
 ## External Dependencies
 
-- **PostgreSQL**: Persistent storage for wallets, wishlists, inventories, compartments, assets, and items
+- **PostgreSQL**: Persistent storage for wallets, wishlists, compartments, and assets
 - **Kafka**: Message broker for commands and events
 - **Jaeger**: Distributed tracing
+- **atlas-data** (REST): Commodity catalog lookups
+- **Configurations service** (REST): Tenant configuration including hourly expiration settings
 
 ## Runtime Configuration
 
@@ -25,6 +27,7 @@ Manages cash shop functionality including wallets, wishlists, inventories, compa
 | DB_PORT | Postgres database port |
 | DB_NAME | Postgres database name |
 | BOOTSTRAP_SERVERS | Kafka host:port |
+| CONFIGURATIONS | Base URL for the configurations service (tenant config / hourly expirations) |
 | EVENT_TOPIC_ACCOUNT_STATUS | Kafka topic for account status events |
 | EVENT_TOPIC_CHARACTER_STATUS | Kafka topic for character status events |
 | COMMAND_TOPIC_CASH_SHOP | Kafka topic for cash shop commands |
@@ -37,6 +40,7 @@ Manages cash shop functionality including wallets, wishlists, inventories, compa
 | EVENT_TOPIC_WALLET_STATUS | Kafka topic for wallet status events |
 | COMMAND_TOPIC_WALLET | Kafka topic for wallet commands |
 | EVENT_TOPIC_WISHLIST_STATUS | Kafka topic for wishlist status events |
+| COMMAND_TOPIC_COMPARTMENT | Kafka topic for character inventory compartment commands (capacity increase) |
 
 ## Documentation
 

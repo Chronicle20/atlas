@@ -40,11 +40,6 @@ func handleAssetMoved(l logrus.FieldLogger, ctx context.Context, e asset.StatusE
 		return
 	}
 
-	// Only handle equipable items
-	if !asset.IsEquipable(e.Body.ReferenceType) {
-		return
-	}
-
 	oldSlot := e.Body.OldSlot
 	newSlot := e.Slot
 
@@ -146,10 +141,10 @@ func extractEquipmentBonuses(assetId uint32, equipData *inventory.EquipableRestD
 		bonuses = append(bonuses, stat.NewBonus(source, stat.TypeIntelligence, int32(equipData.Intelligence)))
 	}
 	if equipData.Hp > 0 {
-		bonuses = append(bonuses, stat.NewBonus(source, stat.TypeMaxHP, int32(equipData.Hp)))
+		bonuses = append(bonuses, stat.NewBonus(source, stat.TypeMaxHp, int32(equipData.Hp)))
 	}
 	if equipData.Mp > 0 {
-		bonuses = append(bonuses, stat.NewBonus(source, stat.TypeMaxMP, int32(equipData.Mp)))
+		bonuses = append(bonuses, stat.NewBonus(source, stat.TypeMaxMp, int32(equipData.Mp)))
 	}
 	if equipData.WeaponAttack > 0 {
 		bonuses = append(bonuses, stat.NewBonus(source, stat.TypeWeaponAttack, int32(equipData.WeaponAttack)))

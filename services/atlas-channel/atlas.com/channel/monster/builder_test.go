@@ -19,7 +19,7 @@ func TestNewModelBuilder(t *testing.T) {
 func TestBuild_AllFieldsSet(t *testing.T) {
 	f := field.NewBuilder(0, 1, 100000).Build()
 	model, err := monster.NewModelBuilder(1, f, 100100).
-		SetMaxHP(1000).
+		SetMaxHp(1000).
 		SetX(100).
 		SetY(200).
 		SetStance(5).
@@ -36,8 +36,8 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 	if model.MonsterId() != 100100 {
 		t.Errorf("model.MonsterId() = %d, want 100100", model.MonsterId())
 	}
-	if model.MaxHP() != 1000 {
-		t.Errorf("model.MaxHP() = %d, want 1000", model.MaxHP())
+	if model.MaxHp() != 1000 {
+		t.Errorf("model.MaxHp() = %d, want 1000", model.MaxHp())
 	}
 }
 
@@ -80,7 +80,7 @@ func TestMustBuild_Panics(t *testing.T) {
 func TestCloneModel(t *testing.T) {
 	f := field.NewBuilder(0, 1, 100000).Build()
 	original, _ := monster.NewModelBuilder(1, f, 100100).
-		SetMaxHP(1000).
+		SetMaxHp(1000).
 		SetX(100).
 		Build()
 
@@ -98,7 +98,7 @@ func TestCloneModel(t *testing.T) {
 		t.Errorf("cloned.X() = %d, want 200", cloned.X())
 	}
 	// Cloned should preserve other fields
-	if cloned.MaxHP() != 1000 {
-		t.Errorf("cloned.MaxHP() = %d, want 1000", cloned.MaxHP())
+	if cloned.MaxHp() != 1000 {
+		t.Errorf("cloned.MaxHp() = %d, want 1000", cloned.MaxHp())
 	}
 }

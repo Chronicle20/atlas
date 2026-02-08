@@ -31,7 +31,7 @@ type ProjectionData struct {
 	Capacity     byte
 	Mesos        uint32
 	NpcId        uint32
-	Compartments map[string][]asset.Model[any]
+	Compartments map[string][]asset.Model
 }
 
 type ProcessorImpl struct {
@@ -47,7 +47,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 type StorageData struct {
 	Capacity byte
 	Mesos    uint32
-	Assets   []asset.Model[any]
+	Assets   []asset.Model
 }
 
 // GetStorageData fetches storage metadata and assets for an account
@@ -60,12 +60,12 @@ func (p *ProcessorImpl) GetStorageData(accountId uint32, worldId world.Id) (Stor
 		return StorageData{
 			Capacity: DefaultStorageCapacity,
 			Mesos:    0,
-			Assets:   []asset.Model[any]{},
+			Assets:   []asset.Model{},
 		}, nil
 	}
 
 	// Transform REST models to asset.Model (assets are now included in storage response)
-	assets := make([]asset.Model[any], 0, len(storageModel.Assets))
+	assets := make([]asset.Model, 0, len(storageModel.Assets))
 	for _, a := range storageModel.Assets {
 		assets = append(assets, transformAsset(a))
 	}
@@ -92,9 +92,9 @@ func (p *ProcessorImpl) GetProjectionData(characterId uint32) (ProjectionData, e
 	}
 
 	// Transform compartments
-	compartments := make(map[string][]asset.Model[any])
+	compartments := make(map[string][]asset.Model)
 	for name, restAssets := range parsedCompartments {
-		assets := make([]asset.Model[any], 0, len(restAssets))
+		assets := make([]asset.Model, 0, len(restAssets))
 		for _, a := range restAssets {
 			assets = append(assets, transformAsset(a))
 		}
@@ -113,8 +113,8 @@ func (p *ProcessorImpl) GetProjectionData(characterId uint32) (ProjectionData, e
 }
 
 // GetAllAssetsFromProjection returns all assets from a projection, sorted by inventory type
-func (p ProjectionData) GetAllAssetsFromProjection() []asset.Model[any] {
-	var result []asset.Model[any]
+func (p ProjectionData) GetAllAssetsFromProjection() []asset.Model {
+	var result []asset.Model
 	// Add assets from each compartment - they may overlap initially until filtered
 	// Use equip compartment as primary since it starts with all assets
 	if assets, ok := p.Compartments["equip"]; ok {
@@ -123,153 +123,45 @@ func (p ProjectionData) GetAllAssetsFromProjection() []asset.Model[any] {
 	return result
 }
 
-// transformAsset converts an AssetRestModel to asset.Model
-func transformAsset(a AssetRestModel) asset.Model[any] {
-	refType := asset.ReferenceType(a.ReferenceType)
-	invType := inventoryTypeFromTemplateId(a.TemplateId)
-
-	// Build reference data from the ReferenceData field
-	refData := buildReferenceDataFromRestModel(refType, a.ReferenceData)
-
-	// Use ETC as fallback for unknown reference types
-	if refType != asset.ReferenceTypeEquipable &&
-		refType != asset.ReferenceTypeConsumable &&
-		refType != asset.ReferenceTypeSetup &&
-		refType != asset.ReferenceTypeEtc &&
-		refType != asset.ReferenceTypeCash &&
-		refType != asset.ReferenceTypePet {
-		refType = asset.ReferenceTypeEtc
-	}
-
-	return asset.NewBuilder[any](a.Id, uuid.Nil, a.TemplateId, a.ReferenceId, refType).
-		SetInventoryType(invType).
+// transformAsset converts a flat AssetRestModel to asset.Model
+func transformAsset(a AssetRestModel) asset.Model {
+	return asset.NewModelBuilder(a.Id, uuid.Nil, a.TemplateId).
 		SetSlot(a.Slot).
 		SetExpiration(a.Expiration).
-		SetReferenceData(refData).
+		SetQuantity(a.Quantity).
+		SetOwnerId(a.OwnerId).
+		SetFlag(a.Flag).
+		SetRechargeable(a.Rechargeable).
+		SetStrength(a.Strength).
+		SetDexterity(a.Dexterity).
+		SetIntelligence(a.Intelligence).
+		SetLuck(a.Luck).
+		SetHp(a.Hp).
+		SetMp(a.Mp).
+		SetWeaponAttack(a.WeaponAttack).
+		SetMagicAttack(a.MagicAttack).
+		SetWeaponDefense(a.WeaponDefense).
+		SetMagicDefense(a.MagicDefense).
+		SetAccuracy(a.Accuracy).
+		SetAvoidability(a.Avoidability).
+		SetHands(a.Hands).
+		SetSpeed(a.Speed).
+		SetJump(a.Jump).
+		SetSlots(a.Slots).
+		SetLocked(a.Locked).
+		SetSpikes(a.Spikes).
+		SetKarmaUsed(a.KarmaUsed).
+		SetCold(a.Cold).
+		SetCanBeTraded(a.CanBeTraded).
+		SetLevelType(a.LevelType).
+		SetLevel(a.Level).
+		SetExperience(a.Experience).
+		SetHammersApplied(a.HammersApplied).
+		SetCashId(a.CashId).
+		SetCommodityId(a.CommodityId).
+		SetPurchaseBy(a.PurchaseBy).
+		SetPetId(a.PetId).
 		MustBuild()
-}
-
-// inventoryTypeFromTemplateId determines the inventory type from a template ID
-func inventoryTypeFromTemplateId(templateId uint32) asset.InventoryType {
-	category := templateId / 1000000
-	switch category {
-	case 1:
-		return asset.InventoryTypeEquip
-	case 2:
-		return asset.InventoryTypeUse
-	case 3:
-		return asset.InventoryTypeSetup
-	case 4:
-		return asset.InventoryTypeEtc
-	case 5:
-		return asset.InventoryTypeCash
-	default:
-		return asset.InventoryTypeEtc
-	}
-}
-
-// buildReferenceDataFromRestModel creates the appropriate reference data from REST model reference data
-func buildReferenceDataFromRestModel(refType asset.ReferenceType, restData interface{}) any {
-	if restData == nil {
-		return nil
-	}
-
-	switch refType {
-	case asset.ReferenceTypeEquipable:
-		if ed, ok := restData.(EquipableRestData); ok {
-			return asset.NewEquipableReferenceDataBuilder().
-				SetOwnerId(ed.OwnerId).
-				SetStrength(ed.Strength).
-				SetDexterity(ed.Dexterity).
-				SetIntelligence(ed.Intelligence).
-				SetLuck(ed.Luck).
-				SetHp(ed.Hp).
-				SetMp(ed.Mp).
-				SetWeaponAttack(ed.WeaponAttack).
-				SetMagicAttack(ed.MagicAttack).
-				SetWeaponDefense(ed.WeaponDefense).
-				SetMagicDefense(ed.MagicDefense).
-				SetAccuracy(ed.Accuracy).
-				SetAvoidability(ed.Avoidability).
-				SetHands(ed.Hands).
-				SetSpeed(ed.Speed).
-				SetJump(ed.Jump).
-				SetSlots(ed.Slots).
-				SetLocked(ed.Locked).
-				SetSpikes(ed.Spikes).
-				SetKarmaUsed(ed.KarmaUsed).
-				SetCold(ed.Cold).
-				SetCanBeTraded(ed.CanBeTraded).
-				SetLevelType(ed.LevelType).
-				SetLevel(ed.Level).
-				SetExperience(ed.Experience).
-				SetHammersApplied(ed.HammersApplied).
-				Build()
-		}
-		return nil
-	case asset.ReferenceTypeConsumable:
-		if cd, ok := restData.(ConsumableRestData); ok {
-			return asset.NewConsumableReferenceDataBuilder().
-				SetQuantity(cd.Quantity).
-				SetOwnerId(cd.OwnerId).
-				SetFlag(cd.Flag).
-				SetRechargeable(cd.Rechargeable).
-				Build()
-		}
-		return nil
-	case asset.ReferenceTypeSetup:
-		if sd, ok := restData.(SetupRestData); ok {
-			return asset.NewSetupReferenceDataBuilder().
-				SetQuantity(sd.Quantity).
-				SetOwnerId(sd.OwnerId).
-				SetFlag(sd.Flag).
-				Build()
-		}
-		return nil
-	case asset.ReferenceTypeEtc:
-		if ed, ok := restData.(EtcRestData); ok {
-			return asset.NewEtcReferenceDataBuilder().
-				SetQuantity(ed.Quantity).
-				SetOwnerId(ed.OwnerId).
-				SetFlag(ed.Flag).
-				Build()
-		}
-		return nil
-	case asset.ReferenceTypeCash:
-		if cd, ok := restData.(CashRestData); ok {
-			return asset.NewCashReferenceDataBuilder().
-				SetQuantity(cd.Quantity).
-				SetOwnerId(cd.OwnerId).
-				SetFlag(cd.Flag).
-				SetCashId(cd.CashId).
-				Build()
-		}
-		return nil
-	case asset.ReferenceTypePet:
-		if pd, ok := restData.(PetRestData); ok {
-			return asset.NewPetReferenceDataBuilder().
-				SetOwnerId(pd.OwnerId).
-				SetCashId(pd.CashId).
-				SetFlag(pd.Flag).
-				SetName(pd.Name).
-				SetLevel(pd.Level).
-				SetCloseness(pd.Closeness).
-				SetFullness(pd.Fullness).
-				SetSlot(pd.Slot).
-				Build()
-		}
-		return nil
-	default:
-		// Default to ETC reference data
-		if ed, ok := restData.(EtcRestData); ok {
-			return asset.NewEtcReferenceDataBuilder().
-				SetQuantity(ed.Quantity).
-				SetOwnerId(ed.OwnerId).
-				SetFlag(ed.Flag).
-				Build()
-		}
-		return nil
-	}
 }
 
 // Arrange sends an ARRANGE command to the storage service to merge and sort items

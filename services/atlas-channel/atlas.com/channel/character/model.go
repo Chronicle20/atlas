@@ -15,7 +15,6 @@ import (
 	"github.com/Chronicle20/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 type Model struct {
@@ -268,10 +267,9 @@ func (m Model) SetInventory(i inventory.Model) Model {
 		if a.Slot() > 0 {
 			ec = ec.AddAsset(a)
 		} else {
-			cash := false
 			s := a.Slot()
-			if s < -100 {
-				cash = true
+			cash := s < -100
+			if cash {
 				s += 100
 			}
 
@@ -284,28 +282,11 @@ func (m Model) SetInventory(i inventory.Model) Model {
 				continue
 			}
 
+			ea := asset.Clone(a).MustBuild()
 			if cash {
-				var crd asset.CashEquipableReferenceData
-				crd, ok = a.ReferenceData().(asset.CashEquipableReferenceData)
-				if ok {
-					ea := asset.NewBuilder[asset.CashEquipableReferenceData](a.Id(), uuid.Nil, a.TemplateId(), a.ReferenceId(), a.ReferenceType()).
-						SetSlot(a.Slot()).
-						SetExpiration(a.Expiration()).
-						SetReferenceData(crd).
-						MustBuild()
-					v.CashEquipable = &ea
-				}
+				v.CashEquipable = &ea
 			} else {
-				var erd asset.EquipableReferenceData
-				erd, ok = a.ReferenceData().(asset.EquipableReferenceData)
-				if ok {
-					ea := asset.NewBuilder[asset.EquipableReferenceData](a.Id(), uuid.Nil, a.TemplateId(), a.ReferenceId(), a.ReferenceType()).
-						SetSlot(a.Slot()).
-						SetExpiration(a.Expiration()).
-						SetReferenceData(erd).
-						MustBuild()
-					v.Equipable = &ea
-				}
+				v.Equipable = &ea
 			}
 			eq.Set(es.Type, v)
 		}

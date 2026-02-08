@@ -12,6 +12,24 @@
 - Message Type: `StatusEvent[StateChangedEventBody]`, `StatusEvent[ErrorStatusEventBody]`
 - Purpose: Receives session state changes for player login, channel changes, and error handling
 
+### EVENT_TOPIC_ASSET_STATUS
+- Direction: Event
+- Message Type: `StatusEvent[CreatedStatusEventBody]`, `StatusEvent[UpdatedStatusEventBody]`, `StatusEvent[QuantityChangedEventBody]`, `StatusEvent[MovedStatusEventBody]`, `StatusEvent[DeletedStatusEventBody]`, `StatusEvent[AcceptedStatusEventBody]`, `StatusEvent[ReleasedStatusEventBody]`, `StatusEvent[ExpiredStatusEventBody]`
+- Envelope: `StatusEvent[E]` with fields: CharacterId (uint32), CompartmentId (uuid.UUID), AssetId (uint32), TemplateId (uint32), Slot (int16), Type (string), Body (E)
+- Purpose: Receives inventory asset lifecycle events. CREATED/ACCEPTED add items to client UI, UPDATED refreshes item display, QUANTITY_CHANGED updates stack counts, MOVED repositions items (with appearance update for equip changes), DELETED/RELEASED remove items from client UI, EXPIRED sends expiration notifications (general, cash, or replacement messages)
+
+### EVENT_TOPIC_COMPARTMENT_STATUS
+- Direction: Event
+- Message Type: `StatusEvent[ReservationCancelledEventBody]`, `StatusEvent[MergeCompleteEventBody]`, `StatusEvent[SortCompleteEventBody]`
+- Envelope: `StatusEvent[E]` with fields: CharacterId (uint32), CompartmentId (uuid.UUID), Type (string), Body (E)
+- Purpose: Receives compartment-level events. RESERVATION_CANCELLED re-enables client actions. MERGE_COMPLETE and SORT_COMPLETE trigger client inventory refresh for the affected type and re-enable actions.
+
+### EVENT_TOPIC_CASH_COMPARTMENT_STATUS
+- Direction: Event
+- Message Type: `StatusEvent[StatusEventAcceptedBody]`, `StatusEvent[StatusEventReleasedBody]`
+- Envelope: `StatusEvent[E]` with fields: AccountId (uint32), CharacterId (uint32), CompartmentId (uuid.UUID), CompartmentType (byte), Type (string), Body (E)
+- Purpose: Receives cash shop compartment transfer events. ACCEPTED (item moved from character to cash shop) fetches the new cash-shop asset and notifies the client. RELEASED (item moved from cash shop to character) looks up the asset by CashId in the character's inventory and notifies the client.
+
 ### EVENT_TOPIC_CHARACTER_STATUS
 - Direction: Event
 - Message Type: `StatusEvent[StatusEventStatChangedBody]`, `StatusEvent[StatusEventMapChangedBody]`, `StatusEvent[ExperienceChangedStatusEventBody]`, `StatusEvent[FameChangedStatusEventBody]`, `StatusEvent[MesoChangedStatusEventBody]`, `StatusEvent[LevelChangedStatusEventBody]`
@@ -27,20 +45,26 @@
 - Message Type: `StatusEvent`
 - Purpose: Receives session created/destroyed events
 
-### EVENT_TOPIC_ASSET_STATUS
+### EVENT_TOPIC_PET_STATUS
 - Direction: Event
-- Message Type: Asset status events
-- Purpose: Receives inventory asset change events
+- Message Type: `StatusEvent[SpawnedStatusEventBody]`, `StatusEvent[DespawnedStatusEventBody]`, `StatusEvent[CommandResponseStatusEventBody]`, `StatusEvent[ClosenessChangedStatusEventBody]`, `StatusEvent[FullnessChangedStatusEventBody]`, `StatusEvent[LevelChangedStatusEventBody]`, `StatusEvent[SlotChangedStatusEventBody]`, `StatusEvent[ExcludeChangedStatusEventBody]`
+- Envelope: `StatusEvent[E]` with fields: PetId (uint32), OwnerId (uint32), Type (string), Body (E)
+- Purpose: Receives pet lifecycle and stat change events. SPAWNED/DESPAWNED manage pet visibility. COMMAND_RESPONSE handles pet interaction results. CLOSENESS_CHANGED and FULLNESS_CHANGED refresh the pet's cash inventory asset. LEVEL_CHANGED triggers level-up effects. SLOT_CHANGED updates pet stat and position. EXCLUDE_CHANGED updates pet exclude list.
 
-### EVENT_TOPIC_COMPARTMENT_STATUS
+### EVENT_TOPIC_STORAGE_STATUS
 - Direction: Event
-- Message Type: Compartment status events
-- Purpose: Receives inventory compartment change events
+- Message Type: `StatusEvent[MesosUpdatedEventBody]`, `StatusEvent[ArrangedEventBody]`, `StatusEvent[ErrorEventBody]`, `StatusEvent[ProjectionCreatedEventBody]`
+- Purpose: Receives storage operation results. MESOS_UPDATED sends updated meso count to client. ARRANGED refreshes the full storage view. ERROR maps error codes to client error messages. PROJECTION_CREATED fetches projection data and displays the storage UI.
 
-### EVENT_TOPIC_COMPARTMENT_TRANSFER_STATUS
+### EVENT_TOPIC_STORAGE_COMPARTMENT_STATUS
 - Direction: Event
-- Message Type: Transfer status events
-- Purpose: Receives compartment transfer completion events
+- Message Type: `StorageCompartmentEvent[CompartmentAcceptedEventBody]`, `StorageCompartmentEvent[CompartmentReleasedEventBody]`
+- Purpose: Receives storage compartment deposit/withdraw events. ACCEPTED (item deposited into storage) sends updated storage assets for the affected inventory type. RELEASED (item withdrawn from storage) sends updated storage assets for the affected inventory type. Both use projection data when available, falling back to direct storage data.
+
+### EVENT_TOPIC_GACHAPON_REWARD_WON
+- Direction: Event
+- Message Type: `RewardWonEvent` with fields: CharacterId (uint32), WorldId (byte), ItemId (uint32), Quantity (uint32), Tier (string), GachaponId (string), GachaponName (string), AssetId (uint32)
+- Purpose: Receives gachapon reward win events. Looks up the asset by AssetId in the character's inventory compartment and broadcasts a world megaphone message.
 
 ### EVENT_TOPIC_CHAIR_STATUS
 - Direction: Event
@@ -97,11 +121,6 @@
 - Message Type: Transport status events
 - Purpose: Receives transport route state changes
 
-### EVENT_TOPIC_STORAGE_STATUS
-- Direction: Event
-- Message Type: Storage status events
-- Purpose: Receives storage operation results
-
 ### EVENT_TOPIC_QUEST_STATUS
 - Direction: Event
 - Message Type: `StatusEvent[QuestStartedEventBody]`, `StatusEvent[QuestCompletedEventBody]`, `StatusEvent[QuestForfeitedEventBody]`, `StatusEvent[QuestProgressUpdatedEventBody]`
@@ -121,15 +140,31 @@
 
 ## Topics Produced
 
-### COMMAND_TOPIC_ACCOUNT_SESSION
+### COMMAND_TOPIC_COMPARTMENT
 - Direction: Command
-- Message Type: `Command[ProgressStateCommandBody]`, `Command[LogoutCommandBody]`
-- Purpose: Issues session state progression and logout commands
+- Message Type: `Command[EquipCommandBody]`, `Command[UnequipCommandBody]`, `Command[MoveCommandBody]`, `Command[DropCommandBody]`, `Command[MergeCommandBody]`, `Command[SortCommandBody]`
+- Envelope: `Command[E]` with fields: CharacterId (uint32), InventoryType (byte), Type (string), Body (E)
+- Purpose: Issues inventory compartment operation commands. EQUIP/UNEQUIP handle equipment slot changes with source/destination. MOVE repositions items within a compartment. DROP drops items to the map (includes field coordinates and quantity). MERGE and SORT reorganize compartment contents.
+
+### COMMAND_TOPIC_STORAGE
+- Direction: Command
+- Message Type: `Command[ArrangeCommandBody]`, `Command[UpdateMesosCommandBody]`, `CloseStorageCommand`
+- Purpose: Issues storage commands. ARRANGE triggers item merge and sort within storage. UPDATE_MESOS deposits or withdraws mesos (ADD/SUBTRACT operations). CLOSE_STORAGE clears NPC context for a character.
 
 ### COMMAND_TOPIC_CHARACTER
 - Direction: Command
 - Message Type: `Command[RequestDistributeApCommandBody]`, `Command[RequestDistributeSpCommandBody]`, `Command[RequestDropMesoCommandBody]`, `Command[ChangeHPCommandBody]`, `Command[ChangeMPCommandBody]`
 - Purpose: Issues character stat distribution, meso drop, and HP/MP change commands
+
+### COMMAND_TOPIC_PET
+- Direction: Command
+- Message Type: `Command[SpawnCommandBody]`, `Command[DespawnCommandBody]`, `Command[AttemptCommandCommandBody]`, `Command[SetExcludeCommandBody]`
+- Purpose: Issues pet spawn, despawn, command attempt, and exclude list commands
+
+### COMMAND_TOPIC_ACCOUNT_SESSION
+- Direction: Command
+- Message Type: `Command[ProgressStateCommandBody]`, `Command[LogoutCommandBody]`
+- Purpose: Issues session state progression and logout commands
 
 ### COMMAND_TOPIC_CHARACTER_MOVEMENT
 - Direction: Command
@@ -246,21 +281,6 @@
 - Message Type: Consumable commands
 - Purpose: Issues consumable item use commands
 
-### COMMAND_TOPIC_PET
-- Direction: Command
-- Message Type: Pet commands
-- Purpose: Issues pet spawn/command/food commands
-
-### COMMAND_TOPIC_COMPARTMENT
-- Direction: Command
-- Message Type: Compartment commands
-- Purpose: Issues inventory compartment operation commands
-
-### COMMAND_TOPIC_COMPARTMENT_TRANSFER
-- Direction: Command
-- Message Type: Transfer commands
-- Purpose: Issues inventory transfer commands
-
 ### COMMAND_TOPIC_CASH_SHOP
 - Direction: Command
 - Message Type: Cash shop commands
@@ -291,11 +311,6 @@
 - Message Type: System message commands
 - Purpose: Issues system message broadcast commands
 
-### COMMAND_TOPIC_STORAGE
-- Direction: Command
-- Message Type: Storage commands
-- Purpose: Issues storage deposit/withdraw commands
-
 ### COMMAND_TOPIC_SAGA
 - Direction: Command
 - Message Type: Saga commands
@@ -316,10 +331,16 @@
 ## Message Types
 
 ### StatusEvent
-Generic status event envelope with type discriminator.
+Generic status event envelope with type discriminator and typed body. Used across asset, compartment, pet, storage, and other event topics.
+
+### StorageCompartmentEvent
+Storage-specific compartment event envelope with WorldId, AccountId, CharacterId, Type, and typed body.
 
 ### Command
-Generic command envelope with type discriminator and typed body.
+Generic command envelope with type discriminator and typed body. Used for all outbound commands.
+
+### RewardWonEvent
+Flat event (not envelope-wrapped) for gachapon reward notifications, containing character, item, and gachapon details.
 
 ---
 
@@ -329,4 +350,4 @@ Generic command envelope with type discriminator and typed body.
 - Consumers start from `LastOffset` for real-time event processing
 - Tenant ID passed in Kafka headers for multi-tenant filtering
 - Span context passed in headers for distributed tracing
-- Messages keyed by character ID for ordering guarantees
+- Messages keyed by character ID (or account ID for storage commands) for ordering guarantees

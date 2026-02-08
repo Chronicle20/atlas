@@ -129,9 +129,9 @@ func getEffects(skillId skill.Id, buff bool, nodes []xml.Node) []effect.RestMode
 func getEffect(skillId skill.Id, overTime bool, node xml.Node) effect.RestModel {
 	e := effect.NewModelBuilder().
 		SetDuration(node.GetIntegerWithDefault("time", -1)).
-		SetHP(uint16(node.GetIntegerWithDefault("hp", 0))).
+		SetHp(uint16(node.GetIntegerWithDefault("hp", 0))).
 		SetHPRecovery(float64(node.GetIntegerWithDefault("hpR", 0)) / 100.0).
-		SetMP(uint16(node.GetIntegerWithDefault("mp", 0))).
+		SetMp(uint16(node.GetIntegerWithDefault("mp", 0))).
 		SetMPRecovery(float64(node.GetIntegerWithDefault("mpR", 0)) / 100.0).
 		SetHPCon(uint16(node.GetIntegerWithDefault("hpCon", 0))).
 		SetMPCon(uint16(node.GetIntegerWithDefault("mpCon", 0))).

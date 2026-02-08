@@ -1,0 +1,51 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-gachapons
+  namespace: atlas
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: atlas-gachapons
+  template:
+    metadata:
+      labels:
+        app: atlas-gachapons
+    spec:
+      containers:
+      - name: gachapons
+        image: ghcr.io/chronicle20/atlas-gachapons/atlas-gachapons:latest
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: atlas-env
+        env:
+        - name: LOG_LEVEL
+          value: "debug"
+        - name: DB_NAME
+          value: "atlas-gachapons"
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: DB_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: DB_PASSWORD
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-gachapons
+  namespace: atlas
+spec:
+  selector:
+    app: atlas-gachapons
+  ports:
+  - protocol: TCP
+    port: 8080

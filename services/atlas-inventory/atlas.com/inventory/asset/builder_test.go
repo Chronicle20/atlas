@@ -9,32 +9,20 @@ import (
 )
 
 func TestNewBuilder(t *testing.T) {
-	id := uint32(123)
 	compartmentId := uuid.New()
-	templateId := uint32(456)
-	referenceId := uint32(789)
-	referenceType := asset.ReferenceTypeConsumable
+	templateId := uint32(1040010)
 
-	b := asset.NewBuilder[any](id, compartmentId, templateId, referenceId, referenceType)
+	b := asset.NewBuilder(compartmentId, templateId)
 	if b == nil {
 		t.Fatal("NewBuilder returned nil")
 	}
 
 	m := b.Build()
-	if m.Id() != id {
-		t.Errorf("expected Id %d, got %d", id, m.Id())
-	}
 	if m.CompartmentId() != compartmentId {
 		t.Errorf("expected CompartmentId %s, got %s", compartmentId, m.CompartmentId())
 	}
 	if m.TemplateId() != templateId {
 		t.Errorf("expected TemplateId %d, got %d", templateId, m.TemplateId())
-	}
-	if m.ReferenceId() != referenceId {
-		t.Errorf("expected ReferenceId %d, got %d", referenceId, m.ReferenceId())
-	}
-	if m.ReferenceType() != referenceType {
-		t.Errorf("expected ReferenceType %s, got %s", referenceType, m.ReferenceType())
 	}
 	if m.Slot() != 0 {
 		t.Errorf("expected default Slot 0, got %d", m.Slot())
@@ -46,7 +34,7 @@ func TestNewBuilder(t *testing.T) {
 
 func TestBuilderSetSlot(t *testing.T) {
 	compartmentId := uuid.New()
-	m := asset.NewBuilder[any](1, compartmentId, 100, 200, asset.ReferenceTypeEquipable).
+	m := asset.NewBuilder(compartmentId, 1040010).
 		SetSlot(5).
 		Build()
 
@@ -59,7 +47,7 @@ func TestBuilderSetExpiration(t *testing.T) {
 	compartmentId := uuid.New()
 	expTime := time.Now().Add(24 * time.Hour)
 
-	m := asset.NewBuilder[any](1, compartmentId, 100, 200, asset.ReferenceTypeEquipable).
+	m := asset.NewBuilder(compartmentId, 1040010).
 		SetExpiration(expTime).
 		Build()
 
@@ -68,37 +56,96 @@ func TestBuilderSetExpiration(t *testing.T) {
 	}
 }
 
-func TestBuilderSetReferenceData(t *testing.T) {
+func TestBuilderEquipmentFields(t *testing.T) {
 	compartmentId := uuid.New()
-	refData := "test reference data"
 
-	m := asset.NewBuilder[string](1, compartmentId, 100, 200, asset.ReferenceTypeConsumable).
-		SetReferenceData(refData).
+	m := asset.NewBuilder(compartmentId, 1040010).
+		SetStrength(10).
+		SetDexterity(5).
+		SetIntelligence(3).
+		SetLuck(7).
+		SetHp(100).
+		SetMp(50).
+		SetWeaponAttack(15).
+		SetMagicAttack(12).
+		SetWeaponDefense(8).
+		SetMagicDefense(6).
+		SetAccuracy(4).
+		SetAvoidability(2).
+		SetHands(1).
+		SetSpeed(3).
+		SetJump(2).
+		SetSlots(7).
 		Build()
 
-	if m.ReferenceData() != refData {
-		t.Errorf("expected ReferenceData %s, got %s", refData, m.ReferenceData())
+	if m.Strength() != 10 {
+		t.Errorf("expected Strength 10, got %d", m.Strength())
+	}
+	if m.Dexterity() != 5 {
+		t.Errorf("expected Dexterity 5, got %d", m.Dexterity())
+	}
+	if m.Intelligence() != 3 {
+		t.Errorf("expected Intelligence 3, got %d", m.Intelligence())
+	}
+	if m.Luck() != 7 {
+		t.Errorf("expected Luck 7, got %d", m.Luck())
+	}
+	if m.Hp() != 100 {
+		t.Errorf("expected HP 100, got %d", m.Hp())
+	}
+	if m.Mp() != 50 {
+		t.Errorf("expected MP 50, got %d", m.Mp())
+	}
+	if m.WeaponAttack() != 15 {
+		t.Errorf("expected WeaponAttack 15, got %d", m.WeaponAttack())
+	}
+	if m.MagicAttack() != 12 {
+		t.Errorf("expected MagicAttack 12, got %d", m.MagicAttack())
+	}
+	if m.WeaponDefense() != 8 {
+		t.Errorf("expected WeaponDefense 8, got %d", m.WeaponDefense())
+	}
+	if m.MagicDefense() != 6 {
+		t.Errorf("expected MagicDefense 6, got %d", m.MagicDefense())
+	}
+	if m.Accuracy() != 4 {
+		t.Errorf("expected Accuracy 4, got %d", m.Accuracy())
+	}
+	if m.Avoidability() != 2 {
+		t.Errorf("expected Avoidability 2, got %d", m.Avoidability())
+	}
+	if m.Hands() != 1 {
+		t.Errorf("expected Hands 1, got %d", m.Hands())
+	}
+	if m.Speed() != 3 {
+		t.Errorf("expected Speed 3, got %d", m.Speed())
+	}
+	if m.Jump() != 2 {
+		t.Errorf("expected Jump 2, got %d", m.Jump())
+	}
+	if m.Slots() != 7 {
+		t.Errorf("expected Slots 7, got %d", m.Slots())
 	}
 }
 
-func TestBuilderWithStructReferenceData(t *testing.T) {
-	type TestRefData struct {
-		Value int
-		Name  string
-	}
-
+func TestBuilderStackableFields(t *testing.T) {
 	compartmentId := uuid.New()
-	refData := TestRefData{Value: 42, Name: "test"}
 
-	m := asset.NewBuilder[TestRefData](1, compartmentId, 100, 200, asset.ReferenceTypeEtc).
-		SetReferenceData(refData).
+	m := asset.NewBuilder(compartmentId, 2000100).
+		SetQuantity(50).
+		SetOwnerId(123).
+		SetFlag(1).
+		SetRechargeable(100).
 		Build()
 
-	if m.ReferenceData().Value != 42 {
-		t.Errorf("expected ReferenceData.Value 42, got %d", m.ReferenceData().Value)
+	if m.Rechargeable() != 100 {
+		t.Errorf("expected Rechargeable 100, got %d", m.Rechargeable())
 	}
-	if m.ReferenceData().Name != "test" {
-		t.Errorf("expected ReferenceData.Name 'test', got %s", m.ReferenceData().Name)
+	if m.OwnerId() != 123 {
+		t.Errorf("expected OwnerId 123, got %d", m.OwnerId())
+	}
+	if m.Flag() != 1 {
+		t.Errorf("expected Flag 1, got %d", m.Flag())
 	}
 }
 
@@ -106,10 +153,13 @@ func TestClone(t *testing.T) {
 	compartmentId := uuid.New()
 	expTime := time.Now()
 
-	original := asset.NewBuilder[string](1, compartmentId, 100, 200, asset.ReferenceTypeConsumable).
+	original := asset.NewBuilder(compartmentId, 1040010).
+		SetId(1).
 		SetSlot(3).
 		SetExpiration(expTime).
-		SetReferenceData("original").
+		SetStrength(10).
+		SetWeaponDefense(5).
+		SetSlots(7).
 		Build()
 
 	cloned := asset.Clone(original).Build()
@@ -123,26 +173,26 @@ func TestClone(t *testing.T) {
 	if cloned.TemplateId() != original.TemplateId() {
 		t.Errorf("cloned TemplateId %d != original TemplateId %d", cloned.TemplateId(), original.TemplateId())
 	}
-	if cloned.ReferenceId() != original.ReferenceId() {
-		t.Errorf("cloned ReferenceId %d != original ReferenceId %d", cloned.ReferenceId(), original.ReferenceId())
-	}
-	if cloned.ReferenceType() != original.ReferenceType() {
-		t.Errorf("cloned ReferenceType %s != original ReferenceType %s", cloned.ReferenceType(), original.ReferenceType())
-	}
 	if cloned.Slot() != original.Slot() {
 		t.Errorf("cloned Slot %d != original Slot %d", cloned.Slot(), original.Slot())
 	}
 	if !cloned.Expiration().Equal(original.Expiration()) {
 		t.Errorf("cloned Expiration %v != original Expiration %v", cloned.Expiration(), original.Expiration())
 	}
-	if cloned.ReferenceData() != original.ReferenceData() {
-		t.Errorf("cloned ReferenceData %s != original ReferenceData %s", cloned.ReferenceData(), original.ReferenceData())
+	if cloned.Strength() != original.Strength() {
+		t.Errorf("cloned Strength %d != original Strength %d", cloned.Strength(), original.Strength())
+	}
+	if cloned.WeaponDefense() != original.WeaponDefense() {
+		t.Errorf("cloned WeaponDefense %d != original WeaponDefense %d", cloned.WeaponDefense(), original.WeaponDefense())
+	}
+	if cloned.Slots() != original.Slots() {
+		t.Errorf("cloned Slots %d != original Slots %d", cloned.Slots(), original.Slots())
 	}
 }
 
 func TestCloneAndModify(t *testing.T) {
 	compartmentId := uuid.New()
-	original := asset.NewBuilder[any](1, compartmentId, 100, 200, asset.ReferenceTypeConsumable).
+	original := asset.NewBuilder(compartmentId, 1040010).
 		SetSlot(1).
 		Build()
 
@@ -160,9 +210,8 @@ func TestCloneAndModify(t *testing.T) {
 
 func TestFluentChaining(t *testing.T) {
 	compartmentId := uuid.New()
-	b := asset.NewBuilder[any](1, compartmentId, 100, 200, asset.ReferenceTypeConsumable)
+	b := asset.NewBuilder(compartmentId, 1040010)
 
-	// Verify each setter returns the builder for chaining
 	result := b.SetSlot(1)
 	if result != b {
 		t.Error("SetSlot did not return the builder")
@@ -173,79 +222,49 @@ func TestFluentChaining(t *testing.T) {
 		t.Error("SetExpiration did not return the builder")
 	}
 
-	result = b.SetReferenceData(nil)
+	result = b.SetQuantity(10)
 	if result != b {
-		t.Error("SetReferenceData did not return the builder")
+		t.Error("SetQuantity did not return the builder")
 	}
 }
 
-func TestAllReferenceTypes(t *testing.T) {
-	refTypes := []asset.ReferenceType{
-		asset.ReferenceTypeEquipable,
-		asset.ReferenceTypeCashEquipable,
-		asset.ReferenceTypeConsumable,
-		asset.ReferenceTypeSetup,
-		asset.ReferenceTypeEtc,
-		asset.ReferenceTypeCash,
-		asset.ReferenceTypePet,
-	}
-
-	compartmentId := uuid.New()
-	for _, refType := range refTypes {
-		m := asset.NewBuilder[any](1, compartmentId, 100, 200, refType).Build()
-		if m.ReferenceType() != refType {
-			t.Errorf("expected ReferenceType %s, got %s", refType, m.ReferenceType())
-		}
-	}
-}
-
-func TestReferenceTypeChecks(t *testing.T) {
+func TestInventoryTypeDerivation(t *testing.T) {
 	compartmentId := uuid.New()
 
-	tests := []struct {
-		refType     asset.ReferenceType
-		checkMethod string
-		expected    bool
-	}{
-		{asset.ReferenceTypeEquipable, "IsEquipable", true},
-		{asset.ReferenceTypeCashEquipable, "IsCashEquipable", true},
-		{asset.ReferenceTypeConsumable, "IsConsumable", true},
-		{asset.ReferenceTypeSetup, "IsSetup", true},
-		{asset.ReferenceTypeEtc, "IsEtc", true},
-		{asset.ReferenceTypeCash, "IsCash", true},
-		{asset.ReferenceTypePet, "IsPet", true},
+	// Equip item (1000000 range)
+	equipModel := asset.NewBuilder(compartmentId, 1040010).Build()
+	if !equipModel.IsEquipment() {
+		t.Error("expected IsEquipment true for templateId 1040010")
 	}
 
-	for _, tt := range tests {
-		m := asset.NewBuilder[any](1, compartmentId, 100, 200, tt.refType).Build()
+	// Use item (2000000 range)
+	useModel := asset.NewBuilder(compartmentId, 2000100).Build()
+	if !useModel.IsConsumable() {
+		t.Error("expected IsConsumable true for templateId 2000100")
+	}
 
-		var result bool
-		switch tt.checkMethod {
-		case "IsEquipable":
-			result = m.IsEquipable()
-		case "IsCashEquipable":
-			result = m.IsCashEquipable()
-		case "IsConsumable":
-			result = m.IsConsumable()
-		case "IsSetup":
-			result = m.IsSetup()
-		case "IsEtc":
-			result = m.IsEtc()
-		case "IsCash":
-			result = m.IsCash()
-		case "IsPet":
-			result = m.IsPet()
-		}
+	// Setup item (3000000 range)
+	setupModel := asset.NewBuilder(compartmentId, 3010000).Build()
+	if !setupModel.IsSetup() {
+		t.Error("expected IsSetup true for templateId 3010000")
+	}
 
-		if result != tt.expected {
-			t.Errorf("%s() for %s: expected %v, got %v", tt.checkMethod, tt.refType, tt.expected, result)
-		}
+	// Etc item (4000000 range)
+	etcModel := asset.NewBuilder(compartmentId, 4000100).Build()
+	if !etcModel.IsEtc() {
+		t.Error("expected IsEtc true for templateId 4000100")
+	}
+
+	// Cash item (5000000 range)
+	cashModel := asset.NewBuilder(compartmentId, 5000100).Build()
+	if !cashModel.IsCash() {
+		t.Error("expected IsCash true for templateId 5000100")
 	}
 }
 
 func TestNegativeSlot(t *testing.T) {
 	compartmentId := uuid.New()
-	m := asset.NewBuilder[any](1, compartmentId, 100, 200, asset.ReferenceTypeEquipable).
+	m := asset.NewBuilder(compartmentId, 1040010).
 		SetSlot(-5).
 		Build()
 

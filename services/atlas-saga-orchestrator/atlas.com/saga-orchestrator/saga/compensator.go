@@ -12,6 +12,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -34,6 +35,7 @@ type Compensator interface {
 	compensateChangeFace(s Saga, failedStep Step[any]) error
 	compensateChangeSkin(s Saga, failedStep Step[any]) error
 	compensateStorageOperation(s Saga, failedStep Step[any]) error
+	compensateSelectGachaponReward(s Saga, failedStep Step[any]) error
 }
 
 type CompensatorImpl struct {
@@ -218,6 +220,8 @@ func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 	case AwardMesos, AcceptToStorage, AcceptToCharacter, ReleaseFromStorage, ReleaseFromCharacter:
 		// Storage-related actions are terminal failures - emit error event and stop
 		return c.compensateStorageOperation(s, failedStep)
+	case SelectGachaponReward:
+		return c.compensateSelectGachaponReward(s, failedStep)
 	default:
 		c.l.WithFields(logrus.Fields{
 			"transaction_id": s.TransactionId().String(),
@@ -762,6 +766,87 @@ func (c *CompensatorImpl) compensateStorageOperation(s Saga, failedStep Step[any
 			"error_code":     errorCode,
 			"tenant_id":      c.t.Id().String(),
 		}).Error("Failed to emit saga failed event for storage operation.")
+		return err
+	}
+
+	return nil
+}
+
+// compensateSelectGachaponReward handles compensation for a failed SelectGachaponReward operation.
+// When reward selection fails, the gachapon ticket has already been destroyed (prior DestroyAsset step).
+// Compensation re-awards the ticket by walking backwards through completed steps to find the
+// DestroyAsset and re-creating the item. The saga is then terminated with a failure event.
+func (c *CompensatorImpl) compensateSelectGachaponReward(s Saga, failedStep Step[any]) error {
+	payload, ok := failedStep.Payload().(SelectGachaponRewardPayload)
+	if !ok {
+		return fmt.Errorf("invalid payload for SelectGachaponReward compensation")
+	}
+
+	characterId := payload.CharacterId
+
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"saga_type":      s.SagaType(),
+		"step_id":        failedStep.StepId(),
+		"character_id":   characterId,
+		"gachapon_id":    payload.GachaponId,
+		"tenant_id":      c.t.Id().String(),
+	}).Info("Compensating failed SelectGachaponReward - re-awarding destroyed ticket.")
+
+	// Walk backwards through completed steps to find DestroyAsset steps that need reversal
+	for _, step := range s.Steps() {
+		if step.Status() != Completed {
+			continue
+		}
+		if step.Action() != DestroyAsset {
+			continue
+		}
+		destroyPayload, ok := step.Payload().(DestroyAssetPayload)
+		if !ok {
+			continue
+		}
+
+		c.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"step_id":        step.StepId(),
+			"character_id":   destroyPayload.CharacterId,
+			"template_id":    destroyPayload.TemplateId,
+			"quantity":       destroyPayload.Quantity,
+			"tenant_id":      c.t.Id().String(),
+		}).Info("Re-awarding destroyed asset as compensation.")
+
+		err := c.compP.RequestCreateItem(s.TransactionId(), destroyPayload.CharacterId, destroyPayload.TemplateId, destroyPayload.Quantity, time.Time{})
+		if err != nil {
+			c.l.WithError(err).WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId().String(),
+				"character_id":   destroyPayload.CharacterId,
+				"template_id":    destroyPayload.TemplateId,
+				"tenant_id":      c.t.Id().String(),
+			}).Error("Failed to re-award destroyed asset during SelectGachaponReward compensation.")
+			return err
+		}
+	}
+
+	// Remove saga from cache
+	GetCache().Remove(c.t.Id(), s.TransactionId())
+
+	// Emit saga failed event
+	err := producer.ProviderImpl(c.l)(c.ctx)(sagaMsg.EnvStatusEventTopic)(
+		FailedStatusEventProvider(
+			s.TransactionId(),
+			characterId,
+			string(s.SagaType()),
+			sagaMsg.ErrorCodeUnknown,
+			fmt.Sprintf("Gachapon reward selection failed at step [%s]", failedStep.StepId()),
+			failedStep.StepId(),
+		))
+	if err != nil {
+		c.l.WithError(err).WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"saga_type":      s.SagaType(),
+			"character_id":   characterId,
+			"tenant_id":      c.t.Id().String(),
+		}).Error("Failed to emit saga failed event for gachapon compensation.")
 		return err
 	}
 

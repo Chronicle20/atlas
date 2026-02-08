@@ -18,7 +18,7 @@
 
 #### SPAWN
 
-Creates a new drop from a monster or other source.
+Creates a new drop from a monster or other non-character source. Equipment stats are provided inline.
 
 ```json
 {
@@ -26,6 +26,7 @@ Creates a new drop from a monster or other source.
   "worldId": 0,
   "channelId": 0,
   "mapId": 0,
+  "instance": "uuid",
   "type": "SPAWN",
   "body": {
     "itemId": 0,
@@ -40,14 +41,30 @@ Creates a new drop from a monster or other source.
     "dropperX": 0,
     "dropperY": 0,
     "playerDrop": false,
-    "mod": 0
+    "mod": 0,
+    "strength": 0,
+    "dexterity": 0,
+    "intelligence": 0,
+    "luck": 0,
+    "hp": 0,
+    "mp": 0,
+    "weaponAttack": 0,
+    "magicAttack": 0,
+    "weaponDefense": 0,
+    "magicDefense": 0,
+    "accuracy": 0,
+    "avoidability": 0,
+    "hands": 0,
+    "speed": 0,
+    "jump": 0,
+    "slots": 0
   }
 }
 ```
 
 #### SPAWN_FROM_CHARACTER
 
-Creates a new drop from a character.
+Creates a new drop from a character action. Equipment stats are provided inline.
 
 ```json
 {
@@ -55,10 +72,10 @@ Creates a new drop from a character.
   "worldId": 0,
   "channelId": 0,
   "mapId": 0,
+  "instance": "uuid",
   "type": "SPAWN_FROM_CHARACTER",
   "body": {
     "itemId": 0,
-    "equipmentId": 0,
     "quantity": 0,
     "mesos": 0,
     "dropType": 0,
@@ -70,7 +87,23 @@ Creates a new drop from a character.
     "dropperX": 0,
     "dropperY": 0,
     "playerDrop": false,
-    "mod": 0
+    "mod": 0,
+    "strength": 0,
+    "dexterity": 0,
+    "intelligence": 0,
+    "luck": 0,
+    "hp": 0,
+    "mp": 0,
+    "weaponAttack": 0,
+    "magicAttack": 0,
+    "weaponDefense": 0,
+    "magicDefense": 0,
+    "accuracy": 0,
+    "avoidability": 0,
+    "hands": 0,
+    "speed": 0,
+    "jump": 0,
+    "slots": 0
   }
 }
 ```
@@ -85,6 +118,7 @@ Requests to reserve a drop for a character.
   "worldId": 0,
   "channelId": 0,
   "mapId": 0,
+  "instance": "uuid",
   "type": "REQUEST_RESERVATION",
   "body": {
     "dropId": 0,
@@ -106,6 +140,7 @@ Cancels a drop reservation.
   "worldId": 0,
   "channelId": 0,
   "mapId": 0,
+  "instance": "uuid",
   "type": "CANCEL_RESERVATION",
   "body": {
     "dropId": 0,
@@ -124,6 +159,7 @@ Requests to pick up a drop.
   "worldId": 0,
   "channelId": 0,
   "mapId": 0,
+  "instance": "uuid",
   "type": "REQUEST_PICK_UP",
   "body": {
     "dropId": 0,
@@ -144,6 +180,7 @@ Emitted when a drop is created.
   "worldId": 0,
   "channelId": 0,
   "mapId": 0,
+  "instance": "uuid",
   "dropId": 0,
   "type": "CREATED",
   "body": {
@@ -174,6 +211,7 @@ Emitted when a drop expires.
   "worldId": 0,
   "channelId": 0,
   "mapId": 0,
+  "instance": "uuid",
   "dropId": 0,
   "type": "EXPIRED",
   "body": {}
@@ -182,7 +220,7 @@ Emitted when a drop expires.
 
 #### PICKED_UP
 
-Emitted when a drop is picked up.
+Emitted when a drop is picked up. Equipment stats are provided inline via EquipmentData.
 
 ```json
 {
@@ -190,22 +228,38 @@ Emitted when a drop is picked up.
   "worldId": 0,
   "channelId": 0,
   "mapId": 0,
+  "instance": "uuid",
   "dropId": 0,
   "type": "PICKED_UP",
   "body": {
     "characterId": 0,
     "itemId": 0,
-    "equipmentId": 0,
     "quantity": 0,
     "meso": 0,
-    "petSlot": -1
+    "petSlot": -1,
+    "strength": 0,
+    "dexterity": 0,
+    "intelligence": 0,
+    "luck": 0,
+    "hp": 0,
+    "mp": 0,
+    "weaponAttack": 0,
+    "magicAttack": 0,
+    "weaponDefense": 0,
+    "magicDefense": 0,
+    "accuracy": 0,
+    "avoidability": 0,
+    "hands": 0,
+    "speed": 0,
+    "jump": 0,
+    "slots": 0
   }
 }
 ```
 
 #### RESERVED
 
-Emitted when a drop is reserved.
+Emitted when a drop is reserved. Equipment stats are provided inline via EquipmentData.
 
 ```json
 {
@@ -213,14 +267,30 @@ Emitted when a drop is reserved.
   "worldId": 0,
   "channelId": 0,
   "mapId": 0,
+  "instance": "uuid",
   "dropId": 0,
   "type": "RESERVED",
   "body": {
     "characterId": 0,
     "itemId": 0,
-    "equipmentId": 0,
     "quantity": 0,
-    "meso": 0
+    "meso": 0,
+    "strength": 0,
+    "dexterity": 0,
+    "intelligence": 0,
+    "luck": 0,
+    "hp": 0,
+    "mp": 0,
+    "weaponAttack": 0,
+    "magicAttack": 0,
+    "weaponDefense": 0,
+    "magicDefense": 0,
+    "accuracy": 0,
+    "avoidability": 0,
+    "hands": 0,
+    "speed": 0,
+    "jump": 0,
+    "slots": 0
   }
 }
 ```
@@ -235,6 +305,7 @@ Emitted when a drop reservation fails.
   "worldId": 0,
   "channelId": 0,
   "mapId": 0,
+  "instance": "uuid",
   "dropId": 0,
   "type": "RESERVATION_FAILURE",
   "body": {
@@ -245,7 +316,9 @@ Emitted when a drop reservation fails.
 
 ## Transaction Semantics
 
-- All commands include a `transactionId` for correlation
-- All events include the same `transactionId` from the originating command
+- All commands and events include a `transactionId` for correlation
+- All events carry the same `transactionId` from the originating command
 - Messages are keyed by `dropId` for ordering guarantees within a drop's lifecycle
-- Tenant headers are required for multi-tenancy support
+- Tenant and span headers are attached to all produced messages for multi-tenancy and tracing support
+- Commands are consumed from a single consumer group (`drop_command`) on the `COMMAND_TOPIC_DROP` topic
+- All Kafka message production uses a buffered emit pattern: messages are collected during processing and flushed atomically after the operation completes

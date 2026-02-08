@@ -12,7 +12,7 @@ func NewBuilder() *Builder {
 	}
 }
 
-func (b *Builder) SetHP(hp uint32) *Builder {
+func (b *Builder) SetHp(hp uint32) *Builder {
 	b.hp = hp
 	return b
 }

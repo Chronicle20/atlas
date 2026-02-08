@@ -6,7 +6,6 @@ import (
 	"atlas-inventory/data/consumable"
 	dcp "atlas-inventory/data/consumable/mock"
 	"atlas-inventory/kafka/message"
-	"atlas-inventory/stackable"
 	"context"
 	"testing"
 	"time"
@@ -27,7 +26,7 @@ func testDatabase(t *testing.T) *gorm.DB {
 	}
 
 	var migrators []func(db *gorm.DB) error
-	migrators = append(migrators, stackable.Migration, asset.Migration, compartment.Migration)
+	migrators = append(migrators, asset.Migration, compartment.Migration)
 
 	for _, migrator := range migrators {
 		if err := migrator(db); err != nil {

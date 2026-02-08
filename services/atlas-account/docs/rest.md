@@ -54,10 +54,11 @@ Array of Account resources.
 | Name | string | name |
 | Pin | string | pin |
 | Pic | string | pic |
+| PinAttempts | int | pinAttempts |
+| PicAttempts | int | picAttempts |
 | LoggedIn | byte | loggedIn |
 | LastLogin | uint64 | lastLogin |
 | Gender | byte | gender |
-| Banned | bool | banned |
 | TOS | bool | tos |
 | Language | string | language |
 | Country | string | country |
@@ -148,6 +149,8 @@ Partial Account resource. Updatable fields:
 |-------|------|----------|
 | Pin | string | pin |
 | Pic | string | pic |
+| PinAttempts | int | pinAttempts |
+| PicAttempts | int | picAttempts |
 | TOS | bool | tos |
 | Gender | byte | gender |
 
@@ -193,6 +196,82 @@ None.
 | 404 Not Found | Account not found |
 | 409 Conflict | Account is currently logged in |
 | 500 Internal Server Error | Database error |
+
+---
+
+### POST /accounts/{accountId}/pin-attempts
+
+Records a PIN attempt result. On failure, increments the PIN attempt counter. If the configured limit is reached, issues a temporary ban via Kafka and resets the counter. On success, resets the counter to 0.
+
+#### Parameters
+
+| Name | Location | Type | Required |
+|------|----------|------|----------|
+| accountId | path | uint32 | yes |
+
+#### Request Model
+
+| Field | Type | JSON Key |
+|-------|------|----------|
+| Success | bool | success |
+
+Resource type: `pin-attempts`
+
+#### Response Model
+
+| Field | Type | JSON Key |
+|-------|------|----------|
+| Id | string | (resource id) |
+| Attempts | int | attempts |
+| LimitReached | bool | limitReached |
+
+Resource type: `pin-attempts`
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 200 OK | Attempt recorded |
+| 400 Bad Request | Invalid account ID |
+| 500 Internal Server Error | Database or processing error |
+
+---
+
+### POST /accounts/{accountId}/pic-attempts
+
+Records a PIC attempt result. On failure, increments the PIC attempt counter. If the configured limit is reached, issues a temporary ban via Kafka and resets the counter. On success, resets the counter to 0.
+
+#### Parameters
+
+| Name | Location | Type | Required |
+|------|----------|------|----------|
+| accountId | path | uint32 | yes |
+
+#### Request Model
+
+| Field | Type | JSON Key |
+|-------|------|----------|
+| Success | bool | success |
+
+Resource type: `pic-attempts`
+
+#### Response Model
+
+| Field | Type | JSON Key |
+|-------|------|----------|
+| Id | string | (resource id) |
+| Attempts | int | attempts |
+| LimitReached | bool | limitReached |
+
+Resource type: `pic-attempts`
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 200 OK | Attempt recorded |
+| 400 Bad Request | Invalid account ID |
+| 500 Internal Server Error | Database or processing error |
 
 ---
 

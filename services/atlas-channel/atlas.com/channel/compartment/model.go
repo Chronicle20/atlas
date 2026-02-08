@@ -12,7 +12,7 @@ type Model struct {
 	characterId   uint32
 	inventoryType inventory.Type
 	capacity      uint32
-	assets        []asset.Model[any]
+	assets        []asset.Model
 }
 
 func (m Model) Id() uuid.UUID {
@@ -27,7 +27,7 @@ func (m Model) Capacity() uint32 {
 	return m.capacity
 }
 
-func (m Model) Assets() []asset.Model[any] {
+func (m Model) Assets() []asset.Model {
 	return m.assets
 }
 
@@ -35,7 +35,7 @@ func (m Model) CharacterId() uint32 {
 	return m.characterId
 }
 
-func (m Model) FindBySlot(slot int16) (*asset.Model[any], bool) {
+func (m Model) FindBySlot(slot int16) (*asset.Model, bool) {
 	for _, a := range m.Assets() {
 		if a.Slot() == slot {
 			return &a, true
@@ -44,7 +44,16 @@ func (m Model) FindBySlot(slot int16) (*asset.Model[any], bool) {
 	return nil, false
 }
 
-func (m Model) FindFirstByItemId(templateId uint32) (*asset.Model[any], bool) {
+func (m Model) FindById(id uint32) (*asset.Model, bool) {
+	for _, a := range m.Assets() {
+		if a.Id() == id {
+			return &a, true
+		}
+	}
+	return nil, false
+}
+
+func (m Model) FindFirstByItemId(templateId uint32) (*asset.Model, bool) {
 	for _, a := range m.Assets() {
 		if a.TemplateId() == templateId {
 			return &a, true
@@ -53,9 +62,9 @@ func (m Model) FindFirstByItemId(templateId uint32) (*asset.Model[any], bool) {
 	return nil, false
 }
 
-func (m Model) FindByReferenceId(referenceId uint32) (*asset.Model[any], bool) {
+func (m Model) FindByPetId(petId uint32) (*asset.Model, bool) {
 	for _, a := range m.Assets() {
-		if a.ReferenceId() == referenceId {
+		if a.PetId() == petId {
 			return &a, true
 		}
 	}

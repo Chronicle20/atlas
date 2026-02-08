@@ -1,0 +1,180 @@
+{
+  "npcId": 9100101,
+  "startState": "checkTicket",
+  "states": [
+    {
+      "id": "checkTicket",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              {
+                "type": "item",
+                "operator": ">=",
+                "value": "1",
+                "referenceId": "5220000"
+              }
+            ],
+            "nextState": "askUseTicket"
+          },
+          {
+            "conditions": [],
+            "nextState": "infoMenu"
+          }
+        ]
+      }
+    },
+    {
+      "id": "askUseTicket",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "You may use the Ellinia Gachapon. Would you like to use your Gachapon ticket?",
+        "choices": [
+          {
+            "text": "Yes",
+            "nextState": "doGachapon"
+          },
+          {
+            "text": "No",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "doGachapon",
+      "type": "gachaponAction",
+      "gachaponAction": {
+        "gachaponId": "ellinia",
+        "ticketItemId": 5220000,
+        "failureState": "gachaponFailed"
+      }
+    },
+    {
+      "id": "gachaponFailed",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Please have at least one slot in your #rEQUIP, USE, SET-UP, #kand #rETC#k inventories free.",
+        "choices": [
+          {
+            "text": "Ok",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "infoMenu",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Welcome to the Ellinia Gachapon. How may I help you?",
+        "choices": [
+          {
+            "text": "What is Gachapon?",
+            "nextState": "whatIsGachapon"
+          },
+          {
+            "text": "Where can you buy Gachapon tickets?",
+            "nextState": "whereTickets"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "whatIsGachapon",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Play Gachapon to earn rare scrolls, equipment, chairs, mastery books, and other cool items! All you need is a #bGachapon Ticket#k to be the winner of a random mix of items.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "gachaponDetailsFromInfo"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "whereTickets",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Gachapon Tickets are available in the #rCash Shop#k and can be purchased using NX or Maple Points. Click on the red SHOP at the lower right hand corner of the screen to visit the #rCash Shop#k where you can purchase tickets.",
+        "choices": [
+          {
+            "text": "Next",
+            "nextState": "gachaponDetailsFromTickets"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "gachaponDetailsFromInfo",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "You'll find a variety of items from the Ellinia Gachapon, but you'll most likely find items and scrolls related to Ellinia.",
+        "choices": [
+          {
+            "text": "Previous",
+            "nextState": "whatIsGachapon"
+          },
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "gachaponDetailsFromTickets",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "You'll find a variety of items from the Ellinia Gachapon, but you'll most likely find items and scrolls related to Ellinia.",
+        "choices": [
+          {
+            "text": "Previous",
+            "nextState": "whereTickets"
+          },
+          {
+            "text": "Next",
+            "nextState": null
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

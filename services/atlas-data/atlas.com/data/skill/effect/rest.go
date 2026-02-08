@@ -13,8 +13,8 @@ type RestModel struct {
 	Avoidability      int16   `json:"avoidability"`
 	Speed             int16   `json:"speed"`
 	Jump              int16   `json:"jump"`
-	HP                uint16  `json:"hp"`
-	MP                uint16  `json:"mp"`
+	Hp                uint16  `json:"hp"`
+	Mp                uint16  `json:"mp"`
 	HPR               float64 `json:"hpR"`
 	MPR               float64 `json:"mpR"`
 	MHPRRate          uint16  `json:"MHPRRate"`

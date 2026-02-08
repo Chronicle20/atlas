@@ -1,6 +1,7 @@
 package compartment
 
 import (
+	"atlas-inventory/asset"
 	"atlas-inventory/compartment"
 	consumer2 "atlas-inventory/kafka/consumer"
 	compartment2 "atlas-inventory/kafka/message/compartment"
@@ -48,6 +49,7 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAcceptCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleReleaseCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleExpireCommand(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleModifyEquipmentCommand(db))))
 		}
 	}
 }
@@ -214,7 +216,44 @@ func handleAcceptCommand(db *gorm.DB) message.Handler[compartment2.Command[compa
 		if transactionId == uuid.Nil {
 			transactionId = c.Body.TransactionId
 		}
-		_ = compartment.NewProcessor(l, ctx, db).AcceptAndEmit(transactionId, c.CharacterId, inventory.Type(c.InventoryType), c.Body.TemplateId, c.Body.ReferenceId, c.Body.ReferenceType, c.Body.ReferenceData, c.Body.Quantity)
+		m := asset.NewBuilder(uuid.Nil, c.Body.TemplateId).
+			SetExpiration(c.Body.Expiration).
+			SetQuantity(c.Body.Quantity).
+			SetOwnerId(c.Body.OwnerId).
+			SetFlag(c.Body.Flag).
+			SetRechargeable(c.Body.Rechargeable).
+			SetStrength(c.Body.Strength).
+			SetDexterity(c.Body.Dexterity).
+			SetIntelligence(c.Body.Intelligence).
+			SetLuck(c.Body.Luck).
+			SetHp(c.Body.Hp).
+			SetMp(c.Body.Mp).
+			SetWeaponAttack(c.Body.WeaponAttack).
+			SetMagicAttack(c.Body.MagicAttack).
+			SetWeaponDefense(c.Body.WeaponDefense).
+			SetMagicDefense(c.Body.MagicDefense).
+			SetAccuracy(c.Body.Accuracy).
+			SetAvoidability(c.Body.Avoidability).
+			SetHands(c.Body.Hands).
+			SetSpeed(c.Body.Speed).
+			SetJump(c.Body.Jump).
+			SetSlots(c.Body.Slots).
+			SetLocked(c.Body.Locked).
+			SetSpikes(c.Body.Spikes).
+			SetKarmaUsed(c.Body.KarmaUsed).
+			SetCold(c.Body.Cold).
+			SetCanBeTraded(c.Body.CanBeTraded).
+			SetLevelType(c.Body.LevelType).
+			SetLevel(c.Body.Level).
+			SetExperience(c.Body.Experience).
+			SetHammersApplied(c.Body.HammersApplied).
+			SetEquippedSince(c.Body.EquippedSince).
+			SetCashId(c.Body.CashId).
+			SetCommodityId(c.Body.CommodityId).
+			SetPurchaseBy(c.Body.PurchaseBy).
+			SetPetId(c.Body.PetId).
+			Build()
+		_ = compartment.NewProcessor(l, ctx, db).AcceptAndEmit(transactionId, c.CharacterId, inventory.Type(c.InventoryType), m)
 	}
 }
 
@@ -257,5 +296,43 @@ func handleExpireCommand(db *gorm.DB) message.Handler[compartment2.Command[compa
 		if err != nil {
 			l.WithError(err).Errorf("Failed to expire asset [%d] for character [%d].", c.Body.AssetId, c.CharacterId)
 		}
+	}
+}
+
+func handleModifyEquipmentCommand(db *gorm.DB) message.Handler[compartment2.Command[compartment2.ModifyEquipmentCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c compartment2.Command[compartment2.ModifyEquipmentCommandBody]) {
+		if c.Type != compartment2.CommandModifyEquipment {
+			return
+		}
+
+		stats := asset.NewBuilder(uuid.Nil, 0).
+			SetStrength(c.Body.Strength).
+			SetDexterity(c.Body.Dexterity).
+			SetIntelligence(c.Body.Intelligence).
+			SetLuck(c.Body.Luck).
+			SetHp(c.Body.Hp).
+			SetMp(c.Body.Mp).
+			SetWeaponAttack(c.Body.WeaponAttack).
+			SetMagicAttack(c.Body.MagicAttack).
+			SetWeaponDefense(c.Body.WeaponDefense).
+			SetMagicDefense(c.Body.MagicDefense).
+			SetAccuracy(c.Body.Accuracy).
+			SetAvoidability(c.Body.Avoidability).
+			SetHands(c.Body.Hands).
+			SetSpeed(c.Body.Speed).
+			SetJump(c.Body.Jump).
+			SetSlots(c.Body.Slots).
+			SetLocked(c.Body.Locked).
+			SetSpikes(c.Body.Spikes).
+			SetKarmaUsed(c.Body.KarmaUsed).
+			SetCold(c.Body.Cold).
+			SetCanBeTraded(c.Body.CanBeTraded).
+			SetLevelType(c.Body.LevelType).
+			SetLevel(c.Body.Level).
+			SetExperience(c.Body.Experience).
+			SetHammersApplied(c.Body.HammersApplied).
+			SetExpiration(c.Body.Expiration).
+			Build()
+		_ = compartment.NewProcessor(l, ctx, db).ModifyEquipmentAndEmit(c.TransactionId, c.CharacterId, c.Body.AssetId, stats)
 	}
 }

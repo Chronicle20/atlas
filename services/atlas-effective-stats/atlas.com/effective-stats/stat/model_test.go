@@ -39,13 +39,13 @@ func TestNewMultiplierBonus(t *testing.T) {
 }
 
 func TestNewFullBonus(t *testing.T) {
-	b := NewFullBonus("passive:1000001", TypeMaxHP, 100, 0.05)
+	b := NewFullBonus("passive:1000001", TypeMaxHp, 100, 0.05)
 
 	if b.Source() != "passive:1000001" {
 		t.Errorf("Source() = %v, want passive:1000001", b.Source())
 	}
-	if b.StatType() != TypeMaxHP {
-		t.Errorf("StatType() = %v, want %v", b.StatType(), TypeMaxHP)
+	if b.StatType() != TypeMaxHp {
+		t.Errorf("StatType() = %v, want %v", b.StatType(), TypeMaxHp)
 	}
 	if b.Amount() != 100 {
 		t.Errorf("Amount() = %v, want 100", b.Amount())
@@ -70,11 +70,11 @@ func TestNewBase(t *testing.T) {
 	if base.Intelligence() != 25 {
 		t.Errorf("Intelligence() = %v, want 25", base.Intelligence())
 	}
-	if base.MaxHP() != 5000 {
-		t.Errorf("MaxHP() = %v, want 5000", base.MaxHP())
+	if base.MaxHp() != 5000 {
+		t.Errorf("MaxHP() = %v, want 5000", base.MaxHp())
 	}
-	if base.MaxMP() != 3000 {
-		t.Errorf("MaxMP() = %v, want 3000", base.MaxMP())
+	if base.MaxMp() != 3000 {
+		t.Errorf("MaxMP() = %v, want 3000", base.MaxMp())
 	}
 }
 
@@ -93,11 +93,11 @@ func TestNewComputed(t *testing.T) {
 	if computed.Intelligence() != 50 {
 		t.Errorf("Intelligence() = %v, want 50", computed.Intelligence())
 	}
-	if computed.MaxHP() != 10000 {
-		t.Errorf("MaxHP() = %v, want 10000", computed.MaxHP())
+	if computed.MaxHp() != 10000 {
+		t.Errorf("MaxHP() = %v, want 10000", computed.MaxHp())
 	}
-	if computed.MaxMP() != 5000 {
-		t.Errorf("MaxMP() = %v, want 5000", computed.MaxMP())
+	if computed.MaxMp() != 5000 {
+		t.Errorf("MaxMP() = %v, want 5000", computed.MaxMp())
 	}
 	if computed.WeaponAttack() != 150 {
 		t.Errorf("WeaponAttack() = %v, want 150", computed.WeaponAttack())
@@ -136,8 +136,8 @@ func TestComputedGetStat(t *testing.T) {
 		{TypeDexterity, 80},
 		{TypeLuck, 60},
 		{TypeIntelligence, 50},
-		{TypeMaxHP, 10000},
-		{TypeMaxMP, 5000},
+		{TypeMaxHp, 10000},
+		{TypeMaxMp, 5000},
 		{TypeWeaponAttack, 150},
 		{TypeWeaponDefense, 200},
 		{TypeMagicAttack, 100},
@@ -174,7 +174,7 @@ func TestAllTypes(t *testing.T) {
 
 	expected := []Type{
 		TypeStrength, TypeDexterity, TypeLuck, TypeIntelligence,
-		TypeMaxHP, TypeMaxMP,
+		TypeMaxHp, TypeMaxMp,
 		TypeWeaponAttack, TypeWeaponDefense, TypeMagicAttack, TypeMagicDefense,
 		TypeAccuracy, TypeAvoidability, TypeSpeed, TypeJump,
 	}
@@ -209,8 +209,8 @@ func TestMapBuffStatType(t *testing.T) {
 		{"SPEED", TypeSpeed, false},
 		{"JUMP", TypeJump, false},
 		// Multiplier bonuses
-		{"HYPER_BODY_HP", TypeMaxHP, true},
-		{"HYPER_BODY_MP", TypeMaxMP, true},
+		{"HYPER_BODY_HP", TypeMaxHp, true},
+		{"HYPER_BODY_MP", TypeMaxMp, true},
 		{"MAPLE_WARRIOR", TypeStrength, true},
 		// Unknown type
 		{"UNKNOWN", "", false},
@@ -252,12 +252,12 @@ func TestMapStatupType(t *testing.T) {
 		{"SPEED", TypeSpeed},
 		{"JUMP", TypeJump},
 		// HP/MP
-		{"HP", TypeMaxHP},
-		{"MAX_HP", TypeMaxHP},
-		{"MHP", TypeMaxHP},
-		{"MP", TypeMaxMP},
-		{"MAX_MP", TypeMaxMP},
-		{"MMP", TypeMaxMP},
+		{"HP", TypeMaxHp},
+		{"MAX_HP", TypeMaxHp},
+		{"MHP", TypeMaxHp},
+		{"MP", TypeMaxMp},
+		{"MAX_MP", TypeMaxMp},
+		{"MMP", TypeMaxMp},
 		// Primary stats
 		{"STR", TypeStrength},
 		{"STRENGTH", TypeStrength},

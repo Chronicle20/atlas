@@ -1,7 +1,7 @@
 package compartment
 
 import (
-	"encoding/json"
+	"atlas-storage/kafka/message"
 
 	"github.com/Chronicle20/atlas-constants/asset"
 	"github.com/Chronicle20/atlas-constants/world"
@@ -18,27 +18,23 @@ const (
 type Command[E any] struct {
 	WorldId     world.Id `json:"worldId"`
 	AccountId   uint32   `json:"accountId"`
-	CharacterId uint32   `json:"characterId,omitempty"` // Optional: for client notification
+	CharacterId uint32   `json:"characterId,omitempty"`
 	Type        string   `json:"type"`
 	Body        E        `json:"body"`
 }
 
 // AcceptCommandBody contains the data for an ACCEPT command
 type AcceptCommandBody struct {
-	TransactionId uuid.UUID       `json:"transactionId"`
-	Slot          int16           `json:"slot"`
-	TemplateId    uint32          `json:"templateId"`
-	ReferenceId   uint32          `json:"referenceId"`
-	ReferenceType string          `json:"referenceType"`
-	ReferenceData json.RawMessage `json:"referenceData,omitempty"` // Type-specific data based on ReferenceType
-	Quantity      asset.Quantity  `json:"quantity"`                // Quantity to accept (0 = all from source)
+	TransactionId uuid.UUID `json:"transactionId"`
+	TemplateId    uint32    `json:"templateId"`
+	message.AssetData
 }
 
 // ReleaseCommandBody contains the data for a RELEASE command
 type ReleaseCommandBody struct {
 	TransactionId uuid.UUID      `json:"transactionId"`
 	AssetId       asset.Id       `json:"assetId"`
-	Quantity      asset.Quantity `json:"quantity"` // Quantity to release (0 = all)
+	Quantity      asset.Quantity `json:"quantity"`
 }
 
 const (
@@ -52,7 +48,7 @@ const (
 type StatusEvent[E any] struct {
 	WorldId     world.Id `json:"worldId"`
 	AccountId   uint32   `json:"accountId"`
-	CharacterId uint32   `json:"characterId,omitempty"` // Optional: for client notification
+	CharacterId uint32   `json:"characterId,omitempty"`
 	Type        string   `json:"type"`
 	Body        E        `json:"body"`
 }

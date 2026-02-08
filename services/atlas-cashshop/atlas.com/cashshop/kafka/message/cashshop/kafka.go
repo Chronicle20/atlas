@@ -79,8 +79,7 @@ type PurchaseEventBody struct {
 	TemplateId    uint32    `json:"templateId"`
 	Price         uint32    `json:"price"`
 	CompartmentId uuid.UUID `json:"compartmentId"`
-	AssetId       uuid.UUID `json:"assetId"`
-	ItemId        uint32    `json:"itemId"`
+	AssetId       uint32    `json:"assetId"`
 }
 
 // ExpireCommandBody contains the data for expiring a cash shop item

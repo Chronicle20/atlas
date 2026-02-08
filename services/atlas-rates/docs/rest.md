@@ -10,8 +10,8 @@ Retrieves computed rates and contributing factors for a character.
 
 | Name | In | Type | Description |
 |------|-----|------|-------------|
-| worldId | path | byte | World identifier |
-| channelId | path | byte | Channel identifier |
+| worldId | path | integer | World identifier |
+| channelId | path | integer | Channel identifier |
 | characterId | path | uint32 | Character identifier |
 
 **Request Model**

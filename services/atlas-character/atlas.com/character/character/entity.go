@@ -25,12 +25,12 @@ type entity struct {
 	Dexterity          uint16    `gorm:"not null;default=5"`
 	Intelligence       uint16    `gorm:"not null;default=4"`
 	Luck               uint16    `gorm:"not null;default=4"`
-	HP                 uint16    `gorm:"not null;default=50"`
-	MP                 uint16    `gorm:"not null;default=5"`
-	MaxHP              uint16    `gorm:"not null;default=50"`
-	MaxMP              uint16    `gorm:"not null;default=5"`
+	Hp                 uint16    `gorm:"not null;default=50"`
+	Mp                 uint16    `gorm:"not null;default=5"`
+	MaxHp              uint16    `gorm:"not null;default=50"`
+	MaxMp              uint16    `gorm:"not null;default=5"`
 	Meso               uint32    `gorm:"not null;default=0"`
-	HPMPUsed           int       `gorm:"not null;default=0"`
+	HpMpUsed           int       `gorm:"column:hpmp_used;not null;default=0"`
 	JobId              job.Id    `gorm:"not null;default=0"`
 	SkinColor          byte      `gorm:"not null;default=0"`
 	Gender             byte      `gorm:"not null;default=0"`

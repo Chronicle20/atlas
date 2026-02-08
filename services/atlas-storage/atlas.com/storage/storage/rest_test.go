@@ -36,18 +36,15 @@ func GetServer() Server {
 func TestStorageWithAssetsMarshalUnmarshal(t *testing.T) {
 	storageId := uuid.New()
 
-	// Create an equipable asset
-	equipableAsset := asset.NewModelBuilder[any]().
+	// Create an equipable asset using the flat builder
+	equipableAsset := asset.NewBuilder(storageId, 1322005).
 		SetId(8).
-		SetStorageId(storageId).
-		SetInventoryType(asset.InventoryTypeEquip).
 		SetSlot(0).
-		SetTemplateId(1322005).
 		SetExpiration(time.Time{}).
-		SetReferenceId(100).
-		SetReferenceType(asset.ReferenceTypeEquipable).
-		SetReferenceData(nil).
-		MustBuild()
+		SetStrength(15).
+		SetDexterity(10).
+		SetSlots(7).
+		Build()
 
 	// Create a storage model with the asset
 	storageModel := storage.NewModelBuilder().
@@ -56,7 +53,7 @@ func TestStorageWithAssetsMarshalUnmarshal(t *testing.T) {
 		SetAccountId(1).
 		SetCapacity(4).
 		SetMesos(485).
-		SetAssets([]asset.Model[any]{equipableAsset}).
+		SetAssets([]asset.Model{equipableAsset}).
 		MustBuild()
 
 	// Transform to REST model
@@ -119,11 +116,8 @@ func TestStorageWithAssetsMarshalUnmarshal(t *testing.T) {
 	if outputAsset.TemplateId != equipableAsset.TemplateId() {
 		t.Errorf("Asset TemplateId mismatch: expected %d, got %d", equipableAsset.TemplateId(), outputAsset.TemplateId)
 	}
-	if outputAsset.ReferenceId != equipableAsset.ReferenceId() {
-		t.Errorf("Asset ReferenceId mismatch: expected %d, got %d", equipableAsset.ReferenceId(), outputAsset.ReferenceId)
-	}
-	if outputAsset.ReferenceType != string(equipableAsset.ReferenceType()) {
-		t.Errorf("Asset ReferenceType mismatch: expected %s, got %s", equipableAsset.ReferenceType(), outputAsset.ReferenceType)
+	if outputAsset.Strength != equipableAsset.Strength() {
+		t.Errorf("Asset Strength mismatch: expected %d, got %d", equipableAsset.Strength(), outputAsset.Strength)
 	}
 }
 
@@ -137,7 +131,7 @@ func TestStorageEmptyAssetsMarshalUnmarshal(t *testing.T) {
 		SetAccountId(2).
 		SetCapacity(8).
 		SetMesos(1000).
-		SetAssets([]asset.Model[any]{}).
+		SetAssets([]asset.Model{}).
 		MustBuild()
 
 	// Transform to REST model
@@ -184,41 +178,26 @@ func TestStorageMultipleAssetsMarshalUnmarshal(t *testing.T) {
 	storageId := uuid.New()
 
 	// Create multiple assets of different types
-	equipableAsset := asset.NewModelBuilder[any]().
+	equipableAsset := asset.NewBuilder(storageId, 1322005).
 		SetId(1).
-		SetStorageId(storageId).
-		SetInventoryType(asset.InventoryTypeEquip).
 		SetSlot(0).
-		SetTemplateId(1322005).
 		SetExpiration(time.Time{}).
-		SetReferenceId(100).
-		SetReferenceType(asset.ReferenceTypeEquipable).
-		SetReferenceData(nil).
-		MustBuild()
+		SetStrength(15).
+		Build()
 
-	consumableAsset := asset.NewModelBuilder[any]().
+	consumableAsset := asset.NewBuilder(storageId, 2000000).
 		SetId(2).
-		SetStorageId(storageId).
-		SetInventoryType(asset.InventoryTypeUse).
 		SetSlot(1).
-		SetTemplateId(2000000).
 		SetExpiration(time.Time{}).
-		SetReferenceId(101).
-		SetReferenceType(asset.ReferenceTypeConsumable).
-		SetReferenceData(nil).
-		MustBuild()
+		SetQuantity(50).
+		Build()
 
-	etcAsset := asset.NewModelBuilder[any]().
+	etcAsset := asset.NewBuilder(storageId, 4000000).
 		SetId(3).
-		SetStorageId(storageId).
-		SetInventoryType(asset.InventoryTypeEtc).
 		SetSlot(2).
-		SetTemplateId(4000000).
 		SetExpiration(time.Time{}).
-		SetReferenceId(102).
-		SetReferenceType(asset.ReferenceTypeEtc).
-		SetReferenceData(nil).
-		MustBuild()
+		SetQuantity(99).
+		Build()
 
 	// Create a storage model with multiple assets
 	storageModel := storage.NewModelBuilder().
@@ -227,7 +206,7 @@ func TestStorageMultipleAssetsMarshalUnmarshal(t *testing.T) {
 		SetAccountId(1).
 		SetCapacity(10).
 		SetMesos(500).
-		SetAssets([]asset.Model[any]{equipableAsset, consumableAsset, etcAsset}).
+		SetAssets([]asset.Model{equipableAsset, consumableAsset, etcAsset}).
 		MustBuild()
 
 	// Transform to REST model

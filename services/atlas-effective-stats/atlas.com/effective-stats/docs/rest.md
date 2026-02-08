@@ -2,17 +2,17 @@
 
 ## Endpoints
 
-### GET /worlds/{worldId}/channels/{channelId}/characters/{characterId}/stats
+### GET /api/worlds/{worldId}/channels/{channelId}/characters/{characterId}/stats
 
-Retrieves computed effective stats for a character.
+Retrieves computed effective stats for a character. If the character has not been initialized yet, lazy initialization is performed by fetching data from external services.
 
 #### Parameters
 
 | Name | In | Type | Description |
 |------|-----|------|-------------|
-| worldId | path | byte | World identifier |
-| channelId | path | byte | Channel identifier |
-| characterId | path | uint32 | Character identifier |
+| worldId | path | int | World identifier |
+| channelId | path | int | Channel identifier |
+| characterId | path | int | Character identifier |
 
 #### Request Model
 
@@ -39,14 +39,14 @@ JSON:API resource of type `effective-stats`.
 | avoidability | uint32 | Effective avoidability |
 | speed | uint32 | Effective movement speed |
 | jump | uint32 | Effective jump height |
-| bonuses | []BonusRestModel | All active bonuses |
+| bonuses | []BonusRestModel | All active bonuses (omitted if empty) |
 
 ##### BonusRestModel
 
 | Field | Type | Description |
 |-------|------|-------------|
-| source | string | Source identifier |
-| statType | string | Stat type affected |
+| source | string | Source identifier (e.g., `equipment:1001`, `buff:2311003`, `passive:1000001`) |
+| statType | string | Stat type affected (e.g., `strength`, `max_hp`) |
 | amount | int32 | Flat bonus value |
 | multiplier | float64 | Percentage bonus value |
 
@@ -95,4 +95,5 @@ JSON:API resource of type `effective-stats`.
 
 | Status Code | Condition |
 |-------------|-----------|
+| 400 | Invalid worldId, channelId, or characterId path parameter |
 | 500 | Internal error retrieving effective stats |

@@ -10,6 +10,7 @@ import (
 	"atlas-channel/character"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
+	"atlas-channel/storage"
 	"context"
 
 	"github.com/Chronicle20/atlas-socket/request"
@@ -37,7 +38,7 @@ func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 			return
 		}
 		cp := character.NewProcessor(l, ctx)
-		c, err := cp.GetById(cp.InventoryDecorator, cp.SkillModelDecorator, cp.PetModelDecorator, cp.QuestModelDecorator)(s.CharacterId())
+		c, err := cp.GetById(cp.InventoryDecorator, cp.PetAssetEnrichmentDecorator, cp.SkillModelDecorator, cp.PetModelDecorator, cp.QuestModelDecorator)(s.CharacterId())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to locate character [%d] attempting to enter cash shop.", s.CharacterId())
 			_ = session.NewProcessor(l, ctx).Destroy(s)
@@ -62,7 +63,13 @@ func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 			ccp = compartment.Model{}
 		}
 
-		err = session.Announce(l)(ctx)(wp)(writer.CashShopOperation)(writer.CashShopCashInventoryBody(l)(a, s.CharacterId(), ccp.Assets()))(s)
+		sd, err := storage.NewProcessor(l, ctx).GetStorageData(s.AccountId(), s.WorldId())
+		if err != nil {
+			l.WithError(err).Debugf("Unable to retrieve storage data for account [%d].", s.AccountId())
+			sd = storage.StorageData{Capacity: storage.DefaultStorageCapacity}
+		}
+
+		err = session.Announce(l)(ctx)(wp)(writer.CashShopOperation)(writer.CashShopCashInventoryBody(l)(a, s.CharacterId(), ccp.Assets(), uint16(sd.Capacity)))(s)
 		if err != nil {
 			return
 		}

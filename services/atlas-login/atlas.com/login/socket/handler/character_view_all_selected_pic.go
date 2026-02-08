@@ -48,18 +48,24 @@ func CharacterViewAllSelectedPicHandleFunc(l logrus.FieldLogger, ctx context.Con
 			return
 		}
 
-		a, err := account.NewProcessor(l, ctx).GetById(s.AccountId())
+		ap := account.NewProcessor(l, ctx)
+		a, err := ap.GetById(s.AccountId())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to get account [%d].", s.AccountId())
-			// TODO issue error
 			return
 		}
 
 		if a.PIC() != pic {
-			l.Errorf("Mismatch PIC for account [%d].", s.AccountId())
-			// TODO issue error
+			l.Debugf("Incorrect PIC for account [%d].", s.AccountId())
+			_, limitReached, _ := ap.RecordPicAttempt(s.AccountId(), false)
+			if limitReached {
+				l.Warnf("Account [%d] has exceeded PIC attempt limit. Terminating session.", s.AccountId())
+				_ = sp.Destroy(s)
+			}
 			return
 		}
+
+		ap.RecordPicAttempt(s.AccountId(), true)
 
 		w, err := world.NewProcessor(l, ctx).GetById(worldId)
 		if err != nil {

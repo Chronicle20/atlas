@@ -9,12 +9,12 @@ import (
 )
 
 type RestModel struct {
-	Id        string                `json:"-"`
-	WorldId   world.Id              `json:"world_id"`
-	AccountId uint32                `json:"account_id"`
-	Capacity  uint32                `json:"capacity"`
-	Mesos     uint32                `json:"mesos"`
-	Assets    []asset.BaseRestModel `json:"-"`
+	Id        string             `json:"-"`
+	WorldId   world.Id           `json:"world_id"`
+	AccountId uint32             `json:"account_id"`
+	Capacity  uint32             `json:"capacity"`
+	Mesos     uint32             `json:"mesos"`
+	Assets    []asset.RestModel  `json:"-"`
 }
 
 func (r RestModel) GetName() string {
@@ -70,7 +70,7 @@ func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
 			if err != nil {
 				return err
 			}
-			r.Assets = append(r.Assets, asset.BaseRestModel{Id: uint32(id)})
+			r.Assets = append(r.Assets, asset.RestModel{Id: uint32(id)})
 		}
 	}
 	return nil
@@ -78,7 +78,7 @@ func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
 
 func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonapi.Data) error {
 	if refMap, ok := references["storage_assets"]; ok {
-		assets := make([]asset.BaseRestModel, 0)
+		assets := make([]asset.RestModel, 0)
 		for _, ri := range r.Assets {
 			if ref, ok := refMap[ri.GetID()]; ok {
 				wip := ri
@@ -94,10 +94,8 @@ func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonap
 	return nil
 }
 
-// Transform converts a Model to a RestModel
-// Assets must already be decorated with reference data before calling this
 func Transform(m Model) (RestModel, error) {
-	baseRestAssets, err := asset.TransformAllToBaseRestModel(m.Assets())
+	restAssets, err := asset.TransformAll(m.Assets())
 	if err != nil {
 		return RestModel{}, err
 	}
@@ -108,7 +106,7 @@ func Transform(m Model) (RestModel, error) {
 		AccountId: m.AccountId(),
 		Capacity:  m.Capacity(),
 		Mesos:     m.Mesos(),
-		Assets:    baseRestAssets,
+		Assets:    restAssets,
 	}, nil
 }
 

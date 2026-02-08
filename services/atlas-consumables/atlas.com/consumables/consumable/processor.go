@@ -414,7 +414,7 @@ func (p *Processor) RequestScroll(characterId uint32, scrollSlot int16, equipSlo
 	}
 
 	// Ensure if we are using a "white scroll" that we have a white scroll item.
-	var whiteScrollItem *asset.Model[any]
+	var whiteScrollItem *asset.Model
 	if whiteScroll {
 		whiteScrollItem, ok = c.Inventory().Consumable().FindFirstByItemId(2340000)
 		if !ok {
@@ -460,7 +460,7 @@ func (p *Processor) RequestScroll(characterId uint32, scrollSlot int16, equipSlo
 	return nil
 }
 
-func (p *Processor) ValidateScrollUse(scrollItem asset.Model[any], equipItem asset.Model[asset.EquipableReferenceData]) bool {
+func (p *Processor) ValidateScrollUse(scrollItem asset.Model, equipItem asset.Model) bool {
 	ep := equipable2.NewProcessor(p.l, p.ctx)
 	if item2.IsScrollCleanSlate(item2.Id(scrollItem.TemplateId())) {
 		// If the scroll is a clean slate scroll, make sure we're not attempting to add mores lots than originally available.
@@ -468,7 +468,7 @@ func (p *Processor) ValidateScrollUse(scrollItem asset.Model[any], equipItem ass
 		if err != nil {
 			return false
 		}
-		if equipItem.ReferenceData().Level() >= byte(es.Slots()) {
+		if equipItem.Level() >= byte(es.Slots()) {
 			return false
 		}
 		return true
@@ -477,7 +477,7 @@ func (p *Processor) ValidateScrollUse(scrollItem asset.Model[any], equipItem ass
 		return true
 	} else {
 		// If a regular scroll ensure we have an open slot.
-		return equipItem.ReferenceData().Slots() > 0
+		return equipItem.Slots() > 0
 	}
 }
 
@@ -485,7 +485,7 @@ func IsNotSlotConsumingScroll(id item2.Id) bool {
 	return item2.IsScrollSpikes(id) || item2.IsScrollColdProtection(id)
 }
 
-func ConsumeScroll(transactionId uuid.UUID, characterId uint32, scrollItem *asset.Model[any], equipSlot int16, whiteScrollItem *asset.Model[any], legendarySpirit bool) ItemConsumer {
+func ConsumeScroll(transactionId uuid.UUID, characterId uint32, scrollItem *asset.Model, equipSlot int16, whiteScrollItem *asset.Model, legendarySpirit bool) ItemConsumer {
 	return func(l logrus.FieldLogger) func(ctx context.Context) error {
 		return func(ctx context.Context) error {
 			p := NewProcessor(l, ctx)
@@ -544,7 +544,7 @@ func ConsumeScroll(transactionId uuid.UUID, characterId uint32, scrollItem *asse
 				} else if item2.IsScrollCleanSlate(item2.Id(scrollItem.TemplateId())) {
 					changes = append(changes, equipable.AddSlots(1))
 				} else if item2.IsChaosScroll(item2.Id(scrollItem.TemplateId())) {
-					ccs, err := applyChaos(sm.Equipable.ReferenceData())
+					ccs, err := applyChaos(*sm.Equipable)
 					if err != nil {
 						return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, scrollItem.Slot(), err)
 					}
@@ -558,8 +558,8 @@ func ConsumeScroll(transactionId uuid.UUID, characterId uint32, scrollItem *asse
 						equipable.AddDexterity(int16(ci.DexterityIncrease())),
 						equipable.AddIntelligence(int16(ci.IntelligenceIncrease())),
 						equipable.AddLuck(int16(ci.LuckIncrease())),
-						equipable.AddHP(int16(ci.MaxHPIncrease())),
-						equipable.AddMP(int16(ci.MaxMPIncrease())),
+						equipable.AddHp(int16(ci.MaxHPIncrease())),
+						equipable.AddMp(int16(ci.MaxMPIncrease())),
 						equipable.AddWeaponAttack(int16(ci.WeaponAttackIncrease())),
 						equipable.AddMagicAttack(int16(ci.MagicAttackIncrease())),
 						equipable.AddWeaponDefense(int16(ci.WeaponDefenseIncrease())),
@@ -586,7 +586,7 @@ func ConsumeScroll(transactionId uuid.UUID, characterId uint32, scrollItem *asse
 			if len(changes) > 0 {
 				l.Debugf("Applying [%d] changes to character [%d] item [%d].", len(changes), characterId, sm.Equipable.TemplateId())
 
-				err = ep.ChangeStat(*sm.Equipable, changes...)
+				err = ep.ChangeStat(characterId, transactionId, *sm.Equipable, changes...)
 				if err != nil {
 					return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, scrollItem.Slot(), err)
 				}
@@ -620,11 +620,11 @@ func ConsumeScroll(transactionId uuid.UUID, characterId uint32, scrollItem *asse
 	}
 }
 
-func applyChaos(m asset.EquipableReferenceData) ([]equipable.Change, error) {
+func applyChaos(m asset.Model) ([]equipable.Change, error) {
 	currents := make([]uint16, 0)
 	changers := make([]func(int16) equipable.Change, 0)
-	currents = append(currents, m.Strength(), m.Dexterity(), m.Intelligence(), m.Luck(), m.WeaponAttack(), m.WeaponDefense(), m.MagicAttack(), m.MagicDefense(), m.Accuracy(), m.Avoidability(), m.Speed(), m.Jump(), m.HP(), m.MP())
-	changers = append(changers, equipable.AddStrength, equipable.AddDexterity, equipable.AddIntelligence, equipable.AddLuck, equipable.AddWeaponAttack, equipable.AddWeaponDefense, equipable.AddMagicAttack, equipable.AddMagicDefense, equipable.AddAccuracy, equipable.AddAvoidability, equipable.AddSpeed, equipable.AddJump, equipable.AddHP, equipable.AddMP)
+	currents = append(currents, m.Strength(), m.Dexterity(), m.Intelligence(), m.Luck(), m.WeaponAttack(), m.WeaponDefense(), m.MagicAttack(), m.MagicDefense(), m.Accuracy(), m.Avoidability(), m.Speed(), m.Jump(), m.Hp(), m.Mp())
+	changers = append(changers, equipable.AddStrength, equipable.AddDexterity, equipable.AddIntelligence, equipable.AddLuck, equipable.AddWeaponAttack, equipable.AddWeaponDefense, equipable.AddMagicAttack, equipable.AddMagicDefense, equipable.AddAccuracy, equipable.AddAvoidability, equipable.AddSpeed, equipable.AddJump, equipable.AddHp, equipable.AddMp)
 	return generateChaosChanges(currents, changers)
 }
 

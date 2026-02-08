@@ -2,6 +2,7 @@ package handler
 
 import (
 	"atlas-channel/chalkboard"
+	character2 "atlas-channel/character"
 	"atlas-channel/consumable"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -9,6 +10,7 @@ import (
 	"math"
 
 	"github.com/Chronicle20/atlas-constants/character"
+	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-socket/request"
@@ -30,7 +32,11 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 		source := slot.Position(r.ReadInt16())
 		itemId := item.Id(r.ReadUint32())
 
-		// TODO verify item in slot as expected.
+		a, err := character2.NewProcessor(l, ctx).GetItemInSlot(s.CharacterId(), inventory.TypeValueCash, int16(source))()
+		if err != nil || item.Id(a.TemplateId()) != itemId {
+			l.Warnf("Character [%d] attempted to use cash item [%d] in slot [%d], but item not found or mismatched.", s.CharacterId(), itemId, source)
+			return
+		}
 
 		it := GetCashSlotItemType(t)(itemId)
 

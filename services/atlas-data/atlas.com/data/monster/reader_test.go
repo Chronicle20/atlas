@@ -1197,11 +1197,11 @@ func TestReader(t *testing.T) {
 	if rm.Name != "Pianus" {
 		t.Errorf("Name mismatch: got %s, expected Pianus", rm.Name)
 	}
-	if rm.HP != 30000000 {
-		t.Errorf("HP mismatch: got %d, expected 30000000", rm.HP)
+	if rm.Hp != 30000000 {
+		t.Errorf("Hp mismatch: got %d, expected 30000000", rm.Hp)
 	}
-	if rm.MP != 3000000 {
-		t.Errorf("MP mismatch: got %d, expected 3000000", rm.MP)
+	if rm.Mp != 3000000 {
+		t.Errorf("Mp mismatch: got %d, expected 3000000", rm.Mp)
 	}
 	if rm.Experience != 1300000 {
 		t.Errorf("Experience mismatch: got %d, expected 1300000", rm.Experience)

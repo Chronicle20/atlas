@@ -53,8 +53,8 @@ func TestBuilderAddAsset(t *testing.T) {
 	compartmentId := uuid.New()
 	b := compartment.NewBuilder(compartmentId, 1, inventory.TypeValueUse, 24)
 
-	// Create a test asset
-	testAsset := asset.NewBuilder[any](1, compartmentId, 100, 200, asset.ReferenceTypeConsumable).
+	testAsset := asset.NewBuilder(compartmentId, 200).
+		SetId(1).
 		SetSlot(1).
 		Build()
 
@@ -72,8 +72,8 @@ func TestBuilderAddMultipleAssets(t *testing.T) {
 	compartmentId := uuid.New()
 	b := compartment.NewBuilder(compartmentId, 1, inventory.TypeValueUse, 24)
 
-	asset1 := asset.NewBuilder[any](1, compartmentId, 100, 201, asset.ReferenceTypeConsumable).SetSlot(1).Build()
-	asset2 := asset.NewBuilder[any](2, compartmentId, 100, 202, asset.ReferenceTypeConsumable).SetSlot(2).Build()
+	asset1 := asset.NewBuilder(compartmentId, 201).SetId(1).SetSlot(1).Build()
+	asset2 := asset.NewBuilder(compartmentId, 202).SetId(2).SetSlot(2).Build()
 
 	m := b.AddAsset(asset1).AddAsset(asset2).Build()
 
@@ -87,14 +87,14 @@ func TestBuilderSetAssets(t *testing.T) {
 	b := compartment.NewBuilder(compartmentId, 1, inventory.TypeValueUse, 24)
 
 	// Add initial asset
-	initialAsset := asset.NewBuilder[any](1, compartmentId, 100, 201, asset.ReferenceTypeConsumable).SetSlot(1).Build()
+	initialAsset := asset.NewBuilder(compartmentId, 201).SetId(1).SetSlot(1).Build()
 	b.AddAsset(initialAsset)
 
 	// Replace with new assets
-	newAsset1 := asset.NewBuilder[any](10, compartmentId, 100, 210, asset.ReferenceTypeConsumable).SetSlot(1).Build()
-	newAsset2 := asset.NewBuilder[any](11, compartmentId, 100, 211, asset.ReferenceTypeConsumable).SetSlot(2).Build()
+	newAsset1 := asset.NewBuilder(compartmentId, 210).SetId(10).SetSlot(1).Build()
+	newAsset2 := asset.NewBuilder(compartmentId, 211).SetId(11).SetSlot(2).Build()
 
-	m := b.SetAssets([]asset.Model[any]{newAsset1, newAsset2}).Build()
+	m := b.SetAssets([]asset.Model{newAsset1, newAsset2}).Build()
 
 	if len(m.Assets()) != 2 {
 		t.Fatalf("expected 2 assets after SetAssets, got %d", len(m.Assets()))
@@ -129,7 +129,7 @@ func TestClone(t *testing.T) {
 
 func TestCloneWithAssets(t *testing.T) {
 	compartmentId := uuid.New()
-	testAsset := asset.NewBuilder[any](1, compartmentId, 100, 200, asset.ReferenceTypeConsumable).SetSlot(1).Build()
+	testAsset := asset.NewBuilder(compartmentId, 200).SetId(1).SetSlot(1).Build()
 
 	original := compartment.NewBuilder(compartmentId, 1, inventory.TypeValueUse, 24).
 		AddAsset(testAsset).
@@ -167,13 +167,13 @@ func TestFluentChaining(t *testing.T) {
 		t.Error("SetCapacity did not return the builder")
 	}
 
-	testAsset := asset.NewBuilder[any](1, compartmentId, 100, 200, asset.ReferenceTypeConsumable).Build()
+	testAsset := asset.NewBuilder(compartmentId, 200).SetId(1).Build()
 	result = b.AddAsset(testAsset)
 	if result != b {
 		t.Error("AddAsset did not return the builder")
 	}
 
-	result = b.SetAssets([]asset.Model[any]{})
+	result = b.SetAssets([]asset.Model{})
 	if result != b {
 		t.Error("SetAssets did not return the builder")
 	}

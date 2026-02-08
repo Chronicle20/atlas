@@ -71,7 +71,7 @@ func handleStatusEventStatChanged(sc server.Model, wp writer.Producer) func(l lo
 
 		var hpChange bool
 		for _, u := range e.Body.Updates {
-			if u == stat.TypeHP || u == stat.TypeMaxHP {
+			if u == stat.TypeHp || u == stat.TypeMaxHp {
 				hpChange = true
 			}
 		}
@@ -120,13 +120,13 @@ func statChanged(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.
 							value = int64(c.Intelligence())
 						} else if update == stat.TypeLuck {
 							value = int64(c.Luck())
-						} else if update == stat.TypeHP {
+						} else if update == stat.TypeHp {
 							value = int64(c.Hp())
-						} else if update == stat.TypeMaxHP {
+						} else if update == stat.TypeMaxHp {
 							value = int64(c.MaxHp())
-						} else if update == stat.TypeMP {
+						} else if update == stat.TypeMp {
 							value = int64(c.Mp())
-						} else if update == stat.TypeMaxMP {
+						} else if update == stat.TypeMaxMp {
 							value = int64(c.MaxMp())
 						} else if update == stat.TypeAvailableAP {
 							value = int64(c.Ap())

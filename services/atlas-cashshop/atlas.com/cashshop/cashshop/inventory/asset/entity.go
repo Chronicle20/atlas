@@ -1,35 +1,44 @@
 package asset
 
 import (
-	"atlas-cashshop/cashshop/item"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-// Migration sets up the database table for assets
 func Migration(db *gorm.DB) error {
 	return db.AutoMigrate(&Entity{})
 }
 
-// Entity represents a cash shop inventory asset in the database
 type Entity struct {
-	Id            uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
-	TenantId      uuid.UUID `gorm:"not null"`
-	CompartmentId uuid.UUID `gorm:"not null"`
-	ItemId        uint32    `gorm:"not null"`
+	Id            uint32         `gorm:"primaryKey;autoIncrement:true"`
+	TenantId      uuid.UUID      `gorm:"not null"`
+	CompartmentId uuid.UUID      `gorm:"not null"`
+	CashId        int64          `gorm:"not null"`
+	TemplateId    uint32         `gorm:"not null"`
+	CommodityId   uint32         `gorm:"not null;default:0"`
+	Quantity      uint32         `gorm:"not null"`
+	Flag          uint16         `gorm:"not null"`
+	PurchasedBy   uint32         `gorm:"not null"`
+	Expiration    time.Time      `gorm:"not null"`
+	CreatedAt     time.Time      `gorm:"not null"`
+	DeletedAt     gorm.DeletedAt `gorm:"index"`
 }
 
-// TableName returns the database table name for this entity
 func (e Entity) TableName() string {
 	return "cash_assets"
 }
 
-// Make converts an Entity to a Model
 func Make(e Entity) (Model, error) {
-	return NewBuilder(
-		e.Id,
-		e.CompartmentId,
-		item.NewBuilder().SetId(e.ItemId).Build(),
-	).Build(), nil
+	return NewBuilder(e.CompartmentId, e.TemplateId).
+		SetId(e.Id).
+		SetCashId(e.CashId).
+		SetCommodityId(e.CommodityId).
+		SetQuantity(e.Quantity).
+		SetFlag(e.Flag).
+		SetPurchasedBy(e.PurchasedBy).
+		SetExpiration(e.Expiration).
+		SetCreatedAt(e.CreatedAt).
+		Build(), nil
 }

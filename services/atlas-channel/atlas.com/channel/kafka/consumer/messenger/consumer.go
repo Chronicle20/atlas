@@ -114,7 +114,7 @@ func handleJoin(sc server.Model, wp writer.Producer) message.Handler[messenger2.
 		}
 
 		cp := character.NewProcessor(l, ctx)
-		tc, err := cp.GetById(cp.PetModelDecorator, cp.InventoryDecorator)(e.ActorId)
+		tc, err := cp.GetById(cp.InventoryDecorator, cp.PetAssetEnrichmentDecorator, cp.PetModelDecorator)(e.ActorId)
 		if err != nil {
 			l.WithError(err).Errorf("Received joined event for character [%d] which does not exist.", e.ActorId)
 			return
@@ -145,7 +145,7 @@ func handleJoin(sc server.Model, wp writer.Producer) message.Handler[messenger2.
 					if m.Id() == e.ActorId {
 						continue
 					}
-					mc, err := cp.GetById(cp.InventoryDecorator, cp.PetModelDecorator)(m.Id())
+					mc, err := cp.GetById(cp.InventoryDecorator, cp.PetAssetEnrichmentDecorator, cp.PetModelDecorator)(m.Id())
 					if err != nil {
 						continue
 					}

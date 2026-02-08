@@ -12,7 +12,7 @@ const MonsterHealth = "MonsterHealth"
 func MonsterHealthBody(m monster.Model) BodyProducer {
 	return func(w *response.Writer, options map[string]interface{}) []byte {
 		w.WriteInt(m.UniqueId())
-		rem := byte(math.Max(1, float64(m.HP())*100/float64(m.MaxHP())))
+		rem := byte(math.Max(1, float64(m.Hp())*100/float64(m.MaxHp())))
 		w.WriteByte(rem)
 		return w.Bytes()
 	}

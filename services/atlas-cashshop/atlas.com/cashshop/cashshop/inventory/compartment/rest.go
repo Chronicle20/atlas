@@ -2,6 +2,7 @@ package compartment
 
 import (
 	"atlas-cashshop/cashshop/inventory/asset"
+	"strconv"
 
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
@@ -78,11 +79,11 @@ func (r *RestModel) SetToOneReferenceID(_, _ string) error {
 func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
 	if name == "assets" {
 		for _, idStr := range IDs {
-			id, err := uuid.Parse(idStr)
+			id, err := strconv.Atoi(idStr)
 			if err != nil {
 				return err
 			}
-			r.Assets = append(r.Assets, asset.RestModel{Id: id})
+			r.Assets = append(r.Assets, asset.RestModel{Id: uint32(id)})
 		}
 	}
 	return nil

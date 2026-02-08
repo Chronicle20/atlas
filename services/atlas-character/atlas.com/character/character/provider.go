@@ -72,12 +72,12 @@ func modelFromEntity(e entity) (Model, error) {
 		SetDexterity(e.Dexterity).
 		SetLuck(e.Luck).
 		SetIntelligence(e.Intelligence).
-		SetHp(e.HP).
-		SetMp(e.MP).
-		SetMaxHp(e.MaxHP).
-		SetMaxMp(e.MaxMP).
+		SetHp(e.Hp).
+		SetMp(e.Mp).
+		SetMaxHp(e.MaxHp).
+		SetMaxMp(e.MaxMp).
 		SetMeso(e.Meso).
-		SetHpMpUsed(e.HPMPUsed).
+		SetHpMpUsed(e.HpMpUsed).
 		SetJobId(e.JobId).
 		SetSkinColor(e.SkinColor).
 		SetGender(e.Gender).

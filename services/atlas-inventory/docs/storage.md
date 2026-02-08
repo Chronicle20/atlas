@@ -17,25 +17,47 @@
 | Column | Type | Constraints |
 |--------|------|-------------|
 | tenant_id | uuid | NOT NULL |
-| id | uint32 | PRIMARY KEY, AUTO INCREMENT |
+| id | uint32 | PRIMARY KEY, AUTO INCREMENT, NOT NULL |
 | compartment_id | uuid | NOT NULL |
 | slot | int16 | NOT NULL |
 | template_id | uint32 | NOT NULL |
 | expiration | timestamp | NOT NULL |
-| reference_id | uint32 | NOT NULL |
-| reference_type | string | NOT NULL |
-
-### stackables
-
-| Column | Type | Constraints |
-|--------|------|-------------|
-| tenant_id | uuid | NOT NULL |
-| id | uint32 | PRIMARY KEY, AUTO INCREMENT |
-| compartment_id | uuid | NOT NULL |
-| quantity | uint32 | NOT NULL |
-| owner_id | uint32 | NOT NULL |
-| flag | uint16 | NOT NULL |
-| rechargeable | uint64 | NOT NULL, DEFAULT 0 |
+| created_at | timestamp | NOT NULL |
+| deleted_at | timestamp | INDEX (soft delete) |
+| quantity | uint32 | |
+| owner_id | uint32 | |
+| flag | uint16 | |
+| rechargeable | uint64 | |
+| strength | uint16 | |
+| dexterity | uint16 | |
+| intelligence | uint16 | |
+| luck | uint16 | |
+| hp | uint16 | |
+| mp | uint16 | |
+| weapon_attack | uint16 | |
+| magic_attack | uint16 | |
+| weapon_defense | uint16 | |
+| magic_defense | uint16 | |
+| accuracy | uint16 | |
+| avoidability | uint16 | |
+| hands | uint16 | |
+| speed | uint16 | |
+| jump | uint16 | |
+| slots | uint16 | |
+| locked | bool | |
+| spikes | bool | |
+| karma_used | bool | |
+| cold | bool | |
+| can_be_traded | bool | |
+| level_type | byte | |
+| level | byte | |
+| experience | uint32 | |
+| hammers_applied | uint32 | |
+| equipped_since | timestamp | nullable |
+| cash_id | int64 | |
+| commodity_id | uint32 | |
+| purchase_by | uint32 | |
+| pet_id | uint32 | |
 
 ---
 
@@ -43,23 +65,19 @@
 
 - `compartments.character_id` references character (external)
 - `assets.compartment_id` references `compartments.id`
-- `assets.reference_id` references type-specific table based on `reference_type`:
-  - `equipable` - equipables table (external service)
-  - `cash-equipable` - cash items table (external service)
-  - `consumable`, `setup`, `etc` - `stackables.id`
-  - `cash` - cash items table (external service)
-  - `pet` - pets table (external service)
-- `stackables.compartment_id` references `compartments.id`
 
 ---
 
 ## Indexes
 
-Managed by GORM AutoMigrate.
+- `assets.deleted_at` - indexed for soft delete queries (GORM DeletedAt)
+- Additional indexes managed by GORM AutoMigrate
 
 ---
 
 ## Migration Rules
 
 - Migrations executed via GORM AutoMigrate on service startup
-- Migration order: compartment, asset, stackable
+- Migration order: compartment, asset
+- Assets use soft delete via GORM `DeletedAt` field
+- UUID generation for compartment IDs handled in `BeforeCreate` hook

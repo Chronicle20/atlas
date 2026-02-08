@@ -47,6 +47,17 @@ func (p *Processor) AllInTenantProvider() ([]Model, error) {
 	return getRegistry().GetInTenant(p.t.Id()), nil
 }
 
+func (p *Processor) AllInChannelProvider(worldId world.Id, channelId channel.Id) ([]Model, error) {
+	all := getRegistry().GetInTenant(p.t.Id())
+	result := make([]Model, 0)
+	for _, s := range all {
+		if s.WorldId() == worldId && s.ChannelId() == channelId {
+			result = append(result, s)
+		}
+	}
+	return result, nil
+}
+
 func (p *Processor) ByIdModelProvider(sessionId uuid.UUID) model.Provider[Model] {
 	t := tenant.MustFromContext(p.ctx)
 	return func() (Model, error) {

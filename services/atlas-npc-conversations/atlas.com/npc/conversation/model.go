@@ -37,6 +37,7 @@ const (
 	GenericActionType      StateType = "genericAction"
 	CraftActionType        StateType = "craftAction"
 	TransportActionType    StateType = "transportAction"
+	GachaponActionType     StateType = "gachaponAction"
 	ListSelectionType StateType = "listSelection"
 	AskNumberType     StateType = "askNumber"
 	AskStyleType                     StateType = "askStyle"
@@ -51,6 +52,7 @@ type StateModel struct {
 	genericAction   *GenericActionModel
 	craftAction     *CraftActionModel
 	transportAction *TransportActionModel
+	gachaponAction  *GachaponActionModel
 	listSelection   *ListSelectionModel
 	askNumber       *AskNumberModel
 	askStyle        *AskStyleModel
@@ -87,6 +89,11 @@ func (s StateModel) TransportAction() *TransportActionModel {
 	return s.transportAction
 }
 
+// GachaponAction returns the gachapon action model (if type is gachaponAction)
+func (s StateModel) GachaponAction() *GachaponActionModel {
+	return s.gachaponAction
+}
+
 // ListSelection returns the list selection model (if type is listSelection)
 func (s StateModel) ListSelection() *ListSelectionModel {
 	return s.listSelection
@@ -115,6 +122,7 @@ type StateBuilder struct {
 	genericAction   *GenericActionModel
 	craftAction     *CraftActionModel
 	transportAction *TransportActionModel
+	gachaponAction  *GachaponActionModel
 	listSelection   *ListSelectionModel
 	askNumber       *AskNumberModel
 	askStyle        *AskStyleModel
@@ -188,6 +196,21 @@ func (b *StateBuilder) SetTransportAction(transportAction *TransportActionModel)
 	return b
 }
 
+// SetGachaponAction sets the gachapon action model
+func (b *StateBuilder) SetGachaponAction(gachaponAction *GachaponActionModel) *StateBuilder {
+	b.stateType = GachaponActionType
+	b.dialogue = nil
+	b.genericAction = nil
+	b.craftAction = nil
+	b.transportAction = nil
+	b.gachaponAction = gachaponAction
+	b.listSelection = nil
+	b.askNumber = nil
+	b.askStyle = nil
+	b.askSlideMenu = nil
+	return b
+}
+
 // SetListSelection sets the list selection model
 func (b *StateBuilder) SetListSelection(listSelection *ListSelectionModel) *StateBuilder {
 	b.stateType = ListSelectionType
@@ -195,6 +218,7 @@ func (b *StateBuilder) SetListSelection(listSelection *ListSelectionModel) *Stat
 	b.genericAction = nil
 	b.craftAction = nil
 	b.transportAction = nil
+	b.gachaponAction = nil
 	b.listSelection = listSelection
 	b.askNumber = nil
 	b.askStyle = nil
@@ -267,6 +291,10 @@ func (b *StateBuilder) Build() (StateModel, error) {
 		if b.transportAction == nil {
 			return StateModel{}, errors.New("transportAction is required for transportAction state")
 		}
+	case GachaponActionType:
+		if b.gachaponAction == nil {
+			return StateModel{}, errors.New("gachaponAction is required for gachaponAction state")
+		}
 	case ListSelectionType:
 		if b.listSelection == nil {
 			return StateModel{}, errors.New("listSelection is required for listSelection state")
@@ -294,6 +322,7 @@ func (b *StateBuilder) Build() (StateModel, error) {
 		genericAction:   b.genericAction,
 		craftAction:     b.craftAction,
 		transportAction: b.transportAction,
+		gachaponAction:  b.gachaponAction,
 		listSelection:   b.listSelection,
 		askNumber:       b.askNumber,
 		askStyle:        b.askStyle,
@@ -1224,6 +1253,69 @@ func (b *TransportActionBuilder) Build() (*TransportActionModel, error) {
 	}, nil
 }
 
+// GachaponActionModel represents a gachapon action state
+type GachaponActionModel struct {
+	gachaponId   string // Gachapon machine ID (e.g., "henesys")
+	ticketItemId uint32 // Ticket item ID to consume
+	failureState string // General failure state
+}
+
+func (g GachaponActionModel) GachaponId() string {
+	return g.gachaponId
+}
+
+func (g GachaponActionModel) TicketItemId() uint32 {
+	return g.ticketItemId
+}
+
+func (g GachaponActionModel) FailureState() string {
+	return g.failureState
+}
+
+// GachaponActionBuilder builds GachaponActionModel
+type GachaponActionBuilder struct {
+	gachaponId   string
+	ticketItemId uint32
+	failureState string
+}
+
+func NewGachaponActionBuilder() *GachaponActionBuilder {
+	return &GachaponActionBuilder{}
+}
+
+func (b *GachaponActionBuilder) SetGachaponId(gachaponId string) *GachaponActionBuilder {
+	b.gachaponId = gachaponId
+	return b
+}
+
+func (b *GachaponActionBuilder) SetTicketItemId(ticketItemId uint32) *GachaponActionBuilder {
+	b.ticketItemId = ticketItemId
+	return b
+}
+
+func (b *GachaponActionBuilder) SetFailureState(failureState string) *GachaponActionBuilder {
+	b.failureState = failureState
+	return b
+}
+
+func (b *GachaponActionBuilder) Build() (*GachaponActionModel, error) {
+	if b.gachaponId == "" {
+		return nil, errors.New("gachaponId is required")
+	}
+	if b.ticketItemId == 0 {
+		return nil, errors.New("ticketItemId is required")
+	}
+	if b.failureState == "" {
+		return nil, errors.New("failureState is required")
+	}
+
+	return &GachaponActionModel{
+		gachaponId:   b.gachaponId,
+		ticketItemId: b.ticketItemId,
+		failureState: b.failureState,
+	}, nil
+}
+
 // ListSelectionModel represents a list selection state
 type ListSelectionModel struct {
 	title   string
@@ -1948,6 +2040,12 @@ func (b *ConversationContextBuilder) SetContext(context map[string]string) *Conv
 // AddContextValue adds a key-value pair to the context map
 func (b *ConversationContextBuilder) AddContextValue(key, value string) *ConversationContextBuilder {
 	b.context[key] = value
+	return b
+}
+
+// SetPendingSagaId sets the pending saga ID
+func (b *ConversationContextBuilder) SetPendingSagaId(sagaId uuid.UUID) *ConversationContextBuilder {
+	b.pendingSagaId = &sagaId
 	return b
 }
 

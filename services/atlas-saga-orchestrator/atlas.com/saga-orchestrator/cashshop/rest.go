@@ -2,43 +2,24 @@ package cashshop
 
 import (
 	"strconv"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
 )
 
-// ItemRestModel represents a cash item from the cash shop service
-type ItemRestModel struct {
-	Id          uint32 `json:"-"`
-	CashId      int64  `json:"cashId,string"`
-	TemplateId  uint32 `json:"templateId"`
-	Quantity    uint32 `json:"quantity"`
-	Flag        uint16 `json:"flag"`
-	PurchasedBy uint32 `json:"purchasedBy"`
-}
-
-func (r ItemRestModel) GetName() string {
-	return "items"
-}
-
-func (r ItemRestModel) GetID() string {
-	return strconv.Itoa(int(r.Id))
-}
-
-func (r *ItemRestModel) SetID(strId string) error {
-	id, err := strconv.Atoi(strId)
-	if err != nil {
-		return err
-	}
-	r.Id = uint32(id)
-	return nil
-}
-
-// AssetRestModel represents a cash shop inventory asset
+// AssetRestModel represents a cash shop inventory asset (flattened)
 type AssetRestModel struct {
-	Id            uuid.UUID     `json:"-"`
-	CompartmentId uuid.UUID     `json:"compartmentId"`
-	Item          ItemRestModel `json:"-"`
+	Id            uint32    `json:"-"`
+	CompartmentId string    `json:"compartmentId"`
+	CashId        int64     `json:"cashId,string"`
+	TemplateId    uint32    `json:"templateId"`
+	CommodityId   uint32    `json:"commodityId"`
+	Quantity      uint32    `json:"quantity"`
+	Flag          uint16    `json:"flag"`
+	PurchasedBy   uint32    `json:"purchasedBy"`
+	Expiration    time.Time `json:"expiration"`
+	CreatedAt     time.Time `json:"createdAt"`
 }
 
 func (r AssetRestModel) GetName() string {
@@ -46,67 +27,18 @@ func (r AssetRestModel) GetName() string {
 }
 
 func (r AssetRestModel) GetID() string {
-	return r.Id.String()
+	return strconv.Itoa(int(r.Id))
 }
 
 func (r *AssetRestModel) SetID(strId string) error {
-	id, err := uuid.Parse(strId)
+	if strId == "" {
+		return nil
+	}
+	id, err := strconv.Atoi(strId)
 	if err != nil {
 		return err
 	}
-	r.Id = id
-	return nil
-}
-
-func (r AssetRestModel) GetReferences() []jsonapi.Reference {
-	return []jsonapi.Reference{
-		{
-			Type: "items",
-			Name: "item",
-		},
-	}
-}
-
-func (r AssetRestModel) GetReferencedIDs() []jsonapi.ReferenceID {
-	return []jsonapi.ReferenceID{
-		{
-			ID:   r.Item.GetID(),
-			Type: r.Item.GetName(),
-			Name: "item",
-		},
-	}
-}
-
-func (r AssetRestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
-	return []jsonapi.MarshalIdentifier{r.Item}
-}
-
-func (r *AssetRestModel) SetToOneReferenceID(name, ID string) error {
-	if name == "item" {
-		var item ItemRestModel
-		if err := item.SetID(ID); err != nil {
-			return err
-		}
-		r.Item = item
-	}
-	return nil
-}
-
-func (r *AssetRestModel) SetToManyReferenceIDs(_ string, _ []string) error {
-	return nil
-}
-
-func (r *AssetRestModel) SetReferencedStructs(references map[string]map[string]jsonapi.Data) error {
-	if r.Item.GetID() != "" {
-		if refMap, ok := references["items"]; ok {
-			if ref, ok := refMap[r.Item.GetID()]; ok {
-				err := jsonapi.ProcessIncludeData(&r.Item, ref, references)
-				if err != nil {
-					return err
-				}
-			}
-		}
-	}
+	r.Id = uint32(id)
 	return nil
 }
 
@@ -172,11 +104,11 @@ func (r *CompartmentRestModel) SetToOneReferenceID(_, _ string) error {
 func (r *CompartmentRestModel) SetToManyReferenceIDs(name string, IDs []string) error {
 	if name == "assets" {
 		for _, idStr := range IDs {
-			id, err := uuid.Parse(idStr)
+			id, err := strconv.Atoi(idStr)
 			if err != nil {
 				return err
 			}
-			r.Assets = append(r.Assets, AssetRestModel{Id: id})
+			r.Assets = append(r.Assets, AssetRestModel{Id: uint32(id)})
 		}
 	}
 	return nil

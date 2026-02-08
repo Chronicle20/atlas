@@ -42,19 +42,19 @@ type Model struct {
 	skills             []skill.Model
 }
 
-func (m Model) HP() uint16 {
+func (m Model) Hp() uint16 {
 	return m.hp
 }
 
-func (m Model) MaxHP() uint16 {
+func (m Model) MaxHp() uint16 {
 	return m.maxHp
 }
 
-func (m Model) MP() uint16 {
+func (m Model) Mp() uint16 {
 	return m.mp
 }
 
-func (m Model) MaxMP() uint16 {
+func (m Model) MaxMp() uint16 {
 	return m.maxMp
 }
 
@@ -183,7 +183,7 @@ func (m Model) GM() int {
 	return m.gm
 }
 
-func (m Model) HPMPUsed() int {
+func (m Model) HpMpUsed() int {
 	return m.hpMpUsed
 }
 

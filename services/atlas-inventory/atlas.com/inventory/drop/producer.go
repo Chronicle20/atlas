@@ -9,7 +9,7 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func EquipmentProvider(f field.Model, itemId uint32, equipmentId uint32, dropType byte, x int16, y int16, ownerId uint32) model.Provider[[]kafka.Message] {
+func EquipmentProvider(f field.Model, itemId uint32, ed drop.EquipmentData, dropType byte, x int16, y int16, ownerId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(f.MapId()))
 	value := &drop.Command[drop.SpawnFromCharacterCommandBody]{
 		WorldId:   f.WorldId(),
@@ -18,17 +18,17 @@ func EquipmentProvider(f field.Model, itemId uint32, equipmentId uint32, dropTyp
 		Instance:  f.Instance(),
 		Type:      drop.CommandTypeSpawnFromCharacter,
 		Body: drop.SpawnFromCharacterCommandBody{
-			ItemId:      itemId,
-			EquipmentId: equipmentId,
-			Quantity:    1,
-			DropType:    dropType,
-			X:           x,
-			Y:           y,
-			OwnerId:     ownerId,
-			DropperId:   ownerId,
-			DropperX:    x,
-			DropperY:    y,
-			PlayerDrop:  true,
+			ItemId:        itemId,
+			Quantity:      1,
+			DropType:      dropType,
+			X:             x,
+			Y:             y,
+			OwnerId:       ownerId,
+			DropperId:     ownerId,
+			DropperX:      x,
+			DropperY:      y,
+			PlayerDrop:    true,
+			EquipmentData: ed,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

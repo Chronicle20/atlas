@@ -65,6 +65,8 @@ const mockCharacter: Character = {
     fame: 0,
     hair: 30000,
     face: 20000,
+    ap: 0,
+    sp: '0',
     mapId: 100000000,
     spawnPoint: 0,
     gm: 0,

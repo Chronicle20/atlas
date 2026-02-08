@@ -149,6 +149,7 @@ type Consumer struct {
 	handlers      map[string]handler.Handler
 	headerParsers []HeaderParser
 	mu            sync.Mutex
+	handlerWg     sync.WaitGroup
 }
 
 func (c *Consumer) start(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) {
@@ -177,16 +178,20 @@ func (c *Consumer) start(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 			}
 
 			err := retry.Try(readerFunc, 10)
-			if err == io.EOF || errors.Is(err, context.Canceled) || len(msg.Value) == 0 {
+			if err == io.EOF || errors.Is(err, context.Canceled) {
 				l.Infof("Reader closed, shutdown.")
 				return
 			} else if err != nil {
-				l.WithError(err).Errorf("Could not successfully read message.")
+				l.WithError(err).Errorf("Could not successfully read message, exiting consumer loop.")
+				return
 			} else {
 				l.Debugf("Message received %s.", string(msg.Value))
 
 				// Pass msg as parameter to avoid closure capture race
+				c.handlerWg.Add(1)
 				go func(m kafka.Message) {
+					defer c.handlerWg.Done()
+
 					wctx := readerCtx
 					for _, p := range c.headerParsers {
 						wctx = p(wctx, m.Headers)
@@ -209,7 +214,9 @@ func (c *Consumer) start(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 					for id, h := range handlersCopy {
 						var handle = h
 						var handleId = id
+						c.handlerWg.Add(1)
 						go func() {
+							defer c.handlerWg.Done()
 							// Use local error variable to avoid closure capture race
 							cont, handlerErr := handle(handlerLogger, wctx, m)
 							if !cont {
@@ -233,5 +240,6 @@ func (c *Consumer) start(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 	if err := c.reader.Close(); err != nil {
 		l.WithError(err).Errorf("Error closing reader.")
 	}
+	c.handlerWg.Wait()
 	l.Infof("Topic consumer stopped.")
 }

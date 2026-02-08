@@ -26,7 +26,6 @@ export const accountKeys = {
   searches: () => [...accountKeys.all, 'search'] as const,
   search: (tenant: Tenant | null, pattern: string) => [...accountKeys.searches(), tenant?.id || 'no-tenant', pattern] as const,
   loggedIn: (tenant: Tenant | null) => [...accountKeys.all, 'loggedIn', tenant?.id || 'no-tenant'] as const,
-  banned: (tenant: Tenant | null) => [...accountKeys.all, 'banned', tenant?.id || 'no-tenant'] as const,
   stats: (tenant: Tenant | null) => [...accountKeys.all, 'stats', tenant?.id || 'no-tenant'] as const,
 };
 
@@ -119,22 +118,6 @@ export function useLoggedInAccounts(
 }
 
 /**
- * Hook to fetch banned accounts for a tenant
- */
-export function useBannedAccounts(
-  tenant: Tenant, 
-  options?: ServiceOptions
-): UseQueryResult<Account[], Error> {
-  return useQuery({
-    queryKey: accountKeys.banned(tenant),
-    queryFn: () => accountsService.getBannedAccounts(tenant, options),
-    enabled: !!tenant?.id,
-    staleTime: 5 * 60 * 1000, // 5 minutes (ban status changes less frequently)
-    gcTime: 10 * 60 * 1000,
-  });
-}
-
-/**
  * Hook to fetch account statistics for a tenant
  */
 export function useAccountStats(
@@ -143,7 +126,6 @@ export function useAccountStats(
 ): UseQueryResult<{
   total: number;
   loggedIn: number;
-  banned: number;
   totalCharacterSlots: number;
   averageCharacterSlots: number;
 }, Error> {
@@ -316,12 +298,6 @@ export function useInvalidateAccounts() {
      */
     invalidateLoggedIn: (tenant: Tenant) =>
       queryClient.invalidateQueries({ queryKey: accountKeys.loggedIn(tenant) }),
-    
-    /**
-     * Invalidate banned accounts for a tenant
-     */
-    invalidateBanned: (tenant: Tenant) =>
-      queryClient.invalidateQueries({ queryKey: accountKeys.banned(tenant) }),
     
     /**
      * Invalidate account statistics for a tenant

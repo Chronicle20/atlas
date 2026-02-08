@@ -415,6 +415,25 @@ class ConversationsService extends BaseService {
   }
 
   /**
+   * Validate a conversation against the backend's validation rules
+   */
+  async validateConversation(conversation: ConversationAttributes): Promise<void> {
+    await api.post<void>(`${this.basePath}/validate`, {
+      data: {
+        type: "conversations",
+        attributes: conversation,
+      },
+    });
+  }
+
+  /**
+   * Seed conversations from the data source
+   */
+  async seedConversations(): Promise<void> {
+    await api.post<void>(`${this.basePath}/seed`, {});
+  }
+
+  /**
    * Clear conversations cache
    */
   clearCache(): void {

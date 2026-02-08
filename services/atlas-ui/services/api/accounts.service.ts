@@ -19,8 +19,6 @@ import { api } from '@/lib/api/client';
 interface AccountQueryOptions extends QueryOptions {
   /** Filter by account name */
   name?: string;
-  /** Filter by banned status */
-  banned?: boolean;
   /** Filter by logged in status */
   loggedIn?: boolean;
   /** Filter by language */
@@ -84,7 +82,8 @@ class AccountsService extends BaseService {
         lastLogin: Number(transformed.attributes.lastLogin),
         gender: Number(transformed.attributes.gender),
         characterSlots: Number(transformed.attributes.characterSlots),
-        banned: Boolean(transformed.attributes.banned),
+        pinAttempts: Number(transformed.attributes.pinAttempts),
+        picAttempts: Number(transformed.attributes.picAttempts),
         tos: Boolean(transformed.attributes.tos),
       };
       return transformed as T;
@@ -112,9 +111,6 @@ class AccountsService extends BaseService {
     const queryOptions: QueryOptions = { ...options };
     if (options?.name) {
       queryOptions.filters = { ...queryOptions.filters, name: options.name };
-    }
-    if (options?.banned !== undefined) {
-      queryOptions.filters = { ...queryOptions.filters, banned: options.banned };
     }
     if (options?.loggedIn !== undefined) {
       queryOptions.filters = { ...queryOptions.filters, loggedIn: options.loggedIn };
@@ -176,18 +172,6 @@ class AccountsService extends BaseService {
   }
 
   /**
-   * Get banned accounts for a specific tenant
-   */
-  async getBannedAccounts(tenant: Tenant, options?: ServiceOptions): Promise<Account[]> {
-    const queryOptions: AccountQueryOptions = {
-      ...options,
-      banned: true
-    };
-    
-    return this.getAllAccounts(tenant, queryOptions);
-  }
-
-  /**
    * Terminate account session - Force logout an account
    */
   async terminateAccountSession(tenant: Tenant, accountId: string, options?: ServiceOptions): Promise<void> {
@@ -205,16 +189,14 @@ class AccountsService extends BaseService {
   async getAccountStats(tenant: Tenant, options?: ServiceOptions): Promise<{
     total: number;
     loggedIn: number;
-    banned: number;
     totalCharacterSlots: number;
     averageCharacterSlots: number;
   }> {
     const accounts = await this.getAllAccounts(tenant, options);
-    
+
     const stats = {
       total: accounts.length,
       loggedIn: accounts.filter(acc => acc.attributes.loggedIn > 0).length,
-      banned: accounts.filter(acc => acc.attributes.banned).length,
       totalCharacterSlots: accounts.reduce((sum, acc) => sum + acc.attributes.characterSlots, 0),
       averageCharacterSlots: 0
     };

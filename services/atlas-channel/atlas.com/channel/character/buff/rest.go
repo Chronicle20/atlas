@@ -10,6 +10,7 @@ import (
 type RestModel struct {
 	Id        string           `json:"-"`
 	SourceId  int32            `json:"sourceId"`
+	Level     byte             `json:"level"`
 	Duration  int32            `json:"duration"`
 	Changes   []stat.RestModel `json:"changes"`
 	CreatedAt time.Time        `json:"createdAt"`
@@ -37,6 +38,7 @@ func Extract(rm RestModel) (Model, error) {
 
 	return Model{
 		sourceId:  rm.SourceId,
+		level:     rm.Level,
 		duration:  rm.Duration,
 		changes:   cs,
 		createdAt: rm.CreatedAt,

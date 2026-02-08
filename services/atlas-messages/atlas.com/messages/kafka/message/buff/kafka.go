@@ -29,6 +29,7 @@ type Command[E any] struct {
 type ApplyCommandBody struct {
 	FromId   uint32       `json:"fromId"`
 	SourceId int32        `json:"sourceId"`
+	Level    byte         `json:"level"`
 	Duration int32        `json:"duration"`
 	Changes  []StatChange `json:"changes"`
 }
@@ -38,7 +39,7 @@ type StatChange struct {
 	Amount int32  `json:"amount"`
 }
 
-func ApplyCommandProvider(field field.Model, characterId uint32, fromId uint32, sourceId int32, duration int32, changes []StatChange) model.Provider[[]kafka.Message] {
+func ApplyCommandProvider(field field.Model, characterId uint32, fromId uint32, sourceId int32, level byte, duration int32, changes []StatChange) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := Command[ApplyCommandBody]{
 		WorldId:     field.WorldId(),
@@ -50,6 +51,7 @@ func ApplyCommandProvider(field field.Model, characterId uint32, fromId uint32, 
 		Body: ApplyCommandBody{
 			FromId:   fromId,
 			SourceId: sourceId,
+			Level:    level,
 			Duration: duration,
 			Changes:  changes,
 		},

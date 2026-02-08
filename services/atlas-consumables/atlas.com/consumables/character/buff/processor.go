@@ -24,9 +24,9 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 	return p
 }
 
-func (p *Processor) Apply(f field.Model, fromId uint32, sourceId int32, duration int32, statups []stat.Model) model.Operator[uint32] {
+func (p *Processor) Apply(f field.Model, fromId uint32, sourceId int32, level byte, duration int32, statups []stat.Model) model.Operator[uint32] {
 	return func(characterId uint32) error {
-		return producer.ProviderImpl(p.l)(p.ctx)(buff2.EnvCommandTopic)(applyCommandProvider(f, characterId, fromId, sourceId, duration, statups))
+		return producer.ProviderImpl(p.l)(p.ctx)(buff2.EnvCommandTopic)(applyCommandProvider(f, characterId, fromId, sourceId, level, duration, statups))
 	}
 }
 

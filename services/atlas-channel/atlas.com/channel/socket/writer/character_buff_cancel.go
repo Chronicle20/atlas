@@ -21,7 +21,7 @@ func CharacterBuffCancelBody(l logrus.FieldLogger) func(ctx context.Context) fun
 				cts := model.NewCharacterTemporaryStat()
 				for _, b := range buffs {
 					for _, c := range b.Changes() {
-						cts.AddStat(l)(t)(c.Type(), b.SourceId(), c.Amount(), b.ExpiresAt())
+						cts.AddStat(l)(t)(c.Type(), b.SourceId(), c.Amount(), b.Level(), b.ExpiresAt())
 					}
 				}
 				cts.EncodeMask(l, t, options)(w)
@@ -41,7 +41,7 @@ func CharacterBuffCancelForeignBody(l logrus.FieldLogger) func(ctx context.Conte
 				cts := model.NewCharacterTemporaryStat()
 				for _, b := range buffs {
 					for _, c := range b.Changes() {
-						cts.AddStat(l)(t)(c.Type(), b.SourceId(), c.Amount(), b.ExpiresAt())
+						cts.AddStat(l)(t)(c.Type(), b.SourceId(), c.Amount(), b.Level(), b.ExpiresAt())
 					}
 				}
 				cts.EncodeMask(l, t, options)(w)

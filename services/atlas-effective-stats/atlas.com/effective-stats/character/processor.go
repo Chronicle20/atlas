@@ -135,7 +135,7 @@ func (p *ProcessorImpl) RemoveBonusesBySource(characterId uint32, source string)
 func (p *ProcessorImpl) SetBaseStats(ch channel.Model, characterId uint32, base stat.Base) error {
 	m := GetRegistry().SetBaseStats(p.t, ch, characterId, base)
 	p.l.Debugf("Set base stats for character [%d]: STR=%d, DEX=%d, INT=%d, LUK=%d, MaxHP=%d, MaxMP=%d",
-		characterId, base.Strength(), base.Dexterity(), base.Intelligence(), base.Luck(), base.MaxHP(), base.MaxMP())
+		characterId, base.Strength(), base.Dexterity(), base.Intelligence(), base.Luck(), base.MaxHp(), base.MaxMp())
 	p.logEffectiveStats(characterId, m.Computed())
 	return nil
 }
@@ -207,7 +207,7 @@ func (p *ProcessorImpl) RemoveCharacter(characterId uint32) {
 func (p *ProcessorImpl) logEffectiveStats(characterId uint32, c stat.Computed) {
 	p.l.Debugf("Character [%d] effective stats: STR=%d, DEX=%d, INT=%d, LUK=%d, MaxHP=%d, MaxMP=%d, WATK=%d, MATK=%d",
 		characterId, c.Strength(), c.Dexterity(), c.Intelligence(), c.Luck(),
-		c.MaxHP(), c.MaxMP(), c.WeaponAttack(), c.MagicAttack())
+		c.MaxHp(), c.MaxMp(), c.WeaponAttack(), c.MagicAttack())
 }
 
 // checkAndPublishClampCommands checks if MaxHP or MaxMP decreased and publishes clamp commands if needed
@@ -215,14 +215,14 @@ func (p *ProcessorImpl) checkAndPublishClampCommands(m Model, oldComputed, newCo
 	transactionId := uuid.New()
 
 	// Check for MaxHP decrease
-	if newComputed.MaxHP() < oldComputed.MaxHP() {
-		p.l.Debugf("MaxHP decreased for character [%d]: %d -> %d, publishing clamp command", m.CharacterId(), oldComputed.MaxHP(), newComputed.MaxHP())
-		_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(clampHPCommandProvider(transactionId, m.Channel(), m.CharacterId(), uint16(newComputed.MaxHP())))
+	if newComputed.MaxHp() < oldComputed.MaxHp() {
+		p.l.Debugf("MaxHP decreased for character [%d]: %d -> %d, publishing clamp command", m.CharacterId(), oldComputed.MaxHp(), newComputed.MaxHp())
+		_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(clampHPCommandProvider(transactionId, m.Channel(), m.CharacterId(), uint16(newComputed.MaxHp())))
 	}
 
 	// Check for MaxMP decrease
-	if newComputed.MaxMP() < oldComputed.MaxMP() {
-		p.l.Debugf("MaxMP decreased for character [%d]: %d -> %d, publishing clamp command", m.CharacterId(), oldComputed.MaxMP(), newComputed.MaxMP())
-		_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(clampMPCommandProvider(transactionId, m.Channel(), m.CharacterId(), uint16(newComputed.MaxMP())))
+	if newComputed.MaxMp() < oldComputed.MaxMp() {
+		p.l.Debugf("MaxMP decreased for character [%d]: %d -> %d, publishing clamp command", m.CharacterId(), oldComputed.MaxMp(), newComputed.MaxMp())
+		_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(clampMPCommandProvider(transactionId, m.Channel(), m.CharacterId(), uint16(newComputed.MaxMp())))
 	}
 }

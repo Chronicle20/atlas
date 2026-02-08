@@ -91,12 +91,10 @@ func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonap
 }
 
 type AssetRestModel struct {
-	Id            string    `json:"-"`
-	Slot          int16     `json:"slot"`
-	TemplateId    uint32    `json:"templateId"`
-	Expiration    time.Time `json:"expiration"`
-	ReferenceId   uint32    `json:"referenceId"`
-	ReferenceType string    `json:"referenceType"`
+	Id         string    `json:"-"`
+	Slot       int16     `json:"slot"`
+	TemplateId uint32    `json:"templateId"`
+	Expiration time.Time `json:"expiration"`
 }
 
 func (r AssetRestModel) GetName() string {

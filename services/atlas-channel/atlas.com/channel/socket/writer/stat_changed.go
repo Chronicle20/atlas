@@ -32,7 +32,7 @@ func StatChangedBody(l logrus.FieldLogger) func(updates []model.StatUpdate, excl
 			for _, u := range updates {
 				if u.Stat() == stat.TypeSkin || u.Stat() == stat.TypeLevel {
 					w.WriteByte(byte(u.Value()))
-				} else if u.Stat() == stat.TypeJob || u.Stat() == stat.TypeStrength || u.Stat() == stat.TypeDexterity || u.Stat() == stat.TypeIntelligence || u.Stat() == stat.TypeLuck || u.Stat() == stat.TypeHP || u.Stat() == stat.TypeMaxHP || u.Stat() == stat.TypeMP || u.Stat() == stat.TypeMaxMP || u.Stat() == stat.TypeAvailableAP || u.Stat() == stat.TypeFame {
+				} else if u.Stat() == stat.TypeJob || u.Stat() == stat.TypeStrength || u.Stat() == stat.TypeDexterity || u.Stat() == stat.TypeIntelligence || u.Stat() == stat.TypeLuck || u.Stat() == stat.TypeHp || u.Stat() == stat.TypeMaxHp || u.Stat() == stat.TypeMp || u.Stat() == stat.TypeMaxMp || u.Stat() == stat.TypeAvailableAP || u.Stat() == stat.TypeFame {
 					w.WriteInt16(int16(u.Value()))
 				} else if u.Stat() == stat.TypeAvailableSP {
 					w.WriteShort(uint16(u.Value()))

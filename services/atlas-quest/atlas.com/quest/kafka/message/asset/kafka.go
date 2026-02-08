@@ -23,9 +23,7 @@ type StatusEvent[E any] struct {
 }
 
 type CreatedStatusEventBody struct {
-	ReferenceId   uint32 `json:"referenceId"`
-	ReferenceType string `json:"referenceType"`
-	Quantity      uint32 `json:"quantity,omitempty"`
+	Quantity uint32 `json:"quantity"`
 }
 
 type DeletedStatusEventBody struct {

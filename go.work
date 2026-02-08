@@ -25,7 +25,6 @@ use (
 	./services/atlas-drop-information/atlas.com/dis
 	./services/atlas-drops/atlas.com/drops
 	./services/atlas-effective-stats/atlas.com/effective-stats
-	./services/atlas-equipables/atlas.com/equipables
 	./services/atlas-expressions/atlas.com/expressions
 	./services/atlas-fame/atlas.com/fame
 	./services/atlas-gachapons/atlas.com/gachapons

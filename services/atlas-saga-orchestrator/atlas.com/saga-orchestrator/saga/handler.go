@@ -1607,18 +1607,14 @@ func (h *HandlerImpl) handleAcceptToStorage(s Saga, st Step[any]) error {
 
 	h.l.Debugf("Accepting asset template [%d] to storage for account [%d]", payload.TemplateId, payload.AccountId)
 
-	// Send ACCEPT command to storage with pre-populated asset data
+	// Send ACCEPT command to storage with flat asset data
 	err := h.storageP.AcceptAndEmit(
 		payload.TransactionId,
 		payload.WorldId,
 		payload.AccountId,
 		payload.CharacterId,
-		-1, // Storage auto-assigns slot
 		payload.TemplateId,
-		payload.ReferenceId,
-		payload.ReferenceType,
-		payload.ReferenceData,
-		asset.Quantity(payload.Quantity),
+		payload.AssetData,
 	)
 
 	if err != nil {
@@ -1663,16 +1659,13 @@ func (h *HandlerImpl) handleAcceptToCharacter(s Saga, st Step[any]) error {
 
 	h.l.Debugf("Accepting asset template [%d] to character [%d] inventory", payload.TemplateId, payload.CharacterId)
 
-	// Send ACCEPT command to character inventory with pre-populated asset data
+	// Send ACCEPT command to character inventory with flat asset data
 	err := h.compP.RequestAcceptAsset(
 		payload.TransactionId,
 		payload.CharacterId,
 		payload.InventoryType,
 		payload.TemplateId,
-		payload.ReferenceId,
-		payload.ReferenceType,
-		payload.ReferenceData,
-		payload.Quantity,
+		payload.AssetData,
 	)
 
 	if err != nil {
@@ -1719,7 +1712,7 @@ func (h *HandlerImpl) handleAcceptToCashShop(s Saga, st Step[any]) error {
 	h.l.Debugf("Accepting asset template [%d] with cashId [%d] to cash shop compartment [%s] for account [%d] character [%d]",
 		payload.TemplateId, payload.CashId, payload.CompartmentId, payload.AccountId, payload.CharacterId)
 
-	// Send ACCEPT command to cash shop compartment with pre-populated asset data (including preserved cashId)
+	// Send ACCEPT command to cash shop compartment with flat asset data
 	err := h.cashshopP.AcceptAndEmit(
 		payload.TransactionId,
 		payload.CharacterId,
@@ -1728,9 +1721,10 @@ func (h *HandlerImpl) handleAcceptToCashShop(s Saga, st Step[any]) error {
 		payload.CompartmentType,
 		payload.CashId,
 		payload.TemplateId,
-		payload.ReferenceId,
-		payload.ReferenceType,
-		payload.ReferenceData,
+		payload.Quantity,
+		payload.CommodityId,
+		payload.PurchasedBy,
+		payload.Flag,
 	)
 
 	if err != nil {

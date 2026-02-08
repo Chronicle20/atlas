@@ -7,12 +7,12 @@ import (
 	asset2 "atlas-channel/kafka/message/asset"
 	_map "atlas-channel/map"
 	"atlas-channel/messenger"
+	"atlas-channel/pet"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/item"
@@ -53,8 +53,153 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 	}
 }
 
-func handleAssetCreatedEvent(sc server.Model, wp writer.Producer) message.Handler[asset2.StatusEvent[asset2.CreatedStatusEventBody[any]]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e asset2.StatusEvent[asset2.CreatedStatusEventBody[any]]) {
+// enrichPetAsset fetches pet data from atlas-pets for pet assets and enriches the model.
+func enrichPetAsset(l logrus.FieldLogger, ctx context.Context, a asset.Model) asset.Model {
+	if !a.IsPet() || a.PetId() == 0 {
+		return a
+	}
+	pm, err := pet.NewProcessor(l, ctx).GetById(a.PetId())
+	if err != nil {
+		l.WithError(err).Debugf("Unable to fetch pet [%d] for asset enrichment.", a.PetId())
+		return a
+	}
+	return asset.Clone(a).
+		SetPetName(pm.Name()).
+		SetPetLevel(pm.Level()).
+		SetCloseness(pm.Closeness()).
+		SetFullness(pm.Fullness()).
+		SetPetSlot(pm.Slot()).
+		MustBuild()
+}
+
+func buildAssetFromCreatedBody(e asset2.StatusEvent[asset2.CreatedStatusEventBody]) asset.Model {
+	return asset.NewModelBuilder(e.AssetId, e.CompartmentId, e.TemplateId).
+		SetSlot(e.Slot).
+		SetExpiration(e.Body.Expiration).
+		SetCreatedAt(e.Body.CreatedAt).
+		SetQuantity(e.Body.Quantity).
+		SetOwnerId(e.Body.OwnerId).
+		SetFlag(e.Body.Flag).
+		SetRechargeable(e.Body.Rechargeable).
+		SetStrength(e.Body.Strength).
+		SetDexterity(e.Body.Dexterity).
+		SetIntelligence(e.Body.Intelligence).
+		SetLuck(e.Body.Luck).
+		SetHp(e.Body.Hp).
+		SetMp(e.Body.Mp).
+		SetWeaponAttack(e.Body.WeaponAttack).
+		SetMagicAttack(e.Body.MagicAttack).
+		SetWeaponDefense(e.Body.WeaponDefense).
+		SetMagicDefense(e.Body.MagicDefense).
+		SetAccuracy(e.Body.Accuracy).
+		SetAvoidability(e.Body.Avoidability).
+		SetHands(e.Body.Hands).
+		SetSpeed(e.Body.Speed).
+		SetJump(e.Body.Jump).
+		SetSlots(e.Body.Slots).
+		SetLocked(e.Body.Locked).
+		SetSpikes(e.Body.Spikes).
+		SetKarmaUsed(e.Body.KarmaUsed).
+		SetCold(e.Body.Cold).
+		SetCanBeTraded(e.Body.CanBeTraded).
+		SetLevelType(e.Body.LevelType).
+		SetLevel(e.Body.Level).
+		SetExperience(e.Body.Experience).
+		SetHammersApplied(e.Body.HammersApplied).
+		SetEquippedSince(e.Body.EquippedSince).
+		SetCashId(e.Body.CashId).
+		SetCommodityId(e.Body.CommodityId).
+		SetPurchaseBy(e.Body.PurchaseBy).
+		SetPetId(e.Body.PetId).
+		MustBuild()
+}
+
+func buildAssetFromUpdatedBody(e asset2.StatusEvent[asset2.UpdatedStatusEventBody]) asset.Model {
+	return asset.NewModelBuilder(e.AssetId, e.CompartmentId, e.TemplateId).
+		SetSlot(e.Slot).
+		SetExpiration(e.Body.Expiration).
+		SetCreatedAt(e.Body.CreatedAt).
+		SetQuantity(e.Body.Quantity).
+		SetOwnerId(e.Body.OwnerId).
+		SetFlag(e.Body.Flag).
+		SetRechargeable(e.Body.Rechargeable).
+		SetStrength(e.Body.Strength).
+		SetDexterity(e.Body.Dexterity).
+		SetIntelligence(e.Body.Intelligence).
+		SetLuck(e.Body.Luck).
+		SetHp(e.Body.Hp).
+		SetMp(e.Body.Mp).
+		SetWeaponAttack(e.Body.WeaponAttack).
+		SetMagicAttack(e.Body.MagicAttack).
+		SetWeaponDefense(e.Body.WeaponDefense).
+		SetMagicDefense(e.Body.MagicDefense).
+		SetAccuracy(e.Body.Accuracy).
+		SetAvoidability(e.Body.Avoidability).
+		SetHands(e.Body.Hands).
+		SetSpeed(e.Body.Speed).
+		SetJump(e.Body.Jump).
+		SetSlots(e.Body.Slots).
+		SetLocked(e.Body.Locked).
+		SetSpikes(e.Body.Spikes).
+		SetKarmaUsed(e.Body.KarmaUsed).
+		SetCold(e.Body.Cold).
+		SetCanBeTraded(e.Body.CanBeTraded).
+		SetLevelType(e.Body.LevelType).
+		SetLevel(e.Body.Level).
+		SetExperience(e.Body.Experience).
+		SetHammersApplied(e.Body.HammersApplied).
+		SetEquippedSince(e.Body.EquippedSince).
+		SetCashId(e.Body.CashId).
+		SetCommodityId(e.Body.CommodityId).
+		SetPurchaseBy(e.Body.PurchaseBy).
+		SetPetId(e.Body.PetId).
+		MustBuild()
+}
+
+func buildAssetFromAcceptedBody(e asset2.StatusEvent[asset2.AcceptedStatusEventBody]) asset.Model {
+	return asset.NewModelBuilder(e.AssetId, e.CompartmentId, e.TemplateId).
+		SetSlot(e.Slot).
+		SetExpiration(e.Body.Expiration).
+		SetCreatedAt(e.Body.CreatedAt).
+		SetQuantity(e.Body.Quantity).
+		SetOwnerId(e.Body.OwnerId).
+		SetFlag(e.Body.Flag).
+		SetRechargeable(e.Body.Rechargeable).
+		SetStrength(e.Body.Strength).
+		SetDexterity(e.Body.Dexterity).
+		SetIntelligence(e.Body.Intelligence).
+		SetLuck(e.Body.Luck).
+		SetHp(e.Body.Hp).
+		SetMp(e.Body.Mp).
+		SetWeaponAttack(e.Body.WeaponAttack).
+		SetMagicAttack(e.Body.MagicAttack).
+		SetWeaponDefense(e.Body.WeaponDefense).
+		SetMagicDefense(e.Body.MagicDefense).
+		SetAccuracy(e.Body.Accuracy).
+		SetAvoidability(e.Body.Avoidability).
+		SetHands(e.Body.Hands).
+		SetSpeed(e.Body.Speed).
+		SetJump(e.Body.Jump).
+		SetSlots(e.Body.Slots).
+		SetLocked(e.Body.Locked).
+		SetSpikes(e.Body.Spikes).
+		SetKarmaUsed(e.Body.KarmaUsed).
+		SetCold(e.Body.Cold).
+		SetCanBeTraded(e.Body.CanBeTraded).
+		SetLevelType(e.Body.LevelType).
+		SetLevel(e.Body.Level).
+		SetExperience(e.Body.Experience).
+		SetHammersApplied(e.Body.HammersApplied).
+		SetEquippedSince(e.Body.EquippedSince).
+		SetCashId(e.Body.CashId).
+		SetCommodityId(e.Body.CommodityId).
+		SetPurchaseBy(e.Body.PurchaseBy).
+		SetPetId(e.Body.PetId).
+		MustBuild()
+}
+
+func handleAssetCreatedEvent(sc server.Model, wp writer.Producer) message.Handler[asset2.StatusEvent[asset2.CreatedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e asset2.StatusEvent[asset2.CreatedStatusEventBody]) {
 		if e.Type != asset2.StatusEventTypeCreated {
 			return
 		}
@@ -71,11 +216,8 @@ func handleAssetCreatedEvent(sc server.Model, wp writer.Producer) message.Handle
 				return errors.New("unable to identify inventory type")
 			}
 
-			a := asset.NewBuilder[any](e.AssetId, e.CompartmentId, e.TemplateId, e.Body.ReferenceId, asset.ReferenceType(e.Body.ReferenceType)).
-				SetSlot(e.Slot).
-				SetExpiration(e.Body.Expiration).
-				SetReferenceData(getReferenceData(e.Body.ReferenceData)).
-				MustBuild()
+			a := buildAssetFromCreatedBody(e)
+			a = enrichPetAsset(l, ctx, a)
 			itemWriter := model.FlipOperator(writer.WriteAssetInfo(t)(true))(a)
 			bp := writer.CharacterInventoryChangeBody(false, writer.InventoryAddBodyWriter(inventoryType, e.Slot, itemWriter))
 			err := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(bp)(s)
@@ -87,8 +229,8 @@ func handleAssetCreatedEvent(sc server.Model, wp writer.Producer) message.Handle
 	}
 }
 
-func handleAssetUpdatedEvent(sc server.Model, wp writer.Producer) message.Handler[asset2.StatusEvent[asset2.UpdatedStatusEventBody[any]]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e asset2.StatusEvent[asset2.UpdatedStatusEventBody[any]]) {
+func handleAssetUpdatedEvent(sc server.Model, wp writer.Producer) message.Handler[asset2.StatusEvent[asset2.UpdatedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e asset2.StatusEvent[asset2.UpdatedStatusEventBody]) {
 		if e.Type != asset2.StatusEventTypeUpdated {
 			return
 		}
@@ -105,11 +247,7 @@ func handleAssetUpdatedEvent(sc server.Model, wp writer.Producer) message.Handle
 				return errors.New("unable to identify inventory type")
 			}
 
-			a := asset.NewBuilder[any](e.AssetId, e.CompartmentId, e.TemplateId, e.Body.ReferenceId, asset.ReferenceType(e.Body.ReferenceType)).
-				SetSlot(e.Slot).
-				SetExpiration(e.Body.Expiration).
-				SetReferenceData(getReferenceData(e.Body.ReferenceData)).
-				MustBuild()
+			a := buildAssetFromUpdatedBody(e)
 			so := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryRefreshAsset(sc.Tenant())(inventoryType, a))
 			err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, so)
 			if err != nil {
@@ -118,480 +256,6 @@ func handleAssetUpdatedEvent(sc server.Model, wp writer.Producer) message.Handle
 			return err
 		})
 	}
-}
-
-func getReferenceData(data any) any {
-	// Handle the case where data is a map (from JSON unmarshaling)
-	if mapData, ok := data.(map[string]interface{}); ok {
-		// Check if it's an EquipableReferenceData by looking for characteristic fields
-		if _, hasStrength := mapData["strength"]; hasStrength {
-			// Check if it's a CashEquipableReferenceData (has cashId)
-			if _, hasCashId := mapData["cashId"]; hasCashId {
-				builder := asset.NewCashEquipableReferenceDataBuilder()
-
-				// Extract fields from the map and set them in the builder
-				if val, ok := mapData["cashId"].(string); ok {
-					var cashId int64
-					fmt.Sscanf(val, "%d", &cashId)
-					builder.SetCashId(cashId)
-				}
-				if val, ok := mapData["strength"].(float64); ok {
-					builder.SetStrength(uint16(val))
-				}
-				if val, ok := mapData["dexterity"].(float64); ok {
-					builder.SetDexterity(uint16(val))
-				}
-				if val, ok := mapData["intelligence"].(float64); ok {
-					builder.SetIntelligence(uint16(val))
-				}
-				if val, ok := mapData["luck"].(float64); ok {
-					builder.SetLuck(uint16(val))
-				}
-				if val, ok := mapData["hp"].(float64); ok {
-					builder.SetHp(uint16(val))
-				}
-				if val, ok := mapData["mp"].(float64); ok {
-					builder.SetMp(uint16(val))
-				}
-				if val, ok := mapData["weaponAttack"].(float64); ok {
-					builder.SetWeaponAttack(uint16(val))
-				}
-				if val, ok := mapData["magicAttack"].(float64); ok {
-					builder.SetMagicAttack(uint16(val))
-				}
-				if val, ok := mapData["weaponDefense"].(float64); ok {
-					builder.SetWeaponDefense(uint16(val))
-				}
-				if val, ok := mapData["magicDefense"].(float64); ok {
-					builder.SetMagicDefense(uint16(val))
-				}
-				if val, ok := mapData["accuracy"].(float64); ok {
-					builder.SetAccuracy(uint16(val))
-				}
-				if val, ok := mapData["avoidability"].(float64); ok {
-					builder.SetAvoidability(uint16(val))
-				}
-				if val, ok := mapData["hands"].(float64); ok {
-					builder.SetHands(uint16(val))
-				}
-				if val, ok := mapData["speed"].(float64); ok {
-					builder.SetSpeed(uint16(val))
-				}
-				if val, ok := mapData["jump"].(float64); ok {
-					builder.SetJump(uint16(val))
-				}
-				if val, ok := mapData["slots"].(float64); ok {
-					builder.SetSlots(uint16(val))
-				}
-				if val, ok := mapData["ownerId"].(float64); ok {
-					builder.SetOwnerId(uint32(val))
-				}
-				if val, ok := mapData["locked"].(bool); ok {
-					builder.SetLocked(val)
-				}
-				if val, ok := mapData["spikes"].(bool); ok {
-					builder.SetSpikes(val)
-				}
-				if val, ok := mapData["karmaUsed"].(bool); ok {
-					builder.SetKarmaUsed(val)
-				}
-				if val, ok := mapData["cold"].(bool); ok {
-					builder.SetCold(val)
-				}
-				if val, ok := mapData["canBeTraded"].(bool); ok {
-					builder.SetCanBeTraded(val)
-				}
-				if val, ok := mapData["levelType"].(float64); ok {
-					builder.SetLevelType(byte(val))
-				}
-				if val, ok := mapData["level"].(float64); ok {
-					builder.SetLevel(byte(val))
-				}
-				if val, ok := mapData["experience"].(float64); ok {
-					builder.SetExperience(uint32(val))
-				}
-				if val, ok := mapData["hammersApplied"].(float64); ok {
-					builder.SetHammersApplied(uint32(val))
-				}
-
-				return builder.Build()
-			} else {
-				// It's a regular EquipableReferenceData (no cashId)
-				builder := asset.NewEquipableReferenceDataBuilder()
-
-				// Extract fields from the map and set them in the builder
-				if val, ok := mapData["strength"].(float64); ok {
-					builder.SetStrength(uint16(val))
-				}
-				if val, ok := mapData["dexterity"].(float64); ok {
-					builder.SetDexterity(uint16(val))
-				}
-				if val, ok := mapData["intelligence"].(float64); ok {
-					builder.SetIntelligence(uint16(val))
-				}
-				if val, ok := mapData["luck"].(float64); ok {
-					builder.SetLuck(uint16(val))
-				}
-				if val, ok := mapData["hp"].(float64); ok {
-					builder.SetHp(uint16(val))
-				}
-				if val, ok := mapData["mp"].(float64); ok {
-					builder.SetMp(uint16(val))
-				}
-				if val, ok := mapData["weaponAttack"].(float64); ok {
-					builder.SetWeaponAttack(uint16(val))
-				}
-				if val, ok := mapData["magicAttack"].(float64); ok {
-					builder.SetMagicAttack(uint16(val))
-				}
-				if val, ok := mapData["weaponDefense"].(float64); ok {
-					builder.SetWeaponDefense(uint16(val))
-				}
-				if val, ok := mapData["magicDefense"].(float64); ok {
-					builder.SetMagicDefense(uint16(val))
-				}
-				if val, ok := mapData["accuracy"].(float64); ok {
-					builder.SetAccuracy(uint16(val))
-				}
-				if val, ok := mapData["avoidability"].(float64); ok {
-					builder.SetAvoidability(uint16(val))
-				}
-				if val, ok := mapData["hands"].(float64); ok {
-					builder.SetHands(uint16(val))
-				}
-				if val, ok := mapData["speed"].(float64); ok {
-					builder.SetSpeed(uint16(val))
-				}
-				if val, ok := mapData["jump"].(float64); ok {
-					builder.SetJump(uint16(val))
-				}
-				if val, ok := mapData["slots"].(float64); ok {
-					builder.SetSlots(uint16(val))
-				}
-				if val, ok := mapData["ownerId"].(float64); ok {
-					builder.SetOwnerId(uint32(val))
-				}
-				if val, ok := mapData["locked"].(bool); ok {
-					builder.SetLocked(val)
-				}
-				if val, ok := mapData["spikes"].(bool); ok {
-					builder.SetSpikes(val)
-				}
-				if val, ok := mapData["karmaUsed"].(bool); ok {
-					builder.SetKarmaUsed(val)
-				}
-				if val, ok := mapData["cold"].(bool); ok {
-					builder.SetCold(val)
-				}
-				if val, ok := mapData["canBeTraded"].(bool); ok {
-					builder.SetCanBeTraded(val)
-				}
-				if val, ok := mapData["levelType"].(float64); ok {
-					builder.SetLevelType(byte(val))
-				}
-				if val, ok := mapData["level"].(float64); ok {
-					builder.SetLevel(byte(val))
-				}
-				if val, ok := mapData["experience"].(float64); ok {
-					builder.SetExperience(uint32(val))
-				}
-				if val, ok := mapData["hammersApplied"].(float64); ok {
-					builder.SetHammersApplied(uint32(val))
-				}
-
-				return builder.Build()
-			}
-		}
-	}
-
-	// Handle the case where data is the expected type
-	if rd, ok := data.(asset2.EquipableReferenceData); ok {
-		return asset.NewEquipableReferenceDataBuilder().
-			SetStrength(rd.Strength).
-			SetDexterity(rd.Dexterity).
-			SetIntelligence(rd.Intelligence).
-			SetLuck(rd.Luck).
-			SetHp(rd.Hp).
-			SetMp(rd.Mp).
-			SetWeaponAttack(rd.WeaponAttack).
-			SetMagicAttack(rd.MagicAttack).
-			SetWeaponDefense(rd.WeaponDefense).
-			SetMagicDefense(rd.MagicDefense).
-			SetAccuracy(rd.Accuracy).
-			SetAvoidability(rd.Avoidability).
-			SetHands(rd.Hands).
-			SetSpeed(rd.Speed).
-			SetJump(rd.Jump).
-			SetSlots(rd.Slots).
-			SetOwnerId(rd.OwnerId).
-			SetLocked(rd.Locked).
-			SetSpikes(rd.Spikes).
-			SetKarmaUsed(rd.KarmaUsed).
-			SetCold(rd.Cold).
-			SetCanBeTraded(rd.CanBeTraded).
-			SetLevelType(rd.LevelType).
-			SetLevel(rd.Level).
-			SetExperience(rd.Experience).
-			SetHammersApplied(rd.HammersApplied).
-			Build()
-	}
-	// The CashEquipableReferenceData case is now handled in the EquipableReferenceData section
-
-	// Handle the case where data is the expected type
-	if rd, ok := data.(asset2.CashEquipableReferenceData); ok {
-		return asset.NewCashEquipableReferenceDataBuilder().
-			SetCashId(rd.CashId).
-			SetStrength(rd.Strength).
-			SetDexterity(rd.Dexterity).
-			SetIntelligence(rd.Intelligence).
-			SetLuck(rd.Luck).
-			SetHp(rd.Hp).
-			SetMp(rd.Mp).
-			SetWeaponAttack(rd.WeaponAttack).
-			SetMagicAttack(rd.MagicAttack).
-			SetWeaponDefense(rd.WeaponDefense).
-			SetMagicDefense(rd.MagicDefense).
-			SetAccuracy(rd.Accuracy).
-			SetAvoidability(rd.Avoidability).
-			SetHands(rd.Hands).
-			SetSpeed(rd.Speed).
-			SetJump(rd.Jump).
-			SetSlots(rd.Slots).
-			SetOwnerId(rd.OwnerId).
-			SetLocked(rd.Locked).
-			SetSpikes(rd.Spikes).
-			SetKarmaUsed(rd.KarmaUsed).
-			SetCold(rd.Cold).
-			SetCanBeTraded(rd.CanBeTraded).
-			SetLevelType(rd.LevelType).
-			SetLevel(rd.Level).
-			SetExperience(rd.Experience).
-			SetHammersApplied(rd.HammersApplied).
-			Build()
-	}
-	// Check if it's a ConsumableReferenceData in map form
-	if mapData, ok := data.(map[string]interface{}); ok {
-		if _, hasQuantity := mapData["quantity"]; hasQuantity && mapData["flag"] != nil && mapData["rechargeable"] != nil {
-			builder := asset.NewConsumableReferenceDataBuilder()
-
-			// Extract fields from the map and set them in the builder
-			if val, ok := mapData["quantity"].(float64); ok {
-				builder.SetQuantity(uint32(val))
-			}
-			if val, ok := mapData["ownerId"].(float64); ok {
-				builder.SetOwnerId(uint32(val))
-			}
-			if val, ok := mapData["flag"].(float64); ok {
-				builder.SetFlag(uint16(val))
-			}
-			if val, ok := mapData["rechargeable"].(float64); ok {
-				builder.SetRechargeable(uint64(val))
-			}
-
-			return builder.Build()
-		}
-	}
-
-	// Handle the case where data is the expected type
-	if rd, ok := data.(asset2.ConsumableReferenceData); ok {
-		return asset.NewConsumableReferenceDataBuilder().
-			SetQuantity(rd.Quantity).
-			SetOwnerId(rd.OwnerId).
-			SetFlag(rd.Flag).
-			SetRechargeable(rd.Rechargeable).
-			Build()
-	}
-	// Check if it's a SetupReferenceData in map form
-	if mapData, ok := data.(map[string]interface{}); ok {
-		if _, hasQuantity := mapData["quantity"]; hasQuantity && mapData["flag"] != nil && mapData["rechargeable"] == nil {
-			// Check if it's a CashReferenceData (has cashId and purchasedBy)
-			if _, hasCashId := mapData["cashId"]; hasCashId && mapData["purchasedBy"] != nil {
-				builder := asset.NewCashReferenceDataBuilder()
-
-				// Extract fields from the map and set them in the builder
-				if val, ok := mapData["cashId"].(string); ok {
-					var cashId int64
-					fmt.Sscanf(val, "%d", &cashId)
-					builder.SetCashId(cashId)
-				}
-				if val, ok := mapData["quantity"].(float64); ok {
-					builder.SetQuantity(uint32(val))
-				}
-				if val, ok := mapData["ownerId"].(float64); ok {
-					builder.SetOwnerId(uint32(val))
-				}
-				if val, ok := mapData["flag"].(float64); ok {
-					builder.SetFlag(uint16(val))
-				}
-				if val, ok := mapData["purchasedBy"].(float64); ok {
-					builder.SetPurchaseBy(uint32(val))
-				}
-
-				return builder.Build()
-			} else if _, hasCashId := mapData["cashId"]; !hasCashId {
-				// Check if it's an EtcReferenceData (no cashId)
-				// We need to distinguish between SetupReferenceData and EtcReferenceData
-				// Since they have the same fields, we'll use a special field added in the test
-				// to determine which one to create
-
-				// Check for the special isEtc field added in the test
-				if _, isEtc := mapData["isEtc"]; isEtc {
-					builder := asset.NewEtcReferenceDataBuilder()
-
-					// Extract fields from the map and set them in the builder
-					if val, ok := mapData["quantity"].(float64); ok {
-						builder.SetQuantity(uint32(val))
-					}
-					if val, ok := mapData["ownerId"].(float64); ok {
-						builder.SetOwnerId(uint32(val))
-					}
-					if val, ok := mapData["flag"].(float64); ok {
-						builder.SetFlag(uint16(val))
-					}
-
-					return builder.Build()
-				}
-
-				// If the special isEtc field is not present, check the referenceType field
-				if _, hasReferenceType := mapData["referenceType"]; hasReferenceType {
-					if refType, ok := mapData["referenceType"].(string); ok && refType == "SETUP" {
-						builder := asset.NewSetupReferenceDataBuilder()
-
-						// Extract fields from the map and set them in the builder
-						if val, ok := mapData["quantity"].(float64); ok {
-							builder.SetQuantity(uint32(val))
-						}
-						if val, ok := mapData["ownerId"].(float64); ok {
-							builder.SetOwnerId(uint32(val))
-						}
-						if val, ok := mapData["flag"].(float64); ok {
-							builder.SetFlag(uint16(val))
-						}
-
-						return builder.Build()
-					} else if refType, ok := mapData["referenceType"].(string); ok && refType == "ETC" {
-						builder := asset.NewEtcReferenceDataBuilder()
-
-						// Extract fields from the map and set them in the builder
-						if val, ok := mapData["quantity"].(float64); ok {
-							builder.SetQuantity(uint32(val))
-						}
-						if val, ok := mapData["ownerId"].(float64); ok {
-							builder.SetOwnerId(uint32(val))
-						}
-						if val, ok := mapData["flag"].(float64); ok {
-							builder.SetFlag(uint16(val))
-						}
-
-						return builder.Build()
-					}
-				}
-
-				// If we can't determine the type from the isEtc or referenceType fields,
-				// default to SetupReferenceData for backward compatibility
-				builder := asset.NewSetupReferenceDataBuilder()
-
-				// Extract fields from the map and set them in the builder
-				if val, ok := mapData["quantity"].(float64); ok {
-					builder.SetQuantity(uint32(val))
-				}
-				if val, ok := mapData["ownerId"].(float64); ok {
-					builder.SetOwnerId(uint32(val))
-				}
-				if val, ok := mapData["flag"].(float64); ok {
-					builder.SetFlag(uint16(val))
-				}
-
-				return builder.Build()
-			}
-		}
-	}
-
-	// Handle the case where data is the expected type
-	if rd, ok := data.(asset2.SetupReferenceData); ok {
-		return asset.NewSetupReferenceDataBuilder().
-			SetQuantity(rd.Quantity).
-			SetOwnerId(rd.OwnerId).
-			SetFlag(rd.Flag).
-			Build()
-	}
-	// The EtcReferenceData case is now handled in the SetupReferenceData section
-
-	// Handle the case where data is the expected type
-	if rd, ok := data.(asset2.EtcReferenceData); ok {
-		return asset.NewEtcReferenceDataBuilder().
-			SetQuantity(rd.Quantity).
-			SetOwnerId(rd.OwnerId).
-			SetFlag(rd.Flag).
-			Build()
-	}
-	// The CashReferenceData case is now handled in the SetupReferenceData section
-
-	// Handle the case where data is the expected type
-	if rd, ok := data.(asset2.CashReferenceData); ok {
-		return asset.NewCashReferenceDataBuilder().
-			SetCashId(rd.CashId).
-			SetQuantity(rd.Quantity).
-			SetOwnerId(rd.OwnerId).
-			SetFlag(rd.Flag).
-			SetPurchaseBy(rd.PurchasedBy).
-			Build()
-	}
-	// Check if it's a PetReferenceData in map form
-	if mapData, ok := data.(map[string]interface{}); ok {
-		if _, hasCashId := mapData["cashId"]; hasCashId && mapData["name"] != nil && mapData["closeness"] != nil {
-			builder := asset.NewPetReferenceDataBuilder()
-
-			// Extract fields from the map and set them in the builder
-			if val, ok := mapData["cashId"].(string); ok {
-				var cashId int64
-				fmt.Sscanf(val, "%d", &cashId)
-				builder.SetCashId(cashId)
-			}
-			if val, ok := mapData["ownerId"].(float64); ok {
-				builder.SetOwnerId(uint32(val))
-			}
-			if val, ok := mapData["flag"].(float64); ok {
-				builder.SetFlag(uint16(val))
-			}
-			if val, ok := mapData["purchasedBy"].(float64); ok {
-				builder.SetPurchaseBy(uint32(val))
-			}
-			if val, ok := mapData["name"].(string); ok {
-				builder.SetName(val)
-			}
-			if val, ok := mapData["level"].(float64); ok {
-				builder.SetLevel(byte(val))
-			}
-			if val, ok := mapData["closeness"].(float64); ok {
-				builder.SetCloseness(uint16(val))
-			}
-			if val, ok := mapData["fullness"].(float64); ok {
-				builder.SetFullness(byte(val))
-			}
-			if val, ok := mapData["slot"].(float64); ok {
-				builder.SetSlot(int8(val))
-			}
-
-			return builder.Build()
-		}
-	}
-
-	// Handle the case where data is the expected type
-	if rd, ok := data.(asset2.PetReferenceData); ok {
-		return asset.NewPetReferenceDataBuilder().
-			SetCashId(rd.CashId).
-			SetOwnerId(rd.OwnerId).
-			SetFlag(rd.Flag).
-			SetPurchaseBy(rd.PurchasedBy).
-			SetName(rd.Name).
-			SetLevel(rd.Level).
-			SetCloseness(rd.Closeness).
-			SetFullness(rd.Fullness).
-			SetSlot(rd.Slot).
-			Build()
-	}
-	return nil
 }
 
 func handleAssetQuantityUpdatedEvent(sc server.Model, wp writer.Producer) message.Handler[asset2.StatusEvent[asset2.QuantityChangedEventBody]] {
@@ -640,7 +304,7 @@ func moveInCompartment(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 		return func(wp writer.Producer) func(e asset2.StatusEvent[asset2.MovedStatusEventBody]) model.Operator[session.Model] {
 			return func(e asset2.StatusEvent[asset2.MovedStatusEventBody]) model.Operator[session.Model] {
 				return func(s session.Model) error {
-					c, err := cp.GetById(cp.InventoryDecorator, cp.PetModelDecorator)(s.CharacterId())
+					c, err := cp.GetById(cp.InventoryDecorator, cp.PetAssetEnrichmentDecorator, cp.PetModelDecorator)(s.CharacterId())
 					if err != nil {
 						l.WithError(err).Errorf("Unable to issue appearance update for character [%d] to others in map.", s.CharacterId())
 						return err
@@ -739,8 +403,8 @@ func handleAssetDeletedEvent(sc server.Model, wp writer.Producer) message.Handle
 }
 
 // handleAssetAcceptedEvent handles ACCEPTED events when an asset is accepted into inventory (e.g., from storage)
-func handleAssetAcceptedEvent(sc server.Model, wp writer.Producer) message.Handler[asset2.StatusEvent[asset2.AcceptedStatusEventBody[any]]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e asset2.StatusEvent[asset2.AcceptedStatusEventBody[any]]) {
+func handleAssetAcceptedEvent(sc server.Model, wp writer.Producer) message.Handler[asset2.StatusEvent[asset2.AcceptedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e asset2.StatusEvent[asset2.AcceptedStatusEventBody]) {
 		if e.Type != asset2.StatusEventTypeAccepted {
 			return
 		}
@@ -757,11 +421,8 @@ func handleAssetAcceptedEvent(sc server.Model, wp writer.Producer) message.Handl
 				return errors.New("unable to identify inventory type")
 			}
 
-			a := asset.NewBuilder[any](e.AssetId, e.CompartmentId, e.TemplateId, e.Body.ReferenceId, asset.ReferenceType(e.Body.ReferenceType)).
-				SetSlot(e.Slot).
-				SetExpiration(e.Body.Expiration).
-				SetReferenceData(getReferenceData(e.Body.ReferenceData)).
-				MustBuild()
+			a := buildAssetFromAcceptedBody(e)
+			a = enrichPetAsset(l, ctx, a)
 			itemWriter := model.FlipOperator(writer.WriteAssetInfo(t)(true))(a)
 			bp := writer.CharacterInventoryChangeBody(false, writer.InventoryAddBodyWriter(inventoryType, e.Slot, itemWriter))
 			err := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(bp)(s)
@@ -783,12 +444,6 @@ func handleAssetReleasedEvent(sc server.Model, wp writer.Producer) message.Handl
 
 		t := sc.Tenant()
 		if !t.Is(tenant.MustFromContext(ctx)) {
-			return
-		}
-
-		// Skip processing for cash-equipable and cash reference types
-		// These are handled separately by the cash shop inventory system
-		if e.Body.ReferenceType == "cash-equipable" || e.Body.ReferenceType == "cash" {
 			return
 		}
 

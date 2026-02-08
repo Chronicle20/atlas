@@ -36,11 +36,11 @@ func (m Model) Luck() uint16 {
 	return m.luck
 }
 
-func (m Model) HP() uint16 {
+func (m Model) Hp() uint16 {
 	return m.hp
 }
 
-func (m Model) MP() uint16 {
+func (m Model) Mp() uint16 {
 	return m.mp
 }
 

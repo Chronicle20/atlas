@@ -66,7 +66,7 @@ func ErrorStatusEventProvider(compartmentId uuid.UUID, compartmentType byte, err
 	return producer.SingleMessageProvider(key, value)
 }
 
-func AcceptedStatusEventProvider(accountId uint32, characterId uint32, compartmentId uuid.UUID, compartmentType byte, transactionId uuid.UUID, assetId uuid.UUID) model.Provider[[]kafka.Message] {
+func AcceptedStatusEventProvider(accountId uint32, characterId uint32, compartmentId uuid.UUID, compartmentType byte, transactionId uuid.UUID, assetId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &compartment.StatusEvent[compartment.StatusEventAcceptedBody]{
 		AccountId:       accountId,

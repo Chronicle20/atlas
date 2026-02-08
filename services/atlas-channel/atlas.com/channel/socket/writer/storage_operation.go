@@ -77,8 +77,8 @@ func inventoryTypeToFlag(inventoryType asset.InventoryType) StorageFlag {
 
 // StorageOperationUpdateAssetsForCompartmentBody sends storage assets filtered by compartment type
 // The flag is derived from the inventory type, and only assets of that type are sent
-func StorageOperationUpdateAssetsForCompartmentBody(l logrus.FieldLogger, t tenant.Model) func(op StorageOperationMode, slots byte, inventoryType asset.InventoryType, assets []asset.Model[any]) BodyProducer {
-	return func(op StorageOperationMode, slots byte, inventoryType asset.InventoryType, assets []asset.Model[any]) BodyProducer {
+func StorageOperationUpdateAssetsForCompartmentBody(l logrus.FieldLogger, t tenant.Model) func(op StorageOperationMode, slots byte, inventoryType asset.InventoryType, assets []asset.Model) BodyProducer {
+	return func(op StorageOperationMode, slots byte, inventoryType asset.InventoryType, assets []asset.Model) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(getStorageOperationMode(l)(options, op))
 			w.WriteByte(slots)
@@ -86,10 +86,9 @@ func StorageOperationUpdateAssetsForCompartmentBody(l logrus.FieldLogger, t tena
 			// Set flag based on the affected compartment
 			flags := inventoryTypeToFlag(inventoryType)
 			w.WriteLong(uint64(flags))
-			//w.WriteLong(uint64(StorageFlagCurrency | StorageFlagEquipment | StorageFlagConsumables | StorageFlagSetUp | StorageFlagEtc | StorageFlagCash))
 
 			// Filter assets to only include those from the affected compartment
-			var filteredAssets []asset.Model[any]
+			var filteredAssets []asset.Model
 			for _, a := range assets {
 				if a.InventoryType() == inventoryType {
 					filteredAssets = append(filteredAssets, a)
@@ -115,8 +114,8 @@ func StorageOperationUpdateMesoBody(l logrus.FieldLogger) func(slots byte, meso 
 	}
 }
 
-func StorageOperationShowBody(l logrus.FieldLogger, t tenant.Model) func(npcId uint32, slots byte, meso uint32, assets []asset.Model[any]) BodyProducer {
-	return func(npcId uint32, slots byte, meso uint32, assets []asset.Model[any]) BodyProducer {
+func StorageOperationShowBody(l logrus.FieldLogger, t tenant.Model) func(npcId uint32, slots byte, meso uint32, assets []asset.Model) BodyProducer {
+	return func(npcId uint32, slots byte, meso uint32, assets []asset.Model) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(getStorageOperationMode(l)(options, StorageOperationModeShow))
 			w.WriteInt(npcId)

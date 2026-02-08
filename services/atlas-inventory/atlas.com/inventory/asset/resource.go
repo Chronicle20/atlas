@@ -44,7 +44,7 @@ func handleGetAssets(db *gorm.DB) rest.GetHandler {
 
 					query := r.URL.Query()
 					queryParams := jsonapi.ParseQueryFields(&query)
-					server.MarshalResponse[[]BaseRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+					server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
 				}
 			})
 		})

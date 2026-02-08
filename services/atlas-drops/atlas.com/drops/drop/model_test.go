@@ -68,9 +68,9 @@ func TestModelBuilder_FluentSetters(t *testing.T) {
 		t.Fatal("SetType should return builder for chaining")
 	}
 
-	result = mb.SetEquipmentId(99999)
+	result = mb.SetStrength(15)
 	if result != mb {
-		t.Fatal("SetEquipmentId should return builder for chaining")
+		t.Fatal("SetStrength should return builder for chaining")
 	}
 
 	result = mb.SetPosition(100, 200)
@@ -121,7 +121,7 @@ func TestModelBuilder_Build_CreatesCorrectModel(t *testing.T) {
 		SetItem(1000000, 50).
 		SetMeso(5000).
 		SetType(1).
-		SetEquipmentId(99999).
+		SetStrength(15).
 		SetPosition(100, 200).
 		SetOwner(12345, 67890).
 		SetDropper(11111, 50, 75).
@@ -161,8 +161,8 @@ func TestModelBuilder_Build_CreatesCorrectModel(t *testing.T) {
 	if m.Type() != 1 {
 		t.Fatalf("Expected Type 1, got %d", m.Type())
 	}
-	if m.EquipmentId() != 99999 {
-		t.Fatalf("Expected EquipmentId 99999, got %d", m.EquipmentId())
+	if m.Strength() != 15 {
+		t.Fatalf("Expected Strength 15, got %d", m.Strength())
 	}
 	if m.X() != 100 || m.Y() != 200 {
 		t.Fatalf("Expected position (100, 200), got (%d, %d)", m.X(), m.Y())
@@ -206,7 +206,7 @@ func TestCloneModelBuilder_CopiesAllFields(t *testing.T) {
 		SetItem(1000000, 50).
 		SetMeso(5000).
 		SetType(1).
-		SetEquipmentId(99999).
+		SetStrength(15).
 		SetPosition(100, 200).
 		SetOwner(12345, 67890).
 		SetDropper(11111, 50, 75).
@@ -252,8 +252,8 @@ func TestCloneModelBuilder_CopiesAllFields(t *testing.T) {
 	if cloned.Type() != original.Type() {
 		t.Fatalf("Expected Type %d, got %d", original.Type(), cloned.Type())
 	}
-	if cloned.EquipmentId() != original.EquipmentId() {
-		t.Fatalf("Expected EquipmentId %d, got %d", original.EquipmentId(), cloned.EquipmentId())
+	if cloned.Strength() != original.Strength() {
+		t.Fatalf("Expected Strength %d, got %d", original.Strength(), cloned.Strength())
 	}
 	if cloned.X() != original.X() || cloned.Y() != original.Y() {
 		t.Fatalf("Expected position (%d, %d), got (%d, %d)", original.X(), original.Y(), cloned.X(), cloned.Y())
@@ -400,7 +400,7 @@ func TestModel_AllGetters(t *testing.T) {
 		transactionId: txId,
 		field:         field.NewBuilder(1, 2, 100000000).Build(),
 		itemId:        1000000,
-		equipmentId:   99999,
+		strength:      15,
 		quantity:      50,
 		meso:          5000,
 		dropType:      1,
@@ -439,8 +439,8 @@ func TestModel_AllGetters(t *testing.T) {
 	if m.ItemId() != 1000000 {
 		t.Fatal("ItemId() failed")
 	}
-	if m.EquipmentId() != 99999 {
-		t.Fatal("EquipmentId() failed")
+	if m.Strength() != 15 {
+		t.Fatal("Strength() failed")
 	}
 	if m.Quantity() != 50 {
 		t.Fatal("Quantity() failed")

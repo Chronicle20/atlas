@@ -13,15 +13,9 @@ Storage operation commands.
 | `UPDATE_MESOS` | UpdateMesosBody | Update stored mesos |
 | `DEPOSIT_ROLLBACK` | DepositRollbackBody | Rollback a deposit operation |
 | `ARRANGE` | ArrangeBody | Merge and sort storage items |
-
-### COMMAND_TOPIC_STORAGE_SHOW
-
-Storage session commands.
-
-| Command Type | Body Type | Description |
-|--------------|-----------|-------------|
 | `SHOW_STORAGE` | ShowStorageCommand | Create projection for storage UI |
 | `CLOSE_STORAGE` | CloseStorageCommand | Destroy projection when closing storage |
+| `EXPIRE` | ExpireBody | Expire an asset from storage |
 
 ### COMMAND_TOPIC_STORAGE_COMPARTMENT
 
@@ -88,35 +82,61 @@ Compartment transfer status events.
 **Command[E]**
 ```
 transactionId: UUID
-worldId: byte
+worldId: world.Id
 accountId: uint32
 type: string
 body: E
+```
+
+**AssetData** (embedded in DepositBody and AcceptCommandBody)
+```
+expiration: time.Time
+quantity: uint32
+ownerId: uint32
+flag: uint16
+rechargeable: uint64
+strength: uint16
+dexterity: uint16
+intelligence: uint16
+luck: uint16
+hp: uint16
+mp: uint16
+weaponAttack: uint16
+magicAttack: uint16
+weaponDefense: uint16
+magicDefense: uint16
+accuracy: uint16
+avoidability: uint16
+hands: uint16
+speed: uint16
+jump: uint16
+slots: uint16
+locked: bool
+spikes: bool
+karmaUsed: bool
+cold: bool
+canBeTraded: bool
+levelType: byte
+level: byte
+experience: uint32
+hammersApplied: uint32
+cashId: int64
+commodityId: uint32
+purchaseBy: uint32
+petId: uint32
 ```
 
 **DepositBody**
 ```
 slot: int16
 templateId: uint32
-expiration: time.Time
-referenceId: uint32
-referenceType: string
-referenceData: ReferenceData (optional)
-```
-
-**ReferenceData**
-```
-quantity: uint32
-ownerId: uint32
-flag: uint16
+(embeds AssetData)
 ```
 
 **WithdrawBody**
 ```
-assetId: uint32
-targetSlot: int16 (optional)
-quantity: uint32 (optional)
-targetStorageId: string (optional)
+assetId: asset.Id
+quantity: asset.Quantity (optional)
 ```
 
 **UpdateMesosBody**
@@ -127,7 +147,7 @@ operation: string (SET, ADD, SUBTRACT)
 
 **DepositRollbackBody**
 ```
-assetId: uint32
+assetId: asset.Id
 ```
 
 **ArrangeBody**
@@ -138,8 +158,8 @@ assetId: uint32
 **ShowStorageCommand**
 ```
 transactionId: UUID
-worldId: byte
-channelId: byte
+worldId: world.Id
+channelId: channel.Id
 characterId: uint32
 npcId: uint32
 accountId: uint32
@@ -152,30 +172,37 @@ characterId: uint32
 type: string
 ```
 
-**AcceptCommandBody**
+**ExpireBody**
 ```
-transactionId: UUID
-slot: int16
+characterId: uint32
+assetId: asset.Id
 templateId: uint32
-referenceId: uint32
-referenceType: string
-referenceData: json.RawMessage (optional)
-quantity: uint32
+inventoryType: int8
+slot: int16
+replaceItemId: uint32
+replaceMessage: string
 ```
 
-**ReleaseCommandBody**
+**AcceptCommandBody** (compartment)
 ```
 transactionId: UUID
-assetId: uint32
-quantity: uint32
+templateId: uint32
+(embeds AssetData)
+```
+
+**ReleaseCommandBody** (compartment)
+```
+transactionId: UUID
+assetId: asset.Id
+quantity: asset.Quantity
 ```
 
 ### Event Messages
 
-**StatusEvent[E]**
+**StatusEvent[E]** (storage)
 ```
 transactionId: UUID
-worldId: byte
+worldId: world.Id
 accountId: uint32
 type: string
 body: E
@@ -183,20 +210,17 @@ body: E
 
 **DepositedEventBody**
 ```
-assetId: uint32
+assetId: asset.Id
 slot: int16
 templateId: uint32
-referenceId: uint32
-referenceType: string
-expiration: time.Time
 ```
 
 **WithdrawnEventBody**
 ```
-assetId: uint32
+assetId: asset.Id
 slot: int16
 templateId: uint32
-quantity: uint32 (optional)
+quantity: asset.Quantity (optional)
 ```
 
 **MesosUpdatedEventBody**
@@ -220,8 +244,8 @@ message: string (optional)
 ```
 characterId: uint32
 accountId: uint32
-worldId: byte
-channelId: byte
+worldId: world.Id
+channelId: channel.Id
 npcId: uint32
 ```
 
@@ -233,14 +257,23 @@ characterId: uint32
 **ExpiredStatusEventBody**
 ```
 isCash: bool
-replaceItemId: uint32
-replaceMessage: string
+replaceItemId: uint32 (optional)
+replaceMessage: string (optional)
+```
+
+**StatusEvent[E]** (compartment)
+```
+worldId: world.Id
+accountId: uint32
+characterId: uint32 (optional)
+type: string
+body: E
 ```
 
 **StatusEventAcceptedBody**
 ```
 transactionId: UUID
-assetId: uint32
+assetId: asset.Id
 slot: int16
 inventoryType: byte
 ```
@@ -248,7 +281,7 @@ inventoryType: byte
 **StatusEventReleasedBody**
 ```
 transactionId: UUID
-assetId: uint32
+assetId: asset.Id
 inventoryType: byte
 ```
 

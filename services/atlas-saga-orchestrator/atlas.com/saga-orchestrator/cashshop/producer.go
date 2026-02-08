@@ -23,7 +23,7 @@ func AdjustCurrencyProvider(transactionId uuid.UUID, accountId uint32, currencyT
 }
 
 // AcceptCommandProvider creates an ACCEPT command for the cash shop compartment
-func AcceptCommandProvider(characterId uint32, accountId uint32, compartmentId uuid.UUID, compartmentType byte, transactionId uuid.UUID, cashId int64, templateId uint32, referenceId uint32, referenceType string, referenceData []byte) model.Provider[[]kafka.Message] {
+func AcceptCommandProvider(characterId uint32, accountId uint32, compartmentId uuid.UUID, compartmentType byte, transactionId uuid.UUID, cashId int64, templateId uint32, quantity uint32, commodityId uint32, purchasedBy uint32, flag uint16) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &cashshopCompartment.Command[cashshopCompartment.AcceptCommandBody]{
 		AccountId:       accountId,
@@ -35,9 +35,10 @@ func AcceptCommandProvider(characterId uint32, accountId uint32, compartmentId u
 			CompartmentId: compartmentId,
 			CashId:        cashId,
 			TemplateId:    templateId,
-			ReferenceId:   referenceId,
-			ReferenceType: referenceType,
-			ReferenceData: referenceData,
+			Quantity:      quantity,
+			CommodityId:   commodityId,
+			PurchasedBy:   purchasedBy,
+			Flag:          flag,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

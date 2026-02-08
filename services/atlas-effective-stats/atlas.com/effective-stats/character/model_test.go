@@ -235,11 +235,11 @@ func TestModelComputeEffectiveStats_BaseOnly(t *testing.T) {
 	if computed.Intelligence() != 25 {
 		t.Errorf("Intelligence() = %v, want 25", computed.Intelligence())
 	}
-	if computed.MaxHP() != 5000 {
-		t.Errorf("MaxHP() = %v, want 5000", computed.MaxHP())
+	if computed.MaxHp() != 5000 {
+		t.Errorf("MaxHP() = %v, want 5000", computed.MaxHp())
 	}
-	if computed.MaxMP() != 3000 {
-		t.Errorf("MaxMP() = %v, want 3000", computed.MaxMP())
+	if computed.MaxMp() != 3000 {
+		t.Errorf("MaxMP() = %v, want 3000", computed.MaxMp())
 	}
 }
 
@@ -305,18 +305,18 @@ func TestModelComputeEffectiveStats_MultipleMultipliers(t *testing.T) {
 	m := NewModel(ten, ch, 12345)
 
 	base := stat.NewBase(50, 40, 30, 25, 5000, 3000)
-	bEquip := stat.NewBonus("equipment:1", stat.TypeMaxHP, 500)
-	bPassive := stat.NewBonus("passive:1001", stat.TypeMaxHP, 200)
-	bHyperBody := stat.NewMultiplierBonus("buff:hyper", stat.TypeMaxHP, 0.60)
-	bMapleWarrior := stat.NewMultiplierBonus("buff:mw", stat.TypeMaxHP, 0.10)
+	bEquip := stat.NewBonus("equipment:1", stat.TypeMaxHp, 500)
+	bPassive := stat.NewBonus("passive:1001", stat.TypeMaxHp, 200)
+	bHyperBody := stat.NewMultiplierBonus("buff:hyper", stat.TypeMaxHp, 0.60)
+	bMapleWarrior := stat.NewMultiplierBonus("buff:mw", stat.TypeMaxHp, 0.10)
 
 	m = m.WithBaseStats(base).WithBonus(bEquip).WithBonus(bPassive).WithBonus(bHyperBody).WithBonus(bMapleWarrior)
 
 	computed := m.ComputeEffectiveStats()
 
 	// (5000 + 500 + 200) * (1.0 + 0.60 + 0.10) = 5700 * 1.70 = 9690
-	if computed.MaxHP() != 9690 {
-		t.Errorf("MaxHP() = %v, want 9690", computed.MaxHP())
+	if computed.MaxHp() != 9690 {
+		t.Errorf("MaxHP() = %v, want 9690", computed.MaxHp())
 	}
 }
 

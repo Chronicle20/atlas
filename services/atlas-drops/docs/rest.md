@@ -32,8 +32,8 @@ Retrieves a drop by ID.
       "worldId": 0,
       "channelId": 0,
       "mapId": 0,
+      "instance": "uuid",
       "itemId": 0,
-      "equipmentId": 0,
       "quantity": 0,
       "meso": 0,
       "type": 0,
@@ -46,7 +46,23 @@ Retrieves a drop by ID.
       "dropperX": 0,
       "dropperY": 0,
       "characterDrop": false,
-      "mod": 0
+      "mod": 0,
+      "strength": 0,
+      "dexterity": 0,
+      "intelligence": 0,
+      "luck": 0,
+      "hp": 0,
+      "mp": 0,
+      "weaponAttack": 0,
+      "magicAttack": 0,
+      "weaponDefense": 0,
+      "magicDefense": 0,
+      "accuracy": 0,
+      "avoidability": 0,
+      "hands": 0,
+      "speed": 0,
+      "jump": 0,
+      "slots": 0
     }
   }
 }
@@ -70,9 +86,9 @@ Retrieves all drops for a specific map instance.
 
 | Name | In | Type | Required | Description |
 |------|-----|------|----------|-------------|
-| worldId | path | uint8 | Yes | World identifier |
-| channelId | path | uint8 | Yes | Channel identifier |
-| mapId | path | uint32 | Yes | Map identifier |
+| worldId | path | int | Yes | World identifier |
+| channelId | path | int | Yes | Channel identifier |
+| mapId | path | int | Yes | Map identifier |
 | instanceId | path | uuid | Yes | Instance identifier (use 00000000-0000-0000-0000-000000000000 for non-instanced maps) |
 
 #### Request Headers
@@ -96,8 +112,8 @@ Retrieves all drops for a specific map instance.
         "worldId": 0,
         "channelId": 0,
         "mapId": 0,
+        "instance": "uuid",
         "itemId": 0,
-        "equipmentId": 0,
         "quantity": 0,
         "meso": 0,
         "type": 0,
@@ -110,7 +126,23 @@ Retrieves all drops for a specific map instance.
         "dropperX": 0,
         "dropperY": 0,
         "characterDrop": false,
-        "mod": 0
+        "mod": 0,
+        "strength": 0,
+        "dexterity": 0,
+        "intelligence": 0,
+        "luck": 0,
+        "hp": 0,
+        "mp": 0,
+        "weaponAttack": 0,
+        "magicAttack": 0,
+        "weaponDefense": 0,
+        "magicDefense": 0,
+        "accuracy": 0,
+        "avoidability": 0,
+        "hands": 0,
+        "speed": 0,
+        "jump": 0,
+        "slots": 0
       }
     }
   ]

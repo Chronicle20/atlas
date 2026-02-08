@@ -110,7 +110,7 @@ func initializeEquippedItems(l logrus.FieldLogger, ctx context.Context, p Proces
 			continue
 		}
 
-		// Get equippedSince from the asset's reference data (from atlas-equipables)
+		// Get equippedSince from the asset
 		equippedSince := asset.GetEquippedSince()
 		if equippedSince == nil {
 			// Item is in equipped slot but equippedSince is not set

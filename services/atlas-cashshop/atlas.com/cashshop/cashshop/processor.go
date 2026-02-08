@@ -4,7 +4,6 @@ import (
 	"atlas-cashshop/cashshop/commodity"
 	"atlas-cashshop/cashshop/inventory/asset"
 	"atlas-cashshop/cashshop/inventory/compartment"
-	"atlas-cashshop/cashshop/item"
 	"atlas-cashshop/character"
 	compartment2 "atlas-cashshop/character/compartment"
 	inventory2 "atlas-cashshop/character/inventory"
@@ -48,7 +47,6 @@ type ProcessorImpl struct {
 	chaInvP inventory2.Processor
 	chaComP compartment2.Processor
 	walP    wallet.Processor
-	itmP    item.Processor
 	astP    asset.Processor
 }
 
@@ -65,7 +63,6 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		chaInvP: inventory2.NewProcessor(l, ctx),
 		chaComP: compartment2.NewProcessor(l, ctx),
 		walP:    wallet.NewProcessor(l, ctx, db),
-		itmP:    item.NewProcessor(l, ctx, db),
 		astP:    asset.NewProcessor(l, ctx, db),
 	}
 	return p
@@ -129,16 +126,8 @@ func (p *ProcessorImpl) Purchase(mb *message.Buffer) func(characterId uint32, cu
 				return err
 			}
 
-			// Create the cash item
-			im, err := p.itmP.Create(mb)(ci.ItemId())(serialNumber)(ci.Count())(characterId)
-			if err != nil {
-				p.l.WithError(err).Errorf("Unable to create cash item for character [%d].", characterId)
-				_ = mb.Put(cashshop.EnvEventTopicStatus, cashshop2.ErrorStatusEventProvider(characterId, "UNKNOWN_ERROR"))
-				return err
-			}
-
-			// Create the asset entity in the database
-			am, err := p.astP.Create(mb)(ccm.Id())(im.Id())
+			// Create the flattened asset directly (no separate item creation)
+			am, err := p.astP.Create(mb)(ccm.Id(), ci.ItemId(), serialNumber, ci.Count(), characterId)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to create asset for character [%d].", characterId)
 				_ = mb.Put(cashshop.EnvEventTopicStatus, cashshop2.ErrorStatusEventProvider(characterId, "UNKNOWN_ERROR"))
@@ -146,7 +135,7 @@ func (p *ProcessorImpl) Purchase(mb *message.Buffer) func(characterId uint32, cu
 			}
 
 			p.l.Debugf("Character [%d] successfully purchased item [%d] for [%d] currency.", characterId, ci.ItemId(), ci.Price())
-			_ = mb.Put(cashshop.EnvEventTopicStatus, cashshop2.PurchaseStatusEventProvider(characterId, ci.ItemId(), ci.Price(), ccm.Id(), am.Id(), im.Id()))
+			_ = mb.Put(cashshop.EnvEventTopicStatus, cashshop2.PurchaseStatusEventProvider(characterId, ci.ItemId(), ci.Price(), ccm.Id(), am.Id()))
 
 			return nil
 		})

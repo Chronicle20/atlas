@@ -1,6 +1,7 @@
 package compartment
 
 import (
+	asset2 "atlas-saga-orchestrator/kafka/message/asset"
 	"atlas-saga-orchestrator/kafka/message/compartment"
 	"time"
 
@@ -76,7 +77,7 @@ func RequestUnequipAssetCommandProvider(transactionId uuid.UUID, characterId uin
 	return producer.SingleMessageProvider(key, value)
 }
 
-func RequestAcceptAssetCommandProvider(transactionId uuid.UUID, characterId uint32, inventoryType byte, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, quantity uint32) model.Provider[[]kafka.Message] {
+func RequestAcceptAssetCommandProvider(transactionId uuid.UUID, characterId uint32, inventoryType byte, templateId uint32, assetData asset2.AssetData) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &compartment.Command[compartment.AcceptCommandBody]{
 		TransactionId: transactionId,
@@ -86,10 +87,7 @@ func RequestAcceptAssetCommandProvider(transactionId uuid.UUID, characterId uint
 		Body: compartment.AcceptCommandBody{
 			TransactionId: transactionId,
 			TemplateId:    templateId,
-			ReferenceId:   referenceId,
-			ReferenceType: referenceType,
-			ReferenceData: referenceData,
-			Quantity:      quantity,
+			AssetData:     assetData,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

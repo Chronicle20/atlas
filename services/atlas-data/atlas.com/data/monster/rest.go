@@ -5,8 +5,8 @@ import "strconv"
 type RestModel struct {
 	Id                 uint32            `json:"-"`
 	Name               string            `json:"name"`
-	HP                 uint32            `json:"hp"`
-	MP                 uint32            `json:"mp"`
+	Hp                 uint32            `json:"hp"`
+	Mp                 uint32            `json:"mp"`
 	Experience         uint32            `json:"experience"`
 	Level              uint32            `json:"level"`
 	WeaponAttack       uint32            `json:"weapon_attack"`
@@ -75,7 +75,7 @@ type banish struct {
 type selfDestruction struct {
 	Action      byte  `json:"action"`
 	RemoveAfter int32 `json:"remove_after"`
-	HP          int32 `json:"hp"`
+	Hp          int32 `json:"hp"`
 }
 
 type coolDamage struct {

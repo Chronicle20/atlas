@@ -159,7 +159,7 @@ func (p *ProcessorImpl) RemoveAllItemFactors(characterId uint32, templateId uint
 }
 
 // TrackBonusExpItem starts tracking an equipment item with time-based EXP bonus tiers
-// The equippedSince timestamp should come from atlas-equipables via atlas-inventory
+// The equippedSince timestamp comes from the asset's equippedSince field via atlas-inventory
 // If equippedSince is nil, the item is tracked but won't provide a bonus until equipped
 func (p *ProcessorImpl) TrackBonusExpItem(characterId uint32, templateId uint32, tiers []BonusExpTier, equippedSince *time.Time) error {
 	item := TrackedItem{

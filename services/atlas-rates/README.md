@@ -28,3 +28,4 @@ Aggregates rate multipliers for characters from multiple sources (world settings
 - [Domain](docs/domain.md)
 - [Kafka](docs/kafka.md)
 - [REST](docs/rest.md)
+- [Storage](docs/storage.md)

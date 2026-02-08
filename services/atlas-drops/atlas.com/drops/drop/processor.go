@@ -1,15 +1,12 @@
 package drop
 
 import (
-	"atlas-drops/equipment"
 	"atlas-drops/kafka/message"
 	"atlas-drops/kafka/message/drop"
 	"atlas-drops/kafka/producer"
 	"context"
 
 	"github.com/Chronicle20/atlas-constants/field"
-	"github.com/Chronicle20/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -75,19 +72,9 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
-// Spawn creates a new drop
+// Spawn creates a new drop (equipment stats already inline from command)
 func (p *ProcessorImpl) Spawn(msgBuf *message.Buffer) func(mb *ModelBuilder) (Model, error) {
 	return func(mb *ModelBuilder) (Model, error) {
-		it, _ := inventory.TypeFromItemId(item.Id(mb.ItemId()))
-		if it == inventory.TypeValueEquip {
-			e, err := equipment.Create(p.l)(p.ctx)(mb.ItemId())()
-			if err != nil {
-				p.l.WithError(err).Errorf("Unable to generate [%d] equipment for drop.", mb.ItemId())
-				return Model{}, err
-			}
-
-			mb.SetEquipmentId(e.Id())
-		}
 		m, err := GetRegistry().CreateDrop(mb)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to create drop.")
@@ -141,7 +128,7 @@ func (p *ProcessorImpl) Reserve(msgBuf *message.Buffer) func(transactionId uuid.
 		d, err := GetRegistry().ReserveDrop(dropId, characterId, petSlot)
 		if err == nil {
 			p.l.Debugf("Reserving [%d] for [%d].", dropId, characterId)
-			_ = msgBuf.Put(drop.EnvEventTopicDropStatus, reservedEventStatusProvider(transactionId, field, dropId, characterId, d.ItemId(), d.EquipmentId(), d.Quantity(), d.Meso()))
+			_ = msgBuf.Put(drop.EnvEventTopicDropStatus, reservedEventStatusProvider(transactionId, field, d))
 		} else {
 			p.l.Debugf("Failed reserving [%d] for [%d].", dropId, characterId)
 			_ = msgBuf.Put(drop.EnvEventTopicDropStatus, reservationFailureEventStatusProvider(transactionId, field, dropId, characterId))
@@ -190,7 +177,7 @@ func (p *ProcessorImpl) Gather(msgBuf *message.Buffer) func(transactionId uuid.U
 		d, err := GetRegistry().RemoveDrop(dropId)
 		if d.Id() == 0 || err == nil {
 			p.l.Debugf("Gathering [%d] for [%d].", dropId, characterId)
-			_ = msgBuf.Put(drop.EnvEventTopicDropStatus, pickedUpEventStatusProvider(transactionId, field, dropId, characterId, d.ItemId(), d.EquipmentId(), d.Quantity(), d.Meso(), d.PetSlot()))
+			_ = msgBuf.Put(drop.EnvEventTopicDropStatus, pickedUpEventStatusProvider(transactionId, field, d, characterId))
 		}
 		return d, err
 	}
@@ -215,14 +202,6 @@ func (p *ProcessorImpl) Expire(msgBuf *message.Buffer) model.Operator[Model] {
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to remove drop [%d] from registry.", m.Id())
 			return err
-		}
-
-		if m.EquipmentId() != 0 {
-			err = equipment.Delete(p.l)(p.ctx)(m.EquipmentId())
-			if err != nil {
-				p.l.WithError(err).Errorf("Unable to delete equipment [%d] corresponding to drop [%d].", m.EquipmentId(), m.Id())
-				return err
-			}
 		}
 
 		_ = msgBuf.Put(drop.EnvEventTopicDropStatus, expiredEventStatusProvider(m.TransactionId(), m.Field(), m.Id()))

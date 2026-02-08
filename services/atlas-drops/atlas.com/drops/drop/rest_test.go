@@ -108,7 +108,7 @@ func TestTransform_AllFields(t *testing.T) {
 		id:           123,
 		field:        field.NewBuilder(1, 2, 100000000).Build(),
 		itemId:       1000000,
-		equipmentId:  99999,
+		strength:     15,
 		quantity:     50,
 		meso:         5000,
 		dropType:     1,
@@ -143,8 +143,8 @@ func TestTransform_AllFields(t *testing.T) {
 	if rm.ItemId != m.ItemId() {
 		t.Fatalf("Expected ItemId %d, got %d", m.ItemId(), rm.ItemId)
 	}
-	if rm.EquipmentId != m.EquipmentId() {
-		t.Fatalf("Expected EquipmentId %d, got %d", m.EquipmentId(), rm.EquipmentId)
+	if rm.Strength != m.Strength() {
+		t.Fatalf("Expected Strength %d, got %d", m.Strength(), rm.Strength)
 	}
 	if rm.Quantity != m.Quantity() {
 		t.Fatalf("Expected Quantity %d, got %d", m.Quantity(), rm.Quantity)
@@ -239,7 +239,7 @@ func TestRestModel_JSONTags(t *testing.T) {
 		ChannelId:     2,
 		MapId:         100000000,
 		ItemId:        1000000,
-		EquipmentId:   99999,
+		Strength:      15,
 		Quantity:      50,
 		Meso:          5000,
 		Type:          1,

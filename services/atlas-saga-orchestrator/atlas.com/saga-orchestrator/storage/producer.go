@@ -3,6 +3,7 @@ package storage
 import (
 	"time"
 
+	asset2 "atlas-saga-orchestrator/kafka/message/asset"
 	storage2 "atlas-saga-orchestrator/kafka/message/storage"
 	storageCompartment "atlas-saga-orchestrator/kafka/message/storage/compartment"
 
@@ -93,7 +94,7 @@ func ShowStorageCommandProvider(transactionId uuid.UUID, ch channel.Model, chara
 }
 
 // AcceptCommandProvider creates an ACCEPT command for the storage compartment
-func AcceptCommandProvider(transactionId uuid.UUID, worldId world.Id, accountId uint32, characterId uint32, slot int16, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, quantity asset.Quantity) model.Provider[[]kafka.Message] {
+func AcceptCommandProvider(transactionId uuid.UUID, worldId world.Id, accountId uint32, characterId uint32, templateId uint32, assetData asset2.AssetData) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(accountId))
 	value := &storageCompartment.Command[storageCompartment.AcceptCommandBody]{
 		WorldId:     worldId,
@@ -102,12 +103,8 @@ func AcceptCommandProvider(transactionId uuid.UUID, worldId world.Id, accountId 
 		Type:        storageCompartment.CommandAccept,
 		Body: storageCompartment.AcceptCommandBody{
 			TransactionId: transactionId,
-			Slot:          slot,
 			TemplateId:    templateId,
-			ReferenceId:   referenceId,
-			ReferenceType: referenceType,
-			ReferenceData: referenceData,
-			Quantity:      quantity,
+			AssetData:     assetData,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

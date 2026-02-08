@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -37,7 +38,7 @@ func ParseCharacterId(l logrus.FieldLogger, next CharacterIdHandler) http.Handle
 	}
 }
 
-type CompartmentTypeHandler func(compartmentType asset.InventoryType) http.HandlerFunc
+type CompartmentTypeHandler func(compartmentType inventory.Type) http.HandlerFunc
 
 func ParseCompartmentType(l logrus.FieldLogger, next CompartmentTypeHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -47,7 +48,7 @@ func ParseCompartmentType(l logrus.FieldLogger, next CompartmentTypeHandler) htt
 		// Try parsing as number first (1-5)
 		if compartmentTypeInt, err := strconv.Atoi(compartmentTypeStr); err == nil {
 			if compartmentTypeInt >= 1 && compartmentTypeInt <= 5 {
-				next(asset.InventoryType(compartmentTypeInt))(w, r)
+				next(inventory.Type(compartmentTypeInt))(w, r)
 				return
 			}
 		}
@@ -109,7 +110,7 @@ func handleGetProjectionRequest() func(d *rest.HandlerDependency, c *rest.Handle
 func handleGetProjectionAssetRequest() func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
-			return ParseCompartmentType(d.Logger(), func(compartmentType asset.InventoryType) http.HandlerFunc {
+			return ParseCompartmentType(d.Logger(), func(compartmentType inventory.Type) http.HandlerFunc {
 				return ParseSlot(d.Logger(), func(slot int16) http.HandlerFunc {
 					return func(w http.ResponseWriter, r *http.Request) {
 						// Get projection from manager
@@ -130,7 +131,7 @@ func handleGetProjectionAssetRequest() func(d *rest.HandlerDependency, c *rest.H
 						}
 
 						// Transform to REST model
-						restModel, err := asset.TransformToBaseRestModel(assetModel)
+						restModel, err := asset.Transform(assetModel)
 						if err != nil {
 							d.Logger().WithError(err).Errorf("Unable to transform asset for character [%d]", characterId)
 							w.WriteHeader(http.StatusInternalServerError)
@@ -139,7 +140,7 @@ func handleGetProjectionAssetRequest() func(d *rest.HandlerDependency, c *rest.H
 
 						query := r.URL.Query()
 						queryParams := jsonapi.ParseQueryFields(&query)
-						server.MarshalResponse[asset.BaseRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(restModel)
+						server.MarshalResponse[asset.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(restModel)
 					}
 				})
 			})

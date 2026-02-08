@@ -29,121 +29,51 @@ type StatusEvent[E any] struct {
 	Body          E         `json:"body"`
 }
 
-type CreatedStatusEventBody[E any] struct {
-	ReferenceId   uint32    `json:"referenceId"`
-	ReferenceType string    `json:"referenceType"`
-	ReferenceData E         `json:"referenceData"`
-	Expiration    time.Time `json:"expiration"`
+type AssetData struct {
+	Expiration     time.Time  `json:"expiration"`
+	CreatedAt      time.Time  `json:"createdAt"`
+	Quantity       uint32     `json:"quantity"`
+	OwnerId        uint32     `json:"ownerId"`
+	Flag           uint16     `json:"flag"`
+	Rechargeable   uint64     `json:"rechargeable"`
+	Strength       uint16     `json:"strength"`
+	Dexterity      uint16     `json:"dexterity"`
+	Intelligence   uint16     `json:"intelligence"`
+	Luck           uint16     `json:"luck"`
+	Hp             uint16     `json:"hp"`
+	Mp             uint16     `json:"mp"`
+	WeaponAttack   uint16     `json:"weaponAttack"`
+	MagicAttack    uint16     `json:"magicAttack"`
+	WeaponDefense  uint16     `json:"weaponDefense"`
+	MagicDefense   uint16     `json:"magicDefense"`
+	Accuracy       uint16     `json:"accuracy"`
+	Avoidability   uint16     `json:"avoidability"`
+	Hands          uint16     `json:"hands"`
+	Speed          uint16     `json:"speed"`
+	Jump           uint16     `json:"jump"`
+	Slots          uint16     `json:"slots"`
+	Locked         bool       `json:"locked"`
+	Spikes         bool       `json:"spikes"`
+	KarmaUsed      bool       `json:"karmaUsed"`
+	Cold           bool       `json:"cold"`
+	CanBeTraded    bool       `json:"canBeTraded"`
+	LevelType      byte       `json:"levelType"`
+	Level          byte       `json:"level"`
+	Experience     uint32     `json:"experience"`
+	HammersApplied uint32     `json:"hammersApplied"`
+	EquippedSince  *time.Time `json:"equippedSince"`
+	CashId         int64      `json:"cashId,string"`
+	CommodityId    uint32     `json:"commodityId"`
+	PurchaseBy     uint32     `json:"purchaseBy"`
+	PetId          uint32     `json:"petId"`
 }
 
-type UpdatedStatusEventBody[E any] struct {
-	ReferenceId   uint32    `json:"referenceId"`
-	ReferenceType string    `json:"referenceType"`
-	ReferenceData E         `json:"referenceData"`
-	Expiration    time.Time `json:"expiration"`
+type CreatedStatusEventBody struct {
+	AssetData
 }
 
-type BaseData struct {
-	OwnerId uint32 `json:"ownerId"`
-}
-type StatisticData struct {
-	Strength      uint16 `json:"strength"`
-	Dexterity     uint16 `json:"dexterity"`
-	Intelligence  uint16 `json:"intelligence"`
-	Luck          uint16 `json:"luck"`
-	Hp            uint16 `json:"hp"`
-	Mp            uint16 `json:"mp"`
-	WeaponAttack  uint16 `json:"weaponAttack"`
-	MagicAttack   uint16 `json:"magicAttack"`
-	WeaponDefense uint16 `json:"weaponDefense"`
-	MagicDefense  uint16 `json:"magicDefense"`
-	Accuracy      uint16 `json:"accuracy"`
-	Avoidability  uint16 `json:"avoidability"`
-	Hands         uint16 `json:"hands"`
-	Speed         uint16 `json:"speed"`
-	Jump          uint16 `json:"jump"`
-}
-
-type CashData struct {
-	CashId int64 `json:"cashId,string"`
-}
-
-type StackableData struct {
-	Quantity uint32 `json:"quantity"`
-}
-type EquipableReferenceData struct {
-	BaseData
-	StatisticData
-	Slots          uint16    `json:"slots"`
-	Locked         bool      `json:"locked"`
-	Spikes         bool      `json:"spikes"`
-	KarmaUsed      bool      `json:"karmaUsed"`
-	Cold           bool      `json:"cold"`
-	CanBeTraded    bool      `json:"canBeTraded"`
-	LevelType      byte      `json:"levelType"`
-	Level          byte      `json:"level"`
-	Experience     uint32    `json:"experience"`
-	HammersApplied uint32    `json:"hammersApplied"`
-	Expiration     time.Time `json:"expiration"`
-	CreatedAt      time.Time `json:"createdAt"`
-}
-
-type CashEquipableReferenceData struct {
-	CashData
-	BaseData
-	StatisticData
-	Slots          uint16    `json:"slots"`
-	Locked         bool      `json:"locked"`
-	Spikes         bool      `json:"spikes"`
-	KarmaUsed      bool      `json:"karmaUsed"`
-	Cold           bool      `json:"cold"`
-	CanBeTraded    bool      `json:"canBeTraded"`
-	LevelType      byte      `json:"levelType"`
-	Level          byte      `json:"level"`
-	Experience     uint32    `json:"experience"`
-	HammersApplied uint32    `json:"hammersApplied"`
-	Expiration     time.Time `json:"expiration"`
-	CreatedAt      time.Time `json:"createdAt"`
-}
-
-type ConsumableReferenceData struct {
-	BaseData
-	StackableData
-	Flag         uint16 `json:"flag"`
-	Rechargeable uint64 `json:"rechargeable"`
-}
-
-type SetupReferenceData struct {
-	BaseData
-	StackableData
-	Flag uint16 `json:"flag"`
-}
-
-type EtcReferenceData struct {
-	BaseData
-	StackableData
-	Flag uint16 `json:"flag"`
-}
-
-type CashReferenceData struct {
-	BaseData
-	CashData
-	StackableData
-	Flag        uint16    `json:"flag"`
-	PurchasedBy uint32    `json:"purchasedBy"`
-	CreatedAt   time.Time `json:"createdAt"`
-}
-
-type PetReferenceData struct {
-	BaseData
-	CashData
-	Flag        uint16 `json:"flag"`
-	PurchasedBy uint32 `json:"purchasedBy"`
-	Name        string `json:"name"`
-	Level       byte   `json:"level"`
-	Closeness   uint16 `json:"closeness"`
-	Fullness    byte   `json:"fullness"`
-	Slot        int8   `json:"slot"`
+type UpdatedStatusEventBody struct {
+	AssetData
 }
 
 type DeletedStatusEventBody struct {
@@ -158,20 +88,14 @@ type QuantityChangedEventBody struct {
 	Quantity uint32 `json:"quantity"`
 }
 
-// AcceptedStatusEventBody contains full asset info for assets accepted into inventory (e.g., from storage)
-type AcceptedStatusEventBody[E any] struct {
-	ReferenceId   uint32    `json:"referenceId"`
-	ReferenceType string    `json:"referenceType"`
-	ReferenceData E         `json:"referenceData"`
-	Expiration    time.Time `json:"expiration"`
+type AcceptedStatusEventBody struct {
+	AssetData
 }
 
-// ReleasedStatusEventBody is for assets released from inventory (e.g., to storage)
 type ReleasedStatusEventBody struct {
-	ReferenceType string `json:"referenceType"`
+	AssetData
 }
 
-// ExpiredStatusEventBody contains information about an expired item for client notification
 type ExpiredStatusEventBody struct {
 	IsCash         bool   `json:"isCash"`
 	ReplaceItemId  uint32 `json:"replaceItemId,omitempty"`

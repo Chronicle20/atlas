@@ -1,7 +1,7 @@
 package compartment
 
 import (
-	"encoding/json"
+	asset2 "atlas-saga-orchestrator/kafka/message/asset"
 	"time"
 
 	"github.com/Chronicle20/atlas-constants/channel"
@@ -137,12 +137,9 @@ type SortCommandBody struct {
 }
 
 type AcceptCommandBody struct {
-	TransactionId uuid.UUID       `json:"transactionId"`
-	ReferenceId   uint32          `json:"referenceId"`             // For equipables/pets - points to external service data
-	TemplateId    uint32          `json:"templateId"`              // Item template ID
-	ReferenceType string          `json:"referenceType"`           // "EQUIPABLE", "CONSUMABLE", "SETUP", "ETC", "CASH", "PET"
-	ReferenceData json.RawMessage `json:"referenceData,omitempty"` // Type-specific data based on ReferenceType
-	Quantity      uint32          `json:"quantity"`                // Quantity to accept (0 = all from source)
+	TransactionId uuid.UUID `json:"transactionId"`
+	TemplateId    uint32    `json:"templateId"`
+	asset2.AssetData
 }
 
 type ReleaseCommandBody struct {

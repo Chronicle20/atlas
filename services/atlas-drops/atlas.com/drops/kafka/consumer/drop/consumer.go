@@ -49,7 +49,23 @@ func handleSpawn(l logrus.FieldLogger, ctx context.Context, c messageDropKafka.C
 		SetPosition(c.Body.X, c.Body.Y).
 		SetOwner(c.Body.OwnerId, c.Body.OwnerPartyId).
 		SetDropper(c.Body.DropperId, c.Body.DropperX, c.Body.DropperY).
-		SetPlayerDrop(c.Body.PlayerDrop)
+		SetPlayerDrop(c.Body.PlayerDrop).
+		SetStrength(c.Body.Strength).
+		SetDexterity(c.Body.Dexterity).
+		SetIntelligence(c.Body.Intelligence).
+		SetLuck(c.Body.Luck).
+		SetHp(c.Body.Hp).
+		SetMp(c.Body.Mp).
+		SetWeaponAttack(c.Body.WeaponAttack).
+		SetMagicAttack(c.Body.MagicAttack).
+		SetWeaponDefense(c.Body.WeaponDefense).
+		SetMagicDefense(c.Body.MagicDefense).
+		SetAccuracy(c.Body.Accuracy).
+		SetAvoidability(c.Body.Avoidability).
+		SetHands(c.Body.Hands).
+		SetSpeed(c.Body.Speed).
+		SetJump(c.Body.Jump).
+		SetSlots(c.Body.Slots)
 	p := drop.NewProcessor(l, ctx)
 	_, _ = p.SpawnAndEmit(mb)
 }
@@ -62,13 +78,28 @@ func handleSpawnFromCharacter(l logrus.FieldLogger, ctx context.Context, c messa
 	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
 	mb := drop.NewModelBuilder(t, f).
 		SetItem(c.Body.ItemId, c.Body.Quantity).
-		SetEquipmentId(c.Body.EquipmentId).
 		SetMeso(c.Body.Mesos).
 		SetType(c.Body.DropType).
 		SetPosition(c.Body.X, c.Body.Y).
 		SetOwner(c.Body.OwnerId, c.Body.OwnerPartyId).
 		SetDropper(c.Body.DropperId, c.Body.DropperX, c.Body.DropperY).
-		SetPlayerDrop(c.Body.PlayerDrop)
+		SetPlayerDrop(c.Body.PlayerDrop).
+		SetStrength(c.Body.Strength).
+		SetDexterity(c.Body.Dexterity).
+		SetIntelligence(c.Body.Intelligence).
+		SetLuck(c.Body.Luck).
+		SetHp(c.Body.Hp).
+		SetMp(c.Body.Mp).
+		SetWeaponAttack(c.Body.WeaponAttack).
+		SetMagicAttack(c.Body.MagicAttack).
+		SetWeaponDefense(c.Body.WeaponDefense).
+		SetMagicDefense(c.Body.MagicDefense).
+		SetAccuracy(c.Body.Accuracy).
+		SetAvoidability(c.Body.Avoidability).
+		SetHands(c.Body.Hands).
+		SetSpeed(c.Body.Speed).
+		SetJump(c.Body.Jump).
+		SetSlots(c.Body.Slots)
 	p := drop.NewProcessor(l, ctx)
 	_, _ = p.SpawnForCharacterAndEmit(mb)
 }

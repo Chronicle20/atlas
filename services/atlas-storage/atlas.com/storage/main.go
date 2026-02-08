@@ -10,7 +10,6 @@ import (
 	"atlas-storage/logger"
 	"atlas-storage/projection"
 	"atlas-storage/service"
-	"atlas-storage/stackable"
 	"atlas-storage/storage"
 	"atlas-storage/tracing"
 	"os"
@@ -47,10 +46,7 @@ func Migrations(db *gorm.DB) error {
 	if err := storage.Migration(db); err != nil {
 		return err
 	}
-	if err := asset.Migration(db); err != nil {
-		return err
-	}
-	return stackable.Migration(db)
+	return asset.Migration(db)
 }
 
 func main() {

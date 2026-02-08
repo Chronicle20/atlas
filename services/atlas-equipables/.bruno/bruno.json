@@ -1,9 +1,0 @@
-{
-  "version": "1",
-  "name": "atlas-equipables",
-  "type": "collection",
-  "ignore": [
-    "node_modules",
-    ".git"
-  ]
-}

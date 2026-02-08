@@ -7,6 +7,8 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas-constants/field"
+	"github.com/Chronicle20/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -42,15 +44,12 @@ func handleDropReservation(db *gorm.DB) message.Handler[drop.StatusEvent[drop.Re
 			return
 		}
 		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
-		if e.Body.EquipmentId > 0 {
-			// TODO this needs to be added to drop event
-			_ = compartment.NewProcessor(l, ctx, db).AttemptEquipmentPickUpAndEmit(uuid.New(), f, e.Body.CharacterId, e.DropId, e.Body.ItemId, e.Body.EquipmentId)
-			return
-		}
 		if e.Body.ItemId > 0 {
-			// TODO this needs to be added to drop event
-			_ = compartment.NewProcessor(l, ctx, db).AttemptItemPickUpAndEmit(uuid.New(), f, e.Body.CharacterId, e.DropId, e.Body.ItemId, e.Body.Quantity)
-			return
+			if it, ok := inventory.TypeFromItemId(item.Id(e.Body.ItemId)); ok && it == inventory.TypeValueEquip {
+				_ = compartment.NewProcessor(l, ctx, db).AttemptEquipmentPickUpAndEmit(uuid.New(), f, e.Body.CharacterId, e.DropId, e.Body.ItemId, e.Body.EquipmentData)
+			} else {
+				_ = compartment.NewProcessor(l, ctx, db).AttemptItemPickUpAndEmit(uuid.New(), f, e.Body.CharacterId, e.DropId, e.Body.ItemId, e.Body.Quantity)
+			}
 		}
 	}
 }

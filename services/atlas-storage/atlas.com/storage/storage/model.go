@@ -14,7 +14,7 @@ type Model struct {
 	accountId uint32
 	capacity  uint32
 	mesos     uint32
-	assets    []asset.Model[any]
+	assets    []asset.Model
 }
 
 func (m Model) Id() uuid.UUID {
@@ -37,7 +37,7 @@ func (m Model) Mesos() uint32 {
 	return m.mesos
 }
 
-func (m Model) Assets() []asset.Model[any] {
+func (m Model) Assets() []asset.Model {
 	return m.assets
 }
 

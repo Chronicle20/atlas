@@ -196,7 +196,7 @@ func announcePetStatUpdate(l logrus.FieldLogger) func(ctx context.Context) func(
 						return err
 					}
 				}
-				a, ok := c.Inventory().Cash().FindByReferenceId(petId)
+				a, ok := c.Inventory().Cash().FindByPetId(petId)
 				if !ok {
 					return func(s session.Model) error {
 						return errors.New("pet not found")

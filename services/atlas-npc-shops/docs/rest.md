@@ -28,7 +28,7 @@ JSON:API response with array of shop resources.
 | Field      | Type   | Description                    |
 |------------|--------|--------------------------------|
 | type       | string | "shops"                        |
-| id         | string | Shop identifier                |
+| id         | string | Shop identifier ("shop-{npcId}") |
 | attributes | object | Shop attributes                |
 
 **Attributes**
@@ -37,6 +37,12 @@ JSON:API response with array of shop resources.
 |-----------|--------|-------------------------------------|
 | npcId     | uint32 | NPC template identifier             |
 | recharger | bool   | Whether shop supports recharging    |
+
+**Relationships**
+
+| Name        | Type          | Description                    |
+|-------------|---------------|--------------------------------|
+| commodities | []commodities | Included when ?include=commodities |
 
 **Error Conditions**
 
@@ -48,7 +54,7 @@ JSON:API response with array of shop resources.
 
 ### DELETE /api/shops
 
-Deletes all shops for the current tenant.
+Deletes all shops and their commodities for the current tenant.
 
 **Request Headers**
 
@@ -95,7 +101,7 @@ JSON:API response with shop resource.
 | Field      | Type   | Description                    |
 |------------|--------|--------------------------------|
 | type       | string | "shops"                        |
-| id         | string | Shop identifier                |
+| id         | string | Shop identifier ("shop-{npcId}") |
 | attributes | object | Shop attributes                |
 
 **Attributes**
@@ -104,6 +110,26 @@ JSON:API response with shop resource.
 |-----------|--------|-------------------------------------|
 | npcId     | uint32 | NPC template identifier             |
 | recharger | bool   | Whether shop supports recharging    |
+
+**Relationships**
+
+| Name        | Type          | Description                    |
+|-------------|---------------|--------------------------------|
+| commodities | []commodities | Included when ?include=commodities |
+
+**Commodity Attributes** (when included)
+
+| Field           | Type    | Description                              |
+|-----------------|---------|------------------------------------------|
+| templateId      | uint32  | Item template identifier                 |
+| mesoPrice       | uint32  | Price in mesos                           |
+| discountRate    | byte    | Discount percentage                      |
+| tokenTemplateId | uint32  | Alternative currency item identifier     |
+| tokenPrice      | uint32  | Price in alternative currency            |
+| period          | uint32  | Time limit on purchase in minutes        |
+| levelLimit      | uint32  | Minimum level required                   |
+| unitPrice       | float64 | Unit price for rechargeable items        |
+| slotMax         | uint32  | Maximum stack size for the item          |
 
 **Error Conditions**
 
@@ -137,6 +163,10 @@ Creates a new shop for a specific NPC.
 
 JSON:API request with shop resource and included commodities.
 
+| Field     | Type | Description                         |
+|-----------|------|-------------------------------------|
+| recharger | bool | Whether shop supports recharging    |
+
 **Response Model**
 
 JSON:API response with created shop resource.
@@ -153,7 +183,7 @@ JSON:API response with created shop resource.
 
 ### PUT /api/npcs/{npcId}/shop
 
-Updates an existing shop for a specific NPC.
+Updates an existing shop for a specific NPC. Replaces all commodities.
 
 **Parameters**
 
@@ -173,6 +203,10 @@ Updates an existing shop for a specific NPC.
 **Request Model**
 
 JSON:API request with shop resource and included commodities.
+
+| Field     | Type | Description                         |
+|-----------|------|-------------------------------------|
+| recharger | bool | Whether shop supports recharging    |
 
 **Response Model**
 
@@ -210,6 +244,11 @@ Retrieves characters currently in a shop.
 **Response Model**
 
 JSON:API response with array of character identifiers.
+
+| Field | Type   | Description           |
+|-------|--------|-----------------------|
+| type  | string | "characters"          |
+| id    | string | Character identifier  |
 
 **Error Conditions**
 
@@ -361,7 +400,7 @@ Deletes all commodities for an NPC's shop.
 
 ### POST /api/shops/seed
 
-Seeds the database with shop data from JSON files.
+Seeds the database with shop data from JSON files on disk. Deletes all existing shops and commodities for the tenant before seeding.
 
 **Request Headers**
 
@@ -374,13 +413,16 @@ Seeds the database with shop data from JSON files.
 
 **Response Model**
 
-| Field              | Type   | Description                      |
-|--------------------|--------|----------------------------------|
-| deletedShops       | int64  | Number of shops deleted          |
-| deletedCommodities | int64  | Number of commodities deleted    |
-| createdShops       | int    | Number of shops created          |
-| createdCommodities | int    | Number of commodities created    |
-| failedCount        | int    | Number of failed operations      |
+JSON response (not JSON:API).
+
+| Field              | Type     | Description                      |
+|--------------------|----------|----------------------------------|
+| deletedShops       | int      | Number of shops deleted          |
+| deletedCommodities | int      | Number of commodities deleted    |
+| createdShops       | int      | Number of shops created          |
+| createdCommodities | int      | Number of commodities created    |
+| failedCount        | int      | Number of failed operations      |
+| errors             | []string | Error messages (omitted if none) |
 
 **Error Conditions**
 

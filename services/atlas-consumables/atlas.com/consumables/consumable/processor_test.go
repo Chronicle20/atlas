@@ -140,8 +140,8 @@ func TestGenerateChaosChanges_MismatchedLengths(t *testing.T) {
 }
 
 func TestApplyChaos_AllStats(t *testing.T) {
-	// Create reference data with all stats non-zero
-	refData := asset.NewEquipableReferenceDataBuilder().
+	// Create asset with all stats non-zero using flat builder
+	a := asset.NewBuilder(uuid.New(), 1000000).
 		SetStrength(10).
 		SetDexterity(10).
 		SetIntelligence(10).
@@ -158,7 +158,7 @@ func TestApplyChaos_AllStats(t *testing.T) {
 		SetMp(100).
 		Build()
 
-	changes, err := applyChaos(refData)
+	changes, err := applyChaos(a)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -170,25 +170,14 @@ func TestApplyChaos_AllStats(t *testing.T) {
 }
 
 func TestApplyChaos_PartialStats(t *testing.T) {
-	// Create reference data with only some stats non-zero
-	refData := asset.NewEquipableReferenceDataBuilder().
+	// Create asset with only some stats non-zero
+	a := asset.NewBuilder(uuid.New(), 1000000).
 		SetStrength(10).
-		SetDexterity(0).
-		SetIntelligence(0).
 		SetLuck(10).
 		SetWeaponAttack(5).
-		SetWeaponDefense(0).
-		SetMagicAttack(0).
-		SetMagicDefense(0).
-		SetAccuracy(0).
-		SetAvoidability(0).
-		SetSpeed(0).
-		SetJump(0).
-		SetHp(0).
-		SetMp(0).
 		Build()
 
-	changes, err := applyChaos(refData)
+	changes, err := applyChaos(a)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -201,27 +190,13 @@ func TestApplyChaos_PartialStats(t *testing.T) {
 
 func TestApplyChaos_HPMPMultiplier(t *testing.T) {
 	// Test that HP/MP adjustments are multiplied by 10
-	// We can verify this by checking the function's behavior indirectly
-
-	// Create reference data with only HP and MP non-zero
-	refData := asset.NewEquipableReferenceDataBuilder().
-		SetStrength(0).
-		SetDexterity(0).
-		SetIntelligence(0).
-		SetLuck(0).
-		SetWeaponAttack(0).
-		SetWeaponDefense(0).
-		SetMagicAttack(0).
-		SetMagicDefense(0).
-		SetAccuracy(0).
-		SetAvoidability(0).
-		SetSpeed(0).
-		SetJump(0).
+	// Create asset with only HP and MP non-zero
+	a := asset.NewBuilder(uuid.New(), 1000000).
 		SetHp(100).
 		SetMp(100).
 		Build()
 
-	changes, err := applyChaos(refData)
+	changes, err := applyChaos(a)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -232,7 +207,7 @@ func TestApplyChaos_HPMPMultiplier(t *testing.T) {
 	}
 
 	// Apply changes to a builder and verify the multiplier effect
-	builder := asset.NewEquipableReferenceDataBuilder().
+	builder := asset.NewBuilder(uuid.New(), 1000000).
 		SetHp(100).
 		SetMp(100)
 
@@ -243,8 +218,8 @@ func TestApplyChaos_HPMPMultiplier(t *testing.T) {
 	result := builder.Build()
 
 	// The change should be +/- 10, 20, 30, 40, or 50 (base adjustment * 10)
-	hpDiff := int(result.HP()) - 100
-	mpDiff := int(result.MP()) - 100
+	hpDiff := int(result.Hp()) - 100
+	mpDiff := int(result.Mp()) - 100
 
 	// HP/MP changes should be multiples of 10
 	if hpDiff%10 != 0 {
@@ -264,28 +239,17 @@ func TestApplyChaos_HPMPMultiplier(t *testing.T) {
 }
 
 // Test helper to create test equipable asset
-func createTestEquipableAsset(templateId uint32, slots uint16, level byte) asset.Model[asset.EquipableReferenceData] {
-	refData := asset.NewEquipableReferenceDataBuilder().
+func createTestEquipableAsset(templateId uint32, slots uint16, level byte) asset.Model {
+	return asset.NewBuilder(uuid.New(), templateId).
+		SetId(1).
 		SetSlots(slots).
 		SetLevel(level).
 		Build()
-
-	return asset.NewBuilder[asset.EquipableReferenceData](
-		1,
-		uuid.New(),
-		templateId,
-		1,
-		asset.ReferenceTypeEquipable,
-	).SetReferenceData(refData).Build()
 }
 
 // Test helper to create test scroll asset
-func createTestScrollAsset(templateId uint32) asset.Model[any] {
-	return asset.NewBuilder[any](
-		2,
-		uuid.New(),
-		templateId,
-		0,
-		asset.ReferenceTypeConsumable,
-	).Build()
+func createTestScrollAsset(templateId uint32) asset.Model {
+	return asset.NewBuilder(uuid.New(), templateId).
+		SetId(2).
+		Build()
 }

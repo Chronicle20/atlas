@@ -30,53 +30,34 @@ type StatusEvent[E any] struct {
 
 // CreatedStatusEventBody contains info for newly created assets
 type CreatedStatusEventBody struct {
-	ReferenceId   uint32                 `json:"referenceId"`
-	ReferenceType string                 `json:"referenceType"`
-	ReferenceData map[string]interface{} `json:"referenceData"`
-	Expiration    time.Time              `json:"expiration"`
+	Expiration time.Time `json:"expiration"`
+	CreatedAt  time.Time `json:"createdAt"`
+	Quantity   uint32    `json:"quantity"`
 }
 
-// GetCreatedAt extracts the createdAt timestamp from the ReferenceData if present
+// GetCreatedAt returns the creation timestamp
 func (b CreatedStatusEventBody) GetCreatedAt() time.Time {
-	if b.ReferenceData == nil {
-		return time.Time{}
-	}
-	if createdAtStr, ok := b.ReferenceData["createdAt"].(string); ok {
-		if t, err := time.Parse(time.RFC3339, createdAtStr); err == nil {
-			return t
-		}
-	}
-	return time.Time{}
+	return b.CreatedAt
 }
 
-// AcceptedStatusEventBody contains info for assets accepted from storage (same structure as Created)
+// AcceptedStatusEventBody contains info for assets accepted from storage
 type AcceptedStatusEventBody struct {
-	ReferenceId   uint32                 `json:"referenceId"`
-	ReferenceType string                 `json:"referenceType"`
-	ReferenceData map[string]interface{} `json:"referenceData"`
-	Expiration    time.Time              `json:"expiration"`
+	Expiration time.Time `json:"expiration"`
+	CreatedAt  time.Time `json:"createdAt"`
+	Quantity   uint32    `json:"quantity"`
 }
 
-// GetCreatedAt extracts the createdAt timestamp from the ReferenceData if present
+// GetCreatedAt returns the creation timestamp
 func (b AcceptedStatusEventBody) GetCreatedAt() time.Time {
-	if b.ReferenceData == nil {
-		return time.Time{}
-	}
-	if createdAtStr, ok := b.ReferenceData["createdAt"].(string); ok {
-		if t, err := time.Parse(time.RFC3339, createdAtStr); err == nil {
-			return t
-		}
-	}
-	return time.Time{}
+	return b.CreatedAt
 }
 
 // DeletedStatusEventBody is empty for deleted assets
 type DeletedStatusEventBody struct {
 }
 
-// ReleasedStatusEventBody contains info for assets released to storage
+// ReleasedStatusEventBody is empty for released assets
 type ReleasedStatusEventBody struct {
-	ReferenceType string `json:"referenceType"`
 }
 
 // MovedStatusEventBody contains the previous slot for moved assets

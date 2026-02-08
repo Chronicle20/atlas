@@ -1,85 +1,160 @@
 package asset
 
 import (
-	"atlas-cashshop/cashshop/item"
 	"time"
 
 	"github.com/google/uuid"
 )
 
-// Model represents a cash shop inventory asset
 type Model struct {
-	id            uuid.UUID
+	id            uint32
 	compartmentId uuid.UUID
-	item          item.Model
+	cashId        int64
+	templateId    uint32
+	commodityId   uint32
+	quantity      uint32
+	flag          uint16
+	purchasedBy   uint32
+	expiration    time.Time
+	createdAt     time.Time
 }
 
-// Id returns the unique identifier of this asset
-func (m Model) Id() uuid.UUID {
+func (m Model) Id() uint32 {
 	return m.id
 }
 
-// CompartmentId returns the compartment ID this asset belongs to
 func (m Model) CompartmentId() uuid.UUID {
 	return m.compartmentId
 }
 
-// Item returns the item associated with this asset
-func (m Model) Item() item.Model {
-	return m.item
+func (m Model) CashId() int64 {
+	return m.cashId
 }
 
-// TemplateId returns the template ID of the item
 func (m Model) TemplateId() uint32 {
-	return m.item.TemplateId()
+	return m.templateId
 }
 
-// Quantity returns the quantity of the item
+func (m Model) CommodityId() uint32 {
+	return m.commodityId
+}
+
 func (m Model) Quantity() uint32 {
-	return m.item.Quantity()
+	return m.quantity
 }
 
-// Expiration returns the expiration time of the item
+func (m Model) Flag() uint16 {
+	return m.flag
+}
+
+func (m Model) PurchasedBy() uint32 {
+	return m.purchasedBy
+}
+
 func (m Model) Expiration() time.Time {
-	return m.item.Expiration()
+	return m.expiration
 }
 
-// Clone creates a builder from this model
+func (m Model) CreatedAt() time.Time {
+	return m.createdAt
+}
+
 func Clone(m Model) *ModelBuilder {
 	return &ModelBuilder{
 		id:            m.id,
 		compartmentId: m.compartmentId,
-		item:          m.item,
+		cashId:        m.cashId,
+		templateId:    m.templateId,
+		commodityId:   m.commodityId,
+		quantity:      m.quantity,
+		flag:          m.flag,
+		purchasedBy:   m.purchasedBy,
+		expiration:    m.expiration,
+		createdAt:     m.createdAt,
 	}
 }
 
-// ModelBuilder is a builder for the Model
 type ModelBuilder struct {
-	id            uuid.UUID
+	id            uint32
 	compartmentId uuid.UUID
-	item          item.Model
+	cashId        int64
+	templateId    uint32
+	commodityId   uint32
+	quantity      uint32
+	flag          uint16
+	purchasedBy   uint32
+	expiration    time.Time
+	createdAt     time.Time
 }
 
-// NewBuilder creates a new ModelBuilder
-func NewBuilder(id uuid.UUID, compartmentId uuid.UUID, item item.Model) *ModelBuilder {
+func NewBuilder(compartmentId uuid.UUID, templateId uint32) *ModelBuilder {
 	return &ModelBuilder{
-		id:            id,
 		compartmentId: compartmentId,
-		item:          item,
+		templateId:    templateId,
 	}
 }
 
-// SetItem sets the item associated with this asset
-func (b *ModelBuilder) SetItem(item item.Model) *ModelBuilder {
-	b.item = item
+func (b *ModelBuilder) SetId(id uint32) *ModelBuilder {
+	b.id = id
 	return b
 }
 
-// Build creates a Model from this builder
+func (b *ModelBuilder) SetCompartmentId(compartmentId uuid.UUID) *ModelBuilder {
+	b.compartmentId = compartmentId
+	return b
+}
+
+func (b *ModelBuilder) SetCashId(cashId int64) *ModelBuilder {
+	b.cashId = cashId
+	return b
+}
+
+func (b *ModelBuilder) SetTemplateId(templateId uint32) *ModelBuilder {
+	b.templateId = templateId
+	return b
+}
+
+func (b *ModelBuilder) SetCommodityId(commodityId uint32) *ModelBuilder {
+	b.commodityId = commodityId
+	return b
+}
+
+func (b *ModelBuilder) SetQuantity(quantity uint32) *ModelBuilder {
+	b.quantity = quantity
+	return b
+}
+
+func (b *ModelBuilder) SetFlag(flag uint16) *ModelBuilder {
+	b.flag = flag
+	return b
+}
+
+func (b *ModelBuilder) SetPurchasedBy(purchasedBy uint32) *ModelBuilder {
+	b.purchasedBy = purchasedBy
+	return b
+}
+
+func (b *ModelBuilder) SetExpiration(expiration time.Time) *ModelBuilder {
+	b.expiration = expiration
+	return b
+}
+
+func (b *ModelBuilder) SetCreatedAt(createdAt time.Time) *ModelBuilder {
+	b.createdAt = createdAt
+	return b
+}
+
 func (b *ModelBuilder) Build() Model {
 	return Model{
 		id:            b.id,
 		compartmentId: b.compartmentId,
-		item:          b.item,
+		cashId:        b.cashId,
+		templateId:    b.templateId,
+		commodityId:   b.commodityId,
+		quantity:      b.quantity,
+		flag:          b.flag,
+		purchasedBy:   b.purchasedBy,
+		expiration:    b.expiration,
+		createdAt:     b.createdAt,
 	}
 }

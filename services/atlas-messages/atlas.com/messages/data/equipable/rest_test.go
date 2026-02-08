@@ -109,8 +109,8 @@ func TestExtract(t *testing.T) {
 		Dexterity:      5,
 		Intelligence:   0,
 		Luck:           0,
-		HP:             100,
-		MP:             50,
+		Hp:             100,
+		Mp:             50,
 		WeaponAttack:   50,
 		MagicAttack:    0,
 		WeaponDefense:  20,
@@ -134,11 +134,11 @@ func TestExtract(t *testing.T) {
 	if model.Dexterity() != rm.Dexterity {
 		t.Errorf("Dexterity mismatch: expected %d, got %d", rm.Dexterity, model.Dexterity())
 	}
-	if model.HP() != rm.HP {
-		t.Errorf("HP mismatch: expected %d, got %d", rm.HP, model.HP())
+	if model.Hp() != rm.Hp {
+		t.Errorf("Hp mismatch: expected %d, got %d", rm.Hp, model.Hp())
 	}
-	if model.MP() != rm.MP {
-		t.Errorf("MP mismatch: expected %d, got %d", rm.MP, model.MP())
+	if model.Mp() != rm.Mp {
+		t.Errorf("Mp mismatch: expected %d, got %d", rm.Mp, model.Mp())
 	}
 	if model.WeaponAttack() != rm.WeaponAttack {
 		t.Errorf("WeaponAttack mismatch: expected %d, got %d", rm.WeaponAttack, model.WeaponAttack())
@@ -161,8 +161,8 @@ func TestExtract_ZeroValues(t *testing.T) {
 	if model.Strength() != 0 {
 		t.Errorf("Expected Strength=0, got %d", model.Strength())
 	}
-	if model.HP() != 0 {
-		t.Errorf("Expected HP=0, got %d", model.HP())
+	if model.Hp() != 0 {
+		t.Errorf("Expected Hp=0, got %d", model.Hp())
 	}
 }
 

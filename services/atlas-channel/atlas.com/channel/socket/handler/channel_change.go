@@ -3,6 +3,7 @@ package handler
 import (
 	as "atlas-channel/account/session"
 	"atlas-channel/channel"
+	"atlas-channel/character"
 	"atlas-channel/session"
 	"atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
@@ -21,7 +22,16 @@ func ChannelChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer
 		updateTime := r.ReadUint32()
 		l.Debugf("Character [%d] attempting to change to channel [%d]. update_time [%d].", s.CharacterId(), channelId, updateTime)
 
-		// TODO verify alive
+		ch, err := character.NewProcessor(l, ctx).GetById()(s.CharacterId())
+		if err != nil {
+			l.WithError(err).Errorf("Unable to get character [%d].", s.CharacterId())
+			return
+		}
+		if ch.Hp() == 0 {
+			l.Warnf("Character [%d] attempting to change channel when dead.", s.CharacterId())
+			return
+		}
+
 		// TODO verify not in mini dungeon
 
 		c, err := channel.NewProcessor(l, ctx).GetById(channel2.NewModel(s.WorldId(), channelId))

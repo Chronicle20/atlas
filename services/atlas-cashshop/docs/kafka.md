@@ -22,19 +22,20 @@ Cash shop commands.
 
 | Command Type | Body Type | Description |
 |--------------|-----------|-------------|
-| REQUEST_PURCHASE | RequestPurchaseCommandBody | Request to purchase an item |
+| REQUEST_PURCHASE | RequestPurchaseCommandBody | Request to purchase a commodity |
 | REQUEST_INVENTORY_INCREASE_BY_TYPE | RequestInventoryIncreaseByTypeCommandBody | Request to increase inventory capacity by type |
-| REQUEST_INVENTORY_INCREASE_BY_ITEM | RequestInventoryIncreaseByItemCommandBody | Request to increase inventory capacity using an item |
+| REQUEST_INVENTORY_INCREASE_BY_ITEM | RequestInventoryIncreaseByItemCommandBody | Request to increase inventory capacity using a commodity |
 | REQUEST_STORAGE_INCREASE | RequestStorageIncreaseBody | Request to increase storage capacity |
-| REQUEST_STORAGE_INCREASE_BY_ITEM | RequestStorageIncreaseByItemCommandBody | Request to increase storage capacity using an item |
-| REQUEST_CHARACTER_SLOT_INCREASE_BY_ITEM | RequestCharacterSlotIncreaseByItemCommandBody | Request to increase character slots using an item |
+| REQUEST_STORAGE_INCREASE_BY_ITEM | RequestStorageIncreaseByItemCommandBody | Request to increase storage capacity using a commodity |
+| REQUEST_CHARACTER_SLOT_INCREASE_BY_ITEM | RequestCharacterSlotIncreaseByItemCommandBody | Request to increase character slots using a commodity |
+| EXPIRE | ExpireCommandBody | Expire a cash shop asset, optionally creating a replacement |
 
 ### COMMAND_TOPIC_CASH_COMPARTMENT
 Cash compartment commands.
 
 | Command Type | Body Type | Description |
 |--------------|-----------|-------------|
-| ACCEPT | AcceptCommandBody | Accept an asset into a compartment |
+| ACCEPT | AcceptCommandBody | Accept an asset into a compartment (creates flattened asset with preserved cashId) |
 | RELEASE | ReleaseCommandBody | Release an asset from a compartment |
 
 ### COMMAND_TOPIC_CASH_ITEM
@@ -42,7 +43,7 @@ Cash item commands.
 
 | Command Type | Body Type | Description |
 |--------------|-----------|-------------|
-| CREATE | CreateCommandBody | Create a new cash item |
+| CREATE | CreateCommandBody | Create a new cash asset |
 
 ### COMMAND_TOPIC_WALLET
 Wallet commands.
@@ -79,7 +80,7 @@ Cash shop status events.
 | Event Type | Body Type | Description |
 |------------|-----------|-------------|
 | INVENTORY_CAPACITY_INCREASED | InventoryCapacityIncreasedBody | Inventory capacity increased |
-| PURCHASE | PurchaseEventBody | Item purchased |
+| PURCHASE | PurchaseEventBody | Commodity purchased, asset created |
 | ERROR | ErrorEventBody | Operation failed |
 
 ### EVENT_TOPIC_CASH_INVENTORY_STATUS
@@ -87,8 +88,8 @@ Cash inventory status events.
 
 | Event Type | Body Type | Description |
 |------------|-----------|-------------|
-| CREATED | StatusEventCreatedBody | Inventory created |
-| DELETED | StatusEventDeletedBody | Inventory deleted |
+| CREATED | StatusEventCreatedBody | Inventory created (empty body) |
+| DELETED | StatusEventDeletedBody | Inventory deleted (empty body) |
 
 ### EVENT_TOPIC_CASH_COMPARTMENT_STATUS
 Cash compartment status events.
@@ -103,11 +104,19 @@ Cash compartment status events.
 | ERROR | StatusEventErrorBody | Operation failed |
 
 ### STATUS_TOPIC_CASH_ITEM
-Cash item status events.
+Cash item status events (produced by asset processor).
 
 | Event Type | Body Type | Description |
 |------------|-----------|-------------|
-| CREATED | StatusEventCreatedBody | Item created |
+| CREATED | StatusEventCreatedBody | Asset created (includes cashId, templateId, quantity, purchasedBy, flag) |
+| EXPIRED | StatusEventExpiredBody | Asset expired (includes isCash flag, optional replaceItemId and replaceMessage) |
+
+### COMMAND_TOPIC_COMPARTMENT
+Character inventory compartment commands (produced during inventory capacity increase purchases).
+
+| Command Type | Body Type | Description |
+|--------------|-----------|-------------|
+| INCREASE_CAPACITY | IncreaseCapacityCommandBody | Increase character inventory compartment capacity |
 
 ---
 
@@ -148,10 +157,48 @@ Cash item status events.
 }
 ```
 
+#### RequestStorageIncreaseBody
+```json
+{
+  "currency": 1
+}
+```
+
+#### RequestStorageIncreaseByItemCommandBody
+```json
+{
+  "currency": 1,
+  "serialNumber": 67890
+}
+```
+
+#### RequestCharacterSlotIncreaseByItemCommandBody
+```json
+{
+  "currency": 1,
+  "serialNumber": 67890
+}
+```
+
+#### ExpireCommandBody
+```json
+{
+  "accountId": 12345,
+  "worldId": 0,
+  "assetId": 42,
+  "templateId": 5000,
+  "inventoryType": -1,
+  "slot": 0,
+  "replaceItemId": 5001,
+  "replaceMessage": "Your item has expired."
+}
+```
+
 #### Compartment Command
 ```json
 {
   "accountId": 12345,
+  "characterId": 67890,
   "compartmentType": 1,
   "type": "COMMAND_TYPE",
   "body": {}
@@ -163,7 +210,12 @@ Cash item status events.
 {
   "transactionId": "uuid",
   "compartmentId": "uuid",
-  "referenceId": 12345
+  "cashId": 12345,
+  "templateId": 5000,
+  "quantity": 1,
+  "commodityId": 100,
+  "purchasedBy": 67890,
+  "flag": 0
 }
 ```
 
@@ -172,7 +224,28 @@ Cash item status events.
 {
   "transactionId": "uuid",
   "compartmentId": "uuid",
-  "assetId": 12345
+  "assetId": 42,
+  "cashId": 12345,
+  "templateId": 5000
+}
+```
+
+#### Item Command
+```json
+{
+  "characterId": 12345,
+  "type": "COMMAND_TYPE",
+  "body": {}
+}
+```
+
+#### CreateCommandBody (Item)
+```json
+{
+  "templateId": 5000,
+  "commodityId": 100,
+  "quantity": 1,
+  "purchasedBy": 12345
 }
 ```
 
@@ -184,6 +257,23 @@ Cash item status events.
   "currencyType": 1,
   "amount": -100,
   "type": "ADJUST_CURRENCY"
+}
+```
+
+#### Character Compartment Command
+```json
+{
+  "characterId": 12345,
+  "inventoryType": 1,
+  "type": "COMMAND_TYPE",
+  "body": {}
+}
+```
+
+#### IncreaseCapacityCommandBody
+```json
+{
+  "amount": 8
 }
 ```
 
@@ -249,8 +339,16 @@ Cash item status events.
   "templateId": 5000,
   "price": 100,
   "compartmentId": "uuid",
-  "assetId": "uuid",
-  "itemId": 12345
+  "assetId": 42
+}
+```
+
+#### InventoryCapacityIncreasedBody
+```json
+{
+  "inventoryType": 1,
+  "capacity": 32,
+  "amount": 8
 }
 ```
 
@@ -262,13 +360,93 @@ Cash item status events.
 }
 ```
 
+#### Inventory StatusEvent
+```json
+{
+  "accountId": 12345,
+  "type": "EVENT_TYPE",
+  "body": {}
+}
+```
+
 #### Compartment StatusEvent
 ```json
 {
+  "accountId": 12345,
+  "characterId": 67890,
   "compartmentId": "uuid",
   "compartmentType": 1,
   "type": "EVENT_TYPE",
   "body": {}
+}
+```
+
+#### StatusEventCreatedBody (Compartment)
+```json
+{
+  "capacity": 55
+}
+```
+
+#### StatusEventUpdatedBody (Compartment)
+```json
+{
+  "capacity": 60
+}
+```
+
+#### StatusEventAcceptedBody (Compartment)
+```json
+{
+  "transactionId": "uuid",
+  "assetId": 42
+}
+```
+
+#### StatusEventReleasedBody (Compartment)
+```json
+{
+  "transactionId": "uuid",
+  "assetId": 42,
+  "cashId": 12345,
+  "templateId": 5000
+}
+```
+
+#### StatusEventErrorBody (Compartment)
+```json
+{
+  "errorCode": "ASSET_CREATION_FAILED",
+  "transactionId": "uuid"
+}
+```
+
+#### Item StatusEvent (produced by asset processor)
+```json
+{
+  "characterId": 12345,
+  "type": "EVENT_TYPE",
+  "body": {}
+}
+```
+
+#### StatusEventCreatedBody (Item)
+```json
+{
+  "cashId": 12345,
+  "templateId": 5000,
+  "quantity": 1,
+  "purchasedBy": 67890,
+  "flag": 0
+}
+```
+
+#### StatusEventExpiredBody (Item)
+```json
+{
+  "isCash": true,
+  "replaceItemId": 5001,
+  "replaceMessage": "Your item has expired."
 }
 ```
 
@@ -277,6 +455,8 @@ Cash item status events.
 ## Transaction Semantics
 
 - Commands include optional `transactionId` for saga coordination
-- Status events include `transactionId` when command included one
+- Status events include `transactionId` when the originating command included one
 - Wallet adjustments are atomic and validated for sufficient balance
-- Events are buffered and emitted after successful transaction commit
+- Purchase operations execute within a database transaction; Kafka events are buffered and emitted after successful commit
+- Compartment Accept uses find-or-create by cashId for idempotent asset creation
+- Compartment Release validates asset existence before deletion

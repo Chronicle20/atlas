@@ -1,7 +1,7 @@
 package compartment
 
 import (
-	"encoding/json"
+	"atlas-inventory/kafka/message/asset"
 	"time"
 
 	"github.com/Chronicle20/atlas-constants/channel"
@@ -28,6 +28,7 @@ const (
 	CommandAccept            = "ACCEPT"
 	CommandRelease           = "RELEASE"
 	CommandExpire            = "EXPIRE"
+	CommandModifyEquipment   = "MODIFY_EQUIPMENT"
 )
 
 type Command[E any] struct {
@@ -116,12 +117,9 @@ type SortCommandBody struct {
 }
 
 type AcceptCommandBody struct {
-	TransactionId uuid.UUID       `json:"transactionId"`
-	TemplateId    uint32          `json:"templateId"`
-	ReferenceId   uint32          `json:"referenceId"`
-	ReferenceType string          `json:"referenceType"`
-	ReferenceData json.RawMessage `json:"referenceData,omitempty"` // Type-specific data based on ReferenceType
-	Quantity      uint32          `json:"quantity"`                // Quantity to accept (0 = all from source)
+	TransactionId uuid.UUID `json:"transactionId"`
+	TemplateId    uint32    `json:"templateId"`
+	asset.AssetData
 }
 
 type ReleaseCommandBody struct {
@@ -137,6 +135,37 @@ type ExpireCommandBody struct {
 	Slot           int16  `json:"slot"`
 	ReplaceItemId  uint32 `json:"replaceItemId"`
 	ReplaceMessage string `json:"replaceMessage"`
+}
+
+// ModifyEquipmentCommandBody contains the data for modifying equipment stats
+type ModifyEquipmentCommandBody struct {
+	AssetId        uint32    `json:"assetId"`
+	Strength       uint16    `json:"strength"`
+	Dexterity      uint16    `json:"dexterity"`
+	Intelligence   uint16    `json:"intelligence"`
+	Luck           uint16    `json:"luck"`
+	Hp             uint16    `json:"hp"`
+	Mp             uint16    `json:"mp"`
+	WeaponAttack   uint16    `json:"weaponAttack"`
+	MagicAttack    uint16    `json:"magicAttack"`
+	WeaponDefense  uint16    `json:"weaponDefense"`
+	MagicDefense   uint16    `json:"magicDefense"`
+	Accuracy       uint16    `json:"accuracy"`
+	Avoidability   uint16    `json:"avoidability"`
+	Hands          uint16    `json:"hands"`
+	Speed          uint16    `json:"speed"`
+	Jump           uint16    `json:"jump"`
+	Slots          uint16    `json:"slots"`
+	Locked         bool      `json:"locked"`
+	Spikes         bool      `json:"spikes"`
+	KarmaUsed      bool      `json:"karmaUsed"`
+	Cold           bool      `json:"cold"`
+	CanBeTraded    bool      `json:"canBeTraded"`
+	LevelType      byte      `json:"levelType"`
+	Level          byte      `json:"level"`
+	Experience     uint32    `json:"experience"`
+	HammersApplied uint32    `json:"hammersApplied"`
+	Expiration     time.Time `json:"expiration"`
 }
 
 const (

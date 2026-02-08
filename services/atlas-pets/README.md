@@ -1,12 +1,19 @@
 # Atlas Pets Service
 
-A microservice for managing in-game pets. This service handles pet creation, retrieval, spawning, despawning, attribute management, and lifecycle operations.
+A microservice for managing in-game pets. This service handles pet creation, retrieval, spawning, despawning, attribute management, and lifecycle operations. It maintains an in-memory character registry to track logged-in characters for the periodic hunger evaluation task, and an in-memory temporal registry to track pet positions and stances.
+
+The service consumes character status events, asset status events, and pet commands via Kafka. It reads character and inventory data from external services via REST. Pet data is fetched from a reference data service for template-level attributes like hunger rate and command skills.
 
 ## External Dependencies
 
 - PostgreSQL database
 - Kafka cluster
 - Jaeger (tracing)
+- atlas-characters service (REST)
+- atlas-inventory service (REST)
+- Pet reference data service (REST)
+- Foothold / position reference data service (REST)
+- Skill reference data service (REST)
 
 ## Runtime Configuration
 
@@ -18,9 +25,9 @@ A microservice for managing in-game pets. This service handles pet creation, ret
 | DB_HOST | PostgreSQL database host |
 | DB_PORT | PostgreSQL database port |
 | DB_USER | PostgreSQL database username |
-| DB_PASS | PostgreSQL database password |
+| DB_PASSWORD | PostgreSQL database password |
 | DB_NAME | PostgreSQL database name |
-| KAFKA_BROKERS | Comma-separated list of Kafka brokers |
+| BOOTSTRAP_SERVERS | Kafka broker address |
 | EVENT_TOPIC_CHARACTER_STATUS | Character status events topic |
 | EVENT_TOPIC_ASSET_STATUS | Asset status events topic |
 | COMMAND_TOPIC_PET | Pet commands topic |

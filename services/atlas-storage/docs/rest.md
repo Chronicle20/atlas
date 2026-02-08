@@ -42,16 +42,41 @@ None.
       "attributes": {
         "id": 1,
         "slot": 0,
-        "templateId": 2000000,
+        "templateId": 1322005,
         "expiration": "0001-01-01T00:00:00Z",
-        "referenceId": 0,
-        "referenceType": "consumable",
-        "referenceData": {
-          "ownerId": 0,
-          "quantity": 100,
-          "flag": 0,
-          "rechargeable": 0
-        }
+        "quantity": 0,
+        "ownerId": 0,
+        "flag": 0,
+        "rechargeable": 0,
+        "strength": 15,
+        "dexterity": 10,
+        "intelligence": 0,
+        "luck": 0,
+        "hp": 0,
+        "mp": 0,
+        "weaponAttack": 0,
+        "magicAttack": 0,
+        "weaponDefense": 0,
+        "magicDefense": 0,
+        "accuracy": 0,
+        "avoidability": 0,
+        "hands": 0,
+        "speed": 0,
+        "jump": 0,
+        "slots": 7,
+        "locked": false,
+        "spikes": false,
+        "karmaUsed": false,
+        "cold": false,
+        "canBeTraded": false,
+        "levelType": 0,
+        "level": 0,
+        "experience": 0,
+        "hammersApplied": 0,
+        "cashId": "0",
+        "commodityId": 0,
+        "purchaseBy": 0,
+        "petId": 0
       }
     }
   ]
@@ -59,7 +84,8 @@ None.
 ```
 
 **Error Conditions**
-- `500 Internal Server Error`: Database or decoration error
+- `400 Bad Request`: Invalid accountId or missing/invalid worldId query parameter
+- `500 Internal Server Error`: Database or transform error
 
 ---
 
@@ -80,6 +106,7 @@ None.
 Same as GET response.
 
 **Error Conditions**
+- `400 Bad Request`: Invalid accountId or missing/invalid worldId query parameter
 - `409 Conflict`: Storage already exists for account and world
 - `500 Internal Server Error`: Database error
 
@@ -87,7 +114,7 @@ Same as GET response.
 
 ### GET /api/storage/accounts/{accountId}/assets
 
-Retrieves all assets for an account's storage.
+Retrieves all assets for an account's storage. Creates the storage if it does not exist.
 
 **Parameters**
 - `accountId` (path): Account identifier (uint32)
@@ -110,14 +137,39 @@ None.
         "slot": 0,
         "templateId": 2000000,
         "expiration": "0001-01-01T00:00:00Z",
-        "referenceId": 0,
-        "referenceType": "consumable",
-        "referenceData": {
-          "ownerId": 0,
-          "quantity": 100,
-          "flag": 0,
-          "rechargeable": 0
-        }
+        "quantity": 100,
+        "ownerId": 0,
+        "flag": 0,
+        "rechargeable": 0,
+        "strength": 0,
+        "dexterity": 0,
+        "intelligence": 0,
+        "luck": 0,
+        "hp": 0,
+        "mp": 0,
+        "weaponAttack": 0,
+        "magicAttack": 0,
+        "weaponDefense": 0,
+        "magicDefense": 0,
+        "accuracy": 0,
+        "avoidability": 0,
+        "hands": 0,
+        "speed": 0,
+        "jump": 0,
+        "slots": 0,
+        "locked": false,
+        "spikes": false,
+        "karmaUsed": false,
+        "cold": false,
+        "canBeTraded": false,
+        "levelType": 0,
+        "level": 0,
+        "experience": 0,
+        "hammersApplied": 0,
+        "cashId": "0",
+        "commodityId": 0,
+        "purchaseBy": 0,
+        "petId": 0
       }
     }
   ]
@@ -125,13 +177,14 @@ None.
 ```
 
 **Error Conditions**
-- `500 Internal Server Error`: Database or decoration error
+- `400 Bad Request`: Invalid accountId or missing/invalid worldId query parameter
+- `500 Internal Server Error`: Database or transform error
 
 ---
 
 ### GET /api/storage/accounts/{accountId}/assets/{assetId}
 
-Retrieves a specific asset.
+Retrieves a specific asset by ID.
 
 **Parameters**
 - `accountId` (path): Account identifier (uint32)
@@ -150,30 +203,58 @@ None.
     "type": "storage_assets",
     "id": "1",
     "attributes": {
-      "storage_id": "uuid",
-      "inventory_type": 2,
+      "id": 1,
       "slot": 0,
-      "template_id": 2000000,
+      "templateId": 2000000,
       "expiration": "0001-01-01T00:00:00Z",
-      "reference_id": 0,
-      "reference_type": "consumable",
       "quantity": 100,
-      "owner_id": 0,
-      "flag": 0
+      "ownerId": 0,
+      "flag": 0,
+      "rechargeable": 0,
+      "strength": 0,
+      "dexterity": 0,
+      "intelligence": 0,
+      "luck": 0,
+      "hp": 0,
+      "mp": 0,
+      "weaponAttack": 0,
+      "magicAttack": 0,
+      "weaponDefense": 0,
+      "magicDefense": 0,
+      "accuracy": 0,
+      "avoidability": 0,
+      "hands": 0,
+      "speed": 0,
+      "jump": 0,
+      "slots": 0,
+      "locked": false,
+      "spikes": false,
+      "karmaUsed": false,
+      "cold": false,
+      "canBeTraded": false,
+      "levelType": 0,
+      "level": 0,
+      "experience": 0,
+      "hammersApplied": 0,
+      "cashId": "0",
+      "commodityId": 0,
+      "purchaseBy": 0,
+      "petId": 0
     }
   }
 }
 ```
 
 **Error Conditions**
+- `400 Bad Request`: Invalid accountId, assetId, or missing/invalid worldId query parameter
 - `404 Not Found`: Asset does not exist
-- `500 Internal Server Error`: Database error
+- `500 Internal Server Error`: Transform error
 
 ---
 
 ### GET /api/storage/projections/{characterId}
 
-Retrieves the storage projection for a character.
+Retrieves the in-memory storage projection for an active character session.
 
 **Parameters**
 - `characterId` (path): Character identifier (uint32)
@@ -198,23 +279,22 @@ None.
       "mesos": 1000,
       "npcId": 9030000,
       "compartments": {
-        "equip": [],
-        "use": [
+        "equip": [
           {
             "id": 1,
             "slot": 0,
-            "templateId": 2000000,
+            "templateId": 1322005,
             "expiration": "0001-01-01T00:00:00Z",
-            "referenceId": 0,
-            "referenceType": "consumable",
-            "referenceData": {
-              "ownerId": 0,
-              "quantity": 100,
-              "flag": 0,
-              "rechargeable": 0
-            }
+            "quantity": 0,
+            "ownerId": 0,
+            "flag": 0,
+            "rechargeable": 0,
+            "strength": 15,
+            "dexterity": 10,
+            "slots": 7
           }
         ],
+        "use": [],
         "setup": [],
         "etc": [],
         "cash": []
@@ -225,6 +305,7 @@ None.
 ```
 
 **Error Conditions**
+- `400 Bad Request`: Invalid characterId
 - `404 Not Found`: Projection does not exist (storage not open)
 - `500 Internal Server Error`: Transform error
 
@@ -255,20 +336,45 @@ None.
       "slot": 0,
       "templateId": 2000000,
       "expiration": "0001-01-01T00:00:00Z",
-      "referenceId": 0,
-      "referenceType": "consumable",
-      "referenceData": {
-        "ownerId": 0,
-        "quantity": 100,
-        "flag": 0,
-        "rechargeable": 0
-      }
+      "quantity": 100,
+      "ownerId": 0,
+      "flag": 0,
+      "rechargeable": 0,
+      "strength": 0,
+      "dexterity": 0,
+      "intelligence": 0,
+      "luck": 0,
+      "hp": 0,
+      "mp": 0,
+      "weaponAttack": 0,
+      "magicAttack": 0,
+      "weaponDefense": 0,
+      "magicDefense": 0,
+      "accuracy": 0,
+      "avoidability": 0,
+      "hands": 0,
+      "speed": 0,
+      "jump": 0,
+      "slots": 0,
+      "locked": false,
+      "spikes": false,
+      "karmaUsed": false,
+      "cold": false,
+      "canBeTraded": false,
+      "levelType": 0,
+      "level": 0,
+      "experience": 0,
+      "hammersApplied": 0,
+      "cashId": "0",
+      "commodityId": 0,
+      "purchaseBy": 0,
+      "petId": 0
     }
   }
 }
 ```
 
 **Error Conditions**
-- `400 Bad Request`: Invalid compartment type
+- `400 Bad Request`: Invalid characterId, compartment type, or slot
 - `404 Not Found`: Projection does not exist or asset not found at slot
 - `500 Internal Server Error`: Transform error

@@ -10,7 +10,11 @@ type Registry struct {
 }
 
 type Configuration struct {
-	AutomaticRegister bool `yaml:"automaticRegister"`
+	AutomaticRegister bool   `yaml:"automaticRegister"`
+	MaxPinAttempts    int    `yaml:"maxPinAttempts"`
+	PinBanDuration    string `yaml:"pinBanDuration"`
+	MaxPicAttempts    int    `yaml:"maxPicAttempts"`
+	PicBanDuration    string `yaml:"picBanDuration"`
 }
 
 var configurationRegistryOnce sync.Once

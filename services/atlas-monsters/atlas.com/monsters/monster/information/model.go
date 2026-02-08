@@ -5,10 +5,10 @@ type Model struct {
 	mp uint32
 }
 
-func (m Model) HP() uint32 {
+func (m Model) Hp() uint32 {
 	return m.hp
 }
 
-func (m Model) MP() uint32 {
+func (m Model) Mp() uint32 {
 	return m.mp
 }

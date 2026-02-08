@@ -5,7 +5,7 @@ type Model struct {
 	experience uint32
 }
 
-func (m Model) HP() uint32 {
+func (m Model) Hp() uint32 {
 	return m.hp
 }
 

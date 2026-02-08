@@ -8,6 +8,8 @@ type RestModel struct {
 	Password       string `json:"password"`
 	Pin            string `json:"pin"`
 	Pic            string `json:"pic"`
+	PinAttempts    int    `json:"pinAttempts"`
+	PicAttempts    int    `json:"picAttempts"`
 	LoggedIn       byte   `json:"loggedIn"`
 	LastLogin      uint64 `json:"lastLogin"`
 	Gender         byte   `json:"gender"`
@@ -37,6 +39,8 @@ func Transform(m Model) (RestModel, error) {
 		Name:           m.name,
 		Pin:            m.pin,
 		Pic:            m.pic,
+		PinAttempts:    m.pinAttempts,
+		PicAttempts:    m.picAttempts,
 		LoggedIn:       byte(m.loggedIn),
 		LastLogin:      m.lastLogin,
 		Gender:         m.gender,
@@ -46,6 +50,72 @@ func Transform(m Model) (RestModel, error) {
 		Country:        m.country,
 		CharacterSlots: m.characterSlots,
 	}, nil
+}
+
+type PinAttemptInputRestModel struct {
+	Id      string `json:"-"`
+	Success bool   `json:"success"`
+}
+
+func (r PinAttemptInputRestModel) GetName() string {
+	return "pin-attempts"
+}
+
+func (r *PinAttemptInputRestModel) SetID(idStr string) error {
+	r.Id = idStr
+	return nil
+}
+
+type PinAttemptOutputRestModel struct {
+	Id           string `json:"-"`
+	Attempts     int    `json:"attempts"`
+	LimitReached bool   `json:"limitReached"`
+}
+
+func (r PinAttemptOutputRestModel) GetName() string {
+	return "pin-attempts"
+}
+
+func (r PinAttemptOutputRestModel) GetID() string {
+	return r.Id
+}
+
+func (r *PinAttemptOutputRestModel) SetID(idStr string) error {
+	r.Id = idStr
+	return nil
+}
+
+type PicAttemptInputRestModel struct {
+	Id      string `json:"-"`
+	Success bool   `json:"success"`
+}
+
+func (r PicAttemptInputRestModel) GetName() string {
+	return "pic-attempts"
+}
+
+func (r *PicAttemptInputRestModel) SetID(idStr string) error {
+	r.Id = idStr
+	return nil
+}
+
+type PicAttemptOutputRestModel struct {
+	Id           string `json:"-"`
+	Attempts     int    `json:"attempts"`
+	LimitReached bool   `json:"limitReached"`
+}
+
+func (r PicAttemptOutputRestModel) GetName() string {
+	return "pic-attempts"
+}
+
+func (r PicAttemptOutputRestModel) GetID() string {
+	return r.Id
+}
+
+func (r *PicAttemptOutputRestModel) SetID(idStr string) error {
+	r.Id = idStr
+	return nil
 }
 
 func Extract(body RestModel) (Model, error) {
@@ -59,6 +129,8 @@ func Extract(body RestModel) (Model, error) {
 		SetPassword(body.Password).
 		SetPin(body.Pin).
 		SetPic(body.Pic).
+		SetPinAttempts(body.PinAttempts).
+		SetPicAttempts(body.PicAttempts).
 		SetLoggedIn(int(body.LoggedIn)).
 		SetLastLogin(body.LastLogin).
 		SetGender(body.Gender).

@@ -2,7 +2,6 @@ package compartment
 
 import (
 	"atlas-cashshop/cashshop/inventory/asset"
-	"atlas-cashshop/cashshop/item"
 	"testing"
 	"time"
 
@@ -15,19 +14,15 @@ func TestTransform(t *testing.T) {
 	accountId := uint32(12345)
 	capacity := uint32(100)
 
-	// Create an item
-	testItem := item.NewBuilder().
+	// Create an asset directly (flattened)
+	testAsset := asset.NewBuilder(compartmentId, 5000).
 		SetId(1).
 		SetCashId(1001).
-		SetTemplateId(5000).
 		SetQuantity(1).
 		SetFlag(0).
 		SetPurchasedBy(accountId).
 		SetExpiration(time.Now().Add(30 * 24 * time.Hour)).
 		Build()
-
-	// Create an asset
-	testAsset := asset.NewBuilder(uuid.New(), compartmentId, testItem).Build()
 
 	// Create compartment model
 	m := NewBuilder(compartmentId, accountId, TypeExplorer, capacity).

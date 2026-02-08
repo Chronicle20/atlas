@@ -22,6 +22,14 @@
       "docker_context": "."
     },
     {
+      "name": "atlas-ban",
+      "type": "go-service",
+      "path": "services/atlas-ban",
+      "module_path": "services/atlas-ban/atlas.com/ban",
+      "docker_image": "ghcr.io/chronicle20/atlas-ban/atlas-ban",
+      "docker_context": "."
+    },
+    {
       "name": "atlas-buddies",
       "type": "go-service",
       "path": "services/atlas-buddies",
@@ -134,14 +142,6 @@
       "docker_context": "."
     },
     {
-      "name": "atlas-equipables",
-      "type": "go-service",
-      "path": "services/atlas-equipables",
-      "module_path": "services/atlas-equipables/atlas.com/equipables",
-      "docker_image": "ghcr.io/chronicle20/atlas-equipables/atlas-equipables",
-      "docker_context": "."
-    },
-    {
       "name": "atlas-expressions",
       "type": "go-service",
       "path": "services/atlas-expressions",
@@ -163,6 +163,14 @@
       "path": "services/atlas-families",
       "module_path": "services/atlas-families/atlas.com/family",
       "docker_image": "ghcr.io/chronicle20/atlas-families/atlas-families",
+      "docker_context": "."
+    },
+    {
+      "name": "atlas-gachapons",
+      "type": "go-service",
+      "path": "services/atlas-gachapons",
+      "module_path": "services/atlas-gachapons/atlas.com/gachapons",
+      "docker_image": "ghcr.io/chronicle20/atlas-gachapons/atlas-gachapons",
       "docker_context": "."
     },
     {

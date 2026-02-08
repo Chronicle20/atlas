@@ -8,6 +8,8 @@ import (
 	"atlas-storage/storage"
 	"context"
 
+	"github.com/Chronicle20/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	kafkaMessage "github.com/Chronicle20/atlas-kafka/message"
@@ -50,7 +52,7 @@ func handleAcceptCommand(db *gorm.DB) kafkaMessage.Handler[compartment.Command[c
 		}
 
 		// Update projection if it exists
-		inventoryType := asset.InventoryTypeFromTemplateId(c.Body.TemplateId)
+		inventoryType, _ := inventory.TypeFromItemId(item.Id(c.Body.TemplateId))
 		updateProjectionOnAccept(l, ctx, db, c.CharacterId, inventoryType)
 	}
 }
@@ -82,7 +84,7 @@ func handleReleaseCommand(db *gorm.DB) kafkaMessage.Handler[compartment.Command[
 }
 
 // updateProjectionOnAccept updates the projection when an asset is accepted into storage
-func updateProjectionOnAccept(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, characterId uint32, inventoryType asset.InventoryType) {
+func updateProjectionOnAccept(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, characterId uint32, inventoryType inventory.Type) {
 	proj, ok := projection.GetManager().Get(characterId)
 	if !ok {
 		return // No projection exists, nothing to update
@@ -97,21 +99,12 @@ func updateProjectionOnAccept(l logrus.FieldLogger, ctx context.Context, db *gor
 		return
 	}
 
-	// Decorate the assets
-	assetProcessor := asset.NewProcessor(l, ctx, db)
-	decoratedAssets, err := assetProcessor.DecorateAll(assets)
-	if err != nil {
-		l.WithError(err).Warnf("Failed to decorate assets for projection update")
-		decoratedAssets = assets
-	}
-
 	// Update only the operated compartment with filtered assets
 	projection.GetManager().Update(characterId, func(p projection.Model) projection.Model {
 		newCompartments := p.Compartments()
 
-		// Filter the operated compartment to only matching inventory types
-		filtered := make([]asset.Model[any], 0)
-		for _, a := range decoratedAssets {
+		filtered := make([]asset.Model, 0)
+		for _, a := range assets {
 			if a.InventoryType() == inventoryType {
 				filtered = append(filtered, a)
 			}
@@ -125,7 +118,7 @@ func updateProjectionOnAccept(l logrus.FieldLogger, ctx context.Context, db *gor
 }
 
 // updateProjectionOnRelease updates the projection when an asset is released from storage
-func updateProjectionOnRelease(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, characterId uint32, inventoryType asset.InventoryType) {
+func updateProjectionOnRelease(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, characterId uint32, inventoryType inventory.Type) {
 	proj, ok := projection.GetManager().Get(characterId)
 	if !ok {
 		return // No projection exists, nothing to update
@@ -140,21 +133,12 @@ func updateProjectionOnRelease(l logrus.FieldLogger, ctx context.Context, db *go
 		return
 	}
 
-	// Decorate the assets
-	assetProcessor := asset.NewProcessor(l, ctx, db)
-	decoratedAssets, err := assetProcessor.DecorateAll(assets)
-	if err != nil {
-		l.WithError(err).Warnf("Failed to decorate assets for projection update")
-		decoratedAssets = assets
-	}
-
 	// Update only the operated compartment with filtered assets
 	projection.GetManager().Update(characterId, func(p projection.Model) projection.Model {
 		newCompartments := p.Compartments()
 
-		// Filter the operated compartment to only matching inventory types
-		filtered := make([]asset.Model[any], 0)
-		for _, a := range decoratedAssets {
+		filtered := make([]asset.Model, 0)
+		for _, a := range assets {
 			if a.InventoryType() == inventoryType {
 				filtered = append(filtered, a)
 			}

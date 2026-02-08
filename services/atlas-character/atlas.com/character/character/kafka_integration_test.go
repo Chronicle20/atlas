@@ -119,11 +119,11 @@ func TestKafkaCreateCharacterIntegration(t *testing.T) {
 	if createdCharacter.Luck() != 4 {
 		t.Errorf("Expected Luck 4, got %d", createdCharacter.Luck())
 	}
-	if createdCharacter.MaxHP() != 50 {
-		t.Errorf("Expected MaxHP 50, got %d", createdCharacter.MaxHP())
+	if createdCharacter.MaxHp() != 50 {
+		t.Errorf("Expected MaxHP 50, got %d", createdCharacter.MaxHp())
 	}
-	if createdCharacter.MaxMP() != 50 {
-		t.Errorf("Expected MaxMP 50, got %d", createdCharacter.MaxMP())
+	if createdCharacter.MaxMp() != 50 {
+		t.Errorf("Expected MaxMP 50, got %d", createdCharacter.MaxMp())
 	}
 	if createdCharacter.JobId() != job.Id(0) {
 		t.Errorf("Expected JobId 0, got %d", createdCharacter.JobId())
@@ -150,11 +150,11 @@ func TestKafkaCreateCharacterIntegration(t *testing.T) {
 	}
 
 	// Verify that HP and MP are set to max values
-	if createdCharacter.HP() != createdCharacter.MaxHP() {
-		t.Errorf("Expected HP to equal MaxHP (%d), got %d", createdCharacter.MaxHP(), createdCharacter.HP())
+	if createdCharacter.Hp() != createdCharacter.MaxHp() {
+		t.Errorf("Expected HP to equal MaxHP (%d), got %d", createdCharacter.MaxHp(), createdCharacter.Hp())
 	}
-	if createdCharacter.MP() != createdCharacter.MaxMP() {
-		t.Errorf("Expected MP to equal MaxMP (%d), got %d", createdCharacter.MaxMP(), createdCharacter.MP())
+	if createdCharacter.Mp() != createdCharacter.MaxMp() {
+		t.Errorf("Expected MP to equal MaxMP (%d), got %d", createdCharacter.MaxMp(), createdCharacter.Mp())
 	}
 }
 

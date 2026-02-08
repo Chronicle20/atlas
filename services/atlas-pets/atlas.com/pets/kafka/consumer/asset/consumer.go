@@ -35,8 +35,8 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 	}
 }
 
-func handleAssetDeleted(db *gorm.DB) message.Handler[asset.StatusEvent[asset.CreatedStatusEventBody[any]]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e asset.StatusEvent[asset.CreatedStatusEventBody[any]]) {
+func handleAssetDeleted(db *gorm.DB) message.Handler[asset.StatusEvent[asset.CreatedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e asset.StatusEvent[asset.CreatedStatusEventBody]) {
 		if e.Type != asset.StatusEventTypeDeleted {
 			return
 		}

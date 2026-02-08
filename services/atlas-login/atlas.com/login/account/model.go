@@ -6,6 +6,8 @@ type Model struct {
 	password       string
 	pin            string
 	pic            string
+	pinAttempts    int
+	picAttempts    int
 	loggedIn       int
 	lastLogin      uint64
 	gender         byte
@@ -44,6 +46,14 @@ func (a Model) PIN() string {
 	return a.pin
 }
 
+func (a Model) PinAttempts() int {
+	return a.pinAttempts
+}
+
+func (a Model) PicAttempts() int {
+	return a.picAttempts
+}
+
 // Builder is used to construct a Model instance
 type Builder struct {
 	id             uint32
@@ -51,6 +61,8 @@ type Builder struct {
 	password       string
 	pin            string
 	pic            string
+	pinAttempts    int
+	picAttempts    int
 	loggedIn       int
 	lastLogin      uint64
 	gender         byte
@@ -93,6 +105,18 @@ func (b *Builder) SetPin(pin string) *Builder {
 // SetPic sets the pic field
 func (b *Builder) SetPic(pic string) *Builder {
 	b.pic = pic
+	return b
+}
+
+// SetPinAttempts sets the pinAttempts field
+func (b *Builder) SetPinAttempts(pinAttempts int) *Builder {
+	b.pinAttempts = pinAttempts
+	return b
+}
+
+// SetPicAttempts sets the picAttempts field
+func (b *Builder) SetPicAttempts(picAttempts int) *Builder {
+	b.picAttempts = picAttempts
 	return b
 }
 
@@ -152,6 +176,8 @@ func (b *Builder) Build() Model {
 		password:       b.password,
 		pin:            b.pin,
 		pic:            b.pic,
+		pinAttempts:    b.pinAttempts,
+		picAttempts:    b.picAttempts,
 		loggedIn:       b.loggedIn,
 		lastLogin:      b.lastLogin,
 		gender:         b.gender,
@@ -171,6 +197,8 @@ func (m Model) ToBuilder() *Builder {
 		SetPassword(m.password).
 		SetPin(m.pin).
 		SetPic(m.pic).
+		SetPinAttempts(m.pinAttempts).
+		SetPicAttempts(m.picAttempts).
 		SetLoggedIn(m.loggedIn).
 		SetLastLogin(m.lastLogin).
 		SetGender(m.gender).

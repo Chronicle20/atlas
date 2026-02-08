@@ -15,7 +15,6 @@ func TestTransform(t *testing.T) {
 		SetPic("5678").
 		SetState(StateLoggedIn).
 		SetGender(1).
-		SetBanned(false).
 		SetTOS(true).
 		Build()
 
@@ -66,7 +65,6 @@ func TestExtract(t *testing.T) {
 		Pic:      "8888",
 		LoggedIn: byte(StateTransition),
 		Gender:   0,
-		Banned:   true,
 		TOS:      false,
 	}
 
@@ -101,10 +99,6 @@ func TestExtract(t *testing.T) {
 
 	if m.Gender() != 0 {
 		t.Errorf("Gender mismatch. Expected 0, got %v", m.Gender())
-	}
-
-	if m.Banned() != true {
-		t.Errorf("Banned mismatch. Expected true, got %v", m.Banned())
 	}
 
 	if m.TOS() != false {

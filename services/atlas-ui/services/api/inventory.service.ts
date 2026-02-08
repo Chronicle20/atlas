@@ -60,12 +60,45 @@ export interface Asset {
   type: string;
   id: string;
   attributes: {
+    id: number;
     slot: number;
     templateId: number;
     expiration: string;
-    referenceId: number;
-    referenceType: string;
-    referenceData: unknown;
+    createdAt: string;
+    quantity: number;
+    ownerId: number;
+    flag: number;
+    rechargeable: boolean;
+    strength: number;
+    dexterity: number;
+    intelligence: number;
+    luck: number;
+    hp: number;
+    mp: number;
+    weaponAttack: number;
+    magicAttack: number;
+    weaponDefense: number;
+    magicDefense: number;
+    accuracy: number;
+    avoidability: number;
+    hands: number;
+    speed: number;
+    jump: number;
+    slots: number;
+    locked: boolean;
+    spikes: boolean;
+    karmaUsed: boolean;
+    cold: boolean;
+    canBeTraded: boolean;
+    levelType: number;
+    level: number;
+    experience: number;
+    hammersApplied: number;
+    equippedSince: string;
+    cashId: number;
+    commodityId: number;
+    purchaseBy: string;
+    petId: number;
   };
 }
 

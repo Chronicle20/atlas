@@ -32,6 +32,7 @@ type ProcessorMock struct {
 	MarkEarliestPendingStepFunc         func(transactionId uuid.UUID, status saga.Status) error
 	MarkEarliestPendingStepCompletedFunc func(transactionId uuid.UUID) error
 	StepCompletedFunc                   func(transactionId uuid.UUID, success bool) error
+	StepCompletedWithResultFunc         func(transactionId uuid.UUID, success bool, result map[string]any) error
 	AddStepFunc                         func(transactionId uuid.UUID, step saga.Step[any]) error
 	AddStepAfterCurrentFunc             func(transactionId uuid.UUID, step saga.Step[any]) error
 	StepFunc                            func(transactionId uuid.UUID) error
@@ -153,6 +154,14 @@ func (m *ProcessorMock) MarkEarliestPendingStepCompleted(transactionId uuid.UUID
 func (m *ProcessorMock) StepCompleted(transactionId uuid.UUID, success bool) error {
 	if m.StepCompletedFunc != nil {
 		return m.StepCompletedFunc(transactionId, success)
+	}
+	return nil
+}
+
+// StepCompletedWithResult is a mock implementation
+func (m *ProcessorMock) StepCompletedWithResult(transactionId uuid.UUID, success bool, result map[string]any) error {
+	if m.StepCompletedWithResultFunc != nil {
+		return m.StepCompletedWithResultFunc(transactionId, success, result)
 	}
 	return nil
 }

@@ -68,7 +68,7 @@ func (b *ModelBuilder) SetDuration(duration int32) *ModelBuilder {
 	return b
 }
 
-func (b *ModelBuilder) SetHP(hp uint16) *ModelBuilder {
+func (b *ModelBuilder) SetHp(hp uint16) *ModelBuilder {
 	b.hp = hp
 	return b
 }
@@ -78,7 +78,7 @@ func (b *ModelBuilder) SetHPRecovery(hpr float64) *ModelBuilder {
 	return b
 }
 
-func (b *ModelBuilder) SetMP(mp uint16) *ModelBuilder {
+func (b *ModelBuilder) SetMp(mp uint16) *ModelBuilder {
 	b.mp = mp
 	return b
 }
@@ -355,8 +355,8 @@ func (b *ModelBuilder) Build() RestModel {
 		Avoidability:         b.avoidability,
 		Speed:                b.speed,
 		Jump:                 b.jump,
-		HP:                   b.hp,
-		MP:                   b.mp,
+		Hp:                   b.hp,
+		Mp:                   b.mp,
 		HPR:                  b.hpr,
 		MPR:                  b.mpr,
 		MHPRRate:             b.mhprRate,

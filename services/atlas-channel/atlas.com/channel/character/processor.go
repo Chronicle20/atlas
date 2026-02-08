@@ -3,6 +3,7 @@ package character
 import (
 	"atlas-channel/asset"
 	"atlas-channel/character/skill"
+	"atlas-channel/compartment"
 	"atlas-channel/inventory"
 	character2 "atlas-channel/kafka/message/character"
 	"atlas-channel/kafka/producer"
@@ -24,10 +25,11 @@ type Processor interface {
 	GetById(decorators ...model.Decorator[Model]) func(characterId uint32) (Model, error)
 	PetModelDecorator(m Model) Model
 	InventoryDecorator(m Model) Model
+	PetAssetEnrichmentDecorator(m Model) Model
 	SkillModelDecorator(m Model) Model
 	QuestModelDecorator(m Model) Model
-	GetEquipableInSlot(characterId uint32, slot int16) model.Provider[asset.Model[any]]
-	GetItemInSlot(characterId uint32, inventoryType inventory2.Type, slot int16) model.Provider[asset.Model[any]]
+	GetEquipableInSlot(characterId uint32, slot int16) model.Provider[asset.Model]
+	GetItemInSlot(characterId uint32, inventoryType inventory2.Type, slot int16) model.Provider[asset.Model]
 	ByNameProvider(name string) model.Provider[[]Model]
 	GetByName(name string) (Model, error)
 	RequestDistributeAp(f field.Model, characterId uint32, updateTime uint32, distributes []DistributePacket) error
@@ -42,6 +44,7 @@ type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 	ip  inventory.Processor
+	cp  compartment.Processor
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
@@ -49,6 +52,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		l:   l,
 		ctx: ctx,
 		ip:  inventory.NewProcessor(l, ctx),
+		cp:  compartment.NewProcessor(l, ctx),
 	}
 	return p
 }
@@ -83,6 +87,62 @@ func (p *ProcessorImpl) InventoryDecorator(m Model) Model {
 	return m.SetInventory(i)
 }
 
+// PetAssetEnrichmentDecorator enriches pet assets in the cash compartment with pet data from atlas-pets.
+// Must run after InventoryDecorator.
+func (p *ProcessorImpl) PetAssetEnrichmentDecorator(m Model) Model {
+	cashComp := m.Inventory().Cash()
+	if len(cashComp.Assets()) == 0 {
+		return m
+	}
+
+	// Check if there are any pet assets to enrich
+	hasPets := false
+	for _, a := range cashComp.Assets() {
+		if a.IsPet() {
+			hasPets = true
+			break
+		}
+	}
+	if !hasPets {
+		return m
+	}
+
+	// Fetch all pets for this character
+	pp := pet.NewProcessor(p.l, p.ctx)
+	pets, err := pp.GetByOwner(m.Id())
+	if err != nil {
+		p.l.WithError(err).Debugf("Unable to fetch pets for character [%d] for asset enrichment.", m.Id())
+		return m
+	}
+
+	// Build lookup by pet ID
+	petMap := make(map[uint32]pet.Model)
+	for _, pm := range pets {
+		petMap[pm.Id()] = pm
+	}
+
+	// Enrich pet assets
+	enrichedAssets := make([]asset.Model, 0, len(cashComp.Assets()))
+	for _, a := range cashComp.Assets() {
+		if a.IsPet() {
+			if pm, ok := petMap[a.PetId()]; ok {
+				a = asset.Clone(a).
+					SetPetName(pm.Name()).
+					SetPetLevel(pm.Level()).
+					SetCloseness(pm.Closeness()).
+					SetFullness(pm.Fullness()).
+					SetPetSlot(pm.Slot()).
+					MustBuild()
+			}
+		}
+		enrichedAssets = append(enrichedAssets, a)
+	}
+
+	enrichedCash := compartment.CloneModel(cashComp).SetAssets(enrichedAssets).MustBuild()
+	enrichedInventory := inventory.CloneModel(m.Inventory()).SetCash(enrichedCash).MustBuild()
+	return m.SetInventory(enrichedInventory)
+}
+
 func (p *ProcessorImpl) SkillModelDecorator(m Model) Model {
 	ms, err := skill.NewProcessor(p.l, p.ctx).GetByCharacterId(m.Id())
 	if err != nil {
@@ -99,34 +159,26 @@ func (p *ProcessorImpl) QuestModelDecorator(m Model) Model {
 	return m.SetQuests(ms)
 }
 
-func (p *ProcessorImpl) GetEquipableInSlot(characterId uint32, slot int16) model.Provider[asset.Model[any]] {
-	// TODO this needs to be more performant
-	c, err := p.GetById(p.InventoryDecorator)(characterId)
+func (p *ProcessorImpl) GetEquipableInSlot(characterId uint32, slot int16) model.Provider[asset.Model] {
+	cm, err := p.cp.GetByType(characterId, inventory2.TypeValueEquip)
 	if err != nil {
-		return model.ErrorProvider[asset.Model[any]](err)
+		return model.ErrorProvider[asset.Model](err)
 	}
-	for _, e := range c.Inventory().Equipable().Assets() {
-		if e.Slot() == slot {
-			return model.FixedProvider(e)
-		}
+	if a, ok := cm.FindBySlot(slot); ok {
+		return model.FixedProvider(*a)
 	}
-	return model.ErrorProvider[asset.Model[any]](errors.New("equipable not found"))
+	return model.ErrorProvider[asset.Model](errors.New("equipable not found"))
 }
 
-func (p *ProcessorImpl) GetItemInSlot(characterId uint32, inventoryType inventory2.Type, slot int16) model.Provider[asset.Model[any]] {
-	// TODO this needs to be more performant
-	c, err := p.GetById(p.InventoryDecorator)(characterId)
+func (p *ProcessorImpl) GetItemInSlot(characterId uint32, inventoryType inventory2.Type, slot int16) model.Provider[asset.Model] {
+	cm, err := p.cp.GetByType(characterId, inventoryType)
 	if err != nil {
-		return model.ErrorProvider[asset.Model[any]](err)
+		return model.ErrorProvider[asset.Model](err)
 	}
-
-	cm := c.Inventory().CompartmentByType(inventoryType)
-	for _, e := range cm.Assets() {
-		if e.Slot() == slot {
-			return model.FixedProvider(e)
-		}
+	if a, ok := cm.FindBySlot(slot); ok {
+		return model.FixedProvider(*a)
 	}
-	return model.ErrorProvider[asset.Model[any]](errors.New("item not found"))
+	return model.ErrorProvider[asset.Model](errors.New("item not found"))
 }
 
 func (p *ProcessorImpl) ByNameProvider(name string) model.Provider[[]Model] {

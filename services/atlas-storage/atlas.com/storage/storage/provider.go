@@ -2,7 +2,6 @@ package storage
 
 import (
 	"atlas-storage/asset"
-	"context"
 
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
@@ -10,8 +9,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// GetByWorldAndAccountId retrieves storage by world and account with decorated assets
-func GetByWorldAndAccountId(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID, ctx context.Context) func(worldId world.Id, accountId uint32) (Model, error) {
+func GetByWorldAndAccountId(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID) func(worldId world.Id, accountId uint32) (Model, error) {
 	return func(worldId world.Id, accountId uint32) (Model, error) {
 		var e Entity
 		err := db.Where("tenant_id = ? AND world_id = ? AND account_id = ?", tenantId, byte(worldId), accountId).First(&e).Error
@@ -19,17 +17,12 @@ func GetByWorldAndAccountId(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUI
 			return Model{}, err
 		}
 
-		// Create asset processor for decoration
-		assetProcessor := asset.NewProcessor(l, ctx, db)
-
-		// Load and decorate assets for this storage
-		assets, err := assetProcessor.GetByStorageIdDecorated(tenantId, e.Id)
+		assets, err := asset.GetByStorageId(db, tenantId)(e.Id)
 		if err != nil {
 			l.WithError(err).Warnf("Failed to load assets for storage %s, returning empty assets", e.Id)
-			assets = []asset.Model[any]{}
+			assets = []asset.Model{}
 		}
 
-		// MustBuild since entities from database are trusted
 		return NewModelBuilder().
 			SetId(e.Id).
 			SetWorldId(world.Id(e.WorldId)).
@@ -41,7 +34,6 @@ func GetByWorldAndAccountId(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUI
 	}
 }
 
-// GetByAccountId retrieves all storages for an account (across all worlds)
 func GetByAccountId(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID) func(accountId uint32) ([]Model, error) {
 	return func(accountId uint32) ([]Model, error) {
 		var entities []Entity
@@ -52,11 +44,10 @@ func GetByAccountId(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID) func(
 
 		var models []Model
 		for _, e := range entities {
-			// Load assets for this storage
 			assets, err := asset.GetByStorageId(db, tenantId)(e.Id)
 			if err != nil {
 				l.WithError(err).Warnf("Failed to load assets for storage %s, returning empty assets", e.Id)
-				assets = []asset.Model[any]{}
+				assets = []asset.Model{}
 			}
 
 			m := NewModelBuilder().

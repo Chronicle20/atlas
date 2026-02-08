@@ -26,6 +26,7 @@ type CreateCommandBody struct {
 	AccountName string `json:"accountName"`
 	Password    string `json:"password"`
 	IPAddress   string `json:"ipAddress"`
+	HWID        string `json:"hwid"`
 }
 
 type ProgressStateCommandBody struct {

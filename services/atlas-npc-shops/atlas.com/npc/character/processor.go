@@ -2,8 +2,8 @@ package character
 
 import (
 	"atlas-npc/inventory"
-	character2 "atlas-npc/kafka/message/character"
-	"atlas-npc/kafka/producer"
+	"atlas-npc/kafka/message"
+	characterMessage "atlas-npc/kafka/message/character"
 	"context"
 
 	"github.com/Chronicle20/atlas-constants/world"
@@ -18,7 +18,7 @@ type Processor interface {
 	GetByName(decorators ...model.Decorator[Model]) func(name string) (Model, error)
 	IdByNameProvider(name string) model.Provider[uint32]
 	InventoryDecorator(m Model) Model
-	RequestChangeMeso(worldId world.Id, characterId uint32, actorId uint32, actorType string, amount int32) error
+	RequestChangeMeso(mb *message.Buffer) func(worldId world.Id, characterId uint32, actorId uint32, actorType string, amount int32) error
 }
 
 type ProcessorImpl struct {
@@ -72,6 +72,9 @@ func (p *ProcessorImpl) InventoryDecorator(m Model) Model {
 	return m.SetInventory(i)
 }
 
-func (p *ProcessorImpl) RequestChangeMeso(worldId world.Id, characterId uint32, actorId uint32, actorType string, amount int32) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(RequestChangeMesoCommandProvider(characterId, worldId, actorId, actorType, amount))
+func (p *ProcessorImpl) RequestChangeMeso(mb *message.Buffer) func(worldId world.Id, characterId uint32, actorId uint32, actorType string, amount int32) error {
+	return func(worldId world.Id, characterId uint32, actorId uint32, actorType string, amount int32) error {
+		return mb.Put(characterMessage.EnvCommandTopic, RequestChangeMesoCommandProvider(characterId, worldId, actorId, actorType, amount))
+	}
 }
+

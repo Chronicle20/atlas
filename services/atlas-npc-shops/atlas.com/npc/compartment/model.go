@@ -14,7 +14,7 @@ type Model struct {
 	characterId   uint32
 	inventoryType inventory.Type
 	capacity      uint32
-	assets        []asset.Model[any]
+	assets        []asset.Model
 }
 
 func (m Model) Id() uuid.UUID {
@@ -29,7 +29,7 @@ func (m Model) Capacity() uint32 {
 	return m.capacity
 }
 
-func (m Model) Assets() []asset.Model[any] {
+func (m Model) Assets() []asset.Model {
 	return m.assets
 }
 
@@ -64,7 +64,7 @@ func (m Model) NextFreeSlot() (int16, error) {
 	}
 }
 
-func (m Model) FindBySlot(slot int16) (*asset.Model[any], bool) {
+func (m Model) FindBySlot(slot int16) (*asset.Model, bool) {
 	for _, a := range m.Assets() {
 		if a.Slot() == slot {
 			return &a, true
@@ -73,7 +73,7 @@ func (m Model) FindBySlot(slot int16) (*asset.Model[any], bool) {
 	return nil, false
 }
 
-func (m Model) FindFirstByItemId(templateId uint32) (*asset.Model[any], bool) {
+func (m Model) FindFirstByItemId(templateId uint32) (*asset.Model, bool) {
 	for _, a := range m.Assets() {
 		if a.TemplateId() == templateId {
 			return &a, true
@@ -82,14 +82,6 @@ func (m Model) FindFirstByItemId(templateId uint32) (*asset.Model[any], bool) {
 	return nil, false
 }
 
-func (m Model) FindByReferenceId(referenceId uint32) (*asset.Model[any], bool) {
-	for _, a := range m.Assets() {
-		if a.ReferenceId() == referenceId {
-			return &a, true
-		}
-	}
-	return nil, false
-}
 
 func Clone(m Model) *ModelBuilder {
 	return &ModelBuilder{
@@ -106,7 +98,7 @@ type ModelBuilder struct {
 	characterId   uint32
 	inventoryType inventory.Type
 	capacity      uint32
-	assets        []asset.Model[any]
+	assets        []asset.Model
 }
 
 func NewBuilder(id uuid.UUID, characterId uint32, it inventory.Type, capacity uint32) *ModelBuilder {
@@ -115,7 +107,7 @@ func NewBuilder(id uuid.UUID, characterId uint32, it inventory.Type, capacity ui
 		characterId:   characterId,
 		inventoryType: it,
 		capacity:      capacity,
-		assets:        make([]asset.Model[any], 0),
+		assets:        make([]asset.Model, 0),
 	}
 }
 
@@ -124,12 +116,12 @@ func (b *ModelBuilder) SetCapacity(capacity uint32) *ModelBuilder {
 	return b
 }
 
-func (b *ModelBuilder) AddAsset(a asset.Model[any]) *ModelBuilder {
+func (b *ModelBuilder) AddAsset(a asset.Model) *ModelBuilder {
 	b.assets = append(b.assets, a)
 	return b
 }
 
-func (b *ModelBuilder) SetAssets(as []asset.Model[any]) *ModelBuilder {
+func (b *ModelBuilder) SetAssets(as []asset.Model) *ModelBuilder {
 	b.assets = as
 	return b
 }

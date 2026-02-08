@@ -1,8 +1,6 @@
 package compartment
 
 import (
-	"encoding/json"
-
 	"github.com/google/uuid"
 )
 
@@ -27,13 +25,14 @@ type Command[E any] struct {
 
 // AcceptCommandBody contains the data for an ACCEPT command
 type AcceptCommandBody struct {
-	TransactionId uuid.UUID       `json:"transactionId"`
-	CompartmentId uuid.UUID       `json:"compartmentId"`
-	CashId        int64           `json:"cashId"` // Preserved CashId from source item
-	TemplateId    uint32          `json:"templateId"`
-	ReferenceId   uint32          `json:"referenceId"`
-	ReferenceType string          `json:"referenceType"`
-	ReferenceData json.RawMessage `json:"referenceData,omitempty"`
+	TransactionId uuid.UUID `json:"transactionId"`
+	CompartmentId uuid.UUID `json:"compartmentId"`
+	CashId        int64     `json:"cashId"`
+	TemplateId    uint32    `json:"templateId"`
+	Quantity      uint32    `json:"quantity"`
+	CommodityId   uint32    `json:"commodityId"`
+	PurchasedBy   uint32    `json:"purchasedBy"`
+	Flag          uint16    `json:"flag"`
 }
 
 // ReleaseCommandBody contains the data for a RELEASE command

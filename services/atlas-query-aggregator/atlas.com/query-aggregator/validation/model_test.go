@@ -779,17 +779,12 @@ func createTestCompartment(id uuid.UUID, characterId uint32, inventoryType inven
 }
 
 // Helper function to create a test item
-func createTestItem(id uint32, compartmentId uuid.UUID, templateId uint32, quantity uint32) asset.Model[any] {
-	// Create consumable reference data using builder
-	refData := asset.NewConsumableReferenceDataBuilder().
-		SetQuantity(quantity).
-		Build()
-
-	// Create the asset
-	return asset.NewBuilder[any](id, compartmentId, templateId, id, asset.ReferenceTypeConsumable).
+func createTestItem(id uint32, compartmentId uuid.UUID, templateId uint32, quantity uint32) asset.Model {
+	return asset.NewBuilder(compartmentId, templateId).
+		SetId(id).
 		SetSlot(int16(id)).
 		SetExpiration(time.Now().Add(24 * time.Hour)).
-		SetReferenceData(refData).
+		SetQuantity(quantity).
 		Build()
 }
 

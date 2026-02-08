@@ -2,18 +2,18 @@
 
 ## Topics Consumed
 
-| Topic Environment Variable      | Description                          |
-|---------------------------------|--------------------------------------|
-| COMMAND_TOPIC_NPC_SHOP          | Shop commands (enter, exit, buy, sell, recharge) |
+| Topic Environment Variable      | Description                                              |
+|---------------------------------|----------------------------------------------------------|
+| COMMAND_TOPIC_NPC_SHOP          | Shop commands (enter, exit, buy, sell, recharge)         |
 | EVENT_TOPIC_CHARACTER_STATUS    | Character status events (logout, map change, channel change) |
 
 ## Topics Produced
 
-| Topic Environment Variable      | Description                          |
-|---------------------------------|--------------------------------------|
-| EVENT_TOPIC_NPC_SHOP_STATUS     | Shop status events (entered, exited, error) |
-| COMMAND_TOPIC_CHARACTER         | Character commands (change meso)     |
-| COMMAND_TOPIC_COMPARTMENT       | Compartment commands (create asset, destroy, recharge) |
+| Topic Environment Variable      | Description                                              |
+|---------------------------------|----------------------------------------------------------|
+| EVENT_TOPIC_NPC_SHOP_STATUS     | Shop status events (entered, exited, error)              |
+| COMMAND_TOPIC_CHARACTER          | Character commands (change meso)                         |
+| COMMAND_TOPIC_COMPARTMENT        | Compartment commands (create asset, destroy, recharge)   |
 
 ## Message Types
 
@@ -34,6 +34,10 @@
 | Field         | Type   | Description           |
 |---------------|--------|-----------------------|
 | npcTemplateId | uint32 | NPC template ID       |
+
+**CommandShopExitBody**
+
+Empty body.
 
 **CommandShopBuyBody**
 
@@ -81,6 +85,10 @@
 | Field         | Type   | Description           |
 |---------------|--------|-----------------------|
 | npcTemplateId | uint32 | NPC template ID       |
+
+**StatusEventExitedBody**
+
+Empty body.
 
 **StatusEventErrorBody**
 
@@ -159,7 +167,8 @@
 
 ## Transaction Semantics
 
-- Shop commands are consumed with tenant header parsing
-- Messages are keyed by character ID for ordering
-- Shop entry/exit maintains in-memory registry state
-- Buy and sell operations emit commands to other services
+- Shop commands are consumed with span and tenant header parsing
+- Messages are keyed by character ID for ordering guarantees
+- Buy, sell, and recharge operations use a message buffer to accumulate all outbound messages, then emit them atomically after the operation succeeds
+- Shop entry/exit events are also emitted through the message buffer pattern
+- Character status events (logout, map change, channel change) trigger shop exit with immediate emission via the emit-and-process pattern

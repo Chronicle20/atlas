@@ -15,7 +15,7 @@ This service makes REST calls to:
 
 - **Character Service** (`CHARACTERS`): Retrieve character information (level)
 - **Map Service** (`MAPS`): Get character IDs currently in a map
-- **Data Service** (`DATA`): Get monster information (HP, experience) and calculate drop positions
+- **Data Service** (`DATA`): Get monster information (HP, experience), calculate drop positions, and retrieve base equipment statistics
 - **Drop Information Service** (`DROPS_INFORMATION`): Get monster drop tables
 - **Quest Service** (`QUESTS`): Get started quests for quest-aware drop filtering
 - **Rate Service** (`RATES`): Get character rate multipliers (exp, meso, item drop)
@@ -25,7 +25,7 @@ This service makes REST calls to:
 | Variable | Description |
 |----------|-------------|
 | `BOOTSTRAP_SERVERS` | Kafka bootstrap servers |
-| `JAEGER_HOST` | Jaeger tracing endpoint |
+| `JAEGER_HOST_PORT` | Jaeger agent host:port |
 | `LOG_LEVEL` | Logging level |
 | `EVENT_TOPIC_MONSTER_STATUS` | Topic for monster status events |
 | `COMMAND_TOPIC_DROP` | Topic for drop spawn commands |
@@ -45,3 +45,5 @@ This service supports multi-tenancy through Kafka headers. Headers are propagate
 
 - [Domain](docs/domain.md)
 - [Kafka](docs/kafka.md)
+- [REST](docs/rest.md)
+- [Storage](docs/storage.md)

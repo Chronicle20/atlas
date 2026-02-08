@@ -46,6 +46,7 @@ type CreateCommandBody struct {
     AccountName string `json:"accountName"`
     Password    string `json:"password"`
     IPAddress   string `json:"ipAddress"`
+    HWID        string `json:"hwid"`
 }
 ```
 
@@ -81,13 +82,13 @@ Topic: EVENT_TOPIC_SESSION_STATUS
 
 ```go
 type StatusEvent struct {
-    SessionId   uuid.UUID `json:"sessionId"`
-    AccountId   uint32    `json:"accountId"`
-    CharacterId uint32    `json:"characterId"`
-    WorldId     byte      `json:"worldId"`
-    ChannelId   byte      `json:"channelId"`
-    Issuer      string    `json:"issuer"`
-    Type        string    `json:"type"`
+    SessionId   uuid.UUID  `json:"sessionId"`
+    AccountId   uint32     `json:"accountId"`
+    CharacterId uint32     `json:"characterId"`
+    WorldId     world.Id   `json:"worldId"`
+    ChannelId   channel.Id `json:"channelId"`
+    Issuer      string     `json:"issuer"`
+    Type        string     `json:"type"`
 }
 ```
 

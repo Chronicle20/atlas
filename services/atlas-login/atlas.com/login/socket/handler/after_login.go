@@ -29,7 +29,8 @@ func AfterLoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.P
 			return
 		}
 
-		a, err := account.NewProcessor(l, ctx).GetById(s.AccountId())
+		ap := account.NewProcessor(l, ctx)
+		a, err := ap.GetById(s.AccountId())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to get account [%d] being acted upon.", s.AccountId())
 			return
@@ -54,8 +55,12 @@ func AfterLoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.P
 			return
 		}
 		if opt1 == 1 && opt2 == 0 {
-			if validPin(pin) {
-				l.Debugf("Validated account [%d] to PIN.", s.AccountId())
+			if pin == a.PIN() {
+				l.Debugf("Validated account [%d] PIN.", s.AccountId())
+				_, _, err = ap.RecordPinAttempt(s.AccountId(), true)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to record successful PIN attempt for account [%d].", s.AccountId())
+				}
 				err = pinOperationFunc(s, writer.AcceptPinBody(l))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to write pin operation response due to error.")
@@ -63,7 +68,16 @@ func AfterLoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.P
 				}
 				return
 			}
-			l.Debugf("Account [%d] to PIN invalid.", s.AccountId())
+			l.Debugf("Account [%d] PIN invalid.", s.AccountId())
+			_, limitReached, err := ap.RecordPinAttempt(s.AccountId(), false)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to record failed PIN attempt for account [%d].", s.AccountId())
+			}
+			if limitReached {
+				l.Warnf("Account [%d] has exceeded PIN attempt limit. Terminating session.", s.AccountId())
+				_ = session.NewProcessor(l, ctx).Destroy(s)
+				return
+			}
 			err = pinOperationFunc(s, writer.InvalidPinBody(l))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write pin operation response due to error.")
@@ -72,8 +86,12 @@ func AfterLoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.P
 			return
 		}
 		if opt1 == 2 && opt2 == 0 {
-			if validPin(pin) {
+			if pin == a.PIN() {
 				l.Debugf("Requesting account [%d] to create PIN.", s.AccountId())
+				_, _, err = ap.RecordPinAttempt(s.AccountId(), true)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to record successful PIN attempt for account [%d].", s.AccountId())
+				}
 				err = pinOperationFunc(s, writer.RegisterPinBody(l))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to write pin operation response due to error.")
@@ -81,7 +99,16 @@ func AfterLoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.P
 				}
 				return
 			}
-			l.Debugf("Account [%d] to PIN invalid.", s.AccountId())
+			l.Debugf("Account [%d] PIN invalid.", s.AccountId())
+			_, limitReached, err := ap.RecordPinAttempt(s.AccountId(), false)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to record failed PIN attempt for account [%d].", s.AccountId())
+			}
+			if limitReached {
+				l.Warnf("Account [%d] has exceeded PIN attempt limit. Terminating session.", s.AccountId())
+				_ = session.NewProcessor(l, ctx).Destroy(s)
+				return
+			}
 			err = pinOperationFunc(s, writer.InvalidPinBody(l))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write pin operation response due to error.")
@@ -93,9 +120,4 @@ func AfterLoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.P
 		l.Warnf("Client should not have gotten here. Terminating session.")
 		_ = session.NewProcessor(l, ctx).Destroy(s)
 	}
-}
-
-func validPin(pin string) bool {
-	// TODO terminate on too many attempts.
-	return true
 }

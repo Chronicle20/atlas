@@ -2,7 +2,7 @@
 
 ## Responsibility
 
-The account domain manages user account lifecycle including creation, authentication, deletion, session state tracking, and account attribute updates.
+The account domain manages user account lifecycle including creation, authentication, deletion, session state tracking, account attribute updates, and PIN/PIC attempt tracking with ban enforcement.
 
 ## Core Models
 
@@ -18,9 +18,10 @@ Immutable domain representation of an account.
 | password | string | Hashed password |
 | pin | string | Account PIN |
 | pic | string | Account PIC |
+| pinAttempts | int | Failed PIN attempt counter |
+| picAttempts | int | Failed PIC attempt counter |
 | state | State | Current session state |
 | gender | byte | Gender value |
-| banned | bool | Ban status |
 | tos | bool | Terms of service acceptance |
 | updatedAt | time.Time | Last update timestamp |
 
@@ -69,6 +70,8 @@ Service type enumeration.
 - An account cannot be deleted if currently logged in
 - Channel login requires an existing session in transition state
 - Logout is blocked for sessions in transition state (State 2)
+- PIN and PIC attempt counters reset to 0 on successful entry
+- PIN and PIC attempt counters reset to 0 after ban is issued
 
 ## State Transitions
 
@@ -95,16 +98,20 @@ Primary domain processor providing account operations.
 | GetOrCreate | Retrieve or create account if automatic registration enabled |
 | Create | Create new account with hashed password |
 | CreateAndEmit | Create account and emit status event |
-| Update | Update account attributes (pin, pic, tos, gender) |
+| Update | Update account attributes (pin, pic, tos, pinAttempts, picAttempts, gender) |
 | Delete | Delete account and emit status event |
 | DeleteAndEmit | Delete account and emit status event |
 | Login | Record login for account and session |
 | Logout | Record logout for account and session |
 | LogoutAndEmit | Logout and emit status event |
-| AttemptLogin | Validate credentials and process login attempt |
+| AttemptLogin | Validate credentials, check ban status, and process login attempt |
 | AttemptLoginAndEmit | Attempt login and emit session status event |
 | ProgressState | Transition account to specified state |
 | ProgressStateAndEmit | Progress state and emit session status event |
+| RecordPinAttempt | Record PIN attempt result and enforce limit |
+| RecordPinAttemptAndEmit | Record PIN attempt and emit ban command if limit reached |
+| RecordPicAttempt | Record PIC attempt result and enforce limit |
+| RecordPicAttemptAndEmit | Record PIC attempt and emit ban command if limit reached |
 
 ### Registry
 

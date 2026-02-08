@@ -3,7 +3,6 @@ package storage_test
 import (
 	"atlas-storage/asset"
 	"atlas-storage/kafka/message"
-	"atlas-storage/stackable"
 	"atlas-storage/storage"
 	"context"
 	"testing"
@@ -39,7 +38,7 @@ func testDatabase(t *testing.T) *gorm.DB {
 	}
 
 	var migrators []func(db *gorm.DB) error
-	migrators = append(migrators, storage.Migration, asset.Migration, stackable.Migration)
+	migrators = append(migrators, storage.Migration, asset.Migration)
 
 	for _, migrator := range migrators {
 		if err = migrator(db); err != nil {
@@ -110,11 +109,14 @@ func TestProcessor_Deposit_Equipable(t *testing.T) {
 	accountId := uint32(12345)
 
 	body := message.DepositBody{
-		Slot:          1,
-		TemplateId:    1302000, // Example sword
-		Expiration:    time.Now().Add(time.Hour * 24 * 365),
-		ReferenceId:   100,
-		ReferenceType: string(asset.ReferenceTypeEquipable),
+		Slot:       1,
+		TemplateId: 1302000, // Example sword (equip type)
+		AssetData: message.AssetData{
+			Expiration: time.Now().Add(time.Hour * 24 * 365),
+			Strength:   10,
+			Dexterity:  5,
+			Slots:      7,
+		},
 	}
 
 	assetId, err := p.Deposit(worldId, accountId, body)
@@ -133,12 +135,11 @@ func TestProcessor_Deposit_Equipable(t *testing.T) {
 		t.Fatalf("Failed to get asset: %v", err)
 	}
 
-	// Note: Slot is computed dynamically via GetByStorageId, not stored
 	if a.TemplateId() != body.TemplateId {
 		t.Fatalf("TemplateId mismatch. Expected %d, got %d", body.TemplateId, a.TemplateId())
 	}
-	if a.ReferenceId() != body.ReferenceId {
-		t.Fatalf("ReferenceId mismatch. Expected %d, got %d", body.ReferenceId, a.ReferenceId())
+	if a.Strength() != 10 {
+		t.Fatalf("Strength mismatch. Expected 10, got %d", a.Strength())
 	}
 }
 
@@ -151,15 +152,13 @@ func TestProcessor_Deposit_Stackable(t *testing.T) {
 	accountId := uint32(12345)
 
 	body := message.DepositBody{
-		Slot:          1,
-		TemplateId:    2000000, // Example consumable
-		Expiration:    time.Now().Add(time.Hour * 24 * 365),
-		ReferenceId:   0,
-		ReferenceType: string(asset.ReferenceTypeConsumable),
-		ReferenceData: message.ReferenceData{
-			Quantity: 50,
-			OwnerId:  999,
-			Flag:     0,
+		Slot:       1,
+		TemplateId: 2000000, // Example consumable
+		AssetData: message.AssetData{
+			Expiration: time.Now().Add(time.Hour * 24 * 365),
+			Quantity:   50,
+			OwnerId:    999,
+			Flag:       0,
 		},
 	}
 
@@ -168,17 +167,18 @@ func TestProcessor_Deposit_Stackable(t *testing.T) {
 		t.Fatalf("Failed to deposit stackable item: %v", err)
 	}
 
-	// Verify stackable data was created
-	s, err := stackable.GetByAssetId(testLogger(), db)(assetId)
+	// Verify asset data is inline
+	te := tenant.MustFromContext(ctx)
+	a, err := asset.GetById(db, te.Id())(assetId)
 	if err != nil {
-		t.Fatalf("Failed to get stackable data: %v", err)
+		t.Fatalf("Failed to get asset: %v", err)
 	}
 
-	if s.Quantity() != body.ReferenceData.Quantity {
-		t.Fatalf("Quantity mismatch. Expected %d, got %d", body.ReferenceData.Quantity, s.Quantity())
+	if a.Quantity() != body.Quantity {
+		t.Fatalf("Quantity mismatch. Expected %d, got %d", body.Quantity, a.Quantity())
 	}
-	if s.OwnerId() != body.ReferenceData.OwnerId {
-		t.Fatalf("OwnerId mismatch. Expected %d, got %d", body.ReferenceData.OwnerId, s.OwnerId())
+	if a.OwnerId() != body.OwnerId {
+		t.Fatalf("OwnerId mismatch. Expected %d, got %d", body.OwnerId, a.OwnerId())
 	}
 }
 
@@ -192,11 +192,11 @@ func TestProcessor_Withdraw_Full(t *testing.T) {
 
 	// Deposit an item first
 	body := message.DepositBody{
-		Slot:          1,
-		TemplateId:    1302000,
-		Expiration:    time.Now().Add(time.Hour * 24 * 365),
-		ReferenceId:   100,
-		ReferenceType: string(asset.ReferenceTypeEquipable),
+		Slot:       1,
+		TemplateId: 1302000,
+		AssetData: message.AssetData{
+			Expiration: time.Now().Add(time.Hour * 24 * 365),
+		},
 	}
 
 	assetId, err := p.Deposit(worldId, accountId, body)
@@ -232,15 +232,11 @@ func TestProcessor_Withdraw_Partial(t *testing.T) {
 
 	// Deposit a stackable item
 	body := message.DepositBody{
-		Slot:          1,
-		TemplateId:    2000000,
-		Expiration:    time.Now().Add(time.Hour * 24 * 365),
-		ReferenceId:   0,
-		ReferenceType: string(asset.ReferenceTypeConsumable),
-		ReferenceData: message.ReferenceData{
-			Quantity: 100,
-			OwnerId:  0,
-			Flag:     0,
+		Slot:       1,
+		TemplateId: 2000000,
+		AssetData: message.AssetData{
+			Expiration: time.Now().Add(time.Hour * 24 * 365),
+			Quantity:   100,
 		},
 	}
 
@@ -261,14 +257,15 @@ func TestProcessor_Withdraw_Partial(t *testing.T) {
 	}
 
 	// Verify quantity was reduced
-	s, err := stackable.GetByAssetId(testLogger(), db)(assetId)
+	te := tenant.MustFromContext(ctx)
+	a, err := asset.GetById(db, te.Id())(assetId)
 	if err != nil {
-		t.Fatalf("Stackable should still exist: %v", err)
+		t.Fatalf("Asset should still exist: %v", err)
 	}
 
 	expectedQuantity := uint32(70)
-	if s.Quantity() != expectedQuantity {
-		t.Fatalf("Quantity mismatch. Expected %d, got %d", expectedQuantity, s.Quantity())
+	if a.Quantity() != expectedQuantity {
+		t.Fatalf("Quantity mismatch. Expected %d, got %d", expectedQuantity, a.Quantity())
 	}
 }
 
@@ -429,15 +426,11 @@ func TestProcessor_DepositRollback(t *testing.T) {
 
 	// Deposit a stackable item
 	body := message.DepositBody{
-		Slot:          1,
-		TemplateId:    2000000,
-		Expiration:    time.Now().Add(time.Hour * 24 * 365),
-		ReferenceId:   0,
-		ReferenceType: string(asset.ReferenceTypeConsumable),
-		ReferenceData: message.ReferenceData{
-			Quantity: 50,
-			OwnerId:  0,
-			Flag:     0,
+		Slot:       1,
+		TemplateId: 2000000,
+		AssetData: message.AssetData{
+			Expiration: time.Now().Add(time.Hour * 24 * 365),
+			Quantity:   50,
 		},
 	}
 
@@ -462,12 +455,6 @@ func TestProcessor_DepositRollback(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Asset should have been deleted on rollback")
 	}
-
-	// Verify stackable was deleted
-	_, err = stackable.GetByAssetId(testLogger(), db)(assetId)
-	if err == nil {
-		t.Fatalf("Stackable should have been deleted on rollback")
-	}
 }
 
 func TestProcessor_MultipleDeposits(t *testing.T) {
@@ -478,14 +465,14 @@ func TestProcessor_MultipleDeposits(t *testing.T) {
 	worldId := world.Id(0)
 	accountId := uint32(12345)
 
-	// Deposit multiple items (0-indexed slots)
+	// Deposit multiple items
 	for i := 0; i < 3; i++ {
 		body := message.DepositBody{
-			Slot:          int16(i),
-			TemplateId:    uint32(1300000 + i),
-			Expiration:    time.Now().Add(time.Hour * 24 * 365),
-			ReferenceId:   uint32(i * 100),
-			ReferenceType: string(asset.ReferenceTypeEquipable),
+			Slot:       int16(i),
+			TemplateId: uint32(1300000 + i),
+			AssetData: message.AssetData{
+				Expiration: time.Now().Add(time.Hour * 24 * 365),
+			},
 		}
 
 		_, err := p.Deposit(worldId, accountId, body)
@@ -528,11 +515,12 @@ func TestProcessor_DeleteByAccountId(t *testing.T) {
 
 	// Deposit an equipable item
 	body1 := message.DepositBody{
-		Slot:          0,
-		TemplateId:    1302000,
-		Expiration:    time.Now().Add(time.Hour * 24 * 365),
-		ReferenceId:   100,
-		ReferenceType: string(asset.ReferenceTypeEquipable),
+		Slot:       0,
+		TemplateId: 1302000,
+		AssetData: message.AssetData{
+			Expiration: time.Now().Add(time.Hour * 24 * 365),
+			Strength:   10,
+		},
 	}
 	_, err = p.Deposit(worldId, accountId, body1)
 	if err != nil {
@@ -541,15 +529,11 @@ func TestProcessor_DeleteByAccountId(t *testing.T) {
 
 	// Deposit a stackable item
 	body2 := message.DepositBody{
-		Slot:          1,
-		TemplateId:    2000000,
-		Expiration:    time.Now().Add(time.Hour * 24 * 365),
-		ReferenceId:   0,
-		ReferenceType: string(asset.ReferenceTypeConsumable),
-		ReferenceData: message.ReferenceData{
-			Quantity: 50,
-			OwnerId:  0,
-			Flag:     0,
+		Slot:       1,
+		TemplateId: 2000000,
+		AssetData: message.AssetData{
+			Expiration: time.Now().Add(time.Hour * 24 * 365),
+			Quantity:   50,
 		},
 	}
 	_, err = p.Deposit(worldId, accountId, body2)
@@ -599,11 +583,11 @@ func TestProcessor_DeleteByAccountId_MultipleWorlds(t *testing.T) {
 
 		// Deposit an item in each world
 		body := message.DepositBody{
-			Slot:          0,
-			TemplateId:    1302000 + uint32(worldId),
-			Expiration:    time.Now().Add(time.Hour * 24 * 365),
-			ReferenceId:   100 + uint32(worldId),
-			ReferenceType: string(asset.ReferenceTypeEquipable),
+			Slot:       0,
+			TemplateId: 1302000 + uint32(worldId),
+			AssetData: message.AssetData{
+				Expiration: time.Now().Add(time.Hour * 24 * 365),
+			},
 		}
 		_, err = p.Deposit(worldId, accountId, body)
 		if err != nil {

@@ -3,7 +3,6 @@ package inventory
 import (
 	"atlas-cashshop/cashshop/inventory/asset"
 	"atlas-cashshop/cashshop/inventory/compartment"
-	"atlas-cashshop/cashshop/item"
 	"atlas-cashshop/logger"
 	"net/http"
 	"net/http/httptest"
@@ -46,48 +45,40 @@ func (s Server) GetPrefix() string {
 
 // TestInventoryTransformSerializeDeserializeExtract tests the transform, serialize, deserialize, and extract functions
 func TestInventoryTransformSerializeDeserializeExtract(t *testing.T) {
-	// Create a cash inventory with compartments, assets, and items
+	// Create a cash inventory with compartments and assets
 	accountId := uint32(12345)
 
-	// Create items
-	item1 := item.NewBuilder().
+	// Create assets directly (flattened model)
+	explorerCompartmentId := uuid.New()
+	cygnusCompartmentId := uuid.New()
+	legendCompartmentId := uuid.New()
+
+	asset1 := asset.NewBuilder(explorerCompartmentId, 5000).
 		SetId(1).
 		SetCashId(1001).
-		SetTemplateId(5000).
 		SetQuantity(1).
 		SetFlag(0).
 		SetPurchasedBy(accountId).
 		SetExpiration(time.Now().Add(30 * 24 * time.Hour)).
 		Build()
 
-	item2 := item.NewBuilder().
+	asset2 := asset.NewBuilder(cygnusCompartmentId, 5001).
 		SetId(2).
 		SetCashId(1002).
-		SetTemplateId(5001).
 		SetQuantity(5).
 		SetFlag(0).
 		SetPurchasedBy(accountId).
 		SetExpiration(time.Now().Add(30 * 24 * time.Hour)).
 		Build()
 
-	item3 := item.NewBuilder().
+	asset3 := asset.NewBuilder(legendCompartmentId, 5002).
 		SetId(3).
 		SetCashId(1003).
-		SetTemplateId(5002).
 		SetQuantity(1).
 		SetFlag(0).
 		SetPurchasedBy(accountId).
 		SetExpiration(time.Now().Add(30 * 24 * time.Hour)).
 		Build()
-
-	// Create assets
-	explorerCompartmentId := uuid.New()
-	cygnusCompartmentId := uuid.New()
-	legendCompartmentId := uuid.New()
-
-	asset1 := asset.NewBuilder(uuid.New(), explorerCompartmentId, item1).Build()
-	asset2 := asset.NewBuilder(uuid.New(), cygnusCompartmentId, item2).Build()
-	asset3 := asset.NewBuilder(uuid.New(), legendCompartmentId, item3).Build()
 
 	// Create compartments
 	explorerCompartment := compartment.NewBuilder(explorerCompartmentId, accountId, compartment.TypeExplorer, 100).
@@ -208,7 +199,7 @@ func TestInventoryTransformSerializeDeserializeExtract(t *testing.T) {
 		t.Errorf("Legend compartment asset count mismatch: expected %d, got %d", len(legendIn.Assets()), len(legendOut.Assets()))
 	}
 
-	// Verify assets and items in explorer compartment
+	// Verify assets in explorer compartment
 	explorerAssetIn := explorerIn.Assets()[0]
 	explorerAssetOut := explorerOut.Assets()[0]
 
@@ -220,7 +211,7 @@ func TestInventoryTransformSerializeDeserializeExtract(t *testing.T) {
 		t.Errorf("Explorer asset quantity mismatch: expected %d, got %d", explorerAssetIn.Quantity(), explorerAssetOut.Quantity())
 	}
 
-	// Verify assets and items in cygnus compartment
+	// Verify assets in cygnus compartment
 	cygnusAssetIn := cygnusIn.Assets()[0]
 	cygnusAssetOut := cygnusOut.Assets()[0]
 
@@ -232,7 +223,7 @@ func TestInventoryTransformSerializeDeserializeExtract(t *testing.T) {
 		t.Errorf("Cygnus asset quantity mismatch: expected %d, got %d", cygnusAssetIn.Quantity(), cygnusAssetOut.Quantity())
 	}
 
-	// Verify assets and items in legend compartment
+	// Verify assets in legend compartment
 	legendAssetIn := legendIn.Assets()[0]
 	legendAssetOut := legendOut.Assets()[0]
 

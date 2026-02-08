@@ -2,6 +2,8 @@ package account
 
 import (
 	account2 "atlas-account/kafka/message/account"
+	ban2 "atlas-account/kafka/message/ban"
+	"fmt"
 	"math/rand"
 
 	"github.com/Chronicle20/atlas-kafka/producer"
@@ -62,33 +64,39 @@ func logoutCommandProvider(accountId uint32) model.Provider[[]kafka.Message] {
 	return producer.SingleMessageProvider(key, value)
 }
 
-func createdStatusProvider(sessionId uuid.UUID, accountId uint32) model.Provider[[]kafka.Message] {
+func createdStatusProvider(sessionId uuid.UUID, accountId uint32, accountName string, ipAddress string, hwid string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(accountId))
 	value := &account2.SessionStatusEvent[account2.CreatedSessionStatusEventBody]{
-		SessionId: sessionId,
-		AccountId: accountId,
-		Type:      account2.SessionEventStatusTypeCreated,
-		Body:      account2.CreatedSessionStatusEventBody{},
+		SessionId:   sessionId,
+		AccountId:   accountId,
+		AccountName: accountName,
+		Type:        account2.SessionEventStatusTypeCreated,
+		Body: account2.CreatedSessionStatusEventBody{
+			IPAddress: ipAddress,
+			HWID:      hwid,
+		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func requestLicenseAgreementStatusProvider(sessionId uuid.UUID, accountId uint32) model.Provider[[]kafka.Message] {
+func requestLicenseAgreementStatusProvider(sessionId uuid.UUID, accountId uint32, accountName string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(accountId))
 	value := &account2.SessionStatusEvent[any]{
-		SessionId: sessionId,
-		AccountId: accountId,
-		Type:      account2.SessionEventStatusTypeRequestLicenseAgreement,
+		SessionId:   sessionId,
+		AccountId:   accountId,
+		AccountName: accountName,
+		Type:        account2.SessionEventStatusTypeRequestLicenseAgreement,
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func stateChangedStatusProvider(sessionId uuid.UUID, accountId uint32, state uint8, params interface{}) model.Provider[[]kafka.Message] {
+func stateChangedStatusProvider(sessionId uuid.UUID, accountId uint32, accountName string, state uint8, params interface{}) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(accountId))
 	value := &account2.SessionStatusEvent[account2.StateChangedSessionStatusEventBody]{
-		SessionId: sessionId,
-		AccountId: accountId,
-		Type:      account2.SessionEventStatusTypeStateChanged,
+		SessionId:   sessionId,
+		AccountId:   accountId,
+		AccountName: accountName,
+		Type:        account2.SessionEventStatusTypeStateChanged,
 		Body: account2.StateChangedSessionStatusEventBody{
 			State:  state,
 			Params: params,
@@ -97,14 +105,34 @@ func stateChangedStatusProvider(sessionId uuid.UUID, accountId uint32, state uin
 	return producer.SingleMessageProvider(key, value)
 }
 
-func errorStatusProvider(sessionId uuid.UUID, accountId uint32, code string) model.Provider[[]kafka.Message] {
+func createBanCommandProvider(accountId uint32, reason string, expiresAt int64) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(accountId))
+	value := &ban2.Command[ban2.CreateCommandBody]{
+		Type: ban2.CommandTypeCreate,
+		Body: ban2.CreateCommandBody{
+			BanType:    2, // Account ban
+			Value:      fmt.Sprintf("%d", accountId),
+			Reason:     reason,
+			ReasonCode: 0,
+			Permanent:  false,
+			ExpiresAt:  expiresAt,
+			IssuedBy:   "atlas-account",
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func errorStatusProvider(sessionId uuid.UUID, accountId uint32, accountName string, code string, ipAddress string, hwid string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(accountId))
 	value := &account2.SessionStatusEvent[account2.ErrorSessionStatusEventBody]{
-		SessionId: sessionId,
-		AccountId: accountId,
-		Type:      account2.SessionEventStatusTypeError,
+		SessionId:   sessionId,
+		AccountId:   accountId,
+		AccountName: accountName,
+		Type:        account2.SessionEventStatusTypeError,
 		Body: account2.ErrorSessionStatusEventBody{
-			Code: code,
+			Code:      code,
+			IPAddress: ipAddress,
+			HWID:      hwid,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

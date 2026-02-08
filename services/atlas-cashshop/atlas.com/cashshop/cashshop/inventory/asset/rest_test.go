@@ -1,7 +1,6 @@
 package asset
 
 import (
-	"atlas-cashshop/cashshop/item"
 	"testing"
 	"time"
 
@@ -10,22 +9,17 @@ import (
 
 func TestTransform(t *testing.T) {
 	// Create test data
-	assetId := uuid.New()
 	compartmentId := uuid.New()
 
-	// Create an item
-	testItem := item.NewBuilder().
+	// Create asset model directly (flattened)
+	m := NewBuilder(compartmentId, 5000).
 		SetId(1).
 		SetCashId(1001).
-		SetTemplateId(5000).
 		SetQuantity(1).
 		SetFlag(0).
 		SetPurchasedBy(12345).
 		SetExpiration(time.Now().Add(30 * 24 * time.Hour)).
 		Build()
-
-	// Create asset model
-	m := NewBuilder(assetId, compartmentId, testItem).Build()
 
 	// Transform to REST model
 	rm, err := Transform(m)
@@ -34,40 +28,31 @@ func TestTransform(t *testing.T) {
 	}
 
 	// Verify fields
-	if rm.Id != assetId {
-		t.Errorf("Id mismatch: expected %v, got %v", assetId, rm.Id)
+	if rm.Id != m.Id() {
+		t.Errorf("Id mismatch: expected %d, got %d", m.Id(), rm.Id)
 	}
-	if rm.CompartmentId != compartmentId {
-		t.Errorf("CompartmentId mismatch: expected %v, got %v", compartmentId, rm.CompartmentId)
+	if rm.CompartmentId != compartmentId.String() {
+		t.Errorf("CompartmentId mismatch: expected %v, got %v", compartmentId.String(), rm.CompartmentId)
 	}
-	if rm.Item.Id != testItem.Id() {
-		t.Errorf("Item.Id mismatch: expected %d, got %d", testItem.Id(), rm.Item.Id)
+	if rm.TemplateId != 5000 {
+		t.Errorf("TemplateId mismatch: expected %d, got %d", 5000, rm.TemplateId)
 	}
-	if rm.Item.TemplateId != testItem.TemplateId() {
-		t.Errorf("Item.TemplateId mismatch: expected %d, got %d", testItem.TemplateId(), rm.Item.TemplateId)
+	if rm.CashId != 1001 {
+		t.Errorf("CashId mismatch: expected %d, got %d", 1001, rm.CashId)
 	}
 }
 
 func TestExtract(t *testing.T) {
-	// Create test data
-	assetId := uuid.New()
-	compartmentId := uuid.New()
-
-	// Create REST item model
-	itemRm := item.RestModel{
-		Id:          1,
-		CashId:      1001,
-		TemplateId:  5000,
-		Quantity:    1,
-		Flag:        0,
-		PurchasedBy: 12345,
-	}
-
 	// Create REST model
 	rm := RestModel{
-		Id:            assetId,
-		CompartmentId: compartmentId,
-		Item:          itemRm,
+		Id:            1,
+		CompartmentId: uuid.New().String(),
+		CashId:        1001,
+		TemplateId:    5000,
+		CommodityId:   0,
+		Quantity:      1,
+		Flag:          0,
+		PurchasedBy:   12345,
 	}
 
 	// Extract to domain model
@@ -77,35 +62,28 @@ func TestExtract(t *testing.T) {
 	}
 
 	// Verify fields
-	if m.Id() != assetId {
-		t.Errorf("Id mismatch: expected %v, got %v", assetId, m.Id())
+	if m.Id() != rm.Id {
+		t.Errorf("Id mismatch: expected %d, got %d", rm.Id, m.Id())
 	}
-	if m.CompartmentId() != compartmentId {
-		t.Errorf("CompartmentId mismatch: expected %v, got %v", compartmentId, m.CompartmentId())
+	if m.TemplateId() != rm.TemplateId {
+		t.Errorf("TemplateId mismatch: expected %d, got %d", rm.TemplateId, m.TemplateId())
 	}
-	if m.Item().Id() != itemRm.Id {
-		t.Errorf("Item.Id mismatch: expected %d, got %d", itemRm.Id, m.Item().Id())
+	if m.CashId() != rm.CashId {
+		t.Errorf("CashId mismatch: expected %d, got %d", rm.CashId, m.CashId())
 	}
 }
 
 func TestTransformExtractRoundTrip(t *testing.T) {
-	// Create test data
-	assetId := uuid.New()
+	// Create asset model
 	compartmentId := uuid.New()
-
-	// Create an item
-	testItem := item.NewBuilder().
+	original := NewBuilder(compartmentId, 5000).
 		SetId(1).
 		SetCashId(1001).
-		SetTemplateId(5000).
 		SetQuantity(1).
 		SetFlag(0).
 		SetPurchasedBy(12345).
 		SetExpiration(time.Now().Add(30 * 24 * time.Hour)).
 		Build()
-
-	// Create asset model
-	original := NewBuilder(assetId, compartmentId, testItem).Build()
 
 	// Transform to REST model
 	rm, err := Transform(original)
@@ -121,16 +99,16 @@ func TestTransformExtractRoundTrip(t *testing.T) {
 
 	// Verify round-trip preserves values
 	if original.Id() != result.Id() {
-		t.Errorf("Id mismatch after round-trip: expected %v, got %v", original.Id(), result.Id())
+		t.Errorf("Id mismatch after round-trip: expected %d, got %d", original.Id(), result.Id())
 	}
-	if original.CompartmentId() != result.CompartmentId() {
-		t.Errorf("CompartmentId mismatch after round-trip: expected %v, got %v", original.CompartmentId(), result.CompartmentId())
+	if original.TemplateId() != result.TemplateId() {
+		t.Errorf("TemplateId mismatch after round-trip: expected %d, got %d", original.TemplateId(), result.TemplateId())
 	}
-	if original.Item().Id() != result.Item().Id() {
-		t.Errorf("Item.Id mismatch after round-trip: expected %d, got %d", original.Item().Id(), result.Item().Id())
+	if original.CashId() != result.CashId() {
+		t.Errorf("CashId mismatch after round-trip: expected %d, got %d", original.CashId(), result.CashId())
 	}
-	if original.Item().TemplateId() != result.Item().TemplateId() {
-		t.Errorf("Item.TemplateId mismatch after round-trip: expected %d, got %d", original.Item().TemplateId(), result.Item().TemplateId())
+	if original.Quantity() != result.Quantity() {
+		t.Errorf("Quantity mismatch after round-trip: expected %d, got %d", original.Quantity(), result.Quantity())
 	}
 }
 
@@ -143,9 +121,8 @@ func TestRestModelGetName(t *testing.T) {
 }
 
 func TestRestModelGetID(t *testing.T) {
-	id := uuid.New()
-	rm := RestModel{Id: id}
-	expected := id.String()
+	rm := RestModel{Id: 42}
+	expected := "42"
 	if rm.GetID() != expected {
 		t.Errorf("GetID mismatch: expected %s, got %s", expected, rm.GetID())
 	}
@@ -153,46 +130,46 @@ func TestRestModelGetID(t *testing.T) {
 
 func TestRestModelSetID(t *testing.T) {
 	rm := &RestModel{}
-	id := uuid.New()
-	err := rm.SetID(id.String())
+	err := rm.SetID("42")
 	if err != nil {
 		t.Fatalf("SetID failed: %v", err)
 	}
-	if rm.Id != id {
-		t.Errorf("SetID mismatch: expected %v, got %v", id, rm.Id)
+	if rm.Id != 42 {
+		t.Errorf("SetID mismatch: expected %d, got %d", 42, rm.Id)
 	}
 }
 
 func TestRestModelSetIDInvalid(t *testing.T) {
 	rm := &RestModel{}
-	err := rm.SetID("not-a-valid-uuid")
+	err := rm.SetID("not-a-number")
 	if err == nil {
-		t.Error("SetID should fail for invalid UUID")
+		t.Error("SetID should fail for invalid number")
 	}
 }
 
-func TestAssetDelegatesMethods(t *testing.T) {
-	// Create an item
-	testItem := item.NewBuilder().
+func TestAssetFlatFields(t *testing.T) {
+	// Create asset model with all fields
+	compartmentId := uuid.New()
+	m := NewBuilder(compartmentId, 5000).
 		SetId(1).
 		SetCashId(1001).
-		SetTemplateId(5000).
 		SetQuantity(10).
 		SetFlag(0).
 		SetPurchasedBy(12345).
 		SetExpiration(time.Now().Add(30 * 24 * time.Hour)).
 		Build()
 
-	// Create asset model
-	assetId := uuid.New()
-	compartmentId := uuid.New()
-	m := NewBuilder(assetId, compartmentId, testItem).Build()
-
-	// Verify delegate methods
-	if m.TemplateId() != testItem.TemplateId() {
-		t.Errorf("TemplateId mismatch: expected %d, got %d", testItem.TemplateId(), m.TemplateId())
+	// Verify all field accessors
+	if m.TemplateId() != 5000 {
+		t.Errorf("TemplateId mismatch: expected %d, got %d", 5000, m.TemplateId())
 	}
-	if m.Quantity() != testItem.Quantity() {
-		t.Errorf("Quantity mismatch: expected %d, got %d", testItem.Quantity(), m.Quantity())
+	if m.Quantity() != 10 {
+		t.Errorf("Quantity mismatch: expected %d, got %d", 10, m.Quantity())
+	}
+	if m.CashId() != 1001 {
+		t.Errorf("CashId mismatch: expected %d, got %d", 1001, m.CashId())
+	}
+	if m.CompartmentId() != compartmentId {
+		t.Errorf("CompartmentId mismatch: expected %v, got %v", compartmentId, m.CompartmentId())
 	}
 }

@@ -80,13 +80,19 @@ Holds all computed effective stats for a character.
 - Multipliers are additive (e.g., two +10% buffs = +20% total).
 - Computed stats are non-negative; negative results are clamped to zero.
 
+### Stat Mapping
+
+The `MapBuffStatType` function maps buff stat type strings to stat types. Most buff types map to flat bonuses. `HYPER_BODY_HP`, `HYPER_BODY_MP`, and `MAPLE_WARRIOR` map to multiplier bonuses.
+
+The `MapStatupType` function maps passive skill statup type strings to stat types. It accepts both short-form (e.g., `PAD`, `STR`) and long-form (e.g., `WEAPON_ATTACK`, `STRENGTH`) identifiers.
+
 ---
 
 ## character
 
 ### Responsibility
 
-Manages the in-memory effective stats model for characters, including bonus tracking, computation, and registry storage.
+Manages the in-memory effective stats model for characters, including bonus tracking, computation, registry storage, and lazy initialization from external services.
 
 ### Core Models
 
@@ -97,8 +103,7 @@ Holds all stat bonuses and computed effective stats for a character.
 | Field | Type | Description |
 |-------|------|-------------|
 | tenant | tenant.Model | Tenant context |
-| worldId | byte | World identifier |
-| channelId | byte | Channel identifier |
+| ch | channel.Model | Channel model (contains world ID and channel ID) |
 | characterId | uint32 | Character identifier |
 | baseStats | stat.Base | Base stats from character service |
 | bonuses | []stat.Bonus | All active bonuses |
@@ -108,10 +113,18 @@ Holds all stat bonuses and computed effective stats for a character.
 
 ### Invariants
 
-- Models are immutable; all modifications return new instances.
+- Models are immutable; all modifications return new instances via `With*` methods.
 - Duplicate bonuses (same source and stat type) are replaced, not accumulated.
 - Computed stats are recomputed after any bonus change.
 - The initialized flag prevents recursive initialization during lazy load.
+- `Bonuses()` returns a defensive copy to protect internal state.
+- When MaxHP or MaxMP decreases due to bonus removal, clamp commands are published to the character command topic.
+
+### State Transitions
+
+- **Uninitialized -> Initialized**: On session CREATED event (channel issuer) or on first `GetEffectiveStats` call (lazy initialization). Fetches base stats from atlas-character, equipment bonuses from atlas-inventory, buff bonuses from atlas-buffs, and passive skill bonuses from atlas-skills and atlas-data.
+- **Initialized -> Updated**: On any bonus add/remove/change or base stat update. Recomputes effective stats immediately.
+- **Initialized -> Removed**: On session DESTROYED event. Character entry is deleted from the registry.
 
 ### Processors
 
@@ -124,14 +137,14 @@ Provides operations for managing character effective stats.
 | GetEffectiveStats | Retrieves computed effective stats and bonuses; performs lazy initialization if needed |
 | AddBonus | Adds or updates a flat stat bonus |
 | AddMultiplierBonus | Adds or updates a percentage stat bonus |
-| RemoveBonus | Removes a specific stat bonus |
-| RemoveBonusesBySource | Removes all bonuses from a source |
+| RemoveBonus | Removes a specific stat bonus; publishes clamp commands if MaxHP/MaxMP decreases |
+| RemoveBonusesBySource | Removes all bonuses from a source; publishes clamp commands if MaxHP/MaxMP decreases |
 | SetBaseStats | Sets base stats and recomputes |
-| AddEquipmentBonuses | Adds stat bonuses from equipment |
+| AddEquipmentBonuses | Adds stat bonuses from equipment (source: `equipment:<id>`) |
 | RemoveEquipmentBonuses | Removes all bonuses from equipment |
-| AddBuffBonuses | Adds stat bonuses from a buff |
+| AddBuffBonuses | Adds stat bonuses from a buff (source: `buff:<id>`) |
 | RemoveBuffBonuses | Removes all bonuses from a buff |
-| AddPassiveBonuses | Adds stat bonuses from a passive skill |
+| AddPassiveBonuses | Adds stat bonuses from a passive skill (source: `passive:<id>`) |
 | RemovePassiveBonuses | Removes all bonuses from a passive skill |
 | RemoveCharacter | Removes a character from the registry |
 
@@ -144,9 +157,23 @@ effective = floor((base + flat_bonuses) * (1.0 + multiplier_bonuses))
 ```
 
 Where:
-- `base` = Character's base stat from atlas-character
-- `flat_bonuses` = Sum of all additive bonuses
-- `multiplier_bonuses` = Sum of all percentage bonuses
+- `base` = Character's base stat from atlas-character (primary stats and MaxHP/MaxMP); secondary stats (WATK, MATK, etc.) have a base of 0
+- `flat_bonuses` = Sum of all flat bonus amounts for that stat type
+- `multiplier_bonuses` = Sum of all percentage multipliers for that stat type
+
+### Initialization
+
+Lazy initialization occurs via `InitializeCharacter` when a character's stats are first requested or when a session CREATED event is received. The initialization process:
+
+1. Creates or retrieves the character model from the registry.
+2. Marks the character as initialized (prevents recursive initialization).
+3. Fetches base stats from atlas-character via REST.
+4. Fetches the equip compartment from atlas-inventory via REST and extracts equipment stat bonuses from equipped assets (negative slot positions). Equipment stats are read from the asset's flat fields (strength, dexterity, etc.).
+5. Fetches active buffs from atlas-buffs via REST and converts stat changes to bonuses.
+6. Fetches character skills from atlas-skills and skill data from atlas-data via REST. Extracts bonuses from passive skills (non-action skills) at the character's skill level, including both direct effect fields and statups arrays.
+7. Recomputes effective stats and updates the registry.
+
+Each fetch step is fail-safe; failures are logged as warnings and the character proceeds with partial data.
 
 ---
 
@@ -154,19 +181,19 @@ Where:
 
 ### Responsibility
 
-Thread-safe singleton in-memory cache for character effective stats, organized by tenant.
+Thread-safe singleton in-memory cache for character effective stats, organized by tenant. Uses a two-level locking strategy: a top-level mutex guards tenant map creation, and per-tenant read-write locks guard character map access.
 
 ### Operations
 
 | Method | Description |
 |--------|-------------|
-| Get | Retrieves a character's model |
+| Get | Retrieves a character's model; returns ErrNotFound if absent |
 | GetOrCreate | Retrieves or creates a character's model |
 | Update | Replaces a character's model |
 | AddBonus | Adds a bonus and recomputes |
 | AddBonuses | Adds multiple bonuses and recomputes |
-| RemoveBonus | Removes a specific bonus and recomputes |
-| RemoveBonusesBySource | Removes all bonuses from a source and recomputes |
+| RemoveBonus | Removes a specific bonus and recomputes; returns ErrNotFound if absent |
+| RemoveBonusesBySource | Removes all bonuses from a source and recomputes; returns ErrNotFound if absent |
 | SetBaseStats | Sets base stats and recomputes |
 | MarkInitialized | Marks a character as initialized |
 | IsInitialized | Checks if a character has been initialized |

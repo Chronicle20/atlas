@@ -23,7 +23,7 @@ func TestHandleAssetCreatedEvent_WrongType(t *testing.T) {
 	tctx := tenant.WithContext(ctx, te)
 
 	// Create an event with wrong type - should return early
-	event := asset2.StatusEvent[asset2.CreatedStatusEventBody[any]]{
+	event := asset2.StatusEvent[asset2.CreatedStatusEventBody]{
 		Type:          "wrong_type", // Not StatusEventTypeCreated
 		TransactionId: uuid.New(),
 		CharacterId:   12345,
@@ -45,7 +45,7 @@ func TestHandleAssetCreatedEvent_SagaNotFound(t *testing.T) {
 	tctx := tenant.WithContext(ctx, te)
 
 	// Create an event with a transaction ID that doesn't exist
-	event := asset2.StatusEvent[asset2.CreatedStatusEventBody[any]]{
+	event := asset2.StatusEvent[asset2.CreatedStatusEventBody]{
 		Type:          asset2.StatusEventTypeCreated,
 		TransactionId: uuid.New(), // This saga doesn't exist
 		CharacterId:   12345,
@@ -94,7 +94,7 @@ func TestHandleAssetCreatedEvent_RegularCreation(t *testing.T) {
 	saga.GetCache().Put(te.Id(), testSaga)
 
 	// Create an asset created event
-	event := asset2.StatusEvent[asset2.CreatedStatusEventBody[any]]{
+	event := asset2.StatusEvent[asset2.CreatedStatusEventBody]{
 		Type:          asset2.StatusEventTypeCreated,
 		TransactionId: transactionId,
 		CharacterId:   12345,
@@ -147,7 +147,7 @@ func TestHandleAssetCreatedEvent_CreateAndEquipAsset(t *testing.T) {
 	saga.GetCache().Put(te.Id(), testSaga)
 
 	// Create an asset created event
-	event := asset2.StatusEvent[asset2.CreatedStatusEventBody[any]]{
+	event := asset2.StatusEvent[asset2.CreatedStatusEventBody]{
 		Type:          asset2.StatusEventTypeCreated,
 		TransactionId: transactionId,
 		CharacterId:   12345,
@@ -201,7 +201,7 @@ func TestHandleAssetCreatedEvent_CharacterMismatch(t *testing.T) {
 	saga.GetCache().Put(te.Id(), testSaga)
 
 	// Create an event with a different character ID
-	event := asset2.StatusEvent[asset2.CreatedStatusEventBody[any]]{
+	event := asset2.StatusEvent[asset2.CreatedStatusEventBody]{
 		Type:          asset2.StatusEventTypeCreated,
 		TransactionId: transactionId,
 		CharacterId:   99999, // Different character

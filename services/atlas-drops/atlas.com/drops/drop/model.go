@@ -24,7 +24,6 @@ type Model struct {
 	transactionId uuid.UUID
 	field         field.Model
 	itemId        uint32
-	equipmentId   uint32
 	quantity      uint32
 	meso          uint32
 	dropType      byte
@@ -39,6 +38,23 @@ type Model struct {
 	playerDrop    bool
 	status        string
 	petSlot       int8
+	// Equipment stats (inline, replacing equipmentId)
+	strength      uint16
+	dexterity     uint16
+	intelligence  uint16
+	luck          uint16
+	hp            uint16
+	mp            uint16
+	weaponAttack  uint16
+	magicAttack   uint16
+	weaponDefense uint16
+	magicDefense  uint16
+	accuracy      uint16
+	avoidability  uint16
+	hands         uint16
+	speed         uint16
+	jump          uint16
+	slots         uint16
 }
 
 func (m Model) Id() uint32 {
@@ -137,10 +153,6 @@ func (m Model) CharacterDrop() bool {
 	return m.playerDrop
 }
 
-func (m Model) EquipmentId() uint32 {
-	return m.equipmentId
-}
-
 func (m Model) Tenant() tenant.Model {
 	return m.tenant
 }
@@ -149,13 +161,76 @@ func (m Model) PetSlot() int8 {
 	return m.petSlot
 }
 
+func (m Model) Strength() uint16 {
+	return m.strength
+}
+
+func (m Model) Dexterity() uint16 {
+	return m.dexterity
+}
+
+func (m Model) Intelligence() uint16 {
+	return m.intelligence
+}
+
+func (m Model) Luck() uint16 {
+	return m.luck
+}
+
+func (m Model) Hp() uint16 {
+	return m.hp
+}
+
+func (m Model) Mp() uint16 {
+	return m.mp
+}
+
+func (m Model) WeaponAttack() uint16 {
+	return m.weaponAttack
+}
+
+func (m Model) MagicAttack() uint16 {
+	return m.magicAttack
+}
+
+func (m Model) WeaponDefense() uint16 {
+	return m.weaponDefense
+}
+
+func (m Model) MagicDefense() uint16 {
+	return m.magicDefense
+}
+
+func (m Model) Accuracy() uint16 {
+	return m.accuracy
+}
+
+func (m Model) Avoidability() uint16 {
+	return m.avoidability
+}
+
+func (m Model) Hands() uint16 {
+	return m.hands
+}
+
+func (m Model) Speed() uint16 {
+	return m.speed
+}
+
+func (m Model) Jump() uint16 {
+	return m.jump
+}
+
+func (m Model) Slots() uint16 {
+	return m.slots
+}
+
 type ModelBuilder struct {
 	tenant        tenant.Model
 	id            uint32
 	transactionId uuid.UUID
 	field         field.Model
 	itemId        uint32
-	equipmentId   uint32
 	quantity      uint32
 	meso          uint32
 	dropType      byte
@@ -170,6 +245,23 @@ type ModelBuilder struct {
 	playerDrop    bool
 	status        string
 	petSlot       int8
+	// Equipment stats
+	strength      uint16
+	dexterity     uint16
+	intelligence  uint16
+	luck          uint16
+	hp            uint16
+	mp            uint16
+	weaponAttack  uint16
+	magicAttack   uint16
+	weaponDefense uint16
+	magicDefense  uint16
+	accuracy      uint16
+	avoidability  uint16
+	hands         uint16
+	speed         uint16
+	jump          uint16
+	slots         uint16
 }
 
 func NewModelBuilder(tenant tenant.Model, f field.Model) *ModelBuilder {
@@ -213,11 +305,6 @@ func (b *ModelBuilder) SetType(dropType byte) *ModelBuilder {
 	return b
 }
 
-func (b *ModelBuilder) SetEquipmentId(equipmentId uint32) *ModelBuilder {
-	b.equipmentId = equipmentId
-	return b
-}
-
 func (b *ModelBuilder) SetPosition(x int16, y int16) *ModelBuilder {
 	b.x = x
 	b.y = y
@@ -252,13 +339,92 @@ func (b *ModelBuilder) SetPetSlot(petSlot int8) *ModelBuilder {
 	return b
 }
 
+func (b *ModelBuilder) SetStrength(v uint16) *ModelBuilder {
+	b.strength = v
+	return b
+}
+
+func (b *ModelBuilder) SetDexterity(v uint16) *ModelBuilder {
+	b.dexterity = v
+	return b
+}
+
+func (b *ModelBuilder) SetIntelligence(v uint16) *ModelBuilder {
+	b.intelligence = v
+	return b
+}
+
+func (b *ModelBuilder) SetLuck(v uint16) *ModelBuilder {
+	b.luck = v
+	return b
+}
+
+func (b *ModelBuilder) SetHp(v uint16) *ModelBuilder {
+	b.hp = v
+	return b
+}
+
+func (b *ModelBuilder) SetMp(v uint16) *ModelBuilder {
+	b.mp = v
+	return b
+}
+
+func (b *ModelBuilder) SetWeaponAttack(v uint16) *ModelBuilder {
+	b.weaponAttack = v
+	return b
+}
+
+func (b *ModelBuilder) SetMagicAttack(v uint16) *ModelBuilder {
+	b.magicAttack = v
+	return b
+}
+
+func (b *ModelBuilder) SetWeaponDefense(v uint16) *ModelBuilder {
+	b.weaponDefense = v
+	return b
+}
+
+func (b *ModelBuilder) SetMagicDefense(v uint16) *ModelBuilder {
+	b.magicDefense = v
+	return b
+}
+
+func (b *ModelBuilder) SetAccuracy(v uint16) *ModelBuilder {
+	b.accuracy = v
+	return b
+}
+
+func (b *ModelBuilder) SetAvoidability(v uint16) *ModelBuilder {
+	b.avoidability = v
+	return b
+}
+
+func (b *ModelBuilder) SetHands(v uint16) *ModelBuilder {
+	b.hands = v
+	return b
+}
+
+func (b *ModelBuilder) SetSpeed(v uint16) *ModelBuilder {
+	b.speed = v
+	return b
+}
+
+func (b *ModelBuilder) SetJump(v uint16) *ModelBuilder {
+	b.jump = v
+	return b
+}
+
+func (b *ModelBuilder) SetSlots(v uint16) *ModelBuilder {
+	b.slots = v
+	return b
+}
+
 func (b *ModelBuilder) Clone(m Model) *ModelBuilder {
 	b.tenant = m.Tenant()
 	b.id = m.Id()
 	b.transactionId = m.TransactionId()
 	b.field = m.Field()
 	b.itemId = m.ItemId()
-	b.equipmentId = m.EquipmentId()
 	b.quantity = m.Quantity()
 	b.meso = m.Meso()
 	b.dropType = m.Type()
@@ -273,6 +439,22 @@ func (b *ModelBuilder) Clone(m Model) *ModelBuilder {
 	b.playerDrop = m.PlayerDrop()
 	b.status = m.Status()
 	b.petSlot = m.PetSlot()
+	b.strength = m.Strength()
+	b.dexterity = m.Dexterity()
+	b.intelligence = m.Intelligence()
+	b.luck = m.Luck()
+	b.hp = m.Hp()
+	b.mp = m.Mp()
+	b.weaponAttack = m.WeaponAttack()
+	b.magicAttack = m.MagicAttack()
+	b.weaponDefense = m.WeaponDefense()
+	b.magicDefense = m.MagicDefense()
+	b.accuracy = m.Accuracy()
+	b.avoidability = m.Avoidability()
+	b.hands = m.Hands()
+	b.speed = m.Speed()
+	b.jump = m.Jump()
+	b.slots = m.Slots()
 	return b
 }
 
@@ -289,7 +471,6 @@ func (b *ModelBuilder) Build() (Model, error) {
 		transactionId: b.transactionId,
 		field:         b.field,
 		itemId:        b.itemId,
-		equipmentId:   b.equipmentId,
 		quantity:      b.quantity,
 		meso:          b.meso,
 		dropType:      b.dropType,
@@ -304,6 +485,22 @@ func (b *ModelBuilder) Build() (Model, error) {
 		playerDrop:    b.playerDrop,
 		status:        b.status,
 		petSlot:       b.petSlot,
+		strength:      b.strength,
+		dexterity:     b.dexterity,
+		intelligence:  b.intelligence,
+		luck:          b.luck,
+		hp:            b.hp,
+		mp:            b.mp,
+		weaponAttack:  b.weaponAttack,
+		magicAttack:   b.magicAttack,
+		weaponDefense: b.weaponDefense,
+		magicDefense:  b.magicDefense,
+		accuracy:      b.accuracy,
+		avoidability:  b.avoidability,
+		hands:         b.hands,
+		speed:         b.speed,
+		jump:          b.jump,
+		slots:         b.slots,
 	}, nil
 }
 

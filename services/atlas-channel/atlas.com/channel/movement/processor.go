@@ -114,7 +114,7 @@ func (p *Processor) ForMonster(f field.Model, characterId uint32, objectId uint3
 		return err
 	}
 	go func() {
-		op := session.Announce(p.l)(p.ctx)(p.wp)(writer.MoveMonsterAck)(writer.MoveMonsterAckBody(p.l, p.t)(objectId, moveId, uint16(mo.MP()), false, 0, 0))
+		op := session.Announce(p.l)(p.ctx)(p.wp)(writer.MoveMonsterAck)(writer.MoveMonsterAckBody(p.l, p.t)(objectId, moveId, uint16(mo.Mp()), false, 0, 0))
 		err = p.sp.IfPresentByCharacterId(f.Channel())(characterId, op)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to ack monster [%d] movement for character [%d].", objectId, characterId)

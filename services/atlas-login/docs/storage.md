@@ -19,8 +19,7 @@ Stores active sessions in memory, keyed by tenant ID and session ID.
 |-------|------|-------------|
 | id | uuid.UUID | Session identifier |
 | accountId | uint32 | Associated account identifier |
-| worldId | byte | Selected world identifier |
-| channelId | byte | Selected channel identifier |
+| ch | channel.Model | Selected channel (carries worldId and channelId) |
 | con | net.Conn | TCP connection |
 | send | crypto.AESOFB | Send encryption cipher |
 | sendLock | *sync.Mutex | Mutex for send operations |

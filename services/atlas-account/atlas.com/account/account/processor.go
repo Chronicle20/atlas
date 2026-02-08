@@ -1,12 +1,15 @@
 package account
 
 import (
+	"atlas-account/ban"
 	"atlas-account/configuration"
 	"atlas-account/kafka/message"
 	account2 "atlas-account/kafka/message/account"
+	ban2 "atlas-account/kafka/message/ban"
 	"atlas-account/kafka/producer"
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/Chronicle20/atlas-model/model"
@@ -42,8 +45,8 @@ type Processor interface {
 	Login(mb *message.Buffer) func(sessionId uuid.UUID) func(accountId uint32) func(issuer string) error
 	LogoutAndEmit(sessionId uuid.UUID, accountId uint32, issuer string) error
 	Logout(mb *message.Buffer) func(sessionId uuid.UUID) func(accountId uint32) func(issuer string) error
-	AttemptLoginAndEmit(sessionId uuid.UUID, name string, password string) error
-	AttemptLogin(mb *message.Buffer) func(sessionId uuid.UUID, name string, password string) error
+	AttemptLoginAndEmit(sessionId uuid.UUID, name string, password string, ipAddress string, hwid string) error
+	AttemptLogin(mb *message.Buffer) func(sessionId uuid.UUID, name string, password string, ipAddress string, hwid string) error
 	ProgressStateAndEmit(sessionId uuid.UUID, issuer string, accountId uint32, state State, params interface{}) error
 	ProgressState(mb *message.Buffer) func(sessionId uuid.UUID, issuer string, accountId uint32, state State, params interface{}) error
 	GetById(accountId uint32) (Model, error)
@@ -53,6 +56,10 @@ type Processor interface {
 	ByNameProvider(name string) model.Provider[Model]
 	ByTenantProvider() ([]Model, error)
 	LoggedInTenantProvider() ([]Model, error)
+	RecordPinAttemptAndEmit(accountId uint32, success bool) (int, bool, error)
+	RecordPinAttempt(mb *message.Buffer) func(accountId uint32, success bool) (int, bool, error)
+	RecordPicAttemptAndEmit(accountId uint32, success bool) (int, bool, error)
+	RecordPicAttempt(mb *message.Buffer) func(accountId uint32, success bool) (int, bool, error)
 }
 
 type ProcessorImpl struct {
@@ -186,6 +193,14 @@ func (p *ProcessorImpl) Update(accountId uint32, input Model) (Model, error) {
 		p.l.Debugf("Updating TOS [%t] of account [%d].", input.tos, accountId)
 		modifiers = append(modifiers, updateTos(input.tos))
 	}
+	if a.pinAttempts != input.pinAttempts {
+		p.l.Debugf("Updating PinAttempts [%d] of account [%d].", input.pinAttempts, accountId)
+		modifiers = append(modifiers, updatePinAttempts(input.pinAttempts))
+	}
+	if a.picAttempts != input.picAttempts {
+		p.l.Debugf("Updating PicAttempts [%d] of account [%d].", input.picAttempts, accountId)
+		modifiers = append(modifiers, updatePicAttempts(input.picAttempts))
+	}
 	if a.gender != input.gender {
 		p.l.Debugf("Updating Gender [%d] of account [%d].", input.gender, accountId)
 		modifiers = append(modifiers, updateGender(input.gender))
@@ -318,59 +333,61 @@ func teardownTenant(l logrus.FieldLogger) func(db *gorm.DB) model.Operator[conte
 	}
 }
 
-func (p *ProcessorImpl) AttemptLoginAndEmit(sessionId uuid.UUID, name string, password string) error {
+func (p *ProcessorImpl) AttemptLoginAndEmit(sessionId uuid.UUID, name string, password string, ipAddress string, hwid string) error {
 	return message.Emit(p.p)(func(buf *message.Buffer) error {
-		return p.AttemptLogin(buf)(sessionId, name, password)
+		return p.AttemptLogin(buf)(sessionId, name, password, ipAddress, hwid)
 	})
 }
 
-func (p *ProcessorImpl) AttemptLogin(mb *message.Buffer) func(sessionId uuid.UUID, name string, password string) error {
-	return func(sessionId uuid.UUID, name string, password string) error {
+func (p *ProcessorImpl) AttemptLogin(mb *message.Buffer) func(sessionId uuid.UUID, name string, password string, ipAddress string, hwid string) error {
+	return func(sessionId uuid.UUID, name string, password string, ipAddress string, hwid string) error {
 		p.l.Debugf("Attemting login for [%s].", name)
 		if checkLoginAttempts(sessionId) > 4 {
 			p.l.Warnf("Session [%s] has attempted to log into (or create) an account too many times.", sessionId.String())
-			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, 0, TooManyAttempts))
+			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, 0, "", TooManyAttempts, ipAddress, hwid))
 		}
 
 		c, err := configuration.Get()
 		if err != nil {
 			p.l.WithError(err).Errorf("Error reading needed configuration.")
-			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, 0, SystemError))
+			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, 0, "", SystemError, ipAddress, hwid))
 		}
 
 		a, err := p.GetOrCreate(mb)(name, password, c.AutomaticRegister)
 		if err != nil && !c.AutomaticRegister {
-			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, 0, NotRegistered))
+			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, 0, "", NotRegistered, ipAddress, hwid))
 		}
 		if err != nil {
-			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, 0, SystemError))
+			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, 0, "", SystemError, ipAddress, hwid))
 		}
 
-		if a.Banned() {
-			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), DeletedOrBlocked))
+		checkResult, err := ban.CheckBan(p.l, p.ctx, ipAddress, hwid, a.Id())
+		if err != nil {
+			p.l.WithError(err).Warnf("Unable to check ban status for account [%d]. Proceeding with fail-open strategy.", a.Id())
+		} else if checkResult.Banned {
+			p.l.Infof("Account [%d] is banned. type=[%d] reason=[%s].", a.Id(), checkResult.BanType, checkResult.Reason)
+			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), a.Name(), DeletedOrBlocked, ipAddress, hwid))
 		}
-
-		// TODO implement ip, mac, and temporary banning practices
 
 		if a.State() != StateNotLoggedIn {
-			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), AlreadyLoggedIn))
+			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), a.Name(), AlreadyLoggedIn, ipAddress, hwid))
 		}
 		if a.Password()[0] != uint8('$') || a.Password()[1] != uint8('2') || bcrypt.CompareHashAndPassword([]byte(a.Password()), []byte(password)) != nil {
-			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), IncorrectPassword))
+			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), a.Name(), IncorrectPassword, ipAddress, hwid))
 		}
 
 		err = p.Login(mb)(sessionId)(a.Id())(ServiceLogin)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to record login.")
-			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), SystemError))
+			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), a.Name(), SystemError, ipAddress, hwid))
 		}
 
 		p.l.Debugf("Login successful for [%s].", name)
 
 		if !a.TOS() && p.t.Region() != "JMS" {
-			return mb.Put(account2.EnvEventSessionStatusTopic, requestLicenseAgreementStatusProvider(sessionId, a.Id()))
+			return mb.Put(account2.EnvEventSessionStatusTopic, requestLicenseAgreementStatusProvider(sessionId, a.Id(), a.Name()))
 		}
-		return mb.Put(account2.EnvEventSessionStatusTopic, createdStatusProvider(sessionId, a.Id()))
+		return mb.Put(account2.EnvEventSessionStatusTopic, createdStatusProvider(sessionId, a.Id(), a.Name(), ipAddress, hwid))
 	}
 }
 
@@ -385,7 +402,7 @@ func (p *ProcessorImpl) ProgressState(mb *message.Buffer) func(sessionId uuid.UU
 		a, err := p.GetById(accountId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to locate account a session is being created for.")
-			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), NotRegistered))
+			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), "", NotRegistered, "", ""))
 		}
 
 		p.l.Debugf("Received request to progress state for account [%d] to state [%d] from state [%d].", accountId, state, a.State())
@@ -393,32 +410,184 @@ func (p *ProcessorImpl) ProgressState(mb *message.Buffer) func(sessionId uuid.UU
 			p.l.Debugf("Has state [%d] for [%s] via session [%s].", v.State, k.Service, k.SessionId.String())
 		}
 		if a.State() == StateNotLoggedIn {
-			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), SystemError))
+			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), a.Name(), SystemError, "", ""))
 		}
 		if state == StateNotLoggedIn {
 			err = p.Logout(mb)(sessionId)(accountId)(issuer)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to logout account.")
-				return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), SystemError))
+				return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), a.Name(), SystemError, "", ""))
 			}
-			return mb.Put(account2.EnvEventSessionStatusTopic, stateChangedStatusProvider(sessionId, a.Id(), uint8(StateNotLoggedIn), params))
+			return mb.Put(account2.EnvEventSessionStatusTopic, stateChangedStatusProvider(sessionId, a.Id(), a.Name(), uint8(StateNotLoggedIn), params))
 		}
 		if state == StateLoggedIn {
 			err = p.Login(mb)(sessionId)(accountId)(issuer)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to login account.")
-				return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), SystemError))
+				return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), a.Name(), SystemError, "", ""))
 			}
-			return mb.Put(account2.EnvEventSessionStatusTopic, stateChangedStatusProvider(sessionId, a.Id(), uint8(StateLoggedIn), params))
+			return mb.Put(account2.EnvEventSessionStatusTopic, stateChangedStatusProvider(sessionId, a.Id(), a.Name(), uint8(StateLoggedIn), params))
 		}
 		if state == StateTransition {
 			err = Get().Transition(AccountKey{Tenant: p.t, AccountId: accountId}, ServiceKey{SessionId: sessionId, Service: Service(issuer)})
 			if err == nil {
 				p.l.Debugf("State transition triggered a transition.")
 			}
-			return mb.Put(account2.EnvEventSessionStatusTopic, stateChangedStatusProvider(sessionId, a.Id(), uint8(StateTransition), params))
+			return mb.Put(account2.EnvEventSessionStatusTopic, stateChangedStatusProvider(sessionId, a.Id(), a.Name(), uint8(StateTransition), params))
 		}
-		return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, 0, SystemError))
+		return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, 0, "", SystemError, "", ""))
+	}
+}
+
+func (p *ProcessorImpl) RecordPinAttemptAndEmit(accountId uint32, success bool) (int, bool, error) {
+	var attempts int
+	var limitReached bool
+	err := message.Emit(p.p)(func(buf *message.Buffer) error {
+		var innerErr error
+		attempts, limitReached, innerErr = p.RecordPinAttempt(buf)(accountId, success)
+		return innerErr
+	})
+	return attempts, limitReached, err
+}
+
+func (p *ProcessorImpl) RecordPinAttempt(mb *message.Buffer) func(accountId uint32, success bool) (int, bool, error) {
+	return func(accountId uint32, success bool) (int, bool, error) {
+		a, err := p.GetById(accountId)
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to locate account [%d] for PIN attempt recording.", accountId)
+			return 0, false, err
+		}
+
+		if success {
+			if a.PinAttempts() > 0 {
+				p.l.Debugf("Resetting PIN attempts for account [%d] after successful PIN entry.", accountId)
+				err = update(p.db)(updatePinAttempts(0))(p.t, accountId)
+				if err != nil {
+					p.l.WithError(err).Errorf("Unable to reset PIN attempts for account [%d].", accountId)
+					return 0, false, err
+				}
+			}
+			return 0, false, nil
+		}
+
+		newAttempts := a.PinAttempts() + 1
+		p.l.Debugf("Recording failed PIN attempt [%d] for account [%d].", newAttempts, accountId)
+
+		c, err := configuration.Get()
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to read configuration for PIN attempt limit.")
+			return newAttempts, false, err
+		}
+
+		limitReached := newAttempts >= c.MaxPinAttempts
+		if limitReached {
+			p.l.Warnf("Account [%d] has reached the PIN attempt limit [%d]. Issuing temporary ban.", accountId, c.MaxPinAttempts)
+
+			duration, err := time.ParseDuration(c.PinBanDuration)
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to parse PIN ban duration [%s]. Defaulting to 15 minutes.", c.PinBanDuration)
+				duration = 15 * time.Minute
+			}
+			expiresAt := time.Now().Add(duration).UnixMilli()
+			reason := fmt.Sprintf("Exceeded maximum PIN attempts (%d)", c.MaxPinAttempts)
+
+			err = mb.Put(ban2.EnvCommandTopic, createBanCommandProvider(accountId, reason, expiresAt))
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to emit ban command for account [%d].", accountId)
+				return newAttempts, true, err
+			}
+
+			// Reset counter after issuing ban
+			err = update(p.db)(updatePinAttempts(0))(p.t, accountId)
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to reset PIN attempts after ban for account [%d].", accountId)
+				return 0, true, err
+			}
+			return 0, true, nil
+		}
+
+		err = update(p.db)(updatePinAttempts(newAttempts))(p.t, accountId)
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to update PIN attempts for account [%d].", accountId)
+			return newAttempts, false, err
+		}
+		return newAttempts, false, nil
+	}
+}
+
+func (p *ProcessorImpl) RecordPicAttemptAndEmit(accountId uint32, success bool) (int, bool, error) {
+	var attempts int
+	var limitReached bool
+	err := message.Emit(p.p)(func(buf *message.Buffer) error {
+		var innerErr error
+		attempts, limitReached, innerErr = p.RecordPicAttempt(buf)(accountId, success)
+		return innerErr
+	})
+	return attempts, limitReached, err
+}
+
+func (p *ProcessorImpl) RecordPicAttempt(mb *message.Buffer) func(accountId uint32, success bool) (int, bool, error) {
+	return func(accountId uint32, success bool) (int, bool, error) {
+		a, err := p.GetById(accountId)
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to locate account [%d] for PIC attempt recording.", accountId)
+			return 0, false, err
+		}
+
+		if success {
+			if a.PicAttempts() > 0 {
+				p.l.Debugf("Resetting PIC attempts for account [%d] after successful PIC entry.", accountId)
+				err = update(p.db)(updatePicAttempts(0))(p.t, accountId)
+				if err != nil {
+					p.l.WithError(err).Errorf("Unable to reset PIC attempts for account [%d].", accountId)
+					return 0, false, err
+				}
+			}
+			return 0, false, nil
+		}
+
+		newAttempts := a.PicAttempts() + 1
+		p.l.Debugf("Recording failed PIC attempt [%d] for account [%d].", newAttempts, accountId)
+
+		c, err := configuration.Get()
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to read configuration for PIC attempt limit.")
+			return newAttempts, false, err
+		}
+
+		limitReached := newAttempts >= c.MaxPicAttempts
+		if limitReached {
+			p.l.Warnf("Account [%d] has reached the PIC attempt limit [%d]. Issuing temporary ban.", accountId, c.MaxPicAttempts)
+
+			duration, err := time.ParseDuration(c.PicBanDuration)
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to parse PIC ban duration [%s]. Defaulting to 15 minutes.", c.PicBanDuration)
+				duration = 15 * time.Minute
+			}
+			expiresAt := time.Now().Add(duration).UnixMilli()
+			reason := fmt.Sprintf("Exceeded maximum PIC attempts (%d)", c.MaxPicAttempts)
+
+			err = mb.Put(ban2.EnvCommandTopic, createBanCommandProvider(accountId, reason, expiresAt))
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to emit ban command for account [%d].", accountId)
+				return newAttempts, true, err
+			}
+
+			// Reset counter after issuing ban
+			err = update(p.db)(updatePicAttempts(0))(p.t, accountId)
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to reset PIC attempts after ban for account [%d].", accountId)
+				return 0, true, err
+			}
+			return 0, true, nil
+		}
+
+		err = update(p.db)(updatePicAttempts(newAttempts))(p.t, accountId)
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to update PIC attempts for account [%d].", accountId)
+			return newAttempts, false, err
+		}
+		return newAttempts, false, nil
 	}
 }
 

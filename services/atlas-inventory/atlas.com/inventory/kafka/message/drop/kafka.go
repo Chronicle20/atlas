@@ -23,19 +23,39 @@ type Command[E any] struct {
 	Body      E          `json:"body"`
 }
 
+// EquipmentData carries inline equipment statistics for drops
+type EquipmentData struct {
+	Strength      uint16 `json:"strength"`
+	Dexterity     uint16 `json:"dexterity"`
+	Intelligence  uint16 `json:"intelligence"`
+	Luck          uint16 `json:"luck"`
+	Hp            uint16 `json:"hp"`
+	Mp            uint16 `json:"mp"`
+	WeaponAttack  uint16 `json:"weaponAttack"`
+	MagicAttack   uint16 `json:"magicAttack"`
+	WeaponDefense uint16 `json:"weaponDefense"`
+	MagicDefense  uint16 `json:"magicDefense"`
+	Accuracy      uint16 `json:"accuracy"`
+	Avoidability  uint16 `json:"avoidability"`
+	Hands         uint16 `json:"hands"`
+	Speed         uint16 `json:"speed"`
+	Jump          uint16 `json:"jump"`
+	Slots         uint16 `json:"slots"`
+}
+
 type SpawnFromCharacterCommandBody struct {
-	ItemId      uint32 `json:"itemId"`
-	EquipmentId uint32 `json:"equipmentId"`
-	Quantity    uint32 `json:"quantity"`
-	Mesos       uint32 `json:"mesos"`
-	DropType    byte   `json:"dropType"`
-	X           int16  `json:"x"`
-	Y           int16  `json:"y"`
-	OwnerId     uint32 `json:"ownerId"`
-	DropperId   uint32 `json:"dropperId"`
-	DropperX    int16  `json:"dropperX"`
-	DropperY    int16  `json:"dropperY"`
-	PlayerDrop  bool   `json:"playerDrop"`
+	ItemId     uint32 `json:"itemId"`
+	Quantity   uint32 `json:"quantity"`
+	Mesos      uint32 `json:"mesos"`
+	DropType   byte   `json:"dropType"`
+	X          int16  `json:"x"`
+	Y          int16  `json:"y"`
+	OwnerId    uint32 `json:"ownerId"`
+	DropperId  uint32 `json:"dropperId"`
+	DropperX   int16  `json:"dropperX"`
+	DropperY   int16  `json:"dropperY"`
+	PlayerDrop bool   `json:"playerDrop"`
+	EquipmentData
 }
 
 type CancelReservationCommandBody struct {
@@ -66,7 +86,7 @@ type StatusEvent[E any] struct {
 type ReservedStatusEventBody struct {
 	CharacterId uint32 `json:"characterId"`
 	ItemId      uint32 `json:"itemId"`
-	EquipmentId uint32 `json:"equipmentId"`
 	Quantity    uint32 `json:"quantity"`
 	Meso        uint32 `json:"meso"`
+	EquipmentData
 }

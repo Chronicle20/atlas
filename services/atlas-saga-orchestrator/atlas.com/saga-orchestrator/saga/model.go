@@ -1,6 +1,7 @@
 package saga
 
 import (
+	asset2 "atlas-saga-orchestrator/kafka/message/asset"
 	"atlas-saga-orchestrator/validation"
 	"encoding/json"
 	"errors"
@@ -28,6 +29,7 @@ const (
 	CharacterCreation    Type = "character_creation"
 	StorageOperation     Type = "storage_operation"
 	CharacterRespawn     Type = "character_respawn"
+	GachaponTransaction  Type = "gachapon_transaction"
 )
 
 // Saga represents the entire saga transaction.
@@ -287,6 +289,34 @@ func (s Saga) WithStepStatus(index int, status Status) (Saga, error) {
 		payload:   s.steps[index].payload,
 		createdAt: s.steps[index].createdAt,
 		updatedAt: time.Now(),
+		result:    s.steps[index].result,
+	}
+
+	return Saga{
+		transactionId: s.transactionId,
+		sagaType:      s.sagaType,
+		initiatedBy:   s.initiatedBy,
+		steps:         newSteps,
+	}, nil
+}
+
+// WithStepResult returns a new Saga with the specified step's result updated
+func (s Saga) WithStepResult(index int, result map[string]any) (Saga, error) {
+	if index < 0 || index >= len(s.steps) {
+		return Saga{}, fmt.Errorf("invalid step index: %d", index)
+	}
+
+	newSteps := make([]Step[any], len(s.steps))
+	copy(newSteps, s.steps)
+
+	newSteps[index] = Step[any]{
+		stepId:    s.steps[index].stepId,
+		status:    s.steps[index].status,
+		action:    s.steps[index].action,
+		payload:   s.steps[index].payload,
+		createdAt: s.steps[index].createdAt,
+		updatedAt: s.steps[index].updatedAt,
+		result:    result,
 	}
 
 	return Saga{
@@ -443,6 +473,10 @@ const (
 	// Saved location actions
 	SaveLocation            Action = "save_location"              // Save character's current location for later return
 	WarpToSavedLocation     Action = "warp_to_saved_location"     // Warp character to a previously saved location and delete it
+
+	// Gachapon actions
+	SelectGachaponReward    Action = "select_gachapon_reward"     // Select a random reward from a gachapon machine
+	EmitGachaponWin         Action = "emit_gachapon_win"          // Emit gachapon win event for announcements (uncommon/rare only)
 )
 
 // Step represents a single step within a saga.
@@ -453,6 +487,7 @@ type Step[T any] struct {
 	payload   T
 	createdAt time.Time
 	updatedAt time.Time
+	result    map[string]any
 }
 
 // StepId returns the step ID
@@ -473,15 +508,19 @@ func (s Step[T]) CreatedAt() time.Time { return s.createdAt }
 // UpdatedAt returns the step update time
 func (s Step[T]) UpdatedAt() time.Time { return s.updatedAt }
 
+// Result returns the step result data (nil if unset)
+func (s Step[T]) Result() map[string]any { return s.result }
+
 // MarshalJSON implements json.Marshaler for Step
 func (s Step[T]) MarshalJSON() ([]byte, error) {
 	type alias struct {
-		StepId    string    `json:"stepId"`
-		Status    Status    `json:"status"`
-		Action    Action    `json:"action"`
-		Payload   T         `json:"payload"`
-		CreatedAt time.Time `json:"createdAt"`
-		UpdatedAt time.Time `json:"updatedAt"`
+		StepId    string         `json:"stepId"`
+		Status    Status         `json:"status"`
+		Action    Action         `json:"action"`
+		Payload   T              `json:"payload"`
+		CreatedAt time.Time      `json:"createdAt"`
+		UpdatedAt time.Time      `json:"updatedAt"`
+		Result    map[string]any `json:"result,omitempty"`
 	}
 	return json.Marshal(alias{
 		StepId:    s.stepId,
@@ -490,6 +529,7 @@ func (s Step[T]) MarshalJSON() ([]byte, error) {
 		Payload:   s.payload,
 		CreatedAt: s.createdAt,
 		UpdatedAt: s.updatedAt,
+		Result:    s.result,
 	})
 }
 
@@ -1059,10 +1099,7 @@ type AcceptToStoragePayload struct {
 	AccountId     uint32          `json:"accountId"`     // Account ID
 	CharacterId   uint32          `json:"characterId"`   // Character initiating the transfer
 	TemplateId    uint32          `json:"templateId"`    // Item template ID
-	ReferenceId   uint32          `json:"referenceId"`   // Reference ID
-	ReferenceType string          `json:"referenceType"` // Reference type
-	ReferenceData json.RawMessage `json:"referenceData"` // Asset-specific data
-	Quantity      uint32          `json:"quantity"`      // Quantity to accept (0 = all from source)
+	AssetData     asset2.AssetData `json:"assetData"`    // Flat asset data
 }
 
 // ReleaseFromCharacterPayload represents the payload for the release_from_character action (internal step)
@@ -1078,14 +1115,11 @@ type ReleaseFromCharacterPayload struct {
 // AcceptToCharacterPayload represents the payload for the accept_to_character action (internal step)
 // This is created by saga-orchestrator expansion with all asset data pre-populated
 type AcceptToCharacterPayload struct {
-	TransactionId uuid.UUID       `json:"transactionId"` // Saga transaction ID
-	CharacterId   uint32          `json:"characterId"`   // Character ID
-	InventoryType byte            `json:"inventoryType"` // Inventory type (equip, use, etc.)
-	TemplateId    uint32          `json:"templateId"`    // Item template ID
-	ReferenceId   uint32          `json:"referenceId"`   // Reference ID
-	ReferenceType string          `json:"referenceType"` // Reference type
-	ReferenceData json.RawMessage `json:"referenceData"` // Asset-specific data
-	Quantity      uint32          `json:"quantity"`      // Quantity to accept (0 = all from source)
+	TransactionId uuid.UUID        `json:"transactionId"` // Saga transaction ID
+	CharacterId   uint32           `json:"characterId"`   // Character ID
+	InventoryType byte             `json:"inventoryType"` // Inventory type (equip, use, etc.)
+	TemplateId    uint32           `json:"templateId"`    // Item template ID
+	AssetData     asset2.AssetData `json:"assetData"`     // Flat asset data
 }
 
 // ReleaseFromStoragePayload represents the payload for the release_from_storage action (internal step)
@@ -1124,16 +1158,17 @@ type WithdrawFromCashShopPayload struct {
 // AcceptToCashShopPayload represents the payload for the accept_to_cash_shop action (internal step)
 // This is created by saga-orchestrator expansion with all asset data pre-populated
 type AcceptToCashShopPayload struct {
-	TransactionId   uuid.UUID       `json:"transactionId"`   // Saga transaction ID
-	CharacterId     uint32          `json:"characterId"`     // Character ID for session lookup
-	AccountId       uint32          `json:"accountId"`       // Account ID
-	CompartmentId   uuid.UUID       `json:"compartmentId"`   // Cash shop compartment ID
-	CompartmentType byte            `json:"compartmentType"` // Compartment type (1=Explorer, 2=Cygnus, 3=Legend)
-	CashId          int64           `json:"cashId"`          // Preserved CashId from source item
-	TemplateId      uint32          `json:"templateId"`      // Item template ID
-	ReferenceId     uint32          `json:"referenceId"`     // Reference ID
-	ReferenceType   string          `json:"referenceType"`   // Reference type
-	ReferenceData   json.RawMessage `json:"referenceData"`   // Asset-specific data
+	TransactionId   uuid.UUID `json:"transactionId"`   // Saga transaction ID
+	CharacterId     uint32    `json:"characterId"`     // Character ID for session lookup
+	AccountId       uint32    `json:"accountId"`       // Account ID
+	CompartmentId   uuid.UUID `json:"compartmentId"`   // Cash shop compartment ID
+	CompartmentType byte      `json:"compartmentType"` // Compartment type (1=Explorer, 2=Cygnus, 3=Legend)
+	CashId          int64     `json:"cashId"`          // Preserved CashId from source item
+	TemplateId      uint32    `json:"templateId"`      // Item template ID
+	Quantity        uint32    `json:"quantity"`         // Quantity
+	CommodityId     uint32    `json:"commodityId"`     // Commodity ID
+	PurchasedBy     uint32    `json:"purchasedBy"`     // Who purchased the item
+	Flag            uint16    `json:"flag"`             // Item flag
 }
 
 // ReleaseFromCashShopPayload represents the payload for the release_from_cash_shop action (internal step)
@@ -1167,6 +1202,24 @@ type WarpToSavedLocationPayload struct {
 	LocationType string     `json:"locationType"` // Location type key to retrieve and delete
 }
 
+// SelectGachaponRewardPayload represents the payload required to select a random reward from a gachapon.
+type SelectGachaponRewardPayload struct {
+	CharacterId uint32   `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id `json:"worldId"`     // WorldId associated with the action
+	GachaponId  string   `json:"gachaponId"`  // Gachapon machine ID to select from
+}
+
+// EmitGachaponWinPayload represents the payload required to emit a gachapon win event.
+type EmitGachaponWinPayload struct {
+	CharacterId  uint32   `json:"characterId"`  // CharacterId who won
+	WorldId      world.Id `json:"worldId"`      // WorldId for broadcasting
+	ItemId       uint32   `json:"itemId"`       // Won item ID
+	Quantity     uint32   `json:"quantity"`     // Won item quantity
+	Tier         string   `json:"tier"`         // Reward tier (uncommon, rare)
+	GachaponId   string   `json:"gachaponId"`   // Gachapon machine ID
+	GachaponName string   `json:"gachaponName"` // Gachapon display name
+}
+
 // Custom UnmarshalJSON for Step[T] to handle the generics
 func (s *Step[T]) UnmarshalJSON(data []byte) error {
 	// First unmarshal to get the action type
@@ -1177,6 +1230,7 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		CreatedAt time.Time       `json:"createdAt"`
 		UpdatedAt time.Time       `json:"updatedAt"`
 		Payload   json.RawMessage `json:"payload"`
+		Result    map[string]any  `json:"result,omitempty"`
 	}
 
 	if err := json.Unmarshal(data, &actionOnly); err != nil {
@@ -1188,6 +1242,7 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 	s.action = actionOnly.Action
 	s.createdAt = actionOnly.CreatedAt
 	s.updatedAt = actionOnly.UpdatedAt
+	s.result = actionOnly.Result
 
 	// Now handle the Payload field based on the Action type
 	switch s.action {
@@ -1547,6 +1602,18 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case WarpToSavedLocation:
 		var payload WarpToSavedLocationPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case SelectGachaponReward:
+		var payload SelectGachaponRewardPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case EmitGachaponWin:
+		var payload EmitGachaponWinPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

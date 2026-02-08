@@ -11,7 +11,7 @@ import (
 )
 
 type Processor interface {
-	Create(sessionId uuid.UUID, accountId uint32, accountName string, password string, ipAddress string) error
+	Create(sessionId uuid.UUID, accountId uint32, accountName string, password string, ipAddress string, hwid string) error
 	Destroy(sessionId uuid.UUID, accountId uint32)
 	UpdateState(sessionId uuid.UUID, accountId uint32, state uint8, params interface{}) error
 }
@@ -31,8 +31,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return p
 }
 
-func (p *ProcessorImpl) Create(sessionId uuid.UUID, accountId uint32, accountName string, password string, ipAddress string) error {
-	return p.mp(session3.EnvCommandTopic)(session2.CreateCommandProvider(sessionId, accountId, accountName, password, ipAddress))
+func (p *ProcessorImpl) Create(sessionId uuid.UUID, accountId uint32, accountName string, password string, ipAddress string, hwid string) error {
+	return p.mp(session3.EnvCommandTopic)(session2.CreateCommandProvider(sessionId, accountId, accountName, password, ipAddress, hwid))
 }
 
 func (p *ProcessorImpl) Destroy(sessionId uuid.UUID, accountId uint32) {

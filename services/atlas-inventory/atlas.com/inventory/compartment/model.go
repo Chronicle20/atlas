@@ -14,7 +14,7 @@ type Model struct {
 	characterId   uint32
 	inventoryType inventory.Type
 	capacity      uint32
-	assets        []asset.Model[any]
+	assets        []asset.Model
 }
 
 func (m Model) Id() uuid.UUID {
@@ -29,7 +29,7 @@ func (m Model) Capacity() uint32 {
 	return m.capacity
 }
 
-func (m Model) Assets() []asset.Model[any] {
+func (m Model) Assets() []asset.Model {
 	return m.assets
 }
 

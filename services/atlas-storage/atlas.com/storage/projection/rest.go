@@ -4,20 +4,21 @@ import (
 	"atlas-storage/asset"
 	"strconv"
 
+	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/world"
 )
 
 // RestModel represents a projection in JSON:API format
 type RestModel struct {
-	Id           string                            `json:"-"`
-	CharacterId  uint32                            `json:"characterId"`
-	AccountId    uint32                            `json:"accountId"`
-	WorldId      world.Id                          `json:"worldId"`
-	StorageId    string                            `json:"storageId"`
-	Capacity     uint32                            `json:"capacity"`
-	Mesos        uint32                            `json:"mesos"`
-	NpcId        uint32                            `json:"npcId"`
-	Compartments map[string][]asset.BaseRestModel `json:"compartments"`
+	Id           string                           `json:"-"`
+	CharacterId  uint32                           `json:"characterId"`
+	AccountId    uint32                           `json:"accountId"`
+	WorldId      world.Id                         `json:"worldId"`
+	StorageId    string                           `json:"storageId"`
+	Capacity     uint32                           `json:"capacity"`
+	Mesos        uint32                           `json:"mesos"`
+	NpcId        uint32                           `json:"npcId"`
+	Compartments map[string][]asset.RestModel     `json:"compartments"`
 }
 
 func (r RestModel) GetName() string {
@@ -35,14 +36,13 @@ func (r *RestModel) SetID(id string) error {
 
 // Transform converts a Model to a RestModel
 func Transform(m Model) (RestModel, error) {
-	compartments := make(map[string][]asset.BaseRestModel)
+	compartments := make(map[string][]asset.RestModel)
 
 	for invType, assets := range m.Compartments() {
-		restAssets, err := asset.TransformAllToBaseRestModel(assets)
+		restAssets, err := asset.TransformAll(assets)
 		if err != nil {
 			return RestModel{}, err
 		}
-		// Use inventory type name as key
 		compartments[inventoryTypeName(invType)] = restAssets
 	}
 
@@ -59,40 +59,36 @@ func Transform(m Model) (RestModel, error) {
 	}, nil
 }
 
-func inventoryTypeName(t asset.InventoryType) string {
+func inventoryTypeName(t inventory.Type) string {
 	switch t {
-	case asset.InventoryTypeEquip:
+	case inventory.TypeValueEquip:
 		return "equip"
-	case asset.InventoryTypeUse:
+	case inventory.TypeValueUse:
 		return "use"
-	case asset.InventoryTypeSetup:
+	case inventory.TypeValueSetup:
 		return "setup"
-	case asset.InventoryTypeEtc:
+	case inventory.TypeValueETC:
 		return "etc"
-	case asset.InventoryTypeCash:
+	case inventory.TypeValueCash:
 		return "cash"
 	default:
 		return "unknown"
 	}
 }
 
-func inventoryTypeFromName(name string) asset.InventoryType {
+func inventoryTypeFromName(name string) inventory.Type {
 	switch name {
 	case "equip":
-		return asset.InventoryTypeEquip
+		return inventory.TypeValueEquip
 	case "use":
-		return asset.InventoryTypeUse
+		return inventory.TypeValueUse
 	case "setup":
-		return asset.InventoryTypeSetup
+		return inventory.TypeValueSetup
 	case "etc":
-		return asset.InventoryTypeEtc
+		return inventory.TypeValueETC
 	case "cash":
-		return asset.InventoryTypeCash
+		return inventory.TypeValueCash
 	default:
 		return 0
 	}
-}
-
-func inventoryTypeFromByte(b byte) asset.InventoryType {
-	return asset.InventoryType(b)
 }

@@ -107,9 +107,9 @@ func handleReleasedEvent(sc server.Model, wp writer.Producer) message.Handler[ca
 			}
 
 			// Find the asset with matching CashId
-			var foundAsset *charAsset.Model[any]
+			var foundAsset *charAsset.Model
 			for _, a := range comp.Assets() {
-				if cashId := getCashIdFromAsset(a); cashId == e.Body.CashId {
+				if a.CashId() == e.Body.CashId {
 					assetCopy := a
 					foundAsset = &assetCopy
 					break
@@ -132,20 +132,7 @@ func handleReleasedEvent(sc server.Model, wp writer.Producer) message.Handler[ca
 	}
 }
 
-// getCashIdFromAsset extracts the CashId from an asset's reference data if present
-func getCashIdFromAsset(a charAsset.Model[any]) int64 {
-	rd := a.ReferenceData()
-	if rd == nil {
-		return 0
-	}
-	if crd, ok := rd.(charAsset.CashReferenceData); ok {
-		return crd.CashId()
-	}
-	if cerd, ok := rd.(charAsset.CashEquipableReferenceData); ok {
-		return cerd.CashId()
-	}
-	if prd, ok := rd.(charAsset.PetReferenceData); ok {
-		return prd.CashId()
-	}
-	return 0
+// getCashIdFromAsset extracts the CashId from a flat asset model
+func getCashIdFromAsset(a charAsset.Model) int64 {
+	return a.CashId()
 }

@@ -1,0 +1,11 @@
+meta {
+  name: Get All Gachapons
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/gachapons
+  body: none
+  auth: inherit
+}

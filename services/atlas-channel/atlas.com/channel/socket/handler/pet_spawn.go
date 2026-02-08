@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"atlas-channel/asset"
 	"atlas-channel/character"
 	"atlas-channel/pet"
 	"atlas-channel/session"
@@ -30,15 +29,14 @@ func PetSpawnHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Prod
 		if !ok {
 			return
 		}
-		var pd asset.PetReferenceData
-		if pd, ok = a.ReferenceData().(asset.PetReferenceData); !ok {
+		if !a.IsPet() {
 			return
 		}
-		spawned := pd.Slot() != -1
+		spawned := a.PetSlot() != -1
 		if spawned {
-			_ = pet.NewProcessor(l, ctx).Despawn(s.CharacterId(), a.ReferenceId())
+			_ = pet.NewProcessor(l, ctx).Despawn(s.CharacterId(), a.PetId())
 		} else {
-			_ = pet.NewProcessor(l, ctx).Spawn(s.CharacterId(), a.ReferenceId(), lead)
+			_ = pet.NewProcessor(l, ctx).Spawn(s.CharacterId(), a.PetId(), lead)
 		}
 	}
 }

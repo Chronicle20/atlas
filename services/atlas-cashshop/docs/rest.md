@@ -265,6 +265,13 @@ JSON:API resource type: `cash-inventories`
         "accountId": 12345,
         "type": 1,
         "capacity": 55
+      },
+      "relationships": {
+        "assets": {
+          "data": [
+            { "type": "assets", "id": "42" }
+          ]
+        }
       }
     }
   ]
@@ -303,13 +310,13 @@ JSON:API resource type: `cash-inventories`
 
 ### GET /api/accounts/{accountId}/cash-shop/inventory/compartments
 
-Retrieves cash compartments for an account.
+Retrieves cash compartments for an account. When a `type` query parameter is provided, returns a single compartment matching the specified type. When omitted, returns all compartments for the account.
 
 #### Parameters
 | Name | Location | Type | Required | Description |
 |------|----------|------|----------|-------------|
 | accountId | path | uint32 | yes | Account ID |
-| type | query | int | no | Compartment type (1=Explorer, 2=Cygnus, 3=Legend) |
+| type | query | int | no | Compartment type (1=Explorer, 2=Cygnus, 3=Legend). If omitted, returns all compartments. |
 
 #### Request Model
 None.
@@ -317,7 +324,7 @@ None.
 #### Response Model
 JSON:API resource type: `compartments`
 
-If `type` is specified, returns a single compartment. Otherwise returns all compartments.
+When `type` is provided, returns a single compartment:
 
 ```json
 {
@@ -332,13 +339,32 @@ If `type` is specified, returns a single compartment. Otherwise returns all comp
     "relationships": {
       "assets": {
         "data": [
-          { "type": "assets", "id": "uuid" }
+          { "type": "assets", "id": "42" }
         ]
       }
     }
-  }
+  },
+  "included": [
+    {
+      "type": "assets",
+      "id": "42",
+      "attributes": {
+        "compartmentId": "uuid",
+        "cashId": "12345",
+        "templateId": 5000,
+        "commodityId": 100,
+        "quantity": 1,
+        "flag": 0,
+        "purchasedBy": 67890,
+        "expiration": "2025-06-01T00:00:00Z",
+        "createdAt": "2025-05-01T00:00:00Z"
+      }
+    }
+  ]
 }
 ```
+
+When `type` is omitted, returns an array of compartments.
 
 #### Error Conditions
 | Status | Condition |
@@ -350,14 +376,14 @@ If `type` is specified, returns a single compartment. Otherwise returns all comp
 
 ### GET /api/accounts/{accountId}/cash-shop/inventory/compartments/{compartmentId}/assets/{assetId}
 
-Retrieves a specific asset by ID.
+Retrieves a specific asset by ID within a compartment context.
 
 #### Parameters
 | Name | Location | Type | Required | Description |
 |------|----------|------|----------|-------------|
 | accountId | path | uint32 | yes | Account ID |
 | compartmentId | path | uuid | yes | Compartment ID |
-| assetId | path | uuid | yes | Asset ID |
+| assetId | path | uint32 | yes | Asset ID |
 
 #### Request Model
 None.
@@ -369,14 +395,17 @@ JSON:API resource type: `assets`
 {
   "data": {
     "type": "assets",
-    "id": "uuid",
+    "id": "42",
     "attributes": {
-      "compartmentId": "uuid"
-    },
-    "relationships": {
-      "item": {
-        "data": { "type": "items", "id": "12345" }
-      }
+      "compartmentId": "uuid",
+      "cashId": "12345",
+      "templateId": 5000,
+      "commodityId": 100,
+      "quantity": 1,
+      "flag": 0,
+      "purchasedBy": 67890,
+      "expiration": "2025-06-01T00:00:00Z",
+      "createdAt": "2025-05-01T00:00:00Z"
     }
   }
 }
@@ -385,36 +414,40 @@ JSON:API resource type: `assets`
 #### Error Conditions
 | Status | Condition |
 |--------|-----------|
-| 404 Not Found | Asset not found or belongs to different compartment |
+| 404 Not Found | Asset not found |
 
 ---
 
-### GET /api/cash-shop/items/{itemId}
+### GET /api/cash-shop/assets/{assetId}
 
-Retrieves a cash item by ID.
+Retrieves an asset by ID.
 
 #### Parameters
 | Name | Location | Type | Required | Description |
 |------|----------|------|----------|-------------|
-| itemId | path | uint32 | yes | Item ID |
+| assetId | path | uint32 | yes | Asset ID |
 
 #### Request Model
 None.
 
 #### Response Model
-JSON:API resource type: `items`
+JSON:API resource type: `assets`
 
 ```json
 {
   "data": {
-    "type": "items",
-    "id": "12345",
+    "type": "assets",
+    "id": "42",
     "attributes": {
-      "cashId": "67890",
+      "compartmentId": "uuid",
+      "cashId": "12345",
       "templateId": 5000,
+      "commodityId": 100,
       "quantity": 1,
       "flag": 0,
-      "purchasedBy": 12345
+      "purchasedBy": 67890,
+      "expiration": "2025-06-01T00:00:00Z",
+      "createdAt": "2025-05-01T00:00:00Z"
     }
   }
 }
@@ -423,39 +456,96 @@ JSON:API resource type: `items`
 #### Error Conditions
 | Status | Condition |
 |--------|-----------|
-| 404 Not Found | Item does not exist |
+| 404 Not Found | Asset does not exist |
 | 500 Internal Server Error | Database error |
 
 ---
 
-### POST /api/cash-shop/items
+### POST /api/cash-shop/assets
 
-Creates a new cash item.
+Creates a new cash asset.
 
 #### Parameters
 None.
 
 #### Request Model
-JSON:API resource type: `items`
+JSON:API resource type: `assets`
 
 ```json
 {
   "data": {
-    "type": "items",
+    "type": "assets",
     "attributes": {
+      "compartmentId": "uuid",
       "templateId": 5000,
+      "commodityId": 100,
       "quantity": 1,
-      "purchasedBy": 12345
+      "purchasedBy": 67890
     }
   }
 }
 ```
 
 #### Response Model
-JSON:API resource type: `items`
+JSON:API resource type: `assets`
 
 #### Error Conditions
 | Status | Condition |
 |--------|-----------|
 | 400 Bad Request | Invalid input |
-| 500 Internal Server Error | Failed to create item |
+| 500 Internal Server Error | Failed to create asset |
+
+---
+
+### PATCH /api/cash-shop/assets/{assetId}
+
+Updates an asset's quantity.
+
+#### Parameters
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| assetId | path | uint32 | yes | Asset ID |
+
+#### Request Model
+JSON:API resource type: `assets`
+
+```json
+{
+  "data": {
+    "type": "assets",
+    "attributes": {
+      "quantity": 5
+    }
+  }
+}
+```
+
+#### Response Model
+None. Returns 204 No Content.
+
+#### Error Conditions
+| Status | Condition |
+|--------|-----------|
+| 500 Internal Server Error | Failed to update asset |
+
+---
+
+### DELETE /api/cash-shop/assets/{assetId}
+
+Deletes a cash asset.
+
+#### Parameters
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| assetId | path | uint32 | yes | Asset ID |
+
+#### Request Model
+None.
+
+#### Response Model
+None. Returns 204 No Content.
+
+#### Error Conditions
+| Status | Condition |
+|--------|-----------|
+| 500 Internal Server Error | Failed to delete asset |

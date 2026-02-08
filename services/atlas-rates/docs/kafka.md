@@ -21,8 +21,8 @@ None.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| worldId | byte | World identifier |
-| channelId | byte | Channel identifier |
+| worldId | world.Id | World identifier |
+| channelId | channel.Id | Channel identifier |
 | characterId | uint32 | Character identifier |
 | type | string | `APPLIED` |
 | body.fromId | uint32 | Source of buff application |
@@ -36,8 +36,8 @@ None.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| worldId | byte | World identifier |
-| channelId | byte | Channel identifier |
+| worldId | world.Id | World identifier |
+| channelId | channel.Id | Channel identifier |
 | characterId | uint32 | Character identifier |
 | type | string | `EXPIRED` |
 | body.sourceId | int32 | Buff source identifier |
@@ -53,6 +53,13 @@ None.
 | type | string | Stat type (e.g., `HOLY_SYMBOL`, `MESO_UP`) |
 | amount | int32 | Stat amount |
 
+**Buff-to-Rate Mappings** (`kafka/message/buff/kafka.go`)
+
+| Stat Type | Rate Type | Conversion |
+|-----------|-----------|------------|
+| HOLY_SYMBOL | exp | Additive: `1.0 + (amount / 100.0)` |
+| MESO_UP | meso | Direct: `amount / 100.0` |
+
 ### World Rate Events
 
 **WorldRateEvent** (`kafka/message/rate/kafka.go`)
@@ -60,7 +67,7 @@ None.
 | Field | Type | Description |
 |-------|------|-------------|
 | type | string | `RATE_CHANGED` |
-| worldId | byte | World identifier |
+| worldId | world.Id | World identifier |
 | rateType | RateType | `exp`, `meso`, `item_drop`, or `quest_exp` |
 | multiplier | float64 | New rate multiplier |
 
@@ -77,10 +84,9 @@ None.
 | templateId | uint32 | Item template identifier |
 | slot | int16 | Inventory slot |
 | type | string | `CREATED` |
-| body.referenceId | uint32 | Reference identifier |
-| body.referenceType | string | Reference type |
-| body.referenceData | map[string]interface{} | Reference data (includes createdAt) |
 | body.expiration | time.Time | Asset expiration |
+| body.createdAt | time.Time | Asset creation time |
+| body.quantity | uint32 | Asset quantity |
 
 **StatusEvent[AcceptedStatusEventBody]** (`kafka/message/asset/kafka.go`)
 
@@ -93,10 +99,9 @@ None.
 | templateId | uint32 | Item template identifier |
 | slot | int16 | Inventory slot |
 | type | string | `ACCEPTED` |
-| body.referenceId | uint32 | Reference identifier |
-| body.referenceType | string | Reference type |
-| body.referenceData | map[string]interface{} | Reference data (includes createdAt) |
 | body.expiration | time.Time | Asset expiration |
+| body.createdAt | time.Time | Asset creation time |
+| body.quantity | uint32 | Asset quantity |
 
 **StatusEvent[DeletedStatusEventBody]** (`kafka/message/asset/kafka.go`)
 
@@ -121,7 +126,6 @@ None.
 | templateId | uint32 | Item template identifier |
 | slot | int16 | Inventory slot |
 | type | string | `RELEASED` |
-| body.referenceType | string | Reference type |
 
 **StatusEvent[MovedStatusEventBody]** (`kafka/message/asset/kafka.go`)
 
@@ -143,12 +147,15 @@ None.
 
 | Field | Type | Description |
 |-------|------|-------------|
+| transactionId | uuid.UUID | Transaction identifier |
+| worldId | world.Id | World identifier |
 | characterId | uint32 | Character identifier |
 | type | string | `MAP_CHANGED` |
-| worldId | byte | World identifier |
-| body.channelId | byte | Channel identifier |
-| body.oldMapId | uint32 | Previous map identifier |
-| body.targetMapId | uint32 | Target map identifier |
+| body.channelId | channel.Id | Channel identifier |
+| body.oldMapId | map.Id | Previous map identifier |
+| body.oldInstance | uuid.UUID | Previous map instance |
+| body.targetMapId | map.Id | Target map identifier |
+| body.targetInstance | uuid.UUID | Target map instance |
 | body.targetPortalId | uint32 | Target portal identifier |
 
 ## Transaction Semantics

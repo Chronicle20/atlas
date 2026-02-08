@@ -29,4 +29,6 @@ A RESTful service that provides composite character state validation in the Atla
 ## Documentation
 
 - [Domain Model](docs/domain.md)
+- [Kafka](docs/kafka.md)
 - [REST API](docs/rest.md)
+- [Storage](docs/storage.md)

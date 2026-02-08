@@ -46,35 +46,29 @@ func createTestInventory(characterId uint32) inventory.Model {
 
 	// Add some test items
 	// Item 2000001 with quantity 10
-	refData1 := asset.NewConsumableReferenceDataBuilder().
-		SetQuantity(10).
-		Build()
-	item1 := asset.NewBuilder[any](1, compartmentId, 2000001, 1, asset.ReferenceTypeConsumable).
+	item1 := asset.NewBuilder(compartmentId, 2000001).
+		SetId(1).
 		SetSlot(1).
 		SetExpiration(time.Now().Add(24 * time.Hour)).
-		SetReferenceData(refData1).
+		SetQuantity(10).
 		Build()
 	builder.AddAsset(item1)
 
 	// Item 2000002 with quantity 5
-	refData2 := asset.NewConsumableReferenceDataBuilder().
-		SetQuantity(5).
-		Build()
-	item2 := asset.NewBuilder[any](2, compartmentId, 2000002, 2, asset.ReferenceTypeConsumable).
+	item2 := asset.NewBuilder(compartmentId, 2000002).
+		SetId(2).
 		SetSlot(2).
 		SetExpiration(time.Now().Add(24 * time.Hour)).
-		SetReferenceData(refData2).
+		SetQuantity(5).
 		Build()
 	builder.AddAsset(item2)
 
 	// Item 2000003 with quantity 20
-	refData3 := asset.NewConsumableReferenceDataBuilder().
-		SetQuantity(20).
-		Build()
-	item3 := asset.NewBuilder[any](3, compartmentId, 2000003, 3, asset.ReferenceTypeConsumable).
+	item3 := asset.NewBuilder(compartmentId, 2000003).
+		SetId(3).
 		SetSlot(3).
 		SetExpiration(time.Now().Add(24 * time.Hour)).
-		SetReferenceData(refData3).
+		SetQuantity(20).
 		Build()
 	builder.AddAsset(item3)
 

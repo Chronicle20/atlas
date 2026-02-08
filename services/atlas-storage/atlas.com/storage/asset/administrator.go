@@ -1,53 +1,86 @@
 package asset
 
 import (
-	"time"
-
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
-// Create creates a new asset in storage
-func Create(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID) func(storageId uuid.UUID, slot int16, templateId uint32, expiration time.Time, referenceId uint32, referenceType ReferenceType) (Model[any], error) {
-	return func(storageId uuid.UUID, slot int16, templateId uint32, expiration time.Time, referenceId uint32, referenceType ReferenceType) (Model[any], error) {
+func Create(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID) func(m Model) (Model, error) {
+	return func(m Model) (Model, error) {
 		e := Entity{
-			TenantId:      tenantId,
-			StorageId:     storageId,
-			InventoryType: InventoryTypeFromTemplateId(templateId),
-			Slot:          slot,
-			TemplateId:    templateId,
-			Expiration:    expiration,
-			ReferenceId:   referenceId,
-			ReferenceType: referenceType,
+			TenantId:       tenantId,
+			StorageId:      m.storageId,
+			InventoryType:  inventoryTypeFromTemplateId(m.templateId),
+			Slot:           m.slot,
+			TemplateId:     m.templateId,
+			Expiration:     m.expiration,
+			Quantity:       m.quantity,
+			OwnerId:        m.ownerId,
+			Flag:           m.flag,
+			Rechargeable:   m.rechargeable,
+			Strength:       m.strength,
+			Dexterity:      m.dexterity,
+			Intelligence:   m.intelligence,
+			Luck:           m.luck,
+			Hp:             m.hp,
+			Mp:             m.mp,
+			WeaponAttack:   m.weaponAttack,
+			MagicAttack:    m.magicAttack,
+			WeaponDefense:  m.weaponDefense,
+			MagicDefense:   m.magicDefense,
+			Accuracy:       m.accuracy,
+			Avoidability:   m.avoidability,
+			Hands:          m.hands,
+			Speed:          m.speed,
+			Jump:           m.jump,
+			Slots:          m.slots,
+			Locked:         m.locked,
+			Spikes:         m.spikes,
+			KarmaUsed:      m.karmaUsed,
+			Cold:           m.cold,
+			CanBeTraded:    m.canBeTraded,
+			LevelType:      m.levelType,
+			Level:          m.level,
+			Experience:     m.experience,
+			HammersApplied: m.hammersApplied,
+			CashId:         m.cashId,
+			CommodityId:    m.commodityId,
+			PurchaseBy:     m.purchaseBy,
+			PetId:          m.petId,
 		}
 		err := db.Create(&e).Error
 		if err != nil {
-			return Model[any]{}, err
+			return Model{}, err
 		}
 		return Make(e), nil
 	}
 }
 
-// Delete removes an asset from storage
 func Delete(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID) func(id uint32) error {
 	return func(id uint32) error {
 		return db.Where("tenant_id = ? AND id = ?", tenantId, id).Delete(&Entity{}).Error
 	}
 }
 
-// DeleteByStorageId removes all assets from a storage
 func DeleteByStorageId(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID) func(storageId uuid.UUID) error {
 	return func(storageId uuid.UUID) error {
 		return db.Where("tenant_id = ? AND storage_id = ?", tenantId, storageId).Delete(&Entity{}).Error
 	}
 }
 
-// UpdateSlot updates the slot of an asset
 func UpdateSlot(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID) func(id uint32, slot int16) error {
 	return func(id uint32, slot int16) error {
 		return db.Model(&Entity{}).
 			Where("tenant_id = ? AND id = ?", tenantId, id).
 			Update("slot", slot).Error
+	}
+}
+
+func UpdateQuantity(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID) func(id uint32, quantity uint32) error {
+	return func(id uint32, quantity uint32) error {
+		return db.Model(&Entity{}).
+			Where("tenant_id = ? AND id = ?", tenantId, id).
+			Update("quantity", quantity).Error
 	}
 }

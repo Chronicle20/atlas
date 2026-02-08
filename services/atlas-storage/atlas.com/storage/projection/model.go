@@ -4,12 +4,12 @@ import (
 	"atlas-storage/asset"
 	"errors"
 
+	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 )
 
 // Model represents an in-memory projection of storage state for a character session.
-// Each compartment slice initially contains ALL assets; filtering occurs on operations.
 type Model struct {
 	characterId  uint32
 	accountId    uint32
@@ -18,7 +18,7 @@ type Model struct {
 	capacity     uint32
 	mesos        uint32
 	npcId        uint32
-	compartments map[asset.InventoryType][]asset.Model[any]
+	compartments map[inventory.Type][]asset.Model
 }
 
 func (m Model) CharacterId() uint32 {
@@ -49,36 +49,25 @@ func (m Model) NpcId() uint32 {
 	return m.npcId
 }
 
-func (m Model) Compartments() map[asset.InventoryType][]asset.Model[any] {
+func (m Model) Compartments() map[inventory.Type][]asset.Model {
 	return m.compartments
 }
 
 // GetCompartment returns the asset slice for a specific inventory type
-func (m Model) GetCompartment(inventoryType asset.InventoryType) []asset.Model[any] {
+func (m Model) GetCompartment(inventoryType inventory.Type) []asset.Model {
 	if assets, ok := m.compartments[inventoryType]; ok {
 		return assets
 	}
-	return []asset.Model[any]{}
+	return []asset.Model{}
 }
 
 // GetAssetBySlot returns the asset at the given slot (index) in the compartment
-func (m Model) GetAssetBySlot(inventoryType asset.InventoryType, slot int16) (asset.Model[any], bool) {
+func (m Model) GetAssetBySlot(inventoryType inventory.Type, slot int16) (asset.Model, bool) {
 	assets := m.GetCompartment(inventoryType)
 	if slot < 0 || int(slot) >= len(assets) {
-		return asset.Model[any]{}, false
+		return asset.Model{}, false
 	}
 	return assets[slot], true
-}
-
-// AllCompartmentTypes returns all valid inventory types
-func AllCompartmentTypes() []asset.InventoryType {
-	return []asset.InventoryType{
-		asset.InventoryTypeEquip,
-		asset.InventoryTypeUse,
-		asset.InventoryTypeSetup,
-		asset.InventoryTypeEtc,
-		asset.InventoryTypeCash,
-	}
 }
 
 // Builder for constructing Model instances
@@ -90,12 +79,12 @@ type Builder struct {
 	capacity     uint32
 	mesos        uint32
 	npcId        uint32
-	compartments map[asset.InventoryType][]asset.Model[any]
+	compartments map[inventory.Type][]asset.Model
 }
 
 func NewBuilder() *Builder {
 	return &Builder{
-		compartments: make(map[asset.InventoryType][]asset.Model[any]),
+		compartments: make(map[inventory.Type][]asset.Model),
 	}
 }
 
@@ -134,7 +123,7 @@ func (b *Builder) SetNpcId(npcId uint32) *Builder {
 	return b
 }
 
-func (b *Builder) SetCompartments(compartments map[asset.InventoryType][]asset.Model[any]) *Builder {
+func (b *Builder) SetCompartments(compartments map[inventory.Type][]asset.Model) *Builder {
 	b.compartments = compartments
 	return b
 }
@@ -179,9 +168,9 @@ func (b *Builder) MustBuild() Model {
 // Clone creates a builder from an existing model for modifications
 func Clone(m Model) *Builder {
 	// Deep copy compartments
-	compartments := make(map[asset.InventoryType][]asset.Model[any])
+	compartments := make(map[inventory.Type][]asset.Model)
 	for k, v := range m.compartments {
-		copied := make([]asset.Model[any], len(v))
+		copied := make([]asset.Model, len(v))
 		copy(copied, v)
 		compartments[k] = copied
 	}

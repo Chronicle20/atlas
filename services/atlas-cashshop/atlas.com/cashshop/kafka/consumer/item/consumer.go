@@ -1,7 +1,7 @@
 package item
 
 import (
-	itemModel "atlas-cashshop/cashshop/item"
+	"atlas-cashshop/cashshop/inventory/asset"
 	consumer2 "atlas-cashshop/kafka/consumer"
 	itemMessage "atlas-cashshop/kafka/message/item"
 	"context"
@@ -11,6 +11,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -41,7 +42,10 @@ func handleCommandCreate(db *gorm.DB) message.Handler[itemMessage.Command[itemMe
 
 		l.Debugf("Handling create item command for character %d", command.CharacterId)
 
-		_, err := itemModel.NewProcessor(l, ctx, db).CreateAndEmit(
+		// Create the asset directly using the flattened model
+		// Use uuid.Nil as compartmentId since this command doesn't provide one
+		_, err := asset.NewProcessor(l, ctx, db).CreateAndEmit(
+			uuid.Nil,
 			command.Body.TemplateId,
 			command.Body.CommodityId,
 			command.Body.Quantity,
@@ -49,10 +53,10 @@ func handleCommandCreate(db *gorm.DB) message.Handler[itemMessage.Command[itemMe
 		)
 
 		if err != nil {
-			l.WithError(err).Errorf("Error creating item.")
+			l.WithError(err).Errorf("Error creating asset.")
 			return
 		}
 
-		l.Debugf("Successfully created item for character %d", command.CharacterId)
+		l.Debugf("Successfully created asset for character %d", command.CharacterId)
 	}
 }

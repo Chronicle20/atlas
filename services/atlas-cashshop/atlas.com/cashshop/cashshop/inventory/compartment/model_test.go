@@ -2,7 +2,6 @@ package compartment
 
 import (
 	"atlas-cashshop/cashshop/inventory/asset"
-	"atlas-cashshop/cashshop/item"
 	"testing"
 	"time"
 
@@ -38,19 +37,15 @@ func TestBuilderWithAssets(t *testing.T) {
 	id := uuid.New()
 	accountId := uint32(12345)
 
-	// Create an item
-	testItem := item.NewBuilder().
+	// Create an asset directly (flattened)
+	testAsset := asset.NewBuilder(id, 5000).
 		SetId(1).
 		SetCashId(1001).
-		SetTemplateId(5000).
 		SetQuantity(1).
 		SetFlag(0).
 		SetPurchasedBy(accountId).
 		SetExpiration(time.Now().Add(30 * 24 * time.Hour)).
 		Build()
-
-	// Create an asset
-	testAsset := asset.NewBuilder(uuid.New(), id, testItem).Build()
 
 	m := NewBuilder(id, accountId, TypeCygnus, 100).
 		AddAsset(testAsset).
@@ -65,19 +60,14 @@ func TestBuilderSetAssets(t *testing.T) {
 	id := uuid.New()
 	accountId := uint32(12345)
 
-	// Create items and assets
-	item1 := item.NewBuilder().
+	// Create assets directly (flattened)
+	asset1 := asset.NewBuilder(id, 5000).
 		SetId(1).
-		SetTemplateId(5000).
 		Build()
 
-	item2 := item.NewBuilder().
+	asset2 := asset.NewBuilder(id, 5001).
 		SetId(2).
-		SetTemplateId(5001).
 		Build()
-
-	asset1 := asset.NewBuilder(uuid.New(), id, item1).Build()
-	asset2 := asset.NewBuilder(uuid.New(), id, item2).Build()
 
 	assets := []asset.Model{asset1, asset2}
 
@@ -112,8 +102,7 @@ func TestBuilderFluentInterface(t *testing.T) {
 		t.Error("SetCapacity should return the same builder")
 	}
 
-	testItem := item.NewBuilder().SetId(1).Build()
-	testAsset := asset.NewBuilder(uuid.New(), id, testItem).Build()
+	testAsset := asset.NewBuilder(id, 5000).SetId(1).Build()
 
 	if b.AddAsset(testAsset) != b {
 		t.Error("AddAsset should return the same builder")
@@ -144,29 +133,26 @@ func TestFindById(t *testing.T) {
 	compartmentId := uuid.New()
 	accountId := uint32(12345)
 
-	// Create items and assets
-	assetId := uuid.New()
-	testItem := item.NewBuilder().
-		SetId(1).
-		SetTemplateId(5000).
+	// Create asset directly (flattened) with uint32 ID
+	testAsset := asset.NewBuilder(compartmentId, 5000).
+		SetId(42).
 		Build()
-	testAsset := asset.NewBuilder(assetId, compartmentId, testItem).Build()
 
 	m := NewBuilder(compartmentId, accountId, TypeExplorer, 100).
 		AddAsset(testAsset).
 		Build()
 
 	// Find existing asset
-	found, ok := m.FindById(assetId)
+	found, ok := m.FindById(uint32(42))
 	if !ok {
 		t.Error("Should find existing asset by ID")
 	}
-	if found.Id() != assetId {
-		t.Errorf("Found asset ID mismatch: expected %v, got %v", assetId, found.Id())
+	if found.Id() != 42 {
+		t.Errorf("Found asset ID mismatch: expected %d, got %d", 42, found.Id())
 	}
 
 	// Find non-existing asset
-	_, ok = m.FindById(uuid.New())
+	_, ok = m.FindById(uint32(999))
 	if ok {
 		t.Error("Should not find non-existing asset")
 	}
@@ -176,13 +162,11 @@ func TestFindByTemplateId(t *testing.T) {
 	compartmentId := uuid.New()
 	accountId := uint32(12345)
 
-	// Create items and assets
+	// Create asset directly (flattened)
 	templateId := uint32(5000)
-	testItem := item.NewBuilder().
+	testAsset := asset.NewBuilder(compartmentId, templateId).
 		SetId(1).
-		SetTemplateId(templateId).
 		Build()
-	testAsset := asset.NewBuilder(uuid.New(), compartmentId, testItem).Build()
 
 	m := NewBuilder(compartmentId, accountId, TypeExplorer, 100).
 		AddAsset(testAsset).

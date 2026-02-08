@@ -40,29 +40,29 @@ Base URL: `BASE_SERVICE_URL` + BUFFS root
 ### CASHSHOP
 Base URL: `BASE_SERVICE_URL` + CASHSHOP root
 
-#### GET /accounts/{accountId}/inventory
+#### GET /accounts/{accountId}/cash-shop/inventory/compartments
 - Parameters: accountId (uint32)
 - Request Model: None
-- Response Model: `RestModel` - Cash shop inventory
-- Error Conditions: 404 if inventory not found
+- Response Model: `[]RestModel` - All cash shop compartments for the account
+- Error Conditions: None
 
-#### GET /accounts/{accountId}/inventory/compartments?type={type}
-- Parameters: accountId (uint32), type (compartment type)
+#### GET /accounts/{accountId}/cash-shop/inventory/compartments?type={type}
+- Parameters: accountId (uint32), type (byte - compartment type)
 - Request Model: None
-- Response Model: `RestModel` - Cash shop compartment
+- Response Model: `RestModel` - Cash shop compartment of specified type
 - Error Conditions: 404 if compartment not found
 
-#### GET /accounts/{accountId}/inventory/compartments/{compartmentId}/assets/{assetId}
+#### GET /accounts/{accountId}/cash-shop/inventory/compartments/{compartmentId}/assets
+- Parameters: accountId (uint32), compartmentId (uuid)
+- Request Model: None
+- Response Model: `[]RestModel` - All assets in a cash shop compartment
+- Error Conditions: None
+
+#### GET /accounts/{accountId}/cash-shop/inventory/compartments/{compartmentId}/assets/{assetId}
 - Parameters: accountId (uint32), compartmentId (uuid), assetId (uuid)
 - Request Model: None
-- Response Model: `RestModel` - Cash shop asset
+- Response Model: `RestModel` - Cash shop asset with nested item reference
 - Error Conditions: 404 if asset not found
-
-#### GET /accounts/{accountId}/world/{worldId}/assets
-- Parameters: accountId (uint32), worldId (byte)
-- Request Model: None
-- Response Model: `[]AssetRestModel` - Cash shop assets for world
-- Error Conditions: None
 
 #### GET /accounts/{accountId}/wallet
 - Parameters: accountId (uint32)
@@ -70,17 +70,23 @@ Base URL: `BASE_SERVICE_URL` + CASHSHOP root
 - Response Model: `RestModel` - NX wallet balances
 - Error Conditions: 404 if wallet not found
 
-#### GET /characters/{characterId}/wishlist
+#### GET /characters/{characterId}/cash-shop/wishlist
 - Parameters: characterId (uint32)
 - Request Model: None
 - Response Model: `[]RestModel` - Wishlist items
 - Error Conditions: None
 
-#### POST /characters/{characterId}/wishlist
-- Parameters: characterId (uint32), serialNumber (uint32)
-- Request Model: `RestModel` - Wishlist item to add
+#### POST /characters/{characterId}/cash-shop/wishlist
+- Parameters: characterId (uint32)
+- Request Model: `RestModel` - Wishlist item with serialNumber
 - Response Model: `RestModel` - Added wishlist item
 - Error Conditions: 400 if invalid
+
+#### DELETE /characters/{characterId}/cash-shop/wishlist
+- Parameters: characterId (uint32)
+- Request Model: None
+- Response Model: None
+- Error Conditions: None
 
 ---
 
@@ -246,16 +252,16 @@ Base URL: `BASE_SERVICE_URL` + GUILD_THREADS root
 ### INVENTORY
 Base URL: `BASE_SERVICE_URL` + INVENTORY root
 
-#### GET /characters/{characterId}/inventories
+#### GET /characters/{characterId}/inventory
 - Parameters: characterId (uint32)
 - Request Model: None
-- Response Model: `RestModel` - Character inventory
+- Response Model: `RestModel` - Character inventory with included compartments and assets. The response uses JSON:API relationships where the inventory contains compartments, and each compartment contains assets. Compartments and assets are extracted via `SetReferencedStructs`.
 - Error Conditions: 404 if not found
 
-#### GET /characters/{characterId}/inventories/{inventoryType}
-- Parameters: characterId (uint32), inventoryType
+#### GET /characters/{characterId}/inventory/compartments?type={type}
+- Parameters: characterId (uint32), type (inventory.Type as integer: 1=equip, 2=use, 3=setup, 4=etc, 5=cash)
 - Request Model: None
-- Response Model: `RestModel` - Specific inventory compartment
+- Response Model: `RestModel` - A single compartment for the specified inventory type with included assets. Each asset uses the unified asset.Model (id, compartmentId, slot, templateId, and type-specific fields).
 - Error Conditions: 404 if not found
 
 ---
@@ -432,10 +438,28 @@ Base URL: `BASE_SERVICE_URL` + SKILLS root
 ### STORAGE
 Base URL: `BASE_SERVICE_URL` + STORAGE root
 
-#### GET /accounts/{accountId}/world/{worldId}/storage
+#### GET /storage/accounts/{accountId}?worldId={worldId}
 - Parameters: accountId (uint32), worldId (byte)
 - Request Model: None
-- Response Model: `StorageRestModel` - Storage contents
+- Response Model: `StorageRestModel` - Storage metadata (capacity, mesos) with included `AssetRestModel` items via JSON:API relationship. Each asset contains id, slot, templateId, expiration, referenceId, referenceType, and referenceData. The referenceType discriminator (equipable, cash_equipable, consumable, setup, etc, cash, pet) determines the shape of referenceData.
+- Error Conditions: 404 if not found (caller returns empty storage with default capacity)
+
+#### GET /storage/accounts/{accountId}/assets?worldId={worldId}
+- Parameters: accountId (uint32), worldId (byte)
+- Request Model: None
+- Response Model: `[]AssetRestModel` - Storage assets for the account and world. Each asset has typed referenceData based on referenceType discriminator.
+- Error Conditions: None
+
+#### GET /storage/projections/{characterId}
+- Parameters: characterId (uint32)
+- Request Model: None
+- Response Model: `ProjectionRestModel` - Storage projection containing characterId, accountId, worldId, storageId, capacity, mesos, npcId, and compartments (map of compartment name to raw JSON asset arrays). Each compartment's assets are parsed via `ParseCompartmentAssets()` into `[]AssetRestModel`.
+- Error Conditions: 404 if no active projection
+
+#### GET /storage/projections/{characterId}/compartments/{compartmentType}/assets/{slot}
+- Parameters: characterId (uint32), compartmentType (byte), slot (int16)
+- Request Model: None
+- Response Model: `AssetRestModel` - A single asset from a projection compartment by type and slot
 - Error Conditions: 404 if not found
 
 ---

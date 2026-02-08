@@ -49,13 +49,13 @@ func Read(l logrus.FieldLogger) func(ctx context.Context) func(np model.Provider
 				return model.ErrorProvider[RestModel](err)
 			}
 			m := &RestModel{Id: monsterId}
-			m.HP = uint32(node.GetIntegerWithDefault("maxHP", math.MaxInt32))
+			m.Hp = uint32(node.GetIntegerWithDefault("maxHP", math.MaxInt32))
 			m.Friendly = node.GetIntegerWithDefault("damagedByMob", 0) == 1
 			m.WeaponAttack = uint32(node.GetIntegerWithDefault("PADamage", 0))
 			m.WeaponDefense = uint32(node.GetIntegerWithDefault("PDDamage", 0))
 			m.MagicAttack = uint32(node.GetIntegerWithDefault("MADamage", 0))
 			m.MagicDefense = uint32(node.GetIntegerWithDefault("MDDamage", 0))
-			m.MP = uint32(node.GetIntegerWithDefault("maxMP", 0))
+			m.Mp = uint32(node.GetIntegerWithDefault("maxMP", 0))
 			m.Experience = uint32(node.GetIntegerWithDefault("exp", 0))
 			m.Level = uint32(node.GetIntegerWithDefault("level", 0))
 			m.RemoveAfter = uint32(node.GetIntegerWithDefault("removeAfter", 0))
@@ -205,7 +205,7 @@ func getSelfDestruction(node *xml.Node) selfDestruction {
 	return selfDestruction{
 		Action:      action,
 		RemoveAfter: removeAfter,
-		HP:          hp,
+		Hp:          hp,
 	}
 }
 

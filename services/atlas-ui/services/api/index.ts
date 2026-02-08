@@ -54,7 +54,6 @@ export type {
   Guild,
   GuildAttributes,
   GuildMember,
-  GuildFilters,
 } from './guilds.service';
 
 export type {

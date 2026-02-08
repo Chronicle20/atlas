@@ -49,7 +49,19 @@ export interface TemplateAttributes {
         serverMessage: string;
         eventMessage: string;
         whyAmIRecommended: string;
+        expRate?: number;
+        mesoRate?: number;
+        itemDropRate?: number;
+        questExpRate?: number;
     }[];
+    cashShop?: {
+        commodities: {
+            hourlyExpirations?: {
+                templateId: number;
+                hours: number;
+            }[];
+        };
+    };
 }
 
 export interface Template {

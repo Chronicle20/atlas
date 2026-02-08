@@ -68,7 +68,7 @@ export interface Asset {
     quantity: number;
     ownerId: number;
     flag: number;
-    rechargeable: boolean;
+    rechargeable: number;
     strength: number;
     dexterity: number;
     intelligence: number;
@@ -95,9 +95,9 @@ export interface Asset {
     experience: number;
     hammersApplied: number;
     equippedSince: string;
-    cashId: number;
+    cashId: string;
     commodityId: number;
-    purchaseBy: string;
+    purchaseBy: number;
     petId: number;
   };
 }

@@ -100,10 +100,6 @@ export const getColumns = ({tenant, onRefresh}: ColumnProps): ColumnDef<Account>
             }
         },
         {
-            accessorKey: "attributes.banned",
-            header: "Banned",
-        },
-        {
             accessorKey: "attributes.tos",
             header: "TOS",
         },

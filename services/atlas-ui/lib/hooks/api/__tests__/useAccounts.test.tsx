@@ -14,7 +14,6 @@ import {
   useAccountExists,
   useAccountSearch,
   useLoggedInAccounts,
-  useBannedAccounts,
   useAccountStats,
   useTerminateAccountSession,
   useTerminateMultipleSessions,
@@ -43,10 +42,11 @@ const mockAccount: Account = {
     name: 'testuser',
     pin: '1234',
     pic: '5678',
+    pinAttempts: 0,
+    picAttempts: 0,
     loggedIn: 1,
     lastLogin: Date.now(),
     gender: 0,
-    banned: false,
     tos: true,
     language: 'en',
     country: 'US',
@@ -59,13 +59,14 @@ const mockAccounts: Account[] = [
   {
     id: 'account-2',
     attributes: {
-      name: 'banneduser',
+      name: 'anotheruser',
       pin: '8765',
       pic: '4321',
+      pinAttempts: 0,
+      picAttempts: 0,
       loggedIn: 0,
       lastLogin: Date.now() - 86400000,
       gender: 1,
-      banned: true,
       tos: true,
       language: 'en',
       country: 'US',
@@ -77,7 +78,6 @@ const mockAccounts: Account[] = [
 const mockStats = {
   total: 2,
   loggedIn: 1,
-  banned: 1,
   totalCharacterSlots: 9,
   averageCharacterSlots: 4.5,
 };
@@ -137,7 +137,7 @@ describe('useAccounts hooks', () => {
     });
 
     it('should pass query options to service', async () => {
-      const options = { name: 'test', banned: false };
+      const options = { name: 'test', loggedIn: false };
       mockAccountsService.getAllAccounts.mockResolvedValue(mockAccounts);
 
       renderHook(
@@ -241,25 +241,6 @@ describe('useAccounts hooks', () => {
 
       expect(result.current.data).toEqual(loggedInAccounts);
       expect(mockAccountsService.getLoggedInAccounts).toHaveBeenCalledWith(mockTenant, undefined);
-    });
-  });
-
-  describe('useBannedAccounts', () => {
-    it('should fetch banned accounts', async () => {
-      const bannedAccounts = [mockAccounts[1]];
-      mockAccountsService.getBannedAccounts.mockResolvedValue(bannedAccounts);
-
-      const { result } = renderHook(
-        () => useBannedAccounts(mockTenant),
-        { wrapper: createWrapper() }
-      );
-
-      await waitFor(() => {
-        expect(result.current.isSuccess).toBe(true);
-      });
-
-      expect(result.current.data).toEqual(bannedAccounts);
-      expect(mockAccountsService.getBannedAccounts).toHaveBeenCalledWith(mockTenant, undefined);
     });
   });
 
@@ -403,7 +384,6 @@ describe('useAccounts hooks', () => {
       expect(typeof result.current.invalidateList).toBe('function');
       expect(typeof result.current.invalidateAccount).toBe('function');
       expect(typeof result.current.invalidateLoggedIn).toBe('function');
-      expect(typeof result.current.invalidateBanned).toBe('function');
       expect(typeof result.current.invalidateStats).toBe('function');
       expect(typeof result.current.invalidateAllForTenant).toBe('function');
     });

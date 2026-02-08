@@ -59,10 +59,11 @@ describe('Services Integration Tests', () => {
       name: 'testuser',
       pin: '1234',
       pic: '5678',
+      pinAttempts: 0,
+      picAttempts: 0,
       loggedIn: 0,
       lastLogin: 1640995200,
       gender: 0,
-      banned: false,
       tos: true,
       language: 'en',
       country: 'US',
@@ -219,7 +220,7 @@ describe('Services Integration Tests', () => {
     it('should calculate account statistics', async () => {
       const accounts = [
         { ...mockAccount, attributes: { ...mockAccount.attributes, loggedIn: 1, characterSlots: 3 } },
-        { ...mockAccount, id: 'account-2', attributes: { ...mockAccount.attributes, banned: true, characterSlots: 5 } },
+        { ...mockAccount, id: 'account-2', attributes: { ...mockAccount.attributes, characterSlots: 5 } },
         { ...mockAccount, id: 'account-3', attributes: { ...mockAccount.attributes, loggedIn: 0, characterSlots: 2 } },
       ];
 
@@ -230,7 +231,6 @@ describe('Services Integration Tests', () => {
       expect(stats).toEqual({
         total: 3,
         loggedIn: 1,
-        banned: 1,
         totalCharacterSlots: 10,
         averageCharacterSlots: 10 / 3,
       });

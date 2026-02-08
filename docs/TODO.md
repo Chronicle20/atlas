@@ -139,7 +139,6 @@ Location: `socket/handler/character_damage.go:24-33`
 ### Consumables Service
 - [ ] Consume Vega scroll (`consumable/processor.go:523`)
 - [ ] Handle spikes/cursed property (`consumable/processor.go:526`)
-- [ ] Improve HP/MP structure (`consumable/processor.go:642`)
 - [ ] Field migration for monster requests (`monster/requests.go:28`)
 
 ### Data Service
@@ -166,7 +165,6 @@ Location: `socket/handler/character_damage.go:24-33`
 - [ ] TransactionId removal from producers (`compartment/producer.go:63,124,138,153`)
 
 ### Invite Service
-- [ ] Character deletion should remove pending invites
 - [ ] Invites should be able to be queued
 
 ### Login Service

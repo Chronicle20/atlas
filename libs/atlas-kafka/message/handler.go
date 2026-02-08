@@ -44,6 +44,7 @@ func AdaptHandler[M any](config Config[M]) handler.Handler {
 		tem := model.Map[kafka.Message, M](adapt[M])(model.FixedProvider(msg))
 		m, err := tem()
 		if err != nil {
+			l.WithError(err).Debugf("Unable to unmarshal message.")
 			return true, nil
 		}
 

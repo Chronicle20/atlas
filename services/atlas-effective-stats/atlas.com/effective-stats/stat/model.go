@@ -8,8 +8,8 @@ const (
 	TypeDexterity     Type = "dexterity"
 	TypeLuck          Type = "luck"
 	TypeIntelligence  Type = "intelligence"
-	TypeMaxHP         Type = "max_hp"
-	TypeMaxMP         Type = "max_mp"
+	TypeMaxHp         Type = "max_hp"
+	TypeMaxMp         Type = "max_mp"
 	TypeWeaponAttack  Type = "weapon_attack"
 	TypeWeaponDefense Type = "weapon_defense"
 	TypeMagicAttack   Type = "magic_attack"
@@ -27,8 +27,8 @@ func AllTypes() []Type {
 		TypeDexterity,
 		TypeLuck,
 		TypeIntelligence,
-		TypeMaxHP,
-		TypeMaxMP,
+		TypeMaxHp,
+		TypeMaxMp,
 		TypeWeaponAttack,
 		TypeWeaponDefense,
 		TypeMagicAttack,
@@ -100,8 +100,8 @@ type Computed struct {
 	dexterity     uint32
 	luck          uint32
 	intelligence  uint32
-	maxHP         uint32
-	maxMP         uint32
+	maxHp         uint32
+	maxMp         uint32
 	weaponAttack  uint32
 	weaponDefense uint32
 	magicAttack   uint32
@@ -128,12 +128,12 @@ func (c Computed) Intelligence() uint32 {
 	return c.intelligence
 }
 
-func (c Computed) MaxHP() uint32 {
-	return c.maxHP
+func (c Computed) MaxHp() uint32 {
+	return c.maxHp
 }
 
-func (c Computed) MaxMP() uint32 {
-	return c.maxMP
+func (c Computed) MaxMp() uint32 {
+	return c.maxMp
 }
 
 func (c Computed) WeaponAttack() uint32 {
@@ -179,10 +179,10 @@ func (c Computed) GetStat(t Type) uint32 {
 		return c.luck
 	case TypeIntelligence:
 		return c.intelligence
-	case TypeMaxHP:
-		return c.maxHP
-	case TypeMaxMP:
-		return c.maxMP
+	case TypeMaxHp:
+		return c.maxHp
+	case TypeMaxMp:
+		return c.maxMp
 	case TypeWeaponAttack:
 		return c.weaponAttack
 	case TypeWeaponDefense:
@@ -207,7 +207,7 @@ func (c Computed) GetStat(t Type) uint32 {
 // NewComputed creates a new computed stats model
 func NewComputed(
 	strength, dexterity, luck, intelligence uint32,
-	maxHP, maxMP uint32,
+	maxHp, maxMp uint32,
 	weaponAttack, weaponDefense, magicAttack, magicDefense uint32,
 	accuracy, avoidability, speed, jump uint32,
 ) Computed {
@@ -216,8 +216,8 @@ func NewComputed(
 		dexterity:     dexterity,
 		luck:          luck,
 		intelligence:  intelligence,
-		maxHP:         maxHP,
-		maxMP:         maxMP,
+		maxHp:         maxHp,
+		maxMp:         maxMp,
 		weaponAttack:  weaponAttack,
 		weaponDefense: weaponDefense,
 		magicAttack:   magicAttack,
@@ -235,8 +235,8 @@ type Base struct {
 	dexterity    uint16
 	luck         uint16
 	intelligence uint16
-	maxHP        uint16
-	maxMP        uint16
+	maxHp        uint16
+	maxMp        uint16
 }
 
 func (b Base) Strength() uint16 {
@@ -255,23 +255,23 @@ func (b Base) Intelligence() uint16 {
 	return b.intelligence
 }
 
-func (b Base) MaxHP() uint16 {
-	return b.maxHP
+func (b Base) MaxHp() uint16 {
+	return b.maxHp
 }
 
-func (b Base) MaxMP() uint16 {
-	return b.maxMP
+func (b Base) MaxMp() uint16 {
+	return b.maxMp
 }
 
 // NewBase creates a new base stats model
-func NewBase(strength, dexterity, luck, intelligence, maxHP, maxMP uint16) Base {
+func NewBase(strength, dexterity, luck, intelligence, maxHp, maxMp uint16) Base {
 	return Base{
 		strength:     strength,
 		dexterity:    dexterity,
 		luck:         luck,
 		intelligence: intelligence,
-		maxHP:        maxHP,
-		maxMP:        maxMP,
+		maxHp:        maxHp,
+		maxMp:        maxMp,
 	}
 }
 
@@ -296,9 +296,9 @@ func MapBuffStatType(buffType string) (Type, bool) {
 	case "JUMP":
 		return TypeJump, false
 	case "HYPER_BODY_HP":
-		return TypeMaxHP, true
+		return TypeMaxHp, true
 	case "HYPER_BODY_MP":
-		return TypeMaxMP, true
+		return TypeMaxMp, true
 	case "MAPLE_WARRIOR":
 		// Maple Warrior affects all primary stats - we need to handle this specially
 		// For now, return strength as the representative stat
@@ -330,9 +330,9 @@ func MapStatupType(statupType string) Type {
 	case "JUMP":
 		return TypeJump
 	case "HP", "MAX_HP", "MHP":
-		return TypeMaxHP
+		return TypeMaxHp
 	case "MP", "MAX_MP", "MMP":
-		return TypeMaxMP
+		return TypeMaxMp
 	case "STR", "STRENGTH":
 		return TypeStrength
 	case "DEX", "DEXTERITY":

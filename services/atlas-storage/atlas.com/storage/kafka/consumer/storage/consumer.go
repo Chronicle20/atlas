@@ -120,7 +120,7 @@ func handleShowStorageCommand(db *gorm.DB) kafkaMessage.Handler[message.ShowStor
 		t := tenant.MustFromContext(ctx)
 
 		// Build the projection from storage data
-		proj, err := projection.BuildProjection(l, db, t.Id(), ctx)(c.CharacterId, c.AccountId, c.WorldId, c.NpcId)
+		proj, err := projection.BuildProjection(l, db, t.Id())(c.CharacterId, c.AccountId, c.WorldId, c.NpcId)
 		if err != nil {
 			l.WithError(err).Errorf("Failed to build projection for character [%d], account [%d], world [%d]",
 				c.CharacterId, c.AccountId, c.WorldId)

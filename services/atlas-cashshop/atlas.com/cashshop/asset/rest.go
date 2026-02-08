@@ -39,8 +39,8 @@ type EquipableRestData struct {
 	Dexterity      uint16 `json:"dexterity"`
 	Intelligence   uint16 `json:"intelligence"`
 	Luck           uint16 `json:"luck"`
-	HP             uint16 `json:"hp"`
-	MP             uint16 `json:"mp"`
+	Hp             uint16 `json:"hp"`
+	Mp             uint16 `json:"mp"`
 	WeaponAttack   uint16 `json:"weaponAttack"`
 	MagicAttack    uint16 `json:"magicAttack"`
 	WeaponDefense  uint16 `json:"weaponDefense"`
@@ -176,8 +176,8 @@ func Transform(m Model[any]) (BaseRestModel, error) {
 				Dexterity:      em.dexterity,
 				Intelligence:   em.intelligence,
 				Luck:           em.luck,
-				HP:             em.hp,
-				MP:             em.mp,
+				Hp:             em.hp,
+				Mp:             em.mp,
 				WeaponAttack:   em.weaponAttack,
 				MagicAttack:    em.magicAttack,
 				WeaponDefense:  em.weaponDefense,
@@ -275,8 +275,8 @@ func Extract(rm BaseRestModel) (Model[any], error) {
 			dexterity:      erm.Dexterity,
 			intelligence:   erm.Intelligence,
 			luck:           erm.Luck,
-			hp:             erm.HP,
-			mp:             erm.MP,
+			hp:             erm.Hp,
+			mp:             erm.Mp,
 			weaponAttack:   erm.WeaponAttack,
 			magicAttack:    erm.MagicAttack,
 			weaponDefense:  erm.WeaponDefense,

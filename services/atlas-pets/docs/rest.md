@@ -4,7 +4,7 @@
 
 ### GET /api/pets/{petId}
 
-Retrieves a pet by identifier.
+Retrieves a pet by identifier. Includes temporal position data (x, y, stance, fh) from the in-memory registry.
 
 #### Parameters
 
@@ -29,24 +29,24 @@ Retrieves a pet by identifier.
     "type": "pets",
     "id": "1",
     "attributes": {
-      "cashId": 5000123,
-      "templateId": 5000,
-      "name": "Fluffy",
+      "cashId": 7000000,
+      "templateId": 5000017,
+      "name": "Mr. Roboto",
       "level": 10,
       "closeness": 100,
       "fullness": 100,
       "expiration": "2023-12-31T23:59:59Z",
-      "ownerId": 54321,
+      "ownerId": 1,
       "slot": 0,
       "x": 100,
       "y": 200,
       "stance": 0,
       "fh": 5,
       "excludes": [
-        { "itemId": 1000 }
+        { "itemId": 2059000 }
       ],
       "flag": 0,
-      "purchaseBy": 54321
+      "purchaseBy": 1
     }
   }
 }
@@ -56,13 +56,14 @@ Retrieves a pet by identifier.
 
 | Status | Condition |
 |--------|-----------|
+| 400 | Invalid petId path parameter |
 | 500 | Pet not found or internal error |
 
 ---
 
 ### GET /api/characters/{characterId}/pets
 
-Retrieves all pets for a character.
+Retrieves all pets for a character. Includes temporal position data for each pet.
 
 #### Parameters
 
@@ -88,14 +89,14 @@ Retrieves all pets for a character.
       "type": "pets",
       "id": "1",
       "attributes": {
-        "cashId": 5000123,
-        "templateId": 5000,
-        "name": "Fluffy",
+        "cashId": 7000000,
+        "templateId": 5000017,
+        "name": "Mr. Roboto",
         "level": 10,
         "closeness": 100,
         "fullness": 100,
         "expiration": "2023-12-31T23:59:59Z",
-        "ownerId": 54321,
+        "ownerId": 1,
         "slot": 0,
         "x": 100,
         "y": 200,
@@ -103,7 +104,7 @@ Retrieves all pets for a character.
         "fh": 5,
         "excludes": [],
         "flag": 0,
-        "purchaseBy": 54321
+        "purchaseBy": 1
       }
     }
   ]
@@ -114,13 +115,14 @@ Retrieves all pets for a character.
 
 | Status | Condition |
 |--------|-----------|
+| 400 | Invalid characterId path parameter |
 | 500 | Internal error |
 
 ---
 
 ### POST /api/pets
 
-Creates a new pet.
+Creates a new pet. The pet is persisted to the database and a CREATED status event is emitted via Kafka.
 
 #### Request Headers
 
@@ -139,18 +141,18 @@ Creates a new pet.
   "data": {
     "type": "pets",
     "attributes": {
-      "cashId": 5000123,
-      "templateId": 5000,
-      "name": "Fluffy",
+      "cashId": 7000000,
+      "templateId": 5000017,
+      "name": "Mr. Roboto",
       "level": 1,
       "closeness": 0,
       "fullness": 100,
       "expiration": "2023-12-31T23:59:59Z",
-      "ownerId": 54321,
+      "ownerId": 1,
       "slot": -1,
       "excludes": [],
       "flag": 0,
-      "purchaseBy": 54321
+      "purchaseBy": 1
     }
   }
 }
@@ -164,14 +166,14 @@ Creates a new pet.
     "type": "pets",
     "id": "1",
     "attributes": {
-      "cashId": 5000123,
-      "templateId": 5000,
-      "name": "Fluffy",
+      "cashId": 7000000,
+      "templateId": 5000017,
+      "name": "Mr. Roboto",
       "level": 1,
       "closeness": 0,
       "fullness": 100,
       "expiration": "2023-12-31T23:59:59Z",
-      "ownerId": 54321,
+      "ownerId": 1,
       "slot": -1,
       "x": 0,
       "y": 0,
@@ -179,7 +181,7 @@ Creates a new pet.
       "fh": 1,
       "excludes": [],
       "flag": 0,
-      "purchaseBy": 54321
+      "purchaseBy": 1
     }
   }
 }
@@ -189,14 +191,14 @@ Creates a new pet.
 
 | Status | Condition |
 |--------|-----------|
-| 400 | Invalid input model |
-| 500 | Internal error |
+| 400 | Invalid input model (JSON parse failure) |
+| 500 | Internal error (creation failed or transform failed) |
 
 ---
 
 ### POST /api/characters/{characterId}/pets
 
-Creates a new pet for a character.
+Creates a new pet for a character. Behaves identically to `POST /api/pets`; the characterId path parameter is available but the ownerId from the request body is used.
 
 #### Parameters
 
@@ -221,17 +223,18 @@ Creates a new pet for a character.
   "data": {
     "type": "pets",
     "attributes": {
-      "cashId": 5000123,
-      "templateId": 5000,
-      "name": "Fluffy",
+      "cashId": 7000000,
+      "templateId": 5000017,
+      "name": "Mr. Roboto",
       "level": 1,
       "closeness": 0,
       "fullness": 100,
       "expiration": "2023-12-31T23:59:59Z",
+      "ownerId": 1,
       "slot": -1,
       "excludes": [],
       "flag": 0,
-      "purchaseBy": 54321
+      "purchaseBy": 1
     }
   }
 }
@@ -245,14 +248,14 @@ Creates a new pet for a character.
     "type": "pets",
     "id": "1",
     "attributes": {
-      "cashId": 5000123,
-      "templateId": 5000,
-      "name": "Fluffy",
+      "cashId": 7000000,
+      "templateId": 5000017,
+      "name": "Mr. Roboto",
       "level": 1,
       "closeness": 0,
       "fullness": 100,
       "expiration": "2023-12-31T23:59:59Z",
-      "ownerId": 54321,
+      "ownerId": 1,
       "slot": -1,
       "x": 0,
       "y": 0,
@@ -260,7 +263,7 @@ Creates a new pet for a character.
       "fh": 1,
       "excludes": [],
       "flag": 0,
-      "purchaseBy": 54321
+      "purchaseBy": 1
     }
   }
 }
@@ -270,5 +273,5 @@ Creates a new pet for a character.
 
 | Status | Condition |
 |--------|-----------|
-| 400 | Invalid input model |
-| 500 | Internal error |
+| 400 | Invalid input model (JSON parse failure) |
+| 500 | Internal error (creation failed or transform failed) |

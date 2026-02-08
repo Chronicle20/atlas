@@ -251,7 +251,7 @@ func (p *ProcessorImpl) DeleteOnRemove(mb *message.Buffer) func(characterId uint
 				if a.TemplateId() != itemId {
 					return errors.New("item mismatch")
 				}
-				return p.Delete(mb)(a.ReferenceId())(characterId)
+				return p.Delete(mb)(a.PetId())(characterId)
 			}
 		}
 	}
@@ -669,7 +669,7 @@ func (p *ProcessorImpl) AwardClosenessWithTransaction(mb *message.Buffer) func(t
 			levels := byte(0)
 
 			for {
-				if pe.Level() >= MaxLevel {
+				if pe.Level()+levels >= MaxLevel {
 					if newCloseness > MaxCloseness {
 						newCloseness = MaxCloseness
 					}
@@ -678,11 +678,7 @@ func (p *ProcessorImpl) AwardClosenessWithTransaction(mb *message.Buffer) func(t
 
 				levelExp := petExpTable[pe.Level()+levels]
 				if newCloseness >= levelExp {
-					if pe.Level()+levels >= MaxLevel {
-						newCloseness = petExpTable[len(petExpTable)]
-					} else {
-						levels += 1
-					}
+					levels += 1
 				} else {
 					break
 				}

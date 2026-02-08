@@ -11,8 +11,8 @@ type RestModel struct {
 	Dexterity     uint32           `json:"dexterity"`
 	Luck          uint32           `json:"luck"`
 	Intelligence  uint32           `json:"intelligence"`
-	MaxHP         uint32           `json:"maxHP"`
-	MaxMP         uint32           `json:"maxMP"`
+	MaxHp         uint32           `json:"maxHP"`
+	MaxMp         uint32           `json:"maxMP"`
 	WeaponAttack  uint32           `json:"weaponAttack"`
 	WeaponDefense uint32           `json:"weaponDefense"`
 	MagicAttack   uint32           `json:"magicAttack"`
@@ -68,8 +68,8 @@ func Transform(characterId uint32, computed Computed, bonuses []Bonus) RestModel
 		Dexterity:     computed.dexterity,
 		Luck:          computed.luck,
 		Intelligence:  computed.intelligence,
-		MaxHP:         computed.maxHP,
-		MaxMP:         computed.maxMP,
+		MaxHp:         computed.maxHp,
+		MaxMp:         computed.maxMp,
 		WeaponAttack:  computed.weaponAttack,
 		WeaponDefense: computed.weaponDefense,
 		MagicAttack:   computed.magicAttack,

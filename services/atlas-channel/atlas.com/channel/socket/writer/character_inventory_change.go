@@ -88,8 +88,8 @@ func InventoryRemoveBodyWriter(inventoryType inventory.Type, slot int16) Invento
 	}
 }
 
-func CharacterInventoryRefreshAsset(t tenant.Model) func(inventoryType inventory.Type, a asset.Model[any]) BodyProducer {
-	return func(inventoryType inventory.Type, a asset.Model[any]) BodyProducer {
+func CharacterInventoryRefreshAsset(t tenant.Model) func(inventoryType inventory.Type, a asset.Model) BodyProducer {
+	return func(inventoryType inventory.Type, a asset.Model) BodyProducer {
 		pw := model.FlipOperator(WriteAssetInfo(t)(true))(a)
 		return CharacterInventoryChangeBody(false, InventoryRemoveBodyWriter(inventoryType, a.Slot()), InventoryAddBodyWriter(inventoryType, a.Slot(), pw))
 	}

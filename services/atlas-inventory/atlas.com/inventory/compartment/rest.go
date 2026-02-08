@@ -14,7 +14,7 @@ type RestModel struct {
 	Id            uuid.UUID             `json:"-"`
 	InventoryType inventory.Type        `json:"type"`
 	Capacity      uint32                `json:"capacity"`
-	Assets        []asset.BaseRestModel `json:"-"`
+	Assets        []asset.RestModel `json:"-"`
 }
 
 func (r RestModel) GetName() string {
@@ -75,7 +75,7 @@ func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
 			if err != nil {
 				return err
 			}
-			r.Assets = append(r.Assets, asset.BaseRestModel{Id: uint32(id)})
+			r.Assets = append(r.Assets, asset.RestModel{Id: uint32(id)})
 		}
 	}
 	return nil
@@ -83,7 +83,7 @@ func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
 
 func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonapi.Data) error {
 	if refMap, ok := references["assets"]; ok {
-		assets := make([]asset.BaseRestModel, 0)
+		assets := make([]asset.RestModel, 0)
 		for _, ri := range r.Assets {
 			if ref, ok := refMap[ri.GetID()]; ok {
 				wip := ri

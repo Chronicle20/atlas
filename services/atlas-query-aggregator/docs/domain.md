@@ -2,7 +2,7 @@
 
 ## Responsibility
 
-Validates character state against specified conditions by aggregating data from multiple external services.
+Validates character state against specified conditions by aggregating data from multiple external services. This is the primary domain of the service.
 
 ## Core Models
 
@@ -16,10 +16,10 @@ Represents a validation condition.
 | operator | Operator | Comparison operator |
 | value | int | Expected value |
 | values | []int | Values for "in" operator |
-| referenceId | uint32 | Reference for quest, item, map, transport, skill, or buff conditions |
+| referenceId | uint32 | Reference for quest, item, map, transport, skill, buff, or inventory space conditions |
 | step | string | Quest progress step key |
-| worldId | byte | World ID for map capacity conditions |
-| channelId | byte | Channel ID for map capacity conditions |
+| worldId | world.Id | World ID for map capacity conditions |
+| channelId | channel.Id | Channel ID for map capacity conditions |
 | includeEquipped | bool | Include equipped items in item quantity checks |
 
 ### ConditionType
@@ -50,12 +50,13 @@ Represents a validation condition.
 | buddyCapacity | Buddy list capacity |
 | petCount | Spawned pet count |
 | mapCapacity | Player count in map |
-| inventorySpace | Available inventory slots |
+| inventorySpace | Available inventory slots for an item |
 | transportAvailable | Transport route availability |
 | skillLevel | Skill level |
 | hp | Current HP |
 | maxHp | Maximum HP |
 | buff | Active buff status |
+| excessSp | Excess SP beyond expected for job tier |
 
 ### Operator
 
@@ -95,29 +96,41 @@ Represents the result of validating multiple conditions.
 
 ### ValidationContext
 
-Aggregated data context for validation.
+Aggregated data context for validation. Supports lazy loading of external data via embedded processors.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| character | character.Model | Character data |
+| character | character.Model | Character data with inventory and equipment |
 | quests | map[uint32]quest.Model | Quest data by quest ID |
-| skills | map[uint32]skill.Model | Skill data by skill ID |
+| skills | map[uint32]skill.Model | Skill data by skill ID (local cache) |
 | marriage | marriage.Model | Marriage gift data |
 | buddyList | buddy.Model | Buddy list data |
 | petCount | int | Spawned pet count |
+| mapP | map.Processor | Lazy-loaded map player count queries |
+| itemP | item.Processor | Lazy-loaded item slot max queries |
+| transportP | transport.Processor | Lazy-loaded transport route queries |
+| skillP | skill.Processor | Lazy-loaded skill level queries |
+| buffP | buff.Processor | Lazy-loaded buff status queries |
 
 ## Invariants
 
 - Condition type must be a supported ConditionType value
 - Operator must be a supported Operator value
-- Item conditions require a referenceId
-- Quest status conditions require a referenceId
-- Quest progress conditions require a referenceId and step
+- Item conditions require a referenceId (item template ID)
+- Quest status conditions require a referenceId (quest ID)
+- Quest progress conditions require a referenceId (quest ID) and step (progress key)
 - Map capacity conditions require a referenceId (map ID)
 - Transport available conditions require a referenceId (start map ID)
 - Skill level conditions require a referenceId (skill ID)
 - Buff conditions require a referenceId (source ID)
 - Inventory space conditions require a referenceId (item ID)
+- ExcessSP conditions require a referenceId (base level for job tier)
+- Context-dependent conditions (questStatus, questProgress, marriageGifts, buddyCapacity, petCount, mapCapacity, transportAvailable, skillLevel, buff, inventorySpace) return failure when evaluated without a ValidationContext
+- A single failing condition causes the entire ValidationResult to fail
+
+## State Transitions
+
+Conditions and validation results are stateless. Each validation request produces a fresh result based on current character state.
 
 ## Processors
 
@@ -127,8 +140,13 @@ Handles validation logic by aggregating data from external services.
 
 | Method | Description |
 |--------|-------------|
-| ValidateStructured | Validates conditions against a character by ID |
+| ValidateStructured | Validates conditions against a character by ID. Automatically detects whether a ValidationContext is needed and builds one if required. |
 | ValidateWithContext | Validates conditions using a pre-built ValidationContext |
+| GetValidationContextProvider | Returns a provider that builds a ValidationContext by fetching character, quest, marriage, buddy, and pet data |
+
+### Inventory Space Calculation
+
+The `CalculateInventorySpace` function determines whether a character can hold a specified quantity of an item. It fills existing partial stacks first, then calculates new slots needed for the remainder. It queries the item processor for slot max data (with caching).
 
 ---
 
@@ -136,7 +154,7 @@ Handles validation logic by aggregating data from external services.
 
 ## Responsibility
 
-Represents character data retrieved from the Character service.
+Represents character data retrieved from the Character service. The character model is the central aggregation point, decorated with inventory, equipment, and guild data.
 
 ## Core Models
 
@@ -149,8 +167,11 @@ Represents character data retrieved from the Character service.
 | worldId | world.Id | World ID |
 | name | string | Character name |
 | gender | byte | Gender (0=male, 1=female) |
+| skinColor | byte | Skin color |
+| face | uint32 | Face ID |
+| hair | uint32 | Hair ID |
 | level | byte | Character level |
-| jobId | uint16 | Job ID |
+| jobId | job.Id | Job ID |
 | strength | uint16 | Strength stat |
 | dexterity | uint16 | Dexterity stat |
 | intelligence | uint16 | Intelligence stat |
@@ -159,16 +180,36 @@ Represents character data retrieved from the Character service.
 | maxHp | uint16 | Maximum HP |
 | mp | uint16 | Current MP |
 | maxMp | uint16 | Maximum MP |
-| meso | uint32 | Currency |
+| hpMpUsed | int | HP/MP usage tracker |
+| ap | uint16 | Ability points |
+| sp | string | Skill points (comma-separated) |
+| experience | uint32 | Experience points |
 | fame | int16 | Fame |
-| mapId | uint32 | Current map ID |
+| gachaponExperience | uint32 | Gachapon experience |
+| mapId | map.Id | Current map ID |
+| spawnPoint | uint32 | Spawn point |
 | gm | int | GM level |
 | reborns | uint32 | Rebirth count |
 | dojoPoints | uint32 | Dojo points |
 | vanquisherKills | uint32 | Vanquisher kill count |
-| equipment | equipment.Model | Equipped items |
+| x | int16 | X position |
+| y | int16 | Y position |
+| stance | byte | Current stance |
+| meso | uint32 | Currency |
+| equipment | equipment.Model | Equipped items (derived from equipable compartment) |
 | inventory | inventory.Model | Inventory data |
 | guild | guild.Model | Guild data |
+
+### SetInventory Logic
+
+When `SetInventory` is called, the equip compartment assets are split into two views:
+
+- Assets with **positive slots** remain in the equipable compartment (unequipped equips in inventory).
+- Assets with **negative slots** are placed into the equipment model, mapped to equipment slot types. Slots below -100 are treated as cash equipment (slot += 100 to find the base slot type).
+
+### SP Table
+
+Characters with Evan job IDs (2210-2218) use an SP table (multiple SP values), otherwise SP is a single value at index 0.
 
 ## Processors
 
@@ -177,8 +218,8 @@ Represents character data retrieved from the Character service.
 | Method | Description |
 |--------|-------------|
 | GetById | Retrieves character by ID with optional decorators |
-| InventoryDecorator | Decorates character with inventory data |
-| GuildDecorator | Decorates character with guild data |
+| InventoryDecorator | Decorates character with inventory data by fetching from the inventory service |
+| GuildDecorator | Decorates character with guild data by fetching from the guild service |
 
 ---
 
@@ -186,7 +227,7 @@ Represents character data retrieved from the Character service.
 
 ## Responsibility
 
-Represents character inventory data retrieved from the Inventory service.
+Represents character inventory data retrieved from the Inventory service. An inventory consists of typed compartments (equip, use, setup, etc, cash), each containing assets.
 
 ## Core Models
 
@@ -197,15 +238,7 @@ Represents character inventory data retrieved from the Inventory service.
 | characterId | uint32 | Character ID |
 | compartments | map[inventory.Type]compartment.Model | Inventory compartments by type |
 
-### Compartment Model
-
-| Field | Type | Description |
-|-------|------|-------------|
-| id | uuid.UUID | Compartment ID |
-| characterId | uint32 | Character ID |
-| inventoryType | inventory.Type | Inventory type |
-| capacity | uint32 | Slot capacity |
-| assets | []asset.Model | Items in compartment |
+Provides named accessors: `Equipable()`, `Consumable()`, `Setup()`, `ETC()`, `Cash()`, as well as `CompartmentByType(inventory.Type)` and `CompartmentById(uuid.UUID)`.
 
 ## Processors
 
@@ -213,7 +246,161 @@ Represents character inventory data retrieved from the Inventory service.
 
 | Method | Description |
 |--------|-------------|
+| ByCharacterIdProvider | Returns a provider for inventory data |
 | GetByCharacterId | Retrieves inventory for a character |
+
+---
+
+# Compartment Domain
+
+## Responsibility
+
+Represents an inventory compartment -- a typed container of assets with a capacity.
+
+## Core Models
+
+### Model
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uuid.UUID | Compartment ID |
+| characterId | uint32 | Character ID |
+| inventoryType | inventory.Type | Inventory type (equip, use, setup, etc, cash) |
+| capacity | uint32 | Slot capacity |
+| assets | []asset.Model | Assets in compartment |
+
+### ModelBuilder
+
+Constructed via `NewBuilder(id, characterId, inventoryType, capacity)` or `Clone(model)`. Supports `SetCapacity`, `AddAsset`, `SetAssets`, and `Build`.
+
+---
+
+# Asset Domain
+
+## Responsibility
+
+Represents a unified inventory asset. All asset types (equipment, stackable, cash) share a single model. The asset's inventory type is derived from its template ID.
+
+## Core Models
+
+### Model
+
+A unified model containing fields for all asset categories:
+
+**Common fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uint32 | Asset ID |
+| compartmentId | uuid.UUID | Parent compartment ID |
+| slot | int16 | Slot position |
+| templateId | uint32 | Item template ID |
+| expiration | time.Time | Expiration time |
+| createdAt | time.Time | Creation time |
+
+**Stackable fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| quantity | uint32 | Stack quantity |
+| ownerId | uint32 | Owner character ID |
+| flag | uint16 | Item flags |
+| rechargeable | uint64 | Rechargeable amount |
+
+**Equipment fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| strength | uint16 | Strength bonus |
+| dexterity | uint16 | Dexterity bonus |
+| intelligence | uint16 | Intelligence bonus |
+| luck | uint16 | Luck bonus |
+| hp | uint16 | HP bonus |
+| mp | uint16 | MP bonus |
+| weaponAttack | uint16 | Weapon attack bonus |
+| magicAttack | uint16 | Magic attack bonus |
+| weaponDefense | uint16 | Weapon defense bonus |
+| magicDefense | uint16 | Magic defense bonus |
+| accuracy | uint16 | Accuracy bonus |
+| avoidability | uint16 | Avoidability bonus |
+| hands | uint16 | Hands bonus |
+| speed | uint16 | Speed bonus |
+| jump | uint16 | Jump bonus |
+| slots | uint16 | Upgrade slots remaining |
+| locked | bool | Whether locked |
+| spikes | bool | Whether has spikes |
+| karmaUsed | bool | Whether karma scissors used |
+| cold | bool | Cold protection flag |
+| canBeTraded | bool | Trade flag |
+| levelType | byte | Level type |
+| level | byte | Item level |
+| experience | uint32 | Item experience |
+| hammersApplied | uint32 | Hammers applied count |
+| equippedSince | *time.Time | When equipped (nil if not equipped) |
+
+**Cash fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| cashId | int64 | Cash item serial number |
+| commodityId | uint32 | Commodity ID |
+| purchaseBy | uint32 | Purchasing character ID |
+
+**Pet reference:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| petId | uint32 | Pet ID (0 if not a pet) |
+
+### Type Classification Methods
+
+The model provides methods to classify asset type based on template ID:
+
+| Method | Description |
+|--------|-------------|
+| InventoryType() | Returns inventory type derived from template ID |
+| IsEquipment() | True if equip type |
+| IsCashEquipment() | True if equip type with non-zero cashId |
+| IsConsumable() | True if use type |
+| IsSetup() | True if setup type |
+| IsEtc() | True if etc type |
+| IsCash() | True if cash type |
+| IsPet() | True if cash type with non-zero petId |
+| IsStackable() | True if use, setup, or etc type |
+| HasQuantity() | True if stackable, or cash (non-pet) |
+| Quantity() | Returns quantity (1 for non-stackable items) |
+
+### ModelBuilder
+
+Constructed via `NewBuilder(compartmentId, templateId)` or `Clone(model)`. Provides setter methods for all fields and a `Build()` method to produce a Model.
+
+---
+
+# Equipment Domain
+
+## Responsibility
+
+Represents the equipment slots on a character, derived from the equip compartment assets when inventory is loaded.
+
+## Core Models
+
+### Model
+
+A map of slot types to slot models.
+
+| Method | Description |
+|--------|-------------|
+| Get(slotType) | Returns the slot model for the given type |
+| Set(slotType, model) | Sets the slot model for the given type |
+| Slots() | Returns all slot models |
+
+### Slot Model
+
+| Field | Type | Description |
+|-------|------|-------------|
+| Position | slot.Position | Slot position value |
+| Equipable | *asset.Model | Normal equipped asset (nil if empty) |
+| CashEquipable | *asset.Model | Cash equipped asset (nil if empty) |
 
 ---
 
@@ -234,7 +421,8 @@ Represents quest data retrieved from the Quest service.
 | state | State | Quest state |
 | startedAt | time.Time | Start time |
 | completedAt | time.Time | Completion time |
-| progress | []ProgressModel | Progress entries |
+| progress | []ProgressModel | Progress entries by info number |
+| progressByKey | map[string]int | Progress entries by string key |
 
 ### State
 
@@ -257,7 +445,12 @@ Represents quest data retrieved from the Quest service.
 
 | Method | Description |
 |--------|-------------|
-| GetQuestsByCharacter | Retrieves all quests for a character |
+| GetQuestState | Returns quest state for a character and quest ID |
+| GetQuestProgress | Returns quest progress for a specific info number |
+| GetQuest | Returns complete quest model |
+| GetQuestsByCharacter | Returns all quests for a character |
+| GetStartedQuestsByCharacter | Returns started quests for a character |
+| GetCompletedQuestsByCharacter | Returns completed quests for a character |
 
 ---
 
@@ -274,11 +467,15 @@ Represents guild data retrieved from the Guild service.
 | Field | Type | Description |
 |-------|------|-------------|
 | id | uint32 | Guild ID |
-| worldId | byte | World ID |
+| worldId | world.Id | World ID |
 | name | string | Guild name |
 | notice | string | Guild notice |
 | points | uint32 | Guild points |
 | capacity | uint32 | Member capacity |
+| logo | uint16 | Logo ID |
+| logoColor | byte | Logo color |
+| logoBackground | uint16 | Logo background ID |
+| logoBackgroundColor | byte | Logo background color |
 | leaderId | uint32 | Leader character ID |
 | members | []member.Model | Guild members |
 | titles | []title.Model | Guild titles |
@@ -288,7 +485,14 @@ Represents guild data retrieved from the Guild service.
 | Field | Type | Description |
 |-------|------|-------------|
 | characterId | uint32 | Member character ID |
-| rank | byte | Member rank |
+| name | string | Member name |
+| jobId | uint16 | Member job ID |
+| level | byte | Member level |
+| title | byte | Member title index |
+| online | bool | Online status |
+| allianceTitle | byte | Alliance title |
+
+The guild model provides a `MemberRank(characterId)` method that returns a member's title (rank) value, or 0 if the character is not a member.
 
 ## Processors
 
@@ -297,6 +501,8 @@ Represents guild data retrieved from the Guild service.
 | Method | Description |
 |--------|-------------|
 | GetByMemberId | Retrieves guild by member character ID |
+| IsLeader | Checks if a character is the guild leader |
+| HasGuild | Checks if a character belongs to a guild |
 
 ---
 
@@ -324,6 +530,8 @@ Represents marriage gift data retrieved from the Marriage service.
 | Method | Description |
 |--------|-------------|
 | GetMarriageGifts | Retrieves marriage gift data for a character |
+| HasUnclaimedGifts | Returns whether a character has unclaimed gifts |
+| GetUnclaimedGiftCount | Returns count of unclaimed gifts |
 
 ---
 
@@ -349,6 +557,7 @@ Represents buddy list data retrieved from the Buddy service.
 | Method | Description |
 |--------|-------------|
 | GetBuddyList | Retrieves buddy list for a character |
+| GetBuddyCapacity | Returns buddy list capacity for a character |
 
 ---
 
@@ -365,7 +574,7 @@ Represents pet data retrieved from the Pet service.
 | Field | Type | Description |
 |-------|------|-------------|
 | id | uint32 | Pet ID |
-| slot | int8 | Spawn slot (-1 if not spawned) |
+| slot | int8 | Spawn slot (-1 if not spawned, >= 0 if spawned) |
 
 ## Processors
 
@@ -373,7 +582,8 @@ Represents pet data retrieved from the Pet service.
 
 | Method | Description |
 |--------|-------------|
-| GetSpawnedPetCount | Returns count of spawned pets for a character |
+| GetPets | Returns all pets for a character |
+| GetSpawnedPetCount | Returns count of spawned pets (slot >= 0) for a character |
 
 ---
 
@@ -401,7 +611,10 @@ Represents skill data retrieved from the Skill service.
 
 | Method | Description |
 |--------|-------------|
-| GetSkillLevel | Returns skill level for a character and skill ID |
+| GetSkillLevel | Returns skill level for a character and skill ID (0 if not found) |
+| GetSkill | Returns complete skill model |
+| GetSkillsByCharacter | Returns all skills for a character |
+| GetSkillsMap | Returns all skills as a map keyed by skill ID |
 
 ---
 
@@ -417,10 +630,12 @@ Represents active buff data retrieved from the Buff service.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| sourceId | int32 | Buff source ID |
+| sourceId | int32 | Buff source ID (skill/item that applied the buff) |
 | duration | int32 | Duration in seconds |
 | createdAt | time.Time | Application time |
 | expiresAt | time.Time | Expiration time |
+
+The model provides an `IsActive()` method that returns true if the current time is before `expiresAt`.
 
 ## Processors
 
@@ -428,7 +643,8 @@ Represents active buff data retrieved from the Buff service.
 
 | Method | Description |
 |--------|-------------|
-| HasActiveBuff | Returns whether character has an active buff with given source ID |
+| HasActiveBuff | Returns whether a character has an active buff with the given source ID. Returns false on error (graceful degradation). |
+| GetBuffsByCharacter | Returns all active buffs for a character. Returns empty slice on error. |
 
 ---
 
@@ -446,8 +662,10 @@ Represents transport route data retrieved from the Transport service.
 |-------|------|-------------|
 | id | uuid.UUID | Route ID |
 | name | string | Route name |
-| state | string | Route state |
+| state | string | Route state (e.g., "open_entry") |
 | startMapId | map.Id | Starting map ID |
+
+The model provides an `IsOpenEntry()` method that returns true if the state is "open_entry".
 
 ## Processors
 
@@ -455,7 +673,7 @@ Represents transport route data retrieved from the Transport service.
 
 | Method | Description |
 |--------|-------------|
-| GetRouteByStartMap | Returns transport route by starting map ID |
+| GetRouteByStartMap | Returns transport route by starting map ID. Returns first route if multiple exist. |
 
 ---
 
@@ -463,7 +681,7 @@ Represents transport route data retrieved from the Transport service.
 
 ## Responsibility
 
-Represents map data retrieved from the Map service.
+Represents map data retrieved from the Map service. Used to query player counts for map capacity conditions.
 
 ## Processors
 
@@ -471,4 +689,29 @@ Represents map data retrieved from the Map service.
 
 | Method | Description |
 |--------|-------------|
-| GetPlayerCountInMap | Returns player count for a map |
+| GetPlayerCountInMap | Returns player count for a map (world/channel/map/instance). Returns 0 on error (graceful degradation). |
+
+---
+
+# Item Domain
+
+## Responsibility
+
+Provides item metadata (slot max) for inventory space calculations. Uses a singleton in-memory cache with TTL-based expiration.
+
+## Core Models
+
+### ItemData
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uint32 | Item ID |
+| slotMax | uint32 | Maximum stack size |
+
+## Processors
+
+### Processor
+
+| Method | Description |
+|--------|-------------|
+| GetSlotMax | Returns maximum stack size for an item. Checks cache first, then fetches from the data service based on item type. Equipment always returns 1. Values capped at 1000. Falls back to defaults on error. |

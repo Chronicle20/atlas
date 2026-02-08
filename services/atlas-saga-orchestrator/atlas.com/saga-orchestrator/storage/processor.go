@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	asset2 "atlas-saga-orchestrator/kafka/message/asset"
 	"atlas-saga-orchestrator/kafka/message"
 	storage2 "atlas-saga-orchestrator/kafka/message/storage"
 	storageCompartment "atlas-saga-orchestrator/kafka/message/storage/compartment"
@@ -27,8 +28,8 @@ type Processor interface {
 	DepositRollback(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, accountId uint32, assetId asset.Id) error
 	ShowStorageAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, npcId uint32, accountId uint32) error
 	ShowStorage(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, npcId uint32, accountId uint32) error
-	AcceptAndEmit(transactionId uuid.UUID, worldId world.Id, accountId uint32, characterId uint32, slot int16, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, quantity asset.Quantity) error
-	Accept(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, accountId uint32, characterId uint32, slot int16, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, quantity asset.Quantity) error
+	AcceptAndEmit(transactionId uuid.UUID, worldId world.Id, accountId uint32, characterId uint32, templateId uint32, assetData asset2.AssetData) error
+	Accept(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, accountId uint32, characterId uint32, templateId uint32, assetData asset2.AssetData) error
 	ReleaseAndEmit(transactionId uuid.UUID, worldId world.Id, accountId uint32, characterId uint32, assetId asset.Id, quantity asset.Quantity) error
 	Release(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, accountId uint32, characterId uint32, assetId asset.Id, quantity asset.Quantity) error
 }
@@ -107,15 +108,15 @@ func (p *ProcessorImpl) ShowStorage(mb *message.Buffer) func(transactionId uuid.
 	}
 }
 
-func (p *ProcessorImpl) AcceptAndEmit(transactionId uuid.UUID, worldId world.Id, accountId uint32, characterId uint32, slot int16, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, quantity asset.Quantity) error {
+func (p *ProcessorImpl) AcceptAndEmit(transactionId uuid.UUID, worldId world.Id, accountId uint32, characterId uint32, templateId uint32, assetData asset2.AssetData) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
-		return p.Accept(mb)(transactionId, worldId, accountId, characterId, slot, templateId, referenceId, referenceType, referenceData, quantity)
+		return p.Accept(mb)(transactionId, worldId, accountId, characterId, templateId, assetData)
 	})
 }
 
-func (p *ProcessorImpl) Accept(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, accountId uint32, characterId uint32, slot int16, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, quantity asset.Quantity) error {
-	return func(transactionId uuid.UUID, worldId world.Id, accountId uint32, characterId uint32, slot int16, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, quantity asset.Quantity) error {
-		return mb.Put(storageCompartment.EnvCommandTopic, AcceptCommandProvider(transactionId, worldId, accountId, characterId, slot, templateId, referenceId, referenceType, referenceData, quantity))
+func (p *ProcessorImpl) Accept(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, accountId uint32, characterId uint32, templateId uint32, assetData asset2.AssetData) error {
+	return func(transactionId uuid.UUID, worldId world.Id, accountId uint32, characterId uint32, templateId uint32, assetData asset2.AssetData) error {
+		return mb.Put(storageCompartment.EnvCommandTopic, AcceptCommandProvider(transactionId, worldId, accountId, characterId, templateId, assetData))
 	}
 }
 

@@ -166,10 +166,10 @@ func TestProcessor_DeleteOnRemove(t *testing.T) {
 			return character.NewModelBuilder().
 				SetInventory(inventory.NewBuilder(characterId).
 					SetCash(compartment.NewBuilder(uuid.New(), characterId, inventory2.TypeValueCash, 24).
-						AddAsset(asset.NewBuilder[any](1, uuid.Nil, templateId, petId, asset.ReferenceTypePet).
+						AddAsset(asset.NewBuilder(uuid.Nil, templateId).
+							SetId(1).
 							SetSlot(slot).
-							SetReferenceData(asset.NewPetReferenceDataBuilder().
-								Build()).
+							SetPetId(petId).
 							Build()).
 						Build()).
 					Build()).

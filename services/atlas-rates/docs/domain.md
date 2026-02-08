@@ -42,6 +42,7 @@ Aggregated rates for a character.
 - All rate types default to 1.0 when no factors exist.
 - Factors with the same source and rateType replace existing factors.
 - Computed rates are the product of all factors for each type.
+- Factor computation is order-independent (multiplication is commutative).
 
 ### Processors
 
@@ -66,8 +67,8 @@ Holds all rate factors for a character.
 | Field | Type | Description |
 |-------|------|-------------|
 | tenant | tenant.Model | Tenant context |
-| worldId | byte | World identifier |
-| channelId | byte | Channel identifier |
+| worldId | world.Id | World identifier |
+| channelId | channel.Id | Channel identifier |
 | characterId | uint32 | Character identifier |
 | factors | []rate.Factor | Rate factors for this character |
 
@@ -84,7 +85,8 @@ Represents an item being tracked for time-based rate calculations.
 | EquippedSince | *time.Time | When the item was equipped (bonusExp items) |
 | AcquiredAt | time.Time | When the coupon was acquired |
 | BaseRate | float64 | Base rate multiplier (coupons) |
-| DurationMins | int32 | Active duration in minutes (coupons) |
+| DurationMins | int32 | Active duration in minutes (0 = permanent, coupons) |
+| TimeWindows | []cash.TimeWindow | Active time windows for day/hour restrictions (coupons) |
 
 **ItemType** (`character/item_tracker.go`)
 
@@ -96,9 +98,24 @@ Represents an item being tracked for time-based rate calculations.
 ### Invariants
 
 - Characters are created lazily on first rate query or map change.
+- Model uses immutable `With*` methods; all mutations return a new Model.
 - BonusExp items only provide a bonus when equipped (EquippedSince is not nil).
-- Coupon items expire after DurationMins minutes from AcquiredAt.
+- Coupon items expire after DurationMins minutes from AcquiredAt. DurationMins of 0 means permanent.
+- Coupons with TimeWindows are only active during the specified day/hour windows. Empty TimeWindows means always active.
 - Factors with the same source and rateType are replaced, not duplicated.
+- Factors() returns a defensive copy to prevent external mutation.
+- Template ID ranges determine rate type: 5210000-5219999 are EXP coupons, 5360000-5369999 are Drop coupons.
+- Expired coupon items are cleaned up when GetItemRateFactors is called.
+
+### State Transitions
+
+- **Uninitialized -> Initialized**: On first rate query or MAP_CHANGED event, character rates are lazily initialized by querying equipped items, cash coupons, and active buffs from external services.
+- **Factor Added**: WithFactor replaces any existing factor with the same source and rateType.
+- **Factor Removed**: WithoutFactor or WithoutFactorsBySource produces a new model without matching factors.
+- **Item Equipped**: BonusExp equipment is tracked with equippedSince set to current time.
+- **Item Unequipped**: BonusExp equipment is untracked.
+- **Coupon Created/Accepted**: Cash coupon is tracked with createdAt, duration, and time windows.
+- **Coupon Deleted/Released**: Coupon is untracked and any static factors are removed.
 
 ### Processors
 
@@ -106,33 +123,33 @@ Represents an item being tracked for time-based rate calculations.
 
 | Method | Description |
 |--------|-------------|
-| GetRates | Retrieves computed rates and factors for a character |
+| GetRates | Retrieves computed rates and factors for a character, including dynamic item factors |
 | AddFactor | Adds or updates a rate factor |
 | RemoveFactor | Removes a specific rate factor |
 | RemoveFactorsBySource | Removes all factors from a specific source |
 | UpdateWorldRate | Updates world rate for all characters in a world |
-| AddBuffFactor | Adds a rate factor from a buff |
+| AddBuffFactor | Adds a rate factor from a buff (source: `buff:{sourceId}`) |
 | RemoveBuffFactor | Removes a specific buff rate factor |
 | RemoveAllBuffFactors | Removes all rate factors from a specific buff |
-| AddItemFactor | Adds a rate factor from an item |
+| AddItemFactor | Adds a rate factor from an item (source: `item:{templateId}`) |
 | RemoveItemFactor | Removes a specific item rate factor |
 | RemoveAllItemFactors | Removes all rate factors from a specific item |
 | TrackBonusExpItem | Starts tracking equipment with time-based EXP bonus tiers |
 | TrackCouponItem | Starts tracking a cash coupon with time-limited rate bonus |
 | UntrackItem | Stops tracking a time-based rate item |
 | UpdateBonusExpEquippedSince | Updates equippedSince timestamp for a bonusExp item |
-| GetItemRateFactors | Returns current rate factors from all tracked items |
+| GetItemRateFactors | Returns current rate factors from all tracked items (cleans up expired items) |
 
 **Registry** (`character/registry.go`)
 
-In-memory cache for character rate models.
+Singleton in-memory cache for character rate models. Thread-safe with per-tenant locking.
 
 | Method | Description |
 |--------|-------------|
 | Get | Retrieves a character's rate model |
 | GetOrCreate | Retrieves or creates a character's rate model |
 | Update | Replaces a character's rate model |
-| AddFactor | Adds a factor to a character |
+| AddFactor | Adds a factor to a character (creates model if absent) |
 | RemoveFactor | Removes a factor from a character |
 | RemoveFactorsBySource | Removes all factors from a source |
 | GetAllForWorld | Returns all characters in a world |
@@ -141,7 +158,7 @@ In-memory cache for character rate models.
 
 **ItemTracker** (`character/item_tracker.go`)
 
-In-memory tracker for time-based rate items.
+Singleton in-memory tracker for time-based rate items. Thread-safe.
 
 | Method | Description |
 |--------|-------------|
@@ -151,11 +168,11 @@ In-memory tracker for time-based rate items.
 | GetTrackedItem | Returns a tracked item if it exists |
 | GetAllTrackedItems | Returns all tracked items for a character |
 | ComputeItemRateFactors | Calculates current rate factors from tracked items |
-| CleanupExpiredItems | Removes expired coupon items |
+| CleanupExpiredItems | Removes expired coupon items and returns removed templateIds |
 
 **InitializeCharacterRates** (`character/initializer.go`)
 
-Queries inventory, buffs, and session data to initialize rate tracking for a character. Called lazily on first rate query or map change event.
+Queries inventory, buffs, and session data to initialize rate tracking for a character. Called lazily on first rate query or map change event. Idempotent -- tracks initialization state per tenant and character to prevent duplicate processing.
 
 ---
 
@@ -172,6 +189,7 @@ Calculates current bonus EXP tier for equipped items based on gameplay time.
 Calculates the current tier and multiplier for an equipped item.
 
 Takes into account:
-- Session history (only gameplay time counts)
+- Session history from atlas-character (only gameplay time counts)
 - Midnight reset rule (hours reset at midnight, but tier is retained until logout or unequip)
-- equippedSince timestamp
+- equippedSince timestamp (when the item was equipped)
+- Returns the higher of the retained midnight tier and the current day's computed tier

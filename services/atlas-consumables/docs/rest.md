@@ -6,36 +6,73 @@ The service makes outbound REST calls to fetch data from other services:
 
 ## Outbound REST Calls
 
-### Character Service
+### Character Service (CHARACTERS)
 
 - `GET /characters/{id}` - Fetch character by ID
 - `GET /characters/{id}?include=inventory` - Fetch character with inventory
 
-### Pet Service
+### Inventory Service (INVENTORY)
+
+- `GET /characters/{id}/inventory` - Fetch full inventory for a character
+
+### Pet Service (PETS)
 
 - `GET /pets/{id}` - Fetch pet by ID
-- `GET /pets?ownerId={ownerIds}` - Fetch pets by owner
+- `GET /characters/{id}/pets` - Fetch pets by owner
 
-### Consumable Data Service
+### Consumable Data Service (DATA)
 
-- `GET /consumables/{id}` - Fetch consumable template
+- `GET /data/consumables/{id}` - Fetch consumable template data
 
-### Equipable Data Service
+### Equipable Data Service (DATA)
 
-- `GET /equipables/{id}` - Fetch equipable template
+- `GET /data/equipment/{id}` - Fetch equipable template data
 
-### Map Data Service
+### Cash Item Data Service (DATA)
 
-- `GET /maps/{id}` - Fetch map template
+- `GET /data/cash/items/{id}` - Fetch cash item template data
 
-### Portal Service
+### Map Data Service (DATA)
 
-- `GET /portals?mapId={mapId}` - Fetch map portals
+- `GET /data/maps/{id}` - Fetch map data (return map ID)
 
-### Monster Drop Position Service
+### Portal Data Service (DATA)
 
-- `GET /monster-drops/positions?mapId={mapId}` - Fetch drop positions
+- `GET /data/maps/{id}/portals` - Fetch portals in a map
 
-### Monster Service
+### Monster Drop Position Service (DATA)
 
-- `POST /monsters` - Create monster instance
+- `POST /data/maps/{id}/drops/position` - Calculate drop position in a map
+
+  Request body:
+  ```json
+  {
+    "initialX": 0,
+    "initialY": 0,
+    "fallbackX": 0,
+    "fallbackY": 0
+  }
+  ```
+
+  Response:
+  ```json
+  {
+    "x": 0,
+    "y": 0
+  }
+  ```
+
+### Monster Service (MONSTERS)
+
+- `POST /worlds/{worldId}/channels/{channelId}/maps/{mapId}/monsters` - Create monster instance
+
+  Request body:
+  ```json
+  {
+    "monsterId": 0,
+    "x": 0,
+    "y": 0,
+    "fh": 0,
+    "team": 0
+  }
+  ```

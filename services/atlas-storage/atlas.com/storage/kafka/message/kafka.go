@@ -46,6 +46,44 @@ const (
 	ErrorCodeGeneric        = "GENERIC"
 )
 
+// AssetData carries all inline asset fields for commands and events
+type AssetData struct {
+	Expiration     time.Time `json:"expiration"`
+	Quantity       uint32    `json:"quantity"`
+	OwnerId        uint32    `json:"ownerId"`
+	Flag           uint16    `json:"flag"`
+	Rechargeable   uint64    `json:"rechargeable"`
+	Strength       uint16    `json:"strength"`
+	Dexterity      uint16    `json:"dexterity"`
+	Intelligence   uint16    `json:"intelligence"`
+	Luck           uint16    `json:"luck"`
+	Hp             uint16    `json:"hp"`
+	Mp             uint16    `json:"mp"`
+	WeaponAttack   uint16    `json:"weaponAttack"`
+	MagicAttack    uint16    `json:"magicAttack"`
+	WeaponDefense  uint16    `json:"weaponDefense"`
+	MagicDefense   uint16    `json:"magicDefense"`
+	Accuracy       uint16    `json:"accuracy"`
+	Avoidability   uint16    `json:"avoidability"`
+	Hands          uint16    `json:"hands"`
+	Speed          uint16    `json:"speed"`
+	Jump           uint16    `json:"jump"`
+	Slots          uint16    `json:"slots"`
+	Locked         bool      `json:"locked"`
+	Spikes         bool      `json:"spikes"`
+	KarmaUsed      bool      `json:"karmaUsed"`
+	Cold           bool      `json:"cold"`
+	CanBeTraded    bool      `json:"canBeTraded"`
+	LevelType      byte      `json:"levelType"`
+	Level          byte      `json:"level"`
+	Experience     uint32    `json:"experience"`
+	HammersApplied uint32    `json:"hammersApplied"`
+	CashId         int64     `json:"cashId,string"`
+	CommodityId    uint32    `json:"commodityId"`
+	PurchaseBy     uint32    `json:"purchaseBy"`
+	PetId          uint32    `json:"petId"`
+}
+
 // Command is the base command structure for storage operations
 type Command[E any] struct {
 	TransactionId uuid.UUID `json:"transactionId"`
@@ -66,19 +104,9 @@ type StatusEvent[E any] struct {
 
 // DepositBody contains the data needed to deposit an item into storage
 type DepositBody struct {
-	Slot          int16         `json:"slot"`
-	TemplateId    uint32        `json:"templateId"`
-	Expiration    time.Time     `json:"expiration"`
-	ReferenceId   uint32        `json:"referenceId"`
-	ReferenceType string        `json:"referenceType"`
-	ReferenceData ReferenceData `json:"referenceData,omitempty"`
-}
-
-// ReferenceData contains the reference data for stackable items
-type ReferenceData struct {
-	Quantity uint32 `json:"quantity,omitempty"`
-	OwnerId  uint32 `json:"ownerId,omitempty"`
-	Flag     uint16 `json:"flag,omitempty"`
+	Slot       int16  `json:"slot"`
+	TemplateId uint32 `json:"templateId"`
+	AssetData
 }
 
 // WithdrawBody contains the data needed to withdraw an item from storage
@@ -100,12 +128,9 @@ type DepositRollbackBody struct {
 
 // DepositedEventBody contains the data for a deposited event
 type DepositedEventBody struct {
-	AssetId       asset.Id  `json:"assetId"`
-	Slot          int16     `json:"slot"`
-	TemplateId    uint32    `json:"templateId"`
-	ReferenceId   uint32    `json:"referenceId"`
-	ReferenceType string    `json:"referenceType"`
-	Expiration    time.Time `json:"expiration"`
+	AssetId    asset.Id `json:"assetId"`
+	Slot       int16    `json:"slot"`
+	TemplateId uint32   `json:"templateId"`
 }
 
 // WithdrawnEventBody contains the data for a withdrawn event

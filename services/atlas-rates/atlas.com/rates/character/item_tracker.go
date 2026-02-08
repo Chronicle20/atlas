@@ -29,7 +29,7 @@ type TrackedItem struct {
 	RateType      rate.Type                // What rate this item affects
 	BonusExpTiers []equipment.BonusExpTier // Tiers for bonusExp items
 
-	// For bonusExp items: When the item was equipped (from atlas-equipables)
+	// For bonusExp items: When the item was equipped
 	EquippedSince *time.Time
 
 	// For coupons: Acquisition info

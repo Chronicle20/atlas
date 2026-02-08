@@ -16,7 +16,7 @@ The channel service acts as the primary interface between game clients and the b
   - ACCOUNTS - Account data
   - BUDDIES - Buddy list data
   - BUFFS - Character buff data
-  - CASHSHOP - Cash shop inventory and wallet
+  - CASHSHOP - Cash shop inventory, wallet, and wishlist
   - CHAIRS - Chair state
   - CHALKBOARDS - Chalkboard state
   - CHANNELS - Channel registration
@@ -26,7 +26,7 @@ The channel service acts as the primary interface between game clients and the b
   - DROPS - Drop state
   - GUILDS - Guild data
   - GUILD_THREADS - Guild BBS
-  - INVENTORY - Character inventory
+  - INVENTORY - Character inventory (compartments and unified assets)
   - KEYS - Key bindings
   - MAPS - Map character tracking
   - MESSENGERS - Messenger rooms
@@ -39,7 +39,7 @@ The channel service acts as the primary interface between game clients and the b
   - REACTORS - Reactor state
   - ROUTES - Transport routes
   - SKILLS - Character skills
-  - STORAGE - Storage data
+  - STORAGE - Storage data and projections
   - WORLDS - World data
 
 ## Runtime Configuration
@@ -53,27 +53,35 @@ The channel service acts as the primary interface between game clients and the b
 | SERVICE_ID | Service instance UUID |
 | SERVICE_TYPE | channel-service |
 | EVENT_TOPIC_ACCOUNT_STATUS | Account status events |
-| EVENT_TOPIC_ACCOUNT_SESSION_STATUS | Session status events |
+| EVENT_TOPIC_ACCOUNT_SESSION_STATUS | Account session status events |
 | EVENT_TOPIC_ASSET_STATUS | Asset status events |
-| EVENT_TOPIC_CHARACTER_STATUS | Character status events |
+| EVENT_TOPIC_CASH_COMPARTMENT_STATUS | Cash shop compartment status events |
+| EVENT_TOPIC_CASH_SHOP_STATUS | Cash shop status events |
 | EVENT_TOPIC_CHAIR_STATUS | Chair status events |
 | EVENT_TOPIC_CHALKBOARD_STATUS | Chalkboard status events |
 | EVENT_TOPIC_CHARACTER_CHAT | Character chat events |
+| EVENT_TOPIC_CHARACTER_STATUS | Character status events |
 | EVENT_TOPIC_COMPARTMENT_STATUS | Compartment status events |
-| EVENT_TOPIC_COMPARTMENT_TRANSFER_STATUS | Transfer status events |
 | EVENT_TOPIC_CONSUMABLE_STATUS | Consumable status events |
 | EVENT_TOPIC_DROP_STATUS | Drop status events |
 | EVENT_TOPIC_EXPRESSION | Expression events |
 | EVENT_TOPIC_FAME_STATUS | Fame status events |
+| EVENT_TOPIC_GACHAPON_REWARD_WON | Gachapon reward won events |
+| EVENT_TOPIC_INSTANCE_TRANSPORT | Instance transport events |
 | EVENT_TOPIC_MAP_STATUS | Map status events |
 | EVENT_TOPIC_MONSTER_STATUS | Monster status events |
 | EVENT_TOPIC_NOTE_STATUS | Note status events |
+| EVENT_TOPIC_PET_STATUS | Pet status events |
+| EVENT_TOPIC_QUEST_STATUS | Quest status events |
+| EVENT_TOPIC_REACTOR_STATUS | Reactor status events |
+| EVENT_TOPIC_SAGA_STATUS | Saga status events |
 | EVENT_TOPIC_SESSION_STATUS | Session status events |
+| EVENT_TOPIC_STORAGE_COMPARTMENT_STATUS | Storage compartment status events |
 | EVENT_TOPIC_STORAGE_STATUS | Storage status events |
 | EVENT_TOPIC_TRANSPORT_STATUS | Transport status events |
-| EVENT_TOPIC_CASH_SHOP_STATUS | Cash shop status events |
-| COMMAND_TOPIC_ACCOUNT_SESSION | Session commands |
+| COMMAND_TOPIC_ACCOUNT_SESSION | Account session commands |
 | COMMAND_TOPIC_BUDDY_LIST | Buddy list commands |
+| COMMAND_TOPIC_CASH_SHOP | Cash shop commands |
 | COMMAND_TOPIC_CHAIR | Chair commands |
 | COMMAND_TOPIC_CHALKBOARD | Chalkboard commands |
 | COMMAND_TOPIC_CHANNEL_STATUS | Channel status commands |
@@ -82,7 +90,6 @@ The channel service acts as the primary interface between game clients and the b
 | COMMAND_TOPIC_CHARACTER_CHAT | Chat commands |
 | COMMAND_TOPIC_CHARACTER_MOVEMENT | Character movement commands |
 | COMMAND_TOPIC_COMPARTMENT | Compartment commands |
-| COMMAND_TOPIC_COMPARTMENT_TRANSFER | Transfer commands |
 | COMMAND_TOPIC_CONSUMABLE | Consumable commands |
 | COMMAND_TOPIC_DROP | Drop commands |
 | COMMAND_TOPIC_EXPRESSION | Expression commands |
@@ -101,13 +108,10 @@ The channel service acts as the primary interface between game clients and the b
 | COMMAND_TOPIC_PET | Pet commands |
 | COMMAND_TOPIC_PET_MOVEMENT | Pet movement commands |
 | COMMAND_TOPIC_PORTAL | Portal commands |
-| COMMAND_TOPIC_QUEST_CONVERSATION | Quest conversation commands |
 | COMMAND_TOPIC_QUEST | Quest commands |
+| COMMAND_TOPIC_QUEST_CONVERSATION | Quest conversation commands |
 | COMMAND_TOPIC_REACTOR | Reactor commands |
 | COMMAND_TOPIC_SAGA | Saga commands |
-| EVENT_TOPIC_QUEST_STATUS | Quest status events |
-| EVENT_TOPIC_REACTOR_STATUS | Reactor status events |
-| EVENT_TOPIC_SAGA_STATUS | Saga status events |
 | COMMAND_TOPIC_SKILL | Skill commands |
 | COMMAND_TOPIC_SKILL_MACRO | Skill macro commands |
 | COMMAND_TOPIC_STORAGE | Storage commands |

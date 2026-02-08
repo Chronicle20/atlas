@@ -2,7 +2,7 @@
 
 ## Responsibility
 
-Coordinates distributed transactions across multiple Atlas microservices using the saga pattern. Maintains transaction consistency by tracking step execution and performing compensation on failure.
+Coordinates distributed transactions across multiple Atlas microservices using the saga pattern. Maintains transaction consistency by tracking step execution and performing compensation on failure. High-level transfer actions are expanded at runtime into concrete step pairs by fetching asset data from inventory services.
 
 ## Core Models
 
@@ -29,6 +29,7 @@ Represents a single action within a saga.
 | payload | any | Action-specific data |
 | createdAt | time.Time | Step creation timestamp |
 | updatedAt | time.Time | Last modification timestamp |
+| result | map[string]any | Completion data carried between steps (nil if unset) |
 
 ### Saga Types
 
@@ -40,6 +41,7 @@ Represents a single action within a saga.
 | character_creation | Character creation workflows |
 | storage_operation | Account storage operations |
 | character_respawn | Character respawn handling |
+| gachapon_transaction | Gachapon machine reward transactions |
 
 ### Step Status
 
@@ -54,7 +56,7 @@ Represents a single action within a saga.
 | Action | Description |
 |--------|-------------|
 | award_asset | Awards items to a character inventory |
-| award_inventory | (Deprecated) Awards items to inventory |
+| award_inventory | (Deprecated) Awards items to inventory, use award_asset |
 | award_experience | Awards experience points |
 | award_level | Awards levels |
 | award_mesos | Awards mesos currency |
@@ -62,7 +64,8 @@ Represents a single action within a saga.
 | award_fame | Awards fame |
 | warp_to_random_portal | Warps to a random portal in a field |
 | warp_to_portal | Warps to a specific portal |
-| destroy_asset | Destroys an inventory asset |
+| destroy_asset | Destroys an inventory asset by template ID |
+| destroy_asset_from_slot | Destroys an inventory asset from a specific slot |
 | equip_asset | Equips an item |
 | unequip_asset | Unequips an item |
 | change_job | Changes character job |
@@ -85,31 +88,84 @@ Represents a single action within a saga.
 | spawn_reactor_drops | Spawns reactor drops |
 | complete_quest | Completes a quest |
 | start_quest | Starts a quest |
+| set_quest_progress | Sets quest progress info |
 | apply_consumable_effect | Applies consumable item effects |
+| cancel_consumable_effect | Cancels consumable item effects |
 | send_message | Sends a system message |
 | deposit_to_storage | Deposits to account storage |
 | update_storage_mesos | Updates storage mesos |
 | show_storage | Shows storage UI |
-| transfer_to_storage | Transfers item to storage |
-| withdraw_from_storage | Withdraws item from storage |
-| accept_to_storage | Accepts item to storage (internal) |
-| release_from_character | Releases item from character (internal) |
-| accept_to_character | Accepts item to character (internal) |
-| release_from_storage | Releases item from storage (internal) |
-| transfer_to_cash_shop | Transfers item to cash shop |
-| withdraw_from_cash_shop | Withdraws item from cash shop |
-| accept_to_cash_shop | Accepts item to cash shop (internal) |
-| release_from_cash_shop | Releases item from cash shop (internal) |
-| set_hp | Sets character HP |
-| deduct_experience | Deducts character experience |
-| cancel_all_buffs | Cancels all character buffs |
-| play_portal_sound | Plays portal sound effect |
-| show_info | Shows info effect |
-| show_info_text | Shows info text message |
-| update_area_info | Updates area info |
-| show_hint | Shows hint box |
-| block_portal | Blocks a portal |
-| unblock_portal | Unblocks a portal |
+| transfer_to_storage | Transfers item to storage (expanded to accept_to_storage + release_from_character) |
+| withdraw_from_storage | Withdraws item from storage (expanded to accept_to_character + release_from_storage) |
+| accept_to_storage | Accepts item to storage (internal, created by expansion) |
+| release_from_character | Releases item from character (internal, created by expansion) |
+| accept_to_character | Accepts item to character (internal, created by expansion) |
+| release_from_storage | Releases item from storage (internal, created by expansion) |
+| transfer_to_cash_shop | Transfers item to cash shop (expanded to accept_to_cash_shop + release_from_character) |
+| withdraw_from_cash_shop | Withdraws item from cash shop (expanded to accept_to_character + release_from_cash_shop) |
+| accept_to_cash_shop | Accepts item to cash shop (internal, created by expansion) |
+| release_from_cash_shop | Releases item from cash shop (internal, created by expansion) |
+| set_hp | Sets character HP to an absolute value |
+| deduct_experience | Deducts character experience (floor at 0) |
+| cancel_all_buffs | Cancels all active buffs on character |
+| reset_stats | Resets character stats (for job advancement) |
+| play_portal_sound | Plays portal sound effect (synchronous) |
+| show_info | Shows info/tutorial effect (synchronous) |
+| show_info_text | Shows info text message (synchronous) |
+| update_area_info | Updates area info (synchronous) |
+| show_hint | Shows hint box (synchronous) |
+| show_guide_hint | Shows pre-defined guide hint by ID (synchronous) |
+| show_intro | Shows intro/direction effect (synchronous) |
+| block_portal | Blocks a portal for a character (synchronous) |
+| unblock_portal | Unblocks a portal for a character (synchronous) |
+| start_instance_transport | Starts an instance-based transport (synchronous, REST call) |
+| save_location | Saves character's current location for later return (synchronous, REST call) |
+| warp_to_saved_location | Warps character to a saved location and deletes it (synchronous, REST call) |
+| select_gachapon_reward | Selects a random reward from a gachapon machine (synchronous, REST call) |
+| emit_gachapon_win | Emits gachapon win event for announcements (synchronous) |
+
+### AssetData
+
+A flat structure representing all asset properties, defined in `kafka/message/asset/kafka.go`. Used for carrying asset data in transfer operations (accept/release steps). Contains all fields for any item type (equipable, consumable, cash, pet) in a single struct.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| expiration | time.Time | Expiration time |
+| createdAt | time.Time | Creation timestamp |
+| quantity | uint32 | Item quantity |
+| ownerId | uint32 | Owner identifier |
+| flag | uint16 | Item flags |
+| rechargeable | uint64 | Recharge amount |
+| strength | uint16 | Strength stat bonus |
+| dexterity | uint16 | Dexterity stat bonus |
+| intelligence | uint16 | Intelligence stat bonus |
+| luck | uint16 | Luck stat bonus |
+| hp | uint16 | HP bonus |
+| mp | uint16 | MP bonus |
+| weaponAttack | uint16 | Weapon attack bonus |
+| magicAttack | uint16 | Magic attack bonus |
+| weaponDefense | uint16 | Weapon defense bonus |
+| magicDefense | uint16 | Magic defense bonus |
+| accuracy | uint16 | Accuracy bonus |
+| avoidability | uint16 | Avoidability bonus |
+| hands | uint16 | Hands bonus |
+| speed | uint16 | Speed bonus |
+| jump | uint16 | Jump bonus |
+| slots | uint16 | Available upgrade slots |
+| locked | bool | Whether the item is locked |
+| spikes | bool | Whether spikes are applied |
+| karmaUsed | bool | Whether karma scissors were used |
+| cold | bool | Cold protection flag |
+| canBeTraded | bool | Whether the item can be traded |
+| levelType | byte | Level type for leveling items |
+| level | byte | Item level |
+| experience | uint32 | Item experience |
+| hammersApplied | uint32 | Number of hammers applied |
+| equippedSince | *time.Time | When the item was equipped |
+| cashId | int64 | Cash serial number |
+| commodityId | uint32 | Commodity identifier |
+| purchaseBy | uint32 | Purchaser character ID |
+| petId | uint32 | Pet identifier |
 
 ## Invariants
 
@@ -119,6 +175,7 @@ Represents a single action within a saga.
 - Step ordering must follow: completed steps before pending steps
 - A failing saga has exactly one failed step
 - Status transitions: pending -> completed, pending -> failed, completed -> failed, failed -> pending
+- State consistency is validated before every cache write
 
 ## State Transitions
 
@@ -126,7 +183,7 @@ Represents a single action within a saga.
 
 1. Saga created with all steps in pending status
 2. Steps execute sequentially from first pending step
-3. On step completion: step marked completed, next step executes
+3. On step completion: step marked completed (optionally with result data), next step executes
 4. On step failure: step marked failed, compensation begins
 5. Compensation reverses completed steps in reverse order
 6. Saga removed from cache on completion or full compensation
@@ -140,6 +197,16 @@ completed -> failed (compensation trigger)
 failed -> pending (compensation applied)
 ```
 
+### Step Expansion
+
+High-level transfer actions are expanded at runtime before execution:
+- `transfer_to_storage` expands to `accept_to_storage` + `release_from_character`
+- `withdraw_from_storage` expands to `accept_to_character` + `release_from_storage`
+- `transfer_to_cash_shop` expands to `accept_to_cash_shop` + `release_from_character`
+- `withdraw_from_cash_shop` expands to `accept_to_character` + `release_from_cash_shop`
+
+During expansion, the orchestrator fetches full asset data from the source inventory service and pre-populates the concrete step payloads with the flat AssetData structure.
+
 ## Processors
 
 ### Processor
@@ -150,18 +217,19 @@ Manages saga execution lifecycle.
 |--------|-------------|
 | GetAll | Returns all sagas for the tenant |
 | GetById | Returns a saga by transaction ID |
-| Put | Adds or updates a saga |
+| Put | Adds or updates a saga, then steps |
 | MarkFurthestCompletedStepFailed | Marks the last completed step as failed |
 | MarkEarliestPendingStep | Updates the first pending step status |
 | MarkEarliestPendingStepCompleted | Marks the first pending step as completed |
 | StepCompleted | Handles step completion event |
+| StepCompletedWithResult | Handles step completion with result data carried forward |
 | AddStep | Adds a step after the current step |
-| AddStepAfterCurrent | Adds a step after the current pending step |
-| Step | Executes the next pending step |
+| AddStepAfterCurrent | Adds a step after the first pending step |
+| Step | Executes the next pending step or triggers compensation |
 
 ### Handler
 
-Executes action-specific logic for each step type.
+Executes action-specific logic for each step type. Delegates to domain-specific processors (compartment, character, skill, guild, storage, cashshop, etc.).
 
 | Method | Description |
 |--------|-------------|
@@ -175,6 +243,17 @@ Performs compensation actions for failed steps.
 |--------|-------------|
 | CompensateFailedStep | Executes compensation for a failed step |
 
+Compensation strategies by action type:
+- **ValidateCharacterState**: Terminal failure, no compensation; emits FAILED event
+- **EquipAsset**: Reverses with UnequipAsset command
+- **UnequipAsset**: Reverses with EquipAsset command
+- **CreateCharacter**: No rollback available; acknowledges failure
+- **CreateAndEquipAsset**: Destroys created asset if auto-equip step exists
+- **ChangeHair/ChangeFace/ChangeSkin**: No rollback available; cosmetic already applied
+- **AwardMesos, AcceptToStorage, AcceptToCharacter, ReleaseFromStorage, ReleaseFromCharacter**: Terminal storage failures; emits error event with context-appropriate error code
+- **SelectGachaponReward**: Re-awards destroyed ticket items, then emits failure event
+- **Default**: Marks failed step as pending (removes failed status)
+
 ### Cache
 
 In-memory storage for active sagas, tenant-scoped.
@@ -185,6 +264,21 @@ In-memory storage for active sagas, tenant-scoped.
 | GetById | Returns a saga by ID for a tenant |
 | Put | Stores a saga for a tenant |
 | Remove | Removes a saga from a tenant |
+
+### ErrorMapper
+
+Determines context-appropriate error codes for saga failures.
+
+| Error Code | Condition |
+|------------|-----------|
+| NOT_ENOUGH_MESOS | AwardMesos failure in storage operation |
+| INVENTORY_FULL | AcceptToCharacter failure in storage operation |
+| STORAGE_FULL | AcceptToStorage failure in storage operation |
+| UNKNOWN | All other failures |
+
+### CharacterExtractor
+
+Extracts the character ID from any step payload type. Returns 0 for unknown payload types.
 
 ---
 
@@ -236,6 +330,54 @@ Filters drops based on character's quest state.
 - Includes drops with questId matching a started quest
 - Excludes drops with questId not matching any started quest
 - On quest service error, excludes all quest-specific drops
+
+---
+
+# Validation
+
+## Responsibility
+
+Validates character state conditions before saga step execution. Supports condition checks for job, meso, map, fame, and item possession.
+
+## Core Models
+
+### ConditionType
+
+| Value | Description |
+|-------|-------------|
+| jobId | Job condition check |
+| meso | Meso amount condition check |
+| mapId | Map location condition check |
+| fame | Fame condition check |
+| item | Item possession condition check |
+
+### Operator
+
+| Value | Description |
+|-------|-------------|
+| = | Equals |
+| > | Greater than |
+| < | Less than |
+| >= | Greater than or equal |
+| <= | Less than or equal |
+
+### ConditionInput
+
+| Field | Type | Description |
+|-------|------|-------------|
+| type | string | Condition type (jobId, meso, item, etc.) |
+| operator | string | Comparison operator |
+| value | int | Value or quantity to check |
+| itemId | uint32 | Item ID (only for item conditions) |
+
+### ValidationResult
+
+| Field | Type | Description |
+|-------|------|-------------|
+| passed | bool | Whether all conditions passed |
+| details | []string | Human-readable descriptions |
+| results | []ConditionResult | Structured condition results |
+| characterId | uint32 | Character that was validated |
 
 ---
 
@@ -295,3 +437,248 @@ Represents character rate multipliers retrieved from external service.
 ### GetForCharacter
 
 Retrieves computed rates for a character. Returns default rates (all 1.0) if the rate service is unavailable.
+
+---
+
+# Gachapon
+
+## Responsibility
+
+Interfaces with the gachapon service to select random rewards and retrieve gachapon metadata for reward tier evaluation.
+
+## Core Models
+
+### RewardRestModel
+
+| Field | Type | Description |
+|-------|------|-------------|
+| itemId | uint32 | Reward item ID |
+| quantity | uint32 | Reward quantity |
+| tier | string | Reward tier (common, uncommon, rare) |
+| gachaponId | string | Source gachapon machine ID |
+
+### GachaponRestModel
+
+| Field | Type | Description |
+|-------|------|-------------|
+| name | string | Gachapon display name |
+| npcIds | []uint32 | NPC IDs associated with this gachapon |
+| commonWeight | uint32 | Common tier weight |
+| uncommonWeight | uint32 | Uncommon tier weight |
+| rareWeight | uint32 | Rare tier weight |
+
+## Processors
+
+### SelectReward
+
+Selects a random reward from a gachapon machine via REST call.
+
+### GetGachapon
+
+Retrieves gachapon metadata (name, weights) via REST call.
+
+---
+
+# Compartment (Client)
+
+## Responsibility
+
+Produces Kafka commands to the inventory compartment service for asset operations within sagas.
+
+## Core Models
+
+### AssetRestModel
+
+A flat model representing an asset from the character inventory service. Contains all properties for any item type (equipable stats, stackable quantities, cash item data, pet data) in a single structure.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | string | Asset identifier |
+| slot | int16 | Inventory slot position |
+| templateId | uint32 | Item template ID |
+| expiration | time.Time | Expiration time |
+| createdAt | time.Time | Creation timestamp |
+| quantity | uint32 | Item quantity |
+| ownerId | uint32 | Owner identifier |
+| flag | uint16 | Item flags |
+| rechargeable | uint64 | Recharge amount |
+| strength | uint16 | Strength stat bonus |
+| dexterity | uint16 | Dexterity stat bonus |
+| intelligence | uint16 | Intelligence stat bonus |
+| luck | uint16 | Luck stat bonus |
+| hp | uint16 | HP bonus |
+| mp | uint16 | MP bonus |
+| weaponAttack | uint16 | Weapon attack bonus |
+| magicAttack | uint16 | Magic attack bonus |
+| weaponDefense | uint16 | Weapon defense bonus |
+| magicDefense | uint16 | Magic defense bonus |
+| accuracy | uint16 | Accuracy bonus |
+| avoidability | uint16 | Avoidability bonus |
+| hands | uint16 | Hands bonus |
+| speed | uint16 | Speed bonus |
+| jump | uint16 | Jump bonus |
+| slots | uint16 | Available upgrade slots |
+| locked | bool | Whether the item is locked |
+| spikes | bool | Whether spikes are applied |
+| karmaUsed | bool | Whether karma scissors were used |
+| cold | bool | Cold protection flag |
+| canBeTraded | bool | Whether the item can be traded |
+| levelType | byte | Level type for leveling items |
+| level | byte | Item level |
+| experience | uint32 | Item experience |
+| hammersApplied | uint32 | Number of hammers applied |
+| equippedSince | *time.Time | When the item was equipped |
+| cashId | int64 | Cash serial number |
+| commodityId | uint32 | Commodity identifier |
+| purchaseBy | uint32 | Purchaser character ID |
+| petId | uint32 | Pet identifier |
+
+### CompartmentRestModel
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | string | Compartment identifier |
+| inventoryType | byte | Inventory type |
+| capacity | uint32 | Compartment capacity |
+| assets | []AssetRestModel | Assets in the compartment |
+
+## Processors
+
+| Method | Description |
+|--------|-------------|
+| RequestCreateItem | Produces CREATE_ASSET command |
+| RequestDestroyItem | Looks up slot by template ID, produces DESTROY command |
+| RequestDestroyItemFromSlot | Produces DESTROY command for a specific slot |
+| RequestEquipAsset | Produces EQUIP command |
+| RequestUnequipAsset | Produces UNEQUIP command |
+| RequestCreateAndEquipAsset | Delegates to RequestCreateItem (equip handled by asset consumer) |
+| RequestAcceptAsset | Produces ACCEPT command with flat AssetData |
+| RequestReleaseAsset | Produces RELEASE command |
+
+---
+
+# Storage (Client)
+
+## Responsibility
+
+Produces Kafka commands to the storage service for deposit, withdraw, accept, release, and mesos operations within sagas.
+
+## Core Models
+
+### AssetRestModel
+
+A flat model representing an asset from the storage service.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | string | Asset identifier |
+| slot | int16 | Storage slot position |
+| templateId | uint32 | Item template ID |
+| expiration | time.Time | Expiration time |
+| quantity | uint32 | Item quantity |
+| ownerId | uint32 | Owner identifier |
+| flag | uint16 | Item flags |
+| rechargeable | uint64 | Recharge amount |
+| strength | uint16 | Strength stat bonus |
+| dexterity | uint16 | Dexterity stat bonus |
+| intelligence | uint16 | Intelligence stat bonus |
+| luck | uint16 | Luck stat bonus |
+| hp | uint16 | HP bonus |
+| mp | uint16 | MP bonus |
+| weaponAttack | uint16 | Weapon attack bonus |
+| magicAttack | uint16 | Magic attack bonus |
+| weaponDefense | uint16 | Weapon defense bonus |
+| magicDefense | uint16 | Magic defense bonus |
+| accuracy | uint16 | Accuracy bonus |
+| avoidability | uint16 | Avoidability bonus |
+| hands | uint16 | Hands bonus |
+| speed | uint16 | Speed bonus |
+| jump | uint16 | Jump bonus |
+| slots | uint16 | Available upgrade slots |
+| locked | bool | Whether the item is locked |
+| spikes | bool | Whether spikes are applied |
+| karmaUsed | bool | Whether karma scissors were used |
+| cold | bool | Cold protection flag |
+| canBeTraded | bool | Whether the item can be traded |
+| levelType | byte | Level type for leveling items |
+| level | byte | Item level |
+| experience | uint32 | Item experience |
+| hammersApplied | uint32 | Number of hammers applied |
+| equippedSince | *time.Time | When the item was equipped |
+| cashId | int64 | Cash serial number |
+| commodityId | uint32 | Commodity identifier |
+| purchaseBy | uint32 | Purchaser character ID |
+| petId | uint32 | Pet identifier |
+
+### ProjectionAssetRestModel
+
+A flat model representing an asset from a storage projection, used during withdraw expansion.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uint32 | Asset identifier |
+| slot | int16 | Storage slot position |
+| templateId | uint32 | Item template ID |
+| expiration | time.Time | Expiration time |
+| quantity | uint32 | Item quantity |
+| ownerId | uint32 | Owner identifier |
+| flag | uint16 | Item flags |
+| rechargeable | uint64 | Recharge amount |
+| (same equipable/cash/pet fields as AssetRestModel) | | |
+
+## Processors
+
+| Method | Description |
+|--------|-------------|
+| DepositAndEmit | Produces DEPOSIT command |
+| WithdrawAndEmit | Produces WITHDRAW command |
+| UpdateMesosAndEmit | Produces UPDATE_MESOS command |
+| DepositRollbackAndEmit | Produces DEPOSIT_ROLLBACK command |
+| ShowStorageAndEmit | Produces SHOW_STORAGE command |
+| AcceptAndEmit | Produces storage compartment ACCEPT command with flat AssetData |
+| ReleaseAndEmit | Produces storage compartment RELEASE command |
+
+---
+
+# Cash Shop (Client)
+
+## Responsibility
+
+Produces Kafka commands to the cash shop service for currency, accept, and release operations within sagas.
+
+## Core Models
+
+### AssetRestModel
+
+A flat model representing a cash shop inventory asset.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uint32 | Asset identifier |
+| compartmentId | string | Compartment identifier |
+| cashId | int64 | Cash serial number |
+| templateId | uint32 | Item template ID |
+| commodityId | uint32 | Commodity identifier |
+| quantity | uint32 | Item quantity |
+| flag | uint16 | Item flags |
+| purchasedBy | uint32 | Purchaser character ID |
+| expiration | time.Time | Expiration time |
+| createdAt | time.Time | Creation timestamp |
+
+### CompartmentRestModel
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uuid.UUID | Compartment identifier |
+| accountId | uint32 | Account identifier |
+| type | byte | Compartment type |
+| capacity | uint32 | Compartment capacity |
+| assets | []AssetRestModel | Assets in the compartment |
+
+## Processors
+
+| Method | Description |
+|--------|-------------|
+| AwardCurrencyAndEmit | Produces wallet ADJUST_CURRENCY command |
+| AcceptAndEmit | Produces cash shop compartment ACCEPT command |
+| ReleaseAndEmit | Produces cash shop compartment RELEASE command |

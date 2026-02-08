@@ -57,9 +57,41 @@ None
         "slot": <int16>,
         "templateId": <uint32>,
         "expiration": "<timestamp>",
-        "referenceId": <uint32>,
-        "referenceType": "<string>",
-        "referenceData": { ... }
+        "createdAt": "<timestamp>",
+        "quantity": <uint32>,
+        "ownerId": <uint32>,
+        "flag": <uint16>,
+        "rechargeable": <uint64>,
+        "strength": <uint16>,
+        "dexterity": <uint16>,
+        "intelligence": <uint16>,
+        "luck": <uint16>,
+        "hp": <uint16>,
+        "mp": <uint16>,
+        "weaponAttack": <uint16>,
+        "magicAttack": <uint16>,
+        "weaponDefense": <uint16>,
+        "magicDefense": <uint16>,
+        "accuracy": <uint16>,
+        "avoidability": <uint16>,
+        "hands": <uint16>,
+        "speed": <uint16>,
+        "jump": <uint16>,
+        "slots": <uint16>,
+        "locked": <bool>,
+        "spikes": <bool>,
+        "karmaUsed": <bool>,
+        "cold": <bool>,
+        "canBeTraded": <bool>,
+        "levelType": <byte>,
+        "level": <byte>,
+        "experience": <uint32>,
+        "hammersApplied": <uint32>,
+        "equippedSince": "<timestamp|null>",
+        "cashId": "<int64 as string>",
+        "commodityId": <uint32>,
+        "purchaseBy": <uint32>,
+        "petId": <uint32>
       }
     }
   ]
@@ -129,7 +161,7 @@ None
 
 ### GET /characters/{characterId}/inventory/compartments/{compartmentId}
 
-Retrieves a specific compartment.
+Retrieves a specific compartment by ID.
 
 #### Parameters
 
@@ -165,7 +197,46 @@ None
     {
       "type": "assets",
       "id": "<uint32>",
-      "attributes": { ... }
+      "attributes": {
+        "slot": <int16>,
+        "templateId": <uint32>,
+        "expiration": "<timestamp>",
+        "createdAt": "<timestamp>",
+        "quantity": <uint32>,
+        "ownerId": <uint32>,
+        "flag": <uint16>,
+        "rechargeable": <uint64>,
+        "strength": <uint16>,
+        "dexterity": <uint16>,
+        "intelligence": <uint16>,
+        "luck": <uint16>,
+        "hp": <uint16>,
+        "mp": <uint16>,
+        "weaponAttack": <uint16>,
+        "magicAttack": <uint16>,
+        "weaponDefense": <uint16>,
+        "magicDefense": <uint16>,
+        "accuracy": <uint16>,
+        "avoidability": <uint16>,
+        "hands": <uint16>,
+        "speed": <uint16>,
+        "jump": <uint16>,
+        "slots": <uint16>,
+        "locked": <bool>,
+        "spikes": <bool>,
+        "karmaUsed": <bool>,
+        "cold": <bool>,
+        "canBeTraded": <bool>,
+        "levelType": <byte>,
+        "level": <byte>,
+        "experience": <uint32>,
+        "hammersApplied": <uint32>,
+        "equippedSince": "<timestamp|null>",
+        "cashId": "<int64 as string>",
+        "commodityId": <uint32>,
+        "purchaseBy": <uint32>,
+        "petId": <uint32>
+      }
     }
   ]
 }
@@ -182,7 +253,7 @@ None
 
 ### GET /characters/{characterId}/inventory/compartments
 
-Retrieves a compartment by type.
+Retrieves a compartment by inventory type.
 
 #### Parameters
 
@@ -236,9 +307,41 @@ None
         "slot": <int16>,
         "templateId": <uint32>,
         "expiration": "<timestamp>",
-        "referenceId": <uint32>,
-        "referenceType": "<string>",
-        "referenceData": { ... }
+        "createdAt": "<timestamp>",
+        "quantity": <uint32>,
+        "ownerId": <uint32>,
+        "flag": <uint16>,
+        "rechargeable": <uint64>,
+        "strength": <uint16>,
+        "dexterity": <uint16>,
+        "intelligence": <uint16>,
+        "luck": <uint16>,
+        "hp": <uint16>,
+        "mp": <uint16>,
+        "weaponAttack": <uint16>,
+        "magicAttack": <uint16>,
+        "weaponDefense": <uint16>,
+        "magicDefense": <uint16>,
+        "accuracy": <uint16>,
+        "avoidability": <uint16>,
+        "hands": <uint16>,
+        "speed": <uint16>,
+        "jump": <uint16>,
+        "slots": <uint16>,
+        "locked": <bool>,
+        "spikes": <bool>,
+        "karmaUsed": <bool>,
+        "cold": <bool>,
+        "canBeTraded": <bool>,
+        "levelType": <byte>,
+        "level": <byte>,
+        "experience": <uint32>,
+        "hammersApplied": <uint32>,
+        "equippedSince": "<timestamp|null>",
+        "cashId": "<int64 as string>",
+        "commodityId": <uint32>,
+        "purchaseBy": <uint32>,
+        "petId": <uint32>
       }
     }
   ]

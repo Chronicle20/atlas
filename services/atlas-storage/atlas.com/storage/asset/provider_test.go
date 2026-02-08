@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/world"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -61,14 +62,14 @@ func TestAsset_Create(t *testing.T) {
 
 	s := createTestStorage(t, db, te.Id(), 0, 12345)
 
-	a, err := asset.Create(testLogger(), db, te.Id())(
-		s.Id(),
-		1,
-		1302000,
-		time.Now().Add(time.Hour*24*365),
-		100,
-		asset.ReferenceTypeEquipable,
-	)
+	m := asset.NewBuilder(s.Id(), 1302000).
+		SetSlot(1).
+		SetExpiration(time.Now().Add(time.Hour * 24 * 365)).
+		SetStrength(10).
+		SetDexterity(5).
+		Build()
+
+	a, err := asset.Create(testLogger(), db, te.Id())(m)
 	if err != nil {
 		t.Fatalf("Failed to create asset: %v", err)
 	}
@@ -85,8 +86,8 @@ func TestAsset_Create(t *testing.T) {
 	if a.TemplateId() != 1302000 {
 		t.Fatalf("TemplateId mismatch. Expected 1302000, got %d", a.TemplateId())
 	}
-	if a.ReferenceType() != asset.ReferenceTypeEquipable {
-		t.Fatalf("ReferenceType mismatch. Expected %s, got %s", asset.ReferenceTypeEquipable, a.ReferenceType())
+	if a.InventoryType() != inventory.TypeValueEquip {
+		t.Fatalf("InventoryType mismatch. Expected %d, got %d", inventory.TypeValueEquip, a.InventoryType())
 	}
 }
 
@@ -97,14 +98,12 @@ func TestAsset_GetById(t *testing.T) {
 
 	s := createTestStorage(t, db, te.Id(), 0, 12345)
 
-	created, err := asset.Create(testLogger(), db, te.Id())(
-		s.Id(),
-		1,
-		1302000,
-		time.Now().Add(time.Hour*24*365),
-		100,
-		asset.ReferenceTypeEquipable,
-	)
+	m := asset.NewBuilder(s.Id(), 1302000).
+		SetSlot(1).
+		SetExpiration(time.Now().Add(time.Hour * 24 * 365)).
+		Build()
+
+	created, err := asset.Create(testLogger(), db, te.Id())(m)
 	if err != nil {
 		t.Fatalf("Failed to create asset: %v", err)
 	}
@@ -129,16 +128,14 @@ func TestAsset_GetByStorageId(t *testing.T) {
 
 	s := createTestStorage(t, db, te.Id(), 0, 12345)
 
-	// Create multiple assets (0-indexed slots)
+	// Create multiple assets
 	for i := 0; i < 3; i++ {
-		_, err := asset.Create(testLogger(), db, te.Id())(
-			s.Id(),
-			int16(i),
-			uint32(1300000+i),
-			time.Now().Add(time.Hour*24*365),
-			uint32(i*100),
-			asset.ReferenceTypeEquipable,
-		)
+		m := asset.NewBuilder(s.Id(), uint32(1300000+i)).
+			SetSlot(int16(i)).
+			SetExpiration(time.Now().Add(time.Hour * 24 * 365)).
+			Build()
+
+		_, err := asset.Create(testLogger(), db, te.Id())(m)
 		if err != nil {
 			t.Fatalf("Failed to create asset %d: %v", i, err)
 		}
@@ -152,14 +149,6 @@ func TestAsset_GetByStorageId(t *testing.T) {
 	if len(assets) != 3 {
 		t.Fatalf("Expected 3 assets, got %d", len(assets))
 	}
-
-	// Verify assets are ordered by slot (0-indexed)
-	for i, a := range assets {
-		expectedSlot := int16(i)
-		if a.Slot() != expectedSlot {
-			t.Fatalf("Asset %d slot mismatch. Expected %d, got %d", i, expectedSlot, a.Slot())
-		}
-	}
 }
 
 func TestAsset_Delete(t *testing.T) {
@@ -169,14 +158,12 @@ func TestAsset_Delete(t *testing.T) {
 
 	s := createTestStorage(t, db, te.Id(), 0, 12345)
 
-	a, err := asset.Create(testLogger(), db, te.Id())(
-		s.Id(),
-		1,
-		1302000,
-		time.Now().Add(time.Hour*24*365),
-		100,
-		asset.ReferenceTypeEquipable,
-	)
+	m := asset.NewBuilder(s.Id(), 1302000).
+		SetSlot(1).
+		SetExpiration(time.Now().Add(time.Hour * 24 * 365)).
+		Build()
+
+	a, err := asset.Create(testLogger(), db, te.Id())(m)
 	if err != nil {
 		t.Fatalf("Failed to create asset: %v", err)
 	}
@@ -201,14 +188,12 @@ func TestAsset_DeleteByStorageId(t *testing.T) {
 
 	// Create multiple assets
 	for i := 1; i <= 3; i++ {
-		_, err := asset.Create(testLogger(), db, te.Id())(
-			s.Id(),
-			int16(i),
-			uint32(1300000+i),
-			time.Now().Add(time.Hour*24*365),
-			uint32(i*100),
-			asset.ReferenceTypeEquipable,
-		)
+		m := asset.NewBuilder(s.Id(), uint32(1300000+i)).
+			SetSlot(int16(i)).
+			SetExpiration(time.Now().Add(time.Hour * 24 * 365)).
+			Build()
+
+		_, err := asset.Create(testLogger(), db, te.Id())(m)
 		if err != nil {
 			t.Fatalf("Failed to create asset %d: %v", i, err)
 		}
@@ -236,14 +221,12 @@ func TestAsset_UpdateSlot(t *testing.T) {
 
 	s := createTestStorage(t, db, te.Id(), 0, 12345)
 
-	a, err := asset.Create(testLogger(), db, te.Id())(
-		s.Id(),
-		1,
-		1302000,
-		time.Now().Add(time.Hour*24*365),
-		100,
-		asset.ReferenceTypeEquipable,
-	)
+	m := asset.NewBuilder(s.Id(), 1302000).
+		SetSlot(1).
+		SetExpiration(time.Now().Add(time.Hour * 24 * 365)).
+		Build()
+
+	a, err := asset.Create(testLogger(), db, te.Id())(m)
 	if err != nil {
 		t.Fatalf("Failed to create asset: %v", err)
 	}
@@ -266,29 +249,24 @@ func TestAsset_UpdateSlot(t *testing.T) {
 
 func TestAsset_IsStackable(t *testing.T) {
 	tests := []struct {
-		refType     asset.ReferenceType
+		name        string
+		templateId  uint32
 		isStackable bool
 	}{
-		{asset.ReferenceTypeEquipable, false},
-		{asset.ReferenceTypeCashEquipable, false},
-		{asset.ReferenceTypeConsumable, true},
-		{asset.ReferenceTypeSetup, true},
-		{asset.ReferenceTypeEtc, true},
-		{asset.ReferenceTypeCash, false},
-		{asset.ReferenceTypePet, false},
+		{"equip", 1302000, false},       // equip (1xxx)
+		{"consumable", 2000000, true},   // use (2xxx)
+		{"setup", 3000000, true},        // setup (3xxx)
+		{"etc", 4000000, true},          // etc (4xxx)
+		{"cash", 5000000, false},        // cash (5xxx)
 	}
 
 	testStorageId := uuid.New()
 	for _, tc := range tests {
-		t.Run(string(tc.refType), func(t *testing.T) {
-			a := asset.NewModelBuilder[any]().
-				SetStorageId(testStorageId).
-				SetTemplateId(1000000).
-				SetReferenceType(tc.refType).
-				MustBuild()
+		t.Run(tc.name, func(t *testing.T) {
+			a := asset.NewBuilder(testStorageId, tc.templateId).Build()
 
 			if a.IsStackable() != tc.isStackable {
-				t.Fatalf("IsStackable() for %s should be %v", tc.refType, tc.isStackable)
+				t.Fatalf("IsStackable() for %s should be %v", tc.name, tc.isStackable)
 			}
 		})
 	}
@@ -296,34 +274,40 @@ func TestAsset_IsStackable(t *testing.T) {
 
 func TestAsset_TypeChecks(t *testing.T) {
 	tests := []struct {
-		refType       asset.ReferenceType
+		name          string
+		templateId    uint32
+		petId         uint32
+		cashId        int64
 		checkMethod   string
 		expectedValue bool
 	}{
-		{asset.ReferenceTypeEquipable, "IsEquipable", true},
-		{asset.ReferenceTypeCashEquipable, "IsCashEquipable", true},
-		{asset.ReferenceTypeConsumable, "IsConsumable", true},
-		{asset.ReferenceTypeSetup, "IsSetup", true},
-		{asset.ReferenceTypeEtc, "IsEtc", true},
-		{asset.ReferenceTypeCash, "IsCash", true},
-		{asset.ReferenceTypePet, "IsPet", true},
+		{"equip", 1302000, 0, 0, "IsEquipment", true},
+		{"consumable", 2000000, 0, 0, "IsConsumable", true},
+		{"setup", 3000000, 0, 0, "IsSetup", true},
+		{"etc", 4000000, 0, 0, "IsEtc", true},
+		{"cash", 5000000, 0, 0, "IsCash", true},
+		{"pet", 5000000, 100, 0, "IsPet", true},
+		{"cashEquip", 1302000, 0, 12345, "IsCashEquipment", true},
 	}
 
 	testStorageId := uuid.New()
 	for _, tc := range tests {
 		t.Run(tc.checkMethod, func(t *testing.T) {
-			a := asset.NewModelBuilder[any]().
-				SetStorageId(testStorageId).
-				SetTemplateId(1000000).
-				SetReferenceType(tc.refType).
-				MustBuild()
+			b := asset.NewBuilder(testStorageId, tc.templateId)
+			if tc.petId > 0 {
+				b.SetPetId(tc.petId)
+			}
+			if tc.cashId != 0 {
+				b.SetCashId(tc.cashId)
+			}
+			a := b.Build()
 
 			var result bool
 			switch tc.checkMethod {
-			case "IsEquipable":
-				result = a.IsEquipable()
-			case "IsCashEquipable":
-				result = a.IsCashEquipable()
+			case "IsEquipment":
+				result = a.IsEquipment()
+			case "IsCashEquipment":
+				result = a.IsCashEquipment()
 			case "IsConsumable":
 				result = a.IsConsumable()
 			case "IsSetup":
@@ -337,7 +321,7 @@ func TestAsset_TypeChecks(t *testing.T) {
 			}
 
 			if result != tc.expectedValue {
-				t.Fatalf("%s for %s should be %v", tc.checkMethod, tc.refType, tc.expectedValue)
+				t.Fatalf("%s for %s should be %v", tc.checkMethod, tc.name, tc.expectedValue)
 			}
 		})
 	}

@@ -15,8 +15,8 @@ type RestModel struct {
 	Avoidability      int16   `json:"avoidability"`
 	Speed             int16   `json:"speed"`
 	Jump              int16   `json:"jump"`
-	HP                uint16  `json:"hp"`
-	MP                uint16  `json:"mp"`
+	Hp                uint16  `json:"hp"`
+	Mp                uint16  `json:"mp"`
 	HPR               float64 `json:"hpR"`
 	MPR               float64 `json:"mpR"`
 	MHPRRate          uint16  `json:"MHPRRate"`
@@ -79,8 +79,8 @@ func Extract(rm RestModel) (Model, error) {
 		avoidability:         rm.Avoidability,
 		speed:                rm.Speed,
 		jump:                 rm.Jump,
-		hp:                   rm.HP,
-		mp:                   rm.MP,
+		hp:                   rm.Hp,
+		mp:                   rm.Mp,
 		hpr:                  rm.HPR,
 		mpr:                  rm.MPR,
 		mhprRate:             rm.MHPRRate,

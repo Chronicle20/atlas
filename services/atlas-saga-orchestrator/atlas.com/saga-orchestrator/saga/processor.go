@@ -6,19 +6,16 @@ import (
 	"atlas-saga-orchestrator/compartment"
 	"atlas-saga-orchestrator/guild"
 	"atlas-saga-orchestrator/invite"
+	asset2 "atlas-saga-orchestrator/kafka/message/asset"
 	"atlas-saga-orchestrator/kafka/message/saga"
 	"atlas-saga-orchestrator/kafka/producer"
 	"atlas-saga-orchestrator/skill"
 	"atlas-saga-orchestrator/storage"
 	"atlas-saga-orchestrator/validation"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 
-	"github.com/Chronicle20/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -854,7 +851,7 @@ func (p *ProcessorImpl) expandAndProcessStep(s Saga, st Step[any]) error {
 	return p.Step(s.TransactionId())
 }
 
-// expandTransferToStorage expands TransferToStorage into AcceptToStorage + ReleaseFromCharacter
+// expandTransferToStorage expands TransferToStorage into ReleaseFromCharacter + AcceptToStorage
 func (p *ProcessorImpl) expandTransferToStorage(st Step[any]) ([]Step[any], error) {
 	payload, ok := st.Payload().(TransferToStoragePayload)
 	if !ok {
@@ -884,31 +881,17 @@ func (p *ProcessorImpl) expandTransferToStorage(st Step[any]) ([]Step[any], erro
 			payload.SourceSlot, payload.CharacterId, payload.SourceInventoryType)
 	}
 
-	p.l.Debugf("Found source asset template [%d] with referenceId [%d] type [%s] and %d bytes of referenceData",
-		foundAsset.TemplateId, foundAsset.ReferenceId, foundAsset.ReferenceType, len(foundAsset.ReferenceData))
+	p.l.Debugf("Found source asset template [%d] at slot [%d]", foundAsset.TemplateId, foundAsset.Slot)
 
 	// Convert string ID to uint32 for assetId
 	var assetId uint32
 	fmt.Sscanf(foundAsset.Id, "%d", &assetId)
 
-	// Create expanded steps
+	// Build AssetData from flat REST model
+	assetData := assetDataFromCompartmentAsset(foundAsset)
+
+	// Create expanded steps: RELEASE first (soft-delete), then ACCEPT (create in destination)
 	steps := []Step[any]{
-		NewStep[any](
-			"accept_to_storage",
-			Pending,
-			AcceptToStorage,
-			AcceptToStoragePayload{
-				TransactionId: payload.TransactionId,
-				WorldId:       payload.WorldId,
-				AccountId:     payload.AccountId,
-				CharacterId:   payload.CharacterId,
-				TemplateId:    foundAsset.TemplateId,
-				ReferenceId:   foundAsset.ReferenceId,
-				ReferenceType: foundAsset.ReferenceType,
-				ReferenceData: foundAsset.ReferenceData,
-				Quantity:      payload.Quantity,
-			},
-		),
 		NewStep[any](
 			"release_from_character",
 			Pending,
@@ -921,12 +904,25 @@ func (p *ProcessorImpl) expandTransferToStorage(st Step[any]) ([]Step[any], erro
 				Quantity:      payload.Quantity,
 			},
 		),
+		NewStep[any](
+			"accept_to_storage",
+			Pending,
+			AcceptToStorage,
+			AcceptToStoragePayload{
+				TransactionId: payload.TransactionId,
+				WorldId:       payload.WorldId,
+				AccountId:     payload.AccountId,
+				CharacterId:   payload.CharacterId,
+				TemplateId:    foundAsset.TemplateId,
+				AssetData:     assetData,
+			},
+		),
 	}
 
 	return steps, nil
 }
 
-// expandWithdrawFromStorage expands WithdrawFromStorage into AcceptToCharacter + ReleaseFromStorage
+// expandWithdrawFromStorage expands WithdrawFromStorage into ReleaseFromStorage + AcceptToCharacter
 func (p *ProcessorImpl) expandWithdrawFromStorage(st Step[any]) ([]Step[any], error) {
 	payload, ok := st.Payload().(WithdrawFromStoragePayload)
 	if !ok {
@@ -943,38 +939,22 @@ func (p *ProcessorImpl) expandWithdrawFromStorage(st Step[any]) ([]Step[any], er
 			payload.CharacterId, payload.InventoryType, payload.SourceSlot, err)
 	}
 
-	p.l.Debugf("Found source storage asset template [%d] with referenceId [%d] type [%s] and %d bytes of referenceData",
-		foundAsset.TemplateId, foundAsset.ReferenceId, foundAsset.ReferenceType, len(foundAsset.ReferenceData))
+	p.l.Debugf("Found source storage asset template [%d] quantity [%d]", foundAsset.TemplateId, foundAsset.Quantity)
 
-	// Resolve quantity: if payload.Quantity is 0 (meaning "take all"), extract actual quantity from ReferenceData
+	// Resolve quantity: if payload.Quantity is 0 (meaning "take all"), use the asset's quantity
 	actualQuantity := payload.Quantity
-	if actualQuantity == 0 && len(foundAsset.ReferenceData) > 0 {
-		var refData struct {
-			Quantity uint32 `json:"quantity"`
-		}
-		if unmarshalErr := json.Unmarshal(foundAsset.ReferenceData, &refData); unmarshalErr == nil && refData.Quantity > 0 {
-			actualQuantity = refData.Quantity
-			p.l.Debugf("Resolved quantity from ReferenceData: %d", actualQuantity)
-		}
+	if actualQuantity == 0 && foundAsset.Quantity > 0 {
+		actualQuantity = foundAsset.Quantity
+		p.l.Debugf("Resolved quantity from asset: %d", actualQuantity)
 	}
 
-	// Create expanded steps
+	// Build AssetData from flat storage projection model
+	assetData := assetDataFromStorageProjectionAsset(&foundAsset)
+	// Override quantity with the resolved actual quantity
+	assetData.Quantity = actualQuantity
+
+	// Create expanded steps: RELEASE first (soft-delete), then ACCEPT (create in destination)
 	steps := []Step[any]{
-		NewStep[any](
-			"accept_to_character",
-			Pending,
-			AcceptToCharacter,
-			AcceptToCharacterPayload{
-				TransactionId: payload.TransactionId,
-				CharacterId:   payload.CharacterId,
-				InventoryType: payload.InventoryType,
-				TemplateId:    foundAsset.TemplateId,
-				ReferenceId:   foundAsset.ReferenceId,
-				ReferenceType: foundAsset.ReferenceType,
-				ReferenceData: foundAsset.ReferenceData,
-				Quantity:      actualQuantity,
-			},
-		),
 		NewStep[any](
 			"release_from_storage",
 			Pending,
@@ -988,12 +968,24 @@ func (p *ProcessorImpl) expandWithdrawFromStorage(st Step[any]) ([]Step[any], er
 				Quantity:      payload.Quantity,
 			},
 		),
+		NewStep[any](
+			"accept_to_character",
+			Pending,
+			AcceptToCharacter,
+			AcceptToCharacterPayload{
+				TransactionId: payload.TransactionId,
+				CharacterId:   payload.CharacterId,
+				InventoryType: payload.InventoryType,
+				TemplateId:    foundAsset.TemplateId,
+				AssetData:     assetData,
+			},
+		),
 	}
 
 	return steps, nil
 }
 
-// expandTransferToCashShop expands TransferToCashShop into AcceptToCashShop + ReleaseFromCharacter
+// expandTransferToCashShop expands TransferToCashShop into ReleaseFromCharacter + AcceptToCashShop
 func (p *ProcessorImpl) expandTransferToCashShop(st Step[any]) ([]Step[any], error) {
 	payload, ok := st.Payload().(TransferToCashShopPayload)
 	if !ok {
@@ -1009,20 +1001,12 @@ func (p *ProcessorImpl) expandTransferToCashShop(st Step[any]) ([]Step[any], err
 		return nil, fmt.Errorf("unable to lookup character [%d] inventory compartment: %w", payload.CharacterId, err)
 	}
 
-	// Find the asset with matching CashId in ReferenceData
+	// Find the asset with matching CashId (now a flat field on the REST model)
 	var foundAsset *compartment.AssetRestModel
 	for i := range comp.Assets {
-		// Parse ReferenceData to extract cashId
-		var refData struct {
-			CashId int64 `json:"cashId,string"`
-		}
-		if err := json.Unmarshal(comp.Assets[i].ReferenceData, &refData); err == nil {
-			if refData.CashId == payload.CashId {
-				foundAsset = &comp.Assets[i]
-				break
-			}
-		} else {
-			p.l.WithError(err).Errorf("Did not match asset.")
+		if comp.Assets[i].CashId == payload.CashId {
+			foundAsset = &comp.Assets[i]
+			break
 		}
 	}
 
@@ -1031,8 +1015,7 @@ func (p *ProcessorImpl) expandTransferToCashShop(st Step[any]) ([]Step[any], err
 			payload.CashId, payload.CharacterId, payload.SourceInventoryType)
 	}
 
-	p.l.Debugf("Found source asset template [%d] with referenceId [%d] type [%s] and %d bytes of referenceData",
-		foundAsset.TemplateId, foundAsset.ReferenceId, foundAsset.ReferenceType, len(foundAsset.ReferenceData))
+	p.l.Debugf("Found source asset template [%d] with cashId [%d]", foundAsset.TemplateId, foundAsset.CashId)
 
 	// Convert string ID to uint32 for assetId
 	var assetId uint32
@@ -1045,25 +1028,8 @@ func (p *ProcessorImpl) expandTransferToCashShop(st Step[any]) ([]Step[any], err
 			payload.AccountId, payload.CompartmentType, err)
 	}
 
-	// Create expanded steps
+	// Create expanded steps: RELEASE first (soft-delete), then ACCEPT (create in destination)
 	steps := []Step[any]{
-		NewStep[any](
-			"accept_to_cash_shop",
-			Pending,
-			AcceptToCashShop,
-			AcceptToCashShopPayload{
-				TransactionId:   payload.TransactionId,
-				CharacterId:     payload.CharacterId,
-				AccountId:       payload.AccountId,
-				CompartmentId:   cashComp.Id,
-				CompartmentType: payload.CompartmentType,
-				CashId:          payload.CashId, // Preserve the CashId from the source item
-				TemplateId:      foundAsset.TemplateId,
-				ReferenceId:     foundAsset.ReferenceId,
-				ReferenceType:   foundAsset.ReferenceType,
-				ReferenceData:   foundAsset.ReferenceData,
-			},
-		),
 		NewStep[any](
 			"release_from_character",
 			Pending,
@@ -1076,12 +1042,30 @@ func (p *ProcessorImpl) expandTransferToCashShop(st Step[any]) ([]Step[any], err
 				Quantity:      0, // Release all (cash items don't have partial quantity)
 			},
 		),
+		NewStep[any](
+			"accept_to_cash_shop",
+			Pending,
+			AcceptToCashShop,
+			AcceptToCashShopPayload{
+				TransactionId:   payload.TransactionId,
+				CharacterId:     payload.CharacterId,
+				AccountId:       payload.AccountId,
+				CompartmentId:   cashComp.Id,
+				CompartmentType: payload.CompartmentType,
+				CashId:          payload.CashId,
+				TemplateId:      foundAsset.TemplateId,
+				Quantity:        foundAsset.Quantity,
+				CommodityId:     foundAsset.CommodityId,
+				PurchasedBy:     foundAsset.PurchaseBy,
+				Flag:            foundAsset.Flag,
+			},
+		),
 	}
 
 	return steps, nil
 }
 
-// expandWithdrawFromCashShop expands WithdrawFromCashShop into AcceptToCharacter + ReleaseFromCashShop
+// expandWithdrawFromCashShop expands WithdrawFromCashShop into ReleaseFromCashShop + AcceptToCharacter
 func (p *ProcessorImpl) expandWithdrawFromCashShop(st Step[any]) ([]Step[any], error) {
 	payload, ok := st.Payload().(WithdrawFromCashShopPayload)
 	if !ok {
@@ -1098,10 +1082,10 @@ func (p *ProcessorImpl) expandWithdrawFromCashShop(st Step[any]) ([]Step[any], e
 			payload.AccountId, payload.CompartmentType, err)
 	}
 
-	// Find the asset with the matching CashId
+	// Find the asset with the matching CashId (now a flat field)
 	var foundAsset *cashshop.AssetRestModel
 	for i := range cashComp.Assets {
-		if uint64(cashComp.Assets[i].Item.CashId) == payload.CashId {
+		if uint64(cashComp.Assets[i].CashId) == payload.CashId {
 			foundAsset = &cashComp.Assets[i]
 			break
 		}
@@ -1113,42 +1097,20 @@ func (p *ProcessorImpl) expandWithdrawFromCashShop(st Step[any]) ([]Step[any], e
 	}
 
 	p.l.Debugf("Found source cash shop item template [%d] with quantity [%d] purchased by [%d]",
-		foundAsset.Item.TemplateId, foundAsset.Item.Quantity, foundAsset.Item.PurchasedBy)
+		foundAsset.TemplateId, foundAsset.Quantity, foundAsset.PurchasedBy)
 
-	// Determine the reference type based on item type
-	// Inventory type 1 is equip, so cash equipable items use "cash-equipable"
-	referenceType := "cash"
-	if invType, ok := inventory.TypeFromItemId(item.Id(foundAsset.Item.TemplateId)); ok && invType == inventory.Type(1) {
-		referenceType = "cash-equipable"
+	// Build AssetData from cashshop flat REST model for the character inventory accept
+	assetData := asset2.AssetData{
+		Quantity:    foundAsset.Quantity,
+		Flag:        foundAsset.Flag,
+		CashId:      foundAsset.CashId,
+		CommodityId: foundAsset.CommodityId,
+		PurchaseBy:  foundAsset.PurchasedBy,
+		Expiration:  foundAsset.Expiration,
 	}
-	p.l.Debugf("Using reference type [%s] for cash shop item template [%d]", referenceType, foundAsset.Item.TemplateId)
 
-	// Build reference data for the character inventory accept
-	// Note: cashId must be marshaled as a string to match the inventory service's expected format
-	referenceData, _ := json.Marshal(map[string]interface{}{
-		"quantity":    foundAsset.Item.Quantity,
-		"purchasedBy": foundAsset.Item.PurchasedBy,
-		"flag":        foundAsset.Item.Flag,
-		"cashId":      strconv.FormatInt(foundAsset.Item.CashId, 10),
-	})
-
-	// Create expanded steps
+	// Create expanded steps: RELEASE first (soft-delete), then ACCEPT (create in destination)
 	steps := []Step[any]{
-		NewStep[any](
-			"accept_to_character",
-			Pending,
-			AcceptToCharacter,
-			AcceptToCharacterPayload{
-				TransactionId: payload.TransactionId,
-				CharacterId:   payload.CharacterId,
-				InventoryType: payload.InventoryType,
-				TemplateId:    foundAsset.Item.TemplateId,
-				ReferenceId:   foundAsset.Item.Id,
-				ReferenceType: referenceType,
-				ReferenceData: referenceData,
-				Quantity:      foundAsset.Item.Quantity,
-			},
-		),
 		NewStep[any](
 			"release_from_cash_shop",
 			Pending,
@@ -1159,12 +1121,107 @@ func (p *ProcessorImpl) expandWithdrawFromCashShop(st Step[any]) ([]Step[any], e
 				AccountId:       payload.AccountId,
 				CompartmentId:   cashComp.Id,
 				CompartmentType: payload.CompartmentType,
-				AssetId:         foundAsset.Item.Id,
-				CashId:          foundAsset.Item.CashId,
-				TemplateId:      foundAsset.Item.TemplateId,
+				AssetId:         foundAsset.Id,
+				CashId:          foundAsset.CashId,
+				TemplateId:      foundAsset.TemplateId,
+			},
+		),
+		NewStep[any](
+			"accept_to_character",
+			Pending,
+			AcceptToCharacter,
+			AcceptToCharacterPayload{
+				TransactionId: payload.TransactionId,
+				CharacterId:   payload.CharacterId,
+				InventoryType: payload.InventoryType,
+				TemplateId:    foundAsset.TemplateId,
+				AssetData:     assetData,
 			},
 		),
 	}
 
 	return steps, nil
+}
+
+// assetDataFromCompartmentAsset converts a compartment AssetRestModel to an AssetData struct
+func assetDataFromCompartmentAsset(a *compartment.AssetRestModel) asset2.AssetData {
+	return asset2.AssetData{
+		Expiration:     a.Expiration,
+		CreatedAt:      a.CreatedAt,
+		Quantity:       a.Quantity,
+		OwnerId:        a.OwnerId,
+		Flag:           a.Flag,
+		Rechargeable:   a.Rechargeable,
+		Strength:       a.Strength,
+		Dexterity:      a.Dexterity,
+		Intelligence:   a.Intelligence,
+		Luck:           a.Luck,
+		Hp:             a.Hp,
+		Mp:             a.Mp,
+		WeaponAttack:   a.WeaponAttack,
+		MagicAttack:    a.MagicAttack,
+		WeaponDefense:  a.WeaponDefense,
+		MagicDefense:   a.MagicDefense,
+		Accuracy:       a.Accuracy,
+		Avoidability:   a.Avoidability,
+		Hands:          a.Hands,
+		Speed:          a.Speed,
+		Jump:           a.Jump,
+		Slots:          a.Slots,
+		Locked:         a.Locked,
+		Spikes:         a.Spikes,
+		KarmaUsed:      a.KarmaUsed,
+		Cold:           a.Cold,
+		CanBeTraded:    a.CanBeTraded,
+		LevelType:      a.LevelType,
+		Level:          a.Level,
+		Experience:     a.Experience,
+		HammersApplied: a.HammersApplied,
+		EquippedSince:  a.EquippedSince,
+		CashId:         a.CashId,
+		CommodityId:    a.CommodityId,
+		PurchaseBy:     a.PurchaseBy,
+		PetId:          a.PetId,
+	}
+}
+
+// assetDataFromStorageProjectionAsset converts a storage ProjectionAssetRestModel to an AssetData struct
+func assetDataFromStorageProjectionAsset(a *storage.ProjectionAssetRestModel) asset2.AssetData {
+	return asset2.AssetData{
+		Expiration:     a.Expiration,
+		Quantity:       a.Quantity,
+		OwnerId:        a.OwnerId,
+		Flag:           a.Flag,
+		Rechargeable:   a.Rechargeable,
+		Strength:       a.Strength,
+		Dexterity:      a.Dexterity,
+		Intelligence:   a.Intelligence,
+		Luck:           a.Luck,
+		Hp:             a.Hp,
+		Mp:             a.Mp,
+		WeaponAttack:   a.WeaponAttack,
+		MagicAttack:    a.MagicAttack,
+		WeaponDefense:  a.WeaponDefense,
+		MagicDefense:   a.MagicDefense,
+		Accuracy:       a.Accuracy,
+		Avoidability:   a.Avoidability,
+		Hands:          a.Hands,
+		Speed:          a.Speed,
+		Jump:           a.Jump,
+		Slots:          a.Slots,
+		Locked:         a.Locked,
+		Spikes:         a.Spikes,
+		KarmaUsed:      a.KarmaUsed,
+		Cold:           a.Cold,
+		CanBeTraded:    a.CanBeTraded,
+		LevelType:      a.LevelType,
+		Level:          a.Level,
+		Experience:     a.Experience,
+		HammersApplied: a.HammersApplied,
+		EquippedSince:  a.EquippedSince,
+		CashId:         a.CashId,
+		CommodityId:    a.CommodityId,
+		PurchaseBy:     a.PurchaseBy,
+		PetId:          a.PetId,
+	}
 }

@@ -176,8 +176,8 @@ func CashShopWishListBody(l logrus.FieldLogger) func(t tenant.Model) func(update
 	}
 }
 
-func CashShopCashItemMovedToInventoryBody(l logrus.FieldLogger, t tenant.Model) func(a asset2.Model[any]) BodyProducer {
-	return func(a asset2.Model[any]) BodyProducer {
+func CashShopCashItemMovedToInventoryBody(l logrus.FieldLogger, t tenant.Model) func(a asset2.Model) BodyProducer {
+	return func(a asset2.Model) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(getCashShopOperation(l)(options, CashShopOperationCashItemMovedToInventory))
 			w.WriteShort(uint16(a.Slot()))

@@ -10,6 +10,27 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
+func equipmentDataFromModel(m Model) messageDropKafka.EquipmentData {
+	return messageDropKafka.EquipmentData{
+		Strength:      m.Strength(),
+		Dexterity:     m.Dexterity(),
+		Intelligence:  m.Intelligence(),
+		Luck:          m.Luck(),
+		Hp:            m.Hp(),
+		Mp:            m.Mp(),
+		WeaponAttack:  m.WeaponAttack(),
+		MagicAttack:   m.MagicAttack(),
+		WeaponDefense: m.WeaponDefense(),
+		MagicDefense:  m.MagicDefense(),
+		Accuracy:      m.Accuracy(),
+		Avoidability:  m.Avoidability(),
+		Hands:         m.Hands(),
+		Speed:         m.Speed(),
+		Jump:          m.Jump(),
+		Slots:         m.Slots(),
+	}
+}
+
 func createdEventStatusProvider(drop Model) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(drop.Id()))
 	value := &messageDropKafka.StatusEvent[messageDropKafka.StatusEventCreatedBody]{
@@ -54,44 +75,44 @@ func expiredEventStatusProvider(transactionId uuid.UUID, field field.Model, drop
 	return producer.SingleMessageProvider(key, value)
 }
 
-func pickedUpEventStatusProvider(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32, itemId uint32, equipmentId uint32, quantity uint32, meso uint32, petSlot int8) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(dropId))
+func pickedUpEventStatusProvider(transactionId uuid.UUID, field field.Model, d Model, characterId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(d.Id()))
 	value := &messageDropKafka.StatusEvent[messageDropKafka.StatusEventPickedUpBody]{
 		TransactionId: transactionId,
 		WorldId:       field.WorldId(),
 		ChannelId:     field.ChannelId(),
 		MapId:         field.MapId(),
 		Instance:      field.Instance(),
-		DropId:        dropId,
+		DropId:        d.Id(),
 		Type:          messageDropKafka.StatusEventTypePickedUp,
 		Body: messageDropKafka.StatusEventPickedUpBody{
-			CharacterId: characterId,
-			ItemId:      itemId,
-			EquipmentId: equipmentId,
-			Quantity:    quantity,
-			Meso:        meso,
-			PetSlot:     petSlot,
+			CharacterId:   characterId,
+			ItemId:        d.ItemId(),
+			Quantity:      d.Quantity(),
+			Meso:          d.Meso(),
+			PetSlot:       d.PetSlot(),
+			EquipmentData: equipmentDataFromModel(d),
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func reservedEventStatusProvider(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32, itemId uint32, equipmentId uint32, quantity uint32, meso uint32) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(dropId))
+func reservedEventStatusProvider(transactionId uuid.UUID, field field.Model, d Model) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(d.Id()))
 	value := &messageDropKafka.StatusEvent[messageDropKafka.StatusEventReservedBody]{
 		TransactionId: transactionId,
 		WorldId:       field.WorldId(),
 		ChannelId:     field.ChannelId(),
 		MapId:         field.MapId(),
 		Instance:      field.Instance(),
-		DropId:        dropId,
+		DropId:        d.Id(),
 		Type:          messageDropKafka.StatusEventTypeReserved,
 		Body: messageDropKafka.StatusEventReservedBody{
-			CharacterId: characterId,
-			ItemId:      itemId,
-			EquipmentId: equipmentId,
-			Quantity:    quantity,
-			Meso:        meso,
+			CharacterId:   d.OwnerId(),
+			ItemId:        d.ItemId(),
+			Quantity:      d.Quantity(),
+			Meso:          d.Meso(),
+			EquipmentData: equipmentDataFromModel(d),
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

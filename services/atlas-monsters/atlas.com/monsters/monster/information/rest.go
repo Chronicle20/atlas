@@ -3,8 +3,8 @@ package information
 type RestModel struct {
 	Id                 string            `json:"-"`
 	Name               string            `json:"name"`
-	HP                 uint32            `json:"hp"`
-	MP                 uint32            `json:"mp"`
+	Hp                 uint32            `json:"hp"`
+	Mp                 uint32            `json:"mp"`
 	Experience         uint32            `json:"experience"`
 	Level              uint32            `json:"level"`
 	WeaponAttack       uint32            `json:"weapon_attack"`
@@ -50,7 +50,7 @@ type skill struct {
 type selfDestruction struct {
 	Action      byte  `json:"action"`
 	RemoveAfter int32 `json:"remove_after"`
-	HP          int32 `json:"hp"`
+	Hp          int32 `json:"hp"`
 }
 
 type coolDamage struct {
@@ -79,7 +79,7 @@ func (r *RestModel) SetID(idStr string) error {
 
 func Extract(rm RestModel) (Model, error) {
 	return Model{
-		hp: rm.HP,
-		mp: rm.MP,
+		hp: rm.Hp,
+		mp: rm.Mp,
 	}, nil
 }

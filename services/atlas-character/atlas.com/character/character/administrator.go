@@ -25,10 +25,10 @@ func create(db *gorm.DB, tenantId uuid.UUID, accountId uint32, worldId world.Id,
 		Dexterity:    dexterity,
 		Intelligence: intelligence,
 		Luck:         luck,
-		HP:           maxHP,
-		MP:           maxMP,
-		MaxHP:        maxHP,
-		MaxMP:        maxMP,
+		Hp:           maxHP,
+		Mp:           maxMP,
+		MaxHp:        maxHP,
+		MaxMp:        maxMP,
 		JobId:        jobId,
 		SkinColor:    skinColor,
 		Gender:       gender,
@@ -99,18 +99,18 @@ func update(db *gorm.DB, tenantId uuid.UUID, characterId uint32, modifiers ...En
 				updates[column] = tempEntity.Intelligence
 			case "Luck":
 				updates[column] = tempEntity.Luck
-			case "HP":
-				updates[column] = tempEntity.HP
-			case "MP":
-				updates[column] = tempEntity.MP
-			case "MaxHP":
-				updates[column] = tempEntity.MaxHP
-			case "MaxMP":
-				updates[column] = tempEntity.MaxMP
+			case "Hp":
+				updates[column] = tempEntity.Hp
+			case "Mp":
+				updates[column] = tempEntity.Mp
+			case "MaxHp":
+				updates[column] = tempEntity.MaxHp
+			case "MaxMp":
+				updates[column] = tempEntity.MaxMp
 			case "Meso":
 				updates[column] = tempEntity.Meso
-			case "HPMPUsed":
-				updates[column] = tempEntity.HPMPUsed
+			case "HpMpUsed":
+				updates[column] = tempEntity.HpMpUsed
 			case "JobId":
 				updates[column] = tempEntity.JobId
 			case "SkinColor":
@@ -168,16 +168,16 @@ func SetMeso(amount uint32) EntityUpdateFunction {
 
 func SetHealth(amount uint16) EntityUpdateFunction {
 	return func() ([]string, func(e *entity)) {
-		return []string{"HP"}, func(e *entity) {
-			e.HP = amount
+		return []string{"Hp"}, func(e *entity) {
+			e.Hp = amount
 		}
 	}
 }
 
 func SetMana(amount uint16) EntityUpdateFunction {
 	return func() ([]string, func(e *entity)) {
-		return []string{"MP"}, func(e *entity) {
-			e.MP = amount
+		return []string{"Mp"}, func(e *entity) {
+			e.Mp = amount
 		}
 	}
 }
@@ -238,26 +238,26 @@ func SpendOnLuck(luck uint16, ap uint16) []EntityUpdateFunction {
 	return []EntityUpdateFunction{SetLuck(luck), SetAP(ap)}
 }
 
-func SetMaxHP(hp uint16) EntityUpdateFunction {
+func SetMaxHp(hp uint16) EntityUpdateFunction {
 	return func() ([]string, func(e *entity)) {
-		return []string{"MaxHP"}, func(e *entity) {
-			e.MaxHP = hp
+		return []string{"MaxHp"}, func(e *entity) {
+			e.MaxHp = hp
 		}
 	}
 }
 
-func SetMaxMP(mp uint16) EntityUpdateFunction {
+func SetMaxMp(mp uint16) EntityUpdateFunction {
 	return func() ([]string, func(e *entity)) {
-		return []string{"MaxMP"}, func(e *entity) {
-			e.MaxMP = mp
+		return []string{"MaxMp"}, func(e *entity) {
+			e.MaxMp = mp
 		}
 	}
 }
 
-func SetHPMPUsed(value int) EntityUpdateFunction {
+func SetHpMpUsed(value int) EntityUpdateFunction {
 	return func() ([]string, func(e *entity)) {
-		return []string{"HPMPUsed"}, func(e *entity) {
-			e.HPMPUsed = value
+		return []string{"HpMpUsed"}, func(e *entity) {
+			e.HpMpUsed = value
 		}
 	}
 }

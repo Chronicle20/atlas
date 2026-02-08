@@ -7,8 +7,8 @@ type RestModel struct {
 	Dexterity     uint32 `json:"dexterity"`
 	Luck          uint32 `json:"luck"`
 	Intelligence  uint32 `json:"intelligence"`
-	MaxHP         uint32 `json:"maxHP"`
-	MaxMP         uint32 `json:"maxMP"`
+	MaxHp         uint32 `json:"maxHP"`
+	MaxMp         uint32 `json:"maxMP"`
 	WeaponAttack  uint32 `json:"weaponAttack"`
 	WeaponDefense uint32 `json:"weaponDefense"`
 	MagicAttack   uint32 `json:"magicAttack"`

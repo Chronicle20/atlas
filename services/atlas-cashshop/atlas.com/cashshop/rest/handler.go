@@ -169,16 +169,16 @@ func ParseCompartmentId(l logrus.FieldLogger, next CompartmentIdHandler) http.Ha
 	}
 }
 
-type AssetIdHandler func(assetId uuid.UUID) http.HandlerFunc
+type AssetIdHandler func(assetId uint32) http.HandlerFunc
 
 func ParseAssetId(l logrus.FieldLogger, next AssetIdHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		assetId, err := uuid.Parse(mux.Vars(r)["assetId"])
+		assetId, err := strconv.Atoi(mux.Vars(r)["assetId"])
 		if err != nil {
 			l.WithError(err).Errorf("Unable to properly parse assetId from path.")
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		next(assetId)(w, r)
+		next(uint32(assetId))(w, r)
 	}
 }

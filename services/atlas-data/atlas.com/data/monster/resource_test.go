@@ -110,8 +110,8 @@ func setupTestMonsterData(t *testing.T, db *gorm.DB, tenantId uuid.UUID) {
 		{
 			Id:            100100, // Snail
 			Name:          "Blue Snail",
-			HP:            15,
-			MP:            0,
+			Hp:            15,
+			Mp:            0,
 			Experience:    3,
 			Level:         2,
 			WeaponAttack:  7,
@@ -127,8 +127,8 @@ func setupTestMonsterData(t *testing.T, db *gorm.DB, tenantId uuid.UUID) {
 		{
 			Id:            100101, // Red Snail
 			Name:          "Red Snail",
-			HP:            20,
-			MP:            0,
+			Hp:            20,
+			Mp:            0,
 			Experience:    4,
 			Level:         3,
 			WeaponAttack:  10,
@@ -142,8 +142,8 @@ func setupTestMonsterData(t *testing.T, db *gorm.DB, tenantId uuid.UUID) {
 		{
 			Id:            8500001, // Papulatus
 			Name:          "Papulatus",
-			HP:            23000000,
-			MP:            10000,
+			Hp:            23000000,
+			Mp:            10000,
 			Experience:    2436600,
 			Level:         125,
 			WeaponAttack:  1650,

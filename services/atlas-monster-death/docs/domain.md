@@ -42,7 +42,7 @@ Evaluates monster drop tables and creates drops for a killed monster.
 - Retrieves drop information for the monster
 - Filters quest-specific drops based on character's started quests
 - Retrieves character rate multipliers
-- Evaluates drop success based on chance and item drop rate
+- Evaluates drop success based on chance and item drop rate (adjustedChance = chance * itemDropRate, success if rand < adjustedChance out of 999999)
 - Creates item or meso drops at calculated positions
 
 #### DistributeExperience
@@ -51,10 +51,11 @@ Distributes experience to characters who damaged the monster.
 
 - Builds damage distribution from damage entries
 - Filters characters to those still present in the map
-- Calculates experience per damage based on monster HP and experience value
+- Calculates experience per damage as (monsterExperience * 20) / monsterHP
 - Retrieves character rate multipliers and applies exp rate
 - Calculates personal ratio and standard deviation threshold
 - Awards experience to each character based on their damage contribution
+- White experience gain is awarded when a character's personal ratio meets or exceeds the standard deviation threshold
 
 #### filterByQuestState
 
@@ -88,7 +89,7 @@ Represents character information retrieved from external service and produces ex
 
 #### AwardExperience
 
-Produces a Kafka command to award experience to a character.
+Produces a Kafka command to award experience to a character. The command carries experience distributions indicating the type (WHITE or YELLOW based on white experience gain determination) and a PARTY distribution.
 
 ---
 
@@ -96,7 +97,7 @@ Produces a Kafka command to award experience to a character.
 
 ### Responsibility
 
-Represents drop information and handles drop creation logic.
+Represents drop information and handles drop creation logic including inline equipment statistics generation for equipment drops.
 
 ### Core Models
 
@@ -108,29 +109,53 @@ Represents drop information and handles drop creation logic.
 | minimumQuantity | uint32 | Minimum drop quantity |
 | maximumQuantity | uint32 | Maximum drop quantity |
 | questId | uint32 | Associated quest identifier |
-| chance | uint32 | Drop chance |
+| chance | uint32 | Drop chance (out of 999999) |
+
+#### EquipmentData
+
+Carries inline equipment statistics for equipment drops. Populated when the dropped item is an equipment (itemId / 1000000 == 1). Statistics are randomized from base values fetched from the data service.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| strength | uint16 | STR stat |
+| dexterity | uint16 | DEX stat |
+| intelligence | uint16 | INT stat |
+| luck | uint16 | LUK stat |
+| hp | uint16 | HP stat |
+| mp | uint16 | MP stat |
+| weaponAttack | uint16 | Weapon attack |
+| magicAttack | uint16 | Magic attack |
+| weaponDefense | uint16 | Weapon defense |
+| magicDefense | uint16 | Magic defense |
+| accuracy | uint16 | Accuracy |
+| avoidability | uint16 | Avoidability |
+| hands | uint16 | Hands |
+| speed | uint16 | Speed |
+| jump | uint16 | Jump |
+| slots | uint16 | Upgrade slots (not randomized) |
 
 ### Invariants
 
 - minimumQuantity cannot exceed maximumQuantity
+- Default minimumQuantity and maximumQuantity are both 1
 
 ### Processors
 
 #### Create
 
-Creates a drop at a calculated position based on drop index.
+Creates a drop at a calculated position based on drop index. Drops are spread alternating left/right from the monster position using a spacing factor (25 for normal drops, 40 for drop type 3). Even indices offset right, odd indices offset left.
 
 #### SpawnMeso
 
-Spawns a meso drop with randomized quantity between minimum and maximum.
+Spawns a meso drop with randomized quantity between minimum and maximum. Applies the meso rate multiplier to the base amount.
 
 #### SpawnItem
 
-Spawns an item drop with randomized quantity between minimum and maximum.
+Spawns an item drop with randomized quantity between minimum and maximum. For equipment items (itemId / 1000000 == 1), fetches base statistics from the data service and generates randomized equipment data. Each non-zero stat is varied within +/- 10% of the base value (capped at a per-stat maximum of 5 or 10). Slots are copied directly without randomization.
 
 #### SpawnDrop
 
-Calculates final drop position and produces spawn drop command.
+Calculates final drop position using the data service's drop position endpoint (called twice for refinement) and produces a spawn drop command via Kafka.
 
 ---
 
@@ -153,7 +178,7 @@ Represents a calculated drop position retrieved from external service.
 
 #### GetInMap
 
-Retrieves a valid drop position within a map from the data service.
+Retrieves a valid drop position within a map from the data service. Accepts initial coordinates and fallback coordinates; returns the fallback on error.
 
 ---
 
@@ -171,6 +196,43 @@ Represents monster static data retrieved from external service.
 |-------|------|-------------|
 | hp | uint32 | Monster hit points |
 | experience | uint32 | Base experience value |
+
+---
+
+## Equipment Statistics
+
+### Responsibility
+
+Represents base equipment statistics retrieved from the data service. Used to generate randomized equipment data for equipment drops.
+
+### Core Models
+
+#### Model
+
+| Field | Type | Description |
+|-------|------|-------------|
+| strength | uint16 | Base STR |
+| dexterity | uint16 | Base DEX |
+| intelligence | uint16 | Base INT |
+| luck | uint16 | Base LUK |
+| hp | uint16 | Base HP |
+| mp | uint16 | Base MP |
+| weaponAttack | uint16 | Base weapon attack |
+| magicAttack | uint16 | Base magic attack |
+| weaponDefense | uint16 | Base weapon defense |
+| magicDefense | uint16 | Base magic defense |
+| accuracy | uint16 | Base accuracy |
+| avoidability | uint16 | Base avoidability |
+| hands | uint16 | Base hands |
+| speed | uint16 | Base speed |
+| jump | uint16 | Base jump |
+| slots | uint16 | Upgrade slots |
+
+### Processors
+
+#### GetById
+
+Retrieves base equipment statistics by item ID from the data service.
 
 ---
 
@@ -204,7 +266,7 @@ Quest state enumeration.
 
 #### GetStartedQuestIds
 
-Retrieves a set of started quest IDs for a character.
+Retrieves a set of started quest IDs for a character. Returns a map of questId to bool for efficient lookup.
 
 ---
 

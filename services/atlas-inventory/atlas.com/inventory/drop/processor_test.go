@@ -3,7 +3,7 @@ package drop_test
 import (
 	"atlas-inventory/drop"
 	"atlas-inventory/kafka/message"
-	dropMsg "atlas-inventory/kafka/message/drop"
+	dropKafka "atlas-inventory/kafka/message/drop"
 	"context"
 	"testing"
 
@@ -33,13 +33,13 @@ func TestCreateForEquipment(t *testing.T) {
 
 	m := testFieldModel()
 	itemId := uint32(1000000)
-	equipmentId := uint32(123)
+	ed := dropKafka.EquipmentData{Strength: 15, Dexterity: 10}
 	dropType := byte(1)
 	x := int16(100)
 	y := int16(200)
 	ownerId := uint32(456)
 
-	err := p.CreateForEquipment(buf)(m, itemId, equipmentId, dropType, x, y, ownerId)
+	err := p.CreateForEquipment(buf)(m, itemId, ed, dropType, x, y, ownerId)
 	if err != nil {
 		t.Fatalf("CreateForEquipment failed: %v", err)
 	}
@@ -49,9 +49,9 @@ func TestCreateForEquipment(t *testing.T) {
 		t.Fatal("Expected messages in buffer, got none")
 	}
 
-	topicMessages, ok := messages[dropMsg.EnvCommandTopic]
+	topicMessages, ok := messages[dropKafka.EnvCommandTopic]
 	if !ok {
-		t.Fatalf("Expected messages in topic %s", dropMsg.EnvCommandTopic)
+		t.Fatalf("Expected messages in topic %s", dropKafka.EnvCommandTopic)
 	}
 
 	if len(topicMessages) != 1 {
@@ -83,9 +83,9 @@ func TestCreateForItem(t *testing.T) {
 		t.Fatal("Expected messages in buffer, got none")
 	}
 
-	topicMessages, ok := messages[dropMsg.EnvCommandTopic]
+	topicMessages, ok := messages[dropKafka.EnvCommandTopic]
 	if !ok {
-		t.Fatalf("Expected messages in topic %s", dropMsg.EnvCommandTopic)
+		t.Fatalf("Expected messages in topic %s", dropKafka.EnvCommandTopic)
 	}
 
 	if len(topicMessages) != 1 {
@@ -113,9 +113,9 @@ func TestCancelReservation(t *testing.T) {
 		t.Fatal("Expected messages in buffer, got none")
 	}
 
-	topicMessages, ok := messages[dropMsg.EnvCommandTopic]
+	topicMessages, ok := messages[dropKafka.EnvCommandTopic]
 	if !ok {
-		t.Fatalf("Expected messages in topic %s", dropMsg.EnvCommandTopic)
+		t.Fatalf("Expected messages in topic %s", dropKafka.EnvCommandTopic)
 	}
 
 	if len(topicMessages) != 1 {
@@ -143,9 +143,9 @@ func TestRequestPickUp(t *testing.T) {
 		t.Fatal("Expected messages in buffer, got none")
 	}
 
-	topicMessages, ok := messages[dropMsg.EnvCommandTopic]
+	topicMessages, ok := messages[dropKafka.EnvCommandTopic]
 	if !ok {
-		t.Fatalf("Expected messages in topic %s", dropMsg.EnvCommandTopic)
+		t.Fatalf("Expected messages in topic %s", dropKafka.EnvCommandTopic)
 	}
 
 	if len(topicMessages) != 1 {
@@ -178,9 +178,9 @@ func TestMultipleOperations(t *testing.T) {
 	}
 
 	messages := buf.GetAll()
-	topicMessages, ok := messages[dropMsg.EnvCommandTopic]
+	topicMessages, ok := messages[dropKafka.EnvCommandTopic]
 	if !ok {
-		t.Fatalf("Expected messages in topic %s", dropMsg.EnvCommandTopic)
+		t.Fatalf("Expected messages in topic %s", dropKafka.EnvCommandTopic)
 	}
 
 	if len(topicMessages) != 3 {

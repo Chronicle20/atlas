@@ -73,7 +73,7 @@ func InitializeCharacter(l logrus.FieldLogger, ctx context.Context, characterId 
 
 	l.Debugf("Completed initialization for character [%d]. Effective stats: STR=%d, DEX=%d, INT=%d, LUK=%d, MaxHP=%d, MaxMP=%d",
 		characterId, m.Computed().Strength(), m.Computed().Dexterity(), m.Computed().Intelligence(),
-		m.Computed().Luck(), m.Computed().MaxHP(), m.Computed().MaxMP())
+		m.Computed().Luck(), m.Computed().MaxHp(), m.Computed().MaxMp())
 
 	return nil
 }
@@ -135,10 +135,10 @@ func fetchEquipmentBonuses(l logrus.FieldLogger, ctx context.Context, characterI
 			bonuses = append(bonuses, stat.NewBonus(source, stat.TypeIntelligence, int32(equipData.Intelligence)))
 		}
 		if equipData.Hp > 0 {
-			bonuses = append(bonuses, stat.NewBonus(source, stat.TypeMaxHP, int32(equipData.Hp)))
+			bonuses = append(bonuses, stat.NewBonus(source, stat.TypeMaxHp, int32(equipData.Hp)))
 		}
 		if equipData.Mp > 0 {
-			bonuses = append(bonuses, stat.NewBonus(source, stat.TypeMaxMP, int32(equipData.Mp)))
+			bonuses = append(bonuses, stat.NewBonus(source, stat.TypeMaxMp, int32(equipData.Mp)))
 		}
 		if equipData.WeaponAttack > 0 {
 			bonuses = append(bonuses, stat.NewBonus(source, stat.TypeWeaponAttack, int32(equipData.WeaponAttack)))
@@ -270,11 +270,11 @@ func fetchPassiveBonuses(l logrus.FieldLogger, ctx context.Context, characterId 
 		if effect.Jump != 0 {
 			bonuses = append(bonuses, stat.NewBonus(source, stat.TypeJump, int32(effect.Jump)))
 		}
-		if effect.HP > 0 {
-			bonuses = append(bonuses, stat.NewBonus(source, stat.TypeMaxHP, int32(effect.HP)))
+		if effect.Hp > 0 {
+			bonuses = append(bonuses, stat.NewBonus(source, stat.TypeMaxHp, int32(effect.Hp)))
 		}
-		if effect.MP > 0 {
-			bonuses = append(bonuses, stat.NewBonus(source, stat.TypeMaxMP, int32(effect.MP)))
+		if effect.Mp > 0 {
+			bonuses = append(bonuses, stat.NewBonus(source, stat.TypeMaxMp, int32(effect.Mp)))
 		}
 
 		// Extract bonuses from statups array

@@ -38,7 +38,7 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 	}
 }
 
-func handleAssetCreatedEvent(l logrus.FieldLogger, ctx context.Context, e asset2.StatusEvent[asset2.CreatedStatusEventBody[any]]) {
+func handleAssetCreatedEvent(l logrus.FieldLogger, ctx context.Context, e asset2.StatusEvent[asset2.CreatedStatusEventBody]) {
 	if e.Type != asset2.StatusEventTypeCreated {
 		return
 	}

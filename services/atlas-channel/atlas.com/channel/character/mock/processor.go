@@ -59,6 +59,10 @@ func (m *MockProcessor) InventoryDecorator(c character.Model) character.Model {
 	return c
 }
 
+func (m *MockProcessor) PetAssetEnrichmentDecorator(c character.Model) character.Model {
+	return c
+}
+
 func (m *MockProcessor) SkillModelDecorator(c character.Model) character.Model {
 	return c
 }
@@ -67,12 +71,12 @@ func (m *MockProcessor) QuestModelDecorator(c character.Model) character.Model {
 	return c
 }
 
-func (m *MockProcessor) GetEquipableInSlot(_ uint32, _ int16) model.Provider[asset.Model[any]] {
-	return model.ErrorProvider[asset.Model[any]](errors.New("not implemented in mock"))
+func (m *MockProcessor) GetEquipableInSlot(_ uint32, _ int16) model.Provider[asset.Model] {
+	return model.ErrorProvider[asset.Model](errors.New("not implemented in mock"))
 }
 
-func (m *MockProcessor) GetItemInSlot(_ uint32, _ inventory2.Type, _ int16) model.Provider[asset.Model[any]] {
-	return model.ErrorProvider[asset.Model[any]](errors.New("not implemented in mock"))
+func (m *MockProcessor) GetItemInSlot(_ uint32, _ inventory2.Type, _ int16) model.Provider[asset.Model] {
+	return model.ErrorProvider[asset.Model](errors.New("not implemented in mock"))
 }
 
 func (m *MockProcessor) ByNameProvider(name string) model.Provider[[]character.Model] {

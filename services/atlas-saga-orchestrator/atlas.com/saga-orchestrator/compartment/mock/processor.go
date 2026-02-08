@@ -2,6 +2,7 @@ package mock
 
 import (
 	"atlas-saga-orchestrator/compartment"
+	asset2 "atlas-saga-orchestrator/kafka/message/asset"
 	"time"
 
 	"github.com/google/uuid"
@@ -9,14 +10,14 @@ import (
 
 // ProcessorMock is a mock implementation of the compartment.Processor interface
 type ProcessorMock struct {
-	RequestCreateItemFunc          func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time) error
-	RequestDestroyItemFunc         func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, removeAll bool) error
-	RequestEquipAssetFunc          func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
-	RequestUnequipAssetFunc        func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
-	RequestCreateAndEquipAssetFunc   func(transactionId uuid.UUID, payload compartment.CreateAndEquipAssetPayload) error
-	RequestAcceptAssetFunc           func(transactionId uuid.UUID, characterId uint32, inventoryType byte, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, quantity uint32) error
-	RequestReleaseAssetFunc          func(transactionId uuid.UUID, characterId uint32, inventoryType byte, assetId uint32, quantity uint32) error
-	RequestDestroyItemFromSlotFunc   func(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, quantity uint32) error
+	RequestCreateItemFunc           func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time) error
+	RequestDestroyItemFunc          func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, removeAll bool) error
+	RequestEquipAssetFunc           func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
+	RequestUnequipAssetFunc         func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
+	RequestCreateAndEquipAssetFunc  func(transactionId uuid.UUID, payload compartment.CreateAndEquipAssetPayload) error
+	RequestAcceptAssetFunc          func(transactionId uuid.UUID, characterId uint32, inventoryType byte, templateId uint32, assetData asset2.AssetData) error
+	RequestReleaseAssetFunc         func(transactionId uuid.UUID, characterId uint32, inventoryType byte, assetId uint32, quantity uint32) error
+	RequestDestroyItemFromSlotFunc  func(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, quantity uint32) error
 }
 
 // RequestCreateItem is a mock implementation of the compartment.Processor.RequestCreateItem method
@@ -60,9 +61,9 @@ func (m *ProcessorMock) RequestCreateAndEquipAsset(transactionId uuid.UUID, payl
 }
 
 // RequestAcceptAsset is a mock implementation of the compartment.Processor.RequestAcceptAsset method
-func (m *ProcessorMock) RequestAcceptAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, templateId uint32, referenceId uint32, referenceType string, referenceData []byte, quantity uint32) error {
+func (m *ProcessorMock) RequestAcceptAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, templateId uint32, assetData asset2.AssetData) error {
 	if m.RequestAcceptAssetFunc != nil {
-		return m.RequestAcceptAssetFunc(transactionId, characterId, inventoryType, templateId, referenceId, referenceType, referenceData, quantity)
+		return m.RequestAcceptAssetFunc(transactionId, characterId, inventoryType, templateId, assetData)
 	}
 	return nil
 }

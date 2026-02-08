@@ -812,9 +812,9 @@ func (p *ProcessorImpl) RequestDistributeAp(transactionId uuid.UUID, characterId
 					return err
 				}
 				newVal := uint16(int16(hpGrowth) * int16(d.Amount))
-				eufs = append(eufs, SetMaxHP(newVal))
-				eufs = append(eufs, SetHPMPUsed(c.HPMPUsed()+int(d.Amount)))
-				stats = append(stats, stat.TypeMaxHP)
+				eufs = append(eufs, SetMaxHp(newVal))
+				eufs = append(eufs, SetHpMpUsed(c.HpMpUsed()+int(d.Amount)))
+				stats = append(stats, stat.TypeMaxHp)
 				values["max_hp"] = newVal
 				break
 			case CommandDistributeApAbilityMp:
@@ -823,9 +823,9 @@ func (p *ProcessorImpl) RequestDistributeAp(transactionId uuid.UUID, characterId
 					return err
 				}
 				newVal := uint16(int16(mpGrowth) * int16(d.Amount))
-				eufs = append(eufs, SetMaxMP(newVal))
-				eufs = append(eufs, SetHPMPUsed(c.HPMPUsed()+int(d.Amount)))
-				stats = append(stats, stat.TypeMaxMP)
+				eufs = append(eufs, SetMaxMp(newVal))
+				eufs = append(eufs, SetHpMpUsed(c.HpMpUsed()+int(d.Amount)))
+				stats = append(stats, stat.TypeMaxMp)
 				values["max_mp"] = newVal
 				break
 			}
@@ -883,11 +883,11 @@ func (p *ProcessorImpl) RequestDistributeSp(transactionId uuid.UUID, characterId
 }
 
 func (p *ProcessorImpl) getMaxHpGrowth(c Model) (uint16, error) {
-	if c.MaxHP() >= 30000 || c.HPMPUsed() > 9999 {
-		return c.MaxHP(), errors.New("max ap to hp")
+	if c.MaxHp() >= 30000 || c.HpMpUsed() > 9999 {
+		return c.MaxHp(), errors.New("max ap to hp")
 	}
 	var improvingHPSkillId skill.Id
-	resMax := c.MaxHP()
+	resMax := c.MaxHp()
 	if job.IsA(c.JobId(),
 		job.WarriorId,
 		job.FighterId, job.CrusaderId, job.HeroId,
@@ -944,11 +944,11 @@ func (p *ProcessorImpl) getMaxHpGrowth(c Model) (uint16, error) {
 }
 
 func (p *ProcessorImpl) getMaxMpGrowth(c Model) (uint16, error) {
-	if c.MaxMP() >= 30000 || c.HPMPUsed() > 9999 {
-		return c.MaxMP(), errors.New("max ap to mp")
+	if c.MaxMp() >= 30000 || c.HpMpUsed() > 9999 {
+		return c.MaxMp(), errors.New("max ap to mp")
 	}
 	var improvingMPSkillId skill.Id
-	resMax := c.MaxMP()
+	resMax := c.MaxMp()
 	if job.IsA(c.JobId(),
 		job.WarriorId,
 		job.FighterId, job.CrusaderId, job.HeroId,
@@ -1037,15 +1037,15 @@ func (p *ProcessorImpl) ChangeHP(mb *message.Buffer) func(transactionId uuid.UUI
 			}
 
 			// Use effective MaxHP if available, fall back to base MaxHP
-			maxHP := c.MaxHP()
+			maxHP := c.MaxHp()
 			effectiveStats, err := effective_stats.RequestByCharacter(channel, c.Id())(p.l, p.ctx)
 			if err == nil {
-				maxHP = uint16(effectiveStats.MaxHP)
+				maxHP = uint16(effectiveStats.MaxHp)
 			} else {
 				p.l.WithError(err).Debugf("Failed to fetch effective stats for character [%d], using base MaxHP", c.Id())
 			}
 
-			adjusted = enforceBounds(amount, c.HP(), maxHP, 0)
+			adjusted = enforceBounds(amount, c.Hp(), maxHP, 0)
 			p.l.Debugf("Attempting to adjust character [%d] health by [%d] to [%d].", characterId, amount, adjusted)
 			return dynamicUpdate(tx)(SetHealth(adjusted))(p.t.Id())(c)
 		})
@@ -1060,7 +1060,7 @@ func (p *ProcessorImpl) ChangeHP(mb *message.Buffer) func(transactionId uuid.UUI
 			}
 		}
 
-		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeHP}, nil))
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeHp}, nil))
 		return nil
 	}
 }
@@ -1081,10 +1081,10 @@ func (p *ProcessorImpl) SetHP(mb *message.Buffer) func(transactionId uuid.UUID, 
 			}
 
 			// Use effective MaxHP if available, fall back to base MaxHP
-			maxHP := c.MaxHP()
+			maxHP := c.MaxHp()
 			effectiveStats, err := effective_stats.RequestByCharacter(channel, c.Id())(p.l, p.ctx)
 			if err == nil {
-				maxHP = uint16(effectiveStats.MaxHP)
+				maxHP = uint16(effectiveStats.MaxHp)
 			} else {
 				p.l.WithError(err).Debugf("Failed to fetch effective stats for character [%d], using base MaxHP", c.Id())
 			}
@@ -1108,7 +1108,7 @@ func (p *ProcessorImpl) SetHP(mb *message.Buffer) func(transactionId uuid.UUID, 
 			}
 		}
 
-		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeHP}, nil))
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeHp}, nil))
 		return nil
 	}
 }
@@ -1128,22 +1128,22 @@ func (p *ProcessorImpl) ChangeMP(mb *message.Buffer) func(transactionId uuid.UUI
 			}
 
 			// Use effective MaxMP if available, fall back to base MaxMP
-			maxMP := c.MaxMP()
+			maxMP := c.MaxMp()
 			effectiveStats, err := effective_stats.RequestByCharacter(channel, c.Id())(p.l, p.ctx)
 			if err == nil {
-				maxMP = uint16(effectiveStats.MaxMP)
+				maxMP = uint16(effectiveStats.MaxMp)
 			} else {
 				p.l.WithError(err).Debugf("Failed to fetch effective stats for character [%d], using base MaxMP", c.Id())
 			}
 
-			adjusted := enforceBounds(amount, c.MP(), maxMP, 0)
+			adjusted := enforceBounds(amount, c.Mp(), maxMP, 0)
 			p.l.Debugf("Attempting to adjust character [%d] mana by [%d] to [%d].", characterId, amount, adjusted)
 			return dynamicUpdate(tx)(SetMana(adjusted))(p.t.Id())(c)
 		})
 		if txErr != nil {
 			return txErr
 		}
-		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeMP}, nil))
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeMp}, nil))
 		return nil
 	}
 }
@@ -1164,8 +1164,8 @@ func (p *ProcessorImpl) ClampHP(mb *message.Buffer) func(transactionId uuid.UUID
 			}
 
 			// Only clamp if current HP exceeds the new max value
-			if c.HP() > maxValue {
-				p.l.Debugf("Clamping character [%d] HP from [%d] to [%d] (effective max decreased).", characterId, c.HP(), maxValue)
+			if c.Hp() > maxValue {
+				p.l.Debugf("Clamping character [%d] HP from [%d] to [%d] (effective max decreased).", characterId, c.Hp(), maxValue)
 				clamped = true
 				return dynamicUpdate(tx)(SetHealth(maxValue))(p.t.Id())(c)
 			}
@@ -1176,7 +1176,7 @@ func (p *ProcessorImpl) ClampHP(mb *message.Buffer) func(transactionId uuid.UUID
 		}
 
 		if clamped {
-			_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeHP}, nil))
+			_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeHp}, nil))
 		}
 		return nil
 	}
@@ -1198,8 +1198,8 @@ func (p *ProcessorImpl) ClampMP(mb *message.Buffer) func(transactionId uuid.UUID
 			}
 
 			// Only clamp if current MP exceeds the new max value
-			if c.MP() > maxValue {
-				p.l.Debugf("Clamping character [%d] MP from [%d] to [%d] (effective max decreased).", characterId, c.MP(), maxValue)
+			if c.Mp() > maxValue {
+				p.l.Debugf("Clamping character [%d] MP from [%d] to [%d] (effective max decreased).", characterId, c.Mp(), maxValue)
 				clamped = true
 				return dynamicUpdate(tx)(SetMana(maxValue))(p.t.Id())(c)
 			}
@@ -1210,7 +1210,7 @@ func (p *ProcessorImpl) ClampMP(mb *message.Buffer) func(transactionId uuid.UUID
 		}
 
 		if clamped {
-			_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeMP}, nil))
+			_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeMp}, nil))
 		}
 		return nil
 	}
@@ -1230,7 +1230,7 @@ func (p *ProcessorImpl) ProcessLevelChange(mb *message.Buffer) func(transactionI
 		var addedMP uint16
 		var addedStr uint16
 		var addedDex uint16
-		var sus = []stat.Type{stat.TypeAvailableAP, stat.TypeAvailableSP, stat.TypeHP, stat.TypeMaxHP, stat.TypeMP, stat.TypeMaxMP}
+		var sus = []stat.Type{stat.TypeAvailableAP, stat.TypeAvailableSP, stat.TypeHp, stat.TypeMaxHp, stat.TypeMp, stat.TypeMaxMp}
 
 		var newMaxHP, newMaxMP uint16
 		var newStr, newDex uint16
@@ -1273,17 +1273,17 @@ func (p *ProcessorImpl) ProcessLevelChange(mb *message.Buffer) func(transactionI
 			p.l.Debugf("As a result of processing a level change of [%d]. Character [%d] will gain [%d] AP, [%d] SP, [%d] HP, and [%d] MP.", amount, characterId, addedAP, addedSP, addedHP, addedMP)
 			sb := getSkillBook(c.JobId())
 
-			newMaxHP = c.MaxHP() + addedHP
-			newMaxMP = c.MaxMP() + addedMP
+			newMaxHP = c.MaxHp() + addedHP
+			newMaxMP = c.MaxMp() + addedMP
 			newInt = c.Intelligence()
 
 			var eufs = []EntityUpdateFunction{
 				SetAP(c.AP() + addedAP),
 				SetSP(c.SP(sb)+addedSP, uint32(sb)),
 				SetHealth(newMaxHP),
-				SetMaxHP(newMaxHP),
+				SetMaxHp(newMaxHP),
 				SetMana(newMaxMP),
-				SetMaxMP(newMaxMP),
+				SetMaxMp(newMaxMP),
 			}
 
 			if addedStr > 0 {
@@ -1499,13 +1499,13 @@ func (p *ProcessorImpl) ProcessJobChange(mb *message.Buffer) func(transactionId 
 				addedMP = randBoundFunc(150, 200)
 			}
 
-			newMaxHP = c.MaxHP() + addedHP
-			newMaxMP = c.MaxMP() + addedMP
+			newMaxHP = c.MaxHp() + addedHP
+			newMaxMP = c.MaxMp() + addedMP
 			newInt = c.Intelligence()
 
 			p.l.Debugf("As a result of processing a job change to [%d]. Character [%d] will gain [%d] AP, [%d] SP, [%d] HP, and [%d] MP.", jobId, characterId, addedAP, addedSP, addedHP, addedMP)
 			sb := getSkillBook(c.JobId())
-			return dynamicUpdate(tx)(SetAP(c.AP()+addedAP), SetSP(c.SP(sb)+addedSP, uint32(sb)), SetHealth(newMaxHP), SetMaxHP(newMaxHP), SetMana(newMaxMP), SetMaxMP(newMaxMP))(p.t.Id())(c)
+			return dynamicUpdate(tx)(SetAP(c.AP()+addedAP), SetSP(c.SP(sb)+addedSP, uint32(sb)), SetHealth(newMaxHP), SetMaxHp(newMaxHP), SetMana(newMaxMP), SetMaxMp(newMaxMP))(p.t.Id())(c)
 		})
 		if txErr != nil {
 			return txErr
@@ -1517,7 +1517,7 @@ func (p *ProcessorImpl) ProcessJobChange(mb *message.Buffer) func(transactionId 
 			"intelligence": newInt,
 		}
 
-		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeAvailableAP, stat.TypeAvailableSP, stat.TypeHP, stat.TypeMaxHP, stat.TypeMP, stat.TypeMaxMP}, values))
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeAvailableAP, stat.TypeAvailableSP, stat.TypeHp, stat.TypeMaxHp, stat.TypeMp, stat.TypeMaxMp}, values))
 		return nil
 	}
 }

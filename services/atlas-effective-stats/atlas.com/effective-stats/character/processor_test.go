@@ -227,7 +227,7 @@ func TestProcessor_AddBuffBonuses(t *testing.T) {
 	_ = p.SetBaseStats(ch, 12345, base)
 
 	bonuses := []stat.Bonus{
-		stat.NewMultiplierBonus("", stat.TypeMaxHP, 0.60), // Hyper Body
+		stat.NewMultiplierBonus("", stat.TypeMaxHp, 0.60), // Hyper Body
 	}
 
 	err := p.AddBuffBonuses(ch, 12345, 2311003, bonuses)
@@ -238,8 +238,8 @@ func TestProcessor_AddBuffBonuses(t *testing.T) {
 	m, _ := GetRegistry().Get(ten, 12345)
 
 	// 5000 * 1.60 = 8000
-	if m.Computed().MaxHP() != 8000 {
-		t.Errorf("Computed MaxHP = %v, want 8000", m.Computed().MaxHP())
+	if m.Computed().MaxHp() != 8000 {
+		t.Errorf("Computed MaxHP = %v, want 8000", m.Computed().MaxHp())
 	}
 }
 
@@ -251,7 +251,7 @@ func TestProcessor_RemoveBuffBonuses(t *testing.T) {
 	_ = p.SetBaseStats(ch, 12345, base)
 
 	bonuses := []stat.Bonus{
-		stat.NewMultiplierBonus("", stat.TypeMaxHP, 0.60),
+		stat.NewMultiplierBonus("", stat.TypeMaxHp, 0.60),
 	}
 	_ = p.AddBuffBonuses(ch, 12345, 2311003, bonuses)
 
@@ -263,8 +263,8 @@ func TestProcessor_RemoveBuffBonuses(t *testing.T) {
 	m, _ := GetRegistry().Get(ten, 12345)
 
 	// Back to base stats
-	if m.Computed().MaxHP() != 5000 {
-		t.Errorf("Computed MaxHP = %v, want 5000", m.Computed().MaxHP())
+	if m.Computed().MaxHp() != 5000 {
+		t.Errorf("Computed MaxHP = %v, want 5000", m.Computed().MaxHp())
 	}
 }
 
@@ -399,14 +399,14 @@ func TestProcessor_MixedBonuses(t *testing.T) {
 	// Add flat equipment bonus
 	equipBonuses := []stat.Bonus{
 		stat.NewBonus("", stat.TypeStrength, 15),
-		stat.NewBonus("", stat.TypeMaxHP, 500),
+		stat.NewBonus("", stat.TypeMaxHp, 500),
 	}
 	_ = p.AddEquipmentBonuses(ch, 12345, 100, equipBonuses)
 
 	// Add multiplier buff (10% strength, 60% HP)
 	buffBonuses := []stat.Bonus{
 		stat.NewMultiplierBonus("", stat.TypeStrength, 0.10),
-		stat.NewMultiplierBonus("", stat.TypeMaxHP, 0.60),
+		stat.NewMultiplierBonus("", stat.TypeMaxHp, 0.60),
 	}
 	_ = p.AddBuffBonuses(ch, 12345, 2311003, buffBonuses)
 
@@ -418,8 +418,8 @@ func TestProcessor_MixedBonuses(t *testing.T) {
 	}
 
 	// MaxHP: (5000 + 500) * 1.60 = 5500 * 1.60 = 8800
-	if m.Computed().MaxHP() != 8800 {
-		t.Errorf("Computed MaxHP = %v, want 8800", m.Computed().MaxHP())
+	if m.Computed().MaxHp() != 8800 {
+		t.Errorf("Computed MaxHP = %v, want 8800", m.Computed().MaxHp())
 	}
 
 	// Dexterity: 40 (no bonuses)

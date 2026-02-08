@@ -15,13 +15,13 @@ type ModelBuilder struct {
 	accountId uint32
 	capacity  uint32
 	mesos     uint32
-	assets    []asset.Model[any]
+	assets    []asset.Model
 }
 
 func NewModelBuilder() *ModelBuilder {
 	return &ModelBuilder{
 		capacity: 4, // Default capacity
-		assets:   make([]asset.Model[any], 0),
+		assets:   make([]asset.Model, 0),
 	}
 }
 
@@ -50,7 +50,7 @@ func (b *ModelBuilder) SetMesos(mesos uint32) *ModelBuilder {
 	return b
 }
 
-func (b *ModelBuilder) SetAssets(assets []asset.Model[any]) *ModelBuilder {
+func (b *ModelBuilder) SetAssets(assets []asset.Model) *ModelBuilder {
 	b.assets = assets
 	return b
 }

@@ -52,17 +52,17 @@ func CloneModel(m Model) *modelBuilder {
 	}
 }
 
-func (b *modelBuilder) SetMaxHP(maxHp uint32) *modelBuilder {
+func (b *modelBuilder) SetMaxHp(maxHp uint32) *modelBuilder {
 	b.maxHp = maxHp
 	return b
 }
 
-func (b *modelBuilder) SetHP(hp uint32) *modelBuilder {
+func (b *modelBuilder) SetHp(hp uint32) *modelBuilder {
 	b.hp = hp
 	return b
 }
 
-func (b *modelBuilder) SetMP(mp uint32) *modelBuilder {
+func (b *modelBuilder) SetMp(mp uint32) *modelBuilder {
 	b.mp = mp
 	return b
 }

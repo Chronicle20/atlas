@@ -534,9 +534,15 @@ func TestExpiredEventStatusProvider_ReturnsValidMessages(t *testing.T) {
 
 func TestPickedUpEventStatusProvider_ReturnsValidMessages(t *testing.T) {
 	txId := uuid.New()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 
 	f := field.NewBuilder(1, 2, 100000000).Build()
-	provider := pickedUpEventStatusProvider(txId, f, 12345, 99999, 1000000, 0, 10, 0, -1)
+	d, _ := NewModelBuilder(ten, f).
+		SetId(12345).
+		SetItem(1000000, 10).
+		SetPetSlot(-1).
+		Build()
+	provider := pickedUpEventStatusProvider(txId, f, d, 99999)
 	messages, err := provider()
 	if err != nil {
 		t.Fatalf("pickedUpEventStatusProvider failed: %v", err)
@@ -548,9 +554,15 @@ func TestPickedUpEventStatusProvider_ReturnsValidMessages(t *testing.T) {
 
 func TestReservedEventStatusProvider_ReturnsValidMessages(t *testing.T) {
 	txId := uuid.New()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 
 	f := field.NewBuilder(1, 2, 100000000).Build()
-	provider := reservedEventStatusProvider(txId, f, 12345, 99999, 1000000, 0, 10, 0)
+	d, _ := NewModelBuilder(ten, f).
+		SetId(12345).
+		SetItem(1000000, 10).
+		SetOwner(99999, 0).
+		Build()
+	provider := reservedEventStatusProvider(txId, f, d)
 	messages, err := provider()
 	if err != nil {
 		t.Fatalf("reservedEventStatusProvider failed: %v", err)

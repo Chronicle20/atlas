@@ -8,10 +8,8 @@ import (
 	"atlas-inventory/kafka/consumer/character"
 	compartment2 "atlas-inventory/kafka/consumer/compartment"
 	"atlas-inventory/kafka/consumer/drop"
-	"atlas-inventory/kafka/consumer/equipable"
 	"atlas-inventory/logger"
 	"atlas-inventory/service"
-	"atlas-inventory/stackable"
 	"atlas-inventory/tracing"
 	"os"
 
@@ -54,18 +52,16 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	db := database.Connect(l, database.SetMigrations(compartment.Migration, asset.Migration, stackable.Migration))
+	db := database.Connect(l, database.SetMigrations(compartment.Migration, asset.Migration))
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	compartment2.InitConsumers(l)(cmf)(consumerGroupId)
 	drop.InitConsumers(l)(cmf)(consumerGroupId)
-	equipable.InitConsumers(l)(cmf)(consumerGroupId)
 
 	character.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 	compartment2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 	drop.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
-	equipable.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 
 	server.New(l).
 		WithContext(tdm.Context()).

@@ -19,8 +19,8 @@ type RestModel struct {
 	Dexterity      uint16          `json:"dexterity"`
 	Intelligence   uint16          `json:"intelligence"`
 	Luck           uint16          `json:"luck"`
-	HP             uint16          `json:"hp"`
-	MP             uint16          `json:"mp"`
+	Hp             uint16          `json:"hp"`
+	Mp             uint16          `json:"mp"`
 	WeaponAttack   uint16          `json:"weaponAttack"`
 	MagicAttack    uint16          `json:"magicAttack"`
 	WeaponDefense  uint16          `json:"weaponDefense"`

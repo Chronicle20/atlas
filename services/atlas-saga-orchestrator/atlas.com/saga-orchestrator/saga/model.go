@@ -1,6 +1,7 @@
 package saga
 
 import (
+	asset2 "atlas-saga-orchestrator/kafka/message/asset"
 	"atlas-saga-orchestrator/validation"
 	"encoding/json"
 	"errors"
@@ -1098,10 +1099,7 @@ type AcceptToStoragePayload struct {
 	AccountId     uint32          `json:"accountId"`     // Account ID
 	CharacterId   uint32          `json:"characterId"`   // Character initiating the transfer
 	TemplateId    uint32          `json:"templateId"`    // Item template ID
-	ReferenceId   uint32          `json:"referenceId"`   // Reference ID
-	ReferenceType string          `json:"referenceType"` // Reference type
-	ReferenceData json.RawMessage `json:"referenceData"` // Asset-specific data
-	Quantity      uint32          `json:"quantity"`      // Quantity to accept (0 = all from source)
+	AssetData     asset2.AssetData `json:"assetData"`    // Flat asset data
 }
 
 // ReleaseFromCharacterPayload represents the payload for the release_from_character action (internal step)
@@ -1117,14 +1115,11 @@ type ReleaseFromCharacterPayload struct {
 // AcceptToCharacterPayload represents the payload for the accept_to_character action (internal step)
 // This is created by saga-orchestrator expansion with all asset data pre-populated
 type AcceptToCharacterPayload struct {
-	TransactionId uuid.UUID       `json:"transactionId"` // Saga transaction ID
-	CharacterId   uint32          `json:"characterId"`   // Character ID
-	InventoryType byte            `json:"inventoryType"` // Inventory type (equip, use, etc.)
-	TemplateId    uint32          `json:"templateId"`    // Item template ID
-	ReferenceId   uint32          `json:"referenceId"`   // Reference ID
-	ReferenceType string          `json:"referenceType"` // Reference type
-	ReferenceData json.RawMessage `json:"referenceData"` // Asset-specific data
-	Quantity      uint32          `json:"quantity"`      // Quantity to accept (0 = all from source)
+	TransactionId uuid.UUID        `json:"transactionId"` // Saga transaction ID
+	CharacterId   uint32           `json:"characterId"`   // Character ID
+	InventoryType byte             `json:"inventoryType"` // Inventory type (equip, use, etc.)
+	TemplateId    uint32           `json:"templateId"`    // Item template ID
+	AssetData     asset2.AssetData `json:"assetData"`     // Flat asset data
 }
 
 // ReleaseFromStoragePayload represents the payload for the release_from_storage action (internal step)
@@ -1163,16 +1158,17 @@ type WithdrawFromCashShopPayload struct {
 // AcceptToCashShopPayload represents the payload for the accept_to_cash_shop action (internal step)
 // This is created by saga-orchestrator expansion with all asset data pre-populated
 type AcceptToCashShopPayload struct {
-	TransactionId   uuid.UUID       `json:"transactionId"`   // Saga transaction ID
-	CharacterId     uint32          `json:"characterId"`     // Character ID for session lookup
-	AccountId       uint32          `json:"accountId"`       // Account ID
-	CompartmentId   uuid.UUID       `json:"compartmentId"`   // Cash shop compartment ID
-	CompartmentType byte            `json:"compartmentType"` // Compartment type (1=Explorer, 2=Cygnus, 3=Legend)
-	CashId          int64           `json:"cashId"`          // Preserved CashId from source item
-	TemplateId      uint32          `json:"templateId"`      // Item template ID
-	ReferenceId     uint32          `json:"referenceId"`     // Reference ID
-	ReferenceType   string          `json:"referenceType"`   // Reference type
-	ReferenceData   json.RawMessage `json:"referenceData"`   // Asset-specific data
+	TransactionId   uuid.UUID `json:"transactionId"`   // Saga transaction ID
+	CharacterId     uint32    `json:"characterId"`     // Character ID for session lookup
+	AccountId       uint32    `json:"accountId"`       // Account ID
+	CompartmentId   uuid.UUID `json:"compartmentId"`   // Cash shop compartment ID
+	CompartmentType byte      `json:"compartmentType"` // Compartment type (1=Explorer, 2=Cygnus, 3=Legend)
+	CashId          int64     `json:"cashId"`          // Preserved CashId from source item
+	TemplateId      uint32    `json:"templateId"`      // Item template ID
+	Quantity        uint32    `json:"quantity"`         // Quantity
+	CommodityId     uint32    `json:"commodityId"`     // Commodity ID
+	PurchasedBy     uint32    `json:"purchasedBy"`     // Who purchased the item
+	Flag            uint16    `json:"flag"`             // Item flag
 }
 
 // ReleaseFromCashShopPayload represents the payload for the release_from_cash_shop action (internal step)

@@ -75,14 +75,14 @@ func (m Model) Instance() uuid.UUID {
 	return m.Field().Instance()
 }
 
-func (m Model) MP() uint32 {
+func (m Model) Mp() uint32 {
 	return m.mp
 }
 
-func (m Model) HP() uint32 {
+func (m Model) Hp() uint32 {
 	return m.hp
 }
 
-func (m Model) MaxHP() uint32 {
+func (m Model) MaxHp() uint32 {
 	return m.maxHp
 }

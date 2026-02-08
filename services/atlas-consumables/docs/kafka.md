@@ -11,6 +11,7 @@ Consumable command topic.
 | REQUEST_ITEM_CONSUME | Consume item from inventory |
 | REQUEST_SCROLL | Use scroll on equipment |
 | APPLY_CONSUMABLE_EFFECT | Apply item effects without consuming |
+| CANCEL_CONSUMABLE_EFFECT | Cancel consumable buff effects |
 
 ### EVENT_TOPIC_CHARACTER_STATUS
 
@@ -25,7 +26,7 @@ Character status events for location tracking.
 
 ### EVENT_TOPIC_COMPARTMENT_STATUS
 
-Compartment status events for transaction handling.
+Compartment status events for transaction handling. Consumed via dynamically registered one-time handlers.
 
 | Event | Description |
 |-------|-------------|
@@ -73,14 +74,7 @@ Compartment commands.
 | CONSUME | Commit item consumption |
 | DESTROY | Destroy item |
 | CANCEL_RESERVATION | Cancel item reservation |
-
-### COMMAND_TOPIC_EQUIPABLE
-
-Equipable commands.
-
-| Command | Description |
-|---------|-------------|
-| CHANGE | Update equipment stats |
+| MODIFY_EQUIPMENT | Update equipment stats |
 
 ### COMMAND_TOPIC_PET
 
@@ -99,6 +93,8 @@ Pet commands.
   "transactionId": "uuid",
   "worldId": 0,
   "channelId": 0,
+  "mapId": 0,
+  "instance": "uuid",
   "characterId": 0,
   "type": "REQUEST_ITEM_CONSUME",
   "body": {
@@ -116,6 +112,8 @@ Pet commands.
   "transactionId": "uuid",
   "worldId": 0,
   "channelId": 0,
+  "mapId": 0,
+  "instance": "uuid",
   "characterId": 0,
   "type": "REQUEST_SCROLL",
   "body": {
@@ -134,8 +132,27 @@ Pet commands.
   "transactionId": "uuid",
   "worldId": 0,
   "channelId": 0,
+  "mapId": 0,
+  "instance": "uuid",
   "characterId": 0,
   "type": "APPLY_CONSUMABLE_EFFECT",
+  "body": {
+    "itemId": 0
+  }
+}
+```
+
+### CANCEL_CONSUMABLE_EFFECT Command
+
+```json
+{
+  "transactionId": "uuid",
+  "worldId": 0,
+  "channelId": 0,
+  "mapId": 0,
+  "instance": "uuid",
+  "characterId": 0,
+  "type": "CANCEL_CONSUMABLE_EFFECT",
   "body": {
     "itemId": 0
   }
@@ -186,6 +203,7 @@ Pet commands.
 
 ```json
 {
+  "transactionId": "uuid",
   "worldId": 0,
   "characterId": 0,
   "type": "CHANGE_HP",
@@ -200,6 +218,7 @@ Pet commands.
 
 ```json
 {
+  "transactionId": "uuid",
   "worldId": 0,
   "characterId": 0,
   "type": "CHANGE_MP",
@@ -214,12 +233,14 @@ Pet commands.
 
 ```json
 {
+  "transactionId": "uuid",
   "worldId": 0,
   "characterId": 0,
   "type": "CHANGE_MAP",
   "body": {
     "channelId": 0,
     "mapId": 0,
+    "instance": "uuid",
     "portalId": 0
   }
 }
@@ -231,6 +252,8 @@ Pet commands.
 {
   "worldId": 0,
   "channelId": 0,
+  "mapId": 0,
+  "instance": "uuid",
   "characterId": 0,
   "type": "APPLY",
   "body": {
@@ -249,13 +272,32 @@ Pet commands.
 
 Note: sourceId uses negative item ID for consumable buffs.
 
-### CHANGE Equipable Command
+### CANCEL Buff Command
 
 ```json
 {
-  "id": 0,
-  "type": "CHANGE",
+  "worldId": 0,
+  "channelId": 0,
+  "mapId": 0,
+  "instance": "uuid",
+  "characterId": 0,
+  "type": "CANCEL",
   "body": {
+    "sourceId": -2000000
+  }
+}
+```
+
+### MODIFY_EQUIPMENT Compartment Command
+
+```json
+{
+  "transactionId": "uuid",
+  "characterId": 0,
+  "inventoryType": 1,
+  "type": "MODIFY_EQUIPMENT",
+  "body": {
+    "assetId": 0,
     "strength": 0,
     "dexterity": 0,
     "intelligence": 0,
@@ -272,7 +314,6 @@ Note: sourceId uses negative item ID for consumable buffs.
     "speed": 0,
     "jump": 0,
     "slots": 0,
-    "ownerName": "",
     "locked": false,
     "spikes": false,
     "karmaUsed": false,
@@ -304,6 +345,7 @@ Note: sourceId uses negative item ID for consumable buffs.
 
 ```json
 {
+  "transactionId": "uuid",
   "characterId": 0,
   "inventoryType": 0,
   "type": "REQUEST_RESERVE",
@@ -324,6 +366,7 @@ Note: sourceId uses negative item ID for consumable buffs.
 
 ```json
 {
+  "transactionId": "uuid",
   "characterId": 0,
   "inventoryType": 0,
   "type": "CONSUME",
@@ -338,6 +381,7 @@ Note: sourceId uses negative item ID for consumable buffs.
 
 ```json
 {
+  "transactionId": "uuid",
   "characterId": 0,
   "inventoryType": 0,
   "type": "DESTROY",
@@ -347,11 +391,112 @@ Note: sourceId uses negative item ID for consumable buffs.
 }
 ```
 
+### CANCEL_RESERVATION Command
+
+```json
+{
+  "transactionId": "uuid",
+  "characterId": 0,
+  "inventoryType": 0,
+  "type": "CANCEL_RESERVATION",
+  "body": {
+    "transactionId": "uuid",
+    "slot": 0
+  }
+}
+```
+
+### LOGIN Event (consumed)
+
+```json
+{
+  "transactionId": "uuid",
+  "worldId": 0,
+  "characterId": 0,
+  "type": "LOGIN",
+  "body": {
+    "channelId": 0,
+    "mapId": 0,
+    "instance": "uuid"
+  }
+}
+```
+
+### LOGOUT Event (consumed)
+
+```json
+{
+  "transactionId": "uuid",
+  "worldId": 0,
+  "characterId": 0,
+  "type": "LOGOUT",
+  "body": {
+    "channelId": 0,
+    "mapId": 0,
+    "instance": "uuid"
+  }
+}
+```
+
+### MAP_CHANGED Event (consumed)
+
+```json
+{
+  "transactionId": "uuid",
+  "worldId": 0,
+  "characterId": 0,
+  "type": "MAP_CHANGED",
+  "body": {
+    "channelId": 0,
+    "oldMapId": 0,
+    "oldInstance": "uuid",
+    "targetMapId": 0,
+    "targetInstance": "uuid",
+    "targetPortalId": 0
+  }
+}
+```
+
+### CHANNEL_CHANGED Event (consumed)
+
+```json
+{
+  "transactionId": "uuid",
+  "worldId": 0,
+  "characterId": 0,
+  "type": "CHANNEL_CHANGED",
+  "body": {
+    "channelId": 0,
+    "oldChannelId": 0,
+    "mapId": 0,
+    "instance": "uuid"
+  }
+}
+```
+
+### RESERVED Event (consumed)
+
+```json
+{
+  "characterId": 0,
+  "compartmentId": "uuid",
+  "type": "RESERVED",
+  "body": {
+    "transactionId": "uuid",
+    "itemId": 0,
+    "slot": 0,
+    "quantity": 0
+  }
+}
+```
+
 ## Transaction Semantics
 
 Item consumption uses saga-style transactions:
 
 1. Request item reservation via REQUEST_RESERVE command
-2. Register one-time handler for RESERVED event
+2. Register one-time handler for RESERVED event (validated by transactionId and itemId)
 3. On RESERVED: Execute item logic, then CONSUME or CANCEL_RESERVATION
 4. On error: CANCEL_RESERVATION and emit ERROR event
+
+The one-time handler is registered dynamically on the compartment status event topic. It validates that the incoming RESERVED event matches the expected transactionId and itemId before invoking the item consumer callback.

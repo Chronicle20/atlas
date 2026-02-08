@@ -26,9 +26,8 @@ type StatusEvent[E any] struct {
 
 // MovedStatusEventBody contains the previous slot for moved assets
 type MovedStatusEventBody struct {
-	OldSlot       int16     `json:"oldSlot"`
-	CreatedAt     time.Time `json:"createdAt,omitempty"`
-	ReferenceType string    `json:"referenceType"`
+	OldSlot   int16     `json:"oldSlot"`
+	CreatedAt time.Time `json:"createdAt,omitempty"`
 }
 
 // DeletedStatusEventBody is empty for deleted assets
@@ -57,13 +56,3 @@ func IsUnequipAction(oldSlot, newSlot int16) bool {
 	return IsEquipmentSlot(oldSlot) && IsInventorySlot(newSlot)
 }
 
-// ReferenceTypes
-const (
-	ReferenceTypeEquipable     = "equipable"
-	ReferenceTypeCashEquipable = "cash_equipable"
-)
-
-// IsEquipable returns true if the reference type is an equipable item
-func IsEquipable(referenceType string) bool {
-	return referenceType == ReferenceTypeEquipable || referenceType == ReferenceTypeCashEquipable
-}

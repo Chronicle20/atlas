@@ -162,7 +162,6 @@ Location: `socket/handler/character_damage.go:24-33`
 - [ ] Second query for party information (`party/rest.go:92`)
 
 ### Inventory Service
-- [ ] Asset owner validation for stacking (`compartment/processor.go:579`)
 - [ ] Migrate TransactionId usage (5 locations in `kafka/consumer/compartment/consumer.go:118,133,148,214,266`)
 - [ ] TransactionId removal from producers (`compartment/producer.go:63,124,138,153`)
 

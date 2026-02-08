@@ -576,7 +576,10 @@ func (p *Processor) canMergeAssets(inventoryType inventory.Type, sourceAsset ass
 		return false
 	}
 
-	// TODO: Rule 6: Assets must have the same owner to be stackable
+	// Rule 6: Assets must have the same owner to be stackable
+	if sourceAsset.OwnerId() != destAsset.OwnerId() {
+		return false
+	}
 
 	// Rule 7: Check if destination asset has already reached its slot max
 	slotMax, err := p.assetProcessor.GetSlotMax(destAsset.TemplateId())

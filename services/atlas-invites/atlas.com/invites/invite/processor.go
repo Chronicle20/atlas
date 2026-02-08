@@ -24,6 +24,7 @@ type Processor interface {
 	Accept(mb *message.Buffer) func(referenceId uint32) func(worldId world.Id) func(inviteType string) func(actorId uint32) func(transactionId uuid.UUID) (Model, error)
 	RejectAndEmit(originatorId uint32, worldId world.Id, inviteType string, actorId uint32, transactionId uuid.UUID) (Model, error)
 	Reject(mb *message.Buffer) func(originatorId uint32) func(worldId world.Id) func(inviteType string) func(actorId uint32) func(transactionId uuid.UUID) (Model, error)
+	DeleteByCharacterIdAndEmit(characterId uint32) error
 }
 
 type ProcessorImpl struct {
@@ -280,4 +281,17 @@ func (p *ProcessorImpl) RejectAndEmit(originatorId uint32, worldId world.Id, inv
 		return err
 	})
 	return m, err
+}
+
+func (p *ProcessorImpl) DeleteByCharacterIdAndEmit(characterId uint32) error {
+	removed := GetRegistry().DeleteForCharacter(p.t, characterId)
+	for _, i := range removed {
+		p.l.Infof("Invite [%d] removed due to character [%d] deletion. Originator [%d], target [%d], type [%s].", i.Id(), characterId, i.OriginatorId(), i.TargetId(), i.Type())
+		transactionId := uuid.New()
+		err := p.p(invite2.EnvEventStatusTopic)(rejectedStatusEventProvider(i.ReferenceId(), i.WorldId(), i.Type(), i.OriginatorId(), i.TargetId(), transactionId))
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to produce rejection event for invite [%d] during character [%d] deletion.", i.Id(), characterId)
+		}
+	}
+	return nil
 }

@@ -97,13 +97,20 @@ export default function Page() {
     // Merge original NPC data with fetched metadata
     useEffect(() => {
         if (!npcs || npcs.length === 0) {
-            setNpcsWithMetadata([]);
+            // Only update if not already empty to avoid infinite loops
+            setNpcsWithMetadata(prev => prev.length === 0 ? prev : []);
             return;
         }
 
         // If metadata is still loading and we have no results yet, show NPCs without metadata
         if (isMetadataLoading && (!npcDataResults || npcDataResults.length === 0)) {
-            setNpcsWithMetadata(npcs);
+            // Only update if different to avoid unnecessary re-renders
+            setNpcsWithMetadata(prev => {
+                if (prev.length === npcs.length && prev.every((p, i) => p.id === npcs[i]?.id)) {
+                    return prev;
+                }
+                return npcs;
+            });
             return;
         }
 

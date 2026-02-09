@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -78,7 +79,8 @@ func (p *ProcessorImpl) Seed() (SeedResult, error) {
 
 		// Build commodity models for this shop
 		for _, cjm := range jm.Commodities {
-			commodityModel, err := (&commodities.ModelBuilder{}).
+			commodityModel, err := commodities.NewBuilder().
+				SetId(uuid.New()).
 				SetNpcId(jm.NpcId).
 				SetTemplateId(cjm.TemplateId).
 				SetMesoPrice(cjm.MesoPrice).

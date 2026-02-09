@@ -9,6 +9,7 @@
  */
 
 import { BaseService, type ServiceOptions, type QueryOptions, type ValidationError } from './base.service';
+import { api } from '@/lib/api/client';
 import type { Tenant } from '@/types/models/tenant';
 
 // Map attributes interface
@@ -95,15 +96,21 @@ class MapsService extends BaseService {
   /**
    * Get all maps with sorting
    */
-  async getAllMaps(options?: QueryOptions): Promise<MapData[]> {
-    const maps = await this.getAll<MapData>(options);
+  async getAllMaps(tenant: Tenant, options?: QueryOptions): Promise<MapData[]> {
+    api.setTenant(tenant);
+    const sparseOptions: QueryOptions = {
+      ...options,
+      fields: { maps: ['name', 'streetName'], ...options?.fields },
+    };
+    const maps = await this.getAll<MapData>(sparseOptions);
     return this.sortMaps(maps);
   }
 
   /**
    * Get map by ID
    */
-  async getMapById(id: string, options?: ServiceOptions): Promise<MapData> {
+  async getMapById(id: string, tenant: Tenant, options?: ServiceOptions): Promise<MapData> {
+    api.setTenant(tenant);
     return this.getById<MapData>(id, options);
   }
 
@@ -159,7 +166,8 @@ class MapsService extends BaseService {
   /**
    * Search maps by name
    */
-  async searchMapsByName(name: string, options?: ServiceOptions): Promise<MapData[]> {
+  async searchMapsByName(name: string, tenant: Tenant, options?: ServiceOptions): Promise<MapData[]> {
+    api.setTenant(tenant);
     const searchOptions: QueryOptions = {
       ...options,
       search: name,
@@ -167,7 +175,7 @@ class MapsService extends BaseService {
         name: name,
       },
     };
-    
+
     const maps = await this.getAll<MapData>(searchOptions);
     return this.sortMaps(maps);
   }
@@ -175,14 +183,15 @@ class MapsService extends BaseService {
   /**
    * Get maps by street name
    */
-  async getMapsByStreetName(streetName: string, options?: ServiceOptions): Promise<MapData[]> {
+  async getMapsByStreetName(streetName: string, tenant: Tenant, options?: ServiceOptions): Promise<MapData[]> {
+    api.setTenant(tenant);
     const searchOptions: QueryOptions = {
       ...options,
       filters: {
         streetName: streetName,
       },
     };
-    
+
     const maps = await this.getAll<MapData>(searchOptions);
     return this.sortMaps(maps);
   }

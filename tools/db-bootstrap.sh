@@ -1,16 +1,60 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+usage() {
+  cat <<EOF
+Usage: $(basename "$0") [OPTIONS]
 
-# ---- Connection (override via env if needed) ----
+Bootstrap PostgreSQL databases for Atlas services.
+Creates the app role, databases, and installs required extensions.
+
+Options:
+  -H HOST      Postgres host            (default: 127.0.0.1,    env: PGHOST)
+  -p PORT      Postgres port            (default: 5432,         env: PGPORT)
+  -U USER      Postgres admin user      (default: postgres,     env: PGADMIN_USER)
+  -W PASSWORD  Postgres admin password  (optional,              env: PGPASSWORD)
+  -d DB        Postgres admin database  (default: postgres,     env: PGADMIN_DB)
+  -u USER      Application role name    (default: atlas_app,    env: APP_USER)
+  -w PASSWORD  Application role password (required,             env: APP_PASSWORD)
+  -h           Show this help message
+
+Examples:
+  $(basename "$0") -w secret
+  $(basename "$0") -H db.local -p 5433 -U admin -W adminpw -w secret
+  APP_PASSWORD=secret $(basename "$0")
+EOF
+}
+
+# ---- Defaults (env fallback) ----
 PGHOST="${PGHOST:-127.0.0.1}"
 PGPORT="${PGPORT:-5432}"
 PGADMIN_USER="${PGADMIN_USER:-postgres}"
 PGADMIN_DB="${PGADMIN_DB:-postgres}"
-
-# ---- App user (required) ----
 APP_USER="${APP_USER:-atlas_app}"
-APP_PASSWORD="${APP_PASSWORD:?set APP_PASSWORD}"
+APP_PASSWORD="${APP_PASSWORD:-}"
+
+while getopts ":H:p:U:W:d:u:w:h" opt; do
+  case "$opt" in
+    H) PGHOST="$OPTARG" ;;
+    p) PGPORT="$OPTARG" ;;
+    U) PGADMIN_USER="$OPTARG" ;;
+    W) export PGPASSWORD="$OPTARG" ;;
+    d) PGADMIN_DB="$OPTARG" ;;
+    u) APP_USER="$OPTARG" ;;
+    w) APP_PASSWORD="$OPTARG" ;;
+    h) usage; exit 0 ;;
+    :) echo "Error: -${OPTARG} requires an argument." >&2; usage; exit 1 ;;
+    *) echo "Error: unknown option -${OPTARG}" >&2; usage; exit 1 ;;
+  esac
+done
+shift $((OPTIND - 1))
+
+if [[ -z "$APP_PASSWORD" ]]; then
+  echo "Error: APP_PASSWORD is required. Set via -w or APP_PASSWORD env var." >&2
+  echo >&2
+  usage >&2
+  exit 1
+fi
 
 
 # ---- Databases (edit this list for now) ----

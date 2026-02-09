@@ -30,13 +30,8 @@ type RestModel struct {
 	Hands          uint16     `json:"hands"`
 	Speed          uint16     `json:"speed"`
 	Jump           uint16     `json:"jump"`
-	Slots          uint16     `json:"slots"`
-	Locked         bool       `json:"locked"`
-	Spikes         bool       `json:"spikes"`
-	KarmaUsed      bool       `json:"karmaUsed"`
-	Cold           bool       `json:"cold"`
-	CanBeTraded    bool       `json:"canBeTraded"`
-	LevelType      byte       `json:"levelType"`
+	Slots     uint16 `json:"slots"`
+	LevelType byte   `json:"levelType"`
 	Level          byte       `json:"level"`
 	Experience     uint32     `json:"experience"`
 	HammersApplied uint32     `json:"hammersApplied"`
@@ -90,13 +85,8 @@ func Transform(m Model) (RestModel, error) {
 		Hands:          m.hands,
 		Speed:          m.speed,
 		Jump:           m.jump,
-		Slots:          m.slots,
-		Locked:         m.locked,
-		Spikes:         m.spikes,
-		KarmaUsed:      m.karmaUsed,
-		Cold:           m.cold,
-		CanBeTraded:    m.canBeTraded,
-		LevelType:      m.levelType,
+		Slots:     m.slots,
+		LevelType: m.levelType,
 		Level:          m.level,
 		Experience:     m.experience,
 		HammersApplied: m.hammersApplied,
@@ -134,13 +124,8 @@ func Extract(rm RestModel) (Model, error) {
 		hands:          rm.Hands,
 		speed:          rm.Speed,
 		jump:           rm.Jump,
-		slots:          rm.Slots,
-		locked:         rm.Locked,
-		spikes:         rm.Spikes,
-		karmaUsed:      rm.KarmaUsed,
-		cold:           rm.Cold,
-		canBeTraded:    rm.CanBeTraded,
-		levelType:      rm.LevelType,
+		slots:     rm.Slots,
+		levelType: rm.LevelType,
 		level:          rm.Level,
 		experience:     rm.Experience,
 		hammersApplied: rm.HammersApplied,

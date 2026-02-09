@@ -523,7 +523,6 @@ func ConsumeScroll(transactionId uuid.UUID, characterId uint32, scrollItem *asse
 			// TODO consume vega scroll
 			successProb := ci.SuccessRate()
 
-			// TODO spikes / cursed property
 			successRoll := rand.Int31n(100)
 			isSuccess := successRoll <= int32(successProb)
 

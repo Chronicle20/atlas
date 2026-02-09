@@ -31,13 +31,8 @@ func TestCreatedStatusEventBody_Deserialization(t *testing.T) {
 		Hands:          130,
 		Speed:          140,
 		Jump:           150,
-		Slots:          5,
-		Locked:         true,
-		Spikes:         true,
-		KarmaUsed:      true,
-		Cold:           true,
-		CanBeTraded:    true,
-		LevelType:      1,
+		Slots:     5,
+		LevelType: 1,
 		Level:          10,
 		Experience:     1000,
 		HammersApplied: 2,
@@ -74,8 +69,8 @@ func TestCreatedStatusEventBody_Deserialization(t *testing.T) {
 	if unmarshaled.PetId != 42 {
 		t.Errorf("PetId = %d, want 42", unmarshaled.PetId)
 	}
-	if !unmarshaled.Locked {
-		t.Error("Expected Locked to be true")
+	if unmarshaled.Flag != 1 {
+		t.Errorf("Flag = %d, want 1", unmarshaled.Flag)
 	}
 }
 

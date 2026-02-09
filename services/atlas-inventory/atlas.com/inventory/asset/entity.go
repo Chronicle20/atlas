@@ -8,6 +8,13 @@ import (
 )
 
 func Migration(db *gorm.DB) error {
+	// Migrate existing boolean flags into the flag bitmask before schema changes
+	db.Exec(`UPDATE assets SET flag = flag |
+		(CASE WHEN locked THEN 1 ELSE 0 END) |
+		(CASE WHEN spikes THEN 2 ELSE 0 END) |
+		(CASE WHEN cold THEN 4 ELSE 0 END) |
+		(CASE WHEN karma_used THEN 16 ELSE 0 END)
+		WHERE locked = true OR spikes = true OR cold = true OR karma_used = true`)
 	return db.AutoMigrate(&Entity{})
 }
 
@@ -41,13 +48,8 @@ type Entity struct {
 	Hands          uint16
 	Speed          uint16
 	Jump           uint16
-	Slots          uint16
-	Locked         bool
-	Spikes         bool
-	KarmaUsed      bool
-	Cold           bool
-	CanBeTraded    bool
-	LevelType      byte
+	Slots     uint16
+	LevelType byte
 	Level          byte
 	Experience     uint32
 	HammersApplied uint32
@@ -91,13 +93,8 @@ func Make(e Entity) (Model, error) {
 		hands:          e.Hands,
 		speed:          e.Speed,
 		jump:           e.Jump,
-		slots:          e.Slots,
-		locked:         e.Locked,
-		spikes:         e.Spikes,
-		karmaUsed:      e.KarmaUsed,
-		cold:           e.Cold,
-		canBeTraded:    e.CanBeTraded,
-		levelType:      e.LevelType,
+		slots:     e.Slots,
+		levelType: e.LevelType,
 		level:          e.Level,
 		experience:     e.Experience,
 		hammersApplied: e.HammersApplied,

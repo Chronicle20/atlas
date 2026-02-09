@@ -85,11 +85,6 @@ export interface Asset {
     speed: number;
     jump: number;
     slots: number;
-    locked: boolean;
-    spikes: boolean;
-    karmaUsed: boolean;
-    cold: boolean;
-    canBeTraded: boolean;
     levelType: number;
     level: number;
     experience: number;

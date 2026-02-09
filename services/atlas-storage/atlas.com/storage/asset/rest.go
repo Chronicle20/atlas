@@ -32,11 +32,6 @@ type RestModel struct {
 	Speed          uint16 `json:"speed"`
 	Jump           uint16 `json:"jump"`
 	Slots          uint16 `json:"slots"`
-	Locked         bool   `json:"locked"`
-	Spikes         bool   `json:"spikes"`
-	KarmaUsed      bool   `json:"karmaUsed"`
-	Cold           bool   `json:"cold"`
-	CanBeTraded    bool   `json:"canBeTraded"`
 	LevelType      byte   `json:"levelType"`
 	Level          byte   `json:"level"`
 	Experience     uint32 `json:"experience"`
@@ -92,11 +87,6 @@ func Extract(rm RestModel) (Model, error) {
 		speed:          rm.Speed,
 		jump:           rm.Jump,
 		slots:          rm.Slots,
-		locked:         rm.Locked,
-		spikes:         rm.Spikes,
-		karmaUsed:      rm.KarmaUsed,
-		cold:           rm.Cold,
-		canBeTraded:    rm.CanBeTraded,
 		levelType:      rm.LevelType,
 		level:          rm.Level,
 		experience:     rm.Experience,

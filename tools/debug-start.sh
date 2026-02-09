@@ -130,9 +130,10 @@ save_debug_state() {
   local service="$1"
   local replicas="$2"
   local target="$3"
+  local port="$4"
 
   kubectl annotate configmap "$CONFIGMAP_NAME" -n "$NAMESPACE" \
-    "${ANNOTATION_PREFIX}/${service}=${replicas}|${target}" \
+    "${ANNOTATION_PREFIX}/${service}=${replicas}|${target}|${port}" \
     --overwrite >/dev/null
 }
 
@@ -157,11 +158,14 @@ show_status() {
   fi
 
   echo "$states" | while IFS=': ' read -r service state; do
-    local replicas target
+    local replicas target port
     replicas=$(echo "$state" | cut -d'|' -f1)
     target=$(echo "$state" | cut -d'|' -f2)
+    port=$(echo "$state" | cut -d'|' -f3)
+    port="${port:-8080}"
     echo -e "  ${BLUE}$service${NC}"
     echo "    Original replicas: $replicas"
+    echo "    Original port: $port"
     echo "    Debug target: $target"
     echo
   done
@@ -274,12 +278,16 @@ start_debug() {
   nginx_config=$(get_nginx_config)
 
   # Find and replace all proxy_pass directives for this service
-  local service_url="http://${service}${SERVICE_DNS_SUFFIX}:8080"
+  local service_pattern="http://${service}${SERVICE_DNS_SUFFIX}:[0-9]+"
   local target_url="http://${target}"
+
+  # Detect the original port from the nginx config
+  local original_port
+  original_port=$(echo "$nginx_config" | grep -oE "${service_pattern}" | head -1 | grep -oE ':[0-9]+$' | tr -d ':')
 
   # Count occurrences
   local occurrences
-  occurrences=$(echo "$nginx_config" | grep -c "$service_url" || echo "0")
+  occurrences=$(echo "$nginx_config" | grep -cE "$service_pattern" || echo "0")
 
   if [[ "$occurrences" == "0" ]]; then
     fail "No proxy_pass directives found for service '$service' in nginx config"
@@ -289,14 +297,14 @@ start_debug() {
 
   # Perform replacement
   local modified_config
-  modified_config=$(echo "$nginx_config" | sed "s|${service_url}|${target_url}|g")
+  modified_config=$(echo "$nginx_config" | sed -E "s|${service_pattern}|${target_url}|g")
 
   # Patch the ConfigMap
   patch_nginx_config "$modified_config"
 
-  # Save state
+  # Save state (replicas|target|port)
   log "Saving debug state..."
-  save_debug_state "$service" "$original_replicas" "$target"
+  save_debug_state "$service" "$original_replicas" "$target" "$original_port"
 
   # Scale down deployment (only if not already at 0)
   local current_replicas

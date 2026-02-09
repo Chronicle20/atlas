@@ -108,3 +108,31 @@ export { questsService } from './quests.service';
 export type { QuestQueryOptions, QuestDefinition, QuestAttributes } from './quests.service';
 export { questStatusService } from './quest-status.service';
 export type { QuestStatusQueryOptions, CharacterQuestStatus, QuestState } from './quest-status.service';
+
+// Service configuration
+export { servicesService } from './services.service';
+export type {
+  Service,
+  ServiceType,
+  ServiceAttributes,
+  LoginService,
+  ChannelService,
+  DropsService,
+  LoginServiceAttributes,
+  ChannelServiceAttributes,
+  DropsServiceAttributes,
+  CreateServiceInput,
+  UpdateServiceInput,
+  TaskConfig,
+  LoginTenant,
+  ChannelTenant,
+} from './services.service';
+export {
+  isLoginService,
+  isChannelService,
+  isDropsService,
+  getServiceTypeDisplayName,
+  getServiceTenantCount,
+  getServiceTaskCount,
+  TASK_TYPES_BY_SERVICE,
+} from './services.service';

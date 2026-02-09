@@ -56,6 +56,10 @@ const items = [
         icon: MonitorCog,
         children: [
             {
+                title: "Services",
+                url: "/services"
+            },
+            {
                 title: "Tenants",
                 url: "/tenants"
             },

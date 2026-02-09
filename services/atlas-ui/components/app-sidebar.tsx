@@ -47,7 +47,19 @@ const items = [
             {
                 title: "Quests",
                 url: "/quests"
-            }
+            },
+            {
+                title: "Monsters",
+                url: "/monsters"
+            },
+            {
+                title: "Maps",
+                url: "/maps"
+            },
+            {
+                title: "Gachapons",
+                url: "/gachapons"
+            },
         ],
     },
     {
@@ -55,6 +67,14 @@ const items = [
         url: "#",
         icon: MonitorCog,
         children: [
+            {
+                title: "Bootstrap",
+                url: "/setup"
+            },
+            {
+                title: "Services",
+                url: "/services"
+            },
             {
                 title: "Tenants",
                 url: "/tenants"

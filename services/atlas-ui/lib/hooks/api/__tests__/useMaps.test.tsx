@@ -18,6 +18,30 @@ import {
   mapKeys,
 } from '../useMaps';
 import { mapsService, type MapData, type MapAttributes } from '@/services/api/maps.service';
+import type { Tenant } from '@/types/models/tenant';
+
+// Mock the tenant context
+const mockTenant: Tenant = {
+  id: 'tenant-1',
+  attributes: {
+    name: 'Test Tenant',
+    region: 'GMS',
+    majorVersion: 83,
+    minorVersion: 1,
+  },
+};
+
+jest.mock('@/context/tenant-context', () => ({
+  useTenant: () => ({
+    activeTenant: mockTenant,
+    tenants: [mockTenant],
+    loading: false,
+    setActiveTenant: jest.fn(),
+    refreshTenants: jest.fn(),
+    refreshAndSelectTenant: jest.fn(),
+    fetchTenantConfiguration: jest.fn(),
+  }),
+}));
 
 // Mock the maps service
 jest.mock('@/services/api/maps.service', () => ({
@@ -92,7 +116,7 @@ describe('useMaps hooks', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(mockMapsService.getAllMaps).toHaveBeenCalledTimes(1);
+      expect(mockMapsService.getAllMaps).toHaveBeenCalledWith(mockTenant, undefined);
       expect(result.current.data).toEqual(mockMaps);
     });
 
@@ -107,7 +131,7 @@ describe('useMaps hooks', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(mockMapsService.getMapById).toHaveBeenCalledWith('1', undefined);
+      expect(mockMapsService.getMapById).toHaveBeenCalledWith('1', mockTenant, undefined);
       expect(result.current.data).toEqual(mockMapData);
     });
 
@@ -132,7 +156,7 @@ describe('useMaps hooks', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(mockMapsService.searchMapsByName).toHaveBeenCalledWith('Test Map', undefined);
+      expect(mockMapsService.searchMapsByName).toHaveBeenCalledWith('Test Map', mockTenant, undefined);
       expect(result.current.data).toEqual(mockMaps);
     });
 
@@ -157,7 +181,7 @@ describe('useMaps hooks', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(mockMapsService.getMapsByStreetName).toHaveBeenCalledWith('Test Street', undefined);
+      expect(mockMapsService.getMapsByStreetName).toHaveBeenCalledWith('Test Street', mockTenant, undefined);
       expect(result.current.data).toEqual(mockMaps);
     });
   });

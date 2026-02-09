@@ -52,6 +52,8 @@ export interface QueryOptions extends ServiceOptions {
   offset?: number;
   /** Additional filters as key-value pairs */
   filters?: Record<string, unknown>;
+  /** Sparse fieldsets per resource type, e.g. { maps: ['name', 'streetName'] } */
+  fields?: Record<string, string[]>;
 }
 
 /**
@@ -139,7 +141,13 @@ export abstract class BaseService {
         }
       });
     }
-    
+
+    if (options?.fields) {
+      Object.entries(options.fields).forEach(([resource, fieldList]) => {
+        params.append(`fields[${resource}]`, fieldList.join(','));
+      });
+    }
+
     const queryString = params.toString();
     return queryString ? `?${queryString}` : '';
   }

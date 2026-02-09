@@ -127,6 +127,60 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
     parent: '/npcs/[id]',
   },
 
+  // Monster routes
+  {
+    pattern: '/monsters',
+    label: 'Monsters',
+    parent: '/',
+  },
+  {
+    pattern: '/monsters/[id]',
+    label: 'Monster Details',
+    parent: '/monsters',
+    entityType: 'monster',
+  },
+
+  // Map routes
+  {
+    pattern: '/maps',
+    label: 'Maps',
+    parent: '/',
+  },
+  {
+    pattern: '/maps/[id]',
+    label: 'Map Details',
+    parent: '/maps',
+    entityType: 'map',
+  },
+  {
+    pattern: '/maps/[id]/portals/[portalId]',
+    label: 'Portal Details',
+    parent: '/maps/[id]',
+    entityType: 'portal',
+  },
+
+  // Reactor routes
+  {
+    pattern: '/reactors/[id]',
+    label: 'Reactor Details',
+    parent: '/',
+    entityType: 'reactor',
+  },
+
+  // Gachapon routes
+  {
+    pattern: '/gachapons',
+    label: 'Gachapons',
+    parent: '/',
+  },
+
+  // Setup routes
+  {
+    pattern: '/setup',
+    label: 'Bootstrap',
+    parent: '/',
+  },
+
   // Template routes
   {
     pattern: '/templates/[id]',
@@ -388,6 +442,14 @@ export const ROUTE_PATTERNS = {
   TEMPLATE_WORLDS: '/templates/[id]/worlds',
   TEMPLATE_CHARACTER: '/templates/[id]/character',
   TEMPLATE_CHARACTER_TEMPLATES: '/templates/[id]/character/templates',
+  MONSTERS: '/monsters',
+  MONSTER_DETAIL: '/monsters/[id]',
+  MAPS: '/maps',
+  MAP_DETAIL: '/maps/[id]',
+  MAP_PORTAL_DETAIL: '/maps/[id]/portals/[portalId]',
+  REACTOR_DETAIL: '/reactors/[id]',
+  GACHAPONS: '/gachapons',
+  SETUP: '/setup',
   TENANTS: '/tenants',
   TENANT_DETAIL: '/tenants/[id]',
   TENANT_PROPERTIES: '/tenants/[id]/properties',

@@ -5,7 +5,11 @@ meta {
 }
 
 get {
-  url: {{scheme}}://{{host}}:{{port}}/api/monsters/100100/drops
+  url: {{scheme}}://{{host}}:{{port}}/api/monsters/{{monsterId}}/drops
   body: none
   auth: none
+}
+
+vars:pre-request {
+  monsterId: 100100
 }

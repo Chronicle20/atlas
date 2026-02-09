@@ -43,6 +43,10 @@ export enum EntityType {
   SERVICE = 'service',
   TEMPLATE = 'template',
   TENANT = 'tenant',
+  MONSTER = 'monster',
+  MAP = 'map',
+  REACTOR = 'reactor',
+  PORTAL = 'portal',
 }
 
 // Default resolver options
@@ -63,6 +67,10 @@ const CACHE_CONFIG = {
     [EntityType.SERVICE]: 30 * 60 * 1000,      // 30 minutes (rarely changes)
     [EntityType.TEMPLATE]: 30 * 60 * 1000,     // 30 minutes (rarely changes)
     [EntityType.TENANT]: 60 * 60 * 1000,       // 1 hour (very stable)
+    [EntityType.MONSTER]: 30 * 60 * 1000,      // 30 minutes (rarely changes)
+    [EntityType.MAP]: 30 * 60 * 1000,          // 30 minutes (rarely changes)
+    [EntityType.REACTOR]: 30 * 60 * 1000,      // 30 minutes (rarely changes)
+    [EntityType.PORTAL]: 30 * 60 * 1000,       // 30 minutes (rarely changes)
   },
   // Maximum cache size per entity type
   MAX_SIZE: 1000,
@@ -258,6 +266,43 @@ const resolvers: Record<EntityType, EntityResolver> = {
       throw new ResolverError(`Failed to resolve tenant: ${error}`, true);
     }
   },
+
+  [EntityType.MONSTER]: async (tenant, entityId, options = {}) => {
+    const { monstersService } = await import('@/services/api');
+    try {
+      const monster = await monstersService.getMonsterById(entityId, tenant, options);
+      return monster.attributes?.name || `Monster ${entityId}`;
+    } catch (error) {
+      console.warn(`Failed to resolve monster name for ID ${entityId}:`, error);
+      throw new ResolverError(`Failed to resolve monster: ${error}`, true);
+    }
+  },
+
+  [EntityType.MAP]: async (tenant, entityId, options = {}) => {
+    const { mapsService } = await import('@/services/api');
+    try {
+      const map = await mapsService.getMapById(entityId, tenant, options);
+      return map.attributes?.name || `Map ${entityId}`;
+    } catch (error) {
+      console.warn(`Failed to resolve map name for ID ${entityId}:`, error);
+      throw new ResolverError(`Failed to resolve map: ${error}`, true);
+    }
+  },
+
+  [EntityType.REACTOR]: async (tenant, entityId, options = {}) => {
+    const { reactorsService } = await import('@/services/api');
+    try {
+      const reactor = await reactorsService.getReactorById(entityId, tenant, options);
+      return reactor.attributes?.name || `Reactor ${entityId}`;
+    } catch (error) {
+      console.warn(`Failed to resolve reactor name for ID ${entityId}:`, error);
+      throw new ResolverError(`Failed to resolve reactor: ${error}`, true);
+    }
+  },
+
+  [EntityType.PORTAL]: async (_tenant, entityId, _options = {}) => {
+    return `Portal ${entityId}`;
+  },
 };
 
 /**
@@ -426,6 +471,10 @@ export function getEntityTypeFromRoute(pathname: string): EntityType | null {
   if (pathname.includes('/services/')) return EntityType.SERVICE;
   if (pathname.includes('/templates/')) return EntityType.TEMPLATE;
   if (pathname.includes('/tenants/')) return EntityType.TENANT;
+  if (pathname.includes('/monsters/')) return EntityType.MONSTER;
+  if (pathname.includes('/maps/') && pathname.includes('/portals/')) return EntityType.PORTAL;
+  if (pathname.includes('/maps/')) return EntityType.MAP;
+  if (pathname.includes('/reactors/')) return EntityType.REACTOR;
 
   return null;
 }

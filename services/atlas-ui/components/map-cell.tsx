@@ -15,7 +15,7 @@ export function MapCell({ mapId, tenant }: { mapId: string; tenant: Tenant | nul
         if (!tenant || !mapId || mapNameCache.has(mapId)) return
 
         setIsLoading(true)
-        mapsService.getMapById(mapId)
+        mapsService.getMapById(mapId, tenant)
             .then((map) => {
                 const mapName = map.attributes.name
                 mapNameCache.set(mapId, mapName)

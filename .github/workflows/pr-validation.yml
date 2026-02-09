@@ -56,12 +56,14 @@ jobs:
           FORCE_ALL="${{ github.event.inputs.force-all }}"
           HAS_WORKSPACE_CHANGES="${{ steps.detect.outputs.has-go-workspace-changes }}"
           HAS_WORKFLOW_CHANGES="${{ steps.detect.outputs.has-workflow-changes }}"
+          HAS_LIBRARY_CHANGES="${{ steps.detect.outputs.has-library-changes }}"
 
           # Determine if we should build everything
+          # Library changes trigger all service builds since any service may depend on the changed library
           BUILD_ALL="false"
-          if [ "$FORCE_ALL" == "true" ] || [ "$HAS_WORKSPACE_CHANGES" == "true" ] || [ "$HAS_WORKFLOW_CHANGES" == "true" ]; then
+          if [ "$FORCE_ALL" == "true" ] || [ "$HAS_WORKSPACE_CHANGES" == "true" ] || [ "$HAS_WORKFLOW_CHANGES" == "true" ] || [ "$HAS_LIBRARY_CHANGES" == "true" ]; then
             BUILD_ALL="true"
-            echo "Building all services due to: force=$FORCE_ALL, workspace=$HAS_WORKSPACE_CHANGES, workflow=$HAS_WORKFLOW_CHANGES"
+            echo "Building all services due to: force=$FORCE_ALL, workspace=$HAS_WORKSPACE_CHANGES, workflow=$HAS_WORKFLOW_CHANGES, library=$HAS_LIBRARY_CHANGES"
           fi
 
           # Load service configuration
@@ -100,6 +102,7 @@ jobs:
           echo "- **Force all**: $FORCE_ALL" >> $GITHUB_STEP_SUMMARY
           echo "- **Workspace changes**: $HAS_WORKSPACE_CHANGES" >> $GITHUB_STEP_SUMMARY
           echo "- **Workflow changes**: $HAS_WORKFLOW_CHANGES" >> $GITHUB_STEP_SUMMARY
+          echo "- **Library changes**: $HAS_LIBRARY_CHANGES" >> $GITHUB_STEP_SUMMARY
           echo "- **Build all**: $BUILD_ALL" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Go Services to test**: $(echo "$GO_SERVICES" | jq length)" >> $GITHUB_STEP_SUMMARY

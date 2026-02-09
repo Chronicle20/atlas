@@ -40,6 +40,7 @@ export enum EntityType {
   CHARACTER = 'character',
   GUILD = 'guild',
   NPC = 'npc',
+  SERVICE = 'service',
   TEMPLATE = 'template',
   TENANT = 'tenant',
 }
@@ -56,9 +57,10 @@ const CACHE_CONFIG = {
   // Cache TTL in milliseconds
   TTL: {
     [EntityType.ACCOUNT]: 10 * 60 * 1000,      // 10 minutes
-    [EntityType.CHARACTER]: 5 * 60 * 1000,     // 5 minutes (changes more frequently)  
+    [EntityType.CHARACTER]: 5 * 60 * 1000,     // 5 minutes (changes more frequently)
     [EntityType.GUILD]: 15 * 60 * 1000,        // 15 minutes
     [EntityType.NPC]: 30 * 60 * 1000,          // 30 minutes (rarely changes)
+    [EntityType.SERVICE]: 30 * 60 * 1000,      // 30 minutes (rarely changes)
     [EntityType.TEMPLATE]: 30 * 60 * 1000,     // 30 minutes (rarely changes)
     [EntityType.TENANT]: 60 * 60 * 1000,       // 1 hour (very stable)
   },
@@ -219,6 +221,17 @@ const resolvers: Record<EntityType, EntityResolver> = {
     } catch (error) {
       console.warn(`Failed to resolve NPC name for ID ${entityId}:`, error);
       throw new ResolverError(`Failed to resolve NPC: ${error}`, true);
+    }
+  },
+
+  [EntityType.SERVICE]: async (tenant, entityId, options = {}) => {
+    const { servicesService, getServiceTypeDisplayName } = await import('@/services/api/services.service');
+    try {
+      const service = await servicesService.getServiceById(entityId, options);
+      return getServiceTypeDisplayName(service.attributes.type);
+    } catch (error) {
+      console.warn(`Failed to resolve service name for ID ${entityId}:`, error);
+      throw new ResolverError(`Failed to resolve service: ${error}`, true);
     }
   },
 
@@ -410,9 +423,10 @@ export function getEntityTypeFromRoute(pathname: string): EntityType | null {
   if (pathname.includes('/characters/')) return EntityType.CHARACTER;
   if (pathname.includes('/guilds/')) return EntityType.GUILD;
   if (pathname.includes('/npcs/')) return EntityType.NPC;
+  if (pathname.includes('/services/')) return EntityType.SERVICE;
   if (pathname.includes('/templates/')) return EntityType.TEMPLATE;
   if (pathname.includes('/tenants/')) return EntityType.TENANT;
-  
+
   return null;
 }
 

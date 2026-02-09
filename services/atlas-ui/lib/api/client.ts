@@ -320,7 +320,8 @@ class ApiClient {
     ];
     
     // Create a simple hash-like string for the cache key
-    return btoa(components.join('::'));
+    // Use encodeURIComponent to handle non-Latin1 characters (e.g., Japanese text)
+    return btoa(encodeURIComponent(components.join('::')));
   }
 
   /**
@@ -487,7 +488,8 @@ class ApiClient {
     ];
     
     // Create a simple hash-like string (not cryptographically secure, but sufficient for deduplication)
-    return btoa(components.join('::'));
+    // Use encodeURIComponent to handle non-Latin1 characters (e.g., Japanese text)
+    return btoa(encodeURIComponent(components.join('::')));
   }
 
   /**

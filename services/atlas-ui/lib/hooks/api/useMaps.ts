@@ -10,6 +10,7 @@
 
 import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
 import { mapsService, type MapData, type MapAttributes } from '@/services/api/maps.service';
+import { useTenant } from '@/context/tenant-context';
 import type { ServiceOptions, QueryOptions } from '@/services/api/base.service';
 
 // Query keys for consistent cache management
@@ -32,9 +33,11 @@ export const mapKeys = {
  * Hook to fetch all maps
  */
 export function useMaps(options?: QueryOptions): UseQueryResult<MapData[], Error> {
+  const { activeTenant } = useTenant();
   return useQuery({
     queryKey: mapKeys.list(options),
-    queryFn: () => mapsService.getAllMaps(options),
+    queryFn: () => mapsService.getAllMaps(activeTenant!, options),
+    enabled: !!activeTenant,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
   });
@@ -44,10 +47,11 @@ export function useMaps(options?: QueryOptions): UseQueryResult<MapData[], Error
  * Hook to fetch a specific map by ID
  */
 export function useMap(id: string, options?: ServiceOptions): UseQueryResult<MapData, Error> {
+  const { activeTenant } = useTenant();
   return useQuery({
     queryKey: mapKeys.detail(id),
-    queryFn: () => mapsService.getMapById(id, options),
-    enabled: !!id,
+    queryFn: () => mapsService.getMapById(id, activeTenant!, options),
+    enabled: !!id && !!activeTenant,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
@@ -57,10 +61,11 @@ export function useMap(id: string, options?: ServiceOptions): UseQueryResult<Map
  * Hook to search maps by name
  */
 export function useMapsByName(name: string, options?: ServiceOptions): UseQueryResult<MapData[], Error> {
+  const { activeTenant } = useTenant();
   return useQuery({
     queryKey: mapKeys.searchByName(name),
-    queryFn: () => mapsService.searchMapsByName(name, options),
-    enabled: !!name && name.trim().length > 0,
+    queryFn: () => mapsService.searchMapsByName(name, activeTenant!, options),
+    enabled: !!name && name.trim().length > 0 && !!activeTenant,
     staleTime: 2 * 60 * 1000, // 2 minutes for search results
     gcTime: 5 * 60 * 1000,
   });
@@ -70,10 +75,11 @@ export function useMapsByName(name: string, options?: ServiceOptions): UseQueryR
  * Hook to fetch maps by street name
  */
 export function useMapsByStreetName(streetName: string, options?: ServiceOptions): UseQueryResult<MapData[], Error> {
+  const { activeTenant } = useTenant();
   return useQuery({
     queryKey: mapKeys.searchByStreet(streetName),
-    queryFn: () => mapsService.getMapsByStreetName(streetName, options),
-    enabled: !!streetName && streetName.trim().length > 0,
+    queryFn: () => mapsService.getMapsByStreetName(streetName, activeTenant!, options),
+    enabled: !!streetName && streetName.trim().length > 0 && !!activeTenant,
     staleTime: 2 * 60 * 1000, // 2 minutes for search results
     gcTime: 5 * 60 * 1000,
   });

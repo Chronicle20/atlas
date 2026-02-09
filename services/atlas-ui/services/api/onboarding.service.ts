@@ -102,6 +102,7 @@ class OnboardingService {
         npcs: template.attributes.npcs,
         socket: template.attributes.socket,
         worlds: template.attributes.worlds,
+        ...(template.attributes.cashShop !== undefined && { cashShop: template.attributes.cashShop }),
       };
 
       // Pass tenant ID to ensure configuration uses the same UUID

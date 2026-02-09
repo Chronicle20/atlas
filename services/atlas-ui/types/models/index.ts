@@ -13,3 +13,8 @@ export * from './npc';
 export * from './service';
 export * from './template';
 export * from './tenant';
+export * from './monster';
+export * from './reactor';
+export * from './drop';
+export * from './portal';
+export * from './gachapon';

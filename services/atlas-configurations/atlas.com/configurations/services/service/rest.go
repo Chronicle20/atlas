@@ -1,9 +1,13 @@
 package service
 
-import "atlas-configurations/services/task"
+import (
+	"atlas-configurations/services/task"
+	"encoding/json"
+)
 
 type GenericRestModel struct {
 	Id    string           `json:"-"`
+	Type  string           `json:"type,omitempty"`
 	Tasks []task.RestModel `json:"tasks"`
 }
 
@@ -20,8 +24,32 @@ func (r *GenericRestModel) SetID(id string) error {
 	return nil
 }
 
+// InputRestModel is used for creating and updating services.
+// It includes the type field to determine which service type to create.
+// Tenants is stored as raw JSON since it differs by service type.
+type InputRestModel struct {
+	Id      string           `json:"-"`
+	Type    string           `json:"type"`
+	Tasks   []task.RestModel `json:"tasks"`
+	Tenants json.RawMessage  `json:"tenants,omitempty"`
+}
+
+func (r InputRestModel) GetName() string {
+	return "services"
+}
+
+func (r InputRestModel) GetID() string {
+	return r.Id
+}
+
+func (r *InputRestModel) SetID(id string) error {
+	r.Id = id
+	return nil
+}
+
 type LoginRestModel struct {
 	Id      string                 `json:"-"`
+	Type    string                 `json:"type"`
 	Tasks   []task.RestModel       `json:"tasks"`
 	Tenants []LoginTenantRestModel `json:"tenants"`
 }
@@ -46,6 +74,7 @@ type LoginTenantRestModel struct {
 
 type ChannelRestModel struct {
 	Id      string                   `json:"-"`
+	Type    string                   `json:"type"`
 	Tasks   []task.RestModel         `json:"tasks"`
 	Tenants []ChannelTenantRestModel `json:"tenants"`
 }

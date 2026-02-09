@@ -18,8 +18,27 @@ func InitResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteIn
 			registerGet := rest.RegisterHandler(l)(si)
 
 			r := router.PathPrefix("/data/monsters").Subrouter()
+			r.HandleFunc("", registerGet("get_monsters", handleGetMonstersRequest(db))).Methods(http.MethodGet)
 			r.HandleFunc("/{monsterId}", registerGet("get_monster", handleGetMonsterRequest(db))).Methods(http.MethodGet)
 			r.HandleFunc("/{monsterId}/loseItems", registerGet("get_monster_lose_items", handleGetMonsterLoseItemsRequest(db))).Methods(http.MethodGet)
+		}
+	}
+}
+
+func handleGetMonstersRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			s := NewStorage(d.Logger(), db)
+			results, err := s.GetAll(d.Context())
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Unable to retrieve monsters.")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(results)
 		}
 	}
 }

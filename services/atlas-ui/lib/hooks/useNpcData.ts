@@ -50,7 +50,28 @@ export function useNpcData(
   npcId: number,
   hookOptions: UseNpcDataOptions = {}
 ) {
-  const options = useMemo(() => ({ ...DEFAULT_OPTIONS, ...hookOptions }), [hookOptions]);
+  // Extract primitives to avoid object reference issues in dependencies
+  const {
+    enabled = DEFAULT_OPTIONS.enabled,
+    staleTime = DEFAULT_OPTIONS.staleTime,
+    gcTime = DEFAULT_OPTIONS.gcTime,
+    retry = DEFAULT_OPTIONS.retry,
+    region,
+    version,
+    onSuccess,
+    onError,
+  } = hookOptions;
+
+  const options = useMemo(() => ({
+    enabled,
+    staleTime,
+    gcTime,
+    retry,
+    region,
+    version,
+    onSuccess,
+    onError,
+  }), [enabled, staleTime, gcTime, retry, region, version, onSuccess, onError]);
   const queryClient = useQueryClient();
   
   const queryKey = generateNpcDataQueryKey(npcId, options.region, options.version);
@@ -167,7 +188,28 @@ export function useNpcBatchData(
   npcIds: number[],
   hookOptions: UseNpcBatchDataOptions = {}
 ) {
-  const options = useMemo(() => ({ ...DEFAULT_OPTIONS, ...hookOptions }), [hookOptions]);
+  // Extract primitives to avoid object reference issues in dependencies
+  const {
+    enabled = DEFAULT_OPTIONS.enabled,
+    staleTime = DEFAULT_OPTIONS.staleTime,
+    gcTime = DEFAULT_OPTIONS.gcTime,
+    retry = DEFAULT_OPTIONS.retry,
+    region,
+    version,
+    onSuccess,
+    onError,
+  } = hookOptions;
+
+  const options = useMemo(() => ({
+    enabled,
+    staleTime,
+    gcTime,
+    retry,
+    region,
+    version,
+    onSuccess,
+    onError,
+  }), [enabled, staleTime, gcTime, retry, region, version, onSuccess, onError]);
   const queryClient = useQueryClient();
   
   // Create queries for each NPC ID
@@ -220,12 +262,18 @@ export function useNpcBatchData(
     })),
   });
 
-  // Aggregate results
-  const allData = queries.map(query => query.data).filter(Boolean) as NpcDataResult[];
+  // Aggregate results - memoize to prevent infinite loops
+  const allData = useMemo(
+    () => queries.map(query => query.data).filter(Boolean) as NpcDataResult[],
+    [queries]
+  );
   const isLoading = queries.some(query => query.isLoading);
   const isError = queries.some(query => query.isError);
   const isSuccess = queries.every(query => query.isSuccess);
-  const errors = queries.filter(query => query.error).map(query => query.error);
+  const errors = useMemo(
+    () => queries.filter(query => query.error).map(query => query.error),
+    [queries]
+  );
 
   // Handle success callback with proper dependency management
   const handleSuccess = options.onSuccess;
@@ -356,7 +404,28 @@ export function useOptimizedNpcBatchData(
   npcIds: number[],
   hookOptions: UseNpcBatchDataOptions = {}
 ) {
-  const options = useMemo(() => ({ ...DEFAULT_OPTIONS, ...hookOptions }), [hookOptions]);
+  // Extract primitives to avoid object reference issues in dependencies
+  const {
+    enabled = DEFAULT_OPTIONS.enabled,
+    staleTime = DEFAULT_OPTIONS.staleTime,
+    gcTime = DEFAULT_OPTIONS.gcTime,
+    retry = DEFAULT_OPTIONS.retry,
+    region,
+    version,
+    onSuccess,
+    onError,
+  } = hookOptions;
+
+  const options = useMemo(() => ({
+    enabled,
+    staleTime,
+    gcTime,
+    retry,
+    region,
+    version,
+    onSuccess,
+    onError,
+  }), [enabled, staleTime, gcTime, retry, region, version, onSuccess, onError]);
   const queryClient = useQueryClient();
   
   // Debounced batch fetcher to reduce API calls
@@ -447,8 +516,11 @@ export function useOptimizedNpcBatchData(
     });
   }, [queryClient, npcIds]);
 
+  // Memoize the data to avoid returning new empty array references
+  const data = useMemo(() => query.data || [], [query.data]);
+
   return {
-    data: query.data || [],
+    data,
     isLoading: query.isLoading,
     isError: query.isError,
     isSuccess: query.isSuccess,

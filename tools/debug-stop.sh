@@ -138,11 +138,14 @@ show_status() {
   fi
 
   echo "$states" | while IFS=': ' read -r service state; do
-    local replicas target
+    local replicas target port
     replicas=$(echo "$state" | cut -d'|' -f1)
     target=$(echo "$state" | cut -d'|' -f2)
+    port=$(echo "$state" | cut -d'|' -f3)
+    port="${port:-8080}"
     echo -e "  ${BLUE}$service${NC}"
     echo "    Original replicas: $replicas"
+    echo "    Original port: $port"
     echo "    Debug target: $target"
     echo
   done
@@ -220,10 +223,12 @@ stop_debug() {
     exit 1
   fi
 
-  # Parse state
-  local original_replicas debug_target
+  # Parse state (replicas|target|port)
+  local original_replicas debug_target original_port
   original_replicas=$(echo "$debug_state" | cut -d'|' -f1)
   debug_target=$(echo "$debug_state" | cut -d'|' -f2)
+  original_port=$(echo "$debug_state" | cut -d'|' -f3)
+  original_port="${original_port:-8080}"
 
   log "Stopping debug session for '$service'"
   echo "  Debug target was: $debug_target"
@@ -235,7 +240,7 @@ stop_debug() {
   nginx_config=$(get_nginx_config)
 
   # Build the URLs
-  local service_url="http://${service}${SERVICE_DNS_SUFFIX}:8080"
+  local service_url="http://${service}${SERVICE_DNS_SUFFIX}:${original_port}"
   local target_url="http://${debug_target}"
 
   # Count occurrences
@@ -326,10 +331,12 @@ stop_debug_single() {
     return 1
   fi
 
-  # Parse state
-  local original_replicas debug_target
+  # Parse state (replicas|target|port)
+  local original_replicas debug_target original_port
   original_replicas=$(echo "$debug_state" | cut -d'|' -f1)
   debug_target=$(echo "$debug_state" | cut -d'|' -f2)
+  original_port=$(echo "$debug_state" | cut -d'|' -f3)
+  original_port="${original_port:-8080}"
 
   log "Restoring '$service'"
   echo "  Debug target was: $debug_target"
@@ -340,7 +347,7 @@ stop_debug_single() {
   nginx_config=$(get_nginx_config)
 
   # Build the URLs
-  local service_url="http://${service}${SERVICE_DNS_SUFFIX}:8080"
+  local service_url="http://${service}${SERVICE_DNS_SUFFIX}:${original_port}"
   local target_url="http://${debug_target}"
 
   # Count occurrences

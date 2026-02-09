@@ -18,7 +18,26 @@ func InitResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteIn
 			registerGet := rest.RegisterHandler(l)(si)
 
 			r := router.PathPrefix("/data/reactors").Subrouter()
+			r.HandleFunc("", registerGet("get_reactors", handleGetReactorsRequest(db))).Methods(http.MethodGet)
 			r.HandleFunc("/{reactorId}", registerGet("get_reactor", handleGetReactorRequest(db))).Methods(http.MethodGet)
+		}
+	}
+}
+
+func handleGetReactorsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			s := NewStorage(d.Logger(), db)
+			results, err := s.GetAll(d.Context())
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Unable to retrieve reactors.")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(results)
 		}
 	}
 }

@@ -285,6 +285,13 @@ data:
           proxy_pass http://atlas-world.atlas.svc.cluster.local:8080;
         }
 
+        location /_next/webpack-hmr {
+          proxy_pass http://atlas-ui.atlas.svc.cluster.local:3000;
+          proxy_http_version 1.1;
+          proxy_set_header Upgrade $http_upgrade;
+          proxy_set_header Connection "upgrade";
+        }
+
         location / {
           proxy_pass http://atlas-ui.atlas.svc.cluster.local:3000;
         }
